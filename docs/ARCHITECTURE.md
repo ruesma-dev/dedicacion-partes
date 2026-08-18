@@ -23,6 +23,20 @@ sus partes diarios. Los dos escriben en las **mismas tablas** de Sigrid
 
 Estado a 2026-08-19: **funciona en local, no hay nada desplegado en Azure**.
 
+## Decisiones tomadas (2026-08-19)
+
+- **El nombre de dominio es «dedicación».** Los tres servicios se llaman
+  `dedicacion-api`, `dedicacion-front` y `dedicacion-transfer`, y la BBDD
+  `dedicacion`. Lo que aún diga «porcentajes» dentro del código se alinea en
+  su feature.
+- **La carpeta del monorepo se queda como `porcentajes`.** Renombrarla no
+  aporta nada y rompe rutas y sesiones abiertas. Que el contenedor se llame
+  distinto que su contenido es deliberado, no un descuido.
+- **La `synckey` se congela en `porcentajes:{asignacion_id}`.** Es un
+  identificador funcional que viaja escrito en Sigrid: cambiarlo dejaría
+  huérfano lo ya registrado y rompería la idempotencia. No se toca aunque el
+  resto del proyecto se llame «dedicación».
+
 ## Capas y estructura
 
 Monorepo de tres servicios independientes; cada uno arranca por su
@@ -162,11 +176,20 @@ Reglas duras:
 
 - Nadie más que el transfer escribe en Sigrid. La API no tiene credencial de
   escritura y no debe tenerla.
-- `sigrid-api` **trunca a 1.000 filas por petición** y el balanceador corta a
-  los 230 s; la paginación es responsabilidad del cliente y el campo
-  `truncated` de la respuesta no se ignora. ⚠ `SIGRID_MAX_ROWS=5000` en la
-  configuración de la API contradice ese tope: revisar antes de fiarse de un
-  `sync` completo.
+- **Topes de `sigrid-api`** (valores efectivos de la instancia `dev`
+  comprobados el 2026-08-18, en `azure-apps/sigrid_api.md` §4.1): el tope de
+  filas por petición es **500.000** (el 1.000 de la tabla de defectos es el
+  del código, no el de la instancia), y `max_rows` por defecto es **200** si
+  el cliente no lo pide. `SIGRID_MAX_ROWS=5000` está holgadamente dentro.
+  Lo que manda de verdad es el **corte del balanceador a los 230 s**: una
+  respuesta grande se lo come antes de llegar al tope de filas, así que
+  paginar (`OFFSET / FETCH` con `ORDER BY ide`) sigue siendo obligatorio para
+  cualquier extracción seria, y el campo `truncated` de la respuesta **no se
+  ignora nunca**: significa respuesta incompleta, sin error. El cliente de la API ya lo
+  trata así: si `truncated` viene a `true`, lanza `SigridError` en vez de
+  seguir con datos a medias. No pagina —hoy no le hace falta con `max_rows`
+  a 5.000 y unos 156 empleados—, así que si el volumen crece, lo que hay que
+  añadir es paginación, no subir el tope.
 - Documentación del sistema origen: `azure-apps/sigrid_api.md` (la pasarela)
   y `azure-apps/sigrid_tablas.md` (diccionario de tablas). No se duplican
   aquí, se enlazan.

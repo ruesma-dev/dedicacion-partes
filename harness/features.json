@@ -1,11 +1,17 @@
 {
   "$schema_doc": "Estados: pending -> spec_ready (aprueba humano) -> in_progress -> done. 'blocked' = parada con motivo en progress/current.md. Máximo UNA in_progress (lo valida init.sh). sdd=false salta la spec: 'acceptance' hace de mini-spec y el reviewer valida contra ella.",
   "$rigor_doc": "El campo 'rigor' de cada feature declara cuanta evidencia se le exige: documental, estandar o critico (ver CHECKPOINTS.md y harness/rigor.json). Si una feature NO lo declara se le aplica el mas exigente: omitirlo no relaja nada.",
-  "$nota": "Backlog propuesto el 2026-08-19 al instalar el arnés, leyendo el código migrado. PENDIENTE DE VALIDAR por el humano: el orden y el alcance son una propuesta, no una decisión.",
+  "$nota": "Backlog propuesto el 2026-08-19 al instalar el arnés, leyendo el código migrado. Validado por el humano en esa misma sesión salvo el orden fino. La F-004 de la propuesta inicial (paginación contra sigrid-api) se retiró: el tope real de la instancia dev son 500.000 filas, no 1.000, y el cliente ya falla en claro si la respuesta viene truncada.",
   "rules": {
     "one_feature_at_a_time": true,
     "require_init_green_to_close": true,
-    "valid_status": ["pending", "spec_ready", "in_progress", "done", "blocked"]
+    "valid_status": [
+      "pending",
+      "spec_ready",
+      "in_progress",
+      "done",
+      "blocked"
+    ]
   },
   "features": [
     {
@@ -58,22 +64,6 @@
     },
     {
       "id": "F-004",
-      "title": "Paginación real contra sigrid-api: el tope son 1.000 filas",
-      "description": "config/settings.py de la API declara SIGRID_MAX_ROWS=5000, pero sigrid-api sirve como máximo 1.000 filas por petición y avisa con el campo 'truncated'. Si la consulta de empleados o de obras crece, el sync se queda con parte de los maestros sin que nada falle. Hay que paginar según el patrón obligatorio de azure-apps/sigrid_api.md y tratar 'truncated' como error, no como aviso silencioso.",
-      "acceptance": [
-        "El cliente pagina y nunca descarta filas en silencio",
-        "Una respuesta con truncated=true sin paginar completa hace fallar la sincronización con mensaje claro",
-        "SIGRID_MAX_ROWS deja de contradecir el tope real del servicio",
-        "Tests con un cliente simulado que devuelve varias páginas"
-      ],
-      "status": "pending",
-      "sdd": true,
-      "rigor": "estandar",
-      "priority": 4,
-      "branch": "feature/F-004-paginacion-sigrid"
-    },
-    {
-      "id": "F-005",
       "title": "README del monorepo y arranque local en orden",
       "description": "El monorepo no tiene README. Hace falta uno que explique los tres servicios, el flujo, y cómo se levanta el sistema en local en el orden que funciona (transfer 8006 -> api 8090 -> front 8080), con la copia de cada .env.example. Hoy esa información está repartida en tres README de servicio y en la cabeza de quien lo escribió.",
       "acceptance": [
@@ -84,26 +74,27 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 5,
-      "branch": "feature/F-005-readme-monorepo"
+      "priority": 4,
+      "branch": "feature/F-004-readme-monorepo"
     },
     {
-      "id": "F-006",
-      "title": "Unificar la nomenclatura a «dedicación»",
-      "description": "El proyecto se llama de dos maneras. Las carpetas ya son dedicacion-*; quedan por decidir y alinear el nombre del repositorio, el service_name del transfer, sus README y los literales internos. Caso aparte: la synckey es 'porcentajes:{id}' y es un identificador funcional escrito en Sigrid — cambiarla invalidaría la idempotencia de lo ya registrado, así que se decide expresamente si se toca o se congela con un comentario que explique por qué.",
+      "id": "F-005",
+      "title": "Alinear los literales internos con el nombre «dedicación»",
+      "description": "El proyecto se llama de dos maneras y el humano decidió el 2026-08-19 el reparto: el nombre de dominio y de los servicios es «dedicación» (las carpetas ya son dedicacion-*), la carpeta del monorepo se queda como «porcentajes», y la synckey 'porcentajes:{id}' NO se toca, porque es un identificador funcional escrito en Sigrid y cambiarlo invalidaría la idempotencia de lo ya registrado. Queda alinear lo que aún dice otra cosa: service_name del transfer, sus README y los literales internos, y dejar las dos decisiones escritas donde se busquen.",
       "acceptance": [
-        "Decisión escrita sobre la synckey, con su motivo, en docs/ARCHITECTURE.md",
-        "service_name y README de los tres servicios coherentes con el nombre elegido",
-        "Ninguna cadena 'porcentajes' suelta en el código que no sea la synckey congelada a propósito"
+        "Las dos decisiones (carpeta y synckey) constan en docs/ARCHITECTURE.md con fecha",
+        "service_name y README de los tres servicios dicen «dedicación»",
+        "La synckey sigue siendo 'porcentajes:{id}', con un comentario que explica por qué no se cambia",
+        "Ninguna otra cadena 'porcentajes' suelta en el código de los servicios"
       ],
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 6,
-      "branch": "feature/F-006-nomenclatura-dedicacion"
+      "priority": 5,
+      "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
-      "id": "F-007",
+      "id": "F-006",
       "title": "Sanear la suite del transfer",
       "description": "tests/test_pipeline_offline.py tiene un test que devuelve un objeto Preflight en vez de comprobarlo con assert: pytest lo avisa y ese test no verifica nada. Se revisa la suite entera con el mismo criterio.",
       "acceptance": [
@@ -114,8 +105,24 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 7,
-      "branch": "feature/F-007-sanear-suite-transfer"
+      "priority": 6,
+      "branch": "feature/F-006-sanear-suite-transfer"
+    },
+    {
+      "id": "F-007",
+      "title": "Propagar a arnes-base dos defectos del instalador",
+      "description": "Detectados el 2026-08-19 instalando el arnés aquí, y valen para cualquier proyecto, así que por la regla de propagación van a arnes-base. (1) El instalador copia al proyecto destino su propio .pytest_cache/ y los __pycache__/ del payload: 9 de los 44 ficheros de una instalación limpia eran basura, y hubo que borrarlos a mano. (2) No copia el .gitattributes, que sí existe en arnes-base, así que el primer commit de un repositorio nuevo sale con avisos de CRLF en cada fichero. El arreglo va en arnes-base (excluir cachés del payload o limpiarlo antes de copiar, y añadir .gitattributes a lo que se instala), no aquí.",
+      "acceptance": [
+        "El payload de arnes-base no contiene cachés, o el instalador las excluye",
+        "Una instalación limpia en un directorio vacío no crea .pytest_cache ni __pycache__",
+        "El .gitattributes llega al proyecto destino",
+        "Cambio commiteado en el repositorio arnes-base, no en este"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "branch": "feature/F-007-propagar-defectos-instalador",
+      "priority": 7
     },
     {
       "id": "F-008",
