@@ -22,9 +22,9 @@
 # node o jq. Si no hay ninguno, la validación DEGRADA a una comprobación por
 # texto (avisa de ello) en vez de fallar.
 
-# --- [ADAPTAR] Configuración por proyecto -----------------------------------
+# --- Configuración por proyecto (adaptada al monorepo porcentajes) ----------
 PROYECTO_PYTHON=auto     # auto (detecta) | 1 (forzar sí) | 0 (forzar no)
-REQUIERE_ENV=1           # 1 si el proyecto usa .env; 0 si no
+REQUIERE_ENV=0           # los .env viven en cada servicio, no en la raíz
 RUTAS_PYTHON=""          # rutas a compilar; vacío = todo el árbol. Si lo
                          # rellenas, incluye `harness` (las herramientas del
                          # arnés también son código que debe compilar).
@@ -32,7 +32,7 @@ COMANDO_TESTS=""         # proyectos NO Python: p.ej. "npm test --silent"
 LINT_BLOQUEA=0           # 1 para que el lint tumbe el arnés; 0 = solo avisa
 RAMA_BASE=dev            # rama de integración contra la que se calcula el
                          # diff de la feature (puerta de cobertura y mutación)
-COMPROBACIONES_EXTRA=0   # 1 para activar la sección 9 (personalizada)
+COMPROBACIONES_EXTRA=1   # sección 9: .env no versionados, YAML y .env.example
 
 # Modo ligero (para hooks): con ARNES_SALTAR_SUITES=1 el portero salta las
 # suites de tests y la puerta de cobertura, avisándolo en cada sección. NO
@@ -475,14 +475,43 @@ if [ -n "$PENDIENTES" ]; then
     warn "Marcas [$MARCA] sin resolver en: $PENDIENTES"
 fi
 
-# --- 9. [ADAPTAR] Comprobaciones específicas del proyecto -------------------
-# Ejemplos según proyecto:
-#   - Azurite levantado y colas creadas (proyectos con colas):
-#       curl -s http://127.0.0.1:10001/devstoreaccount1 >/dev/null || ko "Azurite no responde"
-#   - YAML de configuración parseable:
-#       $PY -c "import yaml; yaml.safe_load(open('config/xxx.yaml'))" || ko "YAML inválido"
+# --- 9. Comprobaciones específicas del proyecto -----------------------------
+# 9a. Ningún .env versionado: la única escritura del sistema va contra el ERP
+#     con una function key, y este repositorio es git (lo que entra, se queda).
+# 9b. El YAML de consultas de la API tiene que parsear: si no, el sync muere
+#     al arrancar y no en un test.
+# 9c. Cada servicio conserva su .env.example: es el único inventario de
+#     variables que queda al no versionar los .env.
 if [ "$COMPROBACIONES_EXTRA" -eq 1 ]; then
-    warn "COMPROBACIONES_EXTRA activado pero sin implementar: edita la sección 9"
+    if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then
+        ENV_VERSIONADOS=$(git ls-files | grep -E '(^|/)\.env$' || true)
+        if [ -n "$ENV_VERSIONADOS" ]; then
+            ko "Hay .env versionados: $ENV_VERSIONADOS"
+        else
+            ok "Ningún .env versionado"
+        fi
+    fi
+
+    YAML_API="services/dedicacion-api/config/config.yaml"
+    if [ -n "$PY" ] && [ -f "$YAML_API" ]; then
+        if ! $PY -c "import yaml" >/dev/null 2>&1; then
+            warn "PyYAML no instalado: no se valida $YAML_API (pip install -r requirements-dev.txt)"
+        elif $PY -c "import sys,yaml; yaml.safe_load(open(sys.argv[1],encoding='utf-8'))" "$YAML_API" >/dev/null 2>&1; then
+            ok "config.yaml de dedicacion-api: válido"
+        else
+            ko "config.yaml de dedicacion-api no parsea"
+        fi
+    fi
+
+    FALTAN_EJEMPLO=""
+    for SRV in dedicacion-api dedicacion-front dedicacion-transfer; do
+        [ -f "services/$SRV/.env.example" ] || FALTAN_EJEMPLO="$FALTAN_EJEMPLO $SRV"
+    done
+    if [ -n "$FALTAN_EJEMPLO" ]; then
+        ko "Servicios sin .env.example:$FALTAN_EJEMPLO"
+    else
+        ok "Los tres servicios tienen .env.example"
+    fi
 fi
 
 # --- 10. Rama actual (informativo + guardarraíl) ----------------------------

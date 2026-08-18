@@ -73,10 +73,24 @@ medición automática, no la disciplina.
       relativa.
 - [ ] Sin `print()` de debug, sin TODOs sin contexto, sin secretos
       hardcodeados, sin dependencias nuevas no previstas en la spec.
-- [ ] [ADAPTAR] Reglas de dominio propias del proyecto respetadas según
-      `docs/ARCHITECTURE.md` (añadir aquí las 2-3 trampas típicas del
-      dominio que el reviewer debe vigilar siempre: campos ambiguos,
-      invariantes de negocio, qué no se puede sumar o mezclar).
+- [ ] Reglas de dominio propias del proyecto respetadas según
+      `docs/ARCHITECTURE.md`. Las tres trampas que el reviewer vigila
+      SIEMPRE, toque lo que toque la feature:
+      - **La escala del porcentaje.** En PostgreSQL se guarda 0-100; al
+        transfer y a Sigrid viaja sobre 1 (40 % → 0.4). Toda conversión
+        nueva se lee dos veces: equivocarla multiplica o divide los
+        importes por 100 sin que nada falle.
+      - **Postventa no se escribe en su obra.** Va a la obra de postventa
+        imputando a la partida de la obra ORIGINAL, y `es_postventa` forma
+        parte de la clave única de la asignación. Cualquier consulta o
+        agrupación que trate la línea de postventa como una línea normal
+        de esa obra está mal.
+      - **Solo escribe el transfer, y solo en la base `ruesma`, con
+        `synckey` y modo pruebas.** Ninguna feature añade una escritura a
+        Sigrid fuera de `dedicacion-transfer`, ni una línea sin `synckey`,
+        ni desactiva `OBRA_PRUEBAS_FORZAR` sin decisión escrita del humano.
+        Y el `ide` se sigue reservando con `MAX(ide)+1` bajo bloqueo: nada
+        de paralelizar la escritura.
 
 ## C3 bis — Los documentos que entran de fuera son seguros
 

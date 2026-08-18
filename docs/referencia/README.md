@@ -33,12 +33,19 @@ Convención del puntero: mismo nombre `NN_tema.md`, título terminado en
 
 ## Índice
 
-[ADAPTAR: una fila por documento incorporado. Mantenerlo al día es parte de
-añadir un documento, no una tarea posterior.]
+Una fila por documento incorporado. Mantenerlo al día es parte de añadir un
+documento, no una tarea posterior.
 
 | Fichero | Qué es |
 |---|---|
-| `01_<tema>.md` | [ADAPTAR: qué es, de qué fecha, y si es una versión redactada.] |
+| `01_sigrid_api.md` | **Puntero.** La pasarela al SQL Server de Sigrid: contrato de lectura y escritura, topes y trampas. Vive en `azure-apps/sigrid_api.md`. |
+| `02_sigrid_tablas.md` | **Puntero.** Diccionario completo de la BBDD de Sigrid (tablas, campos, tipos, índices). Vive en `azure-apps/sigrid_tablas.md`. |
+| `03_partes.md` | **Puntero.** El otro sistema que escribe en las mismas tablas de partes de Sigrid, con las trampas ya pagadas. Vive en `azure-apps/partes.md`. |
+
+Pendiente de incorporar: la plantilla `Plantilla_Dedicacion_Ruesma_vXX.xlsx`
+a la que sustituye este proyecto, y el hilo de reglas de Administración del
+25/07/2026 del que salen las reglas P1-P5. Hoy esas reglas solo constan en
+docstrings del código.
 
 ## Formato
 

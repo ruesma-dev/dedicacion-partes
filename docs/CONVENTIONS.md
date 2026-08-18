@@ -18,7 +18,7 @@
   producción; permitido en scripts puntuales.
 - Errores transitorios de red: reintentos con backoff, nunca bucle desnudo.
 
-### Python (borrar si el proyecto no es Python)
+### Python
 
 - Python 3.12, PEP8, type hints en firmas públicas.
 - Pydantic v2. `default=` solo en la firma, nunca duplicado dentro de
@@ -27,12 +27,26 @@
 - Logging con structlog. Reintentos con tenacity.
 - PDF en servidor: ReportLab (no HTML/CSS print).
 
-## SQL (borrar si el proyecto no lleva SQL)
+### JavaScript (solo `dedicacion-front`)
 
-- Un fichero por unidad lógica, numerado `NN_nombre.sql` dentro de su capa.
-- Idempotente: `CREATE ... IF NOT EXISTS` / `CREATE OR REPLACE VIEW`.
-- Comentario de cabecera explicando qué construye y de qué capa lee.
-- Palabras reservadas siempre entre comillas si se usan como identificador.
+- JS vanilla, sin framework ni bundler: todo en `static/js/app.js`, servido
+  tal cual. Nada de añadir dependencias de front sin decisión del humano.
+- El front no calcula reglas de negocio: pinta lo que devuelve la API y le
+  manda lo que el usuario teclea.
+
+## SQL
+
+- **Las consultas contra Sigrid van en YAML versionado**
+  (`services/dedicacion-api/config/config.yaml`), no incrustadas en el
+  código, y devuelven los alias exactos que espera el mapeo (por nombre de
+  columna, nunca por posición).
+- Parámetros SIEMPRE parametrizados: prohibido concatenar valores en la
+  cadena SQL.
+- El esquema de PostgreSQL se declara en `orm_models.py`. Si una feature
+  necesita una columna nueva, entra en el ORM; el `ALTER TABLE ... IF NOT
+  EXISTS` complementario, si hace falta, se deriva de ahí y no se escribe a
+  mano en paralelo (ver el `_ALTERS` de `application/registro_sigrid.py`,
+  que hoy es justo lo contrario y está en el backlog).
 
 ## Tests
 

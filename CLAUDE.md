@@ -1,5 +1,5 @@
 <!-- CLAUDE.md -->
-# Arnés · [ADAPTAR: nombre-del-proyecto]
+# Arnés · dedicación (monorepo `porcentajes`)
 
 Eres parte de un sistema de agentes (arnés) de este repositorio. Tu punto de
 entrada es el rol **líder**: lee `.claude/agents/leader.md` y actúa según su
@@ -72,16 +72,28 @@ confirmación cubre el plan que se enseñó, no lo que apareció después.
 
 ## Mapa del repositorio (no leas todo el proyecto, ve a lo que necesites)
 
-[ADAPTAR: lista de carpetas/ficheros clave del proyecto y qué contiene cada
-uno. Objetivo: que un agente encuentre lo que necesita sin leer todo el repo.
-Ejemplo de formato:]
+Monorepo de **tres servicios**. El flujo es: el front captura el cuadrante
+mensual → la API lo persiste en PostgreSQL → el transfer lo escribe en los
+partes de trabajo de Sigrid. Detalle completo en `docs/ARCHITECTURE.md`.
 
-- `main.py` — punto de entrada / CLI.
-- `config/` — settings (pydantic-settings sobre `.env`) y YAML de
-  parametrización.
-- `<paquete>/domain/` — entidades puras (sin dependencias externas).
-- `<paquete>/application/` — orquestador + steps (patrón pipeline).
-- `<paquete>/infrastructure/` — adaptadores (BBDD, HTTP, colas...).
+- `services/dedicacion-api/` — backend (FastAPI + PostgreSQL `dedicacion`,
+  puerto 8090). Maestros sincronizados de Sigrid (solo lectura), cuadrante
+  por periodo, export a Excel y orquestación del registro llamando al
+  transfer. Hexagonal: `domain/` (entidades y regla del 100 %),
+  `application/` (casos de uso, sync, registro), `infrastructure/`
+  (`db/`, `sigrid/`, `excel/`, `transfer/`), `interface_adapters/api/`.
+- `services/dedicacion-front/` — SPA de captura rápida (FastAPI + Jinja2 +
+  JS vanilla, puerto 8080). **No tiene lógica de negocio**: sirve la página
+  y hace proxy de `/api/*` a la API inyectando el usuario de Easy Auth. Casi
+  todo el peso está en `static/js/app.js`.
+- `services/dedicacion-transfer/` — ÚNICO servicio con credencial de
+  escritura contra Sigrid (puerto 8006). Contrato `preflight` / `ejecutar`,
+  idempotencia por `synckey`, modo pruebas. Reglas P1-P5 en
+  `application/services/reglas_porcentajes.py`, orquestación en
+  `application/pipelines/registro_pipeline.py`.
+- Cada servicio tiene su `main.py`, su `config/` (pydantic-settings sobre el
+  `.env` del propio servicio) y su `requirements.txt`. **No hay `.env` en la
+  raíz**: cada servicio arranca desde su carpeta.
 - `tests/` — los unit tests NO tocan red ni BBDD.
 - `specs/` — especificaciones SDD (una carpeta por feature).
 - `progress/` — memoria externa del arnés (`current.md`, `history.md`,
@@ -126,9 +138,20 @@ original NO se versiona: al repositorio entra solo el Markdown.
   contra `CHECKPOINTS.md`.
 - PROHIBIDO tocar `.env` o subirlo a git. Los secretos no se escriben en
   ningún fichero del repo ni en specs ni en progress.
-- [ADAPTAR: prohibiciones de escritura contra sistemas reales. Ejemplos:
-  "solo lectura contra el ERP", "nunca contra BBDD de producción",
-  "las colas se simulan con Azurite en local".]
+- CONTRA SIGRID, SOLO LECTURA salvo por `dedicacion-transfer`. La API y el
+  front leen los maestros a través de `sigrid-api` (`POST /api/sql/read`); la
+  única escritura del sistema la hace el transfer, y **siempre** contra la
+  base `ruesma` (la réplica `ruesma_rep` no admite escritura).
+- NINGÚN agente ejecuta una escritura real en Sigrid por su cuenta. El
+  transfer arranca con `OBRA_PRUEBAS_FORZAR=true`: todo va a la obra de
+  pruebas `0404` marcada `PRUEBA-PORC`. Quitar ese modo, o lanzar
+  `prueba_escritura_porcentajes.py ejecutar --confirmar` fuera de él, exige
+  autorización expresa del humano para esa acción concreta.
+- La BBDD PostgreSQL `dedicacion` es HOY local (`PG_HOST=localhost`). El
+  servidor previsto al desplegar es el **compartido** `psql-albaranes-rs9k2`
+  (lo usan albaranes y partes), donde nada de tocar parámetros de servidor,
+  autenticación ni almacenamiento: afectaría a los demás proyectos. Mientras
+  no haya decisión escrita, no des por hecho ninguno de los dos.
 - Cada feature se desarrolla en su rama `feature/F-XXX-slug`. Nunca commits
   directos a `dev` ni a `main`.
 - ANTI TELÉFONO-DESCOMPUESTO: por el chat no circula código ni informes
@@ -142,11 +165,17 @@ original NO se versiona: al repositorio entra solo el Markdown.
   variables ni decoración (la allowlist de permisos cubre el comando limpio).
 - Convenciones de código: `docs/CONVENTIONS.md`. Arquitectura:
   `docs/ARCHITECTURE.md`. Léelos antes de diseñar o implementar.
-- LÍMITE DE MICROSERVICIO: este repo es UN microservicio con una
-  responsabilidad acotada. Si una feature exige lógica que se sale de ese
-  límite (otra responsabilidad, otro dominio, integración que merece vida
-  propia), NO se implementa aquí: se marca `blocked` y se propone al humano
-  extraerla a otro microservicio.
+- LÍMITE DE SERVICIO (adaptación monorepo): cada feature declara en su spec
+  qué servicio(s) toca y por qué. La lógica NO se copia entre servicios; si
+  dos la necesitan, se propone al humano dónde debe vivir. Duplicación
+  tolerada hoy, lista cerrada: `partida_catalog.py`, `partida_matcher.py` y
+  `text_match.py` del transfer son **copias de `partes-persistencia`** (otro
+  repositorio). Quien corrija un fallo en una de ellas avisa al humano de que
+  la copia de `partes` tiene el mismo fallo. La lista solo crece con decisión
+  expresa. Una responsabilidad nueva que no encaje en ningún servicio ⇒
+  `blocked` y se consulta.
+- El front NO lleva lógica de negocio. Si una feature pide calcular algo en
+  `app.js` que decide qué se registra en Sigrid, va a la API o al transfer.
 - Los agentes NO hacen `git push` ni crean PRs salvo petición explícita del
   humano. Commits locales sí, según protocolo del implementer.
 

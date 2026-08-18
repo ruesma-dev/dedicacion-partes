@@ -2,3 +2,5 @@
 pytest>=8.0
 ruff>=0.6
 coverage>=7.0
+# La sección 9 de harness/init.sh valida el config.yaml de dedicacion-api.
+PyYAML>=6.0

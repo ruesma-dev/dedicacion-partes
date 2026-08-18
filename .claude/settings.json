@@ -1,6 +1,6 @@
 {
   "$schema_comment": "Hooks: la verificación la ejecuta el arnés, no el agente, así que no se puede saltar. Adaptado a Git Bash en Windows.",
-  "$adaptar": "El hook PostToolUse ejecuta pytest. En un proyecto que no sea Python, cambia ese comando por la suite del proyecto (npm test, dotnet test...) o borra el bloque PostToolUse entero: un hook que falla siempre acaba desactivado y con él se pierde también el Stop.",
+  "$nota": "Monorepo: el hook PostToolUse corre SOLO la suite de la raíz (tests/, las herramientas del arnés). Las suites de los servicios necesitan el intérprete y el directorio de cada uno, y las ejecuta harness/init.sh (sección 7 bis) leyendo harness/servicios.json.",
   "hooks": {
     "SessionStart": [
       {
@@ -32,8 +32,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -m pytest -q --tb=line 2>&1 | tail -5",
-            "description": "Tras editar o escribir ficheros, corre los tests y muestra el resumen."
+            "command": "python -m pytest tests -q --tb=line 2>&1 | tail -5",
+            "description": "Tras editar o escribir ficheros, corre la suite de la raíz y muestra el resumen."
           }
         ]
       }

@@ -1,7 +1,7 @@
 {
   "$schema_doc": "Estados: pending -> spec_ready (aprueba humano) -> in_progress -> done. 'blocked' = parada con motivo en progress/current.md. Máximo UNA in_progress (lo valida init.sh). sdd=false salta la spec: 'acceptance' hace de mini-spec y el reviewer valida contra ella.",
   "$rigor_doc": "El campo 'rigor' de cada feature declara cuanta evidencia se le exige: documental, estandar o critico (ver CHECKPOINTS.md y harness/rigor.json). Si una feature NO lo declara se le aplica el mas exigente: omitirlo no relaja nada.",
-  "$adaptar": "Sustituye la feature de ejemplo por el backlog real del proyecto. Deja una primera feature trivial de calentamiento: sirve para validar el circuito completo del arnés antes de jugarse nada. 'priority' ordena el backlog; el líder coge la primera no terminada.",
+  "$nota": "Backlog propuesto el 2026-08-19 al instalar el arnés, leyendo el código migrado. PENDIENTE DE VALIDAR por el humano: el orden y el alcance son una propuesta, no una decisión.",
   "rules": {
     "one_feature_at_a_time": true,
     "require_init_green_to_close": true,
@@ -10,18 +10,128 @@
   "features": [
     {
       "id": "F-001",
-      "title": "[ADAPTAR] Feature de calentamiento",
-      "description": "Una tarea trivial (un comando version, un endpoint /health...) para validar el circuito completo del arnés en este proyecto: rama, spec o acceptance, implementer, reviewer y cierre.",
+      "title": "Primera suite de tests de dedicacion-api: la regla del 100 %",
+      "description": "Calentamiento del circuito. dedicacion-api no tiene un solo test: se crea services/dedicacion-api/tests/ y se cubre domain/estados.py, que es donde vive la regla de control del cuadrante (OK / FALTA / EXCESO / SIN_CARGA). Sirve para validar rama, acceptance, implementer, reviewer y cierre sobre algo pequeño y sin riesgo, y para que el portero empiece a ejecutar de verdad la suite del servicio api.",
       "acceptance": [
-        "[ADAPTAR] criterio observable 1",
-        "[ADAPTAR] criterio observable 2 (test sin red ni BBDD)",
-        "bash harness/init.sh en verde"
+        "Existe services/dedicacion-api/tests/ con tests que no tocan red ni BBDD",
+        "Se cubren los cuatro estados y el borde de la épsilon (99,999 % y 100,001 % son OK)",
+        "Se cubre resumir(): un trabajador de baja y sin líneas no cuenta en el resumen",
+        "bash harness/init.sh en verde, con la línea 'servicio api: pytest en verde'"
       ],
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
       "priority": 1,
-      "branch": "feature/F-001-calentamiento"
+      "branch": "feature/F-001-tests-estados-api"
+    },
+    {
+      "id": "F-002",
+      "title": "Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones",
+      "description": "El repositorio se contradice sobre dos reglas que deciden qué se escribe en Sigrid. P5: el README del transfer dice obra POSTV2 e imputación por PARTIDA; el docstring de reglas_porcentajes.py dice 'postventa-2' y CAPÍTULO. P4: el README dice que en obra normal una línea M* previa del recurso choca aunque tenga otra partida; el docstring exige que la partida sea la misma. Hay que confirmar la regla buena con Administración y con datos reales de Sigrid, dejarla en una sola fuente de verdad (docs/ARCHITECTURE.md) y alinear código, docstrings y README. Sin esto, no se debe escribir en producción.",
+      "acceptance": [
+        "La regla confirmada consta en docs/ARCHITECTURE.md con fecha y de quién sale",
+        "Código, docstrings y README del transfer dicen lo mismo que ese documento",
+        "Tests offline que fijan el comportamiento de conflicto y de destino de postventa",
+        "Verificado contra Sigrid con prueba_escritura_porcentajes.py en modo pruebas, con el volcado en progress/"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 2,
+      "branch": "feature/F-002-reglas-postventa-conflicto"
+    },
+    {
+      "id": "F-003",
+      "title": "Las columnas sigrid_* de asignacion no están en el ORM",
+      "description": "application/registro_sigrid.py añade seis columnas (sigrid_estado, sigrid_parte_cod, sigrid_hmores_ide, sigrid_motivo, sigrid_registrado_at_utc, sigrid_registrado_by) con una lista de ALTER TABLE escrita a mano, y orm_models.py no las declara. Es exactamente la avería que en el proyecto partes costó una corrección entera (F-010): dos verdades del esquema que divergen. Las columnas van al ORM y el DDL complementario se deriva de él.",
+      "acceptance": [
+        "Las seis columnas están declaradas en infrastructure/db/orm_models.py",
+        "El DDL complementario se genera del ORM; no queda ninguna lista de ALTER escrita a mano",
+        "Arrancar dos veces contra una base ya creada no falla ni duplica columnas",
+        "Test que compara las columnas del ORM con las que el arranque garantiza"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 3,
+      "branch": "feature/F-003-orm-columnas-sigrid"
+    },
+    {
+      "id": "F-004",
+      "title": "Paginación real contra sigrid-api: el tope son 1.000 filas",
+      "description": "config/settings.py de la API declara SIGRID_MAX_ROWS=5000, pero sigrid-api sirve como máximo 1.000 filas por petición y avisa con el campo 'truncated'. Si la consulta de empleados o de obras crece, el sync se queda con parte de los maestros sin que nada falle. Hay que paginar según el patrón obligatorio de azure-apps/sigrid_api.md y tratar 'truncated' como error, no como aviso silencioso.",
+      "acceptance": [
+        "El cliente pagina y nunca descarta filas en silencio",
+        "Una respuesta con truncated=true sin paginar completa hace fallar la sincronización con mensaje claro",
+        "SIGRID_MAX_ROWS deja de contradecir el tope real del servicio",
+        "Tests con un cliente simulado que devuelve varias páginas"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 4,
+      "branch": "feature/F-004-paginacion-sigrid"
+    },
+    {
+      "id": "F-005",
+      "title": "README del monorepo y arranque local en orden",
+      "description": "El monorepo no tiene README. Hace falta uno que explique los tres servicios, el flujo, y cómo se levanta el sistema en local en el orden que funciona (transfer 8006 -> api 8090 -> front 8080), con la copia de cada .env.example. Hoy esa información está repartida en tres README de servicio y en la cabeza de quien lo escribió.",
+      "acceptance": [
+        "README.md en la raíz con el mapa de servicios, el flujo y el arranque local en orden",
+        "Enlaza a docs/ARCHITECTURE.md y a azure-apps en vez de duplicarlos",
+        "Ningún secreto ni valor de credencial en el documento"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "documental",
+      "priority": 5,
+      "branch": "feature/F-005-readme-monorepo"
+    },
+    {
+      "id": "F-006",
+      "title": "Unificar la nomenclatura a «dedicación»",
+      "description": "El proyecto se llama de dos maneras. Las carpetas ya son dedicacion-*; quedan por decidir y alinear el nombre del repositorio, el service_name del transfer, sus README y los literales internos. Caso aparte: la synckey es 'porcentajes:{id}' y es un identificador funcional escrito en Sigrid — cambiarla invalidaría la idempotencia de lo ya registrado, así que se decide expresamente si se toca o se congela con un comentario que explique por qué.",
+      "acceptance": [
+        "Decisión escrita sobre la synckey, con su motivo, en docs/ARCHITECTURE.md",
+        "service_name y README de los tres servicios coherentes con el nombre elegido",
+        "Ninguna cadena 'porcentajes' suelta en el código que no sea la synckey congelada a propósito"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 6,
+      "branch": "feature/F-006-nomenclatura-dedicacion"
+    },
+    {
+      "id": "F-007",
+      "title": "Sanear la suite del transfer",
+      "description": "tests/test_pipeline_offline.py tiene un test que devuelve un objeto Preflight en vez de comprobarlo con assert: pytest lo avisa y ese test no verifica nada. Se revisa la suite entera con el mismo criterio.",
+      "acceptance": [
+        "Ningún test devuelve valor; todos comprueban con assert",
+        "pytest del servicio transfer sin warnings",
+        "La suite sigue sin tocar red ni BBDD"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 7,
+      "branch": "feature/F-007-sanear-suite-transfer"
+    },
+    {
+      "id": "F-008",
+      "title": "Infraestructura y despliegue en Azure",
+      "description": "Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo el patrón de partes (Container Apps, imágenes en acralbaranesdev con tag fechado, secretos en Key Vault por identidad gestionada, Easy Auth en el front), decidir dónde vive la BBDD dedicacion, y escribir el documento del proyecto en azure-apps. El transfer arranca en modo pruebas y solo sale de él con decisión expresa.",
+      "acceptance": [
+        "Scripts de infra/ idempotentes y ejecutables, con los identificadores redactados",
+        "Los tres servicios responden a /health en Azure",
+        "azure-apps/dedicacion.md escrito, con la cabecera de origen y fecha",
+        "El transfer sigue en modo pruebas al terminar la feature"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 8,
+      "branch": "feature/F-008-infra-azure"
     }
   ]
 }

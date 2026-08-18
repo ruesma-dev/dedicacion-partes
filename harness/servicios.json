@@ -1,0 +1,23 @@
+{
+  "$doc": "Servicios del monorepo. Cada uno se comprueba con SU intérprete desde SU directorio (harness/init.sh, sección 7 bis). Esquema y campos: harness/servicios.ejemplo.json.",
+  "servicios": [
+    {
+      "nombre": "api",
+      "ruta": "services/dedicacion-api",
+      "lenguaje": "python",
+      "venv": "services/dedicacion-api/.venv"
+    },
+    {
+      "nombre": "front",
+      "ruta": "services/dedicacion-front",
+      "lenguaje": "python",
+      "venv": "services/dedicacion-front/.venv"
+    },
+    {
+      "nombre": "transfer",
+      "ruta": "services/dedicacion-transfer",
+      "lenguaje": "python",
+      "venv": "services/dedicacion-transfer/.venv"
+    }
+  ]
+}
