@@ -1,0 +1,18 @@
+# >>> ARNES-BASE: reglas anadidas por el instalador del arnes. >>>
+.env
+.arnes_cache/
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+*.doc
+*.xls
+*.ppt
+# <<< ARNES-BASE: fin del bloque. <<<
+
+# Propias del proyecto
+.venv/
+.idea/
+__pycache__/
+*.py[cod]
+.pytest_cache/
