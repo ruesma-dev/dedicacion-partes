@@ -1,0 +1,132 @@
+# config/config.yaml
+# Parámetros funcionales del microservicio dedicacion-api.
+#
+# Las consultas se lanzan contra Sigrid a través del sigrid-api
+# (POST /api/sql/read). Deben devolver EXACTAMENTE los alias indicados,
+# el mapeo se hace por nombre de columna, no por posición.
+#
+# Usa GET /api/v1/sync/preview para validar los resultados (totales,
+# muestra, categorías y estados incluidos/excluidos) ANTES de sincronizar.
+
+sync:
+  empleados:
+    # Alias obligatorios: ide, cod, nombre, dni, categoria, recurso_ide
+    # Alias del filtro:    cod_hora_mes, importe_mes
+    #
+    # CRITERIO PRINCIPAL: solo entran los RECURSOS con CÓDIGO DE HORA
+    # MENSUAL (auxhor.cod LIKE 'M%': MENC, MCAP, MJEFO…), que son los que
+    # se registran por porcentaje en el parte de trabajo. Es el mismo
+    # criterio que aplica porcentajes-transfer (regla P1), así que lo que
+    # se captura y lo que se registra coinciden.
+    #
+    # El OUTER APPLY trae el código mensual del recurso (y su importe); si
+    # el recurso no tiene ninguno, cod_hora_mes viene NULL y el servicio
+    # descarta la fila (el preview los cuenta como "sin código de hora
+    # mensual", para poder revisarlos).
+    #
+    # Activo = último historial laboral (emphis) sin fecha de baja.
+    sql: |
+      SELECT emp.ide      AS ide,
+             con.cod      AS cod,
+             con.res      AS nombre,
+             emp.dni      AS dni,
+             tip.res      AS categoria,
+             res.ide      AS recurso_ide,
+             hm.cod       AS cod_hora_mes,
+             hm.pre       AS importe_mes
+      FROM dbo.emp AS emp
+      JOIN dbo.con AS con ON con.ide = emp.ide
+      OUTER APPLY (
+          SELECT TOP 1 h.fecbaj
+          FROM dbo.emphis AS h
+          WHERE h.empide = emp.ide
+          ORDER BY h.fec DESC, h.ide DESC
+      ) AS uh
+      LEFT JOIN dbo.res AS res ON res.conide = emp.ide
+      LEFT JOIN dbo.auxrestip AS tip ON tip.ide = res.restipide
+      OUTER APPLY (
+          SELECT TOP 1 ah.cod AS cod, rh.pre AS pre
+          FROM dbo.reshor AS rh
+          JOIN dbo.auxhor AS ah ON ah.ide = rh.horide
+          WHERE rh.reside = res.ide AND ah.cod LIKE 'M%'
+          ORDER BY ah.cod
+      ) AS hm
+      WHERE COALESCE(uh.fecbaj, 0) = 0
+      ORDER BY con.res, res.ide
+
+    # Solo recursos con código de hora mensual (M*). Es EL filtro bueno:
+    # deja fuera peones, oficiales y cualquiera que no vaya por porcentaje.
+    filtro_codigo_mes: true
+
+    # Solo se sincronizan los empleados cuya categoría (auxrestip.res)
+    # esté en esta lista. Comparación normalizada: sin acentos, sin
+    # mayúsculas, espacios colapsados. El preview lista las categorías
+    # excluidas con su recuento para poder ampliar la lista.
+    # Filtro adicional por categoría (auxrestip.res). Desactivado: el
+    # código de hora mensual ya es el criterio correcto. Se conserva la
+    # lista por si en algún momento hace falta restringir más.
+    filtro_categorias: false
+    categorias_incluidas:
+      - "Administrativa"
+      - "Administrativo"
+      - "Auxiliar Administrativo"
+      - "Auxiliar Administrativa"
+      - "Aydte. Coord. Proyectos"
+      - "Capataz"
+      - "Delegado Andalucía"
+      - "Encargado"
+      - "Encargada"
+      - "Jefa de Obra"
+      - "Jefe de Obra"
+      - "Jefa de Producción"
+      - "Jefe de Producción"
+      - "Jefe de Grupo"
+      - "Oficial 2 Administrativa"
+      - "Oficial 2 Administrativo"
+      - "Oficial 2ª Administrativa"
+      - "Oficial 2ª Administrativo"
+      - "Respon. Compras Instal."
+      - "Técnica de Prevención"
+      - "Técnico de Prevención"
+      - "Técnica Prevención"
+      - "Técnico Prevención"
+      - "Técnico"
+      - "Técnica"
+      - "Técnico de Obra"
+      - "Técnico Instalaciones"
+      - "Técnico Organización 2ª"
+      - "Técnico Postventa"
+
+  obras:
+    # Alias obligatorios: ide, cod, descripcion, estado_sigrid
+    # El estado legible sale de conest (con.tip + con.est → conest.res).
+    sql: |
+      SELECT obr.ide                                        AS ide,
+             con.cod                                        AS cod,
+             con.res                                        AS descripcion,
+             COALESCE(est.res, CAST(con.est AS VARCHAR(16))) AS estado_sigrid
+      FROM dbo.obr AS obr
+      JOIN dbo.con AS con ON con.ide = obr.ide
+      LEFT JOIN dbo.conest AS est
+             ON est.tip = con.tip AND est.est = con.est
+      ORDER BY con.cod
+
+    # Se excluyen las obras cuyo estado contenga (normalizado) alguno de
+    # estos literales. Ajustar con los estados reales que muestre el
+    # preview (obras.excluidas_por_estado).
+    filtro_estados: true
+    estados_excluidos:
+      - "terminada"
+      - "terminado"
+      - "cerrada"
+      - "cerrado"
+      - "liquidada"
+      - "liquidado"
+      - "anulada"
+      - "anulado"
+
+export:
+  # Prefijo con el que se exportan las líneas de postventa, para mantener
+  # la compatibilidad con la plantilla Excel actual (códigos "Postv-XXX").
+  prefijo_postventa: "Postv-"
+  nombre_fichero: "dedicacion_{anio}{mes:02d}.xlsx"

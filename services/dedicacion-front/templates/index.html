@@ -1,0 +1,97 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dedicación por Obra · Ruesma</title>
+  <link rel="icon" href="/static/img/logo-ruesma.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap"
+        rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css?v={{ asset_version }}">
+</head>
+<body data-usuario="{{ usuario }}">
+
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="topbar__brand" href="https://ohana.ruesma.es" title="Portal Ruesma">
+        <img class="topbar__logo" src="/static/img/logo-ruesma.png" alt="Ruesma">
+        <span class="topbar__sep"></span>
+        <span class="topbar__tag">Dedicación por Obra</span>
+      </a>
+      <div class="topbar__meta">
+        <span class="muted small">{{ usuario }}</span>
+        <span class="topbar__ver">v{{ version }}</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <div class="container">
+
+      <div class="page-header">
+        <div>
+          <p class="page-eyebrow">Portal Ruesma · Recursos por obra</p>
+          <h1>Dedicación mensual</h1>
+        </div>
+        <div class="cabecera-derecha">
+          <div class="periodo-nav">
+            <button id="btn-mes-prev" class="btn secondary small" title="Mes anterior">‹</button>
+            <span id="periodo-etiqueta" class="periodo-etiqueta">—</span>
+            <button id="btn-mes-next" class="btn secondary small" title="Mes siguiente">›</button>
+            <span id="periodo-estado" class="badge">—</span>
+          </div>
+          <div class="action-bar">
+            <button id="btn-copiar-mes" class="btn secondary">Copiar mes anterior</button>
+            <button id="btn-export" class="btn secondary">Exportar Excel</button>
+            <button id="btn-sync" class="btn secondary">Sincronizar Sigrid</button>
+            <button id="btn-registro" class="btn primary">Registrar en Sigrid</button>
+            <button id="btn-cerrar" class="btn secondary">Cerrar periodo</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="aviso-cerrado" class="alert warn oculto">
+        Periodo cerrado: solo lectura.
+        <button id="btn-reabrir" class="btn secondary small">Reabrir</button>
+      </div>
+
+      <div class="toolbar">
+        <input id="buscador" class="input" type="search"
+               placeholder="Buscar trabajador, categoría u obra…  ( / )"
+               autocomplete="off">
+        <label class="check" title="Ocultar a los que ya están al 100%">
+          <input type="checkbox" id="solo-pendientes" autocomplete="off">
+          Solo pendientes
+        </label>
+        <span id="contador" class="muted small"></span>
+        <div id="resumen" class="resumen"></div>
+      </div>
+
+      <div class="panel panel-tabla">
+        <table class="table docs-table filterable" id="tabla">
+          <thead id="cabecera-tabla"></thead>
+          <tbody id="cuerpo"></tbody>
+        </table>
+        <div id="vacio" class="empty oculto">
+          No hay trabajadores. Pulsa «Sincronizar Sigrid» para cargar los maestros.
+        </div>
+      </div>
+
+      <p class="pie-ayuda muted small">
+        ↑↓ moverse · Enter editar · Esc cerrar · F7 copiar fila superior ·
+        F8 repetir mes anterior · Ctrl+Z deshacer · / buscar ·
+        arrastra las cabeceras para mover columnas, su borde para redimensionar
+      </p>
+
+    </div>
+  </main>
+
+  <div id="modal-registro" class="modal-overlay oculto"></div>
+  <div id="toasts" class="toasts"></div>
+
+  <script src="/static/js/app.js?v={{ asset_version }}"></script>
+</body>
+</html>
