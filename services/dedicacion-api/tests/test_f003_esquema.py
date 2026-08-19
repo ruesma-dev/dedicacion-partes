@@ -132,6 +132,19 @@ def _valores(sentencia: Any) -> dict[str, Any]:
     }
 
 
+def _condicion_de_id(sentencia: Any) -> tuple[str, Any]:
+    """El filtro por `id` de un UPDATE: cómo compara y con qué valor.
+
+    Las tres ramas de la traza actualizan UNA asignación concreta. Sin
+    comprobar esto, cambiar `==` por `!=` en el `where` pasaría inadvertido y
+    la traza machacaría todas las asignaciones MENOS la suya.
+    """
+    compilada = sentencia.compile(dialect=DIALECTO)
+    texto = str(compilada)
+    _, _, filtro = texto.partition(" WHERE ")
+    return filtro, compilada.params["id_1"]
+
+
 def _trazar(respuesta: dict[str, Any], usuario: str = "pgris") -> list[Any]:
     """Ejecuta `_trazar` sobre sesiones falsas y devuelve lo que emitió."""
     fabrica = _FabricaSesiones()
@@ -542,7 +555,7 @@ def test_f003_r14_rama_escritas_fija_las_seis_columnas() -> None:
         "sigrid_motivo": None,
         "sigrid_registrado_by": "pgris",
     }
-    assert _sql(sentencias[0]).endswith("WHERE asignacion.id = %(id_1)s")
+    assert _condicion_de_id(sentencias[0]) == ("asignacion.id = %(id_1)s", 11)
     # R6: la marca es consciente de zona horaria y está en UTC.
     assert marca.tzinfo is not None
     assert marca.utcoffset() == timedelta(0)
@@ -555,7 +568,15 @@ def test_f003_r14_rama_ya_registradas_solo_asciende_el_estado() -> None:
     sentencias = _trazar({"ya_registradas": [3]})
     assert len(sentencias) == 1
     assert _valores(sentencias[0]) == {"sigrid_estado": "registrado"}
-    assert "IS DISTINCT FROM" in _sql(sentencias[0])
+    filtro, identificador = _condicion_de_id(sentencias[0])
+    assert filtro == (
+        "asignacion.id = %(id_1)s AND "
+        "asignacion.sigrid_estado IS DISTINCT FROM %(sigrid_estado_1)s"
+    )
+    assert identificador == 3
+    assert sentencias[0].compile(dialect=DIALECTO).params[
+        "sigrid_estado_1"
+    ] == "registrado"
 
 
 def test_f003_r14_rama_omitidas_guarda_el_motivo() -> None:
@@ -567,6 +588,7 @@ def test_f003_r14_rama_omitidas_guarda_el_motivo() -> None:
         "sigrid_estado": "omitido",
         "sigrid_motivo": "sin parte abierto",
     }
+    assert _condicion_de_id(sentencias[0]) == ("asignacion.id = %(id_1)s", 5)
 
 
 def test_f003_r14_omitida_sin_motivo_guarda_cadena_vacia_no_null() -> None:
