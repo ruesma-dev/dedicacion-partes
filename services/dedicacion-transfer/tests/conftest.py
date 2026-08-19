@@ -26,7 +26,7 @@ from pathlib import Path
 # `application`/`domain` como lo hace `main.py`.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from domain.models.registro_models import (  # noqa: E402
+from domain.models.registro_models import (
     HoraRecurso, LineaEntrada, LineaSigrid, ObraEntrada, ParteDestino,
 )
 
