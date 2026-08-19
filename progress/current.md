@@ -10,22 +10,20 @@ prioridad es **F-002** (`critico`, `sdd: true`): fijar las reglas P4 y P5.
 - `bash harness/init.sh` → ENTORNO LISTO. Avisos vivos: 164 de ruff (deuda
   previa) y `dedicacion-front` sin directorio de tests. El api ya no aparece
   en esa lista: F-001 le dio su primera suite (21 tests).
-- Remoto `origin` → `ruesma-dev/dedicacion-partes` (GitHub). Publicados
-  `main` y `dev`, ambos con upstream. La rama
-  `feature/F-001-tests-estados-api` **no está subida** y **no está mergeada a
-  `dev`**: pendiente de decisión del humano.
+- Remoto `origin` → `ruesma-dev/dedicacion-partes` (GitHub), configurado el
+  2026-08-19. Publicados `main`, `dev` y `feature/F-001-tests-estados-api`.
+  F-001 está **mergeada a `dev`** con `--no-ff` (commit `c1faf05`) y `dev`
+  subido. No se ha abierto ningún PR.
 
 ## Pendiente de decisión del humano
 
-1. **Qué se hace con la rama de F-001**: merge a `dev` y/o push. Los agentes
-   no hacen merge ni push por su cuenta.
-2. **Validar la sección «Semántica de dominio imprescindible» de
+1. **Validar la sección «Semántica de dominio imprescindible» de
    `docs/ARCHITECTURE.md`** (viene de la sesión de instalación): está escrita
    leyendo el código, no hablando con Administración.
-3. **Las dos contradicciones ⚠ de ese documento** —destino e imputación de
+2. **Las dos contradicciones ⚠ de ese documento** —destino e imputación de
    postventa, y qué cuenta como conflicto en obra normal— siguen abiertas y
    son **F-002**. Hasta resolverlas no se escribe en producción.
-4. **Las tres automejoras del arnés** que propuso el reviewer de F-001 quedan
+3. **Las tres automejoras del arnés** que propuso el reviewer de F-001 quedan
    registradas como **F-010**; la higiene de los artefactos de cobertura,
    como **F-009**. Ambas al final de la cola: confírmalas o reordénalas.
 
