@@ -1,11 +1,12 @@
 # tests/test_f002_pipeline.py
-"""F-002 · Pipeline de registro, offline (R10, R11, R13, R21).
+"""F-002 · Pipeline de registro, offline (R10, R11, R13, R21, R28, R29, R32).
 
-Cuatro cosas que solo se ven con el pipeline entero montado: que reejecutar
-no duplique (`synckey`), que el modo pruebas desvíe la escritura sin falsear
-el casado de la postventa, que una línea previa con OTRA partida no se borre
-(Regla A), y que dos conflictos que apuntan a la misma línea de Sigrid no la
-borren dos veces.
+Lo que solo se ve con el pipeline entero montado: que reejecutar no duplique
+(`synckey`), que el modo pruebas desvíe la escritura sin falsear el casado de
+la postventa, que una línea previa con OTRA partida no se borre (Regla A),
+que dos conflictos que apuntan a la misma línea de Sigrid no la borren dos
+veces, qué pasa con una sobrecarga confirmada y sin confirmar, y —lo más
+importante de todo— que no se borre nunca sin escribir el sustituto.
 
 Sin red ni BBDD: el pipeline solo habla con el `ClienteFalso` de
 `conftest.py`, que se limita a acumular las sentencias que se le mandan.
@@ -239,3 +240,146 @@ def test_f002_r13_sin_confirmar_no_se_borra_nada():
     assert cli.borrados() == [] and res.borradas == 0
     assert res.escritas == []
     assert len(res.pendientes_confirmacion) == 1
+
+
+# ---------- R28 / R29 · la sobrecarga, en la escritura ------------- #
+
+def _sobrecarga_de_un_recurso():
+    """El recurso 200 ya tiene 0,9 en otra partida y le añadimos 0,4."""
+    cli = ClienteFalso(lineas_parte=[
+        linea_previa(ide=5001, can=0.9, paride=90001, hora_codigo="MCAP",
+                     horide=7)])
+    return cli, [linea(registro_id=1, porcentaje=0.4)]
+
+
+def _clave_del_conflicto(cli_lineas) -> str:
+    """La clave del único conflicto que produce ese escenario."""
+    cli, lineas = cli_lineas
+    conflictos = _pipeline(cli).preflight(obra=OBRA, lineas=lineas).conflictos
+    assert len(conflictos) == 1, conflictos
+    return conflictos[0].clave
+
+
+def test_f002_r28_sin_confirmar_no_se_escribe():
+    """R28 · Una sobrecarga sin confirmar bloquea sus líneas: no se escribe
+    ni una. Avisar y escribir igualmente no sería avisar."""
+    cli, lineas = _sobrecarga_de_un_recurso()
+    res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas)
+
+    assert cli.inserts() == [] and res.escritas == []
+    assert [c.motivo for c in res.pendientes_confirmacion] == ["sobrecarga"]
+
+
+def test_f002_r28_queda_listada_en_omitidas_con_motivo():
+    """R28 · Y queda listada como OMITIDA, con las cifras.
+
+    No es cosmética: `dedicacion-api` solo mira `omitidas` para escribir
+    `asignacion.sigrid_estado`. Sin esto, una línea bloqueada por sobrecarga
+    se queda en la base con su estado anterior, que miente; con esto queda
+    `omitido` con el motivo real, y pasa a `registrado` en cuanto el humano
+    confirme y reejecute.
+    """
+    cli, lineas = _sobrecarga_de_un_recurso()
+    res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas)
+
+    assert [o["registro_id"] for o in res.omitidas] == [1]
+    motivo = res.omitidas[0]["motivo"]
+    assert motivo.startswith("sobrecarga:"), motivo
+    assert "130.00%" in motivo and "90.00%" in motivo, motivo
+    assert len(motivo) <= 300, len(motivo)
+
+
+def test_f002_r28_un_pisado_sin_confirmar_no_va_a_omitidas():
+    """R28 · Control: esto NO se hace con los pisados. Un pisado sin
+    confirmar es un paso normal del flujo («repite y marca pisar»); una
+    sobrecarga es una anomalía entre el cuadrante y Sigrid, y tiene que
+    dejar rastro aunque nadie vuelva a ejecutar."""
+    cli = ClienteFalso(lineas_parte=[_una_previa_de_la_misma_partida()])
+    res = _pipeline(cli).ejecutar(obra=OBRA, lineas=[linea(registro_id=1)])
+
+    assert res.omitidas == []
+    assert [c.motivo for c in res.pendientes_confirmacion] == ["pisado"]
+
+
+def test_f002_r29_confirmada_se_escribe_y_no_borra_nada():
+    """R29 · Confirmar una sobrecarga escribe la línea y NO borra nada: la
+    línea previa de Administración se queda donde está, que es justo lo que
+    el humano acaba de aceptar (que convivan y sumen más de 1)."""
+    clave = _clave_del_conflicto(_sobrecarga_de_un_recurso())
+
+    cli, lineas = _sobrecarga_de_un_recurso()
+    res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas,
+                                  pisar_claves={clave})
+
+    assert [e["registro_id"] for e in res.escritas] == [1]
+    assert cli.borrados() == [] and res.borradas == 0
+    assert res.omitidas == []
+    assert res.pendientes_confirmacion == []
+
+
+# ---------- R32 · no se borra sin escribir el sustituto ------------ #
+
+def _pisado_y_sobrecarga_mas_otro_trabajador():
+    """El recurso 200 tiene un pisado (línea 5001, misma partida) y además
+    una sobrecarga (línea 5002, otra partida, 0,9). El empleado 12 no tiene
+    ni una cosa ni la otra: está para que quede algo que escribir y el
+    pipeline no salga por el atajo de «nada que hacer»."""
+    cli = ClienteFalso(lineas_parte=[
+        _una_previa_de_la_misma_partida(can=0.5),
+        linea_previa(ide=5002, can=0.9, paride=90001, hora_codigo="MCAP",
+                     horide=7),
+    ])
+    lineas = [linea(registro_id=1, porcentaje=0.4),
+              linea(registro_id=9, porcentaje=0.5, empleado_ide=12,
+                    nombre="Jefe de obra", categoria="Jefe de obra")]
+    return cli, lineas
+
+
+def test_f002_r32_premisa_hay_pisado_y_sobrecarga_del_mismo_recurso():
+    """Premisa del caso: si dejara de haber los dos conflictos, el test de
+    abajo pasaría por el motivo equivocado."""
+    cli, lineas = _pisado_y_sobrecarga_mas_otro_trabajador()
+    pf = _pipeline(cli).preflight(obra=OBRA, lineas=lineas)
+
+    assert [c.motivo for c in pf.conflictos] == ["pisado", "sobrecarga"]
+    assert pf.conflictos[0].lineas[0].ide == 5001
+
+
+def test_f002_r32_no_se_borra_si_no_se_escribe():
+    """R32 · EL requisito que impide perder un apunte de Administración.
+
+    El humano confirma el pisado pero NO la sobrecarga. El borrado se emite
+    por conflicto confirmado y la escritura se bloquea por registro, así que
+    sin esta guarda se borraría la línea 5001 **sin escribir la que la
+    sustituye**: pérdida de dato neta, y encima silenciosa.
+    """
+    cli0, lineas0 = _pisado_y_sobrecarga_mas_otro_trabajador()
+    clave_pisado = _pipeline(cli0).preflight(
+        obra=OBRA, lineas=lineas0).conflictos[0].clave
+
+    cli, lineas = _pisado_y_sobrecarga_mas_otro_trabajador()
+    res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas,
+                                  pisar_claves={clave_pisado})
+
+    assert cli.borrados() == [], cli.borrados()
+    assert res.borradas == 0
+    # …y lo que no estaba bloqueado sí se escribe: la guarda es por
+    # conflicto, no un «ante la duda, no hagas nada».
+    assert [e["registro_id"] for e in res.escritas] == [9]
+
+
+def test_f002_r32_confirmando_las_dos_si_se_borra():
+    """R32 · Control positivo: confirmadas las dos, el sustituto se escribe
+    y entonces sí se borra la línea vieja. La guarda no es «no borres
+    nunca»: es «no borres sin escribir»."""
+    cli0, lineas0 = _pisado_y_sobrecarga_mas_otro_trabajador()
+    claves = {c.clave for c in
+              _pipeline(cli0).preflight(obra=OBRA, lineas=lineas0).conflictos}
+
+    cli, lineas = _pisado_y_sobrecarga_mas_otro_trabajador()
+    res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas,
+                                  pisar_claves=claves)
+
+    assert cli.borrados() == [5001]
+    assert res.borradas == 1
+    assert sorted(e["registro_id"] for e in res.escritas) == [1, 9]

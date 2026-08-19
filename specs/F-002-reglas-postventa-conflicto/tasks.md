@@ -186,7 +186,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   test_f002_r31 or test_f002_r33"` en verde; fase RED pegada (toda la regla
   es nueva: la RED es real contra el código de producción).
 
-- [ ] **T12**: Implementar la **Regla B — escritura y salvaguardas** en
+- [x] **T12**: Implementar la **Regla B — escritura y salvaguardas** en
   `registro_pipeline.ejecutar`:
   - una sobrecarga sin confirmar bloquea sus registros y los lista en
     `omitidas` con `MOTIVO_SOBRECARGA` (R28);

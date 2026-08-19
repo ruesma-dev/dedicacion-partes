@@ -37,8 +37,9 @@ from application.services.partida_resolver import (
     construir_catalogo, resolver_normal, resolver_postventa,
 )
 from application.services.reglas_porcentajes import (
-    MOTIVO_PARTIDA_PV_NO_HOJA, ReglasPorcentajes, clave_conflicto,
-    clave_sobrecarga, criterio_choque, es_linea_mensual, evaluar_capacidad,
+    MOTIVO_PARTIDA_PV_NO_HOJA, MOTIVO_SOBRECARGA, ReglasPorcentajes,
+    clave_conflicto, clave_sobrecarga, criterio_choque, es_linea_mensual,
+    evaluar_capacidad,
 )
 from domain.models.registro_models import (
     AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
@@ -391,9 +392,22 @@ class RegistroPipeline:
         for c in pf.conflictos:
             if c.clave in pisar:
                 res.pisadas.append(c.clave)
-            else:
-                res.pendientes_confirmacion.append(c)
-                bloqueadas.update(c.registros)
+                continue
+            res.pendientes_confirmacion.append(c)
+            bloqueadas.update(c.registros)
+            if c.motivo != "sobrecarga":
+                continue
+            # R28: una sobrecarga sin confirmar deja rastro en `omitidas`.
+            # Los pisados NO lo hacen: un pisado sin confirmar es un paso
+            # normal del flujo, mientras que una sobrecarga es una anomalía
+            # entre el cuadrante y Sigrid que tiene que verse aunque nadie
+            # vuelva a ejecutar. `dedicacion-api` solo mira este campo para
+            # escribir `asignacion.sigrid_estado`.
+            motivo = MOTIVO_SOBRECARGA.format(
+                total=c.suma_total, existente=c.suma_existente,
+                n=len(c.contexto), nueva=c.nueva_can)
+            res.omitidas.extend({"registro_id": r, "motivo": motivo}
+                                for r in c.registros)
 
         a_escribir = [a for a in pf.acciones
                       if a.accion == "escribir"
@@ -439,8 +453,16 @@ class RegistroPipeline:
         # con ella). Se borra UNA vez: el segundo DELETE no borraría nada y
         # dejaría `borradas` contando de más.
         ides_borrados: set[int] = set()
+        escribibles = {a.registro_id for a in a_escribir}
         for c in pf.conflictos:
             if c.clave not in pisar:
+                continue
+            # R32: un conflicto confirmado solo emite sus borrados si al
+            # menos uno de sus registros llega a escribirse. Si no —porque
+            # los bloquea otro conflicto sin confirmar—, borrar dejaría el
+            # parte SIN la línea vieja y SIN la nueva: pérdida neta de un
+            # apunte de Administración, y encima silenciosa.
+            if not (set(c.registros) & escribibles):
                 continue
             for ls in c.lineas:
                 if ls.ide in ides_borrados:

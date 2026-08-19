@@ -169,13 +169,17 @@ class ClienteFalso:
         self._obra_pv_existe = bool(obra_postventa_existe)
         # emp 10 -> recursos 100 (viejo, sin M*) y 200 (MENC)
         # emp 11 -> recurso 300 (solo horas de convenio, sin M*)
-        self.recursos = {10: [100, 200], 11: [300]}
+        # emp 12 -> recurso 400 (MJEFO). Es el SEGUNDO trabajador con M*, y
+        #           hace falta para los casos en los que un recurso queda
+        #           bloqueado y tiene que quedar otro que sí se escriba.
+        self.recursos = {10: [100, 200], 11: [300], 12: [400]}
         self.horas = {
             100: [HoraRecurso(1, "HLPE", None, 20.0)],
             200: [HoraRecurso(5, "MENC", None, 9000.0),
                   HoraRecurso(9, "HEGR", None, 30.0)],
             300: [HoraRecurso(1, "HLPE", None, 20.0),
                   HoraRecurso(9, "HEGR", None, 30.0)],
+            400: [HoraRecurso(6, "MJEFO", None, 11000.0)],
         }
         self.parte = ParteDestino(ano=2026, mes=7, existe=parte_existe,
                                   ide=777 if parte_existe else None,
