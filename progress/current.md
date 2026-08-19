@@ -3,9 +3,9 @@
 
 **F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones**
 Rama `feature/F-002-reglas-postventa-conflicto` · `sdd: true` · rigor `critico`
-Estado: **Fase 2 EN CURSO (lanzada el 2026-08-19).** La Fase 1 (T1–T5) está
-implementada y **aprobada**; la spec v2 ya recoge D1 y D2 cerradas y la regla
-de capacidad del 100 % diseñada.
+Estado: **Fases 1 y 2 implementadas y APROBADAS** (2026-08-19). Falta la
+**Fase 3**, que es toda del humano: T6, T13 y T14. Sin ellas F-002 no pasa a
+`done`.
 
 ## Qué se ha hecho en esta sesión (2026-08-19)
 
@@ -21,17 +21,35 @@ Review de la fase: `progress/review_F-002_fase1.md`.
 | T3 · un solo punto de decisión para el conflicto | [x] | `22328fb` |
 | T4 · R14, R10, R11 y el defecto R13 | [x] | `20280c7` |
 | T5 · fuente única de las reglas (lo que no depende de D1/D2) | [x] | `beba73b` |
-| T6 en adelante | [ ] | bajo la PARADA |
+| T7 · punto 5 de ARCHITECTURE definitivo (D1), con procedencia | [x] | `d0f03d9` |
+| T8 · fuente única de P4 y P5, y la Regla B escrita | [x] | `25b4cc1` |
+| T9 · la partida de postventa solo puede ser hoja activa | [x] | `eb3e80e` |
+| T10 · **Regla A**: la partida entra en la identidad | [x] | `05ceef7` |
+| T11 · **Regla B** (capacidad): detección | [x] | `01468b6` |
+| T12 · **Regla B**: escritura y guarda contra pérdida de datos | [x] | `a8313f1` |
+| T15 · campaña de mutación (8 supervivientes → 1 equivalente) | [x] | `caed865` |
+| T16/T17 · informe, evidencias y portero en verde | [x] | `eaf77a0` |
+| — · demostración exacta del equivalente + lint | [x] | `ab192b7` |
+| **T6 · avisos y procedencia** | **[ ]** | **del humano** |
+| **T13 · casado real contra Sigrid, sin escribir** | **[ ]** | **del humano** |
+| **T14 · escritura real en la obra de pruebas `0404`** | **[ ]** | **del humano** |
 
 ### Verificado con salida real
 
-- `bash harness/init.sh` → ENTORNO LISTO. Suite del transfer: **90 passed,
-  5 xfailed**; raíz 11 passed; api 21 passed.
-- **Puerta de cobertura: 96,8 % (30/31 líneas cambiadas)**, umbral 80 %.
-- **Campaña de mutación: 9 mutantes, 9 muertos, 0 supervivientes**,
-  reejecutada de forma independiente por el reviewer con los mismos totales.
-- Es la **primera feature del repositorio en la que estas dos puertas miden
-  código de producción**: en F-001 salieron `N/A` por diseño.
+- `bash harness/init.sh` → ENTORNO LISTO. Suite del transfer: **187 passed,
+  0 xfail** (eran 90 y 5 al abrir la sesión); raíz 11 passed; api 21 passed.
+- **Puerta de cobertura: 99,1 % (107/108 líneas cambiadas)**, umbral 80 %.
+- **Campaña de mutación: 34 mutantes, 33 muertos, 1 superviviente**, y ese
+  superviviente es **demostrablemente equivalente** (`>` vs `>=` en la
+  tolerancia: los dos solo diferirían si el exceso valiese exactamente
+  0,00005, que no es representable como resultado de esa resta). La
+  demostración es un test con `Fraction`, y el reviewer la ejecutó.
+  La **primera** pasada dejó **8 supervivientes** y se atacaron los ocho: uno
+  destapó un fallo real (el `contexto` de un conflicto colaba líneas de
+  **otro trabajador**), dos se resolvieron **quitando** guardas inalcanzables
+  y tres con tests del cuarto decimal.
+- ruff: **178** avisos (bajó desde 180; los ficheros de producción de la
+  feature pasan de 83 a 82, medido por el reviewer con `ruff --isolated`).
 - **R13 era un defecto real**, reproducido por el reviewer: dos líneas
   pendientes del mismo recurso y mes con partidas distintas chocaban contra
   la misma línea previa y emitían **dos `DELETE` del mismo `hmores.ide`**,
@@ -119,7 +137,12 @@ antes de cerrar, **es una línea de `docs/ARCHITECTURE.md`**.
 
 ## Otras features vivas
 
-- **F-003** (`in_progress`): implementada y **APROBADA** por el reviewer en su
+> **Nota de estado entre ramas.** `harness/features.json` de ESTA rama tiene
+> F-003 en `pending`, porque su `in_progress` vive en la rama de F-003 y
+> `harness/init.sh` solo admite **una** feature en curso a la vez. No es un
+> descuadre que haya que arreglar aquí: se resuelve solo al mergear.
+
+- **F-003** (`in_progress` en su rama): implementada y **APROBADA** por el reviewer en su
   rama `feature/F-003-orm-columnas-sigrid` (HEAD `e6aeefb`). 84 tests en el
   api, cobertura 94,4 %, 14 mutantes y 0 supervivientes. **No pasa a `done`
   hasta que el humano ejecute la verificación MANUAL T8** contra su base real
