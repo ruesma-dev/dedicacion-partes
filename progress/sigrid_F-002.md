@@ -148,3 +148,37 @@ SELECT p.ide, ISNULL(p.padide,0) AS padide, p.pos, p.cod, p.res,
  WHERE con.cod = ?          -- 'POSTV2'
  ORDER BY p.pos, p.ide OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
 ```
+
+---
+
+## C6 · ¿Ha escrito este sistema alguna vez en Sigrid?
+
+- **Fecha:** 2026-08-19 · **Motivo:** cerrar la ventana ciega del 25/07/2026
+  que detectó `progress/explore_transfer_original.md` §5 (el log del original
+  solo empieza el 26/07 a las 12:09).
+- **Vía:** `POST /api/sql/read`, base **`ruesma`**. `SELECT` puro.
+- **Busca:** cualquier fila de `hmores` con `synckey LIKE 'porcentajes:%'` o
+  con la marca de pruebas en `tex` (`%PRUEBA-PORC%`).
+- **Resultado: 0 filas.** `truncated: false`.
+
+**Conclusión: este sistema nunca ha escrito en Sigrid.** No hay restos de
+pruebas que limpiar, y la afirmación queda demostrada, no supuesta. La
+verificación T14 (escritura real en la obra de pruebas `0404`) sigue **entera
+por hacer** y exige autorización expresa del humano para esa acción concreta.
+
+### SQL ejecutado
+
+```sql
+SELECT TOP 500 h.ide, h.hmoide, hmo.ano, hmo.mes, con.cod AS obra_cod,
+       h.reside, h.fec, a.cod AS hora_cod, h.can, h.pre, h.tot,
+       ISNULL(h.paride,0) AS paride, CAST(h.tex AS NVARCHAR(200)) AS tex,
+       h.synckey
+  FROM hmores h
+  JOIN hmo ON hmo.ide = h.hmoide
+  JOIN obr ON obr.ide = hmo.obride
+  JOIN con ON con.ide = obr.ide
+  LEFT JOIN auxhor a ON a.ide = h.horide
+ WHERE h.synckey LIKE ?              -- 'porcentajes:%'
+    OR CAST(h.tex AS NVARCHAR(200)) LIKE ?   -- '%PRUEBA-PORC%'
+ ORDER BY h.ide DESC
+```

@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **10 features**, 9 abiertas, 1 terminadas.
+Resumen: **11 features**, 10 abiertas, 1 terminadas.
 
 En curso: **F-002**.
 
@@ -20,6 +20,7 @@ En curso: **F-002**.
 | F-008 | Infraestructura y despliegue en Azure | 8 | pendiente | critico | `feature/F-008-infra-azure` |
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | pendiente | estandar | `feature/F-009-higiene-coverage-gitignore` |
 | F-010 | Automejoras del arnes propuestas al revisar F-001 | 10 | pendiente | documental | `feature/F-010-automejoras-arnes-reviewer` |
+| F-011 | Un solo codigo de hora mes por trabajador | 11 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
 
 ## Terminadas
 
@@ -82,6 +83,12 @@ Detectado al cerrar F-001. El repositorio versiona seis ficheros generados (.cov
 estado **pendiente** · prioridad 10 · rigor `documental` · SDD no · rama `feature/F-010-automejoras-arnes-reviewer`
 
 Tres huecos del protocolo que dejo ver la review de F-001, los tres validos para cualquier proyecto (van tambien a arnes-base). (1) CHECKPOINTS.md C4 bis no dice que hacer cuando TODA la feature cae en DIRECTORIOS_EXCLUIDOS y salen a la vez cobertura N/A y mutacion 0: la evidencia sustitutiva debe ser una campana de mutacion sobre el fichero de produccion que los tests nuevos cubren, y el reviewer la reproduce. (2) .claude/agents/reviewer.md: cuando el alcance salga vacio, anadir el control positivo (generar mutantes del fichero cubierto y ejecutarlos contra la suite), no solo el control de que el generador funciona. (3) La cache del portero puede ensenar un [OK] de un servicio sin que la suite se haya ejecutado en esa sesion: el protocolo del reviewer debe obligar a lanzarla a mano en ese caso.
+
+### F-011 · Un solo codigo de hora mes por trabajador
+
+estado **pendiente** · prioridad 11 · rigor `estandar` · SDD no · rama `feature/F-011-codigo-hora-mes-unico`
+
+Detectado el 2026-08-19 al revisar el original porcentajes-transfer. Cuando un recurso tiene varios codigos de hora mensual (MENC, MJEFO...), reglas_porcentajes.py:105 elige el PRIMERO POR ORDEN ALFABETICO y de ahi sale el importe mensual (pre) que se escribe en Sigrid. Es una heuristica que nadie ha confirmado y que puede escribir un importe distinto del correcto. Decision del humano: de momento se deja el primero, y se abre esta feature para que la situacion no se de. Dos partes: que el sistema avise en el preflight cuando un recurso tenga mas de un codigo M* vigente (hoy solo lo escribe en el log, donde nadie lo ve), y llevar a Administracion la peticion de que en Sigrid un trabajador solo pueda tener un codigo de hora mes.
 
 ### F-001 · Primera suite de tests de dedicacion-api: la regla del 100 %
 

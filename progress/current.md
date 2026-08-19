@@ -44,6 +44,12 @@ Review de la fase: `progress/review_F-002_fase1.md`.
   (`cod = '0610'`, `res = 'COLEGIO ALEGRA'`, campos separados) es el correcto.
   De paso encontró cuatro partidas duplicadas sin el cero inicial (`656`,
   `664`, `680`, `693`) colgando de la raíz del presupuesto en vez de `CD`.
+- **C6 · EJECUTADA** el 2026-08-19. Buscaba cualquier fila de `hmores` con
+  `synckey LIKE 'porcentajes:%'` o la marca `PRUEBA-PORC`. **Resultado: 0
+  filas ⇒ este sistema NUNCA ha escrito en Sigrid.** Cierra la ventana ciega
+  del 25/07/2026 que detectó `progress/explore_transfer_original.md`: lo que
+  hubo en julio fueron cinco **preflights** en modo pruebas, no escrituras. No
+  hay restos que limpiar y **T14 sigue entera por hacer**.
 - **C1, C3, C4 y C5 · NO ejecutadas.** Siguen escritas en
   `specs/F-002-reglas-postventa-conflicto/requirements.md` §2. C4 perdió casi
   todo su interés cuando el humano contestó D2 directamente.
@@ -83,13 +89,21 @@ Ninguna de la Fase 1 lo era. Todas las que quedan están bajo la PARADA:
 
 ## Otras features vivas
 
-- **F-003** (`spec_ready`): spec escrita y commiteada en su propia rama
-  `feature/F-003-orm-columnas-sigrid` (`e3e03ac`). **Pendiente de que el
-  humano la apruebe.** Hallazgo relevante: hoy los `ALTER TABLE` a mano se
-  ejecutan dentro de `build_app`, así que importar la app de la API abre
-  conexión a PostgreSQL — por eso el servicio no tenía tests de API.
-- **F-009** (higiene de artefactos de cobertura) ha vuelto a aparecer sola:
-  `init.sh` deja el árbol sucio y eso impide al reviewer usar la campaña de
+- **F-003** (`in_progress`): implementada y **APROBADA** por el reviewer en su
+  rama `feature/F-003-orm-columnas-sigrid` (HEAD `e6aeefb`). 84 tests en el
+  api, cobertura 94,4 %, 14 mutantes y 0 supervivientes. **No pasa a `done`
+  hasta que el humano ejecute la verificación MANUAL T8** contra su base real
+  y anote el resultado en el `current.md` de esa rama, donde están los
+  comandos. Lo que consiguió: `_ALTERS` desaparece, el ORM es la única fuente
+  de verdad y **construir la app ya no abre conexión a PostgreSQL** — que era
+  el motivo de que el servicio no pudiera tener tests de API.
+- **F-011** (`pending`, prioridad 11): abierta hoy por decisión del humano.
+  Si un recurso tiene varios códigos `M*`, hoy se elige el primero por orden
+  alfabético y de ahí sale el importe mensual que se escribe en Sigrid. Se
+  deja así de momento; la feature es avisarlo en el preflight (hoy solo va al
+  log) y pedir a Administración un único código de hora mes por trabajador.
+- **F-009** (higiene de artefactos de cobertura) ha estorbado ya **tres
+  veces**: `init.sh` deja el árbol sucio y eso impide usar la campaña de
   mutación paralela, que exige árbol limpio. Ver `review_F-002_fase1.md` §10.
 
 ## Nota de proceso

@@ -171,6 +171,23 @@
       "rigor": "documental",
       "priority": 10,
       "branch": "feature/F-010-automejoras-arnes-reviewer"
+    },
+    {
+      "id": "F-011",
+      "title": "Un solo codigo de hora mes por trabajador",
+      "description": "Detectado el 2026-08-19 al revisar el original porcentajes-transfer. Cuando un recurso tiene varios codigos de hora mensual (MENC, MJEFO...), reglas_porcentajes.py:105 elige el PRIMERO POR ORDEN ALFABETICO y de ahi sale el importe mensual (pre) que se escribe en Sigrid. Es una heuristica que nadie ha confirmado y que puede escribir un importe distinto del correcto. Decision del humano: de momento se deja el primero, y se abre esta feature para que la situacion no se de. Dos partes: que el sistema avise en el preflight cuando un recurso tenga mas de un codigo M* vigente (hoy solo lo escribe en el log, donde nadie lo ve), y llevar a Administracion la peticion de que en Sigrid un trabajador solo pueda tener un codigo de hora mes.",
+      "acceptance": [
+        "La heuristica actual (primer codigo M* por orden alfabetico) esta documentada en docs/ARCHITECTURE.md como temporal, con su fecha y su motivo",
+        "El preflight avisa explicitamente cuando un recurso tiene mas de un codigo M* vigente: hoy solo se escribe en el log y el usuario no lo ve",
+        "Hay un test offline que fija ese aviso",
+        "Queda escrita la peticion a Administracion de un unico codigo de hora mes por trabajador",
+        "bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 11,
+      "branch": "feature/F-011-codigo-hora-mes-unico"
     }
   ]
 }
