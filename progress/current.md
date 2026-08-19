@@ -3,8 +3,9 @@
 
 **F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones**
 Rama `feature/F-002-reglas-postventa-conflicto` · `sdd: true` · rigor `critico`
-Estado: **Fase 1 (T1–T5) implementada y verificada. Parada en la ⛔ barrera de
-`tasks.md`, a la espera de cerrar el rediseño de P4.**
+Estado: **Fase 2 EN CURSO (lanzada el 2026-08-19).** La Fase 1 (T1–T5) está
+implementada y **aprobada**; la spec v2 ya recoge D1 y D2 cerradas y la regla
+de capacidad del 100 % diseñada.
 
 ## Qué se ha hecho en esta sesión (2026-08-19)
 
@@ -65,14 +66,27 @@ Review de la fase: `progress/review_F-002_fase1.md`.
    distintas**, pero **la suma de sus cantidades no puede pasar de 1**
    (el 100 % del trabajador).
 
-## ⚠ Lo que bloquea la Fase 2
+## Fase 2 · qué se está implementando (T7–T12)
 
-**La respuesta a D2 no es ninguna de las dos versiones que se enfrentaban en
-el repositorio**, así que `design.md` §7 (Riesgo 2) queda invalidado en esa
-parte: la regla P4 hay que **diseñarla de cero** (validar la suma del mes
-contra lo que ya existe en el parte, decidir qué ocurre cuando se pasa del
-100 % y qué ve el usuario en el front). El líder debe **volver a la PARADA 1**
-con esa propuesta antes de que nadie implemente T11.
+El rediseño de P4 **ya está hecho y aprobado por el humano** (PARADA 1 del
+2026-08-19). La vieja P4 se parte en dos reglas:
+
+- **Regla A · identidad.** `campos_identidad(destino)` pasa a devolver
+  `CAMPOS_CLAVE` completos **siempre**, también en obra normal: una línea
+  nuestra solo pisa una existente si coinciden recurso + mes + código de hora
+  + **partida**.
+- **Regla B · capacidad (nueva).** Por trabajador y parte,
+  `Σ can de las líneas M* existentes que NO se pisan + Σ can de las nuestras`
+  no puede pasar de 1. Tolerancia `0.00005`, el equivalente exacto en escala
+  0-1 del `_EPSILON = 0.005` que ya usa el cuadrante en
+  `services/dedicacion-api/domain/estados.py`, para que front y Sigrid no
+  discrepen en el último decimal.
+- **Qué hace al pasarse (decisión del humano): avisar y esperar
+  confirmación**, no bloquear ni escribir a ciegas.
+- **Cómo viaja (decisión del humano): como un `Conflicto` más**, con motivo
+  propio, para que F-002 **no toque `dedicacion-api` ni `dedicacion-front`**.
+
+**T6 es del humano y no bloquea el código** (ver abajo).
 
 ## Verificaciones `MANUAL (humano)` pendientes
 
@@ -80,12 +94,28 @@ Ninguna de la Fase 1 lo era. Todas las que quedan están bajo la PARADA:
 
 | Tarea | Qué es | Comando |
 |---|---|---|
-| T6 | llevar a Administración lo que quede abierto tras el rediseño de P4 | copiar de `requirements.md` §2 |
-| T7 | ejecutar C1, C3, C4, C5 contra `sigrid-api` (**solo lectura**) | el `Invoke-RestMethod` de `tasks.md` T7, con la function key fuera del repositorio |
+| T6.1 | trasladar a Administración el aviso de las **cuatro partidas duplicadas** de POSTV2 (`656`, `664`, `680`, `693`, colgando de la raíz en vez de `CD`) | ninguno: es un aviso, no una acción técnica |
+| T6.2 | confirmar **quién firma** la línea de procedencia de R4 | ver «Procedencia» abajo |
+| T6 opc. | calibrar cuánta sobrecarga real va a aflorar con **C3** y **C5** (solo lectura) | `requirements.md` §3. **C1 y C4 ya no tienen motivo** |
 | T13 | casado real contra Sigrid **sin escribir** | `python prueba_escritura_porcentajes.py capitulos` / `estado` / `preflight` |
 | T14 | escritura real en la obra de pruebas `0404` | `ejecutar --confirmar` → `verificar` → `limpiar --confirmar`. **Exige autorización expresa del humano para esa acción concreta**; ningún agente la lanza |
 
 `OBRA_PRUEBAS_FORZAR` sigue en `true` y esta fase no ha tocado ningún `.env`.
+
+### Procedencia de las decisiones (R4) — pendiente de confirmar por el humano
+
+La spec pide la línea `Confirmado por Administración el AAAA-MM-DD ·
+<interlocutor>`. **No consta que se haya hablado con Administración**: D1 y D2
+las decidió el humano directamente el 2026-08-19, y se respaldaron con las
+lecturas reales C2 y C6 contra Sigrid. Escribir «Administración» sería una
+procedencia falsa, que es justo lo que esta feature viene a eliminar. Se
+implementa con la procedencia real:
+
+> `Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
+> verificado contra Sigrid, ver progress/sigrid_F-002.md`
+
+Si el humano prefiere otro interlocutor o quiere llevarlo a Administración
+antes de cerrar, **es una línea de `docs/ARCHITECTURE.md`**.
 
 ## Otras features vivas
 
