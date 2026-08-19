@@ -272,7 +272,7 @@ def test_f003_r3_ddl_add_column_arrastra_default_y_not_null(esquema: Any) -> Non
 
 
 def test_f003_r8_tabla_ausente_no_genera_ningun_alter(esquema: Any) -> None:
-    """Base limpia: la tabla la crea `create_all` con las dieciséis columnas;
+    """Base limpia: la tabla la crea `create_all` con todas sus columnas;
     aquí no se emite nada."""
     assert esquema.alters_faltantes(Base.metadata, {}) == []
 

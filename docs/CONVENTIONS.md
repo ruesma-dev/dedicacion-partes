@@ -42,11 +42,18 @@
   columna, nunca por posición).
 - Parámetros SIEMPRE parametrizados: prohibido concatenar valores en la
   cadena SQL.
-- El esquema de PostgreSQL se declara en `orm_models.py`. Si una feature
-  necesita una columna nueva, entra en el ORM; el `ALTER TABLE ... IF NOT
-  EXISTS` complementario, si hace falta, se deriva de ahí y no se escribe a
-  mano en paralelo (ver el `_ALTERS` de `application/registro_sigrid.py`,
-  que hoy es justo lo contrario y está en el backlog).
+- El esquema de PostgreSQL se declara en `orm_models.py` y **solo** ahí. Si
+  una feature necesita una columna nueva, entra en el ORM; el
+  `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` complementario que pone al día
+  una base ya creada lo **deriva** del ORM
+  `services/dedicacion-api/infrastructure/db/esquema.py`, y se ejecuta al
+  arrancar (`main.py`), nunca al construir la app. Prohibido escribir DDL a
+  mano en paralelo: dos verdades del esquema divergen sin que nada avise
+  (la avería que costó la F-003 aquí y la F-010 en `partes`).
+- Ese mecanismo solo sabe **añadir columnas**. Cambiar un tipo, renombrar,
+  borrar o mover datos existentes exige una migración escrita por una
+  persona; ese es también el momento de meter Alembic (criterio en
+  `specs/F-003-orm-columnas-sigrid/design.md` §6).
 
 ## Tests
 

@@ -68,7 +68,9 @@ Hexagonal estricto:
 - `application/` — casos de uso (`use_cases.py`), sincronización de maestros
   (`sync_pipeline.py`, `filtros_maestros.py`) y orquestación del registro
   (`registro_sigrid.py`, que agrupa por obra y llama al transfer).
-- `infrastructure/` — `db/` (SQLAlchemy 2, `orm_models.py` + repositorios),
+- `infrastructure/` — `db/` (SQLAlchemy 2, `orm_models.py` como única verdad
+  del esquema + `esquema.py`, que deriva de él el DDL del arranque, +
+  repositorios),
   `sigrid/` (cliente de `sigrid-api`), `excel/` (export compatible con la
   plantilla), `transfer/` (cliente HTTP del transfer).
 - `interface_adapters/api/` — FastAPI: `routes.py`, `schemas.py`, `deps.py`
