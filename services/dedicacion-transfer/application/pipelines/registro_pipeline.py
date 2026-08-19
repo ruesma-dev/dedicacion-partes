@@ -361,10 +361,18 @@ class RegistroPipeline:
 
         # Paso 10: borrar pisadas + insertar.
         statements: list[dict] = []
+        # Una misma línea de Sigrid puede aparecer en más de un conflicto
+        # (dos pendientes del mismo recurso con partidas distintas chocan
+        # con ella). Se borra UNA vez: el segundo DELETE no borraría nada y
+        # dejaría `borradas` contando de más.
+        ides_borrados: set[int] = set()
         for c in pf.conflictos:
             if c.clave not in pisar:
                 continue
             for ls in c.lineas:
+                if ls.ide in ides_borrados:
+                    continue
+                ides_borrados.add(ls.ide)
                 statements.append(self._cli.stmt_borrar_linea(ls.ide))
                 res.borradas += 1
 
