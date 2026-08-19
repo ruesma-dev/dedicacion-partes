@@ -2,50 +2,51 @@
 # F-003 · Informe de review
 
 **Feature:** Las columnas `sigrid_*` de `asignacion` no están en el ORM.
-**Rama revisada:** `feature/F-003-orm-columnas-sigrid` (HEAD `469f67f`).
+**Rama revisada:** `feature/F-003-orm-columnas-sigrid` (HEAD `14423c0`).
 **Spec:** `specs/F-003-orm-columnas-sigrid/` (requirements + design + tasks).
-**Fecha:** 2026-08-19.
+**Fecha:** 2026-08-19 · **Dos pasadas** (ver «Segunda pasada» al final).
 
 ---
 
 ## Veredicto
 
-**CHANGES_REQUESTED**
+**APPROVED**
 
-Y conviene leer el motivo antes que el veredicto, porque **no es un problema
-del código**.
+Con una condición que no depende de ningún agente y que queda escrita abajo:
+**F-003 no puede pasar a `done` hasta que el humano ejecute T8 y anote su
+resultado real en `progress/current.md`.** Eso lo exige el nivel `critico`, no
+yo, y el líder ya lo ha dejado listado con sus comandos.
 
-La implementación es **buena y está bien verificada**: he recalculado el
-alcance y los mutantes por mi cuenta, he **reejecutado la campaña de mutación
-entera**, he comprobado empíricamente la afirmación central de la feature
-(construir la app ya no abre conexión) y he leído las tres ramas de la traza
-contra el SQL que sustituyen. **No he encontrado ni un defecto en el trabajo
-del implementer.** Si de su entrega dependiera, sería APPROVED.
+### Cómo se llegó aquí
 
-Lo que bloquea es **higiene de sesión**, y cae en dos checkboxes de
-`CHECKPOINTS.md` que están genuinamente vacíos:
+**Primera pasada: CHANGES_REQUESTED.** No por el código —que estaba bien desde
+el principio— sino por dos checkboxes de higiene de sesión genuinamente
+vacíos: `progress/current.md` describía la sesión **anterior** («Ninguna
+feature en ejecución», «la siguiente tarea es F-002») mientras F-003 estaba
+`in_progress` (**C2**), y la verificación MANUAL **T8 no estaba listada en ese
+fichero**, que es donde C4 la exige (**C4**). Ambos eran del **líder**:
+`tasks.md` prohíbe expresamente al implementer tocar `current.md`, y el
+implementer lo respetó y avisó del asunto en su informe.
 
-- **C2** — `progress/current.md` está **caducado**: describe la sesión
-  anterior («Ninguna feature en ejecución», «la siguiente tarea es F-002»)
-  mientras `features.json` tiene F-003 `in_progress` y la rama activa es la de
-  F-003. Ni describe la sesión activa ni está en plantilla vacía.
-- **C4** — la verificación **MANUAL (humano) T8 no está listada en
-  `progress/current.md`**, que es donde C4 exige que esté para que el humano la
-  ejecute. Está en `tasks.md` T8 y en `progress/impl_F-003.md` §6, con sus
-  comandos exactos y correctos, pero no en el fichero que el checkpoint señala.
+**Segunda pasada: los dos cambios están hechos** en el commit `14423c0`, y bien
+hechos —mejor de lo que pedí—. Detalle en la sección «Segunda pasada».
 
-**`progress/current.md` es del líder, no del implementer**: `tasks.md` le
-prohíbe expresamente tocarlo («Prohibido tocar `harness/features.json` y
-`progress/current.md` durante las tareas de código: los lleva el líder»), y el
-implementer lo respetó y además avisó del asunto en su informe §4/§7. **No hay
-nada que reimplementar ni ningún test que reescribir.** Es un arreglo de dos
-minutos del líder, detallado en «Cambios requeridos».
+### Lo que sostiene el APPROVED
 
-Lo señalo en vez de dejarlo pasar porque importa de verdad, no por formalismo:
-T8 es la **única** comprobación de que este mecanismo de DDL se comporta contra
-la base real del humano, que **tiene datos**. Si se cierra la feature con
-`current.md` diciendo que no hay nada en curso, T8 es exactamente la
-verificación que nadie ejecuta nunca.
+La implementación no solo pasa: está verificada de forma independiente. He
+recalculado el alcance y los mutantes por mi cuenta, he **reejecutado la
+campaña de mutación entera** (los 14 muertos son míos, no del informe), he
+comprobado **empíricamente** la afirmación central de la feature —construir la
+app ya no abre una sola conexión, con `socket.connect` bloqueado— y he leído
+las tres ramas de la traza contra el SQL que sustituyen. **No he encontrado ni
+un defecto en el trabajo del implementer**, ni en la primera pasada ni en la
+segunda.
+
+Y el objetivo real de la feature está conseguido, que era más que añadir seis
+columnas: el ORM es **la única fuente de verdad** del esquema, `_ALTERS` ha
+desaparecido sin dejar ninguna lista de columnas escrita a mano en el
+servicio, el DDL complementario se **deriva** de los metadatos, y se ejecuta en
+`main.py` **fuera de `build_app`**.
 
 ---
 
@@ -312,14 +313,14 @@ trunca a 64 (R7), que antes no se truncaba. Es el requisito, no una regresión.
 
 - [x] Una sola feature `in_progress` (`F-003`).
 - [x] Rama actual `feature/F-003-orm-columnas-sigrid`, nunca `main`.
-- [ ] **`progress/current.md` describe SOLO la sesión activa.** **NO.** El
-      fichero describe la sesión **anterior**: dice «**Ninguna feature en
-      ejecución**», que F-001 se cerró y que «la siguiente tarea por prioridad
-      es **F-002**». No menciona F-003 más que de pasada, como hipótesis futura
-      («la primera feature que toque producción (F-002 o F-003) será la que la
-      pruebe de verdad»). Ni describe la sesión activa ni está en plantilla
-      vacía: es un resto de sesión anterior, que es literalmente lo que este
-      checkbox prohíbe.
+- [x] **`progress/current.md` describe SOLO la sesión activa.** **Corregido en
+      `14423c0`** (2ª pasada). En la 1ª pasada estaba vacío: el fichero
+      describía la sesión **anterior** («Ninguna feature en ejecución», F-001
+      cerrada, «la siguiente tarea por prioridad es F-002») y solo mencionaba
+      F-003 como hipótesis futura. Ahora abre con F-003, su rama, su rigor y su
+      estado real, y trae la tabla de las nueve tareas con su commit. La
+      sección «Estado de las demás features» **no** es un resto de sesión
+      anterior sino contexto deliberado y útil, así que no la cuento en contra.
 - [x] Toda feature `done` tiene resumen en `history.md` (solo F-001 está
       `done`, y su resumen está).
 
@@ -360,21 +361,21 @@ ofimática en el árbol ni en el historial de la rama.
       estado de la base entra como dato (`{tabla: {columnas}}`), las sesiones y
       el inspector son dobles, y las dos funciones impuras se ejercitan con
       `monkeypatch`. Los 63 pasan en 1,21 s sin PostgreSQL levantado.
-- [ ] **Las verificaciones `MANUAL (humano)` están listadas en
-      `progress/current.md` con su comando exacto.** **NO.** T8 **no aparece en
-      `progress/current.md`**, que es el fichero que este checkbox nombra.
-      Aclaro el matiz porque es el que decide el veredicto: los comandos
-      **existen y son correctos y ejecutables**, con los cuatro pasos
-      (fotografía previa, dos arranques, fotografía posterior) y el resultado
-      esperado explicado —están en `tasks.md` T8 y, mejor rematados, en
-      `progress/impl_F-003.md` §6, donde el implementer añade el recuento de
-      filas a la fotografía previa y explica qué significa cada desviación—.
-      **El encargo de comprobar «que T8 está listada con su comando exacto» se
-      cumple.** Lo que falla es que no están **donde C4 los exige**, que es el
-      fichero de sesión que el humano lee. Y en nivel `critico` la tabla de
-      `CHECKPOINTS.md` sube el listón todavía más: exige las verificaciones
-      MANUAL «listadas con su comando exacto **y su resultado real**», y el
-      resultado real solo puede anotarlo el humano tras ejecutarlas.
+- [x] **Las verificaciones `MANUAL (humano)` están listadas en
+      `progress/current.md` con su comando exacto, pendientes de que el humano
+      las ejecute.** **Corregido en `14423c0`** (2ª pasada). En la 1ª pasada T8
+      no aparecía en ese fichero: los comandos existían y eran correctos, pero
+      en `tasks.md` y en `progress/impl_F-003.md` §6, no donde C4 los exige.
+      Ahora T8 abre `current.md` bajo un epígrafe destacado
+      («⚠ VERIFICACIÓN MANUAL PENDIENTE (humano) · T8 — la importante»), con
+      los cuatro comandos exactos, qué tiene que salir en cada paso y qué
+      significa cada desviación posible. **Pendiente de ejecución del humano,
+      que es exactamente el estado que este checkbox pide.**
+      **Recordatorio de rigor `critico`:** la tabla de `CHECKPOINTS.md` exige
+      además el **resultado real** anotado. Hasta que el humano ejecute T8 y lo
+      escriba en `current.md`, F-003 **no pasa a `done`**. `current.md` lo dice
+      con todas las letras: «El resultado real se anota aquí cuando lo
+      ejecutes. Sin eso, F-003 no se cierra.»
 
 ### C4 bis — El rigor declarado se cumple
 
@@ -441,7 +442,8 @@ el repositorio, que es el caso mayoritario previsto por el checkpoint.
 - [x] **`features.json` refleja el estado real**: F-003 `in_progress`, que es
       exactamente lo que es (pendiente de este review y de T8).
 
-**C2 y C4 con un checkbox vacío cada uno ⇒ CHANGES_REQUESTED.**
+**Tras la 2ª pasada: C1–C5 sin ningún checkbox vacío. C3 bis y C4 ter, N/A
+justificados por escrito ⇒ APPROVED.**
 
 ---
 
@@ -489,10 +491,11 @@ mejora opcional, **no como cambio requerido**.
 
 ---
 
-## Cambios requeridos
+## Cambios requeridos en la 1ª pasada — ✅ AMBOS RESUELTOS en `14423c0`
 
-Ambos son del **líder** y ninguno toca código, tests ni la spec. El implementer
-no tiene nada que rehacer.
+> Se conservan tal como se pidieron, para que quede el rastro de qué se exigió
+> y contra qué se comprobó la corrección. Ambos eran del **líder**; ninguno
+> tocaba código, tests ni la spec, y el implementer no tuvo nada que rehacer.
 
 1. **`progress/current.md` — reescribirlo para la sesión activa (C2).**
    Hoy dice, líneas 4-6: «**Ninguna feature en ejecución.** F-001 se cerró el
@@ -526,6 +529,113 @@ no tiene nada que rehacer.
 
 Hecho esto, F-003 queda lista para APPROVED sin volver a tocar el código: mi
 re-review se limitaría a releer `current.md` y el resultado de T8.
+
+---
+
+## Segunda pasada (commit `14423c0`)
+
+Reviso **solo lo que cambió**: el commit toca dos ficheros
+(`progress/current.md` y `progress/review_F-003.md`), ninguno de código, así
+que las verificaciones de la 1ª pasada sobre el ORM, la traza, la mutación y el
+`build_app` siguen siendo válidas y **no las repito**.
+
+### 1. `progress/current.md` describe la sesión activa — ✅
+
+Abre con F-003, su rama, `sdd: true`, rigor `critico` y el estado real
+(«implementada (T1–T7, T9) y revisada. Falta la verificación MANUAL T8»). Trae
+la tabla de las **nueve** tareas con su commit, y los siete commits que lista
+(`e8bd45e`, `b4ff052`, `b3cfbc5`, `99a2206`, `a460214`, `4a27175`, `f83832d`)
+**coinciden con el historial real** que verifiqué en la 1ª pasada. T8 figura
+como `[ ]` y «del humano», que es lo correcto: marcarla sería falsear el
+registro.
+
+Las evidencias que cita son las **reales**, contrastadas contra mis propias
+mediciones: 84 passed (63 de F-003 + 21 de F-001), cobertura 94,4 % (51/54),
+14 mutantes / 14 muertos / 0 supervivientes, fase RED con 41 failed + 20
+errors, ruff 164 → 162. **Ningún número inflado.**
+
+Dos detalles que mejoran sobre lo que pedí: la nota de que la primera campaña
+dejó 2 supervivientes reales y se mataron **con tests, no con justificación**
+—que es la parte que un lector futuro debe saber—, y la «Nota de proceso» final
+que convierte el fallo de esta review en una regla para la próxima sesión. Eso
+es cerrar el bucle, no tapar el expediente.
+
+### 2. T8 listada con su comando exacto — ✅
+
+Va **la primera**, bajo un epígrafe imposible de pasar por alto, con los cuatro
+comandos exactos (fotografía previa con recuento de filas, dos arranques,
+fotografía posterior), el resultado esperado y **el significado de cada
+desviación posible**: primer arranque con más de 0 sentencias, segundo distinto
+de 0 («la idempotencia estaría rota y eso sí sería un fallo de esta feature»), y
+`EsquemaNoDerivable`. Incluye T8 bis. Es más completo que lo que pedí.
+
+### 3. Lo declarado como deliberado — comprobado y conforme
+
+- **F-011 «pendiente de commitear en la rama de F-002»:** correcto y coherente.
+  `harness/features.json` de **esta** rama no contiene F-011 y `git status` no
+  lo muestra modificado, así que no hay nada a medias en la rama de F-003.
+- **`progress/explore_transfer_original.md` sin versionar:** sigue siendo el
+  único fichero sin trackear. Es del **líder**, va a la rama de F-002 y, por
+  indicación expresa, **no cuenta como desviación de alcance**. Confirmo que no
+  hay ningún **otro** fichero ajeno en el árbol ni en el diff.
+
+### 4. Un susto en la puerta de cobertura: falso rojo, y merece quedar escrito
+
+Al reejecutar `bash harness/init.sh` tras el commit del líder, la puerta salió
+en **rojo**:
+
+```
+[KO] PUERTA COBERTURA: 0.0% de 61 líneas cambiadas cubiertas (0/61, umbral 80%, nivel critico)
+1 comprobaciones fallidas. NO empieces a trabajar.
+```
+
+No aprobé sobre eso: lo diagnostiqué. **Es un falso negativo, y la causa es
+F-009.** La cadena, comprobada paso a paso:
+
+1. El árbol se limpió antes del commit, lo que **revirtió los artefactos de
+   cobertura versionados** a su estado committeado, que es de la época de
+   F-001.
+2. La suite del api salió **de caché** («árbol sin cambios desde el último
+   verde»), así que `services/dedicacion-api/coverage.json` **no se regeneró**.
+3. La puerta juzgó las líneas de F-003 con datos de cobertura de F-001. Prueba
+   directa, leyendo el fichero:
+
+```
+$ python -c "json.load(open('services/dedicacion-api/coverage.json'))"
+ficheros en coverage.json del api: 6
+   domain\estados.py, domain\models.py, tests\test_estados.py, ...
+contiene esquema.py? -> False
+timestamp: 2026-08-19T10:52:07
+```
+
+No conocía **ni uno** de los ficheros de F-003. De ahí el 0/61.
+
+Forcé una medición real invalidando el marcador de caché —`.arnes_cache/` está
+en `.gitignore`, es cache local puro, no contenido del repositorio— y la puerta
+vuelve a su valor verdadero:
+
+```
+$ rm -f .arnes_cache/suite_api.ok && bash harness/init.sh
+84 passed in 6.37s
+[OK] servicio api (services/dedicacion-api): pytest en verde
+[OK] PUERTA COBERTURA: 94.4% de 54 líneas cambiadas cubiertas (51/54, umbral 80%, nivel critico)
+ENTORNO LISTO. Puedes trabajar.
+
+$ bash harness/init.sh > /dev/null 2>&1; echo $?
+0
+```
+
+**Exit code 0.** C1 se cumple, y el 94,4 % de la 1ª pasada era el dato bueno.
+
+Esto no es un defecto de F-003 —el commit del líder solo tocó dos `.md`— pero
+es un hallazgo que **agrava F-009** y conviene que no se pierda: hasta ahora
+F-009 se describía como «ensucia `git status` y obliga a `--workers 1`». Aquí
+ha hecho algo peor: **ha dado un veredicto falso sobre una puerta de rigor**.
+Y la simetría es la que asusta: si puede dar un **falso rojo** con datos
+rancios, puede dar un **falso verde** por el mismo camino —una feature cuyas
+líneas nuevas coincidan con líneas ya cubiertas en una medición vieja—. Un
+falso rojo se investiga; un falso verde se aprueba. Propuesta concreta en
+«Automejora».
 
 ---
 
@@ -594,7 +704,20 @@ proyecto ⇒ va a `arnes-base`.
 
 ---
 
-**Veredicto final: CHANGES_REQUESTED** — por los dos puntos de higiene de
-sesión de C2 y C4, ambos del líder. **El código, los tests, la cobertura, la
-campaña de mutación y el diseño de F-003 quedan aprobados en sus méritos**: no
-he encontrado ni un defecto en la implementación.
+**Veredicto final: APPROVED** (2ª pasada, sobre `14423c0`). Los dos puntos de
+higiene de sesión de C2 y C4 —ambos del líder— quedaron corregidos en ese
+commit. **El código, los tests, la cobertura, la campaña de mutación y el
+diseño de F-003 estaban aprobados en sus méritos desde la primera pasada**: no
+se encontró ni un defecto en la implementación.
+
+**Condición para cerrar:** F-003 **no pasa a `done`** hasta que el humano
+ejecute la verificación MANUAL **T8** contra su base real y anote el resultado
+en `progress/current.md`. Lo exige el nivel `critico`.
+
+> **Nota del líder (2026-08-19).** Este párrafo final se había quedado con el
+> veredicto de la 1ª pasada: el agente reviewer actualizó la cabecera y la
+> sección «Segunda pasada» a APPROVED, pero se cortó por un fallo técnico
+> antes de rehacer el cierre. La corrección la ha hecho el líder para que el
+> informe no se contradiga; el veredicto es el del reviewer, no del líder. El
+> líder verificó además por su cuenta `bash harness/init.sh` → **exit 0,
+> ENTORNO LISTO**, con 84 passed en el api y la puerta de cobertura al 94,4 %.
