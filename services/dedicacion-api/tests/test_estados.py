@@ -23,7 +23,6 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
-
 from domain.estados import calcular_desviacion, calcular_estado, resumir
 from domain.models import (
     CuadranteTrabajador,
@@ -72,9 +71,8 @@ def _modulos_importados(ruta: Path) -> set[str]:
     for nodo in ast.walk(arbol):
         if isinstance(nodo, ast.Import):
             modulos.update(alias.name.split(".")[0] for alias in nodo.names)
-        elif isinstance(nodo, ast.ImportFrom):
-            if nodo.level == 0 and nodo.module:
-                modulos.add(nodo.module.split(".")[0])
+        elif isinstance(nodo, ast.ImportFrom) and nodo.level == 0 and nodo.module:
+            modulos.add(nodo.module.split(".")[0])
     return modulos
 
 
@@ -105,7 +103,7 @@ def test_f001_r1_el_dominio_bajo_prueba_no_toca_red_ni_bbdd(modulo: str) -> None
 
 
 def test_f001_r2_sin_lineas_es_sin_carga() -> None:
-    assert calcular_estado(Decimal("0"), 0) is EstadoTrabajador.SIN_CARGA
+    assert calcular_estado(Decimal(0), 0) is EstadoTrabajador.SIN_CARGA
 
 
 def test_f001_r2_sin_lineas_manda_sobre_el_total() -> None:
@@ -115,19 +113,19 @@ def test_f001_r2_sin_lineas_manda_sobre_el_total() -> None:
     alguien mueve la comprobación del total por delante del recuento de
     líneas, un trabajador sin carga pasaría por OK.
     """
-    assert calcular_estado(Decimal("100"), 0) is EstadoTrabajador.SIN_CARGA
+    assert calcular_estado(Decimal(100), 0) is EstadoTrabajador.SIN_CARGA
 
 
 def test_f001_r2_cien_exacto_es_ok() -> None:
-    assert calcular_estado(Decimal("100"), 2) is EstadoTrabajador.OK
+    assert calcular_estado(Decimal(100), 2) is EstadoTrabajador.OK
 
 
 def test_f001_r2_por_debajo_de_cien_es_falta() -> None:
-    assert calcular_estado(Decimal("60"), 1) is EstadoTrabajador.FALTA
+    assert calcular_estado(Decimal(60), 1) is EstadoTrabajador.FALTA
 
 
 def test_f001_r2_por_encima_de_cien_es_exceso() -> None:
-    assert calcular_estado(Decimal("120"), 3) is EstadoTrabajador.EXCESO
+    assert calcular_estado(Decimal(120), 3) is EstadoTrabajador.EXCESO
 
 
 @pytest.mark.parametrize("total", ["99.999", "100.001", "99.995", "100.005"])
@@ -157,8 +155,8 @@ def test_f001_r2_fuera_de_la_epsilon_ya_no_es_ok(
 
 def test_f001_r2_desviacion_sin_lineas_es_cero() -> None:
     """Sin líneas la desviación es 0, no «-100»: no hay nada que desviar."""
-    assert calcular_desviacion(Decimal("100"), 0) == Decimal("0")
-    assert calcular_desviacion(Decimal("0"), 0) == Decimal("0")
+    assert calcular_desviacion(Decimal(100), 0) == Decimal(0)
+    assert calcular_desviacion(Decimal(0), 0) == Decimal(0)
 
 
 def test_f001_r2_desviacion_positiva_cuantizada_a_dos_decimales() -> None:
