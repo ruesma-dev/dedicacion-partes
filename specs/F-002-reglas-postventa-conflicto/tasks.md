@@ -245,7 +245,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   superviviente con justificación escrita para que la acepte el humano
   (rigor `critico`).
 
-- [ ] **T16**: Escribir la sección **«Evidencias»** en
+- [x] **T16**: Escribir la sección **«Evidencias»** en
   `progress/impl_F-002.md` con los cuatro números: tests ejecutados y
   resultado, cobertura de las líneas cambiadas, mutantes y supervivientes,
   tiempo de la suite. Listar las verificaciones `MANUAL (humano)` (T6, T13,

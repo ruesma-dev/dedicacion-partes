@@ -1,7 +1,7 @@
 <!-- progress/mutacion_F-002.md -->
 # F-002 · Campaña de mutación
 
-Generado por `python -m harness.mutacion --feature F-002` el 2026-08-19 17:02.
+Generado por `python -m harness.mutacion --feature F-002` el 2026-08-19 17:05.
 
 ## Alcance
 
@@ -9,12 +9,12 @@ Origen del diff: **rama** (`c43a12fd730805a107985e0962a8134e8cbc1678` .. `featur
 
 | Fichero | Líneas en alcance |
 |---|---|
-| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | 140 |
+| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | 143 |
 | `services/dedicacion-transfer/application/services/partida_resolver.py` | 21 |
 | `services/dedicacion-transfer/application/services/reglas_porcentajes.py` | 237 |
 | `services/dedicacion-transfer/domain/models/registro_models.py` | 36 |
 | `services/dedicacion-transfer/interface_adapters/api/app.py` | 2 |
-| **Total** | **436** |
+| **Total** | **439** |
 
 ## Totales
 
@@ -25,7 +25,7 @@ Origen del diff: **rama** (`c43a12fd730805a107985e0962a8134e8cbc1678` .. `featur
 | Muertos | 33 |
 | Supervivientes | 1 |
 | Timeouts | 0 |
-| Tiempo total | 39.5 s |
+| Tiempo total | 35.3 s |
 | Muestreo | no: campaña completa |
 
 ## Supervivientes
@@ -67,4 +67,6 @@ el doble sí) y con `test_f002_r26_justo_uno_no_es_sobrecarga`.
 > con tests nuevos, tres quitando un `round(..., 4)` que ningún test
 > ejercitaba en su cuarto decimal, y uno simplificando dos `or 0` defensivos
 > que P1 hace imposibles.
+
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
 
