@@ -127,12 +127,17 @@ def _dos_partidas_distintas():
 
     Era el escenario de R13 —cuando la partida no entraba en la identidad,
     las dos chocaban con ella—. Con la Regla A ya no choca ninguna, y de ahí
-    sale el control de R21."""
-    cli = ClienteFalso(lineas_parte=[linea_previa(ide=5001, paride=0)])
+    sale el control de R21.
+
+    Las cantidades suman 0,9 a propósito: aquí se mira la identidad, y una
+    sobrecarga metería por medio un conflicto de otro tipo. El mismo
+    escenario pasado de 1 está en `test_f002_capacidad.py` (R25)."""
+    cli = ClienteFalso(lineas_parte=[linea_previa(ide=5001, paride=0,
+                                                  can=0.2)])
     lineas = [
-        linea(registro_id=1, porcentaje=0.4, paride=80001,
+        linea(registro_id=1, porcentaje=0.3, paride=80001,
               partida_cod="CI.1.10"),
-        linea(registro_id=2, porcentaje=0.6, paride=80002,
+        linea(registro_id=2, porcentaje=0.4, paride=80002,
               partida_cod="CI.1.20"),
     ]
     return cli, lineas

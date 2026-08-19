@@ -129,13 +129,25 @@ class AccionLinea:
 
 @dataclass
 class Conflicto:
-    """Ya hay línea(s) M* en Sigrid para ese parte + recurso + mes + código.
+    """Algo que el humano tiene que confirmar antes de que se escriba.
 
-    ``lineas``: las que se BORRARÍAN al pisar (mismo código, cualquier día
-    del mes — incluye registros mal fechados fuera del último día).
-    ``contexto``: otras líneas MENSUALES del mismo recurso con OTRO código,
-    solo informativas.
-    ``nuevas``: lo que se escribiría en su lugar.
+    Hay DOS tipos, y los distingue ``motivo``:
+
+    - ``"pisado"``: ya hay en el parte una línea que es LA MISMA que la
+      nuestra (ARCHITECTURE.md#regla-conflicto). ``lineas`` son las que se
+      BORRARÍAN al confirmar (cualquier día del mes: incluye registros mal
+      fechados fuera del último día).
+    - ``"sobrecarga"``: el trabajador se pasaría de la jornada del parte
+      (ARCHITECTURE.md#regla-capacidad). **Nunca lleva ``lineas``**, porque
+      una sobrecarga no borra nada: eso hace que sea cierto *por
+      construcción* y no por una comprobación que alguien pueda quitar. Las
+      líneas que ha contado viajan en ``contexto``, que es informativo.
+
+    ``contexto``: otras líneas mensuales del mismo recurso, solo
+    informativas. ``nuevas``: lo que se escribiría. Los cuatro campos
+    numéricos solo tienen contenido en la sobrecarga, y todos los campos
+    añadidos por F-002 tienen valor por defecto para que un cliente que los
+    ignore siga funcionando igual que antes.
     """
     clave: str
     recurso_ide: int
@@ -149,6 +161,10 @@ class Conflicto:
     contexto: list[LineaSigrid] = field(default_factory=list)
     nuevas: list[dict] = field(default_factory=list)
     registros: list[int] = field(default_factory=list)
+    motivo: str = "pisado"              # pisado | sobrecarga
+    suma_existente: float = 0.0         # jornada ya ocupada que se ha contado
+    suma_total: float = 0.0             # suma_existente + nueva_can
+    exceso: float = 0.0                 # suma_total - 1
 
     @property
     def nueva_can(self) -> float:

@@ -167,7 +167,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   test_f002_r22"` en verde y **suite completa del transfer en verde**; fase
   RED pegada.
 
-- [ ] **T11**: Implementar la **Regla B — detección** (`design.md` §4.2–4.4):
+- [x] **T11**: Implementar la **Regla B — detección** (`design.md` §4.2–4.4):
   - en `reglas_porcentajes.py`: `LIMITE_CAPACIDAD`, `EPSILON_CAPACIDAD`
     (con el comentario que justifica el número), `PREFIJO_CLAVE_SOBRECARGA`,
     `MOTIVO_SOBRECARGA`, `Capacidad`, `es_linea_mensual`,

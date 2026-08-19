@@ -38,7 +38,7 @@ from application.services.partida_resolver import (
 )
 from application.services.reglas_porcentajes import (
     MOTIVO_PARTIDA_PV_NO_HOJA, ReglasPorcentajes, clave_conflicto,
-    criterio_choque,
+    clave_sobrecarga, criterio_choque, es_linea_mensual, evaluar_capacidad,
 )
 from domain.models.registro_models import (
     AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
@@ -53,6 +53,17 @@ def _norm(texto: Optional[str]) -> str:
     plano = unicodedata.normalize("NFD", texto or "")
     sin = "".join(c for c in plano if unicodedata.category(c) != "Mn")
     return " ".join(sin.lower().split())
+
+
+def _nueva(a: AccionLinea) -> dict:
+    """Lo que se escribiría, tal y como viaja dentro de un `Conflicto`.
+
+    Los dos tipos de conflicto lo publican igual: si divergieran, el front
+    tendría que saber de cuál viene para leerlo.
+    """
+    return {"registro_id": a.registro_id, "can": a.can, "tot": a.tot,
+            "hora_codigo": a.hora_codigo, "fecha_int": a.fecha_int,
+            "partida_cod": a.partida_cod}
 
 
 class RegistroPipeline:
@@ -278,7 +289,7 @@ class RegistroPipeline:
                     contexto = [
                         ls for ls in existentes
                         if ls.reside == a.recurso_ide and ls not in choques
-                        and (ls.hora_codigo or "").upper().startswith("M")
+                        and es_linea_mensual(ls)
                     ]
                     c = Conflicto(
                         clave=k, recurso_ide=int(a.recurso_ide or 0),
@@ -288,12 +299,42 @@ class RegistroPipeline:
                         lineas=choques, contexto=contexto)
                     por_clave[k] = c
                 c.registros.append(a.registro_id)
-                c.nuevas.append({
-                    "registro_id": a.registro_id, "can": a.can,
-                    "tot": a.tot, "hora_codigo": a.hora_codigo,
-                    "fecha_int": a.fecha_int, "partida_cod": a.partida_cod,
-                })
+                c.nuevas.append(_nueva(a))
             conflictos.extend(por_clave.values())
+
+            # Paso 7 bis: capacidad (ver ARCHITECTURE `#regla-capacidad`).
+            # Va DESPUÉS de los pisados del mismo parte, y no antes: su
+            # cifra ya presupone que todos ellos se confirman.
+            pisadas: dict[int, set[int]] = {}
+            for c in por_clave.values():
+                pisadas.setdefault(c.recurso_ide, set()).update(
+                    ls.ide for ls in c.lineas)
+            for recurso in sorted({int(a.recurso_ide or 0) for a in grupo}):
+                suyas = [a for a in grupo
+                         if int(a.recurso_ide or 0) == recurso]
+                cap = evaluar_capacidad(
+                    [ls for ls in existentes if int(ls.reside or 0) == recurso],
+                    suyas, mias=mias, pisadas=pisadas.get(recurso, set()))
+                if not cap.sobrecarga:
+                    continue
+                cabeza = suyas[0]
+                conflictos.append(Conflicto(
+                    clave=clave_sobrecarga(cabeza), recurso_ide=recurso,
+                    ano=parte.ano, mes=parte.mes, parte_cod=parte.cod,
+                    nombre=cabeza.nombre, horide=cabeza.hora_ide,
+                    hora_codigo=cabeza.hora_codigo,
+                    lineas=[],          # una sobrecarga NO borra nada
+                    contexto=list(cap.contadas),
+                    nuevas=[_nueva(a) for a in suyas],
+                    registros=[a.registro_id for a in suyas],
+                    motivo="sobrecarga",
+                    suma_existente=round(cap.existente, 4),
+                    suma_total=round(cap.total, 4),
+                    exceso=round(cap.exceso, 4)))
+                logger.warning(
+                    "[registro] sobrecarga recurso=%s parte=%s existente=%s "
+                    "nueva=%s total=%s", recurso, parte.cod,
+                    cap.existente, cap.nueva, cap.total)
 
         pf = Preflight(
             obra_destino=destino_normal, obra_origen=obra,

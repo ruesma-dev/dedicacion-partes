@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from domain.models.registro_models import (
     AccionLinea, HoraRecurso, LineaEntrada, LineaSigrid,
@@ -141,6 +141,109 @@ def criterio_choque(existente: LineaSigrid, accion: AccionLinea, *,
         if _DE_LINEA[campo](existente) != _DE_ACCION[campo](accion):
             return False
     return True
+
+
+# ------------------------------------------------------------------ #
+#  Capacidad de un recurso en un parte: cuánta jornada cabe
+# ------------------------------------------------------------------ #
+# Ver ARCHITECTURE `#regla-capacidad`. Es una propiedad DEL CONJUNTO de
+# líneas de un recurso en un parte, no de una línea suelta, y por eso no es
+# un método de `ReglasPorcentajes` (que decide línea a línea y no ve lo que
+# ya hay en Sigrid). No decide qué se escribe: informa, y el humano confirma.
+
+#: La jornada completa de una persona en un mes.
+LIMITE_CAPACIDAD: float = 1.0
+
+#: Tolerancia de la comparación de jornada. Es la MISMA que usa el cuadrante
+#: en dedicacion-api/domain/estados.py (_EPSILON = Decimal("0.005") sobre
+#: escala 0-100), convertida a la escala 0-1 de Sigrid: 0.005 / 100.
+#: NO es un número redondo por elección: si se cambia, el front y Sigrid
+#: discrepan en el último decimal y un cuadrante que la API da por OK se
+#: convierte aquí en una sobrecarga fantasma. Cambiar una obliga a cambiar
+#: la otra (lo vigila test_f002_r26_la_tolerancia_es_la_del_cuadrante).
+EPSILON_CAPACIDAD: float = 0.00005
+
+#: Prefijo de la clave con la que se confirma una sobrecarga. Ninguna clave
+#: de pisado puede empezar por él: la de pisado empieza por el `ide` del
+#: recurso, que es un entero.
+PREFIJO_CLAVE_SOBRECARGA: str = "sobrecarga:"
+
+#: Se formatea con total / existente / n / nueva. Corto a propósito: cabe en
+#: los 300 caracteres a los que dedicacion-api recorta `sigrid_motivo`.
+MOTIVO_SOBRECARGA = (
+    "sobrecarga: el trabajador sumaría {total:.2%} en el parte "
+    "(ya tiene {existente:.2%} en {n} línea(s) M*, se añade {nueva:.2%}); "
+    "confirma para escribirlo igualmente"
+)
+
+
+class Capacidad(NamedTuple):
+    """Jornada de un recurso en un parte, con el desglose que la justifica."""
+    existente: float                    # jornada ya ocupada que cuenta
+    nueva: float                        # jornada que vamos a añadir
+    total: float                        # existente + nueva
+    exceso: float                       # total - LIMITE (puede ser negativo)
+    sobrecarga: bool                    # exceso > EPSILON_CAPACIDAD
+    contadas: tuple[LineaSigrid, ...]   # las existentes que ha sumado
+
+
+def es_linea_mensual(linea: LineaSigrid) -> bool:
+    """¿Es una línea de jornada mensual? Cualquier código `M*` vale.
+
+    El límite es la jornada de la PERSONA, no un concepto concreto: `MENC` y
+    `MCAP` del mismo trabajador en el mismo parte compiten por el mismo mes.
+    Las horas de convenio (`H*`) no cuentan: van en otra escala.
+    """
+    return (linea.hora_codigo or "").upper().startswith("M")
+
+
+def _can(valor) -> float:
+    """`can` ausente vale 0, como en el resto del módulo."""
+    return float(valor or 0.0)
+
+
+def evaluar_capacidad(
+    existentes: list[LineaSigrid],
+    nuevas: list[AccionLinea],
+    *, mias: set[str], pisadas: set[int],
+) -> Capacidad:
+    """Jornada del recurso en un parte. NO decide qué se escribe: informa.
+
+    De `existentes` suma las que cumplen LAS TRES condiciones: son mensuales,
+    su `ide` **no** está en `pisadas` (van a ser sustituidas, así que no van
+    a convivir con las nuestras) y su `synckey` **no** está en `mias` (son de
+    esta misma ejecución, y ya están representadas por la acción pendiente).
+    De `nuevas` suma los `can`.
+
+    `pisadas` llega con TODOS los pisados propuestos dados por confirmados:
+    es la única hipótesis segura, porque cualquier otra combinación escribe
+    estrictamente menos (ARCHITECTURE `#regla-capacidad`).
+    """
+    contadas = tuple(
+        ls for ls in existentes
+        if es_linea_mensual(ls)
+        and ls.ide not in pisadas
+        and not (ls.synckey and ls.synckey in mias)
+    )
+    existente = sum(_can(ls.can) for ls in contadas)
+    nueva = sum(_can(a.can) for a in nuevas)
+    total = existente + nueva
+    exceso = total - LIMITE_CAPACIDAD
+    return Capacidad(existente=existente, nueva=nueva, total=total,
+                     exceso=exceso, sobrecarga=exceso > EPSILON_CAPACIDAD,
+                     contadas=contadas)
+
+
+def clave_sobrecarga(accion: AccionLinea) -> str:
+    """Clave con la que se confirma una sobrecarga: una por recurso y parte.
+
+    La partida NO entra: la sobrecarga la provoca el conjunto de líneas del
+    trabajador, no una en concreto. Se lee con los MISMOS lectores que
+    `clave_conflicto` para que las dos no puedan divergir.
+    """
+    recurso = _DE_ACCION["recurso"](accion)
+    periodo = _DE_ACCION["periodo"](accion)
+    return f"{PREFIJO_CLAVE_SOBRECARGA}{recurso}|{periodo}"
 
 
 class ReglasPorcentajes:
