@@ -1,128 +1,102 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-002 · «Fijar las reglas P4 y P5: postventa y conflicto tienen dos
-versiones»** (`rigor: critico`, `sdd: true`), rama
-`feature/F-002-reglas-postventa-conflicto`.
+**F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones**
+Rama `feature/F-002-reglas-postventa-conflicto` · `sdd: true` · rigor `critico`
+Estado: **Fase 1 (T1–T5) implementada y verificada. Parada en la ⛔ barrera de
+`tasks.md`, a la espera de cerrar el rediseño de P4.**
 
-Estado: **spec escrita, pendiente de aprobación del humano y de la respuesta
-de Administración.** No se ha tocado ni una línea de código.
+## Qué se ha hecho en esta sesión (2026-08-19)
 
-## Lo que se ha escrito
+**Sí se ha tocado código.** 8 commits en la rama, de `04fbd9b` a `2987fc0`
+más el de bookkeeping de esta corrección. Informe completo:
+`progress/impl_F-002.md`. Campaña de mutación: `progress/mutacion_F-002.md`.
+Review de la fase: `progress/review_F-002_fase1.md`.
 
-`specs/F-002-reglas-postventa-conflicto/` con los tres ficheros:
+| Tarea | Estado | Commit |
+|---|---|---|
+| T1 · fixtures offline parametrizables del transfer | [x] | `04fbd9b` |
+| T2 · tests de las reglas no disputadas (R6–R9, R12) | [x] | `60d5319` |
+| T3 · un solo punto de decisión para el conflicto | [x] | `22328fb` |
+| T4 · R14, R10, R11 y el defecto R13 | [x] | `20280c7` |
+| T5 · fuente única de las reglas (lo que no depende de D1/D2) | [x] | `beba73b` |
+| T6 en adelante | [ ] | bajo la PARADA |
 
-- `requirements.md` — 19 requisitos EARS (R1–R14 independientes de
-  Administración; R15–R19 bloqueados) y la sección **«Decisiones abiertas que
-  solo puede cerrar Administración»** con las preguntas cerradas y las cinco
-  consultas de lectura contra Sigrid.
-- `design.md` — fuente única en `docs/ARCHITECTURE.md` con ancla por regla,
-  extracción del criterio de choque a una función pura, y la lista exacta de
-  qué texto se sustituye en cada fichero. Sin SQL de producción.
-- `tasks.md` — T1–T6 **se pueden hacer ya**; T7–T17 quedan tras una PARADA
-  explícita hasta que vuelva la respuesta de Administración.
+### Verificado con salida real
 
-## Pendiente de decisión del humano
+- `bash harness/init.sh` → ENTORNO LISTO. Suite del transfer: **90 passed,
+  5 xfailed**; raíz 11 passed; api 21 passed.
+- **Puerta de cobertura: 96,8 % (30/31 líneas cambiadas)**, umbral 80 %.
+- **Campaña de mutación: 9 mutantes, 9 muertos, 0 supervivientes**,
+  reejecutada de forma independiente por el reviewer con los mismos totales.
+- Es la **primera feature del repositorio en la que estas dos puertas miden
+  código de producción**: en F-001 salieron `N/A` por diseño.
+- **R13 era un defecto real**, reproducido por el reviewer: dos líneas
+  pendientes del mismo recurso y mes con partidas distintas chocaban contra
+  la misma línea previa y emitían **dos `DELETE` del mismo `hmores.ide`**,
+  con `res.borradas` contando 2. Arreglado deduplicando por `ide`.
 
-### 1. Aprobar la spec
+## Consultas de lectura contra Sigrid
 
-Antes de lanzar al implementer. En particular, dos decisiones de diseño que
-conviene mirar:
+- **C2 · EJECUTADA** el 2026-08-19, autorizada por el humano. Volcado íntegro
+  en `progress/sigrid_F-002.md`. Cerró D1: la obra de postventa es `POSTV2`,
+  se imputa a **partida hoja** y el emparejamiento por **código exacto**
+  (`cod = '0610'`, `res = 'COLEGIO ALEGRA'`, campos separados) es el correcto.
+  De paso encontró cuatro partidas duplicadas sin el cero inicial (`656`,
+  `664`, `680`, `693`) colgando de la raíz del presupuesto en vez de `CD`.
+- **C1, C3, C4 y C5 · NO ejecutadas.** Siguen escritas en
+  `specs/F-002-reglas-postventa-conflicto/requirements.md` §2. C4 perdió casi
+  todo su interés cuando el humano contestó D2 directamente.
 
-- `clave_conflicto` deja de ser property de `AccionLinea` (domain) y pasa a
-  función de `application/services/reglas_porcentajes.py`, para que la clave
-  y el filtro de choque no puedan divergir (es lo que hoy pasa).
-- La fase 1 retira duplicación de P1–P3 **antes** de tener la respuesta de
-  Administración, para que no aparezca una sexta versión mientras se espera.
+## Decisiones del humano en esta sesión
 
-### 2. Llevar a Administración estas preguntas (son el nudo de F-002)
+1. **D1 · cerrada.** Obra de postventa `POSTV2`, siempre viva. Se imputa
+   siempre a la partida de la obra original dentro de POSTV2 (`0610 COLEGIO
+   ALEGRA`), **nunca** a una partida normal de ejecución. Confirmado además
+   con la lectura C2.
+2. **D2 · contestada con una tercera opción.** Pueden convivir varias líneas
+   `M*` del mismo trabajador en el mismo parte y mes con **partidas
+   distintas**, pero **la suma de sus cantidades no puede pasar de 1**
+   (el 100 % del trabajador).
 
-**D1.1 — Código de la obra de postventa.** El README, el `.env.example` y
-`settings.py` dicen `POSTV2`; el docstring de `reglas_porcentajes.py:15` dice
-`postventa-2`.
+## ⚠ Lo que bloquea la Fase 2
 
-> ¿Cuál es el **código exacto** —campo *Código* de la ficha de obra— de la
-> obra donde queréis ver imputada la dedicación de postventa? ¿Hay una sola o
-> varias?
+**La respuesta a D2 no es ninguna de las dos versiones que se enfrentaban en
+el repositorio**, así que `design.md` §7 (Riesgo 2) queda invalidado en esa
+parte: la regla P4 hay que **diseñarla de cero** (validar la suma del mes
+contra lo que ya existe en el parte, decidir qué ocurre cuando se pasa del
+100 % y qué ve el usuario en el front). El líder debe **volver a la PARADA 1**
+con esa propuesta antes de que nadie implemente T11.
 
-Si el código está mal, **todas** las líneas de postventa se omiten en
-silencio: el registro termina «OK» con la postventa fuera.
+## Verificaciones `MANUAL (humano)` pendientes
 
-**D1.2 — ¿Partida (hoja) o capítulo (nodo con hijos)?** README y
-`partida_resolver.py` dicen *partida*; `reglas_porcentajes.py:15-17` y
-`registro_pipeline.py:6-8` dicen *capítulo*. El código de hoy **no elige**:
-`partida_resolver.py:54` llama `hojas` a una lista que no filtra `es_hoja`,
-mientras `registro_pipeline.py:296` sí filtra para el desplegable del front.
-Automático y manual pueden apuntar a universos distintos.
+Ninguna de la Fase 1 lo era. Todas las que quedan están bajo la PARADA:
 
-> La dedicación por postventa de la obra **0707**, ¿va al **capítulo** «0707»
-> o a una **partida concreta** colgada de él? Si es partida, ¿cuál, con su
-> código exacto? Y si una obra original no tiene línea en el presupuesto de
-> postventa, ¿no se escribe, o se escribe sin imputar (`paride = 0`)?
+| Tarea | Qué es | Comando |
+|---|---|---|
+| T6 | llevar a Administración lo que quede abierto tras el rediseño de P4 | copiar de `requirements.md` §2 |
+| T7 | ejecutar C1, C3, C4, C5 contra `sigrid-api` (**solo lectura**) | el `Invoke-RestMethod` de `tasks.md` T7, con la function key fuera del repositorio |
+| T13 | casado real contra Sigrid **sin escribir** | `python prueba_escritura_porcentajes.py capitulos` / `estado` / `preflight` |
+| T14 | escritura real en la obra de pruebas `0404` | `ejecutar --confirmar` → `verificar` → `limpiar --confirmar`. **Exige autorización expresa del humano para esa acción concreta**; ningún agente la lanza |
 
-**D2 — Qué cuenta como conflicto en la obra normal.** El README (`:14-15`,
-`:31-33`) y **el código** (`registro_pipeline.py:246-253`) dicen que choca
-aunque la partida sea distinta; los docstrings
-(`reglas_porcentajes.py:11-13`, `registro_pipeline.py:16-17`) exigen la misma
-partida.
+`OBRA_PRUEBAS_FORZAR` sigue en `true` y esta fase no ha tocado ningún `.env`.
 
-> En el parte mensual de una obra, ¿puede un mismo trabajador tener más de
-> una línea `M*` en el mismo mes con partidas distintas?
-> (a) No, como mucho una: si ya hay, se sustituye.
-> (b) Sí, sin límite.
-> (c) Sí, pero la suma de sus cantidades no puede pasar de 1.
+## Otras features vivas
 
-Consecuencia con números: encargado a 9.000 €/mes con una línea previa de
-9.000 € puesta a mano y un 40 % nuestro de 3.600 €. Con la versión del código
-se **borra** el apunte manual; con la de los docstrings el parte queda con
-**12.600 €** de un trabajador que cuesta 9.000. Los dos riesgos son reales y
-de signo opuesto: por eso no se decide desde el código.
+- **F-003** (`spec_ready`): spec escrita y commiteada en su propia rama
+  `feature/F-003-orm-columnas-sigrid` (`e3e03ac`). **Pendiente de que el
+  humano la apruebe.** Hallazgo relevante: hoy los `ALTER TABLE` a mano se
+  ejecutan dentro de `build_app`, así que importar la app de la API abre
+  conexión a PostgreSQL — por eso el servicio no tenía tests de API.
+- **F-009** (higiene de artefactos de cobertura) ha vuelto a aparecer sola:
+  `init.sh` deja el árbol sucio y eso impide al reviewer usar la campaña de
+  mutación paralela, que exige árbol limpio. Ver `review_F-002_fase1.md` §10.
 
-**Si la respuesta a D2 es (c)**, ninguna de las dos versiones sirve y hay que
-volver a proponer diseño: sería una regla nueva (validar la suma), posible
-candidata a vivir en la API, que es quien ve el cuadrante completo.
+## Nota de proceso
 
-### 3. Consultas de lectura contra Sigrid — NO ejecutadas
-
-Cinco consultas listas en `requirements.md` §2 (C1–C5), para
-`POST /api/sql/read`, base `ruesma`, con tablas y campos reales de
-`azure-apps/sigrid_tablas.md`:
-
-- **C1** — qué obra existe con `POSTV2` / `postventa-2` / «POSTVENT».
-- **C2** — árbol de `obrparpar` de la obra de postventa con `n_hijos`:
-  distingue capítulo de partida.
-- **C3** — últimas líneas `M*` reales del parte de postventa con su `paride`
-  y si esa partida tiene hijos. **Es la corroboración más fuerte de D1.2**:
-  dice lo que Administración hace de verdad.
-- **C4** — agregado: casos reales de un recurso con más de una línea `M*` en
-  el mismo parte, con `n_partidas` y `suma_can`. Cierra D2 con datos.
-- **C5** — detalle de los partes que salgan de C4.
-
-Las lanza el humano cuando decida. Recordatorios: `max_rows` explícito (el
-defecto son 200 y trunca en silencio), `truncated: true` significa respuesta
-incompleta, y el balanceador corta a los **230 s**. El volcado va a
-`progress/sigrid_F-002.md`.
-
-## Estado del repositorio
-
-- Rama activa: `feature/F-002-reglas-postventa-conflicto`, creada desde
-  `dev`. Sin commits todavía de esta sesión.
-- `bash harness/init.sh` → ENTORNO LISTO en la última ejecución conocida.
-  Avisos vivos: 164 de ruff (deuda previa) y `dedicacion-front` sin
-  directorio de tests.
-- F-001 cerrada y mergeada a `dev` (`c1faf05`). Sin PR abierto.
-
-## Lo que sabemos y no conviene volver a descubrir
-
-- **La puerta de cobertura sigue sin estrenarse con datos reales.** F-002 es
-  la primera feature que toca producción: será la que la pruebe de verdad.
-- **`ruff` no está instalado en el venv de `dedicacion-api`**: para lintar ese
-  servicio hay que usar el intérprete de la raíz.
-- El portero ensucia `git status` en cada ejecución porque los ficheros de
-  cobertura están versionados. Es F-009.
-- **Contradicción número tres, derivada** (la encontró el spec-author, no
-  estaba en el backlog): hoy `clave_conflicto` incluye `paride` siempre
-  (versión B) mientras el filtro de choque no lo compara en obra normal
-  (versión A). Dos líneas pendientes con distinta partida chocando contra la
-  misma línea existente generan **dos `DELETE` del mismo `hmores.ide`**. Es
-  R13/R14 de la spec y hay que arreglarlo vaya como vaya D2.
+Los cuatro puntos que el reviewer pidió corregir (checkboxes de `tasks.md`,
+este fichero y el estado en `features.json`) los ha hecho **el líder**, no el
+implementer: `current.md` y `features.json` son suyos por protocolo y al
+implementer se le había prohibido tocarlos para que no chocara con el
+subagente que escribía la spec de F-003 en el mismo árbol. El rastro quedó
+sin actualizar por ese motivo.

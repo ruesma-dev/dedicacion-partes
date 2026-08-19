@@ -15,14 +15,14 @@ Un commit por tarea: `F-002 Tn: descripción`.
 
 ## Fase 1 — Independiente de Administración
 
-- [ ] **T1**: Crear `services/dedicacion-transfer/tests/conftest.py` con el
+- [x] **T1**: Crear `services/dedicacion-transfer/tests/conftest.py` con el
   `ClienteFalso` parametrizable (presupuesto de postventa `hojas` |
   `capitulos`, líneas previas del parte configurables, `synckeys`
   precargadas) y `SettingsFalso`. Sin red, sin BBDD, sin `.env`.
   **Verificación:** `python -m pytest services/dedicacion-transfer/tests -q`
   sigue en verde (la fixture aún no la usa nadie, pero importa limpio).
 
-- [ ] **T2**: Añadir `tests/test_f002_reglas.py` con R6–R9 y R12 sobre
+- [x] **T2**: Añadir `tests/test_f002_reglas.py` con R6–R9 y R12 sobre
   `ReglasPorcentajes` directamente (sin pipeline): sin `M*` se omite, fecha
   al último día del mes, `can`/`pre`/`tot`, porcentaje fuera de `(0,1]`,
   `POSTVENTA_REGISTRAR=false`.
@@ -31,7 +31,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   pegada en `progress/impl_F-002.md` rompiendo en copia aislada la línea que
   cada test vigila.
 
-- [ ] **T3**: Extraer a `application/services/reglas_porcentajes.py` las
+- [x] **T3**: Extraer a `application/services/reglas_porcentajes.py` las
   funciones puras `campos_identidad(destino)`, `clave_conflicto(accion)` y
   `criterio_choque(existente, accion, *, mias)`, **replicando exactamente la
   conducta actual** (obra normal: no compara `paride`; postventa: sí).
@@ -41,7 +41,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   (incluida la aserción `c.clave == "200|202607|5|80001"`). Si cambia algo
   ahí, el refactor está mal.
 
-- [ ] **T4**: Añadir `tests/test_f002_conflicto.py` con R14
+- [x] **T4**: Añadir `tests/test_f002_conflicto.py` con R14
   (`clave_conflicto` y `criterio_choque` derivan de `campos_identidad`: al
   cambiar la tupla cambian las dos) y `tests/test_f002_pipeline.py` con R10
   (idempotencia por `synckey`), R11 (modo pruebas: destino `0404` pero
@@ -52,7 +52,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   test_f002_r13 or test_f002_r14"` en verde; fase RED de R13 y R14 pegada en
   el informe (R13 falla contra el código actual: es un defecto real).
 
-- [ ] **T5**: Añadir `tests/test_f002_fuente_unica.py` (R1–R5) y aplicar la
+- [x] **T5**: Añadir `tests/test_f002_fuente_unica.py` (R1–R5) y aplicar la
   parte no bloqueada de la fuente única:
   - anclas `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-pruebas` en
     `docs/ARCHITECTURE.md`;
