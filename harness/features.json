@@ -150,7 +150,7 @@
         "bash harness/init.sh en verde",
         "El mismo cambio queda portado a arnes-base o, si no procede, escrito por que no"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "sdd": false,
       "rigor": "estandar",
       "priority": 9,

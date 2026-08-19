@@ -5,6 +5,8 @@
 
 Resumen: **10 features**, 9 abiertas, 1 terminadas.
 
+En curso: **F-009**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
@@ -16,7 +18,7 @@ Resumen: **10 features**, 9 abiertas, 1 terminadas.
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-007 | Propagar a arnes-base dos defectos del instalador | 7 | pendiente | estandar | `feature/F-007-propagar-defectos-instalador` |
 | F-008 | Infraestructura y despliegue en Azure | 8 | pendiente | critico | `feature/F-008-infra-azure` |
-| F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | pendiente | estandar | `feature/F-009-higiene-coverage-gitignore` |
+| F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | en curso | estandar | `feature/F-009-higiene-coverage-gitignore` |
 | F-010 | Automejoras del arnes propuestas al revisar F-001 | 10 | pendiente | documental | `feature/F-010-automejoras-arnes-reviewer` |
 
 ## Terminadas
@@ -71,7 +73,7 @@ Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo
 
 ### F-009 · Higiene: los artefactos de cobertura no se versionan
 
-estado **pendiente** · prioridad 9 · rigor `estandar` · SDD no · rama `feature/F-009-higiene-coverage-gitignore`
+estado **en curso** · prioridad 9 · rigor `estandar` · SDD no · rama `feature/F-009-higiene-coverage-gitignore`
 
 Detectado al cerrar F-001. El repositorio versiona seis ficheros generados (.coverage y coverage.json de la raiz, del transfer y del api) que harness/init.sh reescribe en cada ejecucion: el portero ensucia git status cada vez que corre y sube la probabilidad de arrastrar ruido a un commit. Hay que anadirlos a .gitignore y sacarlos del indice con git rm --cached. Como el .gitignore lo deja el instalador del arnes, por la regla de propagacion el mismo arreglo va a arnes-base.
 
