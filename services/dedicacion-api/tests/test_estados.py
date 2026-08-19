@@ -99,3 +99,75 @@ def test_f001_r1_el_dominio_bajo_prueba_no_toca_red_ni_bbdd(modulo: str) -> None
     assert externos == set(), (
         f"domain/{modulo} importa dependencias no permitidas: {sorted(externos)}"
     )
+
+
+# --- R2: los cuatro estados -------------------------------------------------
+
+
+def test_f001_r2_sin_lineas_es_sin_carga() -> None:
+    assert calcular_estado(Decimal("0"), 0) is EstadoTrabajador.SIN_CARGA
+
+
+def test_f001_r2_sin_lineas_manda_sobre_el_total() -> None:
+    """Cero líneas es SIN_CARGA aunque el total valga 100.
+
+    No es un caso imposible de laboratorio: es el orden de las guardas. Si
+    alguien mueve la comprobación del total por delante del recuento de
+    líneas, un trabajador sin carga pasaría por OK.
+    """
+    assert calcular_estado(Decimal("100"), 0) is EstadoTrabajador.SIN_CARGA
+
+
+def test_f001_r2_cien_exacto_es_ok() -> None:
+    assert calcular_estado(Decimal("100"), 2) is EstadoTrabajador.OK
+
+
+def test_f001_r2_por_debajo_de_cien_es_falta() -> None:
+    assert calcular_estado(Decimal("60"), 1) is EstadoTrabajador.FALTA
+
+
+def test_f001_r2_por_encima_de_cien_es_exceso() -> None:
+    assert calcular_estado(Decimal("120"), 3) is EstadoTrabajador.EXCESO
+
+
+@pytest.mark.parametrize("total", ["99.999", "100.001", "99.995", "100.005"])
+def test_f001_r2_dentro_de_la_epsilon_es_ok(total: str) -> None:
+    """La tolerancia es 0,005 puntos porcentuales, y es cerrada.
+
+    99,999 % y 100,001 % son OK (criterio `acceptance` de F-001); 99,995 % y
+    100,005 % caen justo EN el borde y también son OK, porque la comparación
+    es `<=`. Sin estos dos últimos, cambiar `<=` por `<` no lo caza nadie.
+    """
+    assert calcular_estado(Decimal(total), 2) is EstadoTrabajador.OK
+
+
+@pytest.mark.parametrize(("total", "esperado"), [
+    ("99.99", EstadoTrabajador.FALTA),
+    ("100.01", EstadoTrabajador.EXCESO),
+])
+def test_f001_r2_fuera_de_la_epsilon_ya_no_es_ok(
+    total: str, esperado: EstadoTrabajador
+) -> None:
+    """El primer escalón fuera de la tolerancia: 99,99 % y 100,01 %."""
+    assert calcular_estado(Decimal(total), 2) is esperado
+
+
+# --- R2: la desviación que acompaña al estado -------------------------------
+
+
+def test_f001_r2_desviacion_sin_lineas_es_cero() -> None:
+    """Sin líneas la desviación es 0, no «-100»: no hay nada que desviar."""
+    assert calcular_desviacion(Decimal("100"), 0) == Decimal("0")
+    assert calcular_desviacion(Decimal("0"), 0) == Decimal("0")
+
+
+def test_f001_r2_desviacion_positiva_cuantizada_a_dos_decimales() -> None:
+    desviacion = calcular_desviacion(Decimal("120.456"), 2)
+    assert desviacion == Decimal("20.46")
+    assert str(desviacion) == "20.46", "debe venir cuantizada, no en bruto"
+
+
+def test_f001_r2_desviacion_negativa_cuantizada_a_dos_decimales() -> None:
+    desviacion = calcular_desviacion(Decimal("70.123"), 1)
+    assert desviacion == Decimal("-29.88")
+    assert str(desviacion) == "-29.88", "debe venir cuantizada, no en bruto"
