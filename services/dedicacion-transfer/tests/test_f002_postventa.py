@@ -21,10 +21,10 @@ import pytest
 
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.partida_catalog import partidas_hoja
-from application.services.reglas_porcentajes import MOTIVO_PARTIDA_PV_NO_HOJA
 from application.services.partida_resolver import (
     construir_catalogo, resolver_postventa,
 )
+from application.services.reglas_porcentajes import MOTIVO_PARTIDA_PV_NO_HOJA
 from domain.models.registro_models import ObraEntrada
 
 from tests.conftest import (
@@ -112,7 +112,7 @@ def test_f002_r16_un_capitulo_no_es_destino(codigo):
 def test_f002_r16_el_capitulo_no_llega_al_paride_de_la_linea():
     """R16 · Y lo mismo visto desde el pipeline, que es donde acabaría
     escribiéndose: el `paride` de la acción es un ide de hoja activa."""
-    cli, pf = _pv("capitulos")
+    _cli, pf = _pv("capitulos")
     hojas = {n.ide for n in partidas_hoja(_nodos("capitulos"))}
     a = pf.acciones[0]
     assert a.accion == "escribir" and a.destino == "postventa", a
@@ -152,7 +152,7 @@ def test_f002_r16_un_override_manual_a_un_capitulo_se_omite():
 def test_f002_r16_un_override_manual_a_una_hoja_si_vale():
     """R16 · Control positivo: el override a una hoja activa se respeta tal
     cual, que es para lo que está."""
-    cli, pf = _pv("capitulos", paride=70011, partida_cod="0678.MO")
+    _cli, pf = _pv("capitulos", paride=70011, partida_cod="0678.MO")
     a = pf.acciones[0]
     assert a.accion == "escribir" and a.partida_metodo == "manual", a
     assert a.paride == 70011
@@ -178,7 +178,7 @@ def test_f002_r17_el_automatico_y_el_desplegable_comparten_universo(variante):
     el MISMO conjunto. Si divergen, el usuario ve un desplegable que no
     incluye lo que el sistema acaba de decidir por él, y no puede corregirlo
     sin salirse de la lista."""
-    cli, pf = _pv(variante)
+    _cli, pf = _pv(variante)
     desplegable = {p["ide"] for p in getattr(pf, "partidas_postventa")}
     universo = {n.ide for n in partidas_hoja(_nodos(variante))}
     assert desplegable == universo, variante
@@ -189,7 +189,7 @@ def test_f002_r17_el_automatico_y_el_desplegable_comparten_universo(variante):
 
 def test_f002_r17_el_desplegable_no_ofrece_capitulos_ni_bajas():
     """R17 · Control: el universo es «hojas activas», no «todo el árbol»."""
-    cli, pf = _pv("hojas_inactivas")
+    _cli, pf = _pv("hojas_inactivas")
     ides = {p["ide"] for p in getattr(pf, "partidas_postventa")}
     assert 69000 not in ides            # CD es capítulo
     assert 70001 not in ides            # 0678 está de baja

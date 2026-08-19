@@ -259,7 +259,7 @@ def test_f002_r13_el_contexto_es_solo_del_mismo_recurso():
                     nombre="Jefe de obra", categoria="Jefe de obra")]
     pf = _pipeline(cli).preflight(obra=OBRA, lineas=lineas)
 
-    pisado = [c for c in pf.conflictos if c.motivo == "pisado"][0]
+    pisado = next(c for c in pf.conflictos if c.motivo == "pisado")
     assert pisado.recurso_ide == 200
     assert [ls.ide for ls in pisado.lineas] == [5001]
     assert pisado.contexto == [], [ls.ide for ls in pisado.contexto]
@@ -275,7 +275,7 @@ def test_f002_r13_el_contexto_si_recoge_otro_codigo_del_mismo_recurso():
     ])
     pf = _pipeline(cli).preflight(obra=OBRA, lineas=[linea(registro_id=1)])
 
-    pisado = [c for c in pf.conflictos if c.motivo == "pisado"][0]
+    pisado = next(c for c in pf.conflictos if c.motivo == "pisado")
     assert [ls.ide for ls in pisado.contexto] == [5002]
 
 
