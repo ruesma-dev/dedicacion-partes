@@ -74,16 +74,25 @@ Un commit por tarea: `F-002 Tn: descripción`.
 
 ## Fase 2 — Escribir las decisiones y alinear el código
 
-- [ ] **T6**: Cerrar los dos cabos que solo puede atar el humano, **sin tocar
-  código**:
-  1. Trasladar a Administración el **aviso de las cuatro partidas duplicadas**
-     sin cero inicial del presupuesto de `POSTV2` (`656`, `664`, `680`,
-     `693`, colgando de la raíz en vez de `CD`; tabla en `requirements.md`
-     §2 · D1 y volcado en `progress/sigrid_F-002.md`). No rompen nada hoy;
-     son ruido de presupuesto y alguien debe saberlo.
-  2. Confirmar el **interlocutor y la fecha** que van a la línea de
-     procedencia que exige R4 (`Confirmado por Administración el AAAA-MM-DD ·
-     <interlocutor>`), y anotarlos donde el implementer pueda copiarlos.
+- [ ] **T6**: Trasladar a Administración el **aviso de las cuatro partidas
+  duplicadas** sin cero inicial del presupuesto de `POSTV2` (`656`, `664`,
+  `680`, `693`, colgando de la raíz en vez de `CD`; tabla en
+  `requirements.md` §2 · D1 y volcado en `progress/sigrid_F-002.md`). No
+  rompen nada hoy —`normalize_code` no quita ceros a la izquierda, y eso lo
+  fija R18—, pero son ruido de presupuesto y alguien debe saberlo. **Sin
+  tocar código.**
+
+  > **Lo que esta tarea pedía además, ya está hecho.** La v1 y la v2 de esta
+  > spec reservaban aquí «confirmar el interlocutor de la línea de
+  > procedencia», dando por hecho que D1 y D2 las contestaría Administración.
+  > No hubo tal conversación: las decidió **Pablo Gris (responsable del
+  > proyecto) el 2026-08-19**, respaldándolas con lecturas reales contra
+  > Sigrid (C2 y C6), y eso es lo que T7 y T8 escribieron en
+  > `docs/ARCHITECTURE.md`. R4 exige **quién · cuándo · respaldo**, no un
+  > interlocutor concreto: no queda nada que confirmar. Si algún día
+  > Administración revisa estas reglas, se **añade** su procedencia, no se
+  > sustituye la que hay.
+
   **Opcional, no bloqueante:** si el humano quiere calibrar cuánta sobrecarga
   real va a aflorar, puede lanzar las consultas **C3** y **C5** de solo
   lectura (`requirements.md` §3) y pegar el volcado en
@@ -93,9 +102,18 @@ Un commit por tarea: `F-002 Tn: descripción`.
 - [x] **T7**: Escribir en `docs/ARCHITECTURE.md` el **punto 5 definitivo**
   (D1): obra `POSTVENTA_OBRA_COD`, **partida hoja activa**, casado por
   **código exacto**, omisión con motivo si no casa. Retirar la marca
-  `PENDIENTE · decisión D1/D2 de F-002` de ese punto y poner la línea
-  `Confirmado por Administración el 2026-08-19 · <interlocutor de T6>` con la
-  referencia a `progress/sigrid_F-002.md`.
+  `PENDIENTE · decisión D1/D2 de F-002` de ese punto y poner la línea de
+  procedencia que exige R4 —**quién decidió · cuándo · con qué respaldo**—
+  con la referencia a `progress/sigrid_F-002.md`. La real, y la que se
+  escribió, es:
+
+  ```
+  Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
+  verificado contra Sigrid, ver progress/sigrid_F-002.md
+  ```
+
+  **No** se escribe «Administración» si Administración no lo dijo: una
+  procedencia falsa es peor que ninguna (`requirements.md` R4).
   **Verificación:** `pytest -q -k test_f002_r4` en verde (procedencia fechada
   presente y con formato). Fase RED: el test está hoy en `xfail(strict=True)`;
   al pasar, quitar la marca.

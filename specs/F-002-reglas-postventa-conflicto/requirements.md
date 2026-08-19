@@ -49,10 +49,26 @@ en `design.md` §1.
   prohibidas en el test de fuente única), ENTONCES la suite debe fallar.
 
 - **R4.** El sistema debe registrar en `docs/ARCHITECTURE.md`, junto a cada
-  regla confirmada, **la fecha y de quién sale** la confirmación, en un
-  formato reconocible (`Confirmado por Administración el AAAA-MM-DD ·
-  <interlocutor>`), y en el punto 5 debe además referenciar el volcado
-  `progress/sigrid_F-002.md` que la corrobora.
+  regla que F-002 confirma, su **procedencia**: **quién** la decidió,
+  **cuándo** y **con qué respaldo**, en un formato reconocible
+  (`Confirmado por <quién> el AAAA-MM-DD · <respaldo>`). Donde el respaldo
+  sea una lectura contra Sigrid, debe apuntar al volcado
+  `progress/sigrid_F-002.md`.
+
+  > **Por qué importa, y por qué el requisito no nombra a nadie.** Una regla
+  > que decide lo que se escribe en los partes de Sigrid tiene que decir de
+  > dónde sale, para que dentro de un año se le pueda repreguntar a alguien
+  > concreto en vez de discutir contra un documento anónimo. Lo que el
+  > requisito exige son las **tres piezas**, no un interlocutor concreto ni
+  > la palabra «Administración»: la v1 de esta spec daba por hecho que la
+  > respuesta vendría de Administración, y D1 y D2 acabó decidiéndolas el
+  > responsable del proyecto el **2026-08-19**, respaldándolas con lecturas
+  > reales contra Sigrid. Escribir «Administración» para encajar en la
+  > plantilla habría sido **una procedencia falsa**, que es peor que ninguna:
+  > es exactamente la avería —documentación que parece vigente y no lo es—
+  > que F-002 vino a arreglar. El test (`PATRON_PROCEDENCIA`) comprueba las
+  > tres piezas y **no** el interlocutor, y trae su control negativo: una
+  > procedencia anónima o sin fecha no vale.
 
 - **R5.** El sistema no debe citar el valor literal del código de la obra de
   postventa en ningún docstring ni comentario: debe referirse al ajuste
@@ -224,8 +240,16 @@ con la lectura real C2 contra Sigrid** (volcado íntegro en
 
 **Evidencia (C2, 2026-08-19, `POST /api/sql/read`, base `ruesma`, 248 filas,
 `truncated: false`).** El presupuesto de `POSTV2` tiene 225 hojas y 23
-capítulos; las **84 partidas de obra son todas hojas** (`n_hijos = 0`) y
-cuelgan de `CD · COSTES DIRECTOS`.
+capítulos; las **86 partidas de obra son todas hojas** (`n_hijos = 0`) y
+cuelgan de `CD · COSTES DIRECTOS`, salvo las cuatro sueltas del aviso de más
+abajo.
+
+> La v1 de esta spec decía «84». El número correcto es **86**: el 84 salía de
+> un conteo intermedio que exigía un límite de palabra tras los dígitos y
+> dejaba fuera códigos como `0613-B`. Lo señaló la review de la Fase 2 (§9.5)
+> y está cuadrado en `progress/sigrid_F-002.md`. Ninguna conclusión de D1
+> cambia: todas son hojas, `cod` y `res` son campos separados, y hay
+> capítulos con código numérico.
 
 **Defecto confirmado que sigue abierto.**
 `application/services/partida_resolver.py`, en `resolver_postventa`:
@@ -352,8 +376,8 @@ tests corren **sin red y sin BBDD**, con las fixtures parametrizables de
 |---|---|---|---|
 | R1, R3, R5 | `test_f002_r1_*`, `test_f002_r3_frases_prohibidas_fase1`, `test_f002_r5_*` | `test_f002_fuente_unica.py` | **pasa** (T5) |
 | R2 (P1–P3) | `test_f002_r2_el_readme_remite_a_las_anclas` | `test_f002_fuente_unica.py` | **pasa** (T5) |
-| R1 (`#regla-capacidad`), R2 y R3 (P4/P5) | `test_f002_r2_los_docstrings_remiten_p4_p5`, `test_f002_r3_frases_prohibidas_p4_p5` | `test_f002_fuente_unica.py` | `xfail(strict)` → **T8** |
-| R4 | `test_f002_r4_procedencia_fechada` | `test_f002_fuente_unica.py` | `xfail(strict)` → **T7/T8** |
+| R1 (`#regla-capacidad`), R2 y R3 (P4/P5) | `test_f002_r2_los_docstrings_remiten_p4_p5`, `test_f002_r3_frases_prohibidas_p4_p5` | `test_f002_fuente_unica.py` | **pasa** (T8) |
+| R4 | `test_f002_r4_procedencia_fechada` | `test_f002_fuente_unica.py` | **pasa** (T7/T8) |
 | R6 | `test_f002_r6_*` (3) | `test_f002_reglas.py` | **pasa** (T2) |
 | R7 | `test_f002_r7_*` (7) | `test_f002_reglas.py` | **pasa** (T2) |
 | R8 | `test_f002_r8_*` (3) | `test_f002_reglas.py` | **pasa** (T2) |
