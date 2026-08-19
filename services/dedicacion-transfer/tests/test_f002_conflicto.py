@@ -10,9 +10,11 @@ tests están para que no vuelva a pasar en silencio.
 Los enunciados normativos viven en `docs/ARCHITECTURE.md`
 (`#regla-conflicto`). Aquí solo se comprueba el mecanismo.
 
-R18 y R19 (qué cuenta como conflicto en la obra normal) NO están aquí: son
-la decisión D2, pendiente de Administración. Lo que estos tests fijan es la
-conducta de HOY, para que el cambio de D2 se vea.
+R20-R22 son la **Regla A**, la decisión D2: la identidad de una línea del
+parte es recurso + mes + código de hora + **partida**, con el mismo criterio
+en la obra normal y en la de postventa. Los dos tests de T4 que fijaban la
+conducta contraria están reescritos como R20; no se han borrado, se han
+dado la vuelta, que es justo para lo que se escribieron.
 """
 from __future__ import annotations
 
@@ -44,17 +46,15 @@ def test_f002_r14_la_identidad_es_subconjunto_de_la_clave():
     """R14 · Todo lo que se compara está en la clave. Si el criterio mirara
     un campo que la clave no lleva, dos líneas distintas compartirían clave
     y el humano confirmaría a ciegas."""
-    for destino in ("obra", "postventa"):
-        assert set(campos_identidad(destino)) <= set(CAMPOS_CLAVE), destino
+    assert set(campos_identidad()) <= set(CAMPOS_CLAVE)
 
 
 def test_f002_r14_todo_campo_comparado_sabe_leerse_de_las_dos_partes():
     """R14 · Un campo de la identidad, o se sabe leer de la línea existente,
     o está declarado implícito del parte. No hay tercera opción silenciosa."""
-    for destino in ("obra", "postventa"):
-        for campo in campos_identidad(destino):
-            assert campo in IMPLICITOS_DEL_PARTE or campo in rp._DE_LINEA, campo
-            assert campo in rp._DE_ACCION, campo
+    for campo in campos_identidad():
+        assert campo in IMPLICITOS_DEL_PARTE or campo in rp._DE_LINEA, campo
+        assert campo in rp._DE_ACCION, campo
 
 
 def test_f002_r14_cambiar_la_tupla_cambia_la_clave_y_el_criterio(monkeypatch):
@@ -70,8 +70,7 @@ def test_f002_r14_cambiar_la_tupla_cambia_la_clave_y_el_criterio(monkeypatch):
 
     monkeypatch.setattr(rp, "CAMPOS_CLAVE", ("recurso", "periodo", "hora"))
 
-    assert campos_identidad("postventa") == ("recurso", "periodo", "hora")
-    assert campos_identidad("obra") == ("recurso", "periodo", "hora")
+    assert campos_identidad() == ("recurso", "periodo", "hora")
     assert clave_conflicto(a) == "200|202607|5"
     assert criterio_choque(previa, a, mias=set()) is True
 
@@ -119,53 +118,107 @@ def test_f002_r14_la_clave_no_depende_del_destino():
 def test_f002_r14_choca_el_mismo_recurso_y_codigo_en_otro_dia():
     """La línea previa es del día 15 y la nuestra del 31: choca igual, el
     parte es mensual."""
-    assert criterio_choque(linea_previa(fecha_int=20260715), accion(),
-                           mias=set()) is True
+    assert criterio_choque(linea_previa(fecha_int=20260715, paride=80001),
+                           accion(), mias=set()) is True
 
 
 def test_f002_r14_no_choca_otro_recurso():
-    assert criterio_choque(linea_previa(reside=999), accion(),
+    assert criterio_choque(linea_previa(reside=999, paride=80001), accion(),
                            mias=set()) is False
 
 
 def test_f002_r14_no_choca_otro_codigo_de_hora():
-    assert criterio_choque(linea_previa(horide=9, hora_codigo="HEGR"),
-                           accion(), mias=set()) is False
+    assert criterio_choque(
+        linea_previa(horide=9, hora_codigo="HEGR", paride=80001),
+        accion(), mias=set()) is False
 
 
-def test_f002_r14_en_obra_normal_la_partida_no_distingue():
-    """Conducta de HOY (versión A del README). La cambia D2, y cuando la
-    cambie, este test es el que lo dirá."""
-    assert criterio_choque(linea_previa(paride=0), accion(paride=80001),
+# -------------- R20 · la partida entra en la identidad ------------- #
+
+@pytest.mark.parametrize("destino, paride", [("obra", 80001),
+                                             ("postventa", 70001)])
+def test_f002_r20_la_partida_entra_en_la_identidad(destino, paride):
+    """R20 · La identidad es recurso + mes + código de hora + PARTIDA, en la
+    obra normal y en la de postventa, **con el mismo criterio**.
+
+    Este test sustituye a los dos de T4 que fijaban la conducta contraria:
+    `..._en_obra_normal_la_partida_no_distingue` (versión del README, que era
+    lo que hacía el código) y `..._en_postventa_la_partida_si_distingue`. La
+    decisión D2 dice que no hay dos criterios: hay uno.
+    """
+    a = accion(destino=destino, paride=paride)
+    assert criterio_choque(linea_previa(paride=paride), a,
                            mias=set()) is True
+    assert criterio_choque(linea_previa(paride=paride + 1), a,
+                           mias=set()) is False
 
 
-def test_f002_r14_en_postventa_la_partida_si_distingue():
-    """En la obra de postventa cada partida es una obra original distinta:
-    un mismo recurso tiene una línea legítima por cada una."""
-    a = accion(destino="postventa", paride=70001)
-    assert criterio_choque(linea_previa(paride=70001), a, mias=set()) is True
-    assert criterio_choque(linea_previa(paride=70002), a, mias=set()) is False
+def test_f002_r20_los_cuatro_campos_deciden():
+    """R20 · Y son los CUATRO: cambiar cualquiera de ellos rompe la
+    identidad. El periodo no se compara contra la línea existente porque el
+    propio parte ya lo fija (`IMPLICITOS_DEL_PARTE`)."""
+    a = accion(destino="obra", paride=80001)
+    assert criterio_choque(linea_previa(paride=80001), a, mias=set()) is True
+
+    for cambio in ({"reside": 999}, {"horide": 9}, {"paride": 80002}):
+        previa = linea_previa(**{"paride": 80001, **cambio})
+        assert criterio_choque(previa, a, mias=set()) is False, cambio
 
 
-def test_f002_r14_lo_nuestro_no_choca_con_nosotros_mismos():
-    """Una línea con una synckey de esta misma ejecución no es conflicto:
-    se reescribe sin preguntar."""
-    previa = linea_previa(synckey="porcentajes:1")
+def test_f002_r20_el_destino_ya_no_decide_nada():
+    """R20 · La misma línea previa y la misma partida dan el mismo veredicto
+    sea cual sea el destino. Mientras `campos_identidad` recibía el destino,
+    dos líneas idénticas podían chocar o no según de dónde vinieran."""
+    for paride in (0, 80001):
+        previa = linea_previa(paride=paride)
+        assert criterio_choque(previa, accion(destino="obra", paride=paride),
+                               mias=set()) \
+            == criterio_choque(previa,
+                               accion(destino="postventa", paride=paride),
+                               mias=set())
+
+
+# ------- R21 · otra partida no es conflicto, y no se toca ---------- #
+
+def test_f002_r21_otra_partida_no_es_conflicto():
+    """R21 · EL cambio de conducta de la feature. Una línea `M*` previa del
+    mismo recurso y mes con OTRA partida es una línea legítima distinta —la
+    metió Administración a mano contra otra partida— y no se pisa.
+
+    Antes chocaba, y confirmar el pisado la borraba."""
+    assert criterio_choque(linea_previa(paride=0), accion(paride=80001),
+                           mias=set()) is False
+
+
+def test_f002_r21_sin_partida_en_las_dos_si_choca():
+    """R21 · Control positivo: si ninguna de las dos tiene partida (`0` y
+    `None` son lo mismo en Sigrid), sí son la misma línea. La regla nueva no
+    es «nunca choca»: es «choca cuando coincide la partida»."""
+    a = accion(paride=0)
+    assert criterio_choque(linea_previa(paride=0), a, mias=set()) is True
+    assert criterio_choque(linea_previa(paride=None), a, mias=set()) is True
+
+
+# ------------ R22 · lo nuestro no choca con nosotros mismos -------- #
+
+def test_f002_r22_lo_nuestro_no_choca_con_nosotros_mismos():
+    """R22 · Una línea con una synckey de esta misma ejecución no es
+    conflicto: se reescribe sin preguntar. (Estaba en R14; su sitio es R22.)"""
+    previa = linea_previa(synckey="porcentajes:1", paride=80001)
     assert criterio_choque(previa, accion(), mias={"porcentajes:1"}) is False
 
 
-def test_f002_r14_una_synckey_ajena_si_choca():
-    """Pero una synckey que NO es de esta ejecución sigue siendo un apunte
-    de otro: choca como cualquier otra línea."""
-    previa = linea_previa(synckey="porcentajes:777")
+def test_f002_r22_una_synckey_ajena_si_choca():
+    """R22 · Pero una synckey que NO es de esta ejecución sigue siendo un
+    apunte de otro: choca como cualquier otra línea."""
+    previa = linea_previa(synckey="porcentajes:777", paride=80001)
     assert criterio_choque(previa, accion(), mias={"porcentajes:1"}) is True
 
 
-def test_f002_r14_una_linea_sin_synckey_choca():
-    """La línea metida a mano por Administración no tiene synckey."""
-    assert criterio_choque(linea_previa(synckey=None), accion(),
-                           mias={"porcentajes:1"}) is True
+def test_f002_r22_una_linea_sin_synckey_choca():
+    """R22 · La línea metida a mano por Administración no tiene synckey."""
+    assert criterio_choque(linea_previa(synckey=None, paride=80001),
+                           accion(), mias={"porcentajes:1"}) is True
 
 
 def test_f002_r14_los_valores_ausentes_valen_cero():

@@ -1,15 +1,18 @@
 # tests/test_f002_pipeline.py
-"""F-002 · Pipeline de registro, offline (R10, R11, R13).
+"""F-002 · Pipeline de registro, offline (R10, R11, R13, R21).
 
-Tres cosas que solo se ven con el pipeline entero montado: que reejecutar no
-duplique (`synckey`), que el modo pruebas desvíe la escritura sin falsear el
-casado de la postventa, y que dos líneas que chocan con la MISMA línea de
-Sigrid no la borren dos veces.
+Cuatro cosas que solo se ven con el pipeline entero montado: que reejecutar
+no duplique (`synckey`), que el modo pruebas desvíe la escritura sin falsear
+el casado de la postventa, que una línea previa con OTRA partida no se borre
+(Regla A), y que dos conflictos que apuntan a la misma línea de Sigrid no la
+borren dos veces.
 
 Sin red ni BBDD: el pipeline solo habla con el `ClienteFalso` de
 `conftest.py`, que se limita a acumular las sentencias que se le mandan.
 """
 from __future__ import annotations
+
+from dataclasses import replace
 
 from application.pipelines.registro_pipeline import RegistroPipeline
 from domain.models.registro_models import LineaSigrid, ObraEntrada
@@ -115,13 +118,17 @@ def test_f002_r11_sin_modo_pruebas_va_a_la_obra_real():
     assert [i["tex"] for i in cli2.inserts()] == [None]
 
 
-# ------------------- R13 · un solo borrado por línea --------------- #
+# ------ R21 · una línea de otra partida ni choca ni se borra ------- #
 
-def _dos_lineas_contra_la_misma():
-    """Dos líneas pendientes del MISMO recurso y mes con partidas distintas.
-    En la obra normal la partida no distingue (conducta de hoy), así que las
-    dos chocan con la única línea previa del parte."""
-    cli = ClienteFalso(lineas_parte=[linea_previa(ide=5001)])
+def _dos_partidas_distintas():
+    """Dos líneas pendientes del MISMO recurso y mes con partidas distintas,
+    y una línea previa sin partida (`paride = 0`), de las que mete
+    Administración a mano.
+
+    Era el escenario de R13 —cuando la partida no entraba en la identidad,
+    las dos chocaban con ella—. Con la Regla A ya no choca ninguna, y de ahí
+    sale el control de R21."""
+    cli = ClienteFalso(lineas_parte=[linea_previa(ide=5001, paride=0)])
     lineas = [
         linea(registro_id=1, porcentaje=0.4, paride=80001,
               partida_cod="CI.1.10"),
@@ -131,63 +138,99 @@ def _dos_lineas_contra_la_misma():
     return cli, lineas
 
 
-def test_f002_r13_las_dos_lineas_chocan_con_la_misma():
-    """Premisa del caso: hay una sola línea previa y las dos pendientes
-    apuntan a ella. Si esto dejara de ser cierto, el test de abajo pasaría
-    por el motivo equivocado."""
-    cli, lineas = _dos_lineas_contra_la_misma()
+def test_f002_r21_otra_partida_no_produce_conflicto_en_el_pipeline():
+    """R21 · Visto desde el pipeline entero: la línea previa tiene otra
+    partida, así que no hay nada que confirmar y las dos se escriben."""
+    cli, lineas = _dos_partidas_distintas()
     pf = _pipeline(cli).preflight(obra=OBRA, lineas=lineas)
 
     assert len(cli.lineas_parte) == 1
-    ides = [ls.ide for c in pf.conflictos for ls in c.lineas]
-    assert ides == [5001, 5001], ides
+    assert pf.conflictos == [], pf.conflictos
+
+
+def test_f002_r21_no_se_borra_la_linea_de_otra_partida():
+    """R21 · Y lo que importa de verdad: ese apunte de Administración NO se
+    borra. Antes de la Regla A, confirmar el pisado lo borraba y escribía la
+    nuestra encima."""
+    cli, lineas = _dos_partidas_distintas()
+    res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas)
+
+    assert cli.borrados() == [] and res.borradas == 0
+    assert sorted(e["registro_id"] for e in res.escritas) == [1, 2]
+    assert res.pendientes_confirmacion == []
+
+
+# ------------------- R13 · un solo borrado por línea --------------- #
+
+def _una_previa_de_la_misma_partida(**kw):
+    """Una línea previa que SÍ es la misma línea que la de `registro_id=1`:
+    mismo recurso, mismo código de hora y la misma partida (`80001`, la que
+    el automático le resuelve al encargado)."""
+    return linea_previa(**{"ide": 5001, "paride": 80001, **kw})
 
 
 def test_f002_r13_borrado_unico_por_ide():
-    """R13 · Confirmadas las dos, la línea 5001 se borra UNA vez y
-    `borradas` cuenta 1. Emitir dos DELETE del mismo `ide` deja el segundo
-    borrando nada y el recuento mintiendo al humano."""
-    cli, lineas = _dos_lineas_contra_la_misma()
-    claves = {c.clave for c in
-              _pipeline(cli).preflight(obra=OBRA, lineas=lineas).conflictos}
+    """R13 · Si dos conflictos confirmados apuntan a la MISMA línea de
+    Sigrid, solo sale un `DELETE` y `borradas` cuenta 1.
 
-    cli2, lineas2 = _dos_lineas_contra_la_misma()
-    res = _pipeline(cli2).ejecutar(obra=OBRA, lineas=lineas2,
-                                   pisar_claves=claves)
+    El escenario original de este test —dos pendientes con partidas
+    distintas chocando con la misma línea previa— **ya no es alcanzable**
+    con la Regla A: una línea existente casa, como mucho, con una identidad.
+    La salvaguarda se queda igualmente, y para probarla hay que inyectar el
+    par de conflictos a mano. Emitir dos `DELETE` del mismo `ide` deja el
+    segundo borrando nada y el recuento mintiendo al humano.
+    """
+    clave = _pipeline(
+        ClienteFalso(lineas_parte=[_una_previa_de_la_misma_partida()])
+    ).preflight(obra=OBRA, lineas=[linea(registro_id=1)]).conflictos[0].clave
 
-    assert cli2.borrados() == [5001], cli2.borrados()
+    cli = ClienteFalso(lineas_parte=[_una_previa_de_la_misma_partida()])
+    pl = _pipeline(cli)
+    original = pl.preflight
+
+    def con_conflicto_gemelo(**kw):
+        pf = original(**kw)
+        c = pf.conflictos[0]
+        pf.conflictos.append(replace(c, clave=f"{c.clave}|gemelo"))
+        return pf
+
+    pl.preflight = con_conflicto_gemelo
+    res = pl.ejecutar(obra=OBRA, lineas=[linea(registro_id=1)],
+                      pisar_claves={clave, f"{clave}|gemelo"})
+
+    assert cli.borrados() == [5001], cli.borrados()
     assert res.borradas == 1
-    assert sorted(e["registro_id"] for e in res.escritas) == [1, 2]
+    assert [e["registro_id"] for e in res.escritas] == [1]
 
 
 def test_f002_r13_dos_lineas_distintas_se_borran_las_dos():
-    """R13 · Control negativo: dos líneas previas DISTINTAS sí se borran las
-    dos. La deduplicación es por `ide`, no un tope de uno."""
-    cli = ClienteFalso(lineas_parte=[
-        linea_previa(ide=5001, horide=5),
-        linea_previa(ide=5002, horide=5, fecha_int=20260710),
-    ])
+    """R13 · Control negativo: dos líneas previas DISTINTAS de la misma
+    identidad (mismo recurso, código y partida, en dos días del mes) sí se
+    borran las dos. La deduplicación es por `ide`, no un tope de uno."""
+    def previas():
+        return [_una_previa_de_la_misma_partida(),
+                _una_previa_de_la_misma_partida(ide=5002,
+                                                fecha_int=20260710)]
+
     lineas = [linea(registro_id=1)]
     claves = {c.clave for c in
-              _pipeline(cli).preflight(obra=OBRA, lineas=lineas).conflictos}
+              _pipeline(ClienteFalso(lineas_parte=previas()))
+              .preflight(obra=OBRA, lineas=lineas).conflictos}
 
-    cli2 = ClienteFalso(lineas_parte=[
-        linea_previa(ide=5001, horide=5),
-        linea_previa(ide=5002, horide=5, fecha_int=20260710),
-    ])
-    res = _pipeline(cli2).ejecutar(obra=OBRA, lineas=lineas,
-                                   pisar_claves=claves)
+    cli = ClienteFalso(lineas_parte=previas())
+    res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas,
+                                  pisar_claves=claves)
 
-    assert sorted(cli2.borrados()) == [5001, 5002]
+    assert sorted(cli.borrados()) == [5001, 5002]
     assert res.borradas == 2
 
 
 def test_f002_r13_sin_confirmar_no_se_borra_nada():
     """R13 · Y sin confirmar el pisado no se borra ni se escribe esa línea:
     queda pendiente de confirmación."""
-    cli, lineas = _dos_lineas_contra_la_misma()
-    res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas)
+    cli = ClienteFalso(lineas_parte=[_una_previa_de_la_misma_partida()])
+    res = _pipeline(cli).ejecutar(obra=OBRA, lineas=[linea(registro_id=1)])
 
     assert cli.borrados() == [] and res.borradas == 0
     assert res.escritas == []
-    assert len(res.pendientes_confirmacion) == 2
+    assert len(res.pendientes_confirmacion) == 1

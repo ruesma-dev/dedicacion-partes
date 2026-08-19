@@ -149,7 +149,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   pegada en `progress/impl_F-002.md` (R16 y R17 fallan contra el código
   actual: el filtro que falta es un defecto real).
 
-- [ ] **T10**: Aplicar la **Regla A** (identidad):
+- [x] **T10**: Aplicar la **Regla A** (identidad):
   - `campos_identidad()` devuelve `CAMPOS_CLAVE` **siempre**; se le quita el
     parámetro `destino` y se actualiza `criterio_choque` y los tests que la
     llaman;

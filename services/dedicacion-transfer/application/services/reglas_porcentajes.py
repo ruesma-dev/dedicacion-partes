@@ -98,17 +98,19 @@ _DE_LINEA: dict[str, Callable[[LineaSigrid], object]] = {
 }
 
 
-def campos_identidad(destino: str) -> tuple[str, ...]:
+def campos_identidad() -> tuple[str, ...]:
     """Campos que deciden si dos líneas del parte son la MISMA línea.
 
-    Subconjunto de `CAMPOS_CLAVE`, según el destino de la línea. Es el único
-    punto donde vive la decisión D2 de F-002: cuando Administración conteste
-    qué cuenta como conflicto en la obra normal, se cambia aquí y en ningún
-    otro sitio.
+    Los CUATRO de `CAMPOS_CLAVE`, siempre: recurso, periodo, código de hora
+    y partida (D2, 2026-08-19; ver `ARCHITECTURE.md#regla-conflicto`). No
+    recibe el destino porque el destino ya no decide nada — la obra normal y
+    la de postventa comparten criterio—, y un parámetro que no decide es una
+    mentira en la firma y una rama que ningún test puede matar.
+
+    Es el único punto del código donde vive esa decisión: la clave del
+    conflicto y el criterio de choque se derivan de aquí, no la reimplementan.
     """
-    if destino == "postventa":
-        return CAMPOS_CLAVE
-    return tuple(campo for campo in CAMPOS_CLAVE if campo != "paride")
+    return CAMPOS_CLAVE
 
 
 def clave_conflicto(accion: AccionLinea) -> str:
@@ -128,12 +130,12 @@ def criterio_choque(existente: LineaSigrid, accion: AccionLinea, *,
     `mias` son las `synckey` de las líneas de esta misma ejecución: lo que
     escribimos nosotros no choca con nosotros mismos, se reescribe.
 
-    Se compara campo a campo con `campos_identidad(accion.destino)`: no
-    reimplementa el criterio, lo deriva.
+    Se compara campo a campo con `campos_identidad()`: no reimplementa el
+    criterio, lo deriva.
     """
     if existente.synckey and existente.synckey in mias:
         return False
-    for campo in campos_identidad(accion.destino):
+    for campo in campos_identidad():
         if campo in IMPLICITOS_DEL_PARTE:
             continue
         if _DE_LINEA[campo](existente) != _DE_ACCION[campo](accion):
