@@ -5,9 +5,10 @@
 > reviewer rechaza lo que lo incumpla. Si no está aquí, no es un requisito.
 >
 > **Escrito el 2026-08-19 leyendo el código migrado al monorepo.** De la
-> sección «Semántica de dominio imprescindible» quedan **dos puntos sin
-> validar** (el 5, postventa, y el 6, conflicto), marcados
-> `PENDIENTE · decisión D1/D2 de F-002`. El resto está validado.
+> sección «Semántica de dominio imprescindible» queda **un punto sin
+> validar** (el 6, conflicto), marcado `PENDIENTE · decisión D1/D2 de
+> F-002`. El punto 5 (postventa) se cerró con la decisión D1 el 2026-08-19.
+> El resto está validado.
 
 ## Qué hace este proyecto
 
@@ -119,12 +120,12 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
-> Los puntos **5** y **6** siguen `PENDIENTE · decisión D1/D2 de F-002`:
-> el repositorio tiene dos versiones enfrentadas de cada uno y la respuesta
-> la tiene Administración (preguntas y consultas de corroboración en
-> `specs/F-002-reglas-postventa-conflicto/requirements.md` §2). Hasta que
-> se cierren no se escribe en producción: `OBRA_PRUEBAS_FORZAR` se queda a
-> `true`. El resto de los puntos sí está validado.
+> El punto **6** sigue `PENDIENTE · decisión D1/D2 de F-002`: el
+> repositorio tiene dos versiones enfrentadas y la decisión D2 todavía no
+> está escrita aquí (`specs/F-002-reglas-postventa-conflicto/requirements.md`
+> §2). Hasta que se cierre no se escribe en producción:
+> `OBRA_PRUEBAS_FORZAR` se queda a `true`. El resto de los puntos sí está
+> validado.
 
 1. <a id="regla-p1"></a>**Solo recursos mensuales (P1).** Se registra únicamente el recurso que
    tenga un código de hora `M*` (`MENC`, `MCAP`, `MJEFO`…) en `reshor`. Es
@@ -145,20 +146,35 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
    0,005 para no pelearse con los decimales.
 5. <a id="regla-p5"></a>**Postventa es una obra, no una marca (P5).** Una asignación con
    `es_postventa` no se escribe en su obra: se escribe en la obra de
-   postventa (`POSTVENTA_OBRA_COD`, hoy `POSTV2`) imputando a la partida que
-   corresponde a la **obra original** (`0707` → partida `0707 · …`). Sin
-   casado, la línea se omite con motivo. Por eso la clave única de
-   `asignacion` incluye `es_postventa`: un trabajador puede tener la misma
-   obra dos veces, una normal y otra de postventa.
+   postventa que declare `POSTVENTA_OBRA_COD` (el valor vive en el `.env`,
+   no aquí), imputando a una **partida hoja activa** del presupuesto de esa
+   obra: la que corresponde a la **obra original**. Por eso la clave única
+   de `asignacion` incluye `es_postventa`: un trabajador puede tener la
+   misma obra dos veces, una normal y otra de postventa.
 
-   **PENDIENTE · decisión D1/D2 de F-002.** Dos cosas sin cerrar: el
-   **código** de la obra de postventa (el README y el `.env.example` dicen
-   uno, el docstring de `reglas_porcentajes.py` decía otro) y si se imputa a
-   una **partida hoja** o a un **capítulo** con partidas dentro — el código
-   de hoy no elige, porque `resolver_postventa` no filtra por tipo de nodo
-   mientras el desplegable del front sí. Preguntas y consultas de
-   corroboración: `specs/F-002-reglas-postventa-conflicto/requirements.md`
-   §2 (D1). Volcado de lo leído en Sigrid: `progress/sigrid_F-002.md`.
+   Tres precisiones que deciden qué se escribe:
+
+   - **Partida hoja, nunca un capítulo.** El destino (`hmores.paride`) es
+     siempre una hoja del árbol del presupuesto y activa (`tipdes = 0`). Es
+     el mismo universo que el preflight publica en `partidas_postventa` para
+     el desplegable del front: el automático y el desplegable **no pueden
+     apuntar a sitios distintos**.
+   - **Casado por código exacto.** En `obrparpar` el código y la
+     descripción son campos separados (`cod`, `res`); lo que la pantalla de
+     Sigrid enseña junto es la concatenación de los dos. Se compara el
+     código de la obra original contra `cod` normalizado, **entero**: `0656`
+     y `656` son códigos **distintos** y no casan entre sí. Solo si no hay
+     coincidencia exacta se aplican las cascadas (empieza por → código en la
+     descripción → nombre), siempre sobre hojas activas y de forma
+     **determinista** (el orden en que Sigrid devuelva las filas no puede
+     cambiar la partida elegida).
+   - **Sin casado no se escribe.** La línea se omite con su motivo, visible
+     en el preflight. Lo mismo si la obra de postventa no existe en Sigrid.
+
+   *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
+   verificado contra Sigrid, ver `progress/sigrid_F-002.md`* (lectura del
+   presupuesto completo de la obra de postventa: 225 hojas, 23 capítulos, y
+   las 84 partidas de obra todas hojas colgando de `CD`).
 6. <a id="regla-p4"></a><a id="regla-conflicto"></a>**Conflicto e idempotencia (P4).** `synckey = "porcentajes:{asignacion_id}"`
    (no se cruza con los partes diarios, que usan otro prefijo): reejecutar no
    duplica. Si el recurso ya tiene una línea `M*` en ese parte —**aunque sea

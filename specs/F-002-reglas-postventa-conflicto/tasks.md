@@ -90,7 +90,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   `progress/sigrid_F-002.md`. **C1 y C4 ya no tienen motivo** y no se lanzan.
   **Verificación: MANUAL (humano).**
 
-- [ ] **T7**: Escribir en `docs/ARCHITECTURE.md` el **punto 5 definitivo**
+- [x] **T7**: Escribir en `docs/ARCHITECTURE.md` el **punto 5 definitivo**
   (D1): obra `POSTVENTA_OBRA_COD`, **partida hoja activa**, casado por
   **código exacto**, omisión con motivo si no casa. Retirar la marca
   `PENDIENTE · decisión D1/D2 de F-002` de ese punto y poner la línea

@@ -115,15 +115,15 @@ def _punto(numero: int) -> str:
     return texto[inicio:fin]
 
 
-@pytest.mark.parametrize("numero", (5, 6))
+@pytest.mark.parametrize("numero", (6,))
 def test_f002_r1_los_puntos_sin_cerrar_estan_marcados(numero):
-    """R1 · Mientras D1 y D2 sigan abiertas, los puntos 5 y 6 lo dicen con
-    esas palabras. Una regla provisional que parece firme es peor que una
-    marcada como pendiente."""
+    """R1 · Mientras D2 siga sin escribirse, el punto 6 lo dice con esas
+    palabras. Una regla provisional que parece firme es peor que una marcada
+    como pendiente. (D1 se cerró en T7: el punto 5 ya no la lleva.)"""
     assert MARCA_PENDIENTE in _punto(numero), numero
 
 
-@pytest.mark.parametrize("numero", (1, 2, 3, 4, 7))
+@pytest.mark.parametrize("numero", (1, 2, 3, 4, 5, 7))
 def test_f002_r1_los_puntos_cerrados_no_estan_marcados(numero):
     """R1 · Y los que sí están validados NO llevan la marca: si la llevaran
     todos, la marca no diría nada."""
@@ -177,14 +177,50 @@ def test_f002_r3_la_fuente_si_puede_enunciarla():
 
 # ------------------ R4 · de quién sale y cuándo -------------------- #
 
-@pytest.mark.xfail(strict=True, reason="T8/T9: Administración no ha "
-                                       "contestado a D1 ni a D2")
-def test_f002_r4_procedencia_fechada():
-    """R4 · Cada regla confirmada dirá quién la confirmó y cuándo."""
+#: Formato de la línea de procedencia. Lo que R4 exige es que se sepa
+#: **quién** confirmó la regla y **cuándo**, más el respaldo detrás del «·».
+#: El patrón NO fija el interlocutor: la v1 de la spec daba por hecho que
+#: sería Administración, y D1/D2 acabó decidiéndolas el responsable del
+#: proyecto con lecturas reales contra Sigrid. Clavar «Administración» en el
+#: test obligaría a escribir una procedencia falsa para ponerlo en verde,
+#: que es exactamente lo contrario de lo que este requisito persigue.
+#: Se busca sobre el texto con los espacios colapsados (`_plano`), como las
+#: frases prohibidas: una línea de procedencia partida en dos por el ajuste
+#: del párrafo es la misma procedencia, y no puede hacer fallar al test.
+PATRON_PROCEDENCIA = r"Confirmado por [^·]{3,120} el \d{4}-\d{2}-\d{2} · \S+"
+
+#: Anclas de las reglas que F-002 decide y que, por tanto, tienen que llevar
+#: su procedencia. Se comprueba **bloque a bloque**, no contando apariciones
+#: en el documento entero: dos líneas de procedencia en la misma regla no
+#: pueden hacer pasar por confirmada a la de al lado.
+#: La lista crece con las reglas que se van cerrando: `regla-conflicto` y
+#: `regla-capacidad` entran con T8, que es cuando D2 se escribe.
+ANCLAS_CON_PROCEDENCIA = ("regla-p5",)
+
+
+def _bloque(ancla: str) -> str:
+    """El texto que va de un ancla a la siguiente (o al final), aplanado."""
+    texto = _plano(ARQUITECTURA)
+    inicio = texto.index(f'<a id="{ancla}"></a>')
+    fin = texto.find('<a id="', inicio + 1)
+    return texto[inicio:fin if fin != -1 else len(texto)]
+
+
+@pytest.mark.parametrize("ancla", ANCLAS_CON_PROCEDENCIA)
+def test_f002_r4_procedencia_fechada(ancla):
+    """R4 · Cada regla confirmada dice quién la confirmó y cuándo."""
     import re
-    texto = _texto(ARQUITECTURA)
-    patron = r"Confirmado por Administración el \d{4}-\d{2}-\d{2} · \S+"
-    assert len(re.findall(patron, texto)) >= 2, texto
+    assert re.search(PATRON_PROCEDENCIA, _bloque(ancla)), ancla
+
+
+def test_f002_r4_la_procedencia_no_es_anonima():
+    """R4 · Control: «Confirmado el 2026-08-19» a secas no vale. Una regla
+    sin interlocutor no se le puede repreguntar a nadie."""
+    import re
+    assert re.search(PATRON_PROCEDENCIA, "Confirmado por  el 2026-08-19 · x") \
+        is None
+    assert re.search(PATRON_PROCEDENCIA,
+                     "Confirmado por Fulano el 2026-08-19") is None
 
 
 # ------------- R5 · el valor del ajuste vive en el .env ------------ #
