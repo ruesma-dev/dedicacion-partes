@@ -37,7 +37,8 @@ from application.services.partida_resolver import (
     construir_catalogo, resolver_normal, resolver_postventa,
 )
 from application.services.reglas_porcentajes import (
-    ReglasPorcentajes, clave_conflicto, criterio_choque,
+    MOTIVO_PARTIDA_PV_NO_HOJA, ReglasPorcentajes, clave_conflicto,
+    criterio_choque,
 )
 from domain.models.registro_models import (
     AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
@@ -89,12 +90,12 @@ class RegistroPipeline:
         self, obra_origen: ObraEntrada, forzada: bool,
         destino_pruebas: ObraEntrada,
     ) -> tuple[Optional[ObraEntrada], Optional[dict], Optional[str]]:
-        """Paso 1b. Obra de postventa + capítulo de la obra original.
+        """Paso 1b. Obra de postventa + partida de la obra original.
 
-        Devuelve (obra_destino_pv, capitulo, motivo_si_falla). En modo
-        pruebas el parte se escribe en la obra de pruebas, pero el
-        capítulo se resuelve igualmente contra la obra de postventa real
-        (para validar el casado).
+        Devuelve (obra_destino_pv, partida, motivo_si_falla). En modo
+        pruebas el parte se escribe en la obra de pruebas, pero la partida
+        se resuelve igualmente contra la obra de postventa real (para
+        validar el casado). Ver `ARCHITECTURE.md#regla-p5`.
         """
         obra_pv = self._cli.obra_por_codigo(self._st.postventa_obra_cod)
         if obra_pv is None:
@@ -106,15 +107,24 @@ class RegistroPipeline:
         self._nodos_pv = nodos
         nodo = resolver_postventa(nodos, obra_origen.codigo,
                                   obra_origen.nombre)
-        capitulo = ({"ide": nodo.ide, "cod": nodo.cod, "res": nodo.res}
-                    if nodo else None)
-        if capitulo is None:
+        partida = ({"ide": nodo.ide, "cod": nodo.cod, "res": nodo.res}
+                   if nodo else None)
+        if partida is None:
             return (None, None,
                     f"la obra {obra_origen.codigo or obra_origen.nombre} "
-                    f"no casa con ningún capítulo de "
+                    f"no casa con ninguna partida de "
                     f"{self._st.postventa_obra_cod}")
         destino = destino_pruebas if forzada else obra_pv
-        return destino, capitulo, None
+        return destino, partida, None
+
+    # ------------------------------------------------------------- #
+    def _es_hoja_activa_pv(self, paride: int) -> bool:
+        """¿`paride` es una partida hoja activa del presupuesto de la obra
+        de postventa? Es el universo de `ARCHITECTURE.md#regla-p5`, el mismo
+        que se publica en `partidas_postventa`."""
+        nodos = getattr(self, "_nodos_pv", None) or {}
+        nodo = nodos.get(int(paride))
+        return bool(nodo and nodo.es_hoja and nodo.activa)
 
     # ------------------------------------------------------------- #
     def _resolver_recursos(self, lineas: list[LineaEntrada]) -> dict:
@@ -151,18 +161,18 @@ class RegistroPipeline:
 
         # Paso 1b: destino de postventa (solo si hace falta).
         destino_pv: Optional[ObraEntrada] = None
-        capitulo: Optional[dict] = None
+        partida_pv: Optional[dict] = None
         motivo_pv: Optional[str] = None
         if any(l.es_postventa for l in lineas) \
                 and self._st.postventa_registrar:
-            destino_pv, capitulo, motivo_pv = self._destino_postventa(
+            destino_pv, partida_pv, motivo_pv = self._destino_postventa(
                 obra, forzada, destino_normal)
 
         # Pasos 2-4: recursos + reglas.
         horas = self._resolver_recursos(lineas)
         reglas = ReglasPorcentajes(
             horas, postventa_registrar=self._st.postventa_registrar,
-            capitulo_postventa=capitulo, motivo_postventa=motivo_pv)
+            partida_postventa=partida_pv, motivo_postventa=motivo_pv)
         acciones: list[AccionLinea] = [reglas.decidir(l) for l in lineas]
 
         # Partida de imputación por línea: el override manual del front
@@ -177,6 +187,15 @@ class RegistroPipeline:
                 continue
             linea = por_id.get(a.registro_id)
             if linea is not None and linea.paride:
+                # El override del front manda… salvo que apunte fuera del
+                # universo válido de la postventa (un capítulo, una partida
+                # de baja). Ahí no se escribe: ver ARCHITECTURE #regla-p5.
+                if a.destino == "postventa" \
+                        and not self._es_hoja_activa_pv(linea.paride):
+                    a.accion = "omitir"
+                    a.motivo = MOTIVO_PARTIDA_PV_NO_HOJA.format(
+                        paride=int(linea.paride))
+                    continue
                 a.paride = int(linea.paride)
                 a.partida_cod = linea.partida_cod
                 a.partida_metodo = "manual"
@@ -287,7 +306,12 @@ class RegistroPipeline:
             pf.n_escribir, pf.n_omitir, pf.n_ya, len(conflictos))
         # El destino de postventa se adjunta para trazabilidad de la API.
         setattr(pf, "obra_postventa", destino_pv)
-        setattr(pf, "capitulo_postventa", capitulo)
+        # OJO con el nombre: lo que viaja es una PARTIDA, no un capítulo
+        # (ARCHITECTURE.md#regla-p5). El atributo conserva el nombre viejo
+        # porque es contrato HTTP y el front lo lee como `capitulo_postventa`
+        # en la respuesta de /api/registro/preflight. Renombrarlo obliga a
+        # tocar los tres servicios a la vez: es una feature aparte.
+        setattr(pf, "capitulo_postventa", partida_pv)
 
         def _cat(nodos):
             if not nodos:

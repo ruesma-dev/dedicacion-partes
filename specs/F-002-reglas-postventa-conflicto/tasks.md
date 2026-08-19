@@ -127,7 +127,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   > Durante T9–T12 el documento describe una conducta que el código todavía
   > no cumple. Es deliberado: `design.md` §9, última decisión.
 
-- [ ] **T9**: Alinear el código con **D1 (postventa)**:
+- [x] **T9**: Alinear el código con **D1 (postventa)**:
   - `partida_resolver.resolver_postventa`: sustituir
     `hojas = [n for n in nodos.values() if n.activa]` por
     `candidatos = partidas_hoja(nodos)` (hojas **activas**, ordenadas por

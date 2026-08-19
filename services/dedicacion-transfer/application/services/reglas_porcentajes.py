@@ -41,6 +41,12 @@ MOTIVO_SIN_MENSUAL = (
     "no se registra por porcentaje"
 )
 MOTIVO_PORCENTAJE = "porcentaje fuera de rango (debe ser > 0 y <= 1)"
+#: Se formatea con `paride`. Cabe de sobra en los 300 caracteres a los que
+#: `dedicacion-api` recorta `asignacion.sigrid_motivo`.
+MOTIVO_PARTIDA_PV_NO_HOJA = (
+    "la partida {paride} indicada a mano no es una partida hoja activa del "
+    "presupuesto de la obra de postventa: no se escribe"
+)
 MOTIVO_POSTVENTA_OFF = (
     "línea de postventa: registro de postventa desactivado "
     "(POSTVENTA_REGISTRAR=false)"
@@ -138,10 +144,13 @@ def criterio_choque(existente: LineaSigrid, accion: AccionLinea, *,
 class ReglasPorcentajes:
     """Decide, para cada línea, si se escribe y con qué código/importe.
 
-    ``capitulo_postventa``: capítulo de la obra original dentro de la obra
-    de postventa (dict con ide/cod/res), o None si no aplica/no se casó.
-    ``motivo_postventa``: por qué no hay capítulo (obra postventa no
-    encontrada, capítulo sin casar…) — se usa como motivo de omisión.
+    ``partida_postventa``: la partida HOJA de la obra de postventa que
+    corresponde a la obra original (dict con ide/cod/res), o None si no
+    aplica o no se casó. Se llamaba `capitulo_postventa` cuando el
+    repositorio creía que el destino era un capítulo (ver
+    `ARCHITECTURE.md#regla-p5`).
+    ``motivo_postventa``: por qué no hay partida (obra de postventa no
+    encontrada, código sin casar…) — se usa como motivo de omisión.
     """
 
     def __init__(
@@ -149,12 +158,12 @@ class ReglasPorcentajes:
         horas_por_recurso: dict[int, list[HoraRecurso]],
         *,
         postventa_registrar: bool = True,
-        capitulo_postventa: Optional[dict] = None,
+        partida_postventa: Optional[dict] = None,
         motivo_postventa: Optional[str] = None,
     ) -> None:
         self._horas = horas_por_recurso
         self._postventa = bool(postventa_registrar)
-        self._capitulo = capitulo_postventa
+        self._partida = partida_postventa
         self._motivo_pv = motivo_postventa
 
     def decidir(self, linea: LineaEntrada) -> AccionLinea:
@@ -173,12 +182,12 @@ class ReglasPorcentajes:
             # P5 (ver ARCHITECTURE.md#regla-p5).
             if not self._postventa:
                 return omitir(MOTIVO_POSTVENTA_OFF)
-            if self._capitulo is None:
+            if self._partida is None:
                 return omitir(self._motivo_pv
-                              or "capítulo de postventa sin resolver")
+                              or "partida de postventa sin resolver")
             destino = "postventa"
-            paride = int(self._capitulo["ide"])
-            partida_cod = self._capitulo.get("cod")
+            paride = int(self._partida["ide"])
+            partida_cod = self._partida.get("cod")
 
         if not linea.recurso_ide:
             return omitir(MOTIVO_SIN_RECURSO)

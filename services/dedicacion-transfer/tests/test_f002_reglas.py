@@ -24,7 +24,7 @@ HORAS = {
           HoraRecurso(9, "HEGR", None, 30.0)],
 }
 
-CAPITULO_PV = {"ide": 70001, "cod": "0678", "res": "15 VIVIENDAS Y HOSTEL"}
+PARTIDA_PV = {"ide": 70001, "cod": "0678", "res": "15 VIVIENDAS Y HOSTEL"}
 
 
 def _reglas(**kw) -> ReglasPorcentajes:
@@ -140,7 +140,7 @@ def test_f002_r12_postventa_desactivada():
     """R12 · Con POSTVENTA_REGISTRAR desactivado, la línea de postventa se
     omite con motivo explícito y NO cae en la obra normal."""
     a = _reglas(postventa_registrar=False,
-                capitulo_postventa=CAPITULO_PV).decidir(
+                partida_postventa=PARTIDA_PV).decidir(
         linea(recurso_ide=200, empleado_ide=None, es_postventa=True))
     assert a.accion == "omitir", a
     assert "POSTVENTA_REGISTRAR" in (a.motivo or ""), a.motivo
@@ -151,7 +151,7 @@ def test_f002_r12_postventa_activada_va_a_la_obra_de_postventa():
     """R12 · Control positivo: con el ajuste activo la misma línea sí se
     escribe, y su destino es la obra de postventa."""
     a = _reglas(postventa_registrar=True,
-                capitulo_postventa=CAPITULO_PV).decidir(
+                partida_postventa=PARTIDA_PV).decidir(
         linea(recurso_ide=200, empleado_ide=None, es_postventa=True))
     assert a.accion == "escribir" and a.destino == "postventa", a
     assert a.paride == 70001

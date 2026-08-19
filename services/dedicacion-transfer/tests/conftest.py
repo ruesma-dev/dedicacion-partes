@@ -7,10 +7,13 @@ inyecta, así que basta con un doble de ese cliente y un doble de los ajustes.
 Lo que aporta sobre el cliente falso de `test_pipeline_offline.py` es que
 todo lo que la feature necesita variar está **parametrizado**:
 
-- ``presupuesto_postventa``: el árbol de la obra de postventa se construye
-  con las obras originales como **hojas** (``"hojas"``) o como **capítulos
-  con partidas dentro** (``"capitulos"``). Es la variable de la decisión D1.2,
-  y por eso no puede estar cableada en el doble.
+- ``presupuesto_postventa``: el árbol de la obra de postventa. Cuatro
+  variantes: ``"hojas"`` (lo que devolvió la lectura real de Sigrid, con sus
+  trampas: capítulo de código numérico, duplicados sin cero inicial y
+  descripciones que empiezan por el código de otra obra), ``"capitulos"``
+  (las obras originales con partidas dentro, así que dejan de ser hoja),
+  ``"hojas_inactivas"`` (la partida de la obra original dada de baja) y
+  ``"orden_invertido"`` (las mismas filas de ``"hojas"`` al revés).
 - ``lineas_parte``: las líneas que ya existen en el parte del mes.
 - ``synckeys``: las líneas que ya escribimos nosotros (idempotencia).
 - ``obra_postventa_existe``: si la obra de postventa no está en Sigrid.
@@ -57,21 +60,56 @@ class SettingsFalso:
         self.paso_pos = paso_pos
 
 
-def _fila(ide: int, padide: int, pos: int, cod: str, res: str) -> dict:
-    """Una fila de `obrparpar` tal y como la devuelve el cliente real."""
+def _fila(ide: int, padide: int, pos: int, cod: str, res: str,
+          tipdes: int = 0) -> dict:
+    """Una fila de `obrparpar` tal y como la devuelve el cliente real.
+
+    ``tipdes = 0`` es activa; cualquier otro valor, dada de baja."""
     return {"ide": ide, "padide": padide, "pos": pos, "tip": 1 if padide else 0,
-            "cod": cod, "res": res, "tex": None, "tipdes": 0,
+            "cod": cod, "res": res, "tex": None, "tipdes": tipdes,
             "cosindide": None, "unimed": None}
 
 
-#: Presupuesto de la obra de postventa con las obras originales como HOJAS
-#: (lo que devolvió la lectura real de Sigrid: 0678 y 0713 cuelgan de CD y
-#: no tienen hijos).
+#: Presupuesto de la obra de postventa con las obras originales como HOJAS.
+#: Reproduce las trampas que documenta `progress/sigrid_F-002.md`:
+#:
+#: - las obras originales cuelgan de `CD` y no tienen hijos (225 hojas / 23
+#:   capítulos en el presupuesto real);
+#: - hay **capítulos con código numérico** (`3`, `4`, … `11`), que son los
+#:   que podrían colarse como destino si la resolución no filtrara por hoja;
+#: - hay partidas duplicadas **sin el cero inicial** colgando de la raíz
+#:   (`656`, `664`), que son códigos DISTINTOS de `0656` y `0664`;
+#: - hay partidas cuya DESCRIPCIÓN empieza por el código de otra obra, que
+#:   es el tercer escalón de la cascada y no debe adelantar al exacto.
 PRESUPUESTO_PV_HOJAS: list[dict] = [
     _fila(69000, 0, 0, "CD", "COSTES DIRECTOS"),
     _fila(70001, 69000, 1, "0678", "15 VIVIENDAS Y HOSTEL"),
     _fila(70002, 69000, 2, "0713", "CLUB DEPORTIVO"),
+    _fila(70003, 69000, 3, "0656", "33+34 VIVIENDAS TOMARES"),
+    _fila(70004, 69000, 4, "0664", "76 VIVIENDAS EN LOS GUINDOS"),
+    _fila(70005, 69000, 5, "0999", "0664 VARIOS DE LOS GUINDOS"),
+    _fila(70006, 69000, 6, "0998", "0777 OBRA SIN PARTIDA PROPIA"),
+    # Capítulo de código numérico: tiene hijos, así que no es hoja.
+    _fila(69100, 69000, 7, "11", "OBRAS VARIAS"),
+    _fila(69110, 69100, 1, "11.01", "REPARACIONES"),
+    # Duplicados sin cero inicial, colgando de la RAÍZ (no de CD).
+    _fila(70050, 0, 8, "656", "33+34 VIVIENDAS TOMARES"),
+    _fila(70051, 0, 9, "664", "76 VIVIENDAS EN LOS GUINDOS"),
 ]
+
+#: El mismo, con la partida de la obra original DADA DE BAJA (`tipdes = 1`).
+#: Una hoja inactiva no es destino válido: no se escribe contra ella.
+PRESUPUESTO_PV_HOJAS_INACTIVAS: list[dict] = [
+    _fila(69000, 0, 0, "CD", "COSTES DIRECTOS"),
+    _fila(70001, 69000, 1, "0678", "15 VIVIENDAS Y HOSTEL", tipdes=1),
+    _fila(70002, 69000, 2, "0713", "CLUB DEPORTIVO"),
+]
+
+#: Las MISMAS filas de `PRESUPUESTO_PV_HOJAS`, en orden inverso. Sigrid no
+#: garantiza el orden de las filas de una consulta sin `ORDER BY`, así que
+#: la partida elegida no puede depender de él.
+PRESUPUESTO_PV_ORDEN_INVERTIDO: list[dict] = list(
+    reversed(PRESUPUESTO_PV_HOJAS))
 
 #: El mismo presupuesto con las obras originales como CAPÍTULOS: cada una
 #: tiene partidas colgando, así que deja de ser hoja. Es el caso que hoy
@@ -95,6 +133,8 @@ PRESUPUESTO_ORIGEN: list[dict] = [
 PRESUPUESTOS_PV = {
     "hojas": PRESUPUESTO_PV_HOJAS,
     "capitulos": PRESUPUESTO_PV_CAPITULOS,
+    "hojas_inactivas": PRESUPUESTO_PV_HOJAS_INACTIVAS,
+    "orden_invertido": PRESUPUESTO_PV_ORDEN_INVERTIDO,
 }
 
 
