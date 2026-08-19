@@ -118,15 +118,10 @@ class AccionLinea:
                                           # auto_categoria | postventa
     aviso: Optional[str] = None           # p.ej. partida no localizada
     hmores_ide: Optional[int] = None    # si ya estaba registrada
-
-    @property
-    def clave_conflicto(self) -> str:
-        """recurso + MES + código + PARTIDA. Sin día (un registro M* del
-        mismo recurso/mes en otro día también choca). La partida forma
-        parte de la clave: en el parte de postventa un recurso puede tener
-        una línea legítima por cada capítulo/obra."""
-        return (f"{self.recurso_ide or 0}|{self.ano}{self.mes:02d}"
-                f"|{self.hora_ide or 0}|{self.paride or 0}")
+    # La CLAVE de conflicto de esta acción no se calcula aquí: sale de
+    # `application.services.reglas_porcentajes.clave_conflicto`, junto al
+    # criterio de choque que la tiene que respetar. Tenerla en dos capas es
+    # lo que dejó que la clave y el criterio se desalinearan.
 
 
 @dataclass

@@ -29,7 +29,9 @@ from typing import Optional
 from application.services.partida_resolver import (
     construir_catalogo, resolver_normal, resolver_postventa,
 )
-from application.services.reglas_porcentajes import ReglasPorcentajes
+from application.services.reglas_porcentajes import (
+    ReglasPorcentajes, clave_conflicto, criterio_choque,
+)
 from domain.models.registro_models import (
     AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
     Preflight, ResultadoRegistro,
@@ -224,7 +226,7 @@ class RegistroPipeline:
                 a.motivo = (f"ya registrada en Sigrid (línea {hit.ide}); "
                             f"no se duplica")
 
-        # Paso 7: conflictos por recurso + MES + código + PARTIDA.
+        # Paso 7: conflictos (ver ARCHITECTURE `#regla-conflicto`).
         conflictos: list[Conflicto] = []
         pendientes = [a for a in acciones if a.accion == "escribir"]
         for clave_p, parte in sorted(partes.items()):
@@ -239,20 +241,11 @@ class RegistroPipeline:
             mias = {synckey_de(a.registro_id) for a in grupo}
             por_clave: dict[str, Conflicto] = {}
             for a in grupo:
-                k = a.clave_conflicto
-                # En POSTVENTA la partida distingue líneas legítimas
-                # (una por obra original); en la obra normal una línea M*
-                # previa del recurso choca aunque tenga otra partida.
-                choques = [
-                    ls for ls in existentes
-                    if ls.reside == a.recurso_ide
-                    and int(ls.horide or 0) == int(a.hora_ide or 0)
-                    and (a.destino != "postventa"
-                         or int(ls.paride or 0) == int(a.paride or 0))
-                    and not (ls.synckey and ls.synckey in mias)
-                ]
+                k = clave_conflicto(a)
+                choques = [ls for ls in existentes
+                           if criterio_choque(ls, a, mias=mias)]
                 if not choques:
-                    continue        # código+partida libres este mes
+                    continue        # nada previo con esa identidad
                 c = por_clave.get(k)
                 if c is None:
                     contexto = [
