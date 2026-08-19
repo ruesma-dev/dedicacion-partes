@@ -188,6 +188,22 @@ def test_f002_r25_con_su_detalle_numerico():
     assert [ls.ide for ls in c.contexto] == [5001]
 
 
+def test_f002_r25_las_cifras_se_redondean_a_cuatro_decimales():
+    """R25 · Las cifras del conflicto van redondeadas a 4 decimales, la
+    misma escala en la que se escribe `can` (P3). Sin el redondeo, el humano
+    lee «se pasa en 0.023456000000000045», que es ruido de coma flotante
+    disfrazado de precisión."""
+    cli = ClienteFalso(lineas_parte=[
+        linea_previa(ide=5001, can=0.123456, paride=90001)])
+    c = _pipeline(cli).preflight(
+        obra=OBRA,
+        lineas=[linea(registro_id=1, porcentaje=0.9)]).conflictos[0]
+
+    assert c.suma_existente == 0.1235
+    assert c.suma_total == 1.0235
+    assert c.exceso == 0.0235
+
+
 def test_f002_r25_el_escenario_viejo_de_r13_ahora_es_una_sobrecarga():
     """R25 · La otra cara de la Regla A, y la razón por la que las dos
     reglas van en la misma feature.
@@ -248,6 +264,22 @@ def test_f002_r26_la_tolerancia_decide_el_borde(extra, avisa):
     cap = evaluar_capacidad([], [accion(can=1.0 + extra)],
                             mias=set(), pisadas=set())
     assert cap.sobrecarga is avisa, (extra, cap)
+
+
+def test_f002_r26_el_borde_exacto_de_la_tolerancia_no_existe():
+    """R26 · Documenta por qué la comparación es `>` y no `>=`, y por qué da
+    igual: en coma flotante de doble precisión **no existe** un caso con
+    `exceso == EPSILON_CAPACIDAD`.
+
+    Para un `total` entre 1 y 2 la resta `total - 1.0` es exacta y solo
+    puede dar múltiplos del ULP de esa franja (2⁻⁵², ~2,2e-16); el `double`
+    más cercano a 0,00005 no lo es. El `>=` es, por tanto, una mutación
+    equivalente, y esto lo deja escrito en un test en vez de en un comentario
+    que nadie comprueba.
+    """
+    alcanzables = {(1.0 + k * 2.0 ** -52) - 1.0 for k in range(1, 2000)}
+    assert EPSILON_CAPACIDAD not in alcanzables
+    assert (1.0 + EPSILON_CAPACIDAD) - 1.0 != EPSILON_CAPACIDAD
 
 
 def test_f002_r26_la_tolerancia_es_la_del_cuadrante():

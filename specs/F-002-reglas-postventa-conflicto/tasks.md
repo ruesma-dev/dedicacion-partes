@@ -239,7 +239,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   (`CLAUDE.md`, reglas duras). **Ningún agente la lanza por su cuenta**, ni
   siquiera con la feature aprobada.
 
-- [ ] **T15**: Campaña de mutación con cero supervivientes:
+- [x] **T15**: Campaña de mutación con cero supervivientes:
   `python -m harness.mutacion --feature F-002 --workers 1`.
   **Verificación:** `progress/mutacion_F-002.md` con 0 supervivientes, o cada
   superviviente con justificación escrita para que la acepte el humano
@@ -252,7 +252,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   T14) con su comando exacto y su resultado real.
   **Verificación:** el reviewer las encuentra sin preguntar.
 
-- [ ] **T17**: Ejecutar `bash harness/init.sh` en verde (incluida la puerta
+- [x] **T17**: Ejecutar `bash harness/init.sh` en verde (incluida la puerta
   de cobertura de las líneas cambiadas ≥ 80 %).
   **Verificación:** exit code 0 y `[OK]` en la puerta de cobertura.
 </content>

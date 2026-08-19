@@ -229,6 +229,23 @@ def test_f002_r18_la_cascada_solo_actua_sin_exacto():
     assert nodo.cod == "0998"           # casó por la descripción, no por cod
 
 
+def test_f002_r18_el_ultimo_escalon_casa_por_nombre_de_obra():
+    """R18 · Cuarto y último escalón: si la obra no trae código utilizable,
+    se busca su NOMBRE dentro de la descripción de la partida. Es el que
+    salva a las obras que en Sigrid se identifican por nombre."""
+    nodo = resolver_postventa(_nodos("hojas"), None, "CLUB DEPORTIVO")
+    assert nodo is not None and nodo.ide == 70002, nodo
+
+
+def test_f002_r18_el_escalon_del_nombre_tambien_mira_solo_hojas_activas():
+    """R18 · Y no es una puerta trasera: el último escalón busca en el mismo
+    universo que los otros tres. Con la partida de la obra dada de baja, no
+    devuelve nada aunque el nombre case."""
+    nodos = _nodos("hojas_inactivas")
+    assert "15 VIVIENDAS" in (nodos[70001].res or "")
+    assert resolver_postventa(nodos, None, "15 VIVIENDAS") is None
+
+
 def test_f002_r18_sin_ninguna_coincidencia_no_hay_partida():
     """R18 · Y si no casa por ningún escalón, no se inventa una: `None`, que
     el pipeline convierte en omisión con motivo."""

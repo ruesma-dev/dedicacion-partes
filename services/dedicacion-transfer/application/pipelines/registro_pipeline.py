@@ -310,11 +310,14 @@ class RegistroPipeline:
             for c in por_clave.values():
                 pisadas.setdefault(c.recurso_ide, set()).update(
                     ls.ide for ls in c.lineas)
-            for recurso in sorted({int(a.recurso_ide or 0) for a in grupo}):
-                suyas = [a for a in grupo
-                         if int(a.recurso_ide or 0) == recurso]
+            # Sin `or 0` a propósito: `grupo` solo tiene acciones «escribir»,
+            # y P1 omite toda línea sin recurso, así que aquí `recurso_ide`
+            # no puede ser nulo. Normalizarlo otra vez sería una guarda que
+            # ningún test puede ejercitar, y que por tanto nadie mantiene.
+            for recurso in sorted({int(a.recurso_ide) for a in grupo}):
+                suyas = [a for a in grupo if int(a.recurso_ide) == recurso]
                 cap = evaluar_capacidad(
-                    [ls for ls in existentes if int(ls.reside or 0) == recurso],
+                    [ls for ls in existentes if int(ls.reside) == recurso],
                     suyas, mias=mias, pisadas=pisadas.get(recurso, set()))
                 if not cap.sobrecarga:
                     continue

@@ -242,6 +242,43 @@ def test_f002_r13_sin_confirmar_no_se_borra_nada():
     assert len(res.pendientes_confirmacion) == 1
 
 
+def test_f002_r13_el_contexto_es_solo_del_mismo_recurso():
+    """El `contexto` de un conflicto es informativo, pero informa DE ALGUIEN:
+    son las otras líneas mensuales **de ese mismo trabajador**. Colar en él
+    las de otro convierte el aviso en una acusación falsa —«además tiene
+    estas»— sobre líneas que no son suyas."""
+    cli = ClienteFalso(lineas_parte=[
+        _una_previa_de_la_misma_partida(),                  # la que se pisa
+        linea_previa(ide=5002, hora_codigo="HEGR", horide=9,  # no es M*
+                     paride=90001),
+        linea_previa(ide=5003, reside=400, hora_codigo="MJEFO",  # otro
+                     horide=6, can=0.3, paride=90002),
+    ])
+    lineas = [linea(registro_id=1),
+              linea(registro_id=9, porcentaje=0.5, empleado_ide=12,
+                    nombre="Jefe de obra", categoria="Jefe de obra")]
+    pf = _pipeline(cli).preflight(obra=OBRA, lineas=lineas)
+
+    pisado = [c for c in pf.conflictos if c.motivo == "pisado"][0]
+    assert pisado.recurso_ide == 200
+    assert [ls.ide for ls in pisado.lineas] == [5001]
+    assert pisado.contexto == [], [ls.ide for ls in pisado.contexto]
+
+
+def test_f002_r13_el_contexto_si_recoge_otro_codigo_del_mismo_recurso():
+    """Control positivo: otra línea `M*` del MISMO trabajador con otro
+    código sí entra en el contexto. Es para lo que está."""
+    cli = ClienteFalso(lineas_parte=[
+        _una_previa_de_la_misma_partida(),
+        linea_previa(ide=5002, hora_codigo="MCAP", horide=7, can=0.2,
+                     paride=90001),
+    ])
+    pf = _pipeline(cli).preflight(obra=OBRA, lineas=[linea(registro_id=1)])
+
+    pisado = [c for c in pf.conflictos if c.motivo == "pisado"][0]
+    assert [ls.ide for ls in pisado.contexto] == [5002]
+
+
 # ---------- R28 / R29 · la sobrecarga, en la escritura ------------- #
 
 def _sobrecarga_de_un_recurso():
