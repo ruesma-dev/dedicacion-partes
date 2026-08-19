@@ -171,3 +171,57 @@ def test_f001_r2_desviacion_negativa_cuantizada_a_dos_decimales() -> None:
     desviacion = calcular_desviacion(Decimal("70.123"), 1)
     assert desviacion == Decimal("-29.88")
     assert str(desviacion) == "-29.88", "debe venir cuantizada, no en bruto"
+
+
+# --- R3: el resumen del periodo ---------------------------------------------
+
+
+def test_f001_r3_resumen_vacio() -> None:
+    assert resumir([]) == ResumenPeriodo(total=0, ok=0, falta=0, exceso=0,
+                                         sin_carga=0)
+
+
+def test_f001_r3_baja_sin_lineas_no_cuenta() -> None:
+    """El criterio central de F-001: la baja sin carga no existe para el
+    resumen. Ni suma en `total` ni aparece en `sin_carga` (tampoco se muestra
+    en el front)."""
+    filas = [
+        _fila("100", ide=1),
+        _fila(ide=2, activo=False),          # de baja y sin líneas
+    ]
+    assert resumir(filas) == ResumenPeriodo(total=1, ok=1, falta=0, exceso=0,
+                                            sin_carga=0)
+
+
+def test_f001_r3_baja_con_lineas_si_cuenta() -> None:
+    """Una baja CON carga sigue contando: alguien tiene que verla y
+    corregirla antes de registrar el periodo."""
+    filas = [_fila("50", ide=7, activo=False)]
+    assert resumir(filas) == ResumenPeriodo(total=1, ok=0, falta=1, exceso=0,
+                                            sin_carga=0)
+
+
+def test_f001_r3_activo_sin_lineas_si_cuenta_como_sin_carga() -> None:
+    """La otra mitad de la condición: lo que descarta a la baja es la
+    combinación «de baja Y sin líneas», no una de las dos por su cuenta."""
+    filas = [_fila(ide=3, activo=True)]
+    assert resumir(filas) == ResumenPeriodo(total=1, ok=0, falta=0, exceso=0,
+                                            sin_carga=1)
+
+
+def test_f001_r3_mixto_el_total_es_la_suma_de_los_cuatro_contadores() -> None:
+    """Caso mixto con los cuatro estados más una baja sin carga: el `total`
+    cuadra con la suma de contadores, así que nadie se cuenta dos veces ni se
+    pierde por el camino."""
+    filas = [
+        _fila("60", "40", ide=1),            # OK
+        _fila("30", ide=2),                  # FALTA
+        _fila("80", "40", ide=3),            # EXCESO
+        _fila(ide=4),                        # SIN_CARGA (activo)
+        _fila(ide=5, activo=False),          # baja sin líneas: no cuenta
+    ]
+    resumen = resumir(filas)
+    assert resumen == ResumenPeriodo(total=4, ok=1, falta=1, exceso=1,
+                                     sin_carga=1)
+    assert resumen.total == (resumen.ok + resumen.falta + resumen.exceso
+                             + resumen.sin_carga)
