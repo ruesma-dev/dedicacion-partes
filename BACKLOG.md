@@ -5,11 +5,13 @@
 
 Resumen: **8 features**, 8 abiertas, 0 terminadas.
 
+En curso: **F-001**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | pendiente | estandar | `feature/F-001-tests-estados-api` |
+| F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | en curso | estandar | `feature/F-001-tests-estados-api` |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | pendiente | critico | `feature/F-002-reglas-postventa-conflicto` |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | pendiente | critico | `feature/F-003-orm-columnas-sigrid` |
 | F-004 | README del monorepo y arranque local en orden | 4 | pendiente | documental | `feature/F-004-readme-monorepo` |
@@ -26,7 +28,7 @@ _Todavía no hay features terminadas._
 
 ### F-001 · Primera suite de tests de dedicacion-api: la regla del 100 %
 
-estado **pendiente** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-001-tests-estados-api`
+estado **en curso** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-001-tests-estados-api`
 
 Calentamiento del circuito. dedicacion-api no tiene un solo test: se crea services/dedicacion-api/tests/ y se cubre domain/estados.py, que es donde vive la regla de control del cuadrante (OK / FALTA / EXCESO / SIN_CARGA). Sirve para validar rama, acceptance, implementer, reviewer y cierre sobre algo pequeño y sin riesgo, y para que el portero empiece a ejecutar de verdad la suite del servicio api.
 

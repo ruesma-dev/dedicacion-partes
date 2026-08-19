@@ -24,7 +24,7 @@
         "Se cubre resumir(): un trabajador de baja y sin líneas no cuenta en el resumen",
         "bash harness/init.sh en verde, con la línea 'servicio api: pytest en verde'"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "sdd": false,
       "rigor": "estandar",
       "priority": 1,
