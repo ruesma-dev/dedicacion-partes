@@ -345,15 +345,30 @@ def test_f003_r12_columna_not_null_con_default_si_se_puede_anadir(
 def test_f003_r13_el_ddl_derivado_solo_anade_columnas(esquema: Any) -> None:
     """Límite declarado: ni `DROP`, ni `ALTER COLUMN`, ni `ADD CONSTRAINT`.
 
-    Se le da una base a la que le falta TODO menos las claves primarias, para
-    que el mecanismo emita cuanto puede emitir.
+    Se le dan dos tablas a las que les falta todo menos la clave primaria (y
+    que tienen además un índice y una restricción única declarados), para que
+    el mecanismo emita cuanto es capaz de emitir. Nada de lo que emite sale de
+    la forma `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
     """
-    existentes = {
-        tabla.name: {columna.name for columna in tabla.primary_key}
-        for tabla in Base.metadata.tables.values()
-    }
-    sentencias = esquema.alters_faltantes(Base.metadata, existentes)
-    assert sentencias, "el escenario debe generar DDL, si no no prueba nada"
+    metadata = MetaData()
+    Table(
+        "uno",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("texto", String(10)),
+        Column("marca", DateTime(timezone=True), nullable=False,
+               server_default=func.now()),
+    )
+    Table(
+        "dos",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("n", Integer),
+    )
+    sentencias = esquema.alters_faltantes(
+        metadata, {"uno": {"id"}, "dos": {"id"}}
+    ) + esquema.alters_faltantes(Base.metadata, _base_sin_traza())
+    assert len(sentencias) == 3 + len(COLUMNAS_TRAZA)
     for sentencia in sentencias:
         assert sentencia.startswith("ALTER TABLE ")
         assert " ADD COLUMN IF NOT EXISTS " in sentencia
