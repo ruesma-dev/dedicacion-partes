@@ -3,9 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **10 features**, 9 abiertas, 1 terminadas.
-
-En curso: **F-009**.
+Resumen: **10 features**, 8 abiertas, 2 terminadas.
 
 ## Trabajo abierto
 
@@ -18,7 +16,6 @@ En curso: **F-009**.
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-007 | Propagar a arnes-base dos defectos del instalador | 7 | pendiente | estandar | `feature/F-007-propagar-defectos-instalador` |
 | F-008 | Infraestructura y despliegue en Azure | 8 | pendiente | critico | `feature/F-008-infra-azure` |
-| F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | en curso | estandar | `feature/F-009-higiene-coverage-gitignore` |
 | F-010 | Automejoras del arnes propuestas al revisar F-001 | 10 | pendiente | documental | `feature/F-010-automejoras-arnes-reviewer` |
 
 ## Terminadas
@@ -26,6 +23,7 @@ En curso: **F-009**.
 | # | Feature | Prioridad | Rigor |
 |---|---|---|---|
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | estandar |
+| F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
 
@@ -71,12 +69,6 @@ estado **pendiente** · prioridad 8 · rigor `critico` · SDD sí · rama `featu
 
 Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo el patrón de partes (Container Apps, imágenes en acralbaranesdev con tag fechado, secretos en Key Vault por identidad gestionada, Easy Auth en el front), decidir dónde vive la BBDD dedicacion, y escribir el documento del proyecto en azure-apps. El transfer arranca en modo pruebas y solo sale de él con decisión expresa.
 
-### F-009 · Higiene: los artefactos de cobertura no se versionan
-
-estado **en curso** · prioridad 9 · rigor `estandar` · SDD no · rama `feature/F-009-higiene-coverage-gitignore`
-
-Detectado al cerrar F-001. El repositorio versiona seis ficheros generados (.coverage y coverage.json de la raiz, del transfer y del api) que harness/init.sh reescribe en cada ejecucion: el portero ensucia git status cada vez que corre y sube la probabilidad de arrastrar ruido a un commit. Hay que anadirlos a .gitignore y sacarlos del indice con git rm --cached. Como el .gitignore lo deja el instalador del arnes, por la regla de propagacion el mismo arreglo va a arnes-base.
-
 ### F-010 · Automejoras del arnes propuestas al revisar F-001
 
 estado **pendiente** · prioridad 10 · rigor `documental` · SDD no · rama `feature/F-010-automejoras-arnes-reviewer`
@@ -88,3 +80,9 @@ Tres huecos del protocolo que dejo ver la review de F-001, los tres validos para
 estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-001-tests-estados-api`
 
 Calentamiento del circuito. dedicacion-api no tiene un solo test: se crea services/dedicacion-api/tests/ y se cubre domain/estados.py, que es donde vive la regla de control del cuadrante (OK / FALTA / EXCESO / SIN_CARGA). Sirve para validar rama, acceptance, implementer, reviewer y cierre sobre algo pequeño y sin riesgo, y para que el portero empiece a ejecutar de verdad la suite del servicio api.
+
+### F-009 · Higiene: los artefactos de cobertura no se versionan
+
+estado **terminada** · prioridad 9 · rigor `estandar` · SDD no · rama `feature/F-009-higiene-coverage-gitignore`
+
+Detectado al cerrar F-001. El repositorio versiona seis ficheros generados (.coverage y coverage.json de la raiz, del transfer y del api) que harness/init.sh reescribe en cada ejecucion: el portero ensucia git status cada vez que corre y sube la probabilidad de arrastrar ruido a un commit. Hay que anadirlos a .gitignore y sacarlos del indice con git rm --cached. Como el .gitignore lo deja el instalador del arnes, por la regla de propagacion el mismo arreglo va a arnes-base.
