@@ -3,15 +3,12 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **8 features**, 8 abiertas, 0 terminadas.
-
-En curso: **F-001**.
+Resumen: **10 features**, 9 abiertas, 1 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | en curso | estandar | `feature/F-001-tests-estados-api` |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | pendiente | critico | `feature/F-002-reglas-postventa-conflicto` |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | pendiente | critico | `feature/F-003-orm-columnas-sigrid` |
 | F-004 | README del monorepo y arranque local en orden | 4 | pendiente | documental | `feature/F-004-readme-monorepo` |
@@ -19,18 +16,16 @@ En curso: **F-001**.
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-007 | Propagar a arnes-base dos defectos del instalador | 7 | pendiente | estandar | `feature/F-007-propagar-defectos-instalador` |
 | F-008 | Infraestructura y despliegue en Azure | 8 | pendiente | critico | `feature/F-008-infra-azure` |
+| F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | pendiente | estandar | `feature/F-009-higiene-coverage-gitignore` |
+| F-010 | Automejoras del arnes propuestas al revisar F-001 | 10 | pendiente | documental | `feature/F-010-automejoras-arnes-reviewer` |
 
 ## Terminadas
 
-_Todavía no hay features terminadas._
+| # | Feature | Prioridad | Rigor |
+|---|---|---|---|
+| F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | estandar |
 
 ## Detalle
-
-### F-001 · Primera suite de tests de dedicacion-api: la regla del 100 %
-
-estado **en curso** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-001-tests-estados-api`
-
-Calentamiento del circuito. dedicacion-api no tiene un solo test: se crea services/dedicacion-api/tests/ y se cubre domain/estados.py, que es donde vive la regla de control del cuadrante (OK / FALTA / EXCESO / SIN_CARGA). Sirve para validar rama, acceptance, implementer, reviewer y cierre sobre algo pequeño y sin riesgo, y para que el portero empiece a ejecutar de verdad la suite del servicio api.
 
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 
@@ -73,3 +68,21 @@ Detectados el 2026-08-19 instalando el arnés aquí, y valen para cualquier proy
 estado **pendiente** · prioridad 8 · rigor `critico` · SDD sí · rama `feature/F-008-infra-azure`
 
 Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo el patrón de partes (Container Apps, imágenes en acralbaranesdev con tag fechado, secretos en Key Vault por identidad gestionada, Easy Auth en el front), decidir dónde vive la BBDD dedicacion, y escribir el documento del proyecto en azure-apps. El transfer arranca en modo pruebas y solo sale de él con decisión expresa.
+
+### F-009 · Higiene: los artefactos de cobertura no se versionan
+
+estado **pendiente** · prioridad 9 · rigor `estandar` · SDD no · rama `feature/F-009-higiene-coverage-gitignore`
+
+Detectado al cerrar F-001. El repositorio versiona seis ficheros generados (.coverage y coverage.json de la raiz, del transfer y del api) que harness/init.sh reescribe en cada ejecucion: el portero ensucia git status cada vez que corre y sube la probabilidad de arrastrar ruido a un commit. Hay que anadirlos a .gitignore y sacarlos del indice con git rm --cached. Como el .gitignore lo deja el instalador del arnes, por la regla de propagacion el mismo arreglo va a arnes-base.
+
+### F-010 · Automejoras del arnes propuestas al revisar F-001
+
+estado **pendiente** · prioridad 10 · rigor `documental` · SDD no · rama `feature/F-010-automejoras-arnes-reviewer`
+
+Tres huecos del protocolo que dejo ver la review de F-001, los tres validos para cualquier proyecto (van tambien a arnes-base). (1) CHECKPOINTS.md C4 bis no dice que hacer cuando TODA la feature cae en DIRECTORIOS_EXCLUIDOS y salen a la vez cobertura N/A y mutacion 0: la evidencia sustitutiva debe ser una campana de mutacion sobre el fichero de produccion que los tests nuevos cubren, y el reviewer la reproduce. (2) .claude/agents/reviewer.md: cuando el alcance salga vacio, anadir el control positivo (generar mutantes del fichero cubierto y ejecutarlos contra la suite), no solo el control de que el generador funciona. (3) La cache del portero puede ensenar un [OK] de un servicio sin que la suite se haya ejecutado en esa sesion: el protocolo del reviewer debe obligar a lanzarla a mano en ese caso.
+
+### F-001 · Primera suite de tests de dedicacion-api: la regla del 100 %
+
+estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-001-tests-estados-api`
+
+Calentamiento del circuito. dedicacion-api no tiene un solo test: se crea services/dedicacion-api/tests/ y se cubre domain/estados.py, que es donde vive la regla de control del cuadrante (OK / FALTA / EXCESO / SIN_CARGA). Sirve para validar rama, acceptance, implementer, reviewer y cierre sobre algo pequeño y sin riesgo, y para que el portero empiece a ejecutar de verdad la suite del servicio api.
