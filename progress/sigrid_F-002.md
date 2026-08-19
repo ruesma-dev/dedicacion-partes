@@ -46,7 +46,15 @@ izquierda, así que `0656` y `656` son códigos distintos y la obra `0656`
 casa siempre con su partida bajo `CD`. Pero son ruido de presupuesto y
 conviene que Administración sepa que están ahí.
 
-### Las 84 partidas de obra
+### Las 86 partidas de obra
+
+> **Nota (2026-08-19).** Este epígrafe decía «84» mientras el resto del
+> documento decía 86, y lo señaló la review de la Fase 2 (§9.5). El número
+> correcto es **86**, que son las filas listadas abajo. El 84 salió de un
+> conteo intermedio del líder que exigía un límite de palabra tras los
+> dígitos y por tanto dejaba fuera códigos como `0613-B`. Ninguna de las
+> conclusiones cambia: todas son hojas, `cod` y `res` son campos separados, y
+> hay capítulos con código numérico.
 
 | cod | res | hijos | padre |
 |---|---|---|---|

@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **11 features**, 10 abiertas, 1 terminadas.
+Resumen: **12 features**, 11 abiertas, 1 terminadas.
 
 En curso: **F-002**.
 
@@ -21,6 +21,7 @@ En curso: **F-002**.
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | pendiente | estandar | `feature/F-009-higiene-coverage-gitignore` |
 | F-010 | Automejoras del arnes propuestas al revisar F-001 | 10 | pendiente | documental | `feature/F-010-automejoras-arnes-reviewer` |
 | F-011 | Un solo codigo de hora mes por trabajador | 11 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
+| F-012 | El test de la epsilon compartida ata el transfer al monorepo | 12 | pendiente | estandar | `feature/F-012-epsilon-compartida-entre-servicios` |
 
 ## Terminadas
 
@@ -89,6 +90,12 @@ Tres huecos del protocolo que dejo ver la review de F-001, los tres validos para
 estado **pendiente** · prioridad 11 · rigor `estandar` · SDD no · rama `feature/F-011-codigo-hora-mes-unico`
 
 Detectado el 2026-08-19 al revisar el original porcentajes-transfer. Cuando un recurso tiene varios codigos de hora mensual (MENC, MJEFO...), reglas_porcentajes.py:105 elige el PRIMERO POR ORDEN ALFABETICO y de ahi sale el importe mensual (pre) que se escribe en Sigrid. Es una heuristica que nadie ha confirmado y que puede escribir un importe distinto del correcto. Decision del humano: de momento se deja el primero, y se abre esta feature para que la situacion no se de. Dos partes: que el sistema avise en el preflight cuando un recurso tenga mas de un codigo M* vigente (hoy solo lo escribe en el log, donde nadie lo ve), y llevar a Administracion la peticion de que en Sigrid un trabajador solo pueda tener un codigo de hora mes.
+
+### F-012 · El test de la epsilon compartida ata el transfer al monorepo
+
+estado **pendiente** · prioridad 12 · rigor `estandar` · SDD no · rama `feature/F-012-epsilon-compartida-entre-servicios`
+
+Detectado por la review de la Fase 2 de F-002 (observacion 9.4). El test test_f002_r26_la_tolerancia_es_la_del_cuadrante navega con Path(__file__).resolve().parents[3] hasta services/dedicacion-api/domain/estados.py para comprobar que la tolerancia del transfer (0.00005) sigue siendo el equivalente exacto del _EPSILON del cuadrante (0.005 en escala 0-100). La decision es la correcta y NO viola el limite de servicio: no importa codigo ni duplica logica, y sin ese test las dos epsilon se separarian sin que nadie se entere. Pero ata la suite del transfer a la disposicion del monorepo: si algun dia el servicio se extrae a su propio repositorio, el test se cae con un error de ruta en vez de con el mensaje de negocio que lleva escrito. Hay que decidir como se vigila esa invariante entre servicios sin depender de rutas relativas.
 
 ### F-001 · Primera suite de tests de dedicacion-api: la regla del 100 %
 

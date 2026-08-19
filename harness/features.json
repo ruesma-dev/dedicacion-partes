@@ -188,6 +188,21 @@
       "rigor": "estandar",
       "priority": 11,
       "branch": "feature/F-011-codigo-hora-mes-unico"
+    },
+    {
+      "id": "F-012",
+      "title": "El test de la epsilon compartida ata el transfer al monorepo",
+      "description": "Detectado por la review de la Fase 2 de F-002 (observacion 9.4). El test test_f002_r26_la_tolerancia_es_la_del_cuadrante navega con Path(__file__).resolve().parents[3] hasta services/dedicacion-api/domain/estados.py para comprobar que la tolerancia del transfer (0.00005) sigue siendo el equivalente exacto del _EPSILON del cuadrante (0.005 en escala 0-100). La decision es la correcta y NO viola el limite de servicio: no importa codigo ni duplica logica, y sin ese test las dos epsilon se separarian sin que nadie se entere. Pero ata la suite del transfer a la disposicion del monorepo: si algun dia el servicio se extrae a su propio repositorio, el test se cae con un error de ruta en vez de con el mensaje de negocio que lleva escrito. Hay que decidir como se vigila esa invariante entre servicios sin depender de rutas relativas.",
+      "acceptance": [
+        "Esta escrito en docs/ARCHITECTURE.md que las dos tolerancias son la misma magnitud en escalas distintas y por que",
+        "La comprobacion sigue existiendo y falla con un mensaje de negocio, no con un error de ruta, si el fichero no esta donde se espera",
+        "bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 12,
+      "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     }
   ]
 }
