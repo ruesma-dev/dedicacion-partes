@@ -451,6 +451,22 @@ mutable; su conducta la vigilan igualmente `test_f002_pipeline.py` y
    escribiendo otro subagente) y que no debo commitear. Con `--workers 1`
    funciona y los 9 mutantes tardan 12 s.
 
+### 4.4 · Estado del árbol al terminar
+
+`git status` deja tres ficheros **generados y versionados** modificados
+—`coverage.json`, `services/dedicacion-transfer/coverage.json` y
+`services/dedicacion-transfer/.coverage`—, que `bash harness/init.sh`
+reescribe en cada ejecución. **No los he commiteado a propósito**: son
+artefactos, no trabajo de la feature, y meterlos en el diff de una feature de
+rigor crítico es ruido. Es exactamente la avería que describe **F-009** del
+backlog (versionar artefactos de cobertura). Efecto secundario útil: con el
+árbol sucio, la caché de suites de `init.sh` se invalida y la suite del
+transfer se ejecuta de verdad en lugar de salir de caché.
+
+Los otros dos ficheros sin versionar del árbol (`progress/spec_F-003.md` y
+`specs/F-003-orm-columnas-sigrid/`) son de otra sesión y no entran en ningún
+commit de F-002.
+
 ---
 
 ## 5. Verificación de cierre
