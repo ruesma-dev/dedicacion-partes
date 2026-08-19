@@ -5,12 +5,32 @@ trabajo de Sigrid**. Réplica del patrón validado en `partes-transfer`:
 único servicio con la credencial de escritura, contrato
 `preflight` / `ejecutar`, idempotencia por `synckey` y modo pruebas.
 
-## Reglas (Administración, 25/07/2026)
+## Reglas de negocio
 
-- **P1** Solo recursos con código de hora **mensual** (`M*`) en `reshor`.
-- **P2** La línea va SIEMPRE al **último día del mes** (`fec`).
-- **P3** `can` = porcentaje **sobre 1** (40 % -> 0.4); `pre` = importe
-  mensual del recurso; `tot = can × pre`.
+Las reglas **P1, P2 y P3** —qué recursos entran, qué fecha lleva la línea y
+en qué escala viaja el porcentaje— **no se enuncian aquí**. Su única fuente
+normativa es `docs/ARCHITECTURE.md` § Semántica de dominio imprescindible:
+[`#regla-p1`](../../docs/ARCHITECTURE.md#regla-p1),
+[`#regla-p2`](../../docs/ARCHITECTURE.md#regla-p2) y
+[`#regla-p3`](../../docs/ARCHITECTURE.md#regla-p3).
+
+Lo que sí es de este servicio, y por eso se cuenta aquí: la resolución
+automática de la partida (`partida_resolver.py`), el override manual del
+front (`paride` en la línea de entrada, `partida_metodo=manual`) y que el
+preflight devuelva `partidas_obra` / `partidas_postventa` (ide/cod/res) para
+poblar el desplegable.
+
+El criterio de conflicto y la clave que confirma el pisado salen de una sola
+función, `reglas_porcentajes.campos_identidad`
+([`#regla-conflicto`](../../docs/ARCHITECTURE.md#regla-conflicto)).
+
+### P4 y P5 · PENDIENTE · decisión D1/D2 de F-002
+
+> Lo que sigue es el enunciado **heredado**, y se contradice con el de los
+> docstrings. **No es normativo**: la regla buena la fija Administración y
+> se escribirá en `docs/ARCHITECTURE.md` (`#regla-p4` y `#regla-p5`).
+> Hasta entonces, `OBRA_PRUEBAS_FORZAR` se queda a `true`.
+
 - **P4** Si el recurso ya tiene un registro `M*` en ese parte — **aunque
   sea en otro día** — es conflicto; pisar lo sustituye (y corrige la fecha).
 - **P5** PARTIDA de imputación:

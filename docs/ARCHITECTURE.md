@@ -4,10 +4,10 @@
 > Este documento es NORMATIVO: el spec-author diseña contra él y el
 > reviewer rechaza lo que lo incumpla. Si no está aquí, no es un requisito.
 >
-> **Escrito el 2026-08-19 leyendo el código migrado al monorepo.** La
-> sección «Semántica de dominio imprescindible» está PENDIENTE DE VALIDAR
-> por el humano: sale del código y de los README, no de una conversación con
-> Administración, y dos de sus puntos tienen contradicciones señaladas.
+> **Escrito el 2026-08-19 leyendo el código migrado al monorepo.** De la
+> sección «Semántica de dominio imprescindible» quedan **dos puntos sin
+> validar** (el 5, postventa, y el 6, conflicto), marcados
+> `PENDIENTE · decisión D1/D2 de F-002`. El resto está validado.
 
 ## Qué hace este proyecto
 
@@ -112,18 +112,29 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
 ## Semántica de dominio imprescindible
 
-> PENDIENTE DE VALIDACIÓN POR EL HUMANO. Los puntos marcados ⚠ tienen
-> versiones contradictorias en el propio repositorio.
+> **Esta sección es la ÚNICA fuente normativa de las reglas P1-P5.** El
+> README del transfer, los docstrings y las specs **remiten** a las anclas
+> `#regla-p1` … `#regla-p5`, `#regla-conflicto` y `#regla-pruebas`; no
+> vuelven a enunciar la regla con palabras propias. Lo vigila
+> `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
+> falla si alguien la reenuncia fuera de aquí.
+>
+> Los puntos **5** y **6** siguen `PENDIENTE · decisión D1/D2 de F-002`:
+> el repositorio tiene dos versiones enfrentadas de cada uno y la respuesta
+> la tiene Administración (preguntas y consultas de corroboración en
+> `specs/F-002-reglas-postventa-conflicto/requirements.md` §2). Hasta que
+> se cierren no se escribe en producción: `OBRA_PRUEBAS_FORZAR` se queda a
+> `true`. El resto de los puntos sí está validado.
 
-1. **Solo recursos mensuales (P1).** Se registra únicamente el recurso que
+1. <a id="regla-p1"></a>**Solo recursos mensuales (P1).** Se registra únicamente el recurso que
    tenga un código de hora `M*` (`MENC`, `MCAP`, `MJEFO`…) en `reshor`. Es
    el mismo filtro que aplica la sincronización de empleados de la API, y
    por eso lo que se captura y lo que se registra coinciden. Un recurso sin
    `M*` se omite con motivo; no es un error.
-2. **La línea va al último día del mes (P2).** El parte de Sigrid es por
+2. <a id="regla-p2"></a>**La línea va al último día del mes (P2).** El parte de Sigrid es por
    obra y mes natural; la fecha (`fec`) de la línea es siempre el último día
    de ese mes, no el día en que se trabajó ni el de captura.
-3. **El porcentaje viaja sobre 1 (P3).** En PostgreSQL se guarda 0-100
+3. <a id="regla-p3"></a>**El porcentaje viaja sobre 1 (P3).** En PostgreSQL se guarda 0-100
    (`asignacion.porcentaje`, `Numeric(6,2)`); al transfer se manda **dividido
    entre 100** (40 % → `0.4`). En Sigrid, `can` = ese valor sobre 1, `pre` =
    importe mensual del recurso en `reshor`, `tot = can × pre`. Confundir las
@@ -132,25 +143,40 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
    (>100) y `SIN_CARGA` (sin líneas) son estados visibles, no bloqueos: se
    puede guardar un cuadrante incompleto. La comparación usa una épsilon de
    0,005 para no pelearse con los decimales.
-5. **Postventa es una obra, no una marca (P5).** Una asignación con
+5. <a id="regla-p5"></a>**Postventa es una obra, no una marca (P5).** Una asignación con
    `es_postventa` no se escribe en su obra: se escribe en la obra de
    postventa (`POSTVENTA_OBRA_COD`, hoy `POSTV2`) imputando a la partida que
    corresponde a la **obra original** (`0707` → partida `0707 · …`). Sin
    casado, la línea se omite con motivo. Por eso la clave única de
    `asignacion` incluye `es_postventa`: un trabajador puede tener la misma
-   obra dos veces, una normal y otra de postventa. ⚠ El README del transfer
-   dice obra `POSTV2` y habla de *partida*; el docstring de
-   `reglas_porcentajes.py` dice `postventa-2` y habla de *capítulo*. Manda
-   el `.env` (`POSTV2`), pero conviene confirmarlo contra Sigrid.
-6. **Conflicto e idempotencia.** `synckey = "porcentajes:{asignacion_id}"`
+   obra dos veces, una normal y otra de postventa.
+
+   **PENDIENTE · decisión D1/D2 de F-002.** Dos cosas sin cerrar: el
+   **código** de la obra de postventa (el README y el `.env.example` dicen
+   uno, el docstring de `reglas_porcentajes.py` decía otro) y si se imputa a
+   una **partida hoja** o a un **capítulo** con partidas dentro — el código
+   de hoy no elige, porque `resolver_postventa` no filtra por tipo de nodo
+   mientras el desplegable del front sí. Preguntas y consultas de
+   corroboración: `specs/F-002-reglas-postventa-conflicto/requirements.md`
+   §2 (D1). Volcado de lo leído en Sigrid: `progress/sigrid_F-002.md`.
+6. <a id="regla-p4"></a><a id="regla-conflicto"></a>**Conflicto e idempotencia (P4).** `synckey = "porcentajes:{asignacion_id}"`
    (no se cruza con los partes diarios, que usan otro prefijo): reejecutar no
    duplica. Si el recurso ya tiene una línea `M*` en ese parte —**aunque sea
    en otro día**— es conflicto y hay que confirmar el pisado, que sustituye
-   la línea y de paso corrige la fecha. ⚠ El README dice que en obra normal
-   choca aunque la partida sea distinta; el docstring de P4 exige «la misma
-   partida». Hay que fijar cuál es la regla buena antes de escribir en
-   producción.
-7. **Modo pruebas por defecto.** `OBRA_PRUEBAS_FORZAR=true` desvía TODA
+   la línea y de paso corrige la fecha.
+
+   El criterio de choque y la clave del conflicto salen de **una sola
+   función**, `application/services/reglas_porcentajes.campos_identidad`:
+   ahí y en ningún otro sitio se decide qué es «la misma línea».
+
+   **PENDIENTE · decisión D1/D2 de F-002.** Sin cerrar: si en la obra normal
+   una línea `M*` previa del recurso choca **aunque tenga otra partida**
+   (versión del README, que es lo que hace el código hoy) o solo cuando la
+   partida coincide (versión de los docstrings). Los dos riesgos son reales
+   y de signo opuesto: la primera borra un apunte manual de Administración,
+   la segunda duplica coste de obra. Pregunta y consultas de corroboración:
+   `specs/F-002-reglas-postventa-conflicto/requirements.md` §2 (D2).
+7. <a id="regla-pruebas"></a>**Modo pruebas por defecto.** `OBRA_PRUEBAS_FORZAR=true` desvía TODA
    escritura a la obra `0404` con la marca `PRUEBA-PORC` en `tex`. El
    capítulo de postventa se sigue resolviendo contra la obra de postventa
    real, para que la prueba valide el casado.

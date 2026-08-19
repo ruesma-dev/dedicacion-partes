@@ -161,7 +161,8 @@ class RegistroPipeline:
         # Partida de imputación por línea: el override manual del front
         # manda; si no, la NORMAL se casa con la partida del recurso en el
         # presupuesto de la obra ORIGEN (patrón de partes: rol/categoría y
-        # nombre), y la POSTVENTA ya trae el capítulo de POSTV2.
+        # nombre), y la POSTVENTA ya trae el suyo de la obra de postventa
+        # (`POSTVENTA_OBRA_COD`).
         nodos_origen = None
         por_id = {l.registro_id: l for l in lineas}
         for a in acciones:

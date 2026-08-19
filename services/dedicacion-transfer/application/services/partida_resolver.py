@@ -6,9 +6,9 @@
   según la categoría) la partida cuyo rol casa con la CATEGORÍA del
   trabajador y, si la descripción incluye su NOMBRE, esa gana
   (partida_matcher, copiado de partes-persistencia).
-- POSTVENTA: la obra de postventa (POSTV2) no imputa a una partida
-  concreta del recurso, sino a la partida cuyo código ES el código de la
-  obra original (p. ej. postventa de la 0707 -> partida "0707 · …").
+- POSTVENTA: la obra de postventa (`POSTVENTA_OBRA_COD`) no imputa a una
+  partida concreta del recurso, sino a la partida cuyo código ES el código
+  de la obra original (p. ej. postventa de la 0707 -> partida "0707 · …").
 La aplicación propone; el usuario puede editar la partida en el front
 (override `paride` en la línea de entrada).
 """
@@ -48,8 +48,9 @@ def resolver_postventa(
     nodos: dict[int, PartidaNodo], obra_cod: Optional[str],
     obra_nombre: Optional[str],
 ) -> Optional[PartidaNodo]:
-    """Partida de POSTV2 cuyo código es el de la obra original:
-    exacto > empieza por > código en la descripción > nombre."""
+    """Partida de la obra de postventa (`POSTVENTA_OBRA_COD`) cuyo código es
+    el de la obra original: exacto > empieza por > código en la descripción
+    > nombre."""
     cod = tm.normalize_code(obra_cod)
     hojas = [n for n in nodos.values() if n.activa]
     if cod:

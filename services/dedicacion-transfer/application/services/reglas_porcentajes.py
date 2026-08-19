@@ -12,9 +12,13 @@ Definidas por Administración (hilo de porcentajes, 25/07/2026):
       partida en ese parte —aunque sea en OTRO día— es un conflicto: pisar
       lo sustituye (y de paso corrige la fecha).
   P5. La POSTVENTA se registra en la OBRA DE POSTVENTA (config
-      POSTVENTA_OBRA_COD, hoy 'postventa-2'), imputando al CAPÍTULO
-      (obrparpar) que corresponde a la obra original. Sin capítulo casado
-      no se escribe (motivo claro en el preflight).
+      POSTVENTA_OBRA_COD; el valor vive en el .env, no aquí), imputando al
+      CAPÍTULO (obrparpar) que corresponde a la obra original. Sin capítulo
+      casado no se escribe (motivo claro en el preflight).
+
+P4 y P5 están PENDIENTE · decisión D1/D2 de F-002: lo de arriba es el
+enunciado heredado y contradice al del README. La regla buena la fija
+Administración y se escribirá en docs/ARCHITECTURE.md (#regla-p4, #regla-p5).
 """
 from __future__ import annotations
 
