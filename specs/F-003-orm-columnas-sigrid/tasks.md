@@ -17,7 +17,7 @@ Un commit por tarea: `F-003 Tn: descripción`.
 
 ## Fase 1 — RED
 
-- [ ] **T1**: Crear `services/dedicacion-api/tests/test_f003_esquema.py` con
+- [x] **T1**: Crear `services/dedicacion-api/tests/test_f003_esquema.py` con
   los tests de R1, R5, R6, R8-R13 y R17 escritos contra el API que todavía no
   existe (`infrastructure/db/esquema.py`) y contra las seis columnas que aún
   no están en el ORM. Nombres `test_f003_rN_*`. Sin red ni BBDD.
@@ -29,13 +29,13 @@ Un commit por tarea: `F-003 Tn: descripción`.
 
 ## Fase 2 — El ORM pasa a ser la fuente de verdad
 
-- [ ] **T2**: Declarar en `AsignacionORM` (`infrastructure/db/orm_models.py`)
+- [x] **T2**: Declarar en `AsignacionORM` (`infrastructure/db/orm_models.py`)
   las seis columnas `sigrid_*` con los tipos y la nulabilidad de la tabla de
   `requirements.md` R5, más el import de `String`. Nada más en ese fichero.
   **Verificación:** `pytest tests/test_f003_esquema.py -q -k "r1 or r5 or r6"`
   en verde; los tests del mecanismo siguen rojos.
 
-- [ ] **T3**: Crear `infrastructure/db/esquema.py` con
+- [x] **T3**: Crear `infrastructure/db/esquema.py` con
   `EsquemaNoDerivable`, `ddl_add_column`, `alters_faltantes`,
   `columnas_existentes` y `sincronizar_esquema`, según `design.md` §1. Las dos
   primeras y `alters_faltantes` son puras; el docstring del módulo declara el
@@ -43,7 +43,7 @@ Un commit por tarea: `F-003 Tn: descripción`.
   restricciones).
   **Verificación:** `pytest tests/test_f003_esquema.py -q` entero en verde.
 
-- [ ] **T4**: Cambiar `main.py` para que llame a `sincronizar_esquema(engine)`
+- [x] **T4**: Cambiar `main.py` para que llame a `sincronizar_esquema(engine)`
   en lugar de `Base.metadata.create_all(engine)` y registre en el log cuántas
   sentencias aplicó.
   **Verificación:** `pytest tests -q` en verde y
@@ -52,7 +52,7 @@ Un commit por tarea: `F-003 Tn: descripción`.
 
 ## Fase 3 — Retirar la segunda verdad
 
-- [ ] **T5**: En `application/registro_sigrid.py`: borrar `_ALTERS` y el bucle
+- [x] **T5**: En `application/registro_sigrid.py`: borrar `_ALTERS` y el bucle
   DDL del constructor, borrar el import de `text`, reescribir `_trazar` con
   `update(AsignacionORM)` (`is_distinct_from` para la rama
   `ya_registradas`) y truncar el usuario a 64 (R7). Sin tocar `_payloads`,
@@ -62,7 +62,7 @@ Un commit por tarea: `F-003 Tn: descripción`.
   el de R4 (construir `RegistroSigrid` no ejecuta ninguna sentencia) y los de
   R7/R14 sobre las tres ramas de `_trazar`.
 
-- [ ] **T6**: Actualizar la sección «SQL» de `docs/CONVENTIONS.md` (la frase
+- [x] **T6**: Actualizar la sección «SQL» de `docs/CONVENTIONS.md` (la frase
   que cita `_ALTERS` como contraejemplo «que está en el backlog» queda falsa)
   para que apunte a `infrastructure/db/esquema.py`, y añadir al `README` de
   `services/dedicacion-api` la nota de que el esquema se pone al día **solo**
@@ -72,7 +72,7 @@ Un commit por tarea: `F-003 Tn: descripción`.
 
 ## Fase 4 — Puertas de rigor `critico`
 
-- [ ] **T7**: Campaña de mutación.
+- [x] **T7**: Campaña de mutación.
   **Verificación:** `python -m harness.mutacion --feature F-003` con
   **cero supervivientes**, informe en `progress/mutacion_F-003.md`. Cada
   superviviente exige un test nuevo o una justificación escrita para el
@@ -80,7 +80,7 @@ Un commit por tarea: `F-003 Tn: descripción`.
   `ALTER` y los cortes `[:300]` / `[:64]`, todos ellos con test de cadena
   exacta y de longitud límite.
 
-- [ ] **T8**: **Verificación MANUAL (humano)** — arranque contra la base real.
+- [ ] **T8** (PENDIENTE, la ejecuta el humano): **Verificación MANUAL (humano)** — arranque contra la base real.
   No la ejecuta ningún agente. Comandos exactos, desde
   `services/dedicacion-api` y con el `.env` local (`PG_HOST=localhost`):
 
@@ -104,7 +104,7 @@ Un commit por tarea: `F-003 Tn: descripción`.
   `0 sentencias` de DDL aplicadas, y el recuento de filas no cambia.
   El resultado real se anota en `progress/current.md`.
 
-- [ ] **T9**: Ejecutar `bash harness/init.sh` en verde (incluye la suite de
+- [x] **T9**: Ejecutar `bash harness/init.sh` en verde (incluye la suite de
   los tres servicios y la puerta de cobertura de las líneas cambiadas,
   umbral 80 %).
   **Verificación:** exit code 0 y `[OK]` en la puerta de cobertura.
