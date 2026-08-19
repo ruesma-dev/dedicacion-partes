@@ -24,7 +24,7 @@
         "Se cubre resumir(): un trabajador de baja y sin líneas no cuenta en el resumen",
         "bash harness/init.sh en verde, con la línea 'servicio api: pytest en verde'"
       ],
-      "status": "pending",
+      "status": "done",
       "sdd": false,
       "rigor": "estandar",
       "priority": 1,
@@ -139,6 +139,38 @@
       "rigor": "critico",
       "priority": 8,
       "branch": "feature/F-008-infra-azure"
+    },
+    {
+      "id": "F-009",
+      "title": "Higiene: los artefactos de cobertura no se versionan",
+      "description": "Detectado al cerrar F-001. El repositorio versiona seis ficheros generados (.coverage y coverage.json de la raiz, del transfer y del api) que harness/init.sh reescribe en cada ejecucion: el portero ensucia git status cada vez que corre y sube la probabilidad de arrastrar ruido a un commit. Hay que anadirlos a .gitignore y sacarlos del indice con git rm --cached. Como el .gitignore lo deja el instalador del arnes, por la regla de propagacion el mismo arreglo va a arnes-base.",
+      "acceptance": [
+        ".coverage y coverage.json (raiz y los tres servicios) estan en .gitignore y fuera del indice",
+        "Tras ejecutar bash harness/init.sh dos veces seguidas, git status --porcelain sale vacio",
+        "bash harness/init.sh en verde",
+        "El mismo cambio queda portado a arnes-base o, si no procede, escrito por que no"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 9,
+      "branch": "feature/F-009-higiene-coverage-gitignore"
+    },
+    {
+      "id": "F-010",
+      "title": "Automejoras del arnes propuestas al revisar F-001",
+      "description": "Tres huecos del protocolo que dejo ver la review de F-001, los tres validos para cualquier proyecto (van tambien a arnes-base). (1) CHECKPOINTS.md C4 bis no dice que hacer cuando TODA la feature cae en DIRECTORIOS_EXCLUIDOS y salen a la vez cobertura N/A y mutacion 0: la evidencia sustitutiva debe ser una campana de mutacion sobre el fichero de produccion que los tests nuevos cubren, y el reviewer la reproduce. (2) .claude/agents/reviewer.md: cuando el alcance salga vacio, anadir el control positivo (generar mutantes del fichero cubierto y ejecutarlos contra la suite), no solo el control de que el generador funciona. (3) La cache del portero puede ensenar un [OK] de un servicio sin que la suite se haya ejecutado en esa sesion: el protocolo del reviewer debe obligar a lanzarla a mano en ese caso.",
+      "acceptance": [
+        "CHECKPOINTS.md C4 bis cubre el caso de alcance de produccion vacio",
+        ".claude/agents/reviewer.md pide el control positivo y lanzar a mano la suite que venga de cache",
+        "Las tres mejoras estan portadas a arnes-base",
+        "bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "documental",
+      "priority": 10,
+      "branch": "feature/F-010-automejoras-arnes-reviewer"
     }
   ]
 }
