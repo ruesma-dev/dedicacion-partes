@@ -18,17 +18,25 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.reglas_porcentajes import (
-    EPSILON_CAPACIDAD, LIMITE_CAPACIDAD, MOTIVO_SOBRECARGA,
-    PREFIJO_CLAVE_SOBRECARGA, clave_conflicto, clave_sobrecarga,
-    es_linea_mensual, evaluar_capacidad,
+    EPSILON_CAPACIDAD,
+    LIMITE_CAPACIDAD,
+    MOTIVO_SOBRECARGA,
+    PREFIJO_CLAVE_SOBRECARGA,
+    clave_conflicto,
+    clave_sobrecarga,
+    es_linea_mensual,
+    evaluar_capacidad,
 )
 from domain.models.registro_models import AccionLinea, ObraEntrada
 
 from tests.conftest import (
-    OBRA_ORIGEN, ClienteFalso, SettingsFalso, linea, linea_previa,
+    OBRA_ORIGEN,
+    ClienteFalso,
+    SettingsFalso,
+    linea,
+    linea_previa,
 )
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
@@ -267,18 +275,26 @@ def test_f002_r26_la_tolerancia_decide_el_borde(extra, avisa):
 
 
 def test_f002_r26_el_borde_exacto_de_la_tolerancia_no_existe():
-    """R26 · Documenta por qué la comparación es `>` y no `>=`, y por qué da
+    """R26 · Demuestra por qué la comparación es `>` y no `>=`, y por qué da
     igual: en coma flotante de doble precisión **no existe** un caso con
     `exceso == EPSILON_CAPACIDAD`.
 
-    Para un `total` entre 1 y 2 la resta `total - 1.0` es exacta y solo
-    puede dar múltiplos del ULP de esa franja (2⁻⁵², ~2,2e-16); el `double`
-    más cercano a 0,00005 no lo es. El `>=` es, por tanto, una mutación
-    equivalente, y esto lo deja escrito en un test en vez de en un comentario
-    que nadie comprueba.
+    `exceso = total - 1.0`. Para `total` en `[1, 2)` esa resta es **exacta**
+    (Sterbenz), así que su resultado solo puede ser un múltiplo del ULP de
+    esa franja, `2⁻⁵²`. La demostración es, por tanto, aritmética exacta y no
+    un muestreo: se comprueba con `Fraction` —el valor racional EXACTO del
+    `double`— que 0,00005 **no** es múltiplo de `2⁻⁵²`, para todo el rango de
+    una vez. Un barrido no serviría: el `k` que haría falta ronda 2,25e11.
+
+    Para `total ≥ 2` el exceso es ≥ 1, muy por encima de la épsilon, y las
+    dos comparaciones responden lo mismo.
     """
-    alcanzables = {(1.0 + k * 2.0 ** -52) - 1.0 for k in range(1, 2000)}
-    assert EPSILON_CAPACIDAD not in alcanzables
+    from fractions import Fraction
+
+    ulp = Fraction(1, 2 ** 52)
+    assert Fraction(EPSILON_CAPACIDAD) % ulp != 0
+
+    # Y el hecho observable que se sigue de lo anterior.
     assert (1.0 + EPSILON_CAPACIDAD) - 1.0 != EPSILON_CAPACIDAD
 
 

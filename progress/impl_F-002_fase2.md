@@ -607,3 +607,88 @@ F-002:     aseo de lint en los tests nuevos
 ```
 
 Ningún `git push`, ningún PR, ningún commit en `dev` ni en `main`.
+
+---
+
+## 10. Cierre de las dos observaciones del reviewer (post-APROBADO)
+
+La Fase 2 se aprobó con dos observaciones **no bloqueantes**
+(`progress/review_F-002_fase2.md` §9.1 y §9.2). Se cierran aquí, en la misma
+rama, sin tocar nada más de lo aprobado.
+
+### 10.1 · El test del mutante equivalente no demostraba lo que decía
+
+`test_f002_r26_el_borde_exacto_de_la_tolerancia_no_existe` abría con un
+barrido:
+
+```python
+alcanzables = {(1.0 + k * 2.0 ** -52) - 1.0 for k in range(1, 2000)}
+assert EPSILON_CAPACIDAD not in alcanzables
+```
+
+**El reviewer tiene razón y el fallo es mío.** Con `k < 2000` el conjunto
+llega como mucho a `4.44e-13`, unas cinco millones de veces por debajo de la
+épsilon (`5e-5`, que cae en `k ≈ 2.25e11`). Esa aserción **no podía fallar
+aunque la épsilon fuera alcanzable**: es exactamente el vicio que yo mismo
+denuncio en la §4.1 de este informe —un test que pasa por la razón que no
+es— y encima en el sitio donde más daño hace, porque es la prueba que
+sostiene la única excepción de la campaña de mutación.
+
+La conclusión sigue siendo cierta (el reviewer la verificó por su cuenta);
+lo que estaba mal era la prueba. Se sustituye el muestreo por la
+demostración **exacta y general**, que además cabe en dos líneas:
+
+```python
+ulp = Fraction(1, 2 ** 52)
+assert Fraction(EPSILON_CAPACIDAD) % ulp != 0
+```
+
+`Fraction(float)` da el valor racional **exacto** del `double`, así que esto
+no muestrea nada: comprueba para todo el rango de una vez que 0,00005 no es
+múltiplo del ULP de la franja `[1, 2)`, que es lo único que `total - 1.0`
+puede producir. Comprobado a mano: el resto vale
+`17197/147573952589676412928`, distinto de cero.
+
+La segunda aserción, `(1.0 + EPSILON) - 1.0 != EPSILON`, **se queda**: es un
+hecho observable y es el corolario práctico de la anterior. El docstring se
+reescribe para decir exactamente lo que el test prueba, y por qué un barrido
+no serviría.
+
+El análisis de `progress/mutacion_F-002.md` no cambia: su razonamiento ya era
+el correcto; lo que se ha arreglado es el test que lo respalda.
+
+### 10.2 · `I001` en los dos ficheros de test nuevos
+
+```
+python -m ruff check --select I001 --fix \
+    services/dedicacion-transfer/tests/test_f002_capacidad.py \
+    services/dedicacion-transfer/tests/test_f002_postventa.py
+```
+
+Se acota a `--select I001` **a propósito**: un `--fix` a secas habría tocado
+también los tres `B009`, que el reviewer declara justificados y cuyo cambio
+empeoraría el código (son los `getattr` de los atributos que el preflight
+adjunta con `setattr`). El `C408` tampoco se toca.
+
+`ruff` deja los imports en su formato canónico —uno por línea—, que difiere
+del estilo compacto escrito a mano en el resto de la suite. Es inevitable:
+el estilo compacto es justo lo que `I001` marca, así que no hay forma de
+satisfacer la regla conservándolo. Los otros cuatro ficheros de test siguen
+con su `I001` de siempre; no se tocan, porque no son de esta feature.
+
+**Recuento medido: 180 → 178 avisos** (`python -m ruff check .` desde la
+raíz, contando líneas `fichero:línea:col:`). En los dos ficheros solo quedan
+los tres `B009` y el `C408` justificados.
+
+### 10.3 · Verificación de este cierre
+
+- `python -m pytest tests -q` en `services/dedicacion-transfer`:
+  **187 passed** en 0,66 s (mismo número que antes: no se añade ni se quita
+  ningún test, se corrige el cuerpo de uno).
+- `bash harness/init.sh`: en verde, con la puerta de cobertura pasando.
+- `ruff`: 178 avisos, dos menos.
+
+La campaña de mutación **no se relanza**: ninguna línea de producción ha
+cambiado en este cierre, solo el cuerpo de un test y el orden de dos bloques
+de imports. Su resultado (34 mutantes, 33 muertos, 1 equivalente justificado)
+sigue siendo el del árbol actual.

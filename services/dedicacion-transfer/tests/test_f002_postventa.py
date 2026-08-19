@@ -18,17 +18,21 @@ Sin red ni BBDD: todo sale de las fixtures de `conftest.py`.
 from __future__ import annotations
 
 import pytest
-
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.partida_catalog import partidas_hoja
 from application.services.partida_resolver import (
-    construir_catalogo, resolver_postventa,
+    construir_catalogo,
+    resolver_postventa,
 )
 from application.services.reglas_porcentajes import MOTIVO_PARTIDA_PV_NO_HOJA
 from domain.models.registro_models import ObraEntrada
 
 from tests.conftest import (
-    OBRA_ORIGEN, PRESUPUESTOS_PV, ClienteFalso, SettingsFalso, linea,
+    OBRA_ORIGEN,
+    PRESUPUESTOS_PV,
+    ClienteFalso,
+    SettingsFalso,
+    linea,
 )
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
