@@ -343,3 +343,11 @@ pero **nadie los ha ejecutado contra la base**.
   sus gemelos en `services/dedicacion-api/`) quedan modificados en el árbol
   porque `init.sh` los reescribe. **No se han commiteado**: no son trabajo de
   esta feature. Es la avería F-009 del backlog.
+- **Ojo, líder: el árbol trae más cambios sin commitear que no son míos.**
+  Durante esta sesión aparecieron, de otra mano, una feature **F-011** nueva en
+  `harness/features.json` y el fichero `progress/sigrid_F-002.md`; `BACKLOG.md`
+  quedó modificado porque `init.sh` lo regenera desde ese JSON. Los he dejado
+  **sin tocar y sin commitear**: `tasks.md` me prohíbe expresamente tocar
+  `harness/features.json` y `progress/current.md`. También sigue ahí, de antes,
+  `progress/explore_transfer_original.md` sin versionar. Al cerrar la feature,
+  revísalos aparte del diff de F-003.
