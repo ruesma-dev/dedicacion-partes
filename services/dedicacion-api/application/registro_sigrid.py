@@ -11,7 +11,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from sqlalchemy import select, text
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from infrastructure.db.orm_models import (
@@ -21,16 +21,11 @@ from infrastructure.transfer.transfer_client import TransferClient
 
 logger = logging.getLogger(__name__)
 
-_ALTERS = [
-    "ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS sigrid_estado VARCHAR(16)",
-    "ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS sigrid_parte_cod VARCHAR(24)",
-    "ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS sigrid_hmores_ide INTEGER",
-    "ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS sigrid_motivo VARCHAR(300)",
-    "ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS "
-    "sigrid_registrado_at_utc TIMESTAMPTZ",
-    "ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS "
-    "sigrid_registrado_by VARCHAR(64)",
-]
+#: Longitudes de las columnas de traza, declaradas en `orm_models.py`. Lo que
+#: no quepa se corta antes de escribirlo: un texto de más no puede tumbar la
+#: traza de un registro que en Sigrid YA se hizo.
+_MAX_MOTIVO = 300
+_MAX_USUARIO = 64
 
 
 class RegistroSigrid:
@@ -38,10 +33,6 @@ class RegistroSigrid:
                  transfer: TransferClient) -> None:
         self._sf = session_factory
         self._transfer = transfer
-        with self._sf() as s:
-            for stmt in _ALTERS:
-                s.execute(text(stmt))
-            s.commit()
 
     # ------------------------------------------------------------- #
     def _payloads(self, s: Session, anio: int, mes: int,
@@ -112,25 +103,38 @@ class RegistroSigrid:
                 else True, "obras": resultados}
 
     def _trazar(self, r: dict, usuario: str) -> None:
+        """Persiste en la asignación qué hizo Sigrid con ella.
+
+        Las sentencias se construyen con el ORM (`update(AsignacionORM)`), no
+        con SQL crudo: un nombre de columna mal escrito falla al importar, no
+        en producción contra la base.
+        """
         ahora = datetime.now(timezone.utc)
+        quien = (usuario or "")[:_MAX_USUARIO]
         with self._sf() as s:
             for e in r.get("escritas", []):
-                s.execute(text(
-                    "UPDATE asignacion SET sigrid_estado='registrado', "
-                    "sigrid_parte_cod=:p, sigrid_hmores_ide=:h, "
-                    "sigrid_motivo=NULL, sigrid_registrado_at_utc=:t, "
-                    "sigrid_registrado_by=:u WHERE id=:i"),
-                    {"p": e.get("parte_cod"), "h": e.get("hmores_ide"),
-                     "t": ahora, "u": usuario, "i": e["registro_id"]})
+                s.execute(
+                    update(AsignacionORM)
+                    .where(AsignacionORM.id == e["registro_id"])
+                    .values(sigrid_estado="registrado",
+                            sigrid_parte_cod=e.get("parte_cod"),
+                            sigrid_hmores_ide=e.get("hmores_ide"),
+                            sigrid_motivo=None,
+                            sigrid_registrado_at_utc=ahora,
+                            sigrid_registrado_by=quien))
             for rid in r.get("ya_registradas", []):
-                s.execute(text(
-                    "UPDATE asignacion SET sigrid_estado='registrado' "
-                    "WHERE id=:i AND sigrid_estado IS DISTINCT FROM "
-                    "'registrado'"), {"i": rid})
+                # Solo asciende el estado, y solo si aún no era 'registrado':
+                # no se pisa la marca de tiempo de quien lo registró de verdad.
+                s.execute(
+                    update(AsignacionORM)
+                    .where(AsignacionORM.id == rid,
+                           AsignacionORM.sigrid_estado.is_distinct_from(
+                               "registrado"))
+                    .values(sigrid_estado="registrado"))
             for o in r.get("omitidas", []):
-                s.execute(text(
-                    "UPDATE asignacion SET sigrid_estado='omitido', "
-                    "sigrid_motivo=:m WHERE id=:i"),
-                    {"m": (o.get("motivo") or "")[:300],
-                     "i": o["registro_id"]})
+                s.execute(
+                    update(AsignacionORM)
+                    .where(AsignacionORM.id == o["registro_id"])
+                    .values(sigrid_estado="omitido",
+                            sigrid_motivo=(o.get("motivo") or "")[:_MAX_MOTIVO]))
             s.commit()

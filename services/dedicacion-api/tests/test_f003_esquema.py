@@ -24,15 +24,15 @@ from __future__ import annotations
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import pytest
+from application import registro_sigrid
+from application.registro_sigrid import RegistroSigrid
+from infrastructure.db.orm_models import AsignacionORM, Base
 from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, func
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.schema import CreateColumn
-
-from application.registro_sigrid import RegistroSigrid
-from infrastructure.db.orm_models import AsignacionORM, Base
 
 RAIZ_SERVICIO = Path(__file__).resolve().parents[1]
 FUENTE_REGISTRO = RAIZ_SERVICIO / "application" / "registro_sigrid.py"
@@ -87,7 +87,7 @@ class _SesionFalsa:
         self.registro = registro
         self.commits = 0
 
-    def __enter__(self) -> "_SesionFalsa":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *_excepcion: object) -> bool:
@@ -288,10 +288,10 @@ def test_f003_r10_se_emite_una_sentencia_por_columna_faltante(
     existentes = _base_al_dia()
     existentes["asignacion"] -= {"sigrid_motivo", "sigrid_registrado_by"}
     assert esquema.alters_faltantes(Base.metadata, existentes) == [
-        "ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS "
-        "sigrid_motivo VARCHAR(300)",
-        "ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS "
-        "sigrid_registrado_by VARCHAR(64)",
+        ("ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS "
+         "sigrid_motivo VARCHAR(300)"),
+        ("ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS "
+         "sigrid_registrado_by VARCHAR(64)"),
     ]
 
 
@@ -337,8 +337,8 @@ def test_f003_r12_columna_not_null_con_default_si_se_puede_anadir(
         Column("obligatoria", String(8), nullable=False, server_default="x"),
     )
     assert esquema.alters_faltantes(metadata, {"asignacion": {"id"}}) == [
-        "ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS "
-        "obligatoria VARCHAR(8) DEFAULT 'x' NOT NULL"
+        ("ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS "
+         "obligatoria VARCHAR(8) DEFAULT 'x' NOT NULL"),
     ]
 
 
@@ -418,7 +418,7 @@ def test_f003_r4_sincronizar_esquema_crea_tablas_antes_de_inspeccionar(
     ejecutadas: list[str] = []
 
     class _Conexion:
-        def __enter__(self) -> "_Conexion":
+        def __enter__(self) -> Self:
             return self
 
         def __exit__(self, *_excepcion: object) -> bool:
@@ -459,7 +459,7 @@ def test_f003_r9_sincronizar_esquema_no_ejecuta_nada_si_no_falta_nada(
     ejecutadas: list[str] = []
 
     class _Conexion:
-        def __enter__(self) -> "_Conexion":
+        def __enter__(self) -> Self:
             return self
 
         def __exit__(self, *_excepcion: object) -> bool:
@@ -643,13 +643,17 @@ def test_f003_r5_el_parte_cod_no_se_trunca() -> None:
 
 def test_f003_r5_los_recortes_coinciden_con_las_longitudes_del_orm() -> None:
     """Cierra el círculo: los cortes de `_trazar` no son números sueltos, son
-    la longitud de la columna. Si alguien cambia el `VARCHAR`, esto avisa."""
+    la longitud que declara la columna. Si alguien cambia el `VARCHAR` sin
+    cambiar el corte (o al revés), esto avisa."""
     columnas = AsignacionORM.__table__.columns
-    assert columnas["sigrid_motivo"].type.length == 300
-    assert columnas["sigrid_registrado_by"].type.length == 64
-    fuente = FUENTE_REGISTRO.read_text(encoding="utf-8")
-    assert "[:300]" in fuente
-    assert "[:64]" in fuente
+    assert registro_sigrid._MAX_MOTIVO == columnas["sigrid_motivo"].type.length
+    assert (
+        registro_sigrid._MAX_USUARIO
+        == columnas["sigrid_registrado_by"].type.length
+    )
+    # Y las longitudes son las de R5, no cualesquiera dos iguales entre sí.
+    assert registro_sigrid._MAX_MOTIVO == 300
+    assert registro_sigrid._MAX_USUARIO == 64
 
 
 def test_f003_r3_el_ddl_derivado_usa_el_compilador_de_sqlalchemy(
