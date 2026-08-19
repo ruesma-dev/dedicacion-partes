@@ -1,20 +1,27 @@
 # application/pipelines/registro_pipeline.py
 """Pipeline de registro de PORCENTAJES en los partes de trabajo de Sigrid.
 
+Orquesta las reglas; no las enuncia. La fuente normativa es
+`docs/ARCHITECTURE.md` § Semántica de dominio imprescindible.
+
 Pasos (el preflight ejecuta 1-8; la escritura, 1-10):
 
   1. Resolver los DESTINOS: la obra normal (en pruebas, la de pruebas) y,
-     si hay líneas de postventa, la OBRA DE POSTVENTA con el CAPÍTULO
-     (obrparpar) que corresponde a la obra original.
+     si hay líneas de postventa, la obra de postventa con su PARTIDA
+     (ARCHITECTURE.md#regla-p5).
   2. Resolver el RECURSO de cada empleado (res.conide) si no viene dado:
      se elige el recurso con código mensual M*; a igualdad, el más
      reciente (ide mayor).
   3. Cargar los tipos de hora de los recursos implicados (reshor).
-  4. Aplicar las REGLAS (solo M*, % sobre 1, postventa -> capítulo).
+  4. Aplicar las REGLAS de la línea (ARCHITECTURE.md#regla-p1 … #regla-p3,
+     #regla-p5).
   5. Localizar el parte de cada DESTINO+MES; proponer código si no existe.
   6. Idempotencia por synckey ('porcentajes:{id}') -> ya_registrado.
-  7. CONFLICTOS: línea(s) M* del recurso con el mismo código Y la misma
-     partida en el parte, EN CUALQUIER DÍA del mes -> confirmar pisado.
+  7. CONFLICTOS de pisado, por identidad de la línea
+     (ARCHITECTURE.md#regla-conflicto) -> confirmar pisado.
+  7 bis. CONFLICTOS de sobrecarga, por jornada del recurso en el parte
+     (ARCHITECTURE.md#regla-capacidad) -> confirmar escritura. Van DESPUÉS
+     de los de pisado: su cifra ya presupone que el pisado ocurre.
   8. (fin del preflight)
   9. Crear los partes que falten (con + hmo, releer el ide).
  10. Borrar las pisadas confirmadas + insertar las nuevas (por lotes).

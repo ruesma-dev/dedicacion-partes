@@ -100,7 +100,7 @@ Un commit por tarea: `F-002 Tn: descripción`.
   presente y con formato). Fase RED: el test está hoy en `xfail(strict=True)`;
   al pasar, quitar la marca.
 
-- [ ] **T8**: Cerrar la fuente única de P4 y P5. En `docs/ARCHITECTURE.md`:
+- [x] **T8**: Cerrar la fuente única de P4 y P5. En `docs/ARCHITECTURE.md`:
   - **punto 6** (`#regla-p4` / `#regla-conflicto`) definitivo con **solo la
     Regla A** (identidad = recurso + mes + código de hora + partida, en obra
     normal y en postventa) más la idempotencia por `synckey`, con su línea de

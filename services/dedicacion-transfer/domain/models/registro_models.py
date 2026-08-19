@@ -1,12 +1,15 @@
 # domain/models/registro_models.py
 """Modelos del registro de la dedicación mensual (porcentajes) en Sigrid.
 
-Una línea porcentual en el parte de trabajo (hmores) va SIEMPRE al último
-día del mes, con el código de hora MENSUAL (M*) del recurso, can = el
-porcentaje sobre 1 (40 % -> 0.4) y pre = el importe mensual del recurso en
-reshor. La identidad de la línea en el parte es recurso + mes + código:
-no hay día, por lo que un registro M* del mismo recurso y mes en OTRO día
-también choca (y pisar lo corrige).
+Estructuras de datos del proceso: qué entra, qué hay ya en el parte y qué
+se propone hacer. No deciden nada; las reglas que las gobiernan viven en
+`docs/ARCHITECTURE.md` § Semántica de dominio imprescindible:
+
+  - la forma de la línea que se escribe: ARCHITECTURE.md#regla-p2 y
+    ARCHITECTURE.md#regla-p3;
+  - cuándo dos líneas del parte son la MISMA:
+    ARCHITECTURE.md#regla-conflicto;
+  - cuánta jornada admite un parte: ARCHITECTURE.md#regla-capacidad.
 """
 from __future__ import annotations
 

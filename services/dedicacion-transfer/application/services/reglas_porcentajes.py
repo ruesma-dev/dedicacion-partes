@@ -1,24 +1,27 @@
 # application/services/reglas_porcentajes.py
 """Reglas de negocio del registro de porcentajes en Sigrid.
 
-Definidas por Administración (hilo de porcentajes, 25/07/2026):
+Aquí se IMPLEMENTAN; no se enuncian. La única fuente normativa es
+`docs/ARCHITECTURE.md` § Semántica de dominio imprescindible:
 
-  P1. Se registran SOLO los recursos que tienen código de hora MENSUAL
-      ('M%': MENC, MCAP, MJEFO…) en su ficha (reshor). Nadie más.
-  P2. La línea se escribe SIEMPRE en el ÚLTIMO día del mes (fec).
-  P3. can = el PORCENTAJE SOBRE 1 (40 % -> 0.4). pre = importe mensual del
-      recurso en reshor para ese código; tot = can × pre.
-  P4. Si el mismo recurso ya tiene un registro con código M* y la misma
-      partida en ese parte —aunque sea en OTRO día— es un conflicto: pisar
-      lo sustituye (y de paso corrige la fecha).
-  P5. La POSTVENTA se registra en la OBRA DE POSTVENTA (config
-      POSTVENTA_OBRA_COD; el valor vive en el .env, no aquí), imputando al
-      CAPÍTULO (obrparpar) que corresponde a la obra original. Sin capítulo
-      casado no se escribe (motivo claro en el preflight).
+  P1 -> ARCHITECTURE.md#regla-p1        qué recursos entran
+  P2 -> ARCHITECTURE.md#regla-p2        qué fecha lleva la línea
+  P3 -> ARCHITECTURE.md#regla-p3        en qué escala viaja el porcentaje
+  P4 -> ARCHITECTURE.md#regla-conflicto Regla A: qué es «la misma línea»
+     -> ARCHITECTURE.md#regla-capacidad Regla B: cuánta jornada cabe
+  P5 -> ARCHITECTURE.md#regla-p5        destino de la postventa
 
-P4 y P5 están PENDIENTE · decisión D1/D2 de F-002: lo de arriba es el
-enunciado heredado y contradice al del README. La regla buena la fija
-Administración y se escribirá en docs/ARCHITECTURE.md (#regla-p4, #regla-p5).
+Qué vive en este módulo, y por qué junto:
+
+  - los MOTIVOS de omisión, que es el texto que el humano acaba leyendo;
+  - la IDENTIDAD de una línea del parte (`CAMPOS_CLAVE`, `campos_identidad`,
+    `clave_conflicto`, `criterio_choque`);
+  - la CAPACIDAD de un recurso en un parte (`evaluar_capacidad` y
+    compañía).
+
+Las dos últimas son funciones puras: sin I/O, sin `settings` y sin cliente.
+El valor del código de la obra de postventa NO se cita: vive en el ajuste
+`POSTVENTA_OBRA_COD` del `.env`.
 """
 from __future__ import annotations
 
@@ -167,7 +170,7 @@ class ReglasPorcentajes:
 
         destino, paride, partida_cod = "obra", 0, None
         if linea.es_postventa:
-            # P5: destino obra de postventa + capítulo de la obra original.
+            # P5 (ver ARCHITECTURE.md#regla-p5).
             if not self._postventa:
                 return omitir(MOTIVO_POSTVENTA_OFF)
             if self._capitulo is None:

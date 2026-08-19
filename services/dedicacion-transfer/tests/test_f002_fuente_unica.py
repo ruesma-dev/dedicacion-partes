@@ -9,9 +9,8 @@ docstrings no se ejecutan.
 
 Solo I/O de ficheros locales: ni red, ni BBDD.
 
-Lo que todavía NO se puede cerrar (los enunciados de P4 y P5, y la línea de
-procedencia de Administración) está aquí como `xfail(strict=True)`: si algún
-día pasa sin que nadie lo espere, el test lo dice en vez de callarse.
+Ya no queda nada en `xfail`: D1 y D2 están decididas y escritas (T7 y T8),
+así que todo lo que este fichero vigila es exigible hoy.
 """
 from __future__ import annotations
 
@@ -28,38 +27,44 @@ RESOLVER = (RAIZ / "services" / "dedicacion-transfer" / "application" /
             "services" / "partida_resolver.py")
 PIPELINE = (RAIZ / "services" / "dedicacion-transfer" / "application" /
             "pipelines" / "registro_pipeline.py")
+MODELOS = (RAIZ / "services" / "dedicacion-transfer" / "domain" / "models" /
+           "registro_models.py")
 
 #: Anclas que el resto del repositorio puede enlazar. Son el contrato de la
 #: fuente única: sin ellas, remitir obliga a copiar el texto otra vez.
 ANCLAS = ("regla-p1", "regla-p2", "regla-p3", "regla-p4", "regla-p5",
-          "regla-conflicto", "regla-pruebas")
+          "regla-conflicto", "regla-capacidad", "regla-pruebas")
 
 #: Ficheros de producción donde vive el código de la obra de postventa como
 #: literal. Fuera de aquí se cita el ajuste, no el valor (R5).
 FUENTES_SIN_LITERAL = (REGLAS, RESOLVER, PIPELINE)
 
-#: Frases que la fase 1 de F-002 retira. Fichero -> frases que ya no puede
-#: contener. Las de P4 y P5 están más abajo, en el test `xfail`: se retiran
-#: en T12, cuando Administración conteste.
-PROHIBIDAS_HOY: dict[Path, tuple[str, ...]] = {
+#: Frases que F-002 retira del repositorio. Fichero -> frases que ya no
+#: puede contener. Cada una es un enunciado normativo que vivía fuera de la
+#: fuente única; varias además decían lo contrario que su vecina.
+PROHIBIDAS: dict[Path, tuple[str, ...]] = {
     README: (
         "**P1** Solo recursos con código de hora",
         "**P2** La línea va SIEMPRE al",
         "**P3** `can` = porcentaje",
+        "aunque tenga otra partida",
+        "la partida es la del CÓDIGO DE LA OBRA original",
     ),
     REGLAS: (
         "postventa-2",
-    ),
-}
-
-#: Las que esperan a la respuesta de Administración (T12).
-PROHIBIDAS_TRAS_D1_D2: dict[Path, tuple[str, ...]] = {
-    README: (
-        "choca aunque tenga otra partida",
-    ),
-    REGLAS: (
         "la misma partida en ese parte",
         "imputando al CAPÍTULO",
+        "aunque tenga otra partida",
+    ),
+    PIPELINE: (
+        "el CAPÍTULO (obrparpar) que corresponde a la obra original",
+        "línea(s) M* del recurso con el mismo código Y la misma partida",
+    ),
+    RESOLVER: (
+        "la partida cuyo código ES el código de la obra original",
+    ),
+    MODELOS: (
+        "La identidad de la línea en el parte es recurso + mes + código",
     ),
 }
 
@@ -115,19 +120,20 @@ def _punto(numero: int) -> str:
     return texto[inicio:fin]
 
 
-@pytest.mark.parametrize("numero", (6,))
-def test_f002_r1_los_puntos_sin_cerrar_estan_marcados(numero):
-    """R1 · Mientras D2 siga sin escribirse, el punto 6 lo dice con esas
-    palabras. Una regla provisional que parece firme es peor que una marcada
-    como pendiente. (D1 se cerró en T7: el punto 5 ya no la lleva.)"""
-    assert MARCA_PENDIENTE in _punto(numero), numero
-
-
-@pytest.mark.parametrize("numero", (1, 2, 3, 4, 5, 7))
-def test_f002_r1_los_puntos_cerrados_no_estan_marcados(numero):
-    """R1 · Y los que sí están validados NO llevan la marca: si la llevaran
-    todos, la marca no diría nada."""
+@pytest.mark.parametrize("numero", range(1, 11))
+def test_f002_r1_ningun_punto_sigue_pendiente(numero):
+    """R1 · D1 y D2 están cerradas (T7 y T8): ya no queda ningún punto con
+    la marca. Se comprueba punto a punto y no sobre el documento entero
+    para que el fallo diga CUÁL quedó a medias."""
     assert MARCA_PENDIENTE not in _punto(numero), numero
+
+
+def test_f002_r1_la_cabecera_ya_no_avisa_de_puntos_sin_validar():
+    """R1 · Y la cabecera tampoco: un documento que se anuncia a sí mismo
+    como provisional invita a no fiarse de ninguno de sus puntos."""
+    texto = _texto(ARQUITECTURA)
+    assert MARCA_PENDIENTE not in texto
+    assert "sin validar" not in texto
 
 
 # ---------------------- R2 · el resto remite ----------------------- #
@@ -138,32 +144,31 @@ def test_f002_r2_el_readme_remite_a_las_anclas(ancla):
     assert f"ARCHITECTURE.md#{ancla}" in _texto(README), ancla
 
 
-@pytest.mark.xfail(strict=True, reason="T12: espera a D1/D2")
 def test_f002_r2_los_docstrings_remiten_p4_p5():
-    """R2 · Los docstrings de P4 y P5 remitirán también. Hoy reenuncian."""
+    """R2 · Los docstrings de P4 y P5 remiten en vez de reenunciar."""
     assert "ARCHITECTURE.md#regla-p5" in _texto(REGLAS)
     assert "ARCHITECTURE.md#regla-conflicto" in _texto(REGLAS)
+    assert "ARCHITECTURE.md#regla-capacidad" in _texto(REGLAS)
+
+
+@pytest.mark.parametrize("ruta", (README, REGLAS, PIPELINE, RESOLVER,
+                                  MODELOS), ids=lambda r: r.name)
+def test_f002_r2_todo_el_que_pierde_su_enunciado_remite(ruta):
+    """R2 · Retirar el enunciado sin dejar el enlace no es cerrar la fuente
+    única: es borrar la regla de la vista de quien lee ese fichero."""
+    assert "ARCHITECTURE.md#regla-" in _texto(ruta), ruta.name
 
 
 # ------------------- R3 · nadie reenuncia la regla ----------------- #
 
 @pytest.mark.parametrize("ruta, frase", [
-    (ruta, frase) for ruta, frases in PROHIBIDAS_HOY.items()
+    (ruta, frase) for ruta, frases in PROHIBIDAS.items()
     for frase in frases
 ])
-def test_f002_r3_frases_prohibidas_fase1(ruta, frase):
+def test_f002_r3_frases_prohibidas(ruta, frase):
     """R3 · La frase se retiró de donde la duplicaba. Si vuelve, la suite
     cae: es la única forma de que una duplicación no se cuele en una
     revisión de diff."""
-    assert frase not in _plano(ruta), f"{ruta.name}: {frase!r}"
-
-
-@pytest.mark.xfail(strict=True, reason="T12: espera a D1/D2")
-@pytest.mark.parametrize("ruta, frase", [
-    (ruta, frase) for ruta, frases in PROHIBIDAS_TRAS_D1_D2.items()
-    for frase in frases
-])
-def test_f002_r3_frases_prohibidas_p4_p5(ruta, frase):
     assert frase not in _plano(ruta), f"{ruta.name}: {frase!r}"
 
 
@@ -193,9 +198,7 @@ PATRON_PROCEDENCIA = r"Confirmado por [^·]{3,120} el \d{4}-\d{2}-\d{2} · \S+"
 #: su procedencia. Se comprueba **bloque a bloque**, no contando apariciones
 #: en el documento entero: dos líneas de procedencia en la misma regla no
 #: pueden hacer pasar por confirmada a la de al lado.
-#: La lista crece con las reglas que se van cerrando: `regla-conflicto` y
-#: `regla-capacidad` entran con T8, que es cuando D2 se escribe.
-ANCLAS_CON_PROCEDENCIA = ("regla-p5",)
+ANCLAS_CON_PROCEDENCIA = ("regla-p5", "regla-conflicto", "regla-capacidad")
 
 
 def _bloque(ancla: str) -> str:
