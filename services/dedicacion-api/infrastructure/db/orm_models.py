@@ -15,6 +15,7 @@ from sqlalchemy import (
     Index,
     Integer,
     Numeric,
+    String,
     Text,
     UniqueConstraint,
     func,
@@ -94,6 +95,22 @@ class AsignacionORM(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     actualizado_por: Mapped[str] = mapped_column(Text, nullable=False, default="local")
+
+    # Traza del registro en Sigrid, escrita por `application/registro_sigrid.py`
+    # y por nadie más (ningún endpoint ni esquema Pydantic la expone). Las seis
+    # son NULABLES y sin default a propósito: una asignación recién creada aún
+    # no está registrada, y esa ausencia de valor es su estado inicial legítimo.
+    # `String(N)` en vez del `Text` del resto del fichero porque son las
+    # longitudes que la tabla ya tiene en la base; cambiarlas sería una
+    # migración de tipo (ver `specs/F-003-orm-columnas-sigrid/design.md` §2).
+    sigrid_estado: Mapped[str | None] = mapped_column(String(16))
+    sigrid_parte_cod: Mapped[str | None] = mapped_column(String(24))
+    sigrid_hmores_ide: Mapped[int | None] = mapped_column(Integer)
+    sigrid_motivo: Mapped[str | None] = mapped_column(String(300))
+    sigrid_registrado_at_utc: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    sigrid_registrado_by: Mapped[str | None] = mapped_column(String(64))
 
     __table_args__ = (
         UniqueConstraint(
