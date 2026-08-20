@@ -438,8 +438,8 @@ def test_f013_confirmar_solo_la_sobrecarga_no_escribe():
     seguros de componer."""
     cli0, lineas0 = _sin_partida_y_sobrecarga()
     pf = _pipeline(cli0).preflight(obra=OBRA, lineas=lineas0)
-    clave_sobre = [c.clave for c in pf.conflictos
-                   if c.motivo == "sobrecarga"][0]
+    clave_sobre = next(c.clave for c in pf.conflictos
+                       if c.motivo == "sobrecarga")
 
     cli, lineas = _sin_partida_y_sobrecarga()
     res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas,
@@ -454,8 +454,8 @@ def test_f013_confirmar_solo_la_sin_partida_tampoco_escribe():
     con un pipeline que no escriba nunca."""
     cli0, lineas0 = _sin_partida_y_sobrecarga()
     pf = _pipeline(cli0).preflight(obra=OBRA, lineas=lineas0)
-    clave_sinp = [c.clave for c in pf.conflictos
-                  if c.motivo == "sin_partida"][0]
+    clave_sinp = next(c.clave for c in pf.conflictos
+                      if c.motivo == "sin_partida")
 
     cli, lineas = _sin_partida_y_sobrecarga()
     res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas,
@@ -531,8 +531,8 @@ def test_f013_confirmar_el_pisado_sin_la_partida_no_borra():
     que la sustituye: pérdida neta de un apunte, y en silencio."""
     cli0, lineas0 = _sin_partida_y_pisado()
     pf = _pipeline(cli0).preflight(obra=OBRA, lineas=lineas0)
-    clave_pisado = [c.clave for c in pf.conflictos
-                    if c.motivo == "pisado"][0]
+    clave_pisado = next(c.clave for c in pf.conflictos
+                        if c.motivo == "pisado")
 
     cli, lineas = _sin_partida_y_pisado()
     res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas,
