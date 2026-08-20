@@ -40,7 +40,7 @@
         "Tests offline que fijan el comportamiento de conflicto y de destino de postventa",
         "Verificado contra Sigrid con prueba_escritura_porcentajes.py en modo pruebas, con el volcado en progress/"
       ],
-      "status": "in_progress",
+      "status": "blocked",
       "sdd": true,
       "rigor": "critico",
       "priority": 2,
