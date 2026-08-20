@@ -118,3 +118,54 @@ seis ficheros trackeados y los modifican. Al mergearlas, git puede
 de cada merge.
 
 Informes: `progress/impl_F-009.md`, `progress/review_F-009.md`.
+
+## 2026-08-20 · F-003 · Las columnas `sigrid_*` de `asignacion` no están en el ORM
+
+Rama `feature/F-003-orm-columnas-sigrid` · `sdd: true` · rigor `critico` ·
+**APROBADO** por el reviewer (2ª pasada) · mergeada a `dev` en `0499153`.
+
+**Qué cambió.** `_ALTERS` —la lista de `ALTER TABLE` escrita a mano en
+`application/registro_sigrid.py`— desaparece. Las seis columnas `sigrid_*`
+pasan al ORM, que queda como **única fuente de verdad**, y el DDL
+complementario se **deriva** de él en `infrastructure/db/esquema.py`,
+ejecutado desde `main.py` junto a `create_all` y **fuera de `build_app`**.
+
+**Efecto colateral deliberado y valioso:** construir la app ya no abre
+conexión a PostgreSQL. Antes, el constructor de `RegistroSigrid` lanzaba el
+DDL, así que importar la aplicación exigía base de datos: por eso el servicio
+no podía tener tests de API. Ahora puede.
+
+**Verificado (salida real).** 84 tests en el api (63 de F-003 + 21 de F-001),
+cobertura de líneas cambiadas **94,4 %** (51/54), **14 mutantes y 0
+supervivientes**. La primera campaña dejó **2 supervivientes reales** y el
+implementer escribió los tests que faltaban hasta matarlos, en vez de
+justificarlos. Fase RED real: **41 failed + 20 errors** antes de existir
+`esquema.py`. ruff: 164 → 162.
+
+**T8 · verificación MANUAL contra la base real, EJECUTADA el 2026-08-20.**
+Es la que de verdad cerraba la feature, porque la base local tiene datos y las
+seis columnas ya creadas a mano: el resultado correcto era que no pasara nada.
+
+| Paso | Resultado real |
+|---|---|
+| Fotografía previa | 14 columnas, **30 filas** en `asignacion` |
+| Primer arranque (`python main.py`) | `Esquema verificado en BBDD 'dedicacion': 0 sentencias DDL aplicadas` |
+| Segundo arranque | `0 sentencias DDL aplicadas` ⇒ **idempotente** |
+| Fotografía posterior | 14 columnas, **30 filas** — idénticas |
+
+Ningún `EsquemaNoDerivable`, ningún dato tocado.
+
+**Queda fuera (T8 bis):** la traza de extremo a extremo —que un registro real
+deje `sigrid_estado='registrado'` con su `sigrid_parte_cod`— exige escribir en
+Sigrid vía `dedicacion-transfer`. Los `UPDATE` están verificados
+**compilados** contra el dialecto PostgreSQL, no ejecutados.
+
+**Nota de proceso.** La 1ª review fue CHANGES_REQUESTED **por el rastro del
+líder**, no por el código: `progress/current.md` describía la sesión anterior
+y no listaba T8 con su comando, que es donde `CHECKPOINTS.md` C4 la exige. El
+reviewer lo argumentó bien: si la feature se cierra con `current.md` diciendo
+que no hay nada en curso, T8 es exactamente la verificación que nadie ejecuta
+nunca.
+
+Informes: `progress/impl_F-003.md`, `progress/review_F-003.md`,
+`progress/mutacion_F-003.md`.
