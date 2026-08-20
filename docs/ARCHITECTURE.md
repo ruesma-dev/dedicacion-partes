@@ -22,7 +22,10 @@ El personal que va por horas se registra en el otro sistema, `partes`, con
 sus partes diarios. Los dos escriben en las **mismas tablas** de Sigrid
 (`hmo` / `hmores`), cada uno con su propio espacio de `synckey`.
 
-Estado a 2026-08-19: **funciona en local, no hay nada desplegado en Azure**.
+Estado a 2026-08-20: **funciona en local**. El despliegue en Azure está
+**escrito y sin ejecutar**: los scripts viven en `infra/` y los ejecuta una
+persona (F-008). Qué exponemos y qué consumimos, en
+[`docs/INTEGRACION.md`](INTEGRACION.md).
 
 ## Decisiones tomadas (2026-08-19)
 
@@ -298,7 +301,7 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 |---|---|---|---|
 | `sigrid-api` (Function App) | api | **solo lectura** (`POST /api/sql/read`) | maestros de empleados y obras; consultas parametrizadas en `config/config.yaml` |
 | `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura) |
-| PostgreSQL `dedicacion` | api | lectura y escritura | hoy `localhost`; el servidor de destino al desplegar está sin decidir |
+| PostgreSQL `dedicacion` | api | lectura y escritura | en local, `localhost`. Desplegado, **base propia dentro del servidor compartido `psql-albaranes-rs9k2`** (decisión del humano, 2026-08-20), esquema `public`, rol de aplicación propio y `PG_SSLMODE=require` |
 | `dedicacion-transfer` | api | HTTP interno | `TRANSFER_BASE_URL`, timeout 180 s |
 
 Reglas duras:
@@ -328,14 +331,79 @@ Reglas duras:
 
 ## Infra y despliegue
 
-**No hay nada desplegado ni carpeta `infra/`.** Los tres servicios se
-ejecutan en local: transfer (8006) → api (8090) → front (8080), en ese orden.
-`dedicacion-api` y `dedicacion-front` traen `Dockerfile`; el transfer no.
+**El despliegue está escrito y todavía sin ejecutar** (F-008, 2026-08-20).
+Los scripts viven en `infra/`, los ejecuta **una persona** —no hay CI/CD— y
+su manual es [`infra/README_dedicacion.md`](../infra/README_dedicacion.md).
+Los tres servicios siguen corriendo en local: transfer (8006) → api (8090) →
+front (8080), en ese orden. Los tres traen ya `Dockerfile` y `.dockerignore`.
 
-Cuando toque desplegar, el patrón de referencia es el monorepo `partes`
-(`infra/` con scripts PowerShell 5.1, `az acr build` sobre `acralbaranesdev`,
-Container Apps, secretos en Key Vault por `keyvaultref` con identidad
-gestionada) y las reglas del entorno: imágenes con tag fechado
-`rYYYYMMDD-HHmm` sin reescribir, secretos como secrets del recurso, `.env`
-nunca viaja en la imagen, tags obligatorios de Azure Policy. Ese trabajo es
-una feature, con su documento en `azure-apps/` cuando exista despliegue.
+**Qué expone y qué consume el proyecto:
+[`docs/INTEGRACION.md`](INTEGRACION.md)**, que es la fuente de verdad y de la
+que se copia `azure-apps/dedicacion.md`.
+
+### Topología
+
+Tres Container Apps en `rg-dedicacion-dev` (`spaincentral`), **solo el front
+expuesto**:
+
+| Container App | Puerto | Ingress | Réplicas |
+|---|---|---|---|
+| `ca-dedicacion-front` | 8080 | **externo** + Easy Auth (Entra) | min 1 / max 1 |
+| `ca-dedicacion-api` | 8090 | interno | min 1 / **max 1** |
+| `ca-dedicacion-transfer` | 8006 | interno | min 1 / **max 1** |
+
+Los dos `max 1` no son ajuste de coste: el transfer inserta con `MAX(ide)+1`
+bajo `UPDLOCK, HOLDLOCK` (§9) y dos réplicas se pisarían los `ide`; la
+sincronización de maestros de la api no está diseñada para concurrencia.
+
+**El ingress interno de la api es su control de acceso**, no una preferencia:
+la api no tiene autenticación propia (`deps.py::obtener_usuario` lee la
+cabecera `X-Usuario` y se la cree). El razonamiento completo, y por qué nadie
+debe «arreglarlo» abriendo el ingress, está en `docs/INTEGRACION.md` §5.
+
+### Se reutiliza, no se crea
+
+`acralbaranesdev` (imágenes, por identidad gestionada; su usuario admin está
+deshabilitado), `psql-albaranes-rs9k2` (base propia; somos el **quinto
+inquilino** y no tocamos nada a nivel de servidor) y `sigrid-api`. **No se
+crea Storage Account ni colas**: aquí no hay canal asíncrono.
+
+### La base de datos ya no la crea el servicio
+
+`dedicacion-api` arranca con `AUTO_CREATE_DATABASE=false` y **ni siquiera
+abre la conexión de administración**: la base y el rol los crea una persona,
+una vez, con `infra/crear_base_dedicacion.ps1`. Así la contraseña del
+administrador de un servidor compartido por cinco proyectos no viaja a ningún
+contenedor. Si la base falta, el arranque falla nombrándola y nombrando el
+script que la crea.
+
+### Timeouts encadenados
+
+Cada salto espera **más** que el siguiente, y todos por debajo del corte del
+balanceador de Azure:
+
+| Salto | Variable | Local | Desplegado |
+|---|---|---|---|
+| navegador → front | (balanceador de Azure) | — | **230 s, no configurable** |
+| front → api | `API_TIMEOUT_S` | 120 | **200** |
+| api → transfer | `TRANSFER_TIMEOUT_S` | 180 | **180** |
+| transfer → `sigrid-api` | `SIGRID_API_TIMEOUT_S` | 60 | 60 |
+
+En local están al revés (el front se rinde antes que la api): el usuario
+vería un error de un registro que sí se estaba haciendo. Se corrige al
+desplegar, subiendo el front a 200 s.
+
+### Imágenes y secretos
+
+Tag fechado `rAAAAMMDD-HHmm`, **nunca `latest`** y nunca reescribiendo un tag
+publicado. Qué tag hay publicado por servicio consta en `infra/imagenes.json`,
+versionado: es lo que responde «qué código está corriendo» sin abrir Azure.
+Los secretos van en un Key Vault propio y se consumen por `keyvaultref` con
+la identidad gestionada; ninguno viaja como valor ni entra en la imagen.
+
+### El transfer sigue en modo pruebas
+
+`OBRA_PRUEBAS_FORZAR=true`: toda escritura va a la obra `0404` marcada
+`PRUEBA-PORC` ([`#regla-pruebas`](#regla-pruebas)). **El despliegue termina
+así, a propósito.** Salir de ahí exige dos señales explícitas en el script y
+una decisión expresa del humano para una acción concreta.

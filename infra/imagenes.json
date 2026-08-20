@@ -1,0 +1,24 @@
+{
+  "$doc": "Inventario de imagenes publicadas en el ACR compartido acralbaranesdev. Lo ESCRIBE build_images_dedicacion.ps1 en cada build y se VERSIONA a proposito: con tag fechado y sin 'latest', esta es la unica forma de responder 'que codigo esta corriendo' sin abrir Azure (F-008, R24). Formato del tag: rAAAAMMDD-HHmm. Un tag ya publicado NUNCA se reescribe (docs/CONVENTIONS.md).",
+  "registro": "acralbaranesdev",
+  "servicios": {
+    "dedicacion-transfer": {
+      "repositorio": "dedicacion-transfer",
+      "tag": null,
+      "publicado": null,
+      "nota": "Nunca publicado: el build real es MANUAL (humano), T25 de specs/F-008-infra-azure/tasks.md."
+    },
+    "dedicacion-api": {
+      "repositorio": "dedicacion-api",
+      "tag": null,
+      "publicado": null,
+      "nota": "Nunca publicado: el build real es MANUAL (humano), T25 de specs/F-008-infra-azure/tasks.md."
+    },
+    "dedicacion-front": {
+      "repositorio": "dedicacion-front",
+      "tag": null,
+      "publicado": null,
+      "nota": "Nunca publicado: el build real es MANUAL (humano), T25 de specs/F-008-infra-azure/tasks.md."
+    }
+  }
+}

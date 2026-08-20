@@ -1,78 +1,88 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-013 · Una línea sin partida no se escribe en silencio**
-Rama `feature/F-013-linea-sin-partida-confirma` · `sdd: false` · rigor `critico`
-Estado: **lanzada el 2026-08-20.** No lleva spec: mandan sus `acceptance`.
+**F-002 · en review de cierre.** Ninguna otra feature en ejecución. Rama
+`dev`, con **todo el trabajo aprobado ya integrado**: F-001, F-003, F-004,
+F-009, F-013 y las fases 1–6 de F-008.
 
-## Qué se cambia y por qué
+## Estado del backlog (12 features)
 
-Hoy, cuando el casado de partida falla en obra normal,
-`registro_pipeline.py` hace:
+| Estado | Features |
+|---|---|
+| `done` | F-001, F-003, F-004, F-009, F-013 |
+| `in_progress` | **F-002** — review de cierre en curso |
+| `blocked` | **F-008** — esperando la fase 7, que es del humano |
+| `pending` | F-005, F-006, F-011, F-012, F-014 |
 
-```python
-a.paride = 0
-a.aviso = "partida no localizada para la categoría/nombre: se imputa sin partida (editable)"
-```
+Retiradas el 2026-08-20 por decisión del humano: **F-007** y **F-010**, que se
+hacen en `arnes-base`. Su razonamiento está en `progress/history.md`.
 
-Es decir: **avisa, pero escribe igual**. En el preflight real de julio 2026
-eso eran **2.132 € de una jefa de obra** (Arriaza, obra 0025) colgando de la
-obra sin imputar a ninguna partida.
+## ⚠ Lo que espera al humano
 
-**Decisión del humano (2026-08-20):** debe **avisar y esperar confirmación**,
-igual que la sobrecarga del 100 % que introdujo F-002.
+### 1 · La fase 7 de F-008 — crear la infraestructura en Azure
 
-**El mecanismo ya existe**: la Regla B de F-002 emite un `Conflicto` con
-motivo propio que viaja al front. Esto es aplicar ese patrón a un tercer
-caso, no inventar nada — y por eso **no toca `dedicacion-api` ni
-`dedicacion-front`**.
+Fases 1–6 **implementadas y aprobadas**. Lo que queda **crea recursos, gasta
+dinero y toca la suscripción**: ningún agente lo ejecuta. Comandos con su
+resultado esperado en `specs/F-008-infra-azure/tasks.md` fase 7 y en
+`infra/README_dedicacion.md`.
 
-## Por qué es feature aparte y no una tarea de F-002
+Orden: `fase1_infra_dedicacion.ps1` → `crear_base_dedicacion.ps1` →
+`add_secrets_dedicacion.ps1` → `build_images_dedicacion.ps1` → los tres
+`create_*_dedicacion.ps1` → `setup_front_easyauth.ps1`.
 
-F-002 está `blocked` por motivos ajenos (Administración) y sus fases 1 y 2
-están **aprobadas y mergeadas a `dev`**. Meterle un cambio de comportamiento
-nuevo la reabriría sin necesidad.
+**Falta decidir D3**: la lista de personas del grupo
+`dedicacion-portal-users`, necesaria para Easy Auth (T26).
 
-## Verificaciones `MANUAL (humano)` pendientes
+**Y D5, que no bloquea pero conviene antes de que el entorno esté vivo**:
+pedir a `sigrid-api` una function key de **solo lectura** para la api. Hoy api
+y transfer comparten la misma, y lo único que impide que la api escriba es que
+su código no tiene rutas de escritura.
 
-**Ninguna de F-013 mientras no se escriba en Sigrid.** Los tests son offline
-con las fixtures de `services/dedicacion-transfer/tests/conftest.py`. Si en
-algún momento se quisiera comprobar contra Sigrid real, sería una acción
-aparte y con autorización expresa.
+> Al pegar la salida real de `az` en `progress/`: usa marcadores
+> (`<SUSCRIPCION>`, `<OBJECT-ID>`). El guardián de secretos ya vigila ese
+> directorio, pero es la red, no la primera línea.
 
-## Otras features (ninguna avanza sin el humano)
+### 2 · F-014, cuando toque (prioridad 20)
 
-- **F-002** · `blocked`. Falta avisar a Administración de las cuatro partidas
-  duplicadas de POSTV2 (`656`, `664`, `680`, `693`) y decidir quién firma la
-  procedencia de las reglas.
-- **F-008** · `blocked`. Fases 1–6 **aprobadas** en su rama, sin mergear. La
-  **fase 7 es del humano** (crear recursos, imágenes, Easy Auth), con sus
-  comandos en `specs/F-008-infra-azure/tasks.md` e `infra/README_dedicacion.md`.
-  Falta **D3**: la lista del grupo `dedicacion-portal-users`.
-- **F-004** · `done` y aprobada en su rama `feature/F-004-readme-monorepo`,
-  **sin mergear a `dev`**. (En ESTA rama `features.json` la muestra como
-  `pending`: su `done` vive en su propia rama.)
-
-## ⚠ ACCIÓN PENDIENTE EN PRODUCCIÓN (Sigrid)
-
-Sigue viva la fila de prueba de T14: `hmores.ide = 403039`, parte
-`PT26/00296`, obra `0404`, marca `PRUEBA-PORC`. El humano quiere verla en la
-pantalla del ERP antes de borrarla. **Es precondición de la fase 7 de F-008.**
+Sigue viva en Sigrid la fila de la primera escritura real:
+`hmores.ide = 403039`, `synckey 'porcentajes:77'`, marca `PRUEBA-PORC`, en el
+parte `PT26/00296` (`hmo.ide = 2820419`) de la obra de pruebas `0404`.
 
 ```bash
 cd services/dedicacion-transfer
 .venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar --ano 2026 --mes 7
 ```
 
-## Hechos comprobados que no conviene volver a descubrir
+**Ojo con el orden**: probar el registro desde Azure escribirá **más** líneas
+`PRUEBA-PORC` en la misma obra y mes, indistinguibles de esa salvo por su
+`ide`. Si se va a desplegar antes, conviene limpiar primero o asumir que habrá
+que distinguirlas a mano.
 
-- **La escritura en Sigrid funciona** (T14, 2026-08-20). Antes de esa fecha el
-  sistema **nunca** había escrito en el ERP.
+F-014 recoge también el aviso a Administración de las cuatro partidas
+duplicadas de POSTV2 (`656`, `664`, `680`, `693`) y quién firma la procedencia
+de las reglas P4/P5.
+
+## Lo que el sistema sabe hacer hoy, comprobado
+
+- **Corre entero en local**: transfer 8006 → api 8090 → front 8080, cada uno
+  desde su carpeta con su venv. El README de la raíz lo documenta.
+- **Escribe en Sigrid de verdad** (T14, 2026-08-20): crea el parte si no
+  existe e inserta la línea con su `synckey`. Antes de esa fecha **nunca**
+  había escrito en el ERP.
+- **Avisa y espera confirmación** en tres casos distintos, cada uno con su
+  clave: pisado de una línea existente, sobrecarga del 100 % del trabajador
+  (F-002) y línea sin partida casada (F-013).
+
+## Hechos que no conviene volver a descubrir
+
 - El api expone su salud en **`/api/v1/health`**, no en `/health`.
-- `ruff` **no está instalado** en el venv de `dedicacion-api`.
-- **Dos defectos del arnés detectados el 2026-08-20** (anotados en
-  `progress/history.md` para `arnes-base`): `init.sh` confunde «no hay tests»
-  (pytest código 5) con «los tests fallan», y **la caché de suites cruza
-  ramas**, de modo que el portero puede dar `[OK]` por una suite ejecutada en
-  otra rama. Si aparece un rojo raro del front, mira si hay un `tests/` con
-  solo `__pycache__` dentro.
+- `ruff` **no está instalado** en el venv de `dedicacion-api`: usar el
+  intérprete de la raíz.
+- **Dos defectos del arnés**, anotados en `history.md` para `arnes-base`:
+  `init.sh` confunde «no hay tests» (pytest código 5) con «los tests fallan»,
+  y **la caché de suites cruza ramas**, así que el portero puede dar `[OK]`
+  por una suite ejecutada en otra rama. Si aparece un rojo raro del front,
+  mira si hay un `services/dedicacion-front/tests/` con solo `__pycache__`.
+- La fase `verificar` de `prueba_escritura_porcentajes.py` busca **sus
+  propias** líneas de plantilla, no lo que escriba el sistema por su camino
+  normal. Para comprobar una escritura real hay que leer por `synckey`.
