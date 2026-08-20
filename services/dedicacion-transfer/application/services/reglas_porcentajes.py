@@ -9,6 +9,8 @@ Aquí se IMPLEMENTAN; no se enuncian. La única fuente normativa es
   P3 -> ARCHITECTURE.md#regla-p3        en qué escala viaja el porcentaje
   P4 -> ARCHITECTURE.md#regla-conflicto Regla A: qué es «la misma línea»
      -> ARCHITECTURE.md#regla-capacidad Regla B: cuánta jornada cabe
+     -> ARCHITECTURE.md#regla-sin-partida Regla C: una línea sin partida
+                                          no se escribe sin confirmar
   P5 -> ARCHITECTURE.md#regla-p5        destino de la postventa
 
 Qué vive en este módulo, y por qué junto:
@@ -17,9 +19,11 @@ Qué vive en este módulo, y por qué junto:
   - la IDENTIDAD de una línea del parte (`CAMPOS_CLAVE`, `campos_identidad`,
     `clave_conflicto`, `criterio_choque`);
   - la CAPACIDAD de un recurso en un parte (`evaluar_capacidad` y
-    compañía).
+    compañía);
+  - si una línea se escribiría SIN PARTIDA (`sin_partida`,
+    `clave_sin_partida`).
 
-Las dos últimas son funciones puras: sin I/O, sin `settings` y sin cliente.
+Las tres últimas son funciones puras: sin I/O, sin `settings` y sin cliente.
 El valor del código de la obra de postventa NO se cita: vive en el ajuste
 `POSTVENTA_OBRA_COD` del `.env`.
 """
@@ -244,6 +248,70 @@ def clave_sobrecarga(accion: AccionLinea) -> str:
     recurso = _DE_ACCION["recurso"](accion)
     periodo = _DE_ACCION["periodo"](accion)
     return f"{PREFIJO_CLAVE_SOBRECARGA}{recurso}|{periodo}"
+
+
+# ------------------------------------------------------------------ #
+#  Una línea sin partida: se avisa y se espera confirmación
+# ------------------------------------------------------------------ #
+# Ver ARCHITECTURE `#regla-sin-partida`. Como la capacidad, no decide qué se
+# escribe: informa, y el humano confirma. A diferencia de ella, es propiedad
+# de UNA línea y no del conjunto, y por eso su clave es por línea.
+
+#: Prefijo de la clave con la que se confirma que una línea se impute sin
+#: partida. Ninguna clave de pisado puede empezar por él (la de pisado
+#: empieza por el `ide` del recurso, que es un entero) ni ninguna de
+#: sobrecarga (empieza por `PREFIJO_CLAVE_SOBRECARGA`).
+PREFIJO_CLAVE_SIN_PARTIDA: str = "sin_partida:"
+
+#: Motivo de la omisión cuando nadie ha confirmado. Corto a propósito: cabe
+#: en los 300 caracteres a los que dedicacion-api recorta `sigrid_motivo`.
+MOTIVO_SIN_PARTIDA = (
+    "sin partida: no se ha localizado partida del presupuesto de la obra "
+    "para la categoría/nombre del trabajador; elige una partida o confirma "
+    "para imputar la línea SIN partida"
+)
+
+#: Aviso que acompaña a la acción en el preflight (campo `AccionLinea.aviso`,
+#: que el front pinta bajo el desplegable de partida). Decía «se imputa sin
+#: partida (editable)», y desde F-013 eso es falso: sin confirmación no se
+#: imputa nada.
+AVISO_SIN_PARTIDA = (
+    "partida no localizada para la categoría/nombre: no se escribe sin "
+    "confirmarlo — elige una partida o marca la confirmación"
+)
+
+
+def sin_partida(accion: AccionLinea) -> bool:
+    """¿Esta acción se escribiría sin imputar a ninguna partida?
+
+    Se mira `paride`, que es literalmente lo que acabaría en `hmores.paride`,
+    y no el método de casado: cualquier camino que deje la partida a 0 cae
+    aquí, hoy y el día que haya otro. Preguntar por el método dejaría fuera
+    al camino nuevo sin que nada avisara.
+
+    Una acción que no se va a escribir no tiene nada que confirmar: una
+    omitida no llega a Sigrid y una `ya_registrado` ya está escrita.
+
+    La POSTVENTA no pasa por aquí aunque el casado le falle: sin partida no
+    tiene destino posible en un presupuesto ajeno al de su obra, así que P5
+    la omite en `decidir` antes de que llegue a ser una acción de escritura
+    (ARCHITECTURE.md#regla-p5). En la obra normal sí hay destino —la propia
+    obra— y lo único que falta es la imputación analítica: por eso se puede
+    escribir, y por eso se pregunta.
+    """
+    return accion.accion == "escribir" and _entero(accion.paride) == 0
+
+
+def clave_sin_partida(accion: AccionLinea) -> str:
+    """Clave con la que se confirma que una línea se impute SIN partida.
+
+    Es por LÍNEA —`registro_id`, el id de la asignación en PostgreSQL, que es
+    su identidad estable entre ejecuciones— y no por recurso y parte como la
+    sobrecarga: que el casado falle es propiedad de una línea (su categoría y
+    su nombre), no del conjunto. Si la clave agrupara, confirmar la línea que
+    el humano ha mirado arrastraría a otra suya que no ha visto.
+    """
+    return f"{PREFIJO_CLAVE_SIN_PARTIDA}{int(accion.registro_id)}"
 
 
 class ReglasPorcentajes:
