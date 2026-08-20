@@ -3,7 +3,9 @@
 
 Patrón idéntico al de partes-sv3: en el arranque, con las credenciales
 de administración, se crea la base de datos si no existe; después se
-abre el engine de aplicación y se ejecuta create_all (idempotente).
+abre el engine de aplicación y se pone al día el esquema, de forma
+idempotente, con `esquema.sincronizar_esquema` (que es quien conoce las
+tablas: aquí solo se crean el rol y la base).
 """
 from __future__ import annotations
 

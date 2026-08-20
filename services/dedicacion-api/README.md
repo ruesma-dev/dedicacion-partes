@@ -13,6 +13,15 @@ pip install -r requirements.txt
 python main.py            (crea la BBDD "dedicacion" si no existe, puerto 8090)
 ```
 
+**Arranca siempre por `python main.py`.** El esquema se pone al día ahí y solo
+ahí: `main.py` crea las tablas que faltan y añade a las que ya existen las
+columnas que declara `infrastructure/db/orm_models.py`, derivando el DDL con
+`infrastructure/db/esquema.py` y registrando en el log cuántas sentencias
+aplicó (contra una base al día, cero). Construir la app (`build_app`) **no
+toca la base de datos**, así que apuntar `uvicorn` directamente a la app se
+salta esa puesta al día. El mecanismo solo añade columnas: cualquier otro
+cambio de esquema es una migración que escribe una persona.
+
 ## Endpoints (prefijo /api/v1)
 
 | Método | Ruta | Uso |

@@ -56,7 +56,7 @@
         "Arrancar dos veces contra una base ya creada no falla ni duplica columnas",
         "Test que compara las columnas del ORM con las que el arranque garantiza"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "sdd": true,
       "rigor": "critico",
       "priority": 3,

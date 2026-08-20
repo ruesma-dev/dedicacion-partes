@@ -2,8 +2,12 @@
 """Arranque del microservicio dedicacion-api.
 
 1. Crea la BBDD PostgreSQL si no existe (credenciales admin).
-2. create_all idempotente del esquema.
+2. Pone al día el esquema (idempotente), derivándolo del ORM.
 3. Arranca uvicorn con la app FastAPI.
+
+El paso 2 vive AQUÍ y solo aquí: construir la app (`build_app`) no toca la
+base de datos. Arrancar el servicio apuntando `uvicorn` directamente a la app,
+en vez de por `python main.py`, se salta la puesta al día del esquema.
 """
 from __future__ import annotations
 
@@ -13,7 +17,7 @@ import uvicorn
 
 from config.settings import get_settings
 from infrastructure.db.database import asegurar_base_datos, crear_engine
-from infrastructure.db.orm_models import Base
+from infrastructure.db.esquema import sincronizar_esquema
 from interface_adapters.api.app import build_app
 
 logger = logging.getLogger("dedicacion-api")
@@ -29,8 +33,12 @@ def main() -> None:
 
     asegurar_base_datos(settings)
     engine = crear_engine(settings)
-    Base.metadata.create_all(engine)
-    logger.info("Esquema verificado en BBDD '%s'", settings.pg_db)
+    aplicadas = sincronizar_esquema(engine)
+    logger.info(
+        "Esquema verificado en BBDD '%s': %s sentencias DDL aplicadas",
+        settings.pg_db,
+        len(aplicadas),
+    )
 
     app = build_app(settings)
     uvicorn.run(app, host=settings.api_host, port=settings.api_port, log_level="info")
