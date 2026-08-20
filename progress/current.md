@@ -3,7 +3,26 @@
 
 **F-008 · Infraestructura y despliegue en Azure**
 Rama `feature/F-008-infra-azure` · `sdd: true` · rigor `critico` · prioridad 3
-Estado: **arrancada el 2026-08-20. Spec en redacción.**
+Estado: **spec APROBADA por el humano el 2026-08-20. Implementer lanzado con
+las fases 1–6.** La fase 7 (crear recursos en Azure) es MANUAL del humano.
+
+## Decisiones del humano sobre F-008 (2026-08-20)
+
+| # | Decisión | Elegido |
+|---|---|---|
+| **D1** | dónde vive la BBDD `dedicacion` | **base propia en `psql-albaranes-rs9k2`**, como quinto inquilino, con las cuatro salvaguardas de `postventa-incidencias`: base y rol creados **una vez por una persona**, rol de aplicación propio (nunca el admin del servidor), **nada a nivel de servidor**, `PG_SSLMODE=require` |
+| **D1b** | esquema | **`public`** dentro de nuestra base, como albaranes y partes |
+| **D2** | exposición | **solo el front** con ingress externo; **api y transfer internos**. La api no tiene autenticación propia (`deps.py` se cree la cabecera `X-Usuario`), así que el ingress interno **es** su control de acceso |
+| **D4** | réplicas | **`min-replicas 1`** en los tres: comportamiento predecible mientras se valida |
+
+**Sin cerrar, y no bloquean el arranque:**
+
+- **D3** · quién entra en el grupo `dedicacion-portal-users` (hace falta para
+  Easy Auth, tarea manual T26).
+- **D5** · pedir al proyecto `sigrid-api` una **function key de solo lectura**
+  para la api: hoy api y transfer comparten la misma clave, y lo único que
+  impide que la api escriba es que su código no tiene rutas de escritura, no
+  la credencial.
 
 ---
 
