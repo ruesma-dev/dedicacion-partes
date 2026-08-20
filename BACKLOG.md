@@ -3,21 +3,22 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **11 features**, 7 abiertas, 4 terminadas.
+Resumen: **12 features**, 8 abiertas, 4 terminadas.
 
-Bloqueadas: **F-002**.
+En curso: **F-002**.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | bloqueada | critico | `feature/F-002-reglas-postventa-conflicto` |
+| F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | en curso | critico | `feature/F-002-reglas-postventa-conflicto` |
 | F-008 | Infraestructura y despliegue en Azure | 3 | pendiente | critico | `feature/F-008-infra-azure` |
 | F-004 | README del monorepo y arranque local en orden | 4 | pendiente | documental | `feature/F-004-readme-monorepo` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-011 | Un solo codigo de hora mes por trabajador | 7 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
 | F-012 | El test de la epsilon compartida ata el transfer al monorepo | 8 | pendiente | estandar | `feature/F-012-epsilon-compartida-entre-servicios` |
+| F-014 | Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14 | 20 | pendiente | documental | `feature/F-014-cabos-sigrid-administracion` |
 
 ## Terminadas
 
@@ -32,7 +33,7 @@ Bloqueadas: **F-002**.
 
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 
-estado **bloqueada** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-002-reglas-postventa-conflicto`
+estado **en curso** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-002-reglas-postventa-conflicto`
 
 El repositorio se contradice sobre dos reglas que deciden qué se escribe en Sigrid. P5: el README del transfer dice obra POSTV2 e imputación por PARTIDA; el docstring de reglas_porcentajes.py dice 'postventa-2' y CAPÍTULO. P4: el README dice que en obra normal una línea M* previa del recurso choca aunque tenga otra partida; el docstring exige que la partida sea la misma. Hay que confirmar la regla buena con Administración y con datos reales de Sigrid, dejarla en una sola fuente de verdad (docs/ARCHITECTURE.md) y alinear código, docstrings y README. Sin esto, no se debe escribir en producción.
 
@@ -71,6 +72,12 @@ Detectado el 2026-08-19 al revisar el original porcentajes-transfer. Cuando un r
 estado **pendiente** · prioridad 8 · rigor `estandar` · SDD no · rama `feature/F-012-epsilon-compartida-entre-servicios`
 
 Detectado por la review de la Fase 2 de F-002 (observacion 9.4). El test test_f002_r26_la_tolerancia_es_la_del_cuadrante navega con Path(__file__).resolve().parents[3] hasta services/dedicacion-api/domain/estados.py para comprobar que la tolerancia del transfer (0.00005) sigue siendo el equivalente exacto del _EPSILON del cuadrante (0.005 en escala 0-100). La decision es la correcta y NO viola el limite de servicio: no importa codigo ni duplica logica, y sin ese test las dos epsilon se separarian sin que nadie se entere. Pero ata la suite del transfer a la disposicion del monorepo: si algun dia el servicio se extrae a su propio repositorio, el test se cae con un error de ruta en vez de con el mensaje de negocio que lleva escrito. Hay que decidir como se vigila esa invariante entre servicios sin depender de rutas relativas.
+
+### F-014 · Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14
+
+estado **pendiente** · prioridad 20 · rigor `documental` · SDD no · rama `feature/F-014-cabos-sigrid-administracion`
+
+Decision del humano el 2026-08-20: estas dos cosas dejan de bloquear F-002 y la fase 7 de F-008, y se agrupan aqui con prioridad baja. (1) LIMPIEZA EN SIGRID: quedo viva la fila de la primera escritura real del sistema, hmores.ide=403039, synckey 'porcentajes:77', marca PRUEBA-PORC, en el parte PT26/00296 (hmo.ide=2820419) de la obra de pruebas 0404, escrita el 2026-08-20. El humano queria verla en la pantalla del ERP antes de borrarla. Se borra con 'prueba_escritura_porcentajes.py limpiar --confirmar --ano 2026 --mes 7', que solo toca lo marcado PRUEBA-PORC; la cabecera del parte quedaria creada y vacia y hay que decidir si se borra tambien. OJO: cuando se pruebe el registro desde Azure se escribiran MAS lineas PRUEBA-PORC en la misma obra y mes, indistinguibles de esa, asi que conviene hacerlo antes o asumir que habra que distinguirlas por ide. (2) ADMINISTRACION: avisar de las cuatro partidas duplicadas sin cero inicial en el presupuesto de POSTV2 (656, 664, 680, 693, colgando de la raiz en vez de CD; tabla en progress/sigrid_F-002.md), y decidir si la procedencia de las reglas P4/P5 la firma el responsable del proyecto (como hoy) o pasa por Administracion. El test de procedencia no clava el interlocutor, asi que cambiar esa linea no rompe nada.
 
 ### F-001 · Primera suite de tests de dedicacion-api: la regla del 100 %
 

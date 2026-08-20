@@ -40,7 +40,7 @@
         "Tests offline que fijan el comportamiento de conflicto y de destino de postventa",
         "Verificado contra Sigrid con prueba_escritura_porcentajes.py en modo pruebas, con el volcado en progress/"
       ],
-      "status": "blocked",
+      "status": "in_progress",
       "sdd": true,
       "rigor": "critico",
       "priority": 2,
@@ -190,6 +190,23 @@
       "rigor": "critico",
       "priority": 4,
       "branch": "feature/F-013-linea-sin-partida-confirma"
+    },
+    {
+      "id": "F-014",
+      "title": "Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14",
+      "description": "Decision del humano el 2026-08-20: estas dos cosas dejan de bloquear F-002 y la fase 7 de F-008, y se agrupan aqui con prioridad baja. (1) LIMPIEZA EN SIGRID: quedo viva la fila de la primera escritura real del sistema, hmores.ide=403039, synckey 'porcentajes:77', marca PRUEBA-PORC, en el parte PT26/00296 (hmo.ide=2820419) de la obra de pruebas 0404, escrita el 2026-08-20. El humano queria verla en la pantalla del ERP antes de borrarla. Se borra con 'prueba_escritura_porcentajes.py limpiar --confirmar --ano 2026 --mes 7', que solo toca lo marcado PRUEBA-PORC; la cabecera del parte quedaria creada y vacia y hay que decidir si se borra tambien. OJO: cuando se pruebe el registro desde Azure se escribiran MAS lineas PRUEBA-PORC en la misma obra y mes, indistinguibles de esa, asi que conviene hacerlo antes o asumir que habra que distinguirlas por ide. (2) ADMINISTRACION: avisar de las cuatro partidas duplicadas sin cero inicial en el presupuesto de POSTV2 (656, 664, 680, 693, colgando de la raiz en vez de CD; tabla en progress/sigrid_F-002.md), y decidir si la procedencia de las reglas P4/P5 la firma el responsable del proyecto (como hoy) o pasa por Administracion. El test de procedencia no clava el interlocutor, asi que cambiar esa linea no rompe nada.",
+      "acceptance": [
+        "La fila de prueba hmores.ide=403039 esta borrada de Sigrid, o hay decision escrita de dejarla y por que",
+        "Decidido y anotado que se hace con la cabecera del parte PT26/00296, que quedaria creada y vacia",
+        "Administracion esta avisada de las cuatro partidas duplicadas de POSTV2",
+        "La linea de procedencia de P4/P5 en docs/ARCHITECTURE.md refleja quien firma de verdad",
+        "bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "documental",
+      "priority": 20,
+      "branch": "feature/F-014-cabos-sigrid-administracion"
     }
   ]
 }
