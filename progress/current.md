@@ -1,16 +1,16 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-002 · en review de cierre.** Ninguna otra feature en ejecución. Rama
-`dev`, con **todo el trabajo aprobado ya integrado**: F-001, F-003, F-004,
-F-009, F-013 y las fases 1–6 de F-008.
+**Ninguna feature en ejecución.** Rama `dev`, con **todo el trabajo aprobado
+integrado**: F-001, **F-002**, F-003, F-004, F-009, F-013 y las fases 1–6 de
+F-008. **F-002 cerró el 2026-08-20** con tres reviews aprobadas (fase 1, fase
+2 y cierre).
 
 ## Estado del backlog (12 features)
 
 | Estado | Features |
 |---|---|
-| `done` | F-001, F-003, F-004, F-009, F-013 |
-| `in_progress` | **F-002** — review de cierre en curso |
+| `done` | F-001, **F-002**, F-003, F-004, F-009, F-013 |
 | `blocked` | **F-008** — esperando la fase 7, que es del humano |
 | `pending` | F-005, F-006, F-011, F-012, F-014 |
 
@@ -59,8 +59,16 @@ cd services/dedicacion-transfer
 que distinguirlas a mano.
 
 F-014 recoge también el aviso a Administración de las cuatro partidas
-duplicadas de POSTV2 (`656`, `664`, `680`, `693`) y quién firma la procedencia
-de las reglas P4/P5.
+duplicadas de POSTV2 (`656`, `664`, `680`, `693`), quién firma la procedencia
+de las reglas P4/P5, y un tercer cabo que dejó la review de cierre de F-002:
+
+> **La Regla B (sobrecarga del 100 %) nunca se ha ejercitado contra Sigrid
+> real.** Está implementada y probada offline —35 tests, cobertura y
+> mutación—, pero el preflight de julio no llegó a dispararla porque el parte
+> de la obra destino **no existía** y no había líneas `M*` previas con las que
+> chocar. No es un defecto: es que el caso no se dio. Conviene que **la
+> primera vez que un parte real tenga líneas `M*` previas, alguien mire ese
+> preflight con atención**.
 
 ## Lo que el sistema sabe hacer hoy, comprobado
 
