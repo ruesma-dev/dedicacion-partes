@@ -39,6 +39,7 @@ sitio.
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -142,8 +143,38 @@ def hallazgos(texto: str) -> dict[str, list[str]]:
     return encontrado
 
 
+def _rutas_que_git_puede_versionar() -> set[Path] | None:
+    """Ficheros trackeados + sin versionar que NO estan ignorados.
+
+    Es exactamente el conjunto que puede acabar en el historial. Un fichero
+    ignorado por `.gitignore` no esta en el repositorio y no lo estara: es el
+    caso de las COPIAS LOCALES (`*.local.ps1`) que `infra/README_dedicacion.md`
+    manda crear con la suscripcion y el tenant reales. Barrer el sistema de
+    ficheros sin este filtro las delata y da un falso positivo que deja el
+    portero en rojo por hacer justo lo que la documentacion prescribe.
+
+    Devuelve None si git no esta disponible; en ese caso se barre todo, que es
+    el comportamiento conservador.
+    """
+    try:
+        salida = subprocess.run(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+            cwd=RAIZ, capture_output=True, text=True, timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if salida.returncode != 0:
+        return None
+    return {
+        (RAIZ / linea.strip()).resolve()
+        for linea in salida.stdout.splitlines()
+        if linea.strip()
+    }
+
+
 def ficheros_barridos() -> list[Path]:
-    """Todos los ficheros de texto bajo los tres directorios vigilados."""
+    """Los ficheros de texto vigilados que git puede llegar a versionar."""
+    versionables = _rutas_que_git_puede_versionar()
     encontrados: list[Path] = []
     for directorio in DIRECTORIOS:
         raiz = RAIZ / directorio
@@ -154,8 +185,11 @@ def ficheros_barridos() -> list[Path]:
                 continue
             if any(parte in IGNORADOS for parte in fichero.parts):
                 continue
-            if fichero.suffix.lower() in SUFIJOS:
-                encontrados.append(fichero)
+            if fichero.suffix.lower() not in SUFIJOS:
+                continue
+            if versionables is not None and fichero.resolve() not in versionables:
+                continue
+            encontrados.append(fichero)
     return encontrados
 
 
