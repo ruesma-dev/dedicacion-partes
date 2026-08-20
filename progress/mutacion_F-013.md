@@ -1,7 +1,7 @@
 <!-- progress/mutacion_F-013.md -->
 # F-013 · Campaña de mutación
 
-Generado por `python -m harness.mutacion --feature F-013` el 2026-08-20 14:38.
+Generado por `python -m harness.mutacion --feature F-013` el 2026-08-20 14:40.
 
 ## Alcance
 
@@ -9,10 +9,10 @@ Origen del diff: **rama** (`f594ff1e6e81cfea13f82b4b96a11e35d2b27ea4` .. `featur
 
 | Fichero | Líneas en alcance |
 |---|---|
-| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | 80 |
+| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | 85 |
 | `services/dedicacion-transfer/application/services/reglas_porcentajes.py` | 70 |
 | `services/dedicacion-transfer/domain/models/registro_models.py` | 19 |
-| **Total** | **169** |
+| **Total** | **174** |
 
 ## Totales
 
@@ -23,7 +23,7 @@ Origen del diff: **rama** (`f594ff1e6e81cfea13f82b4b96a11e35d2b27ea4` .. `featur
 | Muertos | 7 |
 | Supervivientes | 0 |
 | Timeouts | 0 |
-| Tiempo total | 3.5 s |
+| Tiempo total | 3.1 s |
 | Muestreo | no: campaña completa |
 
 ## Supervivientes
