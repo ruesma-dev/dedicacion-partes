@@ -128,7 +128,11 @@ function Ejecutar-Sql($base, $sql) {
 # (lo usa Ejecutar-Sql mas arriba). Mezclarlos da:
 #   ERROR: unrecognized arguments: -d dedicacion
 Section "4) Base '$PG_DB'"
-$existe = az postgres flexible-server db show -g $PG_RG -s $PG -n $PG_DB --query "name" -o tsv 2>$null
+# `db show` DEVUELVE ERROR si la base no existe, y con $ErrorActionPreference
+# = "Stop" eso aborta el script: en PS 5.1 el `2>$null` sobre un ejecutable
+# nativo no silencia nada, lo convierte en NativeCommandError. Se pregunta
+# con `db list`, que devuelve vacio sin fallar.
+$existe = az postgres flexible-server db list -g $PG_RG -s $PG --query "[?name=='$PG_DB'] | [0].name" -o tsv
 if ([string]::IsNullOrWhiteSpace($existe)) {
     az postgres flexible-server db create -g $PG_RG -s $PG -n $PG_DB --only-show-errors | Out-Null
     Write-Host "  Base '$PG_DB' creada." -ForegroundColor Green

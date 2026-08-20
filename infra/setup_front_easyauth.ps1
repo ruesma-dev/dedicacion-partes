@@ -74,7 +74,11 @@ if (-not $GROUP_ID) { throw "No pude crear ni localizar el grupo '$GRUPO_ACCESO'
 function Anadir-Miembro($identificador) {
     $oid = $identificador
     if ($identificador -notmatch '^[0-9a-fA-F-]{36}$') {
-        $oid = az ad user show --id $identificador --query id -o tsv 2>$null
+        # Un identificador que no existe hace fallar a `ad user show`, y el
+        # aviso de la linea siguiente ya contempla ese caso: se tolera.
+        $oid = $null
+        try   { $oid = az ad user show --id $identificador --query id -o tsv }
+        catch { $oid = $null }
         if (-not $oid) { Write-Warning "No encuentro al usuario '$identificador'. Lo salto."; return }
     }
     $esMiembro = az ad group member check --group $GROUP_ID --member-id $oid --query value -o tsv

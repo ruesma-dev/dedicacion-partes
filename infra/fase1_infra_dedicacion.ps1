@@ -49,7 +49,12 @@ foreach ($p in @(
 az extension add --name containerapp --upgrade --only-show-errors | Out-Null
 
 # objectId de quien ejecuta, para poder escribir secretos en el Key Vault.
-$ME = az ad signed-in-user show --query "id" -o tsv 2>$null
+# Si quien ejecuta es un service principal, `signed-in-user show` falla y con
+# ErrorActionPreference="Stop" abortaria. El aviso de abajo ya contempla que
+# no se resuelva, asi que se tolera el fallo aqui.
+$ME = $null
+try   { $ME = az ad signed-in-user show --query "id" -o tsv }
+catch { $ME = $null }
 if ([string]::IsNullOrWhiteSpace($ME)) {
     Write-Host "  (aviso) no pude resolver tu objectId: me salto el rol 'Key Vault Secrets Officer' para ti." -ForegroundColor Yellow
     Write-Host "  (aviso) sin el, add_secrets_dedicacion.ps1 fallara al guardar." -ForegroundColor Yellow
@@ -94,7 +99,7 @@ Require $LAW_CUSTOMERID "No pude obtener el customerId de Log Analytics '$LAW'."
 Section "5) Key Vault $KV (RBAC)"
 # Idempotente: `keyvault create` NO lo es (falla con "already exists" al
 # relanzar la fase 1, que el README promete repetible). Se comprueba antes.
-$KV_ID = az keyvault show -n $KV -g $RG --query "id" -o tsv 2>$null
+$KV_ID = az keyvault list -g $RG --query "[?name=='$KV'] | [0].id" -o tsv
 if ([string]::IsNullOrWhiteSpace($KV_ID)) {
     az keyvault create -n $KV -g $RG -l $LOCATION `
         --enable-rbac-authorization true --tags $TAGS | Out-Null
@@ -123,7 +128,7 @@ az containerapp env create -n $CAE -g $RG -l $LOCATION `
 
 # --- 7) Comprobacion: la pasarela de Sigrid existe y NO se toca -------------
 Section "7) sigrid-api (reutilizada, solo se comprueba)"
-$SIGRID_ID = az functionapp show -n $SIGRID_FUNC -g $SIGRID_RG --query "id" -o tsv 2>$null
+$SIGRID_ID = az functionapp list -g $SIGRID_RG --query "[?name=='$SIGRID_FUNC'] | [0].id" -o tsv
 if ([string]::IsNullOrWhiteSpace($SIGRID_ID)) {
     Write-Host "  (aviso) no encuentro '$SIGRID_FUNC' en '$SIGRID_RG'. Revisa el nombre." -ForegroundColor Yellow
     Write-Host "  (aviso) NO la crees: es de otro proyecto y es el UNICO acceso al SQL Server de Sigrid." -ForegroundColor Yellow

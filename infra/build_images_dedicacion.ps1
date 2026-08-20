@@ -65,7 +65,12 @@ foreach ($svc in $Solo) {
 
     # --- Un tag publicado no se reescribe JAMAS (R23) ----------------------
     if (-not $Simular) {
-        $yaEsta = az acr repository show-tags -n $ACR --repository $repo --query "[?@=='$TAG']" -o tsv 2>$null
+        # La PRIMERA vez el repositorio no existe en el registro y `show-tags`
+        # falla; con ErrorActionPreference="Stop" eso abortaria el build.
+        # No poder listar tags equivale a que el tag no esta publicado.
+        $yaEsta = $null
+        try   { $yaEsta = az acr repository show-tags -n $ACR --repository $repo --query "[?@=='$TAG']" -o tsv }
+        catch { $yaEsta = $null }
         if ($yaEsta) {
             throw "El tag '$TAG' ya existe en '$repo'. Un tag publicado no se reescribe: espera al minuto siguiente y relanza."
         }
