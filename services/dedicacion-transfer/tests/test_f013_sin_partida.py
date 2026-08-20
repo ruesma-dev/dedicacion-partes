@@ -126,6 +126,9 @@ def test_f013_r1_una_linea_sin_partida_emite_conflicto():
     assert c.lineas == []           # no borra nada: no sustituye a nadie
     assert c.recurso_ide == 400 and c.hora_codigo == "MJEFO"
     assert c.nuevas[0]["can"] == pytest.approx(0.4)
+    # Y dice en qué parte iba a caer: sin eso, el humano no sabe de qué mes
+    # ni de qué obra le están hablando.
+    assert c.parte_cod == "PT26/00251" and (c.ano, c.mes) == (2026, 7)
 
 
 def test_f013_r1_el_motivo_distingue_de_los_otros_dos():
@@ -193,6 +196,8 @@ def test_f013_r1_tambien_avisa_con_el_parte_por_crear():
     pf = _pipeline(cli).preflight(obra=OBRA, lineas=[linea_que_no_casa()])
 
     assert [c.motivo for c in pf.conflictos] == ["sin_partida"]
+    # Y lleva el código que se PROPONE para ese parte, no un hueco.
+    assert pf.conflictos[0].parte_cod == "PT26/09999"
 
 
 def test_f013_r1_el_aviso_de_la_accion_ya_no_promete_que_se_escribe():

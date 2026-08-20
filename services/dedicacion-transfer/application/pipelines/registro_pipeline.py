@@ -288,12 +288,17 @@ class RegistroPipeline:
         for a in acciones:
             if not sin_partida(a):
                 continue
-            parte_a = partes.get((int(obra_de(a).ide), a.ano, a.mes))
+            # Sin `.get` a propósito: el paso 5 dejó una entrada por cada
+            # acción `escribir`, y de aquí a allí ninguna acción PASA a
+            # serlo (el paso 6 solo las saca). Un `.get` con rama de
+            # respaldo sería una guarda que ningún test puede ejercitar, y
+            # que por tanto nadie mantiene. Lo mismo con `recurso_ide`: P1
+            # omite toda línea que no lo tenga.
+            parte_a = partes[(int(obra_de(a).ide), a.ano, a.mes)]
             conflictos.append(Conflicto(
                 clave=clave_sin_partida(a),
                 recurso_ide=int(a.recurso_ide), nombre=a.nombre,
-                ano=a.ano, mes=a.mes,
-                parte_cod=parte_a.cod if parte_a else None,
+                ano=a.ano, mes=a.mes, parte_cod=parte_a.cod,
                 horide=a.hora_ide, hora_codigo=a.hora_codigo,
                 lineas=[],          # no sustituye a nadie: no borra nada
                 nuevas=[_nueva(a)], registros=[a.registro_id],
