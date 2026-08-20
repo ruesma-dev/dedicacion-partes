@@ -118,7 +118,7 @@
         "azure-apps/dedicacion.md escrito, con la cabecera de origen y fecha",
         "El transfer sigue en modo pruebas al terminar la feature"
       ],
-      "status": "in_progress",
+      "status": "blocked",
       "sdd": true,
       "rigor": "critico",
       "priority": 3,
