@@ -315,3 +315,34 @@ colgando de la obra sin imputar a ninguna partida**, y el sistema la escribía
 sin preguntar. Al verlo, el humano decidió el 2026-08-20 que una línea sin
 partida debe **avisar y esperar confirmación**. Eso es **F-013**, ya
 implementada y aprobada.
+
+---
+
+## Limpieza de la prueba T14 — hecha el 2026-08-20
+
+Autorizada por el humano tras comprobar que el sistema desplegado en Azure
+funciona. Ejecutado desde `services/dedicacion-transfer`:
+
+```bash
+.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar --ano 2026 --mes 7
+```
+
+**Antes:** una sola fila, la de T14 (`hmores.ide = 403039`, `synckey
+'porcentajes:77'`). Ninguna más: la prueba desde Azure se detuvo en el
+preflight, como estaba acordado, así que no se escribió nada nuevo.
+
+**Después, verificado leyendo Sigrid:**
+
+- Filas con `synckey LIKE 'porcentajes:%'` o marca `PRUEBA-PORC`: **0**.
+- Líneas en el parte `PT26/00296` (`hmoide = 2820419`): **0**.
+
+**La cabecera del parte `PT26/00296` se queda**, vacía, en la obra de pruebas
+`0404`. Es una decisión, no un olvido: borrarla exigiría `DELETE` a mano sobre
+`hmo` y `con` —dos tablas de documento del ERP— sin ninguna herramienta que lo
+haga y sin haberlo probado nunca, y el riesgo supera al beneficio de quitar un
+parte vacío de la obra de pruebas. Si se vuelve a probar el registro en julio
+de 2026, el pipeline **reutilizará** ese parte en vez de crear otro, que es el
+comportamiento correcto.
+
+**Con esto, el sistema vuelve a no tener ni una fila propia en Sigrid**, igual
+que antes de T14.
