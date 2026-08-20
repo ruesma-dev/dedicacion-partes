@@ -115,11 +115,32 @@ if ($APP_PWD -eq $PGADMIN_PWD) {
 # Escapado para SQL: en PostgreSQL una comilla simple se duplica.
 $APP_PWD_SQL = $APP_PWD.Replace("'", "''")
 
-function Ejecutar-Sql($base, $sql) {
-    az postgres flexible-server execute `
-        -n $PG -u $PG_ADMIN -p $PGADMIN_PWD -d $base `
-        --querytext $sql --only-show-errors | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Fallo ejecutando SQL en la base '$base'." }
+function Ejecutar-Sql($base, $sql, [switch]$TolerarYaExiste) {
+    # UNA sentencia por llamada, sin `;` y sin bloques `DO $$...$$`:
+    # `az ... execute --querytext` trocea la consulta por `;`, asi que un
+    # bloque dollar-quoted le llega partido y PostgreSQL responde
+    # "unterminated dollar-quoted string". Con sentencias sueltas no pasa.
+    #
+    # El ErrorActionPreference se relaja solo aqui: en PS 5.1, capturar la
+    # salida de un ejecutable nativo con 2>&1 mientras esta en "Stop" convierte
+    # su stderr en error terminante y no se podria inspeccionar el mensaje.
+    $anterior = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $salida = az postgres flexible-server execute `
+            -n $PG -u $PG_ADMIN -p $PGADMIN_PWD -d $base `
+            --querytext $sql --only-show-errors 2>&1 | Out-String
+        $codigo = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $anterior
+    }
+    if ($codigo -ne 0) {
+        if ($TolerarYaExiste -and $salida -match "already exists") {
+            Write-Host "  (ya existia: no se recrea)" -ForegroundColor DarkGray
+            return
+        }
+        throw "Fallo ejecutando SQL en la base '$base':`n$salida"
+    }
 }
 
 # --- 4) La base --------------------------------------------------------------
@@ -145,17 +166,17 @@ Section "5) Rol de aplicacion '$PG_APP_USER'"
 # Rol PROPIO, con LOGIN y nada mas: ni SUPERUSER, ni CREATEDB, ni CREATEROLE,
 # ni REPLICATION. Es lo que va dentro del Container App, y por tanto lo unico
 # que podria filtrarse.
-$sqlRol = @"
-DO `$rol`$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$PG_APP_USER') THEN
-    CREATE ROLE $PG_APP_USER LOGIN PASSWORD '$APP_PWD_SQL'
-      NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
-  END IF;
-END
-`$rol`$;
-"@
-Ejecutar-Sql "postgres" $sqlRol
+# PostgreSQL no tiene CREATE ROLE IF NOT EXISTS, y el bloque DO que habia
+# aqui no sobrevive a `--querytext` (ver el comentario de Ejecutar-Sql). Se
+# intenta crear y se tolera que ya exista.
+Ejecutar-Sql "postgres" ("CREATE ROLE $PG_APP_USER LOGIN PASSWORD '$APP_PWD_SQL' " +
+    "NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS") -TolerarYaExiste
+
+# La contrasena se fija SIEMPRE, exista el rol de antes o no: es la unica forma
+# de garantizar que la del rol y la que se guarda en el Key Vault como
+# PG-PASSWORD son la misma. Si un intento anterior dejo el rol a medias con
+# otra contrasena, esto lo corrige en vez de dejar a la api sin poder conectar.
+Ejecutar-Sql "postgres" "ALTER ROLE $PG_APP_USER LOGIN PASSWORD '$APP_PWD_SQL'"
 Write-Host "  Rol '$PG_APP_USER' listo (LOGIN, sin privilegios globales)." -ForegroundColor Green
 
 # --- 6) Permisos DENTRO de nuestra base, y solo ahi -------------------------
@@ -163,15 +184,16 @@ Section "6) Permisos dentro de '$PG_DB' (esquema '$PG_SCHEMA')"
 # Desde PostgreSQL 15 el esquema public no deja crear tablas a cualquiera:
 # hace falta este GRANT explicito. Todo lo de abajo esta acotado a NUESTRA
 # base y a NUESTRO esquema; ninguna sentencia sale de ahi.
-$sqlPermisos = @"
-GRANT CONNECT ON DATABASE $PG_DB TO $PG_APP_USER;
-GRANT USAGE, CREATE ON SCHEMA $PG_SCHEMA TO $PG_APP_USER;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA $PG_SCHEMA TO $PG_APP_USER;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA $PG_SCHEMA TO $PG_APP_USER;
-ALTER DEFAULT PRIVILEGES IN SCHEMA $PG_SCHEMA GRANT ALL ON TABLES TO $PG_APP_USER;
-ALTER DEFAULT PRIVILEGES IN SCHEMA $PG_SCHEMA GRANT ALL ON SEQUENCES TO $PG_APP_USER;
-"@
-Ejecutar-Sql $PG_DB $sqlPermisos
+# Una por llamada, por el mismo motivo: `--querytext` trocea por `;`.
+$permisos = @(
+    "GRANT CONNECT ON DATABASE $PG_DB TO $PG_APP_USER",
+    "GRANT USAGE, CREATE ON SCHEMA $PG_SCHEMA TO $PG_APP_USER",
+    "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA $PG_SCHEMA TO $PG_APP_USER",
+    "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA $PG_SCHEMA TO $PG_APP_USER",
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA $PG_SCHEMA GRANT ALL ON TABLES TO $PG_APP_USER",
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA $PG_SCHEMA GRANT ALL ON SEQUENCES TO $PG_APP_USER"
+)
+foreach ($sentencia in $permisos) { Ejecutar-Sql $PG_DB $sentencia }
 Write-Host "  Permisos concedidos, acotados a '$PG_DB'." -ForegroundColor Green
 
 # --- 7) Resumen -------------------------------------------------------------
