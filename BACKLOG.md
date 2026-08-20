@@ -5,6 +5,8 @@
 
 Resumen: **13 features**, 7 abiertas, 6 terminadas.
 
+En curso: **F-015**.
+
 Bloqueadas: **F-008**.
 
 ## Trabajo abierto
@@ -12,7 +14,7 @@ Bloqueadas: **F-008**.
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-008 | Infraestructura y despliegue en Azure | 3 | bloqueada | critico | `feature/F-008-infra-azure` |
-| F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | spec lista | documental | `feature/F-015-portal-tarjeta-y-usuarios` |
+| F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | en curso | documental | `feature/F-015-portal-tarjeta-y-usuarios` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-011 | Un solo codigo de hora mes por trabajador | 7 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
@@ -40,9 +42,9 @@ Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo
 
 ### F-015 · Alta en el Portal Ruesma: tarjeta y usuarios del grupo
 
-estado **spec lista** · prioridad 4 · rigor `documental` · SDD sí · rama `feature/F-015-portal-tarjeta-y-usuarios`
+estado **en curso** · prioridad 4 · rigor `documental` · SDD sí · rama `feature/F-015-portal-tarjeta-y-usuarios`
 
-Pedida por el humano el 2026-08-20, con el sistema ya desplegado. Sin esto el sistema esta vivo pero nadie puede llegar a el: no hay tarjeta en el Portal Ruesma desde la que entrar, y solo tiene acceso quien ya este en el grupo de Entra. Dos partes. (1) TARJETA: pasar al proyecto front-portal la URL publica del front (ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io) y el objectId del grupo 'dedicacion-portal-users' para que anada la tarjeta. El objectId NO se escribe en este repositorio: se saca con 'az ad group show --group dedicacion-portal-users --query id -o tsv' y se pasa por el canal que se use con ese proyecto. Es trabajo que cruza la frontera del proyecto, asi que hay que mirar antes el documento de front-portal en azure-apps/. (2) USUARIOS: decidir quien entra (la decision D3 de F-008, que quedo abierta) y darles de alta con 'infra/setup_front_easyauth.ps1 -Miembros persona@ruesma.es'. La Enterprise App tiene asignacion requerida, asi que quien no este en el grupo no obtiene token: no basta con tener cuenta de Ruesma. Sale de F-008 (era su T30) para que aquella pueda cerrarse.
+Pedida por el humano el 2026-08-20, con el sistema ya desplegado. Sin esto el sistema esta vivo pero nadie puede llegar a el: no hay tarjeta en el Portal Ruesma desde la que entrar, y solo tiene acceso quien ya este en el grupo de Entra. Dos partes. (1) TARJETA: pasar al proyecto front-portal la URL publica del front (ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io) y el objectId del grupo 'dedicacion-portal-users' para que anada la tarjeta. El objectId NO se escribe en este repositorio: se saca con 'az ad group show --group dedicacion-portal-users --query id -o tsv' y se pasa por el canal que se use con ese proyecto. Es trabajo que cruza la frontera del proyecto, asi que hay que mirar antes el documento de front-portal en azure-apps/. (2) USUARIOS: decidir quien entra (la decision D3 de F-008, que quedo abierta) y darles de alta con 'infra/setup_front_easyauth.ps1 -Miembros persona@ruesma.es'. La Enterprise App tiene asignacion requerida, asi que quien no este en el grupo no obtiene token: no basta con tener cuenta de Ruesma. Sale de F-008 (era su T30) para que aquella pueda cerrarse. DECISIONES DEL HUMANO 2026-08-20: el icono lo elige el lider ('chart', por ser un cuadrante de porcentajes y no una comparativa); y la tarjeta se deja PUESTA CON EL GRUPO CONFIGURADO pero SIN dar de alta usuarios: el humano los mete a mano cuando decida quien entra. Con eso D3 deja de bloquear la feature.
 
 ### F-005 · Alinear los literales internos con el nombre «dedicación»
 

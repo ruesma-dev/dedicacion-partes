@@ -27,3 +27,38 @@ La entrada de catálogo ya está redactada en `design.md §1`, lista para pegar.
    de extremo a extremo, no como descarte de esto.
 
 Ningún GUID entra en la spec: solo el comando que lo obtiene.
+
+---
+
+## Decisiones cerradas y trabajo hecho (2026-08-20)
+
+- **Icono: `chart`.** Lo eligió el líder a petición del humano. Motivo: esto es
+  un **cuadrante de porcentajes**, no una comparativa; `compare` ya lo usa
+  «Comparativos» y confundiría dos cosas distintas en la misma parrilla.
+- **D3 ya no bloquea.** Decisión del humano: la tarjeta se deja **con el grupo
+  configurado** y él dará de alta a las personas a mano cuando decida quién
+  entra. La restricción funciona desde el primer día aunque el grupo esté casi
+  vacío.
+- **T1 · objectId obtenido** con `az ad group show`. **No se ha escrito en este
+  repositorio**; solo en `catalog.js` de `front-portal`, que es donde el propio
+  mecanismo del portal lo espera (todas sus entradas llevan el suyo).
+- **T2 · entrada añadida** a
+  `front-portal/public/assets/js/catalog.js`, en la categoría **Obra**, justo
+  detrás de «Partes de Trabajo». Sintaxis verificada con `node --check`.
+
+### ⚠ Lo que queda, y una advertencia
+
+**`front-portal` tenía cambios sin commitear ANTES de que se tocara nada**:
+`deploy.ps1` (211 líneas), `app.js` y el propio `catalog.js`. Entre esos
+cambios previos hay uno a medias que conviene mirar antes de desplegar:
+
+```
+requiredGroupId: ['REEMPLAZAR_OBJECT_ID_compras_usuarios'],
+```
+
+Es un marcador sin sustituir en la entrada de **Comparativos**. No es nuestro y
+no se ha tocado, pero **si se despliega así, esa tarjeta no dejará entrar a
+nadie**.
+
+El humano debe: revisar el diff completo de `front-portal`, commitear allí
+(es otro repositorio: el commit es suyo), y lanzar `.\deploy.ps1 -SoloFront`.
