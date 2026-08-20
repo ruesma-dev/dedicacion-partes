@@ -220,8 +220,8 @@
         "Ningun objectId ni identificador de Entra queda escrito en este repositorio",
         "azure-apps/dedicacion.md refleja quien puede entrar y como se da acceso a alguien nuevo"
       ],
-      "status": "pending",
-      "sdd": false,
+      "status": "spec_ready",
+      "sdd": true,
       "rigor": "documental",
       "priority": 4,
       "branch": "feature/F-015-portal-tarjeta-y-usuarios"
