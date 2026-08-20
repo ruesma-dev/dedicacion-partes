@@ -301,3 +301,59 @@ inalcanzables.
 
 Informes: `progress/impl_F-013.md`, `progress/review_F-013.md`,
 `progress/mutacion_F-013.md`.
+
+## 2026-08-20 · F-002 · Fijar las reglas P4 y P5: postventa y conflicto
+
+Rama `feature/F-002-reglas-postventa-conflicto` · `sdd: true` · rigor
+`critico` · **tres reviews aprobadas**: fase 1, fase 2 y **cierre**
+(`review_F-002_fase1.md`, `review_F-002_fase2.md`, `review_F-002_cierre.md`).
+Mergeada a `dev` en `985054e`.
+
+**El problema que resolvía.** El repositorio se contradecía sobre dos reglas
+que deciden qué se escribe en Sigrid, con el README diciendo una cosa y los
+docstrings otra. Ninguna de las dos versiones podía darse por buena sin
+preguntar.
+
+**Cómo se cerraron las dos decisiones.**
+- **D1 (postventa)**: el humano confirmó obra `POSTV2` fija y partida por
+  obra, y **se verificó con una lectura real** (consulta C2): 86 partidas de
+  obra en el presupuesto, todas hojas, con `cod` y `res` en campos separados,
+  así que el emparejamiento por **código exacto** que ya hacía el código era
+  el correcto. El `'postventa-2'` de los docstrings era **falso**.
+- **D2 (conflicto)**: el humano contestó con una **tercera opción** que no
+  existía en el repositorio —varias partidas por trabajador sí, pero la suma
+  del mes no pasa de 1—, lo que obligó a **volver a la PARADA 1** y rediseñar.
+  La vieja P4 se partió en dos reglas: **identidad** (recurso + mes + código
+  de hora + **partida**) y **capacidad** (el 100 % del trabajador), esta
+  última avisando y esperando confirmación, y viajando como un `Conflicto`
+  más para **no tocar `dedicacion-api` ni `dedicacion-front`**.
+
+**Lo que se verificó, con salida real.** Fase 1: cobertura 96,8 %, 9 mutantes
+y 0 supervivientes. Fase 2: **187 tests** en el transfer (eran 90), cobertura
+**99,1 %**, 34 mutantes y **1 superviviente demostrado equivalente** con una
+prueba ejecutable —la primera campaña dejó **8** y se atacaron los ocho, uno
+de ellos destapando un fallo real: el `contexto` de un conflicto mostraba
+líneas de **otro trabajador**—. Y **dos defectos reales corregidos**: el doble
+`DELETE` del mismo `hmores.ide` (R13) y el filtro de `resolver_postventa` que
+decía quedarse con las hojas y no lo hacía.
+
+**T13 y T14, ejecutadas contra Sigrid real el 2026-08-20.** El preflight de
+julio (13 obras, 4 líneas a escribir, 0 conflictos) y **la primera escritura
+real de este sistema en el ERP**: `hmores.ide = 403039`, parte `PT26/00296`
+creado, obra de pruebas `0404`. Volcados en `progress/sigrid_F-002.md`.
+
+**Dos avisos que sobreviven al cierre, ambos con dueño en F-014.** Sigue viva
+la fila de prueba en Sigrid; y **la Regla B nunca se ha ejercitado contra
+Sigrid real**, porque el parte de la obra destino no existía y no había líneas
+`M*` previas con las que chocar. Está probada offline, pero conviene que
+alguien mire con atención el primer preflight real que sí tenga líneas previas.
+
+**Lo que costó dos rechazos, y no fue el código.** Las reviews de la fase 1 y
+del cierre se rechazaron por el **rastro documental**, siempre del líder: un
+`current.md` que decía «no se ha tocado ni una línea de código» con siete
+commits hechos, y —lo más grave— **el volcado de T13 perdido al resolver un
+merge**, porque el líder reescribió `progress/current.md` entero sin darse
+cuenta de que llevaba dentro evidencia que no estaba en ningún otro sitio. Se
+recuperó del commit `01bf62a`. Lección: **un fichero de rastro puede contener
+información única; resolver su conflicto reescribiéndolo la destruye en
+silencio.**
