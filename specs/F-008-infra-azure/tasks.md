@@ -243,7 +243,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
 > Ninguna de estas tareas la ejecuta un agente. El humano pega el resultado
 > real en `progress/impl_F-008.md`.
 
-- [ ] **T24 · MANUAL (humano)**: provisión base.
+- [x] **T24 · MANUAL (humano) — EJECUTADA el 2026-08-20**: provisión base.
   ```powershell
   cd C:\Users\pgris\PycharmProjects\porcentajes\infra
   . .\00_vars_dedicacion.ps1
@@ -255,7 +255,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
   MI, Log Analytics, Key Vault y CAE, **y ninguna Storage Account** (R1, R3,
   R6).
 
-- [ ] **T25 · MANUAL (humano)**: imágenes y alta de los tres servicios, en
+- [x] **T25 · MANUAL (humano) — EJECUTADA el 2026-08-20**: imágenes y alta de los tres servicios, en
   orden.
   ```powershell
   . .\00_vars_dedicacion.ps1 ; . .\00_capps_vars_dedicacion.ps1
@@ -268,7 +268,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
   --repository dedicacion-api -o table` muestra el tag fechado (R23), y
   `git diff infra/imagenes.json` recoge los tres tags publicados (R24).
 
-- [ ] **T26 · MANUAL (humano)**: Easy Auth.
+- [x] **T26 · MANUAL (humano) — EJECUTADA el 2026-08-20**: Easy Auth.
   ```powershell
   .\setup_front_easyauth.ps1
   ```
@@ -276,7 +276,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
   Entra; un usuario **fuera** del grupo `dedicacion-portal-users` no entra
   (R36).
 
-- [ ] **T27 · MANUAL (humano)**: comprobación de exposición y modo pruebas —
+- [x] **T27 · MANUAL (humano) — EJECUTADA el 2026-08-20**: comprobación de exposición y modo pruebas —
   **la verificación que de verdad importa**.
   ```powershell
   # Solo el front es externo (R7)
@@ -296,7 +296,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
   devuelve `true`; `maxReplicas` = 1 en transfer y api; todos los secretos con
   `keyVaultUrl`.
 
-- [ ] **T28 · MANUAL (humano)**: salud de los tres servicios (R33, R34, R35).
+- [x] **T28 · MANUAL (humano) — EJECUTADA el 2026-08-20**: salud de los tres servicios (R33, R34, R35).
   - **front**: navegar a `https://<fqdn-front>/health` **con sesión iniciada**
     (anónimo redirige al login: es lo esperado, R35).
   - **api**: `https://<fqdn-front>/api/v1/health` en el navegador; debe
@@ -308,7 +308,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
     —`modo_pruebas: true`, `database: "ruesma"` (R34)—, hay que llamarlo desde
     dentro del entorno.
 
-- [ ] **T29 · MANUAL (humano)**: prueba funcional de extremo a extremo, **sin
+- [x] **T29 · MANUAL (humano) — EJECUTADA el 2026-08-20**: prueba funcional de extremo a extremo, **sin
   escribir en Sigrid**: entrar al front, sincronizar maestros, crear un
   periodo, cargar un cuadrante y ejecutar **solo `registro/preflight`**.
   **Verificación:** el preflight devuelve acciones y conflictos; **no se
@@ -324,7 +324,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
   («Obra») e icono. **El GUID no entra en este repositorio** (R21).
   **Verificación:** petición enviada; la tarjeta la añade ese proyecto.
 
-- [ ] **T31 · MANUAL (humano)**: refrescar `docs/INTEGRACION.md` y
+- [x] **T31 · MANUAL (humano) — EJECUTADA el 2026-08-20**: refrescar `docs/INTEGRACION.md` y
   `azure-apps/dedicacion.md` con el estado real tras el despliegue (FQDN del
   front, fecha, «estado al escribirlo»), y commitear la copia en `azure-apps`.
   **Verificación:** las dos cabeceras llevan fecha y commit de origen.

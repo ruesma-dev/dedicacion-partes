@@ -10,13 +10,18 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-08-20.**
+> **Fecha del documento: 2026-08-20** (actualizado tras el despliegue).
 >
-> **Estado al escribirlo:** los scripts de despliegue existen y están
-> revisados; **en Azure no hay nada creado todavía**. La ejecución es manual
-> y la hace una persona (fase 7 de `specs/F-008-infra-azure/tasks.md`). Hasta
-> entonces el sistema corre en local. Cuando el despliegue se haga, hay que
-> volver aquí y actualizar esta cabecera y la §6 con el FQDN del front.
+> **Estado: DESPLEGADO.** El 2026-08-20 se ejecutó la fase 7 y los tres
+> servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo y el
+> transfer en modo pruebas. Imágenes con el tag **`r20260820-1625`**
+> (`infra/imagenes.json` lleva el digest de cada una).
+>
+> **URL del front:**
+> `https://ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io`
+>
+> **Todavía no es usable por nadie más que quien esté en el grupo**: falta la
+> tarjeta en el Portal Ruesma y dar de alta a los usuarios. Es **F-015**.
 
 ---
 
@@ -241,9 +246,12 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Container Apps | `ca-dedicacion-transfer`, `ca-dedicacion-api`, `ca-dedicacion-front` |
 | Entorno | `cae-dedicacion-dev` |
 | Identidad gestionada | `id-dedicacion-dev` |
-| Key Vault | `kv-dedicacion-<sufijo>` |
+| Key Vault | `kv-dedicacion-dd7k2` |
 | Logs | `log-dedicacion-dev` |
-| Grupo de acceso | `dedicacion-portal-users` |
+| Grupo de acceso | `dedicacion-portal-users` (asignación requerida: quien no esté, no entra) |
+| FQDN del front (público) | `ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io` |
+| FQDN de la api (interno) | `ca-dedicacion-api.internal.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io` |
+| FQDN del transfer (interno) | `ca-dedicacion-transfer.internal.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io` |
 
 ---
 
