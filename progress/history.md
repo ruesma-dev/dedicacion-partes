@@ -169,3 +169,28 @@ nunca.
 
 Informes: `progress/impl_F-003.md`, `progress/review_F-003.md`,
 `progress/mutacion_F-003.md`.
+
+## 2026-08-20 · Retiradas F-007 y F-010 (se hacen en `arnes-base`)
+
+Decisión del humano. Las dos eran mejoras del **arnés genérico**, no de este
+proyecto, y se abordan directamente en el repositorio `arnes-base`:
+
+- **F-007** · dos defectos del instalador: arrastra su propio `.pytest_cache/`
+  y los `__pycache__/` del payload, y no copia el `.gitattributes`.
+- **F-010** · cinco automejoras del protocolo detectadas revisando F-001 y
+  F-002: `CHECKPOINTS.md` no contempla la review de una fase; el reviewer
+  debería hacer control positivo cuando el alcance de mutación salga vacío;
+  la caché del portero puede enseñar un `[OK]` sin ejecutar la suite; un
+  superviviente declarado «equivalente» debería traer demostración
+  **ejecutable** y el reviewer reproducirla; y quitar código defensivo para
+  matar un mutante obliga a verificar el invariante **en quien construye el
+  dato**.
+
+**No se pierden**: quedan escritas aquí y en los informes de review que las
+originaron (`progress/review_F-001.md` §10, `progress/review_F-002_fase1.md`
+§10, `progress/review_F-002_fase2.md` §11). Quien las implemente en
+`arnes-base` tiene ahí el razonamiento completo y el caso real que las motivó.
+
+**Reordenado el backlog** en la misma decisión: **F-008 (despliegue en Azure)
+sube a prioridad 3**, justo detrás de F-002, para poder hacer pruebas en un
+entorno desplegado.
