@@ -243,3 +243,75 @@ hora=MCAP  tex='PRUEBA-PORC'  synckey='porcentajes:77'
   lo tiene que mirar una persona.
 - El comportamiento con **conflictos y pisado** (`DELETE` + `INSERT`): en esta
   prueba había 0 conflictos.
+
+---
+
+## T13 · Casado real contra Sigrid, sin escribir
+
+- **Fecha:** 2026-08-20 · **Periodo probado:** **julio de 2026** (`--mes 7`).
+- **Tipo:** solo lectura. Ninguna escritura.
+- **Nota de trazabilidad:** esta sección se escribió el 2026-08-20 recuperando
+  el contenido de `progress/current.md` del commit `01bf62a`. **Se había
+  perdido al resolver el merge de F-008**, donde vivía dentro de `current.md`;
+  lo detectó la review de cierre de F-002 (`progress/review_F-002_cierre.md`
+  §5.4). Las cifras son las de la ejecución real, no reconstruidas de memoria.
+
+### Qué se lanzó
+
+| Fase | Resultado |
+|---|---|
+| `capitulos` | Obra de postventa localizada: `POSTV2 · POSTVENTA 2` (`ide = 1659588`), con su árbol de presupuesto |
+| `estado --ano 2026 --mes 7` | Obra de pruebas `0404 · CUBIERTA NAVE 14 - JOHN DEERE` (`ide = 828942`, `cenide = 828943`). **Parte de julio: no existía** |
+| `preflight` del periodo completo | por el camino real front → api → transfer → `sigrid-api` |
+
+### Totales del preflight
+
+**13 obras · 25 acciones: 4 escribir, 21 omitir, 0 conflictos.**
+
+### Las cuatro líneas que se escribirían
+
+| Obra | Trabajador | `can` | Código | `paride` | `pre` | `tot` |
+|---|---|---|---|---|---|---|
+| 0025 | Arriaza García, Raquel | 0,385 | MJEFO | **0** ⚠ | 5.538,39 | 2.132,28 |
+| 0404 | Álvarez Seguido, Rafael | 0,5 | MCAP | 94178 (`CI.1.8`) | 4.500,00 | 2.250,00 |
+| 0658 | Arriaza García, Raquel | 0,18 | MJEFO | 359825 | 5.538,39 | 996,91 |
+| 0707 | Arriaza García, Raquel | 0,435 | MJEFO | 392522 | 5.538,39 | 2.409,20 |
+
+Dos comprobaciones que salieron bien: los importes cuadran al céntimo
+(`tot = can × pre`), y **Arriaza suma 0,385 + 0,18 + 0,435 = 1,0 exacto**, el
+100 % de la persona repartido entre tres obras.
+
+### Las dos comprobaciones para las que existía T13
+
+1. **¿La partida resuelta es una hoja?** Sí. La única línea con partida casada
+   en la obra de pruebas es la de Álvarez: `paride = 94178`, `partida_cod =
+   CI.1.8`, con `partida_metodo = auto_categoria`. En obra normal la
+   resolución sale de `partidas_hoja(...)`, que filtra hojas por
+   construcción; en postventa, tras T9, la cascada exige **hoja activa**.
+2. **¿Apareció el conflicto de sobrecarga del 100 %?** **No, y con motivo:**
+   `conflictos: 0`. Ninguna de las cuatro líneas chocaba con una línea `M*`
+   previa, porque el parte de julio de la obra destino **no existía todavía**.
+   Es decir: **la Regla B no llegó a ejercitarse contra datos reales** — está
+   probada offline (6 tests de interacción, cobertura y mutación), pero no
+   contra Sigrid. Queda dicho para no confundir «no saltó» con «no funciona».
+
+### Las 21 omisiones, por motivo
+
+| Nº | Motivo |
+|---|---|
+| 10 | el recurso **no tiene código de hora mensual `M*`** en Sigrid |
+| 4 | **sin recurso** en Sigrid para el empleado |
+| 7 | la obra (`0009`, `0285`, `0404`, `0700`) **no casa con ninguna partida de POSTV2** |
+
+**14 de 21 son por datos de Sigrid, no por nuestra lógica**, y es justo lo que
+ataca **F-011**. Las otras 7 son líneas de postventa que la regla omite con
+motivo: esa dedicación no llegará a Sigrid hasta que Administración cree esas
+partidas en el presupuesto de POSTV2.
+
+### El hallazgo que originó F-013
+
+La línea de Arriaza en la obra `0025` saldría con **`paride = 0`**: **2.132,28 €
+colgando de la obra sin imputar a ninguna partida**, y el sistema la escribía
+sin preguntar. Al verlo, el humano decidió el 2026-08-20 que una línea sin
+partida debe **avisar y esperar confirmación**. Eso es **F-013**, ya
+implementada y aprobada.

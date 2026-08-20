@@ -127,8 +127,16 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > falla si alguien la reenuncia fuera de aquí.
 >
 > Todos los puntos están validados. Que la regla esté escrita no autoriza a
-> escribir en producción: `OBRA_PRUEBAS_FORZAR` se queda a `true` hasta que
-> la verificación real contra Sigrid (F-002, T13 y T14) la haga el humano.
+> escribir en producción: `OBRA_PRUEBAS_FORZAR` **se queda a `true`**.
+>
+> El motivo ya no es que falte verificar contra Sigrid —**T13 y T14 se
+> ejecutaron el 2026-08-20** y el sistema escribe de verdad en el ERP—, sino
+> el que consta en `progress/sigrid_F-002.md` § «Qué NO queda demostrado»:
+> **la imputación a partidas en producción no está validada**. En modo pruebas
+> toda línea se desvía a la obra `0404` conservando la partida de su obra de
+> origen, así que solo la línea cuya obra original *era* la de pruebas resultó
+> representativa. Salir del modo pruebas exige **autorización expresa del
+> humano para una acción concreta**.
 
 1. <a id="regla-p1"></a>**Solo recursos mensuales (P1).** Se registra únicamente el recurso que
    tenga un código de hora `M*` (`MENC`, `MCAP`, `MJEFO`…) en `reshor`. Es
@@ -185,7 +193,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
    *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
    verificado contra Sigrid, ver `progress/sigrid_F-002.md`* (lectura del
    presupuesto completo de la obra de postventa: 225 hojas, 23 capítulos, y
-   las 84 partidas de obra todas hojas colgando de `CD`).
+   las **86** partidas de obra, todas hojas, **82 colgando de `CD` y cuatro
+   sueltas en la raíz** — `656`, `664`, `680` y `693`, duplicados sin el cero
+   inicial que Administración debería limpiar; ver F-014).
 6. <a id="regla-p4"></a><a id="regla-conflicto"></a>**Identidad de la línea e idempotencia (P4 · Regla A).**
    `synckey = "porcentajes:{asignacion_id}"` (no se cruza con los partes
    diarios, que usan otro prefijo): reejecutar no duplica.

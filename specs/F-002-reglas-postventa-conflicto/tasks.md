@@ -4,12 +4,15 @@
 Rama: `feature/F-002-reglas-postventa-conflicto` (ya creada y activa).
 Un commit por tarea: `F-002 Tn: descripción`.
 
-> **Estado (2026-08-19).** La **Fase 1 (T1–T5) está hecha y APROBADA**
-> (`progress/impl_F-002.md`, `progress/review_F-002_fase1.md`). **D1 y D2
-> están cerradas** (`requirements.md` §2), así que **la ⛔ PARADA de la v1 ya
-> no existe**: nada de lo que sigue espera respuesta de nadie. Lo único que
-> sigue exigiendo al humano son las verificaciones marcadas
-> **MANUAL (humano)** (T6, T13, T14).
+> **Estado (2026-08-20).** **Fases 1 y 2 hechas y APROBADAS**
+> (`review_F-002_fase1.md`, `review_F-002_fase2.md`). **D1 y D2 cerradas**
+> (`requirements.md` §2): la ⛔ PARADA de la v1 ya no existe.
+>
+> De las tres verificaciones **MANUAL (humano)** que quedaban: **T13 y T14 se
+> ejecutaron el 2026-08-20** contra Sigrid real (volcados en
+> `progress/sigrid_F-002.md`), y **T6 se movió a F-014**. Lo único que sigue
+> pendiente de T14 es `limpiar --confirmar`, que también está en F-014: hay
+> una fila de prueba viva en Sigrid (`hmores.ide = 403039`).
 >
 > **T1–T5 no se tocan.** Están hechas, revisadas y commiteadas.
 
@@ -74,7 +77,9 @@ Un commit por tarea: `F-002 Tn: descripción`.
 
 ## Fase 2 — Escribir las decisiones y alinear el código
 
-- [ ] **T6**: Trasladar a Administración el **aviso de las cuatro partidas
+- [~] **T6 · MOVIDA A F-014** por decisión del humano del 2026-08-20: deja de
+  bloquear el cierre de F-002 y se hará con prioridad baja. Contenido, que se
+  conserva íntegro en la descripción de F-014: trasladar a Administración el **aviso de las cuatro partidas
   duplicadas** sin cero inicial del presupuesto de `POSTV2` (`656`, `664`,
   `680`, `693`, colgando de la raíz en vez de `CD`; tabla en
   `requirements.md` §2 · D1 y volcado en `progress/sigrid_F-002.md`). No
@@ -230,12 +235,18 @@ Un commit por tarea: `F-002 Tn: descripción`.
 
 ## Fase 3 — Verificación real y cierre
 
-- [ ] **T13**: Verificar el casado contra Sigrid **sin escribir**:
+- [x] **T13** · **EJECUTADA el 2026-08-20** sobre el periodo **julio de 2026**
+  (no agosto: el mes con datos reales era el 7). Volcado completo en
+  `progress/sigrid_F-002.md` § T13. Resultado: **13 obras, 25 acciones —
+  4 escribir, 21 omitir, 0 conflictos**. La partida resuelta **es una hoja**
+  (`CI.1.8`, por categoría); el conflicto de sobrecarga **no llegó a
+  ejercitarse** porque el parte de julio de la obra destino no existía, y eso
+  queda dicho en el volcado para no confundirlo con «funciona».
   ```
   cd services/dedicacion-transfer
   python prueba_escritura_porcentajes.py capitulos
-  python prueba_escritura_porcentajes.py estado --ano 2026 --mes 8
-  python prueba_escritura_porcentajes.py preflight --ano 2026 --mes 8
+  python prueba_escritura_porcentajes.py estado --ano 2026 --mes 7
+  python prueba_escritura_porcentajes.py preflight --ano 2026 --mes 7
   ```
   (previa edición de `LINEAS_PRUEBA` y `OBRA_ORIGEN_PRUEBA` con empleados
   reales con código `M*`). Comprobar en el `preflight` que **la partida
@@ -245,12 +256,19 @@ Un commit por tarea: `F-002 Tn: descripción`.
   **Verificación: MANUAL (humano).** Solo lectura. Requiere `.env` con la
   function key: **ningún agente lo toca**.
 
-- [ ] **T14**: Escritura real **en la obra de pruebas** `0404` con la marca
-  `PRUEBA-PORC`, y limpieza posterior:
+- [x] **T14** · **EJECUTADA EN PARTE el 2026-08-20**, sobre **julio de 2026**.
+  Se hicieron `ejecutar --confirmar` y la verificación (leyendo Sigrid por
+  `synckey`, no fiándose de la respuesta del servicio): fue **la primera
+  escritura real de este sistema en el ERP** — `hmores.ide = 403039`, parte
+  `PT26/00296` creado, obra de pruebas `0404`. Volcado en
+  `progress/sigrid_F-002.md` § T14.
+  **`limpiar --confirmar` NO se ejecutó, a propósito**: el humano quiso ver la
+  fila en la pantalla del ERP antes de borrarla, así que **sigue viva** y la
+  limpieza se movió a **F-014** (prioridad 20).
   ```
-  python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 8
-  python prueba_escritura_porcentajes.py verificar
-  python prueba_escritura_porcentajes.py limpiar --confirmar
+  python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 7
+  python prueba_escritura_porcentajes.py verificar --ano 2026 --mes 7
+  python prueba_escritura_porcentajes.py limpiar --confirmar --ano 2026 --mes 7   # PENDIENTE → F-014
   ```
   **Verificación: MANUAL (humano).** Exige `OBRA_PRUEBAS_FORZAR=true` y
   **autorización expresa del humano para esta acción concreta**
