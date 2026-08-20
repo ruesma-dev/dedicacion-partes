@@ -1,81 +1,78 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** Rama `dev`, con F-001, F-003 y F-009
-mergeadas y cerradas. Queda **F-002 en `blocked`**, esperando tres
-verificaciones que solo puede hacer el humano.
+**F-013 · Una línea sin partida no se escribe en silencio**
+Rama `feature/F-013-linea-sin-partida-confirma` · `sdd: false` · rigor `critico`
+Estado: **lanzada el 2026-08-20.** No lleva spec: mandan sus `acceptance`.
 
-## El sistema se levantó en local y funciona (2026-08-20)
+## Qué se cambia y por qué
 
-Primera vez que los tres servicios corren juntos desde el monorepo. Orden de
-arranque, que importa porque cada uno llama al anterior:
+Hoy, cuando el casado de partida falla en obra normal,
+`registro_pipeline.py` hace:
 
-```bash
-cd services/dedicacion-transfer && .venv/Scripts/python main.py   # 8006
-cd services/dedicacion-api      && .venv/Scripts/python main.py   # 8090
-cd services/dedicacion-front    && .venv/Scripts/python main.py   # 8080
+```python
+a.paride = 0
+a.aviso = "partida no localizada para la categoría/nombre: se imputa sin partida (editable)"
 ```
 
-Comprobado con salida real:
+Es decir: **avisa, pero escribe igual**. En el preflight real de julio 2026
+eso eran **2.132 € de una jefa de obra** (Arriaza, obra 0025) colgando de la
+obra sin imputar a ninguna partida.
 
-- **transfer** `http://127.0.0.1:8006/health` → **200**.
-- **api** `http://127.0.0.1:8090/api/v1/health` → **200**,
-  `{"ok":true,"service":"dedicacion-api","sigrid_configurado":true}`.
-  Ojo: el api **no** expone `/health` a secas, sino bajo `/api/v1`.
-- **front** `http://localhost:8080` → **200**, y su proxy `/api/*` devuelve el
-  cuadrante real leído de PostgreSQL.
-- La pantalla carga con **176 trabajadores** en agosto 2026: 0 OK, 175 sin
-  carga, 1 falta, 0 exceso.
+**Decisión del humano (2026-08-20):** debe **avisar y esperar confirmación**,
+igual que la sobrecarga del 100 % que introdujo F-002.
 
-Requisitos que ya estaban en su sitio: PostgreSQL escuchando en 5432, los tres
-`.env` presentes, y el api apuntando al transfer en `127.0.0.1:8006` por
-defecto (`config/settings.py:59`).
+**El mecanismo ya existe**: la Regla B de F-002 emite un `Conflicto` con
+motivo propio que viaja al front. Esto es aplicar ese patrón a un tercer
+caso, no inventar nada — y por eso **no toca `dedicacion-api` ni
+`dedicacion-front`**.
 
-## F-002 · BLOQUEADA esperando al humano
+## Por qué es feature aparte y no una tarea de F-002
 
-Fases 1 y 2 **implementadas y aprobadas**. El código está en `dev`. Lo que
-falta es la Fase 3, y ninguna de sus tareas la puede hacer un agente:
+F-002 está `blocked` por motivos ajenos (Administración) y sus fases 1 y 2
+están **aprobadas y mergeadas a `dev`**. Meterle un cambio de comportamiento
+nuevo la reabriría sin necesidad.
 
-| Tarea | Qué es | Cómo se hace |
-|---|---|---|
-| **T6.1** | avisar a Administración de las **cuatro partidas duplicadas** de POSTV2 (`656`, `664`, `680`, `693`, colgando de la raíz en vez de `CD`) | es un aviso, no una acción técnica |
-| **T6.2** | decidir **quién firma** la procedencia de las reglas | hoy dice `Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 · verificado contra Sigrid`. El test no clava el interlocutor: cambiarlo no rompe nada |
-| **T13** | casado real contra Sigrid **sin escribir** | `python prueba_escritura_porcentajes.py capitulos` / `estado` / `preflight` |
-| **T14** | **escritura real** en la obra de pruebas `0404` | `ejecutar --confirmar` → `verificar` → `limpiar --confirmar`. **Exige autorización expresa del humano para esa acción concreta**; ningún agente la lanza |
+## Verificaciones `MANUAL (humano)` pendientes
 
-> **T14 sería la primera escritura de este sistema en Sigrid.** Lo demuestra
-> la consulta C6 del 2026-08-19: cero filas con `synckey LIKE 'porcentajes:%'`
-> o marca `PRUEBA-PORC`. `OBRA_PRUEBAS_FORZAR` sigue en `true`.
+**Ninguna de F-013 mientras no se escriba en Sigrid.** Los tests son offline
+con las fixtures de `services/dedicacion-transfer/tests/conftest.py`. Si en
+algún momento se quisiera comprobar contra Sigrid real, sería una acción
+aparte y con autorización expresa.
 
-## Por qué F-002 está `blocked` y no `in_progress`
+## Otras features (ninguna avanza sin el humano)
 
-Al mergear F-002 y F-003 quedaron **dos features `in_progress`** y
-`harness/init.sh` solo admite una. El estado real de F-002 es que no puede
-avanzar sin acción humana, que es justo lo que `blocked` describe. No es una
-avería.
+- **F-002** · `blocked`. Falta avisar a Administración de las cuatro partidas
+  duplicadas de POSTV2 (`656`, `664`, `680`, `693`) y decidir quién firma la
+  procedencia de las reglas.
+- **F-008** · `blocked`. Fases 1–6 **aprobadas** en su rama, sin mergear. La
+  **fase 7 es del humano** (crear recursos, imágenes, Easy Auth), con sus
+  comandos en `specs/F-008-infra-azure/tasks.md` e `infra/README_dedicacion.md`.
+  Falta **D3**: la lista del grupo `dedicacion-portal-users`.
+- **F-004** · `done` y aprobada en su rama `feature/F-004-readme-monorepo`,
+  **sin mergear a `dev`**. (En ESTA rama `features.json` la muestra como
+  `pending`: su `done` vive en su propia rama.)
 
-**Deuda de protocolo detectada aquí:** el arnés no tiene un estado para «hecho
-y aprobado, esperando una verificación del humano». O se miente con
-`in_progress` o se usa `blocked`, que suena a problema. Candidato a sumarse a
-**F-010**.
+## ⚠ ACCIÓN PENDIENTE EN PRODUCCIÓN (Sigrid)
 
-## Estado del backlog
+Sigue viva la fila de prueba de T14: `hmores.ide = 403039`, parte
+`PT26/00296`, obra `0404`, marca `PRUEBA-PORC`. El humano quiere verla en la
+pantalla del ERP antes de borrarla. **Es precondición de la fase 7 de F-008.**
 
-- **F-001** · `done` · primera suite de tests (`domain/estados.py` al 100 %).
-- **F-002** · **`blocked`** · ver arriba.
-- **F-003** · `done` · el ORM es la única fuente de verdad del esquema. **T8
-  ejecutada el 2026-08-20**: dos arranques con `0 sentencias DDL aplicadas`,
-  14 columnas y 30 filas antes y después, idénticas.
-- **F-009** · `done` · los artefactos de cobertura ya no se versionan, y el
-  arreglo está portado a `arnes-base` (`c5b258d`).
-- **F-004 a F-008, F-010 a F-012** · `pending`.
+```bash
+cd services/dedicacion-transfer
+.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar --ano 2026 --mes 7
+```
 
 ## Hechos comprobados que no conviene volver a descubrir
 
-- **Este sistema NUNCA ha escrito en Sigrid** (consulta C6). Lo de julio de
-  2026 fueron cinco **preflights** en modo pruebas.
-- El original `porcentajes-transfer` y el código migrado eran **byte a byte
-  idénticos**: no se perdió lógica en la migración.
-- `ruff` **no está instalado** en el venv de `dedicacion-api`: para lintar ese
-  servicio hay que usar el intérprete de la raíz.
+- **La escritura en Sigrid funciona** (T14, 2026-08-20). Antes de esa fecha el
+  sistema **nunca** había escrito en el ERP.
 - El api expone su salud en **`/api/v1/health`**, no en `/health`.
+- `ruff` **no está instalado** en el venv de `dedicacion-api`.
+- **Dos defectos del arnés detectados el 2026-08-20** (anotados en
+  `progress/history.md` para `arnes-base`): `init.sh` confunde «no hay tests»
+  (pytest código 5) con «los tests fallan», y **la caché de suites cruza
+  ramas**, de modo que el portero puede dar `[OK]` por una suite ejecutada en
+  otra rama. Si aparece un rojo raro del front, mira si hay un `tests/` con
+  solo `__pycache__` dentro.
