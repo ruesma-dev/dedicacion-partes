@@ -190,3 +190,56 @@ SELECT TOP 500 h.ide, h.hmoide, hmo.ano, hmo.mes, con.cod AS obra_cod,
     OR CAST(h.tex AS NVARCHAR(200)) LIKE ?   -- '%PRUEBA-PORC%'
  ORDER BY h.ide DESC
 ```
+
+---
+
+## T14 · La primera escritura real de este sistema en Sigrid
+
+- **Fecha:** 2026-08-20 · **Autorizada expresamente por el humano** para esta
+  acción concreta, tras enseñarle las sentencias exactas que se ejecutarían.
+- **Alcance deliberadamente mínimo:** **una sola línea**, y se eligió la de la
+  obra `0404` porque su obra original **es** la obra de pruebas: así la
+  partida casada le pertenece de verdad y la prueba no queda falseada por el
+  modo pruebas (que desvía las líneas de otras obras a `0404` conservando la
+  partida de origen).
+- `OBRA_PRUEBAS_FORZAR` en `true`, marca `PRUEBA-PORC` en `tex`.
+
+### Qué se ejecutó
+
+Vía `POST /api/registro/ejecutar` del transfer, con una línea:
+Álvarez Seguido, Rafael · CAPATAZ · 50 % · obra `0404` · julio 2026.
+
+| Efecto | Resultado |
+|---|---|
+| Parte de trabajo | **creado**: `PT26/00296`, `hmo.ide = 2820419` (no existía) |
+| Línea escrita | `hmores.ide = **403039**` |
+| Omitidas / pisadas / borradas | 0 / 0 / 0 |
+| `error` | `null` |
+
+### Verificación independiente (lectura, no la respuesta del servicio)
+
+```
+ide=403039  hmoide=2820419  parte=PT26/00296  reside=1140343
+fec=20260731  can=0.5  pre=4500.0  tot=2250.0  paride=94178 (CI.1.8)
+hora=MCAP  tex='PRUEBA-PORC'  synckey='porcentajes:77'
+```
+
+### Qué queda demostrado
+
+1. **`sql/write` está habilitado** en la instancia de `sigrid-api` que usamos,
+   contra la base `ruesma`.
+2. **El `INSERT` en `hmores` no rechaza nada**: los campos que nunca se habían
+   confirmado —`ortide = 0` y `caaide = 0`— son aceptados por Sigrid.
+3. **La creación del parte funciona** (`con` + `hmo`) cuando no existe.
+4. El mapeo es correcto: fecha al último día del mes, `can` sobre 1, y
+   `tot = can × pre` cuadrando al céntimo.
+
+### Qué NO queda demostrado
+
+- **La imputación a partidas en producción.** En modo pruebas todas las líneas
+  van a `0404`; las de otras obras conservarían la partida de su obra
+  original, lo que en producción no ocurriría. Solo esta línea era fiel.
+- Que Sigrid **muestre** la línea correctamente en su pantalla de partes: eso
+  lo tiene que mirar una persona.
+- El comportamiento con **conflictos y pisado** (`DELETE` + `INSERT`): en esta
+  prueba había 0 conflictos.

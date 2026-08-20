@@ -5,6 +5,8 @@
 
 Resumen: **10 features**, 7 abiertas, 3 terminadas.
 
+En curso: **F-008**.
+
 Bloqueadas: **F-002**.
 
 ## Trabajo abierto
@@ -12,7 +14,7 @@ Bloqueadas: **F-002**.
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | bloqueada | critico | `feature/F-002-reglas-postventa-conflicto` |
-| F-008 | Infraestructura y despliegue en Azure | 3 | pendiente | critico | `feature/F-008-infra-azure` |
+| F-008 | Infraestructura y despliegue en Azure | 3 | en curso | critico | `feature/F-008-infra-azure` |
 | F-004 | README del monorepo y arranque local en orden | 4 | pendiente | documental | `feature/F-004-readme-monorepo` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
@@ -37,7 +39,7 @@ El repositorio se contradice sobre dos reglas que deciden qué se escribe en Sig
 
 ### F-008 · Infraestructura y despliegue en Azure
 
-estado **pendiente** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-008-infra-azure`
+estado **en curso** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-008-infra-azure`
 
 Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo el patrón de partes (Container Apps, imágenes en acralbaranesdev con tag fechado, secretos en Key Vault por identidad gestionada, Easy Auth en el front), decidir dónde vive la BBDD dedicacion, y escribir el documento del proyecto en azure-apps. El transfer arranca en modo pruebas y solo sale de él con decisión expresa.
 
