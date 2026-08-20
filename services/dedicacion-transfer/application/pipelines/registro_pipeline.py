@@ -17,6 +17,10 @@ Pasos (el preflight ejecuta 1-8; la escritura, 1-10):
      #regla-p5).
   5. Localizar el parte de cada DESTINO+MES; proponer código si no existe.
   6. Idempotencia por synckey ('porcentajes:{id}') -> ya_registrado.
+  6 bis. CONFLICTOS de línea SIN PARTIDA, por línea
+     (ARCHITECTURE.md#regla-sin-partida) -> confirmar la imputación sin
+     partida. Van los PRIMEROS: los otros dos avisos dan por hecho que esa
+     línea se escribe.
   7. CONFLICTOS de pisado, por identidad de la línea
      (ARCHITECTURE.md#regla-conflicto) -> confirmar pisado.
   7 bis. CONFLICTOS de sobrecarga, por jornada del recurso en el parte
@@ -37,9 +41,10 @@ from application.services.partida_resolver import (
     construir_catalogo, resolver_normal, resolver_postventa,
 )
 from application.services.reglas_porcentajes import (
-    MOTIVO_PARTIDA_PV_NO_HOJA, MOTIVO_SOBRECARGA, ReglasPorcentajes,
-    clave_conflicto, clave_sobrecarga, criterio_choque, es_linea_mensual,
-    evaluar_capacidad,
+    AVISO_SIN_PARTIDA, MOTIVO_PARTIDA_PV_NO_HOJA, MOTIVO_SIN_PARTIDA,
+    MOTIVO_SOBRECARGA, ReglasPorcentajes, clave_conflicto, clave_sin_partida,
+    clave_sobrecarga, criterio_choque, es_linea_mensual, evaluar_capacidad,
+    sin_partida,
 )
 from domain.models.registro_models import (
     AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
@@ -229,9 +234,11 @@ class RegistroPipeline:
                 linea.categoria if linea else None,
                 linea.nombre if linea else a.nombre)
             if m is None:
+                # Hasta F-013 esto se escribía igual, con un aviso que nadie
+                # tenía que atender. Ahora el paso 6 bis lo convierte en un
+                # conflicto: ver ARCHITECTURE.md#regla-sin-partida.
                 a.paride = 0
-                a.aviso = ("partida no localizada para la categoría/"
-                           "nombre: se imputa sin partida (editable)")
+                a.aviso = AVISO_SIN_PARTIDA
             else:
                 a.paride, a.partida_cod, a.partida_metodo = m
 
@@ -265,8 +272,38 @@ class RegistroPipeline:
                 a.motivo = (f"ya registrada en Sigrid (línea {hit.ide}); "
                             f"no se duplica")
 
-        # Paso 7: conflictos (ver ARCHITECTURE `#regla-conflicto`).
+        # Paso 6 bis: líneas SIN PARTIDA (ver ARCHITECTURE
+        # `#regla-sin-partida`). Se emiten ANTES que los pisados y las
+        # sobrecargas por la misma razón por la que el pisado va antes que
+        # la sobrecarga: el aviso de después DA POR HECHO el de antes. La
+        # identidad del pisado usa el `paride` a 0 de esta línea y la suma
+        # de la sobrecarga incluye su `can`, así que la decisión que los
+        # sostiene se lee primero.
+        #
+        # Y NO va dentro del bucle de partes de abajo: ese se salta los
+        # partes que aún no existen porque contra un parte nuevo no puede
+        # haber pisado. Aquí eso no vale: este aviso no habla de lo que ya
+        # hay en Sigrid, sino de dónde se imputa lo que vamos a escribir.
         conflictos: list[Conflicto] = []
+        for a in acciones:
+            if not sin_partida(a):
+                continue
+            parte_a = partes.get((int(obra_de(a).ide), a.ano, a.mes))
+            conflictos.append(Conflicto(
+                clave=clave_sin_partida(a),
+                recurso_ide=int(a.recurso_ide), nombre=a.nombre,
+                ano=a.ano, mes=a.mes,
+                parte_cod=parte_a.cod if parte_a else None,
+                horide=a.hora_ide, hora_codigo=a.hora_codigo,
+                lineas=[],          # no sustituye a nadie: no borra nada
+                nuevas=[_nueva(a)], registros=[a.registro_id],
+                motivo="sin_partida"))
+            logger.warning(
+                "[registro] sin partida recurso=%s registro=%s %s/%s: "
+                "no se escribe sin confirmar", a.recurso_ide, a.registro_id,
+                a.ano, a.mes)
+
+        # Paso 7: conflictos (ver ARCHITECTURE `#regla-conflicto`).
         pendientes = [a for a in acciones if a.accion == "escribir"]
         for clave_p, parte in sorted(partes.items()):
             if not parte.existe or not parte.ide:
@@ -392,25 +429,50 @@ class RegistroPipeline:
         )
 
         bloqueadas: set[int] = set()
+        # Registros ya listados en `omitidas` por un aviso anterior. Empieza
+        # vacío y no sembrado con las omisiones de las reglas: una acción
+        # `omitir` no llega a ser conflicto (los conflictos solo agrupan
+        # acciones `escribir`), así que los dos conjuntos son disjuntos por
+        # construcción y sembrarlo sería una guarda que ningún test podría
+        # ejercitar.
+        omitidas_ya: set[int] = set()
         for c in pf.conflictos:
             if c.clave in pisar:
                 res.pisadas.append(c.clave)
                 continue
             res.pendientes_confirmacion.append(c)
             bloqueadas.update(c.registros)
-            if c.motivo != "sobrecarga":
+            # Un conflicto sin confirmar deja rastro en `omitidas`, salvo el
+            # pisado: un pisado sin confirmar es un paso normal del flujo
+            # («repite y marca pisar»), mientras que una sobrecarga (R28) o
+            # una línea sin partida (F-013) son anomalías que tienen que
+            # verse aunque nadie vuelva a ejecutar. `dedicacion-api` solo
+            # mira este campo para escribir `asignacion.sigrid_estado`.
+            #
+            # La condición se escribe por lo que se EXCLUYE y no por lo que
+            # se incluye: así un motivo nuevo deja rastro por defecto, que
+            # es el lado seguro del error.
+            if c.motivo == "pisado":
                 continue
-            # R28: una sobrecarga sin confirmar deja rastro en `omitidas`.
-            # Los pisados NO lo hacen: un pisado sin confirmar es un paso
-            # normal del flujo, mientras que una sobrecarga es una anomalía
-            # entre el cuadrante y Sigrid que tiene que verse aunque nadie
-            # vuelva a ejecutar. `dedicacion-api` solo mira este campo para
-            # escribir `asignacion.sigrid_estado`.
-            motivo = MOTIVO_SOBRECARGA.format(
-                total=c.suma_total, existente=c.suma_existente,
-                n=len(c.contexto), nueva=c.nueva_can)
-            res.omitidas.extend({"registro_id": r, "motivo": motivo}
-                                for r in c.registros)
+            motivo = (
+                MOTIVO_SOBRECARGA.format(
+                    total=c.suma_total, existente=c.suma_existente,
+                    n=len(c.contexto), nueva=c.nueva_can)
+                if c.motivo == "sobrecarga" else MOTIVO_SIN_PARTIDA)
+            # Una misma línea puede estar retenida por MÁS DE UN aviso (sin
+            # partida y sobrecarga a la vez). En `omitidas` sale UNA vez,
+            # con el motivo del primero que la retuvo, que por el orden en
+            # que se emiten es el que los demás presuponen. `dedicacion-api`
+            # hace un UPDATE por entrada sobre la MISMA asignación: dos
+            # entradas serían dos escrituras de las que solo sobrevive la
+            # última, y un recuento de omitidas inflado en el front. Los
+            # avisos completos siguen viéndose donde se decide, que es
+            # `pendientes_confirmacion`.
+            for r in c.registros:
+                if r in omitidas_ya:
+                    continue
+                omitidas_ya.add(r)
+                res.omitidas.append({"registro_id": r, "motivo": motivo})
 
         a_escribir = [a for a in pf.acciones
                       if a.accion == "escribir"

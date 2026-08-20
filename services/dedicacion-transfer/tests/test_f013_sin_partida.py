@@ -482,15 +482,22 @@ def test_f013_confirmando_las_dos_se_escribe_una_vez():
 
 
 def test_f013_la_omision_no_se_duplica_con_los_dos_avisos():
-    """Y sin confirmar ninguno, la línea aparece UNA vez por cada aviso que
-    la retiene, nunca más: `dedicacion-api` escribe el motivo de cada
-    `omitidas` sobre la misma asignación, así que dos entradas del mismo
-    motivo serían una escritura repetida y ruido en la traza."""
+    """Sin confirmar ninguno de los dos, la línea sale UNA sola vez en
+    `omitidas`, con el motivo del primero que la retuvo.
+
+    `dedicacion-api` hace un UPDATE por entrada sobre la MISMA asignación:
+    dos entradas serían dos escrituras de las que solo sobrevive la última,
+    y un recuento de omitidas inflado en el front. Lo que el usuario tiene
+    que decidir no se pierde: los dos avisos siguen enteros en
+    `pendientes_confirmacion`, que es donde se decide.
+    """
     cli, lineas = _sin_partida_y_sobrecarga()
     res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas)
 
-    motivos = sorted(o["motivo"][:12] for o in res.omitidas)
-    assert motivos == ["sin partida:", "sobrecarga:"], res.omitidas
+    assert [o["registro_id"] for o in res.omitidas] == [1], res.omitidas
+    assert res.omitidas[0]["motivo"] == MOTIVO_SIN_PARTIDA
+    assert [c.motivo for c in res.pendientes_confirmacion] == \
+        ["sin_partida", "sobrecarga"]
 
 
 # ------------ interacción con el PISADO (F-002, Regla A) ----------- #
