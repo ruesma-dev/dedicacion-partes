@@ -3,9 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **11 features**, 8 abiertas, 3 terminadas.
-
-En curso: **F-004**.
+Resumen: **11 features**, 7 abiertas, 4 terminadas.
 
 Bloqueadas: **F-002, F-008**.
 
@@ -15,7 +13,6 @@ Bloqueadas: **F-002, F-008**.
 |---|---|---|---|---|---|
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | bloqueada | critico | `feature/F-002-reglas-postventa-conflicto` |
 | F-008 | Infraestructura y despliegue en Azure | 3 | bloqueada | critico | `feature/F-008-infra-azure` |
-| F-004 | README del monorepo y arranque local en orden | 4 | en curso | documental | `feature/F-004-readme-monorepo` |
 | F-013 | Una linea sin partida no se escribe en silencio | 4 | pendiente | critico | `feature/F-013-linea-sin-partida-confirma` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 6 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
 | F-006 | Sanear la suite del transfer | 7 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
@@ -28,6 +25,7 @@ Bloqueadas: **F-002, F-008**.
 |---|---|---|---|
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | estandar |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | critico |
+| F-004 | README del monorepo y arranque local en orden | 4 | documental |
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
@@ -43,12 +41,6 @@ El repositorio se contradice sobre dos reglas que deciden qué se escribe en Sig
 estado **bloqueada** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-008-infra-azure`
 
 Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo el patrón de partes (Container Apps, imágenes en acralbaranesdev con tag fechado, secretos en Key Vault por identidad gestionada, Easy Auth en el front), decidir dónde vive la BBDD dedicacion, y escribir el documento del proyecto en azure-apps. El transfer arranca en modo pruebas y solo sale de él con decisión expresa.
-
-### F-004 · README del monorepo y arranque local en orden
-
-estado **en curso** · prioridad 4 · rigor `documental` · SDD no · rama `feature/F-004-readme-monorepo`
-
-El monorepo no tiene README. Hace falta uno que explique los tres servicios, el flujo, y cómo se levanta el sistema en local en el orden que funciona (transfer 8006 -> api 8090 -> front 8080), con la copia de cada .env.example. Hoy esa información está repartida en tres README de servicio y en la cabeza de quien lo escribió.
 
 ### F-013 · Una linea sin partida no se escribe en silencio
 
@@ -91,6 +83,12 @@ Calentamiento del circuito. dedicacion-api no tiene un solo test: se crea servic
 estado **terminada** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-003-orm-columnas-sigrid`
 
 application/registro_sigrid.py añade seis columnas (sigrid_estado, sigrid_parte_cod, sigrid_hmores_ide, sigrid_motivo, sigrid_registrado_at_utc, sigrid_registrado_by) con una lista de ALTER TABLE escrita a mano, y orm_models.py no las declara. Es exactamente la avería que en el proyecto partes costó una corrección entera (F-010): dos verdades del esquema que divergen. Las columnas van al ORM y el DDL complementario se deriva de él.
+
+### F-004 · README del monorepo y arranque local en orden
+
+estado **terminada** · prioridad 4 · rigor `documental` · SDD no · rama `feature/F-004-readme-monorepo`
+
+El monorepo no tiene README. Hace falta uno que explique los tres servicios, el flujo, y cómo se levanta el sistema en local en el orden que funciona (transfer 8006 -> api 8090 -> front 8080), con la copia de cada .env.example. Hoy esa información está repartida en tres README de servicio y en la cabeza de quien lo escribió.
 
 ### F-009 · Higiene: los artefactos de cobertura no se versionan
 

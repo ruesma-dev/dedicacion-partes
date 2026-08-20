@@ -71,7 +71,7 @@
         "Enlaza a docs/ARCHITECTURE.md y a azure-apps en vez de duplicarlos",
         "Ningún secreto ni valor de credencial en el documento"
       ],
-      "status": "in_progress",
+      "status": "done",
       "sdd": false,
       "rigor": "documental",
       "priority": 4,

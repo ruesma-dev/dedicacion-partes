@@ -228,3 +228,35 @@ tests» —legítimo porque su suite vive en la rama de F-008, sin mergear—.
 **El arreglo de fondo va a `arnes-base`**, junto a lo que se retiró con F-007
 y F-010: los dos defectos son del arnés genérico y los sufrirá cualquier
 proyecto que trabaje con varias ramas.
+
+## 2026-08-20 · F-004 · README del monorepo y arranque local en orden
+
+Rama `feature/F-004-readme-monorepo` · `sdd: false` · rigor `documental` ·
+**APROBADO** por el reviewer · commits `605c2d9` (README + test) y `fed6f9b`
+(informe).
+
+**Qué cambió.** `README.md` en la raíz (177 líneas), que no existía: qué es el
+sistema y su flujo, los tres servicios con su puerto y **enlace** a su README
+(sin duplicarlos), el arranque local en el orden que funciona, cómo comprobar
+que va, qué NO hacer, el mapa del repositorio y el estado real del proyecto.
+Más `tests/test_f004_readme.py`, que ata el README al código para que no se
+pudra en silencio — no lo exigía el nivel `documental`, y el implementer lo
+entregó igual.
+
+**Se escribió con hechos, no con suposiciones**: el 2026-08-20 se levantó el
+sistema entero en local por primera vez y se verificó cada paso antes de
+documentarlo. El reviewer comprobó **una por una** todas las afirmaciones
+verificables contra el código, no contra el informe, y no encontró ni una
+discrepancia. La trampa conocida —el api expone su salud en
+**`/api/v1/health`**, no en `/health`— quedó documentada con aviso propio y
+con un test que impide que se degrade.
+
+**El bloqueo que hubo, y que no era de la feature.** El implementer entregó su
+trabajo commiteado pero marcó `blocked` por un rojo de `harness/init.sh`
+ajeno: `services/dedicacion-front/tests/` existía con **solo `__pycache__`
+dentro** —restos de la rama de F-008, donde sí hay tests—, así que `pytest`
+devolvía código 5 («no tests ran») y el portero lo trataba como fallo. **Hizo
+lo correcto al no arreglar `init.sh` por su cuenta**: el defecto es del arnés
+genérico y arrastra propagación a `arnes-base`, así que paró y preguntó. El
+líder borró el residuo y el portero volvió a ENTORNO LISTO. Los dos defectos
+del arnés que esto destapó están anotados arriba, en la entrada del mismo día.
