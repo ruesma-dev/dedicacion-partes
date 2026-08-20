@@ -63,9 +63,16 @@ extremo **parando en `registro/preflight`, sin ejecutar**; pedir a
 `azure-apps` es del humano**: es otro repositorio.
 
 > **Al pegar la salida real de los comandos `az` en `progress/`**: contiene
-> identificadores de suscripción y objectId. El guardián de secretos se está
-> ampliando para vigilar también ese directorio (§7.2 de la review). Usa
-> marcadores (`<SUSCRIPCION>`, `<OBJECT-ID>`) en vez de los valores reales.
+> identificadores de suscripción y objectId. El guardián de secretos **ya
+> vigila también ese directorio** (§7.2 y §7.3 de la review, cerradas y
+> commiteadas en `11042f2`): ahora barre `infra/`, `specs/`, `docs/` y
+> `progress/`, y pilla además el sufijo `_value` y el separador `":"` de la
+> salida JSON de `az`. Aun así, **usa marcadores** (`<SUSCRIPCION>`,
+> `<OBJECT-ID>`) en vez de los valores reales: el guardián es la red, no la
+> primera línea.
+>
+> Verificado por el líder colando un `clientSecret` de mentira en `infra/`:
+> el test **falla**, como debe.
 
 ---
 
