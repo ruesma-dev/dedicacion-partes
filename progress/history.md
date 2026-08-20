@@ -194,3 +194,37 @@ originaron (`progress/review_F-001.md` §10, `progress/review_F-002_fase1.md`
 **Reordenado el backlog** en la misma decisión: **F-008 (despliegue en Azure)
 sube a prioridad 3**, justo detrás de F-002, para poder hacer pruebas en un
 entorno desplegado.
+
+## 2026-08-20 · Dos defectos del arnés detectados al cerrar F-004 (van a `arnes-base`)
+
+Salieron al quedar F-004 en `blocked` por un rojo de `harness/init.sh` que
+**no tenía nada que ver con la feature**. El diagnóstico es del implementer de
+F-004 (`progress/impl_F-004.md`) y lo confirmó el líder.
+
+**1. `init.sh` confunde «no hay tests» con «los tests fallan».** Si el
+directorio `tests/` de un servicio existe pero no contiene ningún test,
+`pytest` termina con **código 5** («no tests ran»), y la sección 7 bis trata
+cualquier salida distinta de 0 como rojo. El caso real: al cambiar de rama,
+git se llevó los `.py` de `services/dedicacion-front/tests/` —que solo
+existen en la rama de F-008— pero dejó el directorio con `__pycache__`
+dentro, así que el árbol tenía un `tests/` **vacío de tests pero existente**.
+Arreglo propuesto: tratar el código 5 como el aviso que ya existe («sin
+directorio de tests»), no como fallo.
+
+**2. La caché de suites cruza ramas, y eso es más grave.**
+`.arnes_cache/suite_front.ok` guardaba el hash del árbol del front **de la
+rama de F-008**, donde sí hay tests, y por eso el rojo estuvo camuflado un
+tiempo dando un `[OK]` heredado de otra rama. Es exactamente el riesgo que ya
+había señalado el reviewer de F-001 («la caché puede enseñar un `[OK]` sin
+que la suite se haya ejecutado»), ahora con un caso real: **el portero puede
+dar verde por una suite que se ejecutó en otro sitio.**
+
+**Desbloqueo aplicado aquí** (no toca el arnés): borrar el residuo
+`services/dedicacion-front/tests/` con solo `__pycache__` dentro, su
+`.pytest_cache` y la entrada de caché `suite_front.ok`. `init.sh` vuelve a
+**ENTORNO LISTO** y el front recupera su aviso legítimo de «sin directorio de
+tests» —legítimo porque su suite vive en la rama de F-008, sin mergear—.
+
+**El arreglo de fondo va a `arnes-base`**, junto a lo que se retiró con F-007
+y F-010: los dos defectos son del arnés genérico y los sufrirá cualquier
+proyecto que trabaje con varias ramas.

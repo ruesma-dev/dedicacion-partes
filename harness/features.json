@@ -90,7 +90,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 5,
+      "priority": 6,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -105,7 +105,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 6,
+      "priority": 7,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -154,7 +154,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 7,
+      "priority": 8,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -169,8 +169,27 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 8,
+      "priority": 9,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
+    },
+    {
+      "id": "F-013",
+      "title": "Una linea sin partida no se escribe en silencio",
+      "description": "Decision del humano el 2026-08-20, al ver el preflight real de julio: hoy, cuando el casado de partida falla en obra normal, registro_pipeline.py pone paride=0 y deja un aviso informativo, pero LA LINEA SE ESCRIBE IGUAL. En el preflight de julio eso eran 2.132 EUR de una jefa de obra colgando de la obra sin imputar a ninguna partida. La regla nueva: debe AVISAR Y ESPERAR CONFIRMACION, igual que la sobrecarga del 100 % que introdujo F-002. El mecanismo ya existe y no hay que inventarlo: la Regla B de F-002 emite un Conflicto con motivo propio que viaja al front sin tocar dedicacion-api ni dedicacion-front. Esto es aplicar ese mismo patron a un tercer caso. Sale de F-002 y no dentro, porque F-002 esta blocked por motivos ajenos (Administracion) y sus fases 1 y 2 ya estan aprobadas y mergeadas.",
+      "acceptance": [
+        "Una linea cuyo casado de partida falla (paride=0) NO se escribe sin confirmacion explicita: viaja como conflicto con motivo propio, distinguible del pisado y de la sobrecarga",
+        "Sin confirmacion, la linea queda omitida y listada con su motivo",
+        "Con confirmacion, se escribe con paride=0, que es el comportamiento de hoy",
+        "El front sigue funcionando aunque ignore el motivo nuevo (degradacion elegante): F-013 NO toca dedicacion-api ni dedicacion-front",
+        "Tests offline sin red ni BBDD con las fixtures de services/dedicacion-transfer/tests/conftest.py",
+        "docs/ARCHITECTURE.md recoge la regla en la fuente unica, con su procedencia (quien, cuando, con que respaldo)",
+        "bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "critico",
+      "priority": 4,
+      "branch": "feature/F-013-linea-sin-partida-confirma"
     }
   ]
 }
