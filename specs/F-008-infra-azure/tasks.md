@@ -25,7 +25,7 @@ Rama: `feature/F-008-infra-azure`. Un commit por tarea:
 
 ## Fase 1 — RED
 
-- [ ] **T1**: Crear `services/dedicacion-api/tests/test_f008_bootstrap_bbdd.py`
+- [x] **T1**: Crear `services/dedicacion-api/tests/test_f008_bootstrap_bbdd.py`
   con los tests de R13, R14, R15 y R16 escritos contra un API que todavía no
   existe: `Settings.auto_create_database`, el cortocircuito de
   `asegurar_base_datos` y el error `BaseDatosNoExiste`. Nombres
@@ -39,31 +39,31 @@ Rama: `feature/F-008-infra-azure`. Un commit por tarea:
 
 ## Fase 2 — El arranque deja de crear bases y roles
 
-- [ ] **T2**: Añadir `auto_create_database: bool = False` a
+- [x] **T2**: Añadir `auto_create_database: bool = False` a
   `services/dedicacion-api/config/settings.py` (R14). Nada más en ese fichero.
   **Verificación:** `pytest tests/test_f008_bootstrap_bbdd.py -q -k r14` en
   verde; el resto sigue rojo.
 
-- [ ] **T3**: Cortocircuitar `asegurar_base_datos` en
+- [x] **T3**: Cortocircuitar `asegurar_base_datos` en
   `services/dedicacion-api/infrastructure/db/database.py`: si
   `not settings.auto_create_database`, dejar un registro en el log y
   **retornar sin abrir la conexión** (R13, R15).
   **Verificación:** `pytest tests/test_f008_bootstrap_bbdd.py -q -k "r13 or
   r15"` en verde, con el doble de `psycopg.connect` sin invocar.
 
-- [ ] **T4**: Añadir el error tipado `BaseDatosNoExiste` y la traducción del
+- [x] **T4**: Añadir el error tipado `BaseDatosNoExiste` y la traducción del
   fallo de conexión en el arranque (`main.py` + `database.py`): el mensaje
   nombra la base que falta y `infra/crear_base_dedicacion.ps1` (R16).
   **Verificación:** `pytest tests/test_f008_bootstrap_bbdd.py -q` **entero**
   en verde.
 
-- [ ] **T5**: Crear `services/dedicacion-api/tests/test_f008_despliegue.py`
+- [x] **T5**: Crear `services/dedicacion-api/tests/test_f008_despliegue.py`
   con el test de R8: `obtener_usuario` devuelve tal cual lo que venga en
   `X-Usuario` y no valida nada. El docstring del test dice por qué existe (es
   la razón escrita de que la api no pueda tener ingress externo).
   **Verificación:** `pytest tests/test_f008_despliegue.py -q` en verde.
 
-- [ ] **T6**: Crear la suite del front, que hoy no tiene ninguna
+- [x] **T6**: Crear la suite del front, que hoy no tiene ninguna
   (`harness/init.sh` lo avisa en cada ejecución): `tests/__init__.py`,
   `tests/conftest.py` y `tests/test_f008_identidad.py` con el test de R11 —
   `X-MS-CLIENT-PRINCIPAL-NAME` se propaga como `X-Usuario` y, sin ella, se usa
@@ -77,21 +77,21 @@ Rama: `feature/F-008-infra-azure`. Un commit por tarea:
 
 ## Fase 3 — Empaquetado de los tres servicios
 
-- [ ] **T7**: Crear `services/dedicacion-transfer/Dockerfile` y
+- [x] **T7**: Crear `services/dedicacion-transfer/Dockerfile` y
   `services/dedicacion-transfer/.dockerignore` (R25, R26), calcados de los de
   la api: `python:3.12-slim`, `requirements.txt` primero, `EXPOSE 8006`,
   `CMD ["python", "main.py"]`. El `.dockerignore` excluye `.env`, `logs/`,
   `tests/`, `__pycache__/`, `.venv/`.
   **Verificación:** T8.
 
-- [ ] **T8**: Crear `tests/test_f008_imagenes.py` (raíz) con R24, R25 y R26:
+- [x] **T8**: Crear `tests/test_f008_imagenes.py` (raíz) con R24, R25 y R26:
   los tres servicios tienen `Dockerfile` y `.dockerignore`, los tres
   `.dockerignore` excluyen `.env`, y `infra/imagenes.json` —cuando exista—
   parsea, cubre los tres servicios y sus tags cumplen `rAAAAMMDD-HHmm`.
   **Verificación:** `.venv/Scripts/python -m pytest tests/test_f008_imagenes.py -q`
   en verde.
 
-- [ ] **T9**: Completar los `.env.example` de los tres servicios: en la api
+- [x] **T9**: Completar los `.env.example` de los tres servicios: en la api
   `AUTO_CREATE_DATABASE=true`, `TRANSFER_BASE_URL` y `TRANSFER_TIMEOUT_S`
   (hoy el código los lee y el ejemplo no los declara); en el front, comentario
   de los valores de Azure (`DEFAULT_USER=desconocido`, `API_TIMEOUT_S=200`);
@@ -106,7 +106,7 @@ Rama: `feature/F-008-infra-azure`. Un commit por tarea:
 > El guardián de secretos va **primero**: vigila los scripts desde el commit
 > en que nacen, no después.
 
-- [ ] **T10**: Crear `tests/test_f008_infra_sin_secretos.py` (raíz) con R21 y
+- [x] **T10**: Crear `tests/test_f008_infra_sin_secretos.py` (raíz) con R21 y
   R22: barrido de `infra/`, `specs/` y `docs/` buscando GUID, `AccountKey=`,
   `password=`/`pwd=` con valor, function keys, IP privada y claves largas en
   base64. Falla nombrando fichero y línea. Excluye deliberadamente los
@@ -121,25 +121,25 @@ Rama: `feature/F-008-infra-azure`. Un commit por tarea:
   aislada** (un fichero temporal con un GUID) y pegar la traza en
   `progress/impl_F-008.md`. El árbol real queda limpio (`git status`).
 
-- [ ] **T11**: Crear `infra/.gitignore` (ignora `*.local.ps1`),
+- [x] **T11**: Crear `infra/.gitignore` (ignora `*.local.ps1`),
   `infra/00_vars_dedicacion.ps1` y `infra/00_capps_vars_dedicacion.ps1` según
   `design.md` §7.1: nombres de recurso, `$TAGS` acens, mapa `$IMG`, y
   **marcadores redactados** para suscripción y tenant.
   **Verificación:** `pytest tests/test_f008_infra_sin_secretos.py -q` en
   verde.
 
-- [ ] **T12**: Crear `infra/build_images_dedicacion.ps1` (tag fechado
+- [x] **T12**: Crear `infra/build_images_dedicacion.ps1` (tag fechado
   `rAAAAMMDD-HHmm`, `az acr build`, escribe `infra/imagenes.json`) y el
   `infra/imagenes.json` inicial (R23, R24).
   **Verificación:** `pytest tests/test_f008_imagenes.py -q` en verde ·
   ejecución real: MANUAL (humano), T24.
 
-- [ ] **T13**: Crear `infra/redeploy_dedicacion.ps1`: reordena siempre a
+- [x] **T13**: Crear `infra/redeploy_dedicacion.ps1`: reordena siempre a
   **transfer → api → front** y aborta si el Container App no existe (R27).
   **Verificación:** revisión del reviewer contra R27 · ejecución real: MANUAL
   (humano).
 
-- [ ] **T14**: Crear `infra/README_dedicacion.md`: orden de ejecución, qué
+- [x] **T14**: Crear `infra/README_dedicacion.md`: orden de ejecución, qué
   hace cada script, y **qué pasos son MANUAL (humano)** con su comando.
   **Verificación:** revisión.
 
@@ -163,7 +163,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
 
 ## Fase 5 — Scripts que dependen de las decisiones
 
-- [ ] **T15**: Crear `infra/fase1_infra_dedicacion.ps1` (RG, MI, AcrPull sobre
+- [x] **T15**: Crear `infra/fase1_infra_dedicacion.ps1` (RG, MI, AcrPull sobre
   `acralbaranesdev`, Log Analytics, Key Vault RBAC, CAE) y
   `infra/crear_base_dedicacion.ps1` (base + rol de aplicación + firewall,
   **una sola vez, ejecutado por una persona**), según D1 y D1b. Sin
@@ -171,33 +171,33 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
   **Verificación:** revisión contra R2, R3, R6, R18, R19, R20 ·
   `pytest tests/test_f008_infra_sin_secretos.py -q` en verde.
 
-- [ ] **T16**: Crear `infra/add_secrets_dedicacion.ps1`: pide `PG-PASSWORD`,
+- [x] **T16**: Crear `infra/add_secrets_dedicacion.ps1`: pide `PG-PASSWORD`,
   `SIGRID-API-FUNCTION-KEY` y `EASYAUTH-CLIENT-SECRET` con
   `Read-Host -AsSecureString`, sin escribirlos en disco ni imprimirlos (R19,
   R22). Deja escrito en el propio script que **no** se carga la contraseña de
   administrador de PostgreSQL, y por qué.
   **Verificación:** revisión + `pytest tests/test_f008_infra_sin_secretos.py -q`.
 
-- [ ] **T17**: Crear `infra/create_transfer_dedicacion.ps1`: ingress
+- [x] **T17**: Crear `infra/create_transfer_dedicacion.ps1`: ingress
   **interno**, `--allow-insecure`, min 1 / **max 1**, `OBRA_PRUEBAS_FORZAR=true`
   por defecto, doble confirmación para salir de modo pruebas (R4, R7, R9,
   R10), secret `sigrid-key` por `keyvaultref`, `LOG_DIR=/tmp/logs`.
   **Verificación:** revisión contra R4, R7, R9, R10, R19, R20.
 
-- [ ] **T18**: Crear `infra/create_api_dedicacion.ps1`: ingress **interno**,
+- [x] **T18**: Crear `infra/create_api_dedicacion.ps1`: ingress **interno**,
   `--allow-insecure`, min 1 / max 1, `AUTO_CREATE_DATABASE=false`,
   `PG_SSLMODE=require`, `PG_USER` = rol de aplicación (no admin),
   `TRANSFER_TIMEOUT_S=180`, y cableado de `TRANSFER_BASE_URL` leyendo el FQDN
   interno del transfer (R5, R7, R13, R17, R19, R28).
   **Verificación:** revisión contra esos requisitos.
 
-- [ ] **T19**: Crear `infra/create_front_dedicacion.ps1`: ingress
+- [x] **T19**: Crear `infra/create_front_dedicacion.ps1`: ingress
   **externo**, `DEFAULT_USER=desconocido`, `API_TIMEOUT_S=200`, cableado de
   `API_BASE_URL` con el FQDN interno de la api (R7, R12, R28). Imprime el FQDN
   público y avisa de que **hasta T20 no hay autenticación**.
   **Verificación:** revisión contra R7, R12, R28.
 
-- [ ] **T20**: Crear `infra/setup_front_easyauth.ps1`: grupo
+- [x] **T20**: Crear `infra/setup_front_easyauth.ps1`: grupo
   `dedicacion-portal-users`, App Registration, client secret al Key Vault,
   Enterprise App con asignación requerida, grupo asignado, Easy Auth con
   login obligatorio. **Idempotente** (R36).
@@ -207,7 +207,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
 
 ## Fase 6 — Documentación
 
-- [ ] **T21**: Escribir `docs/INTEGRACION.md` con las nueve secciones de
+- [x] **T21**: Escribir `docs/INTEGRACION.md` con las nueve secciones de
   `design.md` §10 (R29, R31). Sin un solo valor de conexión. Incluye
   explícitamente: por qué la api va interna (para que nadie lo «arregle»), que
   el transfer está en modo pruebas, y que `/health` del front **no** es
@@ -215,14 +215,14 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
   **Verificación:** `pytest tests/test_f008_infra_sin_secretos.py -q` en verde
   + revisión.
 
-- [ ] **T22**: Actualizar `docs/ARCHITECTURE.md` (R32): §«Qué hace este
+- [x] **T22**: Actualizar `docs/ARCHITECTURE.md` (R32): §«Qué hace este
   proyecto» y §«Infra y despliegue» dejan de decir que no hay nada desplegado;
   se añaden dónde vive PostgreSQL (D1), la tabla de timeouts de `design.md`
   §2.5 y el recordatorio de que `OBRA_PRUEBAS_FORZAR` sigue a `true`. **No se
   toca** la sección de semántica de dominio.
   **Verificación:** revisión + `bash harness/init.sh` en verde.
 
-- [ ] **T23**: Escribir `azure-apps/dedicacion.md` (copia de
+- [x] **T23**: Escribir `azure-apps/dedicacion.md` (copia de
   `docs/INTEGRACION.md` con la cabecera obligatoria de origen y fecha) y
   añadir su fila a `azure-apps/README.md` (R30).
   **Verificación:** revisión — el barrido de secretos del reviewer se ejecuta
@@ -329,13 +329,13 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
 
 ## Fase 8 — Cierre
 
-- [ ] **T32**: Ejecutar la campaña de mutación sobre el alcance de la feature
+- [x] **T32**: Ejecutar la campaña de mutación sobre el alcance de la feature
   y dejar `progress/mutacion_F-008.md` con **cero supervivientes** o cada
   superviviente analizado y justificado por escrito (`CHECKPOINTS.md` C4 bis,
   nivel `critico`).
   **Verificación:** `python -m harness.mutacion --feature F-008`.
 
-- [ ] **T33**: Ejecutar `bash harness/init.sh` en verde.
+- [x] **T33**: Ejecutar `bash harness/init.sh` en verde.
   **Verificación:** exit code 0, con las líneas `servicio api`, `servicio
   front` y `servicio transfer` en verde y la puerta de cobertura en `[OK]` (o
   en `N/A` **con su motivo impreso**, si el diff no deja líneas `.py`

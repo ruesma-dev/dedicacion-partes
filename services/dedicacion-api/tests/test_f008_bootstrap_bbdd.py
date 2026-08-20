@@ -30,7 +30,7 @@ del driver entran como dato. Los tests no llevan ni una credencial
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import psycopg
 import pytest
@@ -78,7 +78,7 @@ class _ConexionFalsa:
         fila = self._respuestas.pop(0) if self._respuestas else None
         return _ResultadoFalso(fila)
 
-    def __enter__(self) -> _ConexionFalsa:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *_excepcion: object) -> bool:
