@@ -185,7 +185,7 @@
         "docs/ARCHITECTURE.md recoge la regla en la fuente unica, con su procedencia (quien, cuando, con que respaldo)",
         "bash harness/init.sh en verde"
       ],
-      "status": "in_progress",
+      "status": "done",
       "sdd": false,
       "rigor": "critico",
       "priority": 4,

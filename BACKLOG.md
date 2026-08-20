@@ -3,9 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **11 features**, 8 abiertas, 3 terminadas.
-
-En curso: **F-013**.
+Resumen: **11 features**, 7 abiertas, 4 terminadas.
 
 Bloqueadas: **F-002**.
 
@@ -16,7 +14,6 @@ Bloqueadas: **F-002**.
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | bloqueada | critico | `feature/F-002-reglas-postventa-conflicto` |
 | F-008 | Infraestructura y despliegue en Azure | 3 | pendiente | critico | `feature/F-008-infra-azure` |
 | F-004 | README del monorepo y arranque local en orden | 4 | pendiente | documental | `feature/F-004-readme-monorepo` |
-| F-013 | Una linea sin partida no se escribe en silencio | 4 | en curso | critico | `feature/F-013-linea-sin-partida-confirma` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-011 | Un solo codigo de hora mes por trabajador | 7 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
@@ -28,6 +25,7 @@ Bloqueadas: **F-002**.
 |---|---|---|---|
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | estandar |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | critico |
+| F-013 | Una linea sin partida no se escribe en silencio | 4 | critico |
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
@@ -49,12 +47,6 @@ Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo
 estado **pendiente** · prioridad 4 · rigor `documental` · SDD no · rama `feature/F-004-readme-monorepo`
 
 El monorepo no tiene README. Hace falta uno que explique los tres servicios, el flujo, y cómo se levanta el sistema en local en el orden que funciona (transfer 8006 -> api 8090 -> front 8080), con la copia de cada .env.example. Hoy esa información está repartida en tres README de servicio y en la cabeza de quien lo escribió.
-
-### F-013 · Una linea sin partida no se escribe en silencio
-
-estado **en curso** · prioridad 4 · rigor `critico` · SDD no · rama `feature/F-013-linea-sin-partida-confirma`
-
-Decision del humano el 2026-08-20, al ver el preflight real de julio: hoy, cuando el casado de partida falla en obra normal, registro_pipeline.py pone paride=0 y deja un aviso informativo, pero LA LINEA SE ESCRIBE IGUAL. En el preflight de julio eso eran 2.132 EUR de una jefa de obra colgando de la obra sin imputar a ninguna partida. La regla nueva: debe AVISAR Y ESPERAR CONFIRMACION, igual que la sobrecarga del 100 % que introdujo F-002. El mecanismo ya existe y no hay que inventarlo: la Regla B de F-002 emite un Conflicto con motivo propio que viaja al front sin tocar dedicacion-api ni dedicacion-front. Esto es aplicar ese mismo patron a un tercer caso. Sale de F-002 y no dentro, porque F-002 esta blocked por motivos ajenos (Administracion) y sus fases 1 y 2 ya estan aprobadas y mergeadas.
 
 ### F-005 · Alinear los literales internos con el nombre «dedicación»
 
@@ -91,6 +83,12 @@ Calentamiento del circuito. dedicacion-api no tiene un solo test: se crea servic
 estado **terminada** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-003-orm-columnas-sigrid`
 
 application/registro_sigrid.py añade seis columnas (sigrid_estado, sigrid_parte_cod, sigrid_hmores_ide, sigrid_motivo, sigrid_registrado_at_utc, sigrid_registrado_by) con una lista de ALTER TABLE escrita a mano, y orm_models.py no las declara. Es exactamente la avería que en el proyecto partes costó una corrección entera (F-010): dos verdades del esquema que divergen. Las columnas van al ORM y el DDL complementario se deriva de él.
+
+### F-013 · Una linea sin partida no se escribe en silencio
+
+estado **terminada** · prioridad 4 · rigor `critico` · SDD no · rama `feature/F-013-linea-sin-partida-confirma`
+
+Decision del humano el 2026-08-20, al ver el preflight real de julio: hoy, cuando el casado de partida falla en obra normal, registro_pipeline.py pone paride=0 y deja un aviso informativo, pero LA LINEA SE ESCRIBE IGUAL. En el preflight de julio eso eran 2.132 EUR de una jefa de obra colgando de la obra sin imputar a ninguna partida. La regla nueva: debe AVISAR Y ESPERAR CONFIRMACION, igual que la sobrecarga del 100 % que introdujo F-002. El mecanismo ya existe y no hay que inventarlo: la Regla B de F-002 emite un Conflicto con motivo propio que viaja al front sin tocar dedicacion-api ni dedicacion-front. Esto es aplicar ese mismo patron a un tercer caso. Sale de F-002 y no dentro, porque F-002 esta blocked por motivos ajenos (Administracion) y sus fases 1 y 2 ya estan aprobadas y mergeadas.
 
 ### F-009 · Higiene: los artefactos de cobertura no se versionan
 
