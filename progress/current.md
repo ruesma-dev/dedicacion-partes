@@ -26,6 +26,49 @@ las fases 1–6.** La fase 7 (crear recursos en Azure) es MANUAL del humano.
 
 ---
 
+## ⚠ FASE 7 de F-008 · MANUAL (humano) — lo que solo puedes hacer tú
+
+Las fases 1–6 están **implementadas y APROBADAS** (`progress/review_F-008.md`).
+Lo que queda **crea recursos, gasta dinero y toca la suscripción**: ningún
+agente lo ejecuta. Detalle con el resultado esperado de cada paso en
+`specs/F-008-infra-azure/tasks.md` fase 7 y en `infra/README_dedicacion.md`.
+
+> **PRECONDICIÓN de toda la fase 7:** cerrar antes la comprobación pendiente
+> de F-002 en Sigrid (fila `hmores.ide=403039`, parte `PT26/00296`, obra
+> `0404`). Probar el registro desde Azure escribirá **más** líneas
+> `PRUEBA-PORC` en la misma obra y mes, **indistinguibles de esa**.
+
+**T24 · provisión base** (desde `infra/`, tras `. .\00_vars_dedicacion.ps1`):
+`fase1_infra_dedicacion.ps1` → `crear_base_dedicacion.ps1` (crea la base en
+`psql-albaranes-rs9k2`, decisión D1) → `add_secrets_dedicacion.ps1`.
+Verificación: `az resource list -g rg-dedicacion-dev -o table` lista RG, MI,
+Log Analytics, Key Vault y CAE, **y ninguna Storage Account**.
+
+**T25 · imágenes y alta de los tres servicios, en orden**:
+`build_images_dedicacion.ps1` → `create_transfer_dedicacion.ps1` →
+`create_api_dedicacion.ps1` → `create_front_dedicacion.ps1`.
+
+**T26 · Easy Auth**: `setup_front_easyauth.ps1`. **Necesita D3**, la lista de
+personas del grupo `dedicacion-portal-users`, que sigue sin decidir.
+
+**T27 · la verificación que de verdad importa**: que **solo el front** sea
+externo, que el transfer siga con `OBRA_PRUEBAS_FORZAR=true`, que api y
+transfer tengan **una réplica como máximo**, y que **todos los secretos** sean
+referencias a Key Vault.
+
+**T28–T31**: salud de los tres servicios; prueba funcional de extremo a
+extremo **parando en `registro/preflight`, sin ejecutar**; pedir a
+`front-portal` el alta del enlace; y refrescar `docs/INTEGRACION.md` y
+`azure-apps/dedicacion.md` con los valores reales. **El commit en
+`azure-apps` es del humano**: es otro repositorio.
+
+> **Al pegar la salida real de los comandos `az` en `progress/`**: contiene
+> identificadores de suscripción y objectId. El guardián de secretos se está
+> ampliando para vigilar también ese directorio (§7.2 de la review). Usa
+> marcadores (`<SUSCRIPCION>`, `<OBJECT-ID>`) en vez de los valores reales.
+
+---
+
 ## ⚠ ACCIÓN PENDIENTE EN PRODUCCIÓN (Sigrid)
 
 **Hay una fila de prueba viva en Sigrid**, escrita el 2026-08-20 en la
