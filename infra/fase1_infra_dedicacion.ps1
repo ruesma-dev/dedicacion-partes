@@ -92,9 +92,16 @@ Require $LAW_CUSTOMERID "No pude obtener el customerId de Log Analytics '$LAW'."
 
 # --- 5) Key Vault (RBAC, no access policies) -------------------------------
 Section "5) Key Vault $KV (RBAC)"
-az keyvault create -n $KV -g $RG -l $LOCATION `
-    --enable-rbac-authorization true --tags $TAGS | Out-Null
-$KV_ID = az keyvault show -n $KV -g $RG --query "id" -o tsv
+# Idempotente: `keyvault create` NO lo es (falla con "already exists" al
+# relanzar la fase 1, que el README promete repetible). Se comprueba antes.
+$KV_ID = az keyvault show -n $KV -g $RG --query "id" -o tsv 2>$null
+if ([string]::IsNullOrWhiteSpace($KV_ID)) {
+    az keyvault create -n $KV -g $RG -l $LOCATION `
+        --enable-rbac-authorization true --tags $TAGS | Out-Null
+    $KV_ID = az keyvault show -n $KV -g $RG --query "id" -o tsv
+} else {
+    Write-Host "  Ya existe. No se toca." -ForegroundColor DarkGray
+}
 Require $KV_ID "El Key Vault '$KV' no se creo (su nombre es unico MUNDIAL y puede estar pillado). Cambia `$SUFFIX en 00_vars_dedicacion.ps1 y relanza."
 
 # La identidad gestionada solo LEE secretos, en tiempo de ejecucion.

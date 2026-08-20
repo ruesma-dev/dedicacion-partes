@@ -123,10 +123,14 @@ function Ejecutar-Sql($base, $sql) {
 }
 
 # --- 4) La base --------------------------------------------------------------
+# OJO con los flags: en `db show` y `db create` el nombre de la base va con
+# -n/--name. El -d/--database-name SOLO existe en `flexible-server execute`
+# (lo usa Ejecutar-Sql mas arriba). Mezclarlos da:
+#   ERROR: unrecognized arguments: -d dedicacion
 Section "4) Base '$PG_DB'"
-$existe = az postgres flexible-server db show -g $PG_RG -s $PG -d $PG_DB --query "name" -o tsv 2>$null
+$existe = az postgres flexible-server db show -g $PG_RG -s $PG -n $PG_DB --query "name" -o tsv 2>$null
 if ([string]::IsNullOrWhiteSpace($existe)) {
-    az postgres flexible-server db create -g $PG_RG -s $PG -d $PG_DB --only-show-errors | Out-Null
+    az postgres flexible-server db create -g $PG_RG -s $PG -n $PG_DB --only-show-errors | Out-Null
     Write-Host "  Base '$PG_DB' creada." -ForegroundColor Green
 } else {
     Write-Host "  Base '$PG_DB' ya existe. No se toca."
