@@ -48,6 +48,14 @@ class Settings(BaseSettings):
     pg_admin_password: str = ""
     pg_admin_db: str = "postgres"
 
+    # Bootstrap de la BBDD al arrancar (CREATE ROLE + CREATE DATABASE).
+    # Por defecto APAGADO a propósito (F-008, R14): en Azure la base vive en
+    # un servidor COMPARTIDO con otros cuatro proyectos y la crea una persona
+    # una sola vez con infra/crear_base_dedicacion.ps1. Una variable olvidada
+    # al desplegar tiene que hacer lo prudente, no lo peligroso. En local se
+    # enciende desde el .env (el .env.example lo trae a true).
+    auto_create_database: bool = False
+
     # --- Sigrid API (Function App) ---
     sigrid_api_base_url: str = ""
     sigrid_api_function_key: str = ""
