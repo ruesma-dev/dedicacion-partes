@@ -1,6 +1,8 @@
 # >>> ARNES-BASE: reglas anadidas por el instalador del arnes. >>>
 .env
 .arnes_cache/
+.coverage
+coverage.json
 *.pdf
 *.docx
 *.xlsx

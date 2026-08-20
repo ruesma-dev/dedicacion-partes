@@ -71,3 +71,50 @@ está instalado. Con el de la raíz funciona.
 
 Informes: `progress/impl_F-001.md`, `progress/review_F-001.md`,
 `progress/mutacion_F-001.md`.
+
+## 2026-08-19 · F-009 · Higiene: los artefactos de cobertura no se versionan
+
+Rama `feature/F-009-higiene-coverage-gitignore` · `sdd: false` · rigor
+`estandar` · **APROBADO** por el reviewer · 3 commits (`0aa68ed` … `d9d3e68`),
+más `c5b258d` en el repositorio `arnes-base`.
+
+**Qué cambió.** Los seis artefactos de cobertura versionados (`.coverage` y
+`coverage.json` de la raíz, de `dedicacion-api` y de `dedicacion-transfer`)
+salen del índice y entran en `.gitignore`. Ni una línea de Python tocada.
+
+**Qué se verificó (salida real).** `git ls-files | grep coverage` no devuelve
+nada. `bash harness/init.sh` ejecutado **dos veces seguidas** deja
+`git status --porcelain` **vacío**, que era el criterio de aceptación central.
+El portero sigue en verde y ni la puerta de cobertura ni la caché de suites se
+resienten: las dos leen esos ficheros **del disco**, no de git, y los ficheros
+se siguen generando.
+
+**Por qué se hizo ahora.** Había estorbado tres veces en una sola tarde: en
+F-001 se acabaron añadiendo dos artefactos más «por seguir el precedente»; en
+F-002 y F-003 la campaña de mutación paralela —que exige árbol limpio— tuvo
+que lanzarse con `--workers 1`; y el reviewer de F-003 llegó a interpretar el
+árbol sucio como un posible rojo del portero.
+
+**La propagación a `arnes-base`, que es lo más valioso.** El implementer no
+copió la regla: encontró la causa. `GUIA_INSTALACION.md` ya mandaba añadir
+`coverage.json` y `.coverage` al `.gitignore`, pero **como paso manual**, en
+dos sitios distintos (al actualizar desde 1.1.0 y desde 1.2.x). En
+`porcentajes` nadie lo hizo, que es exactamente lo que le pasa a un paso
+manual. El commit `c5b258d` de `arnes-base` lo convierte en **mecanismo**: la
+regla pasa al bloque gestionado por el instalador (`harness/gitignore.arnes`),
+con patrones sin anclar para que cubran la raíz y cualquier servicio de un
+monorepo. Ningún proyecto nuevo heredará el problema.
+
+**Puertas.** Cobertura y mutación salieron **N/A justificado** (cero líneas de
+Python de producción en el alcance), verificado por el reviewer leyendo
+`harness/alcance.py:112-124` y recalculando, con prueba de control incluida.
+La fase RED no podía ser un test unitario: fue la traza real de
+`init.sh` + `git status` ensuciándose antes y saliendo limpio después, y el
+reviewer la **reprodujo**.
+
+**Aviso vivo para el líder.** Las ramas de F-002 y F-003 todavía tienen esos
+seis ficheros trackeados y los modifican. Al mergearlas, git puede
+**reintroducirlos**: hay que comprobar `git ls-files | grep coverage` después
+de cada merge.
+
+Informes: `progress/impl_F-009.md`, `progress/review_F-009.md`.
