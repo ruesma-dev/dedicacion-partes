@@ -4,21 +4,24 @@
   "servicios": {
     "dedicacion-transfer": {
       "repositorio": "dedicacion-transfer",
-      "tag": null,
-      "publicado": null,
-      "nota": "Nunca publicado: el build real es MANUAL (humano), T25 de specs/F-008-infra-azure/tasks.md."
+      "tag": "r20260820-1625",
+      "publicado": "2026-08-20T14:27",
+      "nota": "Publicado en el build manual del 2026-08-20 (T25). El inventario se relleno a mano porque build_images_dedicacion.ps1 fallo al ESCRIBIR el fichero despues de publicar las tres imagenes; el digest sale del log de ese build.",
+      "digest": "sha256:cf872c89d1bcc9dfd613baea8a0e196c87391edd0da2cf848100c21dff413e3f"
     },
     "dedicacion-api": {
       "repositorio": "dedicacion-api",
-      "tag": null,
-      "publicado": null,
-      "nota": "Nunca publicado: el build real es MANUAL (humano), T25 de specs/F-008-infra-azure/tasks.md."
+      "tag": "r20260820-1625",
+      "publicado": "2026-08-20T14:27",
+      "nota": "Publicado en el build manual del 2026-08-20 (T25). El inventario se relleno a mano porque build_images_dedicacion.ps1 fallo al ESCRIBIR el fichero despues de publicar las tres imagenes; el digest sale del log de ese build.",
+      "digest": "sha256:d5b4a18a32c260e7aeb6eafc1b19d66aba789f2ea4a09e2cee02ab6983edb84e"
     },
     "dedicacion-front": {
       "repositorio": "dedicacion-front",
-      "tag": null,
-      "publicado": null,
-      "nota": "Nunca publicado: el build real es MANUAL (humano), T25 de specs/F-008-infra-azure/tasks.md."
+      "tag": "r20260820-1625",
+      "publicado": "2026-08-20T14:27",
+      "nota": "Publicado en el build manual del 2026-08-20 (T25). El inventario se relleno a mano porque build_images_dedicacion.ps1 fallo al ESCRIBIR el fichero despues de publicar las tres imagenes; el digest sale del log de ese build.",
+      "digest": "sha256:abd1b6f40e802b112a5d3a1ce2e580ba6bb4fc1149d895050adba72129cec8f3"
     }
   }
 }

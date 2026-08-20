@@ -130,7 +130,13 @@ if ($construidos.Count -gt 0) {
     }
     # Sin BOM y con LF: .gitattributes declara *.json eol=lf.
     $json = ($inventario | ConvertTo-Json -Depth 6).Replace("`r`n", "`n") + "`n"
-    [System.IO.File]::WriteAllText($INVENTARIO, $json, (New-Object System.Text.UTF8Encoding($false)))
+    # El encoding se construye ANTES: en PS 5.1, un `New-Object` anidado como
+    # argumento de un metodo estatico no resuelve, y la llamada falla con
+    # "No se encuentra ninguna sobrecarga para WriteAllText y el numero de
+    # argumentos 3". Con la variable aparte, la sobrecarga (String, String,
+    # Encoding) se resuelve sin problema.
+    $sinBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText([string]$INVENTARIO, [string]$json, $sinBom)
 
     Write-Host "`n=== infra/imagenes.json actualizado ===" -ForegroundColor Green
     foreach ($repo in $construidos.Keys) { Write-Host ("  {0,-22} {1}" -f $repo, $construidos[$repo]) }
