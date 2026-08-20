@@ -194,3 +194,69 @@ originaron (`progress/review_F-001.md` §10, `progress/review_F-002_fase1.md`
 **Reordenado el backlog** en la misma decisión: **F-008 (despliegue en Azure)
 sube a prioridad 3**, justo detrás de F-002, para poder hacer pruebas en un
 entorno desplegado.
+
+## 2026-08-20 · Dos defectos del arnés detectados al cerrar F-004 (van a `arnes-base`)
+
+Salieron al quedar F-004 en `blocked` por un rojo de `harness/init.sh` que
+**no tenía nada que ver con la feature**. El diagnóstico es del implementer de
+F-004 (`progress/impl_F-004.md`) y lo confirmó el líder.
+
+**1. `init.sh` confunde «no hay tests» con «los tests fallan».** Si el
+directorio `tests/` de un servicio existe pero no contiene ningún test,
+`pytest` termina con **código 5** («no tests ran»), y la sección 7 bis trata
+cualquier salida distinta de 0 como rojo. El caso real: al cambiar de rama,
+git se llevó los `.py` de `services/dedicacion-front/tests/` —que solo
+existen en la rama de F-008— pero dejó el directorio con `__pycache__`
+dentro, así que el árbol tenía un `tests/` **vacío de tests pero existente**.
+Arreglo propuesto: tratar el código 5 como el aviso que ya existe («sin
+directorio de tests»), no como fallo.
+
+**2. La caché de suites cruza ramas, y eso es más grave.**
+`.arnes_cache/suite_front.ok` guardaba el hash del árbol del front **de la
+rama de F-008**, donde sí hay tests, y por eso el rojo estuvo camuflado un
+tiempo dando un `[OK]` heredado de otra rama. Es exactamente el riesgo que ya
+había señalado el reviewer de F-001 («la caché puede enseñar un `[OK]` sin
+que la suite se haya ejecutado»), ahora con un caso real: **el portero puede
+dar verde por una suite que se ejecutó en otro sitio.**
+
+**Desbloqueo aplicado aquí** (no toca el arnés): borrar el residuo
+`services/dedicacion-front/tests/` con solo `__pycache__` dentro, su
+`.pytest_cache` y la entrada de caché `suite_front.ok`. `init.sh` vuelve a
+**ENTORNO LISTO** y el front recupera su aviso legítimo de «sin directorio de
+tests» —legítimo porque su suite vive en la rama de F-008, sin mergear—.
+
+**El arreglo de fondo va a `arnes-base`**, junto a lo que se retiró con F-007
+y F-010: los dos defectos son del arnés genérico y los sufrirá cualquier
+proyecto que trabaje con varias ramas.
+
+## 2026-08-20 · F-004 · README del monorepo y arranque local en orden
+
+Rama `feature/F-004-readme-monorepo` · `sdd: false` · rigor `documental` ·
+**APROBADO** por el reviewer · commits `605c2d9` (README + test) y `fed6f9b`
+(informe).
+
+**Qué cambió.** `README.md` en la raíz (177 líneas), que no existía: qué es el
+sistema y su flujo, los tres servicios con su puerto y **enlace** a su README
+(sin duplicarlos), el arranque local en el orden que funciona, cómo comprobar
+que va, qué NO hacer, el mapa del repositorio y el estado real del proyecto.
+Más `tests/test_f004_readme.py`, que ata el README al código para que no se
+pudra en silencio — no lo exigía el nivel `documental`, y el implementer lo
+entregó igual.
+
+**Se escribió con hechos, no con suposiciones**: el 2026-08-20 se levantó el
+sistema entero en local por primera vez y se verificó cada paso antes de
+documentarlo. El reviewer comprobó **una por una** todas las afirmaciones
+verificables contra el código, no contra el informe, y no encontró ni una
+discrepancia. La trampa conocida —el api expone su salud en
+**`/api/v1/health`**, no en `/health`— quedó documentada con aviso propio y
+con un test que impide que se degrade.
+
+**El bloqueo que hubo, y que no era de la feature.** El implementer entregó su
+trabajo commiteado pero marcó `blocked` por un rojo de `harness/init.sh`
+ajeno: `services/dedicacion-front/tests/` existía con **solo `__pycache__`
+dentro** —restos de la rama de F-008, donde sí hay tests—, así que `pytest`
+devolvía código 5 («no tests ran») y el portero lo trataba como fallo. **Hizo
+lo correcto al no arreglar `init.sh` por su cuenta**: el defecto es del arnés
+genérico y arrastra propagación a `arnes-base`, así que paró y preguntó. El
+líder borró el residuo y el portero volvió a ENTORNO LISTO. Los dos defectos
+del arnés que esto destapó están anotados arriba, en la entrada del mismo día.
