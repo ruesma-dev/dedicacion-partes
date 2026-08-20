@@ -21,8 +21,8 @@ servidor.** Ni una escritura en Sigrid. Ni un `git push`.
 | Commits | 21, uno por tarea (con una excepción justificada en §8) |
 | Ficheros nuevos | 20 |
 | Ficheros modificados | 7 |
-| Tests nuevos | **105** (16 + 12 en la api, 11 en el front, 27 + 39 en la raíz) |
-| Suite completa | **387 tests en verde** (77 raíz + 112 api + 11 front + 187 transfer) |
+| Tests nuevos | **119** (16 + 12 en la api, 11 en el front, 27 + 53 en la raíz) |
+| Suite completa | **401 tests en verde** (91 raíz + 112 api + 11 front + 187 transfer) |
 | Cobertura de líneas cambiadas | **93,3 %** (28/30), umbral 80 % |
 | Mutación | **5 mutantes, 5 muertos, 0 supervivientes** |
 | `bash harness/init.sh` | **ENTORNO LISTO** (exit 0) |
@@ -38,8 +38,8 @@ Lo que de verdad cambia en el sistema, más allá de la carpeta `infra/`:
    que la identidad de Easy Auth llega al backend y que el `X-Usuario` que
    llegue de fuera se descarta.
 3. **El transfer se puede empaquetar.** Era el único sin `Dockerfile`.
-4. **Hay un guardián permanente de secretos** sobre `infra/`, `specs/` y
-   `docs/`, y ya ha cazado algo real (§4.2).
+4. **Hay un guardián permanente de secretos** sobre `infra/`, `specs/`,
+   `docs/` y `progress/`, y ya ha cazado algo real (§4.2 y §10).
 
 ---
 
@@ -70,7 +70,7 @@ Lo que de verdad cambia en el sistema, más allá de la carpeta `infra/`:
 | `services/dedicacion-front/tests/{__init__,conftest}.py` | — | (la suite no existía) |
 | `services/dedicacion-front/tests/test_f008_identidad.py` | R11, R12 | 11 |
 | `tests/test_f008_imagenes.py` | R23-R26 | 27 |
-| `tests/test_f008_infra_sin_secretos.py` | R21, R22 | 39 |
+| `tests/test_f008_infra_sin_secretos.py` | R21, R22 | 53 (39 + 14 de la ampliación §10) |
 
 ### 2.4 `infra/` (nueva)
 
@@ -133,12 +133,19 @@ Tras T2, T3 y T4, los 16 tests del fichero pasan (§5).
 
 El entregable de T10 **es el propio test**, así que su fase RED consiste en
 romperlo a propósito. Se creó un fichero temporal `infra/_prueba_red_f008.ps1`
-con **un GUID y una contraseña inventados** (no existen, no apuntan a nada):
+con **un GUID y una contraseña inventados** (no existían, no apuntaban a
+nada):
 
 ```powershell
-$Global:SUBSCRIPTION = "3f7c1d2e-5a4b-4c6d-8e9f-0a1b2c3d4e5f"
-$Global:PG_PASSWORD  = "InventadaDelTodoNoExiste"
+$Global:SUBSCRIPTION = "<GUID-INVENTADO>"
+$Global:PG_PASSWORD  = "<CONTRASENA-INVENTADA>"
 ```
+
+> Los dos valores iban aquí literales hasta que el guardián empezó a barrer
+> también `progress/` (§10): **se acusó a sí mismo, y con razón**. Aunque
+> fueran inventados, tenían exactamente la forma de un secreto, y un guardián
+> que distinga «inventado» de «real» no existe. Sustituidos por marcadores,
+> que es la salida que este informe recomienda para el mismo caso.
 
 **Primera ejecución — el guardián solo cazó la mitad:**
 
@@ -152,9 +159,9 @@ E       assert ['infra/_prue...ps1:4 [guid]'] == []
 **La línea 5 no saltó, y eso es un agujero real.** El patrón de credenciales
 excluía todo valor que empezara por comilla —lo hacía para no acusar a
 `"PG_PASSWORD=secretref:pg-password"`, que es una referencia legítima— y con
-ello se le colaba `PG_PASSWORD = "loQueSea"`, que es **la forma más habitual
-de escribir una contraseña en un `.ps1`**. Un guardián así habría dado verde
-para siempre sobre el caso que más importa.
+ello se le colaba `PG_PASSWORD = "<un valor entre comillas>"`, que es **la
+forma más habitual de escribir una contraseña en un `.ps1`**. Un guardián así
+habría dado verde para siempre sobre el caso que más importa.
 
 Corregido consumiendo la comilla de apertura **antes** de aplicar la
 exclusión. Segunda ejecución, con el patrón arreglado:
@@ -578,3 +585,117 @@ Con honestidad, y para que el reviewer no lo dé por hecho:
 - **Que el transfer siga en modo pruebas una vez desplegado.** El script lo
   fija a `true` y exige dos señales para cambiarlo; comprobarlo sobre el
   recurso vivo es T27.
+
+---
+
+## 10 · Ampliación posterior a la review: el guardián barre `progress/` (§7.2 y §7.3)
+
+**Fecha:** 2026-08-20, tras el APROBADO de las fases 1-6
+(`progress/review_F-008.md`). Se atiende **solo** lo que pedía el coordinador;
+el resto del trabajo aprobado no se toca.
+
+### 10.1 Qué cambió
+
+| Cambio | Recomendación |
+|---|---|
+| `DIRECTORIOS` pasa de `("infra", "specs", "docs")` a incluir **`"progress"`** | §7.2 |
+| El patrón de credenciales admite el sufijo `_value` / `-value` / `Value` | §7.3.1 |
+| El patrón admite el separador **`:`** además de `=` | §7.3.2 |
+
+El motivo de §7.2, con nombre y apellidos: **la fase 7 manda pegar en este
+mismo fichero la salida real de `az resource list`, `az containerapp show` y
+`az ad group show`**, que escupe identificadores de suscripción y objectId de
+grupo. El directorio con más probabilidad de recibir esa clase de texto era
+justo el único de los cuatro versionados que nadie vigilaba.
+
+Sobre el separador `:` hay una asimetría deliberada: con `:` se admite la
+comilla de **cierre** del nombre (una clave JSON siempre va entrecomillada),
+y con `=` no. Sin esa distinción, una tabla de descripciones de PowerShell
+—`"PG-PASSWORD" = "contrasena del rol de aplicacion..."`, que es prosa, no un
+valor— empezaría a saltar. Las dos formas están fijadas como controles.
+
+**Las otras dos rendijas de §7.3 —here-strings de PowerShell y valores con
+espacios— NO se han tocado**, por indicación expresa: exigen barrer por
+bloques en vez de línea a línea y el reviewer concluye que no compensan.
+Siguen escritas en §3.4 de la review.
+
+### 10.2 Sí, disparó con los informes existentes
+
+Al añadir `progress/` (8.521 líneas en 24 informes), el barrido señaló
+**cuatro líneas**, y después de cerrar las dos rendijas, **dos más**:
+
+| Fichero | Qué era |
+|---|---|
+| `impl_F-008.md:139-140` | el GUID y la contraseña **inventados** de la fase RED de T10, pegados literales |
+| `impl_F-008.md:155` y `review_F-008.md:149` | `PG_PASSWORD = "…"` citado en prosa al explicar el agujero que destapó esa fase RED |
+| `review_F-008.md:246-247` | la tabla de la review que **documentaba estas dos rendijas**, con sus valores de ejemplo |
+
+Ninguno era un secreto real. Pero **todos tenían exactamente la forma de
+uno**, y un guardián capaz de distinguir «inventado» de «real» no existe: esa
+es precisamente la razón por la que sirve.
+
+**Resuelto con marcadores en el texto, sin relajar ni un patrón**
+(`<GUID-INVENTADO>`, `<CONTRASENA-INVENTADA>`, `<valor>`). Encajan solos,
+porque el carácter `<` ya estaba en la lista de exclusiones del patrón desde
+el principio: los marcadores eran ya la salida prevista. Cada sitio editado
+dice por qué se editó.
+
+Las dos filas de la tabla de la review quedan marcadas **CERRADO**, porque
+después de este cambio ya no describen la realidad. Las otras cuatro siguen
+abiertas, tal cual.
+
+> Merece la pena dejarlo dicho: el guardián **se acusó a sí mismo dos veces**
+> —una en su propia fase RED, otra al ampliarse— y las dos veces tenía razón.
+
+### 10.3 Comprobación de que la ampliación sirve de algo
+
+Un guardián que solo se ve pasar no demuestra nada. Se creó un fichero
+temporal en `progress/` con la salida de `az` **con la forma exacta que va a
+tener en la fase 7** (valores inventados):
+
+```
+progress/_prueba_red_progress.md:8  [guid]         "subscriptionId": "…"
+progress/_prueba_red_progress.md:9  [credencial]   "clientSecret": "…"
+progress/_prueba_red_progress.md:10 [credencial]   "secret_value": "…"
+```
+
+Las tres cazadas, nombrando fichero y línea: el identificador de suscripción
+por el patrón de GUID, y las otras dos **por las dos rendijas recién
+cerradas** —el separador `:` y el sufijo `_value`—, que antes de este cambio
+se habrían colado. Fichero borrado; `git status` limpio.
+
+### 10.4 Estado
+
+El guardián pasa de **39 a 53 tests**: seis controles positivos nuevos (las
+dos rendijas, en sus tres variantes cada una) y ocho negativos nuevos (las
+tablas de descripciones de PowerShell, los marcadores y las referencias
+`secretref:` / `keyvaultref:` / `kv:keyVaultUrl`, que llevan `:` y **no** son
+valores).
+
+```
+$ bash harness/init.sh
+
+[OK] pytest en verde (con medición de cobertura)          91 passed
+[OK] servicio api (services/dedicacion-api): pytest en verde
+[OK] servicio front (services/dedicacion-front): pytest en verde
+[OK] servicio transfer (services/dedicacion-transfer): pytest en verde
+[OK] PUERTA COBERTURA: 93.3% de 30 líneas cambiadas cubiertas (28/30, umbral 80%, nivel critico)
+[OK] Ningún .env versionado
+[OK] Rama actual: feature/F-008-infra-azure
+----------------------------------------
+ENTORNO LISTO. Puedes trabajar.
+```
+
+La cobertura y la mutación no se mueven: este cambio es solo de tests y de
+texto, y `harness/alcance.py` no considera producción ni `tests/` ni
+`progress/`. **La campaña de mutación sigue siendo válida** (5 mutantes, 5
+muertos, 0 supervivientes): no se ha tocado una sola línea de código de
+producción.
+
+### 10.5 Para el líder
+
+La recomendación §7.2 dice que esto **vale también para `arnes-base`**, por la
+regla de propagación de `CLAUDE.md`: si el arnés genérico incorpora un
+guardián de secretos, que nazca ya con `progress/` dentro, porque `progress/`
+es justo donde el arnés manda pegar salidas reales. **No lo he hecho**: está
+fuera de este encargo y `arnes-base` es otro repositorio.

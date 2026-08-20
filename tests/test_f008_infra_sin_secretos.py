@@ -45,10 +45,17 @@ import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
 
-#: Los tres árboles que se barren (R22). `infra/` porque es donde nacen los
+#: Los cuatro árboles que se barren (R22). `infra/` porque es donde nacen los
 #: scripts de despliegue; `specs/` y `docs/` porque son los ficheros que más
 #: tientan a pegar «un ejemplo real para que se entienda».
-DIRECTORIOS = ("infra", "specs", "docs")
+#:
+#: Y `progress/` porque es **el que más va a recibir esa clase de texto**: el
+#: arnés manda pegar ahí la salida REAL de los comandos, y la fase 7 de
+#: `specs/F-008-infra-azure/tasks.md` pide literalmente el resultado de
+#: `az resource list`, `az containerapp show` y `az ad group show`, que
+#: escupen identificadores de suscripción y objectId de grupo. Era el único
+#: de los cuatro directorios versionados que nadie vigilaba.
+DIRECTORIOS = ("infra", "specs", "docs", "progress")
 
 #: Nada de esto es código que haya que leer, y algunos ni siquiera son texto.
 IGNORADOS = ("__pycache__", ".pytest_cache", ".ruff_cache", ".git")
@@ -88,9 +95,20 @@ PATRONES: dict[str, re.Pattern[str]] = {
     # (`[System.Net.NetworkCredential]::new(...)`), no un literal: ninguna
     # credencial empieza así, y sin esta exclusión el guardián señalaba la
     # línea que precisamente EVITA escribir la contraseña en el script.
+    # `secret_value=`, `secretValue=`, `api-key-value=`: el sufijo es una
+    # variante habitual del mismo nombre y sin él se escapaba entera.
+    #
+    # Y el separador `:` además de `=`, porque `"clientSecret": "..."` es
+    # exactamente la forma en que un secreto sale de `az` y de cualquier JSON.
+    # Con `:` se admite la comilla de CIERRE del nombre (una clave JSON
+    # siempre va entrecomillada); con `=` no, y es deliberado: en una tabla de
+    # descripciones de PowerShell —`"PG-PASSWORD" = "contrasena del rol..."`—
+    # lo que sigue al `=` es prosa, no un valor.
     "credencial": re.compile(
         r"(?i)(?:password|passwd|pwd|secret|token|api[_-]?key|function[_-]?key)"
-        r"\s*=\s*[\"']?"
+        r"(?:[_-]?value)?"
+        r"(?:\s*=\s*|[\"']?\s*:\s*)"
+        r"[\"']?"
         r"(?!secretref:|keyvaultref:|\$|<|%|@|\[|REDACTADO|AUTO\b|TU-)"
         r"[^\s\"'`,;)\]}]{4,}"
     ),
@@ -229,6 +247,15 @@ def test_f008_r21_los_valores_reales_no_se_versionan():
         ("credencial", "SIGRID_API_FUNCTION_KEY=zzInventadaNoExiste"),
         ("credencial", "password = inventada-tampoco"),
         ("credencial", "client_secret=Abc123InventadoDelTodo"),
+        # Rendija 1 de la review §7.3: el sufijo `_value` / `-value` / `Value`.
+        ("credencial", "secret_value=Abc123Inventado"),
+        ("credencial", "SECRET-VALUE=Abc123Inventado"),
+        ("credencial", "secretValue=Abc123Inventado"),
+        # Rendija 2: el separador `:`, que es como un secreto sale de `az` y
+        # de cualquier JSON.
+        ("credencial", '"clientSecret": "Abc123Inventado"'),
+        ("credencial", '"apiKey":"Abc123Inventado"'),
+        ("credencial", "password: Abc123Inventado"),
         (
             "clave_base64",
             "la clave es SUx1c3RvUGFyYVByb2JhckVsQmFycmlkb051bmNhRXhpc3Rpbw==",
@@ -280,6 +307,20 @@ def test_f008_r21_el_barrido_caza_cada_patron_inyectado(familia: str, inyectado:
         'appRoleId = "00000000-0000-0000-0000-000000000000"',
         # Un tag fechado, que se parece a un identificador y no lo es.
         "imagen dedicacion-api:r20260820-1830",
+        # Una tabla de DESCRIPCIONES de PowerShell: lo que sigue al `=` es
+        # prosa, no un valor. Por eso el separador `=` no admite la comilla de
+        # cierre del nombre y el separador `:` sí.
+        '"PG-PASSWORD" = "contrasena del rol de aplicacion, la que elegiste"',
+        '"SIGRID-API-FUNCTION-KEY" = "function key de sigrid-api"',
+        # Marcadores: es la salida recomendada cuando hay que ilustrar la
+        # forma de un secreto en un documento (review §7.2).
+        'PG_PASSWORD = "<CONTRASENA-INVENTADA>"',
+        '"clientSecret": "<valor>"',
+        "secret_value=<valor>",
+        # Referencias con `:` que NO son valores.
+        "sigrid-key=secretref:sigrid-key",
+        "easyauth-client-secret=keyvaultref:$KV_URI/secrets/EASYAUTH-CLIENT-SECRET",
+        '--query "properties.configuration.secrets[].{n:name, kv:keyVaultUrl}"',
     ),
 )
 def test_f008_r21_el_barrido_no_salta_con_el_texto_legitimo(legitimo: str):

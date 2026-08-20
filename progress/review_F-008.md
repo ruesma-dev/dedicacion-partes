@@ -146,8 +146,8 @@ Dos fases RED con **salida pegada**, no con la frase «se siguió TDD»:
   hizo rompiéndolo en un fichero temporal con un GUID y una contraseña
   **inventados**. Y destapó un agujero real: el patrón de credenciales
   excluía todo valor que empezara por comilla, y con ello se le colaba
-  `PG_PASSWORD = "loQueSea"`, **la forma más habitual de escribir una
-  contraseña en un `.ps1`**. Dos ejecuciones pegadas: la primera caza solo el
+  `PG_PASSWORD = "<un valor entre comillas>"`, **la forma más habitual de
+  escribir una contraseña en un `.ps1`**. Dos ejecuciones pegadas: la primera caza solo el
   GUID, la segunda —con el patrón corregido consumiendo la comilla de
   apertura— caza las dos líneas.
 
@@ -241,10 +241,16 @@ con credencial; IP privada.
 
 **Se le escapan** (heurísticas, no incumplimientos de R21):
 
+> **Actualización del implementer (2026-08-20).** Las **dos primeras filas
+> están CERRADAS** por la recomendación §7.3; los valores de ejemplo se
+> sustituyen aquí por marcadores porque el guardián, que desde §7.2 barre
+> también `progress/`, los cazaba —correctamente— en esta misma tabla. Las
+> cuatro restantes siguen abiertas y a propósito.
+
 | Entrada que escapa | Comentario |
 |---|---|
-| `secret_value=Abc12345` | el patrón exige `secret` pegado al `=`; `secret_value=` no casa |
-| `"clientSecret": "Abc..."` | JSON usa `":"`, no `=` |
+| ~~`secret_value=<valor>`~~ | **CERRADO**: el patrón admite ya el sufijo `_value` / `-value` / `Value` |
+| ~~`"clientSecret": "<valor>"`~~ | **CERRADO**: el patrón admite ya el separador `:`, que es como sale de `az` |
 | here-string de PowerShell (`@"…"@`) | el valor va en la línea siguiente y el barrido es línea a línea |
 | GUID sin guiones (32 hex) | el patrón exige el formato con guiones |
 | base64 largo **sin** relleno `=` | exigir el `=` es deliberado: sin él, cualquier identificador largo saltaría |
