@@ -4,10 +4,11 @@
 > Este documento es NORMATIVO: el spec-author diseña contra él y el
 > reviewer rechaza lo que lo incumpla. Si no está aquí, no es un requisito.
 >
-> **Escrito el 2026-08-19 leyendo el código migrado al monorepo.** La
-> sección «Semántica de dominio imprescindible» está PENDIENTE DE VALIDAR
-> por el humano: sale del código y de los README, no de una conversación con
-> Administración, y dos de sus puntos tienen contradicciones señaladas.
+> **Escrito el 2026-08-19 leyendo el código migrado al monorepo y validado
+> ese mismo día.** Los dos puntos que quedaban en el aire —el 5 (postventa)
+> y el 6 (conflicto)— se cerraron con las decisiones D1 y D2 de F-002, y de
+> la segunda salió una regla que el repositorio no tenía: la 7 (capacidad).
+> Cada uno lleva su línea de procedencia.
 
 ## Qué hace este proyecto
 
@@ -114,18 +115,26 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
 ## Semántica de dominio imprescindible
 
-> PENDIENTE DE VALIDACIÓN POR EL HUMANO. Los puntos marcados ⚠ tienen
-> versiones contradictorias en el propio repositorio.
+> **Esta sección es la ÚNICA fuente normativa de las reglas P1-P5.** El
+> README del transfer, los docstrings y las specs **remiten** a las anclas
+> `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad` y
+> `#regla-pruebas`; no vuelven a enunciar la regla con palabras propias. Lo
+> vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
+> falla si alguien la reenuncia fuera de aquí.
+>
+> Todos los puntos están validados. Que la regla esté escrita no autoriza a
+> escribir en producción: `OBRA_PRUEBAS_FORZAR` se queda a `true` hasta que
+> la verificación real contra Sigrid (F-002, T13 y T14) la haga el humano.
 
-1. **Solo recursos mensuales (P1).** Se registra únicamente el recurso que
+1. <a id="regla-p1"></a>**Solo recursos mensuales (P1).** Se registra únicamente el recurso que
    tenga un código de hora `M*` (`MENC`, `MCAP`, `MJEFO`…) en `reshor`. Es
    el mismo filtro que aplica la sincronización de empleados de la API, y
    por eso lo que se captura y lo que se registra coinciden. Un recurso sin
    `M*` se omite con motivo; no es un error.
-2. **La línea va al último día del mes (P2).** El parte de Sigrid es por
+2. <a id="regla-p2"></a>**La línea va al último día del mes (P2).** El parte de Sigrid es por
    obra y mes natural; la fecha (`fec`) de la línea es siempre el último día
    de ese mes, no el día en que se trabajó ni el de captura.
-3. **El porcentaje viaja sobre 1 (P3).** En PostgreSQL se guarda 0-100
+3. <a id="regla-p3"></a>**El porcentaje viaja sobre 1 (P3).** En PostgreSQL se guarda 0-100
    (`asignacion.porcentaje`, `Numeric(6,2)`); al transfer se manda **dividido
    entre 100** (40 % → `0.4`). En Sigrid, `can` = ese valor sobre 1, `pre` =
    importe mensual del recurso en `reshor`, `tot = can × pre`. Confundir las
@@ -133,37 +142,113 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 4. **El total de un trabajador debe ser 100 %.** `FALTA` (<100), `EXCESO`
    (>100) y `SIN_CARGA` (sin líneas) son estados visibles, no bloqueos: se
    puede guardar un cuadrante incompleto. La comparación usa una épsilon de
-   0,005 para no pelearse con los decimales.
-5. **Postventa es una obra, no una marca (P5).** Una asignación con
+   0,005 (`dedicacion-api/domain/estados.py`) para no pelearse con los
+   decimales.
+
+   **Esa épsilon no está sola.** `dedicacion-transfer` usa la misma,
+   convertida a la escala 0-1 de Sigrid (0,00005), para decidir si una
+   jornada se pasa del 100 % en un parte:
+   [`#regla-capacidad`](#regla-capacidad). Quien cambie una tiene que
+   cambiar la otra, o el front dará por `OK` cuadrantes que el transfer
+   marcará como sobrecarga.
+5. <a id="regla-p5"></a>**Postventa es una obra, no una marca (P5).** Una asignación con
    `es_postventa` no se escribe en su obra: se escribe en la obra de
-   postventa (`POSTVENTA_OBRA_COD`, hoy `POSTV2`) imputando a la partida que
-   corresponde a la **obra original** (`0707` → partida `0707 · …`). Sin
-   casado, la línea se omite con motivo. Por eso la clave única de
-   `asignacion` incluye `es_postventa`: un trabajador puede tener la misma
-   obra dos veces, una normal y otra de postventa. ⚠ El README del transfer
-   dice obra `POSTV2` y habla de *partida*; el docstring de
-   `reglas_porcentajes.py` dice `postventa-2` y habla de *capítulo*. Manda
-   el `.env` (`POSTV2`), pero conviene confirmarlo contra Sigrid.
-6. **Conflicto e idempotencia.** `synckey = "porcentajes:{asignacion_id}"`
-   (no se cruza con los partes diarios, que usan otro prefijo): reejecutar no
-   duplica. Si el recurso ya tiene una línea `M*` en ese parte —**aunque sea
-   en otro día**— es conflicto y hay que confirmar el pisado, que sustituye
-   la línea y de paso corrige la fecha. ⚠ El README dice que en obra normal
-   choca aunque la partida sea distinta; el docstring de P4 exige «la misma
-   partida». Hay que fijar cuál es la regla buena antes de escribir en
-   producción.
-7. **Modo pruebas por defecto.** `OBRA_PRUEBAS_FORZAR=true` desvía TODA
-   escritura a la obra `0404` con la marca `PRUEBA-PORC` en `tex`. El
-   capítulo de postventa se sigue resolviendo contra la obra de postventa
+   postventa que declare `POSTVENTA_OBRA_COD` (el valor vive en el `.env`,
+   no aquí), imputando a una **partida hoja activa** del presupuesto de esa
+   obra: la que corresponde a la **obra original**. Por eso la clave única
+   de `asignacion` incluye `es_postventa`: un trabajador puede tener la
+   misma obra dos veces, una normal y otra de postventa.
+
+   Tres precisiones que deciden qué se escribe:
+
+   - **Partida hoja, nunca un capítulo.** El destino (`hmores.paride`) es
+     siempre una hoja del árbol del presupuesto y activa (`tipdes = 0`). Es
+     el mismo universo que el preflight publica en `partidas_postventa` para
+     el desplegable del front: el automático y el desplegable **no pueden
+     apuntar a sitios distintos**.
+   - **Casado por código exacto.** En `obrparpar` el código y la
+     descripción son campos separados (`cod`, `res`); lo que la pantalla de
+     Sigrid enseña junto es la concatenación de los dos. Se compara el
+     código de la obra original contra `cod` normalizado, **entero**: `0656`
+     y `656` son códigos **distintos** y no casan entre sí. Solo si no hay
+     coincidencia exacta se aplican las cascadas (empieza por → código en la
+     descripción → nombre), siempre sobre hojas activas y de forma
+     **determinista** (el orden en que Sigrid devuelva las filas no puede
+     cambiar la partida elegida).
+   - **Sin casado no se escribe.** La línea se omite con su motivo, visible
+     en el preflight. Lo mismo si la obra de postventa no existe en Sigrid.
+
+   *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
+   verificado contra Sigrid, ver `progress/sigrid_F-002.md`* (lectura del
+   presupuesto completo de la obra de postventa: 225 hojas, 23 capítulos, y
+   las 84 partidas de obra todas hojas colgando de `CD`).
+6. <a id="regla-p4"></a><a id="regla-conflicto"></a>**Identidad de la línea e idempotencia (P4 · Regla A).**
+   `synckey = "porcentajes:{asignacion_id}"` (no se cruza con los partes
+   diarios, que usan otro prefijo): reejecutar no duplica.
+
+   Dos líneas del parte son **la misma línea** si, y solo si, coinciden los
+   **cuatro** campos: recurso, mes, código de hora y **partida**. En la obra
+   normal y en la de postventa, con el mismo criterio. Consecuencias:
+
+   - Una línea `M*` previa del recurso con **otra partida** es una línea
+     legítima distinta: no es conflicto y **no se toca**. Un mismo
+     trabajador puede tener varias líneas en el mismo parte repartidas
+     entre partidas — cuánto puede sumar entre todas lo dice
+     [`#regla-capacidad`](#regla-capacidad).
+   - Cuando los cuatro campos sí coinciden es **conflicto**, aunque la línea
+     previa esté en **otro día** del mes: hay que confirmar el pisado, que
+     la sustituye y de paso corrige la fecha.
+   - Una línea que lleve una `synckey` de la ejecución en curso no choca:
+     lo que escribimos nosotros no compite con nosotros mismos.
+
+   El criterio de choque y la clave del conflicto salen de **una sola
+   función**, `application/services/reglas_porcentajes.campos_identidad`:
+   ahí y en ningún otro sitio se decide qué es «la misma línea».
+
+   *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
+   decisión D2, `specs/F-002-reglas-postventa-conflicto/requirements.md` §2.*
+   Ninguna de las dos versiones que el repositorio enfrentaba era la buena:
+   la vieja P4 se parte en dos reglas, esta (identidad) y la siguiente
+   (capacidad).
+7. <a id="regla-capacidad"></a>**La jornada de un trabajador en un parte no pasa de 1 (Regla B).**
+   Por trabajador y parte, la suma de `can` de sus líneas `M*` no puede
+   pasar de **1** (el 100 % de la persona). Cuentan **todas** las líneas
+   cuyo código de hora empiece por `M`, sea cual sea el código concreto: el
+   límite es la jornada, no el concepto.
+
+   - **Qué entra en la suma:** las líneas `M*` que ya están en el parte y no
+     se van a pisar ni son de la ejecución en curso, más las que se van a
+     escribir. Se calcula **suponiendo que todos los pisados propuestos se
+     confirman**, que es la única hipótesis segura: cualquier otra
+     combinación escribe estrictamente menos.
+   - **Tolerancia 0,00005.** Es la épsilon del punto 4 (0,005 sobre escala
+     0-100) convertida a la escala 0-1 de Sigrid. **Las dos son la misma**:
+     un cuadrante que la API da por `OK` no puede convertirse aquí en una
+     sobrecarga. Cambiar una obliga a cambiar la otra.
+   - **Al pasarse se avisa, no se decide.** El preflight devuelve un
+     conflicto de **sobrecarga**, con las cifras que lo justifican; sin
+     confirmación **no se escribe** ninguna de las líneas que lo provocan, y
+     quedan listadas como omitidas con su motivo. Confirmar una sobrecarga
+     escribe **y no borra nada**.
+   - **Alcance: un parte, es decir, una obra.** El 100 % del trabajador
+     entre **todas** sus obras es otra regla, la del punto 4, y vive en
+     `dedicacion-api`. Esta solo ve el parte que tiene delante, y por eso
+     tampoco detecta sobrecargas previas en las que no participa.
+
+   *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
+   decisión D2, `specs/F-002-reglas-postventa-conflicto/requirements.md` §2.*
+8. <a id="regla-pruebas"></a>**Modo pruebas por defecto.** `OBRA_PRUEBAS_FORZAR=true` desvía TODA
+   escritura a la obra `0404` con la marca `PRUEBA-PORC` en `tex`. La
+   partida de postventa se sigue resolviendo contra la obra de postventa
    real, para que la prueba valide el casado.
-8. **`ide` reservado a mano.** Las líneas se insertan con `MAX(ide)+1` bajo
+9. **`ide` reservado a mano.** Las líneas se insertan con `MAX(ide)+1` bajo
    `UPDLOCK, HOLDLOCK`: el transfer va a **una sola instancia**. Dos procesos
    escribiendo a la vez se pisan los `ide`.
-9. **Trampas de Sigrid heredadas de partes.** Lotes de 15 sentencias como
-   máximo; solo base `ruesma`; `tex` es TEXT, hay que comparar con
-   `CAST(tex AS NVARCHAR(200)) = ?`; el parte se localiza por `cod` **y**
-   `tip`; tras crear la cabecera hay que releer su `ide` antes de insertar
-   líneas.
+10. **Trampas de Sigrid heredadas de partes.** Lotes de 15 sentencias como
+    máximo; solo base `ruesma`; `tex` es TEXT, hay que comparar con
+    `CAST(tex AS NVARCHAR(200)) = ?`; el parte se localiza por `cod` **y**
+    `tip`; tras crear la cabecera hay que releer su `ide` antes de insertar
+    líneas.
 
 ## Acceso a datos y sistemas externos
 

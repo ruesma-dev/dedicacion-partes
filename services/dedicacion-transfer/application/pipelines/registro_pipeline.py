@@ -1,20 +1,27 @@
 # application/pipelines/registro_pipeline.py
 """Pipeline de registro de PORCENTAJES en los partes de trabajo de Sigrid.
 
+Orquesta las reglas; no las enuncia. La fuente normativa es
+`docs/ARCHITECTURE.md` § Semántica de dominio imprescindible.
+
 Pasos (el preflight ejecuta 1-8; la escritura, 1-10):
 
   1. Resolver los DESTINOS: la obra normal (en pruebas, la de pruebas) y,
-     si hay líneas de postventa, la OBRA DE POSTVENTA con el CAPÍTULO
-     (obrparpar) que corresponde a la obra original.
+     si hay líneas de postventa, la obra de postventa con su PARTIDA
+     (ARCHITECTURE.md#regla-p5).
   2. Resolver el RECURSO de cada empleado (res.conide) si no viene dado:
      se elige el recurso con código mensual M*; a igualdad, el más
      reciente (ide mayor).
   3. Cargar los tipos de hora de los recursos implicados (reshor).
-  4. Aplicar las REGLAS (solo M*, % sobre 1, postventa -> capítulo).
+  4. Aplicar las REGLAS de la línea (ARCHITECTURE.md#regla-p1 … #regla-p3,
+     #regla-p5).
   5. Localizar el parte de cada DESTINO+MES; proponer código si no existe.
   6. Idempotencia por synckey ('porcentajes:{id}') -> ya_registrado.
-  7. CONFLICTOS: línea(s) M* del recurso con el mismo código Y la misma
-     partida en el parte, EN CUALQUIER DÍA del mes -> confirmar pisado.
+  7. CONFLICTOS de pisado, por identidad de la línea
+     (ARCHITECTURE.md#regla-conflicto) -> confirmar pisado.
+  7 bis. CONFLICTOS de sobrecarga, por jornada del recurso en el parte
+     (ARCHITECTURE.md#regla-capacidad) -> confirmar escritura. Van DESPUÉS
+     de los de pisado: su cifra ya presupone que el pisado ocurre.
   8. (fin del preflight)
   9. Crear los partes que falten (con + hmo, releer el ide).
  10. Borrar las pisadas confirmadas + insertar las nuevas (por lotes).
@@ -29,7 +36,11 @@ from typing import Optional
 from application.services.partida_resolver import (
     construir_catalogo, resolver_normal, resolver_postventa,
 )
-from application.services.reglas_porcentajes import ReglasPorcentajes
+from application.services.reglas_porcentajes import (
+    MOTIVO_PARTIDA_PV_NO_HOJA, MOTIVO_SOBRECARGA, ReglasPorcentajes,
+    clave_conflicto, clave_sobrecarga, criterio_choque, es_linea_mensual,
+    evaluar_capacidad,
+)
 from domain.models.registro_models import (
     AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
     Preflight, ResultadoRegistro,
@@ -43,6 +54,17 @@ def _norm(texto: Optional[str]) -> str:
     plano = unicodedata.normalize("NFD", texto or "")
     sin = "".join(c for c in plano if unicodedata.category(c) != "Mn")
     return " ".join(sin.lower().split())
+
+
+def _nueva(a: AccionLinea) -> dict:
+    """Lo que se escribiría, tal y como viaja dentro de un `Conflicto`.
+
+    Los dos tipos de conflicto lo publican igual: si divergieran, el front
+    tendría que saber de cuál viene para leerlo.
+    """
+    return {"registro_id": a.registro_id, "can": a.can, "tot": a.tot,
+            "hora_codigo": a.hora_codigo, "fecha_int": a.fecha_int,
+            "partida_cod": a.partida_cod}
 
 
 class RegistroPipeline:
@@ -80,12 +102,12 @@ class RegistroPipeline:
         self, obra_origen: ObraEntrada, forzada: bool,
         destino_pruebas: ObraEntrada,
     ) -> tuple[Optional[ObraEntrada], Optional[dict], Optional[str]]:
-        """Paso 1b. Obra de postventa + capítulo de la obra original.
+        """Paso 1b. Obra de postventa + partida de la obra original.
 
-        Devuelve (obra_destino_pv, capitulo, motivo_si_falla). En modo
-        pruebas el parte se escribe en la obra de pruebas, pero el
-        capítulo se resuelve igualmente contra la obra de postventa real
-        (para validar el casado).
+        Devuelve (obra_destino_pv, partida, motivo_si_falla). En modo
+        pruebas el parte se escribe en la obra de pruebas, pero la partida
+        se resuelve igualmente contra la obra de postventa real (para
+        validar el casado). Ver `ARCHITECTURE.md#regla-p5`.
         """
         obra_pv = self._cli.obra_por_codigo(self._st.postventa_obra_cod)
         if obra_pv is None:
@@ -97,15 +119,24 @@ class RegistroPipeline:
         self._nodos_pv = nodos
         nodo = resolver_postventa(nodos, obra_origen.codigo,
                                   obra_origen.nombre)
-        capitulo = ({"ide": nodo.ide, "cod": nodo.cod, "res": nodo.res}
-                    if nodo else None)
-        if capitulo is None:
+        partida = ({"ide": nodo.ide, "cod": nodo.cod, "res": nodo.res}
+                   if nodo else None)
+        if partida is None:
             return (None, None,
                     f"la obra {obra_origen.codigo or obra_origen.nombre} "
-                    f"no casa con ningún capítulo de "
+                    f"no casa con ninguna partida de "
                     f"{self._st.postventa_obra_cod}")
         destino = destino_pruebas if forzada else obra_pv
-        return destino, capitulo, None
+        return destino, partida, None
+
+    # ------------------------------------------------------------- #
+    def _es_hoja_activa_pv(self, paride: int) -> bool:
+        """¿`paride` es una partida hoja activa del presupuesto de la obra
+        de postventa? Es el universo de `ARCHITECTURE.md#regla-p5`, el mismo
+        que se publica en `partidas_postventa`."""
+        nodos = getattr(self, "_nodos_pv", None) or {}
+        nodo = nodos.get(int(paride))
+        return bool(nodo and nodo.es_hoja and nodo.activa)
 
     # ------------------------------------------------------------- #
     def _resolver_recursos(self, lineas: list[LineaEntrada]) -> dict:
@@ -142,24 +173,25 @@ class RegistroPipeline:
 
         # Paso 1b: destino de postventa (solo si hace falta).
         destino_pv: Optional[ObraEntrada] = None
-        capitulo: Optional[dict] = None
+        partida_pv: Optional[dict] = None
         motivo_pv: Optional[str] = None
         if any(l.es_postventa for l in lineas) \
                 and self._st.postventa_registrar:
-            destino_pv, capitulo, motivo_pv = self._destino_postventa(
+            destino_pv, partida_pv, motivo_pv = self._destino_postventa(
                 obra, forzada, destino_normal)
 
         # Pasos 2-4: recursos + reglas.
         horas = self._resolver_recursos(lineas)
         reglas = ReglasPorcentajes(
             horas, postventa_registrar=self._st.postventa_registrar,
-            capitulo_postventa=capitulo, motivo_postventa=motivo_pv)
+            partida_postventa=partida_pv, motivo_postventa=motivo_pv)
         acciones: list[AccionLinea] = [reglas.decidir(l) for l in lineas]
 
         # Partida de imputación por línea: el override manual del front
         # manda; si no, la NORMAL se casa con la partida del recurso en el
         # presupuesto de la obra ORIGEN (patrón de partes: rol/categoría y
-        # nombre), y la POSTVENTA ya trae el capítulo de POSTV2.
+        # nombre), y la POSTVENTA ya trae el suyo de la obra de postventa
+        # (`POSTVENTA_OBRA_COD`).
         nodos_origen = None
         por_id = {l.registro_id: l for l in lineas}
         for a in acciones:
@@ -167,6 +199,15 @@ class RegistroPipeline:
                 continue
             linea = por_id.get(a.registro_id)
             if linea is not None and linea.paride:
+                # El override del front manda… salvo que apunte fuera del
+                # universo válido de la postventa (un capítulo, una partida
+                # de baja). Ahí no se escribe: ver ARCHITECTURE #regla-p5.
+                if a.destino == "postventa" \
+                        and not self._es_hoja_activa_pv(linea.paride):
+                    a.accion = "omitir"
+                    a.motivo = MOTIVO_PARTIDA_PV_NO_HOJA.format(
+                        paride=int(linea.paride))
+                    continue
                 a.paride = int(linea.paride)
                 a.partida_cod = linea.partida_cod
                 a.partida_metodo = "manual"
@@ -224,7 +265,7 @@ class RegistroPipeline:
                 a.motivo = (f"ya registrada en Sigrid (línea {hit.ide}); "
                             f"no se duplica")
 
-        # Paso 7: conflictos por recurso + MES + código + PARTIDA.
+        # Paso 7: conflictos (ver ARCHITECTURE `#regla-conflicto`).
         conflictos: list[Conflicto] = []
         pendientes = [a for a in acciones if a.accion == "escribir"]
         for clave_p, parte in sorted(partes.items()):
@@ -239,26 +280,17 @@ class RegistroPipeline:
             mias = {synckey_de(a.registro_id) for a in grupo}
             por_clave: dict[str, Conflicto] = {}
             for a in grupo:
-                k = a.clave_conflicto
-                # En POSTVENTA la partida distingue líneas legítimas
-                # (una por obra original); en la obra normal una línea M*
-                # previa del recurso choca aunque tenga otra partida.
-                choques = [
-                    ls for ls in existentes
-                    if ls.reside == a.recurso_ide
-                    and int(ls.horide or 0) == int(a.hora_ide or 0)
-                    and (a.destino != "postventa"
-                         or int(ls.paride or 0) == int(a.paride or 0))
-                    and not (ls.synckey and ls.synckey in mias)
-                ]
+                k = clave_conflicto(a)
+                choques = [ls for ls in existentes
+                           if criterio_choque(ls, a, mias=mias)]
                 if not choques:
-                    continue        # código+partida libres este mes
+                    continue        # nada previo con esa identidad
                 c = por_clave.get(k)
                 if c is None:
                     contexto = [
                         ls for ls in existentes
                         if ls.reside == a.recurso_ide and ls not in choques
-                        and (ls.hora_codigo or "").upper().startswith("M")
+                        and es_linea_mensual(ls)
                     ]
                     c = Conflicto(
                         clave=k, recurso_ide=int(a.recurso_ide or 0),
@@ -268,12 +300,45 @@ class RegistroPipeline:
                         lineas=choques, contexto=contexto)
                     por_clave[k] = c
                 c.registros.append(a.registro_id)
-                c.nuevas.append({
-                    "registro_id": a.registro_id, "can": a.can,
-                    "tot": a.tot, "hora_codigo": a.hora_codigo,
-                    "fecha_int": a.fecha_int, "partida_cod": a.partida_cod,
-                })
+                c.nuevas.append(_nueva(a))
             conflictos.extend(por_clave.values())
+
+            # Paso 7 bis: capacidad (ver ARCHITECTURE `#regla-capacidad`).
+            # Va DESPUÉS de los pisados del mismo parte, y no antes: su
+            # cifra ya presupone que todos ellos se confirman.
+            pisadas: dict[int, set[int]] = {}
+            for c in por_clave.values():
+                pisadas.setdefault(c.recurso_ide, set()).update(
+                    ls.ide for ls in c.lineas)
+            # Sin `or 0` a propósito: `grupo` solo tiene acciones «escribir»,
+            # y P1 omite toda línea sin recurso, así que aquí `recurso_ide`
+            # no puede ser nulo. Normalizarlo otra vez sería una guarda que
+            # ningún test puede ejercitar, y que por tanto nadie mantiene.
+            for recurso in sorted({int(a.recurso_ide) for a in grupo}):
+                suyas = [a for a in grupo if int(a.recurso_ide) == recurso]
+                cap = evaluar_capacidad(
+                    [ls for ls in existentes if int(ls.reside) == recurso],
+                    suyas, mias=mias, pisadas=pisadas.get(recurso, set()))
+                if not cap.sobrecarga:
+                    continue
+                cabeza = suyas[0]
+                conflictos.append(Conflicto(
+                    clave=clave_sobrecarga(cabeza), recurso_ide=recurso,
+                    ano=parte.ano, mes=parte.mes, parte_cod=parte.cod,
+                    nombre=cabeza.nombre, horide=cabeza.hora_ide,
+                    hora_codigo=cabeza.hora_codigo,
+                    lineas=[],          # una sobrecarga NO borra nada
+                    contexto=list(cap.contadas),
+                    nuevas=[_nueva(a) for a in suyas],
+                    registros=[a.registro_id for a in suyas],
+                    motivo="sobrecarga",
+                    suma_existente=round(cap.existente, 4),
+                    suma_total=round(cap.total, 4),
+                    exceso=round(cap.exceso, 4)))
+                logger.warning(
+                    "[registro] sobrecarga recurso=%s parte=%s existente=%s "
+                    "nueva=%s total=%s", recurso, parte.cod,
+                    cap.existente, cap.nueva, cap.total)
 
         pf = Preflight(
             obra_destino=destino_normal, obra_origen=obra,
@@ -286,7 +351,12 @@ class RegistroPipeline:
             pf.n_escribir, pf.n_omitir, pf.n_ya, len(conflictos))
         # El destino de postventa se adjunta para trazabilidad de la API.
         setattr(pf, "obra_postventa", destino_pv)
-        setattr(pf, "capitulo_postventa", capitulo)
+        # OJO con el nombre: lo que viaja es una PARTIDA, no un capítulo
+        # (ARCHITECTURE.md#regla-p5). El atributo conserva el nombre viejo
+        # porque es contrato HTTP y el front lo lee como `capitulo_postventa`
+        # en la respuesta de /api/registro/preflight. Renombrarlo obliga a
+        # tocar los tres servicios a la vez: es una feature aparte.
+        setattr(pf, "capitulo_postventa", partida_pv)
 
         def _cat(nodos):
             if not nodos:
@@ -325,9 +395,22 @@ class RegistroPipeline:
         for c in pf.conflictos:
             if c.clave in pisar:
                 res.pisadas.append(c.clave)
-            else:
-                res.pendientes_confirmacion.append(c)
-                bloqueadas.update(c.registros)
+                continue
+            res.pendientes_confirmacion.append(c)
+            bloqueadas.update(c.registros)
+            if c.motivo != "sobrecarga":
+                continue
+            # R28: una sobrecarga sin confirmar deja rastro en `omitidas`.
+            # Los pisados NO lo hacen: un pisado sin confirmar es un paso
+            # normal del flujo, mientras que una sobrecarga es una anomalía
+            # entre el cuadrante y Sigrid que tiene que verse aunque nadie
+            # vuelva a ejecutar. `dedicacion-api` solo mira este campo para
+            # escribir `asignacion.sigrid_estado`.
+            motivo = MOTIVO_SOBRECARGA.format(
+                total=c.suma_total, existente=c.suma_existente,
+                n=len(c.contexto), nueva=c.nueva_can)
+            res.omitidas.extend({"registro_id": r, "motivo": motivo}
+                                for r in c.registros)
 
         a_escribir = [a for a in pf.acciones
                       if a.accion == "escribir"
@@ -368,10 +451,26 @@ class RegistroPipeline:
 
         # Paso 10: borrar pisadas + insertar.
         statements: list[dict] = []
+        # Una misma línea de Sigrid puede aparecer en más de un conflicto
+        # (dos pendientes del mismo recurso con partidas distintas chocan
+        # con ella). Se borra UNA vez: el segundo DELETE no borraría nada y
+        # dejaría `borradas` contando de más.
+        ides_borrados: set[int] = set()
+        escribibles = {a.registro_id for a in a_escribir}
         for c in pf.conflictos:
             if c.clave not in pisar:
                 continue
+            # R32: un conflicto confirmado solo emite sus borrados si al
+            # menos uno de sus registros llega a escribirse. Si no —porque
+            # los bloquea otro conflicto sin confirmar—, borrar dejaría el
+            # parte SIN la línea vieja y SIN la nueva: pérdida neta de un
+            # apunte de Administración, y encima silenciosa.
+            if not (set(c.registros) & escribibles):
+                continue
             for ls in c.lineas:
+                if ls.ide in ides_borrados:
+                    continue
+                ides_borrados.add(ls.ide)
                 statements.append(self._cli.stmt_borrar_linea(ls.ide))
                 res.borradas += 1
 

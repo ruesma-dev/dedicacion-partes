@@ -3,15 +3,15 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **10 features**, 8 abiertas, 2 terminadas.
+Resumen: **12 features**, 10 abiertas, 2 terminadas.
 
-En curso: **F-003**.
+En curso: **F-002, F-003**.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | pendiente | critico | `feature/F-002-reglas-postventa-conflicto` |
+| F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | en curso | critico | `feature/F-002-reglas-postventa-conflicto` |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | en curso | critico | `feature/F-003-orm-columnas-sigrid` |
 | F-004 | README del monorepo y arranque local en orden | 4 | pendiente | documental | `feature/F-004-readme-monorepo` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
@@ -19,6 +19,8 @@ En curso: **F-003**.
 | F-007 | Propagar a arnes-base dos defectos del instalador | 7 | pendiente | estandar | `feature/F-007-propagar-defectos-instalador` |
 | F-008 | Infraestructura y despliegue en Azure | 8 | pendiente | critico | `feature/F-008-infra-azure` |
 | F-010 | Automejoras del arnes propuestas al revisar F-001 | 10 | pendiente | documental | `feature/F-010-automejoras-arnes-reviewer` |
+| F-011 | Un solo codigo de hora mes por trabajador | 11 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
+| F-012 | El test de la epsilon compartida ata el transfer al monorepo | 12 | pendiente | estandar | `feature/F-012-epsilon-compartida-entre-servicios` |
 
 ## Terminadas
 
@@ -31,7 +33,7 @@ En curso: **F-003**.
 
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 
-estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-002-reglas-postventa-conflicto`
+estado **en curso** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-002-reglas-postventa-conflicto`
 
 El repositorio se contradice sobre dos reglas que deciden qué se escribe en Sigrid. P5: el README del transfer dice obra POSTV2 e imputación por PARTIDA; el docstring de reglas_porcentajes.py dice 'postventa-2' y CAPÍTULO. P4: el README dice que en obra normal una línea M* previa del recurso choca aunque tenga otra partida; el docstring exige que la partida sea la misma. Hay que confirmar la regla buena con Administración y con datos reales de Sigrid, dejarla en una sola fuente de verdad (docs/ARCHITECTURE.md) y alinear código, docstrings y README. Sin esto, no se debe escribir en producción.
 
@@ -75,7 +77,19 @@ Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo
 
 estado **pendiente** · prioridad 10 · rigor `documental` · SDD no · rama `feature/F-010-automejoras-arnes-reviewer`
 
-Tres huecos del protocolo que dejo ver la review de F-001, los tres validos para cualquier proyecto (van tambien a arnes-base). (1) CHECKPOINTS.md C4 bis no dice que hacer cuando TODA la feature cae en DIRECTORIOS_EXCLUIDOS y salen a la vez cobertura N/A y mutacion 0: la evidencia sustitutiva debe ser una campana de mutacion sobre el fichero de produccion que los tests nuevos cubren, y el reviewer la reproduce. (2) .claude/agents/reviewer.md: cuando el alcance salga vacio, anadir el control positivo (generar mutantes del fichero cubierto y ejecutarlos contra la suite), no solo el control de que el generador funciona. (3) La cache del portero puede ensenar un [OK] de un servicio sin que la suite se haya ejecutado en esa sesion: el protocolo del reviewer debe obligar a lanzarla a mano en ese caso.
+Tres huecos del protocolo que dejo ver la review de F-001, los tres validos para cualquier proyecto (van tambien a arnes-base). (1) CHECKPOINTS.md C4 bis no dice que hacer cuando TODA la feature cae en DIRECTORIOS_EXCLUIDOS y salen a la vez cobertura N/A y mutacion 0: la evidencia sustitutiva debe ser una campana de mutacion sobre el fichero de produccion que los tests nuevos cubren, y el reviewer la reproduce. (2) .claude/agents/reviewer.md: cuando el alcance salga vacio, anadir el control positivo (generar mutantes del fichero cubierto y ejecutarlos contra la suite), no solo el control de que el generador funciona. (3) La cache del portero puede ensenar un [OK] de un servicio sin que la suite se haya ejecutado en esa sesion: el protocolo del reviewer debe obligar a lanzarla a mano en ese caso. AMPLIADA el 2026-08-19 con dos propuestas mas, de la review de la Fase 2 de F-002 (seccion 11): (4) CHECKPOINTS.md C4 bis no dice nada sobre la CALIDAD del argumento cuando un superviviente se declara equivalente. Paso en F-002: justificacion correcta acompanada de un test que no demostraba lo que decia (barria un rango cinco millones de veces menor que la epsilon, asi que no podia fallar). Propuesta: si el analisis concluye 'mutante equivalente', el reviewer reproduce el argumento por su cuenta, ejecutandolo cuando sea aritmetico, y lo deja escrito. Un argumento plausible sin reproducir no es una justificacion aceptada. (5) .claude/agents/reviewer.md: cuando un superviviente se mate QUITANDO codigo defensivo, el reviewer debe verificar el invariante que lo hacia inalcanzable EN QUIEN CONSTRUYE EL DATO, no en el punto donde estaba la guarda. Quitar codigo es la forma mas limpia de matar un mutante y tambien la mas facil de hacer mal.
+
+### F-011 · Un solo codigo de hora mes por trabajador
+
+estado **pendiente** · prioridad 11 · rigor `estandar` · SDD no · rama `feature/F-011-codigo-hora-mes-unico`
+
+Detectado el 2026-08-19 al revisar el original porcentajes-transfer. Cuando un recurso tiene varios codigos de hora mensual (MENC, MJEFO...), reglas_porcentajes.py:105 elige el PRIMERO POR ORDEN ALFABETICO y de ahi sale el importe mensual (pre) que se escribe en Sigrid. Es una heuristica que nadie ha confirmado y que puede escribir un importe distinto del correcto. Decision del humano: de momento se deja el primero, y se abre esta feature para que la situacion no se de. Dos partes: que el sistema avise en el preflight cuando un recurso tenga mas de un codigo M* vigente (hoy solo lo escribe en el log, donde nadie lo ve), y llevar a Administracion la peticion de que en Sigrid un trabajador solo pueda tener un codigo de hora mes.
+
+### F-012 · El test de la epsilon compartida ata el transfer al monorepo
+
+estado **pendiente** · prioridad 12 · rigor `estandar` · SDD no · rama `feature/F-012-epsilon-compartida-entre-servicios`
+
+Detectado por la review de la Fase 2 de F-002 (observacion 9.4). El test test_f002_r26_la_tolerancia_es_la_del_cuadrante navega con Path(__file__).resolve().parents[3] hasta services/dedicacion-api/domain/estados.py para comprobar que la tolerancia del transfer (0.00005) sigue siendo el equivalente exacto del _EPSILON del cuadrante (0.005 en escala 0-100). La decision es la correcta y NO viola el limite de servicio: no importa codigo ni duplica logica, y sin ese test las dos epsilon se separarian sin que nadie se entere. Pero ata la suite del transfer a la disposicion del monorepo: si algun dia el servicio se extrae a su propio repositorio, el test se cae con un error de ruta en vez de con el mensaje de negocio que lleva escrito. Hay que decidir como se vigila esa invariante entre servicios sin depender de rutas relativas.
 
 ### F-001 · Primera suite de tests de dedicacion-api: la regla del 100 %
 

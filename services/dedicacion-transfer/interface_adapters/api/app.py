@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from application.pipelines.registro_pipeline import RegistroPipeline
+from application.services.reglas_porcentajes import clave_conflicto
 from domain.models.registro_models import LineaEntrada, ObraEntrada
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
 
@@ -100,7 +101,7 @@ def build_app(settings) -> FastAPI:
                 "partidas_postventa": getattr(pf, "partidas_postventa", []),
                 "forzada_pruebas": pf.forzada_pruebas,
                 "partes": [asdict(x) for x in pf.partes],
-                "acciones": [asdict(a) | {"clave": a.clave_conflicto}
+                "acciones": [asdict(a) | {"clave": clave_conflicto(a)}
                              for a in pf.acciones],
                 "conflictos": [asdict(c) for c in pf.conflictos],
                 "resumen": {"escribir": pf.n_escribir, "omitir": pf.n_omitir,

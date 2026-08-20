@@ -6,9 +6,10 @@
   según la categoría) la partida cuyo rol casa con la CATEGORÍA del
   trabajador y, si la descripción incluye su NOMBRE, esa gana
   (partida_matcher, copiado de partes-persistencia).
-- POSTVENTA: la obra de postventa (POSTV2) no imputa a una partida
-  concreta del recurso, sino a la partida cuyo código ES el código de la
-  obra original (p. ej. postventa de la 0707 -> partida "0707 · …").
+- POSTVENTA: el destino (la obra del ajuste `POSTVENTA_OBRA_COD`) y el
+  criterio de casado los fija `docs/ARCHITECTURE.md#regla-p5`; aquí solo se
+  implementan.
+
 La aplicación propone; el usuario puede editar la partida en el front
 (override `paride` en la línea de entrada).
 """
@@ -48,20 +49,30 @@ def resolver_postventa(
     nodos: dict[int, PartidaNodo], obra_cod: Optional[str],
     obra_nombre: Optional[str],
 ) -> Optional[PartidaNodo]:
-    """Partida de POSTV2 cuyo código es el de la obra original:
-    exacto > empieza por > código en la descripción > nombre."""
+    """Partida de la obra de postventa que corresponde a la obra original.
+
+    Cascada: código exacto > empieza por > código en la descripción >
+    nombre. Ver `docs/ARCHITECTURE.md#regla-p5`.
+
+    El universo de búsqueda son las **hojas activas** ordenadas por código,
+    que es EXACTAMENTE el mismo que el preflight publica en
+    `partidas_postventa` para el desplegable del front. Dos consecuencias
+    que antes no se cumplían: la cascada no puede devolver un capítulo (que
+    nunca es destino válido), y el desempate de cada escalón deja de
+    depender del orden en que Sigrid haya devuelto las filas.
+    """
     cod = tm.normalize_code(obra_cod)
-    hojas = [n for n in nodos.values() if n.activa]
+    candidatos = partidas_hoja(nodos)
     if cod:
-        exactas = [n for n in hojas if tm.normalize_code(n.cod) == cod]
+        exactas = [n for n in candidatos if tm.normalize_code(n.cod) == cod]
         if exactas:
             return exactas[0]
-        empieza = [n for n in hojas
+        empieza = [n for n in candidatos
                    if tm.normalize_code(n.cod).startswith(cod)]
         if empieza:
             return sorted(empieza,
                           key=lambda n: len(tm.normalize_code(n.cod)))[0]
-        en_res = [n for n in hojas
+        en_res = [n for n in candidatos
                   if tm.normalize(n.res or "").startswith(cod.lower())
                   or f" {cod.lower()} " in f" {tm.normalize(n.res or '')} "
                   or tm.normalize(n.res or "").split(" ")[:1] == [cod.lower()]]
@@ -69,7 +80,7 @@ def resolver_postventa(
             return en_res[0]
     nombre_n = tm.normalize(obra_nombre)
     if nombre_n:
-        en_res = [n for n in hojas
+        en_res = [n for n in candidatos
                   if nombre_n in tm.normalize(n.res or "")]
         if en_res:
             return en_res[0]

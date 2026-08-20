@@ -5,34 +5,41 @@ trabajo de Sigrid**. Réplica del patrón validado en `partes-transfer`:
 único servicio con la credencial de escritura, contrato
 `preflight` / `ejecutar`, idempotencia por `synckey` y modo pruebas.
 
-## Reglas (Administración, 25/07/2026)
+## Reglas de negocio
 
-- **P1** Solo recursos con código de hora **mensual** (`M*`) en `reshor`.
-- **P2** La línea va SIEMPRE al **último día del mes** (`fec`).
-- **P3** `can` = porcentaje **sobre 1** (40 % -> 0.4); `pre` = importe
-  mensual del recurso; `tot = can × pre`.
-- **P4** Si el recurso ya tiene un registro `M*` en ese parte — **aunque
-  sea en otro día** — es conflicto; pisar lo sustituye (y corrige la fecha).
-- **P5** PARTIDA de imputación:
-  - **Obra normal**: la partida asignada al recurso, como en partes —
-    se casa por CATEGORÍA (rol) y NOMBRE contra las hojas de CI (o
-    CI+CD según categoría) del presupuesto de la obra origen
-    (`partida_matcher`/`partida_catalog` copiados de
-    partes-persistencia). Sin casado: se escribe con paride=0 y un
-    `aviso` en el preflight (editable).
-  - **Postventa**: obra `POSTV2` (`POSTVENTA_OBRA_COD`); la partida es
-    la del CÓDIGO DE LA OBRA original (0707 -> partida "0707 · …";
-    exacto > empieza por > descripción). Sin casado, la línea se omite
-    con motivo.
-  - El front puede **editar la partida**: si la línea trae `paride`
-    (override), manda sobre el automático (`partida_metodo=manual`).
-    El preflight devuelve `partidas_obra` y `partidas_postventa`
-    (hojas ide/cod/res) para poblar el desplegable.
-  - Conflictos: en postventa la partida forma parte de la identidad
-    (una línea legítima por obra original); en la obra normal una línea
-    M* previa del recurso choca aunque tenga otra partida.
+**Las reglas de negocio no se enuncian aquí.** Su única fuente normativa es
+`docs/ARCHITECTURE.md` § Semántica de dominio imprescindible:
 
-`synckey = "porcentajes:{asignacion_id}"` (no se cruza con los diarios).
+| Regla | Qué decide | Ancla |
+|---|---|---|
+| P1 | qué recursos entran | [`#regla-p1`](../../docs/ARCHITECTURE.md#regla-p1) |
+| P2 | qué fecha lleva la línea | [`#regla-p2`](../../docs/ARCHITECTURE.md#regla-p2) |
+| P3 | en qué escala viaja el porcentaje | [`#regla-p3`](../../docs/ARCHITECTURE.md#regla-p3) |
+| P4 · Regla A | qué es «la misma línea» del parte | [`#regla-p4`](../../docs/ARCHITECTURE.md#regla-p4) · [`#regla-conflicto`](../../docs/ARCHITECTURE.md#regla-conflicto) |
+| Regla B | cuánta jornada cabe en un parte | [`#regla-capacidad`](../../docs/ARCHITECTURE.md#regla-capacidad) |
+| P5 | dónde y contra qué se imputa la postventa | [`#regla-p5`](../../docs/ARCHITECTURE.md#regla-p5) |
+| — | modo pruebas | [`#regla-pruebas`](../../docs/ARCHITECTURE.md#regla-pruebas) |
+
+Dónde se implementan: la identidad y la capacidad, en
+`application/services/reglas_porcentajes.py` (funciones puras, sin I/O); la
+orquestación, en `application/pipelines/registro_pipeline.py`.
+
+Lo que sí es de este servicio, y por eso se cuenta aquí:
+
+- **Resolución automática de la partida** (`partida_resolver.py`). En la
+  obra normal se casa por CATEGORÍA (rol) y NOMBRE contra las hojas de CI
+  (o CI+CD según categoría) del presupuesto de la obra origen
+  (`partida_matcher` / `partida_catalog`, copiados de
+  `partes-persistencia`). Sin casado: se escribe con `paride=0` y un
+  `aviso` en el preflight, editable.
+- **Override manual del front**: si la línea de entrada trae `paride`,
+  manda sobre el automático (`partida_metodo=manual`). En postventa el
+  override se valida contra las hojas activas del presupuesto; si apunta a
+  otra cosa, la línea se omite con motivo.
+- **Catálogos para el desplegable**: el preflight devuelve `partidas_obra` y
+  `partidas_postventa` (hojas activas, `ide`/`cod`/`res`).
+- **`synckey = "porcentajes:{asignacion_id}"`**, que no se cruza con el
+  espacio de los partes diarios.
 
 ## Arranque
 

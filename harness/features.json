@@ -40,7 +40,7 @@
         "Tests offline que fijan el comportamiento de conflicto y de destino de postventa",
         "Verificado contra Sigrid con prueba_escritura_porcentajes.py en modo pruebas, con el volcado en progress/"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "sdd": true,
       "rigor": "critico",
       "priority": 2,
@@ -159,18 +159,52 @@
     {
       "id": "F-010",
       "title": "Automejoras del arnes propuestas al revisar F-001",
-      "description": "Tres huecos del protocolo que dejo ver la review de F-001, los tres validos para cualquier proyecto (van tambien a arnes-base). (1) CHECKPOINTS.md C4 bis no dice que hacer cuando TODA la feature cae en DIRECTORIOS_EXCLUIDOS y salen a la vez cobertura N/A y mutacion 0: la evidencia sustitutiva debe ser una campana de mutacion sobre el fichero de produccion que los tests nuevos cubren, y el reviewer la reproduce. (2) .claude/agents/reviewer.md: cuando el alcance salga vacio, anadir el control positivo (generar mutantes del fichero cubierto y ejecutarlos contra la suite), no solo el control de que el generador funciona. (3) La cache del portero puede ensenar un [OK] de un servicio sin que la suite se haya ejecutado en esa sesion: el protocolo del reviewer debe obligar a lanzarla a mano en ese caso.",
+      "description": "Tres huecos del protocolo que dejo ver la review de F-001, los tres validos para cualquier proyecto (van tambien a arnes-base). (1) CHECKPOINTS.md C4 bis no dice que hacer cuando TODA la feature cae en DIRECTORIOS_EXCLUIDOS y salen a la vez cobertura N/A y mutacion 0: la evidencia sustitutiva debe ser una campana de mutacion sobre el fichero de produccion que los tests nuevos cubren, y el reviewer la reproduce. (2) .claude/agents/reviewer.md: cuando el alcance salga vacio, anadir el control positivo (generar mutantes del fichero cubierto y ejecutarlos contra la suite), no solo el control de que el generador funciona. (3) La cache del portero puede ensenar un [OK] de un servicio sin que la suite se haya ejecutado en esa sesion: el protocolo del reviewer debe obligar a lanzarla a mano en ese caso. AMPLIADA el 2026-08-19 con dos propuestas mas, de la review de la Fase 2 de F-002 (seccion 11): (4) CHECKPOINTS.md C4 bis no dice nada sobre la CALIDAD del argumento cuando un superviviente se declara equivalente. Paso en F-002: justificacion correcta acompanada de un test que no demostraba lo que decia (barria un rango cinco millones de veces menor que la epsilon, asi que no podia fallar). Propuesta: si el analisis concluye 'mutante equivalente', el reviewer reproduce el argumento por su cuenta, ejecutandolo cuando sea aritmetico, y lo deja escrito. Un argumento plausible sin reproducir no es una justificacion aceptada. (5) .claude/agents/reviewer.md: cuando un superviviente se mate QUITANDO codigo defensivo, el reviewer debe verificar el invariante que lo hacia inalcanzable EN QUIEN CONSTRUYE EL DATO, no en el punto donde estaba la guarda. Quitar codigo es la forma mas limpia de matar un mutante y tambien la mas facil de hacer mal.",
       "acceptance": [
         "CHECKPOINTS.md C4 bis cubre el caso de alcance de produccion vacio",
         ".claude/agents/reviewer.md pide el control positivo y lanzar a mano la suite que venga de cache",
         "Las tres mejoras estan portadas a arnes-base",
-        "bash harness/init.sh en verde"
+        "bash harness/init.sh en verde",
+        "CHECKPOINTS.md exige que un superviviente declarado equivalente traiga demostracion reproducible y que el reviewer la reproduzca",
+        "reviewer.md exige verificar el invariante en quien construye el dato cuando un mutante se mata quitando codigo defensivo"
       ],
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
       "priority": 10,
       "branch": "feature/F-010-automejoras-arnes-reviewer"
+    },
+    {
+      "id": "F-011",
+      "title": "Un solo codigo de hora mes por trabajador",
+      "description": "Detectado el 2026-08-19 al revisar el original porcentajes-transfer. Cuando un recurso tiene varios codigos de hora mensual (MENC, MJEFO...), reglas_porcentajes.py:105 elige el PRIMERO POR ORDEN ALFABETICO y de ahi sale el importe mensual (pre) que se escribe en Sigrid. Es una heuristica que nadie ha confirmado y que puede escribir un importe distinto del correcto. Decision del humano: de momento se deja el primero, y se abre esta feature para que la situacion no se de. Dos partes: que el sistema avise en el preflight cuando un recurso tenga mas de un codigo M* vigente (hoy solo lo escribe en el log, donde nadie lo ve), y llevar a Administracion la peticion de que en Sigrid un trabajador solo pueda tener un codigo de hora mes.",
+      "acceptance": [
+        "La heuristica actual (primer codigo M* por orden alfabetico) esta documentada en docs/ARCHITECTURE.md como temporal, con su fecha y su motivo",
+        "El preflight avisa explicitamente cuando un recurso tiene mas de un codigo M* vigente: hoy solo se escribe en el log y el usuario no lo ve",
+        "Hay un test offline que fija ese aviso",
+        "Queda escrita la peticion a Administracion de un unico codigo de hora mes por trabajador",
+        "bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 11,
+      "branch": "feature/F-011-codigo-hora-mes-unico"
+    },
+    {
+      "id": "F-012",
+      "title": "El test de la epsilon compartida ata el transfer al monorepo",
+      "description": "Detectado por la review de la Fase 2 de F-002 (observacion 9.4). El test test_f002_r26_la_tolerancia_es_la_del_cuadrante navega con Path(__file__).resolve().parents[3] hasta services/dedicacion-api/domain/estados.py para comprobar que la tolerancia del transfer (0.00005) sigue siendo el equivalente exacto del _EPSILON del cuadrante (0.005 en escala 0-100). La decision es la correcta y NO viola el limite de servicio: no importa codigo ni duplica logica, y sin ese test las dos epsilon se separarian sin que nadie se entere. Pero ata la suite del transfer a la disposicion del monorepo: si algun dia el servicio se extrae a su propio repositorio, el test se cae con un error de ruta en vez de con el mensaje de negocio que lleva escrito. Hay que decidir como se vigila esa invariante entre servicios sin depender de rutas relativas.",
+      "acceptance": [
+        "Esta escrito en docs/ARCHITECTURE.md que las dos tolerancias son la misma magnitud en escalas distintas y por que",
+        "La comprobacion sigue existiendo y falla con un mensaje de negocio, no con un error de ruta, si el fichero no esta donde se espera",
+        "bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 12,
+      "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     }
   ]
 }

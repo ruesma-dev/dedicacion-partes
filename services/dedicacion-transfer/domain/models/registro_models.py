@@ -1,12 +1,15 @@
 # domain/models/registro_models.py
 """Modelos del registro de la dedicación mensual (porcentajes) en Sigrid.
 
-Una línea porcentual en el parte de trabajo (hmores) va SIEMPRE al último
-día del mes, con el código de hora MENSUAL (M*) del recurso, can = el
-porcentaje sobre 1 (40 % -> 0.4) y pre = el importe mensual del recurso en
-reshor. La identidad de la línea en el parte es recurso + mes + código:
-no hay día, por lo que un registro M* del mismo recurso y mes en OTRO día
-también choca (y pisar lo corrige).
+Estructuras de datos del proceso: qué entra, qué hay ya en el parte y qué
+se propone hacer. No deciden nada; las reglas que las gobiernan viven en
+`docs/ARCHITECTURE.md` § Semántica de dominio imprescindible:
+
+  - la forma de la línea que se escribe: ARCHITECTURE.md#regla-p2 y
+    ARCHITECTURE.md#regla-p3;
+  - cuándo dos líneas del parte son la MISMA:
+    ARCHITECTURE.md#regla-conflicto;
+  - cuánta jornada admite un parte: ARCHITECTURE.md#regla-capacidad.
 """
 from __future__ import annotations
 
@@ -118,26 +121,33 @@ class AccionLinea:
                                           # auto_categoria | postventa
     aviso: Optional[str] = None           # p.ej. partida no localizada
     hmores_ide: Optional[int] = None    # si ya estaba registrada
-
-    @property
-    def clave_conflicto(self) -> str:
-        """recurso + MES + código + PARTIDA. Sin día (un registro M* del
-        mismo recurso/mes en otro día también choca). La partida forma
-        parte de la clave: en el parte de postventa un recurso puede tener
-        una línea legítima por cada capítulo/obra."""
-        return (f"{self.recurso_ide or 0}|{self.ano}{self.mes:02d}"
-                f"|{self.hora_ide or 0}|{self.paride or 0}")
+    # La CLAVE de conflicto de esta acción no se calcula aquí: sale de
+    # `application.services.reglas_porcentajes.clave_conflicto`, junto al
+    # criterio de choque que la tiene que respetar. Tenerla en dos capas es
+    # lo que dejó que la clave y el criterio se desalinearan.
 
 
 @dataclass
 class Conflicto:
-    """Ya hay línea(s) M* en Sigrid para ese parte + recurso + mes + código.
+    """Algo que el humano tiene que confirmar antes de que se escriba.
 
-    ``lineas``: las que se BORRARÍAN al pisar (mismo código, cualquier día
-    del mes — incluye registros mal fechados fuera del último día).
-    ``contexto``: otras líneas MENSUALES del mismo recurso con OTRO código,
-    solo informativas.
-    ``nuevas``: lo que se escribiría en su lugar.
+    Hay DOS tipos, y los distingue ``motivo``:
+
+    - ``"pisado"``: ya hay en el parte una línea que es LA MISMA que la
+      nuestra (ARCHITECTURE.md#regla-conflicto). ``lineas`` son las que se
+      BORRARÍAN al confirmar (cualquier día del mes: incluye registros mal
+      fechados fuera del último día).
+    - ``"sobrecarga"``: el trabajador se pasaría de la jornada del parte
+      (ARCHITECTURE.md#regla-capacidad). **Nunca lleva ``lineas``**, porque
+      una sobrecarga no borra nada: eso hace que sea cierto *por
+      construcción* y no por una comprobación que alguien pueda quitar. Las
+      líneas que ha contado viajan en ``contexto``, que es informativo.
+
+    ``contexto``: otras líneas mensuales del mismo recurso, solo
+    informativas. ``nuevas``: lo que se escribiría. Los cuatro campos
+    numéricos solo tienen contenido en la sobrecarga, y todos los campos
+    añadidos por F-002 tienen valor por defecto para que un cliente que los
+    ignore siga funcionando igual que antes.
     """
     clave: str
     recurso_ide: int
@@ -151,6 +161,10 @@ class Conflicto:
     contexto: list[LineaSigrid] = field(default_factory=list)
     nuevas: list[dict] = field(default_factory=list)
     registros: list[int] = field(default_factory=list)
+    motivo: str = "pisado"              # pisado | sobrecarga
+    suma_existente: float = 0.0         # jornada ya ocupada que se ha contado
+    suma_total: float = 0.0             # suma_existente + nueva_can
+    exceso: float = 0.0                 # suma_total - 1
 
     @property
     def nueva_can(self) -> float:

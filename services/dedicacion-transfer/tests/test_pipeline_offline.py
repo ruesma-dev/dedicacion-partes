@@ -69,10 +69,23 @@ class ClienteFalso:
         }
         self.parte = ParteDestino(ano=2026, mes=7, existe=True,
                                   ide=777, cod="PT26/00251")
-        # Línea M* previa del recurso 200 EN OTRO DÍA (el 15) -> conflicto
+        # Línea M* previa del recurso 200 EN OTRO DÍA (el 15) -> conflicto.
+        #
+        # `paride=80001` es la única línea de este fichero que F-002 ha
+        # tocado, y es DATO DE ENTRADA, no una aserción: ninguna aserción de
+        # esta red de seguridad cambia. Motivo: con la Regla A
+        # (ARCHITECTURE.md#regla-conflicto) una línea previa solo es «la
+        # misma línea» si comparte también la PARTIDA, y el automático le
+        # resuelve al encargado la CI.1.10 (ide 80001). Sin ese dato, este
+        # fichero dejaría de ejercitar el camino del pisado de punta a punta
+        # —que es a lo que vino— y pasaría a probar dos veces el caso «no
+        # hay conflicto». El caso nuevo (previa con OTRA partida: ni choca
+        # ni se borra) tiene sus propios tests en `test_f002_pipeline.py`
+        # (R21).
         self.lineas_parte = [LineaSigrid(
             ide=5001, reside=200, fecha_int=20260715, horide=5,
-            hora_codigo="MENC", can=1.0, tot=9000.0, synckey=None)]
+            hora_codigo="MENC", can=1.0, tot=9000.0, synckey=None,
+            paride=80001)]
         self.escritos: list[dict] = []
         self.synckeys: dict[str, LineaSigrid] = {}
 
