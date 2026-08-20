@@ -162,6 +162,12 @@ inserciones y actualizaciones de filas cortas con índices por periodo.
 **Hoy, hacia otros proyectos: nada.** Ni una API pública, ni una cola, ni una
 tabla que nadie más lea. Este sistema es consumidor puro.
 
+**Cómo se llega**: por la tarjeta **«Dedicación»** del Portal Ruesma
+(categoría *Obra*), que apunta al FQDN del front. La tarjeta vive en
+`front-portal/public/assets/js/catalog.js` y solo la ven quienes están en el
+grupo. También se puede entrar por la URL directa: el control de acceso no es
+la tarjeta, es Easy Auth.
+
 Lo único que se expone a Internet es el **front**, y para personas:
 
 | Servicio | Ingress | Quién lo alcanza |
@@ -169,6 +175,32 @@ Lo único que se expone a Internet es el **front**, y para personas:
 | `ca-dedicacion-front` | **externo** | Personas, con Easy Auth y pertenencia al grupo `dedicacion-portal-users` |
 | `ca-dedicacion-api` | interno | Solo el front, desde dentro del Container Apps Environment |
 | `ca-dedicacion-transfer` | interno | Solo la api |
+
+### Quién puede entrar, y cómo se da acceso a alguien nuevo
+
+El acceso lo decide la pertenencia al grupo de Entra
+**`dedicacion-portal-users`**, con **asignación requerida** en la Enterprise
+App: tener cuenta de Ruesma **no basta**, y quien no esté en el grupo no
+obtiene token. Comprobado el 2026-08-20 (`appRoleAssignmentRequired = True`);
+sin licencia Entra ID P1 esa restricción se ignoraría en silencio, así que no
+se da por hecha: se verifica.
+
+**La lista de miembros no se escribe aquí**, porque son datos personales y
+cambian. Se consulta:
+
+```powershell
+az ad group member list --group 'dedicacion-portal-users' --query "[].userPrincipalName" -o tsv
+```
+
+**Dar acceso a alguien nuevo** (desde `infra/`, con `az login` hecho):
+
+```powershell
+.\setup_front_easyauth.ps1 -Miembros "persona@ruesma.es"
+```
+
+El script es idempotente y admite varios correos. Quien entra por primera vez
+puede necesitar cerrar sesión y volver a abrirla para que el token recoja la
+pertenencia nueva.
 
 ### Por qué la api va interna, y por qué nadie debe «arreglarlo»
 
