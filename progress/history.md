@@ -260,3 +260,44 @@ lo correcto al no arreglar `init.sh` por su cuenta**: el defecto es del arnés
 genérico y arrastra propagación a `arnes-base`, así que paró y preguntó. El
 líder borró el residuo y el portero volvió a ENTORNO LISTO. Los dos defectos
 del arnés que esto destapó están anotados arriba, en la entrada del mismo día.
+## 2026-08-20 · F-013 · Una línea sin partida no se escribe en silencio
+
+Rama `feature/F-013-linea-sin-partida-confirma` · `sdd: false` · rigor
+`critico` · **APROBADO** por el reviewer · 8 commits sobre `dev`.
+
+**Qué cambió y por qué.** Cuando el casado de partida fallaba en obra normal,
+el pipeline ponía `paride = 0`, dejaba un aviso informativo y **escribía la
+línea igual**. En el preflight real del periodo 2026-07, ejecutado el
+2026-08-20, eso eran **2.132,28 €** de una jefa de obra (Arriaza García,
+Raquel · obra `0025` · `MJEFO` · `can=0.385` · `pre=5538.39`) colgando de la
+obra **sin imputar a ninguna partida**, y nadie se enteraba. Por decisión del
+humano, ahora **avisa y espera confirmación**, igual que la sobrecarga del
+100 % que introdujo F-002.
+
+**No se inventó mecanismo**: se reutilizó el `Conflicto` con motivo propio de
+la Regla B de F-002, así que **F-013 no toca `dedicacion-api` ni
+`dedicacion-front`** — verificado en el diff: 12 ficheros, ninguno de esos dos
+servicios.
+
+**Verificado (salida real, reproducida por el reviewer).** Cobertura de las
+líneas cambiadas **100 % (24/24)**; **7 mutantes, 7 muertos, 0
+supervivientes**, campaña reejecutada; **232 tests** en el transfer; portero
+en verde. Fase RED auténtica: **26 tests fallando** antes de tocar el código,
+con las líneas de las trazas contrastadas una a una por el reviewer.
+
+**La interacción entre avisos, que era lo delicado.** Una misma línea puede
+caer a la vez en «sin partida», «sobrecarga del 100 %» y pisado. Se decidió
+enseñar **todos** los avisos, cada uno con su clave, porque cada uno es una
+decisión distinta del usuario. Cubierto con 6 tests de interacción con la
+sobrecarga, 3 con el pisado, 2 de postventa (uno de control positivo) y dos
+de premisa que impiden que un escenario pase por el motivo equivocado.
+
+**La guarda muerta de T5, con la lección de F-002 aplicada.** El commit
+`89e0d29` quitó dos guardas defensivas para matar mutantes. Siguiendo la
+recomendación §11.2 de la review de la Fase 2 de F-002, el reviewer **no** se
+conformó con ver el mutante muerto: verificó el invariante **en quien
+construye el dato** y confirmó que las dos guardas eran genuinamente
+inalcanzables.
+
+Informes: `progress/impl_F-013.md`, `progress/review_F-013.md`,
+`progress/mutacion_F-013.md`.

@@ -117,7 +117,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
 > **Esta sección es la ÚNICA fuente normativa de las reglas P1-P5.** El
 > README del transfer, los docstrings y las specs **remiten** a las anclas
-> `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad` y
+> `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad`,
+> `#regla-sin-partida` y
 > `#regla-pruebas`; no vuelven a enunciar la regla con palabras propias. Lo
 > vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
@@ -200,6 +201,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      la sustituye y de paso corrige la fecha.
    - Una línea que lleve una `synckey` de la ejecución en curso no choca:
      lo que escribimos nosotros no compite con nosotros mismos.
+   - Hay un tercer caso que también se confirma antes de escribir y que no
+     mira lo que ya hay en el parte, sino dónde se imputa lo que vamos a
+     escribir: [`#regla-sin-partida`](#regla-sin-partida).
 
    El criterio de choque y la clave del conflicto salen de **una sola
    función**, `application/services/reglas_porcentajes.campos_identidad`:
@@ -237,14 +241,52 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
    *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
    decisión D2, `specs/F-002-reglas-postventa-conflicto/requirements.md` §2.*
-8. <a id="regla-pruebas"></a>**Modo pruebas por defecto.** `OBRA_PRUEBAS_FORZAR=true` desvía TODA
+8. <a id="regla-sin-partida"></a>**Una línea sin partida no se escribe en silencio (Regla C).**
+   En la obra normal, si el casado de partida falla, la línea se escribiría
+   con `hmores.paride = 0`: colgada de la obra, sin imputar a ninguna
+   partida del presupuesto. Eso **no se escribe sin confirmación
+   explícita**.
+
+   - **Al no casar se avisa, no se decide.** El preflight devuelve un
+     conflicto de **sin partida**, uno por línea. Sin confirmación **no se
+     escribe**, y la línea queda listada como **omitida** con su motivo.
+     Confirmarla la escribe con `paride = 0` —el comportamiento anterior— y
+     **no borra nada**.
+   - **La decisión es por LÍNEA.** A diferencia de la sobrecarga, que es
+     propiedad del conjunto de líneas del trabajador, que el casado falle lo
+     es de una línea concreta: su categoría y su nombre. Confirmar una no
+     puede arrastrar a otra que el humano no ha mirado.
+   - **Los tres avisos se enseñan a la vez y en orden**: sin partida,
+     pisado, sobrecarga. Una misma línea puede caer en varios, y cada uno se
+     confirma por separado, porque cada uno es una decisión distinta. El
+     orden no es estético: cada aviso **da por hecho** el anterior (la
+     identidad del pisado usa el `paride` de la línea, y la suma de la
+     sobrecarga incluye su `can`). Retenida por varios, la línea sale **una
+     sola vez** en `omitidas`, con el motivo del primero.
+   - **Alcance: la obra normal.** La **postventa** no llega hasta aquí: sin
+     partida casada no tiene destino posible en un presupuesto ajeno al de
+     su obra, así que [`#regla-p5`](#regla-p5) la **omite** y no hay nada que
+     confirmar. En la obra normal sí hay destino —la propia obra— y lo único
+     que falta es la imputación analítica: por eso se puede escribir, y por
+     eso se pregunta.
+   - **La elección alternativa sigue existiendo:** el preflight publica las
+     partidas de la obra en `partidas_obra` y el front las ofrece en un
+     desplegable. Confirmar «sin partida» es lo que se hace cuando ninguna
+     vale, no el único camino.
+
+   *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-20 ·
+   preflight real del periodo 2026-07*, donde una jefa de obra iba a
+   escribirse con 2.132,28 € (`can = 0,385`) colgados de la obra sin partida,
+   con un aviso informativo que no retenía nada y que nadie tenía que
+   atender.
+9. <a id="regla-pruebas"></a>**Modo pruebas por defecto.** `OBRA_PRUEBAS_FORZAR=true` desvía TODA
    escritura a la obra `0404` con la marca `PRUEBA-PORC` en `tex`. La
    partida de postventa se sigue resolviendo contra la obra de postventa
    real, para que la prueba valide el casado.
-9. **`ide` reservado a mano.** Las líneas se insertan con `MAX(ide)+1` bajo
-   `UPDLOCK, HOLDLOCK`: el transfer va a **una sola instancia**. Dos procesos
-   escribiendo a la vez se pisan los `ide`.
-10. **Trampas de Sigrid heredadas de partes.** Lotes de 15 sentencias como
+10. **`ide` reservado a mano.** Las líneas se insertan con `MAX(ide)+1` bajo
+    `UPDLOCK, HOLDLOCK`: el transfer va a **una sola instancia**. Dos
+    procesos escribiendo a la vez se pisan los `ide`.
+11. **Trampas de Sigrid heredadas de partes.** Lotes de 15 sentencias como
     máximo; solo base `ruesma`; `tex` es TEXT, hay que comparar con
     `CAST(tex AS NVARCHAR(200)) = ?`; el parte se localiza por `cod` **y**
     `tip`; tras crear la cabecera hay que releer su `ide` antes de insertar
