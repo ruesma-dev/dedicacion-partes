@@ -120,7 +120,7 @@ def _punto(numero: int) -> str:
     return texto[inicio:fin]
 
 
-@pytest.mark.parametrize("numero", range(1, 11))
+@pytest.mark.parametrize("numero", range(1, 12))
 def test_f002_r1_ningun_punto_sigue_pendiente(numero):
     """R1 · D1 y D2 están cerradas (T7 y T8): ya no queda ningún punto con
     la marca. Se comprueba punto a punto y no sobre el documento entero

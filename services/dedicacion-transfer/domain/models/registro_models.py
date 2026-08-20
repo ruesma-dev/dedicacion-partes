@@ -9,7 +9,9 @@ se propone hacer. No deciden nada; las reglas que las gobiernan viven en
     ARCHITECTURE.md#regla-p3;
   - cuándo dos líneas del parte son la MISMA:
     ARCHITECTURE.md#regla-conflicto;
-  - cuánta jornada admite un parte: ARCHITECTURE.md#regla-capacidad.
+  - cuánta jornada admite un parte: ARCHITECTURE.md#regla-capacidad;
+  - qué pasa con una línea que no casa partida:
+    ARCHITECTURE.md#regla-sin-partida.
 """
 from __future__ import annotations
 
@@ -119,7 +121,11 @@ class AccionLinea:
     partida_cod: Optional[str] = None
     partida_metodo: Optional[str] = None  # manual | auto_nombre |
                                           # auto_categoria | postventa
-    aviso: Optional[str] = None           # p.ej. partida no localizada
+    # Aviso informativo que acompaña a la acción en la tabla del preflight.
+    # Que haya aviso NO implica que la línea se vaya a escribir: si es el de
+    # «sin partida», además viaja un Conflicto que la retiene hasta que
+    # alguien confirme (ARCHITECTURE.md#regla-sin-partida).
+    aviso: Optional[str] = None
     hmores_ide: Optional[int] = None    # si ya estaba registrada
     # La CLAVE de conflicto de esta acción no se calcula aquí: sale de
     # `application.services.reglas_porcentajes.clave_conflicto`, junto al
@@ -131,7 +137,7 @@ class AccionLinea:
 class Conflicto:
     """Algo que el humano tiene que confirmar antes de que se escriba.
 
-    Hay DOS tipos, y los distingue ``motivo``:
+    Hay TRES tipos, y los distingue ``motivo``:
 
     - ``"pisado"``: ya hay en el parte una línea que es LA MISMA que la
       nuestra (ARCHITECTURE.md#regla-conflicto). ``lineas`` son las que se
@@ -142,12 +148,18 @@ class Conflicto:
       una sobrecarga no borra nada: eso hace que sea cierto *por
       construcción* y no por una comprobación que alguien pueda quitar. Las
       líneas que ha contado viajan en ``contexto``, que es informativo.
+    - ``"sin_partida"``: la línea se escribiría sin imputar a ninguna
+      partida de la obra (ARCHITECTURE.md#regla-sin-partida). Tampoco lleva
+      ``lineas``, y por el mismo motivo: no sustituye a nada. Es el único
+      de los tres que es propiedad de UNA línea y no del parte, y por eso
+      su ``clave`` va por ``registro_id``.
 
     ``contexto``: otras líneas mensuales del mismo recurso, solo
     informativas. ``nuevas``: lo que se escribiría. Los cuatro campos
-    numéricos solo tienen contenido en la sobrecarga, y todos los campos
-    añadidos por F-002 tienen valor por defecto para que un cliente que los
-    ignore siga funcionando igual que antes.
+    numéricos solo tienen contenido en la sobrecarga; el tercer motivo, que
+    añadió F-013, no necesitó ni un campo más. Todos los campos añadidos por
+    F-002 tienen valor por defecto para que un cliente que los ignore siga
+    funcionando igual que antes.
     """
     clave: str
     recurso_ide: int
@@ -161,7 +173,7 @@ class Conflicto:
     contexto: list[LineaSigrid] = field(default_factory=list)
     nuevas: list[dict] = field(default_factory=list)
     registros: list[int] = field(default_factory=list)
-    motivo: str = "pisado"              # pisado | sobrecarga
+    motivo: str = "pisado"              # pisado | sobrecarga | sin_partida
     suma_existente: float = 0.0         # jornada ya ocupada que se ha contado
     suma_total: float = 0.0             # suma_existente + nueva_can
     exceso: float = 0.0                 # suma_total - 1
