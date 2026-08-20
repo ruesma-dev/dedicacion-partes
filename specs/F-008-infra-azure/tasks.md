@@ -315,7 +315,11 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
   ejecuta `registro/ejecutar`** hasta que el humano lo decida expresamente
   (precondición de la fase 7).
 
-- [ ] **T30 · MANUAL (humano)**: pasar al proyecto `front-portal` la petición
+- [~] **T30 · MOVIDA A F-015** por decisión del humano del 2026-08-20, para
+  que F-008 pueda cerrarse. Contenido íntegro en la descripción de F-015:
+  pasar a `front-portal` la URL y el objectId del grupo para la tarjeta, y
+  dar de alta en `dedicacion-portal-users` a quien deba entrar (la decisión
+  **D3**, que quedó abierta). El original decía:
   de la tarjeta: URL del front, nombre y Object ID del grupo, categoría
   («Obra») e icono. **El GUID no entra en este repositorio** (R21).
   **Verificación:** petición enviada; la tarjeta la añade ese proyecto.
