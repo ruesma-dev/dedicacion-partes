@@ -83,10 +83,15 @@ PATRONES: dict[str, re.Pattern[str]] = {
     # diferencia entre cazar `PG_PASSWORD = "loQueSea"` y dejarlo pasar: la
     # primera versión de este patrón excluía todo lo que empezara por comilla
     # y se le coló justo el caso más habitual en un script de PowerShell.
+    #
+    # Un valor que empieza por `[` es un acelerador de tipo .NET
+    # (`[System.Net.NetworkCredential]::new(...)`), no un literal: ninguna
+    # credencial empieza así, y sin esta exclusión el guardián señalaba la
+    # línea que precisamente EVITA escribir la contraseña en el script.
     "credencial": re.compile(
         r"(?i)(?:password|passwd|pwd|secret|token|api[_-]?key|function[_-]?key)"
         r"\s*=\s*[\"']?"
-        r"(?!secretref:|keyvaultref:|\$|<|%|@|REDACTADO|AUTO\b|TU-)"
+        r"(?!secretref:|keyvaultref:|\$|<|%|@|\[|REDACTADO|AUTO\b|TU-)"
         r"[^\s\"'`,;)\]}]{4,}"
     ),
     # Una clave larga en base64 con su relleno (las function keys de Azure
@@ -256,7 +261,12 @@ def test_f008_r21_el_barrido_caza_cada_patron_inyectado(familia: str, inyectado:
         '"easyauth-client-secret=keyvaultref:$KV_URI/secrets/EASYAUTH-CLIENT-SECRET"',
         '$Global:SUBSCRIPTION = "REDACTADO-VER-COPIA-LOCAL"',
         "$PGPASS = [System.Net.NetworkCredential]::new(\"\", $sec).Password",
+        # La línea que EVITA escribir la contraseña en el script: se lee de un
+        # SecureString pedido por consola. El guardián la señalaba.
+        '$PGADMIN_PWD = [System.Net.NetworkCredential]::new("", $secAdmin).Password',
         '$env:PGPASSWORD = $PGPASS',
+        "CREATE ROLE dedicacion_app LOGIN PASSWORD '$APP_PWD_SQL'",
+        '$secApp = Read-Host "  Contrasena" -AsSecureString',
         # Nombres de recurso: públicos dentro de la casa y exigidos por R2.
         "el servidor compartido `psql-albaranes-rs9k2` y el registro `acralbaranesdev`",
         "la pasarela `sigrid-api` (`func-sigridapi-dev-huyke`)",
