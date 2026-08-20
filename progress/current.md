@@ -17,12 +17,53 @@ F-008. **F-002 cerró el 2026-08-20** con tres reviews aprobadas (fase 1, fase
 Retiradas el 2026-08-20 por decisión del humano: **F-007** y **F-010**, que se
 hacen en `arnes-base`. Su razonamiento está en `progress/history.md`.
 
+## ✅ EL SISTEMA ESTÁ DESPLEGADO EN AZURE (2026-08-20)
+
+El humano ejecutó la fase 7. Los tres servicios están arriba, con Easy Auth
+activo y la exposición que se decidió en D2.
+
+| Servicio | Ingress | Réplicas | FQDN |
+|---|---|---|---|
+| `ca-dedicacion-front` | **EXTERNO** | 1/1 | `ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io` |
+| `ca-dedicacion-api` | interno | 1/1 | `ca-dedicacion-api.internal.ashypebble-…` |
+| `ca-dedicacion-transfer` | interno | 1/1 | `ca-dedicacion-transfer.internal.ashypebble-…` |
+
+- **Imágenes**: las tres con el tag `r20260820-1625`, inventariadas con su
+  digest en `infra/imagenes.json`.
+- **Base de datos**: `dedicacion` y el rol `dedicacion_app`, creados en el
+  servidor compartido `psql-albaranes-rs9k2`.
+- **Easy Auth**: grupo `dedicacion-portal-users`, asignación requerida ON,
+  login obligatorio, client secret por referencia al Key Vault.
+- **El transfer sigue en modo pruebas** (`OBRA_PRUEBAS_FORZAR=true`).
+
+> **Ningún GUID entra en el repositorio.** El objectId del grupo se saca
+> cuando haga falta con
+> `az ad group show --group 'dedicacion-portal-users' --query id -o tsv`.
+
+### Cinco bugs de los scripts, encontrados desplegando de verdad
+
+Ninguno lo habría cazado un test offline: todos son de la interacción real
+con `az` y con PowerShell 5.1. Corregidos y commiteados.
+
+1. `db show` / `db create` usan `-n`, no `-d` (ese solo existe en `execute`).
+2. **`az ... show` devuelve error si el recurso no existe**, y con
+   `$ErrorActionPreference = "Stop"` eso aborta el script. Se cambió por
+   `list` donde existe equivalente, y por `try/catch` donde no. Afectaba a
+   cuatro scripts, tres de ellos habrían fallado más adelante.
+3. El bloque `DO $rol$ … $rol$` no sobrevive a `--querytext`, que trocea por
+   `;`. Ahora es **una sentencia por llamada**, y la contraseña del rol se
+   fija **siempre** con `ALTER ROLE` para que coincida con la del Key Vault.
+4. `az keyvault create` no es idempotente pese a que el README lo promete.
+5. `New-Object` anidado como argumento de un método estático no resuelve en
+   PS 5.1: por eso `imagenes.json` no llegó a escribirse **después** de
+   publicar las tres imágenes, y el despliegue creía que no existían.
+
 ## ⚠ Lo que espera al humano
 
-### 1 · La fase 7 de F-008 — crear la infraestructura en Azure
+### 1 · Cerrar la fase 7: T27–T31
 
-Fases 1–6 **implementadas y aprobadas**. Lo que queda **crea recursos, gasta
-dinero y toca la suscripción**: ningún agente lo ejecuta. Comandos con su
+Fases 1–6 **implementadas y aprobadas**; T24–T26 **ejecutadas**. Lo que queda
+**no lo ejecuta ningún agente**. Comandos con su
 resultado esperado en `specs/F-008-infra-azure/tasks.md` fase 7 y en
 `infra/README_dedicacion.md`.
 
