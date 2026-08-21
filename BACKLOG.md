@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **13 features**, 6 abiertas, 7 terminadas.
+Resumen: **14 features**, 7 abiertas, 7 terminadas.
 
 Bloqueadas: **F-008**.
 
@@ -16,6 +16,7 @@ Bloqueadas: **F-008**.
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-011 | Un solo codigo de hora mes por trabajador | 7 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
 | F-012 | El test de la epsilon compartida ata el transfer al monorepo | 8 | pendiente | estandar | `feature/F-012-epsilon-compartida-entre-servicios` |
+| F-016 | Una function key de solo lectura para dedicacion-api | 9 | pendiente | estandar | `feature/F-016-sigrid-key-solo-lectura` |
 | F-014 | Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14 | 20 | pendiente | documental | `feature/F-014-cabos-sigrid-administracion` |
 
 ## Terminadas
@@ -61,6 +62,12 @@ Detectado el 2026-08-19 al revisar el original porcentajes-transfer. Cuando un r
 estado **pendiente** · prioridad 8 · rigor `estandar` · SDD no · rama `feature/F-012-epsilon-compartida-entre-servicios`
 
 Detectado por la review de la Fase 2 de F-002 (observacion 9.4). El test test_f002_r26_la_tolerancia_es_la_del_cuadrante navega con Path(__file__).resolve().parents[3] hasta services/dedicacion-api/domain/estados.py para comprobar que la tolerancia del transfer (0.00005) sigue siendo el equivalente exacto del _EPSILON del cuadrante (0.005 en escala 0-100). La decision es la correcta y NO viola el limite de servicio: no importa codigo ni duplica logica, y sin ese test las dos epsilon se separarian sin que nadie se entere. Pero ata la suite del transfer a la disposicion del monorepo: si algun dia el servicio se extrae a su propio repositorio, el test se cae con un error de ruta en vez de con el mensaje de negocio que lleva escrito. Hay que decidir como se vigila esa invariante entre servicios sin depender de rutas relativas.
+
+### F-016 · Una function key de solo lectura para dedicacion-api
+
+estado **pendiente** · prioridad 9 · rigor `estandar` · SDD no · rama `feature/F-016-sigrid-key-solo-lectura`
+
+Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T30, T30 se movio a F-015 y F-015 solo se llevo la mitad del Portal. La review de cierre de F-008 la busco en las trece entradas del backlog y no aparecia en ninguna. El problema: la api y el transfer comparten HOY la misma function key de sigrid-api, y lo unico que impide que la api escriba en el ERP es que su codigo no tiene rutas de escritura, NO la credencial. Es decir, la separacion es por disciplina, no por permisos: cualquiera que anada por error una llamada de escritura a la api tendria credencial para ejecutarla. Hay que preguntar al dueno de sigrid-api si puede emitir una clave de SOLO LECTURA y, si puede, desplegarla en la api. Si no puede, hay que dejar escrito que la separacion depende del codigo y que eso es un riesgo aceptado a conciencia.
 
 ### F-014 · Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14
 

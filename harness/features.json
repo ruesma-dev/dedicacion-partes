@@ -225,6 +225,23 @@
       "rigor": "documental",
       "priority": 4,
       "branch": "dev"
+    },
+    {
+      "id": "F-016",
+      "title": "Una function key de solo lectura para dedicacion-api",
+      "description": "Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T30, T30 se movio a F-015 y F-015 solo se llevo la mitad del Portal. La review de cierre de F-008 la busco en las trece entradas del backlog y no aparecia en ninguna. El problema: la api y el transfer comparten HOY la misma function key de sigrid-api, y lo unico que impide que la api escriba en el ERP es que su codigo no tiene rutas de escritura, NO la credencial. Es decir, la separacion es por disciplina, no por permisos: cualquiera que anada por error una llamada de escritura a la api tendria credencial para ejecutarla. Hay que preguntar al dueno de sigrid-api si puede emitir una clave de SOLO LECTURA y, si puede, desplegarla en la api. Si no puede, hay que dejar escrito que la separacion depende del codigo y que eso es un riesgo aceptado a conciencia.",
+      "acceptance": [
+        "Preguntado al proyecto sigrid-api si admite claves distintas por consumidor con permisos distintos",
+        "Si las admite: la api usa una clave de SOLO LECTURA, distinta de la del transfer, y ambas estan en el Key Vault por separado",
+        "Si no las admite: docs/INTEGRACION.md dice explicitamente que la api tiene credencial de escritura aunque no la use, y por que se acepta",
+        "azure-apps/dedicacion.md refleja la decision",
+        "bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 9,
+      "branch": "feature/F-016-sigrid-key-solo-lectura"
     }
   ]
 }

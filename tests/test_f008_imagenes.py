@@ -160,11 +160,26 @@ def test_f008_r24_el_inventario_parsea_y_cubre_los_tres_servicios():
 
 @pytest.mark.parametrize("servicio", sorted(PUERTOS))
 def test_f008_r24_cada_entrada_declara_repositorio_tag_y_fecha(servicio: str):
-    """Un tag sin fecha de publicación no sirve para reconstruir la historia."""
+    """Un tag sin fecha de publicación no sirve para reconstruir la historia.
+
+    Y sin **digest** tampoco: el tag dice qué se pidió publicar, el digest dice
+    qué se publicó. Se exige en cuanto hay tag porque es el campo que se tecleó
+    a mano el 2026-08-20 —el script falló al escribir el inventario después de
+    publicar— y hasta la review de cierre de F-008 se podía borrar o alterar sin
+    que ningún test se enterara.
+    """
     entrada = json.loads(INVENTARIO.read_text(encoding="utf-8"))["servicios"][servicio]
 
     assert set(entrada) >= {"repositorio", "tag", "publicado"}
     assert entrada["repositorio"] == servicio
+
+    if entrada["tag"] is not None:
+        assert "digest" in entrada, (
+            f"{servicio}: hay tag publicado pero no consta su digest"
+        )
+        assert re.match(r"^sha256:[0-9a-f]{64}$", entrada["digest"]), (
+            f"{servicio}: digest '{entrada['digest']}' no es un sha256 de 64 hex"
+        )
 
 
 @pytest.mark.parametrize("servicio", sorted(PUERTOS))

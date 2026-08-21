@@ -10,7 +10,8 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-08-20** (actualizado tras el despliegue).
+> **Fecha del documento: 2026-08-21** (actualizado tras el despliegue).
+> **Commit de origen: `df8866f`** (rama `dev`).
 >
 > **Estado: DESPLEGADO.** El 2026-08-20 se ejecutó la fase 7 y los tres
 > servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo y el

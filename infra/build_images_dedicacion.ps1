@@ -130,11 +130,20 @@ if ($construidos.Count -gt 0) {
     }
     # Sin BOM y con LF: .gitattributes declara *.json eol=lf.
     $json = ($inventario | ConvertTo-Json -Depth 6).Replace("`r`n", "`n") + "`n"
-    # El encoding se construye ANTES: en PS 5.1, un `New-Object` anidado como
-    # argumento de un metodo estatico no resuelve, y la llamada falla con
-    # "No se encuentra ninguna sobrecarga para WriteAllText y el numero de
-    # argumentos 3". Con la variable aparte, la sobrecarga (String, String,
-    # Encoding) se resuelve sin problema.
+    # Los casts [string] son los que sostienen esta llamada: NO se quitan.
+    #
+    # El 2026-08-20 esto fallo en ejecucion real con "No se encuentra ninguna
+    # sobrecarga para WriteAllText y el numero de argumentos 3", despues de
+    # haber publicado ya las tres imagenes. Se arreglo asi y funciona, pero
+    # CUIDADO con la explicacion: la primera version de este comentario decia
+    # que en PS 5.1 un `New-Object` anidado como argumento de un metodo
+    # estatico no resuelve, y eso es FALSO. Lo desmonto la review de cierre
+    # reproduciendolo en PS 5.1.26100.9168 (las dos formas funcionan), y el
+    # contraejemplo esta en este mismo repositorio: setup_front_easyauth.ps1
+    # usa el constructo anidado y se ejecuto con exito en T26.
+    #
+    # La causa raiz quedo SIN IDENTIFICAR. Lo unico comprobado es que con los
+    # casts explicitos la sobrecarga (String, String, Encoding) se resuelve.
     $sinBom = New-Object System.Text.UTF8Encoding $false
     [System.IO.File]::WriteAllText([string]$INVENTARIO, [string]$json, $sinBom)
 
