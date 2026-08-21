@@ -410,3 +410,72 @@ commit de F-008 (`a59b1b5`) está igual: es **deriva de método**, no un descuid
 puntual. No es la norma y no debe volverse costumbre.
 
 Informes: `progress/spec_F-015.md`, `progress/review_F-015.md`.
+
+## 2026-08-21 · F-008 · Infraestructura y despliegue en Azure
+
+`sdd: true` · rigor `critico` · **APROBADO** en la 3ª pasada de la review de
+cierre (las fases 1–6 ya tenían la suya, `progress/review_F-008.md`).
+
+**Qué se consiguió.** El sistema pasó de correr solo en un portátil a estar
+**desplegado y en uso**: tres Container Apps en `rg-dedicacion-dev`, base
+propia `dedicacion` en el servidor compartido, secretos en Key Vault por
+identidad gestionada, Easy Auth con grupo de asignación requerida, y tarjeta en
+el Portal Ruesma (esto último, F-015). El transfer **sigue en modo pruebas**.
+
+**Tres hallazgos que salieron de escribir la spec, no de desplegar.** Los tres
+eran defectos reales del código que nadie buscaba:
+
+1. **`dedicacion-api` creaba la base de datos y el rol en cada arranque**,
+   conectándose como **administrador del servidor**. Contra
+   `psql-albaranes-rs9k2`, compartido con otros cuatro proyectos, eso es
+   exactamente lo que el ecosistema prohíbe por escrito. Ahora
+   `AUTO_CREATE_DATABASE` está apagado por defecto y **ni siquiera abre esa
+   conexión** — se vio funcionar en el log del primer arranque en Azure.
+2. **Los timeouts encadenados estaban al revés**: el front esperaba 120 s y la
+   api 180 s, así que el front se rendía **antes** y el usuario habría visto un
+   error de un registro que sí se estaba completando.
+3. **El transfer no tenía `Dockerfile`.** Era el único de los tres.
+
+**Cinco bugs más, que solo aparecieron desplegando de verdad.** Ninguno lo
+habría cazado un test offline, porque todos son de la interacción real con `az`
+y con PowerShell 5.1: el flag `-d` frente a `-n`; **`az ... show` devolviendo
+error cuando el recurso no existe** —que con `ErrorActionPreference = "Stop"`
+aborta el script, y afectaba a cuatro sitios—; el bloque `DO $rol$` troceado
+por `--querytext`; `az keyvault create` no idempotente pese a prometerlo; y el
+fallo al escribir `imagenes.json` **después** de haber publicado las tres
+imágenes, que dejó el despliegue creyendo que no existían.
+
+**Lo que costó tres pasadas de review, y no fue el código.**
+
+- **Una explicación falsa mía.** Escribí en el script que en PS 5.1 un
+  `New-Object` anidado como argumento de un método estático «no resuelve». El
+  reviewer lo **reprodujo** y demostró que es falso, con un contraejemplo del
+  propio repositorio (`setup_front_easyauth.ps1`, que usa ese constructo y
+  funcionó). El arreglo era correcto pero la causa raíz **quedó sin
+  identificar**, y ahora el script lo dice así en vez de enseñar una causa
+  inventada que alguien copiaría a otro proyecto.
+- **El digest del inventario no tenía portero**, justo el campo que se tecleó
+  a mano tras el fallo del script. Se podía borrar y la suite seguía verde.
+- **La decisión D5 no tenía dueño: nadie.** Viajaba dentro de T30, T30 se movió
+  a F-015 y F-015 solo se llevó la mitad. Ahora es **F-016**. Lo que está en
+  juego: api y transfer **comparten function key**, así que lo único que impide
+  que la api escriba en el ERP es que su código no tiene rutas de escritura.
+- **La fuente de verdad contradecía a su propia copia.** `docs/INTEGRACION.md`
+  seguía diciendo que faltaba la tarjeta mientras `azure-apps/dedicacion.md` ya
+  decía que estaba en uso: **la copia bien y la fuente mal**, al revés de la
+  regla que el documento se impone. El reviewer lo había avisado una pasada
+  antes y F-015 cerró sin recogerlo.
+
+**Lo que se declara NO verificado, a propósito.** El nivel `critico` exige
+decir la verdad, no aparentarla: **R34** (el `/health` del transfer con
+`modo_pruebas` y `database`) no se comprobó porque el servicio tiene ingress
+interno y no es alcanzable desde fuera — que es justo lo que la decisión D2
+buscaba; y **T29** se apoya en la **confirmación del humano, sin volcado**.
+Ambas cosas constan en el texto de sus propias tareas, no en una nota al pie.
+
+**Y no se llamó a `registro/ejecutar` desde el entorno desplegado**, por
+acuerdo: habría escrito más líneas `PRUEBA-PORC` indistinguibles de la de T14,
+que entonces seguía viva.
+
+Informes: `progress/impl_F-008.md`, `progress/review_F-008.md`,
+`progress/review_F-008_cierre.md`, `progress/spec_F-008.md`.

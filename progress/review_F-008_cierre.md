@@ -16,11 +16,11 @@ y que el rastro documental **dice la verdad**.
 
 ---
 
-> **Este informe tiene DOS pasadas.** La primera (§1-§13) es del 2026-08-21 y
-> pidió cinco cambios. La segunda (**§14, al final**) verifica los remates y
-> **contiene el veredicto vigente**. Lo de abajo se conserva como está, sin
-> retocar: es el estado en que se encontró la feature, y borrarlo sería
-> reescribir la historia.
+> **Este informe tiene TRES pasadas.** La primera (§1-§13) es del 2026-08-21 y
+> pidió cinco cambios; la segunda (§14) verificó los remates y bloqueó por un
+> punto más. **El veredicto definitivo está en §15, al final: APPROVED.** Lo
+> anterior se conserva sin retocar: es el estado en que se encontró la feature,
+> y borrarlo sería reescribir la historia.
 
 ---
 
@@ -1000,3 +1000,146 @@ El único checkbox que sigue vacío es el de **§14.6**, que cae en **C3**
 (documentación que no dice la verdad) y en el criterio `acceptance` de F-008
 sobre el documento de integración, leído junto a **R29 y R31**, que piden que
 ese documento describa el sistema.
+
+---
+---
+
+# §15 · TERCERA PASADA — cierre (2026-08-21)
+
+Commit revisado: **`ab86416 · F-008: la fuente de verdad deja de contradecir a
+su propia copia`**.
+
+## Veredicto (definitivo — sustituye a los anteriores)
+
+> # APPROVED
+
+**F-008 está terminada.** El único punto que quedaba abierto está cerrado y
+verificado, y con él caen los tres bloqueos que abrió la primera pasada.
+
+---
+
+## 15.1 · El punto que bloqueaba · **CERRADO**
+
+`docs/INTEGRACION.md`, cabecera. El párrafo falso ya no existe. Lo comprobé de
+dos maneras:
+
+**Barrido negativo** — busqué los restos de las tres afirmaciones falsas
+(`falta la tarjeta`, `dar de alta a los usuarios`, `Es **F-015**`, `Todavía no
+es usable`) en todo el fichero: **ninguna coincidencia**.
+
+**Lectura positiva** — lo que dice ahora:
+
+> «**En uso desde el 2026-08-21.** Se entra por la tarjeta **«Dedicación»** del
+> Portal Ruesma (categoría *Obra*), y el permiso lo da la pertenencia al grupo
+> `dedicacion-portal-users`, con **asignación requerida**: tener cuenta de
+> Ruesma **no** basta. Para dar acceso a alguien nuevo, ver §5.»
+
+Es correcto en las cuatro cosas que afirma, contrastadas contra lo que yo mismo
+leí en Azure (§1.4): la tarjeta existe, el grupo es el que es, la asignación
+requerida está activa y remite a §5 para el procedimiento. Y **deja de
+contradecir a la §5 del propio documento**, que era la contradicción interna
+que señalé en §14.6.
+
+**La divergencia fuente/copia está resuelta.** Comparé el párrafo de la fuente
+con el de la copia commiteada en `azure-apps` (`git show HEAD:dedicacion.md`):
+dicen lo mismo. La redacción no es idéntica —la copia añade «en la Enterprise
+App»— pero **no hay ni una afirmación que se contradiga**, que es lo que
+importaba: ya se puede aplicar la regla de refresco fuente → copia sin
+propagar un error.
+
+Y el cuerpo del commit deja escrito el diagnóstico completo, incluido el
+porqué era peor que una frase vieja. Que quede en el historial importa: es lo
+que evita que la próxima vez se lea como una errata menor.
+
+## 15.2 · Los dos apuntes menores · **RECOGIDOS**
+
+- **`azure-apps` sin remoto.** `progress/current.md` (líneas 52-53) lo dice
+  ahora con sus palabras y su comprobación: «ese repositorio **no tiene remoto
+  configurado** (`git remote -v` vacío)». Corregir una afirmación propia que
+  el reviewer desmontó, en vez de dejarla correr, es exactamente lo que hace
+  que el rastro valga algo.
+- **Estado del arnés.** Verificado en `harness/features.json`: F-008
+  `in_progress` (ya no `blocked`), F-015 `done`, F-016 `pending`.
+  `current.md` refleja las 14 features y describe la sesión activa.
+
+## 15.3 · Entorno, ejecutado por mí
+
+```
+14 features, 7 abiertas, en curso: ['F-008'], bloqueadas: ninguna
+[OK] features.json válido
+102 passed
+[OK] PUERTA COBERTURA: N/A (rama dev: solo aplica en ramas de feature)
+ENTORNO LISTO. Puedes trabajar.        exit 0
+```
+
+Suite de la raíz relanzada aparte: **102 passed**. Guardián de secretos y
+portero del inventario: **80 passed**. `git status`: **limpio**.
+
+## 15.4 · Los checkpoints, al cerrar
+
+| | Estado |
+|---|---|
+| **C1** — arnés en verde | **[x]** `init.sh` exit 0, ejecutado por mí tres veces a lo largo de esta review |
+| **C2** — estado coherente | **[x]** Una sola feature en curso, ninguna bloqueada, `current.md` y `features.json` al día |
+| **C3** — arquitectura y convenciones | **[x]** Revalidado, incluida la documentación que ahora sí dice la verdad |
+| **C3 bis** — documentos de fuera | **[x] N/A justificado**: F-008 no toca `docs/referencia/` |
+| **C4** — verificación real | **[x]** Resuelto en la segunda pasada: lo verificado consta con su salida, lo no verificado consta **como no verificado** |
+| **C4 bis** — rigor `critico` | **[x]** Fase RED con trazas reales, cobertura N/A con motivo impreso, mutación recalculada por mí (108 líneas, 5 mutantes, cero supervivientes), «Evidencias» completa |
+| **C4 ter** — rutas sensibles | **[x] N/A justificado**: no existe `harness/rutas_sensibles.json` |
+| **C5** — sesión cerrada | **[x]** `tasks.md` sin marcas que afirmen de más, árbol limpio, `features.json` real |
+
+**Ningún checkbox vacío. Ningún N/A sin justificar.**
+
+## 15.5 · Una observación que NO bloquea
+
+La cabecera declara «Commit de origen: `df8866f`», y el documento cambió
+después, en `ab86416`. Está, por tanto, un commit por detrás.
+
+**No lo cuento como defecto y no quiero que se "arregle" a la carrera**,
+porque es un límite lógico, no un descuido: **un fichero no puede contener el
+hash del commit que lo introduce**. Cualquier documento que se autoestampe
+está siempre uno por detrás por construcción. Lo que ese sello tiene que
+garantizar —y garantiza— es que se pueda saber de qué versión salió la copia
+de `azure-apps`. Lo natural es **restamparlo la próxima vez que se refresque
+la copia**, no ahora.
+
+Lo dejo escrito para que nadie lo lea dentro de seis meses como un cabo suelto
+que se nos pasó.
+
+## 15.6 · Qué queda vivo, con dueño
+
+| Cabo | Dueño |
+|---|---|
+| Function key de solo lectura para la api (**D5**) | **F-016**, `pending` |
+| Fila de prueba en Sigrid, avisos a Administración, Regla B sin ejercitar | **F-014**, `pending` |
+| Tarjeta y usuarios del Portal | **F-015**, `done` |
+| **R34** (`/health` del transfer en caliente) | **Sin dueño, y es correcto**: consta como no verificado en `impl_F-008.md` y en `tasks.md`, con el motivo —ingress interno, que es lo que D2 buscaba—. No es deuda oculta: es una limitación declarada del diseño |
+| **T29** sin volcado | **Sin dueño, y es correcto**: consta como confirmación del humano, no como traza |
+
+Nada se cierra en falso y nada se cae por una rendija.
+
+---
+
+## 15.7 · Nota final sobre las tres pasadas
+
+Las tres bajadas de esta review encontraron cosas distintas, y merece la pena
+dejar dicho por qué, porque no fue casualidad:
+
+1. **La primera** no encontró nada mirando el sistema desplegado —estaba
+   bien— y lo encontró todo **contrastando el rastro contra la realidad**: no
+   fiándose de `tasks.md`, sino comprobando las mismas cosas con `az` y
+   preguntándose de dónde salía cada `[x]`.
+2. **La segunda** no encontró nada en los cinco remates, que estaban bien, y
+   encontró el bloqueo **en una condición que la primera había dejado escrita
+   como riesgo futuro** y que entretanto se había cumplido. Ese aviso, escrito
+   y fechado, es lo que hizo que se pudiera reclamar.
+3. **La tercera** no encontró nada, y eso también es un resultado.
+
+Y en las tres, lo que más aguantó fue lo que se puso a prueba en vez de
+leerse: el guardián de secretos (que acabó cazándome a mí), el portero del
+digest (roto a propósito y restaurado), el comentario falso de PowerShell
+(reproducido hasta desmontarlo) y los totales de mutación (recalculados,
+mutante a mutante). Leer un informe verde y verificarlo son dos actividades
+distintas, y solo una de ellas es una review.
+
+**F-008 · Infraestructura y despliegue en Azure: APROBADA.**
