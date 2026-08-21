@@ -1,137 +1,78 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** Rama `dev`, con **todo el trabajo aprobado
-integrado**: F-001, **F-002**, F-003, F-004, F-009, F-013 y las fases 1–6 de
-F-008. **F-002 cerró el 2026-08-20** con tres reviews aprobadas (fase 1, fase
-2 y cierre).
+**F-015 · Alta en el Portal Ruesma** — `in_progress`, en **review de cierre**.
+**F-008** — `blocked`, también en review de cierre. Todo lo demás, cerrado.
 
-## Estado del backlog (12 features)
+Rama `dev`, con todo el trabajo integrado.
+
+## Estado del backlog (13 features)
 
 | Estado | Features |
 |---|---|
-| `done` | F-001, **F-002**, F-003, F-004, F-009, F-013 |
-| `blocked` | **F-008** — esperando la fase 7, que es del humano |
+| `done` | F-001, F-002, F-003, F-004, F-009, F-013 |
+| en review de cierre | **F-008** (`blocked`), **F-015** (`in_progress`) |
 | `pending` | F-005, F-006, F-011, F-012, F-014 |
 
-Retiradas el 2026-08-20 por decisión del humano: **F-007** y **F-010**, que se
-hacen en `arnes-base`. Su razonamiento está en `progress/history.md`.
+Retiradas el 2026-08-20: **F-007** y **F-010**, que se hacen en `arnes-base`.
 
-## ✅ EL SISTEMA ESTÁ DESPLEGADO EN AZURE (2026-08-20)
+## El sistema está desplegado y en uso (2026-08-21)
 
-El humano ejecutó la fase 7. Los tres servicios están arriba, con Easy Auth
-activo y la exposición que se decidió en D2.
+- **Front**: `https://ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io`
+- **Se entra** por la tarjeta «Dedicación» del Portal Ruesma (categoría *Obra*),
+  desplegada el 2026-08-21. El permiso lo da el grupo
+  `dedicacion-portal-users`, con asignación requerida: **8 personas dentro**.
+- `ca-dedicacion-api` y `ca-dedicacion-transfer`: **internos**, no alcanzables
+  desde fuera. El ingress interno de la api **es** su control de acceso.
+- Imágenes con tag `r20260820-1625`, inventariadas con su digest.
+- **El transfer sigue en modo pruebas** (`OBRA_PRUEBAS_FORZAR=true`), y salir
+  de ahí exige autorización expresa para una acción concreta. El motivo real
+  está en `docs/ARCHITECTURE.md`: **la imputación a partidas en producción no
+  está validada**.
 
-| Servicio | Ingress | Réplicas | FQDN |
-|---|---|---|---|
-| `ca-dedicacion-front` | **EXTERNO** | 1/1 | `ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io` |
-| `ca-dedicacion-api` | interno | 1/1 | `ca-dedicacion-api.internal.ashypebble-…` |
-| `ca-dedicacion-transfer` | interno | 1/1 | `ca-dedicacion-transfer.internal.ashypebble-…` |
+## Verificaciones `MANUAL (humano)` — todas hechas
 
-- **Imágenes**: las tres con el tag `r20260820-1625`, inventariadas con su
-  digest en `infra/imagenes.json`.
-- **Base de datos**: `dedicacion` y el rol `dedicacion_app`, creados en el
-  servidor compartido `psql-albaranes-rs9k2`.
-- **Easy Auth**: grupo `dedicacion-portal-users`, asignación requerida ON,
-  login obligatorio, client secret por referencia al Key Vault.
-- **El transfer sigue en modo pruebas** (`OBRA_PRUEBAS_FORZAR=true`).
-
-> **Ningún GUID entra en el repositorio.** El objectId del grupo se saca
-> cuando haga falta con
-> `az ad group show --group 'dedicacion-portal-users' --query id -o tsv`.
-
-### Cinco bugs de los scripts, encontrados desplegando de verdad
-
-Ninguno lo habría cazado un test offline: todos son de la interacción real
-con `az` y con PowerShell 5.1. Corregidos y commiteados.
-
-1. `db show` / `db create` usan `-n`, no `-d` (ese solo existe en `execute`).
-2. **`az ... show` devuelve error si el recurso no existe**, y con
-   `$ErrorActionPreference = "Stop"` eso aborta el script. Se cambió por
-   `list` donde existe equivalente, y por `try/catch` donde no. Afectaba a
-   cuatro scripts, tres de ellos habrían fallado más adelante.
-3. El bloque `DO $rol$ … $rol$` no sobrevive a `--querytext`, que trocea por
-   `;`. Ahora es **una sentencia por llamada**, y la contraseña del rol se
-   fija **siempre** con `ALTER ROLE` para que coincida con la del Key Vault.
-4. `az keyvault create` no es idempotente pese a que el README lo promete.
-5. `New-Object` anidado como argumento de un método estático no resuelve en
-   PS 5.1: por eso `imagenes.json` no llegó a escribirse **después** de
-   publicar las tres imágenes, y el despliegue creía que no existían.
+| Feature | Qué | Estado |
+|---|---|---|
+| F-003 · T8 | arranque contra la base real | **hecha** 2026-08-20: `0 sentencias DDL` en dos arranques |
+| F-002 · T13 | casado real contra Sigrid, sin escribir | **hecha** 2026-08-20, volcado en `sigrid_F-002.md` |
+| F-002 · T14 | primera escritura real en Sigrid | **hecha** 2026-08-20, y **limpiada** el mismo día |
+| F-008 · T24–T29, T31 | despliegue completo en Azure | **hechas** 2026-08-20 |
+| F-015 · T1–T7 | tarjeta, usuarios y comprobación de acceso | **hechas** 2026-08-21 |
 
 ## ⚠ Lo que espera al humano
 
-### 1 · Cerrar la fase 7: T27–T31
+1. **Commitear `azure-apps/dedicacion.md`**, que sigue **sin trackear** en ese
+   repositorio (`?? dedicacion.md`). Mientras no se commitee, **el documento
+   del ecosistema no existe para los demás proyectos** y un `git clean` se lo
+   lleva. Es otro repositorio: el commit es suyo.
+2. **`git push origin dev`** en este repositorio.
+3. Cuando quiera: **F-014** (aviso a Administración de las cuatro partidas
+   duplicadas de POSTV2 y quién firma la procedencia) y las features
+   pendientes.
 
-Fases 1–6 **implementadas y aprobadas**; T24–T26 **ejecutadas**. Lo que queda
-**no lo ejecuta ningún agente**. Comandos con su
-resultado esperado en `specs/F-008-infra-azure/tasks.md` fase 7 y en
-`infra/README_dedicacion.md`.
+## Nota de método: por qué hay commits directos en `dev`
 
-Orden: `fase1_infra_dedicacion.ps1` → `crear_base_dedicacion.ps1` →
-`add_secrets_dedicacion.ps1` → `build_images_dedicacion.ps1` → los tres
-`create_*_dedicacion.ps1` → `setup_front_easyauth.ps1`.
+`CLAUDE.md` exige una rama por feature, y **F-015 se trabajó en `dev`**, igual
+que los arreglos de los scripts de infraestructura durante el despliegue. Fue
+a conciencia: F-015 no toca una línea de código de este repositorio —su cambio
+real vive en `front-portal`— y se hizo intercalada con el despliegue en vivo,
+donde el árbol tenía que estar en `dev` para corregir los scripts sobre la
+marcha. `features.json` lo declara (`"branch": "dev"`) en vez de apuntar a una
+rama inexistente. **No es la norma y no debe volverse costumbre.**
 
-**Falta decidir D3**: la lista de personas del grupo
-`dedicacion-portal-users`, necesaria para Easy Auth (T26).
+## Hechos comprobados que no conviene volver a descubrir
 
-**Y D5, que no bloquea pero conviene antes de que el entorno esté vivo**:
-pedir a `sigrid-api` una function key de **solo lectura** para la api. Hoy api
-y transfer comparten la misma, y lo único que impide que la api escriba es que
-su código no tiene rutas de escritura.
-
-> Al pegar la salida real de `az` en `progress/`: usa marcadores
-> (`<SUSCRIPCION>`, `<OBJECT-ID>`). El guardián de secretos ya vigila ese
-> directorio, pero es la red, no la primera línea.
-
-### 2 · F-014, cuando toque (prioridad 20)
-
-Sigue viva en Sigrid la fila de la primera escritura real:
-`hmores.ide = 403039`, `synckey 'porcentajes:77'`, marca `PRUEBA-PORC`, en el
-parte `PT26/00296` (`hmo.ide = 2820419`) de la obra de pruebas `0404`.
-
-```bash
-cd services/dedicacion-transfer
-.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar --ano 2026 --mes 7
-```
-
-**Ojo con el orden**: probar el registro desde Azure escribirá **más** líneas
-`PRUEBA-PORC` en la misma obra y mes, indistinguibles de esa salvo por su
-`ide`. Si se va a desplegar antes, conviene limpiar primero o asumir que habrá
-que distinguirlas a mano.
-
-F-014 recoge también el aviso a Administración de las cuatro partidas
-duplicadas de POSTV2 (`656`, `664`, `680`, `693`), quién firma la procedencia
-de las reglas P4/P5, y un tercer cabo que dejó la review de cierre de F-002:
-
-> **La Regla B (sobrecarga del 100 %) nunca se ha ejercitado contra Sigrid
-> real.** Está implementada y probada offline —35 tests, cobertura y
-> mutación—, pero el preflight de julio no llegó a dispararla porque el parte
-> de la obra destino **no existía** y no había líneas `M*` previas con las que
-> chocar. No es un defecto: es que el caso no se dio. Conviene que **la
-> primera vez que un parte real tenga líneas `M*` previas, alguien mire ese
-> preflight con atención**.
-
-## Lo que el sistema sabe hacer hoy, comprobado
-
-- **Corre entero en local**: transfer 8006 → api 8090 → front 8080, cada uno
-  desde su carpeta con su venv. El README de la raíz lo documenta.
-- **Escribe en Sigrid de verdad** (T14, 2026-08-20): crea el parte si no
-  existe e inserta la línea con su `synckey`. Antes de esa fecha **nunca**
-  había escrito en el ERP.
-- **Avisa y espera confirmación** en tres casos distintos, cada uno con su
-  clave: pisado de una línea existente, sobrecarga del 100 % del trabajador
-  (F-002) y línea sin partida casada (F-013).
-
-## Hechos que no conviene volver a descubrir
-
-- El api expone su salud en **`/api/v1/health`**, no en `/health`.
-- `ruff` **no está instalado** en el venv de `dedicacion-api`: usar el
-  intérprete de la raíz.
-- **Dos defectos del arnés**, anotados en `history.md` para `arnes-base`:
-  `init.sh` confunde «no hay tests» (pytest código 5) con «los tests fallan»,
-  y **la caché de suites cruza ramas**, así que el portero puede dar `[OK]`
-  por una suite ejecutada en otra rama. Si aparece un rojo raro del front,
-  mira si hay un `services/dedicacion-front/tests/` con solo `__pycache__`.
-- La fase `verificar` de `prueba_escritura_porcentajes.py` busca **sus
-  propias** líneas de plantilla, no lo que escriba el sistema por su camino
-  normal. Para comprobar una escritura real hay que leer por `synckey`.
+- **La escritura en Sigrid funciona** (T14). Y ahora mismo el sistema **no
+  tiene ninguna fila propia** en el ERP: la prueba se limpió.
+- **La Regla B (sobrecarga del 100 %) nunca se ha ejercitado contra Sigrid
+  real**: el preflight de julio no la disparó porque el parte de la obra
+  destino no existía. Está en F-014.
+- El api expone su salud en **`/api/v1/health`**, no en `/health`. Y el front,
+  con Easy Auth, responde **401 a un `curl` anónimo**: no es una caída.
+- `ruff` **no está instalado** en el venv de `dedicacion-api`.
+- **Dos defectos del arnés** anotados para `arnes-base` en `history.md`:
+  `init.sh` confunde «no hay tests» con «los tests fallan», y **la caché de
+  suites cruza ramas**.
+- **Cinco bugs de los scripts de infraestructura** salieron solo al desplegar
+  de verdad; ninguno lo habría cazado un test offline. Están en `history.md`.

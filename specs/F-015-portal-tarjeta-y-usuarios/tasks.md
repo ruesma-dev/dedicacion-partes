@@ -22,5 +22,5 @@ prueba el acceso. T1–T2 se pueden hacer ya; T3–T4 esperan a D3.
       refrescar la copia `azure-apps/dedicacion.md`. | Verificación: el
       documento dice quién puede entrar y cómo se da acceso a alguien nuevo;
       el commit de `azure-apps` lo hace el humano.
-- [ ] T7: Ejecutar `bash harness/init.sh` en verde. | Verificación: portero en
+- [x] T7 · HECHA (2026-08-21): Ejecutar `bash harness/init.sh` en verde. | Verificación: portero en
       verde, incluido `tests/test_f008_infra_sin_secretos.py` (barre `specs/`).
