@@ -699,3 +699,63 @@ regla de propagación de `CLAUDE.md`: si el arnés genérico incorpora un
 guardián de secretos, que nazca ya con `progress/` dentro, porque `progress/`
 es justo donde el arnés manda pegar salidas reales. **No lo he hecho**: está
 fuera de este encargo y `arnes-base` es otro repositorio.
+
+---
+
+## Fase 7 · resultado real (añadido el 2026-08-21, tras ejecutarla)
+
+Lo que sigue lo escribe el líder recogiendo lo verificado y lo que el humano
+confirma. **Se distingue a propósito lo comprobado por máquina de lo
+confirmado de palabra**, que era lo que pedía la review de cierre.
+
+### T24–T27 · verificados contra Azure
+
+Con salida real, y además **reverificados de forma independiente por el
+reviewer de cierre** (`progress/review_F-008_cierre.md` §1):
+
+| Qué | Resultado |
+|---|---|
+| Exposición (R7) | `transfer` False · `api` False · `front` **True** |
+| Modo pruebas (R9) | `OBRA_PRUEBAS_FORZAR = true` en el Container App |
+| Secretos (R19) | los dos **por referencia a Key Vault**, con identidad gestionada |
+| Réplicas (R4, R5) | 1/1 en los tres |
+| Arranque de la api | `AUTO_CREATE_DATABASE desactivado: no se abre la conexión de administración` y `Esquema verificado en BBDD 'dedicacion': 0 sentencias DDL aplicadas` |
+| Imágenes | las tres con tag `r20260820-1625`, con su digest en `infra/imagenes.json` |
+
+### T28 · R34 queda SIN VERIFICAR, y consta
+
+El `/health` del transfer devuelve `modo_pruebas` y `database`, pero el
+servicio tiene **ingress interno**: no es alcanzable desde el portátil, que es
+justo lo que R8 y D2 buscaban. Comprobarlo exigiría entrar en el entorno de
+Container Apps.
+
+**Lo que sí está verificado por otra vía**: el modo pruebas, leyendo la
+variable de entorno del Container App con `az` (T27). La base `ruesma` no se
+ha comprobado en caliente; está fijada en `.env.example`, en el código y en los
+tests offline.
+
+### T29 · prueba funcional — CONFIRMADA POR EL HUMANO, sin volcado
+
+El humano confirma el 2026-08-21 que **entró al front desplegado y funciona**.
+**No se pegó el volcado del preflight**, así que esta tarea se apoya en su
+confirmación, no en una traza. Se deja dicho en vez de aparentar evidencia que
+no existe.
+
+Lo que sí consta por máquina: el front responde **HTTP 401** a una petición
+anónima (Easy Auth pidiendo credenciales, R35 cumplido) y el Portal responde
+**302** al login. La tarjeta está commiteada y desplegada (`4d7cfa8` y
+`01fb1aa` en `front-portal`).
+
+**Lo que NO se hizo, a propósito:** no se llamó a `registro/ejecutar` desde el
+entorno desplegado. Era la precondición acordada con el humano para no escribir
+más líneas `PRUEBA-PORC` indistinguibles de la de T14, que entonces seguía
+viva. Esa fila se limpió después (ver `progress/sigrid_F-002.md`).
+
+### T30 y T31
+
+- **T30** se movió a **F-015**, ya cerrada: tarjeta desplegada y 8 personas en
+  el grupo.
+- **T31** hecha: `docs/INTEGRACION.md` y su copia `azure-apps/dedicacion.md`
+  recogen el despliegue real, con el commit de origen en la cabecera. El
+  documento del ecosistema **ya está commiteado** por el humano (`08676ac` en
+  `azure-apps`), así que R30 queda cumplida.

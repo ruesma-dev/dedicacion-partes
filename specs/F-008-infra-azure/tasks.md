@@ -296,7 +296,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
   devuelve `true`; `maxReplicas` = 1 en transfer y api; todos los secretos con
   `keyVaultUrl`.
 
-- [x] **T28 · MANUAL (humano) — EJECUTADA el 2026-08-20**: salud de los tres servicios (R33, R34, R35).
+- [x] **T28 · MANUAL (humano) — EJECUTADA el 2026-08-20, con R34 SIN VERIFICAR** (el `/health` del transfer no es alcanzable desde fuera: ingress interno): salud de los tres servicios (R33, R34, R35).
   - **front**: navegar a `https://<fqdn-front>/health` **con sesión iniciada**
     (anónimo redirige al login: es lo esperado, R35).
   - **api**: `https://<fqdn-front>/api/v1/health` en el navegador; debe
@@ -308,7 +308,7 @@ decisiones D1–D5 de `progress/spec_F-008.md`.** Resumen:
     —`modo_pruebas: true`, `database: "ruesma"` (R34)—, hay que llamarlo desde
     dentro del entorno.
 
-- [x] **T29 · MANUAL (humano) — EJECUTADA el 2026-08-20**: prueba funcional de extremo a extremo, **sin
+- [x] **T29 · MANUAL (humano) — CONFIRMADA POR EL HUMANO el 2026-08-21, sin volcado** (ver `progress/impl_F-008.md`, «Fase 7 · resultado real»): prueba funcional de extremo a extremo, **sin
   escribir en Sigrid**: entrar al front, sincronizar maestros, crear un
   periodo, cargar un cuadrante y ejecutar **solo `registro/preflight`**.
   **Verificación:** el preflight devuelve acciones y conflictos; **no se
