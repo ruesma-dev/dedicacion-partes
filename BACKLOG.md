@@ -5,13 +5,13 @@
 
 Resumen: **14 features**, 7 abiertas, 7 terminadas.
 
-Bloqueadas: **F-008**.
+En curso: **F-008**.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-008 | Infraestructura y despliegue en Azure | 3 | bloqueada | critico | `feature/F-008-infra-azure` |
+| F-008 | Infraestructura y despliegue en Azure | 3 | en curso | critico | `feature/F-008-infra-azure` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-011 | Un solo codigo de hora mes por trabajador | 7 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
@@ -35,7 +35,7 @@ Bloqueadas: **F-008**.
 
 ### F-008 · Infraestructura y despliegue en Azure
 
-estado **bloqueada** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-008-infra-azure`
+estado **en curso** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-008-infra-azure`
 
 Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo el patrón de partes (Container Apps, imágenes en acralbaranesdev con tag fechado, secretos en Key Vault por identidad gestionada, Easy Auth en el front), decidir dónde vive la BBDD dedicacion, y escribir el documento del proyecto en azure-apps. El transfer arranca en modo pruebas y solo sale de él con decisión expresa.
 

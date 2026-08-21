@@ -1,18 +1,19 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-015 · Alta en el Portal Ruesma** — `in_progress`, en **review de cierre**.
-**F-008** — `blocked`, también en review de cierre. Todo lo demás, cerrado.
+**F-008 · Infraestructura y despliegue en Azure** — `in_progress`, en la
+**segunda pasada de su review de cierre**. Es lo único abierto: todo lo demás
+está cerrado, incluida **F-015**.
 
 Rama `dev`, con todo el trabajo integrado.
 
-## Estado del backlog (13 features)
+## Estado del backlog (14 features)
 
 | Estado | Features |
 |---|---|
-| `done` | F-001, F-002, F-003, F-004, F-009, F-013 |
-| en review de cierre | **F-008** (`blocked`), **F-015** (`in_progress`) |
-| `pending` | F-005, F-006, F-011, F-012, F-014 |
+| `done` | F-001, F-002, F-003, F-004, F-009, F-013, **F-015** |
+| en review de cierre | **F-008** |
+| `pending` | F-005, F-006, F-011, F-012, F-014, **F-016** |
 
 Retiradas el 2026-08-20: **F-007** y **F-010**, que se hacen en `arnes-base`.
 
@@ -42,14 +43,16 @@ Retiradas el 2026-08-20: **F-007** y **F-010**, que se hacen en `arnes-base`.
 
 ## ⚠ Lo que espera al humano
 
-1. **Commitear `azure-apps/dedicacion.md`**, que sigue **sin trackear** en ese
-   repositorio (`?? dedicacion.md`). Mientras no se commitee, **el documento
-   del ecosistema no existe para los demás proyectos** y un `git clean` se lo
-   lleva. Es otro repositorio: el commit es suyo.
-2. **`git push origin dev`** en este repositorio.
-3. Cuando quiera: **F-014** (aviso a Administración de las cuatro partidas
-   duplicadas de POSTV2 y quién firma la procedencia) y las features
-   pendientes.
+1. **`git push origin dev`** en este repositorio.
+2. Cuando quiera: **F-014** (aviso a Administración de las cuatro partidas
+   duplicadas de POSTV2, quién firma la procedencia, y mirar el primer
+   preflight real con líneas `M*` previas) y **F-016** (pedir a `sigrid-api`
+   una function key de solo lectura para la api).
+
+> **`azure-apps` ya está commiteado** (`08676ac`). Ojo con un dato: ese
+> repositorio **no tiene remoto configurado** (`git remote -v` vacío), así que
+> vive solo en local. No es cosa de este proyecto, pero conviene saberlo: lo
+> que se escribe ahí no está respaldado en ningún sitio.
 
 ## Nota de método: por qué hay commits directos en `dev`
 

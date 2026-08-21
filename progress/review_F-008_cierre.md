@@ -16,7 +16,15 @@ y que el rastro documental **dice la verdad**.
 
 ---
 
-## Veredicto
+> **Este informe tiene DOS pasadas.** La primera (§1-§13) es del 2026-08-21 y
+> pidió cinco cambios. La segunda (**§14, al final**) verifica los remates y
+> **contiene el veredicto vigente**. Lo de abajo se conserva como está, sin
+> retocar: es el estado en que se encontró la feature, y borrarlo sería
+> reescribir la historia.
+
+---
+
+## Veredicto de la PRIMERA pasada (histórico — ver §14 para el vigente)
 
 > ## CHANGES_REQUESTED
 
@@ -742,3 +750,253 @@ que hice yo sobre el árbol entero (§4.2) salió limpio, pero lo hice a mano.
 Convendría que `DIRECTORIOS` pasara a ser «todo lo versionado menos una lista
 de exclusiones», ahora que `_rutas_que_git_puede_versionar()` ya da
 exactamente ese conjunto y el coste sería casi nulo.
+
+---
+---
+
+# §14 · SEGUNDA PASADA — verificación de los remates (2026-08-21)
+
+Commits revisados: **`c350d5c`** y **`903c588`**, hechos por el líder sobre
+`dev`. Verifiqué los cinco puntos **uno a uno y por mi cuenta**, sin fiarme del
+resumen que me llegó.
+
+## Veredicto (vigente)
+
+> ## CHANGES_REQUESTED
+
+**Los cinco cambios requeridos están cerrados, y bien cerrados.** No tengo una
+sola objeción a ninguno: tres de ellos los verifiqué rompiendo algo a propósito
+o reproduciendo el contraejemplo, y el trabajo aguanta. Si de esos cinco
+dependiera, esto sería APPROVED.
+
+Bloqueo por **un solo punto, nuevo y verificado**, que es exactamente la
+contingencia que dejé escrita en la §6 de la primera pasada:
+
+> «si F-015 cierra sin arreglar esa cabecera, **queda huérfana**, porque F-008
+> ya no estará abierta para recogerla».
+
+**F-015 cerró** (`df8866f`) sin tocarla. Está huérfana. Y al mirarla de cerca
+resulta ser peor de lo que parecía: no es solo una frase obsoleta, es que
+**la fuente de verdad y su copia dicen ahora cosas contrarias, y la que está
+mal es la fuente.** Detalle en §14.6.
+
+---
+
+## 14.1 · Punto 1 — la fase 7, con su resultado real · **CERRADO, y bien**
+
+`progress/impl_F-008.md` tiene la sección «Fase 7 · resultado real» (60 líneas,
+commit `903c588`). La verifiqué contra lo que yo mismo había comprobado en §1.
+
+**Lo que hace bien, y merece decirse:** no rellena el hueco, lo **etiqueta**.
+Era justo lo que pedía el cambio 1, que ofrecía dos salidas (pegar la traza o
+desmarcar la tarea). El líder tomó una tercera, mejor que las dos: **mantener
+la marca pero cambiar lo que la marca afirma.**
+
+| Tarea | Cómo queda | Mi lectura |
+|---|---|---|
+| T24–T27 | Tabla con salida real, citando mi reverificación | ✔ Cuadra con lo que leí yo en Azure (§1.1–§1.3) |
+| T28 | `**R34 SIN VERIFICAR**`, con el motivo: el `/health` del transfer no es alcanzable desde fuera por tener **ingress interno** | ✔ Y el motivo es **el correcto**: no es una excusa, es que R8 y D2 buscaban justo eso. Separa lo verificado por otra vía (modo pruebas leído con `az`) de lo que no (la base `ruesma` en caliente) |
+| T29 | `**CONFIRMADA POR EL HUMANO el 2026-08-21, sin volcado**` | ✔ Es la línea que me importaba |
+
+Y no lo esconde en el informe: **el matiz viaja en la propia tarea de
+`tasks.md`**, que es donde lo verá quien audite dentro de un año. Verificado en
+el diff de `903c588`: T28 y T29 llevan el matiz **en el texto de la marca**, no
+en una nota al pie.
+
+De T29 dice, textualmente:
+
+> «se apoya en su confirmación, no en una traza. **Se deja dicho en vez de
+> aparentar evidencia que no existe**.»
+
+Eso es exactamente lo contrario de lo que encontré en la primera pasada, donde
+un commit convirtió siete `[ ]` en `[x]` sin añadir una línea de respaldo. Y
+añade lo que sí consta por máquina (401 del front, 302 del Portal, tarjeta
+desplegada) y, lo que más me importa, **que no se llamó a `registro/ejecutar`**,
+con su motivo.
+
+**C4 y la exigencia extra del nivel `critico` quedan satisfechas**: no porque
+todo esté verificado, sino porque lo que no lo está **lo dice**.
+
+## 14.2 · Punto 2 — T31 y el commit en `azure-apps` · **CERRADO**
+
+Verificado en `C:\Users\pgris\PycharmProjects\azure-apps`:
+
+- `08676ac · Añade dedicacion: desplegado y en uso`.
+- `git ls-files dedicacion.md` → **trackeado**. **R30 cumplida**: ya no es un
+  fichero suelto que se lleve un `git clean`.
+- `git status` allí solo muestra `?? postventa_incidencias.md`, que es de otro
+  proyecto y **no se tocó**. El aviso de la primera pasada sobre no arrastrar
+  trabajo ajeno con `git add -A` se respetó.
+- **Commit de origen en las dos cabeceras**: `docs/INTEGRACION.md` declara
+  «**Commit de origen: `df8866f`** (rama `dev`)» y la copia «Origen:
+  repositorio `porcentajes`, rama `dev`, commit `df8866f`». Era la
+  verificación que la propia T31 declaraba y que no cumplía ninguna de las dos.
+
+> **Matiz sobre lo que se me dijo.** El mensaje que recibí afirma que
+> `azure-apps` «está sincronizado con su remoto (0 commits pendientes)». Lo
+> comprobé: `git remote -v` no devuelve nada y `git branch -r` está vacío.
+> **Ese repositorio no tiene remoto configurado.** No es un defecto —R30 pide
+> la copia en `azure-apps`, y ahí está, commiteada— pero no es cierto que esté
+> sincronizado con un remoto, porque no hay ninguno. Lo dejo escrito para que
+> nadie dé por hecha una copia de seguridad que no existe.
+
+## 14.3 · Punto 3 — el comentario falso · **CERRADO, y con nota alta**
+
+`infra/build_images_dedicacion.ps1`, líneas 133-147. El comentario nuevo:
+
+- Empieza por lo accionable: «**Los casts `[string]` son los que sostienen
+  esta llamada: NO se quitan.**» Era el riesgo real que señalé: que alguien
+  los tomara por decoración y los limpiara, reintroduciendo el fallo.
+- **Se retracta explícitamente**: «la primera versión de este comentario decía
+  que en PS 5.1 un `New-Object` anidado […] no resuelve, y eso es **FALSO**».
+- Conserva **cómo** se desmontó (reproducido en PS 5.1.26100.9168 y el
+  contraejemplo de `setup_front_easyauth.ps1`), que es lo que permite a otro
+  volver a comprobarlo en vez de creérselo.
+- Y termina con la línea difícil de escribir: «**La causa raíz quedó SIN
+  IDENTIFICAR.** Lo único comprobado es que con los casts explícitos la
+  sobrecarga (String, String, Encoding) se resuelve.»
+
+Un comentario que dice «no sé por qué falló, sé qué lo arregla» vale
+infinitamente más que uno que inventa una causa plausible. **Cerrado.**
+
+## 14.4 · Punto 4 — el portero del digest · **CERRADO, verificado rompiéndolo**
+
+`tests/test_f008_imagenes.py`, líneas 176-182, exige ahora, en cuanto hay tag:
+
+```python
+assert "digest" in entrada
+assert re.match(r"^sha256:[0-9a-f]{64}$", entrada["digest"])
+```
+
+**No me fié: lo puse a prueba yo.** Alteré el digest de `dedicacion-api` a un
+valor inválido y ejecuté la suite:
+
+```
+FAILED tests/test_f008_imagenes.py::test_f008_r24_cada_entrada_declara_repositorio_tag_y_fecha[dedicacion-api]
+1 failed, 26 passed in 0.10s
+```
+
+Restaurado con `git checkout -- infra/imagenes.json`; `git status infra/`
+**vacío**. El portero muerde de verdad, y el docstring explica *por qué* existe
+(el campo se tecleó a mano tras fallar el script), que es lo que evita que
+alguien lo quite por molesto dentro de un año.
+
+## 14.5 · Punto 5 — D5 tiene dueño · **CERRADO**
+
+**F-016 · «Una function key de solo lectura para dedicacion-api»**, `pending`,
+prioridad 9, rigor `estandar`. Verificado en `harness/features.json` y en
+`BACKLOG.md`.
+
+La descripción enuncia el riesgo sin suavizarlo —«la separación es por
+disciplina, **no por permisos**»— y deja la trazabilidad de cómo casi se
+pierde. Pero lo que hace que esta feature sirva es su **tercer criterio**:
+
+> «Si no las admite: `docs/INTEGRACION.md` dice explícitamente que la api tiene
+> credencial de escritura aunque no la use, y por qué se acepta.»
+
+Es decir: **F-016 no puede cerrarse en falso.** Si `sigrid-api` no puede emitir
+una clave de solo lectura, la salida no es «no se pudo», es dejar el riesgo
+escrito y aceptado a conciencia. Cerrado.
+
+## 14.6 · Lo que bloquea: la fuente de verdad dice lo contrario que su copia
+
+`docs/INTEGRACION.md`, líneas 24-25, **hoy**:
+
+> «**Todavía no es usable por nadie más que quien esté en el grupo**: falta la
+> tarjeta en el Portal Ruesma y dar de alta a los usuarios. Es **F-015**.»
+
+Las tres afirmaciones que hace, contrastadas:
+
+| Afirma | Realidad verificada |
+|---|---|
+| «falta la tarjeta en el Portal Ruesma» | **Falso.** Desplegada: `d14a5b2`. El propio `impl_F-008.md` lo dice ahora |
+| «falta dar de alta a los usuarios» | **Falso.** 8 personas en el grupo: `142676e` |
+| «Es F-015» | **Falso.** F-015 cerró: `df8866f` |
+
+Y no es solo que esté obsoleta. Comparando la fuente con su copia (`diff` de
+las dos cabeceras) sale esto:
+
+| | `docs/INTEGRACION.md` (**fuente de verdad**) | `azure-apps/dedicacion.md` (**copia**) |
+|---|---|---|
+| línea 24 | «falta la tarjeta… Es F-015» | «**Acceso: en uso desde el 2026-08-21.** Se entra por la tarjeta «Dedicación» del Portal Ruesma…» |
+
+**La copia está bien y la fuente está mal.** Eso invierte la regla que el
+propio documento se impone dos párrafos más arriba —«La copia de
+`azure-apps/dedicacion.md` se refresca **desde aquí, no al revés**»— y que
+`CLAUDE.md` eleva a norma del ecosistema. Quien siga la regla al pie de la
+letra refrescará la copia desde la fuente y **propagará el error hacia
+`azure-apps`**, deshaciendo lo que ya está bien.
+
+Hay además una contradicción **dentro del mismo fichero**: la §5 (líneas
+165-169) dice «**Cómo se llega**: por la tarjeta «Dedicación» del Portal
+Ruesma (categoría *Obra*)». La cabecera dice que falta justo lo que el cuerpo
+describe como la vía de entrada.
+
+### Por qué esto bloquea, y no lo dejo en recomendación
+
+En la primera pasada **no lo conté como cambio requerido**, y lo razoné: era de
+F-015, que lo tenía como criterio `acceptance` y estaba en revisión. Fue la
+decisión correcta con la información de entonces. Lo que ha cambiado es que
+**la condición que dejé escrita se ha cumplido**: F-015 cerró sin tocarlo.
+
+Ya no hay ninguna otra feature que pueda recogerlo. Si F-008 cierra así:
+
+- `docs/INTEGRACION.md` es el documento que `CLAUDE.md` manda consultar **antes
+  de diseñar nada que cruce la frontera del proyecto**. Quedaría diciendo, de
+  forma permanente, que el sistema no es alcanzable y que hay pendiente una
+  feature que ya no existe.
+- La divergencia fuente/copia no se resuelve sola: se resuelve **mal**, en
+  cuanto alguien aplique la regla de refresco.
+
+Es una corrección de dos líneas cuyo **texto correcto ya está escrito** —basta
+traerlo de la copia— y aviso de que **es lo único que separa a F-008 de
+APPROVED**. No la dejo en recomendación porque ya la dejé una vez, y el
+resultado está a la vista.
+
+---
+
+## 14.7 · `bash harness/init.sh` (segunda pasada)
+
+Ejecutado por mí tras los dos commits: **exit code 0**, `ENTORNO LISTO`.
+Suite de la raíz **102 passed**, los tres servicios en verde, `PUERTA
+COBERTURA: N/A` con su motivo impreso, `Ningún .env versionado`.
+
+El guardián de secretos sigue en verde con este informe dentro de `progress/`
+(53 tests). `git status` del repositorio: limpio salvo este fichero.
+
+---
+
+## 14.8 · Cambio requerido (uno solo)
+
+1. **`docs/INTEGRACION.md`, líneas 24-25: sustituir el párrafo falso por el
+   estado real.** El texto correcto ya existe en `azure-apps/dedicacion.md`,
+   línea 24 y siguientes («**Acceso: en uso desde el 2026-08-21.** Se entra por
+   la tarjeta «Dedicación» del Portal Ruesma…»): basta traerlo, que además
+   restaura la dirección correcta fuente → copia.
+   - Al hacerlo, **refrescar el `commit de origen`** de las dos cabeceras al
+     commit que resulte, porque `df8866f` dejará de ser el que las describe.
+   - Y **volver a commitear la copia en `azure-apps`** si el texto cambia
+     respecto al de `08676ac`, para que no vuelvan a divergir. Ese commit es
+     del humano: es otro repositorio.
+
+Nada más. Los cinco puntos de la primera pasada están cerrados y verificados.
+
+## 14.9 · Estado de los checkpoints tras los remates
+
+Los que la primera pasada dejó vacíos:
+
+- **C4** («verificaciones `MANUAL (humano)` con su resultado real») → **[x]**.
+  Resuelto por §14.1: lo verificado consta con su salida, y lo no verificado
+  consta **como no verificado**.
+- **C5** («`tasks.md` con todas las tareas `[x]`») → **[x]**. T28 y T29 siguen
+  marcadas, pero la marca ya no afirma más de lo que hay.
+- **C2** (`current.md` y `features.json` desactualizados) → **queda al líder**
+  al resolver este cierre; son sus ficheros y no los he tocado. F-016 ya está
+  en `features.json`, así que esa parte está hecha.
+- **C3** («sin secretos, convenciones») → **[x]**, revalidado: barrido en verde
+  con los ficheros nuevos dentro.
+
+El único checkbox que sigue vacío es el de **§14.6**, que cae en **C3**
+(documentación que no dice la verdad) y en el criterio `acceptance` de F-008
+sobre el documento de integración, leído junto a **R29 y R31**, que piden que
+ese documento describa el sistema.

@@ -21,8 +21,10 @@
 > **URL del front:**
 > `https://ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io`
 >
-> **Todavía no es usable por nadie más que quien esté en el grupo**: falta la
-> tarjeta en el Portal Ruesma y dar de alta a los usuarios. Es **F-015**.
+> **En uso desde el 2026-08-21.** Se entra por la tarjeta **«Dedicación»** del
+> Portal Ruesma (categoría *Obra*), y el permiso lo da la pertenencia al grupo
+> `dedicacion-portal-users`, con **asignación requerida**: tener cuenta de
+> Ruesma **no** basta. Para dar acceso a alguien nuevo, ver §5.
 
 ---
 
