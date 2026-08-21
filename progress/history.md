@@ -357,3 +357,56 @@ cuenta de que llevaba dentro evidencia que no estaba en ningún otro sitio. Se
 recuperó del commit `01bf62a`. Lección: **un fichero de rastro puede contener
 información única; resolver su conflicto reescribiéndolo la destruye en
 silencio.**
+
+## 2026-08-21 · F-015 · Alta en el Portal Ruesma: tarjeta y usuarios del grupo
+
+`sdd: true` · rigor `documental` · **APROBADO** en la 2ª pasada de la review de
+cierre · trabajada en `dev` (ver «Nota de método» abajo).
+
+**El problema.** El sistema llevaba un día desplegado y funcionando en Azure,
+pero **nadie podía llegar a él**: no había tarjeta en el Portal Ruesma desde la
+que entrar, y la Enterprise App tiene **asignación requerida**, así que quien
+no estuviera en el grupo `dedicacion-portal-users` no obtenía token **aunque
+tuviera cuenta de Ruesma**. Solo estaba dado de alta el humano.
+
+**El hallazgo de la spec, que cambió el trabajo.** No había que pedirle la
+tarjeta a nadie: `front-portal` es un repositorio del propio humano y dar de
+alta una app es **editar `public/assets/js/catalog.js` y desplegar**. La spec
+salió en **104 líneas** porque el humano la pidió corta para hacerla juntos.
+
+**Qué se hizo.** Entrada añadida al catálogo en la categoría *Obra*, icono
+`chart` —`compare` ya lo usa «Comparativos» y confundiría un cuadrante de
+porcentajes con una comparativa—, apuntando al FQDN del front y restringida
+por el grupo. El humano la commiteó (`4d7cfa8` en `front-portal`), la desplegó
+y dio de alta a **8 personas**. `docs/INTEGRACION.md` §5 y su copia
+`azure-apps/dedicacion.md` explican cómo se llega, quién puede entrar y cómo
+dar acceso a alguien nuevo, **sin listar a nadie**: son datos personales y
+cambian, así que queda el comando para consultarlos.
+
+**Una duda cerrada con evidencia en vez de con fe.** La spec advertía de que,
+sin licencia Entra ID P1, la «asignación requerida» se ignora **en silencio** y
+entraría cualquiera del tenant. Se comprobó: `appRoleAssignmentRequired = True`.
+Era una duda buena — de haber sido falsa, se habría dado por protegido algo que
+no lo estaba.
+
+**El objectId del grupo no está en este repositorio.** Vive solo en el catálogo
+de `front-portal`, que es donde el mecanismo del portal lo exige. Verificado con
+`git grep` y con el guardián de secretos (53 tests).
+
+**Los cuatro remates que costaron un rechazo, todos del líder.** El que más
+daño hacía: la **cabecera** de `azure-apps/dedicacion.md` seguía diciendo que
+la tarjeta y el alta «están pendientes» cuando llevaban un día en producción.
+El cuerpo estaba bien, pero quien abre ese documento lee el recuadro, y sacaba
+la conclusión contraria a la verdad. Los otros tres: `current.md` describiendo
+una sesión ya pasada, `features.json` apuntando a una **rama inexistente**, y
+una tarea sin marcar.
+
+**Nota de método.** F-015 se trabajó **directamente en `dev`**, contra la regla
+de una rama por feature. Se decidió a conciencia —no toca una línea de código
+de este repositorio y se hizo intercalada con el despliegue en vivo, donde el
+árbol tenía que estar en `dev` para corregir los scripts sobre la marcha— y
+`features.json` lo **declara** en vez de mentir. El reviewer señaló que un
+commit de F-008 (`a59b1b5`) está igual: es **deriva de método**, no un descuido
+puntual. No es la norma y no debe volverse costumbre.
+
+Informes: `progress/spec_F-015.md`, `progress/review_F-015.md`.

@@ -3,9 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **13 features**, 7 abiertas, 6 terminadas.
-
-En curso: **F-015**.
+Resumen: **13 features**, 6 abiertas, 7 terminadas.
 
 Bloqueadas: **F-008**.
 
@@ -14,7 +12,6 @@ Bloqueadas: **F-008**.
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-008 | Infraestructura y despliegue en Azure | 3 | bloqueada | critico | `feature/F-008-infra-azure` |
-| F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | en curso | documental | `dev` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-011 | Un solo codigo de hora mes por trabajador | 7 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
@@ -30,6 +27,7 @@ Bloqueadas: **F-008**.
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | critico |
 | F-004 | README del monorepo y arranque local en orden | 4 | documental |
 | F-013 | Una linea sin partida no se escribe en silencio | 4 | critico |
+| F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | documental |
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
@@ -39,12 +37,6 @@ Bloqueadas: **F-008**.
 estado **bloqueada** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-008-infra-azure`
 
 Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo el patrón de partes (Container Apps, imágenes en acralbaranesdev con tag fechado, secretos en Key Vault por identidad gestionada, Easy Auth en el front), decidir dónde vive la BBDD dedicacion, y escribir el documento del proyecto en azure-apps. El transfer arranca en modo pruebas y solo sale de él con decisión expresa.
-
-### F-015 · Alta en el Portal Ruesma: tarjeta y usuarios del grupo
-
-estado **en curso** · prioridad 4 · rigor `documental` · SDD sí · rama `dev`
-
-Pedida por el humano el 2026-08-20, con el sistema ya desplegado. Sin esto el sistema esta vivo pero nadie puede llegar a el: no hay tarjeta en el Portal Ruesma desde la que entrar, y solo tiene acceso quien ya este en el grupo de Entra. Dos partes. (1) TARJETA: pasar al proyecto front-portal la URL publica del front (ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io) y el objectId del grupo 'dedicacion-portal-users' para que anada la tarjeta. El objectId NO se escribe en este repositorio: se saca con 'az ad group show --group dedicacion-portal-users --query id -o tsv' y se pasa por el canal que se use con ese proyecto. Es trabajo que cruza la frontera del proyecto, asi que hay que mirar antes el documento de front-portal en azure-apps/. (2) USUARIOS: decidir quien entra (la decision D3 de F-008, que quedo abierta) y darles de alta con 'infra/setup_front_easyauth.ps1 -Miembros persona@ruesma.es'. La Enterprise App tiene asignacion requerida, asi que quien no este en el grupo no obtiene token: no basta con tener cuenta de Ruesma. Sale de F-008 (era su T30) para que aquella pueda cerrarse. DECISIONES DEL HUMANO 2026-08-20: el icono lo elige el lider ('chart', por ser un cuadrante de porcentajes y no una comparativa); y la tarjeta se deja PUESTA CON EL GRUPO CONFIGURADO pero SIN dar de alta usuarios: el humano los mete a mano cuando decida quien entra. Con eso D3 deja de bloquear la feature. NOTA DE METODO: esta feature se trabajo directamente en 'dev', sin rama propia, y el campo branch lo dice. El CLAUDE.md exige rama por feature; la excepcion se toma a conciencia y se deja escrita: F-015 no toca una linea de codigo de este repositorio (su unico cambio real vive en front-portal, otro repo), y se hizo intercalada con el despliegue en vivo de F-008, donde el arbol tenia que estar en dev para arreglar los scripts sobre la marcha. Rehacer la historia ahora seria peor que el problema: los commits estan en origin/dev.
 
 ### F-005 · Alinear los literales internos con el nombre «dedicación»
 
@@ -105,6 +97,12 @@ El monorepo no tiene README. Hace falta uno que explique los tres servicios, el 
 estado **terminada** · prioridad 4 · rigor `critico` · SDD no · rama `feature/F-013-linea-sin-partida-confirma`
 
 Decision del humano el 2026-08-20, al ver el preflight real de julio: hoy, cuando el casado de partida falla en obra normal, registro_pipeline.py pone paride=0 y deja un aviso informativo, pero LA LINEA SE ESCRIBE IGUAL. En el preflight de julio eso eran 2.132 EUR de una jefa de obra colgando de la obra sin imputar a ninguna partida. La regla nueva: debe AVISAR Y ESPERAR CONFIRMACION, igual que la sobrecarga del 100 % que introdujo F-002. El mecanismo ya existe y no hay que inventarlo: la Regla B de F-002 emite un Conflicto con motivo propio que viaja al front sin tocar dedicacion-api ni dedicacion-front. Esto es aplicar ese mismo patron a un tercer caso. Sale de F-002 y no dentro, porque F-002 esta blocked por motivos ajenos (Administracion) y sus fases 1 y 2 ya estan aprobadas y mergeadas.
+
+### F-015 · Alta en el Portal Ruesma: tarjeta y usuarios del grupo
+
+estado **terminada** · prioridad 4 · rigor `documental` · SDD sí · rama `dev`
+
+Pedida por el humano el 2026-08-20, con el sistema ya desplegado. Sin esto el sistema esta vivo pero nadie puede llegar a el: no hay tarjeta en el Portal Ruesma desde la que entrar, y solo tiene acceso quien ya este en el grupo de Entra. Dos partes. (1) TARJETA: pasar al proyecto front-portal la URL publica del front (ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io) y el objectId del grupo 'dedicacion-portal-users' para que anada la tarjeta. El objectId NO se escribe en este repositorio: se saca con 'az ad group show --group dedicacion-portal-users --query id -o tsv' y se pasa por el canal que se use con ese proyecto. Es trabajo que cruza la frontera del proyecto, asi que hay que mirar antes el documento de front-portal en azure-apps/. (2) USUARIOS: decidir quien entra (la decision D3 de F-008, que quedo abierta) y darles de alta con 'infra/setup_front_easyauth.ps1 -Miembros persona@ruesma.es'. La Enterprise App tiene asignacion requerida, asi que quien no este en el grupo no obtiene token: no basta con tener cuenta de Ruesma. Sale de F-008 (era su T30) para que aquella pueda cerrarse. DECISIONES DEL HUMANO 2026-08-20: el icono lo elige el lider ('chart', por ser un cuadrante de porcentajes y no una comparativa); y la tarjeta se deja PUESTA CON EL GRUPO CONFIGURADO pero SIN dar de alta usuarios: el humano los mete a mano cuando decida quien entra. Con eso D3 deja de bloquear la feature. NOTA DE METODO: esta feature se trabajo directamente en 'dev', sin rama propia, y el campo branch lo dice. El CLAUDE.md exige rama por feature; la excepcion se toma a conciencia y se deja escrita: F-015 no toca una linea de codigo de este repositorio (su unico cambio real vive en front-portal, otro repo), y se hizo intercalada con el despliegue en vivo de F-008, donde el arbol tenia que estar en dev para arreglar los scripts sobre la marcha. Rehacer la historia ahora seria peor que el problema: los commits estan en origin/dev.
 
 ### F-009 · Higiene: los artefactos de cobertura no se versionan
 

@@ -6,7 +6,14 @@
 
 ## Veredicto
 
-**CHANGES_REQUESTED**
+**APPROVED** (segunda pasada, 2026-08-21 — ver la sección final)
+
+> **Primera pasada: CHANGES_REQUESTED.** Cuatro remates de cierre, ninguno de
+> fondo. El líder los cerró en `8c3ce95` y los he verificado uno a uno: el
+> detalle está en **«Segunda pasada»**, al final de este informe. Todo lo que
+> sigue es la primera pasada, que se conserva íntegra —incluidos los cambios
+> requeridos— porque es el rastro de por qué esta feature se cerró como se
+> cerró.
 
 Conviene decirlo sin ambigüedad, porque el veredicto binario no lo distingue:
 **el trabajo sustantivo de F-015 está hecho y lo he verificado de forma
@@ -400,3 +407,140 @@ del ecosistema (que además sigue sin commitear en `azure-apps`), `current.md`
 congelado en la sesión anterior, la rama declarada que no existe, y T7 sin
 marcar. Ninguno obliga a rehacer nada; con eso resuelto, esta feature se cierra
 sin reservas.
+
+---
+
+# Segunda pasada · 2026-08-21 — **APPROVED**
+
+El líder cerró los cuatro cambios requeridos en `8c3ce95` («F-015: cierra los
+cuatro remates de la review de cierre»). **No me he fiado del resumen: he
+comprobado los cuatro contra el árbol.** Los cuatro están.
+
+## Los cuatro cambios, verificados
+
+### 1 · La cabecera de `azure-apps/dedicacion.md` · **RESUELTO**
+
+Leído el fichero. El recuadro ya no miente:
+
+> **Acceso: en uso desde el 2026-08-21.** Se entra por la tarjeta
+> **«Dedicación»** del Portal Ruesma (categoría *Obra*), y el permiso lo da la
+> pertenencia al grupo `dedicacion-portal-users`, con **asignación requerida**
+> en la Enterprise App: tener cuenta de Ruesma **no** basta. Para dar acceso a
+> alguien nuevo, ver §5.
+
+`grep -n "pendient" dedicacion.md` no devuelve **nada**: la afirmación falsa no
+sobrevive en ningún otro punto del documento. El texto nuevo dice las tres
+cosas que hacían falta —que está en uso, cómo se llega y quién puede entrar— y
+remite a §5 para el alta, sin duplicar el procedimiento ni nombrar a nadie.
+**R5 queda cumplido también en la cabecera**, no solo en el cuerpo.
+
+**El fichero sigue sin trackear en `azure-apps` (`?? dedicacion.md`), y me
+parece bien que se quede así**: es otro repositorio y el commit es del humano,
+como fija `design.md`. Lo que pedía no era el commit, sino que el pendiente
+estuviera anotado en vez de olvidado. Lo está: `progress/current.md` líneas
+45-47 lo pone como primer punto de lo que espera al humano, **con el motivo**
+(«mientras no se commitee, el documento del ecosistema no existe para los
+demás proyectos» y un `git clean` se lo lleva). Eso es exactamente lo que
+convierte un cabo suelto en un pendiente con dueño.
+
+### 2 · `progress/current.md` · **RESUELTO**
+
+Reescrito entero (183 líneas tocadas). Comprobado punto por punto:
+
+| Lo que fallaba | Ahora |
+|---|---|
+| «Ninguna feature en ejecución» | línea 4: **F-015 · `in_progress`, en review de cierre** |
+| «12 features» | línea 9: **«Estado del backlog (13 features)»** |
+| F-015 sin mencionar | 5 apariciones, incluida la tabla de estado (línea 14) |
+| «Falta decidir D3» | `grep "D3"` no devuelve **nada** |
+| Fase 7 como pendiente | dada por ejecutada |
+
+Añade además la tabla única con **todas** las verificaciones MANUAL fechadas.
+Con eso cae también el checkbox pendiente de **C4**: las verificaciones
+`MANUAL (humano)` de F-015 ya están listadas en `current.md`, que era el
+requisito literal del checkpoint.
+
+### 3 · La rama · **RESUELTO**
+
+`features.json` ya dice `"branch": "dev"` (verificado leyendo el JSON, no el
+diff). Se acabó el campo que apuntaba a una rama inexistente.
+
+Y está lo que de verdad pedía, que era el **porqué escrito**:
+`current.md` §«Nota de método: por qué hay commits directos en `dev`»
+(líneas 54-62) explica que F-015 no toca una línea de código de este
+repositorio —su único cambio real vive en `front-portal`— y que se hizo
+intercalada con el despliegue en vivo, con el árbol en `dev` para corregir los
+scripts sobre la marcha. Recoge la deriva de F-008 que señalé y **cierra
+diciendo: «No es la norma y no debe volverse costumbre.»**
+
+Eso es lo que distingue una excepción de una erosión: queda por escrito, con
+su motivo y con su fecha de caducidad moral. La acepto.
+
+### 4 · T7 · **RESUELTO**
+
+`tasks.md:25` → `- [x] T7 · HECHA (2026-08-21)`. Y **cero** casillas sin marcar
+en el fichero (`grep -c "^- \[ \]"` → `0`).
+
+## Comprobaciones propias de esta segunda pasada
+
+No basta con que los cuatro arreglos estén: hay que comprobar que no rompieron
+nada al pasar.
+
+- **`bash harness/init.sh`: ENTORNO LISTO, `exit=0`**, ejecutado por mí.
+  `102 passed`, los tres servicios en verde, `PUERTA COBERTURA: N/A (rama dev)`
+  con su motivo impreso, ningún `.env` versionado.
+- **R4 revalidado**, porque `8c3ce95` tocó `features.json` y `current.md`, que
+  son justo donde podría colarse un identificador al reescribir:
+  `tests/test_f008_infra_sin_secretos.py` → **53 passed**, y el barrido de GUID
+  sobre `progress/current.md`, `harness/features.json` y `specs/` no devuelve
+  **ninguna** coincidencia. **Sigue sin entrar ni un objectId en este
+  repositorio.**
+- **Alcance del commit**: 5 ficheros, todos previstos —`BACKLOG.md` (regenerado
+  por el portero), `harness/features.json`, `progress/current.md`,
+  `specs/F-015-.../tasks.md`— más `progress/review_F-015.md`, que es este
+  informe. **Ni una línea de código.** El nivel `documental` sigue siendo el
+  correcto de principio a fin.
+- **`git status` limpio**, y `front-portal` intacto (`git status --short` vacío
+  allí). Nada del otro reviewer tocado.
+
+## Checkpoints, recorrido final
+
+| | Estado | Nota |
+|---|---|---|
+| **C1** | **[x]** | `init.sh` exit 0, verificado tres veces en total |
+| **C2** | **[x]** | Una sola `in_progress`; rama declarada = rama real, con la excepción escrita; `current.md` describe la sesión activa |
+| **C3** | **N/A justificado** | Cero código en el diff, comprobado sobre `git diff --stat` |
+| **C3 bis** | **N/A justificado** | No toca `docs/referencia/`; barrido de sensibles ejecutado igualmente |
+| **C4** | **[x]** | Tests trazables N/A por nivel `documental` y por ser todo verificación manual; las MANUAL ya listadas en `current.md` |
+| **C4 bis** | **[x]** | `rigor: documental` declarado; RED, cobertura y mutación N/A **por el nivel**, justificado por escrito |
+| **C4 ter** | **N/A justificado** | No existe `harness/rutas_sensibles.json` |
+| **C5** | **[x]** | `tasks.md` sin casillas vacías; árbol limpio; `features.json` refleja el estado real |
+
+**Ningún checkbox vacío en C1–C5. Ningún N/A sin motivo escrito.**
+
+## Veredicto final
+
+**APPROVED.**
+
+Los cinco requisitos se cumplen y los he verificado de forma independiente, no
+por informe: la tarjeta existe y es correcta (FQDN que coincide y **responde**,
+grupo correcto, icono `chart` que sí está en `ICONS`, mismo patrón que
+`partes-trabajo`); el acceso está restringido de verdad (**HTTP 401** al
+anónimo y `appRoleAssignmentRequired = True`); hay **8** personas en el grupo
+(`az ad group member list`); **no hay ni un identificador de Entra en este
+repositorio**, que era el criterio más importante de la feature; y los dos
+documentos —`docs/INTEGRACION.md` y la copia del ecosistema— dicen quién puede
+entrar y cómo se da acceso, sin listar a nadie por su nombre o su correo.
+
+Queda **un pendiente con dueño y sin plazo del arnés**: commitear
+`azure-apps/dedicacion.md`, que es del humano y está anotado con su motivo en
+`current.md`. No bloquea el cierre —R5 se cumple en el contenido, y el commit
+en otro repositorio nunca fue trabajo de esta feature—, pero **conviene que se
+haga pronto**: hasta entonces ese documento no existe para los demás
+proyectos.
+
+Los cuatro marcadores `REEMPLAZAR_OBJECT_ID_*` del catálogo del portal siguen
+sin ser trabajo de este proyecto y confirmado que no afectan a nuestra tarjeta.
+
+Las dos propuestas de automejora del protocolo siguen en pie, a decisión del
+humano y sin aplicar.
