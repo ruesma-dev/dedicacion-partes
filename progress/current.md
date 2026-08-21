@@ -2,16 +2,16 @@
 # Trabajo en curso
 
 **Ninguna feature en ejecución ni bloqueada.** Rama `dev`, portero en verde,
-árbol limpio y **todo pusheado** a `origin/dev`. El arnés es la **1.7.2** con
-un correctivo propio (ver abajo).
+árbol limpio y **todo pusheado** a `origin/dev`. El arnés es la **1.7.3**.
 
 > **Sesión cerrada el 2026-08-21.** Quien retome: ejecuta `bash
 > harness/init.sh`, lee esto y coge la primera `pending` por prioridad (F-005).
 > No hay trabajo a medias.
 
-## Arnés actualizado a 1.7.2 (2026-08-21)
+## Arnés actualizado a 1.7.3 (2026-08-22)
 
-De **1.5.2** a **1.7.2**, en la rama `chore/arnes-1.7.2`. El instalador aplicó
+De **1.5.2** a **1.7.2** y, con el correctivo de abajo, a la **1.7.3** que
+nació aquí. Todo en la rama `chore/arnes-1.7.2`. El instalador aplicó
 lo genérico (agentes, `harness/*.py`, `rigor.json`, `SPECS.md`, 15 tests
 nuevos) y conservó los seis ficheros adaptados; `CHECKPOINTS.md` y
 `harness/init.sh` se fusionaron a mano para quedarse con las mejoras genéricas
@@ -51,7 +51,8 @@ Lo que cambia para trabajar aquí:
   en la rama base), así que su review de 546 líneas dejaba `dev` en **rojo
   permanente**. La sección 7 quater descarta ahora el papeleo cerrado, con test
   en `tests/test_tamano.py`. **Portado a `arnes-base` como 1.7.3** por la regla
-  de propagación.
+  de propagación, y reinstalado desde ahí: este repo lleva ya la 1.7.3. El
+  commit de `arnes-base` está **en local, sin push**.
 - `ruff` pasa de 179 a 185 avisos: los seis nuevos son del código del arnés que
   acaba de entrar. Deuda previa, no bloquea.
 
