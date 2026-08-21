@@ -8,6 +8,46 @@
 > harness/init.sh`, lee esto y coge la primera `pending` por prioridad (F-005).
 > No hay trabajo a medias.
 
+## Arnés actualizado a 1.7.2 (2026-08-21)
+
+De **1.5.2** a **1.7.2**, en la rama `chore/arnes-1.7.2`. El instalador aplicó
+lo genérico (agentes, `harness/*.py`, `rigor.json`, `SPECS.md`, 15 tests
+nuevos) y conservó los seis ficheros adaptados; `CHECKPOINTS.md` y
+`harness/init.sh` se fusionaron a mano para quedarse con las mejoras genéricas
+sin perder lo del monorepo. Portero en verde: **354 tests, 1 skipped**.
+
+Lo que cambia para trabajar aquí:
+
+- **Puerta nueva de tamaño del papeleo** (`init.sh` sección 7 quater, topes en
+  el bloque `tamano` de `harness/rigor.json`): requirements 150, design 250,
+  `impl_F-XXX.md` 220, `review_F-XXX.md` 140 líneas. Mide **solo la feature en
+  curso**: lo viejo queda amnistiado, lo que se retome y edite pasará a
+  medirse. Pasarse pone el portero en **rojo**.
+- **`nivel_por_defecto` pasa de `critico` a `estandar`.** No afecta hoy: las 14
+  features declaran su `rigor` explícitamente. A partir de ahora, `critico` se
+  declara, no se hereda.
+- **Campañas `estandar` muestreadas a 20 mutantes** con semilla fija; sus
+  números **no** son comparables con los de campañas anteriores. Campaña
+  entera: `--max-mutantes 0`.
+- **El reviewer reejecuta la campaña por debajo de 60 segundos** (antes 5
+  minutos) y revisa **incremental** desde el último SHA aprobado, declarándolo
+  en la primera línea de su informe. Reglas **RM1–RM6** en `CHECKPOINTS.md` C4
+  bis y en `.claude/agents/reviewer.md`.
+- **Timeout y workers de mutación se calculan solos**: el timeout se deriva de
+  la línea base medida (`timeout_por_mutante_s` es ahora un **suelo**) y los
+  workers por defecto bajan a `min(max(1,(núcleos-2)//2),4)`.
+- **Códigos de salida nuevos de `harness.mutacion`**: `2` alcance vacío, `3`
+  cero mutantes generados (sin informe). Un guion que encadene campañas debe
+  tratarlos como fallo.
+- **Uno de los dos defectos del arnés que anotamos ya tiene ficha**: pytest
+  código 5 («ningún test recogido») contado como verde es el defecto CONOCIDO
+  que la 1.7.2 declara **sin arreglar** (F-041 en `albaranes`, rigor
+  `critico`). Mientras viva, una campaña de una sola pasada no vale como
+  evidencia: contrástala con otra (`--workers 1`). El segundo —la caché de
+  suites cruza ramas— sigue sin ficha.
+- `ruff` pasa de 179 a 185 avisos: los seis nuevos son del código del arnés que
+  acaba de entrar. Deuda previa, no bloquea.
+
 El sistema está **desplegado y en uso**: se entra por la tarjeta «Dedicación»
 del Portal Ruesma y hay 8 personas con acceso.
 
@@ -78,8 +118,9 @@ hacen en `arnes-base`. Su razonamiento sigue en `progress/history.md`.
   no son caídas.
 - `ruff` **no está instalado** en el venv de `dedicacion-api`.
 - **Dos defectos del arnés**, anotados para `arnes-base`: `init.sh` confunde
-  «no hay tests» (pytest código 5) con «los tests fallan», y **la caché de
-  suites cruza ramas**.
+  «no hay tests» (pytest código 5) con «los tests fallan» —desde la 1.7.2 es
+  defecto CONOCIDO con ficha (F-041 en `albaranes`), aún sin arreglar—, y **la
+  caché de suites cruza ramas**, que sigue sin ficha.
 - **Los scripts de `infra/` solo se prueban ejecutándolos contra Azure**: cinco
   bugs salieron así, ninguno lo habría cazado un test offline.
 - **Un fichero de rastro puede contener información única.** Resolver su
