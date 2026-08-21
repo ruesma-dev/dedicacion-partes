@@ -1,7 +1,12 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución ni bloqueada.** Rama `dev`, portero en verde.
+**Ninguna feature en ejecución ni bloqueada.** Rama `dev`, portero en verde,
+árbol limpio y **todo pusheado** a `origin/dev`.
+
+> **Sesión cerrada el 2026-08-21.** Quien retome: ejecuta `bash
+> harness/init.sh`, lee esto y coge la primera `pending` por prioridad (F-005).
+> No hay trabajo a medias.
 
 El sistema está **desplegado y en uso**: se entra por la tarjeta «Dedicación»
 del Portal Ruesma y hay 8 personas con acceso.
