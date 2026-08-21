@@ -2,7 +2,8 @@
 # Trabajo en curso
 
 **Ninguna feature en ejecución ni bloqueada.** Rama `dev`, portero en verde,
-árbol limpio y **todo pusheado** a `origin/dev`.
+árbol limpio y **todo pusheado** a `origin/dev`. El arnés es la **1.7.2** con
+un correctivo propio (ver abajo).
 
 > **Sesión cerrada el 2026-08-21.** Quien retome: ejecuta `bash
 > harness/init.sh`, lee esto y coge la primera `pending` por prioridad (F-005).
@@ -45,6 +46,12 @@ Lo que cambia para trabajar aquí:
   `critico`). Mientras viva, una campaña de una sola pasada no vale como
   evidencia: contrástala con otra (`--workers 1`). El segundo —la caché de
   suites cruza ramas— sigue sin ficha.
+- **Defecto de la 1.7.2 encontrado y corregido aquí**: la puerta de tamaño
+  medía también las features `done`, y F-015 declara `branch: "dev"` (se hizo
+  en la rama base), así que su review de 546 líneas dejaba `dev` en **rojo
+  permanente**. La sección 7 quater descarta ahora el papeleo cerrado, con test
+  en `tests/test_tamano.py`. **Portado a `arnes-base` como 1.7.3** por la regla
+  de propagación.
 - `ruff` pasa de 179 a 185 avisos: los seis nuevos son del código del arnés que
   acaba de entrar. Deuda previa, no bloquea.
 
