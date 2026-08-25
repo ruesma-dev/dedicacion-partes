@@ -52,7 +52,8 @@ Lo que cambia para trabajar aquí:
   permanente**. La sección 7 quater descarta ahora el papeleo cerrado, con test
   en `tests/test_tamano.py`. **Portado a `arnes-base` como 1.7.3** por la regla
   de propagación, y reinstalado desde ahí: este repo lleva ya la 1.7.3. El
-  commit de `arnes-base` está **en local, sin push**.
+  commit de `arnes-base` (`a695c32`) está **pusheado** a
+  `ruesma-dev/harness-ruesma`.
 - `ruff` pasa de 179 a 185 avisos: los seis nuevos son del código del arnés que
   acaba de entrar. Deuda previa, no bloquea.
 
