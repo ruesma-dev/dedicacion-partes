@@ -3,12 +3,14 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **14 features**, 6 abiertas, 8 terminadas.
+Resumen: **16 features**, 8 abiertas, 8 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
+| F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
+| F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-011 | Un solo codigo de hora mes por trabajador | 7 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
@@ -30,6 +32,18 @@ Resumen: **14 features**, 6 abiertas, 8 terminadas.
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
+
+### F-017 · Probar con Administracion sobre la obra de pruebas 0404
+
+estado **pendiente** · prioridad 1 · rigor `documental` · SDD no · rama `feature/F-017-prueba-administracion`
+
+Pedida por el humano el 2026-08-25. El sistema esta desplegado, en uso por 8 personas y escribiendo de verdad en Sigrid, pero TODO se desvia a la obra de pruebas 0404 marcada PRUEBA-PORC. Falta la validacion que nadie ha hecho todavia: que Administracion mire lo que el sistema escribe y diga si es correcto. No toca codigo; si sale un defecto se abre su propia feature en vez de parchearlo aqui. Es la puerta de entrada de F-018 (pasar a real): sin la firma de Administracion, F-018 no arranca.
+
+### F-018 · Pasar a escritura real cuando Administracion apruebe
+
+estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-018-paso-a-escritura-real`
+
+Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga.
 
 ### F-005 · Alinear los literales internos con el nombre «dedicación»
 

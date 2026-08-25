@@ -1,6 +1,6 @@
 {
   "$schema_doc": "Estados: pending -> spec_ready (aprueba humano) -> in_progress -> done. 'blocked' = parada con motivo en progress/current.md. Máximo UNA in_progress (lo valida init.sh). sdd=false salta la spec: 'acceptance' hace de mini-spec y el reviewer valida contra ella.",
-  "$rigor_doc": "El campo 'rigor' de cada feature declara cuanta evidencia se le exige: documental, estandar o critico (ver CHECKPOINTS.md y harness/rigor.json). Si una feature NO lo declara se le aplica el mas exigente: omitirlo no relaja nada.",
+  "$rigor_doc": "El campo 'rigor' de cada feature declara cuanta evidencia se le exige: documental, estandar o critico (ver CHECKPOINTS.md y harness/rigor.json). Si una feature NO lo declara se le aplica el 'nivel_por_defecto' de harness/rigor.json, hoy 'estandar': sigue exigiendo fase RED, cobertura y campana de mutacion, pero no cero supervivientes. Lo critico se declara, no se hereda por descuido (arnes 1.7.0).",
   "$nota": "Backlog propuesto el 2026-08-19 al instalar el arnés, leyendo el código migrado. Validado por el humano en esa misma sesión salvo el orden fino. La F-004 de la propuesta inicial (paginación contra sigrid-api) se retiró: el tope real de la instancia dev son 500.000 filas, no 1.000, y el cliente ya falla en claro si la respuesta viene truncada.",
   "rules": {
     "one_feature_at_a_time": true,
@@ -242,6 +242,44 @@
       "rigor": "estandar",
       "priority": 9,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
+    },
+    {
+      "id": "F-017",
+      "title": "Probar con Administracion sobre la obra de pruebas 0404",
+      "description": "Pedida por el humano el 2026-08-25. El sistema esta desplegado, en uso por 8 personas y escribiendo de verdad en Sigrid, pero TODO se desvia a la obra de pruebas 0404 marcada PRUEBA-PORC. Falta la validacion que nadie ha hecho todavia: que Administracion mire lo que el sistema escribe y diga si es correcto. No toca codigo; si sale un defecto se abre su propia feature en vez de parchearlo aqui. Es la puerta de entrada de F-018 (pasar a real): sin la firma de Administracion, F-018 no arranca.",
+      "acceptance": [
+        "Antes de empezar se comprueba EN CALIENTE que el transfer sigue en modo pruebas: az containerapp show del ca-dedicacion-transfer devuelve OBRA_PRUEBAS_FORZAR=true, OBRA_PRUEBAS_COD=0404 y MARCA_PRUEBAS=PRUEBA-PORC",
+        "La prueba cubre un caso de cada regla: linea normal, postventa (P4), conflicto o pisado (P5), linea sin partida casada (F-013) y sobrecarga del 100 % (Regla B), que es la unica que nunca se ha ejercitado contra datos reales",
+        "Volcado de lo escrito en Sigrid -filas con su synckey y la marca PRUEBA-PORC- guardado en progress/ como evidencia, no como afirmacion",
+        "Administracion firma por escrito que acepta o que rechaza, con quien, cuando y con que respaldo; queda en docs/referencia/ o en progress/, no solo en el chat",
+        "Las filas de prueba se limpian despues y se comprueba que no queda ninguna en el ERP",
+        "Los defectos que aparezcan se anotan como features nuevas en harness/features.json, con su procedencia",
+        "bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "documental",
+      "priority": 1,
+      "branch": "feature/F-017-prueba-administracion"
+    },
+    {
+      "id": "F-018",
+      "title": "Pasar a escritura real cuando Administracion apruebe",
+      "description": "Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga.",
+      "acceptance": [
+        "NO arranca hasta que F-017 este done con la firma de Administracion, y exige ademas autorizacion expresa del humano para esa accion concreta: que la feature exista no la autoriza",
+        "Queda resuelto y escrito el bloqueador de docs/ARCHITECTURE.md: la imputacion a partidas en produccion, validada, con su evidencia",
+        "Plan de reversion escrito ANTES de ejecutar nada: como se anula o se borra lo escrito si sale mal, y quien lo hace",
+        "El cambio de modo se hace por el camino previsto (redeploy con -ModoProduccion -Confirmar), no editando la variable a mano, y se comprueba EN CALIENTE que OBRA_PRUEBAS_FORZAR quedo en false",
+        "Primer registro real ACOTADO -una obra, un trabajador, un periodo- con volcado de lo escrito y comprobacion contra lo esperado antes de abrirlo a todos",
+        "Se actualiza todo lo que deja de ser cierto: la regla dura de CLAUDE.md, docs/ARCHITECTURE.md, docs/INTEGRACION.md seccion 8 y el documento del proyecto en azure-apps/, porque cambia lo que este sistema hace contra un sistema compartido",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 2,
+      "branch": "feature/F-018-paso-a-escritura-real"
     }
   ]
 }

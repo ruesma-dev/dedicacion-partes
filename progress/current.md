@@ -60,12 +60,19 @@ Lo que cambia para trabajar aquí:
 El sistema está **desplegado y en uso**: se entra por la tarjeta «Dedicación»
 del Portal Ruesma y hay 8 personas con acceso.
 
-## Estado del backlog (14 features)
+## Estado del backlog (16 features)
 
 | Estado | Features |
 |---|---|
 | `done` | F-001, F-002, F-003, F-004, **F-008**, F-009, F-013, F-015 |
-| `pending` | F-005, F-006, F-011, F-012, F-014, F-016 |
+| `pending` | **F-017**, **F-018**, F-005, F-006, F-011, F-012, F-014, F-016 |
+
+**F-017 y F-018, añadidas el 2026-08-25 por el humano**, marcan el camino que
+falta: que Administración valide contra la obra `0404` lo que el sistema
+escribe (F-017) y, solo con esa firma y con autorización expresa para esa
+acción concreta, salir del modo pruebas (F-018). Comprobado en caliente ese
+día: el transfer desplegado sigue con `OBRA_PRUEBAS_FORZAR=true`,
+`OBRA_PRUEBAS_COD=0404` y `MARCA_PRUEBAS=PRUEBA-PORC`.
 
 Retiradas el 2026-08-20 por decisión del humano: **F-007** y **F-010**, que se
 hacen en `arnes-base`. Su razonamiento sigue en `progress/history.md`.
@@ -74,6 +81,8 @@ hacen en `arnes-base`. Su razonamiento sigue en `progress/history.md`.
 
 | # | Feature | Qué es |
 |---|---|---|
+| 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
+| 2 | **F-018** | pasar a escritura real, solo si F-017 se firma |
 | 5 | **F-005** | alinear los literales internos con el nombre «dedicación» |
 | 6 | **F-006** | sanear la suite del transfer (un test que devuelve en vez de asertar) |
 | 7 | **F-011** | que un trabajador no pueda tener dos códigos `M*` |
