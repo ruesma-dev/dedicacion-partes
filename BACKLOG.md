@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **16 features**, 8 abiertas, 8 terminadas.
+Resumen: **19 features**, 11 abiertas, 8 terminadas.
 
 ## Trabajo abierto
 
@@ -11,11 +11,14 @@ Resumen: **16 features**, 8 abiertas, 8 terminadas.
 |---|---|---|---|---|---|
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
+| F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
+| F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 4 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
 | F-011 | Un solo codigo de hora mes por trabajador | 7 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
 | F-012 | El test de la epsilon compartida ata el transfer al monorepo | 8 | pendiente | estandar | `feature/F-012-epsilon-compartida-entre-servicios` |
 | F-016 | Una function key de solo lectura para dedicacion-api | 9 | pendiente | estandar | `feature/F-016-sigrid-key-solo-lectura` |
+| F-021 | El filtro por obra muestra solo el chip de la obra filtrada | 10 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-014 | Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14 | 20 | pendiente | documental | `feature/F-014-cabos-sigrid-administracion` |
 
 ## Terminadas
@@ -44,6 +47,18 @@ Pedida por el humano el 2026-08-25. El sistema esta desplegado, en uso por 8 per
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-018-paso-a-escritura-real`
 
 Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga.
+
+### F-019 · Excel de importacion en formato Carmen
+
+estado **pendiente** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-019-excel-formato-carmen`
+
+Pedida por el humano el 2026-09-03. Hoy la API exporta un unico Excel (services/dedicacion-api/infrastructure/excel/exporter.py: hojas Detalle y Resumen, declaradas compatibles con la plantilla v14), pensado para leerlo, no para que otro sistema lo importe. Hace falta poder generar ADEMAS un segundo Excel con otro formato, el que usa Carmen para la importacion adicion. PENDIENTE DE DATOS (la feature no arranca sin esto): el humano tiene que pasar el fichero de ejemplo del formato Carmen -se convierte con markitdown y se guarda en docs/referencia/, el original no se versiona- y explicar que es la importacion adicion y en que sistema entra ese Excel. Sin las dos cosas no hay criterio de aceptacion verificable y lo que se escriba sera una adivinanza.
+
+### F-020 · Revisar y mejorar el formato del Excel de exportacion actual
+
+estado **pendiente** · prioridad 4 · rigor `estandar` · SDD no · rama `feature/F-020-mejorar-excel-exportacion`
+
+Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee.
 
 ### F-005 · Alinear los literales internos con el nombre «dedicación»
 
@@ -74,6 +89,12 @@ Detectado por la review de la Fase 2 de F-002 (observacion 9.4). El test test_f0
 estado **pendiente** · prioridad 9 · rigor `estandar` · SDD no · rama `feature/F-016-sigrid-key-solo-lectura`
 
 Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T30, T30 se movio a F-015 y F-015 solo se llevo la mitad del Portal. La review de cierre de F-008 la busco en las trece entradas del backlog y no aparecia en ninguna. El problema: la api y el transfer comparten HOY la misma function key de sigrid-api, y lo unico que impide que la api escriba en el ERP es que su codigo no tiene rutas de escritura, NO la credencial. Es decir, la separacion es por disciplina, no por permisos: cualquiera que anada por error una llamada de escritura a la api tendria credencial para ejecutarla. Hay que preguntar al dueno de sigrid-api si puede emitir una clave de SOLO LECTURA y, si puede, desplegarla en la api. Si no puede, hay que dejar escrito que la separacion depende del codigo y que eso es un riesgo aceptado a conciencia.
+
+### F-021 · El filtro por obra muestra solo el chip de la obra filtrada
+
+estado **pendiente** · prioridad 10 · rigor `estandar` · SDD no · rama `feature/F-021-filtro-obra-chip-unico`
+
+Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asignaciones pinta un chip por cada obra del trabajador (dedicacion-front/static/js/app.js, construirCelda ~530-545). El filtro 'Filtrar obra...' de esa columna (trabajadoresVisibles ~439) decide que FILAS se ven, pero cada fila sigue pintando TODOS sus chips: filtras por una obra y ves al trabajador con las otras cuatro al lado. Se pide que, con el filtro activo, cada fila muestre solo el chip que coincide. A DECIDIR EN LA SPEC: la columna total y el estado (OK/FALTA/EXCESO) seguirian refiriendose al 100 % de TODAS las obras, asi que la fila se contradice a simple vista; hay que decidir si se recalcula sobre lo filtrado -y entonces el estado deja de significar lo que significa- o si se avisa de que hay chips ocultos. Es presentacion pura: no toca dedicacion-api ni el transfer y no cambia nada de lo que se registra en Sigrid.
 
 ### F-014 · Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14
 

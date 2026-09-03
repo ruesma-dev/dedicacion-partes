@@ -280,6 +280,59 @@
       "rigor": "critico",
       "priority": 2,
       "branch": "feature/F-018-paso-a-escritura-real"
+    },
+    {
+      "id": "F-019",
+      "title": "Excel de importacion en formato Carmen",
+      "description": "Pedida por el humano el 2026-09-03. Hoy la API exporta un unico Excel (services/dedicacion-api/infrastructure/excel/exporter.py: hojas Detalle y Resumen, declaradas compatibles con la plantilla v14), pensado para leerlo, no para que otro sistema lo importe. Hace falta poder generar ADEMAS un segundo Excel con otro formato, el que usa Carmen para la importacion adicion. PENDIENTE DE DATOS (la feature no arranca sin esto): el humano tiene que pasar el fichero de ejemplo del formato Carmen -se convierte con markitdown y se guarda en docs/referencia/, el original no se versiona- y explicar que es la importacion adicion y en que sistema entra ese Excel. Sin las dos cosas no hay criterio de aceptacion verificable y lo que se escriba sera una adivinanza.",
+      "acceptance": [
+        "NO arranca hasta que el formato Carmen este convertido en docs/referencia/ y este escrito que es la importacion adicion y a que sistema entra",
+        "El Excel nuevo se genera desde dedicacion-api, sin duplicar el exportador actual: lo comun se comparte y lo unico que cambia es el formato de salida",
+        "El exportador de hoy sigue produciendo EXACTAMENTE el mismo fichero: ningun consumidor de la plantilla v14 se rompe, y hay test que lo fija",
+        "Tests que comprueban el contenido del libro generado -celdas, cabeceras y tipos-, no el tamano en bytes",
+        "El front ofrece las dos descargas de forma que no se puedan confundir",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 3,
+      "branch": "feature/F-019-excel-formato-carmen"
+    },
+    {
+      "id": "F-020",
+      "title": "Revisar y mejorar el formato del Excel de exportacion actual",
+      "description": "Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee.",
+      "acceptance": [
+        "Lista escrita de que se cambia y que se deja, revisada con el humano ANTES de tocar el codigo",
+        "Ningun cambio que mueva o renombre columnas de la hoja Detalle sin decision expresa del humano en esa lista",
+        "Se ensena el resultado real -un fichero generado y abierto-, no solo tests en verde",
+        "Tests que fijan el formato que se decida, para que no se pierda en el siguiente cambio",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 4,
+      "branch": "feature/F-020-mejorar-excel-exportacion"
+    },
+    {
+      "id": "F-021",
+      "title": "El filtro por obra muestra solo el chip de la obra filtrada",
+      "description": "Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asignaciones pinta un chip por cada obra del trabajador (dedicacion-front/static/js/app.js, construirCelda ~530-545). El filtro 'Filtrar obra...' de esa columna (trabajadoresVisibles ~439) decide que FILAS se ven, pero cada fila sigue pintando TODOS sus chips: filtras por una obra y ves al trabajador con las otras cuatro al lado. Se pide que, con el filtro activo, cada fila muestre solo el chip que coincide. A DECIDIR EN LA SPEC: la columna total y el estado (OK/FALTA/EXCESO) seguirian refiriendose al 100 % de TODAS las obras, asi que la fila se contradice a simple vista; hay que decidir si se recalcula sobre lo filtrado -y entonces el estado deja de significar lo que significa- o si se avisa de que hay chips ocultos. Es presentacion pura: no toca dedicacion-api ni el transfer y no cambia nada de lo que se registra en Sigrid.",
+      "acceptance": [
+        "Con el filtro de obra activo, cada fila visible muestra solo los chips que casan con el filtro",
+        "Sin filtro, la tabla se ve exactamente como hoy",
+        "Decidido, escrito y aplicado que pasa con la columna total y con el estado cuando hay chips ocultos",
+        "El editor sigue abriendo el reparto COMPLETO del trabajador: ocultar chips no puede esconder carga a quien edita",
+        "No se toca dedicacion-api ni dedicacion-transfer: es front puro, sin logica de negocio nueva",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 10,
+      "branch": "feature/F-021-filtro-obra-chip-unico"
     }
   ]
 }
