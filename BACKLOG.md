@@ -100,7 +100,7 @@ Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a prop
 
 estado **pendiente** · prioridad 4 · rigor `estandar` · SDD sí · rama `feature/F-024-selector-empresa`
 
-Salida de la revisión de negocio del 2026-09-29. Botón/selector de empresa en la esquina superior derecha del cuadrante. Por defecto, Construcciones Ruesma (empresa 1). Filtra obras y recursos que se ven y en qué empresa se imputa: decisión del humano 2026-09-29, se imputa a la empresa filtrada. Depende de F-023 (empresa en los maestros) y alimenta F-022 (la empresa viaja en la línea). El filtrado lo sirve la API; el front no decide nada.
+Salida de la revisión de negocio del 2026-09-29. Botón/selector de empresa en la esquina superior derecha del cuadrante. Por defecto, Construcciones Ruesma (empresa 1). Filtra obras y recursos que se ven y en qué empresa se imputa: decisión del humano 2026-09-29, se imputa a la empresa filtrada. Depende de F-023 (empresa en los maestros) y alimenta F-022 (la empresa viaja en la línea). El filtrado lo sirve la API; el front no decide nada. RECOGIDO de la review 1 de F-022 (2026-09-30): cuando el transfer corta al principio por empresa (R3 sin empresa, R11 obra de otra empresa), obra_destino publica la obra de ENTRADA con empresa null; en R11 se leería mejor con el origen resuelto (p. ej. empresa 28). Se decide y se hace aquí, cuando la empresa la elige el usuario.
 
 ### F-027 · Deshacer solo lo propio: nadie deshace lo de otro usuario
 

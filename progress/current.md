@@ -1,12 +1,31 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-022 en ejecución** (implementer lanzado, rigor crítico). El arnés es la
-**1.7.3**.
+**F-022 en review, pasada 2** (rigor crítico). Pasada 1:
+CHANGES_REQUESTED **solo por el rastro de este fichero**; código, tests,
+mutación (28/28) y documentación, aprobados (`progress/review_F-022.md`). El
+arnés es la **1.7.3**; lo de su actualización está en `history.md`.
 
-## F-022 · implementer en marcha
+## F-022 · El transfer busca cada obra por código y empresa
 
-- Rama `feature/F-022-transfer-obra-por-empresa`. Implementer TERMINADO (informe `progress/impl_F-022.md`); pendiente: T10 MANUAL del humano (abajo), review.
+- Rama `feature/F-022-transfer-obra-por-empresa`. Spec aprobada por el humano
+  el 2026-09-29 (D1-D4; la D5 pasa a F-026). Implementer terminado
+  (`progress/impl_F-022.md`); T1-T9 y T11 hechas, **T10 es MANUAL del humano**
+  y está pendiente (abajo).
+- **Para pasar a `done` faltan**: la review aprobada, T10 ejecutada con su
+  resultado real anotado aquí y el commit del humano en `azure-apps`.
+- Observaciones de la review 1, **recogidas**:
+  - En los cortes R3/R11 `obra_destino` publica la obra de entrada con
+    `empresa: null`. Queda como criterio en **F-024** (`features.json`).
+  - Esta rama toca en `features.json` las entradas de F-018, F-023 y F-026.
+    **Al mergear F-023 después**, resolver el conflicto de `features.json`
+    fusionando las entradas, sin reescribir el fichero (ver «Hechos»).
+  - Automejora del arnés (C5 contra MANUAL, purgar la caché antes de la
+    mutación): **propuesta al humano**, pendiente de decisión. Si se aprueba,
+    va también a `arnes-base` por la regla de propagación.
+
+Detalle del implementer (desviaciones, todas aceptadas por la review 1):
+
 - Desviación menor (orden, no alcance): `empresa=1` en las LÍNEAS de los
   dobles (`conftest.linea()`, `test_pipeline_offline.lineas_entrada()`) entra
   en el commit de T3 y no en el de T4. Con las reglas nuevas, una línea sin
@@ -57,25 +76,25 @@ Comprobar, en la obra con postventa: `obra_postventa.empresa == 1`,
 `obra_destino.codigo == "0404"` y `obra_destino.empresa == 1`. **NO** se lanza
 `registro/ejecutar`. Resultado real: _pendiente, a anotar aquí_.
 
-> **2026-09-29: el humano aprueba las specs de F-022 y F-023.** F-022 pasa
-> a **`in_progress`** en `feature/F-022-transfer-obra-por-empresa`. F-023 sigue en `spec_ready` en su rama, ya
-> aprobada, esperando turno porque solo puede haber una feature en curso.
-> Las decisiones quedan escritas en la descripción de cada feature; la D5 de
-> F-022 pasa a F-026. Antes de verificar F-023 faltan dos cosas: el
-> resultado de la consulta Q1 (design §4), que dice qué estado de recurso
-> cuenta como inactivo, y la lista de recursos inactivos que señaló negocio.
-> T10 de F-022 es una verificación MANUAL del humano: un preflight real de
-> solo lectura, cuyo resultado se anota aquí.
+## F-023 · spec aprobada, esperando turno
+
+Rama `feature/F-023-sync-empresa-y-estado-recurso`, en `spec_ready`, aprobada
+por el humano el 2026-09-29 (decisiones en `features.json`). Espera porque
+solo puede haber una feature en curso. **No se despliega sin F-024**
+(D4: sin selector, una persona con fichas en dos empresas sale dos veces).
+Antes de verificarla faltan dos datos del humano: el resultado de la consulta
+Q1 (design §4, solo lectura), que dice qué estado de recurso es «inactivo», y
+la lista de recursos inactivos que señaló negocio.
 
 ## Revisión de negocio del 2026-09-29: F-022 a F-031 entran al backlog
 
 Negocio revisó la app en uso y salieron fallos y peticiones. Se dan de alta
-en la rama `chore/backlog-f022-f031` (commit local, sin merge ni push):
+en la rama `chore/backlog-f022-f031`, ya mergeada en `dev` (`01671a9`, sin push):
 
 - **Fallos de maestros**, diagnosticados con evidencia en
   `progress/explore_maestros_sync.md` y `progress/explore_eusebio.md`:
   - F-022: el transfer busca la obra sin empresa. POSTV2 existe en las
-    empresas 1 y 28. **Bloquea F-018.**
+    empresas 1 y 28. **Bloquea F-018** (en curso, ver arriba).
   - F-023: el sync no lee la empresa y no usa el estado del recurso.
   - F-025: las obras de postventa están CERRADAS y el filtro de estado las
     quita.
@@ -100,99 +119,34 @@ en la rama `chore/backlog-f022-f031` (commit local, sin merge ni push):
 - **Por lanzar contra Sigrid (solo SELECT):** las tres consultas de
   `progress/explore_eusebio.md`, que confirman la causa de F-026.
 
-## Arnés actualizado a 1.7.3 (2026-08-22)
-
-De **1.5.2** a **1.7.2** y, con el correctivo de abajo, a la **1.7.3** que
-nació aquí. Todo en la rama `chore/arnes-1.7.2`. El instalador aplicó
-lo genérico (agentes, `harness/*.py`, `rigor.json`, `SPECS.md`, 15 tests
-nuevos) y conservó los seis ficheros adaptados; `CHECKPOINTS.md` y
-`harness/init.sh` se fusionaron a mano para quedarse con las mejoras genéricas
-sin perder lo del monorepo. Portero en verde: **354 tests, 1 skipped**.
-
-Lo que cambia para trabajar aquí:
-
-- **Puerta nueva de tamaño del papeleo** (`init.sh` sección 7 quater, topes en
-  el bloque `tamano` de `harness/rigor.json`): requirements 150, design 250,
-  `impl_F-XXX.md` 220, `review_F-XXX.md` 140 líneas. Mide **solo la feature en
-  curso**: lo viejo queda amnistiado, lo que se retome y edite pasará a
-  medirse. Pasarse pone el portero en **rojo**.
-- **`nivel_por_defecto` pasa de `critico` a `estandar`.** No afecta hoy: las 14
-  features declaran su `rigor` explícitamente. A partir de ahora, `critico` se
-  declara, no se hereda.
-- **Campañas `estandar` muestreadas a 20 mutantes** con semilla fija; sus
-  números **no** son comparables con los de campañas anteriores. Campaña
-  entera: `--max-mutantes 0`.
-- **El reviewer reejecuta la campaña por debajo de 60 segundos** (antes 5
-  minutos) y revisa **incremental** desde el último SHA aprobado, declarándolo
-  en la primera línea de su informe. Reglas **RM1–RM6** en `CHECKPOINTS.md` C4
-  bis y en `.claude/agents/reviewer.md`.
-- **Timeout y workers de mutación se calculan solos**: el timeout se deriva de
-  la línea base medida (`timeout_por_mutante_s` es ahora un **suelo**) y los
-  workers por defecto bajan a `min(max(1,(núcleos-2)//2),4)`.
-- **Códigos de salida nuevos de `harness.mutacion`**: `2` alcance vacío, `3`
-  cero mutantes generados (sin informe). Un guion que encadene campañas debe
-  tratarlos como fallo.
-- **Uno de los dos defectos del arnés que anotamos ya tiene ficha**: pytest
-  código 5 («ningún test recogido») contado como verde es el defecto CONOCIDO
-  que la 1.7.2 declara **sin arreglar** (F-041 en `albaranes`, rigor
-  `critico`). Mientras viva, una campaña de una sola pasada no vale como
-  evidencia: contrástala con otra (`--workers 1`). El segundo —la caché de
-  suites cruza ramas— sigue sin ficha.
-- **Defecto de la 1.7.2 encontrado y corregido aquí**: la puerta de tamaño
-  medía también las features `done`, y F-015 declara `branch: "dev"` (se hizo
-  en la rama base), así que su review de 546 líneas dejaba `dev` en **rojo
-  permanente**. La sección 7 quater descarta ahora el papeleo cerrado, con test
-  en `tests/test_tamano.py`. **Portado a `arnes-base` como 1.7.3** por la regla
-  de propagación, y reinstalado desde ahí: este repo lleva ya la 1.7.3. El
-  commit de `arnes-base` (`a695c32`) está **pusheado** a
-  `ruesma-dev/harness-ruesma`.
-- `ruff` pasa de 179 a 185 avisos: los seis nuevos son del código del arnés que
-  acaba de entrar. Deuda previa, no bloquea.
-
-El sistema está **desplegado y en uso**: se entra por la tarjeta «Dedicación»
-del Portal Ruesma y hay 8 personas con acceso.
-
-## Estado del backlog (16 features)
-
-| Estado | Features |
-|---|---|
-| `done` | F-001, F-002, F-003, F-004, **F-008**, F-009, F-013, F-015 |
-| `pending` | **F-017**, **F-018**, F-005, F-006, F-011, F-012, F-014, F-016 |
-
-**F-017 y F-018, añadidas el 2026-08-25 por el humano**, marcan el camino que
-falta: que Administración valide contra la obra `0404` lo que el sistema
-escribe (F-017) y, solo con esa firma y con autorización expresa para esa
-acción concreta, salir del modo pruebas (F-018). Comprobado en caliente ese
-día: el transfer desplegado sigue con `OBRA_PRUEBAS_FORZAR=true`,
-`OBRA_PRUEBAS_COD=0404` y `MARCA_PRUEBAS=PRUEBA-PORC`.
-
-Retiradas el 2026-08-20 por decisión del humano: **F-007** y **F-010**, que se
-hacen en `arnes-base`. Su razonamiento sigue en `progress/history.md`.
-
 ## Lo siguiente, por prioridad
+
+El backlog completo está en `BACKLOG.md` (29 features). Por orden:
 
 | # | Feature | Qué es |
 |---|---|---|
+| — | **F-022** | en review (arriba) |
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
-| 2 | **F-018** | pasar a escritura real, solo si F-017 se firma |
-| 5 | **F-005** | alinear los literales internos con el nombre «dedicación» |
-| 6 | **F-006** | sanear la suite del transfer (un test que devuelve en vez de asertar) |
-| 7 | **F-011** | que un trabajador no pueda tener dos códigos `M*` |
-| 8 | **F-012** | el test de la épsilon compartida ata el transfer al monorepo |
-| 9 | **F-016** | pedir a `sigrid-api` una function key de **solo lectura** para la api |
-| 20 | **F-014** | los cabos de Sigrid y Administración |
+| 2 | **F-023** | sync de maestros con empresa y estado del recurso (spec aprobada) |
+| 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-022 y F-026** cerradas y autorización expresa |
+| 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
+| 4 | **F-024**, **F-027**, F-020 | selector de empresa; deshacer solo lo propio; Excel |
 
 ## ⚠ Lo que espera al humano
 
-1. **`git push origin dev`**: hay commits locales sin subir.
-2. **F-014**, cuando quiera: avisar a Administración de las cuatro partidas
-   duplicadas de POSTV2 (`656`, `664`, `680`, `693`), decidir quién firma la
-   procedencia de las reglas P4/P5, y **mirar el primer preflight real que
-   tenga líneas `M*` previas** — es la única forma de ver la Regla B
-   (sobrecarga del 100 %) ejercitada contra datos de verdad.
-3. **F-016**: preguntar al dueño de `sigrid-api` si puede emitir una clave de
-   solo lectura. Hoy api y transfer comparten la misma, y lo único que impide
-   que la api escriba en el ERP es que su código no tiene rutas de escritura.
+1. **F-022 T10**: el preflight de solo lectura de arriba.
+2. **`azure-apps/dedicacion.md`**: revisar y hacer el commit; decidir si la
+   corrección de `ruesma_rep` se lleva a `docs/INTEGRACION.md`.
+3. **`git push origin dev`**: `dev` lleva 2 commits sin subir (el alta del
+   backlog F-022-F-031).
+4. **Datos para F-023 y F-026**: la consulta Q1 de F-023, la lista de
+   recursos inactivos, las tres consultas de `progress/explore_eusebio.md`, y
+   si encargados y gruistas se dan de alta sin ficha de empleado a propósito.
+5. **`progress/explore_grafico_parte.md`** sin versionar: obliga a la
+   mutación a ir en serie. Versionarlo o borrarlo.
+6. **F-014** y **F-016**, cuando quiera: aviso a Administración de las cuatro
+   partidas duplicadas de POSTV2 y quién firma P4/P5; pedir a `sigrid-api`
+   una clave de solo lectura para la api.
 
 > **`azure-apps` no tiene remoto configurado** (`git remote -v` vacío): vive
 > solo en local. No es de este proyecto, pero ahí está la documentación de todo

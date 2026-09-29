@@ -479,3 +479,55 @@ que entonces seguía viva.
 
 Informes: `progress/impl_F-008.md`, `progress/review_F-008.md`,
 `progress/review_F-008_cierre.md`, `progress/spec_F-008.md`.
+
+## 2026-08-22 · Arnés actualizado a 1.7.3
+
+De **1.5.2** a **1.7.2** y, con el correctivo de abajo, a la **1.7.3** que
+nació aquí. Todo en la rama `chore/arnes-1.7.2`. El instalador aplicó
+lo genérico (agentes, `harness/*.py`, `rigor.json`, `SPECS.md`, 15 tests
+nuevos) y conservó los seis ficheros adaptados; `CHECKPOINTS.md` y
+`harness/init.sh` se fusionaron a mano para quedarse con las mejoras genéricas
+sin perder lo del monorepo. Portero en verde: **354 tests, 1 skipped**.
+
+Lo que cambia para trabajar aquí:
+
+- **Puerta nueva de tamaño del papeleo** (`init.sh` sección 7 quater, topes en
+  el bloque `tamano` de `harness/rigor.json`): requirements 150, design 250,
+  `impl_F-XXX.md` 220, `review_F-XXX.md` 140 líneas. Mide **solo la feature en
+  curso**: lo viejo queda amnistiado, lo que se retome y edite pasará a
+  medirse. Pasarse pone el portero en **rojo**.
+- **`nivel_por_defecto` pasa de `critico` a `estandar`.** No afecta hoy: las 14
+  features declaran su `rigor` explícitamente. A partir de ahora, `critico` se
+  declara, no se hereda.
+- **Campañas `estandar` muestreadas a 20 mutantes** con semilla fija; sus
+  números **no** son comparables con los de campañas anteriores. Campaña
+  entera: `--max-mutantes 0`.
+- **El reviewer reejecuta la campaña por debajo de 60 segundos** (antes 5
+  minutos) y revisa **incremental** desde el último SHA aprobado, declarándolo
+  en la primera línea de su informe. Reglas **RM1–RM6** en `CHECKPOINTS.md` C4
+  bis y en `.claude/agents/reviewer.md`.
+- **Timeout y workers de mutación se calculan solos**: el timeout se deriva de
+  la línea base medida (`timeout_por_mutante_s` es ahora un **suelo**) y los
+  workers por defecto bajan a `min(max(1,(núcleos-2)//2),4)`.
+- **Códigos de salida nuevos de `harness.mutacion`**: `2` alcance vacío, `3`
+  cero mutantes generados (sin informe). Un guion que encadene campañas debe
+  tratarlos como fallo.
+- **Uno de los dos defectos del arnés que anotamos ya tiene ficha**: pytest
+  código 5 («ningún test recogido») contado como verde es el defecto CONOCIDO
+  que la 1.7.2 declara **sin arreglar** (F-041 en `albaranes`, rigor
+  `critico`). Mientras viva, una campaña de una sola pasada no vale como
+  evidencia: contrástala con otra (`--workers 1`). El segundo —la caché de
+  suites cruza ramas— sigue sin ficha.
+- **Defecto de la 1.7.2 encontrado y corregido aquí**: la puerta de tamaño
+  medía también las features `done`, y F-015 declara `branch: "dev"` (se hizo
+  en la rama base), así que su review de 546 líneas dejaba `dev` en **rojo
+  permanente**. La sección 7 quater descarta ahora el papeleo cerrado, con test
+  en `tests/test_tamano.py`. **Portado a `arnes-base` como 1.7.3** por la regla
+  de propagación, y reinstalado desde ahí: este repo lleva ya la 1.7.3. El
+  commit de `arnes-base` (`a695c32`) está **pusheado** a
+  `ruesma-dev/harness-ruesma`.
+- `ruff` pasa de 179 a 185 avisos: los seis nuevos son del código del arnés que
+  acaba de entrar. Deuda previa, no bloquea.
+
+> Pasado aquí desde `current.md` el 2026-09-30, al pedirlo la review de
+> F-022 (C2): `current.md` debe describir solo la sesión activa.
