@@ -349,7 +349,7 @@
         "docs/ARCHITECTURE.md y azure-apps/dedicacion.md reflejan el cambio de contrato en el mismo trabajo",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "spec_ready",
       "sdd": true,
       "rigor": "critico",
       "priority": 2,

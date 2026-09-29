@@ -11,7 +11,7 @@ Resumen: **29 features**, 21 abiertas, 8 terminadas.
 |---|---|---|---|---|---|
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
-| F-022 | El transfer busca cada obra por código y empresa | 2 | pendiente | critico | `feature/F-022-transfer-obra-por-empresa` |
+| F-022 | El transfer busca cada obra por código y empresa | 2 | spec lista | critico | `feature/F-022-transfer-obra-por-empresa` |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | pendiente | critico | `feature/F-023-sync-empresa-y-estado-recurso` |
 | F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
@@ -60,7 +60,7 @@ Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZA
 
 ### F-022 · El transfer busca cada obra por código y empresa
 
-estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-022-transfer-obra-por-empresa`
+estado **spec lista** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-022-transfer-obra-por-empresa`
 
 Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Hallazgo colateral del diagnóstico de maestros (sección D): obra_por_codigo (services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py ~105-126) busca WHERE con.cod = ? sin empresa ni ORDER BY y se queda con la primera fila. POSTV2 tiene dos fichas (empresa 1 Construcciones Ruesma y 28 Porsan), así que el destino de postventa puede caer en la de Porsan según el orden que devuelva SQL Server; lo mismo cualquier obra con copia en otra empresa (81 códigos repetidos). Hoy no hace daño porque OBRA_PRUEBAS_FORZAR desvía todo a la 0404, pero BLOQUEA F-018. Decisión del humano 2026-09-29: se imputa a la empresa filtrada en el cuadrante, así que la empresa viaja en la línea (contrato API -> transfer) y el transfer la usa para resolver la obra. Si una línea llega sin empresa, no se adivina: se rechaza con motivo.
 
