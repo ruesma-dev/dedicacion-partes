@@ -6,7 +6,7 @@
 
 ## F-022 · implementer en marcha
 
-- Rama `feature/F-022-transfer-obra-por-empresa`. Tarea en curso: **T8**.
+- Rama `feature/F-022-transfer-obra-por-empresa`. Tarea en curso: **T9**.
 - Desviación menor (orden, no alcance): `empresa=1` en las LÍNEAS de los
   dobles (`conftest.linea()`, `test_pipeline_offline.lineas_entrada()`) entra
   en el commit de T3 y no en el de T4. Con las reglas nuevas, una línea sin
@@ -19,6 +19,22 @@
 - T6: `RegistroSigrid` exige `empresa_imputacion` (design §4.8, sin valor
   por defecto), así que las tres construcciones de `test_f003_esquema.py`
   pasan `empresa_imputacion=1`. Solo el argumento; ningún assert cambia.
+- **T8, desviación que decide el humano.** La copia
+  `azure-apps/dedicacion.md` ya divergía del cuerpo de `docs/INTEGRACION.md`
+  ANTES de F-022, en 4 bloques ajenos a esta feature: (1) §1, `ruesma_rep`
+  «no es una réplica, es la base documental» — corrección hecha en la copia
+  por `sigrid-api` (commit `a40684f` de azure-apps, 2026-09-05) que
+  `INTEGRACION.md` no tiene; (2) §5, tarjeta del Portal y (3) «Quién puede
+  entrar», redactados distinto desde la copia inicial (`08676ac`); (4) §6,
+  filas de FQDN que la copia no lleva. Copiar el cuerpo entero habría
+  BORRADO la corrección (1). Se hizo lo no destructivo: cabecera (commit
+  `f9b3a46`, fecha 2026-09-29) y las tres piezas de F-022 copiadas LITERALES
+  de `INTEGRACION.md` (fila `EMPRESA_IMPUTACION`, fila del transfer sin
+  `SIGRID_EMPRESA`, párrafo §9). El `diff` del cuerpo ya no tiene ninguna
+  diferencia de F-022, pero conserva esos 4 bloques. **Pendiente del humano**:
+  revisar y hacer el commit en `azure-apps` (sin commit por el agente), y
+  decidir si la corrección de `ruesma_rep` se porta a `INTEGRACION.md` (fuera
+  del alcance de F-022).
 
 > **2026-09-29: el humano aprueba las specs de F-022 y F-023.** F-022 pasa
 > a **`in_progress`** en `feature/F-022-transfer-obra-por-empresa`. F-023 sigue en `spec_ready` en su rama, ya
