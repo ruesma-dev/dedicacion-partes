@@ -16,10 +16,9 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
-
 from application.registro_sigrid import RegistroSigrid
 from config.settings import Settings
+from pydantic import ValidationError
 
 
 class _Resultado:
@@ -36,10 +35,10 @@ class _Sesion:
     def __init__(self, filas: list[tuple]) -> None:
         self._filas = filas
 
-    def __enter__(self) -> "_Sesion":
+    def __enter__(self) -> _Sesion:
         return self
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(self, *exc: object) -> None:
         return None
 
     def execute(self, _sentencia: Any) -> _Resultado:

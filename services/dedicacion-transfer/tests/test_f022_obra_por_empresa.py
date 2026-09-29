@@ -16,19 +16,24 @@ import dataclasses
 import inspect
 
 import pytest
-
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services import reglas_porcentajes as reglas
 from domain.errores import EmpresasMezcladas, ObraAmbigua
 from domain.models.registro_models import (
-    HoraRecurso, LineaEntrada, ObraEntrada, ParteDestino,
+    HoraRecurso,
+    LineaEntrada,
+    ObraEntrada,
+    ParteDestino,
 )
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
+
 from tests.conftest import (
-    PRESUPUESTO_ORIGEN, PRESUPUESTO_PV_HOJAS, ClienteFalso, SettingsFalso,
+    PRESUPUESTO_ORIGEN,
+    PRESUPUESTO_PV_HOJAS,
+    ClienteFalso,
+    SettingsFalso,
     linea,
 )
-
 
 # ============================ dominio (T1) ============================ #
 
@@ -115,7 +120,7 @@ def test_f022_r7_cliente_postv2_elige_la_empresa_pedida(orden, pedida,
     assert obra.empresa == pedida
     assert obra.codigo == "POSTV2"
     assert obra.nombre == f"POSTVENTA emp {pedida}"
-    assert getattr(obra, "cenide") == 70 + ide_esperado % 10
+    assert obra.cenide == 70 + ide_esperado % 10
 
 
 def test_f022_r8_cliente_sin_ficha_en_la_empresa_no_encontrada():
@@ -605,7 +610,6 @@ def app_falsa(monkeypatch):
     from types import SimpleNamespace
 
     from fastapi.testclient import TestClient
-
     from interface_adapters.api.app import build_app
 
     ajustes = SimpleNamespace(
