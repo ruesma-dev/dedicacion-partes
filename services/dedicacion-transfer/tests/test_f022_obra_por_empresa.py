@@ -712,3 +712,38 @@ def test_f022_r5_app_ajustes_sin_sigrid_empresa():
     assert "sigrid_empresa" not in Settings.model_fields
     ejemplo = Path(__file__).resolve().parents[1] / ".env.example"
     assert "SIGRID_EMPRESA" not in ejemplo.read_text(encoding="utf-8")
+
+
+# ========================== documentación (T7) ========================== #
+
+def _raiz_repo():
+    from pathlib import Path
+
+    return Path(__file__).resolve().parents[3]
+
+
+def _plano(ruta) -> str:
+    return " ".join(ruta.read_text(encoding="utf-8").split())
+
+
+def test_f022_r22_la_regla_se_remite_no_se_reenuncia():
+    """R22 · La regla vive en `#regla-empresa`; P5, el modo pruebas, el
+    pipeline y el README del transfer REMITEN a ella."""
+    raiz = _raiz_repo()
+    arq = _plano(raiz / "docs" / "ARCHITECTURE.md")
+    p5 = arq[arq.index('<a id="regla-p5"></a>'):
+             arq.index('<a id="regla-p4"></a>')]
+    pruebas = arq[arq.index('<a id="regla-pruebas"></a>'):
+                  arq.index("10. **`ide` reservado a mano.**")]
+    assert "(#regla-empresa)" in p5
+    assert "(#regla-empresa)" in pruebas
+    transfer = raiz / "services" / "dedicacion-transfer"
+    for rel in ("README.md", "application/pipelines/registro_pipeline.py"):
+        assert "ARCHITECTURE.md#regla-empresa" in (
+            transfer / rel).read_text(encoding="utf-8"), rel
+
+
+def test_f022_r23_infra_sin_sigrid_empresa():
+    """D4 · El despliegue del transfer ya no declara `SIGRID_EMPRESA`."""
+    ps1 = _raiz_repo() / "infra" / "create_transfer_dedicacion.ps1"
+    assert "SIGRID_EMPRESA" not in ps1.read_text(encoding="utf-8-sig")
