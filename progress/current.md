@@ -1,12 +1,16 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución ni bloqueada.** El arnés es la **1.7.3**.
+**F-022 en ejecución** (implementer lanzado, rigor crítico). El arnés es la
+**1.7.3**.
+
+## F-022 · implementer en marcha
+
+- Rama `feature/F-022-transfer-obra-por-empresa`. Tarea en curso: **T1**.
+- Desviaciones respecto a la spec: ninguna por ahora.
 
 > **2026-09-29: el humano aprueba las specs de F-022 y F-023.** F-022 pasa
-> a **`in_progress`** en `feature/F-022-transfer-obra-por-empresa` y su
-> implementer **aún no se ha lanzado**: falta que el humano confirme el plan
-> de implementación (PARADA 1). F-023 sigue en `spec_ready` en su rama, ya
+> a **`in_progress`** en `feature/F-022-transfer-obra-por-empresa`. F-023 sigue en `spec_ready` en su rama, ya
 > aprobada, esperando turno porque solo puede haber una feature en curso.
 > Las decisiones quedan escritas en la descripción de cada feature; la D5 de
 > F-022 pasa a F-026. Antes de verificar F-023 faltan dos cosas: el
