@@ -109,7 +109,7 @@ class SigridWriteClient:
             "obr.cenide AS cenide, con.emp AS emp FROM obr "
             "JOIN con ON con.ide = obr.ide "
             "WHERE con.cod = ? AND con.emp = ?", [cod, int(empresa)])
-        return self._obra(filas, int(empresa))
+        return self._obra(filas, int(empresa), cod)
 
     def obra_por_ide(self, ide: int) -> ObraEntrada | None:
         """Obra por `ide`, que es único: no se filtra por empresa, pero se
@@ -122,8 +122,8 @@ class SigridWriteClient:
         return self._obra(filas)
 
     @staticmethod
-    def _obra(filas: list[dict],
-              empresa: int | None = None) -> ObraEntrada | None:
+    def _obra(filas: list[dict], empresa: int | None = None,
+              cod: str | None = None) -> ObraEntrada | None:
         """Una ficha o ninguna; NUNCA «la primera».
 
         Con `empresa`, filtra también aquí aunque el SQL ya lo haga: es la
@@ -137,7 +137,7 @@ class SigridWriteClient:
             return None
         if len(filas) > 1:
             raise ObraAmbigua(
-                f"obra {filas[0]['cod']} ambigua: {len(filas)} fichas en la "
+                f"obra {cod} ambigua: {len(filas)} fichas en la "
                 f"empresa {empresa}")
         f = filas[0]
         o = ObraEntrada(ide=int(f["ide"]), codigo=f["cod"], nombre=f["res"],

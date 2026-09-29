@@ -751,3 +751,18 @@ def test_f022_r23_infra_sin_sigrid_empresa():
     """D4 · El despliegue del transfer ya no declara `SIGRID_EMPRESA`."""
     ps1 = _raiz_repo() / "infra" / "create_transfer_dedicacion.ps1"
     assert "SIGRID_EMPRESA" not in ps1.read_text(encoding="utf-8-sig")
+
+
+# ================== script manual de pruebas (T5, T9) ================== #
+
+def test_f022_r13_script_de_pruebas_imputa_a_la_empresa_de_la_0404():
+    """R13 y D3 · El script manual busca sus obras y manda sus líneas en
+    `EMPRESA_PRUEBA`, que tiene que ser la 1: la obra de pruebas solo existe
+    ahí y, con otra, el preflight falla sin escribir. Sus líneas de ejemplo
+    siguen incluyendo una de postventa, que es lo que el script ejercita."""
+    import prueba_escritura_porcentajes as script
+
+    assert script.EMPRESA_PRUEBA == 1
+    lineas = script._lineas(2026, 7)
+    assert [lin.empresa for lin in lineas] == [1] * len(script.LINEAS_PRUEBA)
+    assert any(lin.es_postventa for lin in lineas)
