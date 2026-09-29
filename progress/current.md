@@ -3,6 +3,18 @@
 
 **Ninguna feature en ejecución ni bloqueada.** El arnés es la **1.7.3**.
 
+> **2026-09-29: el humano aprueba las specs de F-022 y F-023.** F-022 pasa
+> a **`in_progress`** en `feature/F-022-transfer-obra-por-empresa` y su
+> implementer **aún no se ha lanzado**: falta que el humano confirme el plan
+> de implementación (PARADA 1). F-023 sigue en `spec_ready` en su rama, ya
+> aprobada, esperando turno porque solo puede haber una feature en curso.
+> Las decisiones quedan escritas en la descripción de cada feature; la D5 de
+> F-022 pasa a F-026. Antes de verificar F-023 faltan dos cosas: el
+> resultado de la consulta Q1 (design §4), que dice qué estado de recurso
+> cuenta como inactivo, y la lista de recursos inactivos que señaló negocio.
+> T10 de F-022 es una verificación MANUAL del humano: un preflight real de
+> solo lectura, cuyo resultado se anota aquí.
+
 ## Revisión de negocio del 2026-09-29: F-022 a F-031 entran al backlog
 
 Negocio revisó la app en uso y salieron fallos y peticiones. Se dan de alta
