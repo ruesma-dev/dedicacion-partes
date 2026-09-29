@@ -6,7 +6,7 @@
 
 ## F-022 · implementer en marcha
 
-- Rama `feature/F-022-transfer-obra-por-empresa`. Tarea en curso: **T1**.
+- Rama `feature/F-022-transfer-obra-por-empresa`. Tarea en curso: **T3**.
 - Desviaciones respecto a la spec: ninguna por ahora.
 
 > **2026-09-29: el humano aprueba las specs de F-022 y F-023.** F-022 pasa

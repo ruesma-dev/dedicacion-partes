@@ -22,6 +22,7 @@ from typing import Any, Iterable
 
 import httpx
 
+from domain.errores import ObraAmbigua
 from domain.models.registro_models import (
     HoraRecurso, LineaSigrid, ObraEntrada, ParteDestino,
 )
@@ -42,7 +43,6 @@ class SigridWriteClient:
         base_url: str,
         function_key: str,
         database: str,
-        empresa: int = 1,
         timeout_s: float = 60.0,
         max_statements: int = 15,
         tip_parte: int = 35,
@@ -52,7 +52,6 @@ class SigridWriteClient:
         self._headers = {"x-functions-key": function_key,
                          "Content-Type": "application/json"}
         self._db = database
-        self._empresa = int(empresa)
         self._timeout = float(timeout_s)
         self._max_st = int(max_statements)
         self._tip = int(tip_parte)
@@ -102,26 +101,47 @@ class SigridWriteClient:
 
     # ----------------------------- lecturas ----------------------------- #
 
-    def obra_por_codigo(self, cod: str) -> ObraEntrada | None:
+    def obra_por_codigo(self, cod: str, empresa: int) -> ObraEntrada | None:
+        """Obra por código DENTRO de su empresa: el código solo es único
+        ahí (ARCHITECTURE.md#regla-empresa). La empresa es obligatoria."""
         filas = self._read(
             "SELECT obr.ide AS ide, con.cod AS cod, con.res AS res, "
-            "obr.cenide AS cenide FROM obr JOIN con ON con.ide = obr.ide "
-            "WHERE con.cod = ?", [cod])
-        return self._obra(filas)
+            "obr.cenide AS cenide, con.emp AS emp FROM obr "
+            "JOIN con ON con.ide = obr.ide "
+            "WHERE con.cod = ? AND con.emp = ?", [cod, int(empresa)])
+        return self._obra(filas, int(empresa))
 
     def obra_por_ide(self, ide: int) -> ObraEntrada | None:
+        """Obra por `ide`, que es único: no se filtra por empresa, pero se
+        lee para poder comprobarla."""
         filas = self._read(
             "SELECT obr.ide AS ide, con.cod AS cod, con.res AS res, "
-            "obr.cenide AS cenide FROM obr JOIN con ON con.ide = obr.ide "
+            "obr.cenide AS cenide, con.emp AS emp FROM obr "
+            "JOIN con ON con.ide = obr.ide "
             "WHERE obr.ide = ?", [int(ide)])
         return self._obra(filas)
 
     @staticmethod
-    def _obra(filas: list[dict]) -> ObraEntrada | None:
+    def _obra(filas: list[dict],
+              empresa: int | None = None) -> ObraEntrada | None:
+        """Una ficha o ninguna; NUNCA «la primera».
+
+        Con `empresa`, filtra también aquí aunque el SQL ya lo haga: es la
+        defensa si alguien toca la consulta, y lo que hace comprobable la
+        elección sin Sigrid. Una ficha sin `con.emp` no es de ninguna
+        empresa válida. Sin `empresa` (búsqueda por `ide`) no se filtra.
+        """
+        if empresa is not None:
+            filas = [f for f in filas if int(f["emp"] or 0) == empresa]
         if not filas:
             return None
+        if len(filas) > 1:
+            raise ObraAmbigua(
+                f"obra {filas[0]['cod']} ambigua: {len(filas)} fichas en la "
+                f"empresa {empresa}")
         f = filas[0]
-        o = ObraEntrada(ide=int(f["ide"]), codigo=f["cod"], nombre=f["res"])
+        o = ObraEntrada(ide=int(f["ide"]), codigo=f["cod"], nombre=f["res"],
+                        empresa=int(f["emp"] or 0))
         setattr(o, "cenide", int(f["cenide"] or 0))
         return o
 
@@ -277,7 +297,15 @@ class SigridWriteClient:
     def stmts_crear_parte(
         self, *, obra: ObraEntrada, ano: int, mes: int, cod: str, desc: str
     ) -> list[dict]:
-        """Cabecera (con) + extensión (hmo) del parte de obra/mes."""
+        """Cabecera (con) + extensión (hmo) del parte de obra/mes.
+
+        `con.emp` es la empresa de la obra destino: el parte es de la
+        empresa de su obra (ARCHITECTURE.md#regla-empresa). Sin ella no se
+        adivina: `ValueError`.
+        """
+        if not obra.empresa:
+            raise ValueError(
+                f"la obra {obra.codigo} no trae empresa: no se crea su parte")
         ultimo = calendar.monthrange(int(ano), int(mes))[1]
         fec = int(f"{int(ano)}{int(mes):02d}{ultimo:02d}")
         cenide = int(getattr(obra, "cenide", 0) or 0)
@@ -285,7 +313,7 @@ class SigridWriteClient:
             {"sql": ("INSERT INTO con (ide, emp, tip, est, cod, res, fec) "
                      "SELECT ISNULL(MAX(ide),0)+1, ?, ?, ?, ?, ?, ? "
                      "FROM con WITH (UPDLOCK, HOLDLOCK)"),
-             "parameters": [self._empresa, self._tip, self._est,
+             "parameters": [int(obra.empresa), self._tip, self._est,
                             cod, desc[:128], fec]},
             {"sql": ("INSERT INTO hmo (ide, cenide, obride, ano, mes, reside, "
                      "cenmul) SELECT ide, ?, ?, ?, ?, 0, 0 FROM con "
