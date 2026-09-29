@@ -38,6 +38,10 @@ from domain.models.registro_models import (
 OBRA_PRUEBAS = "0404"
 OBRA_ORIGEN = "0678"
 OBRA_POSTVENTA = "POSTV2"
+#: Obra de origen que existe en Sigrid pero no casa con ninguna partida de
+#: la obra de postventa. Desde F-022 el pipeline resuelve la obra de origen
+#: también en modo pruebas, así que el doble tiene que conocerla.
+OBRA_SIN_PARTIDA_PV = "0001"
 #: Empresa de todas las obras y líneas del doble (F-022, R19): la suite
 #: anterior a F-022 sigue probando lo mismo, ahora con la empresa explícita.
 EMPRESA = 1
@@ -162,11 +166,14 @@ class ClienteFalso:
                 f"presupuesto_postventa debe ser uno de "
                 f"{sorted(PRESUPUESTOS_PV)}, no {presupuesto_postventa!r}")
         self.obra = ObraEntrada(ide=828942, codigo=OBRA_PRUEBAS,
-                                nombre="PRUEBAS")
+                                nombre="PRUEBAS", empresa=EMPRESA)
         self.obra_pv = ObraEntrada(ide=999001, codigo=OBRA_POSTVENTA,
-                                   nombre="POSTVENTA 2")
+                                   nombre="POSTVENTA 2", empresa=EMPRESA)
         self.obra_origen = ObraEntrada(ide=555001, codigo=OBRA_ORIGEN,
-                                       nombre="15 VIVIENDAS")
+                                       nombre="15 VIVIENDAS", empresa=EMPRESA)
+        self.obra_sin_partida_pv = ObraEntrada(
+            ide=555002, codigo=OBRA_SIN_PARTIDA_PV, nombre="SIN PARTIDA PV",
+            empresa=EMPRESA)
         self.capitulos = PRESUPUESTOS_PV[presupuesto_postventa]
         self.partidas_origen = PRESUPUESTO_ORIGEN
         self._obra_pv_existe = bool(obra_postventa_existe)
@@ -192,13 +199,18 @@ class ClienteFalso:
         self.escritos: list[dict] = []
 
     # --- lecturas --- #
-    def obra_por_codigo(self, cod):
+    def obra_por_codigo(self, cod, empresa):
+        """Todas las obras del doble son de `EMPRESA` (F-022)."""
+        if empresa != EMPRESA:
+            return None
         if cod == OBRA_PRUEBAS:
             return self.obra
         if cod == OBRA_POSTVENTA:
             return self.obra_pv if self._obra_pv_existe else None
         if cod == OBRA_ORIGEN:
             return self.obra_origen
+        if cod == OBRA_SIN_PARTIDA_PV:
+            return self.obra_sin_partida_pv
         return None
 
     def obra_por_ide(self, ide):

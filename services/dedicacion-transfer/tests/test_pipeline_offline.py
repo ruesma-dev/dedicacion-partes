@@ -25,10 +25,11 @@ class Settings:
 
 class ClienteFalso:
     def __init__(self):
-        self.obra = ObraEntrada(ide=828942, codigo="0404", nombre="PRUEBAS")
+        self.obra = ObraEntrada(ide=828942, codigo="0404", nombre="PRUEBAS",
+                                empresa=1)
         setattr(self.obra, "cenide", 555)
         self.obra_pv = ObraEntrada(ide=999001, codigo="POSTV2",
-                                   nombre="POSTVENTA 2")
+                                   nombre="POSTVENTA 2", empresa=1)
         setattr(self.obra_pv, "cenide", 666)
         # Partidas de POSTV2 (una por obra original, bajo CD) y de la
         # obra origen 0678 (capítulo CI con partidas de mando).
@@ -44,7 +45,7 @@ class ClienteFalso:
              "tipdes": 0, "cosindide": None, "unimed": None},
         ]
         self.obra_origen = ObraEntrada(ide=555001, codigo="0678",
-                                       nombre="15 VIVIENDAS")
+                                       nombre="15 VIVIENDAS", empresa=1)
         setattr(self.obra_origen, "cenide", 444)
         self.partidas_origen = [
             {"ide": 80000, "padide": 0, "pos": 0, "tip": 0, "cod": "CI",
@@ -89,7 +90,10 @@ class ClienteFalso:
         self.escritos: list[dict] = []
         self.synckeys: dict[str, LineaSigrid] = {}
 
-    def obra_por_codigo(self, cod):
+    def obra_por_codigo(self, cod, empresa):
+        # F-022: todas las obras de este doble son de la empresa 1.
+        if empresa != 1:
+            return None
         if cod == "0404":
             return self.obra
         if cod == "POSTV2":

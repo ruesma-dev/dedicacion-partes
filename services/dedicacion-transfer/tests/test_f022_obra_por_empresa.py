@@ -17,8 +17,17 @@ import inspect
 
 import pytest
 
-from domain.models.registro_models import LineaEntrada, ObraEntrada
+from application.pipelines.registro_pipeline import RegistroPipeline
+from application.services import reglas_porcentajes as reglas
+from domain.errores import EmpresasMezcladas, ObraAmbigua
+from domain.models.registro_models import (
+    HoraRecurso, LineaEntrada, ObraEntrada, ParteDestino,
+)
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
+from tests.conftest import (
+    PRESUPUESTO_ORIGEN, PRESUPUESTO_PV_HOJAS, ClienteFalso, SettingsFalso,
+    linea,
+)
 
 
 # ============================ dominio (T1) ============================ #
@@ -44,8 +53,6 @@ def test_f022_r9_dominio_la_obra_lleva_empresa():
 def test_f022_r4_r8_dominio_errores_propios():
     """R4 y R8 · Los dos errores de la regla son del dominio y heredan de
     lo que la app ya sabe tratar."""
-    from domain.errores import EmpresasMezcladas, ObraAmbigua
-
     assert issubclass(EmpresasMezcladas, ValueError)
     assert issubclass(ObraAmbigua, RuntimeError)
 
@@ -132,8 +139,6 @@ def test_f022_r8_cliente_ficha_sin_empresa_no_casa_con_ninguna():
 def test_f022_r8_cliente_dos_fichas_en_la_empresa_es_ambigua():
     """R8 · Nunca «la primera»: dos fichas en la empresa pedida fallan con
     código, empresa y número de fichas."""
-    from domain.errores import ObraAmbigua
-
     cli, _ = _cliente([_ficha(9001, 1), _ficha(9002, 1), _ficha(9028, 28)])
     with pytest.raises(ObraAmbigua) as exc:
         cli.obra_por_codigo("POSTV2", 1)
@@ -202,9 +207,6 @@ def test_f022_r5_cliente_sin_empresa_por_defecto():
 
 # ============================= reglas (T3) ============================= #
 
-from application.services import reglas_porcentajes as reglas  # noqa: E402
-from domain.models.registro_models import HoraRecurso  # noqa: E402
-
 #: Horas del recurso 200 (MENC): basta para que una línea válida se escriba.
 HORAS = {200: [HoraRecurso(5, "MENC", None, 9000.0)]}
 
@@ -240,8 +242,6 @@ def test_f022_r3_reglas_empresa_de_peticion(empresas, esperada):
 def test_f022_r4_reglas_empresas_mezcladas():
     """R4 · Más de una empresa válida en la misma petición: error que las
     nombra, ordenadas."""
-    from domain.errores import EmpresasMezcladas
-
     lineas = [_linea_regla(registro_id=1, empresa=28),
               _linea_regla(registro_id=2, empresa=None),
               _linea_regla(registro_id=3, empresa=1)]
@@ -299,3 +299,261 @@ def test_f022_r19_reglas_linea_con_empresa_sigue_igual():
     siempre."""
     a = reglas.ReglasPorcentajes(HORAS).decidir(_linea_regla())
     assert a.accion == "escribir" and a.hora_codigo == "MENC"
+
+
+# ============================ pipeline (T4) ============================ #
+
+#: Fichas del doble: (código, empresa) -> ide. `0678` y `POSTV2` tienen
+#: copia en la empresa 28, como en Sigrid; `0404` solo existe en la 1.
+FICHAS = {("0404", 1): 828942, ("0678", 1): 555001, ("0678", 28): 555028,
+          ("POSTV2", 1): 999001, ("POSTV2", 28): 999028}
+
+
+class ClienteEmpresas(ClienteFalso):
+    """Doble indexado por `(código, empresa)` y por `ide` que ANOTA cada
+    búsqueda de obra. `ambiguas`: claves que fallan con `ObraAmbigua`."""
+
+    def __init__(self, *, quitar=(), ambiguas=(), **kw) -> None:
+        super().__init__(**kw)
+        self.fichas = {
+            clave: ObraEntrada(ide=ide, codigo=clave[0],
+                               nombre=f"{clave[0]} emp {clave[1]}",
+                               empresa=clave[1])
+            for clave, ide in FICHAS.items() if clave not in quitar}
+        self.por_ide = {o.ide: o for o in self.fichas.values()}
+        self.ambiguas = set(ambiguas)
+        self.llamadas: list[tuple] = []
+        self.creados: list[ObraEntrada] = []
+
+    def obra_por_codigo(self, cod, empresa):
+        self.llamadas.append(("codigo", cod, empresa))
+        if (cod, empresa) in self.ambiguas:
+            raise ObraAmbigua(f"obra {cod} ambigua: 2 fichas en la empresa "
+                              f"{empresa}")
+        return self.fichas.get((cod, empresa))
+
+    def obra_por_ide(self, ide):
+        self.llamadas.append(("ide", ide))
+        return self.por_ide.get(ide)
+
+    def capitulos_de_obra(self, obride):
+        if obride in (999001, 999028):
+            return PRESUPUESTO_PV_HOJAS
+        if obride in (555001, 555028):
+            return PRESUPUESTO_ORIGEN
+        return []
+
+    def stmts_crear_parte(self, **kw):
+        self.creados.append(kw["obra"])
+        self.parte = ParteDestino(ano=2026, mes=7, existe=True, ide=778,
+                                  cod=kw["cod"])
+        return super().stmts_crear_parte(**kw)
+
+
+def _pl(cli, forzar: bool = True) -> RegistroPipeline:
+    return RegistroPipeline(cliente=cli,
+                            settings=SettingsFalso(obra_pruebas_forzar=forzar))
+
+
+ORIGEN_1 = ObraEntrada(codigo="0678")
+
+
+def test_f022_r4_pipeline_empresas_mezcladas_no_lee_nada():
+    """R4 · Dos empresas en la misma petición: error, sin buscar obras."""
+    cli = ClienteEmpresas()
+    with pytest.raises(EmpresasMezcladas):
+        _pl(cli).preflight(obra=ORIGEN_1, lineas=[
+            linea(registro_id=1, empresa=1), linea(registro_id=2, empresa=28)])
+    assert cli.llamadas == [] and cli.escritos == []
+
+
+@pytest.mark.parametrize("forzar", [True, False])
+def test_f022_r3_pipeline_ninguna_empresa_no_lee_ninguna_obra(forzar):
+    """R3 · Ninguna línea con empresa: todas omitidas, sin leer ninguna
+    obra y sin escribir nada."""
+    cli = ClienteEmpresas()
+    lineas = [linea(registro_id=1, empresa=None),
+              linea(registro_id=2, empresa=0, es_postventa=True)]
+    pf = _pl(cli, forzar).preflight(obra=ORIGEN_1, lineas=lineas)
+    assert [(a.accion, a.motivo) for a in pf.acciones] == [
+        ("omitir", reglas.MOTIVO_SIN_EMPRESA)] * 2
+    assert cli.llamadas == []
+    assert pf.obra_destino is ORIGEN_1 and pf.obra_origen is ORIGEN_1
+    assert pf.forzada_pruebas is forzar
+    assert pf.partes == [] and pf.conflictos == []
+    res = _pl(cli, forzar).ejecutar(obra=ORIGEN_1, lineas=lineas)
+    assert cli.escritos == [] and res.escritas == []
+    assert [o["motivo"] for o in res.omitidas] == [
+        reglas.MOTIVO_SIN_EMPRESA] * 2
+
+
+def test_f022_r2_pipeline_la_linea_sin_empresa_no_frena_a_las_demas():
+    """R2 · La línea sin empresa se omite con motivo y la otra se escribe."""
+    cli = ClienteEmpresas()
+    lineas = [linea(registro_id=1, empresa=None),
+              linea(registro_id=2, empleado_ide=12)]
+    res = _pl(cli).ejecutar(obra=ORIGEN_1, lineas=lineas)
+    assert res.omitidas == [{"registro_id": 1,
+                             "motivo": reglas.MOTIVO_SIN_EMPRESA}]
+    assert [e["registro_id"] for e in res.escritas] == [2]
+
+
+@pytest.mark.parametrize("forzar", [True, False])
+def test_f022_r10_r11_pipeline_obra_de_otra_empresa_se_omite(forzar):
+    """R10 y R11 · La obra llega por `ide` y es de la 28; las líneas se
+    imputan a la 1. En los DOS modos: todo omitido con el motivo que nombra
+    obra y empresas, sin resolver destinos y sin escribir."""
+    cli = ClienteEmpresas()
+    obra = ObraEntrada(ide=555028, codigo="0678")
+    lineas = [linea(registro_id=1), linea(registro_id=2, es_postventa=True),
+              linea(registro_id=3, empresa=None)]
+    pf = _pl(cli, forzar).preflight(obra=obra, lineas=lineas)
+    motivo = ("la obra 0678 es de la empresa 28 y la línea se imputa a la "
+              "empresa 1: no se escribe")
+    assert [(a.accion, a.motivo) for a in pf.acciones] == [
+        ("omitir", motivo), ("omitir", motivo),
+        ("omitir", reglas.MOTIVO_SIN_EMPRESA)]
+    assert cli.llamadas == [("ide", 555028)]
+    assert pf.obra_destino is obra and pf.forzada_pruebas is forzar
+    assert pf.partes == [] and pf.conflictos == []
+    res = _pl(cli, forzar).ejecutar(obra=obra, lineas=lineas)
+    assert cli.escritos == [] and res.escritas == []
+
+
+@pytest.mark.parametrize("forzar, llamadas", [
+    (True, [("ide", 555001), ("codigo", "0404", 1)]),
+    (False, [("ide", 555001)]),
+])
+def test_f022_r10_pipeline_obra_por_ide_de_la_empresa_se_escribe(forzar,
+                                                                 llamadas):
+    """R10 · Misma empresa: la obra de origen se comprueba en los dos modos
+    y la línea se escribe."""
+    cli = ClienteEmpresas()
+    obra = ObraEntrada(ide=555001, codigo="0678")
+    res = _pl(cli, forzar).ejecutar(obra=obra, lineas=[linea(registro_id=1)])
+    assert cli.llamadas == llamadas
+    assert [e["registro_id"] for e in res.escritas] == [1]
+    assert res.obra_destino.empresa == 1
+
+
+def test_f022_r12_pipeline_obra_sin_ide_por_codigo_y_empresa():
+    """R12 · Sin `ide`, la obra se busca por código y empresa de la
+    petición: la `0678` de la 28 es otra ficha que la de la 1."""
+    cli = ClienteEmpresas()
+    pf = _pl(cli, forzar=False).preflight(
+        obra=ORIGEN_1, lineas=[linea(registro_id=1, empresa=28)])
+    assert cli.llamadas == [("codigo", "0678", 28)]
+    assert pf.obra_destino.ide == 555028 and pf.obra_destino.empresa == 28
+    assert pf.acciones[0].accion == "escribir"
+
+
+def test_f022_r12_pipeline_obra_no_encontrada_en_la_empresa():
+    """R12 · Si no existe en esa empresa, error que nombra la empresa."""
+    cli = ClienteEmpresas(quitar={("0678", 28)})
+    with pytest.raises(RuntimeError) as exc:
+        _pl(cli, forzar=False).preflight(
+            obra=ORIGEN_1, lineas=[linea(registro_id=1, empresa=28)])
+    assert "0678" in str(exc.value) and "empresa=28" in str(exc.value)
+
+
+def test_f022_r12_pipeline_obra_sin_ide_ni_codigo():
+    cli = ClienteEmpresas()
+    with pytest.raises(RuntimeError, match="obra no encontrada"):
+        _pl(cli).preflight(obra=ObraEntrada(), lineas=[linea()])
+    assert cli.llamadas == []
+
+
+def test_f022_r13_pipeline_pruebas_por_codigo_y_empresa():
+    """R13 · En pruebas, la obra de pruebas se busca en la empresa de la
+    petición."""
+    cli = ClienteEmpresas()
+    pf = _pl(cli).preflight(obra=ORIGEN_1, lineas=[linea(registro_id=1)])
+    assert cli.llamadas == [("codigo", "0678", 1), ("codigo", "0404", 1)]
+    assert pf.obra_destino.codigo == "0404" and pf.obra_destino.empresa == 1
+    assert pf.forzada_pruebas is True
+
+
+def test_f022_r13_pipeline_pruebas_inexistente_en_la_empresa_falla():
+    """R13 · La `0404` solo existe en la 1: con la 28, error con código y
+    empresa, sin escribir nada (D3, estricta)."""
+    cli = ClienteEmpresas()
+    with pytest.raises(RuntimeError) as exc:
+        _pl(cli).ejecutar(obra=ORIGEN_1,
+                          lineas=[linea(registro_id=1, empresa=28)])
+    assert "0404" in str(exc.value) and "empresa 28" in str(exc.value)
+    assert cli.escritos == []
+
+
+@pytest.mark.parametrize("forzar", [True, False])
+def test_f022_r14_pipeline_la_partida_usa_el_origen_ya_resuelto(forzar):
+    """R14 · La partida normal se casa contra la obra de origen del paso 1:
+    una sola búsqueda de esa obra."""
+    cli = ClienteEmpresas()
+    pf = _pl(cli, forzar).preflight(obra=ORIGEN_1,
+                                    lineas=[linea(registro_id=1)])
+    assert [c for c in cli.llamadas if c[1] == "0678"] == [
+        ("codigo", "0678", 1)]
+    assert pf.acciones[0].partida_cod == "CI.1.10"
+
+
+@pytest.mark.parametrize("empresa, ide_pv", [(1, 999001), (28, 999028)])
+def test_f022_r15_pipeline_postventa_de_la_empresa_pedida(empresa, ide_pv):
+    """R15 · `POSTV2` existe en la 1 y en la 28: se elige la de la empresa
+    de la petición."""
+    cli = ClienteEmpresas()
+    pf = _pl(cli, forzar=False).preflight(obra=ORIGEN_1, lineas=[
+        linea(registro_id=1, empresa=empresa, es_postventa=True)])
+    assert ("codigo", "POSTV2", empresa) in cli.llamadas
+    assert pf.obra_postventa.ide == ide_pv
+    assert pf.obra_postventa.empresa == empresa
+    assert pf.acciones[0].accion == "escribir"
+
+
+@pytest.mark.parametrize("quitar, ambiguas, texto", [
+    ({("POSTV2", 28)}, set(), "no encontrada"),
+    (set(), {("POSTV2", 28)}, "ambigua"),
+], ids=["inexistente", "ambigua"])
+def test_f022_r16_pipeline_postventa_sin_ficha_en_la_empresa(quitar,
+                                                            ambiguas, texto):
+    """R16 · Sin ficha de postventa (o con dos) en la empresa: la postventa
+    se omite con un motivo que nombra código y empresa; la normal sigue."""
+    cli = ClienteEmpresas(quitar=quitar, ambiguas=ambiguas)
+    res = _pl(cli, forzar=False).ejecutar(obra=ORIGEN_1, lineas=[
+        linea(registro_id=1, empresa=28, es_postventa=True),
+        linea(registro_id=2, empresa=28, empleado_ide=12)])
+    [omitida] = res.omitidas
+    assert omitida["registro_id"] == 1
+    assert "'POSTV2'" in omitida["motivo"]
+    assert "empresa 28" in omitida["motivo"] and texto in omitida["motivo"]
+    assert [e["registro_id"] for e in res.escritas] == [2]
+
+
+@pytest.mark.parametrize("forzar, empresa, ide", [
+    (True, 1, 828942), (False, 1, 555001), (False, 28, 555028)])
+def test_f022_r17_pipeline_el_parte_nuevo_lleva_la_obra_resuelta(
+        forzar, empresa, ide):
+    """R17 · El parte nuevo se crea con la obra destino RESUELTA, que es la
+    que trae la empresa que irá a `con.emp`."""
+    cli = ClienteEmpresas(parte_existe=False)
+    res = _pl(cli, forzar).ejecutar(obra=ORIGEN_1, lineas=[
+        linea(registro_id=1, empresa=empresa)])
+    [creada] = cli.creados
+    assert (creada.ide, creada.empresa) == (ide, empresa)
+    assert [e["registro_id"] for e in res.escritas] == [1]
+
+
+def test_f022_r6_pipeline_sin_literales_de_obra_ni_de_empresa():
+    """R6 y D4 · Ni la obra de pruebas ni una empresa «por defecto» viven
+    como literal en el código que resuelve obras: salen de los ajustes y de
+    la línea. (`POSTV2` ya lo vigila `test_f002_fuente_unica.py`.)"""
+    import re
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parents[1]
+    for rel in ("application/pipelines/registro_pipeline.py",
+                "application/services/reglas_porcentajes.py",
+                "infrastructure/sigrid/sigrid_write_client.py"):
+        texto = (raiz / rel).read_text(encoding="utf-8")
+        assert "0404" not in texto, rel
+        assert re.search(r"empresa\w*\s*(=|==|!=|:\s*int\s*=)\s*1\b",
+                         texto) is None, rel
