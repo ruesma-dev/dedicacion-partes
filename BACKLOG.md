@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **19 features**, 11 abiertas, 8 terminadas.
+Resumen: **29 features**, 21 abiertas, 8 terminadas.
 
 ## Trabajo abierto
 
@@ -11,14 +11,24 @@ Resumen: **19 features**, 11 abiertas, 8 terminadas.
 |---|---|---|---|---|---|
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
+| F-022 | El transfer busca cada obra por código y empresa | 2 | pendiente | critico | `feature/F-022-transfer-obra-por-empresa` |
+| F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | pendiente | critico | `feature/F-023-sync-empresa-y-estado-recurso` |
 | F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
+| F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
+| F-026 | Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro | 3 | pendiente | critico | `feature/F-026-recursos-sin-ficha-empleado` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 4 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
+| F-024 | Selector de empresa arriba a la derecha, Construcciones Ruesma por defecto | 4 | pendiente | estandar | `feature/F-024-selector-empresa` |
+| F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 4 | pendiente | estandar | `feature/F-027-deshacer-por-usuario` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
+| F-028 | Borrar todo lo que está en pantalla | 5 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-006 | Sanear la suite del transfer | 6 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
+| F-029 | Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada | 6 | pendiente | estandar | `feature/F-029-seleccion-multiple-completar-100` |
+| F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 6 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
 | F-011 | Un solo codigo de hora mes por trabajador | 7 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
 | F-012 | El test de la epsilon compartida ata el transfer al monorepo | 8 | pendiente | estandar | `feature/F-012-epsilon-compartida-entre-servicios` |
 | F-016 | Una function key de solo lectura para dedicacion-api | 9 | pendiente | estandar | `feature/F-016-sigrid-key-solo-lectura` |
-| F-021 | El filtro por obra muestra solo el chip de la obra filtrada | 10 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
+| F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 10 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
+| F-031 | MCP para que una IA haga el trabajo del usuario | 11 | pendiente | critico | `feature/F-031-mcp-ia` |
 | F-014 | Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14 | 20 | pendiente | documental | `feature/F-014-cabos-sigrid-administracion` |
 
 ## Terminadas
@@ -46,7 +56,19 @@ Pedida por el humano el 2026-08-25. El sistema esta desplegado, en uso por 8 per
 
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-018-paso-a-escritura-real`
 
-Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga.
+Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga. AÑADIDO 2026-09-29: también depende de F-022. El transfer resuelve la obra por código sin empresa y POSTV2 existe en las empresas 1 y 28; sin F-022 la primera escritura real podría caer en la ficha de Porsan.
+
+### F-022 · El transfer busca cada obra por código y empresa
+
+estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-022-transfer-obra-por-empresa`
+
+Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Hallazgo colateral del diagnóstico de maestros (sección D): obra_por_codigo (services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py ~105-126) busca WHERE con.cod = ? sin empresa ni ORDER BY y se queda con la primera fila. POSTV2 tiene dos fichas (empresa 1 Construcciones Ruesma y 28 Porsan), así que el destino de postventa puede caer en la de Porsan según el orden que devuelva SQL Server; lo mismo cualquier obra con copia en otra empresa (81 códigos repetidos). Hoy no hace daño porque OBRA_PRUEBAS_FORZAR desvía todo a la 0404, pero BLOQUEA F-018. Decisión del humano 2026-09-29: se imputa a la empresa filtrada en el cuadrante, así que la empresa viaja en la línea (contrato API -> transfer) y el transfer la usa para resolver la obra. Si una línea llega sin empresa, no se adivina: se rechaza con motivo.
+
+### F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
+
+estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-023-sync-empresa-y-estado-recurso`
+
+Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio ve recursos inactivos en el cuadrante. Dos causas: (1) la SQL de sync (services/dedicacion-api/config/config.yaml) no lee la empresa (con.emp; Construcciones Ruesma = 1) y mezcla fichas de todas; en obras entran ~140 de otras empresas y 81 códigos salen duplicados; el dedupe por DNI puede quedarse con la ficha de otra empresa. (2) activo se decide por el último emphis sin fecbaj; un emp sin emphis cuenta como activo y se ignora el estado del recurso. Decisión del humano 2026-09-29: inactivo es un ESTADO del recurso en Sigrid; la spec localiza el campo exacto y sus valores en azure-apps/sigrid_tablas.md. Se sincronizan TODAS las empresas guardando la empresa de cada ficha (el filtro lo hace F-024); el dedupe por persona pasa a ser dentro de cada empresa.
 
 ### F-019 · Excel de importacion en formato Carmen
 
@@ -54,11 +76,35 @@ estado **pendiente** · prioridad 3 · rigor `estandar` · SDD sí · rama `feat
 
 Pedida por el humano el 2026-09-03. Hoy la API exporta un unico Excel (services/dedicacion-api/infrastructure/excel/exporter.py: hojas Detalle y Resumen, declaradas compatibles con la plantilla v14), pensado para leerlo, no para que otro sistema lo importe. Hace falta poder generar ADEMAS un segundo Excel con otro formato, el que usa Carmen para la importacion adicion. PENDIENTE DE DATOS (la feature no arranca sin esto): el humano tiene que pasar el fichero de ejemplo del formato Carmen -se convierte con markitdown y se guarda en docs/referencia/, el original no se versiona- y explicar que es la importacion adicion y en que sistema entra ese Excel. Sin las dos cosas no hay criterio de aceptacion verificable y lo que se escriba sera una adivinanza.
 
+### F-025 · Obras de postventa sacadas de los capítulos de POSTV2
+
+estado **pendiente** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-025-obras-postventa-postv2`
+
+Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio echa en falta obras de postventa. Causa: las obras en postventa están CERRADAS en Sigrid y el filtro estados_excluidos de config.yaml las quita; sin la obra en el maestro el front no ofrece su Postv-XXXX (app.js ~175-191). 69 de 78 obras con postventa en POSTV2 no llegan. Decisión del humano 2026-09-29: la lista de obras de postventa sale de los CAPÍTULOS del proyecto POSTV2, sea cual sea el estado de la obra. Propuesta del líder pendiente de objeción: una obra cerrada se ofrece solo como Postv-, no como obra normal. RIESGOS para la spec: (a) F-002 dejó escrito en docs/ARCHITECTURE.md que P5 imputa por PARTIDA en POSTV2; hay que conciliar capítulos y partidas sin romper esa regla; (b) límite de servicio: POSTVENTA_OBRA_COD vive hoy solo en el transfer; decidir si la API lo lee o pregunta al transfer, pero el universo de postventa del front y el del transfer no pueden divergir.
+
+### F-026 · Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro
+
+estado **pendiente** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-026-recursos-sin-ficha-empleado`
+
+Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. El recurso MO/0772 (Eusebio Vindel Duro, activo, empresa 1, hora MENC) no tiene ficha de empleado enlazada en el data mart, y la SQL de sync parte de dbo.emp enlazando res.conide = emp.ide: un recurso sin empleado no aparece nunca. Hay otros 9 recursos de la empresa 1 en la misma situación, casi todos altas recientes. Aunque entraran, hoy no se registrarían: la API manda empleado_ide y el transfer resuelve el recurso por res.conide. CAUSA RAÍZ (progress/explore_eusebio.md): el recurso tiene vacío «Empleado asociado» (res.conide) y no existe ficha de empleado con su NIF en ninguna empresa del data mart. Es un patrón de alta: ningún ENCARGADO DE OBRA, capataz ni gruista dado de alta recientemente en la empresa 1 lo tiene, y aun así Sigrid les imputa partes (MO/0496 lleva 1.201 líneas desde 2020 sin empleado). MO/0496 es un caso aparte: su ficha de empleado existe pero solo está enlazada a su recurso de la UTE 18, así que probablemente entra en el cuadrante con el recurso de la UTE. Dos salidas: de DATOS (Administración rellena «Empleado asociado» en el recurso; rellenar solo «Recurso relacionado» en el empleado no basta) o de MODELO (el sync parte del recurso, el trabajador se identifica por recurso_ide y se envía recurso_ide al transfer, que ya lo admite). Pregunta abierta para negocio: si encargados y gruistas se dan de alta sin ficha de empleado A PROPÓSITO, el arreglo tiene que ser el de modelo. Quedan tres SELECT por lanzar contra Sigrid para confirmar, escritos en el informe.
+
 ### F-020 · Revisar y mejorar el formato del Excel de exportacion actual
 
 estado **pendiente** · prioridad 4 · rigor `estandar` · SDD no · rama `feature/F-020-mejorar-excel-exportacion`
 
-Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee.
+Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio.
+
+### F-024 · Selector de empresa arriba a la derecha, Construcciones Ruesma por defecto
+
+estado **pendiente** · prioridad 4 · rigor `estandar` · SDD sí · rama `feature/F-024-selector-empresa`
+
+Salida de la revisión de negocio del 2026-09-29. Botón/selector de empresa en la esquina superior derecha del cuadrante. Por defecto, Construcciones Ruesma (empresa 1). Filtra obras y recursos que se ven y en qué empresa se imputa: decisión del humano 2026-09-29, se imputa a la empresa filtrada. Depende de F-023 (empresa en los maestros) y alimenta F-022 (la empresa viaja en la línea). El filtrado lo sirve la API; el front no decide nada.
+
+### F-027 · Deshacer solo lo propio: nadie deshace lo de otro usuario
+
+estado **pendiente** · prioridad 4 · rigor `estandar` · SDD no · rama `feature/F-027-deshacer-por-usuario`
+
+Salida de la revisión de negocio del 2026-09-29. Hoy el deshacer es por trabajador y deshace su última modificación (DeshacerUltimaModificacion, ruta /periodos/{anio}/{mes}/trabajadores/{ide}/deshacer; botón y Ctrl+Z en app.js ~563 y ~975) sin mirar quién la hizo. Se pide que un usuario solo pueda deshacer sus propios cambios. La regla vive en la API con el usuario que inyecta el front desde Easy Auth; el front solo oculta el botón.
 
 ### F-005 · Alinear los literales internos con el nombre «dedicación»
 
@@ -66,11 +112,29 @@ estado **pendiente** · prioridad 5 · rigor `estandar` · SDD sí · rama `feat
 
 El proyecto se llama de dos maneras y el humano decidió el 2026-08-19 el reparto: el nombre de dominio y de los servicios es «dedicación» (las carpetas ya son dedicacion-*), la carpeta del monorepo se queda como «porcentajes», y la synckey 'porcentajes:{id}' NO se toca, porque es un identificador funcional escrito en Sigrid y cambiarlo invalidaría la idempotencia de lo ya registrado. Queda alinear lo que aún dice otra cosa: service_name del transfer, sus README y los literales internos, y dejar las dos decisiones escritas donde se busquen.
 
+### F-028 · Borrar todo lo que está en pantalla
+
+estado **pendiente** · prioridad 5 · rigor `estandar` · SDD no · rama `feature/F-028-borrar-todo-filtrado`
+
+Salida de la revisión de negocio del 2026-09-29. Botón «Borrar todo». Decisión del humano 2026-09-29: borra SOLO lo filtrado que aparece en pantalla en ese momento, no el mes entero. El borrado lo hace la API sobre la lista de trabajadores que le pasa el front.
+
 ### F-006 · Sanear la suite del transfer
 
 estado **pendiente** · prioridad 6 · rigor `estandar` · SDD no · rama `feature/F-006-sanear-suite-transfer`
 
 tests/test_pipeline_offline.py tiene un test que devuelve un objeto Preflight en vez de comprobarlo con assert: pytest lo avisa y ese test no verifica nada. Se revisa la suite entera con el mismo criterio.
+
+### F-029 · Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada
+
+estado **pendiente** · prioridad 6 · rigor `estandar` · SDD sí · rama `feature/F-029-seleccion-multiple-completar-100`
+
+Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas con Ctrl (sueltas) y Shift (rango) y aplicarles una acción que asigna a la obra filtrada. Decisión del humano 2026-09-29: COMPLETA HASTA EL 100 %, es decir, a cada trabajador le pone en la obra filtrada lo que le falte para llegar al 100 %, sin tocar sus otras obras. Depende del filtro por obra (F-021). El cálculo de lo que falta vive en la API, no en app.js.
+
+### F-030 · Dedicación por días, bajas e incidencias con calendario del trabajador
+
+estado **pendiente** · prioridad 6 · rigor `critico` · SDD sí · rama `feature/F-030-dias-bajas-incidencias`
+
+Salida de la revisión de negocio del 2026-09-29. Dos peticiones que se resuelven con el mismo mecanismo: (1) en vez de teclear el %, indicar un rango de fechas y que el % salga de los días laborables; (2) poder indicar bajas y otras incidencias como en partes (V/B/AT/FJ/F/H/M, ver azure-apps/partes.md), con el % calculado por días. Decisiones del humano 2026-09-29: el calendario es el mismo que usa nominas-extras, cada trabajador con el suyo (allí: convenio por CCC, festivos por convenio y año, fines de semana no laborables; application/services/convenio_calendar.py). UX: una tecla especial (por ejemplo +) sobre la obra del recurso despliega una subfila debajo para fechas y tipo; NO debe interferir ni ralentizar la secuencia actual % Enter obra Enter, que funciona bien. A DECIDIR EN LA SPEC: de dónde sale el convenio de cada trabajador aquí; dónde viven los festivos sin copiar lógica ni datos entre proyectos (regla de límite de servicio); si las incidencias se escriben en Sigrid como en partes o solo descuentan días del 100 %; cómo afecta a P1-P5 del transfer.
 
 ### F-011 · Un solo codigo de hora mes por trabajador
 
@@ -90,11 +154,17 @@ estado **pendiente** · prioridad 9 · rigor `estandar` · SDD no · rama `featu
 
 Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T30, T30 se movio a F-015 y F-015 solo se llevo la mitad del Portal. La review de cierre de F-008 la busco en las trece entradas del backlog y no aparecia en ninguna. El problema: la api y el transfer comparten HOY la misma function key de sigrid-api, y lo unico que impide que la api escriba en el ERP es que su codigo no tiene rutas de escritura, NO la credencial. Es decir, la separacion es por disciplina, no por permisos: cualquiera que anada por error una llamada de escritura a la api tendria credencial para ejecutarla. Hay que preguntar al dueno de sigrid-api si puede emitir una clave de SOLO LECTURA y, si puede, desplegarla en la api. Si no puede, hay que dejar escrito que la separacion depende del codigo y que eso es un riesgo aceptado a conciencia.
 
-### F-021 · El filtro por obra muestra solo el chip de la obra filtrada
+### F-021 · Filtro por obra: solo su chip y los recursos asignados en Sesame
 
-estado **pendiente** · prioridad 10 · rigor `estandar` · SDD no · rama `feature/F-021-filtro-obra-chip-unico`
+estado **pendiente** · prioridad 10 · rigor `estandar` · SDD sí · rama `feature/F-021-filtro-obra-chip-unico`
 
-Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asignaciones pinta un chip por cada obra del trabajador (dedicacion-front/static/js/app.js, construirCelda ~530-545). El filtro 'Filtrar obra...' de esa columna (trabajadoresVisibles ~439) decide que FILAS se ven, pero cada fila sigue pintando TODOS sus chips: filtras por una obra y ves al trabajador con las otras cuatro al lado. Se pide que, con el filtro activo, cada fila muestre solo el chip que coincide. A DECIDIR EN LA SPEC: la columna total y el estado (OK/FALTA/EXCESO) seguirian refiriendose al 100 % de TODAS las obras, asi que la fila se contradice a simple vista; hay que decidir si se recalcula sobre lo filtrado -y entonces el estado deja de significar lo que significa- o si se avisa de que hay chips ocultos. Es presentacion pura: no toca dedicacion-api ni el transfer y no cambia nada de lo que se registra en Sigrid.
+Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asignaciones pinta un chip por cada obra del trabajador (dedicacion-front/static/js/app.js, construirCelda ~530-545). El filtro 'Filtrar obra...' de esa columna (trabajadoresVisibles ~439) decide que FILAS se ven, pero cada fila sigue pintando TODOS sus chips: filtras por una obra y ves al trabajador con las otras cuatro al lado. Se pide que, con el filtro activo, cada fila muestre solo el chip que coincide. A DECIDIR EN LA SPEC: la columna total y el estado (OK/FALTA/EXCESO) seguirian refiriendose al 100 % de TODAS las obras, asi que la fila se contradice a simple vista; hay que decidir si se recalcula sobre lo filtrado -y entonces el estado deja de significar lo que significa- o si se avisa de que hay chips ocultos. Es presentacion pura: no toca dedicacion-api ni el transfer y no cambia nada de lo que se registra en Sigrid. AMPLIADA 2026-09-29 (revisión de negocio): el filtro por obra debe además SELECCIONAR los recursos asignados a esa obra en Sesame (el humano confirma que Sesame guarda la obra de cada persona). Eso deja de ser presentación pura: cruza la frontera del proyecto (sesame-api, ver azure-apps/partes.md 5.3 bis) y la consulta la hace la API, no el front. Pendiente en la spec: si sesame-api expone la obra asignada y si está desplegado; cómo se casa la persona (DNI) y la obra de Sesame con las de Sigrid. La selección que produce es la que usa F-029.
+
+### F-031 · MCP para que una IA haga el trabajo del usuario
+
+estado **pendiente** · prioridad 11 · rigor `critico` · SDD sí · rama `feature/F-031-mcp-ia`
+
+Salida de la revisión de negocio del 2026-09-29. Servidor MCP para que una IA responda sobre la información de la BBDD de la app y, sobre todo, pueda ESCRIBIR: hacer el trabajo del usuario en el cuadrante. Límites propuestos por el líder para la spec: escribe SIEMPRE a través de dedicacion-api con la identidad del usuario, nunca directo a PostgreSQL, para que valgan las mismas reglas (100 %, periodo abierto, deshacer propio de F-027); NO puede lanzar el registro en Sigrid, ese paso sigue siendo humano desde el front. A decidir: dónde vive (dentro de la API o servicio aparte), autenticación, y si toma como referencia mcp-bbdd (azure-apps/mcp_bbdd.md). Cambia lo que el proyecto expone: azure-apps/dedicacion.md se actualiza en el mismo trabajo.
 
 ### F-014 · Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14
 
