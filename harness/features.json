@@ -368,7 +368,7 @@
         "Comprobado contra datos reales (preview) que los recursos inactivos señalados por negocio ya no salen",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "spec_ready",
       "sdd": true,
       "rigor": "critico",
       "priority": 2,

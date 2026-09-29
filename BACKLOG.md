@@ -12,7 +12,7 @@ Resumen: **29 features**, 21 abiertas, 8 terminadas.
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | pendiente | critico | `feature/F-022-transfer-obra-por-empresa` |
-| F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | pendiente | critico | `feature/F-023-sync-empresa-y-estado-recurso` |
+| F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | spec lista | critico | `feature/F-023-sync-empresa-y-estado-recurso` |
 | F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
 | F-026 | Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro | 3 | pendiente | critico | `feature/F-026-recursos-sin-ficha-empleado` |
@@ -66,7 +66,7 @@ Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en 
 
 ### F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
 
-estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-023-sync-empresa-y-estado-recurso`
+estado **spec lista** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-023-sync-empresa-y-estado-recurso`
 
 Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio ve recursos inactivos en el cuadrante. Dos causas: (1) la SQL de sync (services/dedicacion-api/config/config.yaml) no lee la empresa (con.emp; Construcciones Ruesma = 1) y mezcla fichas de todas; en obras entran ~140 de otras empresas y 81 códigos salen duplicados; el dedupe por DNI puede quedarse con la ficha de otra empresa. (2) activo se decide por el último emphis sin fecbaj; un emp sin emphis cuenta como activo y se ignora el estado del recurso. Decisión del humano 2026-09-29: inactivo es un ESTADO del recurso en Sigrid; la spec localiza el campo exacto y sus valores en azure-apps/sigrid_tablas.md. Se sincronizan TODAS las empresas guardando la empresa de cada ficha (el filtro lo hace F-024); el dedupe por persona pasa a ser dentro de cada empresa.
 
