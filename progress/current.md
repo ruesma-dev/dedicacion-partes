@@ -6,7 +6,7 @@
 
 ## F-022 · implementer en marcha
 
-- Rama `feature/F-022-transfer-obra-por-empresa`. Tarea en curso: **T9**.
+- Rama `feature/F-022-transfer-obra-por-empresa`. Tarea en curso: **T11** (T10 es MANUAL del humano, abajo).
 - Desviación menor (orden, no alcance): `empresa=1` en las LÍNEAS de los
   dobles (`conftest.linea()`, `test_pipeline_offline.lineas_entrada()`) entra
   en el commit de T3 y no en el de T4. Con las reglas nuevas, una línea sin
@@ -35,6 +35,27 @@
   revisar y hacer el commit en `azure-apps` (sin commit por el agente), y
   decidir si la corrección de `ruesma_rep` se porta a `INTEGRACION.md` (fuera
   del alcance de F-022).
+- T9: campaña completa en serie (`--workers 1`: el fichero sin versionar
+  `progress/explore_grafico_parte.md` impide la paralela y no es nuestro).
+  Primera pasada (SHA `c4d9c3e`): 29 mutantes, 5 supervivientes; dos de
+  ellos (`registro_pipeline.py:109` y `:116`) resultaron FALSOS: aplicados a
+  mano en el árbol, los mata `test_f002_r11_modo_pruebas_destino_y_partida`.
+  Esa pasada se DESCARTA. Se arreglaron los otros tres (mensaje de obra
+  ambigua con el código pedido; test de los datos del script manual), se
+  borraron `__pycache__`/`.pytest_cache` y se relanzó: **28/28 muertos, 0
+  supervivientes** (SHA `dfe079d`, `progress/mutacion_F-022.md`).
+
+## F-022 · verificación MANUAL pendiente (humano) — T10 / M1
+
+Preflight real, **solo lectura**, con el transfer en modo pruebas (API 8090 y
+transfer 8006 en local), sobre un periodo con al menos una línea de
+postventa:
+
+    curl -s -X POST http://127.0.0.1:8090/api/v1/periodos/AAAA/MM/registro/preflight -H "Content-Type: application/json" -H "X-Usuario: <usuario>" -d "{}"
+
+Comprobar, en la obra con postventa: `obra_postventa.empresa == 1`,
+`obra_destino.codigo == "0404"` y `obra_destino.empresa == 1`. **NO** se lanza
+`registro/ejecutar`. Resultado real: _pendiente, a anotar aquí_.
 
 > **2026-09-29: el humano aprueba las specs de F-022 y F-023.** F-022 pasa
 > a **`in_progress`** en `feature/F-022-transfer-obra-por-empresa`. F-023 sigue en `spec_ready` en su rama, ya
