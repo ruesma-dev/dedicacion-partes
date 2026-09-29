@@ -30,9 +30,12 @@ _MAX_USUARIO = 64
 
 class RegistroSigrid:
     def __init__(self, session_factory: sessionmaker[Session],
-                 transfer: TransferClient) -> None:
+                 transfer: TransferClient, empresa_imputacion: int) -> None:
         self._sf = session_factory
         self._transfer = transfer
+        # Empresa de cada línea (docs/ARCHITECTURE.md#regla-empresa). Sin
+        # valor por defecto: sale siempre del ajuste EMPRESA_IMPUTACION.
+        self._empresa = empresa_imputacion
 
     # ------------------------------------------------------------- #
     def _payloads(self, s: Session, anio: int, mes: int,
@@ -64,6 +67,7 @@ class RegistroSigrid:
                 "empleado_ide": t.ide, "dni": t.dni, "nombre": t.nombre,
                 "categoria": t.categoria,
                 "es_postventa": bool(a.es_postventa),
+                "empresa": self._empresa,
             }
             if overrides.get(a.id):
                 linea["paride"] = int(overrides[a.id])
