@@ -557,3 +557,158 @@ def test_f022_r6_pipeline_sin_literales_de_obra_ni_de_empresa():
         assert "0404" not in texto, rel
         assert re.search(r"empresa\w*\s*(=|==|!=|:\s*int\s*=)\s*1\b",
                          texto) is None, rel
+
+
+# =========================== app y ajustes (T5) =========================== #
+
+#: Fichas que devuelve la lectura falsa de la app: (código, empresa) -> ide.
+FICHAS_APP = {("0404", 1): 828942, ("0678", 1): 555001,
+              ("POSTV2", 1): 999001, ("POSTV2", 28): 999028}
+
+
+class SigridFalsaApp:
+    """Sustituye a `SigridWriteClient._read` para la app entera: contesta a
+    cada consulta del pipeline por su forma, anota cada una y no escribe.
+    `repetir`: claves (código, empresa) que salen DOS veces (ambiguas)."""
+
+    def __init__(self, repetir=()) -> None:
+        self.consultas: list[tuple[str, list]] = []
+        self.repetir = set(repetir)
+
+    def __call__(self, cli, sql: str, params: list) -> list[dict]:
+        self.consultas.append((sql, list(params)))
+        if "con.cod = ? AND con.emp = ?" in sql:
+            cod, emp = params
+            ide = FICHAS_APP.get((cod, emp))
+            if ide is None:
+                return []
+            fila = {"ide": ide, "cod": cod, "res": cod, "cenide": 1,
+                    "emp": emp}
+            return [fila, fila] if (cod, emp) in self.repetir else [fila]
+        if "WHERE obr.ide = ?" in sql:
+            por_ide = {i: c for c, i in FICHAS_APP.items()}
+            cod, emp = por_ide[params[0]]
+            return [{"ide": params[0], "cod": cod, "res": cod, "cenide": 1,
+                     "emp": emp}]
+        if "FROM obrparpar" in sql and params[0] in (999001, 999028):
+            return PRESUPUESTO_PV_HOJAS
+        return []
+
+
+def _escribir_prohibido(self, statements):
+    raise AssertionError("la app no debe escribir en estos tests")
+
+
+@pytest.fixture
+def app_falsa(monkeypatch):
+    """`build_app` con ajustes falsos y la lectura de Sigrid sustituida."""
+    from types import SimpleNamespace
+
+    from fastapi.testclient import TestClient
+
+    from interface_adapters.api.app import build_app
+
+    ajustes = SimpleNamespace(
+        sigrid_api_base_url="http://sigrid.invalid",
+        sigrid_api_function_key="sin-clave", sigrid_api_database="ruesma",
+        sigrid_api_timeout_s=1.0, sigrid_max_statements=15,
+        tip_parte_trabajo=35, est_parte_activo=1, obra_pruebas_forzar=True,
+        obra_pruebas_cod="0404", marca_pruebas="PRUEBA-PORC",
+        postventa_registrar=True, postventa_obra_cod="POSTV2", paso_pos=64)
+
+    def fabricar(repetir=()):
+        lectura = SigridFalsaApp(repetir)
+        monkeypatch.setattr(SigridWriteClient, "_read",
+                            lambda self, sql, params: lectura(self, sql,
+                                                              params))
+        monkeypatch.setattr(SigridWriteClient, "escribir",
+                            _escribir_prohibido)
+        return TestClient(build_app(ajustes)), lectura
+
+    return fabricar
+
+
+def _peticion(*empresas, postventa: bool = False) -> dict:
+    lineas = []
+    for i, emp in enumerate(empresas, start=1):
+        lin = {"registro_id": i, "ano": 2026, "mes": 7, "porcentaje": 0.4,
+               "es_postventa": postventa}
+        if emp != "ausente":
+            lin["empresa"] = emp
+        lineas.append(lin)
+    return {"obra": {"codigo": "0678"}, "lineas": lineas}
+
+
+def test_f022_r1_app_la_empresa_llega_al_dominio(app_falsa):
+    """R1 · El campo `empresa` de cada línea llega al pipeline: la que no lo
+    trae (ausente o nulo) sale omitida por empresa; la que sí, por otra
+    cosa (aquí, no tiene recurso)."""
+    cliente, _ = app_falsa()
+    r = cliente.post("/api/registro/preflight",
+                     json=_peticion(1, "ausente", None))
+    assert r.status_code == 200, r.text
+    motivos = [a["motivo"] for a in r.json()["acciones"]]
+    assert motivos == [reglas.MOTIVO_SIN_RECURSO, reglas.MOTIVO_SIN_EMPRESA,
+                       reglas.MOTIVO_SIN_EMPRESA]
+
+
+@pytest.mark.parametrize("ruta", ["/api/registro/preflight",
+                                  "/api/registro/ejecutar"])
+def test_f022_r4_app_empresas_mezcladas_es_422_sin_leer(app_falsa, ruta):
+    """R4 · Petición con líneas de dos empresas: 422 que las nombra, sin una
+    sola lectura en Sigrid."""
+    cliente, lectura = app_falsa()
+    r = cliente.post(ruta, json=_peticion(28, 1))
+    assert r.status_code == 422
+    cuerpo = r.json()
+    assert cuerpo["ok"] is False and "[1, 28]" in cuerpo["error"]
+    assert lectura.consultas == []
+
+
+@pytest.mark.parametrize("ruta", ["/api/registro/preflight",
+                                  "/api/registro/ejecutar"])
+def test_f022_r8_app_obra_ambigua_es_502(app_falsa, ruta):
+    """R8 · Obra de pruebas con dos fichas en la empresa: el error genérico
+    de siempre (502), no un 422 de dato de entrada."""
+    cliente, _ = app_falsa(repetir={("0404", 1)})
+    r = cliente.post(ruta, json=_peticion(1))
+    assert r.status_code == 502
+    assert r.json()["ok"] is False and "ambigua" in r.json()["error"]
+
+
+def test_f022_r18_app_preflight_publica_la_empresa(app_falsa):
+    """R18 · `obra_destino` y `obra_postventa` del preflight llevan su
+    empresa. En modo pruebas el destino de la postventa es la obra de
+    pruebas (ARCHITECTURE.md#regla-p5): la elección de `POSTV2` por empresa
+    la cubre `test_f022_r15_pipeline_postventa_de_la_empresa_pedida`."""
+    cliente, _ = app_falsa()
+    r = cliente.post("/api/registro/preflight",
+                     json=_peticion(1, postventa=True))
+    cuerpo = r.json()
+    assert cuerpo["obra_destino"]["empresa"] == 1
+    assert cuerpo["obra_destino"]["codigo"] == "0404"
+    assert cuerpo["obra_postventa"]["empresa"] == 1
+    assert cuerpo["obra_postventa"]["ide"] == 828942
+    assert cuerpo["capitulo_postventa"]["cod"] == "0678"
+
+
+def test_f022_r18_app_ejecutar_publica_la_empresa(app_falsa):
+    """R18 · `obra_destino` de ejecutar lleva su empresa (sin escribir: la
+    única línea no tiene recurso)."""
+    cliente, _ = app_falsa()
+    r = cliente.post("/api/registro/ejecutar", json=_peticion(1))
+    assert r.status_code == 200, r.text
+    assert r.json()["obra_destino"]["empresa"] == 1
+    assert r.json()["escritas"] == []
+
+
+def test_f022_r5_app_ajustes_sin_sigrid_empresa():
+    """R5 · El transfer no tiene empresa por defecto: ni en sus ajustes ni en
+    su `.env.example` (D4)."""
+    from pathlib import Path
+
+    from config.settings import Settings
+
+    assert "sigrid_empresa" not in Settings.model_fields
+    ejemplo = Path(__file__).resolve().parents[1] / ".env.example"
+    assert "SIGRID_EMPRESA" not in ejemplo.read_text(encoding="utf-8")

@@ -20,7 +20,6 @@ class Settings(BaseSettings):
     sigrid_api_function_key: str = Field(..., alias="SIGRID_API_FUNCTION_KEY")
     # La ESCRITURA solo admite 'ruesma' (nunca la réplica ruesma_rep).
     sigrid_api_database: str = Field("ruesma", alias="SIGRID_API_DATABASE")
-    sigrid_empresa: int = Field(1, alias="SIGRID_EMPRESA")
     sigrid_api_timeout_s: float = Field(60.0, alias="SIGRID_API_TIMEOUT_S")
     # Tope de sentencias por batch de sigrid-api (MAX_STATEMENTS_PER_BATCH=20).
     sigrid_max_statements: int = Field(15, alias="SIGRID_MAX_STATEMENTS")
