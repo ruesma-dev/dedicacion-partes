@@ -6,7 +6,7 @@
 
 ## F-022 · implementer en marcha
 
-- Rama `feature/F-022-transfer-obra-por-empresa`. Tarea en curso: **T11** (T10 es MANUAL del humano, abajo).
+- Rama `feature/F-022-transfer-obra-por-empresa`. Implementer TERMINADO (informe `progress/impl_F-022.md`); pendiente: T10 MANUAL del humano (abajo), review.
 - Desviación menor (orden, no alcance): `empresa=1` en las LÍNEAS de los
   dobles (`conftest.linea()`, `test_pipeline_offline.lineas_entrada()`) entra
   en el commit de T3 y no en el de T4. Con las reglas nuevas, una línea sin
