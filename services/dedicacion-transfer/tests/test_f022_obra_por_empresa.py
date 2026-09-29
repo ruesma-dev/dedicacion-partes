@@ -198,3 +198,104 @@ def test_f022_r5_cliente_sin_empresa_por_defecto():
     busqueda = inspect.signature(SigridWriteClient.obra_por_codigo).parameters
     assert "empresa" in busqueda
     assert busqueda["empresa"].default is inspect.Parameter.empty
+
+
+# ============================= reglas (T3) ============================= #
+
+from application.services import reglas_porcentajes as reglas  # noqa: E402
+from domain.models.registro_models import HoraRecurso  # noqa: E402
+
+#: Horas del recurso 200 (MENC): basta para que una línea válida se escriba.
+HORAS = {200: [HoraRecurso(5, "MENC", None, 9000.0)]}
+
+
+def _linea_regla(**kw) -> LineaEntrada:
+    datos = dict(registro_id=1, ano=2026, mes=7, porcentaje=0.4,
+                 recurso_ide=200, nombre="Acuna Mera, Antonio", empresa=1)
+    datos.update(kw)
+    return LineaEntrada(**datos)
+
+
+@pytest.mark.parametrize("valor, esperado", [
+    (None, False), (0, False), (-1, False), (True, False), (False, False),
+    ("1", False), (1.0, False), (1, True), (28, True),
+])
+def test_f022_r2_reglas_empresa_valida(valor, esperado):
+    """R2 · Empresa válida = entero > 0. Un booleano no es una empresa."""
+    assert reglas.empresa_valida(valor) is esperado
+
+
+@pytest.mark.parametrize("empresas, esperada", [
+    ([], None), ([None, 0, -3], None), ([1], 1), ([1, None], 1),
+    ([None, 28, 28], 28),
+])
+def test_f022_r3_reglas_empresa_de_peticion(empresas, esperada):
+    """R3 · La empresa de la petición es la única válida de sus líneas;
+    ninguna válida -> None."""
+    lineas = [_linea_regla(registro_id=i, empresa=e)
+              for i, e in enumerate(empresas)]
+    assert reglas.empresa_de_peticion(lineas) == esperada
+
+
+def test_f022_r4_reglas_empresas_mezcladas():
+    """R4 · Más de una empresa válida en la misma petición: error que las
+    nombra, ordenadas."""
+    from domain.errores import EmpresasMezcladas
+
+    lineas = [_linea_regla(registro_id=1, empresa=28),
+              _linea_regla(registro_id=2, empresa=None),
+              _linea_regla(registro_id=3, empresa=1)]
+    with pytest.raises(EmpresasMezcladas) as exc:
+        reglas.empresa_de_peticion(lineas)
+    assert "[1, 28]" in str(exc.value)
+
+
+def test_f022_r2_reglas_motivos_exactos_y_cortos():
+    """R2 y R11 · Los motivos son el texto que el humano lee en la
+    asignación: caben en los 300 caracteres de `sigrid_motivo`."""
+    assert reglas.MOTIVO_SIN_EMPRESA == (
+        "la línea llega sin empresa: no se adivina a qué empresa imputarla "
+        "y no se escribe")
+    texto = reglas.MOTIVO_EMPRESA_OBRA.format(cod="0678", emp_obra=28,
+                                              emp_linea=1)
+    assert texto == ("la obra 0678 es de la empresa 28 y la línea se imputa "
+                     "a la empresa 1: no se escribe")
+    assert len(reglas.MOTIVO_SIN_EMPRESA) <= 300 and len(texto) <= 300
+
+
+@pytest.mark.parametrize("empresa", [None, 0, -1])
+def test_f022_r2_reglas_linea_sin_empresa_se_omite(empresa):
+    """R2 · Sin empresa válida, la línea se omite con su motivo."""
+    a = reglas.ReglasPorcentajes(HORAS).decidir(_linea_regla(empresa=empresa))
+    assert a.accion == "omitir"
+    assert a.motivo == reglas.MOTIVO_SIN_EMPRESA
+
+
+def test_f022_r2_reglas_sin_empresa_va_antes_que_la_postventa():
+    """R2 · El motivo de empresa se decide ANTES que la rama de postventa:
+    si no, una postventa sin empresa saldría con el motivo de P5."""
+    r = reglas.ReglasPorcentajes(HORAS, postventa_registrar=False)
+    a = r.decidir(_linea_regla(empresa=None, es_postventa=True))
+    assert a.motivo == reglas.MOTIVO_SIN_EMPRESA
+
+
+def test_f022_r11_reglas_motivo_de_empresa_de_la_obra():
+    """R11 · Con `motivo_empresa`, toda línea con empresa se omite con él;
+    la que no trae empresa conserva el suyo."""
+    motivo = reglas.MOTIVO_EMPRESA_OBRA.format(cod="0678", emp_obra=28,
+                                               emp_linea=1)
+    r = reglas.ReglasPorcentajes(HORAS, motivo_empresa=motivo,
+                                 postventa_registrar=False)
+    con = r.decidir(_linea_regla())
+    pv = r.decidir(_linea_regla(registro_id=2, es_postventa=True))
+    sin = r.decidir(_linea_regla(registro_id=3, empresa=None))
+    assert (con.accion, con.motivo) == ("omitir", motivo)
+    assert (pv.accion, pv.motivo) == ("omitir", motivo)
+    assert sin.motivo == reglas.MOTIVO_SIN_EMPRESA
+
+
+def test_f022_r19_reglas_linea_con_empresa_sigue_igual():
+    """R19 · Control: con empresa válida y sin motivo, se escribe como
+    siempre."""
+    a = reglas.ReglasPorcentajes(HORAS).decidir(_linea_regla())
+    assert a.accion == "escribir" and a.hora_codigo == "MENC"

@@ -149,14 +149,14 @@ def lineas_entrada():
     return [
         LineaEntrada(registro_id=1, ano=2026, mes=7, porcentaje=0.4,
                      empleado_ide=10, nombre="Acuna Mera, Antonio",
-                     categoria="Encargado"),
+                     categoria="Encargado", empresa=1),
         LineaEntrada(registro_id=2, ano=2026, mes=7, porcentaje=0.6,
-                     empleado_ide=11, nombre="Peon"),
+                     empleado_ide=11, nombre="Peon", empresa=1),
         LineaEntrada(registro_id=3, ano=2026, mes=7, porcentaje=0.5,
                      empleado_ide=10, nombre="Encargado PV",
-                     es_postventa=True),
+                     es_postventa=True, empresa=1),
         LineaEntrada(registro_id=4, ano=2026, mes=7, porcentaje=40,
-                     empleado_ide=10, nombre="Rango mal"),
+                     empleado_ide=10, nombre="Rango mal", empresa=1),
     ]
 
 
@@ -241,7 +241,7 @@ def test_override_manual():
     pl = RegistroPipeline(cliente=cli, settings=Settings())
     linea = LineaEntrada(registro_id=9, ano=2026, mes=7, porcentaje=0.3,
                          empleado_ide=10, nombre="Acuna", categoria="Encargado",
-                         paride=80002, partida_cod="CI.1.20")
+                         paride=80002, partida_cod="CI.1.20", empresa=1)
     pf = pl.preflight(obra=ObraEntrada(codigo="0678"), lineas=[linea])
     a = pf.acciones[0]
     assert a.paride == 80002 and a.partida_metodo == "manual", a

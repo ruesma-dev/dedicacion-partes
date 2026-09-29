@@ -38,6 +38,9 @@ from domain.models.registro_models import (
 OBRA_PRUEBAS = "0404"
 OBRA_ORIGEN = "0678"
 OBRA_POSTVENTA = "POSTV2"
+#: Empresa de todas las obras y líneas del doble (F-022, R19): la suite
+#: anterior a F-022 sigue probando lo mismo, ahora con la empresa explícita.
+EMPRESA = 1
 
 
 class SettingsFalso:
@@ -267,6 +270,6 @@ def linea(**kw) -> LineaEntrada:
     """Línea de entrada del cuadrante con valores por defecto sensatos."""
     datos = dict(registro_id=1, ano=2026, mes=7, porcentaje=0.4,
                  empleado_ide=10, nombre="Acuna Mera, Antonio",
-                 categoria="Encargado")
+                 categoria="Encargado", empresa=EMPRESA)
     datos.update(kw)
     return LineaEntrada(**datos)

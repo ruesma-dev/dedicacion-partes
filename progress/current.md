@@ -6,8 +6,12 @@
 
 ## F-022 · implementer en marcha
 
-- Rama `feature/F-022-transfer-obra-por-empresa`. Tarea en curso: **T3**.
-- Desviaciones respecto a la spec: ninguna por ahora.
+- Rama `feature/F-022-transfer-obra-por-empresa`. Tarea en curso: **T4**.
+- Desviación menor (orden, no alcance): `empresa=1` en las LÍNEAS de los
+  dobles (`conftest.linea()`, `test_pipeline_offline.lineas_entrada()`) entra
+  en el commit de T3 y no en el de T4. Con las reglas nuevas, una línea sin
+  empresa se omite, y sin ese dato la suite quedaba en rojo (91 fallos) entre
+  T3 y T4. Ningún assert cambia.
 
 > **2026-09-29: el humano aprueba las specs de F-022 y F-023.** F-022 pasa
 > a **`in_progress`** en `feature/F-022-transfer-obra-por-empresa`. F-023 sigue en `spec_ready` en su rama, ya
