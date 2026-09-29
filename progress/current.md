@@ -1,9 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-022 en review, pasada 2** (rigor crítico). Pasada 1:
-CHANGES_REQUESTED **solo por el rastro de este fichero**; código, tests,
-mutación (28/28) y documentación, aprobados (`progress/review_F-022.md`). El
+**F-022 con review APROBADA** (pasada 2, rigor crítico; `progress/review_F-022.md`).
+No pasa a `done` hasta que el humano ejecute T10 y haga el commit en `azure-apps`. El
 arnés es la **1.7.3**; lo de su actualización está en `history.md`.
 
 ## F-022 · El transfer busca cada obra por código y empresa
@@ -12,8 +11,10 @@ arnés es la **1.7.3**; lo de su actualización está en `history.md`.
   el 2026-09-29 (D1-D4; la D5 pasa a F-026). Implementer terminado
   (`progress/impl_F-022.md`); T1-T9 y T11 hechas, **T10 es MANUAL del humano**
   y está pendiente (abajo).
-- **Para pasar a `done` faltan**: la review aprobada, T10 ejecutada con su
-  resultado real anotado aquí y el commit del humano en `azure-apps`.
+- **Para pasar a `done` faltan**: T10 ejecutada con su resultado real anotado
+  aquí y el commit del humano en `azure-apps`. La review ya está aprobada.
+- **Al cerrar**: pasar a `history.md` la sección «Revisión de negocio del
+  2026-09-29» (observación 3 de la pasada 2) y anotar ruff 185 → 193.
 - Observaciones de la review 1, **recogidas**:
   - En los cortes R3/R11 `obra_destino` publica la obra de entrada con
     `empresa: null`. Queda como criterio en **F-024** (`features.json`).
@@ -78,7 +79,7 @@ Comprobar, en la obra con postventa: `obra_postventa.empresa == 1`,
 
 ## F-023 · spec aprobada, esperando turno
 
-Rama `feature/F-023-sync-empresa-y-estado-recurso`, en `spec_ready`, aprobada
+Rama `feature/F-023-sync-empresa-y-estado-recurso`: `spec_ready` **en su rama** (`988f79e`); en `dev` y aquí figura `pending` hasta que se mergee. Aprobada
 por el humano el 2026-09-29 (decisiones en `features.json`). Espera porque
 solo puede haber una feature en curso. **No se despliega sin F-024**
 (D4: sin selector, una persona con fichas en dos empresas sale dos veces).
@@ -94,7 +95,7 @@ en la rama `chore/backlog-f022-f031`, ya mergeada en `dev` (`01671a9`, sin push)
 - **Fallos de maestros**, diagnosticados con evidencia en
   `progress/explore_maestros_sync.md` y `progress/explore_eusebio.md`:
   - F-022: el transfer busca la obra sin empresa. POSTV2 existe en las
-    empresas 1 y 28. **Bloquea F-018** (en curso, ver arriba).
+    empresas 1 y 28. **Bloquea F-018.** (F-022 es la feature en review, arriba; F-018 sigue `pending`.)
   - F-023: el sync no lee la empresa y no usa el estado del recurso.
   - F-025: las obras de postventa están CERRADAS y el filtro de estado las
     quita.
