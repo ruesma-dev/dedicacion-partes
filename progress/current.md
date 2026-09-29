@@ -1,12 +1,40 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución ni bloqueada.** Rama `dev`, portero en verde,
-árbol limpio y **todo pusheado** a `origin/dev`. El arnés es la **1.7.3**.
+**Ninguna feature en ejecución ni bloqueada.** El arnés es la **1.7.3**.
 
-> **Sesión cerrada el 2026-08-21.** Quien retome: ejecuta `bash
-> harness/init.sh`, lee esto y coge la primera `pending` por prioridad (F-005).
-> No hay trabajo a medias.
+## Revisión de negocio del 2026-09-29: F-022 a F-031 entran al backlog
+
+Negocio revisó la app en uso y salieron fallos y peticiones. Se dan de alta
+en la rama `chore/backlog-f022-f031` (commit local, sin merge ni push):
+
+- **Fallos de maestros**, diagnosticados con evidencia en
+  `progress/explore_maestros_sync.md` y `progress/explore_eusebio.md`:
+  - F-022: el transfer busca la obra sin empresa. POSTV2 existe en las
+    empresas 1 y 28. **Bloquea F-018.**
+  - F-023: el sync no lee la empresa y no usa el estado del recurso.
+  - F-025: las obras de postventa están CERRADAS y el filtro de estado las
+    quita.
+  - F-026: el recurso de Eusebio Vindel Duro tiene vacío «Empleado
+    asociado» (`res.conide`).
+- **Peticiones**:
+  - F-024: selector de empresa.
+  - F-027: deshacer solo lo propio.
+  - F-028: borrar lo que está en pantalla.
+  - F-029: selección múltiple y completar hasta el 100 %.
+  - F-030: dedicación por días, bajas e incidencias.
+  - F-031: MCP para IA.
+  - Se amplían F-020 (quitar la columna E del Excel) y F-021 (el filtro
+    por obra marca a los asignados en Sesame).
+- Las decisiones del humano de ese día están escritas en la descripción de
+  cada entrada.
+- **Pendiente de negocio:**
+  - Si encargados y gruistas se dan de alta sin ficha de empleado a
+    propósito (decide cómo se arregla F-026).
+  - Objeción, si la hay, a que una obra cerrada se ofrezca solo como
+    «Postv-» (F-025).
+- **Por lanzar contra Sigrid (solo SELECT):** las tres consultas de
+  `progress/explore_eusebio.md`, que confirman la causa de F-026.
 
 ## Arnés actualizado a 1.7.3 (2026-08-22)
 
