@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
-from application.filtros_maestros import CriterioActivoRecurso
 from domain.errors import (
     LineasInvalidas,
     NadaQueDeshacer,
@@ -34,6 +33,8 @@ from domain.models import (
     Trabajador,
 )
 from domain.ports import SigridGateway, UnitOfWork
+
+from application.filtros_maestros import CRITERIO_VACIO, CriterioActivoRecurso
 
 logger = logging.getLogger(__name__)
 
@@ -294,7 +295,7 @@ class PreviewSync:
         estados_excluidos: list[str] | None = None,
         filtro_estados: bool = True,
         exigir_codigo_mes: bool = True,
-        criterio: CriterioActivoRecurso = CriterioActivoRecurso(),
+        criterio: CriterioActivoRecurso = CRITERIO_VACIO,
     ) -> None:
         self._sigrid = sigrid
         self._sql_empleados = sql_empleados

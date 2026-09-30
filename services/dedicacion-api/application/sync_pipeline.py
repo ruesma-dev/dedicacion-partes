@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from application.filtros_maestros import (
+    CRITERIO_VACIO,
     CriterioActivoRecurso,
     depurar_empleados,
     depurar_obras,
@@ -55,7 +56,7 @@ class FetchEmpleadosStep:
         categorias_incluidas: list[str] | None = None,
         filtro_activo: bool = True,
         exigir_codigo_mes: bool = True,
-        criterio: CriterioActivoRecurso = CriterioActivoRecurso(),
+        criterio: CriterioActivoRecurso = CRITERIO_VACIO,
     ) -> None:
         self._sigrid = sigrid
         self._sql = sql

@@ -59,6 +59,10 @@ class CriterioActivoRecurso:
     activo: bool = True
 
 
+#: Criterio vacío, compartido como valor por defecto (es inmutable).
+CRITERIO_VACIO = CriterioActivoRecurso()
+
+
 @dataclass
 class ResultadoDepuracion:
     filas: list[dict[str, Any]]
@@ -81,7 +85,7 @@ def depurar_empleados(
     categorias_incluidas: list[str],
     filtro_activo: bool,
     exigir_codigo_mes: bool = True,
-    criterio: CriterioActivoRecurso = CriterioActivoRecurso(),
+    criterio: CriterioActivoRecurso = CRITERIO_VACIO,
 ) -> ResultadoDepuracion:
     resultado = ResultadoDepuracion(filas=[], brutos=len(filas))
 
