@@ -115,7 +115,7 @@ como hoy.
 
 Por `POST /api/sql/read` contra `ruesma_rep`. Ningún agente las ejecuta.
 
-**Q1 — cierra D1.** Estados reales de los recursos de la empresa 1 y su
+**Q1 — cierra D1** (no lanzada: la D1 se cerró el 2026-10-01 sin ella). Estados reales de los recursos de la empresa 1 y su
 relación con la fecha de baja:
 
 ```sql

@@ -28,7 +28,7 @@ usa la SQL de obras), y `con.fecbaj` «Fecha baja» (l. 5658).
 **El diccionario no dice qué valores de `con.est` significan inactivo** para
 un recurso, ni si Administración usa `est`, `fecbaj` o ambos. El criterio va
 por **configuración** (literales de estado excluidos + interruptor de fecha de
-baja) y sus valores quedan en **D1**, con la consulta que la cierra (design §4).
+baja) y sus valores quedan en **D1**, cerrada el 2026-10-01 (design §4).
 
 ## Requisitos
 

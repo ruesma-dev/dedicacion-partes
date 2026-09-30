@@ -1,8 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-023 con review APROBADA** (pasada 1, rigor crítico; `progress/review_F-023.md`).
-T9 cumplida; falta la pasada 3 (documental) de la review para mergear a `dev`, y T10 y T11 para `done`. El arnés es la **1.7.3**.
+**F-023 con review APROBADA** (pasada 3, rigor crítico; `progress/review_F-023.md`).
+T9 cumplida y mergeada a `dev`; faltan T10 y T11 (MANUAL) para `done`. El arnés es la **1.7.3**.
 
 ## F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
 
@@ -41,8 +41,8 @@ T9 cumplida; falta la pasada 3 (documental) de la review para mergear a `dev`, y
   comentario corregido (observación 1 de la review), `r5` y `r18` adaptados
   con fase RED real, mutación 33/33, `init.sh` en verde. Review pasada 2:
   código y tests **aprobados**; CHANGES_REQUESTED solo porque la D1 seguía
-  abierta en otros sitios del rastro (corregido). Pasada 3, solo documental,
-  lanzada. Automejora → encargo `c94c072` en `arnes-base`.
+  abierta en otros sitios del rastro (corregido). Pasada 3 (documental):
+  APPROVED; sus dos observaciones, recogidas. Automejora → encargo `c94c072` en `arnes-base`.
 - **T10 · R19 y D6**: con la API local apuntando a Sigrid,
   `GET http://localhost:8090/api/v1/sync/preview`. Comprobar que no llega
   truncada, que los recursos inactivos que señaló negocio (lista D5, **aún no
