@@ -12,11 +12,20 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from application.filtros_maestros import depurar_empleados, depurar_obras
+from application.filtros_maestros import (
+    CriterioActivoRecurso,
+    depurar_empleados,
+    depurar_obras,
+)
 from domain.models import ResultadoSync, ResultadoSyncMaestro
 from domain.ports import SigridGateway, UnitOfWork
 
 logger = logging.getLogger(__name__)
+
+#: Columnas sin las que no se sincroniza (F-023 R6). Las comparte el preview
+#: (`use_cases.PreviewSync`) para que los dos exijan exactamente lo mismo.
+COLUMNAS_EMPLEADOS = frozenset({"ide", "nombre", "empresa"})
+COLUMNAS_OBRAS = frozenset({"ide", "cod", "empresa"})
 
 
 @dataclass
@@ -46,30 +55,37 @@ class FetchEmpleadosStep:
         categorias_incluidas: list[str] | None = None,
         filtro_activo: bool = True,
         exigir_codigo_mes: bool = True,
+        criterio: CriterioActivoRecurso = CriterioActivoRecurso(),
     ) -> None:
         self._sigrid = sigrid
         self._sql = sql
         self._categorias = categorias_incluidas or []
         self._filtro = filtro_activo and bool(self._categorias)
         self._exigir_mes = bool(exigir_codigo_mes)
+        self._criterio = criterio
 
     def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
         brutas = self._sigrid.leer(self._sql)
-        _validar_columnas(brutas, {"ide", "nombre"}, "sync.empleados.sql")
+        _validar_columnas(brutas, COLUMNAS_EMPLEADOS, "sync.empleados.sql")
         depurado = depurar_empleados(
             brutas, self._categorias, self._filtro,
             exigir_codigo_mes=self._exigir_mes,
+            criterio=self._criterio,
         )
         logger.info(
-            "sync empleados: %d brutos, %d duplicados de recurso, "
+            "sync empleados: %d brutos, %d de recurso de otra empresa, "
+            "%d por estado del recurso, %d duplicados de recurso, "
             "%d duplicados de persona, %d sin código de hora mensual, "
-            "%d excluidos por categoría, %d netos",
+            "%d excluidos por categoría, %d netos (%d con baja laboral)",
             depurado.brutos,
+            depurado.excluidos_otra_empresa,
+            sum(depurado.excluidos_estado_recurso.values()),
             depurado.duplicados_recurso,
             depurado.duplicados_persona,
             depurado.excluidos_sin_codigo_mes,
             depurado.excluidos_filtro,
             len(depurado.filas),
+            depurado.con_baja_laboral,
         )
         ctx.filas_empleados = depurado.filas
 
@@ -91,7 +107,7 @@ class FetchObrasStep:
 
     def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
         brutas = self._sigrid.leer(self._sql)
-        _validar_columnas(brutas, {"ide", "cod"}, "sync.obras.sql")
+        _validar_columnas(brutas, COLUMNAS_OBRAS, "sync.obras.sql")
         depurado = depurar_obras(brutas, self._estados, self._filtro)
         logger.info(
             "sync obras: %d brutas, %d excluidas por estado, %d netas",
@@ -146,7 +162,7 @@ class SyncMaestrosPipeline:
 
 
 def _validar_columnas(
-    filas: list[dict[str, Any]], requeridas: set[str], origen: str
+    filas: list[dict[str, Any]], requeridas: frozenset[str], origen: str
 ) -> None:
     if not filas:
         return
