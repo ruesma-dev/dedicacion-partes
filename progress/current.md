@@ -1,8 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-023 en review** (rigor crítico). Implementer terminado el 2026-09-30;
-reviewer lanzado. El arnés es la **1.7.3**.
+**F-023 con review APROBADA** (pasada 1, rigor crítico; `progress/review_F-023.md`).
+No se mergea a `dev` sin T9 (observación 3) ni pasa a `done` sin T9, T10 y T11. El arnés es la **1.7.3**.
 
 ## F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
 
@@ -11,8 +11,21 @@ reviewer lanzado. El arnés es la **1.7.3**.
   2026-09-29; decisiones en `features.json`.
 - **Implementer terminado**: T1-T8 y T12 hechas, un commit por tarea más dos
   de ajuste (`5ae53d1` … `19d4f40`); informe `progress/impl_F-023.md`, con
-  mutación 33/33 y dos desviaciones menores que valida el reviewer. **Reviewer
-  lanzado** → `progress/review_F-023.md`.
+  mutación 33/33 y dos desviaciones menores, aceptadas. **Review APROBADA**:
+  campaña reejecutada 33/33, cobertura 100 % (67/67), 0 avisos de ruff nuevos.
+- Observaciones de la review, **recogidas**:
+  1. R12 y el JOIN a `conest` del recurso quedan inertes (el tipo 33 no tiene
+     estados) y la comparación es por subcadena: un `"1"` casaría `"10"`. **Al
+     cerrar T9**, el líder corrige el comentario de `config.yaml` (para
+     recursos no hay literales; el criterio es la fecha de baja). Simplificar
+     R12 sería otra feature, si el humano la quiere.
+  2. T11 corregida abajo: las filas **desactivadas** conservan `empresa` NULL
+     (el upsert solo escribe las recibidas). Aviso llevado a F-024.
+  3. **T9 antes del merge a `dev`**, no solo antes del despliegue: sin el
+     criterio, esta rama mete en el maestro ~535 personas de baja como recurso
+     que hoy filtra `emphis`.
+  - Automejora (C4: comprobar que el resultado esperado de una MANUAL es
+    alcanzable) → encargo en el backlog de `arnes-base`.
 - **Explorador (D1), terminado** → `progress/explore_estado_recurso.md`: el
   «rojo» de Administración es la **fecha de baja del concepto del recurso**
   (`con.fecbaj > 0`), no un estado. El tipo 33 (recurso) no tiene estados en
@@ -36,8 +49,10 @@ reviewer lanzado. El arnés es la **1.7.3**.
   `por_empresa`. Resultado: _pendiente_.
 - **T11**: API contra la BBDD local `dedicacion`; comprobar que el esquema
   añade `empresa` a `trabajador` y `obra`; `POST /api/v1/sync` y
-  `SELECT empresa, COUNT(*) FROM obra GROUP BY empresa` (y lo mismo en
-  `trabajador`) sin NULL. Resultado: _pendiente_.
+  `SELECT empresa, COUNT(*) FROM obra WHERE activa GROUP BY empresa` y
+  `SELECT empresa, COUNT(*) FROM trabajador WHERE activo GROUP BY empresa`,
+  sin NULL. Las filas desactivadas **sí** pueden quedar con NULL, y es
+  correcto (observación 2 de la review). Resultado: _pendiente_.
 
 ## Lo siguiente, por prioridad
 
