@@ -10,8 +10,10 @@
 
 sync:
   empleados:
-    # Alias obligatorios: ide, cod, nombre, dni, categoria, recurso_ide
-    # Alias del filtro:    cod_hora_mes, importe_mes
+    # Alias obligatorios: ide, cod, nombre, dni, empresa, categoria,
+    #                     recurso_ide
+    # Alias del filtro:    cod_hora_mes, importe_mes, empresa_recurso,
+    #                     estado_recurso, baja_recurso, baja_laboral
     #
     # CRITERIO PRINCIPAL: solo entran los RECURSOS con CÓDIGO DE HORA
     # MENSUAL (auxhor.cod LIKE 'M%': MENC, MCAP, MJEFO…), que son los que
@@ -24,14 +26,27 @@ sync:
     # descarta la fila (el preview los cuenta como "sin código de hora
     # mensual", para poder revisarlos).
     #
-    # Activo = último historial laboral (emphis) sin fecha de baja.
+    # EMPRESA (F-023): se sincronizan TODAS las empresas. `empresa` es el
+    # con.emp de la ficha de empleado (la que se guarda, decisión D2) y
+    # `empresa_recurso` el del recurso: si difieren, el servicio descarta
+    # la fila. El dedupe por persona no mezcla empresas.
+    #
+    # ACTIVO (F-023): lo decide el ESTADO DEL RECURSO, no el historial
+    # laboral. Sin WHERE: el filtro se aplica en el servicio para que el
+    # preview pueda contar los excluidos. `baja_laboral` (fecbaj del último
+    # emphis) solo se cuenta, no excluye (decisión D3).
     sql: |
       SELECT emp.ide      AS ide,
              con.cod      AS cod,
              con.res      AS nombre,
              emp.dni      AS dni,
+             con.emp      AS empresa,
              tip.res      AS categoria,
              res.ide      AS recurso_ide,
+             rcon.emp     AS empresa_recurso,
+             COALESCE(rest.res, CAST(rcon.est AS VARCHAR(16))) AS estado_recurso,
+             rcon.fecbaj  AS baja_recurso,
+             uh.fecbaj    AS baja_laboral,
              hm.cod       AS cod_hora_mes,
              hm.pre       AS importe_mes
       FROM dbo.emp AS emp
@@ -43,6 +58,9 @@ sync:
           ORDER BY h.fec DESC, h.ide DESC
       ) AS uh
       LEFT JOIN dbo.res AS res ON res.conide = emp.ide
+      LEFT JOIN dbo.con AS rcon ON rcon.ide = res.ide
+      LEFT JOIN dbo.conest AS rest
+             ON rest.tip = rcon.tip AND rest.est = rcon.est
       LEFT JOIN dbo.auxrestip AS tip ON tip.ide = res.restipide
       OUTER APPLY (
           SELECT TOP 1 ah.cod AS cod, rh.pre AS pre
@@ -51,8 +69,26 @@ sync:
           WHERE rh.reside = res.ide AND ah.cod LIKE 'M%'
           ORDER BY ah.cod
       ) AS hm
-      WHERE COALESCE(uh.fecbaj, 0) = 0
-      ORDER BY con.res, res.ide
+      ORDER BY con.emp, con.res, res.ide
+
+    # Estado del RECURSO (F-023). `res` no tiene estado propio: es el de su
+    # fila de `con` (misma ide). Campos, según azure-apps/sigrid_tablas.md:
+    #   - con.est «Estado», Entero (l. 5657), con su literal en `conest`
+    #     por tip + est -> res (l. 6083-6089): alias `estado_recurso`;
+    #   - con.fecbaj «Fecha baja», Entero tipo fecha (l. 5658): alias
+    #     `baja_recurso`.
+    # El diccionario NO dice qué valores significan «inactivo» (decisión D1,
+    # abierta): hasta cerrarla con la consulta Q1 de
+    # specs/F-023-sync-empresa-y-estado-recurso/design.md §4, la lista entra
+    # VACÍA y la fecha de baja no excluye, así que nadie queda fuera por
+    # estado. El preview (empleados.excluidos_por_estado_recurso) enseña lo
+    # que se descarta en cuanto se rellenen.
+    filtro_estado_recurso: true
+    # Literales de conest.res del recurso que lo dejan fuera (subcadena
+    # normalizada: sin acentos ni mayúsculas, como en obras).
+    estados_recurso_excluidos: []
+    # true = también fuera todo recurso con con.fecbaj informada (> 0).
+    excluir_recurso_con_fecha_baja: false
 
     # Solo recursos con código de hora mensual (M*). Es EL filtro bueno:
     # deja fuera peones, oficiales y cualquiera que no vaya por porcentaje.
@@ -98,18 +134,21 @@ sync:
       - "Técnico Postventa"
 
   obras:
-    # Alias obligatorios: ide, cod, descripcion, estado_sigrid
+    # Alias obligatorios: ide, cod, empresa, descripcion, estado_sigrid
     # El estado legible sale de conest (con.tip + con.est → conest.res).
+    # `empresa` es el con.emp de la ficha (F-023): un mismo código en dos
+    # empresas son dos obras distintas, cada una con su ide.
     sql: |
       SELECT obr.ide                                        AS ide,
              con.cod                                        AS cod,
+             con.emp                                        AS empresa,
              con.res                                        AS descripcion,
              COALESCE(est.res, CAST(con.est AS VARCHAR(16))) AS estado_sigrid
       FROM dbo.obr AS obr
       JOIN dbo.con AS con ON con.ide = obr.ide
       LEFT JOIN dbo.conest AS est
              ON est.tip = con.tip AND est.est = con.est
-      ORDER BY con.cod
+      ORDER BY con.emp, con.cod
 
     # Se excluyen las obras cuyo estado contenga (normalizado) alguno de
     # estos literales. Ajustar con los estados reales que muestre el
