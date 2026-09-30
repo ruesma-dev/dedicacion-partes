@@ -1,20 +1,39 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-022 se cerró el 2026-09-30 (resumen en
-`history.md`). La siguiente es **F-023**, con spec aprobada: falta enseñar el
-plan de implementación al humano (PARADA 1). El arnés es la **1.7.3**.
+**F-023 en ejecución** (rigor crítico). Plan confirmado por el humano el
+2026-09-30; implementer lanzado. El arnés es la **1.7.3**.
 
-## F-023 · spec aprobada, esperando turno
+## F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
 
-Rama `feature/F-023-sync-empresa-y-estado-recurso`: `spec_ready` **en su rama** (`988f79e`); en `dev` figura `pending` hasta que se mergee. Aprobada
-por el humano el 2026-09-29 (decisiones en `features.json`). Espera porque
-solo puede haber una feature en curso. **No se despliega sin F-024**
-(D4: sin selector, una persona con fichas en dos empresas sale dos veces).
-Antes de verificarla faltan dos datos del humano: el resultado de la consulta
-Q1 (design §4, solo lectura), que dice qué estado de recurso es «inactivo», y
-la lista de recursos inactivos que señaló negocio.
+- Rama `feature/F-023-sync-empresa-y-estado-recurso`, con `dev` traído
+  (`792870f`, incluye F-022). Estado `in_progress`. Spec aprobada el
+  2026-09-29; decisiones en `features.json`.
+- **Implementer lanzado** con T1-T8 y T12 → `progress/impl_F-023.md`. Después,
+  reviewer.
+- **Explorador en paralelo, solo lectura**: intenta cerrar la D1 (qué
+  estados de recurso significan «de baja») con el data mart, sin
+  sigrid-api → `progress/explore_estado_recurso.md`. Si lo consigue, sus
+  valores se proponen al humano para T9; el implementer no los inventa.
+- **No se despliega sin F-024** (D4: sin selector, una persona con fichas en
+  dos empresas sale dos veces). Mergear a `dev` no despliega.
 
+### Verificaciones MANUAL (humano) de F-023
+
+- **T9 · D1**: lanzar la consulta Q1 (`specs/F-023-sync-empresa-y-estado-recurso/design.md`
+  §4) por `POST /api/sql/read` contra `ruesma_rep` y decidir los literales de
+  `estados_recurso_excluidos` y si `excluir_recurso_con_fecha_baja` va a
+  `true`. Puede sustituirla el hallazgo del explorador, si el humano lo
+  acepta. Resultado: _pendiente_.
+- **T10 · R19 y D6**: con la API local apuntando a Sigrid,
+  `GET http://localhost:8090/api/v1/sync/preview`. Comprobar que no llega
+  truncada, que los recursos inactivos que señaló negocio (lista D5, **aún no
+  entregada**) salen en `excluidos_por_estado_recurso`, y revisar
+  `por_empresa`. Resultado: _pendiente_.
+- **T11**: API contra la BBDD local `dedicacion`; comprobar que el esquema
+  añade `empresa` a `trabajador` y `obra`; `POST /api/v1/sync` y
+  `SELECT empresa, COUNT(*) FROM obra GROUP BY empresa` (y lo mismo en
+  `trabajador`) sin NULL. Resultado: _pendiente_.
 
 ## Lo siguiente, por prioridad
 
@@ -23,7 +42,7 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 | # | Feature | Qué es |
 |---|---|---|
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
-| 2 | **F-023** | sync de maestros con empresa y estado del recurso (spec aprobada; **no se despliega sin F-024**) |
+| — | **F-023** | en curso (arriba); **no se despliega sin F-024** |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
 | 4 | **F-024**, **F-027**, F-020 | selector de empresa; deshacer solo lo propio; Excel |
