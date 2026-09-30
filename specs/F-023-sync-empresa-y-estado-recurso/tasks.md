@@ -9,7 +9,7 @@ Rama: `feature/F-023-sync-empresa-y-estado-recurso`. Un commit por tarea:
 > `harness/features.json` y `progress/current.md` (los lleva el líder).
 > Comando de tests: `cd services/dedicacion-api && .venv/Scripts/python -m pytest tests/test_f023_sync_empresa.py -q`.
 
-- [ ] T1: Crear `tests/test_f023_sync_empresa.py` con los tests de design §6 (`test_f023_rN_*`, R1-R18), sin red ni BBDD  |  Verificación: el comando de tests falla (RED) por `empresa` ausente del ORM, `CriterioActivoRecurso` inexistente y alias ausentes; salida real pegada en `progress/impl_F-023.md`
+- [x] T1: Crear `tests/test_f023_sync_empresa.py` con los tests de design §6 (`test_f023_rN_*`, R1-R18), sin red ni BBDD  |  Verificación: el comando de tests falla (RED) por `empresa` ausente del ORM, `CriterioActivoRecurso` inexistente y alias ausentes; salida real pegada en `progress/impl_F-023.md`
 - [ ] T2: Añadir `empresa` a `TrabajadorORM`, `ObraORM` (`orm_models.py`) y a `Trabajador`, `Obra` (`domain/models.py`)  |  Verificación: `pytest tests/test_f023_sync_empresa.py -q -k "r1 or r2"` en verde y `pytest tests/test_f003_esquema.py -q` en verde
 - [ ] T3: `repositories.py`: `_entero`, `empresa` en alta, actualización, `cambio` y mapeos a dominio  |  Verificación: `pytest tests/test_f023_sync_empresa.py -q -k "r7 or r8"` en verde
 - [ ] T4: `filtros_maestros.py`: `CriterioActivoRecurso`, campos nuevos de `ResultadoDepuracion`, paso 0 fila a fila, clave de persona con empresa, `con_baja_laboral` y limpieza de columnas auxiliares (design §2)  |  Verificación: `pytest tests/test_f023_sync_empresa.py -q -k "r9 or r10 or r11 or r12 or r13 or r14 or r15 or r16"` en verde
