@@ -5,13 +5,15 @@
 
 Resumen: **29 features**, 20 abiertas, 9 terminadas.
 
+En curso: **F-023**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
-| F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | pendiente | critico | `feature/F-023-sync-empresa-y-estado-recurso` |
+| F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | en curso | critico | `feature/F-023-sync-empresa-y-estado-recurso` |
 | F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
 | F-026 | Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro | 3 | pendiente | critico | `feature/F-026-recursos-sin-ficha-empleado` |
@@ -60,9 +62,9 @@ Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZA
 
 ### F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
 
-estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-023-sync-empresa-y-estado-recurso`
+estado **en curso** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-023-sync-empresa-y-estado-recurso`
 
-Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio ve recursos inactivos en el cuadrante. Dos causas: (1) la SQL de sync (services/dedicacion-api/config/config.yaml) no lee la empresa (con.emp; Construcciones Ruesma = 1) y mezcla fichas de todas; en obras entran ~140 de otras empresas y 81 códigos salen duplicados; el dedupe por DNI puede quedarse con la ficha de otra empresa. (2) activo se decide por el último emphis sin fecbaj; un emp sin emphis cuenta como activo y se ignora el estado del recurso. Decisión del humano 2026-09-29: inactivo es un ESTADO del recurso en Sigrid; la spec localiza el campo exacto y sus valores en azure-apps/sigrid_tablas.md. Se sincronizan TODAS las empresas guardando la empresa de cada ficha (el filtro lo hace F-024); el dedupe por persona pasa a ser dentro de cada empresa. SPEC APROBADA por el humano el 2026-09-29; espera turno porque solo puede haber una in_progress. Decisiones: D2 empresa del trabajador = la de su ficha de empleado; D3 se quita el filtro de emphis; D4 F-023 NO se despliega sin F-024; D6 paginar fuera. Pendiente antes de verificar (T9/T10): D1, valores de estado de recurso inactivo (consulta Q1), y D5, lista de recursos inactivos señalados por negocio.
+Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio ve recursos inactivos en el cuadrante. Dos causas: (1) la SQL de sync (services/dedicacion-api/config/config.yaml) no lee la empresa (con.emp; Construcciones Ruesma = 1) y mezcla fichas de todas; en obras entran ~140 de otras empresas y 81 códigos salen duplicados; el dedupe por DNI puede quedarse con la ficha de otra empresa. (2) activo se decide por el último emphis sin fecbaj; un emp sin emphis cuenta como activo y se ignora el estado del recurso. Decisión del humano 2026-09-29: inactivo es un ESTADO del recurso en Sigrid; la spec localiza el campo exacto y sus valores en azure-apps/sigrid_tablas.md. Se sincronizan TODAS las empresas guardando la empresa de cada ficha (el filtro lo hace F-024); el dedupe por persona pasa a ser dentro de cada empresa. SPEC APROBADA por el humano el 2026-09-29; espera turno porque solo puede haber una in_progress. Decisiones: D1 inactivo = fecha de baja del recurso (con.fecbaj > 0), decidida el 2026-10-01 con progress/explore_estado_recurso.md, sin lanzar Q1 (estados_recurso_excluidos queda vacía: el tipo 33 no tiene estados en conest); D2 empresa del trabajador = la de su ficha de empleado; D3 se quita el filtro de emphis; D4 F-023 NO se despliega sin F-024; D6 paginar fuera. Pendiente antes de verificar (T10): D5, lista de recursos inactivos señalados por negocio.
 
 ### F-019 · Excel de importacion en formato Carmen
 
@@ -92,7 +94,7 @@ Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a prop
 
 estado **pendiente** · prioridad 4 · rigor `estandar` · SDD sí · rama `feature/F-024-selector-empresa`
 
-Salida de la revisión de negocio del 2026-09-29. Botón/selector de empresa en la esquina superior derecha del cuadrante. Por defecto, Construcciones Ruesma (empresa 1). Filtra obras y recursos que se ven y en qué empresa se imputa: decisión del humano 2026-09-29, se imputa a la empresa filtrada. Depende de F-023 (empresa en los maestros) y alimenta F-022 (la empresa viaja en la línea). El filtrado lo sirve la API; el front no decide nada. RECOGIDO de la review 1 de F-022 (2026-09-30): cuando el transfer corta al principio por empresa (R3 sin empresa, R11 obra de otra empresa), obra_destino publica la obra de ENTRADA con empresa null; en R11 se leería mejor con el origen resuelto (p. ej. empresa 28). Se decide y se hace aquí, cuando la empresa la elige el usuario.
+Salida de la revisión de negocio del 2026-09-29. Botón/selector de empresa en la esquina superior derecha del cuadrante. Por defecto, Construcciones Ruesma (empresa 1). Filtra obras y recursos que se ven y en qué empresa se imputa: decisión del humano 2026-09-29, se imputa a la empresa filtrada. Depende de F-023 (empresa en los maestros) y alimenta F-022 (la empresa viaja en la línea). El filtrado lo sirve la API; el front no decide nada. RECOGIDO de la review 1 de F-022 (2026-09-30): cuando el transfer corta al principio por empresa (R3 sin empresa, R11 obra de otra empresa), obra_destino publica la obra de ENTRADA con empresa null; en R11 se leería mejor con el origen resuelto (p. ej. empresa 28). Se decide y se hace aquí, cuando la empresa la elige el usuario. RECOGIDO de la review de F-023 (2026-09-30): el sync solo escribe empresa en las filas que recibe, así que obras y trabajadores DESACTIVADOS conservan empresa NULL; y listar_para_periodo sigue mostrando desactivados que tienen líneas en el periodo. Esos llegarán al filtro de empresa con NULL: decidir aquí qué se hace con ellos.
 
 ### F-027 · Deshacer solo lo propio: nadie deshace lo de otro usuario
 

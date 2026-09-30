@@ -34,6 +34,8 @@ from domain.models import (
 )
 from domain.ports import SigridGateway, UnitOfWork
 
+from application.filtros_maestros import CRITERIO_VACIO, CriterioActivoRecurso
+
 logger = logging.getLogger(__name__)
 
 
@@ -278,8 +280,9 @@ class PreviewSync:
     """Muestra qué sincronizaría el sync SIN persistir nada.
 
     Aplica la misma depuración que el pipeline (dedupe de recursos,
-    filtro de categorías y de estados de obra) y desglosa lo incluido y
-    lo excluido para poder ajustar config.yaml con datos reales.
+    filtro de categorías y de estados de obra, empresa y estado del
+    recurso) con la misma validación de columnas, y desglosa lo incluido
+    y lo excluido para poder ajustar config.yaml con datos reales.
     """
 
     def __init__(
@@ -292,6 +295,7 @@ class PreviewSync:
         estados_excluidos: list[str] | None = None,
         filtro_estados: bool = True,
         exigir_codigo_mes: bool = True,
+        criterio: CriterioActivoRecurso = CRITERIO_VACIO,
     ) -> None:
         self._sigrid = sigrid
         self._sql_empleados = sql_empleados
@@ -301,24 +305,31 @@ class PreviewSync:
         self._estados = estados_excluidos or []
         self._filtro_estados = filtro_estados and bool(self._estados)
         self._exigir_mes = bool(exigir_codigo_mes)
+        self._criterio = criterio
 
     def ejecutar(self) -> dict[str, Any]:
         from application.filtros_maestros import (
             depurar_empleados,
             depurar_obras,
         )
+        from application.sync_pipeline import (
+            COLUMNAS_EMPLEADOS,
+            COLUMNAS_OBRAS,
+            _validar_columnas,
+        )
 
+        brutas_emp = self._sigrid.leer(self._sql_empleados)
+        _validar_columnas(brutas_emp, COLUMNAS_EMPLEADOS, "sync.empleados.sql")
         emp = depurar_empleados(
-            self._sigrid.leer(self._sql_empleados),
+            brutas_emp,
             self._categorias,
             self._filtro_categorias,
             exigir_codigo_mes=self._exigir_mes,
+            criterio=self._criterio,
         )
-        obr = depurar_obras(
-            self._sigrid.leer(self._sql_obras),
-            self._estados,
-            self._filtro_estados,
-        )
+        brutas_obr = self._sigrid.leer(self._sql_obras)
+        _validar_columnas(brutas_obr, COLUMNAS_OBRAS, "sync.obras.sql")
+        obr = depurar_obras(brutas_obr, self._estados, self._filtro_estados)
         por_categoria = Counter(
             str(f.get("categoria") or "(sin categoría)") for f in emp.filas
         )
@@ -338,8 +349,14 @@ class PreviewSync:
                 "excluidos_por_categoria": dict(
                     emp.excluidos_detalle.most_common()
                 ),
+                "excluidos_por_estado_recurso": dict(
+                    emp.excluidos_estado_recurso.most_common()
+                ),
+                "excluidos_recurso_otra_empresa": emp.excluidos_otra_empresa,
+                "con_baja_laboral": emp.con_baja_laboral,
                 "total": len(emp.filas),
                 "por_categoria": dict(por_categoria.most_common()),
+                "por_empresa": _por_empresa(emp.filas),
                 "muestra": emp.filas[:5],
             },
             "obras": {
@@ -349,9 +366,19 @@ class PreviewSync:
                 ),
                 "total": len(obr.filas),
                 "por_estado": dict(por_estado.most_common()),
+                "por_empresa": _por_empresa(obr.filas),
                 "muestra": obr.filas[:5],
             },
         }
+
+
+def _por_empresa(filas: list[dict[str, Any]]) -> dict[str, int]:
+    """Incluidos por empresa (`con.emp`), con la clave en texto como el
+    resto de desgloses del preview."""
+    return dict(Counter(
+        "(sin empresa)" if f.get("empresa") is None else str(f["empresa"])
+        for f in filas
+    ).most_common())
 
 
 # ----------------------------------------------------------------------
