@@ -36,6 +36,7 @@ class Trabajador:
     dni: str | None
     categoria: str | None
     activo: bool = True
+    empresa: int | None = None  # con.emp de su ficha (F-023)
 
 
 @dataclass(frozen=True)
@@ -45,6 +46,7 @@ class Obra:
     descripcion: str
     estado_sigrid: str | None
     activa: bool = True
+    empresa: int | None = None  # con.emp de su ficha (F-023)
 
 
 @dataclass(frozen=True)

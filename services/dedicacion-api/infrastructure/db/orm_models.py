@@ -37,6 +37,11 @@ class TrabajadorORM(Base):
     dni: Mapped[str | None] = mapped_column(Text)
     categoria: Mapped[str | None] = mapped_column(Text)
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Empresa de la ficha en Sigrid (`con.emp`, F-023). Nulable y sin default a
+    # propósito: sobre una tabla con filas el ADD COLUMN lo deriva
+    # `esquema.alters_faltantes` y las filas previas quedan a NULL hasta el
+    # siguiente sync, que las rellena.
+    empresa: Mapped[int | None] = mapped_column(Integer)
     sync_en: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -52,6 +57,9 @@ class ObraORM(Base):
     descripcion: Mapped[str] = mapped_column(Text, nullable=False, default="")
     estado_sigrid: Mapped[str | None] = mapped_column(Text)
     activa: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Empresa de la ficha (`con.emp`, F-023): un mismo `cod` en dos empresas son
+    # dos obras, cada una con su `ide`. Nulable y sin default, como en trabajador.
+    empresa: Mapped[int | None] = mapped_column(Integer)
     sync_en: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
