@@ -2,7 +2,7 @@
 # Trabajo en curso
 
 **F-023 con review APROBADA** (pasada 1, rigor crítico; `progress/review_F-023.md`).
-No se mergea a `dev` sin T9 (observación 3) ni pasa a `done` sin T9, T10 y T11. El arnés es la **1.7.3**.
+T9 cumplida; falta la review incremental de T9 para mergear a `dev`, y T10 y T11 para `done`. El arnés es la **1.7.3**.
 
 ## F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
 
@@ -37,11 +37,12 @@ No se mergea a `dev` sin T9 (observación 3) ni pasa a `done` sin T9, T10 y T11.
 
 ### Verificaciones MANUAL (humano) de F-023
 
-- **T9 · D1**: decidir el criterio de inactivo. El explorador lo resolvió
-  con el data mart (arriba) y queda **pendiente de que el humano acepte** la
-  propuesta; si prefiere el dato directo, lanzar Q1 (`design.md` §4) por
-  `POST /api/sql/read` contra `ruesma_rep`. Con la decisión, el líder fija el
-  valor en `config.yaml`. Resultado: _pendiente_.
+- **T9 · D1 — CUMPLIDA (2026-10-01)**: decidida por el humano, sin lanzar Q1:
+  inactivo = fecha de baja del recurso. Implementada en `9b9c1d9`:
+  `excluir_recurso_con_fecha_baja: true`, lista de estados vacía con
+  comentario corregido (observación 1 de la review), `r5` y `r18` adaptados
+  con fase RED real, mutación 33/33, `init.sh` en verde. **Reviewer
+  incremental lanzado** (desde `ef38fa8`).
 - **T10 · R19 y D6**: con la API local apuntando a Sigrid,
   `GET http://localhost:8090/api/v1/sync/preview`. Comprobar que no llega
   truncada, que los recursos inactivos que señaló negocio (lista D5, **aún no
