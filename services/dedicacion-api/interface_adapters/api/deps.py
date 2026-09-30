@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from fastapi import Request
 from sqlalchemy.orm import Session, sessionmaker
 
+from application.filtros_maestros import CriterioActivoRecurso
 from application.sync_pipeline import (
     FetchEmpleadosStep,
     FetchObrasStep,
@@ -50,12 +51,22 @@ def construir_contenedor(
     exigir_mes = bool(cfg_emp.get("filtro_codigo_mes", True))
     estados_exc = cfg_obr.get("estados_excluidos", [])
     filtro_est = bool(cfg_obr.get("filtro_estados", True))
+    # UN solo criterio para el step y para el preview (F-023 R18): lo que
+    # enseña el preview es exactamente lo que el sync va a guardar.
+    criterio = CriterioActivoRecurso(
+        estados_excluidos=tuple(cfg_emp.get("estados_recurso_excluidos") or []),
+        excluir_con_fecha_baja=bool(
+            cfg_emp.get("excluir_recurso_con_fecha_baja", False)
+        ),
+        activo=bool(cfg_emp.get("filtro_estado_recurso", True)),
+    )
 
     sigrid = SigridApiClient(settings)
     pipeline = SyncMaestrosPipeline(
         [
             FetchEmpleadosStep(sigrid, sql_empleados, categorias, filtro_cat,
-                               exigir_codigo_mes=exigir_mes),
+                               exigir_codigo_mes=exigir_mes,
+                               criterio=criterio),
             FetchObrasStep(sigrid, sql_obras, estados_exc, filtro_est),
             UpsertTrabajadoresStep(),
             UpsertObrasStep(),
@@ -78,6 +89,7 @@ def construir_contenedor(
             estados_excluidos=estados_exc,
             filtro_estados=filtro_est,
             exigir_codigo_mes=exigir_mes,
+            criterio=criterio,
         ),
         exporter=exporter,
         registro_sigrid=RegistroSigrid(session_factory,
