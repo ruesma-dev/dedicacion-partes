@@ -2,7 +2,7 @@
 # Trabajo en curso
 
 **F-022 con review APROBADA** (pasada 2, rigor crítico; `progress/review_F-022.md`).
-No pasa a `done` hasta que el humano ejecute T10 y haga el commit en `azure-apps`. El
+T10 cumplida el 2026-09-30. No pasa a `done` hasta el commit del humano en `azure-apps`. El
 arnés es la **1.7.3**; lo de su actualización está en `history.md`.
 
 ## F-022 · El transfer busca cada obra por código y empresa
@@ -11,8 +11,8 @@ arnés es la **1.7.3**; lo de su actualización está en `history.md`.
   el 2026-09-29 (D1-D4; la D5 pasa a F-026). Implementer terminado
   (`progress/impl_F-022.md`); T1-T9 y T11 hechas, **T10 es MANUAL del humano**
   y está pendiente (abajo).
-- **Para pasar a `done` faltan**: T10 ejecutada con su resultado real anotado
-  aquí y el commit del humano en `azure-apps`. La review ya está aprobada.
+- **Para pasar a `done` falta solo el commit del humano en `azure-apps`.**
+  T10 está cumplida (abajo) y la review está aprobada.
 - **Al cerrar**: pasar a `history.md` la sección «Revisión de negocio del
   2026-09-29» (observación 3 de la pasada 2) y anotar ruff 185 → 193.
 - Observaciones de la review 1, **recogidas**:
@@ -76,7 +76,32 @@ postventa:
 
 Comprobar, en la obra con postventa: `obra_postventa.empresa == 1`,
 `obra_destino.codigo == "0404"` y `obra_destino.empresa == 1`. **NO** se lanza
-`registro/ejecutar`. Resultado real: _pendiente, a anotar aquí_.
+`registro/ejecutar`.
+
+**Resultado real (2026-09-30, lanzado por el humano con
+`t10_preflight_f022.ps1`, API y transfer de la rama F-022 en local, transfer
+con `modo_pruebas=true`, `obra_pruebas=0404`, base `ruesma`): CUMPLIDA.**
+
+- **2026-07, obra 0658:** línea de postventa con `obra_postventa` = `0404`
+  empresa 1 (en modo pruebas la postventa también se desvía) y `obra_destino`
+  = `0404` empresa 1. Es la única obra de julio cuya postventa casó con una
+  partida de POSTV2.
+- **2026-07, obras 0009 y 0025 (fichas de Porsan del maestro local):** sus
+  líneas salen **omitidas** con «la obra … es de la empresa 28 y la línea se
+  imputa a la empresa 1: no se escribe». Es R11 con datos reales. Antes de
+  F-022 esas líneas iban contra la ficha de Porsan. Hasta que F-023 y F-024
+  arreglen el maestro, **el usuario verá estas omisiones en el preflight**.
+- **2026-08, obras 0455 y 0465:** POSTV2 se resuelve en la empresa 1 **sin
+  ambigüedad** (se leen sus partidas), pero las obras no casan con ninguna
+  partida («no casa con ninguna partida de POSTV2»). No es de F-022: es el
+  universo de postventa de F-025.
+- Primera ejecución de agosto: el script dio `OK` **sin haber comprobado
+  nada**, porque ninguna línea tuvo destino de postventa. Se corrigió el
+  script (ahora dice «NO CONCLUYENTE») y se repitió en julio.
+- Hallazgo menor, anterior a F-022: el preflight publica
+  `partidas_postventa` también en obras sin líneas de postventa (el catálogo
+  `_nodos_pv` se queda en la instancia del pipeline entre llamadas).
+  Inofensivo; pendiente de ficha.
 
 ## F-023 · spec aprobada, esperando turno
 
@@ -136,7 +161,7 @@ El backlog completo está en `BACKLOG.md` (29 features). Por orden:
 
 ## ⚠ Lo que espera al humano
 
-1. **F-022 T10**: el preflight de solo lectura de arriba.
+1. **F-022**: T10 cumplida; falta solo el commit en `azure-apps` (punto 2).
 2. **`azure-apps/dedicacion.md`**: revisar y hacer el commit; decidir si la
    corrección de `ruesma_rep` se lleva a `docs/INTEGRACION.md`.
 3. **`git push origin dev`**: `dev` lleva 4 commits sin subir (el alta del
