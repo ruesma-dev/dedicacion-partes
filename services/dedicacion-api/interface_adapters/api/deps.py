@@ -81,7 +81,8 @@ def construir_contenedor(
         ),
         exporter=exporter,
         registro_sigrid=RegistroSigrid(session_factory,
-                                       TransferClient(settings)),
+                                       TransferClient(settings),
+                                       settings.empresa_imputacion),
     )
 
 

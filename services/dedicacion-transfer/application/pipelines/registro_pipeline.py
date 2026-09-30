@@ -4,11 +4,14 @@
 Orquesta las reglas; no las enuncia. La fuente normativa es
 `docs/ARCHITECTURE.md` § Semántica de dominio imprescindible.
 
-Pasos (el preflight ejecuta 1-8; la escritura, 1-10):
+Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
 
+  0. EMPRESA de la petición y OBRA DE ORIGEN, en los dos modos
+     (ARCHITECTURE.md#regla-empresa). Sin empresa, o con la obra en otra
+     empresa, todas las líneas salen omitidas aquí, sin seguir.
   1. Resolver los DESTINOS: la obra normal (en pruebas, la de pruebas) y,
      si hay líneas de postventa, la obra de postventa con su PARTIDA
-     (ARCHITECTURE.md#regla-p5).
+     (ARCHITECTURE.md#regla-p5), todas en la empresa de la petición.
   2. Resolver el RECURSO de cada empleado (res.conide) si no viene dado:
      se elige el recurso con código mensual M*; a igualdad, el más
      reciente (ide mayor).
@@ -41,11 +44,12 @@ from application.services.partida_resolver import (
     construir_catalogo, resolver_normal, resolver_postventa,
 )
 from application.services.reglas_porcentajes import (
-    AVISO_SIN_PARTIDA, MOTIVO_PARTIDA_PV_NO_HOJA, MOTIVO_SIN_PARTIDA,
-    MOTIVO_SOBRECARGA, ReglasPorcentajes, clave_conflicto, clave_sin_partida,
-    clave_sobrecarga, criterio_choque, es_linea_mensual, evaluar_capacidad,
-    sin_partida,
+    AVISO_SIN_PARTIDA, MOTIVO_EMPRESA_OBRA, MOTIVO_PARTIDA_PV_NO_HOJA,
+    MOTIVO_SIN_PARTIDA, MOTIVO_SOBRECARGA, ReglasPorcentajes, clave_conflicto,
+    clave_sin_partida, clave_sobrecarga, criterio_choque, empresa_de_peticion,
+    es_linea_mensual, evaluar_capacidad, sin_partida,
 )
+from domain.errores import ObraAmbigua
 from domain.models.registro_models import (
     AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
     Preflight, ResultadoRegistro,
@@ -78,34 +82,57 @@ class RegistroPipeline:
         self._st = settings
 
     # ------------------------------------------------------------- #
-    def _obra_destino(self, obra: ObraEntrada) -> tuple[ObraEntrada, bool]:
-        """Paso 1a. En pruebas, TODO va a la obra de pruebas."""
-        if self._st.obra_pruebas_forzar:
-            destino = self._cli.obra_por_codigo(self._st.obra_pruebas_cod)
-            if destino is None:
-                raise RuntimeError(
-                    f"obra de pruebas {self._st.obra_pruebas_cod} "
-                    f"no encontrada")
-            logger.warning(
-                "[registro] MODO PRUEBAS: la obra %s se ignora; se escribe "
-                "en %s (%s)", obra.codigo, destino.codigo, destino.nombre)
-            return destino, True
+    def _obra_origen(self, obra: ObraEntrada, empresa: int) -> ObraEntrada:
+        """Paso 0. La obra de origen en Sigrid, en los DOS modos: por `ide`
+        si viene y, si no, por código Y empresa
+        (ARCHITECTURE.md#regla-empresa)."""
         if obra.ide:
             real = self._cli.obra_por_ide(int(obra.ide))
         elif obra.codigo:
-            real = self._cli.obra_por_codigo(obra.codigo)
+            real = self._cli.obra_por_codigo(obra.codigo, empresa)
         else:
             real = None
         if real is None:
             raise RuntimeError(
                 f"obra no encontrada en Sigrid (ide={obra.ide} "
-                f"cod={obra.codigo})")
-        return real, False
+                f"cod={obra.codigo} empresa={empresa})")
+        return real
+
+    # ------------------------------------------------------------- #
+    def _obra_destino(self, origen: ObraEntrada,
+                      empresa: int) -> tuple[ObraEntrada, bool]:
+        """Paso 1a. En pruebas, TODO va a la obra de pruebas DE LA EMPRESA
+        de la petición; si no existe en ella, no se escribe nada."""
+        if self._st.obra_pruebas_forzar:
+            destino = self._cli.obra_por_codigo(self._st.obra_pruebas_cod,
+                                                empresa)
+            if destino is None:
+                raise RuntimeError(
+                    f"obra de pruebas {self._st.obra_pruebas_cod} "
+                    f"no encontrada en la empresa {empresa}")
+            logger.warning(
+                "[registro] MODO PRUEBAS: la obra %s se ignora; se escribe "
+                "en %s (%s)", origen.codigo, destino.codigo, destino.nombre)
+            return destino, True
+        return origen, False
+
+    # ------------------------------------------------------------- #
+    def _todas_omitidas(self, obra: ObraEntrada, lineas: list[LineaEntrada],
+                        motivo_empresa: Optional[str]) -> Preflight:
+        """Fin anticipado del paso 0: ninguna línea se puede escribir.
+
+        Las acciones salen del MISMO `decidir` que el resto, que omite cada
+        línea por su empresa antes de mirar horas o recursos."""
+        reglas = ReglasPorcentajes({}, motivo_empresa=motivo_empresa)
+        return Preflight(
+            obra_destino=obra, obra_origen=obra,
+            forzada_pruebas=self._st.obra_pruebas_forzar,
+            acciones=[reglas.decidir(l) for l in lineas])
 
     # ------------------------------------------------------------- #
     def _destino_postventa(
         self, obra_origen: ObraEntrada, forzada: bool,
-        destino_pruebas: ObraEntrada,
+        destino_pruebas: ObraEntrada, empresa: int,
     ) -> tuple[Optional[ObraEntrada], Optional[dict], Optional[str]]:
         """Paso 1b. Obra de postventa + partida de la obra original.
 
@@ -114,11 +141,16 @@ class RegistroPipeline:
         se resuelve igualmente contra la obra de postventa real (para
         validar el casado). Ver `ARCHITECTURE.md#regla-p5`.
         """
-        obra_pv = self._cli.obra_por_codigo(self._st.postventa_obra_cod)
+        cod_pv = self._st.postventa_obra_cod
+        try:
+            obra_pv = self._cli.obra_por_codigo(cod_pv, empresa)
+        except ObraAmbigua as exc:
+            return None, None, (f"obra de postventa '{cod_pv}' ambigua en "
+                                f"la empresa {empresa}: {exc}")
         if obra_pv is None:
-            return None, None, (f"obra de postventa "
-                                f"'{self._st.postventa_obra_cod}' "
-                                f"no encontrada en Sigrid")
+            return None, None, (f"obra de postventa '{cod_pv}' "
+                                f"no encontrada en Sigrid en la empresa "
+                                f"{empresa}")
         filas = self._cli.capitulos_de_obra(int(obra_pv.ide))
         nodos = construir_catalogo(filas)
         self._nodos_pv = nodos
@@ -174,7 +206,16 @@ class RegistroPipeline:
     # ------------------------------------------------------------- #
     def preflight(self, *, obra: ObraEntrada,
                   lineas: list[LineaEntrada]) -> Preflight:
-        destino_normal, forzada = self._obra_destino(obra)
+        # Paso 0: empresa y obra de origen (ARCHITECTURE.md#regla-empresa).
+        empresa = empresa_de_peticion(lineas)
+        if empresa is None:
+            return self._todas_omitidas(obra, lineas, None)
+        origen = self._obra_origen(obra, empresa)
+        if origen.empresa != empresa:
+            motivo = MOTIVO_EMPRESA_OBRA.format(
+                cod=origen.codigo, emp_obra=origen.empresa, emp_linea=empresa)
+            return self._todas_omitidas(obra, lineas, motivo)
+        destino_normal, forzada = self._obra_destino(origen, empresa)
 
         # Paso 1b: destino de postventa (solo si hace falta).
         destino_pv: Optional[ObraEntrada] = None
@@ -183,7 +224,7 @@ class RegistroPipeline:
         if any(l.es_postventa for l in lineas) \
                 and self._st.postventa_registrar:
             destino_pv, partida_pv, motivo_pv = self._destino_postventa(
-                obra, forzada, destino_normal)
+                obra, forzada, destino_normal, empresa)
 
         # Pasos 2-4: recursos + reglas.
         horas = self._resolver_recursos(lineas)
@@ -221,14 +262,10 @@ class RegistroPipeline:
                 a.partida_metodo = "postventa"
                 continue
             if nodos_origen is None:
-                origen_real = None
-                if obra.ide:
-                    origen_real = self._cli.obra_por_ide(int(obra.ide))
-                elif obra.codigo:
-                    origen_real = self._cli.obra_por_codigo(obra.codigo)
-                filas_o = self._cli.capitulos_de_obra(
-                    int(origen_real.ide)) if origen_real else []
-                nodos_origen = construir_catalogo(filas_o)
+                # La obra de origen ya está resuelta en el paso 0: no se
+                # vuelve a buscar (R14 de F-022).
+                nodos_origen = construir_catalogo(
+                    self._cli.capitulos_de_obra(int(origen.ide)))
             m = resolver_normal(
                 nodos_origen,
                 linea.categoria if linea else None,

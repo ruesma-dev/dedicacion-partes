@@ -12,6 +12,7 @@ Aquí se IMPLEMENTAN; no se enuncian. La única fuente normativa es
      -> ARCHITECTURE.md#regla-sin-partida Regla C: una línea sin partida
                                           no se escribe sin confirmar
   P5 -> ARCHITECTURE.md#regla-p5        destino de la postventa
+  Empresa -> ARCHITECTURE.md#regla-empresa a qué empresa se imputa
 
 Qué vive en este módulo, y por qué junto:
 
@@ -30,9 +31,10 @@ El valor del código de la obra de postventa NO se cita: vive en el ajuste
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import NamedTuple, Optional
 
+from domain.errores import EmpresasMezcladas
 from domain.models.registro_models import (
     AccionLinea, HoraRecurso, LineaEntrada, LineaSigrid,
 )
@@ -55,6 +57,38 @@ MOTIVO_POSTVENTA_OFF = (
     "línea de postventa: registro de postventa desactivado "
     "(POSTVENTA_REGISTRAR=false)"
 )
+#: Ver ARCHITECTURE.md#regla-empresa. Los dos caben en los 300 caracteres de
+#: `asignacion.sigrid_motivo`; el segundo se formatea con cod / emp_obra /
+#: emp_linea.
+MOTIVO_SIN_EMPRESA = ("la línea llega sin empresa: no se adivina a qué "
+                      "empresa imputarla y no se escribe")
+MOTIVO_EMPRESA_OBRA = ("la obra {cod} es de la empresa {emp_obra} y la línea "
+                       "se imputa a la empresa {emp_linea}: no se escribe")
+
+
+# ------------------------------------------------------------------ #
+#  Empresa de la línea y de la petición (ARCHITECTURE.md#regla-empresa)
+# ------------------------------------------------------------------ #
+
+def empresa_valida(valor) -> bool:
+    """¿`valor` es una empresa? Un entero > 0; un booleano no cuenta."""
+    return type(valor) is int and valor > 0
+
+
+def empresa_de_peticion(lineas: Iterable[LineaEntrada]) -> Optional[int]:
+    """La única empresa válida que traen las líneas, o None si ninguna.
+
+    Una petición es una obra y una obra es de una empresa: dos empresas
+    válidas distintas en la misma petición no se reparten, se rechazan
+    (`EmpresasMezcladas`).
+    """
+    empresas = sorted({l.empresa for l in lineas
+                       if empresa_valida(l.empresa)})
+    if len(empresas) > 1:
+        raise EmpresasMezcladas(
+            f"la petición mezcla líneas de varias empresas {empresas}: una "
+            f"obra es de una sola empresa")
+    return empresas[0] if empresas else None
 
 
 # ------------------------------------------------------------------ #
@@ -324,6 +358,9 @@ class ReglasPorcentajes:
     `ARCHITECTURE.md#regla-p5`).
     ``motivo_postventa``: por qué no hay partida (obra de postventa no
     encontrada, código sin casar…) — se usa como motivo de omisión.
+    ``motivo_empresa``: si viene, la obra es de otra empresa que la de la
+    petición y toda línea con empresa se omite con él
+    (ARCHITECTURE.md#regla-empresa).
     """
 
     def __init__(
@@ -333,11 +370,13 @@ class ReglasPorcentajes:
         postventa_registrar: bool = True,
         partida_postventa: Optional[dict] = None,
         motivo_postventa: Optional[str] = None,
+        motivo_empresa: Optional[str] = None,
     ) -> None:
         self._horas = horas_por_recurso
         self._postventa = bool(postventa_registrar)
         self._partida = partida_postventa
         self._motivo_pv = motivo_postventa
+        self._motivo_empresa = motivo_empresa
 
     def decidir(self, linea: LineaEntrada) -> AccionLinea:
         base = dict(
@@ -349,6 +388,13 @@ class ReglasPorcentajes:
 
         def omitir(motivo: str) -> AccionLinea:
             return AccionLinea(accion="omitir", motivo=motivo, **base)
+
+        # Empresa (ARCHITECTURE.md#regla-empresa), antes que nada más: sin
+        # ella no se sabe ni dónde buscar la obra.
+        if not empresa_valida(linea.empresa):
+            return omitir(MOTIVO_SIN_EMPRESA)
+        if self._motivo_empresa:
+            return omitir(self._motivo_empresa)
 
         destino, paride, partida_cod = "obra", 0, None
         if linea.es_postventa:

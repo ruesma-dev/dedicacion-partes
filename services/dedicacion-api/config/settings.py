@@ -8,10 +8,11 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 from urllib.parse import quote_plus
 
 import yaml
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _BASE_DIR = Path(__file__).resolve().parent.parent
@@ -66,6 +67,12 @@ class Settings(BaseSettings):
     # porcentajes-transfer (registro en Sigrid)
     transfer_base_url: str = "http://127.0.0.1:8006"
     transfer_timeout_s: float = 180.0
+
+    # Empresa (`con.emp` de Sigrid) que viaja en CADA línea del registro
+    # (docs/ARCHITECTURE.md#regla-empresa). Puente hasta F-024, que la
+    # tomará de la empresa filtrada en el cuadrante: entonces cambia SOLO de
+    # dónde sale este valor. Entero > 0; si no, la API no arranca.
+    empresa_imputacion: Annotated[int, Field(gt=0)] = 1
 
     # ------------------------------------------------------------------
     @property

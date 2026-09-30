@@ -10,8 +10,10 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-08-21** (actualizado tras el despliegue).
-> **Commit de origen: `df8866f`** (rama `dev`).
+> **Fecha del documento: 2026-09-29** (F-022: la empresa viaja en cada
+> línea del registro; fuera `SIGRID_EMPRESA`, dentro `EMPRESA_IMPUTACION`).
+> **Commit de origen: `f9b3a46`** (rama `feature/F-022-transfer-obra-por-empresa`,
+> pendiente de merge a `dev`).
 >
 > **Estado: DESPLEGADO.** El 2026-08-20 se ejecutó la fase 7 y los tres
 > servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo y el
@@ -111,6 +113,7 @@ despliegue no tenga que aprender dos vocabularios.
 | `SIGRID_API_BASE_URL`, `SIGRID_API_DATABASE`, `SIGRID_API_TIMEOUT_S`, `SIGRID_MAX_ROWS` | Lectura de maestros |
 | `SIGRID_API_FUNCTION_KEY` | **Secreto**. Por referencia a Key Vault |
 | `TRANSFER_BASE_URL`, `TRANSFER_TIMEOUT_S` | El registro en Sigrid, por HTTP interno |
+| `EMPRESA_IMPUTACION` | Empresa de Sigrid (`con.emp`) que viaja en **cada** línea del registro. `1` por defecto; entero > 0 o la api no arranca. Puente hasta que la empresa salga del cuadrante (F-024) |
 
 ### `dedicacion-front`
 
@@ -124,7 +127,7 @@ despliegue no tenga que aprender dos vocabularios.
 
 | Variable | Notas |
 |---|---|
-| `SIGRID_API_BASE_URL`, `SIGRID_API_DATABASE`, `SIGRID_EMPRESA` | La base es **siempre** `ruesma` |
+| `SIGRID_API_BASE_URL`, `SIGRID_API_DATABASE` | La base es **siempre** `ruesma`. **No hay `SIGRID_EMPRESA`** desde F-022: la empresa llega en cada línea, y una variable que quede en un despliegue viejo se ignora |
 | `SIGRID_API_FUNCTION_KEY` | **Secreto**. Es la credencial de **escritura** sobre el ERP |
 | `OBRA_PRUEBAS_FORZAR`, `OBRA_PRUEBAS_COD`, `MARCA_PRUEBAS` | Modo pruebas (§8) |
 | `LOG_DIR` | `/tmp/logs` en el contenedor: `/app` no tiene por qué ser escribible |
@@ -357,6 +360,15 @@ Para probar la api, `https://<fqdn-front>/api/v1/health`, autenticado. Para el
 transfer, `az containerapp logs show`.
 
 **El endpoint de salud de la api es `/api/v1/health`, no `/health`.**
+
+**Una línea sin empresa no se registra.** El código de obra solo es único
+dentro de su empresa, así que el transfer busca cada obra por código **y**
+empresa, y la empresa llega en cada línea (la pone la api con
+`EMPRESA_IMPUTACION`). Una línea que llegue sin ella sale **omitida con
+motivo**, no con error; una petición que mezcle dos empresas se rechaza con
+**422**; y si la obra es de otra empresa que sus líneas, todas se omiten. En
+modo pruebas, una empresa sin obra de pruebas no escribe nada. La regla
+completa: `docs/ARCHITECTURE.md#regla-empresa`.
 
 **Si la api arranca y dice que la base no existe**, es que falta ejecutar
 `infra/crear_base_dedicacion.ps1`. El servicio ya no la crea solo, a

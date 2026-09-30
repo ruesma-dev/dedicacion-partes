@@ -94,7 +94,6 @@ $entorno = @(
     "SIGRID_API_BASE_URL=$SIGRID_URL",
     "SIGRID_API_FUNCTION_KEY=secretref:sigrid-key",
     "SIGRID_API_DATABASE=$SIGRID_DB",
-    "SIGRID_EMPRESA=1",
     "SIGRID_API_TIMEOUT_S=$TIMEOUT_TRANSFER_SIGRID",
 
     # --- Modo pruebas (R9) --------------------------------------------------

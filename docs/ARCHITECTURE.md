@@ -121,8 +121,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > **Esta sección es la ÚNICA fuente normativa de las reglas P1-P5.** El
 > README del transfer, los docstrings y las specs **remiten** a las anclas
 > `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad`,
-> `#regla-sin-partida` y
-> `#regla-pruebas`; no vuelven a enunciar la regla con palabras propias. Lo
+> `#regla-sin-partida`, `#regla-pruebas` y
+> `#regla-empresa`; no vuelven a enunciar la regla con palabras propias. Lo
 > vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
@@ -189,6 +189,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      cambiar la partida elegida).
    - **Sin casado no se escribe.** La línea se omite con su motivo, visible
      en el preflight. Lo mismo si la obra de postventa no existe en Sigrid.
+   - **La obra de postventa es la de la empresa de la petición**: ver
+     [`#regla-empresa`](#regla-empresa).
 
    *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
    verificado contra Sigrid, ver `progress/sigrid_F-002.md`* (lectura del
@@ -295,7 +297,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 9. <a id="regla-pruebas"></a>**Modo pruebas por defecto.** `OBRA_PRUEBAS_FORZAR=true` desvía TODA
    escritura a la obra `0404` con la marca `PRUEBA-PORC` en `tex`. La
    partida de postventa se sigue resolviendo contra la obra de postventa
-   real, para que la prueba valide el casado.
+   real, para que la prueba valide el casado. La obra de pruebas se busca en
+   la empresa de la petición: ver [`#regla-empresa`](#regla-empresa).
 10. **`ide` reservado a mano.** Las líneas se insertan con `MAX(ide)+1` bajo
     `UPDLOCK, HOLDLOCK`: el transfer va a **una sola instancia**. Dos
     procesos escribiendo a la vez se pisan los `ide`.
@@ -304,6 +307,38 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     `CAST(tex AS NVARCHAR(200)) = ?`; el parte se localiza por `cod` **y**
     `tip`; tras crear la cabecera hay que releer su `ide` antes de insertar
     líneas.
+12. <a id="regla-empresa"></a>**La obra se busca por código y empresa.** El código de una obra
+    solo es único **dentro de su empresa** (`con.emp`): la misma obra puede
+    tener ficha en Construcciones Ruesma y en Porsan, y quedarse con «la
+    primera» que devuelve Sigrid es imputar a la empresa equivocada. Por eso:
+
+    - **La empresa viaja en cada línea** del contrato API → transfer
+      (`empresa`, entero > 0). Hoy la pone `dedicacion-api` desde su ajuste
+      `EMPRESA_IMPUTACION`; el transfer **no tiene empresa por defecto**.
+    - **Sin empresa, la línea no se escribe**: se omite con su motivo y el
+      resto de la petición sigue. Si ninguna línea la trae, no se lee
+      ninguna obra.
+    - **Una petición es de una sola empresa**, porque es una obra. Líneas
+      con dos empresas distintas se rechazan enteras (HTTP 422), sin leer
+      nada en Sigrid.
+    - **Toda obra se busca con código y empresa**: la de origen (cuando no
+      llega por `ide`), la de pruebas ([`#regla-pruebas`](#regla-pruebas))
+      y la de postventa ([`#regla-p5`](#regla-p5)). Sin ficha en esa
+      empresa es «no encontrada»; con más de una, obra ambigua. **Nunca se
+      elige la primera.** Sin obra de postventa en la empresa, se omiten
+      solo las líneas de postventa; sin obra de pruebas, no se escribe
+      nada.
+    - **Obra de otra empresa, líneas omitidas.** La obra de origen se
+      comprueba en modo normal **y** en modo pruebas: si su empresa no es la
+      de sus líneas, todas se omiten con un motivo que nombra la obra y las
+      dos empresas, y no se escribe nada.
+    - **El parte hereda la empresa de su obra**: la cabecera (`con.emp`) de
+      un parte nuevo es la de la obra destino.
+
+    *Decidido por Pablo Gris (responsable del proyecto) el 2026-09-29 ·
+    F-022, decisiones D1-D4 de
+    `specs/F-022-transfer-obra-por-empresa/requirements.md`.* El recurso del
+    trabajador todavía no se elige por empresa: es F-026.
 
 ## Acceso a datos y sistemas externos
 

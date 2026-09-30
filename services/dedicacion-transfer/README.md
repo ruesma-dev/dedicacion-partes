@@ -20,6 +20,7 @@ trabajo de Sigrid**. Réplica del patrón validado en `partes-transfer`:
 | Regla C | qué pasa con una línea que no casa partida | [`#regla-sin-partida`](../../docs/ARCHITECTURE.md#regla-sin-partida) |
 | P5 | dónde y contra qué se imputa la postventa | [`#regla-p5`](../../docs/ARCHITECTURE.md#regla-p5) |
 | — | modo pruebas | [`#regla-pruebas`](../../docs/ARCHITECTURE.md#regla-pruebas) |
+| — | a qué empresa se imputa y cómo se busca la obra | [`#regla-empresa`](../../docs/ARCHITECTURE.md#regla-empresa) |
 
 Dónde se implementan: la identidad, la capacidad y el «sin partida», en
 `application/services/reglas_porcentajes.py` (funciones puras, sin I/O); la
@@ -55,8 +56,11 @@ Lo que sí es de este servicio, y por eso se cuenta aquí:
     POST /api/registro/ejecutar    {obra, lineas[], pisar_claves[], usuario}
 
 Línea: `{registro_id, ano, mes, porcentaje (sobre 1), empleado_ide,
-recurso_ide?, dni?, nombre?, es_postventa}`. El servicio resuelve el
-recurso del empleado (`res.conide`) eligiendo el que tenga `M*`.
+recurso_ide?, dni?, nombre?, es_postventa, empresa}`. `empresa` es la
+`con.emp` a la que se imputa: sin ella la línea se omite con motivo, y con
+líneas de dos empresas la petición se rechaza con 422
+([`#regla-empresa`](../../docs/ARCHITECTURE.md#regla-empresa)). El servicio
+resuelve el recurso del empleado (`res.conide`) eligiendo el que tenga `M*`.
 
 ## Antes de escribir nada
 
