@@ -2,8 +2,8 @@
 
 > Sync de maestros: todas las empresas y activo según el estado del recurso.
 > Rigor **crítico**. Rama `feature/F-023-sync-empresa-y-estado-recurso`.
-> Spec: `specs/F-023-sync-empresa-y-estado-recurso/`. Estado: **T1-T8 y T12
-> hechas; T9, T10 y T11 MANUAL (humano) pendientes**.
+> Spec: `specs/F-023-sync-empresa-y-estado-recurso/`. Estado: **T1-T9 y T12
+> hechas (T9: D1 cerrada, ver al final); T10 y T11 MANUAL (humano) pendientes**.
 
 ## Qué cambió (solo `services/dedicacion-api/`)
 
@@ -13,7 +13,7 @@
 | `domain/models.py` | `empresa: int \| None = None` como último campo de `Trabajador` y `Obra`. |
 | `infrastructure/db/repositories.py` | `_entero()`; `empresa` en alta, actualización, `cambio` y en `_a_trabajador` / `_a_obra`. `listar_para_periodo` sin cambios. |
 | `application/filtros_maestros.py` | `CriterioActivoRecurso` (frozen) + singleton `CRITERIO_VACIO`; `ResultadoDepuracion` gana `excluidos_otra_empresa`, `excluidos_estado_recurso`, `con_baja_laboral`; paso 0 fila a fila antes de los dedupes; clave de persona `"{empresa}\|dni:…"`; recuento de baja laboral; se retiran las columnas auxiliares antes del upsert. `depurar_obras` intacto. |
-| `config/config.yaml` | Consultas de design §3 (obras con `con.emp AS empresa`; empleados con los cinco alias y **sin** `WHERE COALESCE(uh.fecbaj, 0) = 0`); claves `filtro_estado_recurso: true`, `estados_recurso_excluidos: []`, `excluir_recurso_con_fecha_baja: false`, con citas a `sigrid_tablas.md` l. 5657-5658 y 6083-6089 (comprobadas). |
+| `config/config.yaml` | Consultas de design §3 (obras con `con.emp AS empresa`; empleados con los cinco alias y **sin** `WHERE COALESCE(uh.fecbaj, 0) = 0`); claves `filtro_estado_recurso: true`, `estados_recurso_excluidos: []`, `excluir_recurso_con_fecha_baja: false` (T9 lo pasa a `true`), con citas a `sigrid_tablas.md` l. 5657-5658 y 6083-6089 (comprobadas). |
 | `application/sync_pipeline.py` | `COLUMNAS_EMPLEADOS` / `COLUMNAS_OBRAS` (con `empresa`); `criterio` en `FetchEmpleadosStep`; log con los tres recuentos nuevos. |
 | `application/use_cases.py` | `PreviewSync(criterio=…)`, valida columnas con el mismo `_validar_columnas` y las mismas constantes que el pipeline, y publica las claves de R17. |
 | `interface_adapters/api/deps.py` | Un único `CriterioActivoRecurso` leído de `config.yaml` para step y preview. |
@@ -123,10 +123,7 @@ T5 `-k "r3 or r4 or r5"` 4 passed · T6 2 passed · T7 7 passed · T8
 No ejecutadas por el implementer (fuera de alcance por instrucción del líder;
 descritas en `progress/current.md` y en tasks.md):
 
-- **T9** · cerrar D1 con la consulta Q1 de design §4 (solo lectura, contra
-  `ruesma_rep`) y fijar en `config.yaml` los literales de
-  `estados_recurso_excluidos` y el valor de `excluir_recurso_con_fecha_baja`.
-  Hoy entran **vacío** y **`false`**: nadie queda fuera por estado (R16).
+- ~~**T9**~~ · cerrada el 2026-10-01 sin lanzar Q1 (sección «T9 · D1 cerrada»).
 - **T10** · R19 y D6: `GET http://localhost:8090/api/v1/sync/preview` con la
   API apuntando a Sigrid; comprobar que no llega truncada, que la lista D5
   sale en `excluidos_por_estado_recurso` y revisar `por_empresa`. Depende de
@@ -184,3 +181,38 @@ descritas en `progress/current.md` y en tasks.md):
    caché purgada otra vez y campaña entera: **33/33 muertos en 51.0 s**. Es el
    informe vigente. Al durar menos de 60 s, el reviewer debe reejecutarla
    (CHECKPOINTS C4 bis).
+
+## T9 · D1 cerrada (2026-10-01)
+
+Decidida por el humano con el hallazgo de `progress/explore_estado_recurso.md`, **sin lanzar
+Q1**: INACTIVO = recurso con fecha de baja de su concepto (`con.fecbaj > 0`), el criterio que
+publica el data mart (`personal.recursos.activo`). Solo cambia configuración y tests; ningún
+cambio de código de producción.
+
+- `config/config.yaml`: `excluir_recurso_con_fecha_baja: true`; `estados_recurso_excluidos: []`
+  sigue vacía **a propósito**, con comentario: el tipo 33 no tiene estados en `conest`
+  (`estado_recurso` llega como el número de `con.est`), no meter «BAJA» ni «2» (estado del
+  EMPLEADO, tipo 43) y la comparación por subcadena haría que «1» casara «10» y «21». Recoge la
+  observación 1 de `progress/review_F-023.md`.
+- Tests renombrados: `r5_config_inactivo_es_la_fecha_de_baja_del_recurso` (interruptor `True`,
+  lista vacía, fecha de baja `True`) y `r18_con_el_config_real_cae_el_recurso_con_fecha_de_baja`
+  (config real: netos `([1, 2], [1])` iguales en preview y sync; `excluidos_por_estado_recurso ==
+  {"(fecha de baja del recurso)": 1}`; el 2 sigue aunque su estado diga «Baja»; sigue cayendo el
+  de otra empresa, `excluidos_recurso_otra_empresa == 1`).
+
+**Fase RED** (tests nuevos, `config.yaml` anterior), comando
+`cd services/dedicacion-api && .venv/Scripts/python -m pytest tests/test_f023_sync_empresa.py -q -k "r5_config_inactivo or r18_con_el_config_real"`:
+```
+>       assert cfg["excluir_recurso_con_fecha_baja"] is True
+E       assert False is True
+>       assert _mismos_netos(contenedor) == ([1, 2], [1])
+E       assert ([1, 2, 3], [1]) == ([1, 2], [1])
+2 failed, 51 deselected in 5.20s
+```
+Con el config nuevo: `2 passed`; suite del servicio **176 passed** en 5.41 s.
+
+**Evidencias T9.** `bash harness/init.sh`: **ENTORNO LISTO**; raíz **355 passed, 1 skipped** en
+57.35 s; api 176 passed en 5.82 s; `PUERTA COBERTURA` 100.0 % (67/67); ruff 193 avisos (los de
+`dev`). Mutación repetida sobre el disco (`--workers 1`, porque `progress/current.md` del líder
+estaba sin commitear): **33 generados, 33 muertos, 0 supervivientes**, 255.6 s; mismos 33
+mutantes (el cambio es de YAML y tests, no de producción). Informe: `progress/mutacion_F-023.md`.

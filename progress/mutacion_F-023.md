@@ -1,7 +1,7 @@
 <!-- progress/mutacion_F-023.md -->
 # F-023 · Campaña de mutación
 
-Generado por `python -m harness.mutacion --feature F-023` el 2026-09-30 18:28.
+Generado por `python -m harness.mutacion --feature F-023` el 2026-10-01 00:40.
 
 ## Alcance
 
@@ -28,16 +28,13 @@ Origen del diff: **rama** (`6fb5147aa88e6193123ac36357c7dd8af7956ee2` .. `featur
 | Supervivientes | 0 |
 | Timeouts | 0 |
 | Sin veredicto (base rota) | 0 |
-| Tiempo total | 51.0 s |
-| SHA de HEAD medido | `fd2831cc50518208d8de95c3b76b3d2924684202` |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-023_2edunhld/wk_0/services/dedicacion-api` | 4.6 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-023_2edunhld/wk_1/services/dedicacion-api` | 4.6 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-023_2edunhld/wk_2/services/dedicacion-api` | 4.6 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-023_2edunhld/wk_3/services/dedicacion-api` | 4.6 |
-| Media por mutante evaluado (s) | 1.5 |
+| Tiempo total | 255.6 s |
+| SHA de HEAD medido | `ef38fa840c14188dc3a7757b5d16beba6b017a9a` |
+| Línea base (s) — `services/dedicacion-api` | 14.5 |
+| Media por mutante evaluado (s) | 7.7 |
 | Timeout efectivo por mutante (s) | 120 — derivado de la línea base × 2.0 |
 | Suelo configurado (s) | 120 |
-| Workers | 4 |
+| Workers | 1 |
 | Muestreo | no: campaña completa |
 
 ## Supervivientes

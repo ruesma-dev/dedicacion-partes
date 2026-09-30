@@ -234,11 +234,13 @@ def test_f023_r5_empleados_sin_filtro_de_emphis() -> None:
     assert not re.search(r"\)\s*AS hm\s+WHERE", sql)
 
 
-def test_f023_r5_config_criterio_del_recurso_entra_vacio_por_d1() -> None:
+def test_f023_r5_config_inactivo_es_la_fecha_de_baja_del_recurso() -> None:
+    """D1 cerrada (2026-10-01): inactivo = `con.fecbaj > 0` del recurso. La
+    lista de literales queda vacía: el tipo 33 no tiene estados en `conest`."""
     cfg = _config_sync()["empleados"]
     assert cfg["filtro_estado_recurso"] is True
     assert cfg["estados_recurso_excluidos"] == []
-    assert cfg["excluir_recurso_con_fecha_baja"] is False
+    assert cfg["excluir_recurso_con_fecha_baja"] is True
 
 
 # --- R6: sin columna `empresa` no se persiste nada ----------------------------
@@ -739,11 +741,15 @@ def test_f023_r18_filtro_estado_recurso_encendido_por_defecto(
     assert _mismos_netos(contenedor) == ([1, 3], [1])
 
 
-def test_f023_r18_con_el_config_real_nadie_cae_por_estado(
+def test_f023_r18_con_el_config_real_cae_el_recurso_con_fecha_de_baja(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """D1 abierta: con `config.yaml` tal cual, el estado no descarta a nadie
-    (R16); solo cae el recurso de otra empresa (R9)."""
+    """D1 cerrada: con `config.yaml` tal cual, cae el recurso con fecha de
+    baja (R13) y cuenta como tal; el 2 sigue aunque su estado diga «Baja»
+    porque la lista de literales está vacía; y sigue cayendo el de otra
+    empresa (R9). Preview y sync, con los mismos netos."""
     contenedor = _contenedor(monkeypatch, _entrada_r18())
-    netos_emp, _ = _mismos_netos(contenedor)
-    assert netos_emp == [1, 2, 3]
+    assert _mismos_netos(contenedor) == ([1, 2], [1])
+    emp = contenedor.preview_sync.ejecutar()["empleados"]
+    assert emp["excluidos_por_estado_recurso"] == {FECHA_BAJA: 1}
+    assert emp["excluidos_recurso_otra_empresa"] == 1

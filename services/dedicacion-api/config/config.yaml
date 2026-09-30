@@ -77,18 +77,21 @@ sync:
     #     por tip + est -> res (l. 6083-6089): alias `estado_recurso`;
     #   - con.fecbaj «Fecha baja», Entero tipo fecha (l. 5658): alias
     #     `baja_recurso`.
-    # El diccionario NO dice qué valores significan «inactivo» (decisión D1,
-    # abierta): hasta cerrarla con la consulta Q1 de
-    # specs/F-023-sync-empresa-y-estado-recurso/design.md §4, la lista entra
-    # VACÍA y la fecha de baja no excluye, así que nadie queda fuera por
-    # estado. El preview (empleados.excluidos_por_estado_recurso) enseña lo
-    # que se descarta en cuanto se rellenen.
+    # INACTIVO = recurso con fecha de baja de su concepto (con.fecbaj > 0).
+    # Decisión D1 cerrada por el humano el 2026-10-01, con el hallazgo de
+    # progress/explore_estado_recurso.md: es el criterio del data mart
+    # (personal.recursos.activo). El tipo 33 (recurso) no tiene estados en
+    # `conest`, así que `estado_recurso` llega siempre como el número de
+    # con.est en texto. El preview (empleados.excluidos_por_estado_recurso)
+    # cuenta los descartes bajo «(fecha de baja del recurso)».
     filtro_estado_recurso: true
-    # Literales de conest.res del recurso que lo dejan fuera (subcadena
-    # normalizada: sin acentos ni mayúsculas, como en obras).
+    # VACÍA A PROPÓSITO: para recursos no hay literales en `conest`. NO meter
+    # «BAJA» ni «2»: son el estado del EMPLEADO (tipo 43), no del recurso. Y
+    # la comparación es por subcadena normalizada: un número casaría otros
+    # («1» casa «10» y «21»).
     estados_recurso_excluidos: []
-    # true = también fuera todo recurso con con.fecbaj informada (> 0).
-    excluir_recurso_con_fecha_baja: false
+    # true = fuera todo recurso con con.fecbaj informada (> 0). Criterio D1.
+    excluir_recurso_con_fecha_baja: true
 
     # Solo recursos con código de hora mensual (M*). Es EL filtro bueno:
     # deja fuera peones, oficiales y cualquiera que no vaya por porcentaje.
