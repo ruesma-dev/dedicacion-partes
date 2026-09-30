@@ -1,30 +1,34 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-023 en ejecución** (rigor crítico). Plan confirmado por el humano el
-2026-09-30; implementer lanzado. El arnés es la **1.7.3**.
+**F-023 en review** (rigor crítico). Implementer terminado el 2026-09-30;
+reviewer lanzado. El arnés es la **1.7.3**.
 
 ## F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
 
 - Rama `feature/F-023-sync-empresa-y-estado-recurso`, con `dev` traído
   (`792870f`, incluye F-022). Estado `in_progress`. Spec aprobada el
   2026-09-29; decisiones en `features.json`.
-- **Implementer lanzado** con T1-T8 y T12 → `progress/impl_F-023.md`. Después,
-  reviewer.
-- **Explorador en paralelo, solo lectura**: intenta cerrar la D1 (qué
-  estados de recurso significan «de baja») con el data mart, sin
-  sigrid-api → `progress/explore_estado_recurso.md`. Si lo consigue, sus
-  valores se proponen al humano para T9; el implementer no los inventa.
+- **Implementer terminado**: T1-T8 y T12 hechas, un commit por tarea más dos
+  de ajuste (`5ae53d1` … `19d4f40`); informe `progress/impl_F-023.md`, con
+  mutación 33/33 y dos desviaciones menores que valida el reviewer. **Reviewer
+  lanzado** → `progress/review_F-023.md`.
+- **Explorador (D1), terminado** → `progress/explore_estado_recurso.md`: el
+  «rojo» de Administración es la **fecha de baja del concepto del recurso**
+  (`con.fecbaj > 0`), no un estado. El tipo 33 (recurso) no tiene estados en
+  `conest`. Propuesta al humano para T9, **pendiente de su respuesta**:
+  `excluir_recurso_con_fecha_baja: true` y `estados_recurso_excluidos: []`.
+  Mientras no responda, `config.yaml` sigue con el criterio vacío.
 - **No se despliega sin F-024** (D4: sin selector, una persona con fichas en
   dos empresas sale dos veces). Mergear a `dev` no despliega.
 
 ### Verificaciones MANUAL (humano) de F-023
 
-- **T9 · D1**: lanzar la consulta Q1 (`specs/F-023-sync-empresa-y-estado-recurso/design.md`
-  §4) por `POST /api/sql/read` contra `ruesma_rep` y decidir los literales de
-  `estados_recurso_excluidos` y si `excluir_recurso_con_fecha_baja` va a
-  `true`. Puede sustituirla el hallazgo del explorador, si el humano lo
-  acepta. Resultado: _pendiente_.
+- **T9 · D1**: decidir el criterio de inactivo. El explorador lo resolvió
+  con el data mart (arriba) y queda **pendiente de que el humano acepte** la
+  propuesta; si prefiere el dato directo, lanzar Q1 (`design.md` §4) por
+  `POST /api/sql/read` contra `ruesma_rep`. Con la decisión, el líder fija el
+  valor en `config.yaml`. Resultado: _pendiente_.
 - **T10 · R19 y D6**: con la API local apuntando a Sigrid,
   `GET http://localhost:8090/api/v1/sync/preview`. Comprobar que no llega
   truncada, que los recursos inactivos que señaló negocio (lista D5, **aún no
