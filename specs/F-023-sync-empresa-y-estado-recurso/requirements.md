@@ -123,12 +123,11 @@ baja) y sus valores quedan en **D1**, con la consulta que la cierra (design §4)
 
 ## Decisiones abiertas
 
-- **D1 · Campo y valores de «inactivo».** El diccionario localiza el estado
-  (`con.est` + `conest`, y `con.fecbaj`) pero no sus valores. Lanzar la
-  consulta Q1 de design §4 (solo lectura) y decidir: (a) qué literales de
-  `conest.res` van a `estados_recurso_excluidos`; (b) si
-  `excluir_recurso_con_fecha_baja` va a `true`. Hasta decidirlo, la
-  configuración entra vacía (R16) y la verificación T10 (R19) espera a T9.
+- **D1 · CERRADA el 2026-10-01** (humano, sin Q1): inactivo = fecha de baja
+  del concepto del recurso, `excluir_recurso_con_fecha_baja: true`;
+  `estados_recurso_excluidos` vacía porque el tipo 33 no tiene estados en
+  `conest` (`progress/explore_estado_recurso.md`). R12 queda como gancho
+  inerte. T10 (R19) solo espera la lista D5.
 - **D2 · Empresa del trabajador = la de su ficha de empleado**, y se
   descartan sus recursos de otra empresa (R9). Alternativa: la del recurso.
   **Condiciona a F-026**: si allí el eje pasa a ser el recurso, la empresa

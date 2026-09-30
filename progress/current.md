@@ -2,7 +2,7 @@
 # Trabajo en curso
 
 **F-023 con review APROBADA** (pasada 1, rigor crítico; `progress/review_F-023.md`).
-T9 cumplida; falta la review incremental de T9 para mergear a `dev`, y T10 y T11 para `done`. El arnés es la **1.7.3**.
+T9 cumplida; falta la pasada 3 (documental) de la review para mergear a `dev`, y T10 y T11 para `done`. El arnés es la **1.7.3**.
 
 ## F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
 
@@ -26,12 +26,10 @@ T9 cumplida; falta la review incremental de T9 para mergear a `dev`, y T10 y T11
      que hoy filtra `emphis`.
   - Automejora (C4: comprobar que el resultado esperado de una MANUAL es
     alcanzable) → encargo en el backlog de `arnes-base`.
-- **Explorador (D1), terminado** → `progress/explore_estado_recurso.md`: el
-  «rojo» de Administración es la **fecha de baja del concepto del recurso**
-  (`con.fecbaj > 0`), no un estado. El tipo 33 (recurso) no tiene estados en
-  `conest`. Propuesta al humano para T9, **pendiente de su respuesta**:
-  `excluir_recurso_con_fecha_baja: true` y `estados_recurso_excluidos: []`.
-  Mientras no responda, `config.yaml` sigue con el criterio vacío.
+- **Explorador (D1)** → `progress/explore_estado_recurso.md`: el «rojo» de
+  Administración es la **fecha de baja del concepto del recurso**
+  (`con.fecbaj > 0`); el tipo 33 no tiene estados en `conest`. **Aceptado por
+  el humano el 2026-10-01 y aplicado en T9** (`9b9c1d9`).
 - **No se despliega sin F-024** (D4: sin selector, una persona con fichas en
   dos empresas sale dos veces). Mergear a `dev` no despliega.
 
@@ -41,8 +39,10 @@ T9 cumplida; falta la review incremental de T9 para mergear a `dev`, y T10 y T11
   inactivo = fecha de baja del recurso. Implementada en `9b9c1d9`:
   `excluir_recurso_con_fecha_baja: true`, lista de estados vacía con
   comentario corregido (observación 1 de la review), `r5` y `r18` adaptados
-  con fase RED real, mutación 33/33, `init.sh` en verde. **Reviewer
-  incremental lanzado** (desde `ef38fa8`).
+  con fase RED real, mutación 33/33, `init.sh` en verde. Review pasada 2:
+  código y tests **aprobados**; CHANGES_REQUESTED solo porque la D1 seguía
+  abierta en otros sitios del rastro (corregido). Pasada 3, solo documental,
+  lanzada. Automejora → encargo `c94c072` en `arnes-base`.
 - **T10 · R19 y D6**: con la API local apuntando a Sigrid,
   `GET http://localhost:8090/api/v1/sync/preview`. Comprobar que no llega
   truncada, que los recursos inactivos que señaló negocio (lista D5, **aún no
@@ -79,8 +79,8 @@ preflight. Es lo seguro; se arregla limpiando el maestro.
 2. **Decidir** si la corrección de `ruesma_rep` («no es réplica, es la base
    documental») que tiene `azure-apps/dedicacion.md` se lleva a
    `docs/INTEGRACION.md`.
-3. **Datos para F-023 y F-026**: la consulta Q1 de F-023 (design §4), la lista
-   de recursos inactivos que señaló negocio, las tres consultas de
+3. **Datos para F-023 y F-026**: la lista de recursos inactivos que señaló
+   negocio (para T10 de F-023), las tres consultas de
    `progress/explore_eusebio.md`, y si encargados y gruistas se dan de alta
    sin ficha de empleado a propósito.
 4. **F-014** y **F-016**, cuando quiera: aviso a Administración de las cuatro

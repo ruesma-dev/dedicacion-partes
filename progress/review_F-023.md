@@ -1,130 +1,119 @@
-Revisión completa (pasada 1) del trabajo de F-023: `git diff 792870f..HEAD` (base = merge de `dev` con F-022; HEAD `9c7810c`)
+Revisión incremental desde ef38fa8 (pasada 2), HEAD `a14025e`. La pasada 1 (completa, sobre `9c7810c`) va resumida primero.
 
 # F-023 · Review — Sync de maestros: todas las empresas y activo según el estado del recurso
 
-**Veredicto: APPROVED** (el `done` sigue bloqueado por T9, T10 y T11, MANUAL del humano).
+**Veredicto vigente: CHANGES_REQUESTED** (pasada 2). Solo por rastro documental: config, tests y
+mutación están bien. **Nivel de rigor:** `critico`, declarado en `harness/features.json` (fase RED,
+cobertura ≥ 80 %, mutación con cero supervivientes, RM1-RM6, MANUAL con su comando).
 
-**Rama:** `feature/F-023-sync-empresa-y-estado-recurso`, árbol principal, limpio antes y después de la review.
-**Nivel de rigor:** `critico`, declarado en `harness/features.json`. Exige fase RED, cobertura ≥ 80 % de las
-líneas cambiadas, mutación con cero supervivientes, RM1-RM6 y verificaciones MANUAL con su comando.
+## Pasada 1 · Revisión completa `792870f..9c7810c` — APPROVED (resumen)
 
-## Verificación ejecutada por el reviewer
+- `init.sh` verde (355 passed, 1 skipped; cobertura 100 % 67/67); ruff sin avisos nuevos en los 8 `.py`.
+- Mutación: recálculo puro (182 líneas, 33 mutantes) y **campaña reejecutada** (51,0 s < 60 s): 33/33
+  muertos, 0 sin veredicto; RM1 y RM2 coherentes; RM3 revisados los 33, ninguno equivalente; RM6 los
+  supervivientes de la primera campaña se mataron **añadiendo** tests (`7e1bf24`).
+- C1-C5 `[x]`; C3 bis y C4 ter N/A (no toca `docs/referencia/`; no hay `rutas_sensibles.json`); T9-T11
+  `[ ]` justificado (MANUAL del humano: bloquean el `done`, no la review).
+- Trazabilidad R1-R18 con tests `test_f023_rN_*` en `services/dedicacion-api/tests/test_f023_sync_empresa.py`;
+  R19 MANUAL (T10). Desviaciones aceptadas: filtros `-k` por subcadena, `_entero` duplicado entre capas
+  (su sitio, si se unifica, es `domain/normalizacion.py`), tests extra y `CRITERIO_VACIO` singleton.
+- Observaciones: (1) R12 y el JOIN a `conest` del recurso quedan inertes y la comparación es por
+  subcadena; corregir el comentario de `config.yaml` al cerrar T9. (2) T11 debe filtrar `WHERE activa` /
+  `WHERE activo`. (3) T9 antes del merge a `dev`. Automejora propuesta: C4 debe comprobar que el resultado
+  esperado de una MANUAL es alcanzable.
 
-- `bash harness/init.sh`: **ENTORNO LISTO**. 355 passed, 1 skipped; PUERTA COBERTURA `[OK]` 100,0 % (67/67);
-  PUERTA TAMAÑO `[OK]`; ningún `.env` versionado; ruff 193 avisos.
-- Ruff comparado fichero a fichero (`792870f` frente a HEAD) en los 8 `.py` tocados: **0 avisos nuevos**.
-- `pytest tests/test_f023_sync_empresa.py`: **53 passed** (1,6 s).
-- Mutación, **recálculo puro**: `alcance_de_feature("F-023")` = `6fb5147..rama`, 7 ficheros, **182 líneas**;
-  `generar_mutantes` = **33 mutantes**. Coinciden fichero a fichero con `progress/mutacion_F-023.md`.
-- Mutación, **campaña reejecutada** (el informe declara 51,0 s, menos de 60 s):
-  `python -m harness.mutacion --feature F-023 --max-mutantes 0 --salida <scratchpad>` sobre HEAD `9c7810c`
-  da **33 evaluados, 33 muertos, 0 supervivientes, 0 timeouts, 0 sin veredicto, 53,4 s**, con la línea base
-  ejecutada (4,4-4,5 s por worker) y sin cabecera «CAMPAÑA NO VÁLIDA». Los totales coinciden. `git status`
-  queda limpio.
+## Pasada 2 · Revisión incremental desde `ef38fa8` (HEAD `a14025e`)
 
-## Checkpoints
+Delta: `9b9c1d9` (F-023 T9) y `a14025e` (rastro). Ficheros: `config/config.yaml`,
+`tests/test_f023_sync_empresa.py`, `tasks.md`, `progress/{current,impl_F-023,mutacion_F-023}.md`.
 
-**C1** [x] init.sh sale con 0 · [x] existen los ficheros base.
-**C2** [x] una sola `in_progress` (F-023) · [x] la rama es la de la feature · [x] `current.md` refleja la
-sesión (F-023 en review) · [x] todas las `done` tienen su entrada en `history.md` (comprobado por script).
-**C3** [x] Hexagonal: `domain/` sin imports nuevos; `filtros_maestros` es función pura en `application/`;
-el ORM y el upsert viven en `infrastructure/db`; `deps.py` solo cablea. · [x] La primera línea de los
-9 ficheros tocados es su ruta. · [x] Sin `print`, sin TODO, sin secretos y sin dependencias nuevas.
-· [x] Las tres trampas: ni porcentajes, ni postventa, ni escrituras a Sigrid (la SQL es de lectura y va
-por `sigrid-api`).
-**C3 bis** N/A: la feature no toca `docs/referencia/`.
-**C4** [x] Hay tests de R1 a R18 y pasan (tabla abajo). · [x] Sin red ni BBDD: la sesión, `SigridGateway`
-y el UoW son dobles; `SigridApiClient` va parcheado con monkeypatch; `construir_contenedor(..., None)`
-no abre ningún engine; `cargar_config` solo lee el yaml. · [x] T9, T10 y T11 constan en `current.md` con su
-comando (Q1 de design §4, `GET …/sync/preview`, `SELECT empresa, COUNT(*)…`).
-**C4 bis** [x] rigor `critico` declarado · [x] RED: traza real pegada (47 failed, 3 passed). Los 3 verdes son
-de R10, que caracteriza el comportamiento de hoy, y el cambio lo demuestra R11 en rojo. · [x] Cobertura:
-100 %. · [x] Mutación con totales verificados de forma independiente. · [x] Campaña reejecutada (arriba).
-· [x] Coste por mutante: 51,0 × 4 ÷ 33 = 6,2 s, más de 1 s. · [x] Sin «CAMPAÑA NO VÁLIDA» y 0 sin
-veredicto. · [x] **RM1**: se midió sobre `fd2831c`; de ahí a HEAD solo cambian `progress/` y `tasks.md`,
-así que el alcance es el mismo (la reejecución sobre HEAD da lo mismo). · [x] **RM2**: media × W =
-1,5 × 4 = 6,2 s, coherente con la línea base de 4,6 s. · **RM3**: revisé los 33; ninguno es equivalente,
-todos cambian algo observable (p. ej. `or ""` → `and ""` vacía el estado que se compara). · RM5 N/A: no
-hay equivalentes declarados. · [x] **RM6**: no se quitó ninguna guarda. Los cuatro supervivientes de la
-primera campaña se mataron **añadiendo** tests (`7e1bf24`). · Campaña manual N/A: la automática dio 33.
-· [x] Cero supervivientes. · [x] La sección «Evidencias» trae los cuatro números y los workers (4).
+### Verificación ejecutada por el reviewer
+
+- `bash harness/init.sh`, tal cual: **ENTORNO LISTO**. 355 passed, 1 skipped; COBERTURA `[OK]` 100,0 %
+  (67/67); TAMAÑO `[OK]`; ningún `.env`; `config.yaml` válido.
+- **Ningún `.py` de producción en el delta** (`git diff --stat ef38fa8..HEAD`): solo YAML, tests, spec y
+  rastro. `filtrar_produccion` deja el YAML fuera del alcance de mutación.
+- **Fase RED reproducida** en un worktree desechable del scratchpad (HEAD con el `config.yaml` de
+  `ef38fa8`): `2 failed` con las mismas trazas del informe (`assert False is True`;
+  `([1, 2, 3], [1]) == ([1, 2], [1])`). Con el config de HEAD: fichero entero **53 passed**. Worktree
+  eliminado; `git status` limpio.
+- **Mutación, recálculo puro**: `alcance_de_feature("F-023")` = `6fb5147..rama`, 7 ficheros, 182 líneas;
+  `generar_mutantes` = 33 (24+0+1+0+0+5+3). Coincide con `progress/mutacion_F-023.md`.
+  **Campaña no reejecutada: 255,6 s según el informe** (> 60 s); vale recálculo + RM.
+
+### Puntos de la petición del líder
+
+- **Solo config, tests, rastro y spec**: [x]. `deps.py` sigue leyendo la clave con default `False`; el
+  cambio de comportamiento sale solo del YAML.
+- **RM1**: [x]. La campaña se midió sobre `ef38fa8` con el árbol en disco (`--workers 1`); de ahí a HEAD
+  no cambia ningún fichero del alcance. Es la misma campaña que `impl_F-023.md` §T9 declara (33/33,
+  255,6 s) y la de la pasada 1 sigue valiendo.
+- **RM2**: [x]. 33 × 7,7 = 254 s ≈ 255,6 s; media × W = 7,7 × 1 frente a línea base 14,5 s: por debajo
+  por el `-x`, sin salto de orden de magnitud. Coste por mutante 7,7 s > 1 s. Timeout 120 s (no comparable
+  con la pasada 1: línea base distinta). Sin «CAMPAÑA NO VÁLIDA», 0 sin veredicto, 0 supervivientes.
+- **Tests no aflojados**: [x]. `r5_config_inactivo_es_la_fecha_de_baja_del_recurso` fija las tres
+  claves (interruptor `True`, lista `[]`, fecha de baja `True`): meter «BAJA» en la lista lo rompe.
+  `r18_con_el_config_real_cae_el_recurso_con_fecha_de_baja` es **más fuerte** que el anterior (antes
+  solo `netos_emp == [1, 2, 3]`): con el yaml real exige netos `([1, 2], [1])` iguales en sync y preview,
+  `excluidos_por_estado_recurso == {"(fecha de baja del recurso)": 1}` (cae el 3), el 2 con estado
+  «Baja» sin fecha se queda, y `excluidos_recurso_otra_empresa == 1` (cae el 4).
+- **Comentario de `config.yaml` recoge la observación 1**: [x]. Dice que el criterio es `con.fecbaj > 0`
+  (D1, fuente el data mart), que el tipo 33 no tiene estados en `conest`, que no se mete «BAJA» ni «2»
+  (estado del tipo 43) y que la subcadena haría casar «1» con «10» y «21».
+- **`current.md` con T10 y T11 y su comando exacto**: [x]. T11 ya con `WHERE activa` / `WHERE activo`.
+- **`current.md` coherente con `features.json`**: [ ]. Ver cambios requeridos 1 y 2.
+
+### Checkpoints (pasada 2; lo no tocado por el delta sigue como en la pasada 1)
+
+**C1** [x] init.sh sale con 0 · [x] ficheros base.
+**C2** [x] una sola `in_progress` · [x] rama de la feature · [ ] `current.md` **conserva restos
+contradictorios** (cambio 1) · [x] `history.md` sin cambios que pedir.
+**C3** [x] primera línea con ruta en los dos ficheros tocados · [x] sin prints, TODO ni secretos ·
+[x] hexagonal intacta (sin código) · [x] las tres trampas: ni porcentajes, ni postventa, ni escrituras.
+**C3 bis** N/A: el delta no toca `docs/referencia/`.
+**C4** [x] R5, R13 y R18 con tests adaptados y en verde · [x] sin red ni BBDD (`SigridApiClient` parcheado,
+yaml real solo leído) · [x] T10 y T11 en `current.md` con su comando.
+**C4 bis** [x] rigor declarado · [x] RED con traza real, reproducida · [x] cobertura 100 % · [x] totales
+recalculados · [x] campaña > 60 s: recálculo + RM, dicho arriba · [x] coste por mutante 7,7 s ·
+[x] sin cabecera de no válida · [x] RM1 · [x] RM2 · RM3: los mutantes no cambian respecto a la pasada 1,
+ninguno equivalente · RM5 N/A: no hay equivalentes declarados · [x] RM6: no se quitó ninguna guarda ·
+campaña manual N/A: la automática dio 33 · [x] cero supervivientes · [x] «Evidencias T9» con tests,
+cobertura, mutantes y workers (1).
 **C4 ter** N/A: no existe `harness/rutas_sensibles.json`.
-**C5** [x] T1-T8 y T12 `[x]`, cada una con su commit `F-023 Tn:`, más dos commits de ajuste con motivo.
-T9-T11 quedan `[ ]` **justificado**: son MANUAL del humano y bloquean el `done`, no esta review.
-· [x] Sin artefactos sin trackear. · [x] `features.json` en `in_progress`.
+**C5** [x] T9 `[x]` con su commit `F-023 T9:` · T10 y T11 `[ ]` justificado (MANUAL del humano; bloquean
+el `done`, no el merge) · [x] árbol limpio · [ ] la descripción de F-023 en `features.json` sigue dando
+D1 por pendiente (cambio 2).
 
-## Cobertura: requisito → test (`services/dedicacion-api/tests/test_f023_sync_empresa.py`)
+### Cobertura del delta: requisito → test
 
-| R | Tests | R | Tests |
-|---|---|---|---|
-| R1 | `r1_columna_empresa_integer_nulable_sin_default` ×2, `r1_empresa_solo_en_trabajador_y_obra` | R10 | `r10_*` ×3 |
-| R2 | `r2_alters_de_una_base_sin_empresa` (las dos cadenas exactas) | R11 | `r11_*` ×3 (incluida empresa nula) |
-| R3 | `r3_obras_devuelven_empresa_de_su_ficha` | R12 | `r12_*` ×3 |
-| R4 | `r4_empleados_devuelven_los_cinco_alias` | R13 | `r13_*` ×2 |
-| R5 | `r5_empleados_sin_filtro_de_emphis`, `r5_config_criterio_…_vacio_por_d1` | R14 | `r14_*` ×3 (estado, empresa y fecha) |
-| R6 | `r6_pipeline_…` ×2, `r6_preview_…` ×2, `r6_las_demas_columnas…` | R15 | `r15_baja_laboral_no_excluye_pero_se_cuenta` |
-| R7 | `r7_mismo_codigo_en_dos_empresas_son_dos_obras` | R16 | `r16_*` ×3 |
-| R8 | `r8_*` ×10 | R17 | `r17_*` ×2 |
-| R9 | `r9_*` ×3 | R18 | `r18_*` ×6 (contenedor real con el yaml parcheado) |
+| R | Test |
+|---|---|
+| R5 | `test_f023_r5_config_inactivo_es_la_fecha_de_baja_del_recurso` (+ `r5_empleados_sin_filtro_de_emphis`) |
+| R13 | `test_f023_r18_con_el_config_real_cae_el_recurso_con_fecha_de_baja` con el yaml real (+ `r13_*` ×2) |
+| R9 | ídem: `excluidos_recurso_otra_empresa == 1` |
+| R18 | ídem más los cinco `r18_*` con yaml parcheado |
 
-R19: MANUAL (T10).
+## Cambios requeridos (pasada 2; todos de rastro, ninguno de código)
 
-## Puntos de la petición del líder
+1. `progress/current.md` l. 29-34, viñeta «Explorador (D1)»: dice «Propuesta al humano para T9,
+   **pendiente de su respuesta**» y «Mientras no responda, `config.yaml` sigue con el criterio vacío».
+   Es falso desde `9b9c1d9`. Dejarla como «aceptada el 2026-10-01 (T9)» o quitarla. Y en «Lo que espera
+   al humano», punto 3 (l. 82), quitar «la consulta Q1 de F-023 (design §4)»: D1 se cerró sin Q1. La lista D5
+   (para T10) sí sigue pendiente.
+2. `harness/features.json`, descripción de F-023: sigue diciendo «Pendiente antes de verificar (T9/T10):
+   D1, valores de estado de recurso inactivo (consulta Q1)» y no lista D1 entre las decisiones. Añadir
+   «D1 inactivo = fecha de baja del recurso (`con.fecbaj > 0`), 2026-10-01» y dejar solo D5 como
+   pendiente. Regenerar `BACKLOG.md` con `bash harness/init.sh`.
+3. `specs/F-023-sync-empresa-y-estado-recurso/requirements.md` l. 126-131 (D1: «Hasta decidirlo, la
+   configuración entra vacía») y `design.md` l. 32 (`false`, D1): anotar que D1 está cerrada y con qué
+   valor. El acceptance 2 de `features.json` pide el campo y los valores «documentados en la spec»; hoy
+   solo los recoge la coletilla de T9 en `tasks.md`. Ojo: `requirements.md` está en 147/150 líneas;
+   reescribir la viñeta D1 en su sitio, no añadir un bloque.
 
-- **Columnas `empresa` en el ORM, sin ALTER a mano**: [x]. `Integer`, nulable, sin default, solo en
-  `trabajador` y `obra`. El `ALTER` sale de `alters_faltantes` (R2). `esquema.py` y `main.py` no se tocan.
-- **El dedupe por persona no mezcla empresas**: [x]. `_clave_persona` = `"{empresa}|dni:…"`; con empresa
-  nula la clave es `None|…`.
-- **El descarte fila a fila va antes de los dedupes**: [x]. El paso 0 construye `validas` y el dedupe por
-  `ide` recorre solo esas.
-- **Preview y sync usan el mismo criterio y el mismo objeto**: [x]. En `deps.py` se crea una sola instancia
-  y se pasa a los dos; las columnas requeridas son constantes compartidas.
-- **Config vacía por D1**: [x]. `estados_recurso_excluidos: []` y `excluir_recurso_con_fecha_baja: false`.
-  No es defecto.
-- **Alcance de F-024, F-025 y F-026 sin tocar**: [x]. Front, transfer, `depurar_obras`, `schemas.py` y
-  `routes.py` intactos; la SQL sigue partiendo de `dbo.emp`.
-- **Tests sin red ni BBDD y ningún `.env`**: [x].
-
-## Desviaciones del implementer, validadas
-
-1. **Filtros `-k` de `tasks.md`.** `-k` casa por subcadena, así que se usó `-k "r1_ or r2_"`. Es correcto y
-   no cambia lo que se verifica. Para specs futuras: mejor `-k "r1_"`.
-2. **`_entero` duplicado** en `repositories.py` y `filtros_maestros.py`. Aceptable: `application` no puede
-   importar de `infrastructure`, son una línea cada uno y es el mismo servicio. Si se unifica, su sitio es
-   `domain/normalizacion.py`.
-3. **Tests extra, `CRITERIO_VACIO` como singleton y `COLUMNAS_*` compartidas**: mejoran lo que pide el
-   diseño sin cambiar el comportamiento.
-
-## Observaciones (no bloquean; el líder debe recogerlas, no dejarlas en «anotado»)
-
-1. **Hallazgo del explorador (el tipo 33 no tiene estados en `conest`; la baja es `con.fecbaj`).**
-   Ningún requisito queda sin sentido: R13 es justo el criterio real, y R19 sigue valiendo porque los
-   descartes por fecha salen dentro de `excluidos_por_estado_recurso` bajo `"(fecha de baja del recurso)"`.
-   Pero R12 y el `LEFT JOIN dbo.conest AS rest` del recurso (`config.yaml`) quedan **inertes en la práctica**:
-   `estado_recurso` siempre será el `CAST(rcon.est)` numérico. Es código probado y sin riesgo mientras la
-   lista siga vacía. El peligro está en rellenarla con un número: la comparación es por **subcadena**, así
-   que `"1"` casaría también `"10"` y `"21"`. Además, el comentario de `config.yaml` («Literales de
-   conest.res del recurso») invita a meter `BAJA`/`2`, que es el estado del **tipo 43 (empleado)**, la trampa
-   que señala el explorador. **Al cerrar T9**, corregir ese comentario (decir que para recursos no hay
-   literales y que el criterio es la fecha de baja) o simplificar R12 en una feature aparte. Lo decide el
-   humano.
-2. **T11 tal como está escrita va a fallar.** Pide `SELECT empresa, COUNT(*) FROM obra GROUP BY empresa`
-   «sin NULL tras el sync». Pero el upsert solo escribe `empresa` en las filas **recibidas**. Las
-   desactivadas (obras terminadas que filtra `estados_excluidos`, trabajadores sin código M* o ya de baja)
-   se quedan con `empresa` NULL para siempre. Hay que cambiar la comprobación a `… WHERE activa` / `WHERE
-   activo`. Y avisar en F-024: `listar_para_periodo` sigue mostrando desactivados que tienen líneas en el
-   periodo, y esos llegarán con empresa NULL al filtro de empresa.
-3. **Orden respecto a T9.** Con el criterio vacío y sin el filtro de `emphis` (R5), el sync de esta rama
-   **mete más gente inactiva que `dev` hoy**: según el explorador, 535 personas con ficha que están de
-   baja como recurso. Por D4 no se despliega sin F-024, pero conviene que `excluir_recurso_con_fecha_baja`
-   quede fijado (T9) **antes del merge a `dev`**, no solo antes del despliegue.
-
-## Cambios requeridos
-
-Ninguno.
+Con eso, la pasada 3 puede ser solo documental: no hace falta repetir la mutación ni la RED.
 
 ## Propuesta de automejora (para el humano, no aplicada)
 
-- `CHECKPOINTS.md` C4: añadir que el reviewer compruebe que el **resultado esperado** de cada verificación
-  MANUAL es alcanzable con el código revisado, no solo que el comando está en `current.md`. La observación 2
-  habría devuelto a T11 un «falla» sin que hubiera defecto en el código.
+- `leader.md`: al cerrar una decisión abierta (Dn), checklist de dónde vive: `features.json`
+  (descripción), `requirements.md` (sección de decisiones), `current.md` (todas las viñetas que la citan)
+  y la tarea. Aquí se actualizaron dos de cuatro sitios.
