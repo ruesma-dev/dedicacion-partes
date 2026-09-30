@@ -15,6 +15,7 @@ que el fichero entero caiga en la colección por lo que aún no existe.
 """
 from __future__ import annotations
 
+import dataclasses
 import re
 from typing import Any
 
@@ -549,9 +550,10 @@ def test_f023_r15_baja_laboral_no_excluye_pero_se_cuenta() -> None:
         _emp(2, baja_laboral=0),
         _emp(3, baja_laboral=None),
         _emp(4, baja_laboral=1, cod_hora_mes=None),   # cae por código mensual
+        _emp(5, baja_laboral=1),                      # cualquier fecha > 0
     ], criterio=_criterio())
-    assert _ides(res.filas) == [1, 2, 3]
-    assert res.con_baja_laboral == 1
+    assert _ides(res.filas) == [1, 2, 3, 5]
+    assert res.con_baja_laboral == 2
 
 
 def test_f023_r16_criterio_vacio_no_descarta_por_estado() -> None:
@@ -571,6 +573,15 @@ def test_f023_r16_criterio_por_defecto_es_vacio() -> None:
     assert criterio.estados_excluidos == ()
     assert criterio.excluir_con_fecha_baja is False
     assert criterio.activo is True
+
+
+def test_f023_r16_criterio_es_inmutable() -> None:
+    """El criterio por defecto es UNA instancia compartida (valor por defecto
+    de `depurar_empleados`, del step y del preview): si se pudiera mutar, un
+    cambio en un sitio alteraría el filtro de todos los demás."""
+    criterio = _criterio()
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        criterio.activo = False  # type: ignore[misc]
 
 
 # --- R17: el preview publica los recuentos nuevos -----------------------------
@@ -707,6 +718,25 @@ def test_f023_r18_interruptor_general_apagado_llega_a_los_dos(
         "excluir_recurso_con_fecha_baja": True,
     }))
     assert _mismos_netos(contenedor) == ([1, 2, 3], [1])
+
+
+def test_f023_r18_config_sin_claves_de_recurso_no_filtra_por_estado(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Un config.yaml anterior a F-023 (sin las tres claves) se comporta como
+    el criterio vacío (R16): los valores por defecto no filtran."""
+    contenedor = _contenedor(monkeypatch, _entrada_r18(), _config_prueba({}))
+    assert _mismos_netos(contenedor) == ([1, 2, 3], [1])
+
+
+def test_f023_r18_filtro_estado_recurso_encendido_por_defecto(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Con literales y sin el interruptor explícito, el filtro se aplica."""
+    contenedor = _contenedor(monkeypatch, _entrada_r18(), _config_prueba({
+        "estados_recurso_excluidos": ["baja"],
+    }))
+    assert _mismos_netos(contenedor) == ([1, 3], [1])
 
 
 def test_f023_r18_con_el_config_real_nadie_cae_por_estado(
