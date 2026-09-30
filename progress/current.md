@@ -21,9 +21,10 @@ arnés es la **1.7.3**; lo de su actualización está en `history.md`.
   - Esta rama toca en `features.json` las entradas de F-018, F-023 y F-026.
     **Al mergear F-023 después**, resolver el conflicto de `features.json`
     fusionando las entradas, sin reescribir el fichero (ver «Hechos»).
-  - Automejora del arnés (C5 contra MANUAL, purgar la caché antes de la
-    mutación): **propuesta al humano**, pendiente de decisión. Si se aprueba,
-    va también a `arnes-base` por la regla de propagación.
+  - Automejoras del arnés (C5 contra MANUAL; falsos supervivientes con
+    caché previa): por decisión del humano van al **backlog de `arnes-base`**
+    como `ENCARGO_pendiente_*.md` (commit `357522c` en `arnes-base`, sin
+    push). No se tocan en este repositorio.
 
 Detalle del implementer (desviaciones, todas aceptadas por la review 1):
 
@@ -138,14 +139,12 @@ El backlog completo está en `BACKLOG.md` (29 features). Por orden:
 1. **F-022 T10**: el preflight de solo lectura de arriba.
 2. **`azure-apps/dedicacion.md`**: revisar y hacer el commit; decidir si la
    corrección de `ruesma_rep` se lleva a `docs/INTEGRACION.md`.
-3. **`git push origin dev`**: `dev` lleva 2 commits sin subir (el alta del
-   backlog F-022-F-031).
+3. **`git push origin dev`**: `dev` lleva 4 commits sin subir (el alta del
+   backlog F-022-F-031 y la exploración del gráfico del parte, ya versionada).
 4. **Datos para F-023 y F-026**: la consulta Q1 de F-023, la lista de
    recursos inactivos, las tres consultas de `progress/explore_eusebio.md`, y
    si encargados y gruistas se dan de alta sin ficha de empleado a propósito.
-5. **`progress/explore_grafico_parte.md`** sin versionar: obliga a la
-   mutación a ir en serie. Versionarlo o borrarlo.
-6. **F-014** y **F-016**, cuando quiera: aviso a Administración de las cuatro
+5. **F-014** y **F-016**, cuando quiera: aviso a Administración de las cuatro
    partidas duplicadas de POSTV2 y quién firma P4/P5; pedir a `sigrid-api`
    una clave de solo lectura para la api.
 
