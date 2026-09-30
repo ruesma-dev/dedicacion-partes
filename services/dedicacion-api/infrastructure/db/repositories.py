@@ -57,6 +57,7 @@ class PgTrabajadorRepository:
                         dni=_texto(fila.get("dni")),
                         categoria=_texto(fila.get("categoria")),
                         activo=True,
+                        empresa=_entero(fila.get("empresa")),
                     )
                 )
                 altas += 1
@@ -66,12 +67,14 @@ class PgTrabajadorRepository:
                     or existente.dni != _texto(fila.get("dni"))
                     or existente.categoria != _texto(fila.get("categoria"))
                     or existente.cod != _texto(fila.get("cod"))
+                    or existente.empresa != _entero(fila.get("empresa"))
                     or not existente.activo
                 )
                 existente.cod = _texto(fila.get("cod"))
                 existente.nombre = _texto(fila.get("nombre")) or existente.nombre
                 existente.dni = _texto(fila.get("dni"))
                 existente.categoria = _texto(fila.get("categoria"))
+                existente.empresa = _entero(fila.get("empresa"))
                 existente.activo = True
                 if cambio:
                     actualizados += 1
@@ -130,6 +133,7 @@ class PgObraRepository:
                         descripcion=_texto(fila.get("descripcion")) or "",
                         estado_sigrid=_texto(fila.get("estado_sigrid")),
                         activa=True,
+                        empresa=_entero(fila.get("empresa")),
                     )
                 )
                 altas += 1
@@ -138,11 +142,13 @@ class PgObraRepository:
                     existente.cod != cod
                     or existente.descripcion != (_texto(fila.get("descripcion")) or "")
                     or existente.estado_sigrid != _texto(fila.get("estado_sigrid"))
+                    or existente.empresa != _entero(fila.get("empresa"))
                     or not existente.activa
                 )
                 existente.cod = cod
                 existente.descripcion = _texto(fila.get("descripcion")) or ""
                 existente.estado_sigrid = _texto(fila.get("estado_sigrid"))
+                existente.empresa = _entero(fila.get("empresa"))
                 existente.activa = True
                 if cambio:
                     actualizados += 1
@@ -401,6 +407,11 @@ def _texto(valor: Any) -> str | None:
     return texto or None
 
 
+def _entero(valor: Any) -> int | None:
+    """Entero de Sigrid (p. ej. `con.emp`) o None si viene NULL."""
+    return None if valor is None else int(valor)
+
+
 def _a_trabajador(orm: TrabajadorORM) -> Trabajador:
     return Trabajador(
         ide=orm.ide,
@@ -409,6 +420,7 @@ def _a_trabajador(orm: TrabajadorORM) -> Trabajador:
         dni=orm.dni,
         categoria=orm.categoria,
         activo=orm.activo,
+        empresa=orm.empresa,
     )
 
 
@@ -419,6 +431,7 @@ def _a_obra(orm: ObraORM) -> Obra:
         descripcion=orm.descripcion,
         estado_sigrid=orm.estado_sigrid,
         activa=orm.activa,
+        empresa=orm.empresa,
     )
 
 
