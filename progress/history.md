@@ -479,3 +479,221 @@ que entonces seguía viva.
 
 Informes: `progress/impl_F-008.md`, `progress/review_F-008.md`,
 `progress/review_F-008_cierre.md`, `progress/spec_F-008.md`.
+
+## 2026-08-22 · Arnés actualizado a 1.7.3
+
+De **1.5.2** a **1.7.2** y, con el correctivo de abajo, a la **1.7.3** que
+nació aquí. Todo en la rama `chore/arnes-1.7.2`. El instalador aplicó
+lo genérico (agentes, `harness/*.py`, `rigor.json`, `SPECS.md`, 15 tests
+nuevos) y conservó los seis ficheros adaptados; `CHECKPOINTS.md` y
+`harness/init.sh` se fusionaron a mano para quedarse con las mejoras genéricas
+sin perder lo del monorepo. Portero en verde: **354 tests, 1 skipped**.
+
+Lo que cambia para trabajar aquí:
+
+- **Puerta nueva de tamaño del papeleo** (`init.sh` sección 7 quater, topes en
+  el bloque `tamano` de `harness/rigor.json`): requirements 150, design 250,
+  `impl_F-XXX.md` 220, `review_F-XXX.md` 140 líneas. Mide **solo la feature en
+  curso**: lo viejo queda amnistiado, lo que se retome y edite pasará a
+  medirse. Pasarse pone el portero en **rojo**.
+- **`nivel_por_defecto` pasa de `critico` a `estandar`.** No afecta hoy: las 14
+  features declaran su `rigor` explícitamente. A partir de ahora, `critico` se
+  declara, no se hereda.
+- **Campañas `estandar` muestreadas a 20 mutantes** con semilla fija; sus
+  números **no** son comparables con los de campañas anteriores. Campaña
+  entera: `--max-mutantes 0`.
+- **El reviewer reejecuta la campaña por debajo de 60 segundos** (antes 5
+  minutos) y revisa **incremental** desde el último SHA aprobado, declarándolo
+  en la primera línea de su informe. Reglas **RM1–RM6** en `CHECKPOINTS.md` C4
+  bis y en `.claude/agents/reviewer.md`.
+- **Timeout y workers de mutación se calculan solos**: el timeout se deriva de
+  la línea base medida (`timeout_por_mutante_s` es ahora un **suelo**) y los
+  workers por defecto bajan a `min(max(1,(núcleos-2)//2),4)`.
+- **Códigos de salida nuevos de `harness.mutacion`**: `2` alcance vacío, `3`
+  cero mutantes generados (sin informe). Un guion que encadene campañas debe
+  tratarlos como fallo.
+- **Uno de los dos defectos del arnés que anotamos ya tiene ficha**: pytest
+  código 5 («ningún test recogido») contado como verde es el defecto CONOCIDO
+  que la 1.7.2 declara **sin arreglar** (F-041 en `albaranes`, rigor
+  `critico`). Mientras viva, una campaña de una sola pasada no vale como
+  evidencia: contrástala con otra (`--workers 1`). El segundo —la caché de
+  suites cruza ramas— sigue sin ficha.
+- **Defecto de la 1.7.2 encontrado y corregido aquí**: la puerta de tamaño
+  medía también las features `done`, y F-015 declara `branch: "dev"` (se hizo
+  en la rama base), así que su review de 546 líneas dejaba `dev` en **rojo
+  permanente**. La sección 7 quater descarta ahora el papeleo cerrado, con test
+  en `tests/test_tamano.py`. **Portado a `arnes-base` como 1.7.3** por la regla
+  de propagación, y reinstalado desde ahí: este repo lleva ya la 1.7.3. El
+  commit de `arnes-base` (`a695c32`) está **pusheado** a
+  `ruesma-dev/harness-ruesma`.
+- `ruff` pasa de 179 a 185 avisos: los seis nuevos son del código del arnés que
+  acaba de entrar. Deuda previa, no bloquea.
+
+> Pasado aquí desde `current.md` el 2026-09-30, al pedirlo la review de
+> F-022 (C2): `current.md` debe describir solo la sesión activa.
+
+## 2026-09-30 · F-022 · El transfer busca cada obra por código y empresa
+
+Rama `feature/F-022-transfer-obra-por-empresa` · `sdd: true` · rigor `critico` ·
+**APROBADO** por el reviewer en la pasada 2 (la pasada 1 pidió cambios solo por
+el rastro de `current.md`, no por el código). Spec aprobada por el humano el
+2026-09-29 con D1-D4; la D5 (el recurso tampoco mira la empresa) pasó a F-026,
+que queda como requisito de F-018.
+
+**Qué cambió.** El transfer busca cada obra por código **y** empresa
+(`con.emp`), en SQL y en Python, y falla en vez de elegir si hay dos fichas en
+la misma empresa. La empresa viaja en cada línea; la pone la api con
+`EMPRESA_IMPUTACION` (1 por defecto) hasta que la elija el usuario (F-024).
+Una línea sin empresa o de obra de otra empresa se **omite con motivo**; una
+petición que mezcla empresas es **422**. Fuera `SIGRID_EMPRESA`. Regla nueva
+`docs/ARCHITECTURE.md#regla-empresa`; `azure-apps/dedicacion.md` refrescada.
+
+**Verificado.** `init.sh` en verde (355 passed, 1 skipped); cobertura de líneas
+cambiadas 97,4 %; mutación **28/28 muertos**, reejecutada por el reviewer; RED
+de T2 reproducida por el reviewer en un worktree aislado; POSTV2 en empresas 1
+y 28 en los dos órdenes; ningún assert anterior cambia. **T10 (MANUAL) cumplida
+el 2026-09-30** con un preflight real de solo lectura: obra 0658, postventa y
+destino `0404` en la empresa 1; y las obras 0009 y 0025 del maestro local, que
+son fichas de Porsan, salen omitidas por R11 con datos reales.
+
+**Lo que dejó para después.** ruff pasa de 185 a 193 avisos (estilo de los tests
+nuevos, deuda previa). La primera campaña dio dos falsos supervivientes que no
+se reproducían con la caché limpia: van como encargo a `arnes-base`, junto con
+la contradicción C5/MANUAL (`357522c` en `arnes-base`). El preflight publica
+`partidas_postventa` también en obras sin postventa: recogido en F-025.
+
+Informes: `progress/impl_F-022.md`, `progress/review_F-022.md`,
+`progress/mutacion_F-022.md`. Detalle de sesión que se retiró de `current.md`:
+
+## F-022 · El transfer busca cada obra por código y empresa
+
+- Rama `feature/F-022-transfer-obra-por-empresa`. Spec aprobada por el humano
+  el 2026-09-29 (D1-D4; la D5 pasa a F-026). Implementer terminado
+  (`progress/impl_F-022.md`); T1-T9 y T11 hechas, **T10 es MANUAL del humano**
+  y está pendiente (abajo).
+- **Para pasar a `done` falta solo el commit del humano en `azure-apps`.**
+  T10 está cumplida (abajo) y la review está aprobada.
+- **Al cerrar**: pasar a `history.md` la sección «Revisión de negocio del
+  2026-09-29» (observación 3 de la pasada 2) y anotar ruff 185 → 193.
+- Observaciones de la review 1, **recogidas**:
+  - En los cortes R3/R11 `obra_destino` publica la obra de entrada con
+    `empresa: null`. Queda como criterio en **F-024** (`features.json`).
+  - Esta rama toca en `features.json` las entradas de F-018, F-023 y F-026.
+    **Al mergear F-023 después**, resolver el conflicto de `features.json`
+    fusionando las entradas, sin reescribir el fichero (ver «Hechos»).
+  - Automejoras del arnés (C5 contra MANUAL; falsos supervivientes con
+    caché previa): por decisión del humano van al **backlog de `arnes-base`**
+    como `ENCARGO_pendiente_*.md` (commit `357522c` en `arnes-base`, sin
+    push). No se tocan en este repositorio.
+
+Detalle del implementer (desviaciones, todas aceptadas por la review 1):
+
+- Desviación menor (orden, no alcance): `empresa=1` en las LÍNEAS de los
+  dobles (`conftest.linea()`, `test_pipeline_offline.lineas_entrada()`) entra
+  en el commit de T3 y no en el de T4. Con las reglas nuevas, una línea sin
+  empresa se omite, y sin ese dato la suite quedaba en rojo (91 fallos) entre
+  T3 y T4. Ningún assert cambia.
+- T4: el doble de `conftest.py` conoce ahora la obra `0001` (constante
+  `OBRA_SIN_PARTIDA_PV`). `test_f013_la_postventa_sin_partida_se_sigue_omitiendo`
+  la usa como origen y, desde F-022, el origen se resuelve también en pruebas
+  (R10; design §8, riesgo asumido). Es dato del doble; el test no cambia.
+- T6: `RegistroSigrid` exige `empresa_imputacion` (design §4.8, sin valor
+  por defecto), así que las tres construcciones de `test_f003_esquema.py`
+  pasan `empresa_imputacion=1`. Solo el argumento; ningún assert cambia.
+- **T8, desviación que decide el humano.** La copia
+  `azure-apps/dedicacion.md` ya divergía del cuerpo de `docs/INTEGRACION.md`
+  ANTES de F-022, en 4 bloques ajenos a esta feature: (1) §1, `ruesma_rep`
+  «no es una réplica, es la base documental» — corrección hecha en la copia
+  por `sigrid-api` (commit `a40684f` de azure-apps, 2026-09-05) que
+  `INTEGRACION.md` no tiene; (2) §5, tarjeta del Portal y (3) «Quién puede
+  entrar», redactados distinto desde la copia inicial (`08676ac`); (4) §6,
+  filas de FQDN que la copia no lleva. Copiar el cuerpo entero habría
+  BORRADO la corrección (1). Se hizo lo no destructivo: cabecera (commit
+  `f9b3a46`, fecha 2026-09-29) y las tres piezas de F-022 copiadas LITERALES
+  de `INTEGRACION.md` (fila `EMPRESA_IMPUTACION`, fila del transfer sin
+  `SIGRID_EMPRESA`, párrafo §9). El `diff` del cuerpo ya no tiene ninguna
+  diferencia de F-022, pero conserva esos 4 bloques. **Pendiente del humano**:
+  revisar y hacer el commit en `azure-apps` (sin commit por el agente), y
+  decidir si la corrección de `ruesma_rep` se porta a `INTEGRACION.md` (fuera
+  del alcance de F-022).
+- T9: campaña completa en serie (`--workers 1`: el fichero sin versionar
+  `progress/explore_grafico_parte.md` impide la paralela y no es nuestro).
+  Primera pasada (SHA `c4d9c3e`): 29 mutantes, 5 supervivientes; dos de
+  ellos (`registro_pipeline.py:109` y `:116`) resultaron FALSOS: aplicados a
+  mano en el árbol, los mata `test_f002_r11_modo_pruebas_destino_y_partida`.
+  Esa pasada se DESCARTA. Se arreglaron los otros tres (mensaje de obra
+  ambigua con el código pedido; test de los datos del script manual), se
+  borraron `__pycache__`/`.pytest_cache` y se relanzó: **28/28 muertos, 0
+  supervivientes** (SHA `dfe079d`, `progress/mutacion_F-022.md`).
+
+### F-022 · verificación MANUAL pendiente (humano) — T10 / M1
+
+Preflight real, **solo lectura**, con el transfer en modo pruebas (API 8090 y
+transfer 8006 en local), sobre un periodo con al menos una línea de
+postventa:
+
+    curl -s -X POST http://127.0.0.1:8090/api/v1/periodos/AAAA/MM/registro/preflight -H "Content-Type: application/json" -H "X-Usuario: <usuario>" -d "{}"
+
+Comprobar, en la obra con postventa: `obra_postventa.empresa == 1`,
+`obra_destino.codigo == "0404"` y `obra_destino.empresa == 1`. **NO** se lanza
+`registro/ejecutar`.
+
+**Resultado real (2026-09-30, lanzado por el humano con
+`t10_preflight_f022.ps1`, API y transfer de la rama F-022 en local, transfer
+con `modo_pruebas=true`, `obra_pruebas=0404`, base `ruesma`): CUMPLIDA.**
+
+- **2026-07, obra 0658:** línea de postventa con `obra_postventa` = `0404`
+  empresa 1 (en modo pruebas la postventa también se desvía) y `obra_destino`
+  = `0404` empresa 1. Es la única obra de julio cuya postventa casó con una
+  partida de POSTV2.
+- **2026-07, obras 0009 y 0025 (fichas de Porsan del maestro local):** sus
+  líneas salen **omitidas** con «la obra … es de la empresa 28 y la línea se
+  imputa a la empresa 1: no se escribe». Es R11 con datos reales. Antes de
+  F-022 esas líneas iban contra la ficha de Porsan. Hasta que F-023 y F-024
+  arreglen el maestro, **el usuario verá estas omisiones en el preflight**.
+- **2026-08, obras 0455 y 0465:** POSTV2 se resuelve en la empresa 1 **sin
+  ambigüedad** (se leen sus partidas), pero las obras no casan con ninguna
+  partida («no casa con ninguna partida de POSTV2»). No es de F-022: es el
+  universo de postventa de F-025.
+- Primera ejecución de agosto: el script dio `OK` **sin haber comprobado
+  nada**, porque ninguna línea tuvo destino de postventa. Se corrigió el
+  script (ahora dice «NO CONCLUYENTE») y se repitió en julio.
+- Hallazgo menor, anterior a F-022: el preflight publica
+  `partidas_postventa` también en obras sin líneas de postventa (el catálogo
+  `_nodos_pv` se queda en la instancia del pipeline entre llamadas).
+  Inofensivo; pendiente de ficha.
+
+
+## 2026-09-29 · Revisión de negocio: F-022 a F-031 entran al backlog
+
+Negocio revisó la app en uso y salieron fallos y peticiones. Se dan de alta
+en la rama `chore/backlog-f022-f031`, ya mergeada en `dev` (`01671a9`, sin push):
+
+- **Fallos de maestros**, diagnosticados con evidencia en
+  `progress/explore_maestros_sync.md` y `progress/explore_eusebio.md`:
+  - F-022: el transfer busca la obra sin empresa. POSTV2 existe en las
+    empresas 1 y 28. **Bloquea F-018.** (F-022 es la feature en review, arriba; F-018 sigue `pending`.)
+  - F-023: el sync no lee la empresa y no usa el estado del recurso.
+  - F-025: las obras de postventa están CERRADAS y el filtro de estado las
+    quita.
+  - F-026: el recurso de Eusebio Vindel Duro tiene vacío «Empleado
+    asociado» (`res.conide`).
+- **Peticiones**:
+  - F-024: selector de empresa.
+  - F-027: deshacer solo lo propio.
+  - F-028: borrar lo que está en pantalla.
+  - F-029: selección múltiple y completar hasta el 100 %.
+  - F-030: dedicación por días, bajas e incidencias.
+  - F-031: MCP para IA.
+  - Se amplían F-020 (quitar la columna E del Excel) y F-021 (el filtro
+    por obra marca a los asignados en Sesame).
+- Las decisiones del humano de ese día están escritas en la descripción de
+  cada entrada.
+- **Pendiente de negocio:**
+  - Si encargados y gruistas se dan de alta sin ficha de empleado a
+    propósito (decide cómo se arregla F-026).
+  - Objeción, si la hay, a que una obra cerrada se ofrezca solo como
+    «Postv-» (F-025).
+- **Por lanzar contra Sigrid (solo SELECT):** las tres consultas de
+  `progress/explore_eusebio.md`, que confirman la causa de F-026.
+

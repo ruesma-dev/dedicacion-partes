@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.reglas_porcentajes import clave_conflicto
+from domain.errores import EmpresasMezcladas
 from domain.models.registro_models import LineaEntrada, ObraEntrada
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
 
@@ -44,6 +45,10 @@ class LineaIn(BaseModel):
     es_postventa: bool = False
     paride: Optional[int] = None        # override manual de la partida
     partida_cod: Optional[str] = None
+    # Empresa a la que se imputa (ARCHITECTURE.md#regla-empresa). Opcional A
+    # PROPÓSITO: una línea sin empresa tiene que llegar al pipeline para
+    # omitirse con motivo, no morir aquí en un 422 que no deja traza.
+    empresa: Optional[int] = None
 
 
 class PeticionIn(BaseModel):
@@ -53,6 +58,14 @@ class PeticionIn(BaseModel):
     usuario: Optional[str] = None
 
 
+def _empresas_mezcladas(exc: EmpresasMezcladas) -> JSONResponse:
+    """Una petición con líneas de varias empresas es un dato de entrada
+    inválido (422), no un fallo de Sigrid (502): no se ha leído nada."""
+    logger.warning("peticion rechazada: %s", exc)
+    return JSONResponse(status_code=422,
+                        content={"ok": False, "error": str(exc)})
+
+
 def build_app(settings) -> FastAPI:
     app = FastAPI(title="Porcentajes -> Sigrid (transfer)", version="1.0.0")
 
@@ -60,7 +73,6 @@ def build_app(settings) -> FastAPI:
         base_url=settings.sigrid_api_base_url,
         function_key=settings.sigrid_api_function_key,
         database=settings.sigrid_api_database,
-        empresa=settings.sigrid_empresa,
         timeout_s=settings.sigrid_api_timeout_s,
         max_statements=settings.sigrid_max_statements,
         tip_parte=settings.tip_parte_trabajo,
@@ -108,6 +120,8 @@ def build_app(settings) -> FastAPI:
                             "ya_registrado": pf.n_ya,
                             "conflictos": len(pf.conflictos)},
             }
+        except EmpresasMezcladas as exc:
+            return _empresas_mezcladas(exc)
         except Exception as exc:                # noqa: BLE001
             logger.exception("preflight fallo")
             return JSONResponse(status_code=502,
@@ -134,6 +148,8 @@ def build_app(settings) -> FastAPI:
                                             r.pendientes_confirmacion],
                 "error": r.error,
             }
+        except EmpresasMezcladas as exc:
+            return _empresas_mezcladas(exc)
         except Exception as exc:                # noqa: BLE001
             logger.exception("ejecutar fallo")
             return JSONResponse(status_code=502,

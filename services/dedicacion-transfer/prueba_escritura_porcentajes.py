@@ -36,15 +36,21 @@ from infrastructure.sigrid.sigrid_write_client import (
 )
 
 # --- Líneas de ejemplo (EDITAR con empleados reales con código M*) --- #
+# Empresa (`con.emp`) de las líneas y de las obras que busca este script:
+# la obra se busca por código Y empresa (ARCHITECTURE.md#regla-empresa).
+EMPRESA_PRUEBA = 1
+
 # registro_id arbitrario para pruebas (synckey 'porcentajes:9000xx').
 LINEAS_PRUEBA = [
     {"registro_id": 900001, "empleado_ide": 0, "dni": None,
-     "nombre": "EDITAR: encargado con MENC", "porcentaje": 0.40},
+     "nombre": "EDITAR: encargado con MENC", "porcentaje": 0.40,
+     "empresa": EMPRESA_PRUEBA},
     {"registro_id": 900002, "empleado_ide": 0, "dni": None,
-     "nombre": "EDITAR: jefe de obra con MJEFO", "porcentaje": 0.60},
+     "nombre": "EDITAR: jefe de obra con MJEFO", "porcentaje": 0.60,
+     "empresa": EMPRESA_PRUEBA},
     {"registro_id": 900003, "empleado_ide": 0, "dni": None,
      "nombre": "EDITAR: postventa del mismo encargado",
-     "porcentaje": 0.10, "es_postventa": True},
+     "porcentaje": 0.10, "es_postventa": True, "empresa": EMPRESA_PRUEBA},
 ]
 
 # La obra "original" de estas líneas de prueba: su capítulo debe existir
@@ -60,7 +66,7 @@ def _cliente(st) -> SigridWriteClient:
     return SigridWriteClient(
         base_url=st.sigrid_api_base_url,
         function_key=st.sigrid_api_function_key,
-        database=st.sigrid_api_database, empresa=st.sigrid_empresa,
+        database=st.sigrid_api_database,
         timeout_s=st.sigrid_api_timeout_s,
         max_statements=st.sigrid_max_statements,
         tip_parte=st.tip_parte_trabajo, est_parte=st.est_parte_activo)
@@ -90,7 +96,7 @@ def fase_inspeccionar(cli: SigridWriteClient) -> None:
 
 def fase_capitulos(cli: SigridWriteClient, st) -> None:
     """Capítulos de la obra de postventa (para verificar el casado)."""
-    obra = cli.obra_por_codigo(st.postventa_obra_cod)
+    obra = cli.obra_por_codigo(st.postventa_obra_cod, EMPRESA_PRUEBA)
     if obra is None:
         print(f"Obra de postventa '{st.postventa_obra_cod}' NO encontrada. "
               f"Ajusta POSTVENTA_OBRA_COD en el .env.")
@@ -102,7 +108,7 @@ def fase_capitulos(cli: SigridWriteClient, st) -> None:
 
 
 def fase_estado(cli: SigridWriteClient, st, ano: int, mes: int) -> None:
-    obra = cli.obra_por_codigo(st.obra_pruebas_cod)
+    obra = cli.obra_por_codigo(st.obra_pruebas_cod, EMPRESA_PRUEBA)
     if obra is None:
         print(f"Obra de pruebas {st.obra_pruebas_cod} no encontrada")
         return

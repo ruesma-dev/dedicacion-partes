@@ -11,7 +11,8 @@ se propone hacer. No deciden nada; las reglas que las gobiernan viven en
     ARCHITECTURE.md#regla-conflicto;
   - cuánta jornada admite un parte: ARCHITECTURE.md#regla-capacidad;
   - qué pasa con una línea que no casa partida:
-    ARCHITECTURE.md#regla-sin-partida.
+    ARCHITECTURE.md#regla-sin-partida;
+  - a qué empresa pertenece la obra: ARCHITECTURE.md#regla-empresa.
 """
 from __future__ import annotations
 
@@ -38,6 +39,9 @@ class LineaEntrada:
     # Override manual desde el front: si viene, manda sobre el automático.
     paride: Optional[int] = None
     partida_cod: Optional[str] = None
+    # Empresa (`con.emp`) a la que se imputa la línea. Sin ella no se adivina
+    # nada: ver ARCHITECTURE.md#regla-empresa.
+    empresa: Optional[int] = None
 
     @property
     def fecha_int(self) -> int:
@@ -51,6 +55,8 @@ class ObraEntrada:
     ide: Optional[int] = None
     codigo: Optional[str] = None
     nombre: Optional[str] = None
+    # `con.emp` de la ficha resuelta en Sigrid (ARCHITECTURE.md#regla-empresa).
+    empresa: Optional[int] = None
 
 
 # ----------------------------- Sigrid ----------------------------- #

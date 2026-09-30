@@ -25,10 +25,11 @@ class Settings:
 
 class ClienteFalso:
     def __init__(self):
-        self.obra = ObraEntrada(ide=828942, codigo="0404", nombre="PRUEBAS")
+        self.obra = ObraEntrada(ide=828942, codigo="0404", nombre="PRUEBAS",
+                                empresa=1)
         setattr(self.obra, "cenide", 555)
         self.obra_pv = ObraEntrada(ide=999001, codigo="POSTV2",
-                                   nombre="POSTVENTA 2")
+                                   nombre="POSTVENTA 2", empresa=1)
         setattr(self.obra_pv, "cenide", 666)
         # Partidas de POSTV2 (una por obra original, bajo CD) y de la
         # obra origen 0678 (capítulo CI con partidas de mando).
@@ -44,7 +45,7 @@ class ClienteFalso:
              "tipdes": 0, "cosindide": None, "unimed": None},
         ]
         self.obra_origen = ObraEntrada(ide=555001, codigo="0678",
-                                       nombre="15 VIVIENDAS")
+                                       nombre="15 VIVIENDAS", empresa=1)
         setattr(self.obra_origen, "cenide", 444)
         self.partidas_origen = [
             {"ide": 80000, "padide": 0, "pos": 0, "tip": 0, "cod": "CI",
@@ -89,7 +90,10 @@ class ClienteFalso:
         self.escritos: list[dict] = []
         self.synckeys: dict[str, LineaSigrid] = {}
 
-    def obra_por_codigo(self, cod):
+    def obra_por_codigo(self, cod, empresa):
+        # F-022: todas las obras de este doble son de la empresa 1.
+        if empresa != 1:
+            return None
         if cod == "0404":
             return self.obra
         if cod == "POSTV2":
@@ -149,14 +153,14 @@ def lineas_entrada():
     return [
         LineaEntrada(registro_id=1, ano=2026, mes=7, porcentaje=0.4,
                      empleado_ide=10, nombre="Acuna Mera, Antonio",
-                     categoria="Encargado"),
+                     categoria="Encargado", empresa=1),
         LineaEntrada(registro_id=2, ano=2026, mes=7, porcentaje=0.6,
-                     empleado_ide=11, nombre="Peon"),
+                     empleado_ide=11, nombre="Peon", empresa=1),
         LineaEntrada(registro_id=3, ano=2026, mes=7, porcentaje=0.5,
                      empleado_ide=10, nombre="Encargado PV",
-                     es_postventa=True),
+                     es_postventa=True, empresa=1),
         LineaEntrada(registro_id=4, ano=2026, mes=7, porcentaje=40,
-                     empleado_ide=10, nombre="Rango mal"),
+                     empleado_ide=10, nombre="Rango mal", empresa=1),
     ]
 
 
@@ -241,7 +245,7 @@ def test_override_manual():
     pl = RegistroPipeline(cliente=cli, settings=Settings())
     linea = LineaEntrada(registro_id=9, ano=2026, mes=7, porcentaje=0.3,
                          empleado_ide=10, nombre="Acuna", categoria="Encargado",
-                         paride=80002, partida_cod="CI.1.20")
+                         paride=80002, partida_cod="CI.1.20", empresa=1)
     pf = pl.preflight(obra=ObraEntrada(codigo="0678"), lineas=[linea])
     a = pf.acciones[0]
     assert a.paride == 80002 and a.partida_metodo == "manual", a

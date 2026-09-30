@@ -148,7 +148,8 @@ def _condicion_de_id(sentencia: Any) -> tuple[str, Any]:
 def _trazar(respuesta: dict[str, Any], usuario: str = "pgris") -> list[Any]:
     """Ejecuta `_trazar` sobre sesiones falsas y devuelve lo que emitió."""
     fabrica = _FabricaSesiones()
-    registro = RegistroSigrid(fabrica, transfer=object())
+    registro = RegistroSigrid(fabrica, transfer=object(),
+                              empresa_imputacion=1)
     registro._trazar(respuesta, usuario)
     return fabrica.sentencias
 
@@ -406,7 +407,7 @@ def test_f003_r4_construir_registro_sigrid_no_ejecuta_nada() -> None:
     """El constructor era quien disparaba los `ALTER`: importar y construir la
     app abría una conexión a PostgreSQL. Ya no."""
     fabrica = _FabricaSesiones()
-    RegistroSigrid(fabrica, transfer=object())
+    RegistroSigrid(fabrica, transfer=object(), empresa_imputacion=1)
     assert fabrica.aperturas == 0
     assert fabrica.sentencias == []
 
@@ -600,7 +601,8 @@ def test_f003_r14_omitida_sin_motivo_guarda_cadena_vacia_no_null() -> None:
 def test_f003_r14_las_tres_ramas_conviven_en_una_sola_sesion() -> None:
     """Una respuesta completa emite las tres sentencias y hace un solo commit."""
     fabrica = _FabricaSesiones()
-    registro = RegistroSigrid(fabrica, transfer=object())
+    registro = RegistroSigrid(fabrica, transfer=object(),
+                              empresa_imputacion=1)
     registro._trazar(
         {
             "escritas": [{"registro_id": 1, "parte_cod": "P", "hmores_ide": 2}],
