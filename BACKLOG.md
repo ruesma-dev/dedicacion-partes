@@ -3,9 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **29 features**, 21 abiertas, 8 terminadas.
-
-En curso: **F-022**.
+Resumen: **29 features**, 20 abiertas, 9 terminadas.
 
 ## Trabajo abierto
 
@@ -13,7 +11,6 @@ En curso: **F-022**.
 |---|---|---|---|---|---|
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
-| F-022 | El transfer busca cada obra por código y empresa | 2 | en curso | critico | `feature/F-022-transfer-obra-por-empresa` |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | pendiente | critico | `feature/F-023-sync-empresa-y-estado-recurso` |
 | F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
@@ -39,6 +36,7 @@ En curso: **F-022**.
 |---|---|---|---|
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | estandar |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
+| F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | critico |
 | F-008 | Infraestructura y despliegue en Azure | 3 | critico |
 | F-004 | README del monorepo y arranque local en orden | 4 | documental |
@@ -60,12 +58,6 @@ estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `featu
 
 Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga. AÑADIDO 2026-09-29: también depende de F-022. El transfer resuelve la obra por código sin empresa y POSTV2 existe en las empresas 1 y 28; sin F-022 la primera escritura real podría caer en la ficha de Porsan.
 
-### F-022 · El transfer busca cada obra por código y empresa
-
-estado **en curso** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-022-transfer-obra-por-empresa`
-
-Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Hallazgo colateral del diagnóstico de maestros (sección D): obra_por_codigo (services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py ~105-126) busca WHERE con.cod = ? sin empresa ni ORDER BY y se queda con la primera fila. POSTV2 tiene dos fichas (empresa 1 Construcciones Ruesma y 28 Porsan), así que el destino de postventa puede caer en la de Porsan según el orden que devuelva SQL Server; lo mismo cualquier obra con copia en otra empresa (81 códigos repetidos). Hoy no hace daño porque OBRA_PRUEBAS_FORZAR desvía todo a la 0404, pero BLOQUEA F-018. Decisión del humano 2026-09-29: se imputa a la empresa filtrada en el cuadrante, así que la empresa viaja en la línea (contrato API -> transfer) y el transfer la usa para resolver la obra. Si una línea llega sin empresa, no se adivina: se rechaza con motivo. SPEC APROBADA por el humano el 2026-09-29 con las decisiones D1-D4 tal como las propone requirements.md (EMPRESA_IMPUTACION=1 en la API, omitir con motivo, pruebas estrictas, fuera SIGRID_EMPRESA); D5 (el recurso tampoco mira la empresa) pasa a F-026.
-
 ### F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
 
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-023-sync-empresa-y-estado-recurso`
@@ -82,7 +74,7 @@ Pedida por el humano el 2026-09-03. Hoy la API exporta un unico Excel (services/
 
 estado **pendiente** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-025-obras-postventa-postv2`
 
-Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio echa en falta obras de postventa. Causa: las obras en postventa están CERRADAS en Sigrid y el filtro estados_excluidos de config.yaml las quita; sin la obra en el maestro el front no ofrece su Postv-XXXX (app.js ~175-191). 69 de 78 obras con postventa en POSTV2 no llegan. Decisión del humano 2026-09-29: la lista de obras de postventa sale de los CAPÍTULOS del proyecto POSTV2, sea cual sea el estado de la obra. Propuesta del líder pendiente de objeción: una obra cerrada se ofrece solo como Postv-, no como obra normal. RIESGOS para la spec: (a) F-002 dejó escrito en docs/ARCHITECTURE.md que P5 imputa por PARTIDA en POSTV2; hay que conciliar capítulos y partidas sin romper esa regla; (b) límite de servicio: POSTVENTA_OBRA_COD vive hoy solo en el transfer; decidir si la API lo lee o pregunta al transfer, pero el universo de postventa del front y el del transfer no pueden divergir.
+Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio echa en falta obras de postventa. Causa: las obras en postventa están CERRADAS en Sigrid y el filtro estados_excluidos de config.yaml las quita; sin la obra en el maestro el front no ofrece su Postv-XXXX (app.js ~175-191). 69 de 78 obras con postventa en POSTV2 no llegan. Decisión del humano 2026-09-29: la lista de obras de postventa sale de los CAPÍTULOS del proyecto POSTV2, sea cual sea el estado de la obra. Propuesta del líder pendiente de objeción: una obra cerrada se ofrece solo como Postv-, no como obra normal. RIESGOS para la spec: (a) F-002 dejó escrito en docs/ARCHITECTURE.md que P5 imputa por PARTIDA en POSTV2; hay que conciliar capítulos y partidas sin romper esa regla; (b) límite de servicio: POSTVENTA_OBRA_COD vive hoy solo en el transfer; decidir si la API lo lee o pregunta al transfer, pero el universo de postventa del front y el del transfer no pueden divergir. RECOGIDO del cierre de F-022 (2026-09-30): el preflight del transfer publica partidas_postventa también en obras sin líneas de postventa, porque el catálogo _nodos_pv se queda en la instancia del pipeline entre llamadas. Inofensivo hoy; como esta feature redefine el universo de postventa, se corrige aquí.
 
 ### F-026 · Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro
 
@@ -185,6 +177,12 @@ Calentamiento del circuito. dedicacion-api no tiene un solo test: se crea servic
 estado **terminada** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-002-reglas-postventa-conflicto`
 
 El repositorio se contradice sobre dos reglas que deciden qué se escribe en Sigrid. P5: el README del transfer dice obra POSTV2 e imputación por PARTIDA; el docstring de reglas_porcentajes.py dice 'postventa-2' y CAPÍTULO. P4: el README dice que en obra normal una línea M* previa del recurso choca aunque tenga otra partida; el docstring exige que la partida sea la misma. Hay que confirmar la regla buena con Administración y con datos reales de Sigrid, dejarla en una sola fuente de verdad (docs/ARCHITECTURE.md) y alinear código, docstrings y README. Sin esto, no se debe escribir en producción.
+
+### F-022 · El transfer busca cada obra por código y empresa
+
+estado **terminada** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-022-transfer-obra-por-empresa`
+
+Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Hallazgo colateral del diagnóstico de maestros (sección D): obra_por_codigo (services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py ~105-126) busca WHERE con.cod = ? sin empresa ni ORDER BY y se queda con la primera fila. POSTV2 tiene dos fichas (empresa 1 Construcciones Ruesma y 28 Porsan), así que el destino de postventa puede caer en la de Porsan según el orden que devuelva SQL Server; lo mismo cualquier obra con copia en otra empresa (81 códigos repetidos). Hoy no hace daño porque OBRA_PRUEBAS_FORZAR desvía todo a la 0404, pero BLOQUEA F-018. Decisión del humano 2026-09-29: se imputa a la empresa filtrada en el cuadrante, así que la empresa viaja en la línea (contrato API -> transfer) y el transfer la usa para resolver la obra. Si una línea llega sin empresa, no se adivina: se rechaza con motivo. SPEC APROBADA por el humano el 2026-09-29 con las decisiones D1-D4 tal como las propone requirements.md (EMPRESA_IMPUTACION=1 en la API, omitir con motivo, pruebas estrictas, fuera SIGRID_EMPRESA); D5 (el recurso tampoco mira la empresa) pasa a F-026.
 
 ### F-003 · Las columnas sigrid_* de asignacion no están en el ORM
 
