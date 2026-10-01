@@ -89,6 +89,19 @@ class FiltroEmpresa:
     por_defecto: int
 
 
+@dataclass(frozen=True)
+class Empresa:
+    """Empresa de Sigrid (`auxemp`, F-032), por su número (`con.emp`).
+
+    `nombre` puede faltar (sin `res` en Sigrid); `de_baja` lo decide
+    `domain.empresas.empresa_de_baja`.
+    """
+
+    numero: int
+    nombre: str | None
+    de_baja: bool = False
+
+
 @dataclass
 class CuadranteTrabajador:
     """Fila del cuadrante: trabajador + sus líneas + estado calculado."""
@@ -124,6 +137,9 @@ class ResultadoSync:
     empleados: ResultadoSyncMaestro
     obras: ResultadoSyncMaestro
     duracion_s: float
+    # Catálogo `auxemp` (F-032). Al final y con valor por defecto para no
+    # romper a quien construye el resultado por posición.
+    empresas: ResultadoSyncMaestro = field(default_factory=ResultadoSyncMaestro)
 
 
 @dataclass(frozen=True)

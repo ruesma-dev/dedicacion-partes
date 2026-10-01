@@ -10,11 +10,12 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-10-01** (F-024: selector de empresa; la
-> línea se imputa a la empresa elegida y `EMPRESA_IMPUTACION` pasa a ser la
-> empresa por defecto). **Origen:** rama `feature/F-024-selector-empresa`,
-> pendiente de merge a `dev`. Versión anterior: 2026-09-29, F-022, commit
-> `f9b3a46`.
+> **Fecha del documento: 2026-10-01** (F-032: el sync lee además el
+> catálogo de empresas `auxemp` de Sigrid y el selector toma de ahí el
+> nombre y si la empresa está de baja). **Origen:** rama
+> `feature/F-032-empresas-desde-sigrid`, pendiente de merge a `dev`. Versión
+> anterior: 2026-10-01, F-024 (selector de empresa; `EMPRESA_IMPUTACION`
+> pasa a ser la empresa por defecto), commit `a2bcbca`.
 >
 > **Estado: DESPLEGADO.** El 2026-08-20 se ejecutó la fase 7 y los tres
 > servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo y el
@@ -36,7 +37,7 @@
 | Recurso | Compartido con | Qué hacemos | Desde |
 |---|---|---|---|
 | PostgreSQL `psql-albaranes-rs9k2` | `albaranes`, `partes`, `datamart-seg-anual`, `postventa-incidencias` | Base propia `dedicacion`: periodos, cuadrante, asignaciones y auditoría | **F-008** |
-| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api; **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma` | F-001, F-002 |
+| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma` | F-001, F-002 |
 | `acralbaranesdev` | `albaranes`, `partes` | Publicar y tirar las tres imágenes, por identidad gestionada | **F-008** |
 | Entra ID | todo el ecosistema | Autenticación del front (Easy Auth) y grupo de acceso | **F-008** |
 
@@ -67,6 +68,7 @@ Servidor  psql-albaranes-rs9k2      COMPARTIDO — no tocamos nada suyo
                ├── asignacion           trabajador × obra × periodo, con % y traza a Sigrid
                ├── trabajador           maestro sincronizado desde Sigrid (solo lectura)
                ├── obra                 maestro sincronizado desde Sigrid (solo lectura)
+               ├── empresa              catálogo `auxemp` sincronizado desde Sigrid (solo lectura, F-032)
                └── evento               auditoría: quién hizo qué y cuándo
 ```
 
@@ -184,7 +186,8 @@ Lo único que se expone a Internet es el **front**, y para personas:
 | `ca-dedicacion-transfer` | interno | Solo la api |
 
 Desde F-024 la api sirve además, **solo para el front**, `GET
-/api/v1/empresas` (empresas del selector y la por defecto) y acepta el
+/api/v1/empresas` (empresas del selector y la por defecto; desde F-032,
+con el nombre de Sigrid y `de_baja`) y acepta el
 parámetro `empresa` (entero > 0, si no 422) en las rutas de
 `/api/v1/periodos/...`. Siguen siendo internas: no se exponen a otros
 proyectos.
@@ -325,6 +328,7 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Cambiar el contrato de `sigrid-api` (`/api/sql/read`, `/api/sql/write`) | Se cae todo: es nuestro único acceso a Sigrid |
 | Borrar o renombrar `acralbaranesdev` | No se puede publicar ni tirar ninguna imagen |
 | Cambiar tablas o campos de Sigrid (`hmo`, `hmores`, `reshor`) | El mapeo del transfer deja de casar |
+| Cambiar `auxemp` de Sigrid (`numemp`, `res`, `fecbaj`, `desact`) | El sync de maestros falla entero (columnas obligatorias `numemp` y `nombre`) y el selector se queda con los nombres del último sync bueno |
 
 **Petición abierta al proyecto `sigrid-api`:** hoy la api y el transfer
 referencian **la misma** function key. Lo único que impide que la api escriba

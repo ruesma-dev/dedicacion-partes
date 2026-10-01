@@ -24,6 +24,7 @@ from domain.errors import (
 from domain.estados import resumir
 from domain.models import (
     CuadranteTrabajador,
+    Empresa,
     EstadoPeriodo,
     FiltroEmpresa,
     Linea,
@@ -287,19 +288,29 @@ class ListarPeriodos:
 
 
 class ListarEmpresas:
-    """Empresas del selector (F-024, R1 y R2): las que tienen algún
-    trabajador activo más la por defecto, ordenadas, con su nombre de
-    `config.yaml` o «Empresa N»."""
+    """Empresas del selector (F-024 R1, F-032): las que tienen algún
+    trabajador activo más la por defecto, ordenadas.
 
-    def __init__(self, nombres: dict[int, str], por_defecto: int) -> None:
-        self._nombres = nombres
+    Nombre y baja salen del catálogo `auxemp` que trae el sync (tabla
+    `empresa`); «Empresa N» solo si la empresa no está en la tabla o no tiene
+    nombre. Una empresa de baja o desactivada se enseña marcada, nunca se
+    oculta: ocultarla escondería carga (decisión del humano, 2026-10-01).
+    """
+
+    def __init__(self, por_defecto: int) -> None:
         self._por_defecto = por_defecto
 
-    def ejecutar(self, uow: UnitOfWork) -> tuple[int, list[tuple[int, str]]]:
+    def ejecutar(self, uow: UnitOfWork) -> tuple[int, list[Empresa]]:
         numeros = uow.trabajadores.empresas_activas() | {self._por_defecto}
-        empresas = [
-            (n, self._nombres.get(n) or f"Empresa {n}") for n in sorted(numeros)
-        ]
+        fichas = {e.numero: e for e in uow.empresas.listar()}
+        empresas = []
+        for numero in sorted(numeros):
+            ficha = fichas.get(numero)
+            empresas.append(Empresa(
+                numero=numero,
+                nombre=(ficha.nombre if ficha else None) or f"Empresa {numero}",
+                de_baja=ficha.de_baja if ficha else False,
+            ))
         return self._por_defecto, empresas
 
 
@@ -332,7 +343,8 @@ class PreviewSync:
     Aplica la misma depuración que el pipeline (dedupe de recursos,
     filtro de categorías y de estados de obra, empresa y estado del
     recurso) con la misma validación de columnas, y desglosa lo incluido
-    y lo excluido para poder ajustar config.yaml con datos reales.
+    y lo excluido para poder ajustar config.yaml con datos reales. Desde
+    F-032 informa también del catálogo de empresas leído.
     """
 
     def __init__(
@@ -346,10 +358,14 @@ class PreviewSync:
         filtro_estados: bool = True,
         exigir_codigo_mes: bool = True,
         criterio: CriterioActivoRecurso = CRITERIO_VACIO,
+        sql_empresas: str | None = None,
     ) -> None:
         self._sigrid = sigrid
         self._sql_empleados = sql_empleados
         self._sql_obras = sql_obras
+        # Catálogo `auxemp` (F-032). Sin consulta, el preview no lo lee ni
+        # publica la sección; el contenedor la pasa siempre.
+        self._sql_empresas = sql_empresas
         self._categorias = categorias_incluidas or []
         self._filtro_categorias = filtro_categorias and bool(self._categorias)
         self._estados = estados_excluidos or []
@@ -361,9 +377,11 @@ class PreviewSync:
         from application.filtros_maestros import (
             depurar_empleados,
             depurar_obras,
+            resumir_empresas,
         )
         from application.sync_pipeline import (
             COLUMNAS_EMPLEADOS,
+            COLUMNAS_EMPRESAS,
             COLUMNAS_OBRAS,
             _validar_columnas,
         )
@@ -389,7 +407,7 @@ class PreviewSync:
         por_estado = Counter(
             str(f.get("estado_sigrid") or "(sin estado)") for f in obr.filas
         )
-        return {
+        salida: dict[str, Any] = {
             "empleados": {
                 "brutos": emp.brutos,
                 "duplicados_recurso": emp.duplicados_recurso,
@@ -420,6 +438,12 @@ class PreviewSync:
                 "muestra": obr.filas[:5],
             },
         }
+        if self._sql_empresas is not None:
+            brutas_empresas = self._sigrid.leer(self._sql_empresas)
+            _validar_columnas(brutas_empresas, COLUMNAS_EMPRESAS,
+                              "sync.empresas.sql")
+            salida["empresas"] = resumir_empresas(brutas_empresas)
+        return salida
 
 
 def _por_empresa(filas: list[dict[str, Any]]) -> dict[str, int]:

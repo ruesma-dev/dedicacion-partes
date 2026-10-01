@@ -15,9 +15,10 @@ from typing import Any, Self
 
 import pytest
 from config.settings import Settings
+from domain.models import Empresa
 from fastapi.testclient import TestClient
 from interface_adapters.api.app import build_app
-from interface_adapters.api.deps import construir_contenedor, obtener_contenedor
+from interface_adapters.api.deps import obtener_contenedor
 
 from tests.test_f024_cuadrante_empresa import (
     ANIO,
@@ -28,8 +29,6 @@ from tests.test_f024_cuadrante_empresa import (
     _ln,
     _Uow,
 )
-
-NOMBRES = {1: "Construcciones Ruesma", 28: "Porsan"}
 
 
 class _UowCM(_Uow):
@@ -75,6 +74,9 @@ def api(monkeypatch):
     # «deshacer» ve lo que guardó el PUT); `uows` anota cada apertura.
     compartida = _UowCM({P_ACT: _lineas_actuales(),
                          P_ANT: {14: [_ln(101, "100")]}})
+    # Catálogo de empresas en la tabla (F-032; antes, `empresas.nombres`).
+    compartida.empresas.fichas = [Empresa(1, "Construcciones Ruesma"),
+                                  Empresa(28, "Porsan")]
     uows: list[_UowCM] = []
 
     def nueva_uow() -> _UowCM:
@@ -83,7 +85,7 @@ def api(monkeypatch):
 
     contenedor = _Contenedor(settings=settings, uow=nueva_uow,
                              exporter=_Exportador(), registro_sigrid=_Registro(),
-                             nombres_empresas=NOMBRES, uows=uows)
+                             uows=uows)
     app = build_app(settings)
     app.dependency_overrides[obtener_contenedor] = lambda: contenedor
     return TestClient(app), contenedor
@@ -98,16 +100,10 @@ def test_f024_r1_r2_get_empresas(api):
     r = cliente.get("/api/v1/empresas")
     assert r.status_code == 200, r.text
     assert r.json() == {"por_defecto": 1, "empresas": [
-        {"empresa": 1, "nombre": "Construcciones Ruesma"},
-        {"empresa": 18, "nombre": "Empresa 18"},
-        {"empresa": 28, "nombre": "Porsan"},
+        {"empresa": 1, "nombre": "Construcciones Ruesma", "de_baja": False},
+        {"empresa": 18, "nombre": "Empresa 18", "de_baja": False},
+        {"empresa": 28, "nombre": "Porsan", "de_baja": False},
     ]}
-
-
-def test_f024_r2_el_contenedor_lleva_los_nombres_de_config():
-    contenedor = construir_contenedor(Settings(_env_file=None),
-                                      session_factory=None)  # type: ignore[arg-type]
-    assert contenedor.nombres_empresas == NOMBRES
 
 
 # --------------------------------- R6 --------------------------------- #

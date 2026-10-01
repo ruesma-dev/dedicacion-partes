@@ -13,7 +13,9 @@ from typing import Any
 from sqlalchemy import delete, distinct, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
+from domain.empresas import empresa_de_baja
 from domain.models import (
+    Empresa,
     EstadoPeriodo,
     Linea,
     Obra,
@@ -24,6 +26,7 @@ from domain.models import (
 )
 from infrastructure.db.orm_models import (
     AsignacionORM,
+    EmpresaORM,
     EventoORM,
     ObraORM,
     PeriodoORM,
@@ -187,6 +190,58 @@ class PgObraRepository:
             return set()
         stmt = select(ObraORM.ide).where(ObraORM.ide.in_(ides))
         return set(self._s.scalars(stmt).all())
+
+
+# ----------------------------------------------------------------------
+# Empresas (catálogo `auxemp` de Sigrid, F-032)
+# ----------------------------------------------------------------------
+class PgEmpresaRepository:
+    def __init__(self, session: Session) -> None:
+        self._s = session
+
+    def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro:
+        """Upsert por `numemp`. Idempotente: las mismas filas dos veces no
+        cambian nada. Una empresa que deja de llegar NO se borra: su nombre
+        sigue sirviendo para las fichas que la referencian."""
+        actuales = {e.numemp: e for e in self._s.scalars(select(EmpresaORM)).all()}
+        recibidos: set[int] = set()
+        altas = actualizados = 0
+        for fila in filas:
+            numemp = _entero(fila.get("numemp"))
+            if numemp is None:
+                logger.warning("Empresa sin numemp en auxemp; omitida: %s", fila)
+                continue
+            recibidos.add(numemp)
+            valores = {
+                "cod": _texto(fila.get("cod")),
+                "nombre": _texto(fila.get("nombre")),
+                "fecbaj": _entero(fila.get("fecbaj")),
+                "desact": _entero(fila.get("desact")),
+            }
+            existente = actuales.get(numemp)
+            if existente is None:
+                nueva = EmpresaORM(numemp=numemp, **valores)
+                self._s.add(nueva)
+                # Si `numemp` llegara repetido, la segunda fila actualiza la
+                # misma alta en vez de crear otra con la misma clave.
+                actuales[numemp] = nueva
+                altas += 1
+                continue
+            cambio = any(getattr(existente, k) != v for k, v in valores.items())
+            for campo, valor in valores.items():
+                setattr(existente, campo, valor)
+            if cambio:
+                actualizados += 1
+        return ResultadoSyncMaestro(
+            recibidos=len(recibidos),
+            altas=altas,
+            actualizados=actualizados,
+            desactivados=0,
+        )
+
+    def listar(self) -> list[Empresa]:
+        stmt = select(EmpresaORM).order_by(EmpresaORM.numemp)
+        return [_a_empresa(e) for e in self._s.scalars(stmt).all()]
 
 
 # ----------------------------------------------------------------------
@@ -381,6 +436,7 @@ class SqlAlchemyUnitOfWork:
         s = self._session
         self.trabajadores = PgTrabajadorRepository(s)
         self.obras = PgObraRepository(s)
+        self.empresas = PgEmpresaRepository(s)
         self.periodos = PgPeriodoRepository(s)
         self.asignaciones = PgAsignacionRepository(s)
         self.eventos = PgEventoRepository(s)
@@ -417,6 +473,14 @@ def _texto(valor: Any) -> str | None:
 def _entero(valor: Any) -> int | None:
     """Entero de Sigrid (p. ej. `con.emp`) o None si viene NULL."""
     return None if valor is None else int(valor)
+
+
+def _a_empresa(orm: EmpresaORM) -> Empresa:
+    return Empresa(
+        numero=orm.numemp,
+        nombre=orm.nombre,
+        de_baja=empresa_de_baja(orm.fecbaj, orm.desact),
+    )
 
 
 def _a_trabajador(orm: TrabajadorORM) -> Trabajador:

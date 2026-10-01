@@ -10,6 +10,7 @@ from typing import Any, Protocol
 
 from domain.models import (
     CuadranteTrabajador,
+    Empresa,
     Linea,
     Obra,
     Periodo,
@@ -50,6 +51,18 @@ class ObraRepository(Protocol):
 
     def existen(self, ides: set[int]) -> set[int]:
         """Subconjunto de `ides` que existen en el maestro."""
+        ...
+
+
+class EmpresaRepository(Protocol):
+    """Catálogo de empresas copiado de Sigrid (`auxemp`, F-032)."""
+
+    def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro:
+        """Upsert idempotente por `numemp`; no borra las que ya no llegan."""
+        ...
+
+    def listar(self) -> list[Empresa]:
+        """Todas las empresas de la tabla, por número."""
         ...
 
 
@@ -114,6 +127,7 @@ class UnitOfWork(Protocol):
 
     trabajadores: TrabajadorRepository
     obras: ObraRepository
+    empresas: EmpresaRepository
     periodos: PeriodoRepository
     asignaciones: AsignacionRepository
     eventos: EventoRepository

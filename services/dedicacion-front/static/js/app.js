@@ -64,7 +64,7 @@ const state = {
   timerGuardado: null,
   guardadoPendiente: false,
   empresa: null,               // empresa elegida en el selector (F-024)
-  empresas: [],                // [{empresa, nombre}] que sirve la API
+  empresas: [],                // [{empresa, nombre, de_baja}] que sirve la API
 };
 
 // ---------------------------------------------------------------- utilidades
@@ -179,7 +179,8 @@ function pintarSelectorEmpresa() {
   state.empresas.forEach((e) => {
     const opcion = document.createElement("option");
     opcion.value = String(e.empresa);
-    opcion.textContent = e.nombre;
+    // «de baja» lo decide la API (F-032): aquí solo se marca, nunca se oculta.
+    opcion.textContent = e.de_baja ? `${e.nombre} (de baja)` : e.nombre;
     sel.appendChild(opcion);
   });
   sel.value = String(state.empresa);

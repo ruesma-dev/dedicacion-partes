@@ -23,6 +23,7 @@ from application.use_cases import (
     ObtenerFilaTrabajador,
 )
 from domain.models import (
+    Empresa,
     FiltroEmpresa,
     Linea,
     Obra,
@@ -207,6 +208,16 @@ class _Eventos:
         return set(self.pendientes)
 
 
+class _Empresas:
+    """Catálogo de empresas en memoria (tabla `empresa`, F-032)."""
+
+    def __init__(self) -> None:
+        self.fichas: list[Empresa] = []
+
+    def listar(self) -> list[Empresa]:
+        return list(self.fichas)
+
+
 class _Uow:
     """UnitOfWork en memoria con los repositorios que usan los casos."""
 
@@ -215,6 +226,7 @@ class _Uow:
         self.reemplazados: list[int] = []
         self.trabajadores = _Trabajadores(self)
         self.obras = _Obras()
+        self.empresas = _Empresas()
         self.periodos = _Periodos()
         self.asignaciones = _Asignaciones(self)
         self.eventos = _Eventos()
@@ -350,26 +362,20 @@ def test_f024_r14_copiar_mes_cuenta_con_carga_solo_de_la_empresa():
 def test_f024_r1_empresas_ordenadas_con_la_por_defecto():
     """R1 · Las que tienen algún trabajador activo (1, 18, 28 en el doble),
     ordenadas, y la por defecto aunque no tenga ninguno."""
-    por_defecto, empresas = ListarEmpresas({}, 1).ejecutar(_uow())
+    por_defecto, empresas = ListarEmpresas(1).ejecutar(_uow())
     assert por_defecto == 1
-    assert [e for e, _ in empresas] == [1, 18, 28]
-    por_defecto, empresas = ListarEmpresas({}, 5).ejecutar(_uow())
+    assert [e.numero for e in empresas] == [1, 18, 28]
+    por_defecto, empresas = ListarEmpresas(5).ejecutar(_uow())
     assert por_defecto == 5
-    assert [e for e, _ in empresas] == [1, 5, 18, 28]
+    assert [e.numero for e in empresas] == [1, 5, 18, 28]
 
 
-def test_f024_r2_nombre_de_config_o_empresa_n():
-    """R2 · Nombre de `empresas.nombres`; sin él, «Empresa N»."""
-    nombres = {1: "Construcciones Ruesma", 28: "Porsan"}
-    _, empresas = ListarEmpresas(nombres, 1).ejecutar(_uow())
-    assert empresas == [(1, "Construcciones Ruesma"), (18, "Empresa 18"),
-                        (28, "Porsan")]
-
-
-def test_f024_r2_config_yaml_trae_los_nombres_de_d1():
-    """R2 y D1 · `config.yaml` entra con la 1 y la 28; el resto, «Empresa N»
-    hasta T12."""
-    from config.settings import cargar_config
-
-    nombres = cargar_config()["empresas"]["nombres"]
-    assert nombres == {1: "Construcciones Ruesma", 28: "Porsan"}
+def test_f024_r2_nombre_de_la_tabla_o_empresa_n():
+    """R2 · Nombre de la empresa; sin él, «Empresa N». Desde F-032 el nombre
+    sale de la tabla `empresa` (catálogo `auxemp`), no de `config.yaml`."""
+    uow = _uow()
+    uow.empresas.fichas = [Empresa(1, "Construcciones Ruesma"),
+                           Empresa(28, "Porsan")]
+    _, empresas = ListarEmpresas(1).ejecutar(uow)
+    assert [(e.numero, e.nombre) for e in empresas] == [
+        (1, "Construcciones Ruesma"), (18, "Empresa 18"), (28, "Porsan")]

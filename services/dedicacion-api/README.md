@@ -28,7 +28,8 @@ cambio de esquema es una migración que escribe una persona.
 |---|---|---|
 | GET  | /health | Estado del servicio |
 | GET  | /sync/preview | Ver qué devolverán las consultas de Sigrid (sin persistir) |
-| POST | /sync | Sincronizar empleados activos y obras |
+| POST | /sync | Sincronizar empleados activos, obras y el catálogo de empresas (`auxemp`) |
+| GET  | /empresas | Empresas del selector: nombre de Sigrid, `de_baja` y la por defecto |
 | GET/POST | /periodos | Listar / crear-obtener periodo (idempotente) |
 | POST | /periodos/{a}/{m}/cerrar · /reabrir | Estado del periodo |
 | POST | /periodos/{a}/{m}/copiar-anterior | Rellena SIN CARGA con el último periodo con datos |

@@ -123,6 +123,8 @@ class _SigridFalso:
         self._obras = obras
 
     def leer(self, sql: str) -> list[dict[str, Any]]:
+        if "dbo.auxemp" in sql:  # catálogo de empresas (F-032): fuera de F-023
+            return []
         origen = self._obras if "dbo.obr" in sql else self._empleados
         return [dict(fila) for fila in origen]
 
@@ -140,6 +142,7 @@ class _UowEspia:
     def __init__(self) -> None:
         self.trabajadores = _RepoEspia()
         self.obras = _RepoEspia()
+        self.empresas = _RepoEspia()  # paso de empresas del sync (F-032)
         self.commits = 0
 
     def commit(self) -> None:
@@ -661,6 +664,8 @@ def _config_prueba(criterio: dict[str, Any]) -> dict[str, Any]:
         "sync": {
             "empleados": {"sql": SQL_EMP, **criterio},
             "obras": {"sql": SQL_OBR, "estados_excluidos": ["terminada"]},
+            # Obligatoria desde F-032 (catálogo de empresas).
+            "empresas": {"sql": "SELECT ... FROM dbo.auxemp AS aux"},
         },
         "export": {"prefijo_postventa": "PV"},
     }

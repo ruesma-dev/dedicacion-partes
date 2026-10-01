@@ -97,6 +97,8 @@ class CuadranteOut(_Base):
 class EmpresaOut(_Base):
     empresa: int
     nombre: str
+    # De baja o desactivada en Sigrid (F-032): el front la marca, la API decide.
+    de_baja: bool
 
 
 class EmpresasOut(_Base):
@@ -133,6 +135,7 @@ class SyncOut(_Base):
     empleados: SyncMaestroOut
     obras: SyncMaestroOut
     duracion_s: float
+    empresas: SyncMaestroOut  # catálogo auxemp (F-032)
 
 
 class PeriodoCreadoOut(PeriodoOut):
@@ -205,6 +208,7 @@ def a_sync_out(resultado: ResultadoSync) -> SyncOut:
         empleados=SyncMaestroOut(**resultado.empleados.__dict__),
         obras=SyncMaestroOut(**resultado.obras.__dict__),
         duracion_s=resultado.duracion_s,
+        empresas=SyncMaestroOut(**resultado.empresas.__dict__),
     )
 
 

@@ -87,15 +87,15 @@ def preview_sync(contenedor: Cont) -> dict[str, Any]:
 # --------------------------- Empresas ---------------------------------
 @router.get("/empresas", response_model=EmpresasOut, tags=["empresas"])
 def listar_empresas(contenedor: Cont) -> EmpresasOut:
-    """Empresas del selector y la por defecto (F-024, R1 y R2)."""
-    caso = ListarEmpresas(
-        contenedor.nombres_empresas, contenedor.settings.empresa_imputacion
-    )
+    """Empresas del selector y la por defecto (F-024 R1); nombre y baja del
+    catálogo de Sigrid sincronizado (F-032)."""
+    caso = ListarEmpresas(contenedor.settings.empresa_imputacion)
     with contenedor.uow() as uow:
         por_defecto, empresas = caso.ejecutar(uow)
     return EmpresasOut(
         por_defecto=por_defecto,
-        empresas=[EmpresaOut(empresa=n, nombre=nombre) for n, nombre in empresas],
+        empresas=[EmpresaOut(empresa=e.numero, nombre=e.nombre, de_baja=e.de_baja)
+                  for e in empresas],
     )
 
 

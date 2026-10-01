@@ -5,13 +5,15 @@
 
 Resumen: **30 features**, 19 abiertas, 11 terminadas.
 
+En curso: **F-032**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
-| F-032 | Nombres de empresa sincronizados desde Sigrid | 2 | pendiente | estandar | `feature/F-032-empresas-desde-sigrid` |
+| F-032 | Nombres de empresa sincronizados desde Sigrid | 2 | en curso | estandar | `feature/F-032-empresas-desde-sigrid` |
 | F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
 | F-026 | Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro | 3 | pendiente | critico | `feature/F-026-recursos-sin-ficha-empleado` |
@@ -61,9 +63,9 @@ Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZA
 
 ### F-032 · Nombres de empresa sincronizados desde Sigrid
 
-estado **pendiente** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-032-empresas-desde-sigrid`
+estado **en curso** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-032-empresas-desde-sigrid`
 
-Pedida por el humano el 2026-10-01 al cerrar F-024: los nombres del selector de empresa no pueden vivir en config.yaml (empresas.nombres), porque una empresa nueva saldría como «Empresa N» y un cambio de nombre en Sigrid no llegaría nunca. El sync de maestros (dedicacion-api, por sigrid-api, solo lectura) trae también el catálogo auxemp de Sigrid (numemp, res, fecbaj, desact; azure-apps/sigrid_tablas.md, tabla auxemp) y lo guarda en una tabla empresa de la BBDD dedicacion; ListarEmpresas toma de ahí los nombres y se retira empresas.nombres de config.yaml, con «Empresa N» solo como red de seguridad si una empresa no está en la tabla. El selector sigue enseñando solo empresas con trabajadores activos más la por defecto. Los nombres que publica el data mart a 2026-10-01 (progress/explore_nombres_empresas.md) sirven para contrastar el resultado. A DECIDIR: qué hace el selector con una empresa dada de baja o desactivada en Sigrid que aún tiene trabajadores activos. F-022, F-023, F-024 y F-032 se despliegan juntas.
+Pedida por el humano el 2026-10-01 al cerrar F-024: los nombres del selector de empresa no pueden vivir en config.yaml (empresas.nombres), porque una empresa nueva saldría como «Empresa N» y un cambio de nombre en Sigrid no llegaría nunca. El sync de maestros (dedicacion-api, por sigrid-api, solo lectura) trae también el catálogo auxemp de Sigrid (numemp, res, fecbaj, desact; azure-apps/sigrid_tablas.md, tabla auxemp) y lo guarda en una tabla empresa de la BBDD dedicacion; ListarEmpresas toma de ahí los nombres y se retira empresas.nombres de config.yaml, con «Empresa N» solo como red de seguridad si una empresa no está en la tabla. El selector sigue enseñando solo empresas con trabajadores activos más la por defecto. Los nombres que publica el data mart a 2026-10-01 (progress/explore_nombres_empresas.md) sirven para contrastar el resultado. DECIDIDO por el humano el 2026-10-01 (plan confirmado): una empresa dada de baja (fecbaj > 0) o desactivada (desact = 1) en Sigrid que aún tiene trabajadores activos SE ENSEÑA en el selector marcada «(de baja)»; nunca se oculta, porque ocultarla escondería carga (mismo criterio que D4/D5 de F-024). F-022, F-023, F-024 y F-032 se despliegan juntas.
 
 ### F-019 · Excel de importacion en formato Carmen
 

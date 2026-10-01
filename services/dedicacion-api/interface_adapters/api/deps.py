@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from application.filtros_maestros import CriterioActivoRecurso
 from application.sync_pipeline import (
     FetchEmpleadosStep,
+    FetchEmpresasStep,
     FetchObrasStep,
     SyncMaestrosPipeline,
+    UpsertEmpresasStep,
     UpsertObrasStep,
     UpsertTrabajadoresStep,
 )
@@ -33,8 +35,6 @@ class Contenedor:
     preview_sync: PreviewSync
     exporter: OpenpyxlExcelExporter
     registro_sigrid: RegistroSigrid
-    # Nombre de cada empresa del selector (config.yaml, F-024 R2).
-    nombres_empresas: dict[int, str]
 
     def uow(self) -> SqlAlchemyUnitOfWork:
         return SqlAlchemyUnitOfWork(self.session_factory)
@@ -48,6 +48,9 @@ def construir_contenedor(
     cfg_obr = config["sync"]["obras"]
     sql_empleados = cfg_emp["sql"]
     sql_obras = cfg_obr["sql"]
+    # Catálogo de empresas (F-032). Obligatorio, como las otras dos: sin él
+    # la api no arranca, en vez de dejar de actualizar nombres en silencio.
+    sql_empresas = config["sync"]["empresas"]["sql"]
     categorias = cfg_emp.get("categorias_incluidas", [])
     filtro_cat = bool(cfg_emp.get("filtro_categorias", False))
     exigir_mes = bool(cfg_emp.get("filtro_codigo_mes", True))
@@ -70,8 +73,10 @@ def construir_contenedor(
                                exigir_codigo_mes=exigir_mes,
                                criterio=criterio),
             FetchObrasStep(sigrid, sql_obras, estados_exc, filtro_est),
+            FetchEmpresasStep(sigrid, sql_empresas),
             UpsertTrabajadoresStep(),
             UpsertObrasStep(),
+            UpsertEmpresasStep(),
         ]
     )
     exporter = OpenpyxlExcelExporter(
@@ -92,17 +97,12 @@ def construir_contenedor(
             filtro_estados=filtro_est,
             exigir_codigo_mes=exigir_mes,
             criterio=criterio,
+            sql_empresas=sql_empresas,
         ),
         exporter=exporter,
         registro_sigrid=RegistroSigrid(session_factory,
                                        TransferClient(settings),
                                        settings.empresa_imputacion),
-        nombres_empresas={
-            int(n): str(nombre)
-            for n, nombre in (
-                (config.get("empresas") or {}).get("nombres") or {}
-            ).items()
-        },
     )
 
 
