@@ -1,9 +1,24 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-024 se cerró el 2026-10-01 (resumen en
-`history.md`). La siguiente es **F-032** (nombres de empresa desde Sigrid):
-falta enseñar su plan al humano (PARADA 1). El arnés es la **1.7.3**.
+**F-032 en curso** (nombres de empresa desde Sigrid, rigor estándar, sin
+spec: guían sus `acceptance`). El arnés es la **1.7.3**.
+
+## F-032 · Nombres de empresa sincronizados desde Sigrid
+
+- Rama `feature/F-032-empresas-desde-sigrid`. Plan confirmado por el humano
+  el 2026-10-01, con la decisión abierta cerrada: una empresa de baja o
+  desactivada con trabajadores activos se enseña marcada «(de baja)», nunca
+  oculta (`features.json`).
+- **Implementer lanzado** → `progress/impl_F-032.md`. Después, reviewer.
+
+### Verificación MANUAL (humano) de F-032
+
+- Sync real contra la BBDD local (API de la rama) y comprobar en
+  `GET /api/v1/empresas` y en el selector que salen 18 = RUESMA SERVICIOS SL
+  y 31 = UTE RUESMA-INESCO TOLEDO (contraste:
+  `progress/explore_nombres_empresas.md`). El líder prepara el script.
+  Resultado: _pendiente_.
 
 > **Aviso de despliegue:** F-022, F-023 y F-024 están en `dev` pero se
 > despliegan **junto con F-032**; hasta entonces el selector enseña «Empresa
@@ -17,7 +32,7 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 |---|---|---|
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
-| 2 | **F-032** | nombres de empresa sincronizados desde Sigrid (siguiente) |
+| — | **F-032** | en curso (arriba) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
 | 4 | **F-027**, F-020 | deshacer solo lo propio; Excel |
 

@@ -521,17 +521,17 @@
     {
       "id": "F-032",
       "title": "Nombres de empresa sincronizados desde Sigrid",
-      "description": "Pedida por el humano el 2026-10-01 al cerrar F-024: los nombres del selector de empresa no pueden vivir en config.yaml (empresas.nombres), porque una empresa nueva saldría como «Empresa N» y un cambio de nombre en Sigrid no llegaría nunca. El sync de maestros (dedicacion-api, por sigrid-api, solo lectura) trae también el catálogo auxemp de Sigrid (numemp, res, fecbaj, desact; azure-apps/sigrid_tablas.md, tabla auxemp) y lo guarda en una tabla empresa de la BBDD dedicacion; ListarEmpresas toma de ahí los nombres y se retira empresas.nombres de config.yaml, con «Empresa N» solo como red de seguridad si una empresa no está en la tabla. El selector sigue enseñando solo empresas con trabajadores activos más la por defecto. Los nombres que publica el data mart a 2026-10-01 (progress/explore_nombres_empresas.md) sirven para contrastar el resultado. A DECIDIR: qué hace el selector con una empresa dada de baja o desactivada en Sigrid que aún tiene trabajadores activos. F-022, F-023, F-024 y F-032 se despliegan juntas.",
+      "description": "Pedida por el humano el 2026-10-01 al cerrar F-024: los nombres del selector de empresa no pueden vivir en config.yaml (empresas.nombres), porque una empresa nueva saldría como «Empresa N» y un cambio de nombre en Sigrid no llegaría nunca. El sync de maestros (dedicacion-api, por sigrid-api, solo lectura) trae también el catálogo auxemp de Sigrid (numemp, res, fecbaj, desact; azure-apps/sigrid_tablas.md, tabla auxemp) y lo guarda en una tabla empresa de la BBDD dedicacion; ListarEmpresas toma de ahí los nombres y se retira empresas.nombres de config.yaml, con «Empresa N» solo como red de seguridad si una empresa no está en la tabla. El selector sigue enseñando solo empresas con trabajadores activos más la por defecto. Los nombres que publica el data mart a 2026-10-01 (progress/explore_nombres_empresas.md) sirven para contrastar el resultado. DECIDIDO por el humano el 2026-10-01 (plan confirmado): una empresa dada de baja (fecbaj > 0) o desactivada (desact = 1) en Sigrid que aún tiene trabajadores activos SE ENSEÑA en el selector marcada «(de baja)»; nunca se oculta, porque ocultarla escondería carga (mismo criterio que D4/D5 de F-024). F-022, F-023, F-024 y F-032 se despliegan juntas.",
       "acceptance": [
         "El sync de maestros lee auxemp de Sigrid por sigrid-api (solo lectura) y lo guarda en una tabla empresa declarada en el ORM, sin DDL a mano",
         "GET /api/v1/empresas toma el nombre de esa tabla; una empresa nueva o renombrada en Sigrid aparece tras el siguiente sync sin tocar configuración",
         "Se retira empresas.nombres de config.yaml; «Empresa N» solo si la empresa no está en la tabla",
         "El preview del sync informa de las empresas leídas",
-        "Decidido y probado qué hace el selector con una empresa dada de baja o desactivada que tiene trabajadores activos",
+        "Una empresa dada de baja o desactivada que tiene trabajadores activos sale en el selector marcada «(de baja)», nunca oculta; probado",
         "Comprobado en local tras un sync real que el selector enseña 18 = RUESMA SERVICIOS SL y 31 = UTE RUESMA-INESCO TOLEDO",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "sdd": false,
       "rigor": "estandar",
       "priority": 2,
