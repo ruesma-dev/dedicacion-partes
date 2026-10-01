@@ -1,5 +1,5 @@
 <!-- progress/review_F-032.md -->
-Revisión incremental desde feff7e4 (pasada 2) · HEAD `713c8ac` · veredicto vigente al final: **CHANGES_REQUESTED**
+Revisión incremental desde 713c8ac (pasada 3) · HEAD `075b4c8` · veredicto vigente: **APPROVED**
 
 # F-032 · Review — Nombres de empresa sincronizados desde Sigrid
 
@@ -11,8 +11,7 @@ mutación con supervivientes analizados. `sdd: false`: mini-spec = descripción 
 ## Pasada 1 (resumen) · completa, base `56e79f3` .. `feff7e4`
 
 **Veredicto: CHANGES_REQUESTED** solo por el rastro; código, tests y campaña bien.
-Resumida por el tope de 140 líneas; el texto íntegro está en
-`git show 6f1fa5a:progress/review_F-032.md`.
+Texto íntegro: `git show 6f1fa5a:progress/review_F-032.md`.
 
 - `init.sh` verde (raíz 355 passed, 1 skipped); suites sin caché: api 342, front 20,
   transfer 317 passed. `PUERTA COBERTURA` 100 % (106/106).
@@ -29,7 +28,6 @@ Resumida por el tope de 140 líneas; el texto íntegro está en
   `current.md`; (2) listar ahí la copia pendiente a `azure-apps/dedicacion.md`.
 - Observaciones no bloqueantes: `resumir_empresas` sin `strip`; literal de la
   empresa 1 cambia a «CONSTRUCCIONES RUESMA»; `sync_en` solo al alta.
-- Automejora propuesta: C4 de `CHECKPOINTS.md` con las copias pendientes a `azure-apps/`.
 
 ### Cobertura acceptance → tests (pasada 1, sin cambios)
 | R | Tests (api salvo indicación) |
@@ -42,88 +40,90 @@ Resumida por el tope de 140 líneas; el texto íntegro está en
 | R6 | MANUAL pendiente (no bloquea APPROVED, sí `done`) |
 | R7 | esta review |
 
-## Pasada 2 · incremental desde `feff7e4` hasta `713c8ac`
+## Pasada 2 (resumen) · incremental `feff7e4` .. `713c8ac`
 
-**Veredicto: CHANGES_REQUESTED** — `bash harness/init.sh` en **rojo**, causado por
-el propio arreglo del cambio 1.
+**Veredicto: CHANGES_REQUESTED.** Texto íntegro: `git show 075b4c8:progress/review_F-032.md`.
+Delta solo en `progress/`. `init.sh` en **rojo**: el guardián de F-008
+(`test_f008_r21_…`) cazó `progress/current.md:35 [guid]`, la ruta del scratchpad
+de la sesión del líder con su UUID; además el script de la MANUAL vivía en un sitio
+efímero. Cambios 1 y 2 de la pasada 1 hechos en contenido (comando con URL y
+resultado esperado; copia pendiente a `azure-apps` listada). Observaciones de la
+pasada 1 descartadas por escrito con motivo o avisadas: aceptado. Cambio pedido:
+quitar la ruta con UUID y versionar el script (`scripts/verif_f032_empresas.ps1`),
+con `init.sh` en verde antes de relanzar.
+
+## Pasada 3 · incremental desde `713c8ac` hasta `075b4c8`
+
+**Veredicto: APPROVED.** El cambio de la pasada 2 está hecho y `init.sh` queda verde.
 
 ### Qué cambió
-`git diff --stat feff7e4..HEAD`: solo `progress/current.md` (+33/−7) y
-`progress/review_F-032.md` (el informe de la pasada 1). **Ningún cambio de código
-ni de tests**: la campaña y la cobertura de la pasada 1 siguen valiendo (RM1: el
-alcance medido no se ha movido).
+`git diff --stat 713c8ac..HEAD`: `progress/current.md` (+8/−4),
+`progress/review_F-032.md` (la pasada 2) y `scripts/verif_f032_empresas.ps1` (nuevo,
+39 líneas). `git diff --stat 713c8ac..HEAD -- services tests`: **vacío**. Sin
+cambios de código ni de tests de producción: campaña, cobertura y RM de la pasada 1
+siguen valiendo (RM1: el alcance medido no se ha movido).
 
 ### Verificación ejecutada
-- `bash harness/init.sh` tal cual: **1 comprobación fallida**. La suite raíz para en
-  `tests/test_f008_infra_sin_secretos.py::test_f008_r21_ningun_secreto_ni_identificador_en_el_repositorio`:
-  `progress/current.md:35 [guid]` (61 passed, 1 failed, `-x`). El resto en verde:
-  servicios api/front/transfer (caché del último verde, sin cambios de código),
-  `PUERTA COBERTURA` 100 % (106/106), `PUERTA TAMAÑO` (review 132/140).
-- Origen: la línea 35 de `current.md` lleva la ruta del scratchpad de la sesión del
-  líder, que contiene el UUID de sesión `5cb867d0-…`. El guardián de F-008 no
-  distingue un UUID de sesión de un ID de tenant, y **no debe**: la regla es no
-  versionar GUIDs. Es un fallo real del rastro, no un falso positivo a silenciar.
-- Script `verif_f032_empresas.ps1` leído entero: existe hoy, sin secretos, solo
-  lecturas a Sigrid vía la API y escritura en la BBDD local; sus comprobaciones
-  coinciden con lo que `current.md` declara (preview `empresas.leidas ≥ 19`, sync
-  con bloque `empresas`, `/empresas` con por defecto 1, 18 y 31 con su nombre,
-  ninguna «Empresa N», 3 empresas). `leidas` existe en `resumir_empresas`
-  (`filtros_maestros.py:273`).
-- Segundo problema del mismo comando: el script vive en el **scratchpad de una
-  sesión** (`%TEMP%\claude\…\<sesión>\scratchpad`), fuera del repo y efímero. Un
-  «comando exacto» que apunta a un fichero que puede desaparecer al cerrar la
-  sesión no cumple C4 en la práctica.
-
-### Cambio 1 de la pasada 1 (comando exacto) — hecho en contenido, mal en forma
-Pasos 1 y 2 con arranque (`python main.py` desde `services/dedicacion-api`),
-llamadas con URL completa, resultado esperado de cada una y selector en
-`http://localhost:8080` con el literal nuevo de la empresa 1. Correcto, salvo la
-ruta del script (ver cambios requeridos).
-
-### Cambio 2 de la pasada 1 (copia a `azure-apps`) — hecho
-Sección «Pendiente antes del `done`» con los cinco puntos del informe del
-implementer (cabecera, fila de `sigrid-api` §1, árbol §2, `de_baja` en
-`/empresas`, fila `auxemp` en «qué se rompe») y commit en `azure-apps`. `[x]`.
-
-### Observaciones no bloqueantes — recogidas
-- `strip` en el preview y `sync_en` solo al alta: **descartadas por escrito** en
-  `current.md` l. 23–26, con motivo (preview diagnóstico, tabla con nombre limpio;
-  `sync_en` igual que `trabajador`/`obra`). Aceptado.
-- Literal de la empresa 1: en el paso 2 de la MANUAL y «se avisa al humano». `[x]`.
-- Automejora: encargo `620b83d` en `arnes-base`. `[x]`.
+- `bash harness/init.sh` tal cual: **ENTORNO LISTO**. Raíz `355 passed, 1 skipped`
+  (incluye el guardián de F-008, ahora verde); api/front/transfer verdes (caché:
+  árbol de servicios sin cambios desde el último verde, coherente con el diff
+  vacío en `services/`); `PUERTA COBERTURA` 100 % (106/106); `PUERTA TAMAÑO` OK;
+  ningún `.env` versionado; rama correcta. ruff 193 avisos, deuda previa.
+- `grep` de GUID (`[0-9a-f]{8}-[0-9a-f]{4}-`) en `current.md` y en el script: **sin
+  coincidencias**. La ruta del scratchpad ha desaparecido de `current.md`.
+- Script leído entero. Primera línea con ruta (`# scripts/verif_f032_empresas.ps1`,
+  tras el BOM UTF-8, que PowerShell 5.1 necesita para los acentos). Sin secretos,
+  claves, cabeceras de autenticación ni IPs internas (solo el loopback
+  `127.0.0.1:8090`). Llamadas: `GET /health`, `GET /sync/preview`, `POST /sync`,
+  `GET /empresas`. **Ninguna** a `registro/ejecutar`, al transfer (8006) ni a Sigrid
+  directo: Sigrid solo se lee a través de la api y `sigrid-api`; la única escritura
+  es la del sync en la BBDD local. Termina con contador de fallos y resultado.
+- Comando de `current.md` l. 38–39: `powershell -ExecutionPolicy Bypass -File
+  scripts/verif_f032_empresas.ps1` «desde la raíz del repo». **Exacto y durable**:
+  ruta relativa al repo, fichero versionado; idéntico al «Uso» de la cabecera del
+  script.
+- Coherencia comando ↔ script: lo que `current.md` declara (preview `empresas.leidas
+  ≥ 19`; sync con bloque `empresas`; `/empresas` con por defecto 1, 18 =
+  `RUESMA SERVICIOS SL`, 31 = `UTE RUESMA-INESCO TOLEDO`, ninguna «Empresa N», 3
+  empresas) es exactamente lo que comprueban los siete `Ok` del script. `localhost`
+  en el texto y `127.0.0.1` en el script apuntan al mismo sitio.
 
 ### `current.md` frente a `features.json` (leído entero)
-F-032 `in_progress`, `estandar`, `sdd: false`, rama correcta: coherente con «F-032
-en review» (l. 4) y la fila «— F-032 en review» de la tabla. Sin restos
-contradictorios: «Reviewer lanzado» de `feff7e4` sustituido por el estado de la
-pasada 1 y «Pasada 2 lanzada». Sin secretos salvo el GUID ya dicho.
+F-032 `in_progress`, `estandar`, `sdd: false`, rama `feature/F-032-empresas-desde-sigrid`:
+coherente con «F-032 en review» (l. 4), la fila «— F-032 en review» de la tabla y
+el historial de pasadas (l. 19–30, ya con «Pasada 2: rechazada … Pasada 3 lanzada
+con `init.sh` en verde»). MANUAL (pasos 1 y 2) y copia a `azure-apps` siguen
+`_pendiente_`: correcto, no bloquean APPROVED, sí el `done`.
 
-### Checkpoints (pasada 2, sobre el delta)
-- **C1** **[ ] init.sh exit 0** — rojo por `current.md:35 [guid]`.
-- **C2** [x] una sola `in_progress`, rama correcta, `current.md` de la sesión activa.
-- **C3** [x] sin código nuevo; **[ ] sin secretos/identificadores**: el GUID de sesión.
-- **C3 bis** N/A — no toca `docs/referencia/`.
-- **C4** [x] tests de la pasada 1 intactos · **[ ] MANUAL con comando exacto**: apunta
-  a un fichero efímero de un scratchpad (y es lo que rompe init.sh).
-- **C4 bis** [x] sin cambios desde la pasada 1 (sin código no hay nada nuevo que medir).
-- **C4 ter** N/A — sin rutas sensibles señaladas por init.sh.
-- **C5** [x] commits `F-032:` de rastro; árbol limpio.
+### Checkpoints (pasada 3, sobre el delta)
+- **C1** [x] init.sh exit 0 · [x] ficheros base presentes.
+- **C2** [x] una sola `in_progress` (F-032) · [x] rama correcta · [x] `current.md` de
+  la sesión activa y coherente con `features.json`.
+- **C3** [x] sin código de producción nuevo · [x] script con primera línea con ruta,
+  sin `print`/debug sobrante, sin secretos ni identificadores · [x] trampas de
+  dominio: no escribe en Sigrid ni toca el transfer.
+- **C3 bis** N/A — el delta no toca `docs/referencia/`.
+- **C4** [x] tests de la pasada 1 intactos y en verde · [x] MANUAL en `current.md`
+  con comando exacto, durable y resultado esperado de cada paso.
+- **C4 bis** [x] sin cambios en `services/` ni `tests/` desde la pasada 1: nada nuevo
+  que medir; la campaña verificada en la pasada 1 (30 mutantes, 2 supervivientes
+  cazados, sin `PENDIENTE`) sigue siendo la del alcance actual.
+- **C4 ter** N/A — init.sh no señala rutas sensibles en el delta.
+- **C5** [x] commit `F-032:` de rastro · [x] árbol limpio (`git status` vacío) ·
+  [x] `tasks.md` N/A (`sdd=false`).
 
-## Cambios requeridos
-1. **`progress/current.md:35`**: quitar la ruta con el UUID de sesión y dejar el
-   script en un sitio **durable** del que el comando no dependa de la sesión.
-   Recomendado: versionarlo como `scripts/verif_f032_empresas.ps1` (ya existe
-   `scripts/`; el script no lleva secretos ni GUIDs, revisado) y que el paso 1 diga
-   `powershell -ExecutionPolicy Bypass -File scripts\verif_f032_empresas.ps1` desde la
-   raíz del repo. Si el humano prefiere no versionarlo, la alternativa es una ruta
-   sin GUID fuera del repo, nombrada con su motivo. En ambos casos, comprobar que
-   `bash harness/init.sh` queda en verde **antes** de relanzar la review.
-2. Con eso, la pasada 3 (incremental desde `713c8ac`) puede aprobar: el resto del
-   delta está bien y no hay que volver a leer código.
+### Observación no bloqueante (para recoger, no para dejar «anotado»)
+- La última línea del script dice «Falta mirar el selector en http://localhost:8080
+  (ver chat)». El chat no es durable: mejor «(ver paso 2 de la MANUAL en
+  `progress/current.md`)». Cosmético; no afecta a lo que el script comprueba.
+
+### Pendiente antes del `done` (no bloquea este APPROVED)
+1. MANUAL pasos 1 y 2, con su resultado en `current.md`.
+2. Copia a `azure-apps/dedicacion.md` y su commit allí.
+3. Avisar al humano del cambio de literal de la empresa 1.
 
 ## Propuesta de automejora (no aplicada)
 - `leader.md` / `implementer.md`: «antes de lanzar la review, `bash harness/init.sh`
-  en verde también tras tocar solo `progress/`». Esta pasada se rechaza por un
-  commit de rastro que nadie pasó por init.sh; el guardián lo habría cazado gratis.
-- Mismo sitio: los scripts de verificación MANUAL no viven en el scratchpad de la
-  sesión (efímero y con UUID en la ruta); van a `scripts/` o equivalente.
+  en verde también tras tocar solo `progress/`» (la pasada 2 se perdió por eso), y
+  los scripts de verificación MANUAL van a `scripts/`, nunca al scratchpad de la
+  sesión (efímero y con UUID en la ruta). Esta feature es el caso de libro.

@@ -1,8 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-032 en review** (nombres de empresa desde Sigrid, rigor estándar, sin
-spec: guían sus `acceptance`). El arnés es la **1.7.3**.
+**F-032 con review APROBADA** (nombres de empresa desde Sigrid, rigor
+estándar, sin spec); faltan la MANUAL y la copia a `azure-apps` para `done`. El arnés es la **1.7.3**.
 
 ## F-032 · Nombres de empresa sincronizados desde Sigrid
 
@@ -26,8 +26,9 @@ spec: guían sus `acceptance`). El arnés es la **1.7.3**.
   `trabajador` y `obra`. El cambio de literal de la empresa 1 se avisa al
   humano. Automejora → encargo `620b83d` en `arnes-base`. Pasada 2: rechazada porque el comando de la
   manual apuntaba al scratchpad de la sesión (ruta con UUID: `init.sh` en
-  rojo). El script pasa a `scripts/verif_f032_empresas.ps1`. Pasada 3
-  lanzada con `init.sh` en verde.
+  rojo). El script pasa a `scripts/verif_f032_empresas.ps1`. **Pasada 3:
+  APPROVED**; su automejora ya estaba en `arnes-base` (`e964f10`).
+  **Mergeada a `dev`**; faltan la MANUAL y la copia a `azure-apps` para `done`.
 
 ### Verificación MANUAL (humano) de F-032
 
@@ -69,7 +70,7 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 |---|---|---|
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
-| — | **F-032** | en review (arriba) |
+| — | **F-032** | aprobada; faltan MANUAL y `azure-apps` (arriba) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
 | 4 | **F-027**, F-020 | deshacer solo lo propio; Excel |
 
