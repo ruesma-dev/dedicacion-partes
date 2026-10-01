@@ -286,6 +286,23 @@ class ListarPeriodos:
         return uow.periodos.listar()
 
 
+class ListarEmpresas:
+    """Empresas del selector (F-024, R1 y R2): las que tienen algún
+    trabajador activo más la por defecto, ordenadas, con su nombre de
+    `config.yaml` o «Empresa N»."""
+
+    def __init__(self, nombres: dict[int, str], por_defecto: int) -> None:
+        self._nombres = nombres
+        self._por_defecto = por_defecto
+
+    def ejecutar(self, uow: UnitOfWork) -> tuple[int, list[tuple[int, str]]]:
+        numeros = uow.trabajadores.empresas_activas() | {self._por_defecto}
+        empresas = [
+            (n, self._nombres.get(n) or f"Empresa {n}") for n in sorted(numeros)
+        ]
+        return self._por_defecto, empresas
+
+
 class CrearObtenerPeriodo:
     def ejecutar(self, uow: UnitOfWork, anio: int, mes: int) -> tuple[Periodo, bool]:
         existente = uow.periodos.obtener(anio, mes)

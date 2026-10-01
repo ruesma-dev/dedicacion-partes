@@ -18,6 +18,7 @@ from application.use_cases import (
     CopiarTrabajadorAnterior,
     DeshacerUltimaModificacion,
     GuardarAsignaciones,
+    ListarEmpresas,
     ObtenerCuadrante,
     ObtenerFilaTrabajador,
 )
@@ -343,3 +344,32 @@ def test_f024_r14_copiar_mes_cuenta_con_carga_solo_de_la_empresa():
                                                  filtro=_f(1))
     assert resultado.con_carga_previa == 1          # Ana; Bea es de la 28
     assert uow.reemplazados == [14]
+
+
+# ======================== lista de empresas (T4) ======================== #
+def test_f024_r1_empresas_ordenadas_con_la_por_defecto():
+    """R1 · Las que tienen algún trabajador activo (1, 18, 28 en el doble),
+    ordenadas, y la por defecto aunque no tenga ninguno."""
+    por_defecto, empresas = ListarEmpresas({}, 1).ejecutar(_uow())
+    assert por_defecto == 1
+    assert [e for e, _ in empresas] == [1, 18, 28]
+    por_defecto, empresas = ListarEmpresas({}, 5).ejecutar(_uow())
+    assert por_defecto == 5
+    assert [e for e, _ in empresas] == [1, 5, 18, 28]
+
+
+def test_f024_r2_nombre_de_config_o_empresa_n():
+    """R2 · Nombre de `empresas.nombres`; sin él, «Empresa N»."""
+    nombres = {1: "Construcciones Ruesma", 28: "Porsan"}
+    _, empresas = ListarEmpresas(nombres, 1).ejecutar(_uow())
+    assert empresas == [(1, "Construcciones Ruesma"), (18, "Empresa 18"),
+                        (28, "Porsan")]
+
+
+def test_f024_r2_config_yaml_trae_los_nombres_de_d1():
+    """R2 y D1 · `config.yaml` entra con la 1 y la 28; el resto, «Empresa N»
+    hasta T12."""
+    from config.settings import cargar_config
+
+    nombres = cargar_config()["empresas"]["nombres"]
+    assert nombres == {1: "Construcciones Ruesma", 28: "Porsan"}
