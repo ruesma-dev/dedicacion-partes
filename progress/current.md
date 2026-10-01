@@ -4,11 +4,13 @@
 **Ninguna feature en ejecución.** F-032 se cerró el 2026-10-01 (resumen en
 `history.md`). El arnés es la **1.7.3**.
 
-> **2026-10-01, en curso:** el humano elige **F-025** (obras de postventa
-> desde POSTV2). Spec en redacción por el spec-author en la rama
-> `feature/F-025-obras-postventa-postv2`; al entregarla pasa a `spec_ready` y
-> espera la aprobación del humano. En paralelo, un reviewer revisa el
-> despliegue del 2026-10-01 → `progress/review_despliegue_20261001.md`.
+> **2026-10-01:** el humano elige **F-025** (obras de postventa desde
+> POSTV2). Spec entregada (`c328e22`, rama `feature/F-025-obras-postventa-postv2`)
+> y en `spec_ready`: **espera la aprobación del humano**, con 7 decisiones
+> abiertas (la D2, cascada de P5, decide si se escriben partidas ajenas).
+> La review del despliegue del 2026-10-01 pidió cambios de rastro y scripts
+> (`progress/review_despliegue_20261001.md`): plan propuesto al humano,
+> **pendiente de su respuesta**.
 
 ## ⚠ DESPLEGADO EN MODO REAL (2026-10-01)
 
