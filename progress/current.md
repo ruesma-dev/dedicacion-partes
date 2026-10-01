@@ -16,16 +16,42 @@ spec: guían sus `acceptance`). El arnés es la **1.7.3**.
   pinta «(de baja)». Mutación con muestreo estándar: 2 supervivientes
   reproducidos a mano y cazados con tests nuevos. Desviación declarada: tests
   de F-024 que fijaban `empresas.nombres` sustituidos por su equivalente
-  sobre la tabla, sin cambiar valores esperados. **Reviewer lanzado** →
-  `progress/review_F-032.md`.
+  sobre la tabla, sin cambiar valores esperados. Review pasada 1
+  (`progress/review_F-032.md`): código, tests y campaña **bien**;
+  CHANGES_REQUESTED solo por el rastro (faltaban aquí el comando exacto de la
+  manual y la copia pendiente a `azure-apps`; corregido). Observaciones:
+  `resumir_empresas` del preview no hace `strip` del nombre y `sync_en` solo
+  se fija al alta, **descartadas por escrito**: el preview es diagnóstico y la
+  tabla guarda el nombre limpio; `sync_en` se comporta igual que en
+  `trabajador` y `obra`. El cambio de literal de la empresa 1 se avisa al
+  humano. Automejora → encargo `620b83d` en `arnes-base`. Pasada 2 lanzada.
 
 ### Verificación MANUAL (humano) de F-032
 
-- Sync real contra la BBDD local (API de la rama) y comprobar en
-  `GET /api/v1/empresas` y en el selector que salen 18 = RUESMA SERVICIOS SL
-  y 31 = UTE RUESMA-INESCO TOLEDO (contraste:
-  `progress/explore_nombres_empresas.md`). El líder prepara el script.
-  Resultado: _pendiente_.
+1. **Sync real en local.** Arrancar la api de esta rama con `python main.py`
+   desde `services/dedicacion-api` (así `create_all` crea la tabla `empresa`).
+   Lanzar el script del líder (solo lectura de Sigrid; el sync escribe solo en
+   la BBDD local):
+   `powershell -ExecutionPolicy Bypass -File "C:\Users\pgris\AppData\Local\Temp\claude\C--Users-pgris-PycharmProjects-porcentajes\5cb867d0-7a0e-4697-8553-fb67f1894080\scratchpad\verif_f032_empresas.ps1"`.
+   Hace `GET http://localhost:8090/api/v1/sync/preview` (esperado:
+   `empresas.leidas` ≥ 19), `POST http://localhost:8090/api/v1/sync`
+   (esperado: bloque `empresas` en la respuesta) y
+   `GET http://localhost:8090/api/v1/empresas` (esperado: por defecto 1;
+   18 = `RUESMA SERVICIOS SL`; 31 = `UTE RUESMA-INESCO TOLEDO`; ninguna
+   «Empresa N»; las mismas 3 empresas que antes). Contraste:
+   `progress/explore_nombres_empresas.md`. Resultado: _pendiente_.
+2. **Selector en `http://localhost:8080`**: enseña 18 = RUESMA SERVICIOS SL,
+   31 = UTE RUESMA-INESCO TOLEDO y **1 = CONSTRUCCIONES RUESMA** (el literal
+   cambia al de Sigrid: antes «Construcciones Ruesma» de `config.yaml`). Si
+   alguna con trabajadores activos está de baja, sale «(de baja)».
+   Resultado: _pendiente_.
+
+### Pendiente antes del `done` (líder, con autorización del humano)
+
+- **Copia a `azure-apps/dedicacion.md`**, como en F-022 y F-024: cabecera,
+  fila de `sigrid-api` de §1, árbol de §2 (tabla `empresa`), párrafo de
+  `GET /api/v1/empresas` (`de_baja`) y fila nueva de `auxemp` en «qué se
+  rompe». Commit en `azure-apps`. Resultado: _pendiente_.
 
 > **Aviso de despliegue:** F-022, F-023 y F-024 están en `dev` pero se
 > despliegan **junto con F-032**; hasta entonces el selector enseña «Empresa
