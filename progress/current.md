@@ -1,7 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-024 en review** (selector de empresa, rigor estándar). El arnés es la
+**F-024 con review APROBADA** (selector de empresa, rigor estándar); faltan las
+manuales T11-T13 para `done`. El arnés es la
 **1.7.3**.
 
 ## F-024 · Selector de empresa arriba a la derecha, Ruesma por defecto
@@ -11,8 +12,19 @@
 - **Implementer terminado**: T1-T10 y T14, un commit por tarea más dos de
   estilo (`1b0bc40` … `2cbe55c`); informe `progress/impl_F-024.md`. Toca los
   tres servicios; contrato API ↔ transfer intacto; único assert anterior
-  cambiado, el de F-022 que declara design §7. Mutación 17/17. **Reviewer
-  lanzado** → `progress/review_F-024.md`.
+  cambiado, el de F-022 que declara design §7. Mutación 17/17. **Review APROBADA** a
+  la primera (`progress/review_F-024.md`): cobertura 100 % (105/105), las ocho
+  rutas del periodo con filtro, front sin lógica, contrato intacto.
+- Observaciones de la review, **recogidas o descartadas por escrito**:
+  - O1 (guardar/deshacer/copiar no comprueban visibilidad) → criterio nuevo
+    de **F-031**: un MCP que escriba es un segundo cliente.
+  - O2 (`?empresa=99` queda en la URL) y O3 (`cerrar`/`reabrir` ignoran
+    `?empresa=`): **descartadas**, cosméticas e inocuas.
+  - O4 (el cambio del transfer no genera mutantes): sostenido por la RED de
+    T7 y los tests de R20; nada que hacer.
+  - Automejora de C4 bis → encargo en `arnes-base`.
+- **Mergeada a `dev`** tras la review (T11-T13 bloquean el `done`, no el
+  merge).
 - **Explorador (T12), terminado**: nombres de las 19 empresas desde tres
   vistas del data mart que coinciden (18 = RUESMA SERVICIOS SL, 31 = UTE
   RUESMA-INESCO TOLEDO; 1 y 28 confirmadas). Informe en el scratchpad del
@@ -49,7 +61,7 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
-| — | **F-024** | en review (arriba) |
+| — | **F-024** | aprobada; faltan T11-T13 (arriba) |
 | 4 | **F-027**, F-020 | deshacer solo lo propio; Excel |
 
 **Efecto visible de F-022 mientras F-024 no esté en `dev`:** la api imputa
