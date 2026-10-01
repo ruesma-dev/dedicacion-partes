@@ -90,7 +90,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 5,
+      "priority": 14,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -105,7 +105,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 6,
+      "priority": 15,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -154,7 +154,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 7,
+      "priority": 16,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -169,7 +169,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 8,
+      "priority": 17,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     },
     {
@@ -240,7 +240,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 9,
+      "priority": 18,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
     },
     {
@@ -259,7 +259,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 1,
+      "priority": 11,
       "branch": "feature/F-017-prueba-administracion"
     },
     {
@@ -280,7 +280,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 2,
+      "priority": 12,
       "branch": "feature/F-018-paso-a-escritura-real"
     },
     {
@@ -298,7 +298,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 3,
+      "priority": 13,
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
@@ -335,7 +335,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 10,
+      "priority": 6,
       "branch": "feature/F-021-filtro-obra-chip-unico"
     },
     {
@@ -410,7 +410,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 3,
+      "priority": 2,
       "branch": "feature/F-025-obras-postventa-postv2"
     },
     {
@@ -427,7 +427,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 3,
+      "priority": 1,
       "branch": "feature/F-026-recursos-sin-ficha-empleado"
     },
     {
@@ -444,7 +444,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 4,
+      "priority": 3,
       "branch": "feature/F-027-deshacer-por-usuario"
     },
     {
@@ -479,7 +479,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 6,
+      "priority": 7,
       "branch": "feature/F-029-seleccion-multiple-completar-100"
     },
     {
@@ -497,7 +497,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 6,
+      "priority": 8,
       "branch": "feature/F-030-dias-bajas-incidencias"
     },
     {
@@ -515,7 +515,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 11,
+      "priority": 9,
       "branch": "feature/F-031-mcp-ia"
     },
     {
@@ -536,6 +536,24 @@
       "rigor": "estandar",
       "priority": 2,
       "branch": "feature/F-032-empresas-desde-sigrid"
+    },
+    {
+      "id": "F-033",
+      "title": "Deshacer una línea real mal escrita en Sigrid",
+      "description": "Detectado el 2026-10-01 al pasar el transfer desplegado a modo real (decisión del humano). Hoy la única vía para borrar lo que escribe el sistema es 'prueba_escritura_porcentajes.py limpiar --confirmar', que solo toca lo marcado PRUEBA-PORC en la obra de pruebas. Una línea REAL mal escrita (recurso de otra empresa, partida equivocada, importe incorrecto) no tiene vía de retirada desde el sistema: habría que borrarla a mano en Sigrid. Hace falta un camino controlado, por synckey 'porcentajes:{id}', que solo pueda borrar lo que escribió este sistema, con preflight, confirmación del humano y traza, y decidir quién puede usarlo.",
+      "acceptance": [
+        "Una operación del transfer retira una línea escrita por el sistema identificándola por su synckey; nunca toca líneas que no lleven synckey del sistema",
+        "Tiene preflight (qué se borraría) y exige confirmación expresa antes de borrar",
+        "La asignación de dedicacion-api vuelve a quedar como no registrada y queda traza de quién y cuándo",
+        "Decidido y documentado quién puede usarla y desde dónde (front, script, ambos)",
+        "Verificado en la obra de pruebas 0404 antes de usarlo en real",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 10,
+      "branch": "feature/F-033-deshacer-linea-real"
     }
   ]
 }
