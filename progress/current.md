@@ -9,10 +9,15 @@
 > empresas. F-024 se desplegó con la regla contraria y **los trabajadores de
 > la 18 y la 31 no pueden registrar en producción**. Entra **F-034** con
 > prioridad 1; spec **aprobada** por el humano con D1-D5 (`edab7d9`);
-> `in_progress`, **implementer aún no lanzado**: falta que el humano confirme
-> el plan (PARADA 1) y si se despliega sola o con F-026.
+> `in_progress`, plan confirmado: **implementer lanzado** →
+> `progress/impl_F-034.md`. Se despliega **junto con F-026**.
+> **F-026**: decisión del humano 2026-10-01, «no debe buscar por empleado sino
+> por recurso»: el sync parte de los RECURSOS activos (sin fecha de baja) con
+> código de hora mes; la ficha de empleado es opcional (solo DNI); la api
+> manda al transfer el recurso exacto. Spec en redacción en un worktree, rama
+> `feature/F-026-recursos-sin-ficha-empleado`.
 > **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
-> turno en su rama. Orden: F-034 → F-026 → F-025.
+> turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.
 > **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni
 > OT (la cascada vigente de P5 las casa con partidas ajenas y se escribiría en
 > real).
