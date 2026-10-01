@@ -30,6 +30,7 @@ from tests.test_f024_cuadrante_empresa import (
     _Uow,
 )
 
+
 class _UowCM(_Uow):
     def __enter__(self) -> Self:
         return self

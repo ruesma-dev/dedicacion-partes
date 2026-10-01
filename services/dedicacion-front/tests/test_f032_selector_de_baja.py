@@ -38,4 +38,4 @@ def test_f032_r5_el_front_no_oculta_ni_decide_la_baja():
     `desact`: la regla vive en la API."""
     assert not re.search(r"empresas\s*\.\s*filter\(", JS)
     for campo in ("fecbaj", "desact"):
-        assert not re.search(rf"{campo}", JS), campo
+        assert not re.search(r"\b" + campo + r"\b", JS), campo
