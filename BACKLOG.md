@@ -11,11 +11,11 @@ Resumen: **29 features**, 19 abiertas, 10 terminadas.
 |---|---|---|---|---|---|
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
+| F-024 | Selector de empresa arriba a la derecha, Construcciones Ruesma por defecto | 2 | pendiente | estandar | `feature/F-024-selector-empresa` |
 | F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
 | F-026 | Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro | 3 | pendiente | critico | `feature/F-026-recursos-sin-ficha-empleado` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 4 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
-| F-024 | Selector de empresa arriba a la derecha, Construcciones Ruesma por defecto | 4 | pendiente | estandar | `feature/F-024-selector-empresa` |
 | F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 4 | pendiente | estandar | `feature/F-027-deshacer-por-usuario` |
 | F-005 | Alinear los literales internos con el nombre «dedicación» | 5 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
 | F-028 | Borrar todo lo que está en pantalla | 5 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
@@ -58,6 +58,12 @@ estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `featu
 
 Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga. AÑADIDO 2026-09-29: también depende de F-022. El transfer resuelve la obra por código sin empresa y POSTV2 existe en las empresas 1 y 28; sin F-022 la primera escritura real podría caer en la ficha de Porsan.
 
+### F-024 · Selector de empresa arriba a la derecha, Construcciones Ruesma por defecto
+
+estado **pendiente** · prioridad 2 · rigor `estandar` · SDD sí · rama `feature/F-024-selector-empresa`
+
+Salida de la revisión de negocio del 2026-09-29. Botón/selector de empresa en la esquina superior derecha del cuadrante. Por defecto, Construcciones Ruesma (empresa 1). Filtra obras y recursos que se ven y en qué empresa se imputa: decisión del humano 2026-09-29, se imputa a la empresa filtrada. Depende de F-023 (empresa en los maestros) y alimenta F-022 (la empresa viaja en la línea). El filtrado lo sirve la API; el front no decide nada. RECOGIDO de la review 1 de F-022 (2026-09-30): cuando el transfer corta al principio por empresa (R3 sin empresa, R11 obra de otra empresa), obra_destino publica la obra de ENTRADA con empresa null; en R11 se leería mejor con el origen resuelto (p. ej. empresa 28). Se decide y se hace aquí, cuando la empresa la elige el usuario. RECOGIDO de la review de F-023 (2026-09-30): el sync solo escribe empresa en las filas que recibe, así que obras y trabajadores DESACTIVADOS conservan empresa NULL; y listar_para_periodo sigue mostrando desactivados que tienen líneas en el periodo. Esos llegarán al filtro de empresa con NULL: decidir aquí qué se hace con ellos. PRIORIDAD SUBIDA a 2 por el humano el 2026-10-01: sin esta feature no se pueden desplegar F-022 ni F-023 (el cuadrante mezclaría empresas). Además, de la D3 de F-022: en modo pruebas la obra 0404 solo existe en la empresa 1, así que con otra empresa elegida el preflight falla sin escribir; decidir aquí qué ve el usuario.
+
 ### F-019 · Excel de importacion en formato Carmen
 
 estado **pendiente** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-019-excel-formato-carmen`
@@ -81,12 +87,6 @@ Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en 
 estado **pendiente** · prioridad 4 · rigor `estandar` · SDD no · rama `feature/F-020-mejorar-excel-exportacion`
 
 Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio.
-
-### F-024 · Selector de empresa arriba a la derecha, Construcciones Ruesma por defecto
-
-estado **pendiente** · prioridad 4 · rigor `estandar` · SDD sí · rama `feature/F-024-selector-empresa`
-
-Salida de la revisión de negocio del 2026-09-29. Botón/selector de empresa en la esquina superior derecha del cuadrante. Por defecto, Construcciones Ruesma (empresa 1). Filtra obras y recursos que se ven y en qué empresa se imputa: decisión del humano 2026-09-29, se imputa a la empresa filtrada. Depende de F-023 (empresa en los maestros) y alimenta F-022 (la empresa viaja en la línea). El filtrado lo sirve la API; el front no decide nada. RECOGIDO de la review 1 de F-022 (2026-09-30): cuando el transfer corta al principio por empresa (R3 sin empresa, R11 obra de otra empresa), obra_destino publica la obra de ENTRADA con empresa null; en R11 se leería mejor con el origen resuelto (p. ej. empresa 28). Se decide y se hace aquí, cuando la empresa la elige el usuario. RECOGIDO de la review de F-023 (2026-09-30): el sync solo escribe empresa en las filas que recibe, así que obras y trabajadores DESACTIVADOS conservan empresa NULL; y listar_para_periodo sigue mostrando desactivados que tienen líneas en el periodo. Esos llegarán al filtro de empresa con NULL: decidir aquí qué se hace con ellos.
 
 ### F-027 · Deshacer solo lo propio: nadie deshace lo de otro usuario
 

@@ -4,6 +4,12 @@
 **Ninguna feature en ejecución.** F-023 se cerró el 2026-10-01 (resumen en
 `history.md`). El arnés es la **1.7.3**.
 
+> **2026-10-01, en curso:** el humano sube **F-024** (selector de empresa) a
+> prioridad 2 porque sin ella F-022 y F-023 no se despliegan. Se está
+> redactando su spec con el spec-author en la rama
+> `feature/F-024-selector-empresa`. Al entregarla pasa a `spec_ready` y
+> espera la aprobación del humano.
+
 > **Aviso de despliegue:** F-023 está en `dev` pero **no se despliega sin
 > F-024** (sin selector, el cuadrante mezcla empresas). La BBDD local ya
 > tiene maestros de todas las empresas desde la verificación T11.
@@ -17,7 +23,8 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
-| 4 | **F-024**, **F-027**, F-020 | selector de empresa; deshacer solo lo propio; Excel |
+| 2 | **F-024** | selector de empresa (spec en redacción) |
+| 4 | **F-027**, F-020 | deshacer solo lo propio; Excel |
 
 **Efecto visible de F-022 hasta que llegue F-024:** la api imputa siempre a
 la empresa 1 (`EMPRESA_IMPUTACION`), así que las líneas puestas en una obra
