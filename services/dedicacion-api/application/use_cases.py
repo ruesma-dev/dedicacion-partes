@@ -20,10 +20,12 @@ from domain.errors import (
     PeriodoNoEncontrado,
     TrabajadorNoEncontrado,
 )
+from domain.empresas import visible_en_empresa
 from domain.estados import resumir
 from domain.models import (
     CuadranteTrabajador,
     EstadoPeriodo,
+    FiltroEmpresa,
     Linea,
     Obra,
     Periodo,
@@ -48,31 +50,47 @@ class Cuadrante:
     obras: list[Obra]
     filas: list[CuadranteTrabajador]
     resumen: ResumenPeriodo
+    empresa: int
 
 
 class ObtenerCuadrante:
-    def ejecutar(self, uow: UnitOfWork, anio: int, mes: int) -> Cuadrante:
+    """Cuadrante de la empresa del filtro: sus trabajadores visibles, con
+    TODAS sus líneas, y solo las obras de esa empresa (F-024)."""
+
+    def ejecutar(
+        self, uow: UnitOfWork, anio: int, mes: int, filtro: FiltroEmpresa
+    ) -> Cuadrante:
         periodo_id, periodo = _periodo_o_error(uow, anio, mes)
-        trabajadores = uow.trabajadores.listar_para_periodo(periodo_id)
-        obras = uow.obras.listar_para_periodo(periodo_id)
-        lineas_por_trabajador = uow.asignaciones.lineas_del_periodo(periodo_id)
-        con_deshacer = uow.eventos.trabajadores_con_pendientes(periodo_id)
-        filas = [
-            CuadranteTrabajador(
-                trabajador=t,
-                lineas=lineas_por_trabajador.get(t.ide, []),
-                puede_deshacer=t.ide in con_deshacer,
-            )
-            for t in trabajadores
+        filas = _filas_de_empresa(uow, periodo_id, filtro)
+        obras = [
+            o
+            for o in uow.obras.listar_para_periodo(periodo_id)
+            if o.empresa == filtro.empresa
         ]
+        con_deshacer = uow.eventos.trabajadores_con_pendientes(periodo_id)
+        for fila in filas:
+            fila.puede_deshacer = fila.trabajador.ide in con_deshacer
         return Cuadrante(
-            periodo=periodo, obras=obras, filas=filas, resumen=resumir(filas)
+            periodo=periodo,
+            obras=obras,
+            filas=filas,
+            resumen=resumir(filas),
+            empresa=filtro.empresa,
         )
 
 
 class ObtenerFilaTrabajador:
+    """Fila de un trabajador con todas sus líneas; el resumen es el de la
+    empresa del filtro."""
+
     def ejecutar(
-        self, uow: UnitOfWork, anio: int, mes: int, trabajador_ide: int
+        self,
+        uow: UnitOfWork,
+        anio: int,
+        mes: int,
+        trabajador_ide: int,
+        *,
+        filtro: FiltroEmpresa,
     ) -> tuple[CuadranteTrabajador, ResumenPeriodo]:
         periodo_id, _ = _periodo_o_error(uow, anio, mes)
         trabajador = _trabajador_o_error(uow, trabajador_ide)
@@ -82,7 +100,7 @@ class ObtenerFilaTrabajador:
             puede_deshacer=uow.eventos.ultimo_pendiente(periodo_id, trabajador_ide)
             is not None,
         )
-        resumen = _resumen_periodo(uow, periodo_id)
+        resumen = _resumen_periodo(uow, periodo_id, filtro)
         return fila, resumen
 
 
@@ -98,6 +116,8 @@ class GuardarAsignaciones:
         trabajador_ide: int,
         lineas_entrada: list[dict[str, Any]],
         usuario: str,
+        *,
+        filtro: FiltroEmpresa,
     ) -> tuple[CuadranteTrabajador, ResumenPeriodo]:
         periodo_id, periodo = _periodo_abierto_o_error(uow, anio, mes)
         trabajador = _trabajador_o_error(uow, trabajador_ide)
@@ -115,7 +135,9 @@ class GuardarAsignaciones:
                 _snapshot(lineas),
             )
         uow.commit()
-        return ObtenerFilaTrabajador().ejecutar(uow, anio, mes, trabajador_ide)
+        return ObtenerFilaTrabajador().ejecutar(
+            uow, anio, mes, trabajador_ide, filtro=filtro
+        )
 
 
 class DeshacerUltimaModificacion:
@@ -126,6 +148,8 @@ class DeshacerUltimaModificacion:
         mes: int,
         trabajador_ide: int,
         usuario: str,
+        *,
+        filtro: FiltroEmpresa,
     ) -> tuple[CuadranteTrabajador, ResumenPeriodo]:
         periodo_id, _ = _periodo_abierto_o_error(uow, anio, mes)
         _trabajador_o_error(uow, trabajador_ide)
@@ -137,7 +161,9 @@ class DeshacerUltimaModificacion:
         uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas, usuario)
         uow.eventos.marcar_deshecho(evento_id)
         uow.commit()
-        return ObtenerFilaTrabajador().ejecutar(uow, anio, mes, trabajador_ide)
+        return ObtenerFilaTrabajador().ejecutar(
+            uow, anio, mes, trabajador_ide, filtro=filtro
+        )
 
 
 # ----------------------------------------------------------------------
@@ -146,13 +172,19 @@ class DeshacerUltimaModificacion:
 class CopiarPeriodoAnterior:
     """Rellena el periodo con las asignaciones del último periodo con datos.
 
-    Solo actúa sobre trabajadores activos SIN carga en el periodo destino:
-    nunca pisa trabajo ya hecho. Las líneas de obras desactivadas se omiten
-    y se contabilizan.
+    Solo actúa sobre trabajadores activos visibles en la empresa del filtro
+    (F-024, R14) y SIN carga en el periodo destino: nunca pisa trabajo ya
+    hecho. Las líneas de obras desactivadas se omiten y se contabilizan.
     """
 
     def ejecutar(
-        self, uow: UnitOfWork, anio: int, mes: int, usuario: str
+        self,
+        uow: UnitOfWork,
+        anio: int,
+        mes: int,
+        usuario: str,
+        *,
+        filtro: FiltroEmpresa,
     ) -> ResultadoCopia:
         periodo_id, _ = _periodo_abierto_o_error(uow, anio, mes)
         origen = uow.periodos.anterior_con_datos(anio, mes)
@@ -161,10 +193,9 @@ class CopiarPeriodoAnterior:
         origen_id, periodo_origen = origen
 
         lineas_origen = uow.asignaciones.lineas_del_periodo(origen_id)
-        lineas_destino = uow.asignaciones.lineas_del_periodo(periodo_id)
-        activos = {
-            t.ide for t in uow.trabajadores.listar_para_periodo(periodo_id) if t.activo
-        }
+        filas_destino = _filas_de_empresa(uow, periodo_id, filtro)
+        lineas_destino = {f.trabajador.ide: f.lineas for f in filas_destino}
+        activos = {f.trabajador.ide for f in filas_destino if f.trabajador.activo}
 
         copiados = con_carga = sin_datos = omitidas = 0
         for trabajador_ide in sorted(activos):
@@ -212,13 +243,15 @@ class CopiarTrabajadorAnterior:
         mes: int,
         trabajador_ide: int,
         usuario: str,
+        *,
+        filtro: FiltroEmpresa,
     ) -> tuple[CuadranteTrabajador, ResumenPeriodo, Periodo | None, int]:
         periodo_id, _ = _periodo_abierto_o_error(uow, anio, mes)
         _trabajador_o_error(uow, trabajador_ide)
         origen = uow.periodos.anterior_con_datos(anio, mes)
         if origen is None:
             fila, resumen = ObtenerFilaTrabajador().ejecutar(
-                uow, anio, mes, trabajador_ide
+                uow, anio, mes, trabajador_ide, filtro=filtro
             )
             return fila, resumen, None, 0
         origen_id, periodo_origen = origen
@@ -240,7 +273,7 @@ class CopiarTrabajadorAnterior:
             )
         uow.commit()
         fila, resumen = ObtenerFilaTrabajador().ejecutar(
-            uow, anio, mes, trabajador_ide
+            uow, anio, mes, trabajador_ide, filtro=filtro
         )
         return fila, resumen, periodo_origen, omitidas
 
@@ -448,14 +481,29 @@ def _validar_lineas(
     return lineas
 
 
-def _resumen_periodo(uow: UnitOfWork, periodo_id: int) -> ResumenPeriodo:
+def _filas_de_empresa(
+    uow: UnitOfWork, periodo_id: int, filtro: FiltroEmpresa
+) -> list[CuadranteTrabajador]:
+    """Filas del periodo visibles en la empresa del filtro, cada una con
+    TODAS sus líneas (F-024, R8 y R10). Único punto del filtro de
+    trabajadores: lo usan el cuadrante, el resumen y la copia del mes."""
     trabajadores = uow.trabajadores.listar_para_periodo(periodo_id)
     lineas = uow.asignaciones.lineas_del_periodo(periodo_id)
-    filas = [
-        CuadranteTrabajador(trabajador=t, lineas=lineas.get(t.ide, []))
-        for t in trabajadores
-    ]
-    return resumir(filas)
+    filas = []
+    for t in trabajadores:
+        propias = lineas.get(t.ide, [])
+        if visible_en_empresa(
+            t.empresa, [ln.obra_empresa for ln in propias], filtro
+        ):
+            filas.append(CuadranteTrabajador(trabajador=t, lineas=propias))
+    return filas
+
+
+def _resumen_periodo(
+    uow: UnitOfWork, periodo_id: int, filtro: FiltroEmpresa
+) -> ResumenPeriodo:
+    """Resumen de los trabajadores visibles en la empresa del filtro (R13)."""
+    return resumir(_filas_de_empresa(uow, periodo_id, filtro))
 
 
 def _snapshot(lineas: list[Linea]) -> list[dict[str, Any]]:
