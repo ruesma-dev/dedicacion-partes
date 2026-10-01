@@ -3,9 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **29 features**, 19 abiertas, 10 terminadas.
-
-En curso: **F-024**.
+Resumen: **30 features**, 19 abiertas, 11 terminadas.
 
 ## Trabajo abierto
 
@@ -13,7 +11,7 @@ En curso: **F-024**.
 |---|---|---|---|---|---|
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
-| F-024 | Selector de empresa arriba a la derecha, Construcciones Ruesma por defecto | 2 | en curso | estandar | `feature/F-024-selector-empresa` |
+| F-032 | Nombres de empresa sincronizados desde Sigrid | 2 | pendiente | estandar | `feature/F-032-empresas-desde-sigrid` |
 | F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
 | F-026 | Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro | 3 | pendiente | critico | `feature/F-026-recursos-sin-ficha-empleado` |
@@ -39,6 +37,7 @@ En curso: **F-024**.
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | critico |
+| F-024 | Selector de empresa arriba a la derecha, Construcciones Ruesma por defecto | 2 | estandar |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | critico |
 | F-008 | Infraestructura y despliegue en Azure | 3 | critico |
 | F-004 | README del monorepo y arranque local en orden | 4 | documental |
@@ -60,11 +59,11 @@ estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `featu
 
 Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga. AÑADIDO 2026-09-29: también depende de F-022. El transfer resuelve la obra por código sin empresa y POSTV2 existe en las empresas 1 y 28; sin F-022 la primera escritura real podría caer en la ficha de Porsan.
 
-### F-024 · Selector de empresa arriba a la derecha, Construcciones Ruesma por defecto
+### F-032 · Nombres de empresa sincronizados desde Sigrid
 
-estado **en curso** · prioridad 2 · rigor `estandar` · SDD sí · rama `feature/F-024-selector-empresa`
+estado **pendiente** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-032-empresas-desde-sigrid`
 
-Salida de la revisión de negocio del 2026-09-29. Botón/selector de empresa en la esquina superior derecha del cuadrante. Por defecto, Construcciones Ruesma (empresa 1). Filtra obras y recursos que se ven y en qué empresa se imputa: decisión del humano 2026-09-29, se imputa a la empresa filtrada. Depende de F-023 (empresa en los maestros) y alimenta F-022 (la empresa viaja en la línea). El filtrado lo sirve la API; el front no decide nada. RECOGIDO de la review 1 de F-022 (2026-09-30): cuando el transfer corta al principio por empresa (R3 sin empresa, R11 obra de otra empresa), obra_destino publica la obra de ENTRADA con empresa null; en R11 se leería mejor con el origen resuelto (p. ej. empresa 28). Se decide y se hace aquí, cuando la empresa la elige el usuario. RECOGIDO de la review de F-023 (2026-09-30): el sync solo escribe empresa en las filas que recibe, así que obras y trabajadores DESACTIVADOS conservan empresa NULL; y listar_para_periodo sigue mostrando desactivados que tienen líneas en el periodo. Esos llegarán al filtro de empresa con NULL: decidir aquí qué se hace con ellos. PRIORIDAD SUBIDA a 2 por el humano el 2026-10-01: sin esta feature no se pueden desplegar F-022 ni F-023 (el cuadrante mezclaría empresas). Además, de la D3 de F-022: en modo pruebas la obra 0404 solo existe en la empresa 1, así que con otra empresa elegida el preflight falla sin escribir; decidir aquí qué ve el usuario. SPEC APROBADA por el humano el 2026-10-01 con las siete decisiones tal como las propone requirements.md §7: D1 nombres en config.yaml (1 Construcciones Ruesma, 28 Porsan, resto «Empresa N» hasta T12); D2 empresa elegida en la URL; D3 modo pruebas con otra empresa: error en el preflight, nada escrito; D4 desactivados sin empresa, donde tienen carga y marcados; D5 líneas en obras de otra empresa: se ven, cuentan, se marcan y el transfer las omite; D6 EMPRESA_IMPUTACION se queda como empresa por defecto; D7 persona con fichas en dos empresas: una fila y un 100 % por ficha, como hoy.
+Pedida por el humano el 2026-10-01 al cerrar F-024: los nombres del selector de empresa no pueden vivir en config.yaml (empresas.nombres), porque una empresa nueva saldría como «Empresa N» y un cambio de nombre en Sigrid no llegaría nunca. El sync de maestros (dedicacion-api, por sigrid-api, solo lectura) trae también el catálogo auxemp de Sigrid (numemp, res, fecbaj, desact; azure-apps/sigrid_tablas.md, tabla auxemp) y lo guarda en una tabla empresa de la BBDD dedicacion; ListarEmpresas toma de ahí los nombres y se retira empresas.nombres de config.yaml, con «Empresa N» solo como red de seguridad si una empresa no está en la tabla. El selector sigue enseñando solo empresas con trabajadores activos más la por defecto. Los nombres que publica el data mart a 2026-10-01 (progress/explore_nombres_empresas.md) sirven para contrastar el resultado. A DECIDIR: qué hace el selector con una empresa dada de baja o desactivada en Sigrid que aún tiene trabajadores activos. F-022, F-023, F-024 y F-032 se despliegan juntas.
 
 ### F-019 · Excel de importacion en formato Carmen
 
@@ -185,6 +184,12 @@ Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en 
 estado **terminada** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-023-sync-empresa-y-estado-recurso`
 
 Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio ve recursos inactivos en el cuadrante. Dos causas: (1) la SQL de sync (services/dedicacion-api/config/config.yaml) no lee la empresa (con.emp; Construcciones Ruesma = 1) y mezcla fichas de todas; en obras entran ~140 de otras empresas y 81 códigos salen duplicados; el dedupe por DNI puede quedarse con la ficha de otra empresa. (2) activo se decide por el último emphis sin fecbaj; un emp sin emphis cuenta como activo y se ignora el estado del recurso. Decisión del humano 2026-09-29: inactivo es un ESTADO del recurso en Sigrid; la spec localiza el campo exacto y sus valores en azure-apps/sigrid_tablas.md. Se sincronizan TODAS las empresas guardando la empresa de cada ficha (el filtro lo hace F-024); el dedupe por persona pasa a ser dentro de cada empresa. SPEC APROBADA por el humano el 2026-09-29; espera turno porque solo puede haber una in_progress. Decisiones: D1 inactivo = fecha de baja del recurso (con.fecbaj > 0), decidida el 2026-10-01 con progress/explore_estado_recurso.md, sin lanzar Q1 (estados_recurso_excluidos queda vacía: el tipo 33 no tiene estados en conest); D2 empresa del trabajador = la de su ficha de empleado; D3 se quita el filtro de emphis; D4 F-023 NO se despliega sin F-024; D6 paginar fuera. D5 cerrada el 2026-10-01 por el humano SIN la lista de negocio: T10 se da por cumplida con evidencia alternativa (preview real, 535 excluidos por fecha de baja = cifra del data mart). El criterio de aceptación 6 se cumple así, no con la lista: es más débil y consta. CERRADA (done) el 2026-10-01.
+
+### F-024 · Selector de empresa arriba a la derecha, Construcciones Ruesma por defecto
+
+estado **terminada** · prioridad 2 · rigor `estandar` · SDD sí · rama `feature/F-024-selector-empresa`
+
+Salida de la revisión de negocio del 2026-09-29. Botón/selector de empresa en la esquina superior derecha del cuadrante. Por defecto, Construcciones Ruesma (empresa 1). Filtra obras y recursos que se ven y en qué empresa se imputa: decisión del humano 2026-09-29, se imputa a la empresa filtrada. Depende de F-023 (empresa en los maestros) y alimenta F-022 (la empresa viaja en la línea). El filtrado lo sirve la API; el front no decide nada. RECOGIDO de la review 1 de F-022 (2026-09-30): cuando el transfer corta al principio por empresa (R3 sin empresa, R11 obra de otra empresa), obra_destino publica la obra de ENTRADA con empresa null; en R11 se leería mejor con el origen resuelto (p. ej. empresa 28). Se decide y se hace aquí, cuando la empresa la elige el usuario. RECOGIDO de la review de F-023 (2026-09-30): el sync solo escribe empresa en las filas que recibe, así que obras y trabajadores DESACTIVADOS conservan empresa NULL; y listar_para_periodo sigue mostrando desactivados que tienen líneas en el periodo. Esos llegarán al filtro de empresa con NULL: decidir aquí qué se hace con ellos. PRIORIDAD SUBIDA a 2 por el humano el 2026-10-01: sin esta feature no se pueden desplegar F-022 ni F-023 (el cuadrante mezclaría empresas). Además, de la D3 de F-022: en modo pruebas la obra 0404 solo existe en la empresa 1, así que con otra empresa elegida el preflight falla sin escribir; decidir aquí qué ve el usuario. SPEC APROBADA por el humano el 2026-10-01 con las siete decisiones tal como las propone requirements.md §7: D1 nombres en config.yaml (1 Construcciones Ruesma, 28 Porsan, resto «Empresa N» hasta T12); D2 empresa elegida en la URL; D3 modo pruebas con otra empresa: error en el preflight, nada escrito; D4 desactivados sin empresa, donde tienen carga y marcados; D5 líneas en obras de otra empresa: se ven, cuentan, se marcan y el transfer las omite; D6 EMPRESA_IMPUTACION se queda como empresa por defecto; D7 persona con fichas en dos empresas: una fila y un 100 % por ficha, como hoy. CERRADA (done) el 2026-10-01. Review aprobada a la primera; T11 y T13 cumplidas (T13 sin ejercitar R19 con datos: la 18 no tiene líneas en julio). D1 y T12: el humano decide que los nombres de empresa salgan de Sigrid y no de config.yaml; T12 queda SUSTITUIDA por F-032. F-022, F-023, F-024 y F-032 se despliegan juntas.
 
 ### F-003 · Las columnas sigrid_* de asignacion no están en el ORM
 
