@@ -9,13 +9,21 @@
 > empresas. F-024 se desplegó con la regla contraria y **los trabajadores de
 > la 18 y la 31 no pueden registrar en producción**. Entra **F-034** con
 > prioridad 1; spec **aprobada** por el humano con D1-D5 (`edab7d9`);
-> `in_progress`, plan confirmado: **implementer lanzado** →
-> `progress/impl_F-034.md`. Se despliega **junto con F-026**.
+> plan confirmado. **BLOCKED (2026-10-01)**: el implementer
+> paró antes de escribir código porque la lista cerrada de tests que cambian
+> (design §6) se quedó corta: 4 tests de F-024 (R17 registro, R10 cuadrante,
+> R6 y R6/R13 rutas) cambian como consecuencia directa de R1/R3 y no estaban
+> en la lista (`progress/impl_F-034.md`, «Motivo del bloqueo»). Propuesta al
+> humano: completar §6 con esos 4 y relanzar. **Pendiente de su respuesta.**
+> Se despliega **junto con F-026**.
 > **F-026**: decisión del humano 2026-10-01, «no debe buscar por empleado sino
 > por recurso»: el sync parte de los RECURSOS activos (sin fecha de baja) con
 > código de hora mes; la ficha de empleado es opcional (solo DNI); la api
-> manda al transfer el recurso exacto. Spec en redacción en un worktree, rama
-> `feature/F-026-recursos-sin-ficha-empleado`.
+> manda al transfer el recurso exacto. Spec entregada (`e27f08f`, rama
+> `feature/F-026-recursos-sin-ficha-empleado`) y en `spec_ready`: **espera la
+> aprobación del humano**, con D1-D7 en `requirements.md` §7 (D1 migración
+> «adoptar»: columna nueva `trabajador.recurso_ide`, sin mover asignaciones
+> ni tocar la `synckey`). Depende de F-034 mergeada (T0).
 > **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
 > turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.
 > **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni

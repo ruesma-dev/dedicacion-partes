@@ -568,7 +568,7 @@
         "Verificado con un preflight real de solo lectura con la 18 elegida: sus líneas en obras de Ruesma salen para escribir, no omitidas; sin ejecutar",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "in_progress",
+      "status": "blocked",
       "sdd": true,
       "rigor": "critico",
       "priority": 1,
