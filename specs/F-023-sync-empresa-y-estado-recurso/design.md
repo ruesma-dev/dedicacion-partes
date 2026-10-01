@@ -135,7 +135,7 @@ Lectura: si hay un literal que solo aparece con `con_fecha_baja = 1`, ese es
 el estado de baja y `est` basta; si aparecen recursos con fecha de baja en un
 estado «activo», hace falta además `excluir_recurso_con_fecha_baja: true`.
 
-**Q2 — R19.** Los recursos que señaló negocio (lista D5), uno a uno:
+**Q2 — R19** (no lanzada: la D5 se cerró el 2026-10-01 sin la lista). Los recursos que señaló negocio (lista D5), uno a uno:
 `SELECT rcon.cod, rcon.emp, rcon.est, est.res, rcon.fecbaj FROM dbo.res res
 JOIN dbo.con rcon ON rcon.ide = res.ide LEFT JOIN dbo.conest est ON est.tip =
 rcon.tip AND est.est = rcon.est WHERE rcon.emp = 1 AND rcon.cod IN (...)`.

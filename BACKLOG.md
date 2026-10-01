@@ -3,9 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **29 features**, 20 abiertas, 9 terminadas.
-
-En curso: **F-023**.
+Resumen: **29 features**, 19 abiertas, 10 terminadas.
 
 ## Trabajo abierto
 
@@ -13,7 +11,6 @@ En curso: **F-023**.
 |---|---|---|---|---|---|
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
-| F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | en curso | critico | `feature/F-023-sync-empresa-y-estado-recurso` |
 | F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
 | F-026 | Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro | 3 | pendiente | critico | `feature/F-026-recursos-sin-ficha-empleado` |
@@ -39,6 +36,7 @@ En curso: **F-023**.
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | estandar |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
+| F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | critico |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | critico |
 | F-008 | Infraestructura y despliegue en Azure | 3 | critico |
 | F-004 | README del monorepo y arranque local en orden | 4 | documental |
@@ -59,12 +57,6 @@ Pedida por el humano el 2026-08-25. El sistema esta desplegado, en uso por 8 per
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-018-paso-a-escritura-real`
 
 Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga. AÑADIDO 2026-09-29: también depende de F-022. El transfer resuelve la obra por código sin empresa y POSTV2 existe en las empresas 1 y 28; sin F-022 la primera escritura real podría caer en la ficha de Porsan.
-
-### F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
-
-estado **en curso** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-023-sync-empresa-y-estado-recurso`
-
-Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio ve recursos inactivos en el cuadrante. Dos causas: (1) la SQL de sync (services/dedicacion-api/config/config.yaml) no lee la empresa (con.emp; Construcciones Ruesma = 1) y mezcla fichas de todas; en obras entran ~140 de otras empresas y 81 códigos salen duplicados; el dedupe por DNI puede quedarse con la ficha de otra empresa. (2) activo se decide por el último emphis sin fecbaj; un emp sin emphis cuenta como activo y se ignora el estado del recurso. Decisión del humano 2026-09-29: inactivo es un ESTADO del recurso en Sigrid; la spec localiza el campo exacto y sus valores en azure-apps/sigrid_tablas.md. Se sincronizan TODAS las empresas guardando la empresa de cada ficha (el filtro lo hace F-024); el dedupe por persona pasa a ser dentro de cada empresa. SPEC APROBADA por el humano el 2026-09-29; espera turno porque solo puede haber una in_progress. Decisiones: D1 inactivo = fecha de baja del recurso (con.fecbaj > 0), decidida el 2026-10-01 con progress/explore_estado_recurso.md, sin lanzar Q1 (estados_recurso_excluidos queda vacía: el tipo 33 no tiene estados en conest); D2 empresa del trabajador = la de su ficha de empleado; D3 se quita el filtro de emphis; D4 F-023 NO se despliega sin F-024; D6 paginar fuera. Pendiente antes de verificar (T10): D5, lista de recursos inactivos señalados por negocio.
 
 ### F-019 · Excel de importacion en formato Carmen
 
@@ -185,6 +177,12 @@ El repositorio se contradice sobre dos reglas que deciden qué se escribe en Sig
 estado **terminada** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-022-transfer-obra-por-empresa`
 
 Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Hallazgo colateral del diagnóstico de maestros (sección D): obra_por_codigo (services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py ~105-126) busca WHERE con.cod = ? sin empresa ni ORDER BY y se queda con la primera fila. POSTV2 tiene dos fichas (empresa 1 Construcciones Ruesma y 28 Porsan), así que el destino de postventa puede caer en la de Porsan según el orden que devuelva SQL Server; lo mismo cualquier obra con copia en otra empresa (81 códigos repetidos). Hoy no hace daño porque OBRA_PRUEBAS_FORZAR desvía todo a la 0404, pero BLOQUEA F-018. Decisión del humano 2026-09-29: se imputa a la empresa filtrada en el cuadrante, así que la empresa viaja en la línea (contrato API -> transfer) y el transfer la usa para resolver la obra. Si una línea llega sin empresa, no se adivina: se rechaza con motivo. SPEC APROBADA por el humano el 2026-09-29 con las decisiones D1-D4 tal como las propone requirements.md (EMPRESA_IMPUTACION=1 en la API, omitir con motivo, pruebas estrictas, fuera SIGRID_EMPRESA); D5 (el recurso tampoco mira la empresa) pasa a F-026.
+
+### F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
+
+estado **terminada** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-023-sync-empresa-y-estado-recurso`
+
+Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio ve recursos inactivos en el cuadrante. Dos causas: (1) la SQL de sync (services/dedicacion-api/config/config.yaml) no lee la empresa (con.emp; Construcciones Ruesma = 1) y mezcla fichas de todas; en obras entran ~140 de otras empresas y 81 códigos salen duplicados; el dedupe por DNI puede quedarse con la ficha de otra empresa. (2) activo se decide por el último emphis sin fecbaj; un emp sin emphis cuenta como activo y se ignora el estado del recurso. Decisión del humano 2026-09-29: inactivo es un ESTADO del recurso en Sigrid; la spec localiza el campo exacto y sus valores en azure-apps/sigrid_tablas.md. Se sincronizan TODAS las empresas guardando la empresa de cada ficha (el filtro lo hace F-024); el dedupe por persona pasa a ser dentro de cada empresa. SPEC APROBADA por el humano el 2026-09-29; espera turno porque solo puede haber una in_progress. Decisiones: D1 inactivo = fecha de baja del recurso (con.fecbaj > 0), decidida el 2026-10-01 con progress/explore_estado_recurso.md, sin lanzar Q1 (estados_recurso_excluidos queda vacía: el tipo 33 no tiene estados en conest); D2 empresa del trabajador = la de su ficha de empleado; D3 se quita el filtro de emphis; D4 F-023 NO se despliega sin F-024; D6 paginar fuera. D5 cerrada el 2026-10-01 por el humano SIN la lista de negocio: T10 se da por cumplida con evidencia alternativa (preview real, 535 excluidos por fecha de baja = cifra del data mart). El criterio de aceptación 6 se cumple así, no con la lista: es más débil y consta. CERRADA (done) el 2026-10-01.
 
 ### F-003 · Las columnas sigrid_* de asignacion no están en el ORM
 
