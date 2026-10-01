@@ -214,7 +214,10 @@ class RegistroPipeline:
         if origen.empresa != empresa:
             motivo = MOTIVO_EMPRESA_OBRA.format(
                 cod=origen.codigo, emp_obra=origen.empresa, emp_linea=empresa)
-            return self._todas_omitidas(obra, lineas, motivo)
+            # Se publica la obra de origen RESUELTA, con su empresa, no la
+            # de entrada (F-024, R20). Sin empresa, arriba, no hay obra
+            # resuelta y sigue saliendo la de entrada.
+            return self._todas_omitidas(origen, lineas, motivo)
         destino_normal, forzada = self._obra_destino(origen, empresa)
 
         # Paso 1b: destino de postventa (solo si hace falta).
