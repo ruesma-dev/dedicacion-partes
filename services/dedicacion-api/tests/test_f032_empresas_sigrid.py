@@ -651,3 +651,30 @@ def test_f032_r3_el_contenedor_no_lleva_nombres_de_config(
 ) -> None:
     contenedor = _contenedor(monkeypatch, _SigridFalso())
     assert not hasattr(contenedor, "nombres_empresas")
+
+
+# --- Supervivientes de la campaña de mutación (progress/mutacion_F-032.md) -----
+
+
+def test_f032_r1_nulabilidad_de_la_tabla_empresa() -> None:
+    """Solo `numemp` (clave) y `sync_en` (marca del sync) son obligatorias:
+    lo demás puede venir NULL de Sigrid. Mismo criterio que `trabajador` y
+    `obra`, que también declaran `sync_en` NOT NULL con `now()`."""
+    from infrastructure.db.orm_models import EmpresaORM
+
+    columnas = EmpresaORM.__table__.columns
+    assert {c.name for c in columnas if not c.nullable} == {"numemp", "sync_en"}
+    assert columnas["sync_en"].server_default is not None
+
+
+def test_f032_r2_la_empresa_del_dominio_es_inmutable() -> None:
+    """`ListarEmpresas` construye empresas nuevas con el nombre de reserva en
+    vez de tocar las fichas que le da el repositorio: que sean inmutables lo
+    garantiza."""
+    import dataclasses
+
+    from domain.models import Empresa
+
+    empresa = Empresa(1, "CONSTRUCCIONES RUESMA")
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        empresa.nombre = "OTRA"  # type: ignore[misc]
