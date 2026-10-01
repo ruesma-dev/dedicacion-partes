@@ -1,5 +1,5 @@
 # application/sync_pipeline.py
-"""Pipeline de sincronización de maestros (empleados y obras).
+"""Pipeline de sincronización de maestros (empleados, obras y empresas).
 
 Patrón Pipeline + Steps con objeto de contexto, como en el resto de
 microservicios: cada paso recibe/enriquece el SyncContext y el pipeline
@@ -27,14 +27,19 @@ logger = logging.getLogger(__name__)
 #: (`use_cases.PreviewSync`) para que los dos exijan exactamente lo mismo.
 COLUMNAS_EMPLEADOS = frozenset({"ide", "nombre", "empresa"})
 COLUMNAS_OBRAS = frozenset({"ide", "cod", "empresa"})
+#: Catálogo `auxemp` (F-032): sin número no hay con qué casar `con.emp`, y
+#: sin nombre la tabla no sirve para lo que existe.
+COLUMNAS_EMPRESAS = frozenset({"numemp", "nombre"})
 
 
 @dataclass
 class SyncContext:
     filas_empleados: list[dict[str, Any]] = field(default_factory=list)
     filas_obras: list[dict[str, Any]] = field(default_factory=list)
+    filas_empresas: list[dict[str, Any]] = field(default_factory=list)
     resultado_empleados: ResultadoSyncMaestro | None = None
     resultado_obras: ResultadoSyncMaestro | None = None
+    resultado_empresas: ResultadoSyncMaestro | None = None
 
 
 class SyncStep(Protocol):
@@ -119,6 +124,23 @@ class FetchObrasStep:
         ctx.filas_obras = depurado.filas
 
 
+class FetchEmpresasStep:
+    """Lee el catálogo `auxemp` de Sigrid (F-032). Sin depuración: entran
+    también las de baja o desactivadas, que el selector enseña marcadas."""
+
+    nombre = "fetch_empresas"
+
+    def __init__(self, sigrid: SigridGateway, sql: str) -> None:
+        self._sigrid = sigrid
+        self._sql = sql
+
+    def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
+        filas = self._sigrid.leer(self._sql)
+        _validar_columnas(filas, COLUMNAS_EMPRESAS, "sync.empresas.sql")
+        logger.info("sync empresas: %d leídas", len(filas))
+        ctx.filas_empresas = filas
+
+
 class UpsertTrabajadoresStep:
     nombre = "upsert_trabajadores"
 
@@ -131,6 +153,13 @@ class UpsertObrasStep:
 
     def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
         ctx.resultado_obras = uow.obras.sincronizar(ctx.filas_obras)
+
+
+class UpsertEmpresasStep:
+    nombre = "upsert_empresas"
+
+    def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
+        ctx.resultado_empresas = uow.empresas.sincronizar(ctx.filas_empresas)
 
 
 # ----------------------------------------------------------------------
@@ -149,17 +178,22 @@ class SyncMaestrosPipeline:
         uow.commit()
         duracion = round(time.perf_counter() - inicio, 2)
         assert ctx.resultado_empleados and ctx.resultado_obras
-        logger.info(
-            "sync completado en %.2fs: empleados=%s obras=%s",
-            duracion,
-            ctx.resultado_empleados,
-            ctx.resultado_obras,
-        )
-        return ResultadoSync(
+        # La composición de pasos es del punto de entrada (deps.py): un
+        # pipeline sin los de empresas devuelve sus contadores a cero.
+        resultado = ResultadoSync(
             empleados=ctx.resultado_empleados,
             obras=ctx.resultado_obras,
             duracion_s=duracion,
+            empresas=ctx.resultado_empresas or ResultadoSyncMaestro(),
         )
+        logger.info(
+            "sync completado en %.2fs: empleados=%s obras=%s empresas=%s",
+            duracion,
+            resultado.empleados,
+            resultado.obras,
+            resultado.empresas,
+        )
+        return resultado
 
 
 def _validar_columnas(

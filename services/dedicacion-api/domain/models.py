@@ -137,6 +137,9 @@ class ResultadoSync:
     empleados: ResultadoSyncMaestro
     obras: ResultadoSyncMaestro
     duracion_s: float
+    # Catálogo `auxemp` (F-032). Al final y con valor por defecto para no
+    # romper a quien construye el resultado por posición.
+    empresas: ResultadoSyncMaestro = field(default_factory=ResultadoSyncMaestro)
 
 
 @dataclass(frozen=True)

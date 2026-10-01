@@ -279,3 +279,140 @@ def test_f032_r1_la_unidad_de_trabajo_trae_el_repositorio() -> None:
 
     with SqlAlchemyUnitOfWork(lambda: _Sesion()) as uow:  # type: ignore[arg-type]
         assert isinstance(uow.empresas, PgEmpresaRepository)
+
+
+# --- R1 · el sync de maestros trae y guarda las empresas ----------------------
+
+
+class _SigridFalso:
+    """Devuelve filas según la tabla que lea la consulta y anota las SQL."""
+
+    def __init__(self, empresas: list[dict[str, Any]] | None = None) -> None:
+        self.empresas = empresas if empresas is not None else [_fila(1)]
+        self.leidas: list[str] = []
+
+    def leer(self, sql: str) -> list[dict[str, Any]]:
+        self.leidas.append(sql)
+        if "dbo.auxemp" in sql:
+            return [dict(f) for f in self.empresas]
+        if "dbo.obr" in sql:
+            return [{"ide": 7, "cod": "0007", "empresa": 1,
+                     "descripcion": "OBRA", "estado_sigrid": "En curso"}]
+        return [{"ide": 3, "cod": "E3", "nombre": "Persona", "dni": "3X",
+                 "empresa": 1, "categoria": "Técnico", "recurso_ide": 30,
+                 "empresa_recurso": 1, "estado_recurso": "1",
+                 "baja_recurso": 0, "baja_laboral": 0,
+                 "cod_hora_mes": "MENC", "importe_mes": 1}]
+
+
+class _RepoEspia:
+    def __init__(self) -> None:
+        self.recibido: list[dict[str, Any]] | None = None
+
+    def sincronizar(self, filas: list[dict[str, Any]]) -> Any:
+        from domain.models import ResultadoSyncMaestro
+
+        self.recibido = [dict(f) for f in filas]
+        return ResultadoSyncMaestro(recibidos=len(filas), altas=len(filas))
+
+
+class _UowEspia:
+    def __init__(self) -> None:
+        self.trabajadores = _RepoEspia()
+        self.obras = _RepoEspia()
+        self.empresas = _RepoEspia()
+        self.commits = 0
+
+    def commit(self) -> None:
+        self.commits += 1
+
+
+def test_f032_r1_pipeline_lee_y_guarda_las_empresas() -> None:
+    from application import sync_pipeline as sp
+
+    filas = [_fila(1), _fila(18, nombre="RUESMA SERVICIOS SL")]
+    sigrid, uow = _SigridFalso(filas), _UowEspia()
+    resultado = sp.SyncMaestrosPipeline([
+        sp.FetchEmpleadosStep(sigrid, "SELECT ... FROM dbo.emp"),
+        sp.FetchObrasStep(sigrid, "SELECT ... FROM dbo.obr"),
+        sp.FetchEmpresasStep(sigrid, SQL_EMPRESAS),
+        sp.UpsertTrabajadoresStep(),
+        sp.UpsertObrasStep(),
+        sp.UpsertEmpresasStep(),
+    ]).ejecutar(uow)
+    assert sigrid.leidas[-1] == SQL_EMPRESAS
+    assert uow.empresas.recibido == filas
+    assert resultado.empresas.recibidos == 2
+    assert resultado.empresas.altas == 2
+    assert uow.commits == 1
+
+
+def test_f032_r1_sin_numemp_o_nombre_no_se_guarda_nada() -> None:
+    from application import sync_pipeline as sp
+
+    for falta in ("numemp", "nombre"):
+        filas = [{k: v for k, v in _fila(1).items() if k != falta}]
+        uow = _UowEspia()
+        with pytest.raises(ValueError, match=rf"sync\.empresas\.sql.*{falta}"):
+            sp.SyncMaestrosPipeline([
+                sp.FetchEmpresasStep(_SigridFalso(filas), SQL_EMPRESAS),
+                sp.UpsertEmpresasStep(),
+            ]).ejecutar(uow)
+        assert uow.empresas.recibido is None
+        assert uow.commits == 0
+
+
+def _contenedor(monkeypatch: pytest.MonkeyPatch, sigrid: _SigridFalso) -> Any:
+    """Contenedor REAL (config.yaml versionado) con Sigrid sustituido."""
+    from config.settings import Settings
+    from interface_adapters.api import deps
+
+    monkeypatch.setattr(deps, "SigridApiClient", lambda _settings: sigrid)
+    return deps.construir_contenedor(Settings(_env_file=None), None)  # type: ignore[arg-type]
+
+
+def test_f032_r1_el_sync_real_incluye_las_empresas(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`POST /sync` (el pipeline del contenedor) lee la consulta de
+    `config.yaml` y guarda sus filas, en la misma transacción que el resto."""
+    from config.settings import cargar_config
+
+    sigrid, uow = _SigridFalso(), _UowEspia()
+    resultado = _contenedor(monkeypatch, sigrid).sync_pipeline.ejecutar(uow)
+    sql = cargar_config()["sync"]["empresas"]["sql"]
+    assert sql in sigrid.leidas
+    assert uow.empresas.recibido == [_fila(1)]
+    assert uow.trabajadores.recibido and uow.obras.recibido
+    assert resultado.empresas.recibidos == 1
+    assert uow.commits == 1
+
+
+def test_f032_r1_la_respuesta_del_sync_trae_las_empresas() -> None:
+    from domain.models import ResultadoSync, ResultadoSyncMaestro
+    from interface_adapters.api.schemas import a_sync_out
+
+    salida = a_sync_out(ResultadoSync(
+        empleados=ResultadoSyncMaestro(recibidos=3),
+        obras=ResultadoSyncMaestro(recibidos=2),
+        duracion_s=1.5,
+        empresas=ResultadoSyncMaestro(recibidos=19, altas=2, actualizados=1),
+    ))
+    assert salida.model_dump()["empresas"] == {
+        "recibidos": 19, "altas": 2, "actualizados": 1, "desactivados": 0}
+
+
+def test_f032_r1_pipeline_sin_pasos_de_empresas_las_deja_a_cero() -> None:
+    """La composición es del punto de entrada: sin los pasos de empresas el
+    resultado las da a cero, nunca `None` (la respuesta del sync las pinta)."""
+    from application import sync_pipeline as sp
+    from domain.models import ResultadoSyncMaestro
+
+    sigrid = _SigridFalso()
+    resultado = sp.SyncMaestrosPipeline([
+        sp.FetchEmpleadosStep(sigrid, "SELECT ... FROM dbo.emp"),
+        sp.FetchObrasStep(sigrid, "SELECT ... FROM dbo.obr"),
+        sp.UpsertTrabajadoresStep(),
+        sp.UpsertObrasStep(),
+    ]).ejecutar(_UowEspia())
+    assert resultado.empresas == ResultadoSyncMaestro()
