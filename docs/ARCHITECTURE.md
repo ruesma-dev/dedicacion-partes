@@ -82,11 +82,13 @@ Hexagonal estricto:
 
 Endpoints bajo `/api/v1`: `health`, `sync` y `sync/preview`, CRUD de
 `periodos` (crear/cerrar/reabrir/copiar-anterior), `cuadrante`, sustitución
-atómica de asignaciones por trabajador, `deshacer`, `export.xlsx` y
-`registro/preflight` + `registro/ejecutar`.
+atómica de asignaciones por trabajador, `deshacer`, `export.xlsx`,
+`registro/preflight` + `registro/ejecutar` y `empresas` (las del selector,
+con su nombre de Sigrid y si están de baja).
 
 Tablas de PostgreSQL: `trabajador`, `obra` (copias sincronizadas de Sigrid,
-PK = el `ide` de Sigrid), `periodo` (año+mes único, `ABIERTO`/`CERRADO`),
+PK = el `ide` de Sigrid), `empresa` (catálogo `auxemp` de Sigrid, PK =
+`numemp`, que es el `con.emp` de las fichas; F-032), `periodo` (año+mes único, `ABIERTO`/`CERRADO`),
 `asignacion` (periodo × trabajador × obra × `es_postventa`, `porcentaje` en
 0-100) y `evento` (auditoría con `snapshot_antes` / `snapshot_despues` en
 JSONB, que es lo que permite deshacer multinivel).
@@ -363,14 +365,18 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     `specs/F-022-transfer-obra-por-empresa/requirements.md`.* *Selector,
     visibilidad y empresa elegida: decidido por Pablo Gris el 2026-10-01 ·
     F-024, decisiones D1-D7 de
-    `specs/F-024-selector-empresa/requirements.md`.* El recurso del
+    `specs/F-024-selector-empresa/requirements.md`.* *Nombre de cada
+    empresa del selector: el de Sigrid (`auxemp.res`), que trae el sync;
+    «Empresa N» solo si no está en la tabla `empresa`. Una empresa de baja
+    o desactivada con trabajadores activos sale marcada «(de baja)», nunca
+    oculta: decidido por Pablo Gris el 2026-10-01 · F-032.* El recurso del
     trabajador todavía no se elige por empresa: es F-026.
 
 ## Acceso a datos y sistemas externos
 
 | Sistema | Quién | Modo | Notas |
 |---|---|---|---|
-| `sigrid-api` (Function App) | api | **solo lectura** (`POST /api/sql/read`) | maestros de empleados y obras; consultas parametrizadas en `config/config.yaml` |
+| `sigrid-api` (Function App) | api | **solo lectura** (`POST /api/sql/read`) | maestros de empleados y obras y catálogo de empresas (`auxemp`, F-032); consultas parametrizadas en `config/config.yaml` |
 | `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura) |
 | PostgreSQL `dedicacion` | api | lectura y escritura | en local, `localhost`. Desplegado, **base propia dentro del servidor compartido `psql-albaranes-rs9k2`** (decisión del humano, 2026-08-20), esquema `public`, rol de aplicación propio y `PG_SSLMODE=require` |
 | `dedicacion-transfer` | api | HTTP interno | `TRANSFER_BASE_URL`, timeout 180 s |
