@@ -118,9 +118,13 @@ foreach ($svc in $Solo) {
 
 # --- Inventario versionado: que tag se publico y cuando (R24) --------------
 if ($construidos.Count -gt 0) {
-    $inventario = Get-Content $INVENTARIO -Raw -Encoding UTF8 | ConvertFrom-Json
+    # OJO: NO llamar a esta variable `$inventario`. PowerShell no distingue
+    # mayusculas en los nombres de variable: `$inventario` ES `$INVENTARIO`, y
+    # asignarle el JSON parseado pisaba la RUTA del fichero (causa raiz de los
+    # fallos del 2026-08-20 y del 2026-10-01, ver el comentario de abajo).
+    $datosInventario = Get-Content $INVENTARIO -Raw -Encoding UTF8 | ConvertFrom-Json
     foreach ($repo in $construidos.Keys) {
-        $entrada = $inventario.servicios.$repo
+        $entrada = $datosInventario.servicios.$repo
         if (-not $entrada) { throw "imagenes.json no tiene entrada para '$repo'." }
         $entrada.tag = $construidos[$repo]
         $entrada.publicado = $AHORA
@@ -129,21 +133,15 @@ if ($construidos.Count -gt 0) {
         }
     }
     # Sin BOM y con LF: .gitattributes declara *.json eol=lf.
-    $json = ($inventario | ConvertTo-Json -Depth 6).Replace("`r`n", "`n") + "`n"
-    # Los casts [string] son los que sostienen esta llamada: NO se quitan.
-    #
-    # El 2026-08-20 esto fallo en ejecucion real con "No se encuentra ninguna
-    # sobrecarga para WriteAllText y el numero de argumentos 3", despues de
-    # haber publicado ya las tres imagenes. Se arreglo asi y funciona, pero
-    # CUIDADO con la explicacion: la primera version de este comentario decia
-    # que en PS 5.1 un `New-Object` anidado como argumento de un metodo
-    # estatico no resuelve, y eso es FALSO. Lo desmonto la review de cierre
-    # reproduciendolo en PS 5.1.26100.9168 (las dos formas funcionan), y el
-    # contraejemplo esta en este mismo repositorio: setup_front_easyauth.ps1
-    # usa el constructo anidado y se ejecuto con exito en T26.
-    #
-    # La causa raiz quedo SIN IDENTIFICAR. Lo unico comprobado es que con los
-    # casts explicitos la sobrecarga (String, String, Encoding) se resuelve.
+    $json = ($datosInventario | ConvertTo-Json -Depth 6).Replace("`r`n", "`n") + "`n"
+    # CAUSA RAIZ, identificada el 2026-10-01: la variable del JSON parseado se
+    # llamaba `$inventario` y, como PowerShell no distingue mayusculas en los
+    # nombres de variable, pisaba `$INVENTARIO` (la ruta). Asi, el primer
+    # argumento era el objeto entero: el 2026-08-20 fallo con «No se encuentra
+    # ninguna sobrecarga para WriteAllText» y, con los casts [string], el
+    # 2026-10-01 con «ruta demasiado larga» (el objeto convertido a texto). Las
+    # dos veces, DESPUES de publicar las imagenes. Ahora se llama
+    # `$datosInventario`. Los casts se quedan: no estorban.
     $sinBom = New-Object System.Text.UTF8Encoding $false
     [System.IO.File]::WriteAllText([string]$INVENTARIO, [string]$json, $sinBom)
 
