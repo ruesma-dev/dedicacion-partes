@@ -2,9 +2,25 @@
 # Trabajo en curso
 
 **F-024 en curso** (selector de empresa, rigor estándar). Spec aprobada por
-el humano el 2026-10-01 con D1-D7 (`features.json`). **Implementer aún no
-lanzado**: falta que el humano confirme el plan de implementación
-(PARADA 1). El arnés es la **1.7.3**.
+el humano el 2026-10-01 con D1-D7 (`features.json`). Plan confirmado por el
+humano: **implementer lanzado** (T1-T10 y T14 → `progress/impl_F-024.md`) y
+explorador de solo lectura en paralelo para los nombres de las empresas 18 y
+31 (T12) con el data mart, informe en el scratchpad del líder.
+
+### Verificaciones MANUAL (humano) de F-024
+
+- **T11**: copiar a `azure-apps/dedicacion.md` las piezas de T10, literales, y
+  hacer el commit allí. Resultado: _pendiente_.
+- **T12**: nombres de las empresas con trabajadores activos (18 y 31) en
+  `config.yaml` `empresas.nombres`. Puede cerrarlo el explorador si el humano
+  acepta sus nombres; si no, `SELECT numemp, res FROM dbo.auxemp WHERE numemp
+  IN (1, 18, 28, 31)` por sigrid-api. Resultado: _pendiente_.
+- **T13**: prueba en local (API de la rama, transfer en modo pruebas): sin
+  `?empresa` sale Construcciones Ruesma; cambiar a 18 y volver; julio 2026 con
+  la 1, las líneas de 0009 y 0025 marcadas `otra_empresa` y omitidas en el
+  preflight con `obra_destino.empresa == 28`; preflight con la 18, error de
+  obra de pruebas por obra y nada escrito. **NO** lanzar `registro/ejecutar`.
+  Resultado: _pendiente_. El arnés es la **1.7.3**.
 
 > **Aviso de despliegue:** F-022 y F-023 están en `dev` pero **no se
 > despliegan sin F-024** (sin selector, el cuadrante mezcla empresas). La
