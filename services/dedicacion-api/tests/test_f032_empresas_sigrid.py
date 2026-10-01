@@ -132,3 +132,150 @@ def test_f032_r1_config_consulta_de_solo_lectura() -> None:
     assert sql.startswith("SELECT ")
     for prohibida in ("INSERT", "UPDATE", "DELETE", "MERGE", "EXEC", ";"):
         assert prohibida not in sql, prohibida
+
+
+# --- R1/R2 · repositorio: upsert idempotente y lectura --------------------------
+
+
+class _Resultado:
+    def __init__(self, filas: list[Any]) -> None:
+        self._filas = filas
+
+    def all(self) -> list[Any]:
+        return list(self._filas)
+
+
+class _SesionRepo:
+    """Sesión doble: `scalars()` devuelve las filas previas (y apunta la
+    sentencia), `add` apunta las altas."""
+
+    def __init__(self, previas: list[Any] | None = None) -> None:
+        self.previas = list(previas or [])
+        self.anadidas: list[Any] = []
+        self.sentencias: list[Any] = []
+
+    def scalars(self, sentencia: Any) -> _Resultado:
+        self.sentencias.append(sentencia)
+        return _Resultado(self.previas)
+
+    def add(self, orm: Any) -> None:
+        self.anadidas.append(orm)
+
+
+def _repo(previas: list[Any] | None = None) -> tuple[Any, _SesionRepo]:
+    from infrastructure.db.repositories import PgEmpresaRepository
+
+    sesion = _SesionRepo(previas)
+    return PgEmpresaRepository(sesion), sesion  # type: ignore[arg-type]
+
+
+def _orm(numemp: int, **cambios: Any) -> Any:
+    from infrastructure.db.orm_models import EmpresaORM
+
+    datos = {k: v for k, v in _fila(numemp).items() if k != "numemp"}
+    datos.update(cambios)
+    return EmpresaORM(numemp=numemp, **datos)
+
+
+def _campos(orm: Any) -> tuple[Any, ...]:
+    return (orm.numemp, orm.cod, orm.nombre, orm.fecbaj, orm.desact)
+
+
+def test_f032_r1_repo_alta_de_empresas_nuevas() -> None:
+    repo, sesion = _repo()
+    resultado = repo.sincronizar([
+        _fila(18, nombre=" RUESMA SERVICIOS SL ", cod=" 18 "),
+        _fila("31", nombre="UTE RUESMA-INESCO TOLEDO", fecbaj="20250101",
+              desact=None),
+    ])
+    assert [_campos(o) for o in sesion.anadidas] == [
+        (18, "18", "RUESMA SERVICIOS SL", 0, 0),
+        (31, "E31", "UTE RUESMA-INESCO TOLEDO", 20250101, None),
+    ]
+    assert (resultado.recibidos, resultado.altas, resultado.actualizados,
+            resultado.desactivados) == (2, 2, 0, 0)
+
+
+def test_f032_r1_repo_es_idempotente() -> None:
+    """Mismas filas sobre una tabla ya al día: nada que dar de alta ni que
+    actualizar, y los valores no cambian."""
+    previas = [_orm(1), _orm(18)]
+    repo, sesion = _repo(previas)
+    resultado = repo.sincronizar([_fila(1), _fila(18)])
+    assert sesion.anadidas == []
+    assert (resultado.recibidos, resultado.altas,
+            resultado.actualizados) == (2, 0, 0)
+    assert [_campos(o) for o in previas] == [
+        (1, "E1", "EMPRESA 1 SL", 0, 0), (18, "E18", "EMPRESA 18 SL", 0, 0)]
+
+
+@pytest.mark.parametrize("campo, valor, esperado", [
+    ("nombre", "NUEVO NOMBRE SL", "NUEVO NOMBRE SL"),
+    ("cod", "X18", "X18"),
+    ("fecbaj", 20260930, 20260930),
+    ("desact", 1, 1),
+])
+def test_f032_r2_repo_actualiza_cambios_de_sigrid(
+    campo: str, valor: Any, esperado: Any
+) -> None:
+    """Un cambio de nombre (o de baja) en Sigrid llega con el siguiente sync."""
+    previa = _orm(18)
+    repo, sesion = _repo([previa, _orm(1)])
+    resultado = repo.sincronizar([_fila(18, **{campo: valor}), _fila(1)])
+    assert getattr(previa, campo) == esperado
+    assert sesion.anadidas == []
+    assert (resultado.altas, resultado.actualizados) == (0, 1)
+
+
+def test_f032_r1_repo_omite_filas_sin_numemp_y_no_borra_las_ausentes() -> None:
+    """Sin `numemp` no hay con qué casar: se omite. Una empresa que ya no
+    llega no se borra (su nombre sigue sirviendo) ni cuenta como cambio."""
+    ausente = _orm(28, nombre="PORSAN E HIJOS CONSTRUCCIONES SL")
+    repo, sesion = _repo([ausente])
+    resultado = repo.sincronizar([_fila(None), _fila(1)])
+    assert [o.numemp for o in sesion.anadidas] == [1]
+    assert ausente.nombre == "PORSAN E HIJOS CONSTRUCCIONES SL"
+    assert (resultado.recibidos, resultado.altas, resultado.actualizados,
+            resultado.desactivados) == (1, 1, 0, 0)
+
+
+def test_f032_r1_repo_numemp_repetido_no_da_dos_altas() -> None:
+    """`numemp` es único en Sigrid; si llegara dos veces, una sola fila (la
+    última manda) y nunca dos altas con la misma clave."""
+    repo, sesion = _repo()
+    resultado = repo.sincronizar([_fila(5, nombre="A"), _fila(5, nombre="B")])
+    assert [(o.numemp, o.nombre) for o in sesion.anadidas] == [(5, "B")]
+    assert (resultado.recibidos, resultado.altas) == (1, 1)
+
+
+def test_f032_r2_r5_repo_listar_mapea_nombre_y_baja() -> None:
+    from domain.models import Empresa
+
+    repo, sesion = _repo([
+        _orm(1, nombre="CONSTRUCCIONES RUESMA"),
+        _orm(12, nombre="CP PRIMO DE RIVERA UTE", fecbaj=20240630),
+        _orm(14, nombre=None, desact=1),
+    ])
+    assert repo.listar() == [
+        Empresa(numero=1, nombre="CONSTRUCCIONES RUESMA", de_baja=False),
+        Empresa(numero=12, nombre="CP PRIMO DE RIVERA UTE", de_baja=True),
+        Empresa(numero=14, nombre=None, de_baja=True),
+    ]
+    [sentencia] = sesion.sentencias
+    sql = " ".join(str(sentencia.compile(dialect=DIALECTO)).split())
+    assert sql.startswith("SELECT empresa.numemp, empresa.cod, empresa.nombre")
+    assert sql.endswith("FROM empresa ORDER BY empresa.numemp")
+
+
+def test_f032_r1_la_unidad_de_trabajo_trae_el_repositorio() -> None:
+    from infrastructure.db.repositories import (
+        PgEmpresaRepository,
+        SqlAlchemyUnitOfWork,
+    )
+
+    class _Sesion:
+        def close(self) -> None:
+            return None
+
+    with SqlAlchemyUnitOfWork(lambda: _Sesion()) as uow:  # type: ignore[arg-type]
+        assert isinstance(uow.empresas, PgEmpresaRepository)
