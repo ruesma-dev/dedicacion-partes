@@ -36,6 +36,10 @@ class TrabajadorRepository(Protocol):
 
     def obtener(self, ide: int) -> Trabajador | None: ...
 
+    def empresas_activas(self) -> set[int]:
+        """Empresas (`con.emp`) con al menos un trabajador activo, sin NULL."""
+        ...
+
 
 class ObraRepository(Protocol):
     def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro: ...

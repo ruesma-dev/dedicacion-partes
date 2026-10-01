@@ -1,12 +1,56 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-023 se cerró el 2026-10-01 (resumen en
-`history.md`). El arnés es la **1.7.3**.
+**F-024 con review APROBADA** (selector de empresa, rigor estándar); faltan las
+manuales T11-T13 para `done`. El arnés es la
+**1.7.3**.
 
-> **Aviso de despliegue:** F-023 está en `dev` pero **no se despliega sin
-> F-024** (sin selector, el cuadrante mezcla empresas). La BBDD local ya
-> tiene maestros de todas las empresas desde la verificación T11.
+## F-024 · Selector de empresa arriba a la derecha, Ruesma por defecto
+
+- Rama `feature/F-024-selector-empresa`. Spec aprobada por el humano el
+  2026-10-01 con D1-D7 (`features.json`). Plan confirmado.
+- **Implementer terminado**: T1-T10 y T14, un commit por tarea más dos de
+  estilo (`1b0bc40` … `2cbe55c`); informe `progress/impl_F-024.md`. Toca los
+  tres servicios; contrato API ↔ transfer intacto; único assert anterior
+  cambiado, el de F-022 que declara design §7. Mutación 17/17. **Review APROBADA** a
+  la primera (`progress/review_F-024.md`): cobertura 100 % (105/105), las ocho
+  rutas del periodo con filtro, front sin lógica, contrato intacto.
+- Observaciones de la review, **recogidas o descartadas por escrito**:
+  - O1 (guardar/deshacer/copiar no comprueban visibilidad) → criterio nuevo
+    de **F-031**: un MCP que escriba es un segundo cliente.
+  - O2 (`?empresa=99` queda en la URL) y O3 (`cerrar`/`reabrir` ignoran
+    `?empresa=`): **descartadas**, cosméticas e inocuas.
+  - O4 (el cambio del transfer no genera mutantes): sostenido por la RED de
+    T7 y los tests de R20; nada que hacer.
+  - Automejora de C4 bis → encargo en `arnes-base`.
+- **Mergeada a `dev`** tras la review (T11-T13 bloquean el `done`, no el
+  merge).
+- **Explorador (T12), terminado**: nombres de las 19 empresas desde tres
+  vistas del data mart que coinciden (18 = RUESMA SERVICIOS SL, 31 = UTE
+  RUESMA-INESCO TOLEDO; 1 y 28 confirmadas). Informe en el scratchpad del
+  líder; se versiona como `progress/explore_nombres_empresas.md` al cerrar
+  T12. **Propuesta al humano, pendiente de su respuesta**: poner los 19 en
+  `config.yaml` tal cual y dar T12 por cumplida sin consultar sigrid-api.
+
+### Verificaciones MANUAL (humano) de F-024
+
+- **T11**: copiar a `azure-apps/dedicacion.md` las piezas de T10, literales, y
+  hacer el commit allí. Resultado: _pendiente_.
+- **T12**: nombres de las empresas con trabajadores activos (18 y 31) en
+  `config.yaml` `empresas.nombres`. Hoy lleva solo 1 y 28 (D1). El
+  explorador tiene los nombres (arriba), pendiente de que el humano los
+  acepte; la alternativa es `SELECT numemp, res FROM dbo.auxemp WHERE numemp
+  IN (1, 18, 28, 31)` por sigrid-api. Resultado: _pendiente_.
+- **T13**: prueba en local (API de la rama, transfer en modo pruebas): sin
+  `?empresa` sale Construcciones Ruesma; cambiar a 18 y volver; julio 2026 con
+  la 1, las líneas de 0009 y 0025 marcadas `otra_empresa` y omitidas en el
+  preflight con `obra_destino.empresa == 28`; preflight con la 18, error de
+  obra de pruebas por obra y nada escrito. **NO** lanzar `registro/ejecutar`.
+  Resultado: _pendiente_.
+
+> **Aviso de despliegue:** F-022 y F-023 están en `dev` pero **no se
+> despliegan sin F-024** (sin selector, el cuadrante mezcla empresas). La
+> BBDD local ya tiene maestros de todas las empresas desde T11 de F-023.
 
 ## Lo siguiente, por prioridad
 
@@ -17,10 +61,11 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
-| 4 | **F-024**, **F-027**, F-020 | selector de empresa; deshacer solo lo propio; Excel |
+| — | **F-024** | aprobada; faltan T11-T13 (arriba) |
+| 4 | **F-027**, F-020 | deshacer solo lo propio; Excel |
 
-**Efecto visible de F-022 hasta que llegue F-024:** la api imputa siempre a
-la empresa 1 (`EMPRESA_IMPUTACION`), así que las líneas puestas en una obra
+**Efecto visible de F-022 mientras F-024 no esté en `dev`:** la api imputa
+siempre a la empresa 1 (`EMPRESA_IMPUTACION`), así que las líneas puestas en una obra
 de otra empresa (por ejemplo 0009 y 0025, de Porsan) salen **omitidas con
 motivo** en el preflight. Con F-023 el maestro ya distingue la empresa de
 cada ficha; falta que el usuario elija empresa (F-024).

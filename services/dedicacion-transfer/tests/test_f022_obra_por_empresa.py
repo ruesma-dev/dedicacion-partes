@@ -419,7 +419,9 @@ def test_f022_r10_r11_pipeline_obra_de_otra_empresa_se_omite(forzar):
         ("omitir", motivo), ("omitir", motivo),
         ("omitir", reglas.MOTIVO_SIN_EMPRESA)]
     assert cli.llamadas == [("ide", 555028)]
-    assert pf.obra_destino is obra and pf.forzada_pruebas is forzar
+    # F-024 (R20, design §7): se publica la obra de origen RESUELTA.
+    assert (pf.obra_destino.ide, pf.obra_destino.empresa) == (555028, 28)
+    assert pf.forzada_pruebas is forzar
     assert pf.partes == [] and pf.conflictos == []
     res = _pl(cli, forzar).ejecutar(obra=obra, lineas=lineas)
     assert cli.escritos == [] and res.escritas == []

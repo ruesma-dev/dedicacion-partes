@@ -63,6 +63,8 @@ const state = {
   edicion: [],
   timerGuardado: null,
   guardadoPendiente: false,
+  empresa: null,               // empresa elegida en el selector (F-024)
+  empresas: [],                // [{empresa, nombre}] que sirve la API
 };
 
 // ---------------------------------------------------------------- utilidades
@@ -95,8 +97,17 @@ function toast(mensaje, esError = false) {
   setTimeout(() => caja.remove(), esError ? 6000 : 3500);
 }
 
+// Añade la empresa elegida a una ruta de la API (F-024, R5). El front no
+// decide nada con ella: solo la pasa; filtrar es cosa de la API.
+function conEmpresa(ruta) {
+  if (state.empresa === null) return ruta;
+  const sep = ruta.includes("?") ? "&" : "?";
+  return `${ruta}${sep}empresa=${encodeURIComponent(state.empresa)}`;
+}
+
 async function api(ruta, opciones = {}) {
-  const respuesta = await fetch("/api/v1" + ruta, {
+  const destino = ruta.startsWith("/periodos/") ? conEmpresa(ruta) : ruta;
+  const respuesta = await fetch("/api/v1" + destino, {
     headers: { "Content-Type": "application/json" },
     ...opciones,
   });
@@ -142,6 +153,45 @@ async function init() {
   cargarPrefsTabla();
   renderCabeceraTabla();
   enlazarEventos();
+  await cargarEmpresas();
+  await cargarPeriodo(state.anio, state.mes);
+}
+
+// Lista de empresas del selector (F-024, R3 y R4). La de la URL si la API
+// la ofrece; si no, la por defecto que dice la API.
+async function cargarEmpresas() {
+  try {
+    const datos = await api("/empresas");
+    state.empresas = datos.empresas;
+    const pedida = parseInt(
+      new URLSearchParams(window.location.search).get("empresa"), 10);
+    const ofrecida = state.empresas.some((e) => e.empresa === pedida);
+    state.empresa = ofrecida ? pedida : datos.por_defecto;
+    pintarSelectorEmpresa();
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+function pintarSelectorEmpresa() {
+  const sel = $("#selector-empresa");
+  sel.innerHTML = "";
+  state.empresas.forEach((e) => {
+    const opcion = document.createElement("option");
+    opcion.value = String(e.empresa);
+    opcion.textContent = e.nombre;
+    sel.appendChild(opcion);
+  });
+  sel.value = String(state.empresa);
+}
+
+// Cambio de empresa: queda en la URL (D2) y se recarga el periodo en curso.
+async function cambiarEmpresa(valor) {
+  state.empresa = parseInt(valor, 10);
+  const url = new URL(window.location.href);
+  url.searchParams.set("empresa", String(state.empresa));
+  history.replaceState(null, "", url);
+  state.seleccionIde = null;
   await cargarPeriodo(state.anio, state.mes);
 }
 
@@ -523,7 +573,11 @@ function construirCelda(t, clave) {
     td.className = "celda-nombre";
     td.innerHTML =
       `<span class="nombre">${escapeHtml(t.nombre)}</span>` +
-      (t.activo ? "" : '<span class="tag-baja">BAJA</span>');
+      (t.activo ? "" : '<span class="tag-baja">BAJA</span>') +
+      (t.empresa === null
+        ? '<span class="tag-sin-empresa" title="Sin empresa en el maestro">' +
+          "sin empresa</span>"
+        : "");
   } else if (clave === "categoria") {
     td.className = "celda-categoria";
     td.textContent = t.categoria || "—";
@@ -536,8 +590,12 @@ function construirCelda(t, clave) {
       t.lineas.forEach((l) => {
         const chip = document.createElement("span");
         chip.className = "chip-linea" + (l.es_postventa ? " pv" : "") +
-          (l.obra_activa ? "" : " obra-baja");
-        chip.title = l.descripcion + (l.obra_activa ? "" : " (obra desactivada)");
+          (l.obra_activa ? "" : " obra-baja") +
+          (l.otra_empresa ? " chip-otra-empresa" : "");
+        chip.title = l.descripcion + (l.obra_activa ? "" : " (obra desactivada)") +
+          (l.otra_empresa
+            ? " · obra de otra empresa: no se registrará en esta empresa"
+            : "");
         chip.innerHTML =
           `<span class="cod">${l.es_postventa ? "Postv-" : ""}` +
           `${escapeHtml(l.cod)}</span>` +
@@ -1125,8 +1183,10 @@ function enlazarEventos() {
   $("#btn-copiar-mes").addEventListener("click", copiarMesAnterior);
   $("#btn-export").addEventListener("click", () => {
     window.location.href =
-      `/api/v1/periodos/${state.anio}/${state.mes}/export.xlsx`;
+      "/api/v1" + conEmpresa(`/periodos/${state.anio}/${state.mes}/export.xlsx`);
   });
+  $("#selector-empresa").addEventListener("change", (ev) =>
+    cambiarEmpresa(ev.target.value));
   $("#btn-cerrar").addEventListener("click", () => {
     if (confirm("¿Cerrar el periodo? Quedará en solo lectura.")) {
       cambiarEstadoPeriodo("cerrar");

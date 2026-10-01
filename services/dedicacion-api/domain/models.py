@@ -70,9 +70,23 @@ class Linea:
     cod: str = ""
     descripcion: str = ""
     obra_activa: bool = True
+    obra_empresa: int | None = None  # empresa de la obra (F-024, R11)
 
     def clave(self) -> tuple[int, bool]:
         return (self.obra_ide, self.es_postventa)
+
+
+@dataclass(frozen=True)
+class FiltroEmpresa:
+    """Empresa elegida en la petición y la por defecto (F-024).
+
+    `por_defecto` es el ajuste `EMPRESA_IMPUTACION`: la que se usa cuando la
+    petición no trae empresa y la que ve a los trabajadores sin empresa y sin
+    carga conocida (docs/ARCHITECTURE.md#regla-empresa).
+    """
+
+    empresa: int
+    por_defecto: int
 
 
 @dataclass

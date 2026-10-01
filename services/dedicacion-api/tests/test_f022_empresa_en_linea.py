@@ -64,10 +64,14 @@ def _fila(asig_id: int, trab_ide: int, obra_ide: int) -> tuple:
     """(asignación, trabajador, obra) como las devuelve la consulta."""
     asignacion = SimpleNamespace(id=asig_id, porcentaje=40,
                                  es_postventa=False)
+    # `empresa=None` en los dos (F-024, design §7): sin empresa y sin obras
+    # con empresa, el trabajador se ve en la por defecto, que es la que usan
+    # estos tests; ningún assert cambia.
     trabajador = SimpleNamespace(ide=trab_ide, dni=None,
-                                 nombre=f"T{trab_ide}", categoria="Encargado")
+                                 nombre=f"T{trab_ide}", categoria="Encargado",
+                                 empresa=None)
     obra = SimpleNamespace(ide=obra_ide, cod=f"0{obra_ide}",
-                           descripcion="OBRA")
+                           descripcion="OBRA", empresa=None)
     return asignacion, trabajador, obra
 
 

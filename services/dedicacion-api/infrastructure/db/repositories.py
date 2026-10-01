@@ -10,7 +10,7 @@ import logging
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, distinct, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from domain.models import (
@@ -104,6 +104,13 @@ class PgTrabajadorRepository:
     def obtener(self, ide: int) -> Trabajador | None:
         orm = self._s.get(TrabajadorORM, ide)
         return _a_trabajador(orm) if orm else None
+
+    def empresas_activas(self) -> set[int]:
+        """Empresas con al menos un trabajador activo (F-024, R1)."""
+        stmt = select(distinct(TrabajadorORM.empresa)).where(
+            TrabajadorORM.activo.is_(True), TrabajadorORM.empresa.is_not(None)
+        )
+        return set(self._s.scalars(stmt).all())
 
 
 # ----------------------------------------------------------------------
@@ -447,4 +454,5 @@ def _a_linea(a: AsignacionORM, o: ObraORM) -> Linea:
         cod=o.cod,
         descripcion=o.descripcion,
         obra_activa=o.activa,
+        obra_empresa=o.empresa,
     )

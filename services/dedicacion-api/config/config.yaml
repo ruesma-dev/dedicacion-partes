@@ -171,4 +171,16 @@ export:
   # Prefijo con el que se exportan las líneas de postventa, para mantener
   # la compatibilidad con la plantilla Excel actual (códigos "Postv-XXX").
   prefijo_postventa: "Postv-"
-  nombre_fichero: "dedicacion_{anio}{mes:02d}.xlsx"
+  # Lleva la empresa elegida en el selector (F-024, R15).
+  nombre_fichero: "dedicacion_{anio}{mes:02d}_emp{empresa}.xlsx"
+
+empresas:
+  # Nombre de cada empresa (`con.emp` de Sigrid) en el selector del cuadrante
+  # (F-024, R2; docs/ARCHITECTURE.md#regla-empresa). La lista de empresas la
+  # da el maestro de trabajadores: aquí solo se le pone nombre. La que no
+  # esté sale como «Empresa N». Origen del nombre: `auxemp.res` con
+  # `auxemp.numemp = con.emp` (T12 de F-024, lectura MANUAL pendiente para
+  # las demás empresas con trabajadores activos).
+  nombres:
+    1: "Construcciones Ruesma"
+    28: "Porsan"
