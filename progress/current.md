@@ -8,7 +8,8 @@
 > postventa) son siempre de Construcciones Ruesma; los trabajadores, de varias
 > empresas. F-024 se desplegó con la regla contraria y **los trabajadores de
 > la 18 y la 31 no pueden registrar en producción**. Entra **F-034** con
-> prioridad 1; spec en redacción en `feature/F-034-obras-siempre-ruesma`.
+> prioridad 1; spec entregada (`edab7d9`) y en `spec_ready`: **espera la
+> aprobación del humano** (D1-D5 y si se despliega sola o con F-026).
 > **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
 > turno en su rama. Orden: F-034 → F-026 → F-025.
 > **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni
