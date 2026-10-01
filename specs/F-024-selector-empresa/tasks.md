@@ -3,7 +3,7 @@
 
 Rama `feature/F-024-selector-empresa`. Un commit por tarea (`F-024 Tn: …`). Tests con nombre `test_f024_rN_…`, sin red ni BBDD. Requiere D1-D7 validadas por el humano.
 
-- [ ] T1: `domain/empresas.py` (`visible_en_empresa`, `linea_de_otra_empresa`) y `FiltroEmpresa` + `Linea.obra_empresa` en `domain/models.py`, con sus tests primero (fase RED anotada)  |  Verificación: `pytest services/dedicacion-api/tests/test_f024_visibilidad.py` (R8, R10, R11; casos con empresa, NULL con obras de una y de dos empresas, NULL sin obras con empresa, NULL sin líneas)
+- [x] T1: `domain/empresas.py` (`visible_en_empresa`, `linea_de_otra_empresa`) y `FiltroEmpresa` + `Linea.obra_empresa` en `domain/models.py`, con sus tests primero (fase RED anotada)  |  Verificación: `pytest services/dedicacion-api/tests/test_f024_visibilidad.py` (R8, R10, R11; casos con empresa, NULL con obras de una y de dos empresas, NULL sin obras con empresa, NULL sin líneas)
 - [ ] T2: `_a_linea` mapea `o.empresa`; `empresas_activas()` en el puerto y en `PgTrabajadorRepository`  |  Verificación: test con sesión falsa en `test_f024_cuadrante_empresa.py` (R1: solo activos y sin NULL)
 - [ ] T3: `_filas_de_empresa`, `filtro` en `ObtenerCuadrante`, `ObtenerFilaTrabajador`, `GuardarAsignaciones`, `DeshacerUltimaModificacion`, `CopiarTrabajadorAnterior`, `CopiarPeriodoAnterior` y `_resumen_periodo`  |  Verificación: `test_f024_cuadrante_empresa.py` con UoW falsa (R7, R9, R10, R13, R14)
 - [ ] T4: caso de uso `ListarEmpresas` y bloque `empresas.nombres` en `config.yaml` (1 y 28)  |  Verificación: `test_f024_cuadrante_empresa.py` (R1 orden y por defecto sin trabajadores, R2 nombre y «Empresa N»)
