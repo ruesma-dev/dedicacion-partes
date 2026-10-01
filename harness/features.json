@@ -388,7 +388,7 @@
         "Decidido y probado qué hace el filtro de empresa con obras y trabajadores desactivados que tienen líneas en el periodo y empresa NULL",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "spec_ready",
       "sdd": true,
       "rigor": "estandar",
       "priority": 2,
