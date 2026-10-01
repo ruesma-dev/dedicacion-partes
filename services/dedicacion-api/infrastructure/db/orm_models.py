@@ -67,6 +67,31 @@ class ObraORM(Base):
     __table_args__ = (Index("ix_obra_activa_cod", "activa", "cod"),)
 
 
+class EmpresaORM(Base):
+    """Catálogo de empresas de Sigrid (`auxemp`), copia de solo lectura (F-032).
+
+    La clave es `auxemp.numemp`, que es lo que casa con `con.emp` de las
+    fichas de trabajador y obra; por eso NO se llama `empresa` (en este
+    esquema esa columna es la referencia de las fichas a la empresa). La
+    tabla la crea `create_all` al arrancar: nada de DDL a mano.
+    """
+
+    __tablename__ = "empresa"
+
+    numemp: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=False
+    )
+    cod: Mapped[str | None] = mapped_column(Text)
+    nombre: Mapped[str | None] = mapped_column(Text)  # auxemp.res
+    # Tal cual vienen de Sigrid: «de baja» lo decide el dominio
+    # (`domain.empresas.empresa_de_baja`), no la tabla.
+    fecbaj: Mapped[int | None] = mapped_column(Integer)
+    desact: Mapped[int | None] = mapped_column(Integer)
+    sync_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class PeriodoORM(Base):
     __tablename__ = "periodo"
 

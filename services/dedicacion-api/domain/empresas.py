@@ -3,7 +3,8 @@
 
 Una sola regla, pura y sin dependencias, que usan el cuadrante, el resumen,
 la copia, el export y el registro en Sigrid. La regla de negocio está en
-`docs/ARCHITECTURE.md#regla-empresa`; aquí solo se implementa.
+`docs/ARCHITECTURE.md#regla-empresa`; aquí solo se implementa. Desde F-032,
+también la regla de empresa «de baja» del catálogo `auxemp`.
 """
 from __future__ import annotations
 
@@ -28,6 +29,17 @@ def visible_en_empresa(empresa_trabajador: int | None,
     if conocidas:
         return filtro.empresa in conocidas
     return filtro.empresa == filtro.por_defecto
+
+
+def empresa_de_baja(fecbaj: int | None, desact: int | None) -> bool:
+    """¿Está la empresa dada de baja o desactivada en Sigrid? (F-032)
+
+    `auxemp.fecbaj` es una fecha entera (0 o NULL = sin baja) y
+    `auxemp.desact` vale 0 (no) o 1 (sí). Una empresa de baja con
+    trabajadores activos se sigue enseñando, marcada: ocultarla escondería
+    carga (decisión del humano del 2026-10-01).
+    """
+    return (fecbaj or 0) > 0 or desact == 1
 
 
 def linea_de_otra_empresa(obra_empresa: int | None, empresa: int) -> bool:
