@@ -407,7 +407,7 @@
         "El preflight solo publica partidas_postventa en las obras que tienen líneas de postventa (el catálogo no se arrastra entre llamadas)",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "spec_ready",
       "sdd": true,
       "rigor": "critico",
       "priority": 3,

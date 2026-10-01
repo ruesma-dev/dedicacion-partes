@@ -12,7 +12,7 @@ Resumen: **30 features**, 18 abiertas, 12 terminadas.
 | F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 1 | pendiente | documental | `feature/F-017-prueba-administracion` |
 | F-018 | Pasar a escritura real cuando Administracion apruebe | 2 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
 | F-019 | Excel de importacion en formato Carmen | 3 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
-| F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
+| F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | spec lista | critico | `feature/F-025-obras-postventa-postv2` |
 | F-026 | Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro | 3 | pendiente | critico | `feature/F-026-recursos-sin-ficha-empleado` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 4 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
 | F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 4 | pendiente | estandar | `feature/F-027-deshacer-por-usuario` |
@@ -67,7 +67,7 @@ Pedida por el humano el 2026-09-03. Hoy la API exporta un unico Excel (services/
 
 ### F-025 · Obras de postventa sacadas de los capítulos de POSTV2
 
-estado **pendiente** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-025-obras-postventa-postv2`
+estado **spec lista** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-025-obras-postventa-postv2`
 
 Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio echa en falta obras de postventa. Causa: las obras en postventa están CERRADAS en Sigrid y el filtro estados_excluidos de config.yaml las quita; sin la obra en el maestro el front no ofrece su Postv-XXXX (app.js ~175-191). 69 de 78 obras con postventa en POSTV2 no llegan. Decisión del humano 2026-09-29: la lista de obras de postventa sale de los CAPÍTULOS del proyecto POSTV2, sea cual sea el estado de la obra. Propuesta del líder pendiente de objeción: una obra cerrada se ofrece solo como Postv-, no como obra normal. RIESGOS para la spec: (a) F-002 dejó escrito en docs/ARCHITECTURE.md que P5 imputa por PARTIDA en POSTV2; hay que conciliar capítulos y partidas sin romper esa regla; (b) límite de servicio: POSTVENTA_OBRA_COD vive hoy solo en el transfer; decidir si la API lo lee o pregunta al transfer, pero el universo de postventa del front y el del transfer no pueden divergir. RECOGIDO del cierre de F-022 (2026-09-30): el preflight del transfer publica partidas_postventa también en obras sin líneas de postventa, porque el catálogo _nodos_pv se queda en la instancia del pipeline entre llamadas. Inofensivo hoy; como esta feature redefine el universo de postventa, se corrige aquí.
 
