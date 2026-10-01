@@ -4,6 +4,20 @@
 **Ninguna feature en ejecución.** F-032 se cerró el 2026-10-01 (resumen en
 `history.md`). El arnés es la **1.7.3**.
 
+> **2026-10-01, en curso:** el humano aclara que las OBRAS (incluida la
+> postventa) son siempre de Construcciones Ruesma; los trabajadores, de varias
+> empresas. F-024 se desplegó con la regla contraria y **los trabajadores de
+> la 18 y la 31 no pueden registrar en producción**. Entra **F-034** con
+> prioridad 1; spec en redacción en `feature/F-034-obras-siempre-ruesma`.
+> **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
+> turno en su rama. Orden: F-034 → F-026 → F-025.
+> **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni
+> OT (la cascada vigente de P5 las casa con partidas ajenas y se escribiría en
+> real).
+> **Pendiente de respuesta del humano:** el plan de correcciones de la review
+> del despliegue (`progress/review_despliegue_20261001.md`) y si F-017 se hace
+> en real con Administración delante.
+
 ## ⚠ DESPLEGADO EN MODO REAL (2026-10-01)
 
 - **Despliegue** de F-022, F-023, F-024 y F-032 lanzado por el humano con
