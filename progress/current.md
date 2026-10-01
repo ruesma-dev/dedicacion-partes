@@ -1,70 +1,12 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-023 con review APROBADA** (pasada 3, rigor crítico; `progress/review_F-023.md`).
-T9 cumplida y mergeada a `dev`; faltan T10 y T11 (MANUAL) para `done`. El arnés es la **1.7.3**.
+**Ninguna feature en ejecución.** F-023 se cerró el 2026-10-01 (resumen en
+`history.md`). El arnés es la **1.7.3**.
 
-## F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
-
-- Rama `feature/F-023-sync-empresa-y-estado-recurso`, con `dev` traído
-  (`792870f`, incluye F-022). Estado `in_progress`. Spec aprobada el
-  2026-09-29; decisiones en `features.json`.
-- **Implementer terminado**: T1-T8 y T12 hechas, un commit por tarea más dos
-  de ajuste (`5ae53d1` … `19d4f40`); informe `progress/impl_F-023.md`, con
-  mutación 33/33 y dos desviaciones menores, aceptadas. **Review APROBADA**:
-  campaña reejecutada 33/33, cobertura 100 % (67/67), 0 avisos de ruff nuevos.
-- Observaciones de la review, **recogidas**:
-  1. R12 y el JOIN a `conest` del recurso quedan inertes (el tipo 33 no tiene
-     estados) y la comparación es por subcadena: un `"1"` casaría `"10"`. **Al
-     cerrar T9**, el líder corrige el comentario de `config.yaml` (para
-     recursos no hay literales; el criterio es la fecha de baja). Simplificar
-     R12 sería otra feature, si el humano la quiere.
-  2. T11 corregida abajo: las filas **desactivadas** conservan `empresa` NULL
-     (el upsert solo escribe las recibidas). Aviso llevado a F-024.
-  3. **T9 antes del merge a `dev`**, no solo antes del despliegue: sin el
-     criterio, esta rama mete en el maestro ~535 personas de baja como recurso
-     que hoy filtra `emphis`.
-  - Automejora (C4: comprobar que el resultado esperado de una MANUAL es
-    alcanzable) → encargo en el backlog de `arnes-base`.
-- **Explorador (D1)** → `progress/explore_estado_recurso.md`: el «rojo» de
-  Administración es la **fecha de baja del concepto del recurso**
-  (`con.fecbaj > 0`); el tipo 33 no tiene estados en `conest`. **Aceptado por
-  el humano el 2026-10-01 y aplicado en T9** (`9b9c1d9`).
-- **No se despliega sin F-024** (D4: sin selector, una persona con fichas en
-  dos empresas sale dos veces). Mergear a `dev` no despliega.
-
-### Verificaciones MANUAL (humano) de F-023
-
-- **T9 · D1 — CUMPLIDA (2026-10-01)**: decidida por el humano, sin lanzar Q1:
-  inactivo = fecha de baja del recurso. Implementada en `9b9c1d9`:
-  `excluir_recurso_con_fecha_baja: true`, lista de estados vacía con
-  comentario corregido (observación 1 de la review), `r5` y `r18` adaptados
-  con fase RED real, mutación 33/33, `init.sh` en verde. Review pasada 2:
-  código y tests **aprobados**; CHANGES_REQUESTED solo porque la D1 seguía
-  abierta en otros sitios del rastro (corregido). Pasada 3 (documental):
-  APPROVED; sus dos observaciones, recogidas. Automejora → encargo `c94c072` en `arnes-base`.
-- **T10 · R19 y D6**: con la API local apuntando a Sigrid,
-  `GET http://localhost:8090/api/v1/sync/preview`. Comprobar que no llega
-  truncada, que los recursos inactivos que señaló negocio (lista D5, **aún no
-  entregada**) salen en `excluidos_por_estado_recurso`, y revisar
-  `por_empresa`. Resultado: _pendiente_.
-- **T11**: API contra la BBDD local `dedicacion`; comprobar que el esquema
-  añade `empresa` a `trabajador` y `obra`; `POST /api/v1/sync` y
-  `SELECT empresa, COUNT(*) FROM obra WHERE activa GROUP BY empresa` y
-  `SELECT empresa, COUNT(*) FROM trabajador WHERE activo GROUP BY empresa`,
-  sin NULL. Las filas desactivadas **sí** pueden quedar con NULL, y es
-  correcto (observación 2 de la review). **Resultado real (2026-10-01,
-  humano, `t11_sync_f023.ps1`, API de `dev` contra la BBDD local): CUMPLIDA.**
-  La columna `empresa` existe en `obra` y `trabajador`; **0 activas con
-  empresa NULL** en las dos (obras activas 453 en 19 empresas, 313 de la 1;
-  trabajadores activos 179: 171 de la 1, 4 de la 18 y 4 de la 31). Las
-  desactivadas (469 obras, 427 trabajadores) quedan con NULL. Sync:
-  empleados 179 recibidos, 32 altas, 147 actualizados, 28 desactivados;
-  obras 453 recibidas, 6 altas, 447 actualizadas, 167 desactivadas; 6,0 s.
-  Preview: 1.358 brutos, **535 excluidos por fecha de baja del recurso**
-  (la misma cifra que midió el explorador en el data mart: cruce
-  independiente del criterio), 642 sin código M*, 0 por recurso de otra
-  empresa, 29 con baja laboral (informativo); no llegó truncado.
+> **Aviso de despliegue:** F-023 está en `dev` pero **no se despliega sin
+> F-024** (sin selector, el cuadrante mezcla empresas). La BBDD local ya
+> tiene maestros de todas las empresas desde la verificación T11.
 
 ## Lo siguiente, por prioridad
 
@@ -73,15 +15,15 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 | # | Feature | Qué es |
 |---|---|---|
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
-| — | **F-023** | en curso (arriba); **no se despliega sin F-024** |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
 | 4 | **F-024**, **F-027**, F-020 | selector de empresa; deshacer solo lo propio; Excel |
 
-**Efecto visible de F-022 hasta que lleguen F-023 y F-024:** las líneas
-imputadas a una obra que en el maestro local es la ficha de otra empresa (por
-ejemplo 0009 y 0025, de Porsan) salen **omitidas con motivo** en el
-preflight. Es lo seguro; se arregla limpiando el maestro.
+**Efecto visible de F-022 hasta que llegue F-024:** la api imputa siempre a
+la empresa 1 (`EMPRESA_IMPUTACION`), así que las líneas puestas en una obra
+de otra empresa (por ejemplo 0009 y 0025, de Porsan) salen **omitidas con
+motivo** en el preflight. Con F-023 el maestro ya distingue la empresa de
+cada ficha; falta que el usuario elija empresa (F-024).
 
 ## ⚠ Lo que espera al humano
 
@@ -90,8 +32,7 @@ preflight. Es lo seguro; se arregla limpiando el maestro.
 2. **Decidir** si la corrección de `ruesma_rep` («no es réplica, es la base
    documental») que tiene `azure-apps/dedicacion.md` se lleva a
    `docs/INTEGRACION.md`.
-3. **Datos para F-023 y F-026**: la lista de recursos inactivos que señaló
-   negocio (para T10 de F-023), las tres consultas de
+3. **Datos para F-026**: las tres consultas de
    `progress/explore_eusebio.md`, y si encargados y gruistas se dan de alta
    sin ficha de empleado a propósito.
 4. **F-014** y **F-016**, cuando quiera: aviso a Administración de las cuatro

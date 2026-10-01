@@ -697,3 +697,99 @@ en la rama `chore/backlog-f022-f031`, ya mergeada en `dev` (`01671a9`, sin push)
 - **Por lanzar contra Sigrid (solo SELECT):** las tres consultas de
   `progress/explore_eusebio.md`, que confirman la causa de F-026.
 
+## 2026-10-01 · F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
+
+Rama `feature/F-023-sync-empresa-y-estado-recurso` · `sdd: true` · rigor
+`critico` · **APROBADO** por el reviewer en la pasada 3. La pasada 1 aprobó el
+código; la 2 aprobó T9 pero pidió cambios porque la D1 seguía abierta en el
+rastro (error del líder: la cerró en 2 de sus 4 sitios); la 3, documental.
+
+**Qué cambió (solo `dedicacion-api`).** Obras y trabajadores guardan su
+empresa (`con.emp`), con la columna en el ORM y sin DDL a mano. El sync trae
+**todas las empresas**; el dedupe por persona no las mezcla y descarta los
+recursos de otra empresa que la ficha. **Inactivo = fecha de baja del
+concepto del recurso** (`con.fecbaj > 0`, D1 cerrada por el humano con
+`progress/explore_estado_recurso.md`, sin lanzar Q1): el tipo 33 no tiene
+estados en `conest`, así que la lista de estados queda vacía a propósito. Se
+quita el filtro de `emphis`. Preview y sync aplican el mismo criterio.
+
+**Verificado.** 53 tests nuevos offline; cobertura de líneas cambiadas 100 %;
+mutación **33/33**, reejecutada por el reviewer; RED real en T1 y en T9.
+**T11 (MANUAL) cumplida**: sync real contra la BBDD local, 0 filas activas sin
+empresa. **T10 (MANUAL) cumplida con evidencia alternativa, por decisión del
+humano (D5)**: no se contrastó la lista de inactivos de negocio; el preview
+real excluye **535** recursos por fecha de baja, la misma cifra que midió el
+data mart por otra vía. Es más débil que la lista y consta así.
+
+**Pendiente y avisos.** **No se despliega sin F-024**: sin selector, el
+cuadrante mezcla empresas (la BBDD local ya las tiene mezcladas tras T11). Las
+filas desactivadas conservan `empresa` NULL; su efecto en el filtro va en
+F-024. Automejoras al backlog de `arnes-base` (`5724ad4`, `c94c072`,
+`9cd66b3`).
+
+Informes: `progress/impl_F-023.md`, `progress/review_F-023.md`,
+`progress/mutacion_F-023.md`, `progress/explore_estado_recurso.md`. Detalle de
+sesión retirado de `current.md`:
+
+## F-023 · Sync de maestros: todas las empresas y activo según el estado del recurso
+
+- Rama `feature/F-023-sync-empresa-y-estado-recurso`, con `dev` traído
+  (`792870f`, incluye F-022). Estado `in_progress`. Spec aprobada el
+  2026-09-29; decisiones en `features.json`.
+- **Implementer terminado**: T1-T8 y T12 hechas, un commit por tarea más dos
+  de ajuste (`5ae53d1` … `19d4f40`); informe `progress/impl_F-023.md`, con
+  mutación 33/33 y dos desviaciones menores, aceptadas. **Review APROBADA**:
+  campaña reejecutada 33/33, cobertura 100 % (67/67), 0 avisos de ruff nuevos.
+- Observaciones de la review, **recogidas**:
+  1. R12 y el JOIN a `conest` del recurso quedan inertes (el tipo 33 no tiene
+     estados) y la comparación es por subcadena: un `"1"` casaría `"10"`. **Al
+     cerrar T9**, el líder corrige el comentario de `config.yaml` (para
+     recursos no hay literales; el criterio es la fecha de baja). Simplificar
+     R12 sería otra feature, si el humano la quiere.
+  2. T11 corregida abajo: las filas **desactivadas** conservan `empresa` NULL
+     (el upsert solo escribe las recibidas). Aviso llevado a F-024.
+  3. **T9 antes del merge a `dev`**, no solo antes del despliegue: sin el
+     criterio, esta rama mete en el maestro ~535 personas de baja como recurso
+     que hoy filtra `emphis`.
+  - Automejora (C4: comprobar que el resultado esperado de una MANUAL es
+    alcanzable) → encargo en el backlog de `arnes-base`.
+- **Explorador (D1)** → `progress/explore_estado_recurso.md`: el «rojo» de
+  Administración es la **fecha de baja del concepto del recurso**
+  (`con.fecbaj > 0`); el tipo 33 no tiene estados en `conest`. **Aceptado por
+  el humano el 2026-10-01 y aplicado en T9** (`9b9c1d9`).
+- **No se despliega sin F-024** (D4: sin selector, una persona con fichas en
+  dos empresas sale dos veces). Mergear a `dev` no despliega.
+
+#### Verificaciones MANUAL (humano) de F-023
+
+- **T9 · D1 — CUMPLIDA (2026-10-01)**: decidida por el humano, sin lanzar Q1:
+  inactivo = fecha de baja del recurso. Implementada en `9b9c1d9`:
+  `excluir_recurso_con_fecha_baja: true`, lista de estados vacía con
+  comentario corregido (observación 1 de la review), `r5` y `r18` adaptados
+  con fase RED real, mutación 33/33, `init.sh` en verde. Review pasada 2:
+  código y tests **aprobados**; CHANGES_REQUESTED solo porque la D1 seguía
+  abierta en otros sitios del rastro (corregido). Pasada 3 (documental):
+  APPROVED; sus dos observaciones, recogidas. Automejora → encargo `c94c072` en `arnes-base`.
+- **T10 · R19 y D6**: con la API local apuntando a Sigrid,
+  `GET http://localhost:8090/api/v1/sync/preview`. Comprobar que no llega
+  truncada, que los recursos inactivos que señaló negocio (lista D5, **aún no
+  entregada**) salen en `excluidos_por_estado_recurso`, y revisar
+  `por_empresa`. Resultado: _pendiente_.
+- **T11**: API contra la BBDD local `dedicacion`; comprobar que el esquema
+  añade `empresa` a `trabajador` y `obra`; `POST /api/v1/sync` y
+  `SELECT empresa, COUNT(*) FROM obra WHERE activa GROUP BY empresa` y
+  `SELECT empresa, COUNT(*) FROM trabajador WHERE activo GROUP BY empresa`,
+  sin NULL. Las filas desactivadas **sí** pueden quedar con NULL, y es
+  correcto (observación 2 de la review). **Resultado real (2026-10-01,
+  humano, `t11_sync_f023.ps1`, API de `dev` contra la BBDD local): CUMPLIDA.**
+  La columna `empresa` existe en `obra` y `trabajador`; **0 activas con
+  empresa NULL** en las dos (obras activas 453 en 19 empresas, 313 de la 1;
+  trabajadores activos 179: 171 de la 1, 4 de la 18 y 4 de la 31). Las
+  desactivadas (469 obras, 427 trabajadores) quedan con NULL. Sync:
+  empleados 179 recibidos, 32 altas, 147 actualizados, 28 desactivados;
+  obras 453 recibidas, 6 altas, 447 actualizadas, 167 desactivadas; 6,0 s.
+  Preview: 1.358 brutos, **535 excluidos por fecha de baja del recurso**
+  (la misma cifra que midió el explorador en el data mart: cruce
+  independiente del criterio), 642 sin código M*, 0 por recurso de otra
+  empresa, 29 con baja laboral (informativo); no llegó truncado.
+

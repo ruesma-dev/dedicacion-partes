@@ -127,7 +127,7 @@ baja) y sus valores quedan en **D1**, cerrada el 2026-10-01 (design §4).
   del concepto del recurso, `excluir_recurso_con_fecha_baja: true`;
   `estados_recurso_excluidos` vacía porque el tipo 33 no tiene estados en
   `conest` (`progress/explore_estado_recurso.md`). R12 queda como gancho
-  inerte. T10 (R19) solo espera la lista D5.
+  inerte. T10 (R19) se cerró sin la lista D5 (ver D5).
 - **D2 · Empresa del trabajador = la de su ficha de empleado**, y se
   descartan sus recursos de otra empresa (R9). Alternativa: la del recurso.
   **Condiciona a F-026**: si allí el eje pasa a ser el recurso, la empresa
@@ -139,8 +139,11 @@ baja) y sus valores quedan en **D1**, cerrada el 2026-10-01 (design §4).
   dos empresas sale **dos veces** en el cuadrante y se ven trabajadores de
   UTE que hoy colapsaban con los de Ruesma. Recomendación: no desplegar F-023
   a usuarios sin F-024.
-- **D5 · Lista de recursos inactivos señalados por negocio**, necesaria para
-  R19. No está en el backlog ni en los informes de exploración.
+- **D5 · CERRADA el 2026-10-01** (humano): la lista de negocio **no se
+  contrasta**. T10 (R19) se cierra con evidencia alternativa: el preview real
+  excluye 535 recursos por fecha de baja, la misma cifra que midió el data
+  mart (`progress/explore_estado_recurso.md`). Más débil que la lista: no
+  prueba que coincida con lo que vio negocio en pantalla.
 - **D6 · Volumen.** Sin el filtro de `emphis`, la consulta de empleados
   devuelve más filas. Si el preview llega `truncated`, el cliente falla (no
   pierde filas); la salida es paginar, que queda **fuera** de esta feature.
