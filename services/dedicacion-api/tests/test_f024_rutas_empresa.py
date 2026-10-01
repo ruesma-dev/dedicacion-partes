@@ -14,11 +14,11 @@ from types import SimpleNamespace
 from typing import Any, Self
 
 import pytest
-from fastapi.testclient import TestClient
-
 from config.settings import Settings
+from fastapi.testclient import TestClient
 from interface_adapters.api.app import build_app
 from interface_adapters.api.deps import construir_contenedor, obtener_contenedor
+
 from tests.test_f024_cuadrante_empresa import (
     ANIO,
     MES,

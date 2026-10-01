@@ -11,7 +11,6 @@ from dataclasses import FrozenInstanceError, fields
 from decimal import Decimal
 
 import pytest
-
 from domain.empresas import linea_de_otra_empresa, visible_en_empresa
 from domain.models import FiltroEmpresa, Linea
 

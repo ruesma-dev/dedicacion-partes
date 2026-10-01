@@ -13,8 +13,6 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from sqlalchemy.dialects import postgresql
-
 from application.use_cases import (
     CopiarPeriodoAnterior,
     CopiarTrabajadorAnterior,
@@ -33,6 +31,7 @@ from domain.models import (
     Trabajador,
 )
 from infrastructure.db.repositories import PgTrabajadorRepository, _a_linea
+from sqlalchemy.dialects import postgresql
 
 
 # ============================ repositorio (T2) ========================== #

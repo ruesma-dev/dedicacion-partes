@@ -15,9 +15,8 @@ from types import SimpleNamespace
 from typing import Any, Self
 
 import pytest
-from sqlalchemy.sql.dml import Update
-
 from application.registro_sigrid import RegistroSigrid
+from sqlalchemy.sql.dml import Update
 
 #: Empresa por defecto (EMPRESA_IMPUTACION) de los tests.
 DEF = 1
