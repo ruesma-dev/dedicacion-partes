@@ -53,7 +53,18 @@ T9 cumplida y mergeada a `dev`; faltan T10 y T11 (MANUAL) para `done`. El arnés
   `SELECT empresa, COUNT(*) FROM obra WHERE activa GROUP BY empresa` y
   `SELECT empresa, COUNT(*) FROM trabajador WHERE activo GROUP BY empresa`,
   sin NULL. Las filas desactivadas **sí** pueden quedar con NULL, y es
-  correcto (observación 2 de la review). Resultado: _pendiente_.
+  correcto (observación 2 de la review). **Resultado real (2026-10-01,
+  humano, `t11_sync_f023.ps1`, API de `dev` contra la BBDD local): CUMPLIDA.**
+  La columna `empresa` existe en `obra` y `trabajador`; **0 activas con
+  empresa NULL** en las dos (obras activas 453 en 19 empresas, 313 de la 1;
+  trabajadores activos 179: 171 de la 1, 4 de la 18 y 4 de la 31). Las
+  desactivadas (469 obras, 427 trabajadores) quedan con NULL. Sync:
+  empleados 179 recibidos, 32 altas, 147 actualizados, 28 desactivados;
+  obras 453 recibidas, 6 altas, 447 actualizadas, 167 desactivadas; 6,0 s.
+  Preview: 1.358 brutos, **535 excluidos por fecha de baja del recurso**
+  (la misma cifra que midió el explorador en el data mart: cruce
+  independiente del criterio), 642 sin código M*, 0 por recurso de otra
+  empresa, 29 con baja laboral (informativo); no llegó truncado.
 
 ## Lo siguiente, por prioridad
 
