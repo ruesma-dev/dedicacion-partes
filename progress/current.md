@@ -5,10 +5,10 @@
 `history.md`). El arnés es la **1.7.3**.
 
 > **2026-10-01, en curso:** el humano sube **F-024** (selector de empresa) a
-> prioridad 2 porque sin ella F-022 y F-023 no se despliegan. Se está
-> redactando su spec con el spec-author en la rama
-> `feature/F-024-selector-empresa`. Al entregarla pasa a `spec_ready` y
-> espera la aprobación del humano.
+> prioridad 2 porque sin ella F-022 y F-023 no se despliegan. Su spec está
+> entregada (`5ebbdd7`, rama `feature/F-024-selector-empresa`) y en
+> `spec_ready`: **espera la aprobación del humano**, con 7 decisiones abiertas
+> al final de `requirements.md`.
 
 > **Aviso de despliegue:** F-023 está en `dev` pero **no se despliega sin
 > F-024** (sin selector, el cuadrante mezcla empresas). La BBDD local ya
@@ -23,7 +23,7 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
-| 2 | **F-024** | selector de empresa (spec en redacción) |
+| 2 | **F-024** | selector de empresa (spec en `spec_ready`, espera aprobación) |
 | 4 | **F-027**, F-020 | deshacer solo lo propio; Excel |
 
 **Efecto visible de F-022 hasta que llegue F-024:** la api imputa siempre a
