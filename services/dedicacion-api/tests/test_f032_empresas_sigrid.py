@@ -105,3 +105,30 @@ def test_f032_r5_empresa_de_baja(fecbaj: Any, desact: Any, de_baja: bool) -> Non
     from domain.empresas import empresa_de_baja
 
     assert empresa_de_baja(fecbaj, desact) is de_baja
+
+
+# --- R1 · consulta versionada en config.yaml ---------------------------------
+
+
+def _plano(sql: str) -> str:
+    return " ".join(sql.split())
+
+
+def test_f032_r1_config_lee_auxemp_con_los_alias_exactos() -> None:
+    from config.settings import cargar_config
+
+    sql = _plano(cargar_config()["sync"]["empresas"]["sql"])
+    assert sql == (
+        "SELECT aux.numemp AS numemp, aux.cod AS cod, aux.res AS nombre, "
+        "aux.fecbaj AS fecbaj, aux.desact AS desact "
+        "FROM dbo.auxemp AS aux ORDER BY aux.numemp"
+    )
+
+
+def test_f032_r1_config_consulta_de_solo_lectura() -> None:
+    from config.settings import cargar_config
+
+    sql = _plano(cargar_config()["sync"]["empresas"]["sql"]).upper()
+    assert sql.startswith("SELECT ")
+    for prohibida in ("INSERT", "UPDATE", "DELETE", "MERGE", "EXEC", ";"):
+        assert prohibida not in sql, prohibida

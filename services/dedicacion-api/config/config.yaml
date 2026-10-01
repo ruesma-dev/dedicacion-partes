@@ -167,6 +167,27 @@ sync:
       - "anulada"
       - "anulado"
 
+  empresas:
+    # Catálogo de empresas de Sigrid (F-032): tabla `auxemp`, campos según
+    # azure-apps/sigrid_tablas.md. Se guarda en la tabla `empresa` de la BBDD
+    # y de ahí sale el nombre del selector del cuadrante.
+    # Alias obligatorios: numemp, nombre.  Alias opcionales: cod, fecbaj, desact
+    #   - numemp «Número de Empresa», Entero, único: es lo que casa con con.emp;
+    #   - res «Resumen», Texto 48: el nombre;
+    #   - fecbaj «Fecha baja», Entero tipo fecha (0 = sin baja);
+    #   - desact «Desactivada 0no 1si», Entero.
+    # Sin WHERE: entran también las de baja o desactivadas. Una de baja con
+    # trabajadores activos se enseña en el selector marcada «(de baja)»,
+    # nunca oculta (decisión del humano del 2026-10-01).
+    sql: |
+      SELECT aux.numemp AS numemp,
+             aux.cod    AS cod,
+             aux.res    AS nombre,
+             aux.fecbaj AS fecbaj,
+             aux.desact AS desact
+      FROM dbo.auxemp AS aux
+      ORDER BY aux.numemp
+
 export:
   # Prefijo con el que se exportan las líneas de postventa, para mantener
   # la compatibilidad con la plantilla Excel actual (códigos "Postv-XXX").
