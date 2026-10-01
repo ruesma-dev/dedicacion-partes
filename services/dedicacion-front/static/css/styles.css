@@ -99,6 +99,14 @@ img { display: block; max-width: 100%; }
   white-space: nowrap;
 }
 .topbar__meta { display: flex; align-items: center; gap: 12px; }
+/* Selector de empresa (F-024): las opciones las pinta app.js. */
+.selector-empresa {
+  font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--ink);
+  padding: 5px 10px; border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong); background: var(--paper);
+  max-width: 260px; cursor: pointer;
+}
+.selector-empresa:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
 .topbar__ver { font-size: 0.72rem; color: var(--steel-300); }
 
 /* ---------- Layout ---------- */
@@ -256,6 +264,14 @@ tr.fila.inactivo td { opacity: 0.55; }
   color: var(--danger-strong); border: 1px solid var(--danger-border);
   vertical-align: middle;
 }
+/* Trabajador sin empresa en el maestro (F-024, R12). */
+.celda-nombre .tag-sin-empresa {
+  margin-left: 8px; padding: 1px 6px; border-radius: 6px;
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; background: var(--info-soft);
+  color: var(--info-ink); border: 1px solid var(--info-border);
+  vertical-align: middle;
+}
 .celda-categoria { color: var(--ink-soft); font-size: 0.86rem; }
 
 .celda-chips {
@@ -271,6 +287,11 @@ tr.fila.inactivo td { opacity: 0.55; }
 .chip-linea .pct { font-variant-numeric: tabular-nums; font-weight: 700; }
 .chip-linea.pv { background: var(--pv-soft); border-color: var(--pv-border); color: var(--pv); }
 .chip-linea.obra-baja { text-decoration: line-through; opacity: 0.6; }
+/* Línea en obra de otra empresa: no se registrará en esta (F-024, R12). */
+.chip-linea.chip-otra-empresa {
+  background: var(--warn-soft); border: 1px dashed var(--warn-border);
+  color: var(--warn);
+}
 .sin-carga-texto { color: var(--steel-300); font-size: 0.84rem; }
 
 /* --- Total (derecha): ✓ / ✗ con falta o sobra --------------------------- */
