@@ -34,19 +34,27 @@ manuales T11-T13 para `done`. El arnés es la
 
 ### Verificaciones MANUAL (humano) de F-024
 
-- **T11**: copiar a `azure-apps/dedicacion.md` las piezas de T10, literales, y
-  hacer el commit allí. Resultado: _pendiente_.
+- **T11 — CUMPLIDA (2026-10-01)**: el líder, con autorización del humano,
+  copió a `azure-apps/dedicacion.md` las cuatro piezas de T10 literales
+  (cabecera, fila de `EMPRESA_IMPUTACION`, párrafo de `GET /api/v1/empresas`
+  y §9) sin reescribir el resto; commit `f6ef278` en `azure-apps`.
 - **T12**: nombres de las empresas con trabajadores activos (18 y 31) en
   `config.yaml` `empresas.nombres`. Hoy lleva solo 1 y 28 (D1). El
   explorador tiene los nombres (arriba), pendiente de que el humano los
   acepte; la alternativa es `SELECT numemp, res FROM dbo.auxemp WHERE numemp
   IN (1, 18, 28, 31)` por sigrid-api. Resultado: _pendiente_.
-- **T13**: prueba en local (API de la rama, transfer en modo pruebas): sin
-  `?empresa` sale Construcciones Ruesma; cambiar a 18 y volver; julio 2026 con
-  la 1, las líneas de 0009 y 0025 marcadas `otra_empresa` y omitidas en el
-  preflight con `obra_destino.empresa == 28`; preflight con la 18, error de
-  obra de pruebas por obra y nada escrito. **NO** lanzar `registro/ejecutar`.
-  Resultado: _pendiente_.
+- **T13 — CUMPLIDA (2026-10-01)**, con un punto sin ejercitar. Parte
+  visual: confirmada por el humano en `http://localhost:8080` (selector con
+  Ruesma por defecto, cambio a la 18 con `?empresa=18` que sobrevive al
+  recargar, marcas de otra empresa). Parte de API: `t13_selector_f024.ps1`
+  (solo lectura, sin `ejecutar`), API y transfer de `dev` con modo pruebas:
+  `/empresas` da por defecto la 1 y la lista 1, 18, 31; julio 2026 con la 1,
+  180 trabajadores (igual sin `?empresa`), líneas de 0009 y 0025 marcadas
+  `otra_empresa` (empresa 28) y omitidas en el preflight con
+  `obra_destino.empresa == 28`, nada escrito; con la 18, 4 trabajadores y 8
+  obras (313 con la 1); 9 trabajadores visibles «sin empresa». **Sin
+  ejercitar con datos reales**: el preflight con la 18 (R19, D3), porque la
+  18 no tiene líneas en julio; lo cubren los tests de `test_f024_registro_empresa.py`.
 
 > **Aviso de despliegue:** F-022 y F-023 están en `dev` pero **no se
 > despliegan sin F-024** (sin selector, el cuadrante mezcla empresas). La
