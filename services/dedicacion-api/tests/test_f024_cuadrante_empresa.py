@@ -13,6 +13,8 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from sqlalchemy.dialects import postgresql
+
 from application.use_cases import (
     CopiarPeriodoAnterior,
     CopiarTrabajadorAnterior,
@@ -31,7 +33,6 @@ from domain.models import (
     Trabajador,
 )
 from infrastructure.db.repositories import PgTrabajadorRepository, _a_linea
-from sqlalchemy.dialects import postgresql
 
 
 # ============================ repositorio (T2) ========================== #
@@ -263,7 +264,7 @@ def test_f024_r10_fila_con_todas_sus_lineas_y_total_sobre_todas():
     ana = cuadrante.filas[0]
     assert [(ln.obra_ide, ln.obra_empresa) for ln in ana.lineas] == [
         (100, 1), (900, 28)]
-    assert ana.total == Decimal("100")
+    assert ana.total == Decimal(100)
 
 
 def test_f024_r10_puede_deshacer_se_conserva():
@@ -299,7 +300,7 @@ def test_f024_r13_resumen_de_las_respuestas_por_fila(empresa, resumen):
     fila, res = GuardarAsignaciones().ejecutar(
         uow, ANIO, MES, 14, [{"obra_ide": 101, "porcentaje": "100"}],
         "u", filtro=_f(empresa))
-    assert fila.total == Decimal("100")
+    assert fila.total == Decimal(100)
     # Eva (14) pasa de SIN_CARGA a OK en la 1; en la 28 no cuenta.
     esperado = (ResumenPeriodo(total=4, ok=3, falta=1, sin_carga=0)
                 if empresa == 1 else resumen)
@@ -311,7 +312,7 @@ def test_f024_r13_resumen_de_las_respuestas_por_fila(empresa, resumen):
 
     uow = _uow()
     uow.lineas[P_ANT] = {14: [_ln(101, "100")]}
-    fila, res, origen, omitidas = CopiarTrabajadorAnterior().ejecutar(
+    fila, res, _origen, omitidas = CopiarTrabajadorAnterior().ejecutar(
         uow, ANIO, MES, 14, "u", filtro=_f(empresa))
     assert res == esperado and omitidas == 0
 

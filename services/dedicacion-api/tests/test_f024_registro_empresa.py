@@ -12,11 +12,12 @@ sentencia) y transfer falso que captura el payload. Ni red, ni BBDD.
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Self
 
 import pytest
-from application.registro_sigrid import RegistroSigrid
 from sqlalchemy.sql.dml import Update
+
+from application.registro_sigrid import RegistroSigrid
 
 #: Empresa por defecto (EMPRESA_IMPUTACION) de los tests.
 DEF = 1
@@ -38,7 +39,7 @@ class _Sesion:
         self._filas = filas
         self._updates = updates
 
-    def __enter__(self) -> _Sesion:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc: object) -> None:

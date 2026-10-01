@@ -41,7 +41,7 @@ class RegistroSigrid:
         # valor por defecto aquí: sale siempre del ajuste EMPRESA_IMPUTACION.
         self._por_defecto = empresa_imputacion
 
-    def _filtro(self, empresa: Optional[int]) -> FiltroEmpresa:
+    def _filtro(self, empresa: int | None) -> FiltroEmpresa:
         return FiltroEmpresa(empresa=empresa or self._por_defecto,
                              por_defecto=self._por_defecto)
 
@@ -66,7 +66,7 @@ class RegistroSigrid:
         # cuadrante, sobre TODAS las obras del trabajador en el periodo. Las
         # líneas en obras de otra empresa se mandan igual (R17): el transfer
         # las omite con motivo y `_trazar` lo deja en la asignación.
-        empresas_de: dict[int, list[Optional[int]]] = {}
+        empresas_de: dict[int, list[int | None]] = {}
         for _, t, o in filas:
             empresas_de.setdefault(t.ide, []).append(o.empresa)
         por_obra: dict[int, dict[str, Any]] = {}
@@ -95,7 +95,7 @@ class RegistroSigrid:
     def preflight(self, anio: int, mes: int,
                   overrides: Optional[dict[int, int]] = None,
                   trabajador_ide: Optional[int] = None,
-                  empresa: Optional[int] = None) -> dict:
+                  empresa: int | None = None) -> dict:
         with self._sf() as s:
             payloads = self._payloads(s, anio, mes, overrides or {},
                                       trabajador_ide, self._filtro(empresa))
@@ -111,7 +111,7 @@ class RegistroSigrid:
                  overrides: Optional[dict[int, int]] = None,
                  usuario: str = "local",
                  trabajador_ide: Optional[int] = None,
-                 empresa: Optional[int] = None) -> dict:
+                 empresa: int | None = None) -> dict:
         with self._sf() as s:
             payloads = self._payloads(s, anio, mes, overrides or {},
                                       trabajador_ide, self._filtro(empresa))

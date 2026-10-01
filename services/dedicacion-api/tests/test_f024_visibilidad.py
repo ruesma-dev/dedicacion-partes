@@ -11,6 +11,7 @@ from dataclasses import FrozenInstanceError, fields
 from decimal import Decimal
 
 import pytest
+
 from domain.empresas import linea_de_otra_empresa, visible_en_empresa
 from domain.models import FiltroEmpresa, Linea
 
@@ -95,7 +96,7 @@ def test_f024_r11_linea_de_otra_empresa(obra_empresa, empresa, otra):
 def test_f024_r11_linea_lleva_obra_empresa_opcional():
     campos = {f.name: f for f in fields(Linea)}
     assert campos["obra_empresa"].default is None
-    ln = Linea(obra_ide=1, es_postventa=False, porcentaje=Decimal("10"),
+    ln = Linea(obra_ide=1, es_postventa=False, porcentaje=Decimal(10),
                obra_empresa=28)
     assert ln.obra_empresa == 28
 
@@ -112,8 +113,8 @@ def test_f024_r10_la_regla_no_quita_lineas():
     """R10 · La visibilidad decide la FILA, no sus líneas: un trabajador de
     la 1 con una línea en una obra de la 28 sigue visible en la 1 y esa
     línea se marca (no se filtra)."""
-    lineas = [Linea(1, False, Decimal("60"), obra_empresa=1),
-              Linea(2, False, Decimal("40"), obra_empresa=28)]
+    lineas = [Linea(1, False, Decimal(60), obra_empresa=1),
+              Linea(2, False, Decimal(40), obra_empresa=28)]
     assert visible_en_empresa(1, [ln.obra_empresa for ln in lineas], _f(1))
     assert [linea_de_otra_empresa(ln.obra_empresa, 1) for ln in lineas] == [
         False, True]

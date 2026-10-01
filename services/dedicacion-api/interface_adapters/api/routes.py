@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, Response
+from fastapi import APIRouter, Body, Depends, Query, Response
 
 from application.use_cases import (
     CambiarEstadoPeriodo,
@@ -13,12 +13,13 @@ from application.use_cases import (
     CrearObtenerPeriodo,
     DeshacerUltimaModificacion,
     GuardarAsignaciones,
+    ListarEmpresas,
     ListarPeriodos,
     ObtenerCuadrante,
     ObtenerFilaTrabajador,
 )
 from config.settings import cargar_config
-from domain.models import EstadoPeriodo
+from domain.models import EstadoPeriodo, FiltroEmpresa
 from interface_adapters.api.deps import (
     Contenedor,
     obtener_contenedor,
@@ -29,6 +30,8 @@ from interface_adapters.api.schemas import (
     CopiaPeriodoOut,
     CopiaTrabajadorOut,
     CuadranteOut,
+    EmpresaOut,
+    EmpresasOut,
     FilaOut,
     PeriodoCreadoOut,
     PeriodoIn,
@@ -47,6 +50,14 @@ router = APIRouter(prefix="/api/v1")
 
 Cont = Annotated[Contenedor, Depends(obtener_contenedor)]
 Usuario = Annotated[str, Depends(obtener_usuario)]
+#: Empresa elegida en el selector (F-024, R6). Sin ella, la por defecto
+#: (`EMPRESA_IMPUTACION`); si no es un entero > 0, 422 sin tocar nada.
+EmpresaQ = Annotated[int | None, Query(gt=0)]
+
+
+def _filtro(contenedor: Contenedor, empresa: int | None) -> FiltroEmpresa:
+    por_defecto = contenedor.settings.empresa_imputacion
+    return FiltroEmpresa(empresa=empresa or por_defecto, por_defecto=por_defecto)
 
 
 # --------------------------- Salud ------------------------------------
@@ -71,6 +82,21 @@ def sincronizar(contenedor: Cont) -> SyncOut:
 @router.get("/sync/preview", tags=["sync"])
 def preview_sync(contenedor: Cont) -> dict[str, Any]:
     return contenedor.preview_sync.ejecutar()
+
+
+# --------------------------- Empresas ---------------------------------
+@router.get("/empresas", response_model=EmpresasOut, tags=["empresas"])
+def listar_empresas(contenedor: Cont) -> EmpresasOut:
+    """Empresas del selector y la por defecto (F-024, R1 y R2)."""
+    caso = ListarEmpresas(
+        contenedor.nombres_empresas, contenedor.settings.empresa_imputacion
+    )
+    with contenedor.uow() as uow:
+        por_defecto, empresas = caso.ejecutar(uow)
+    return EmpresasOut(
+        por_defecto=por_defecto,
+        empresas=[EmpresaOut(empresa=n, nombre=nombre) for n, nombre in empresas],
+    )
 
 
 # --------------------------- Periodos ---------------------------------
@@ -115,23 +141,33 @@ def reabrir_periodo(anio: int, mes: int, contenedor: Cont) -> PeriodoOut:
 @router.post("/periodos/{anio}/{mes}/copiar-anterior",
              response_model=CopiaPeriodoOut, tags=["periodos"])
 def copiar_periodo_anterior(
-    anio: int, mes: int, contenedor: Cont, usuario: Usuario
+    anio: int, mes: int, contenedor: Cont, usuario: Usuario,
+    empresa: EmpresaQ = None,
 ) -> CopiaPeriodoOut:
+    filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
-        resultado = CopiarPeriodoAnterior().ejecutar(uow, anio, mes, usuario)
+        resultado = CopiarPeriodoAnterior().ejecutar(
+            uow, anio, mes, usuario, filtro=filtro
+        )
     return a_copia_periodo_out(resultado)
 
 
 # --------------------------- Cuadrante --------------------------------
 @router.get("/periodos/{anio}/{mes}/cuadrante", response_model=CuadranteOut,
             tags=["cuadrante"])
-def obtener_cuadrante(anio: int, mes: int, contenedor: Cont) -> CuadranteOut:
+def obtener_cuadrante(
+    anio: int, mes: int, contenedor: Cont, empresa: EmpresaQ = None
+) -> CuadranteOut:
+    filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
-        cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes)
+        cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes, filtro)
     return CuadranteOut(
         periodo=a_periodo_out(cuadrante.periodo),
+        empresa=cuadrante.empresa,
         obras=[a_obra_out(o) for o in cuadrante.obras],
-        trabajadores=[a_trabajador_out(f) for f in cuadrante.filas],
+        trabajadores=[
+            a_trabajador_out(f, cuadrante.empresa) for f in cuadrante.filas
+        ],
         resumen=a_resumen_out(cuadrante.resumen),
     )
 
@@ -148,12 +184,18 @@ def guardar_asignaciones(
     payload: AsignacionesIn,
     contenedor: Cont,
     usuario: Usuario,
+    empresa: EmpresaQ = None,
 ) -> FilaOut:
+    filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
         fila, resumen = GuardarAsignaciones().ejecutar(
-            uow, anio, mes, trabajador_ide, lineas_a_dicts(payload), usuario
+            uow, anio, mes, trabajador_ide, lineas_a_dicts(payload), usuario,
+            filtro=filtro,
         )
-    return FilaOut(trabajador=a_trabajador_out(fila), resumen=a_resumen_out(resumen))
+    return FilaOut(
+        trabajador=a_trabajador_out(fila, filtro.empresa),
+        resumen=a_resumen_out(resumen),
+    )
 
 
 @router.post(
@@ -162,13 +204,18 @@ def guardar_asignaciones(
     tags=["cuadrante"],
 )
 def deshacer(
-    anio: int, mes: int, trabajador_ide: int, contenedor: Cont, usuario: Usuario
+    anio: int, mes: int, trabajador_ide: int, contenedor: Cont, usuario: Usuario,
+    empresa: EmpresaQ = None,
 ) -> FilaOut:
+    filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
         fila, resumen = DeshacerUltimaModificacion().ejecutar(
-            uow, anio, mes, trabajador_ide, usuario
+            uow, anio, mes, trabajador_ide, usuario, filtro=filtro
         )
-    return FilaOut(trabajador=a_trabajador_out(fila), resumen=a_resumen_out(resumen))
+    return FilaOut(
+        trabajador=a_trabajador_out(fila, filtro.empresa),
+        resumen=a_resumen_out(resumen),
+    )
 
 
 @router.post(
@@ -177,14 +224,16 @@ def deshacer(
     tags=["cuadrante"],
 )
 def copiar_trabajador_anterior(
-    anio: int, mes: int, trabajador_ide: int, contenedor: Cont, usuario: Usuario
+    anio: int, mes: int, trabajador_ide: int, contenedor: Cont, usuario: Usuario,
+    empresa: EmpresaQ = None,
 ) -> CopiaTrabajadorOut:
+    filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
         fila, resumen, origen, omitidas = CopiarTrabajadorAnterior().ejecutar(
-            uow, anio, mes, trabajador_ide, usuario
+            uow, anio, mes, trabajador_ide, usuario, filtro=filtro
         )
     return CopiaTrabajadorOut(
-        trabajador=a_trabajador_out(fila),
+        trabajador=a_trabajador_out(fila, filtro.empresa),
         resumen=a_resumen_out(resumen),
         periodo_origen=a_periodo_out(origen) if origen else None,
         lineas_omitidas_obra_inactiva=omitidas,
@@ -193,12 +242,15 @@ def copiar_trabajador_anterior(
 
 # --------------------------- Export -----------------------------------
 @router.get("/periodos/{anio}/{mes}/export.xlsx", tags=["export"])
-def exportar(anio: int, mes: int, contenedor: Cont) -> Response:
+def exportar(
+    anio: int, mes: int, contenedor: Cont, empresa: EmpresaQ = None
+) -> Response:
+    filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
-        cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes)
+        cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes, filtro)
     contenido = contenedor.exporter.exportar(cuadrante.periodo, cuadrante.filas)
     plantilla = cargar_config()["export"]["nombre_fichero"]
-    nombre = plantilla.format(anio=anio, mes=mes)
+    nombre = plantilla.format(anio=anio, mes=mes, empresa=cuadrante.empresa)
     return Response(
         content=contenido,
         media_type=(
@@ -215,23 +267,31 @@ _ = ObtenerFilaTrabajador
 # ----------------------- Registro en Sigrid ---------------------------
 @router.post("/periodos/{anio}/{mes}/registro/preflight", tags=["sigrid"])
 def registro_preflight(anio: int, mes: int, contenedor: Cont,
-                       payload: dict = Body(default={})) -> dict[str, Any]:
+                       payload: dict = Body(default={}),
+                       empresa: EmpresaQ = None) -> dict[str, Any]:
     """Analiza qué se registraría (no escribe). Admite `trabajador_ide`
-    para el registro de una sola línea y `overrides` de partida."""
+    para el registro de una sola línea y `overrides` de partida. La empresa
+    llega por query, como en el resto de rutas del periodo (F-024)."""
+    filtro = _filtro(contenedor, empresa)
     overrides = {int(k): int(v) for k, v in
                  (payload.get("overrides") or {}).items()}
     return contenedor.registro_sigrid.preflight(
         anio, mes, overrides,
-        trabajador_ide=payload.get("trabajador_ide"))
+        trabajador_ide=payload.get("trabajador_ide"),
+        empresa=filtro.empresa)
 
 
 @router.post("/periodos/{anio}/{mes}/registro/ejecutar", tags=["sigrid"])
 def registro_ejecutar(anio: int, mes: int, contenedor: Cont,
-                      payload: dict = Body(default={})) -> dict[str, Any]:
-    """Escribe en Sigrid vía porcentajes-transfer y deja la traza."""
+                      payload: dict = Body(default={}),
+                      empresa: EmpresaQ = None) -> dict[str, Any]:
+    """Escribe en Sigrid vía porcentajes-transfer y deja la traza, con la
+    empresa elegida (F-024)."""
+    filtro = _filtro(contenedor, empresa)
     overrides = {int(k): int(v) for k, v in
                  (payload.get("overrides") or {}).items()}
     return contenedor.registro_sigrid.ejecutar(
         anio, mes, pisar_claves=list(payload.get("pisar_claves") or []),
         overrides=overrides, usuario=str(payload.get("usuario") or "local"),
-        trabajador_ide=payload.get("trabajador_ide"))
+        trabajador_ide=payload.get("trabajador_ide"),
+        empresa=filtro.empresa)

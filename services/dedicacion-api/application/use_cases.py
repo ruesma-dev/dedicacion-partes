@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from domain.empresas import visible_en_empresa
 from domain.errors import (
     LineasInvalidas,
     NadaQueDeshacer,
@@ -20,7 +21,6 @@ from domain.errors import (
     PeriodoNoEncontrado,
     TrabajadorNoEncontrado,
 )
-from domain.empresas import visible_en_empresa
 from domain.estados import resumir
 from domain.models import (
     CuadranteTrabajador,

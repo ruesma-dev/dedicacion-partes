@@ -7,6 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from domain.empresas import linea_de_otra_empresa
 from domain.estados import calcular_desviacion, calcular_estado
 from domain.models import (
     CuadranteTrabajador,
@@ -46,6 +47,8 @@ class LineaOut(_Base):
     es_postventa: bool
     porcentaje: float
     obra_activa: bool
+    obra_empresa: int | None
+    otra_empresa: bool
 
 
 class TrabajadorOut(_Base):
@@ -53,6 +56,7 @@ class TrabajadorOut(_Base):
     nombre: str
     categoria: str | None
     activo: bool
+    empresa: int | None
     lineas: list[LineaOut]
     total: float
     desviacion: float
@@ -84,9 +88,20 @@ class ResumenOut(_Base):
 
 class CuadranteOut(_Base):
     periodo: PeriodoOut
+    empresa: int
     obras: list[ObraOut]
     trabajadores: list[TrabajadorOut]
     resumen: ResumenOut
+
+
+class EmpresaOut(_Base):
+    empresa: int
+    nombre: str
+
+
+class EmpresasOut(_Base):
+    por_defecto: int
+    empresas: list[EmpresaOut]
 
 
 class FilaOut(_Base):
@@ -143,7 +158,9 @@ def a_obra_out(obra: Obra) -> ObraOut:
     )
 
 
-def a_trabajador_out(fila: CuadranteTrabajador) -> TrabajadorOut:
+def a_trabajador_out(fila: CuadranteTrabajador, empresa: int) -> TrabajadorOut:
+    """`empresa` es la elegida en la petición: decide `otra_empresa` de cada
+    línea (F-024, R11)."""
     total = fila.total
     estado = calcular_estado(total, len(fila.lineas))
     desviacion = calcular_desviacion(total, len(fila.lineas))
@@ -152,6 +169,7 @@ def a_trabajador_out(fila: CuadranteTrabajador) -> TrabajadorOut:
         nombre=fila.trabajador.nombre,
         categoria=fila.trabajador.categoria,
         activo=fila.trabajador.activo,
+        empresa=fila.trabajador.empresa,
         lineas=[
             LineaOut(
                 obra_ide=ln.obra_ide,
@@ -160,6 +178,8 @@ def a_trabajador_out(fila: CuadranteTrabajador) -> TrabajadorOut:
                 es_postventa=ln.es_postventa,
                 porcentaje=float(ln.porcentaje),
                 obra_activa=ln.obra_activa,
+                obra_empresa=ln.obra_empresa,
+                otra_empresa=linea_de_otra_empresa(ln.obra_empresa, empresa),
             )
             for ln in fila.lineas
         ],
