@@ -14,6 +14,8 @@ from typing import Any, Optional
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
+from domain.empresas import visible_en_empresa
+from domain.models import FiltroEmpresa
 from infrastructure.db.orm_models import (
     AsignacionORM, ObraORM, PeriodoORM, TrabajadorORM,
 )
@@ -33,15 +35,21 @@ class RegistroSigrid:
                  transfer: TransferClient, empresa_imputacion: int) -> None:
         self._sf = session_factory
         self._transfer = transfer
-        # Empresa de cada línea (docs/ARCHITECTURE.md#regla-empresa). Sin
-        # valor por defecto: sale siempre del ajuste EMPRESA_IMPUTACION.
-        self._empresa = empresa_imputacion
+        # Empresa POR DEFECTO (D6 de F-024): la de la línea es la elegida en
+        # el selector y llega en cada petición; esta solo se usa si la
+        # petición no la trae (docs/ARCHITECTURE.md#regla-empresa). Sin
+        # valor por defecto aquí: sale siempre del ajuste EMPRESA_IMPUTACION.
+        self._por_defecto = empresa_imputacion
+
+    def _filtro(self, empresa: Optional[int]) -> FiltroEmpresa:
+        return FiltroEmpresa(empresa=empresa or self._por_defecto,
+                             por_defecto=self._por_defecto)
 
     # ------------------------------------------------------------- #
     def _payloads(self, s: Session, anio: int, mes: int,
                   overrides: dict[int, int],
-                  trabajador_ide: Optional[int] = None
-                  ) -> list[dict[str, Any]]:
+                  trabajador_ide: Optional[int],
+                  filtro: FiltroEmpresa) -> list[dict[str, Any]]:
         filas = s.execute(
             select(AsignacionORM, TrabajadorORM, ObraORM)
             .join(PeriodoORM, PeriodoORM.id == AsignacionORM.periodo_id)
@@ -54,8 +62,17 @@ class RegistroSigrid:
                       if trabajador_ide else [] ))
             .order_by(ObraORM.cod, TrabajadorORM.nombre)
         ).all()
+        # Visibilidad por empresa (F-024, R16): la misma regla que el
+        # cuadrante, sobre TODAS las obras del trabajador en el periodo. Las
+        # líneas en obras de otra empresa se mandan igual (R17): el transfer
+        # las omite con motivo y `_trazar` lo deja en la asignación.
+        empresas_de: dict[int, list[Optional[int]]] = {}
+        for _, t, o in filas:
+            empresas_de.setdefault(t.ide, []).append(o.empresa)
         por_obra: dict[int, dict[str, Any]] = {}
         for a, t, o in filas:
+            if not visible_en_empresa(t.empresa, empresas_de[t.ide], filtro):
+                continue
             grupo = por_obra.setdefault(o.ide, {
                 "obra": {"ide": o.ide, "codigo": o.cod,
                          "nombre": o.descripcion},
@@ -67,7 +84,7 @@ class RegistroSigrid:
                 "empleado_ide": t.ide, "dni": t.dni, "nombre": t.nombre,
                 "categoria": t.categoria,
                 "es_postventa": bool(a.es_postventa),
-                "empresa": self._empresa,
+                "empresa": filtro.empresa,
             }
             if overrides.get(a.id):
                 linea["paride"] = int(overrides[a.id])
@@ -77,10 +94,11 @@ class RegistroSigrid:
     # ------------------------------------------------------------- #
     def preflight(self, anio: int, mes: int,
                   overrides: Optional[dict[int, int]] = None,
-                  trabajador_ide: Optional[int] = None) -> dict:
+                  trabajador_ide: Optional[int] = None,
+                  empresa: Optional[int] = None) -> dict:
         with self._sf() as s:
             payloads = self._payloads(s, anio, mes, overrides or {},
-                                      trabajador_ide)
+                                      trabajador_ide, self._filtro(empresa))
         resultados = []
         for p in payloads:
             r = self._transfer.preflight({**p, "pisar_claves": []})
@@ -92,10 +110,11 @@ class RegistroSigrid:
     def ejecutar(self, anio: int, mes: int, *, pisar_claves: list[str],
                  overrides: Optional[dict[int, int]] = None,
                  usuario: str = "local",
-                 trabajador_ide: Optional[int] = None) -> dict:
+                 trabajador_ide: Optional[int] = None,
+                 empresa: Optional[int] = None) -> dict:
         with self._sf() as s:
             payloads = self._payloads(s, anio, mes, overrides or {},
-                                      trabajador_ide)
+                                      trabajador_ide, self._filtro(empresa))
         resultados = []
         for p in payloads:
             r = self._transfer.ejecutar({**p, "pisar_claves": pisar_claves,
