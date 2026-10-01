@@ -793,3 +793,92 @@ sesión retirado de `current.md`:
   independiente del criterio), 642 sin código M*, 0 por recurso de otra
   empresa, 29 con baja laboral (informativo); no llegó truncado.
 
+## 2026-10-01 · F-024 · Selector de empresa arriba a la derecha, Ruesma por defecto
+
+Rama `feature/F-024-selector-empresa` · `sdd: true` · rigor `estandar` ·
+**APROBADO** por el reviewer a la primera. Prioridad subida a 2 por el humano:
+sin ella no se despliegan F-022 ni F-023.
+
+**Qué cambió (tres servicios).** API: regla de visibilidad por empresa en el
+dominio, un único punto de filtro para cuadrante, fila, guardar, deshacer, las
+dos copias, resumen, export y registro; `GET /api/v1/empresas`; parámetro
+`empresa` (entero > 0) en las rutas del periodo; cada línea se imputa a la
+empresa **elegida** y `EMPRESA_IMPUTACION` pasa a ser la por defecto (D6).
+Transfer: el corte por obra de otra empresa publica la obra de origen
+resuelta (recogido de la review 1 de F-022); contrato intacto. Front: selector
+en la barra superior, empresa en la URL y en cada llamada, marcas «sin
+empresa» y «otra empresa», sin lógica de negocio.
+
+**Verificado.** Cobertura 100 % (105/105); mutación 17/17; único assert
+anterior cambiado, el de F-022 previsto en el design. **T11** (copia en
+`azure-apps`, `f6ef278`) y **T13** (prueba en local: parte visual confirmada
+por el humano; parte de API ejecutada por el líder y repetida por el humano
+con el mismo resultado) cumplidas. Sin ejercitar con datos reales: el
+preflight con la 18 (R19), porque no tiene líneas en julio; lo cubren tests.
+
+**Decisiones de cierre.** **T12 sustituida por F-032**: el humano decide que
+los nombres de empresa salgan de Sigrid (`auxemp`) y no de `config.yaml`.
+Observación O1 de la review (guardar/deshacer/copiar no comprueban
+visibilidad) → criterio de F-031; O2 y O3, descartadas por cosméticas.
+Automejora → `arnes-base` (`2182089`). **F-022, F-023, F-024 y F-032 se
+despliegan juntas.**
+
+Informes: `progress/impl_F-024.md`, `progress/review_F-024.md`,
+`progress/mutacion_F-024.md`, `progress/explore_nombres_empresas.md`. Detalle
+de sesión retirado de `current.md`:
+
+## F-024 · Selector de empresa arriba a la derecha, Ruesma por defecto
+
+- Rama `feature/F-024-selector-empresa`. Spec aprobada por el humano el
+  2026-10-01 con D1-D7 (`features.json`). Plan confirmado.
+- **Implementer terminado**: T1-T10 y T14, un commit por tarea más dos de
+  estilo (`1b0bc40` … `2cbe55c`); informe `progress/impl_F-024.md`. Toca los
+  tres servicios; contrato API ↔ transfer intacto; único assert anterior
+  cambiado, el de F-022 que declara design §7. Mutación 17/17. **Review APROBADA** a
+  la primera (`progress/review_F-024.md`): cobertura 100 % (105/105), las ocho
+  rutas del periodo con filtro, front sin lógica, contrato intacto.
+- Observaciones de la review, **recogidas o descartadas por escrito**:
+  - O1 (guardar/deshacer/copiar no comprueban visibilidad) → criterio nuevo
+    de **F-031**: un MCP que escriba es un segundo cliente.
+  - O2 (`?empresa=99` queda en la URL) y O3 (`cerrar`/`reabrir` ignoran
+    `?empresa=`): **descartadas**, cosméticas e inocuas.
+  - O4 (el cambio del transfer no genera mutantes): sostenido por la RED de
+    T7 y los tests de R20; nada que hacer.
+  - Automejora de C4 bis → encargo en `arnes-base`.
+- **Mergeada a `dev`** tras la review (T11-T13 bloquean el `done`, no el
+  merge).
+- **Explorador (T12), terminado**: nombres de las 19 empresas desde tres
+  vistas del data mart que coinciden (18 = RUESMA SERVICIOS SL, 31 = UTE
+  RUESMA-INESCO TOLEDO; 1 y 28 confirmadas). Informe en el scratchpad del
+  líder; se versiona como `progress/explore_nombres_empresas.md` al cerrar
+  T12. **Propuesta al humano, pendiente de su respuesta**: poner los 19 en
+  `config.yaml` tal cual y dar T12 por cumplida sin consultar sigrid-api.
+
+#### Verificaciones MANUAL (humano) de F-024
+
+- **T11 — CUMPLIDA (2026-10-01)**: el líder, con autorización del humano,
+  copió a `azure-apps/dedicacion.md` las cuatro piezas de T10 literales
+  (cabecera, fila de `EMPRESA_IMPUTACION`, párrafo de `GET /api/v1/empresas`
+  y §9) sin reescribir el resto; commit `f6ef278` en `azure-apps`.
+- **T12**: nombres de las empresas con trabajadores activos (18 y 31) en
+  `config.yaml` `empresas.nombres`. Hoy lleva solo 1 y 28 (D1). El
+  explorador tiene los nombres (arriba), pendiente de que el humano los
+  acepte; la alternativa es `SELECT numemp, res FROM dbo.auxemp WHERE numemp
+  IN (1, 18, 28, 31)` por sigrid-api. Resultado: _pendiente_.
+- **T13 — CUMPLIDA (2026-10-01)**, con un punto sin ejercitar. Parte
+  visual: confirmada por el humano en `http://localhost:8080` (selector con
+  Ruesma por defecto, cambio a la 18 con `?empresa=18` que sobrevive al
+  recargar, marcas de otra empresa). Parte de API: `t13_selector_f024.ps1`
+  (solo lectura, sin `ejecutar`), API y transfer de `dev` con modo pruebas:
+  `/empresas` da por defecto la 1 y la lista 1, 18, 31; julio 2026 con la 1,
+  180 trabajadores (igual sin `?empresa`), líneas de 0009 y 0025 marcadas
+  `otra_empresa` (empresa 28) y omitidas en el preflight con
+  `obra_destino.empresa == 28`, nada escrito; con la 18, 4 trabajadores y 8
+  obras (313 con la 1); 9 trabajadores visibles «sin empresa». **Sin
+  ejercitar con datos reales**: el preflight con la 18 (R19, D3), porque la
+  18 no tiene líneas en julio; lo cubren los tests de `test_f024_registro_empresa.py`.
+
+> **Aviso de despliegue:** F-022 y F-023 están en `dev` pero **no se
+> despliegan sin F-024** (sin selector, el cuadrante mezcla empresas). La
+> BBDD local ya tiene maestros de todas las empresas desde T11 de F-023.
+

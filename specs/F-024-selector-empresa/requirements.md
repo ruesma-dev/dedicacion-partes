@@ -112,14 +112,14 @@ Fuera de alcance: ver [`design.md` §10](design.md#10-fuera-de-alcance).
 
 ## 7. Decisiones abiertas (las valida el humano antes de implementar)
 
-- **D1 · Nombres de las empresas.** Hoy hay trabajadores activos en las
-  empresas 1, 18 y 31 (T11 de F-023); obras en 19. **Propuesta:** nombres en
-  `config.yaml` (`empresas.nombres`) con `1: Construcciones Ruesma` y
-  `28: Porsan`, y «Empresa N» para el resto hasta que alguien los rellene
-  (T12, lectura de `auxemp.res` por `auxemp.numemp = con.emp`, la unión que
-  usa el data mart). **Alternativa:** sincronizar `auxemp` a una tabla
-  `empresa` con el resto de maestros: sin lista a mano, pero con tabla, paso
-  de sync y consulta nuevos. Se descarta para F-024 por tamaño.
+- **D1 · Nombres de las empresas.** Aprobada con nombres en `config.yaml`
+  (`empresas.nombres`: 1 y 28) y «Empresa N» para el resto. **2026-10-01:
+  el humano la deja como puente y decide que los nombres salgan de Sigrid**
+  (`auxemp`, sincronizado con los maestros), lo que antes era la
+  alternativa: eso es **F-032**, que retirará `empresas.nombres`. T12 no se
+  ejecuta; queda sustituida por F-032. Hasta entonces el selector enseña
+  «Empresa 18» y «Empresa 31». F-022, F-023, F-024 y F-032 se despliegan
+  juntas.
 - **D2 · Dónde vive la empresa elegida.** **Propuesta:** en la URL
   (`?empresa=N`), sin guardarla en servidor ni en `localStorage`: al entrar
   sale la por defecto y un recargo o un enlace conservan la elegida.
