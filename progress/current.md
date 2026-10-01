@@ -4,6 +4,12 @@
 **Ninguna feature en ejecución.** F-032 se cerró el 2026-10-01 (resumen en
 `history.md`). El arnés es la **1.7.3**.
 
+> **2026-10-01, en curso:** el humano elige **F-025** (obras de postventa
+> desde POSTV2). Spec en redacción por el spec-author en la rama
+> `feature/F-025-obras-postventa-postv2`; al entregarla pasa a `spec_ready` y
+> espera la aprobación del humano. En paralelo, un reviewer revisa el
+> despliegue del 2026-10-01 → `progress/review_despliegue_20261001.md`.
+
 ## ⚠ DESPLEGADO EN MODO REAL (2026-10-01)
 
 - **Despliegue** de F-022, F-023, F-024 y F-032 lanzado por el humano con
