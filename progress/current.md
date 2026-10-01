@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-032 en curso** (nombres de empresa desde Sigrid, rigor estándar, sin
+**F-032 en review** (nombres de empresa desde Sigrid, rigor estándar, sin
 spec: guían sus `acceptance`). El arnés es la **1.7.3**.
 
 ## F-032 · Nombres de empresa sincronizados desde Sigrid
@@ -10,7 +10,14 @@ spec: guían sus `acceptance`). El arnés es la **1.7.3**.
   el 2026-10-01, con la decisión abierta cerrada: una empresa de baja o
   desactivada con trabajadores activos se enseña marcada «(de baja)», nunca
   oculta (`features.json`).
-- **Implementer lanzado** → `progress/impl_F-032.md`. Después, reviewer.
+- **Implementer terminado**: 11 commits (`4e4f070` … `106e345`), tabla
+  `empresa` desde `auxemp`, preview con las empresas leídas, `/empresas` con
+  nombre y `de_baja` de la tabla, fuera `empresas.nombres`; el front solo
+  pinta «(de baja)». Mutación con muestreo estándar: 2 supervivientes
+  reproducidos a mano y cazados con tests nuevos. Desviación declarada: tests
+  de F-024 que fijaban `empresas.nombres` sustituidos por su equivalente
+  sobre la tabla, sin cambiar valores esperados. **Reviewer lanzado** →
+  `progress/review_F-032.md`.
 
 ### Verificación MANUAL (humano) de F-032
 
@@ -32,7 +39,7 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 |---|---|---|
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
-| — | **F-032** | en curso (arriba) |
+| — | **F-032** | en review (arriba) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
 | 4 | **F-027**, F-020 | deshacer solo lo propio; Excel |
 
