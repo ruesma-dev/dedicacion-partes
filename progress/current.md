@@ -1,18 +1,14 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-023 se cerró el 2026-10-01 (resumen en
-`history.md`). El arnés es la **1.7.3**.
+**F-024 en curso** (selector de empresa, rigor estándar). Spec aprobada por
+el humano el 2026-10-01 con D1-D7 (`features.json`). **Implementer aún no
+lanzado**: falta que el humano confirme el plan de implementación
+(PARADA 1). El arnés es la **1.7.3**.
 
-> **2026-10-01, en curso:** el humano sube **F-024** (selector de empresa) a
-> prioridad 2 porque sin ella F-022 y F-023 no se despliegan. Su spec está
-> entregada (`5ebbdd7`, rama `feature/F-024-selector-empresa`) y en
-> `spec_ready`: **espera la aprobación del humano**, con 7 decisiones abiertas
-> al final de `requirements.md`.
-
-> **Aviso de despliegue:** F-023 está en `dev` pero **no se despliega sin
-> F-024** (sin selector, el cuadrante mezcla empresas). La BBDD local ya
-> tiene maestros de todas las empresas desde la verificación T11.
+> **Aviso de despliegue:** F-022 y F-023 están en `dev` pero **no se
+> despliegan sin F-024** (sin selector, el cuadrante mezcla empresas). La
+> BBDD local ya tiene maestros de todas las empresas desde T11 de F-023.
 
 ## Lo siguiente, por prioridad
 
@@ -23,7 +19,7 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
-| 2 | **F-024** | selector de empresa (spec en `spec_ready`, espera aprobación) |
+| — | **F-024** | en curso (arriba) |
 | 4 | **F-027**, F-020 | deshacer solo lo propio; Excel |
 
 **Efecto visible de F-022 hasta que llegue F-024:** la api imputa siempre a
