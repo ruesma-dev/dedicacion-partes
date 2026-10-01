@@ -4,13 +4,30 @@
 **Ninguna feature en ejecución.** F-032 se cerró el 2026-10-01 (resumen en
 `history.md`). El arnés es la **1.7.3**.
 
-> **Listo para desplegar:** F-022, F-023, F-024 y F-032 están en `dev` y se
-> despliegan **juntas** (imágenes nuevas de api, front y transfer; el esquema
-> de la api añade `empresa` en `trabajador`/`obra` y la tabla `empresa`). El
-> transfer sigue en modo pruebas. Desplegar es decisión del humano.
-> **Justo después de desplegar, pulsar «actualizar Sigrid» una vez**: hasta
-> el primer sync, las columnas `empresa` están vacías y la tabla `empresa`
-> también, así que el selector y el filtro no funcionan bien.
+## ⚠ DESPLEGADO EN MODO REAL (2026-10-01)
+
+- **Despliegue** de F-022, F-023, F-024 y F-032 lanzado por el humano con
+  `infra/redeploy_dedicacion.ps1` (el permiso del entorno no dejó lanzarlo al
+  líder). Imágenes `transfer:r20261001-1805`, `api:r20261001-1807`,
+  `front:r20261001-1808`; las tres revisiones `…--r20261001180529` activas y
+  listas. La api aplicó el esquema al arrancar (`ALTER … ADD COLUMN empresa`
+  en `trabajador` y `obra`; tabla `empresa` por `create_all`). Ya se ha hecho
+  un sync en producción: 536 recursos fuera por fecha de baja, 38 empresas.
+- **El transfer escribe DE VERDAD** (`OBRA_PRUEBAS_FORZAR=false`) por orden
+  expresa del humano, a sabiendas de F-017, F-026 y F-011 (anotado en F-018).
+  **Incidente durante el despliegue:** el humano cambió a real ANTES de
+  desplegar y durante un rato corrió el transfer VIEJO en real (revisión
+  `--0000001`, sin F-022). Comprobado en los logs: en ese tiempo y después
+  solo hubo **preflights**, **ningún `ejecutar`**; no se escribió nada en
+  Sigrid.
+- **El primer despliegue falló** al escribir `infra/imagenes.json`: causa raíz
+  encontrada (en PowerShell `$inventario` pisaba `$INVENTARIO`, la ruta; es la
+  misma del fallo del 2026-08-20). Hotfix del líder con autorización del
+  humano en `d449a58` (rama `chore/despliegue-20261001`). **Pendiente: review
+  de ese hotfix.**
+- Documentación al día con el modo real: `CLAUDE.md`, `README.md`,
+  `docs/ARCHITECTURE.md`, `docs/INTEGRACION.md` (§8 con el comando para volver
+  a pruebas) y su copia en `azure-apps`.
 
 ## Lo siguiente, por prioridad
 

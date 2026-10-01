@@ -142,9 +142,12 @@ original NO se versiona: al repositorio entra solo el Markdown.
   front leen los maestros a través de `sigrid-api` (`POST /api/sql/read`); la
   única escritura del sistema la hace el transfer, y **siempre** contra la
   base `ruesma` (la réplica `ruesma_rep` no admite escritura).
-- NINGÚN agente ejecuta una escritura real en Sigrid por su cuenta. El
-  transfer arranca con `OBRA_PRUEBAS_FORZAR=true`: todo va a la obra de
-  pruebas `0404` marcada `PRUEBA-PORC`. Quitar ese modo, o lanzar
+- NINGÚN agente ejecuta una escritura real en Sigrid por su cuenta. **Ojo:
+  desde el 2026-10-01 el transfer DESPLEGADO está en modo real**
+  (`OBRA_PRUEBAS_FORZAR=false`, decisión expresa del humano): un
+  `registro/ejecutar` contra Azure escribe en la obra real. En local y en un
+  alta nueva el transfer arranca con `OBRA_PRUEBAS_FORZAR=true`: todo va a la
+  obra de pruebas `0404` marcada `PRUEBA-PORC`. Quitar ese modo, o lanzar
   `prueba_escritura_porcentajes.py ejecutar --confirmar` fuera de él, exige
   autorización expresa del humano para esa acción concreta.
 - La BBDD PostgreSQL `dedicacion` es HOY local (`PG_HOST=localhost`). El
