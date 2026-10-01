@@ -45,7 +45,7 @@ def _funcion(nombre: str) -> str:
     """Cuerpo (aproximado) de una función de `app.js`, hasta la siguiente
     declaración de primer nivel."""
     m = re.search(rf"^(async )?function {nombre}\(.*?(?=^(async )?function |\Z)",
-                  JS, re.S | re.M)
+                  JS, re.DOTALL | re.MULTILINE)
     assert m, f"no existe la función {nombre} en app.js"
     return m.group(0)
 
@@ -54,7 +54,7 @@ def _funcion(nombre: str) -> str:
 def test_f024_r3_selector_es_el_primer_hijo_de_topbar_meta():
     p = _Hijos()
     p.feed(HTML)
-    [(etiqueta, padres)] = [v for v in p.vistos
+    [(_etiqueta, padres)] = [v for v in p.vistos
                             if v[0] == "select#selector-empresa"]
     assert padres[-1] == "div.topbar__meta"
     hijos_meta = [v[0] for v in p.vistos if v[1] and v[1][-1] ==
