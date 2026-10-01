@@ -9,7 +9,7 @@ Resumen: **32 features**, 20 abiertas, 12 terminadas.
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-034 | Las obras son siempre de Construcciones Ruesma; el selector filtra solo trabajadores | 1 | pendiente | critico | `feature/F-034-obras-siempre-ruesma` |
+| F-034 | Las obras son siempre de Construcciones Ruesma; el selector filtra solo trabajadores | 1 | spec lista | critico | `feature/F-034-obras-siempre-ruesma` |
 | F-026 | Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro | 2 | pendiente | critico | `feature/F-026-recursos-sin-ficha-empleado` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 3 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
 | F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 4 | pendiente | estandar | `feature/F-027-deshacer-por-usuario` |
@@ -51,7 +51,7 @@ Resumen: **32 features**, 20 abiertas, 12 terminadas.
 
 ### F-034 · Las obras son siempre de Construcciones Ruesma; el selector filtra solo trabajadores
 
-estado **pendiente** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-034-obras-siempre-ruesma`
+estado **spec lista** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-034-obras-siempre-ruesma`
 
 Aclaración del humano el 2026-10-01: los TRABAJADORES son de varias empresas (Construcciones Ruesma, RUESMA SERVICIOS SL, UTE RUESMA-INESCO TOLEDO...), pero las OBRAS, incluida la postventa (POSTV2), son SIEMPRE de Construcciones Ruesma (empresa 1). F-024 se desplegó con la regla contraria: la empresa elegida filtra también las obras (con la 18 se ofrecen las 8 obras que Sigrid tiene en la 18) y es la empresa que viaja en cada línea, así que el transfer busca la obra en la empresa del trabajador; una línea de un trabajador de la 18 en una obra de Ruesma se OMITE. Efecto en producción, con el transfer en modo real: los trabajadores de la 18 y la 31 no pueden registrar. Corrección: el selector filtra solo trabajadores; las obras ofrecidas son siempre las de la empresa de las obras (1); cada línea viaja con la empresa de la OBRA, no con la elegida. El recurso que se escribe es el del propio trabajador en su empresa: eso es F-026, que va justo detrás. Afecta a docs/ARCHITECTURE.md#regla-empresa, a INTEGRACION y a azure-apps. Va DELANTE de todo por bloquear a usuarios en producción.
 
