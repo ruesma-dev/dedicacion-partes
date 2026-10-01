@@ -10,10 +10,11 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-09-29** (F-022: la empresa viaja en cada
-> línea del registro; fuera `SIGRID_EMPRESA`, dentro `EMPRESA_IMPUTACION`).
-> **Commit de origen: `f9b3a46`** (rama `feature/F-022-transfer-obra-por-empresa`,
-> pendiente de merge a `dev`).
+> **Fecha del documento: 2026-10-01** (F-024: selector de empresa; la
+> línea se imputa a la empresa elegida y `EMPRESA_IMPUTACION` pasa a ser la
+> empresa por defecto). **Origen:** rama `feature/F-024-selector-empresa`,
+> pendiente de merge a `dev`. Versión anterior: 2026-09-29, F-022, commit
+> `f9b3a46`.
 >
 > **Estado: DESPLEGADO.** El 2026-08-20 se ejecutó la fase 7 y los tres
 > servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo y el
@@ -113,7 +114,7 @@ despliegue no tenga que aprender dos vocabularios.
 | `SIGRID_API_BASE_URL`, `SIGRID_API_DATABASE`, `SIGRID_API_TIMEOUT_S`, `SIGRID_MAX_ROWS` | Lectura de maestros |
 | `SIGRID_API_FUNCTION_KEY` | **Secreto**. Por referencia a Key Vault |
 | `TRANSFER_BASE_URL`, `TRANSFER_TIMEOUT_S` | El registro en Sigrid, por HTTP interno |
-| `EMPRESA_IMPUTACION` | Empresa de Sigrid (`con.emp`) que viaja en **cada** línea del registro. `1` por defecto; entero > 0 o la api no arranca. Puente hasta que la empresa salga del cuadrante (F-024) |
+| `EMPRESA_IMPUTACION` | **Empresa por defecto** (`con.emp` de Sigrid): la que sale elegida en el selector al entrar y la que se usa si una petición no trae empresa. La empresa de cada línea del registro es la **elegida en el selector** (F-024). `1` por defecto; entero > 0 o la api no arranca |
 
 ### `dedicacion-front`
 
@@ -181,6 +182,12 @@ Lo único que se expone a Internet es el **front**, y para personas:
 | `ca-dedicacion-front` | **externo** | Personas, con Easy Auth y pertenencia al grupo `dedicacion-portal-users` |
 | `ca-dedicacion-api` | interno | Solo el front, desde dentro del Container Apps Environment |
 | `ca-dedicacion-transfer` | interno | Solo la api |
+
+Desde F-024 la api sirve además, **solo para el front**, `GET
+/api/v1/empresas` (empresas del selector y la por defecto) y acepta el
+parámetro `empresa` (entero > 0, si no 422) en las rutas de
+`/api/v1/periodos/...`. Siguen siendo internas: no se exponen a otros
+proyectos.
 
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 
@@ -363,12 +370,14 @@ transfer, `az containerapp logs show`.
 
 **Una línea sin empresa no se registra.** El código de obra solo es único
 dentro de su empresa, así que el transfer busca cada obra por código **y**
-empresa, y la empresa llega en cada línea (la pone la api con
-`EMPRESA_IMPUTACION`). Una línea que llegue sin ella sale **omitida con
-motivo**, no con error; una petición que mezcle dos empresas se rechaza con
-**422**; y si la obra es de otra empresa que sus líneas, todas se omiten. En
-modo pruebas, una empresa sin obra de pruebas no escribe nada. La regla
-completa: `docs/ARCHITECTURE.md#regla-empresa`.
+empresa, y la empresa llega en cada línea (la pone la api: es la **elegida
+en el selector**; `EMPRESA_IMPUTACION` solo es la por defecto). Una línea que
+llegue sin ella sale **omitida con motivo**, no con error; una petición que
+mezcle dos empresas se rechaza con **422**; y si la obra es de otra empresa
+que sus líneas, todas se omiten. En modo pruebas, una empresa sin obra de
+pruebas no escribe nada: con otra empresa que la 1 elegida, el preflight
+enseña ese error por obra. La regla completa:
+`docs/ARCHITECTURE.md#regla-empresa`.
 
 **Si la api arranca y dice que la base no existe**, es que falta ejecutar
 `infra/crear_base_dedicacion.ps1`. El servicio ya no la crea solo, a

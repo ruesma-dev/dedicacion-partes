@@ -68,10 +68,11 @@ class Settings(BaseSettings):
     transfer_base_url: str = "http://127.0.0.1:8006"
     transfer_timeout_s: float = 180.0
 
-    # Empresa (`con.emp` de Sigrid) que viaja en CADA línea del registro
-    # (docs/ARCHITECTURE.md#regla-empresa). Puente hasta F-024, que la
-    # tomará de la empresa filtrada en el cuadrante: entonces cambia SOLO de
-    # dónde sale este valor. Entero > 0; si no, la API no arranca.
+    # Empresa POR DEFECTO (`con.emp` de Sigrid): la que sale elegida en el
+    # selector al entrar y la que se usa si una petición no trae empresa. La
+    # empresa de cada línea del registro es la elegida en el selector
+    # (F-024; docs/ARCHITECTURE.md#regla-empresa). Conserva el nombre (D6).
+    # Entero > 0; si no, la API no arranca.
     empresa_imputacion: Annotated[int, Field(gt=0)] = 1
 
     # ------------------------------------------------------------------
