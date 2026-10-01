@@ -24,15 +24,19 @@ spec: guían sus `acceptance`). El arnés es la **1.7.3**.
   se fija al alta, **descartadas por escrito**: el preview es diagnóstico y la
   tabla guarda el nombre limpio; `sync_en` se comporta igual que en
   `trabajador` y `obra`. El cambio de literal de la empresa 1 se avisa al
-  humano. Automejora → encargo `620b83d` en `arnes-base`. Pasada 2 lanzada.
+  humano. Automejora → encargo `620b83d` en `arnes-base`. Pasada 2: rechazada porque el comando de la
+  manual apuntaba al scratchpad de la sesión (ruta con UUID: `init.sh` en
+  rojo). El script pasa a `scripts/verif_f032_empresas.ps1`. Pasada 3
+  lanzada con `init.sh` en verde.
 
 ### Verificación MANUAL (humano) de F-032
 
 1. **Sync real en local.** Arrancar la api de esta rama con `python main.py`
    desde `services/dedicacion-api` (así `create_all` crea la tabla `empresa`).
-   Lanzar el script del líder (solo lectura de Sigrid; el sync escribe solo en
-   la BBDD local):
-   `powershell -ExecutionPolicy Bypass -File "C:\Users\pgris\AppData\Local\Temp\claude\C--Users-pgris-PycharmProjects-porcentajes\5cb867d0-7a0e-4697-8553-fb67f1894080\scratchpad\verif_f032_empresas.ps1"`.
+   Lanzar el script versionado (solo lectura de Sigrid; el sync escribe solo
+   en la BBDD local):
+   `powershell -ExecutionPolicy Bypass -File scripts/verif_f032_empresas.ps1`
+   desde la raíz del repo.
    Hace `GET http://localhost:8090/api/v1/sync/preview` (esperado:
    `empresas.leidas` ≥ 19), `POST http://localhost:8090/api/v1/sync`
    (esperado: bloque `empresas` en la respuesta) y
