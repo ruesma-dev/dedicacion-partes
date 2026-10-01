@@ -882,3 +882,91 @@ de sesión retirado de `current.md`:
 > despliegan sin F-024** (sin selector, el cuadrante mezcla empresas). La
 > BBDD local ya tiene maestros de todas las empresas desde T11 de F-023.
 
+## 2026-10-01 · F-032 · Nombres de empresa sincronizados desde Sigrid
+
+Rama `feature/F-032-empresas-desde-sigrid` · `sdd: false` · rigor `estandar` ·
+**APROBADO** por el reviewer en la pasada 3. La pasada 1 aprobó código, tests y
+campaña; la 1 y la 2 se rechazaron **solo por el rastro del líder** (manual sin
+comando exacto ni `azure-apps` pendiente; después, el script citado desde el
+scratchpad de la sesión, cuya ruta con UUID dejó `init.sh` en rojo).
+
+**Qué cambió.** Nace de la T12 de F-024: el humano decidió que los nombres del
+selector salgan de Sigrid y no de `config.yaml`. El sync de maestros lee el
+catálogo `auxemp` (solo lectura) y lo guarda en la tabla `empresa` (ORM, clave
+`numemp`, upsert idempotente); el preview informa de las empresas leídas;
+`GET /api/v1/empresas` da nombre y `de_baja` de la tabla; fuera
+`empresas.nombres`. Una empresa de baja o desactivada con trabajadores activos
+se enseña marcada «(de baja)», nunca oculta (decisión del humano). El front
+solo pinta la marca. El script de la manual queda versionado en
+`scripts/verif_f032_empresas.ps1`.
+
+**Verificado.** 32 tests nuevos; mutación con muestreo estándar, 2
+supervivientes reproducidos a mano y cazados con tests; tests de F-024 que
+fijaban `empresas.nombres` sustituidos por equivalentes sin cambiar valores
+esperados. **Resultado real (2026-10-01, humano, `scripts/verif_f032_empresas.ps1`, api de `dev` con F-032 contra la BBDD local): CUMPLIDA.** Preview: 38 empresas leídas, 0 sin número, ninguna de baja. Sync: empresas 38 recibidas y 38 altas; empleados y obras sin cambios (179 y 453 recibidos). `/empresas`: por defecto 1; 1 = CONSTRUCCIONES RUESMA, 18 = RUESMA SERVICIOS SL, 31 = UTE RUESMA-INESCO TOLEDO; ninguna «Empresa N»; las mismas 3. Selector en el navegador confirmado por el humano. Copia a `azure-apps` hecha (`a16a4e0`).
+
+**Aviso.** El literal de la empresa 1 pasa de «Construcciones Ruesma» a
+**«CONSTRUCCIONES RUESMA»** (el de Sigrid). Si cambia `auxemp` en Sigrid, el
+sync de maestros falla entero (consta en `azure-apps/dedicacion.md`).
+Automejoras → `arnes-base` (`620b83d`, `e964f10`).
+
+**Con F-032 cerrada, F-022, F-023, F-024 y F-032 quedan listas para
+desplegarse juntas.**
+
+Informes: `progress/impl_F-032.md`, `progress/review_F-032.md`,
+`progress/mutacion_F-032.md`. Detalle de sesión retirado de `current.md`:
+
+## F-032 · Nombres de empresa sincronizados desde Sigrid
+
+- Rama `feature/F-032-empresas-desde-sigrid`. Plan confirmado por el humano
+  el 2026-10-01, con la decisión abierta cerrada: una empresa de baja o
+  desactivada con trabajadores activos se enseña marcada «(de baja)», nunca
+  oculta (`features.json`).
+- **Implementer terminado**: 11 commits (`4e4f070` … `106e345`), tabla
+  `empresa` desde `auxemp`, preview con las empresas leídas, `/empresas` con
+  nombre y `de_baja` de la tabla, fuera `empresas.nombres`; el front solo
+  pinta «(de baja)». Mutación con muestreo estándar: 2 supervivientes
+  reproducidos a mano y cazados con tests nuevos. Desviación declarada: tests
+  de F-024 que fijaban `empresas.nombres` sustituidos por su equivalente
+  sobre la tabla, sin cambiar valores esperados. Review pasada 1
+  (`progress/review_F-032.md`): código, tests y campaña **bien**;
+  CHANGES_REQUESTED solo por el rastro (faltaban aquí el comando exacto de la
+  manual y la copia pendiente a `azure-apps`; corregido). Observaciones:
+  `resumir_empresas` del preview no hace `strip` del nombre y `sync_en` solo
+  se fija al alta, **descartadas por escrito**: el preview es diagnóstico y la
+  tabla guarda el nombre limpio; `sync_en` se comporta igual que en
+  `trabajador` y `obra`. El cambio de literal de la empresa 1 se avisa al
+  humano. Automejora → encargo `620b83d` en `arnes-base`. Pasada 2: rechazada porque el comando de la
+  manual apuntaba al scratchpad de la sesión (ruta con UUID: `init.sh` en
+  rojo). El script pasa a `scripts/verif_f032_empresas.ps1`. **Pasada 3:
+  APPROVED**; su automejora ya estaba en `arnes-base` (`e964f10`).
+  **Mergeada a `dev`**; faltan la MANUAL y la copia a `azure-apps` para `done`.
+
+#### Verificación MANUAL (humano) de F-032
+
+1. **Sync real en local.** Arrancar la api de esta rama con `python main.py`
+   desde `services/dedicacion-api` (así `create_all` crea la tabla `empresa`).
+   Lanzar el script versionado (solo lectura de Sigrid; el sync escribe solo
+   en la BBDD local):
+   `powershell -ExecutionPolicy Bypass -File scripts/verif_f032_empresas.ps1`
+   desde la raíz del repo.
+   Hace `GET http://localhost:8090/api/v1/sync/preview` (esperado:
+   `empresas.leidas` ≥ 19), `POST http://localhost:8090/api/v1/sync`
+   (esperado: bloque `empresas` en la respuesta) y
+   `GET http://localhost:8090/api/v1/empresas` (esperado: por defecto 1;
+   18 = `RUESMA SERVICIOS SL`; 31 = `UTE RUESMA-INESCO TOLEDO`; ninguna
+   «Empresa N»; las mismas 3 empresas que antes). Contraste:
+   `progress/explore_nombres_empresas.md`. Resultado: _pendiente_.
+2. **Selector en `http://localhost:8080`**: enseña 18 = RUESMA SERVICIOS SL,
+   31 = UTE RUESMA-INESCO TOLEDO y **1 = CONSTRUCCIONES RUESMA** (el literal
+   cambia al de Sigrid: antes «Construcciones Ruesma» de `config.yaml`). Si
+   alguna con trabajadores activos está de baja, sale «(de baja)».
+   Resultado: _pendiente_.
+
+#### Pendiente antes del `done` (líder, con autorización del humano)
+
+- **Copia a `azure-apps/dedicacion.md`**, como en F-022 y F-024: cabecera,
+  fila de `sigrid-api` de §1, árbol de §2 (tabla `empresa`), párrafo de
+  `GET /api/v1/empresas` (`de_baja`) y fila nueva de `auxemp` en «qué se
+  rompe». Commit en `azure-apps`. Resultado: _pendiente_.
+

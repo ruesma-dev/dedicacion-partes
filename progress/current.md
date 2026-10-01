@@ -1,66 +1,16 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-032 con review APROBADA** (nombres de empresa desde Sigrid, rigor
-estándar, sin spec); faltan la MANUAL y la copia a `azure-apps` para `done`. El arnés es la **1.7.3**.
+**Ninguna feature en ejecución.** F-032 se cerró el 2026-10-01 (resumen en
+`history.md`). El arnés es la **1.7.3**.
 
-## F-032 · Nombres de empresa sincronizados desde Sigrid
-
-- Rama `feature/F-032-empresas-desde-sigrid`. Plan confirmado por el humano
-  el 2026-10-01, con la decisión abierta cerrada: una empresa de baja o
-  desactivada con trabajadores activos se enseña marcada «(de baja)», nunca
-  oculta (`features.json`).
-- **Implementer terminado**: 11 commits (`4e4f070` … `106e345`), tabla
-  `empresa` desde `auxemp`, preview con las empresas leídas, `/empresas` con
-  nombre y `de_baja` de la tabla, fuera `empresas.nombres`; el front solo
-  pinta «(de baja)». Mutación con muestreo estándar: 2 supervivientes
-  reproducidos a mano y cazados con tests nuevos. Desviación declarada: tests
-  de F-024 que fijaban `empresas.nombres` sustituidos por su equivalente
-  sobre la tabla, sin cambiar valores esperados. Review pasada 1
-  (`progress/review_F-032.md`): código, tests y campaña **bien**;
-  CHANGES_REQUESTED solo por el rastro (faltaban aquí el comando exacto de la
-  manual y la copia pendiente a `azure-apps`; corregido). Observaciones:
-  `resumir_empresas` del preview no hace `strip` del nombre y `sync_en` solo
-  se fija al alta, **descartadas por escrito**: el preview es diagnóstico y la
-  tabla guarda el nombre limpio; `sync_en` se comporta igual que en
-  `trabajador` y `obra`. El cambio de literal de la empresa 1 se avisa al
-  humano. Automejora → encargo `620b83d` en `arnes-base`. Pasada 2: rechazada porque el comando de la
-  manual apuntaba al scratchpad de la sesión (ruta con UUID: `init.sh` en
-  rojo). El script pasa a `scripts/verif_f032_empresas.ps1`. **Pasada 3:
-  APPROVED**; su automejora ya estaba en `arnes-base` (`e964f10`).
-  **Mergeada a `dev`**; faltan la MANUAL y la copia a `azure-apps` para `done`.
-
-### Verificación MANUAL (humano) de F-032
-
-1. **Sync real en local.** Arrancar la api de esta rama con `python main.py`
-   desde `services/dedicacion-api` (así `create_all` crea la tabla `empresa`).
-   Lanzar el script versionado (solo lectura de Sigrid; el sync escribe solo
-   en la BBDD local):
-   `powershell -ExecutionPolicy Bypass -File scripts/verif_f032_empresas.ps1`
-   desde la raíz del repo.
-   Hace `GET http://localhost:8090/api/v1/sync/preview` (esperado:
-   `empresas.leidas` ≥ 19), `POST http://localhost:8090/api/v1/sync`
-   (esperado: bloque `empresas` en la respuesta) y
-   `GET http://localhost:8090/api/v1/empresas` (esperado: por defecto 1;
-   18 = `RUESMA SERVICIOS SL`; 31 = `UTE RUESMA-INESCO TOLEDO`; ninguna
-   «Empresa N»; las mismas 3 empresas que antes). Contraste:
-   `progress/explore_nombres_empresas.md`. Resultado: _pendiente_.
-2. **Selector en `http://localhost:8080`**: enseña 18 = RUESMA SERVICIOS SL,
-   31 = UTE RUESMA-INESCO TOLEDO y **1 = CONSTRUCCIONES RUESMA** (el literal
-   cambia al de Sigrid: antes «Construcciones Ruesma» de `config.yaml`). Si
-   alguna con trabajadores activos está de baja, sale «(de baja)».
-   Resultado: _pendiente_.
-
-### Pendiente antes del `done` (líder, con autorización del humano)
-
-- **Copia a `azure-apps/dedicacion.md`**, como en F-022 y F-024: cabecera,
-  fila de `sigrid-api` de §1, árbol de §2 (tabla `empresa`), párrafo de
-  `GET /api/v1/empresas` (`de_baja`) y fila nueva de `auxemp` en «qué se
-  rompe». Commit en `azure-apps`. Resultado: _pendiente_.
-
-> **Aviso de despliegue:** F-022, F-023 y F-024 están en `dev` pero se
-> despliegan **junto con F-032**; hasta entonces el selector enseña «Empresa
-> 18» y «Empresa 31». La BBDD local ya tiene maestros de todas las empresas.
+> **Listo para desplegar:** F-022, F-023, F-024 y F-032 están en `dev` y se
+> despliegan **juntas** (imágenes nuevas de api, front y transfer; el esquema
+> de la api añade `empresa` en `trabajador`/`obra` y la tabla `empresa`). El
+> transfer sigue en modo pruebas. Desplegar es decisión del humano.
+> **Justo después de desplegar, pulsar «actualizar Sigrid» una vez**: hasta
+> el primer sync, las columnas `empresa` están vacías y la tabla `empresa`
+> también, así que el selector y el filtro no funcionan bien.
 
 ## Lo siguiente, por prioridad
 
@@ -70,7 +20,6 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 |---|---|---|
 | 1 | **F-017** | probar con Administración sobre la obra de pruebas `0404` |
 | 2 | **F-018** | pasar a escritura real. Requiere F-017 firmada, **F-026** cerrada y autorización expresa (F-022 ya está) |
-| — | **F-032** | aprobada; faltan MANUAL y `azure-apps` (arriba) |
 | 3 | **F-025**, **F-026** | obras de postventa desde POSTV2; recursos sin ficha de empleado |
 | 4 | **F-027**, F-020 | deshacer solo lo propio; Excel |
 
