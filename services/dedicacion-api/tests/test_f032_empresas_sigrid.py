@@ -416,3 +416,64 @@ def test_f032_r1_pipeline_sin_pasos_de_empresas_las_deja_a_cero() -> None:
         sp.UpsertObrasStep(),
     ]).ejecutar(_UowEspia())
     assert resultado.empresas == ResultadoSyncMaestro()
+
+
+# --- R4 · el preview informa de las empresas leídas ---------------------------
+
+
+def _preview(sigrid: _SigridFalso, sql_empresas: str | None = SQL_EMPRESAS) -> Any:
+    from application.use_cases import PreviewSync
+
+    return PreviewSync(sigrid, "SELECT ... FROM dbo.emp",
+                       "SELECT ... FROM dbo.obr", sql_empresas=sql_empresas)
+
+
+def test_f032_r4_preview_informa_de_las_empresas_leidas() -> None:
+    sigrid = _SigridFalso([
+        _fila(1, nombre="CONSTRUCCIONES RUESMA"),
+        _fila(12, nombre="CP PRIMO DE RIVERA UTE", fecbaj=20240630),
+        _fila("18", nombre="RUESMA SERVICIOS SL", fecbaj=None, desact=None),
+        _fila(26, nombre="UTE HOSPITAL HSFA", desact="1"),
+        _fila(None, nombre="SIN NÚMERO"),
+    ])
+    salida = _preview(sigrid).ejecutar()
+    assert salida["empresas"] == {
+        "leidas": 5,
+        "sin_numero": 1,
+        "de_baja": [12, 26],
+        "nombres": {
+            "1": "CONSTRUCCIONES RUESMA",
+            "12": "CP PRIMO DE RIVERA UTE",
+            "18": "RUESMA SERVICIOS SL",
+            "26": "UTE HOSPITAL HSFA",
+        },
+    }
+    assert SQL_EMPRESAS in sigrid.leidas
+    # Lo de F-023 sigue ahí.
+    assert salida["empleados"]["total"] == 1
+    assert salida["obras"]["total"] == 1
+
+
+def test_f032_r4_preview_sin_numemp_o_nombre_avisa_como_el_sync() -> None:
+    filas = [{k: v for k, v in _fila(1).items() if k != "nombre"}]
+    with pytest.raises(ValueError, match=r"sync\.empresas\.sql.*nombre"):
+        _preview(_SigridFalso(filas)).ejecutar()
+
+
+def test_f032_r4_preview_sin_consulta_no_lee_empresas() -> None:
+    sigrid = _SigridFalso()
+    salida = _preview(sigrid, sql_empresas=None).ejecutar()
+    assert "empresas" not in salida
+    assert not any("dbo.auxemp" in sql for sql in sigrid.leidas)
+
+
+def test_f032_r4_el_preview_real_usa_la_consulta_de_config(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Preview y sync del contenedor leen la MISMA consulta de empresas."""
+    from config.settings import cargar_config
+
+    sigrid = _SigridFalso([_fila(31, nombre="UTE RUESMA-INESCO TOLEDO")])
+    salida = _contenedor(monkeypatch, sigrid).preview_sync.ejecutar()
+    assert sigrid.leidas[-1] == cargar_config()["sync"]["empresas"]["sql"]
+    assert salida["empresas"]["nombres"] == {"31": "UTE RUESMA-INESCO TOLEDO"}

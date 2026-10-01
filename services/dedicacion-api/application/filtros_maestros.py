@@ -21,6 +21,9 @@ Empleados, en este orden:
 Obras: se excluyen las obras cuyo estado (conest.res) case con la lista
 de estados excluidos (terminada, cerrada, ...).
 
+Empresas (F-032): no se depuran; `resumir_empresas` solo las cuenta para
+el preview.
+
 Las comparaciones son normalizadas (minúsculas, sin acentos).
 """
 from __future__ import annotations
@@ -31,6 +34,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any
 
+from domain.empresas import empresa_de_baja
 from domain.normalizacion import normalizar
 
 
@@ -243,3 +247,31 @@ def depurar_obras(
             continue
         resultado.filas.append(fila)
     return resultado
+
+
+def resumir_empresas(filas: list[dict[str, Any]]) -> dict[str, Any]:
+    """Lo que el preview enseña del catálogo `auxemp` (F-032).
+
+    `leidas` son todas las filas; las que no traen `numemp` no se guardan
+    (`sin_numero`). `de_baja` lista los números de las de baja o
+    desactivadas, que el selector enseñará marcadas. `nombres` va con la
+    clave en texto, como el resto de desgloses del preview.
+    """
+    nombres: dict[str, Any] = {}
+    de_baja: list[int] = []
+    sin_numero = 0
+    for fila in filas:
+        numemp = _entero(fila.get("numemp"))
+        if numemp is None:
+            sin_numero += 1
+            continue
+        nombres[str(numemp)] = fila.get("nombre")
+        if empresa_de_baja(_entero(fila.get("fecbaj")),
+                           _entero(fila.get("desact"))):
+            de_baja.append(numemp)
+    return {
+        "leidas": len(filas),
+        "sin_numero": sin_numero,
+        "de_baja": sorted(de_baja),
+        "nombres": nombres,
+    }

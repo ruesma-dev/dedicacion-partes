@@ -99,6 +99,7 @@ def construir_contenedor(
             filtro_estados=filtro_est,
             exigir_codigo_mes=exigir_mes,
             criterio=criterio,
+            sql_empresas=sql_empresas,
         ),
         exporter=exporter,
         registro_sigrid=RegistroSigrid(session_factory,
