@@ -97,6 +97,8 @@ class CuadranteOut(_Base):
 class EmpresaOut(_Base):
     empresa: int
     nombre: str
+    # De baja o desactivada en Sigrid (F-032): el front la marca, la API decide.
+    de_baja: bool
 
 
 class EmpresasOut(_Base):

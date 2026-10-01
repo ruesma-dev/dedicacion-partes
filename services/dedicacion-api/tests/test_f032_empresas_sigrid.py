@@ -477,3 +477,177 @@ def test_f032_r4_el_preview_real_usa_la_consulta_de_config(
     salida = _contenedor(monkeypatch, sigrid).preview_sync.ejecutar()
     assert sigrid.leidas[-1] == cargar_config()["sync"]["empresas"]["sql"]
     assert salida["empresas"]["nombres"] == {"31": "UTE RUESMA-INESCO TOLEDO"}
+
+
+# --- R2, R3, R5 · el selector toma nombre y baja de la tabla -------------------
+
+
+class _Activas:
+    def __init__(self, empresas: set[int]) -> None:
+        self._empresas = empresas
+
+    def empresas_activas(self) -> set[int]:
+        return set(self._empresas)
+
+
+class _Catalogo:
+    def __init__(self, fichas: list[Any]) -> None:
+        self.fichas = fichas
+
+    def listar(self) -> list[Any]:
+        return list(self.fichas)
+
+
+class _UowSelector:
+    def __init__(self, activas: set[int], fichas: list[Any]) -> None:
+        self.trabajadores = _Activas(activas)
+        self.empresas = _Catalogo(fichas)
+
+
+def _listar(activas: set[int], fichas: list[Any], por_defecto: int = 1) -> Any:
+    from application.use_cases import ListarEmpresas
+
+    return ListarEmpresas(por_defecto).ejecutar(_UowSelector(activas, fichas))
+
+
+def _vista(empresas: list[Any]) -> list[tuple[int, str, bool]]:
+    return [(e.numero, e.nombre, e.de_baja) for e in empresas]
+
+
+def _catalogo() -> list[Any]:
+    """Nombres del data mart a 2026-10-01 (progress/explore_nombres_empresas.md)."""
+    from domain.models import Empresa
+
+    return [
+        Empresa(1, "CONSTRUCCIONES RUESMA"),
+        Empresa(18, "RUESMA SERVICIOS SL"),
+        Empresa(28, "PORSAN E HIJOS CONSTRUCCIONES SL"),
+        Empresa(31, "UTE RUESMA-INESCO TOLEDO"),
+        Empresa(39, "RUESMA EKONS SYSTEM MADRID SL"),
+    ]
+
+
+def test_f032_r2_nombres_de_la_tabla_y_mismo_conjunto_de_empresas() -> None:
+    """Las del selector siguen siendo las de trabajadores activos + la por
+    defecto (39 está en la tabla pero sin trabajadores: no sale)."""
+    por_defecto, empresas = _listar({1, 18, 31}, _catalogo())
+    assert por_defecto == 1
+    assert _vista(empresas) == [
+        (1, "CONSTRUCCIONES RUESMA", False),
+        (18, "RUESMA SERVICIOS SL", False),
+        (31, "UTE RUESMA-INESCO TOLEDO", False),
+    ]
+
+
+def test_f032_r2_la_por_defecto_sin_trabajadores_sale_con_su_nombre() -> None:
+    por_defecto, empresas = _listar({18}, _catalogo(), por_defecto=28)
+    assert por_defecto == 28
+    assert _vista(empresas) == [
+        (18, "RUESMA SERVICIOS SL", False),
+        (28, "PORSAN E HIJOS CONSTRUCCIONES SL", False),
+    ]
+
+
+def test_f032_r3_empresa_n_solo_si_no_esta_en_la_tabla_o_no_tiene_nombre() -> None:
+    from domain.models import Empresa
+
+    _, empresas = _listar({1, 18, 40}, [Empresa(1, "CONSTRUCCIONES RUESMA"),
+                                        Empresa(18, None),
+                                        Empresa(40, "")])
+    assert _vista(empresas) == [
+        (1, "CONSTRUCCIONES RUESMA", False),
+        (18, "Empresa 18", False),
+        (40, "Empresa 40", False),
+    ]
+    _, vacia = _listar({1, 18}, [])
+    assert _vista(vacia) == [(1, "Empresa 1", False), (18, "Empresa 18", False)]
+
+
+def test_f032_r5_empresa_de_baja_con_trabajadores_sale_marcada() -> None:
+    """Decisión del humano (2026-10-01): de baja o desactivada con
+    trabajadores activos se enseña marcada, nunca se oculta. Vale también
+    para la por defecto."""
+    from domain.models import Empresa
+
+    fichas = [Empresa(1, "CONSTRUCCIONES RUESMA", de_baja=True),
+              Empresa(12, "CP PRIMO DE RIVERA UTE", de_baja=True),
+              Empresa(18, "RUESMA SERVICIOS SL")]
+    _, empresas = _listar({12, 18}, fichas)
+    assert _vista(empresas) == [
+        (1, "CONSTRUCCIONES RUESMA", True),
+        (12, "CP PRIMO DE RIVERA UTE", True),
+        (18, "RUESMA SERVICIOS SL", False),
+    ]
+
+
+def test_f032_r2_r5_alta_cambio_de_nombre_y_baja_llegan_tras_el_sync() -> None:
+    """De punta a punta sin BBDD: el repositorio real sobre una sesión doble
+    que guarda lo que se añade. Tras el sync, el selector ya enseña la
+    empresa nueva, el nombre nuevo y la baja, sin tocar configuración."""
+    from application.use_cases import ListarEmpresas
+    from infrastructure.db.repositories import PgEmpresaRepository
+
+    class _SesionTabla(_SesionRepo):
+        def add(self, orm: Any) -> None:
+            super().add(orm)
+            self.previas.append(orm)
+
+    sesion = _SesionTabla([_orm(1, nombre="CONSTRUCCIONES RUESMA"),
+                           _orm(18, nombre="NOMBRE ANTIGUO")])
+    repo = PgEmpresaRepository(sesion)  # type: ignore[arg-type]
+    repo.sincronizar([_fila(1, nombre="CONSTRUCCIONES RUESMA", fecbaj=20261001),
+                      _fila(18, nombre="RUESMA SERVICIOS SL"),
+                      _fila(31, nombre="UTE RUESMA-INESCO TOLEDO")])
+    uow = _UowSelector({1, 18, 31}, [])
+    uow.empresas = repo  # type: ignore[assignment]
+    _, empresas = ListarEmpresas(1).ejecutar(uow)
+    assert _vista(empresas) == [
+        (1, "CONSTRUCCIONES RUESMA", True),
+        (18, "RUESMA SERVICIOS SL", False),
+        (31, "UTE RUESMA-INESCO TOLEDO", False),
+    ]
+
+
+def test_f032_r2_r5_get_empresas_expone_nombre_y_baja() -> None:
+    from types import SimpleNamespace
+
+    from config.settings import Settings
+    from domain.models import Empresa
+    from fastapi.testclient import TestClient
+    from interface_adapters.api.app import build_app
+    from interface_adapters.api.deps import obtener_contenedor
+
+    class _UowCM(_UowSelector):
+        def __enter__(self) -> Any:
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+    settings = Settings(_env_file=None, empresa_imputacion=1)
+    fichas = [Empresa(1, "CONSTRUCCIONES RUESMA"),
+              Empresa(12, "CP PRIMO DE RIVERA UTE", de_baja=True)]
+    contenedor = SimpleNamespace(settings=settings,
+                                 uow=lambda: _UowCM({12, 31}, fichas))
+    app = build_app(settings)
+    app.dependency_overrides[obtener_contenedor] = lambda: contenedor
+    r = TestClient(app).get("/api/v1/empresas")
+    assert r.status_code == 200, r.text
+    assert r.json() == {"por_defecto": 1, "empresas": [
+        {"empresa": 1, "nombre": "CONSTRUCCIONES RUESMA", "de_baja": False},
+        {"empresa": 12, "nombre": "CP PRIMO DE RIVERA UTE", "de_baja": True},
+        {"empresa": 31, "nombre": "Empresa 31", "de_baja": False},
+    ]}
+
+
+def test_f032_r3_config_yaml_sin_empresas_nombres() -> None:
+    from config.settings import cargar_config
+
+    assert "empresas" not in cargar_config()
+
+
+def test_f032_r3_el_contenedor_no_lleva_nombres_de_config(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contenedor = _contenedor(monkeypatch, _SigridFalso())
+    assert not hasattr(contenedor, "nombres_empresas")

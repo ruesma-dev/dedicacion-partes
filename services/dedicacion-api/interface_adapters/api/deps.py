@@ -35,8 +35,6 @@ class Contenedor:
     preview_sync: PreviewSync
     exporter: OpenpyxlExcelExporter
     registro_sigrid: RegistroSigrid
-    # Nombre de cada empresa del selector (config.yaml, F-024 R2).
-    nombres_empresas: dict[int, str]
 
     def uow(self) -> SqlAlchemyUnitOfWork:
         return SqlAlchemyUnitOfWork(self.session_factory)
@@ -105,12 +103,6 @@ def construir_contenedor(
         registro_sigrid=RegistroSigrid(session_factory,
                                        TransferClient(settings),
                                        settings.empresa_imputacion),
-        nombres_empresas={
-            int(n): str(nombre)
-            for n, nombre in (
-                (config.get("empresas") or {}).get("nombres") or {}
-            ).items()
-        },
     )
 
 

@@ -24,6 +24,7 @@ from domain.errors import (
 from domain.estados import resumir
 from domain.models import (
     CuadranteTrabajador,
+    Empresa,
     EstadoPeriodo,
     FiltroEmpresa,
     Linea,
@@ -287,19 +288,29 @@ class ListarPeriodos:
 
 
 class ListarEmpresas:
-    """Empresas del selector (F-024, R1 y R2): las que tienen algún
-    trabajador activo más la por defecto, ordenadas, con su nombre de
-    `config.yaml` o «Empresa N»."""
+    """Empresas del selector (F-024 R1, F-032): las que tienen algún
+    trabajador activo más la por defecto, ordenadas.
 
-    def __init__(self, nombres: dict[int, str], por_defecto: int) -> None:
-        self._nombres = nombres
+    Nombre y baja salen del catálogo `auxemp` que trae el sync (tabla
+    `empresa`); «Empresa N» solo si la empresa no está en la tabla o no tiene
+    nombre. Una empresa de baja o desactivada se enseña marcada, nunca se
+    oculta: ocultarla escondería carga (decisión del humano, 2026-10-01).
+    """
+
+    def __init__(self, por_defecto: int) -> None:
         self._por_defecto = por_defecto
 
-    def ejecutar(self, uow: UnitOfWork) -> tuple[int, list[tuple[int, str]]]:
+    def ejecutar(self, uow: UnitOfWork) -> tuple[int, list[Empresa]]:
         numeros = uow.trabajadores.empresas_activas() | {self._por_defecto}
-        empresas = [
-            (n, self._nombres.get(n) or f"Empresa {n}") for n in sorted(numeros)
-        ]
+        fichas = {e.numero: e for e in uow.empresas.listar()}
+        empresas = []
+        for numero in sorted(numeros):
+            ficha = fichas.get(numero)
+            empresas.append(Empresa(
+                numero=numero,
+                nombre=(ficha.nombre if ficha else None) or f"Empresa {numero}",
+                de_baja=ficha.de_baja if ficha else False,
+            ))
         return self._por_defecto, empresas
 
 
