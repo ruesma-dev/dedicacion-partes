@@ -131,6 +131,11 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > Todos los puntos están validados. Que la regla esté escrita no autoriza a
 > escribir en producción: `OBRA_PRUEBAS_FORZAR` **se queda a `true`**.
 >
+> **Actualización 2026-10-01:** el humano dio esa autorización expresa y el
+> transfer desplegado está en **modo real** (`OBRA_PRUEBAS_FORZAR=false`), con
+> lo que sigue abierto a sabiendas: el motivo de abajo (F-017), el recurso
+> elegido sin mirar la empresa (F-026) y los varios códigos M* (F-011).
+>
 > El motivo ya no es que falte verificar contra Sigrid —**T13 y T14 se
 > ejecutaron el 2026-08-20** y el sistema escribe de verdad en el ERP—, sino
 > el que consta en `progress/sigrid_F-002.md` § «Qué NO queda demostrado»:
@@ -478,8 +483,11 @@ versionado: es lo que responde «qué código está corriendo» sin abrir Azure.
 Los secretos van en un Key Vault propio y se consumen por `keyvaultref` con
 la identidad gestionada; ninguno viaja como valor ni entra en la imagen.
 
-### El transfer sigue en modo pruebas
+### El transfer: alta en modo pruebas; producción en real desde 2026-10-01
 
+**Desde el 2026-10-01 el transfer desplegado está en modo real** por decisión
+expresa del humano (ver `docs/INTEGRACION.md` §8, con el comando para volver).
+El alta de un transfer nuevo sigue arrancando así:
 `OBRA_PRUEBAS_FORZAR=true`: toda escritura va a la obra `0404` marcada
 `PRUEBA-PORC` ([`#regla-pruebas`](#regla-pruebas)). **El despliegue termina
 así, a propósito.** Salir de ahí exige dos señales explícitas en el script y

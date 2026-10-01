@@ -1,27 +1,27 @@
 {
-  "$doc": "Inventario de imagenes publicadas en el ACR compartido acralbaranesdev. Lo ESCRIBE build_images_dedicacion.ps1 en cada build y se VERSIONA a proposito: con tag fechado y sin 'latest', esta es la unica forma de responder 'que codigo esta corriendo' sin abrir Azure (F-008, R24). Formato del tag: rAAAAMMDD-HHmm. Un tag ya publicado NUNCA se reescribe (docs/CONVENTIONS.md).",
-  "registro": "acralbaranesdev",
-  "servicios": {
-    "dedicacion-transfer": {
-      "repositorio": "dedicacion-transfer",
-      "tag": "r20260820-1625",
-      "publicado": "2026-08-20T14:27",
-      "nota": "Publicado en el build manual del 2026-08-20 (T25). El inventario se relleno a mano porque build_images_dedicacion.ps1 fallo al ESCRIBIR el fichero despues de publicar las tres imagenes; el digest sale del log de ese build.",
-      "digest": "sha256:cf872c89d1bcc9dfd613baea8a0e196c87391edd0da2cf848100c21dff413e3f"
-    },
-    "dedicacion-api": {
-      "repositorio": "dedicacion-api",
-      "tag": "r20260820-1625",
-      "publicado": "2026-08-20T14:27",
-      "nota": "Publicado en el build manual del 2026-08-20 (T25). El inventario se relleno a mano porque build_images_dedicacion.ps1 fallo al ESCRIBIR el fichero despues de publicar las tres imagenes; el digest sale del log de ese build.",
-      "digest": "sha256:d5b4a18a32c260e7aeb6eafc1b19d66aba789f2ea4a09e2cee02ab6983edb84e"
-    },
-    "dedicacion-front": {
-      "repositorio": "dedicacion-front",
-      "tag": "r20260820-1625",
-      "publicado": "2026-08-20T14:27",
-      "nota": "Publicado en el build manual del 2026-08-20 (T25). El inventario se relleno a mano porque build_images_dedicacion.ps1 fallo al ESCRIBIR el fichero despues de publicar las tres imagenes; el digest sale del log de ese build.",
-      "digest": "sha256:abd1b6f40e802b112a5d3a1ce2e580ba6bb4fc1149d895050adba72129cec8f3"
-    }
-  }
+    "$doc":  "Inventario de imagenes publicadas en el ACR compartido acralbaranesdev. Lo ESCRIBE build_images_dedicacion.ps1 en cada build y se VERSIONA a proposito: con tag fechado y sin \u0027latest\u0027, esta es la unica forma de responder \u0027que codigo esta corriendo\u0027 sin abrir Azure (F-008, R24). Formato del tag: rAAAAMMDD-HHmm. Un tag ya publicado NUNCA se reescribe (docs/CONVENTIONS.md).",
+    "registro":  "acralbaranesdev",
+    "servicios":  {
+                      "dedicacion-transfer":  {
+                                                  "repositorio":  "dedicacion-transfer",
+                                                  "tag":  "r20261001-1805",
+                                                  "publicado":  "2026-10-01T18:05:52",
+                                                  "nota":  "Publicado por build_images_dedicacion.ps1.",
+                                                  "digest":  "sha256:cf872c89d1bcc9dfd613baea8a0e196c87391edd0da2cf848100c21dff413e3f"
+                                              },
+                      "dedicacion-api":  {
+                                             "repositorio":  "dedicacion-api",
+                                             "tag":  "r20261001-1807",
+                                             "publicado":  "2026-10-01T18:07:01",
+                                             "nota":  "Publicado por build_images_dedicacion.ps1.",
+                                             "digest":  "sha256:d5b4a18a32c260e7aeb6eafc1b19d66aba789f2ea4a09e2cee02ab6983edb84e"
+                                         },
+                      "dedicacion-front":  {
+                                               "repositorio":  "dedicacion-front",
+                                               "tag":  "r20261001-1808",
+                                               "publicado":  "2026-10-01T18:08:30",
+                                               "nota":  "Publicado por build_images_dedicacion.ps1.",
+                                               "digest":  "sha256:abd1b6f40e802b112a5d3a1ce2e580ba6bb4fc1149d895050adba72129cec8f3"
+                                           }
+                  }
 }

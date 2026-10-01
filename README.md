@@ -108,8 +108,9 @@ vacía o con error, el que falla es el eslabón siguiente, no el front.
 
 ## Qué NO hacer
 
-- **El transfer arranca en modo pruebas y ahí se queda.**
-  `OBRA_PRUEBAS_FORZAR=true` desvía TODA escritura a la obra de pruebas
+- **El transfer desplegado escribe DE VERDAD desde el 2026-10-01**, por
+  decisión expresa del humano (`docs/INTEGRACION.md` §8). Un alta nueva
+  arranca en modo pruebas: `OBRA_PRUEBAS_FORZAR=true` desvía TODA escritura a la obra de pruebas
   `0404`, marcada `PRUEBA-PORC`. Salir de ese modo —o lanzar
   `prueba_escritura_porcentajes.py ejecutar --confirmar` fuera de él— exige
   **autorización expresa del humano para esa acción concreta**. Ningún agente
@@ -164,7 +165,7 @@ Al **2026-08-20**, sin adornos:
 - **La escritura en Sigrid está probada de verdad**, una sola vez: una línea
   real escrita en la **obra de pruebas** `0404`, marcada `PRUEBA-PORC`, con su
   parte creado por el sistema. Antes de esa fecha el sistema nunca había
-  escrito en el ERP. Sigue en modo pruebas.
+  escrito en el ERP. Desde el 2026-10-01 el desplegado está en modo real.
 - **No hay nada desplegado en Azure.** El trabajo de infraestructura está en
   curso en su propia rama, sin integrar: en esta rama no existen ni `infra/`
   ni los documentos de despliegue. Cuando exista despliegue, tendrá su

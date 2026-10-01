@@ -18,9 +18,17 @@
 > pasa a ser la empresa por defecto), commit `a2bcbca`.
 >
 > **Estado: DESPLEGADO.** El 2026-08-20 se ejecutó la fase 7 y los tres
-> servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo y el
-> transfer en modo pruebas. Imágenes con el tag **`r20260820-1625`**
-> (`infra/imagenes.json` lleva el digest de cada una).
+> servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo. El
+> **2026-10-01** se republicaron con F-022, F-023, F-024 y F-032: imágenes
+> `dedicacion-transfer:r20261001-1805`, `dedicacion-api:r20261001-1807` y
+> `dedicacion-front:r20261001-1808` (`infra/imagenes.json`).
+>
+> **Desde el 2026-10-01 el transfer desplegado escribe DE VERDAD**
+> (`OBRA_PRUEBAS_FORZAR=false`), por decisión expresa del humano, tomada a
+> sabiendas de lo que sigue abierto: el recurso se elige sin mirar la empresa
+> (F-026), la imputación a partidas no la ha validado Administración (F-017)
+> y un trabajador con varios códigos M* toma el primero alfabético (F-011).
+> Detalle y cómo volver a modo pruebas: §8.
 >
 > **URL del front:**
 > `https://ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io`
@@ -340,7 +348,16 @@ una que no pueda escribir.
 
 ## 8 · Modo pruebas: el transfer no escribe donde parece
 
-`dedicacion-transfer` está desplegado con **`OBRA_PRUEBAS_FORZAR=true`**. Eso
+> **ESTADO ACTUAL (2026-10-01): MODO REAL.** El humano ordenó salir del modo
+> pruebas al republicar con F-022, F-023, F-024 y F-032: el transfer está con
+> `OBRA_PRUEBAS_FORZAR=false` y **cada registro escribe en la obra real** de
+> Sigrid. Quedan abiertos F-026 (recurso sin mirar la empresa), F-017
+> (Administración no ha validado la imputación a partidas) y F-011 (varios
+> códigos M*). Volver a pruebas es un comando:
+> `az containerapp update -n ca-dedicacion-transfer -g rg-dedicacion-dev --set-env-vars OBRA_PRUEBAS_FORZAR=true`.
+> Lo que sigue describe el modo pruebas, que es como **arranca** un alta nueva.
+
+`dedicacion-transfer` se dio de alta con **`OBRA_PRUEBAS_FORZAR=true`**. Eso
 significa que **toda** escritura, venga de donde venga, se desvía a la obra de
 pruebas `0404` y se marca con `PRUEBA-PORC` en el campo `tex`, para poder
 limpiarla después. Las obras reales no reciben nada.
