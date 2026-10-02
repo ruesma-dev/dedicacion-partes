@@ -1,7 +1,7 @@
 <!-- progress/mutacion_F-026.md -->
 # F-026 · Campaña de mutación
 
-Generado por `python -m harness.mutacion --feature F-026` el 2026-10-02 11:51.
+Generado por `python -m harness.mutacion --feature F-026` el 2026-10-02 12:33.
 
 ## Alcance
 
@@ -31,15 +31,15 @@ Origen del diff: **rama** (`5f498cb50576f28d500a08b92e207351be3b2b43` .. `featur
 |---|---|
 | Mutantes generados | 56 |
 | Mutantes evaluados | 56 |
-| Muertos | 50 |
-| Supervivientes | 6 |
+| Muertos | 55 |
+| Supervivientes | 1 |
 | Timeouts | 0 |
 | Sin veredicto (base rota) | 0 |
-| Tiempo total | 506.4 s |
-| SHA de HEAD medido | `5bea52e7adc7fe83558632f24d63942371977867` |
-| Línea base (s) — `services/dedicacion-api` | 11.5 |
-| Línea base (s) — `services/dedicacion-transfer` | 4.0 |
-| Media por mutante evaluado (s) | 9.0 |
+| Tiempo total | 576.9 s |
+| SHA de HEAD medido | `df7e94cfb118cf9b876b816a5c79080a7d2796c3` |
+| Línea base (s) — `services/dedicacion-api` | 14.5 |
+| Línea base (s) — `services/dedicacion-transfer` | 4.5 |
+| Media por mutante evaluado (s) | 10.3 |
 | Timeout efectivo por mutante (s) | 120 — derivado de la línea base × 2.0 |
 | Suelo configurado (s) | 120 |
 | Workers | 1 |
@@ -49,152 +49,42 @@ Origen del diff: **rama** (`5f498cb50576f28d500a08b92e207351be3b2b43` .. `featur
 
 Cada superviviente es una línea que ningún test comprueba de verdad, o una mutación equivalente. Distinguirlo es trabajo del implementer: ningún análisis puede quedarse sin completar al cerrar la feature.
 
-### 1. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:47` [entero]
-
-- Original: `{"registro_id": 900001, "recurso_ide": 0, "dni": None,`
-- Mutado:   `{"registro_id": 900002, "recurso_ide": 0, "dni": None,`
-
-#### Análisis (implementer, 2026-10-02)
-
-> Por qué ningún test lo caza: es un DATO de ejemplo del script manual
-> `prueba_escritura_porcentajes.py` (`LINEAS_PRUEBA`, «EDITAR con RECURSOS
-> reales»): `registro_id` 9000xx y `recurso_ide` 0 son marcadores que la
-> persona sustituye antes de lanzar `preflight`; ningún código de producción
-> depende de su valor. Entra en el alcance solo porque F-026 renombró la
-> clave `empleado_ide` → `recurso_ide` en esas tres líneas. Reproducido a
-> mano (línea 47 con `900002` y `recurso_ide: 1`): suite del transfer
-> `329 passed`, igual que sin mutar.
-> Decisión: **mutante equivalente a efectos de comportamiento, justificado**;
-> sin test nuevo. Fijar los valores de un marcador que hay que editar
-> obligaría a cambiar el test cada vez que alguien prepare una prueba. Lo
-> que sí importa del bloque, que cada línea lleve `empresa` y pase por
-> `LineaEntrada` (ya sin `empleado_ide`), lo prueba `test_f022_r13_script_de_
-> pruebas_imputa_a_la_empresa_de_la_0404`.
-
-### 2. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:47` [entero]
-
-- Original: `{"registro_id": 900001, "recurso_ide": 0, "dni": None,`
-- Mutado:   `{"registro_id": 900001, "recurso_ide": 1, "dni": None,`
-
-#### Análisis (implementer, 2026-10-02)
-
-> Por qué ningún test lo caza: es un DATO de ejemplo del script manual
-> `prueba_escritura_porcentajes.py` (`LINEAS_PRUEBA`, «EDITAR con RECURSOS
-> reales»): `registro_id` 9000xx y `recurso_ide` 0 son marcadores que la
-> persona sustituye antes de lanzar `preflight`; ningún código de producción
-> depende de su valor. Entra en el alcance solo porque F-026 renombró la
-> clave `empleado_ide` → `recurso_ide` en esas tres líneas. Reproducido a
-> mano (línea 47 con `900002` y `recurso_ide: 1`): suite del transfer
-> `329 passed`, igual que sin mutar.
-> Decisión: **mutante equivalente a efectos de comportamiento, justificado**;
-> sin test nuevo. Fijar los valores de un marcador que hay que editar
-> obligaría a cambiar el test cada vez que alguien prepare una prueba. Lo
-> que sí importa del bloque, que cada línea lleve `empresa` y pase por
-> `LineaEntrada` (ya sin `empleado_ide`), lo prueba `test_f022_r13_script_de_
-> pruebas_imputa_a_la_empresa_de_la_0404`.
-
-### 3. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:50` [entero]
-
-- Original: `{"registro_id": 900002, "recurso_ide": 0, "dni": None,`
-- Mutado:   `{"registro_id": 900003, "recurso_ide": 0, "dni": None,`
-
-#### Análisis (implementer, 2026-10-02)
-
-> Por qué ningún test lo caza: es un DATO de ejemplo del script manual
-> `prueba_escritura_porcentajes.py` (`LINEAS_PRUEBA`, «EDITAR con RECURSOS
-> reales»): `registro_id` 9000xx y `recurso_ide` 0 son marcadores que la
-> persona sustituye antes de lanzar `preflight`; ningún código de producción
-> depende de su valor. Entra en el alcance solo porque F-026 renombró la
-> clave `empleado_ide` → `recurso_ide` en esas tres líneas. Reproducido a
-> mano (línea 47 con `900002` y `recurso_ide: 1`): suite del transfer
-> `329 passed`, igual que sin mutar.
-> Decisión: **mutante equivalente a efectos de comportamiento, justificado**;
-> sin test nuevo. Fijar los valores de un marcador que hay que editar
-> obligaría a cambiar el test cada vez que alguien prepare una prueba. Lo
-> que sí importa del bloque, que cada línea lleve `empresa` y pase por
-> `LineaEntrada` (ya sin `empleado_ide`), lo prueba `test_f022_r13_script_de_
-> pruebas_imputa_a_la_empresa_de_la_0404`.
-
-### 4. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:50` [entero]
-
-- Original: `{"registro_id": 900002, "recurso_ide": 0, "dni": None,`
-- Mutado:   `{"registro_id": 900002, "recurso_ide": 1, "dni": None,`
-
-#### Análisis (implementer, 2026-10-02)
-
-> Por qué ningún test lo caza: es un DATO de ejemplo del script manual
-> `prueba_escritura_porcentajes.py` (`LINEAS_PRUEBA`, «EDITAR con RECURSOS
-> reales»): `registro_id` 9000xx y `recurso_ide` 0 son marcadores que la
-> persona sustituye antes de lanzar `preflight`; ningún código de producción
-> depende de su valor. Entra en el alcance solo porque F-026 renombró la
-> clave `empleado_ide` → `recurso_ide` en esas tres líneas. Reproducido a
-> mano (línea 47 con `900002` y `recurso_ide: 1`): suite del transfer
-> `329 passed`, igual que sin mutar.
-> Decisión: **mutante equivalente a efectos de comportamiento, justificado**;
-> sin test nuevo. Fijar los valores de un marcador que hay que editar
-> obligaría a cambiar el test cada vez que alguien prepare una prueba. Lo
-> que sí importa del bloque, que cada línea lleve `empresa` y pase por
-> `LineaEntrada` (ya sin `empleado_ide`), lo prueba `test_f022_r13_script_de_
-> pruebas_imputa_a_la_empresa_de_la_0404`.
-
-### 5. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:53` [entero]
+### 1. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:53` [entero]
 
 - Original: `{"registro_id": 900003, "recurso_ide": 0, "dni": None,`
 - Mutado:   `{"registro_id": 900004, "recurso_ide": 0, "dni": None,`
 
-#### Análisis (implementer, 2026-10-02)
+#### Análisis (implementer, 2026-10-02, ciclo 2 tras la review 1)
 
-> Por qué ningún test lo caza: es un DATO de ejemplo del script manual
-> `prueba_escritura_porcentajes.py` (`LINEAS_PRUEBA`, «EDITAR con RECURSOS
-> reales»): `registro_id` 9000xx y `recurso_ide` 0 son marcadores que la
-> persona sustituye antes de lanzar `preflight`; ningún código de producción
-> depende de su valor. Entra en el alcance solo porque F-026 renombró la
-> clave `empleado_ide` → `recurso_ide` en esas tres líneas. Reproducido a
-> mano (línea 47 con `900002` y `recurso_ide: 1`): suite del transfer
-> `329 passed`, igual que sin mutar.
-> Decisión: **mutante equivalente a efectos de comportamiento, justificado**;
-> sin test nuevo. Fijar los valores de un marcador que hay que editar
-> obligaría a cambiar el test cada vez que alguien prepare una prueba. Lo
-> que sí importa del bloque, que cada línea lleve `empresa` y pase por
-> `LineaEntrada` (ya sin `empleado_ide`), lo prueba `test_f022_r13_script_de_
-> pruebas_imputa_a_la_empresa_de_la_0404`.
+> Reproducido a mano (línea 53 con `900004`, el resto intacto): suite del
+> transfer `330 passed`, igual que sin mutar.
+> Qué cambia de verdad: solo el literal del tercer `registro_id` de
+> ejemplo y, con él, la synckey que llevaría esa línea si alguien la
+> escribiera (`porcentajes:900004` en vez de `porcentajes:900003`).
+> Qué NO cambia, y lo fija `test_f026_r20_lineas_de_ejemplo_sin_editar_no_
+> escriben` (commit `df7e94c`): los tres `registro_id` siguen siendo
+> distintos (900001, 900002, 900004), así que las synckey no se pisan en la
+> idempotencia ni en `verificar`; los tres siguen con `recurso_ide` 0 y el
+> preflight los omite por `MOTIVO_SIN_RECURSO`; siguen en el rango
+> `9000xx` que documenta el comentario de la línea 45; `limpiar` busca por
+> la marca y el prefijo `porcentajes:`, no por el número. Ningún código
+> lee ese valor concreto: es un identificador arbitrario por diseño.
+> Decisión: **equivalente**, como dijo la review 1 («solo el nº 5 es
+> equivalente de verdad»). Matarlo exigiría fijar el número exacto en un
+> test, que no protege ninguna propiedad. **Necesita aceptación escrita del
+> humano antes del `done`** (rigor `critico`).
 
-### 6. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:53` [entero]
 
-- Original: `{"registro_id": 900003, "recurso_ide": 0, "dni": None,`
-- Mutado:   `{"registro_id": 900003, "recurso_ide": 1, "dni": None,`
-
-#### Análisis (implementer, 2026-10-02)
-
-> Por qué ningún test lo caza: es un DATO de ejemplo del script manual
-> `prueba_escritura_porcentajes.py` (`LINEAS_PRUEBA`, «EDITAR con RECURSOS
-> reales»): `registro_id` 9000xx y `recurso_ide` 0 son marcadores que la
-> persona sustituye antes de lanzar `preflight`; ningún código de producción
-> depende de su valor. Entra en el alcance solo porque F-026 renombró la
-> clave `empleado_ide` → `recurso_ide` en esas tres líneas. Reproducido a
-> mano (línea 47 con `900002` y `recurso_ide: 1`): suite del transfer
-> `329 passed`, igual que sin mutar.
-> Decisión: **mutante equivalente a efectos de comportamiento, justificado**;
-> sin test nuevo. Fijar los valores de un marcador que hay que editar
-> obligaría a cambiar el test cada vez que alguien prepare una prueba. Lo
-> que sí importa del bloque, que cada línea lleve `empresa` y pase por
-> `LineaEntrada` (ya sin `empleado_ide`), lo prueba `test_f022_r13_script_de_
-> pruebas_imputa_a_la_empresa_de_la_0404`.
 
 ## Notas del implementer
 
-- **Campaña anterior (paralela, 4 workers, HEAD `be5efd0`)**: 56 evaluados,
-  47 muertos, 9 supervivientes. Además de estos seis daba tres que, al
-  reproducirlos a mano, **no sobreviven**:
-  - `filtros_maestros.py:124` `> 0` → `> 1`: superviviente REAL (con la
-    mutación a mano, `439 passed`). Hueco: nada fijaba que `fecha_baja = 1`
-    cuenta en `incluidos_con_baja`. Lo mata
-    `test_f026_r17_cualquier_fecha_de_baja_positiva_cuenta_como_con_baja`
-    (commit `5bea52e`; contra el mutante `assert 0 == 1`).
-  - `vigencia.py:21` `*` → `//` y `registro_sigrid.py:115` `or` → `and`:
-    **falsos supervivientes de la campaña paralela**. A mano los matan 12 y
-    15 tests respectivamente; una campaña en serie solo de `vigencia.py`
-    dio 18/18 muertos y esta campaña en serie los da por muertos. Posible
-    fallo del arnés con `workers > 1` (aviso para el líder; no se toca aquí).
-- Esta campaña es en serie (`--workers 1`) sobre HEAD `5bea52e`, para que
-  los números no dependan de ese fallo.
+- **Ciclo 2 (tras la review 1)**: esta campaña es en serie (`--workers 1`)
+  sobre HEAD `df7e94c`. La anterior (HEAD `5bea52e`, 506,4 s) dio 50/56 y
+  seis supervivientes en `prueba_escritura_porcentajes.py`, de los que la
+  review demostró que cinco NO eran equivalentes (nº 1 y 3 duplicaban un
+  `registro_id` y su synckey; nº 2, 4 y 6 quitaban el centinela
+  `recurso_ide: 0`). Los mata `test_f026_r20_lineas_de_ejemplo_sin_editar_
+  no_escriben` (mutantes 51-54 y 56 de esta campaña: muertos).
+- Campañas anteriores y los falsos supervivientes de la campaña paralela
+  (`vigencia.py:21`, `registro_sigrid.py:115`): ver
+  `git show 1bdb08b:progress/mutacion_F-026.md`, «Notas del implementer».
