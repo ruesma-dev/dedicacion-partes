@@ -217,14 +217,15 @@ def test_f023_r3_obras_devuelven_empresa_de_su_ficha() -> None:
 
 
 def test_f023_r4_empleados_devuelven_los_cinco_alias() -> None:
+    """Desde F-026 (R1) la empresa, el estado y la baja salen del concepto
+    del RECURSO (`rcon`), que es la fila base: ya no hay `empresa_recurso`."""
     sql = _plano(_config_sync()["empleados"]["sql"])
     for esperado in (
-        "con.emp AS empresa,",
-        "rcon.emp AS empresa_recurso,",
+        "rcon.emp AS empresa,",
         "COALESCE(rest.res, CAST(rcon.est AS VARCHAR(16))) AS estado_recurso,",
-        "rcon.fecbaj AS baja_recurso,",
+        "NULLIF(rcon.fecbaj, 0) AS fecha_baja,",
         "uh.fecbaj AS baja_laboral,",
-        "LEFT JOIN dbo.con AS rcon ON rcon.ide = res.ide",
+        "JOIN dbo.con AS rcon ON rcon.ide = res.ide",
         "LEFT JOIN dbo.conest AS rest ON rest.tip = rcon.tip AND rest.est = rcon.est",
     ):
         assert esperado in sql, esperado
@@ -233,17 +234,21 @@ def test_f023_r4_empleados_devuelven_los_cinco_alias() -> None:
 def test_f023_r5_empleados_sin_filtro_de_emphis() -> None:
     sql = _plano(_config_sync()["empleados"]["sql"])
     assert "COALESCE(uh.fecbaj" not in sql
-    # El único WHERE que queda es el de las subconsultas OUTER APPLY.
-    assert not re.search(r"\)\s*AS hm\s+WHERE", sql)
+    # Tras las subconsultas OUTER APPLY solo queda el WHERE de clase persona
+    # de F-026 R1, que no mira ninguna fecha de baja.
+    principal = re.split(r"\)\s*AS hm\s+", sql, maxsplit=1)[1]
+    assert re.fullmatch(r"WHERE res\.cla = 1 ORDER BY [^()]*", principal)
+    assert "fecbaj" not in principal
 
 
 def test_f023_r5_config_inactivo_es_la_fecha_de_baja_del_recurso() -> None:
-    """D1 cerrada (2026-10-01): inactivo = `con.fecbaj > 0` del recurso. La
-    lista de literales queda vacía: el tipo 33 no tiene estados en `conest`."""
+    """D1 de F-023 (2026-10-01): inactivo por `con.fecbaj` del recurso, y
+    desde F-026 (D3) solo si la baja es anterior a la ventana. La lista de
+    literales queda vacía: el tipo 33 no tiene estados en `conest`."""
     cfg = _config_sync()["empleados"]
     assert cfg["filtro_estado_recurso"] is True
     assert cfg["estados_recurso_excluidos"] == []
-    assert cfg["excluir_recurso_con_fecha_baja"] is True
+    assert cfg["excluir_baja_anterior_a_ventana"] is True
 
 
 # --- R6: sin columna `empresa` no se persiste nada ----------------------------
