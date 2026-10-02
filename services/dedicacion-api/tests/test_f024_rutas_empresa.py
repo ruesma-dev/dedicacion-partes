@@ -1,6 +1,9 @@
 # tests/test_f024_rutas_empresa.py
 """F-024 · El parámetro `empresa` en la API y `GET /api/v1/empresas`
-(R1, R2, R6, R11, R15, R18).
+(R1, R2, R6, R11, R15, R18), adaptado a F-034: las obras son siempre las de
+la empresa de las obras (R1), el trabajador sin empresa se ve solo en la por
+defecto (R3) y `otra_empresa` no depende de la elegida (R5). Cambios
+declarados en `progress/impl_F-034.md`.
 
 `TestClient` sobre la app real con `dependency_overrides[obtener_contenedor]`:
 el contenedor falso trae la UnitOfWork en memoria de
@@ -111,18 +114,20 @@ def test_f024_r6_sin_empresa_la_por_defecto(api):
     cliente, _ = api
     cuerpo = cliente.get(f"{BASE}/cuadrante").json()
     assert cuerpo["empresa"] == 1
+    # F-034 (R3): Carlos (NULL) se ve en la por defecto.
     assert [t["nombre"] for t in cuerpo["trabajadores"]] == [
-        "Ana", "Dani", "Eva", "Gil"]
+        "Ana", "Carlos", "Dani", "Eva", "Gil"]
 
 
 def test_f024_r6_con_empresa_la_elegida(api):
     cliente, _ = api
     cuerpo = cliente.get(f"{BASE}/cuadrante", params={"empresa": 28}).json()
     assert cuerpo["empresa"] == 28
-    assert [t["nombre"] for t in cuerpo["trabajadores"]] == [
-        "Bea", "Carlos", "Gil"]
-    assert [o["ide"] for o in cuerpo["obras"]] == [900]
-    assert cuerpo["resumen"]["total"] == 3
+    # F-034: los NULL salen de la 28 (R3) y las obras son las de la empresa
+    # de las obras (R1).
+    assert [t["nombre"] for t in cuerpo["trabajadores"]] == ["Bea"]
+    assert [o["ide"] for o in cuerpo["obras"]] == [100, 101, 102]
+    assert cuerpo["resumen"]["total"] == 1
 
 
 RUTAS = [
@@ -151,7 +156,8 @@ def test_f024_r6_empresa_invalida_es_422_sin_tocar_nada(api, metodo, ruta,
     assert contenedor.registro_sigrid.llamadas == []
 
 
-@pytest.mark.parametrize("empresa, total", [(None, 4), (1, 4), (28, 3)])
+# F-034 (R3): los NULL cuentan solo en la por defecto.
+@pytest.mark.parametrize("empresa, total", [(None, 5), (1, 5), (28, 1)])
 @pytest.mark.parametrize("metodo, ruta, cuerpo", RUTAS[1:4],
                          ids=[r[1] for r in RUTAS[1:4]])
 def test_f024_r6_r13_respuestas_por_fila_con_el_resumen_de_la_empresa(
@@ -194,17 +200,23 @@ def test_f024_r11_empresa_del_trabajador_y_de_cada_linea(api):
         100.0, "OK")
 
 
-def test_f024_r11_otra_empresa_depende_de_la_elegida(api):
+@pytest.mark.parametrize("empresa", [None, 1])
+def test_f034_r5_otra_empresa_no_depende_de_la_elegida(api, empresa):
+    """F-034 (R5) · `otra_empresa` compara con la empresa de las obras, no
+    con la elegida. Gil (NULL) solo es visible en la por defecto (R3).
+    Sustituye a `test_f024_r11_otra_empresa_depende_de_la_elegida`; el caso
+    con E = 28 está en `test_f034_rutas.py`."""
     cliente, _ = api
-    cuerpo = cliente.get(f"{BASE}/cuadrante", params={"empresa": 28}).json()
+    params = {} if empresa is None else {"empresa": empresa}
+    cuerpo = cliente.get(f"{BASE}/cuadrante", params=params).json()
     gil = next(t for t in cuerpo["trabajadores"] if t["nombre"] == "Gil")
     assert [(ln["obra_empresa"], ln["otra_empresa"])
-            for ln in gil["lineas"]] == [(1, True), (28, False)]
+            for ln in gil["lineas"]] == [(1, False), (28, True)]
 
 
 # --------------------------------- R15 -------------------------------- #
-@pytest.mark.parametrize("empresa, nombres", [
-    (None, ["Ana", "Dani", "Eva", "Gil"]), (28, ["Bea", "Carlos", "Gil"])])
+@pytest.mark.parametrize("empresa, nombres", [   # F-034 (R3): los NULL
+    (None, ["Ana", "Carlos", "Dani", "Eva", "Gil"]), (28, ["Bea"])])
 def test_f024_r15_export_filtrado_y_con_la_empresa_en_el_nombre(
         api, empresa, nombres):
     cliente, contenedor = api

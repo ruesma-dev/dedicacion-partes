@@ -1,8 +1,43 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-032 se cerró el 2026-10-01 (resumen en
-`history.md`). El arnés es la **1.7.3**.
+**F-034 en curso** (review APROBADA; faltan T8, T9 y la aceptación de M4 para
+`done`). F-032 se cerró el 2026-10-01 (resumen en `history.md`). El arnés es la **1.7.3**.
+
+> **2026-10-01, en curso:** el humano aclara que las OBRAS (incluida la
+> postventa) son siempre de Construcciones Ruesma; los trabajadores, de varias
+> empresas. F-024 se desplegó con la regla contraria y **los trabajadores de
+> la 18 y la 31 no pueden registrar en producción**. Entra **F-034** con
+> prioridad 1; spec **aprobada** por el humano con D1-D5 (`edab7d9`);
+> plan confirmado. **BLOCKED (2026-10-01)**: el implementer
+> paró antes de escribir código porque la lista cerrada de tests que cambian
+> (design §6) se quedó corta: 4 tests de F-024 (R17 registro, R10 cuadrante,
+> R6 y R6/R13 rutas) cambian como consecuencia directa de R1/R3 y no estaban
+> en la lista (`progress/impl_F-034.md`, «Motivo del bloqueo»). El humano acepta
+> (2026-10-02): `in_progress` de nuevo; §6 completado (`ba55567`).
+> **Implementer terminado** (`ef56e2d` … `573ee1e`, `progress/impl_F-034.md`);
+> **review APROBADA** (`progress/review_F-034.md`). Manuales, copia a
+> `azure-apps` y aceptación de M4: sección «F-034 · pendiente» más abajo.
+> **F-034 está en `dev` pero NO se despliega sola**: va con F-026.
+> Se despliega **junto con F-026**.
+> **F-026**: decisión del humano 2026-10-01, «no debe buscar por empleado sino
+> por recurso»: el sync parte de los RECURSOS activos (sin fecha de baja) con
+> código de hora mes; la ficha de empleado es opcional (solo DNI); la api
+> manda al transfer el recurso exacto. Spec aprobada por el
+> humano el 2026-10-02 con la enmienda (`56cfd3e`): clave = `res.ide` sin
+> migración (vaciado de los datos de prueba al desplegar, con autorización
+> expresa), vigencia por mes con ventana de bajas, D2 y D4-D7. `dev` (con
+> F-034) traído a su rama; **`in_progress`, implementer lanzado** →
+> `progress/impl_F-026.md`. F-034 queda `blocked` solo por su T9, que el
+> humano hará junto con las manuales de F-026 (el líder le guía).
+> **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
+> turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.
+> **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni
+> OT (la cascada vigente de P5 las casa con partidas ajenas y se escribiría en
+> real).
+> **Pendiente de respuesta del humano:** el plan de correcciones de la review
+> del despliegue (`progress/review_despliegue_20261001.md`) y si F-017 se hace
+> en real con Administración delante.
 
 ## ⚠ DESPLEGADO EN MODO REAL (2026-10-01)
 
@@ -28,6 +63,38 @@
 - Documentación al día con el modo real: `CLAUDE.md`, `README.md`,
   `docs/ARCHITECTURE.md`, `docs/INTEGRACION.md` (§8 con el comando para volver
   a pruebas) y su copia en `azure-apps`.
+
+## F-034 · pendiente antes del `done`
+
+- **T8 — CUMPLIDA. Copia a `azure-apps/dedicacion.md`**,
+  literal, de las piezas de T7: los puntos de `#regla-empresa` cambiados en
+  `docs/ARCHITECTURE.md` y, de `docs/INTEGRACION.md`, la cabecera, la fila
+  `EMPRESA_IMPUTACION` de §3 y el párrafo «Una línea sin empresa no se
+  registra» de §9 (`git diff d34e4a1 -- docs/`). Commit en `azure-apps`.
+  **Resultado: HECHA (2026-10-02)**, commit `b4d5340` en `azure-apps`, marcada
+  «aún NO desplegado». (ARCHITECTURE no tiene copia en `azure-apps`.)
+- **T9 (humano, R13, D5): preflight en local, solo lectura. Se hará JUNTO con
+  las verificaciones de F-026 (decisión del humano 2026-10-02); el líder le
+  guía cuando esté listo.** Transfer local
+  con `OBRA_PRUEBAS_FORZAR=true` en su `.env`; api y front de esta rama
+  (`python main.py` en cada servicio). En `http://localhost:8080/?empresa=18`:
+  las obras ofrecidas son las de Construcciones Ruesma; dar a un trabajador
+  de la 18 una línea en una de ellas en 2026-09 (solo BBDD local). Después,
+  desde Git Bash:
+  `curl -s -X POST "http://localhost:8090/api/v1/periodos/2026/9/registro/preflight?empresa=18" -H "Content-Type: application/json" -d "{}"`.
+  **Esperado:** `ok: true` por obra, `obra_origen.empresa` = 1 y la acción de
+  esa línea `escribir`, no `omitir` por empresa. **No lanzar
+  `registro/ejecutar`.** Resultado: _pendiente_.
+- **Tras desplegar (humano, no bloquea el `done`):** cuadrante de producción
+  con `?empresa=18`: obras de Construcciones Ruesma, **sin pulsar Registrar**.
+- **M4 — ACEPTADO. Mutante equivalente.** En
+  `RegistroSigrid` `filtro.por_defecto` y `filtro.empresa_obras` salen del
+  mismo ajuste (D1), así que cambiar uno por otro no lo distingue ningún test;
+  reproducido por el reviewer (RM5). **ACEPTADO por el humano el 2026-10-02.**
+- **Despliegue:** junto con F-026 (decisión del humano). No se despliega sola.
+- Observación de la review: una corrida de la campaña dio 3 supervivientes
+  que no se reprodujeron en copia aislada. Si vuelve a pasar, encargo en
+  `arnes-base` (es la misma familia que el de la caché previa de F-022).
 
 ## Lo siguiente, por prioridad
 
@@ -68,9 +135,10 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 - **Avisa y espera confirmación** en tres casos, cada uno con su clave: pisar
   una línea existente, pasarse del 100 % de un trabajador (F-002) y escribir
   sin partida casada (F-013).
-- **El transfer sigue en modo pruebas.** El motivo real está en
-  `docs/ARCHITECTURE.md`: **la imputación a partidas en producción no está
-  validada**. Salir de ahí exige autorización expresa para una acción concreta.
+- **El transfer desplegado escribe DE VERDAD desde el 2026-10-01**, por
+  decisión expresa del humano (`docs/INTEGRACION.md` §8, con el comando para
+  volver a pruebas). Sigue sin validar la imputación a partidas en producción
+  (`docs/ARCHITECTURE.md`, F-017).
 
 ## Lo que NO está verificado, y consta
 

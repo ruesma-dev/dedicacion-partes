@@ -10,12 +10,14 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-10-01** (F-032: el sync lee además el
-> catálogo de empresas `auxemp` de Sigrid y el selector toma de ahí el
-> nombre y si la empresa está de baja). **Origen:** rama
-> `feature/F-032-empresas-desde-sigrid`, pendiente de merge a `dev`. Versión
-> anterior: 2026-10-01, F-024 (selector de empresa; `EMPRESA_IMPUTACION`
-> pasa a ser la empresa por defecto), commit `a2bcbca`.
+> **Fecha del documento: 2026-10-02** (F-034: las obras, postventa
+> incluida, son siempre de la empresa de las obras, `EMPRESA_IMPUTACION`; el
+> selector filtra solo trabajadores y cada línea del registro viaja con la
+> empresa de las obras, no con la elegida). **Origen:** rama
+> `feature/F-034-obras-siempre-ruesma`, pendiente de merge a `dev`. Versión
+> anterior: 2026-10-01, F-032 (el sync lee además el catálogo de empresas
+> `auxemp` de Sigrid y el selector toma de ahí el nombre y si la empresa
+> está de baja), commit `fb240be`.
 >
 > **Estado: DESPLEGADO.** El 2026-08-20 se ejecutó la fase 7 y los tres
 > servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo. El
@@ -124,7 +126,7 @@ despliegue no tenga que aprender dos vocabularios.
 | `SIGRID_API_BASE_URL`, `SIGRID_API_DATABASE`, `SIGRID_API_TIMEOUT_S`, `SIGRID_MAX_ROWS` | Lectura de maestros |
 | `SIGRID_API_FUNCTION_KEY` | **Secreto**. Por referencia a Key Vault |
 | `TRANSFER_BASE_URL`, `TRANSFER_TIMEOUT_S` | El registro en Sigrid, por HTTP interno |
-| `EMPRESA_IMPUTACION` | **Empresa por defecto** (`con.emp` de Sigrid): la que sale elegida en el selector al entrar y la que se usa si una petición no trae empresa. La empresa de cada línea del registro es la **elegida en el selector** (F-024). `1` por defecto; entero > 0 o la api no arranca |
+| `EMPRESA_IMPUTACION` | **Empresa de las obras** (`con.emp` de Sigrid): la de las obras que se ofrecen, postventa incluida, y la que viaja en cada línea del registro, sea cual sea la elegida en el selector (F-034). Es además la **empresa por defecto** del selector: la que sale elegida al entrar y la que se usa si una petición no trae empresa. `1` por defecto; entero > 0 o la api no arranca |
 
 ### `dedicacion-front`
 
@@ -391,14 +393,13 @@ transfer, `az containerapp logs show`.
 
 **Una línea sin empresa no se registra.** El código de obra solo es único
 dentro de su empresa, así que el transfer busca cada obra por código **y**
-empresa, y la empresa llega en cada línea (la pone la api: es la **elegida
-en el selector**; `EMPRESA_IMPUTACION` solo es la por defecto). Una línea que
-llegue sin ella sale **omitida con motivo**, no con error; una petición que
-mezcle dos empresas se rechaza con **422**; y si la obra es de otra empresa
-que sus líneas, todas se omiten. En modo pruebas, una empresa sin obra de
-pruebas no escribe nada: con otra empresa que la 1 elegida, el preflight
-enseña ese error por obra. La regla completa:
-`docs/ARCHITECTURE.md#regla-empresa`.
+empresa, y la empresa llega en cada línea (la pone la api: es la **empresa
+de las obras**, `EMPRESA_IMPUTACION`, sea cual sea la elegida en el
+selector). Una línea que llegue sin ella sale **omitida con motivo**, no con
+error; una petición que mezcle dos empresas se rechaza con **422**; y si la
+obra es de otra empresa que sus líneas, todas se omiten. En modo pruebas,
+una empresa sin obra de pruebas no escribe nada y el preflight enseña ese
+error por obra. La regla completa: `docs/ARCHITECTURE.md#regla-empresa`.
 
 **Si la api arranca y dice que la base no existe**, es que falta ejecutar
 `infra/crear_base_dedicacion.ps1`. El servicio ya no la crea solo, a
