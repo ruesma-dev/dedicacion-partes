@@ -1,8 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-026 en curso** (recursos por recurso, rigor crítico): review pasada 2 con
-el código y la mutación aprobados; quedan la aceptación del superviviente nº 5
+**F-026 en curso** (recursos por recurso, rigor crítico): **review APROBADA**
+(pasada 3) y mergeada en `dev`; quedan la aceptación del superviviente nº 5
 y las MANUAL. **F-034 `blocked`** solo por su T9, que se hace junto con las de
 F-026. Las dos se **despliegan juntas**. El arnés es la **1.7.3**.
 
@@ -29,7 +29,13 @@ F-026. Las dos se **despliegan juntas**. El arnés es la **1.7.3**.
   mes) y con el cambio de método para los tests anteriores (`features.json`).
 - Implementer: `progress/impl_F-026.md`. Review: `progress/review_F-026.md`
   (pasada 1, un punto de evidencia resuelto en el ciclo 2; pasada 2, código y
-  campaña 55/56 correctos, cambios pedidos solo en este fichero).
+  campaña 55/56 correctos, cambios solo en este fichero; **pasada 3, APROBADA**).
+- **Script versionado para T9 + T14 + T15 juntas:**
+  `powershell -ExecutionPolicy Bypass -File scripts/verif_f034_f026.ps1`
+  (desde la raíz; antes, el vaciado local con autorización y transfer + api
+  locales; el script crea un periodo y dos asignaciones de prueba SOLO en la
+  BBDD local y lanza dos preflight; nunca `ejecutar`). Esperado:
+  `RESULTADO: OK`.
 - **Pendiente antes del `done`:**
   - **Superviviente nº 5 (humano):** aceptar por escrito el equivalente
     `prueba_escritura_porcentajes.py:53` `900003→900004`
