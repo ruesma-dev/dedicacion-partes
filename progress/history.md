@@ -1175,3 +1175,108 @@ Informes: `progress/impl_F-034.md`, `progress/review_F-034.md`,
 - **Tras desplegar (humano, no bloquea el `done`):** cuadrante de producción
   con `?empresa=18`: obras de Construcciones Ruesma, **sin pulsar Registrar**.
 
+## 2026-10-02 · F-026 · El sync parte del recurso (el caso Eusebio Vindel Duro)
+
+Rama `feature/F-026-recursos-sin-ficha-empleado` · `sdd: true` · rigor
+`critico` · **APROBADO** por el reviewer en la pasada 3 (la 1 pidió evidencia:
+5 «equivalentes» que no lo eran; la 2, solo el rastro de `current.md`, que se
+reescribió entero).
+
+**Decisiones del humano.** «No debe buscar por empleado sino por recurso»;
+«solo deben aparecer empleados que no estén inactivos y que tengan código hora
+mes»; sin migración (lo de producción son pruebas: se vacía al desplegar);
+un recurso dado de baja en el mes sigue visible ese mes. Y un cambio de método
+para los tests anteriores (consecuencia directa de un requisito, declarados en
+tabla y verificados fila a fila por el reviewer), tras un segundo bloqueo por
+la lista cerrada de tests.
+
+**Qué cambió.** El sync parte de `res` (persona, código M*, vigente según la
+ventana de bajas); la ficha de empleado solo aporta el DNI; la clave del
+trabajador es el `res.ide`; vigencia por mes en cuadrante y registro
+(`no_vigentes`); la api manda `recurso_ide` y el transfer ya no lo elige por
+`res.conide`. Script `infra/vaciar_datos_prueba_dedicacion.ps1` (plan por
+defecto, `-Confirmar`, una sola `TRUNCATE … CONTINUE IDENTITY`, solo la base
+`dedicacion`).
+
+**Verificado.** Suites sin caché (api 440, transfer 329/330, front 21);
+mutación 55/56 con el **nº 5 equivalente, aceptado por el humano**. MANUAL con
+`scripts/verif_f034_f026.ps1` tras el vaciado local: los diez recursos del
+diagnóstico activos; Eusebio (MO/0772) sale para escribir con su recurso
+2798037; activos por empresa 183/8/1/4. Copia a `azure-apps`: `67d0364`.
+
+**Pendiente.** Desplegar con F-034 y vaciar los datos de prueba en Azure con
+autorización expresa. Propuestas al humano como features aparte: la fila de
+guardar/deshacer no conoce el mes, y el front no enseña `no_vigentes`.
+
+Informes: `progress/impl_F-026.md`, `progress/review_F-026.md`,
+`progress/mutacion_F-026.md`. Sección retirada de `current.md`:
+
+## F-026 · El sync parte del recurso (en curso)
+
+- Rama `feature/F-026-recursos-sin-ficha-empleado` (lleva `dev` con F-034).
+  Spec aprobada con la enmienda del humano del 2026-10-02 (clave = `res.ide`
+  sin migración; vaciado de los datos de prueba al desplegar; vigencia por
+  mes) y con el cambio de método para los tests anteriores (`features.json`).
+- Implementer: `progress/impl_F-026.md`. Review: `progress/review_F-026.md`
+  (pasada 1, un punto de evidencia resuelto en el ciclo 2; pasada 2, código y
+  campaña 55/56 correctos, cambios solo en este fichero; **pasada 3, APROBADA**).
+- **Script versionado para T9 + T14 + T15 juntas:**
+  `powershell -ExecutionPolicy Bypass -File scripts/verif_f034_f026.ps1`
+  (desde la raíz; antes, el vaciado local con autorización y transfer + api
+  locales; el script crea un periodo y dos asignaciones de prueba SOLO en la
+  BBDD local y lanza dos preflight; nunca `ejecutar`). Esperado:
+  `RESULTADO: OK`.
+- **Pendiente antes del `done`:**
+  - **Superviviente nº 5 (humano):** aceptar por escrito el equivalente
+    `prueba_escritura_porcentajes.py:53` `900003→900004`
+    (`progress/mutacion_F-026.md`). Resultado: _pendiente_.
+  - **T14 (R24) — CUMPLIDA.** **Resultado real (2026-10-02, humano, `scripts/verif_f034_f026.ps1`, transfer
+  local en modo pruebas, api y front de `dev` con F-034 y F-026, tras el vaciado
+  local): CUMPLIDA.** Vaciado local: 35/60/12/606 → 0/0/0/0.
+    Los 10 recursos del diagnóstico activos en la 1; activos por empresa 183 / 8 / 1 / 4
+    (1 / 18 / 25 / 31). Texto original:
+    `cd infra; .\vaciar_datos_prueba_dedicacion.ps1 -Local` (esperado: solo el
+    plan) y `.\vaciar_datos_prueba_dedicacion.ps1 -Local -Confirmar` (pide la
+    contraseña de `$env:PGUSER` o `postgres`; esperado: recuento antes, la
+    sentencia, recuento 0/0/0/0). API de la rama
+    (`cd services\dedicacion-api; .venv\Scripts\python main.py`);
+    `GET http://localhost:8090/api/v1/sync/preview` (esperado:
+    `empleados.ventana_baja` = día 1 del mes anterior o del ABIERTO más
+    antiguo; `posible_misma_persona` con `MO/0061` y `MO/0736`) y
+    `POST http://localhost:8090/api/v1/sync`. En la base:
+    `SELECT ide, cod, empresa, activo, fecha_baja FROM trabajador WHERE cod IN ('MO/0772','MO/0759','MO/0760','MO/0762','MO/0774','MO/0775','MO/0776','MO/0777','MO/0779','MO/0496') AND empresa = 1`
+    (esperado: diez activos, `ide` = su `res.ide`) y
+    `SELECT COUNT(*) FROM trabajador WHERE fecha_baja < <ventana_baja>` (0). Un
+    recurso con `fecha_baja` en el mes en curso sale en ese mes y no en el
+    siguiente. Resultado: _pendiente_.
+  - **T15 (R25) — CUMPLIDA.** Eusebio (MO/0772) sale `escribir` con
+    `recurso_ide` 2798037 (su `res.ide`); `no_vigentes: []`. Texto original:
+    **preflight de SOLO LECTURA** con el transfer local en modo
+    pruebas (`OBRA_PRUEBAS_FORZAR=true`;
+    `cd services\dedicacion-transfer; .venv\Scripts\python main.py`): dar a
+    Eusebio (`1-MO/0772`) una línea en un periodo local y
+    `curl -X POST http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight -H "Content-Type: application/json" -d "{}"`.
+    Esperado: su acción `escribir` con `recurso_ide` = su `res.ide`; ninguna
+    omitida por «la línea no trae el recurso del trabajador»;
+    `no_vigentes: []`. **NO lanzar `registro/ejecutar`.** Resultado: _pendiente_.
+  - **T16 (líder, con autorización del humano): copia a
+    `azure-apps/dedicacion.md`** de las piezas de T12 de `docs/INTEGRACION.md`
+    (cabecera, avisos, vaciado en §2, contrato de la línea en §9, dos filas en
+    cada tabla de §7). Commit en `azure-apps`. **HECHA**: `67d0364` en `azure-apps`.
+- **Observaciones de las reviews, recogidas o descartadas por escrito:**
+  - Frase de `infra/README_dedicacion.md` §3 bis («sus líneas llevarían un
+    `emp.ide`… que el transfer omite (P1)»): **corregida** (tras el sync esas
+    líneas son de trabajadores no vigentes y van a `no_vigentes`).
+  - `ruff I001` (orden de imports) en 4 ficheros de test nuevos:
+    **descartada** como deuda de estilo; `ruff` no bloquea (193 avisos previos)
+    y tocar los tests ahora obligaría a otra pasada de review. Entra en F-006
+    (sanear suites).
+  - Fila tras guardar/deshacer sin conocer el mes, y el front sin enseñar
+    `no_vigentes`: **propuestas al humano como features pequeñas**, pendientes
+    de su decisión.
+  - Automejoras (RM5: «que la suite pase con el mutante prueba que sobrevive,
+    no que sea equivalente»; `init.sh` compruebe que la cabecera de
+    `current.md` nombra la `in_progress`) → encargo `69df67b` en `arnes-base`.
+  - Falsos supervivientes con `workers > 1` (tercera feature seguida) →
+    añadido al encargo de `arnes-base` (`affff93`).
+
