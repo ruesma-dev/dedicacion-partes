@@ -177,12 +177,11 @@ class ClienteFalso:
         self.capitulos = PRESUPUESTOS_PV[presupuesto_postventa]
         self.partidas_origen = PRESUPUESTO_ORIGEN
         self._obra_pv_existe = bool(obra_postventa_existe)
-        # emp 10 -> recursos 100 (viejo, sin M*) y 200 (MENC)
-        # emp 11 -> recurso 300 (solo horas de convenio, sin M*)
-        # emp 12 -> recurso 400 (MJEFO). Es el SEGUNDO trabajador con M*, y
-        #           hace falta para los casos en los que un recurso queda
-        #           bloqueado y tiene que quedar otro que sí se escriba.
-        self.recursos = {10: [100, 200], 11: [300], 12: [400]}
+        # Recursos (F-026: los manda la API, el transfer no los elige):
+        # 100 (viejo, sin M*) y 200 (MENC); 300 (solo horas de convenio, sin
+        # M*); 400 (MJEFO). El 400 es el SEGUNDO trabajador con M*, y hace
+        # falta para los casos en los que un recurso queda bloqueado y tiene
+        # que quedar otro que sí se escriba.
         self.horas = {
             100: [HoraRecurso(1, "HLPE", None, 20.0)],
             200: [HoraRecurso(5, "MENC", None, 9000.0),
@@ -222,10 +221,6 @@ class ClienteFalso:
         if obride == self.obra_origen.ide:
             return self.partidas_origen
         return []
-
-    def recursos_de_empleados(self, emp_ides):
-        return {e: self.recursos.get(e, []) for e in emp_ides
-                if e in self.recursos}
 
     def horas_de_recursos(self, resides):
         return {r: self.horas.get(r, []) for r in resides}
@@ -281,7 +276,7 @@ def linea_previa(**kw) -> LineaSigrid:
 def linea(**kw) -> LineaEntrada:
     """Línea de entrada del cuadrante con valores por defecto sensatos."""
     datos = dict(registro_id=1, ano=2026, mes=7, porcentaje=0.4,
-                 empleado_ide=10, nombre="Acuna Mera, Antonio",
+                 recurso_ide=200, nombre="Acuna Mera, Antonio",
                  categoria="Encargado", empresa=EMPRESA)
     datos.update(kw)
     return LineaEntrada(**datos)

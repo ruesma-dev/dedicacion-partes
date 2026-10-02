@@ -69,7 +69,7 @@ def linea_que_no_casa(**kw):
     de julio (una jefa de obra sin partida en su presupuesto), no un caso
     inventado para el test.
     """
-    datos = dict(registro_id=1, porcentaje=0.4, empleado_ide=12,
+    datos = dict(registro_id=1, porcentaje=0.4, recurso_ide=400,
                  nombre="Arriaza Garcia, Raquel", categoria="Delineante")
     datos.update(kw)
     return linea(**datos)
@@ -166,7 +166,7 @@ def test_f013_r1_dos_lineas_sin_partida_son_dos_conflictos():
     """R1 · Y el pipeline las publica por separado, con su clave cada una."""
     cli = ClienteFalso()
     lineas = [linea_que_no_casa(registro_id=1),
-              linea_que_no_casa(registro_id=2, empleado_ide=10,
+              linea_que_no_casa(registro_id=2, recurso_ide=200,
                                 nombre="Otro Sin Casar", categoria="Peon")]
     pf = _pipeline(cli).preflight(obra=OBRA, lineas=lineas)
 
@@ -330,7 +330,7 @@ def test_f013_r3_confirmar_una_no_confirma_la_otra():
     escribe la del otro. Es la consecuencia observable de que la clave sea
     por línea."""
     lineas = [linea_que_no_casa(registro_id=1),
-              linea_que_no_casa(registro_id=2, empleado_ide=10,
+              linea_que_no_casa(registro_id=2, recurso_ide=200,
                                 nombre="Otro Sin Casar", categoria="Peon")]
     pf = _pipeline(ClienteFalso()).preflight(obra=OBRA, lineas=lineas)
     claves = {c.registros[0]: c.clave for c in pf.conflictos
