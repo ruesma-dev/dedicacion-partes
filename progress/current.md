@@ -37,8 +37,11 @@
 > verificados uno a uno por el reviewer; ver `features.json`). `in_progress`
 > de nuevo. **Implementer terminado** (`75271a3` … `1bdb08b`,
 > `progress/impl_F-026.md`): mutación 50/56 con 6 equivalentes justificados.
-> **Reviewer lanzado** → `progress/review_F-026.md`. Manuales en la sección
-> «F-026 · pendiente» más abajo. F-034 queda `blocked` solo por su T9, que el
+> Review pasada 1: **CHANGES_REQUESTED** por un solo punto de evidencia: 5 de
+> los 6 supervivientes de `prueba_escritura_porcentajes.py` no son equivalentes
+> (duplican `registro_id`/`synckey` o quitan el centinela `recurso_ide: 0`).
+> **Implementer relanzado** (ciclo 2 de 2) con un test del transfer que lo
+> fije y la campaña relanzada. Manuales en «F-026 · pendiente» más abajo. F-034 queda `blocked` solo por su T9, que el
 > humano hará junto con las manuales de F-026 (el líder le guía).
 > **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
 > turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.
