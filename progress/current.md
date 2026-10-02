@@ -30,8 +30,15 @@ rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
   `cffd850`, `eb224b5`): `)` en la clase de caracteres, con test y README;
   tabla en `progress/mutacion_manual_F-035.md` (21 mutantes, 0
   supervivientes, script incrustado). **Review 2: APROBADO** (tabla
-  reproducida 23/23 por el reviewer) y **mergeada en `dev`**. Para el `done`
-  solo falta la MANUAL de abajo.
+  reproducida 23/23 por el reviewer) y **mergeada en `dev`**.
+- **MANUAL 1 (2026-10-03, humano): FALLA** con `password authentication
+  failed`, pero **no por el script**: comparadas en memoria, la contraseña
+  tecleada (10 caracteres) no es la del Key Vault (14). El servidor y el FQDN
+  responden; el aviso de firewall salió aunque el error era de contraseña.
+- **Ciclo 3 aprobado por el humano (2026-10-03):** en Azure la contraseña se
+  lee de `PG-PASSWORD` del Key Vault (salida de `az`, nunca argumento), con
+  `Read-Host` de respaldo; el aviso de firewall solo ante tiempo agotado o
+  `no pg_hba.conf entry`. Después, review 3 y repetir la MANUAL.
 - **Observaciones de la review 1, recogidas:** `)` → aprobado y en el ciclo 2;
   criterio 6 de `features.json` → ya dice «tres tests»; automejora (tabla
   manual en fichero propio) → `arnes-base`, encargo de mutantes manuales
@@ -51,7 +58,8 @@ rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
   ```
   Esperado: las dos cuentan filas sin «password authentication failed» y
   terminan en «SOLO RECUENTO: hecho, no se ha escrito nada»; el último
-  comando da `False False`. Resultado: _pendiente_.
+  comando da `False False`. Tras el ciclo 3, la de Azure ya no pide contraseña.
+  Resultado: MANUAL 1 fallida (ver arriba); repetición _pendiente_.
 
 ## Producción, hoy
 
