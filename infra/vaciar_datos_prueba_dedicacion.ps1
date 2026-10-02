@@ -49,9 +49,11 @@
 #     acceso de tu IP: si falta, lo dice y para.
 #   - No pide la contrasena del administrador del servidor: basta la del rol
 #     de aplicacion ($PG_APP_USER), que tiene GRANT ALL sobre nuestras tablas.
-#   - La contrasena se pide con Read-Host -AsSecureString, no se escribe en
-#     ningun fichero y solo esta en el entorno (PGPASSWORD) durante cada
-#     llamada a psql.
+#   - En Azure la contrasena se lee de PG-PASSWORD en el Key Vault $KV (hace
+#     falta el rol Key Vault Secrets User u Officer); si no se puede, y en
+#     local siempre, se pide con Read-Host -AsSecureString. No se imprime, no
+#     se escribe en ningun fichero y solo esta en el entorno (PGPASSWORD)
+#     durante cada llamada a psql.
 
 param(
     # Sin este conmutador (ni -SoloRecuento) el script solo IMPRIME el plan.
@@ -107,6 +109,10 @@ Write-Host "`nNO se toca: las tablas obra y empresa, ninguna otra base, ni nada"
 Write-Host "del servidor. Las secuencias se conservan (CONTINUE IDENTITY)." -ForegroundColor Cyan
 Write-Host "Se conecta con psql (tambien en Azure): la contrasena va por el entorno," -ForegroundColor Cyan
 Write-Host "nunca por la linea de comandos (F-035)." -ForegroundColor Cyan
+if (-not $Local) {
+    Write-Host "Contrasena: la de PG-PASSWORD en el Key Vault $KV (az keyvault secret show, solo" -ForegroundColor Cyan
+    Write-Host "lectura); si no se puede leer, se pide a mano." -ForegroundColor Cyan
+}
 
 # Sin -Confirmar ni -SoloRecuento, aqui se acaba: no se ha conectado a nada.
 if (-not $Confirmar -and -not $SoloRecuento) {
@@ -137,14 +143,36 @@ if (-not $Local) {
 
 # --- 2) Credenciales, en memoria y solo durante esta sesion -----------------
 Section "2) Credenciales"
+$CLAVE = $null
 if ($Local) {
     $USUARIO = if ($env:PGUSER) { $env:PGUSER } else { "postgres" }
     $sec = Read-Host "  Contrasena del usuario '$USUARIO' en localhost" -AsSecureString
+    $CLAVE = [System.Net.NetworkCredential]::new("", $sec).Password
 } else {
     $USUARIO = $PG_APP_USER
-    $sec = Read-Host "  Contrasena del rol de aplicacion '$PG_APP_USER' (la de PG-PASSWORD)" -AsSecureString
+    # F-035, ciclo 3: la contrasena del rol sale de PG-PASSWORD en el Key Vault,
+    # la misma que usa la api. Teclearla a mano ya fallo una vez por un error al
+    # introducirla. Es la SALIDA de az (stdout), nunca un argumento: no pasa por
+    # la linea de comandos de cmd.exe. Solo lectura; no se imprime.
+    if ($KV) {
+        Write-Host "  Contrasena de '$PG_APP_USER': se lee de PG-PASSWORD en el Key Vault $KV (no se imprime)."
+        $anterior = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        try {
+            $valor = az keyvault secret show --vault-name $KV --name PG-PASSWORD --query value -o tsv 2>$null
+            if ($LASTEXITCODE -eq 0 -and $valor -is [string]) { $CLAVE = $valor }
+        } finally {
+            $ErrorActionPreference = $anterior
+            $valor = $null
+        }
+    }
+    # Respaldo: sin $KV, sin permiso sobre el Key Vault o con el secreto vacio.
+    if ([string]::IsNullOrWhiteSpace($CLAVE)) {
+        Write-Host "  AVISO: no he podido leer PG-PASSWORD del Key Vault '$KV' (falta `$KV, no tienes el rol Key Vault Secrets User u Officer, o esta vacia). Se pide a mano." -ForegroundColor Yellow
+        $sec = Read-Host "  Contrasena del rol de aplicacion '$PG_APP_USER' (la de PG-PASSWORD)" -AsSecureString
+        $CLAVE = [System.Net.NetworkCredential]::new("", $sec).Password
+    }
 }
-$CLAVE = [System.Net.NetworkCredential]::new("", $sec).Password
 if ([string]::IsNullOrWhiteSpace($CLAVE)) { throw "Sin contrasena no se conecta." }
 
 function Ejecutar-Sql($sql) {
@@ -171,8 +199,19 @@ function Ejecutar-Sql($sql) {
         Remove-Item Env:PGSSLMODE -ErrorAction SilentlyContinue
     }
     if ($codigo -ne 0) {
-        if ($Local) { throw "Fallo ejecutando SQL en ${DESTINO}:`n$salida" }
-        throw "Fallo ejecutando SQL en ${DESTINO}:`n$salida`nSi psql no llega a conectar (tiempo agotado o 'no pg_hba.conf entry'), lo mas probable es que tu IP no tenga acceso al servidor: revisa en el Portal de Azure (servidor $PG, Redes) la regla de firewall de tu IP. Este script NO la crea ni la toca: el servidor es COMPARTIDO."
+        $mensaje = "Fallo ejecutando SQL en ${DESTINO}:`n$salida"
+        if (-not $Local) {
+            # Cada pista, solo si la salida de psql la respalda (ciclo 3): la
+            # del firewall salia tambien ante una contrasena mal tecleada.
+            # Los textos del servidor (Azure) vienen en ingles; el de tiempo
+            # agotado lo pone el cliente y puede venir traducido por Windows.
+            if ($salida -match 'password authentication failed') {
+                $mensaje += "`nLa contrasena no coincide con la del rol '$PG_APP_USER': comprueba que es la de PG-PASSWORD en el Key Vault $KV."
+            } elseif ($salida -match 'timeout|timed out|tiempo|pg_hba\.conf') {
+                $mensaje += "`npsql no llega a conectar: lo mas probable es que tu IP no tenga acceso al servidor. Revisa en el Portal de Azure (servidor $PG, Redes) la regla de firewall de tu IP. Este script NO la crea ni la toca: el servidor es COMPARTIDO."
+            }
+        }
+        throw $mensaje
     }
     return $salida
 }

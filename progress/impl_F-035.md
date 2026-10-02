@@ -1,174 +1,165 @@
 # F-035 · Informe del implementer
 
 Rama `feature/F-035-vaciado-psql-azure`, rigor **estándar**, sin spec (contra
-los `acceptance` de `harness/features.json`). Commits: `fc57b7f` T1 (vaciado
-con `psql` + `-SoloRecuento`), `33b5e9b` T2 (control de caracteres),
-`b8189d3` T3 (README), `30c28c7` T4 (tests reforzados tras mutación manual);
-ciclo 2: `301dfed` T5 (`)`), `cffd850` T6 (tabla de mutación).
+los `acceptance` de `harness/features.json`). Commits: ciclo 1 `fc57b7f` T1
+(psql + `-SoloRecuento`), `33b5e9b` T2 (control de caracteres), `b8189d3` T3
+(README), `30c28c7` T4 (tests reforzados); ciclo 2 `301dfed` T5 (`)`),
+`cffd850` T6 (tabla de mutación); ciclo 3 `5a1eb13` T8 (Key Vault y avisos),
+`5686670` + `4e34f3b` T9 (README y su test), `ced27af` T10 (mutación).
 
-**Ningún script se ha ejecutado**: ni contra Azure ni contra la base local, ni
-con `-Confirmar` ni con `-SoloRecuento`. Lo único ejecutado sobre ellos: el
-analizador de PowerShell (`Parser]::ParseFile`, 0 errores de sintaxis en los
-tres) y la función de control extraída por AST con cadenas inventadas.
+**Ningún script se ha ejecutado** contra Azure ni contra la base local. Solo el
+analizador de PowerShell (`Parser]::ParseFile`: 0 errores en los tres `.ps1`),
+la función de control extraída por AST y las condiciones de los avisos
+evaluadas con `-match` sobre textos inventados.
 
 ## Qué cambió
 
 **`infra/vaciar_datos_prueba_dedicacion.ps1`**
 - Azure usa `psql -h $PG_FQDN -d $PG_DB -U $PG_APP_USER -v ON_ERROR_STOP=1 -c
-  $sql`; FQDN por `az postgres flexible-server show … --query
-  fullyQualifiedDomainName -o tsv` (solo lectura; vacío ⇒ para). Fuera
-  `rdbms-connect` y `az … execute`; queda `az account set`. Solo esas dos `az`.
+  $sql`; FQDN por `az postgres flexible-server show … -o tsv` (solo lectura;
+  vacío ⇒ para). Fuera `rdbms-connect` y `az … execute`.
 - `PGPASSWORD` (los dos modos) y `PGSSLMODE=require` (solo Azure) dentro del
-  `try` de `Ejecutar-Sql`, borrados en su `finally`.
-- Comprobación de `psql` al primer nivel (los dos modos) y, como el FQDN,
-  **antes** de pedir la contraseña.
-- `-SoloRecuento`: plan propio, pide la contraseña, cuenta y `return` antes del
-  vaciado. Con y sin `-Local`.
-- Error de `psql` en Azure: «tu IP no tenga acceso… revisa en el Portal
-  (servidor $PG, Redes) la regla de firewall de tu IP. Este script NO la crea
-  ni la toca» (sin el literal que prohíbe F-026).
-- Cabecera con los seis modos y el `$env:Path` de psql. BOM/CRLF/ASCII.
+  `try` de `Ejecutar-Sql`, borrados en su `finally`. `psql` comprobado en los
+  dos modos antes de pedir nada.
+- `-SoloRecuento`: cuenta y `return` antes del vaciado, con y sin `-Local`.
+- **Ciclo 3.** En Azure la contraseña se lee con `$valor = az keyvault secret
+  show --vault-name $KV --name PG-PASSWORD --query value -o tsv 2>$null`
+  (salida de `az`, nunca argumento), dentro de `if ($KV)`, en la sección
+  «2) Credenciales»: después de la salida del plan. Se acepta solo si
+  `$LASTEXITCODE -eq 0` y es una cadena; si no (sin `$KV`, sin permiso, vacía)
+  avisa y vuelve al `Read-Host -AsSecureString`. No imprime ni la contraseña ni
+  su longitud. El plan dice de dónde sale. En local, sin cambios.
+- **Ciclo 3.** El error de `psql` en Azure construye `$mensaje` y añade una
+  pista solo si la salida la respalda: `password authentication failed` ⇒ «la
+  contraseña no coincide con … PG-PASSWORD en el Key Vault»; si no, `timeout|
+  timed out|tiempo|pg_hba\.conf` ⇒ «tu IP no tenga acceso… regla de firewall de
+  tu IP. Este script NO la crea ni la toca». Otro error: sin pista.
 
-**`crear_base_dedicacion.ps1` / `add_secrets_dedicacion.ps1`** — solo
-añadidos: función `Rechazar-CaracteresDeCmd` (`-match '["&|<>^%)]'` → `throw`
-con el porqué, sin imprimir el valor), llamada tras leer cada secreto
-(`$PGADMIN_PWD`, `$APP_PWD`; `$val`). Ejecutada aislada (extraída por AST):
-rechaza `a"b a&b a|b a<b a>b a^b a%b ab)cd abc)`, acepta `Abc123.x-y_z~`,
-`a(b`, `comilla'simple`, `x!y=z+/`. Mensaje real (ciclo 2):
+**`crear_base` / `add_secrets`** — solo añadidos: `Rechazar-CaracteresDeCmd`
+(`-match '["&|<>^%)]'` → `throw` con el porqué, sin imprimir el valor) tras
+leer cada secreto. Ejecutada aislada: rechaza `a"b a&b a|b a<b a>b a^b a%b
+ab)cd abc)`, acepta `Abc123.x-y_z~ a(b comilla'simple x!y=z+/`.
 
-```
-ABORTADO: El valor de 'PG-PASSWORD' contiene alguno de estos caracteres: " & | < > ^ % ). En Windows az es un .cmd y su linea de comandos pasa por cmd.exe, que los interpreta y corromperia el valor sin avisar; el ) ademas cierra el bloque IF ( ... ) dentro del que az.cmd expande sus argumentos, y corta el valor o rompe la linea (F-035). Si es una contrasena que eliges tu, usa una sin ellos.
-```
-
-**`README_dedicacion.md`** — §3 bis: `$env:Path`, `-SoloRecuento`, «`psql`
-también en Azure» y acceso desde tu IP. §6 bis nueva: `cmd.exe` y la tabla de
-la revisión. §7: fila del vaciado. El resto de scripts, **sin tocar**.
+**`README_dedicacion.md`** — §3 bis: `$env:Path`, `-SoloRecuento`, psql y
+acceso desde tu IP en Azure y (ciclo 3) contraseña del Key Vault con el rol
+Key Vault Secrets User u Officer y respaldo a mano. §6 bis: `cmd.exe`, el `)`
+y la tabla de la revisión. §7: fila del vaciado.
 
 ## Decisiones de diseño
 
-1. **`-SoloRecuento` conecta sin `-Confirmar`**: es de solo lectura. La
-   invariante se mantiene: sin `-Confirmar` **ni** `-SoloRecuento`, el script
-   imprime el plan y sale sin conectar (`if (-not $Confirmar -and -not
-   $SoloRecuento) { … return }`).
-2. **`-Confirmar` y `-SoloRecuento` juntos → `throw`**, antes de imprimir el
-   plan y de conectar a nada. Uno escribe y el otro solo lee: que gane uno en
-   silencio es peor que decirlo.
-3. **`PGSSLMODE` se borra en el `finally` aunque el usuario lo tuviera puesto
-   de antes**, igual que ya pasaba con `PGPASSWORD` en local. Es lo que pide
-   el plan; restaurar el valor previo sería más código para un caso que no se
-   da en este flujo.
-4. **`add_secrets` controla los tres valores**, no solo `PG-PASSWORD`: los tres
-   van por `--value` a `az.cmd`. Las function keys y el client secret de Azure
-   no usan esos caracteres, así que no se rechaza nada legítimo. Si un valor se
-   rechaza, el `throw` corta el bucle; lo guardado antes en esa misma
-   ejecución queda guardado.
-5. **En `crear_base` el control va tras leer cada contraseña**, sin mover nada
-   más («no cambies nada más»): antes de la primera llamada a `az` que la
-   lleva, pero los pasos 1-2 (comprobar el servidor y la regla de servicios de
-   Azure si falta) siguen ejecutándose antes de pedir credenciales, como hasta
-   hoy. Observación para el líder, no la toco: adelantar la lectura de
-   credenciales evitaría ese paso si luego la contraseña se rechaza.
+1. **`-SoloRecuento` conecta sin `-Confirmar`** (solo lee); sin ninguno de los
+   dos no conecta a nada. Juntos ⇒ `throw` antes del plan.
+2. **`PGSSLMODE` se borra en el `finally`** aunque estuviera puesto de antes,
+   como ya pasaba con `PGPASSWORD`.
+3. **`add_secrets` controla los tres valores** (los tres van por `--value`);
+   un rechazo corta el bucle y lo ya guardado queda guardado.
+4. **`crear_base`: control tras leer cada contraseña** sin mover nada más; sus
+   pasos 1-2 siguen antes de pedir credenciales (observación ya en `current.md`).
+5. **Ciclo 3, patrones de los avisos.** `password authentication failed` y
+   `no pg_hba.conf entry` los escribe el **servidor** (Azure, en inglés): se
+   buscan literales (`pg_hba\.conf`). El tiempo agotado lo escribe el
+   **cliente**: libpq da `timeout expired` (con `connect_timeout`) o
+   `Connection timed out`, y en un Windows en español el texto de Winsock
+   llega traducido («…tras un periodo de tiempo…»): de ahí `timeout|timed
+   out|tiempo`. La contraseña se mira **primero** (`if`), el firewall en el
+   `elseif`: nunca salen los dos. `-match` no distingue mayúsculas.
+6. **Ciclo 3, lectura del Key Vault.** `ErrorActionPreference = "Continue"`
+   solo alrededor de la llamada (si no, en PS 5.1 un fallo de `az` cortaría el
+   script en vez de caer al respaldo) y `$valor = $null` en el `finally`. Va
+   tras `az account set` (sección 1), así que lee de la suscripción correcta.
 
 ## Tests anteriores que cambian (declarados)
 
-Los tres en `tests/test_f026_vaciado.py`. **El plan de `current.md` solo
-declaraba el tercero**: los otros dos cambian porque `-SoloRecuento` cambia la
-estructura que fijan. Ninguno pierde exigencia.
+Ninguno pierde exigencia; ninguno más cambia.
 
-| Test | Antes | Ahora | Motivo |
-|---|---|---|---|
-| `test_f026_r10_parametros_confirmar_y_local` | `param` con exactamente `$Confirmar, $Local` | `$Confirmar, $Local, $SoloRecuento` | tercer conmutador |
-| `test_f026_r10_sin_confirmar_sale_antes_de_conectar` | busca `if (-not $Confirmar) {` | busca `if (-not $Confirmar -and -not $SoloRecuento) {`; el resto igual (`return` al primer nivel y antes de cualquier `az`/`psql`/`Read-Host`) | `-SoloRecuento` también conecta, sin `-Confirmar` |
-| `test_f026_r10_solo_en_la_base_dedicacion` | `az … execute` con `-d $PG_DB` y `-u $PG_APP_USER`; todo `psql` con `-h localhost -d dedicacion` | ningún `flexible-server execute`; exactamente 2 `psql`: local con `-h localhost -d dedicacion`, Azure con `-h $PG_FQDN -d $PG_DB -U $PG_APP_USER`; sigue sin `PG_ADMIN` | Azure pasa a psql (R1) |
+| Test | Antes → ahora | Motivo |
+|---|---|---|
+| `test_f026_r10_parametros_confirmar_y_local` | `param($Confirmar, $Local)` → `+ $SoloRecuento` | tercer conmutador |
+| `test_f026_r10_sin_confirmar_sale_antes_de_conectar` | busca `if (-not $Confirmar) {` → `if (-not $Confirmar -and -not $SoloRecuento) {`; resto igual (`return` al primer nivel, antes de toda `az`/`psql`/`Read-Host`: la lectura del Key Vault también queda detrás) | `-SoloRecuento` conecta sin `-Confirmar` |
+| `test_f026_r10_solo_en_la_base_dedicacion` | `az … execute -d $PG_DB` → exactamente 2 `psql` (local `-d dedicacion`; Azure `-d $PG_DB -U $PG_APP_USER`) | Azure pasa a psql |
+| `test_f035_r1_fqdn_por_show_de_solo_lectura` (ciclo 3) | `az` admitidas: `account set`, `flexible-server show` → `+ keyvault secret show` (sus argumentos exactos los fija `test_f035_r7_lee_pg_password_del_key_vault`) | lectura de PG-PASSWORD |
+| `test_f035_r3_el_error_de_azure_apunta_a_la_ip_propia` (ciclo 3) | el aviso iba en el `throw` de Azure → va en el bloque `if (-not $Local)` que suma a `$mensaje`; mismas frases | avisos condicionales |
 
-`test_f026_r10_formato_de_los_ps1_del_repositorio`, `…una_sola_sentencia…`
-(sigue habiendo **un** `TRUNCATE`) y `…nada_fuera_de_las_cuatro_tablas`
-(incluido `firewall-rule`) pasan **sin tocarlos**.
+El barrido `-p $`/`--value $` no cambia: la lectura del Key Vault no lleva
+ninguno de los dos.
 
-## Tests nuevos: `tests/test_f035_secretos_sin_cmd.py` (28)
+## Tests nuevos: `tests/test_f035_secretos_sin_cmd.py` (44)
 
-R1 (7) psql/FQDN/`finally`; R2 (5) `-SoloRecuento`; R3 (2) IP y nada de
-servidor; R4 (8) clase evaluada con datos, mensaje, orden lectura < control <
-primera `az` (×3) y **barrido** de `-p $x`/`--value $x`/`--password $x` en
-`infra/*.ps1`; formato de los 3 `.ps1` (3); R5 (3) README.
+R1 (7) psql/FQDN/`finally`; R2 (5) `-SoloRecuento`; R3 (2); R4 (8) clase,
+mensaje, orden ×3, barrido; formato (3); R5 (3) README; **R7 (8)** lectura del
+Key Vault exacta, tras la salida del plan y en la rama Azure bajo `if ($KV)`,
+respaldo a `Read-Host`, local sin cambios, ninguna contraseña como argumento,
+no se imprime, plan y §3 bis; **R8 (8)** avisos condicionales, sus patrones
+evaluados sobre seis salidas de psql (tiempo, timeout, tiempo en español,
+pg_hba, contraseña, otro) y orden contraseña → firewall.
 
-## Fase RED
+## Fase RED (comando y salida real)
 
-Tests escritos antes que el código en cada tarea. Comandos y salida real:
-
-**T1** — `python -m pytest tests/test_f035_secretos_sin_cmd.py -q -p no:cacheprovider`
-(script de vaciado aún sin tocar):
+**T1** `python -m pytest tests/test_f035_secretos_sin_cmd.py -q -p no:cacheprovider`:
 
 ```
->       assert "flexible-server execute" not in texto
-E         'flexible-server execute' is contained here:
 E            postgres flexible-server execute -n $PG -u $PG_APP_USER -p $CLAVE -d $PG_DB --querytext $sql --only-show-errors 2>&1 | Out-String
->       assert len(azure) == 1, psql
 E       AssertionError: ['$salida = psql -h localhost -d dedicacion -U $USUARIO -v ON_ERROR_STOP=1 -c $sql 2>&1 | Out-String']
->       assert _nivel(codigo, comprobacion) == 0, codigo[comprobacion]
 E       AssertionError: if (-not (Get-Command psql -ErrorAction SilentlyContinue)) {
-E       assert 1 == 0
 E       AssertionError: falta la salida sin -Confirmar ni -SoloRecuento
 E       AssertionError: falta el rechazo de -Confirmar con -SoloRecuento
-E       AssertionError: ['throw "Falta `$PG. Haz primero: ...', 'throw "No encuentro psql en el PATH: ...', 'throw "Sin contrasena no se conecta." }', 'throw "Fallo ejecutando SQL en ${DESTINO}:`n$salida" }']
 13 failed, 1 passed in 0.55s
 ```
 
-(Pasaba `…r3_sin_tocar_nada_del_servidor`: ya se cumplía.) Tras el código: `14 passed`.
-
-**T2** — mismo comando, con los tests de R4 añadidos y los scripts sin tocar:
+Tras el código: `14 passed`. **T2** (mismo comando, R4 añadidos):
 
 ```
 E       AssertionError: falta la funcion Rechazar-CaracteresDeCmd en crear_base_dedicacion.ps1
 E       AssertionError: falta la funcion Rechazar-CaracteresDeCmd en add_secrets_dedicacion.ps1
-E       AssertionError: assert 'cmd.exe' in ''
 E       AssertionError: (27, 75, 41)      # crear_base, la del admin (lectura, control ausente, primera az)
-E       AssertionError: (30, 75, 35)      # crear_base, la del rol
-E       AssertionError: (17, 30, 21)      # add_secrets, el valor
 7 failed, 18 passed in 0.52s
 ```
 
-(El barrido ya pasaba: es guardián a futuro.) Tras el código: `25 passed`.
+Tras el código: `25 passed`. **T3** (`-k r5`): `assert '-SoloRecuento' in '### 3
+bis …'`, `AssertionError: cmd.exe` → `3 failed, 25 deselected`; luego `3 passed`.
+**T5** (`-k r4`, ciclo 2): `AssertionError: )` en
+`re.compile('["&|<>^%]').search('abc)123')` (×2) → `4 failed, 4 passed`; luego
+`28 passed`.
 
-**T3** — `python -m pytest tests/test_f035_secretos_sin_cmd.py -q -p no:cacheprovider -k r5`:
-
-```
-E       AssertionError: assert '-SoloRecuento' in '### 3 bis · Despliegue de F-026 (una vez): vaciar los datos de prueba ...'
-E       AssertionError: cmd.exe        # no existe la sección de cmd.exe
-E       AssertionError: ['| `vaciar_datos_prueba_dedicacion.ps1` | ... plan y `-Confirmar` |']
-3 failed, 25 deselected in 0.27s
-```
-
-Tras el README: `3 passed` (con el filtro de §7 acotado a esa sección).
-
-## Ciclo 2 (review 1: cambios pedidos; `)` aprobado por el humano)
-
-- **T5** `)` en la clase y el mensaje de `crear_base`/`add_secrets`, y en §6 bis.
-  RED (`… test_f035_secretos_sin_cmd.py -q -p no:cacheprovider -k r4`, scripts sin tocar):
-  `E AssertionError: )` en `re.compile('["&|<>^%]').search('abc)123')` (×2) y
-  `E assert '" & | < > ^ % )' in 'if ($clave -match …` (×2) → `4 failed, 4 passed,
-  20 deselected`. Tras el código: `28 passed`; `ParseFile` 0 errores.
-- **T6** `progress/mutacion_manual_F-035.md`: 21 mutantes sobre copia, sin `-x`,
-  0 supervivientes; M8/M10 contra los tests de `b8189d3` siguen sobreviviendo.
-  El script va incrustado; extraído del `.md` y relanzado: misma tabla.
-
-## Resultado real de `bash harness/init.sh` (final del ciclo 2, con este informe)
+**T8** (ciclo 3, mismo comando, script sin tocar):
 
 ```
-402 passed, 1 skipped in 147.16s (0:02:27)
+E       AssertionError: []                                         # r7_lee_...: ninguna linea con keyvault
+E       AssertionError: (112, 112, 71)                             # respaldo: no hay lectura del KV
+E       AssertionError: el origen de la contrasena se anuncia en el plan, para Azure
+E       AssertionError: assert set() == {'clave', 'firewall'}      # avisos sin condicion
+E       KeyError: 'clave'                                          # x6, cada salida de psql
+E       AssertionError: (22, 22)                                   # contrasena antes que firewall
+13 failed, 30 passed in 0.53s
+```
+
+Tras el código: `43 passed`. **T9** (`-k 3_bis`): `AssertionError: assert None`
+(sin Key Vault en §3 bis) → `1 failed`; tras el README, `1 passed`.
+
+## Ciclos 2 y 3
+
+- **Ciclo 2** (review 1): `)` en la clase y el mensaje (T5); tabla
+  reproducible de la mutación manual en su propio fichero (T6).
+- **Ciclo 3** (MANUAL 1 fallida por una contraseña mal tecleada, y el aviso de
+  firewall salió igual): contraseña del Key Vault con respaldo, avisos
+  condicionales (T8), §3 bis (T9) y 10 mutantes nuevos M22–M31 (T10).
+
+## Resultado real de `bash harness/init.sh` (final del ciclo 3, con este informe)
+
+```
+418 passed, 1 skipped in 67.41s (0:01:07)
 [OK] pytest en verde (con medición de cobertura)
 [OK] PUERTA COBERTURA: N/A (F-035 no cambia líneas Python de producción frente a dev)
-[OK] PUERTA TAMAÑO: F-035 dentro de los topes (impl 219/220, review 140/140)
+[OK] PUERTA TAMAÑO: F-035 dentro de los topes (impl 209/220, review 124/140)
 ENTORNO LISTO. Puedes trabajar.
 ```
 
-`ruff` del test nuevo: limpio. Una pasada previa salió en rojo por el propio
-informe (254 líneas y un `PWD:` que el guardián de F-008 leyó como credencial).
+`ruff` del test: limpio (una pasada previa dio 201 avisos por una variable sin
+usar en un test nuevo; quitada, vuelve a los 200 de deuda previa).
 
 ## MANUAL (la hace el humano; NO escribe nada)
 
-Desde una consola de PowerShell **nueva** (con `az login` hecho para la de
-Azure). Los dos comandos piden una contraseña y solo leen.
+Consola de PowerShell **nueva**, con `az login` hecho para la de Azure:
 
 ```powershell
 cd C:\Users\pgris\PycharmProjects\porcentajes\infra
@@ -178,7 +169,7 @@ $env:Path = "C:\Program Files\PostgreSQL\16\bin;$env:Path"
 # 1) Local: pide la contrasena de 'postgres' (o de $env:PGUSER) en localhost
 .\vaciar_datos_prueba_dedicacion.ps1 -Local -SoloRecuento
 
-# 2) Azure: pide la contrasena de 'dedicacion_app' (la de PG-PASSWORD)
+# 2) Azure: NO pide contrasena, la lee de PG-PASSWORD en el Key Vault
 .\vaciar_datos_prueba_dedicacion.ps1 -SoloRecuento
 
 # 3) Despues de cada uno, el entorno queda limpio (esperado: False False)
@@ -190,30 +181,29 @@ contraseña, `=== 3) Filas antes del vaciado ===` con una fila de `psql`
 (asignacion, evento, periodo, trabajador) y `=== SOLO RECUENTO: hecho, no se ha
 escrito nada ===`. Ninguna sección «4) Vaciado».
 
-**Esperado en 2)**: igual, más `Servidor: <fqdn> (psql con PGSSLMODE=require)`
-antes de la contraseña. Tras el sync del 2026-10-02, `trabajador` ≈ 196 y el
-resto lo que se haya capturado desde entonces (0 si nadie ha capturado). **Lo
-que valida F-035**: que conecta con la contraseña del Key Vault sin «password
-authentication failed». Si sale tiempo agotado o `no pg_hba.conf entry`, el
-mensaje pide revisar la regla de firewall de tu IP: es el acceso desde tu
-máquina, no el script, y el script no la toca.
-
-Opcional, sin conectar: `-SoloRecuento -Confirmar` → «se excluyen», sin pedir nada.
+**Esperado en 2)**: el plan dice «Contrasena: la de PG-PASSWORD en el Key
+Vault…»; `Servidor: <fqdn> (psql con PGSSLMODE=require)`; en «2) Credenciales»,
+`Contrasena de 'dedicacion_app': se lee de PG-PASSWORD en el Key Vault <kv> (no
+se imprime).` y **ninguna petición de contraseña**; luego el recuento
+(`trabajador` ≈ 196 tras el sync del 2026-10-02) y «SOLO RECUENTO: hecho».
+Si sale `AVISO: no he podido leer PG-PASSWORD…`, te falta el rol Key Vault
+Secrets User u Officer sobre el Key Vault y la pide a mano. Si psql falla, el
+mensaje solo habla de la contraseña ante `password authentication failed` y
+solo de la regla de firewall de tu IP ante tiempo agotado o `no pg_hba.conf
+entry`.
 
 ## Fuera del alcance / pendiente
 
 - Fuera: volver a vaciar producción, la contraseña de `dedicacion_app`, el
-  servidor y su firewall, `azure-apps` (no cambia lo que exponemos/consumimos).
-- `current.md` y `features.json` sin tocar (los lleva el líder). Queda para
-  él la observación de la decisión 5 (orden de `crear_base`).
+  servidor y su firewall, los permisos del Key Vault, `azure-apps`.
+- `current.md` y `features.json` sin tocar (los lleva el líder).
 
 ## Evidencias
 
 | Evidencia | Valor medido |
 |---|---|
-| Tests ejecutados (suite de `init.sh`) | **402 passed, 1 skipped**; los 28 de `test_f035_secretos_sin_cmd.py` en verde |
+| Tests ejecutados (suite de `init.sh`) | **418 passed, 1 skipped**; los 44 de `test_f035_secretos_sin_cmd.py` en verde |
 | Cobertura de líneas cambiadas | **N/A**: `PUERTA COBERTURA: N/A (F-035 no cambia líneas Python de producción frente a dev)`. Lo cambiado es PowerShell y Markdown |
-| Mutantes (`python -m harness.mutacion --feature F-035`) | **N/A**: «ALCANCE VACÍO en F-035: ni una línea de producción que mutar… No se escribe informe». La herramienta solo muta Python |
-| Mutación manual de los `.ps1` (sustituto) | **21 mutantes, 0 supervivientes** (sobre copia, sin `-x`, en `301dfed`). Primera pasada: M8 (hueco real) y M10 (casi equivalente) sobrevivían; tests ajustados en `30c28c7`. Tabla, texto exacto, fallos por mutante y script: [`progress/mutacion_manual_F-035.md`](mutacion_manual_F-035.md) |
-| Tiempo de la suite | 147.16 s en la pasada final de `init.sh` (entre 75.94 y 171.51 s en las anteriores: varía con la carga de la máquina) |
-
+| Mutantes (`python -m harness.mutacion --feature F-035`) | **N/A**: «ALCANCE VACÍO en F-035… No se escribe informe». La herramienta solo muta Python |
+| Mutación manual de los `.ps1` (sustituto) | **31 mutantes, 0 supervivientes** (sobre copia, sin `-x`, en `4e34f3b`). Primera pasada: M8 (hueco real) y M10 (casi equivalente) sobrevivían; tests ajustados en `30c28c7`, y reproducido contra los tests y `.ps1` de `b8189d3`. Tabla, texto exacto, fallos por mutante y script: [`progress/mutacion_manual_F-035.md`](mutacion_manual_F-035.md) |
+| Tiempo de la suite | 67.41 s en la pasada final de `init.sh` (entre 69 y 172 s en las de ciclos anteriores: varía con la carga de la máquina) |
