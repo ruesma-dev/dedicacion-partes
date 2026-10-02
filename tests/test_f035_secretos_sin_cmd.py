@@ -132,9 +132,10 @@ def test_f035_r1_fqdn_por_show_de_solo_lectura() -> None:
     codigo = _codigo(VACIAR)
     llamadas = [ln for ln in codigo if re.search(r"(^|[=(]\s*)az\s", ln)]
     assert llamadas, "el script no llama a az"
+    # Ciclo 3: tambien `az keyvault secret show` (lectura de PG-PASSWORD, R7).
     for llamada in llamadas:
-        assert re.search(r"\baz (account set|postgres flexible-server show) ",
-                         llamada), llamada
+        assert re.search(r"\baz (account set|postgres flexible-server show"
+                         r"|keyvault secret show) ", llamada), llamada
     show = [ln for ln in llamadas if "flexible-server show" in ln]
     assert len(show) == 1
     assert re.search(r"^\$PG_FQDN\s*=\s*az postgres flexible-server show -n \$PG "
@@ -239,16 +240,20 @@ def test_f035_r2_el_plan_explica_solo_recuento() -> None:
 
 
 def test_f035_r3_el_error_de_azure_apunta_a_la_ip_propia() -> None:
-    # El `throw` de Azure es el que sigue al de la rama local en Ejecutar-Sql.
+    # Ciclo 3: el aviso ya no va en el `throw` de Azure sino en un bloque
+    # condicional de la rama Azure (`if (-not $Local)`) que se suma al mensaje
+    # base; cuando sale lo fija R8 (test_f035_r8_*).
     cuerpo = _funcion_ejecutar_sql()
-    local = _primera(r'^if \(\$Local\) \{ throw "Fallo ejecutando SQL', cuerpo)
-    azure = _primera(r'^throw "Fallo ejecutando SQL', cuerpo, local + 1)
-    assert local < azure < len(cuerpo), (local, azure)
-    mensaje = cuerpo[azure]
+    base = _primera(r'^\$mensaje\s*=\s*"Fallo ejecutando SQL', cuerpo)
+    azure = _primera(r"^if \(-not \$Local\) \{$", cuerpo, base + 1)
+    aviso = _primera(r"regla de firewall de tu IP", cuerpo, azure + 1)
+    lanza = _primera(r"^throw \$mensaje$", cuerpo, aviso + 1)
+    assert base < azure < aviso < lanza < len(cuerpo), (base, azure, aviso, lanza)
+    assert cuerpo[aviso] in _bloque(cuerpo, azure)
+    mensaje = cuerpo[aviso]
     assert "tu IP no tenga acceso" in mensaje, mensaje
-    assert re.search(r"regla de firewall de tu IP", mensaje), mensaje
     assert re.search(r"NO (la )?(crea|toca)", mensaje), mensaje
-    assert "IP" not in cuerpo[local]
+    assert "IP" not in cuerpo[base]
 
 
 def test_f035_r3_sin_tocar_nada_del_servidor() -> None:
@@ -411,3 +416,167 @@ def test_f035_r5_la_tabla_de_ficheros_cita_solo_recuento() -> None:
     fila = [ln for ln in texto.splitlines()
             if ln.startswith("| `vaciar_datos_prueba_dedicacion.ps1`")]
     assert len(fila) == 1 and "-SoloRecuento" in fila[0], fila
+
+
+# --- R7 (ciclo 3) · En Azure, la contrasena sale del Key Vault --------------
+
+LECTURA_KV = "az keyvault secret show --vault-name $KV --name PG-PASSWORD --query value -o tsv"
+
+
+def _credenciales() -> tuple[list[str], int, int, int]:
+    """Codigo (con impresiones) y los indices del `if ($Local)` de la seccion
+    2, de su `} else {` y de la linea que lee el Key Vault."""
+    codigo = _codigo(VACIAR, impresiones=True)
+    seccion = _primera(r'^Section "2\) Credenciales"', codigo)
+    local = _primera(r"^if \(\$Local\) \{$", codigo, seccion)
+    rama_azure = _primera(r"^\} else \{$", codigo, local)
+    lectura = _primera(re.escape(LECTURA_KV), codigo)
+    return codigo, local, rama_azure, lectura
+
+
+def test_f035_r7_lee_pg_password_del_key_vault() -> None:
+    lecturas = [ln for ln in _codigo(VACIAR) if "keyvault" in ln]
+    assert len(lecturas) == 1, lecturas
+    # El secreto es la SALIDA de az, recogida en una variable.
+    assert re.match(r"^\$valor\s*=\s*" + re.escape(LECTURA_KV) + r"(\s+2>\$null)?$",
+                    lecturas[0]), lecturas[0]
+
+
+def test_f035_r7_la_lectura_va_despues_de_la_salida_del_plan() -> None:
+    codigo, local, rama_azure, lectura = _credenciales()
+    salida = _primera(r"^if \(-not \$Confirmar -and -not \$SoloRecuento\) \{$", codigo)
+    fin_salida = salida + len(_bloque(codigo, salida))
+    assert salida < fin_salida < local < rama_azure < lectura < len(codigo)
+    # Solo en la rama de Azure, y solo si hay $KV.
+    assert codigo[lectura] in _bloque(codigo, rama_azure)
+    guarda = _primera(r"^if \(\$KV\) \{$", codigo, rama_azure)
+    assert guarda < lectura and codigo[lectura] in _bloque(codigo, guarda)
+
+
+def test_f035_r7_respaldo_a_read_host_si_no_se_puede_leer() -> None:
+    codigo, local, rama_azure, lectura = _credenciales()
+    respaldo = _primera(r"^if \(\[string\]::IsNullOrWhiteSpace\(\$CLAVE\)\) \{$",
+                        codigo, lectura)
+    funcion = _primera(r"^function Ejecutar-Sql\b", codigo)
+    assert lectura < respaldo < funcion, (lectura, respaldo, funcion)
+    cuerpo = _bloque(codigo, respaldo)
+    assert any(re.search(r"Read-Host .*PG-PASSWORD.*-AsSecureString$", ln) for ln in cuerpo)
+    assert any(ln.startswith("Write-Host") and "AVISO" in ln for ln in cuerpo)
+    assert any(re.match(r"^\$CLAVE\s*=\s*\[System\.Net\.NetworkCredential\]", ln)
+               for ln in cuerpo)
+    # Un fallo de `az` no corta el script: se tolera y se cae al respaldo.
+    guarda = _bloque(codigo, _primera(r"^if \(\$KV\) \{$", codigo, rama_azure))
+    assert '$ErrorActionPreference = "Continue"' in guarda
+    assert any("$LASTEXITCODE -eq 0" in ln for ln in guarda)
+
+
+def test_f035_r7_en_local_no_cambia() -> None:
+    codigo, local, rama_azure, _ = _credenciales()
+    rama_local = codigo[local + 1:rama_azure]
+    assert any(re.search(r"Read-Host .*localhost.*-AsSecureString$", ln) for ln in rama_local)
+    assert not any("keyvault" in ln or "$KV" in ln for ln in rama_local)
+
+
+def test_f035_r7_ninguna_contrasena_viaja_como_argumento() -> None:
+    """`$CLAVE`, `$valor` y `$sec` solo se asignan, se comprueban o van a PGPASSWORD."""
+    admitidas = (
+        r"^\$CLAVE\s*=\s*(\$null|\[System\.Net\.NetworkCredential\]::new\(\"\", \$sec\)\.Password)$",
+        r"^\$env:PGPASSWORD = \$CLAVE$",
+        r"^if \(\[string\]::IsNullOrWhiteSpace\(\$CLAVE\)\) \{",
+        r"^if \(\$LASTEXITCODE -eq 0 -and \$valor -is \[string\]\) \{ \$CLAVE = \$valor \}$",
+        r"^\$valor\s*=\s*(\$null$|" + re.escape(LECTURA_KV) + r")",
+        r"^\$sec = Read-Host .* -AsSecureString$",
+    )
+    for linea in _codigo(VACIAR, impresiones=True):
+        if re.search(r"\$(CLAVE|valor|sec)\b", linea):
+            assert any(re.match(a, linea) for a in admitidas), linea
+        # En la linea de comandos de az/psql (lo que va a la derecha del `=`).
+        llamada = re.search(r"(?:^|[=(|]\s*)((?:az|psql)\s.*)$", linea)
+        if llamada:
+            assert not re.search(r"\$(CLAVE|valor|sec)\b", llamada.group(1)), linea
+
+
+def test_f035_r7_no_imprime_la_contrasena_ni_su_longitud() -> None:
+    # Lo que se imprime o se lanza es el texto entre comillas de esas lineas.
+    for linea in _texto(VACIAR).splitlines():
+        if "Write-Host" in linea or "throw" in linea:
+            for cadena in re.findall(r'"(?:[^"`]|`.)*"', linea):
+                assert not re.search(r"\$(CLAVE|valor|sec)\b|\.Length", cadena), linea
+
+
+def test_f035_r7_el_plan_dice_de_donde_sale_la_contrasena() -> None:
+    codigo = _codigo(VACIAR, impresiones=True)
+    salida = _primera(r"^if \(-not \$Confirmar -and -not \$SoloRecuento\) \{$", codigo)
+    rama = _primera(r"^if \(-not \$Local\) \{$", codigo[:salida])
+    assert rama < salida, "el origen de la contrasena se anuncia en el plan, para Azure"
+    anuncio = _bloque(codigo, rama)
+    assert any(ln.startswith("Write-Host") and "PG-PASSWORD" in ln and "Key Vault" in ln
+               for ln in anuncio), anuncio
+
+
+# --- R8 (ciclo 3) · Cada aviso, solo cuando la salida de psql lo respalda ----
+
+SALIDAS_PSQL = {
+    "tiempo": 'psql: error: connection to server at "srv.example", port 5432 failed: '
+              "Connection timed out (0x0000274C/10060)",
+    "timeout": "psql: error: connection to server failed: timeout expired",
+    "tiempo_es": "Se produjo un error durante el intento de conexion ya que la parte "
+                 "conectada no respondio adecuadamente tras un periodo de tiempo",
+    "pg_hba": "psql: error: connection to server failed: FATAL:  no pg_hba.conf entry "
+              'for host "x", user "dedicacion_app", database "dedicacion", SSL encryption',
+    "clave": "psql: error: connection to server failed: FATAL:  password authentication "
+             'failed for user "dedicacion_app"',
+    "otro": 'ERROR:  relation "asignacion" does not exist',
+}
+
+
+def _avisos() -> dict[str, re.Pattern[str]]:
+    """Condicion `-match` de cada aviso, dentro del `if (-not $Local)` de
+    Ejecutar-Sql. PowerShell `-match` no distingue mayusculas: IGNORECASE."""
+    cuerpo = _funcion_ejecutar_sql()
+    bloque = _bloque(cuerpo, _primera(r"^if \(-not \$Local\) \{$", cuerpo))
+    condiciones = {}
+    for i, linea in enumerate(bloque):
+        hallado = re.match(r"^(?:\} else)?if \(\$salida -match '([^']+)'\) \{$", linea)
+        if not hallado:
+            continue
+        patron = re.compile(hallado.group(1), re.IGNORECASE)
+        if "regla de firewall de tu IP" in bloque[i + 1]:
+            condiciones["firewall"] = patron
+        elif "PG-PASSWORD" in bloque[i + 1] and "no coincide" in bloque[i + 1]:
+            condiciones["clave"] = patron
+    return condiciones
+
+
+def test_f035_r8_los_dos_avisos_son_condicionales() -> None:
+    assert set(_avisos()) == {"clave", "firewall"}
+    # Fuera de esos bloques, ningun aviso: ni en el mensaje base ni en el throw.
+    cuerpo = _funcion_ejecutar_sql()
+    base = [ln for ln in cuerpo if re.match(r'^\$mensaje\s*=\s*"', ln) or ln.startswith("throw")]
+    assert base
+    for linea in base:
+        assert "firewall" not in linea and "PG-PASSWORD" not in linea, linea
+
+
+@pytest.mark.parametrize(("salida", "esperado"), [
+    ("tiempo", "firewall"), ("timeout", "firewall"), ("tiempo_es", "firewall"),
+    ("pg_hba", "firewall"), ("clave", "clave"), ("otro", None),
+])
+def test_f035_r8_cada_salida_de_psql_da_su_aviso(salida: str, esperado: str | None) -> None:
+    """Las condiciones del script, evaluadas sobre salidas tipicas de psql.
+    La de la contrasena va primero (if) y la de firewall en el elseif."""
+    avisos, texto = _avisos(), SALIDAS_PSQL[salida]
+    if avisos["clave"].search(texto):
+        obtenido = "clave"
+    elif avisos["firewall"].search(texto):
+        obtenido = "firewall"
+    else:
+        obtenido = None
+    assert obtenido == esperado, (salida, obtenido)
+
+
+def test_f035_r8_la_contrasena_se_comprueba_antes_que_el_firewall() -> None:
+    cuerpo = _funcion_ejecutar_sql()
+    clave = _primera(r"^if \(\$salida -match '[^']*password authentication failed", cuerpo)
+    firewall = _primera(r"^\} elseif \(\$salida -match '[^']*pg_hba", cuerpo)
+    assert clave < firewall < len(cuerpo), (clave, firewall)
