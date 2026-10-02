@@ -4,6 +4,12 @@
 Agrupa las asignaciones del periodo por OBRA (el contrato del transfer es
 por obra), llama a preflight/ejecutar secuencialmente y persiste la traza
 en la propia asignación (columnas sigrid_*). El porcentaje viaja SOBRE 1.
+
+Cada línea lleva el RECURSO del trabajador (`recurso_ide` = su `ide`, que
+es el `res.ide` de Sigrid): el transfer no lo elige (F-026 R18-R19). Las
+líneas de un trabajador no vigente en el mes no se mandan ni se trazan; sus
+`registro_id` vuelven en `no_vigentes` (F-026 R16,
+docs/ARCHITECTURE.md#regla-recurso).
 """
 from __future__ import annotations
 
@@ -16,6 +22,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from domain.empresas import visible_en_empresa
 from domain.models import FiltroEmpresa
+from domain.vigencia import vigente_en
 from infrastructure.db.orm_models import (
     AsignacionORM, ObraORM, PeriodoORM, TrabajadorORM,
 )
@@ -51,7 +58,9 @@ class RegistroSigrid:
     def _payloads(self, s: Session, anio: int, mes: int,
                   overrides: dict[int, int],
                   trabajador_ide: Optional[int],
-                  filtro: FiltroEmpresa) -> list[dict[str, Any]]:
+                  filtro: FiltroEmpresa
+                  ) -> tuple[list[dict[str, Any]], list[int]]:
+        """Payloads por obra y `registro_id` de los no vigentes en el mes."""
         filas = s.execute(
             select(AsignacionORM, TrabajadorORM, ObraORM)
             .join(PeriodoORM, PeriodoORM.id == AsignacionORM.periodo_id)
@@ -70,8 +79,13 @@ class RegistroSigrid:
         # (R8): el transfer las omite con motivo y `_trazar` lo deja en la
         # asignación.
         por_obra: dict[int, dict[str, Any]] = {}
+        no_vigentes: list[int] = []
         for a, t, o in filas:
             if not visible_en_empresa(t.empresa, filtro):
+                continue
+            # Vigencia por mes (F-026 R16): ni se manda ni se traza.
+            if not vigente_en(t.activo, t.fecha_baja, anio, mes):
+                no_vigentes.append(a.id)
                 continue
             grupo = por_obra.setdefault(o.ide, {
                 "obra": {"ide": o.ide, "codigo": o.cod,
@@ -81,7 +95,7 @@ class RegistroSigrid:
             linea = {
                 "registro_id": a.id, "ano": anio, "mes": mes,
                 "porcentaje": round(float(a.porcentaje) / 100.0, 4),
-                "empleado_ide": t.ide, "dni": t.dni, "nombre": t.nombre,
+                "recurso_ide": t.ide, "dni": t.dni, "nombre": t.nombre,
                 "categoria": t.categoria,
                 "es_postventa": bool(a.es_postventa),
                 "empresa": filtro.empresa_obras,
@@ -89,7 +103,7 @@ class RegistroSigrid:
             if overrides.get(a.id):
                 linea["paride"] = int(overrides[a.id])
             grupo["lineas"].append(linea)
-        return list(por_obra.values())
+        return list(por_obra.values()), sorted(no_vigentes)
 
     # ------------------------------------------------------------- #
     def preflight(self, anio: int, mes: int,
@@ -97,14 +111,15 @@ class RegistroSigrid:
                   trabajador_ide: Optional[int] = None,
                   empresa: int | None = None) -> dict:
         with self._sf() as s:
-            payloads = self._payloads(s, anio, mes, overrides or {},
-                                      trabajador_ide, self._filtro(empresa))
+            payloads, no_vigentes = self._payloads(
+                s, anio, mes, overrides or {}, trabajador_ide,
+                self._filtro(empresa))
         resultados = []
         for p in payloads:
             r = self._transfer.preflight({**p, "pisar_claves": []})
             resultados.append({"obra": p["obra"], **r})
         return {"ok": all(r.get("ok") for r in resultados) if resultados
-                else True, "obras": resultados}
+                else True, "obras": resultados, "no_vigentes": no_vigentes}
 
     # ------------------------------------------------------------- #
     def ejecutar(self, anio: int, mes: int, *, pisar_claves: list[str],
@@ -113,8 +128,9 @@ class RegistroSigrid:
                  trabajador_ide: Optional[int] = None,
                  empresa: int | None = None) -> dict:
         with self._sf() as s:
-            payloads = self._payloads(s, anio, mes, overrides or {},
-                                      trabajador_ide, self._filtro(empresa))
+            payloads, no_vigentes = self._payloads(
+                s, anio, mes, overrides or {}, trabajador_ide,
+                self._filtro(empresa))
         resultados = []
         for p in payloads:
             r = self._transfer.ejecutar({**p, "pisar_claves": pisar_claves,
@@ -123,7 +139,7 @@ class RegistroSigrid:
             if r.get("ok"):
                 self._trazar(r, usuario)
         return {"ok": all(x.get("ok") for x in resultados) if resultados
-                else True, "obras": resultados}
+                else True, "obras": resultados, "no_vigentes": no_vigentes}
 
     def _trazar(self, r: dict, usuario: str) -> None:
         """Persiste en la asignación qué hizo Sigrid con ella.
