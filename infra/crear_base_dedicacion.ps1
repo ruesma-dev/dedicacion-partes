@@ -44,6 +44,17 @@ if (-not $PG) { throw "Falta `$PG. Haz primero:  . .\00_vars_dedicacion.ps1" }
 
 function Section($t) { Write-Host "`n=== $t ===" -ForegroundColor Green }
 
+# F-035: en Windows `az` es un .cmd y su linea de comandos la interpreta
+# cmd.exe, que se come o reinterpreta " & | < > ^ % ) (el ) cierra el
+# bloque IF ( ... ) en el que az.cmd expande sus argumentos): la contrasena le
+# llegaria corrompida a PostgreSQL sin que nada avise. Se rechaza ANTES de
+# la primera llamada a az que la lleva.
+function Rechazar-CaracteresDeCmd($clave, $que) {
+    if ($clave -match '["&|<>^%)]') {
+        throw ("ABORTADO: $que contiene alguno de estos caracteres: " + '" & | < > ^ % )' + ". En Windows az es un .cmd y su linea de comandos pasa por cmd.exe, que los interpreta y corromperia el valor sin avisar; el ) ademas cierra el bloque IF ( ... ) dentro del que az.cmd expande sus argumentos, y corta el valor o rompe la linea (F-035). Usa una contrasena sin ellos.")
+    }
+}
+
 # --- 0) El plan, siempre ----------------------------------------------------
 Write-Host "`n============================================================" -ForegroundColor Yellow
 Write-Host " SERVIDOR COMPARTIDO: $PG ($PG_RG)" -ForegroundColor Yellow
@@ -103,12 +114,14 @@ Write-Host "  Ninguna de las dos se escribe en disco ni se imprime."
 $secAdmin = Read-Host "  Contrasena del admin '$PG_ADMIN' del servidor '$PG'" -AsSecureString
 $PGADMIN_PWD = [System.Net.NetworkCredential]::new("", $secAdmin).Password
 if ([string]::IsNullOrWhiteSpace($PGADMIN_PWD)) { throw "Sin la contrasena del admin no se puede crear nada." }
+Rechazar-CaracteresDeCmd $PGADMIN_PWD "La contrasena del admin '$PG_ADMIN'"
 
 Write-Host "`n  Ahora la del ROL DE APLICACION '$PG_APP_USER' (la eliges tu, es nueva)."
 Write-Host "  Guarda la MISMA en el Key Vault como PG-PASSWORD con add_secrets_dedicacion.ps1."
 $secApp = Read-Host "  Contrasena para '$PG_APP_USER'" -AsSecureString
 $APP_PWD = [System.Net.NetworkCredential]::new("", $secApp).Password
 if ([string]::IsNullOrWhiteSpace($APP_PWD)) { throw "El rol de aplicacion necesita contrasena." }
+Rechazar-CaracteresDeCmd $APP_PWD "La contrasena de '$PG_APP_USER'"
 if ($APP_PWD -eq $PGADMIN_PWD) {
     throw "ABORTADO: el rol de aplicacion NO puede llevar la contrasena del administrador del servidor. Ese es justo el error que `partes` cometio al desplegar con PG_USER=admin."
 }

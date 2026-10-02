@@ -5,11 +5,13 @@
 
 Resumen: **33 features**, 19 abiertas, 14 terminadas.
 
+En curso: **F-035**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-035 | El script de vaciado no funciona contra Azure: la contraseña se corrompe | 1 | pendiente | estandar | `feature/F-035-vaciado-psql-azure` |
+| F-035 | El script de vaciado no funciona contra Azure: la contraseña se corrompe | 1 | en curso | estandar | `feature/F-035-vaciado-psql-azure` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 4 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
 | F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 5 | pendiente | estandar | `feature/F-027-deshacer-por-usuario` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 6 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
@@ -52,9 +54,9 @@ Resumen: **33 features**, 19 abiertas, 14 terminadas.
 
 ### F-035 · El script de vaciado no funciona contra Azure: la contraseña se corrompe
 
-estado **pendiente** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-035-vaciado-psql-azure`
+estado **en curso** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-035-vaciado-psql-azure`
 
-Detectado en el despliegue del 2026-10-02. infra/vaciar_datos_prueba_dedicacion.ps1 pasa la contraseña del rol de aplicación a 'az postgres flexible-server execute -p <clave>'. En Windows az es un .cmd, así que la línea pasa por cmd.exe, que corrompe los caracteres especiales de la contraseña: 'password authentication failed' aunque la contraseña del Key Vault es correcta (la api conecta con ella). El vaciado de producción se hizo a mano con psql (PGPASSWORD en el entorno, PGSSLMODE=require) con las mismas tres sentencias del script. Corregir el script para que contra Azure use psql igual que en local (o pase la contraseña sin cmd.exe), con test. Mismo riesgo en cualquier otro script de infra/ que pase secretos a az por argumento: revisarlos.
+Detectado en el despliegue del 2026-10-02. infra/vaciar_datos_prueba_dedicacion.ps1 pasa la contraseña del rol de aplicación a 'az postgres flexible-server execute -p <clave>'. En Windows az es un .cmd, así que la línea pasa por cmd.exe, que corrompe los caracteres especiales de la contraseña: 'password authentication failed' aunque la contraseña del Key Vault es correcta (la api conecta con ella). El vaciado de producción se hizo a mano con psql (PGPASSWORD en el entorno, PGSSLMODE=require) con las mismas tres sentencias del script. Corregir el script para que contra Azure use psql igual que en local (o pase la contraseña sin cmd.exe), con test. Mismo riesgo en cualquier otro script de infra/ que pase secretos a az por argumento: revisarlos. PLAN APROBADO por el humano el 2026-10-02 (PARADA 1): ver progress/current.md, sección F-035. Review 1 (2026-10-02): CAMBIOS PEDIDOS solo por la tabla reproducible de la campaña manual (C4 bis); el humano aprobó además añadir ')' a los caracteres rechazados.
 
 ### F-025 · Obras de postventa sacadas de los capítulos de POSTV2
 

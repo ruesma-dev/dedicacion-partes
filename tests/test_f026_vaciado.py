@@ -58,14 +58,19 @@ def test_f026_r10_formato_de_los_ps1_del_repositorio() -> None:
 
 
 def test_f026_r10_parametros_confirmar_y_local() -> None:
+    # F-035 añade un tercer conmutador, `-SoloRecuento` (solo lectura).
     texto = _texto()
     assert re.search(r"param\(\s*(?:#[^\n]*\n\s*)*\[switch\]\s*\$Confirmar\s*,"
-                     r"\s*(?:#[^\n]*\n\s*)*\[switch\]\s*\$Local\s*\)", texto)
+                     r"\s*(?:#[^\n]*\n\s*)*\[switch\]\s*\$Local\s*,"
+                     r"\s*(?:#[^\n]*\n\s*)*\[switch\]\s*\$SoloRecuento\s*\)", texto)
 
 
 def test_f026_r10_sin_confirmar_sale_antes_de_conectar() -> None:
+    # Desde F-035 tambien conecta `-SoloRecuento` (solo lectura, sin
+    # -Confirmar): sin NINGUNO de los dos, el script sigue sin conectar.
     codigo = _codigo()
-    salida = _primera(r"^if \(-not \$Confirmar\) \{", codigo)
+    salida = _primera(r"^if \(-not \$Confirmar -and -not \$SoloRecuento\) \{",
+                      codigo)
     assert salida < len(codigo), "falta el bloque que sale sin -Confirmar"
     # `return` en el primer nivel del bloque, no dentro de un if anidado.
     nivel, en_primer_nivel = 0, []
@@ -92,13 +97,17 @@ def test_f026_r10_una_sola_sentencia_sql_de_escritura() -> None:
 
 
 def test_f026_r10_solo_en_la_base_dedicacion() -> None:
+    # Desde F-035 Azure tambien va con psql (antes `az ... execute`, que
+    # pasaba la contrasena por cmd.exe): DOS psql, uno por modo, y cada uno
+    # contra la base `dedicacion` y nada mas.
     texto = _texto()
-    ejecuciones = re.findall(r"az postgres flexible-server execute[^\n]*", texto)
-    assert ejecuciones and all("-d $PG_DB" in e for e in ejecuciones)
+    assert "flexible-server execute" not in texto
     psql = [ln for ln in _codigo() if re.search(r"\bpsql\s+-h\b", ln)]
-    assert psql and all("-d dedicacion" in ln and "-h localhost" in ln
-                        for ln in psql)
-    assert "-u $PG_APP_USER" in texto
+    local = [ln for ln in psql if "-h localhost" in ln]
+    azure = [ln for ln in psql if "-h $PG_FQDN" in ln]
+    assert len(local) == 1 and len(azure) == 1 and len(psql) == 2, psql
+    assert "-d dedicacion" in local[0]
+    assert "-d $PG_DB" in azure[0] and "-U $PG_APP_USER" in azure[0]
     assert "PG_ADMIN" not in texto
 
 

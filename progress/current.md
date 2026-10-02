@@ -1,8 +1,57 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-034 y F-026 se cerraron y se
+**F-035 en curso** (script de vaciado contra Azure, rigor estándar, sin spec),
+rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
 **desplegaron el 2026-10-02** (resúmenes en `history.md`). El arnés es la **1.7.3**.
+
+## F-035 · El vaciado contra Azure sin pasar la contraseña por `cmd.exe`
+
+- **Plan aprobado por el humano el 2026-10-02** (PARADA 1). Criterios en
+  `harness/features.json`. Resumen: el vaciado usa `psql` también en Azure
+  (FQDN por `az … show`, `PGPASSWORD` + `PGSSLMODE=require` solo durante la
+  llamada); conmutador nuevo `-SoloRecuento` (cuenta y sale, sin escribir);
+  `crear_base` y `add_secrets` rechazan contraseñas con `" & | < > ^ %` y
+  `)` (este último aprobado por el humano tras la review 1)
+  antes de llamar a `az`; resultado de la revisión de `infra/` en
+  `infra/README_dedicacion.md`.
+- **Fuera:** volver a vaciar producción, cambiar la contraseña de
+  `dedicacion_app`, firewall o cualquier cosa del servidor, `azure-apps`.
+- **Tests anteriores que cambian (declarados, tabla en `impl_F-035.md`):**
+  tres de `tests/test_f026_vaciado.py`: `…solo_en_la_base_dedicacion` (Azure
+  pasa a psql) y, por el conmutador nuevo `-SoloRecuento` aprobado en el plan,
+  `…parametros_confirmar_y_local` y `…sin_confirmar_sale_antes_de_conectar`.
+  El plan solo nombraba el primero; los otros dos son consecuencia directa de
+  `-SoloRecuento` (método aprobado por el humano: declarados y verificados
+  fila a fila por el reviewer).
+- **Estado:** review 1 → **CAMBIOS PEDIDOS** (`progress/review_F-035.md`):
+  código y tests correctos; bloquea solo C4 bis, la campaña manual de 19
+  mutantes no está como tabla reproducible. **Ciclo 2 hecho** (`301dfed`,
+  `cffd850`, `eb224b5`): `)` en la clase de caracteres, con test y README;
+  tabla en `progress/mutacion_manual_F-035.md` (21 mutantes, 0
+  supervivientes, script incrustado). **Review 2: APROBADO** (tabla
+  reproducida 23/23 por el reviewer) y **mergeada en `dev`**. Para el `done`
+  solo falta la MANUAL de abajo.
+- **Observaciones de la review 1, recogidas:** `)` → aprobado y en el ciclo 2;
+  criterio 6 de `features.json` → ya dice «tres tests»; automejora (tabla
+  manual en fichero propio) → `arnes-base`, encargo de mutantes manuales
+  declarativos, commit `e9bc34a`.
+- **Observación del implementer, no aplicada (fuera del plan):** en
+  `crear_base_dedicacion.ps1` los pasos 1-2 corren antes de pedir las
+  contraseñas, así que una contraseña rechazada llega tras ellos. **Propuesta
+  al humano el 2026-10-02**, pendiente de su decisión (sería otra feature).
+- **MANUAL (humano, NO escribe nada):** desde una consola nueva con `az login`:
+  ```powershell
+  cd C:\Users\pgris\PycharmProjects\porcentajes\infra
+  $env:Path = "C:\Program Files\PostgreSQL\16\bin;$env:Path"
+  . .\00_vars_dedicacion.ps1 ; . .\00_vars_dedicacion.local.ps1
+  .\vaciar_datos_prueba_dedicacion.ps1 -Local -SoloRecuento
+  .\vaciar_datos_prueba_dedicacion.ps1 -SoloRecuento
+  Test-Path Env:PGPASSWORD ; Test-Path Env:PGSSLMODE
+  ```
+  Esperado: las dos cuentan filas sin «password authentication failed» y
+  terminan en «SOLO RECUENTO: hecho, no se ha escrito nada»; el último
+  comando da `False False`. Resultado: _pendiente_.
 
 ## Producción, hoy
 

@@ -577,14 +577,18 @@
     {
       "id": "F-035",
       "title": "El script de vaciado no funciona contra Azure: la contraseña se corrompe",
-      "description": "Detectado en el despliegue del 2026-10-02. infra/vaciar_datos_prueba_dedicacion.ps1 pasa la contraseña del rol de aplicación a 'az postgres flexible-server execute -p <clave>'. En Windows az es un .cmd, así que la línea pasa por cmd.exe, que corrompe los caracteres especiales de la contraseña: 'password authentication failed' aunque la contraseña del Key Vault es correcta (la api conecta con ella). El vaciado de producción se hizo a mano con psql (PGPASSWORD en el entorno, PGSSLMODE=require) con las mismas tres sentencias del script. Corregir el script para que contra Azure use psql igual que en local (o pase la contraseña sin cmd.exe), con test. Mismo riesgo en cualquier otro script de infra/ que pase secretos a az por argumento: revisarlos.",
+      "description": "Detectado en el despliegue del 2026-10-02. infra/vaciar_datos_prueba_dedicacion.ps1 pasa la contraseña del rol de aplicación a 'az postgres flexible-server execute -p <clave>'. En Windows az es un .cmd, así que la línea pasa por cmd.exe, que corrompe los caracteres especiales de la contraseña: 'password authentication failed' aunque la contraseña del Key Vault es correcta (la api conecta con ella). El vaciado de producción se hizo a mano con psql (PGPASSWORD en el entorno, PGSSLMODE=require) con las mismas tres sentencias del script. Corregir el script para que contra Azure use psql igual que en local (o pase la contraseña sin cmd.exe), con test. Mismo riesgo en cualquier otro script de infra/ que pase secretos a az por argumento: revisarlos. PLAN APROBADO por el humano el 2026-10-02 (PARADA 1): ver progress/current.md, sección F-035. Review 1 (2026-10-02): CAMBIOS PEDIDOS solo por la tabla reproducible de la campaña manual (C4 bis); el humano aprobó además añadir ')' a los caracteres rechazados.",
       "acceptance": [
-        "El vaciado contra Azure no pasa la contraseña por argumento de az: usa psql con PGPASSWORD y sslmode=require, como en local",
-        "Revisados los demás scripts de infra/ que pasan secretos a az por argumento, con el resultado escrito",
-        "Test offline que lo fija (lectura del .ps1)",
+        "El vaciado contra Azure no pasa la contraseña por argumento de az: usa psql con PGPASSWORD y PGSSLMODE=require en el entorno solo durante la llamada (borrados en finally), con el FQDN leído por az postgres flexible-server show (solo lectura); sin rdbms-connect",
+        "Nuevo conmutador -SoloRecuento: pide la contraseña, cuenta las filas (solo lectura) y sale SIN ejecutar el TRUNCATE; vale en local y en Azure",
+        "Si psql no conecta con Azure, el mensaje sugiere revisar la regla de firewall de la IP propia; el script NO crea ni toca reglas ni nada del servidor",
+        "crear_base_dedicacion.ps1 y add_secrets_dedicacion.ps1 rechazan, ANTES de llamar a az, contraseñas con caracteres que cmd.exe interpreta (\" & | < > ^ % y, por decisión del humano tras la review 1, también )), con mensaje claro",
+        "Revisados los demás scripts de infra/ que pasan secretos a az, con el resultado escrito en infra/README_dedicacion.md (setup_front_easyauth: secreto generado por Azure, sin riesgo; create_*/redeploy/fase1: solo referencias a Key Vault)",
+        "Test offline que lo fija (lectura de los .ps1); los tres tests de tests/test_f026_vaciado.py que cambian (solo_en_la_base_dedicacion, parametros_confirmar_y_local, sin_confirmar_sale_antes_de_conectar) se declaran en la tabla de tests cambiados",
+        "MANUAL (la hace el humano): -Local -SoloRecuento y -SoloRecuento contra Azure, sin escribir nada",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "sdd": false,
       "rigor": "estandar",
       "priority": 1,
