@@ -35,7 +35,10 @@
 > (2026-10-02)** la ampliación y un cambio de método para el resto de F-026
 > (cambios de test consecuencia directa de un requisito, declarados en tabla y
 > verificados uno a uno por el reviewer; ver `features.json`). `in_progress`
-> de nuevo: **implementer relanzado**, retoma desde `stash@{0}`. F-034 queda `blocked` solo por su T9, que el
+> de nuevo. **Implementer terminado** (`75271a3` … `1bdb08b`,
+> `progress/impl_F-026.md`): mutación 50/56 con 6 equivalentes justificados.
+> **Reviewer lanzado** → `progress/review_F-026.md`. Manuales en la sección
+> «F-026 · pendiente» más abajo. F-034 queda `blocked` solo por su T9, que el
 > humano hará junto con las manuales de F-026 (el líder le guía).
 > **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
 > turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.
@@ -102,6 +105,51 @@
 - Observación de la review: una corrida de la campaña dio 3 supervivientes
   que no se reprodujeron en copia aislada. Si vuelve a pasar, encargo en
   `arnes-base` (es la misma familia que el de la caché previa de F-022).
+
+## F-026 · pendiente antes del `done`
+
+El humano las hará **junto con la T9 de F-034** (el líder le guía con un
+script versionado cuando la review apruebe).
+
+- **T14 (R24), local, vaciado con autorización del humano + sync.**
+  `cd infra; .\vaciar_datos_prueba_dedicacion.ps1 -Local` (esperado: solo el
+  plan) y `.\vaciar_datos_prueba_dedicacion.ps1 -Local -Confirmar` (pide la
+  contraseña de `$env:PGUSER` o `postgres`; esperado: recuento antes, la
+  sentencia, recuento 0/0/0/0). API de la rama
+  (`cd services\dedicacion-api; .venv\Scripts\python main.py`);
+  `GET http://localhost:8090/api/v1/sync/preview` (esperado:
+  `empleados.ventana_baja` = día 1 del mes anterior o del ABIERTO más antiguo;
+  `posible_misma_persona` con `MO/0061` y `MO/0736`) y
+  `POST http://localhost:8090/api/v1/sync`. En la base:
+  `SELECT ide, cod, empresa, activo, fecha_baja FROM trabajador WHERE cod IN ('MO/0772','MO/0759','MO/0760','MO/0762','MO/0774','MO/0775','MO/0776','MO/0777','MO/0779','MO/0496') AND empresa = 1`
+  (esperado: diez activos, `ide` = su `res.ide`) y
+  `SELECT COUNT(*) FROM trabajador WHERE fecha_baja < <ventana_baja>` (0).
+  Un recurso con `fecha_baja` en el mes en curso sale en ese mes y no en el
+  siguiente. Resultado: _pendiente_.
+- **T15 (R25), preflight de SOLO LECTURA** con el transfer local en modo
+  pruebas (`OBRA_PRUEBAS_FORZAR=true`; `cd services\dedicacion-transfer;
+  .venv\Scripts\python main.py`): dar a Eusebio (`1-MO/0772`) una línea en un
+  periodo local y
+  `curl -X POST http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight -H "Content-Type: application/json" -d "{}"`.
+  Esperado: su acción `escribir` con `recurso_ide` = su `res.ide`; ninguna
+  omitida por «la línea no trae el recurso del trabajador»; `no_vigentes: []`.
+  **NO lanzar `registro/ejecutar`.** Resultado: _pendiente_.
+- **T16 (líder, con autorización del humano): copia a `azure-apps/dedicacion.md`**
+  de las piezas de T12 de `docs/INTEGRACION.md` (cabecera, avisos, vaciado en
+  §2, contrato de la línea en §9, dos filas en cada tabla de §7). Commit en
+  `azure-apps`. Resultado: _pendiente_.
+- **Despliegue conjunto F-034 + F-026 (D7)**, `infra/README_dedicacion.md` §3
+  bis: republicar transfer y api juntos → vaciado en Azure (plan y
+  `-Confirmar`, **autorización expresa del humano**) → `sync/preview` → `sync`.
+  El transfer desplegado escribe de verdad: **nada de `registro/ejecutar`
+  hasta terminar**.
+- **Observaciones del implementer, propuestas al humano como features
+  aparte:** (a) la fila que devuelven guardar y deshacer no conoce el mes: un
+  trabajador no vigente con líneas vuelve con el `activo` del ORM hasta
+  recargar; (b) el front no enseña `no_vigentes`: esas líneas no se
+  registran y el usuario no ve el motivo. (c) Arnés: la mutación con
+  `workers > 1` volvió a dar falsos supervivientes (tercera vez: F-022, F-034,
+  F-026) → se añade al encargo de `arnes-base` de la caché previa.
 
 ## Lo siguiente, por prioridad
 
