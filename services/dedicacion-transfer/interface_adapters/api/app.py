@@ -38,8 +38,9 @@ class LineaIn(BaseModel):
     mes: int
     porcentaje: float                   # sobre 1: 40 % -> 0.4
     # Recurso del trabajador (ARCHITECTURE.md#regla-recurso). Sin él la línea
-    # se omite con motivo. `empleado_ide` salió del contrato en F-026: si un
-    # cliente viejo lo manda, Pydantic lo ignora (no es un 422).
+    # se omite con motivo. El ide de la ficha de empleado salió del contrato
+    # en F-026: si un cliente viejo lo manda, Pydantic lo ignora (no es un
+    # 422).
     recurso_ide: Optional[int] = None
     dni: Optional[str] = None
     nombre: Optional[str] = None
