@@ -27,8 +27,12 @@
 > humano el 2026-10-02 con la enmienda (`56cfd3e`): clave = `res.ide` sin
 > migración (vaciado de los datos de prueba al desplegar, con autorización
 > expresa), vigencia por mes con ventana de bajas, D2 y D4-D7. `dev` (con
-> F-034) traído a su rama; **`in_progress`, implementer lanzado** →
-> `progress/impl_F-026.md`. F-034 queda `blocked` solo por su T9, que el
+> F-034) traído a su rama; **BLOCKED (2026-10-02) en T2**: la lista cerrada de
+> tests que cambian (design §7) se queda corta, como pasó en F-034. T1 hecha
+> (`3627a6b`); T2 hecha pero guardada en `stash@{0}` para no dejar la rama en
+> rojo. El implementer listó de antemano lo que tocarán T2-T9 (A1-A8 en F-023,
+> B1 en F-024, C1-C3 dobles): `progress/impl_F-026.md`. **Pendiente del
+> humano:** aprobar la ampliación. F-034 queda `blocked` solo por su T9, que el
 > humano hará junto con las manuales de F-026 (el líder le guía).
 > **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
 > turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.

@@ -424,7 +424,7 @@
         "El recurso que escribe el transfer es el de la empresa de la línea, nunca uno de otra empresa elegido por ide mayor",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "in_progress",
+      "status": "blocked",
       "sdd": true,
       "rigor": "critico",
       "priority": 2,
