@@ -454,7 +454,7 @@ def test_f035_r7_la_lectura_va_despues_de_la_salida_del_plan() -> None:
 
 
 def test_f035_r7_respaldo_a_read_host_si_no_se_puede_leer() -> None:
-    codigo, local, rama_azure, lectura = _credenciales()
+    codigo, _, rama_azure, lectura = _credenciales()
     respaldo = _primera(r"^if \(\[string\]::IsNullOrWhiteSpace\(\$CLAVE\)\) \{$",
                         codigo, lectura)
     funcion = _primera(r"^function Ejecutar-Sql\b", codigo)
