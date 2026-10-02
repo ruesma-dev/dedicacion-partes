@@ -15,11 +15,13 @@ y transfer falsos de `test_f024_registro_empresa.py`. Ni red, ni BBDD, ni
 from __future__ import annotations
 
 import pytest
+from application.registro_sigrid import RegistroSigrid
 from application.use_cases import ObtenerCuadrante
 from domain.empresas import visible_en_empresa
 from domain.models import FiltroEmpresa
 
 from tests.test_f024_cuadrante_empresa import ANIO, MES, _uow
+from tests.test_f024_registro_empresa import _fila, _lineas, _Sesion, _Transfer
 
 #: Empresa de las obras y por defecto (Construcciones Ruesma).
 RUESMA = 1
@@ -102,3 +104,76 @@ def test_f034_r4_filas_y_resumen_con_la_visibilidad_nueva(elegida, nombres,
     if elegida == 1:
         gil = cuadrante.filas[-1]
         assert [ln.obra_empresa for ln in gil.lineas] == [1, 28]
+
+
+# ============================ R7 / R8 / R10 ============================= #
+#: Trabajador 20 de la 18 con una línea en una obra de Ruesma (678) y otra
+#: en una obra de la 28 (9); 21 de la 31 en una obra de Ruesma; 22 sin
+#: empresa en una obra de Ruesma.
+FILAS_18 = [
+    _fila(30, (20, 18), (678, 1)),
+    _fila(31, (20, 18), (9, 28)),
+    _fila(32, (21, 31), (678, 1)),
+    _fila(33, (22, None), (678, 1)),
+]
+
+
+def _registro_18(transfer: _Transfer, updates: list[dict] | None = None,
+                 empresa_imputacion: int = RUESMA) -> RegistroSigrid:
+    anotadas = updates if updates is not None else []
+    return RegistroSigrid(lambda: _Sesion(FILAS_18, anotadas), transfer,
+                          empresa_imputacion)
+
+
+def _llamar(registro: RegistroSigrid, fase: str, empresa: int | None) -> dict:
+    if fase == "preflight":
+        return registro.preflight(2026, 9, empresa=empresa)
+    return registro.ejecutar(2026, 9, pisar_claves=[], empresa=empresa)
+
+
+@pytest.mark.parametrize("fase", ["preflight", "ejecutar"])
+@pytest.mark.parametrize("empresa, esperadas", [
+    (18, [(30, 1), (31, 1)]),     # el de la 18, con la empresa de las obras
+    (31, [(32, 1)]),
+    (1, [(33, 1)]),               # el NULL, solo en la por defecto
+    (None, [(33, 1)]),
+    (28, []),
+])
+def test_f034_r7_lineas_de_los_visibles_con_la_empresa_de_las_obras(
+        fase, empresa, esperadas):
+    """Un trabajador de la 18 registra en una obra de Ruesma: su línea viaja
+    con `empresa` = 1, no con la elegida."""
+    transfer = _Transfer()
+    r = _llamar(_registro_18(transfer), fase, empresa)
+    assert sorted(_lineas(transfer)) == esperadas
+    assert r["ok"] is True
+
+
+@pytest.mark.parametrize("fase", ["preflight", "ejecutar"])
+def test_f034_r10_la_empresa_de_las_obras_sale_del_ajuste(fase):
+    """La empresa de cada línea es EMPRESA_IMPUTACION, no un 1 fijo ni la
+    elegida: con el ajuste en la 28 y E = 18, las líneas viajan con la 28."""
+    transfer = _Transfer()
+    _llamar(_registro_18(transfer, empresa_imputacion=28), fase, 18)
+    assert sorted(_lineas(transfer)) == [(30, 28), (31, 28)]
+
+
+def test_f034_r8_obra_de_otra_empresa_se_manda_y_su_omision_se_traza():
+    """La línea 31 (obra 9, de la 28) de un trabajador de la 18 se manda con
+    `empresa` = 1; el transfer la omite con motivo y queda trazada."""
+    motivo = ("la obra 09 es de la empresa 28 y la línea se imputa a la "
+              "empresa 1: no se escribe")
+    transfer = _Transfer({"ok": True, "escritas": [], "ya_registradas": [],
+                          "omitidas": [{"registro_id": 31,
+                                        "motivo": motivo}]})
+    updates: list[dict] = []
+    _registro_18(transfer, updates).ejecutar(2026, 9, pisar_claves=[],
+                                             empresa=18)
+    obra_9 = [p for p in transfer.payloads if p["obra"]["ide"] == 9]
+    assert [(lin["registro_id"], lin["empresa"])
+            for lin in obra_9[0]["lineas"]] == [(31, 1)]
+    # El transfer falso contesta lo mismo a cada obra: la 31 se traza una
+    # vez por obra mandada; lo que importa es qué y con qué motivo.
+    omitidos = [u for u in updates if u.get("sigrid_estado") == "omitido"]
+    assert {(u["id_1"], u["sigrid_motivo"]) for u in omitidos} == {
+        (31, motivo)}
