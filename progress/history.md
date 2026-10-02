@@ -1133,3 +1133,45 @@ script versionado cuando la review apruebe).
   `workers > 1` volvió a dar falsos supervivientes (tercera vez: F-022, F-034,
   F-026) → se añade al encargo de `arnes-base` de la caché previa.
 
+## 2026-10-02 · F-034 · Las obras son siempre de Construcciones Ruesma
+
+Rama `feature/F-034-obras-siempre-ruesma` · `sdd: true` · rigor `critico` ·
+**APROBADO** por el reviewer a la primera. Nace de la aclaración del humano del
+2026-10-01: los trabajadores son de varias empresas, pero las obras (postventa
+incluida) son siempre de Construcciones Ruesma; F-024 se había desplegado con la
+regla contraria y los trabajadores de la 18 y la 31 no podían registrar.
+
+**Qué cambió.** El selector de empresa filtra solo trabajadores; las obras
+ofrecidas son siempre las de la empresa de las obras (`EMPRESA_IMPUTACION`, D1);
+cada línea del registro viaja con esa empresa, no con la elegida. El transfer no
+cambia. Un primer implementer se bloqueó porque la lista cerrada de tests que
+cambian se quedó corta (4 casos); el humano la amplió.
+
+**Verificado.** Suites relanzadas sin caché por el reviewer (api 368, front 21,
+transfer 317); cobertura 100 %; mutación con 15 mutantes manuales (14 muertos y
+**M4 equivalente, aceptado por el humano**). **T8** (copia a `azure-apps`,
+`b4d5340`) y **T9** cumplidas: preflight local con la 18 elegida, la línea de
+MO/0003 en una obra de Ruesma sale para escribir; parte visual confirmada.
+
+**Pendiente.** En `dev`, sin desplegar: va con F-026. Tras desplegar, mirar el
+cuadrante de producción con `?empresa=18` sin pulsar Registrar.
+
+Informes: `progress/impl_F-034.md`, `progress/review_F-034.md`,
+`progress/mutacion_F-034.md`. Sección retirada de `current.md`:
+
+## F-034 · Obras siempre de Construcciones Ruesma (`blocked` solo por T9)
+
+- En `dev` (`d6656ad`). Review APROBADA; T8 (copia a `azure-apps`, `b4d5340`)
+  hecha; M4 aceptado por el humano el 2026-10-02.
+- **T9 (humano), se hace junto con T14/T15 de F-026.** Transfer local con
+  `OBRA_PRUEBAS_FORZAR=true`; api y front de la rama (`python main.py` en
+  cada servicio). En `http://localhost:8080/?empresa=18` las obras ofrecidas
+  son las de Construcciones Ruesma; dar a un trabajador de la 18 una línea en
+  una de ellas y, desde Git Bash,
+  `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight?empresa=18" -H "Content-Type: application/json" -d "{}"`.
+  **Esperado:** `ok: true`, `obra_origen.empresa` = 1 y la acción de esa línea
+  `escribir`, no `omitir` por empresa. **No lanzar `registro/ejecutar`.**
+  Resultado: _pendiente_.
+- **Tras desplegar (humano, no bloquea el `done`):** cuadrante de producción
+  con `?empresa=18`: obras de Construcciones Ruesma, **sin pulsar Registrar**.
+
