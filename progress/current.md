@@ -26,9 +26,10 @@ rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
   fila a fila por el reviewer).
 - **Estado:** review 1 → **CAMBIOS PEDIDOS** (`progress/review_F-035.md`):
   código y tests correctos; bloquea solo C4 bis, la campaña manual de 19
-  mutantes no está como tabla reproducible. **Ciclo 2 lanzado**: tabla en
-  `progress/mutacion_manual_F-035.md` (fuera del tope del impl) y `)` en la
-  clase de caracteres, con test, README y su mutante. Luego review 2.
+  mutantes no está como tabla reproducible. **Ciclo 2 hecho** (`301dfed`,
+  `cffd850`, `eb224b5`): `)` en la clase de caracteres, con test y README;
+  tabla en `progress/mutacion_manual_F-035.md` (21 mutantes, 0
+  supervivientes, script incrustado). **Review 2 lanzada.**
 - **Observaciones de la review 1, recogidas:** `)` → aprobado y en el ciclo 2;
   criterio 6 de `features.json` → ya dice «tres tests»; automejora (tabla
   manual en fichero propio) → `arnes-base`, encargo de mutantes manuales
