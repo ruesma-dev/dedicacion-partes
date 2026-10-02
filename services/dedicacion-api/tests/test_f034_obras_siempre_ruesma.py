@@ -15,8 +15,11 @@ y transfer falsos de `test_f024_registro_empresa.py`. Ni red, ni BBDD, ni
 from __future__ import annotations
 
 import pytest
+from application.use_cases import ObtenerCuadrante
 from domain.empresas import visible_en_empresa
 from domain.models import FiltroEmpresa
+
+from tests.test_f024_cuadrante_empresa import ANIO, MES, _uow
 
 #: Empresa de las obras y por defecto (Construcciones Ruesma).
 RUESMA = 1
@@ -61,3 +64,41 @@ def test_f034_r10_filtro_lleva_la_empresa_de_las_obras_sin_valor_por_defecto():
     filtro = _f(18)
     assert (filtro.empresa, filtro.por_defecto, filtro.empresa_obras) == (
         18, 1, 1)
+
+
+# ================================== R1 ================================== #
+@pytest.mark.parametrize("elegida", [1, 18, 28])
+def test_f034_r1_obras_leen_la_empresa_de_las_obras_no_la_elegida(elegida):
+    """Las obras ofrecidas salen de `empresa_obras`, no de E ni de la por
+    defecto: con la por defecto = E y la empresa de las obras en la 1, se
+    ofrecen las de la 1 (activas o inactivas con líneas), nunca la 900 de la
+    28 ni la 500 sin empresa."""
+    filtro = _f(elegida, por_defecto=elegida)
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, filtro)
+    assert [o.ide for o in cuadrante.obras] == [100, 101, 102]
+    assert cuadrante.empresa == elegida
+
+
+def test_f034_r1_obras_de_la_28_si_la_empresa_de_las_obras_fuera_la_28():
+    """La empresa de las obras sale del filtro, no de un 1 fijo."""
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES,
+                                            _f(1, empresa_obras=28))
+    assert [o.ide for o in cuadrante.obras] == [900]
+
+
+# ================================== R4 ================================== #
+@pytest.mark.parametrize("elegida, nombres, total", [
+    (1, ["Ana", "Carlos", "Dani", "Eva", "Gil"], 5),
+    (28, ["Bea"], 1),
+    (18, ["Fran"], 1),
+])
+def test_f034_r4_filas_y_resumen_con_la_visibilidad_nueva(elegida, nombres,
+                                                         total):
+    """El cuadrante y su resumen cuentan solo los visibles en E con R2-R3;
+    cada fila lleva todas sus líneas (Gil, NULL, con su línea de la 28)."""
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(elegida))
+    assert [f.trabajador.nombre for f in cuadrante.filas] == nombres
+    assert cuadrante.resumen.total == total
+    if elegida == 1:
+        gil = cuadrante.filas[-1]
+        assert [ln.obra_empresa for ln in gil.lineas] == [1, 28]

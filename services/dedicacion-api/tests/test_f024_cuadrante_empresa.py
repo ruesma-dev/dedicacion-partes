@@ -1,6 +1,8 @@
 # tests/test_f024_cuadrante_empresa.py
 """F-024 · Cuadrante, resumen, copia y lista de empresas con la empresa
-elegida (R1, R2, R7, R9, R10, R13, R14).
+elegida (R1, R2, R7, R9, R10, R13, R14), adaptado a F-034: las obras son
+siempre las de la empresa de las obras (R1) y el trabajador sin empresa se
+ve solo en la por defecto (R3). Cambios declarados en `progress/impl_F-034.md`.
 
 Offline: el repositorio se prueba con una sesión falsa que captura la
 sentencia, y los casos de uso con una UnitOfWork en memoria. Ni red, ni BBDD,
@@ -240,7 +242,7 @@ def _uow() -> _Uow:
 
 
 def _f(empresa: int) -> FiltroEmpresa:
-    return FiltroEmpresa(empresa=empresa, por_defecto=DEF)
+    return FiltroEmpresa(empresa=empresa, por_defecto=DEF, empresa_obras=DEF)
 
 
 def _nombres(filas) -> list[str]:
@@ -249,8 +251,9 @@ def _nombres(filas) -> list[str]:
 
 # ------------------------------ R7 / R8 ------------------------------- #
 @pytest.mark.parametrize("empresa, nombres", [
-    (1, ["Ana", "Dani", "Eva", "Gil"]),
-    (28, ["Bea", "Carlos", "Gil"]),
+    # F-034 (R3): los NULL (Carlos, Dani, Gil) solo en la por defecto.
+    (1, ["Ana", "Carlos", "Dani", "Eva", "Gil"]),
+    (28, ["Bea"]),
     (18, ["Fran"]),
     (31, []),
 ])
@@ -260,13 +263,14 @@ def test_f024_r7_cuadrante_solo_trabajadores_visibles(empresa, nombres):
     assert cuadrante.empresa == empresa
 
 
-# --------------------------------- R9 --------------------------------- #
-@pytest.mark.parametrize("empresa, obras", [
-    (1, [100, 101, 102]), (28, [900]), (18, []),
-])
-def test_f024_r9_obras_solo_de_la_empresa_y_nunca_las_null(empresa, obras):
+# ------------------------------ R9 → F-034 R1 ------------------------- #
+@pytest.mark.parametrize("empresa", [1, 18, 28])
+def test_f034_r1_obras_siempre_de_la_empresa_de_las_obras(empresa):
+    """F-034 (R1) · Con cualquier E, las obras de la empresa de las obras
+    (activas o inactivas con líneas); la 900 de la 28 y la 500 NULL nunca.
+    Sustituye a `test_f024_r9_obras_solo_de_la_empresa_y_nunca_las_null`."""
     cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa))
-    assert [o.ide for o in cuadrante.obras] == obras
+    assert [o.ide for o in cuadrante.obras] == [100, 101, 102]
 
 
 # --------------------------------- R10 -------------------------------- #
@@ -282,13 +286,16 @@ def test_f024_r10_puede_deshacer_se_conserva():
     uow = _uow()
     uow.eventos.pendientes[10] = []
     cuadrante = ObtenerCuadrante().ejecutar(uow, ANIO, MES, _f(1))
+    # F-034 (R3): con E = 1 entra Carlos (NULL): cinco filas.
     assert [f.puede_deshacer for f in cuadrante.filas] == [
-        True, False, False, False]
+        True, False, False, False, False]
 
 
 # --------------------------------- R13 -------------------------------- #
-RESUMEN_1 = ResumenPeriodo(total=4, ok=2, falta=1, exceso=0, sin_carga=1)
-RESUMEN_28 = ResumenPeriodo(total=3, ok=2, falta=1, exceso=0, sin_carga=0)
+# F-034 (R3): Carlos (NULL, 50 %) pasa de la 28 a la 1; Gil (NULL, 100 %)
+# deja de contar en la 28.
+RESUMEN_1 = ResumenPeriodo(total=5, ok=2, falta=2, exceso=0, sin_carga=1)
+RESUMEN_28 = ResumenPeriodo(total=1, ok=1, falta=0, exceso=0, sin_carga=0)
 
 
 @pytest.mark.parametrize("empresa, resumen", [(1, RESUMEN_1),
@@ -313,7 +320,7 @@ def test_f024_r13_resumen_de_las_respuestas_por_fila(empresa, resumen):
         "u", filtro=_f(empresa))
     assert fila.total == Decimal(100)
     # Eva (14) pasa de SIN_CARGA a OK en la 1; en la 28 no cuenta.
-    esperado = (ResumenPeriodo(total=4, ok=3, falta=1, sin_carga=0)
+    esperado = (ResumenPeriodo(total=5, ok=3, falta=2, sin_carga=0)
                 if empresa == 1 else resumen)
     assert res == esperado
 
