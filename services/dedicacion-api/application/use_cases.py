@@ -55,8 +55,9 @@ class Cuadrante:
 
 
 class ObtenerCuadrante:
-    """Cuadrante de la empresa del filtro: sus trabajadores visibles, con
-    TODAS sus líneas, y solo las obras de esa empresa (F-024)."""
+    """Cuadrante de la empresa elegida: sus trabajadores visibles, con TODAS
+    sus líneas (F-024), y las obras de la empresa de las obras, sea cual sea
+    la elegida (F-034, R1)."""
 
     def ejecutar(
         self, uow: UnitOfWork, anio: int, mes: int, filtro: FiltroEmpresa
@@ -66,7 +67,7 @@ class ObtenerCuadrante:
         obras = [
             o
             for o in uow.obras.listar_para_periodo(periodo_id)
-            if o.empresa == filtro.empresa
+            if o.empresa == filtro.empresa_obras
         ]
         con_deshacer = uow.eventos.trabajadores_con_pendientes(periodo_id)
         for fila in filas:
@@ -526,16 +527,15 @@ def _filas_de_empresa(
     uow: UnitOfWork, periodo_id: int, filtro: FiltroEmpresa
 ) -> list[CuadranteTrabajador]:
     """Filas del periodo visibles en la empresa del filtro, cada una con
-    TODAS sus líneas (F-024, R8 y R10). Único punto del filtro de
-    trabajadores: lo usan el cuadrante, el resumen y la copia del mes."""
+    TODAS sus líneas (F-024 R10; visibilidad de F-034 R2-R3). Único punto del
+    filtro de trabajadores: lo usan el cuadrante, el resumen y la copia del
+    mes."""
     trabajadores = uow.trabajadores.listar_para_periodo(periodo_id)
     lineas = uow.asignaciones.lineas_del_periodo(periodo_id)
     filas = []
     for t in trabajadores:
         propias = lineas.get(t.ide, [])
-        if visible_en_empresa(
-            t.empresa, [ln.obra_empresa for ln in propias], filtro
-        ):
+        if visible_en_empresa(t.empresa, filtro):
             filas.append(CuadranteTrabajador(trabajador=t, lineas=propias))
     return filas
 

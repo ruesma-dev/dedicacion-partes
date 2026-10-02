@@ -321,24 +321,28 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
     - **La empresa viaja en cada línea** del contrato API → transfer
       (`empresa`, entero > 0). La pone `dedicacion-api` y es **la empresa
-      elegida en el selector** del cuadrante (parámetro `empresa` de cada
-      ruta del periodo). Su ajuste `EMPRESA_IMPUTACION` es solo la **empresa
-      por defecto**: la que sale elegida al entrar y la que se usa si una
-      petición no trae empresa. El transfer **no tiene empresa por defecto**.
-    - **Cada empresa ve lo suyo.** Con la empresa E elegida, un trabajador
-      con empresa se ve solo en la suya; uno sin empresa (filas desactivadas
-      antes de F-023), en cada empresa de las obras de sus líneas del
-      periodo y, si ninguna tiene empresa o no tiene líneas, solo en la por
-      defecto. Se ofrecen solo las obras de E; una obra sin empresa no se
-      ofrece en ninguna. Cada trabajador visible lleva **todas** sus líneas,
-      también las de obras de otra empresa, que cuentan para su 100 % y
-      salen marcadas. Resumen, copia del mes y export cuentan solo los
-      visibles en E. Una persona con fichas en dos empresas tiene una fila
-      en cada una, cada ficha con su propio 100 %.
-    - **Se registra en la empresa elegida.** Al registrar, la API manda solo
-      las líneas de los trabajadores visibles en E, todas con `empresa = E`;
-      las de obras de otra empresa se mandan igual para que su omisión quede
-      trazada en la asignación.
+      de las obras**, sea cual sea la elegida en el selector: los
+      trabajadores son de varias empresas, pero las obras, **postventa
+      incluida**, son siempre de una sola, la del ajuste
+      `EMPRESA_IMPUTACION` (hoy la 1, Construcciones Ruesma). Ese ajuste es
+      además la **empresa por defecto** del selector: la que sale elegida al
+      entrar y la que se usa si una petición no trae empresa. El transfer
+      **no tiene empresa por defecto**.
+    - **El selector filtra trabajadores.** Con la empresa E elegida
+      (parámetro `empresa` de cada ruta del periodo), un trabajador con
+      empresa se ve solo en la suya; uno sin empresa (filas desactivadas
+      antes de F-023), solo en la por defecto, tenga las líneas que tenga.
+      Las obras ofrecidas son las de la empresa de las obras con cualquier
+      E, nunca sus fichas en otras empresas; una obra sin empresa no se
+      ofrece. Cada trabajador visible lleva **todas** sus líneas; las de una
+      obra que no es de la empresa de las obras cuentan para su 100 % y
+      salen marcadas, con cualquier E. Resumen, copia del mes y export
+      cuentan solo los visibles en E. Una persona con fichas en dos empresas
+      tiene una fila en cada una, cada ficha con su propio 100 %.
+    - **Se registra en la empresa de las obras.** Al registrar, la API manda
+      solo las líneas de los trabajadores visibles en E, todas con `empresa`
+      = la empresa de las obras; las de una obra de otra empresa se mandan
+      igual para que su omisión quede trazada en la asignación.
     - **Sin empresa, la línea no se escribe**: se omite con su motivo y el
       resto de la petición sigue. Si ninguna línea la trae, no se lee
       ninguna obra.
@@ -359,9 +363,6 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       `obra_origen` publican la obra de origen **resuelta en Sigrid, con su
       empresa**; en el corte por línea sin empresa no hay obra resuelta y
       sale la de entrada.
-    - **Modo pruebas con otra empresa.** La obra de pruebas se busca en la
-      empresa elegida; si no existe en ella, el preflight enseña el error
-      por obra y no se escribe nada.
     - **El parte hereda la empresa de su obra**: la cabecera (`con.emp`) de
       un parte nuevo es la de la obra destino.
 
@@ -374,7 +375,11 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     empresa del selector: el de Sigrid (`auxemp.res`), que trae el sync;
     «Empresa N» solo si no está en la tabla `empresa`. Una empresa de baja
     o desactivada con trabajadores activos sale marcada «(de baja)», nunca
-    oculta: decidido por Pablo Gris el 2026-10-01 · F-032.* El recurso del
+    oculta: decidido por Pablo Gris el 2026-10-01 · F-032.* *Obras siempre
+    de la empresa de las obras, selector que filtra solo trabajadores y
+    línea con la empresa de las obras: decidido por Pablo Gris el
+    2026-10-01 · F-034, decisiones D1-D5 de
+    `specs/F-034-obras-siempre-ruesma/requirements.md`.* El recurso del
     trabajador todavía no se elige por empresa: es F-026.
 
 ## Acceso a datos y sistemas externos

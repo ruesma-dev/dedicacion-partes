@@ -78,15 +78,23 @@ class Linea:
 
 @dataclass(frozen=True)
 class FiltroEmpresa:
-    """Empresa elegida en la petición y la por defecto (F-024).
+    """Empresa elegida en la petición, la por defecto y la de las obras
+    (F-024, F-034).
 
-    `por_defecto` es el ajuste `EMPRESA_IMPUTACION`: la que se usa cuando la
-    petición no trae empresa y la que ve a los trabajadores sin empresa y sin
-    carga conocida (docs/ARCHITECTURE.md#regla-empresa).
+    - `empresa`: la elegida en el selector; filtra solo TRABAJADORES.
+    - `por_defecto`: la que se usa cuando la petición no trae empresa y la
+      única en la que se ven los trabajadores sin empresa.
+    - `empresa_obras`: la de las obras ofrecidas y la que viaja en cada línea
+      al registrar, sea cual sea la elegida.
+
+    Hoy `por_defecto` y `empresa_obras` salen del mismo ajuste,
+    `EMPRESA_IMPUTACION` (D1 de F-034); van separadas para que partirlo
+    mañana sea solo un ajuste (docs/ARCHITECTURE.md#regla-empresa).
     """
 
     empresa: int
     por_defecto: int
+    empresa_obras: int
 
 
 @dataclass(frozen=True)

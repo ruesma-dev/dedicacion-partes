@@ -595,7 +595,7 @@ function construirCelda(t, clave) {
           (l.otra_empresa ? " chip-otra-empresa" : "");
         chip.title = l.descripcion + (l.obra_activa ? "" : " (obra desactivada)") +
           (l.otra_empresa
-            ? " · obra de otra empresa: no se registrará en esta empresa"
+            ? " · la obra no es de la empresa de las obras: no se registrará"
             : "");
         chip.innerHTML =
           `<span class="cod">${l.es_postventa ? "Postv-" : ""}` +

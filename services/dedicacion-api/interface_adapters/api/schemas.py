@@ -161,9 +161,10 @@ def a_obra_out(obra: Obra) -> ObraOut:
     )
 
 
-def a_trabajador_out(fila: CuadranteTrabajador, empresa: int) -> TrabajadorOut:
-    """`empresa` es la elegida en la petición: decide `otra_empresa` de cada
-    línea (F-024, R11)."""
+def a_trabajador_out(fila: CuadranteTrabajador,
+                     empresa_obras: int) -> TrabajadorOut:
+    """`empresa_obras` es la empresa de las obras (`EMPRESA_IMPUTACION`), no
+    la elegida: decide `otra_empresa` de cada línea (F-034, R5)."""
     total = fila.total
     estado = calcular_estado(total, len(fila.lineas))
     desviacion = calcular_desviacion(total, len(fila.lineas))
@@ -182,7 +183,8 @@ def a_trabajador_out(fila: CuadranteTrabajador, empresa: int) -> TrabajadorOut:
                 porcentaje=float(ln.porcentaje),
                 obra_activa=ln.obra_activa,
                 obra_empresa=ln.obra_empresa,
-                otra_empresa=linea_de_otra_empresa(ln.obra_empresa, empresa),
+                otra_empresa=linea_de_otra_empresa(ln.obra_empresa,
+                                                   empresa_obras),
             )
             for ln in fila.lineas
         ],
