@@ -143,8 +143,8 @@ el paso 2:
    $env:Path = "C:\Program Files\PostgreSQL\16\bin;$env:Path"   # si psql no está en el PATH
    . .\00_vars_dedicacion.ps1 ; . .\00_vars_dedicacion.local.ps1
    .\vaciar_datos_prueba_dedicacion.ps1                 # PLAN: no conecta
-   .\vaciar_datos_prueba_dedicacion.ps1 -SoloRecuento   # pide la contraseña, cuenta y sale
-   .\vaciar_datos_prueba_dedicacion.ps1 -Confirmar      # pide la contraseña de dedicacion_app
+   .\vaciar_datos_prueba_dedicacion.ps1 -SoloRecuento   # lee la contraseña, cuenta y sale
+   .\vaciar_datos_prueba_dedicacion.ps1 -Confirmar      # lee la contraseña y vacía
    ```
 
    **Hace falta `psql` también en Azure** (desde F-035): el script ya no pasa
@@ -155,6 +155,15 @@ el paso 2:
    se revisa en el Portal (servidor compartido, Redes); el script no la crea
    ni la toca. `-SoloRecuento` es la forma de comprobar las dos cosas sin
    escribir nada: no necesita `-Confirmar` y no se combina con él.
+
+   **En Azure la contraseña de `dedicacion_app` sale del Key Vault**: el
+   script lee `PG-PASSWORD` de `$KV` con `az keyvault secret show` (solo
+   lectura, como salida de `az`, nunca como argumento), la misma que usa la
+   api. Hace falta el rol **Key Vault Secrets User** u **Officer** sobre
+   `$KV`. Si no se puede leer (sin `$KV`, sin permiso o vacía), avisa y la
+   pide a mano como respaldo. En local se pide siempre a mano. Si PostgreSQL
+   la rechaza, el error lo dice; el aviso de la IP solo sale ante tiempo
+   agotado o `no pg_hba.conf entry`.
 
    Ejecuta **una** sentencia en la base `dedicacion`: `TRUNCATE TABLE
    asignacion, evento, periodo, trabajador CONTINUE IDENTITY`. No toca `obra`

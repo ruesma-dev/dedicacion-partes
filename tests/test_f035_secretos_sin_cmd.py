@@ -504,6 +504,13 @@ def test_f035_r7_no_imprime_la_contrasena_ni_su_longitud() -> None:
                 assert not re.search(r"\$(CLAVE|valor|sec)\b|\.Length", cadena), linea
 
 
+def test_f035_r7_el_3_bis_dice_que_en_azure_sale_del_key_vault() -> None:
+    seccion = _seccion("3 bis")
+    assert re.search(r"PG-PASSWORD[^\n]*Key Vault|Key Vault[^\n]*PG-PASSWORD", seccion)
+    assert "Key Vault Secrets User" in seccion and "Officer" in seccion
+    assert re.search(r"respaldo|a mano", seccion)
+
+
 def test_f035_r7_el_plan_dice_de_donde_sale_la_contrasena() -> None:
     codigo = _codigo(VACIAR, impresiones=True)
     salida = _primera(r"^if \(-not \$Confirmar -and -not \$SoloRecuento\) \{$", codigo)
