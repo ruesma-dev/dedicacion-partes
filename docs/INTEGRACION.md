@@ -26,7 +26,10 @@
 > servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo. El
 > **2026-10-01** se republicaron con F-022, F-023, F-024 y F-032: imágenes
 > `dedicacion-transfer:r20261001-1805`, `dedicacion-api:r20261001-1807` y
-> `dedicacion-front:r20261001-1808` (`infra/imagenes.json`).
+> `dedicacion-front:r20261001-1808`. El **2026-10-02** se republicaron con
+> F-034 y F-026 (`dedicacion-transfer:r20261002-1705`, `dedicacion-api:r20261002-1706` y
+> `dedicacion-front:r20261002-1708`, `infra/imagenes.json`), con el vaciado de los
+> datos de prueba de `dedicacion` (§2) y un sync inmediato.
 >
 > **Desde el 2026-10-01 el transfer desplegado escribe DE VERDAD**
 > (`OBRA_PRUEBAS_FORZAR=false`), por decisión expresa del humano, tomada a

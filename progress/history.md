@@ -1280,3 +1280,27 @@ Informes: `progress/impl_F-026.md`, `progress/review_F-026.md`,
   - Falsos supervivientes con `workers > 1` (tercera feature seguida) →
     añadido al encargo de `arnes-base` (`affff93`).
 
+## 2026-10-02 · Despliegue de F-034 y F-026
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1` (los tres servicios):
+`transfer:r20261002-1705`, `api:r20261002-1706`, `front:r20261002-1708`; la api
+añadió `trabajador.fecha_baja` al arrancar; el transfer conserva el modo real.
+**Vaciado de los datos de prueba** de la base `dedicacion` con autorización
+expresa del humano: el script falló contra Azure (`az … -p` en Windows pasa por
+`cmd.exe` y corrompe la contraseña; el reintento sin cifrar lo rechaza
+`pg_hba`, como debe) y se hizo a mano con `psql` (`PGPASSWORD`,
+`PGSSLMODE=require`) con las mismas tres sentencias: 312/376/7/207 → 0/0/0/0.
+**Sync**: preview con 196 trabajadores, ventana de bajas 2026-09-01, 1.034
+excluidos por baja anterior, un posible duplicado avisado (MO/0061 y MO/0736),
+38 empresas. El humano confirma que Eusebio Vindel Duro aparece. Corrección del
+script: F-035.
+
+## ⚠ Despliegue conjunto F-034 + F-026 (pendiente; lo lanza el humano)
+
+`infra/README_dedicacion.md` §3 bis: republicar transfer y api juntos →
+vaciado de los datos de prueba en Azure (`infra/vaciar_datos_prueba_dedicacion.ps1`,
+plan y `-Confirmar`, **autorización expresa del humano**) →
+`GET /api/v1/sync/preview` → `POST /api/v1/sync`. El transfer desplegado
+escribe de verdad: **nada de `registro/ejecutar` hasta terminar**. Lo lanza
+el humano (el permiso del entorno no deja desplegar al líder).
+

@@ -1,45 +1,39 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-034 y F-026 se cerraron el 2026-10-02
-(resúmenes en `history.md`); están en `dev` y **pendientes de desplegarse
-juntas** (sección siguiente). El arnés es la **1.7.3**.
+**Ninguna feature en ejecución.** F-034 y F-026 se cerraron y se
+**desplegaron el 2026-10-02** (resúmenes en `history.md`). El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
-- Desplegado el 2026-10-01: F-022, F-023, F-024 y F-032 (imágenes
-  `transfer:r20261001-1805`, `api:r20261001-1807`, `front:r20261001-1808`).
+- **Desplegado el 2026-10-02: F-034 y F-026**, sobre lo del 2026-10-01 (F-022,
+  F-023, F-024, F-032). Imágenes `transfer:r20261002-1705`,
+  `api:r20261002-1706`, `front:r20261002-1708`; la api añadió
+  `trabajador.fecha_baja` al arrancar. **Datos de prueba vaciados** (312
+  asignaciones, 376 eventos, 7 periodos, 207 trabajadores → 0) y **sync
+  hecho**: 196 trabajadores (183 / 8 / 4 / 1 en las empresas 1 / 18 / 31 /
+  25), ventana de bajas desde el 2026-09-01, 38 empresas. **Eusebio Vindel
+  Duro aparece** (confirmado por el humano).
 - **El transfer desplegado escribe DE VERDAD** (`OBRA_PRUEBAS_FORZAR=false`)
-  por orden expresa del humano (`docs/INTEGRACION.md` §8, con el comando para
-  volver a pruebas). A sabiendas: F-017 (partidas sin validar por
-  Administración) y F-011 (varios códigos M*). F-034 y F-026, que corrigen el
-  resto, aún **no** están desplegadas.
-- **Hasta desplegar F-034 + F-026:** los trabajadores de la 18 y la 31 no
-  pueden registrar (sus líneas se omiten), y el recurso se elige sin mirar la
-  empresa.
+  por orden expresa del humano (`docs/INTEGRACION.md` §8). Siguen abiertos
+  F-017 (partidas sin validar por Administración) y F-011 (varios códigos M*).
 - **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni
   OT (la cascada vigente de P5 las casa con partidas ajenas).
-
-## ⚠ Despliegue conjunto F-034 + F-026 (pendiente; lo lanza el humano)
-
-`infra/README_dedicacion.md` §3 bis: republicar transfer y api juntos →
-vaciado de los datos de prueba en Azure (`infra/vaciar_datos_prueba_dedicacion.ps1`,
-plan y `-Confirmar`, **autorización expresa del humano**) →
-`GET /api/v1/sync/preview` → `POST /api/v1/sync`. El transfer desplegado
-escribe de verdad: **nada de `registro/ejecutar` hasta terminar**. Lo lanza
-el humano (el permiso del entorno no deja desplegar al líder).
+- **El script de vaciado no funcionó contra Azure** (la contraseña se corrompe
+  al pasar por `cmd.exe`); se hizo a mano con `psql`. Corrección: **F-035**.
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Tras desplegar F-034 + F-026: **F-025** (spec
+`BACKLOG.md` tiene el orden completo. Primero **F-035** (script de vaciado
+contra Azure); después **F-025** (spec
 aprobada con D4 cambiada: solo la POSTV2 de Construcciones Ruesma; el
 spec-author la reescribe en su sitio antes de implementar), F-027, F-020,
 F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
-1. **Desplegar F-034 + F-026** (sección de arriba), con el vaciado en Azure
-   autorizado expresamente, y pulsar «actualizar Sigrid» antes de registrar.
+1. Decidir si se abren como features las dos observaciones de F-026: la fila
+   de guardar/deshacer no conoce el mes, y el front no enseña `no_vigentes`.
 2. **Correcciones de la review del despliegue del 2026-10-01**
    (`progress/review_despliegue_20261001.md`: digests de `imagenes.json`,
    textos de scripts que aún dicen «modo pruebas», F-017/F-018) y si **F-017**
