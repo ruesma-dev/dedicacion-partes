@@ -411,8 +411,6 @@ class PreviewSync:
         salida: dict[str, Any] = {
             "empleados": {
                 "brutos": emp.brutos,
-                "duplicados_recurso": emp.duplicados_recurso,
-                "duplicados_persona": emp.duplicados_persona,
                 "excluidos_sin_codigo_mes": emp.excluidos_sin_codigo_mes,
                 "por_codigo_mes": dict(por_codigo_mes.most_common()),
                 "excluidos_por_categoria": dict(
@@ -421,7 +419,6 @@ class PreviewSync:
                 "excluidos_por_estado_recurso": dict(
                     emp.excluidos_estado_recurso.most_common()
                 ),
-                "excluidos_recurso_otra_empresa": emp.excluidos_otra_empresa,
                 "con_baja_laboral": emp.con_baja_laboral,
                 "total": len(emp.filas),
                 "por_categoria": dict(por_categoria.most_common()),

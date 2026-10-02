@@ -27,16 +27,21 @@ from sqlalchemy.dialects import postgresql
 DIALECTO = postgresql.dialect()
 SQL_EMP = "SELECT ... FROM dbo.emp AS emp"
 SQL_OBR = "SELECT ... FROM dbo.obr AS obr"
-FECHA_BAJA = "(fecha de baja del recurso)"
-AUXILIARES = ("recurso_ide", "empresa_recurso", "estado_recurso",
-              "baja_recurso", "baja_laboral")
+#: Desde F-026 (R13) solo cae la baja ANTERIOR a la ventana de bajas.
+FECHA_BAJA = "(baja anterior a la ventana)"
+#: Ventana de bajas de las pruebas de depuración (1 de septiembre de 2026).
+VENTANA = 20260901
+AUXILIARES = ("cif", "estado_recurso", "baja_laboral")
 
 
 # --- Fixtures de filas --------------------------------------------------------
 
 
 def _emp(ide: int, **cambios: Any) -> dict[str, Any]:
-    """Fila de `sync.empleados.sql` de un recurso activo de la empresa 1."""
+    """Fila de `sync.empleados.sql` de un recurso activo de la empresa 1.
+
+    Desde F-026 (R1) una fila por recurso: sin `recurso_ide` ni
+    `empresa_recurso`, y la baja del recurso se llama `fecha_baja`."""
     fila: dict[str, Any] = {
         "ide": ide,
         "cod": f"E{ide}",
@@ -44,10 +49,8 @@ def _emp(ide: int, **cambios: Any) -> dict[str, Any]:
         "dni": f"{ide:08d}X",
         "empresa": 1,
         "categoria": "Técnico",
-        "recurso_ide": ide * 10,
-        "empresa_recurso": 1,
         "estado_recurso": "Activo",
-        "baja_recurso": 0,
+        "fecha_baja": None,
         "baja_laboral": 0,
         "cod_hora_mes": "MENC",
         "importe_mes": 100,
@@ -391,87 +394,10 @@ def test_f023_r8_el_dominio_expone_la_empresa() -> None:
     assert [(o.ide, o.empresa) for o in obras] == [(100, 28)]
 
 
-# --- R9: recurso de otra empresa ----------------------------------------------
-
-
-def test_f023_r9_recurso_de_otra_empresa_se_descarta_y_se_cuenta() -> None:
-    res = _depurar([
-        _emp(1, empresa=1, empresa_recurso=18),
-        _emp(2, empresa=1, empresa_recurso=1),
-        _emp(3, empresa=1, empresa_recurso=None),
-    ], criterio=_criterio())
-    assert _ides(res.filas) == [2, 3]
-    assert res.excluidos_otra_empresa == 1
-    assert res.brutos == 3
-
-
-def test_f023_r9_empresa_nula_con_recurso_informado_se_descarta() -> None:
-    res = _depurar([_emp(1, empresa=None, empresa_recurso=1)],
-                   criterio=_criterio())
-    assert res.filas == []
-    assert res.excluidos_otra_empresa == 1
-
-
-def test_f023_r9_la_empresa_del_recurso_se_descarta_aun_sin_criterio_activo() -> None:
-    res = _depurar([_emp(1, empresa_recurso=18)],
-                   criterio=_criterio(activo=False))
-    assert res.filas == [] and res.excluidos_otra_empresa == 1
-
-
-# --- R10-R11: dedupe por persona dentro de cada empresa -----------------------
-
-
-def test_f023_r10_mismo_dni_misma_empresa_queda_una_ficha() -> None:
-    res = _depurar([
-        _emp(1, dni="12.345.678-a", empresa=1),
-        _emp(2, dni="12345678A", empresa=1),
-    ])
-    assert _ides(res.filas) == [2]      # misma preferencia que hoy: ide mayor
-    assert res.duplicados_persona == 1
-
-
-def test_f023_r10_mismo_nombre_sin_dni_misma_empresa_queda_una_ficha() -> None:
-    res = _depurar([
-        _emp(1, dni=None, nombre="Ana Pérez", empresa=18, empresa_recurso=18),
-        _emp(2, dni="", nombre="ANA PEREZ", empresa=18, empresa_recurso=18),
-    ])
-    assert _ides(res.filas) == [2]
-    assert res.duplicados_persona == 1
-
-
-def test_f023_r10_se_mantiene_la_preferencia_por_codigo_mensual() -> None:
-    res = _depurar([
-        _emp(1, dni="1A", cod_hora_mes="MENC"),
-        _emp(2, dni="1A", cod_hora_mes=None),
-    ])
-    assert _ides(res.filas) == [1]
-
-
-def test_f023_r11_mismo_dni_en_dos_empresas_quedan_las_dos() -> None:
-    res = _depurar([
-        _emp(1, dni="12345678A", empresa=1, empresa_recurso=1),
-        _emp(2, dni="12345678A", empresa=18, empresa_recurso=18),
-    ])
-    assert _ides(res.filas) == [1, 2]
-    assert res.duplicados_persona == 0
-    assert sorted(f["empresa"] for f in res.filas) == [1, 18]
-
-
-def test_f023_r11_mismo_nombre_sin_dni_en_dos_empresas_quedan_las_dos() -> None:
-    res = _depurar([
-        _emp(1, dni=None, nombre="Ana", empresa=1, empresa_recurso=1),
-        _emp(2, dni=None, nombre="Ana", empresa=31, empresa_recurso=31),
-    ])
-    assert _ides(res.filas) == [1, 2]
-    assert res.duplicados_persona == 0
-
-
-def test_f023_r11_empresa_nula_no_se_mezcla_con_ninguna() -> None:
-    res = _depurar([
-        _emp(1, dni="1A", empresa=1),
-        _emp(2, dni="1A", empresa=None, empresa_recurso=None),
-    ])
-    assert _ides(res.filas) == [1, 2]
+# --- R9-R11: retirados por F-026 --------------------------------------------
+# El descarte por empresa del recurso y los dedupes por empleado y por
+# persona ya no existen (F-026 R3, R6): los sustituyen
+# `test_f026_r3_*` y `test_f026_r4_*` de `test_f026_sync_recurso.py`.
 
 
 # --- R12-R16: activo según el estado del recurso ------------------------------
@@ -497,61 +423,42 @@ def test_f023_r12_literal_vacio_no_excluye_a_nadie() -> None:
 
 
 def test_f023_r12_interruptor_apagado_no_filtra_por_estado() -> None:
-    res = _depurar([_emp(1, estado_recurso="Baja", baja_recurso=80000)],
+    res = _depurar([_emp(1, estado_recurso="Baja", fecha_baja=80000)],
                    criterio=_criterio(estados_excluidos=("baja",),
-                                      excluir_con_fecha_baja=True,
-                                      activo=False))
+                                      excluir_baja_anterior_a_ventana=True,
+                                      activo=False),
+                   baja_desde=VENTANA)
     assert _ides(res.filas) == [1]
     assert not res.excluidos_estado_recurso
 
 
 def test_f023_r13_fecha_de_baja_del_recurso_con_interruptor() -> None:
     filas = [
-        _emp(1, baja_recurso=80000),
-        _emp(2, baja_recurso=0),
-        _emp(3, baja_recurso=None),
-        _emp(4, baja_recurso=1),
+        _emp(1, fecha_baja=80000),
+        _emp(2, fecha_baja=0),
+        _emp(3, fecha_baja=None),
+        _emp(4, fecha_baja=1),
     ]
-    encendido = _depurar(filas, criterio=_criterio(excluir_con_fecha_baja=True))
+    encendido = _depurar(filas, criterio=_criterio(
+        excluir_baja_anterior_a_ventana=True), baja_desde=VENTANA)
     assert _ides(encendido.filas) == [2, 3]
     assert dict(encendido.excluidos_estado_recurso) == {FECHA_BAJA: 2}
-    apagado = _depurar(filas, criterio=_criterio(excluir_con_fecha_baja=False))
+    apagado = _depurar(filas, criterio=_criterio(
+        excluir_baja_anterior_a_ventana=False), baja_desde=VENTANA)
     assert _ides(apagado.filas) == [1, 2, 3, 4]
     assert not apagado.excluidos_estado_recurso
 
 
 def test_f023_r13_estado_y_fecha_a_la_vez_se_cuentan_una_sola_vez() -> None:
-    res = _depurar([_emp(1, estado_recurso="Baja", baja_recurso=80000)],
+    res = _depurar([_emp(1, estado_recurso="Baja", fecha_baja=80000)],
                    criterio=_criterio(estados_excluidos=("baja",),
-                                      excluir_con_fecha_baja=True))
+                                      excluir_baja_anterior_a_ventana=True),
+                   baja_desde=VENTANA)
     assert dict(res.excluidos_estado_recurso) == {"Baja": 1}
 
 
-def test_f023_r14_recurso_inactivo_mas_reciente_no_tapa_al_activo() -> None:
-    res = _depurar([
-        _emp(1, recurso_ide=10, cod_hora_mes="MENC", estado_recurso="Activo"),
-        _emp(1, recurso_ide=20, cod_hora_mes="MCAP", estado_recurso="Baja"),
-    ], criterio=_criterio(estados_excluidos=("baja",)))
-    assert [f["cod_hora_mes"] for f in res.filas] == ["MENC"]
-    assert res.duplicados_recurso == 0
-    assert dict(res.excluidos_estado_recurso) == {"Baja": 1}
-
-
-def test_f023_r14_recurso_de_otra_empresa_mas_reciente_no_tapa_al_propio() -> None:
-    res = _depurar([
-        _emp(1, recurso_ide=10, cod_hora_mes="MENC", empresa_recurso=1),
-        _emp(1, recurso_ide=20, cod_hora_mes="MCAP", empresa_recurso=18),
-    ], criterio=_criterio())
-    assert [f["cod_hora_mes"] for f in res.filas] == ["MENC"]
-    assert res.duplicados_recurso == 0
-
-
-def test_f023_r14_fecha_de_baja_del_recurso_mas_reciente_no_tapa_al_activo() -> None:
-    res = _depurar([
-        _emp(1, recurso_ide=10, cod_hora_mes="MENC", baja_recurso=0),
-        _emp(1, recurso_ide=20, cod_hora_mes="MCAP", baja_recurso=80000),
-    ], criterio=_criterio(excluir_con_fecha_baja=True))
-    assert [f["cod_hora_mes"] for f in res.filas] == ["MENC"]
+# R14 retirado por F-026: sin dedupe por empleado no hay recurso «más
+# reciente» que pueda tapar a otro (una fila por recurso, R3).
 
 
 def test_f023_r15_baja_laboral_no_excluye_pero_se_cuenta() -> None:
@@ -568,20 +475,19 @@ def test_f023_r15_baja_laboral_no_excluye_pero_se_cuenta() -> None:
 
 def test_f023_r16_criterio_vacio_no_descarta_por_estado() -> None:
     filas = [
-        _emp(1, estado_recurso="Baja", baja_recurso=80000),
+        _emp(1, estado_recurso="Baja", fecha_baja=80000),
         _emp(2, estado_recurso="Activo"),
     ]
     sin_criterio = _depurar([dict(f) for f in filas])
     con_criterio = _depurar([dict(f) for f in filas], criterio=_criterio())
     assert _ides(sin_criterio.filas) == _ides(con_criterio.filas) == [1, 2]
     assert not con_criterio.excluidos_estado_recurso
-    assert con_criterio.excluidos_otra_empresa == 0
 
 
 def test_f023_r16_criterio_por_defecto_es_vacio() -> None:
     criterio = _criterio()
     assert criterio.estados_excluidos == ()
-    assert criterio.excluir_con_fecha_baja is False
+    assert criterio.excluir_baja_anterior_a_ventana is False
     assert criterio.activo is True
 
 
@@ -602,11 +508,11 @@ def test_f023_r17_preview_publica_claves_nuevas_y_antiguas() -> None:
         _emp(1, empresa=1, baja_laboral=80000),
         _emp(2, empresa=1),
         _emp(3, empresa=18, empresa_recurso=18),
-        _emp(4, empresa=1, empresa_recurso=18),              # otra empresa
+        _emp(4, empresa=1, empresa_recurso=18),              # ya no filtra
         _emp(5, estado_recurso="Baja definitiva"),           # estado
-        _emp(6, baja_recurso=80000),                         # fecha de baja
+        _emp(6, fecha_baja=80000),                           # baja anterior
         _emp(7, cod_hora_mes=None),                          # sin código M*
-        _emp(2, recurso_ide=5),                              # dup. de recurso
+        _emp(2, recurso_ide=5),                              # ya no se funde
     ]
     obras = [
         _obr(1, empresa=1),
@@ -619,23 +525,24 @@ def test_f023_r17_preview_publica_claves_nuevas_y_antiguas() -> None:
         _SigridFalso(empleados, obras), SQL_EMP, SQL_OBR,
         estados_excluidos=["terminada"],
         criterio=_criterio(estados_excluidos=("baja",),
-                           excluir_con_fecha_baja=True),
+                           excluir_baja_anterior_a_ventana=True),
     ).ejecutar()
     emp, obr = salida["empleados"], salida["obras"]
     assert emp["excluidos_por_estado_recurso"] == {
         "Baja definitiva": 1, FECHA_BAJA: 1}
-    assert emp["excluidos_recurso_otra_empresa"] == 1
+    for retirada in ("excluidos_recurso_otra_empresa", "duplicados_recurso",
+                     "duplicados_persona"):
+        assert retirada not in emp, retirada          # F-026 R6
     assert emp["con_baja_laboral"] == 1
-    assert emp["por_empresa"] == {"1": 2, "18": 1}
+    assert emp["por_empresa"] == {"1": 4, "18": 1}
     assert emp["brutos"] == 8
-    assert emp["duplicados_recurso"] == 1
-    assert emp["duplicados_persona"] == 0
+    assert emp["posible_misma_persona"] == [["E2", "E2"]]   # F-026 R4
     assert emp["excluidos_sin_codigo_mes"] == 1
     assert emp["excluidos_por_categoria"] == {"(sin código de hora mensual)": 1}
-    assert emp["por_codigo_mes"] == {"MENC": 3}
-    assert emp["por_categoria"] == {"Técnico": 3}
-    assert emp["total"] == 3
-    assert _ides(emp["muestra"]) == [1, 2, 3]
+    assert emp["por_codigo_mes"] == {"MENC": 5}
+    assert emp["por_categoria"] == {"Técnico": 5}
+    assert emp["total"] == 5
+    assert _ides(emp["muestra"]) == [1, 2, 2, 3, 4]
     assert obr["por_empresa"] == {"1": 1, "28": 1}
     assert obr["brutas"] == 3
     assert obr["excluidas_por_estado"] == {"Terminada": 1}
@@ -704,7 +611,7 @@ def _mismos_netos(contenedor: Any) -> tuple[list[int], list[int]]:
 
 def _entrada_r18() -> _SigridFalso:
     return _SigridFalso(
-        [_emp(1), _emp(2, estado_recurso="Baja"), _emp(3, baja_recurso=80000),
+        [_emp(1), _emp(2, estado_recurso="Baja"), _emp(3, fecha_baja=80000),
          _emp(4, empresa_recurso=18)],
         [_obr(1), _obr(2, estado_sigrid="Terminada")],
     )
@@ -716,9 +623,9 @@ def test_f023_r18_preview_y_sync_aplican_el_mismo_criterio(
     contenedor = _contenedor(monkeypatch, _entrada_r18(), _config_prueba({
         "filtro_estado_recurso": True,
         "estados_recurso_excluidos": ["baja"],
-        "excluir_recurso_con_fecha_baja": True,
+        "excluir_baja_anterior_a_ventana": True,
     }))
-    assert _mismos_netos(contenedor) == ([1], [1])
+    assert _mismos_netos(contenedor) == ([1, 4], [1])
 
 
 def test_f023_r18_interruptor_general_apagado_llega_a_los_dos(
@@ -727,9 +634,9 @@ def test_f023_r18_interruptor_general_apagado_llega_a_los_dos(
     contenedor = _contenedor(monkeypatch, _entrada_r18(), _config_prueba({
         "filtro_estado_recurso": False,
         "estados_recurso_excluidos": ["baja"],
-        "excluir_recurso_con_fecha_baja": True,
+        "excluir_baja_anterior_a_ventana": True,
     }))
-    assert _mismos_netos(contenedor) == ([1, 2, 3], [1])
+    assert _mismos_netos(contenedor) == ([1, 2, 3, 4], [1])
 
 
 def test_f023_r18_config_sin_claves_de_recurso_no_filtra_por_estado(
@@ -738,7 +645,7 @@ def test_f023_r18_config_sin_claves_de_recurso_no_filtra_por_estado(
     """Un config.yaml anterior a F-023 (sin las tres claves) se comporta como
     el criterio vacío (R16): los valores por defecto no filtran."""
     contenedor = _contenedor(monkeypatch, _entrada_r18(), _config_prueba({}))
-    assert _mismos_netos(contenedor) == ([1, 2, 3], [1])
+    assert _mismos_netos(contenedor) == ([1, 2, 3, 4], [1])
 
 
 def test_f023_r18_filtro_estado_recurso_encendido_por_defecto(
@@ -748,18 +655,19 @@ def test_f023_r18_filtro_estado_recurso_encendido_por_defecto(
     contenedor = _contenedor(monkeypatch, _entrada_r18(), _config_prueba({
         "estados_recurso_excluidos": ["baja"],
     }))
-    assert _mismos_netos(contenedor) == ([1, 3], [1])
+    assert _mismos_netos(contenedor) == ([1, 3, 4], [1])
 
 
 def test_f023_r18_con_el_config_real_cae_el_recurso_con_fecha_de_baja(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """D1 cerrada: con `config.yaml` tal cual, cae el recurso con fecha de
-    baja (R13) y cuenta como tal; el 2 sigue aunque su estado diga «Baja»
-    porque la lista de literales está vacía; y sigue cayendo el de otra
-    empresa (R9). Preview y sync, con los mismos netos."""
+    baja anterior a la ventana (R13, F-026 R13) y cuenta como tal; el 2
+    sigue aunque su estado diga «Baja» porque la lista de literales está
+    vacía; y el 4 ya no cae por la empresa del recurso (F-026 R3). Preview
+    y sync, con los mismos netos."""
     contenedor = _contenedor(monkeypatch, _entrada_r18())
-    assert _mismos_netos(contenedor) == ([1, 2], [1])
+    assert _mismos_netos(contenedor) == ([1, 2, 4], [1])
     emp = contenedor.preview_sync.ejecutar()["empleados"]
     assert emp["excluidos_por_estado_recurso"] == {FECHA_BAJA: 1}
-    assert emp["excluidos_recurso_otra_empresa"] == 1
+    assert "excluidos_recurso_otra_empresa" not in emp

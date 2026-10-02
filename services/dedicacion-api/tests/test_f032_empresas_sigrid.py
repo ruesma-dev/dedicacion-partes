@@ -299,9 +299,8 @@ class _SigridFalso:
             return [{"ide": 7, "cod": "0007", "empresa": 1,
                      "descripcion": "OBRA", "estado_sigrid": "En curso"}]
         return [{"ide": 3, "cod": "E3", "nombre": "Persona", "dni": "3X",
-                 "empresa": 1, "categoria": "Técnico", "recurso_ide": 30,
-                 "empresa_recurso": 1, "estado_recurso": "1",
-                 "baja_recurso": 0, "baja_laboral": 0,
+                 "empresa": 1, "categoria": "Técnico", "estado_recurso": "1",
+                 "fecha_baja": None, "baja_laboral": 0,
                  "cod_hora_mes": "MENC", "importe_mes": 1}]
 
 

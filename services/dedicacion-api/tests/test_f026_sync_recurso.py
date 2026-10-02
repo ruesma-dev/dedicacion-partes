@@ -116,3 +116,180 @@ def test_f026_r13_config_excluye_solo_la_baja_anterior_a_la_ventana() -> None:
     assert cfg["estados_recurso_excluidos"] == []
     assert cfg["excluir_baja_anterior_a_ventana"] is True
     assert "excluir_recurso_con_fecha_baja" not in cfg
+
+
+# --- R2-R4, R13: depuración sin filtro de empresa ni dedupes ------------------
+
+#: Clave del recuento de las bajas anteriores a la ventana (R13).
+BAJA_ANTERIOR = "(baja anterior a la ventana)"
+#: Ventana de las pruebas: 1 de septiembre de 2026.
+VENTANA = 20260901
+
+
+def _fila(ide: int, **cambios: Any) -> dict[str, Any]:
+    """Fila de `sync.empleados.sql` (R1): un recurso persona M* sin baja."""
+    fila: dict[str, Any] = {
+        "ide": ide,
+        "cod": f"MO/{ide:04d}",
+        "nombre": f"Persona {ide}",
+        "dni": f"{ide:08d}X",
+        "cif": f"{ide:08d}X",
+        "empresa": 1,
+        "categoria": "Encargado",
+        "estado_recurso": "1",
+        "fecha_baja": None,
+        "baja_laboral": None,
+        "cod_hora_mes": "MENC",
+        "importe_mes": 100,
+    }
+    fila.update(cambios)
+    return fila
+
+
+def _criterio(**kwargs: Any) -> Any:
+    from application.filtros_maestros import CriterioActivoRecurso
+
+    return CriterioActivoRecurso(**kwargs)
+
+
+def _depurar(filas: list[dict[str, Any]], **kwargs: Any) -> Any:
+    from application.filtros_maestros import depurar_empleados
+
+    return depurar_empleados([dict(f) for f in filas], [], False, **kwargs)
+
+
+def _ides(filas: list[dict[str, Any]]) -> list[int]:
+    return sorted(int(f["ide"]) for f in filas)
+
+
+def test_f026_r2_recurso_sin_ficha_de_empleado_entra() -> None:
+    res = _depurar([_fila(772, dni=None), _fila(5)])
+    assert _ides(res.filas) == [5, 772]
+    (eusebio,) = [f for f in res.filas if f["ide"] == 772]
+    assert eusebio["dni"] is None
+    assert eusebio["cod"] == "MO/0772"
+
+
+def test_f026_r3_misma_persona_en_la_misma_empresa_son_dos_filas() -> None:
+    res = _depurar([_fila(61, dni="1A", cod_hora_mes="MENC"),
+                    _fila(736, dni="1A", cod_hora_mes="MCAP")])
+    assert _ides(res.filas) == [61, 736]
+    assert sorted(f["cod_hora_mes"] for f in res.filas) == ["MCAP", "MENC"]
+
+
+def test_f026_r3_misma_persona_en_dos_empresas_cada_una_en_la_suya() -> None:
+    res = _depurar([_fila(496, dni="1A", empresa=1),
+                    _fila(6, dni="1A", empresa=18)])
+    assert sorted((f["ide"], f["empresa"]) for f in res.filas) == [
+        (6, 18), (496, 1)]
+
+
+def test_f026_r3_recurso_de_otra_empresa_que_la_ficha_ya_no_se_descarta() -> None:
+    """La empresa es la del recurso: ninguna columna la contrasta con la de
+    la ficha de empleado (se retira el descarte de F-023 R9)."""
+    res = _depurar([_fila(1, empresa=18)], criterio=_criterio())
+    assert [(f["ide"], f["empresa"]) for f in res.filas] == [(1, 18)]
+
+
+def test_f026_r4_posible_misma_persona_por_dni_normalizado() -> None:
+    res = _depurar([_fila(61, dni="12.345.678-a"), _fila(736, dni="12345678 A"),
+                    _fila(7)])
+    assert res.posible_misma_persona == [["MO/0061", "MO/0736"]]
+    assert _ides(res.filas) == [7, 61, 736]
+
+
+def test_f026_r4_sin_dni_agrupa_por_cif() -> None:
+    res = _depurar([_fila(1, dni=None, cif="b-1"), _fila(2, dni="", cif="B1"),
+                    _fila(3, dni=None, cif="B1")])
+    assert res.posible_misma_persona == [["MO/0001", "MO/0002", "MO/0003"]]
+
+
+def test_f026_r4_el_dni_manda_sobre_el_cif() -> None:
+    res = _depurar([_fila(1, dni="1A", cif="C"), _fila(2, dni="2B", cif="C")])
+    assert res.posible_misma_persona == []
+
+
+def test_f026_r4_nunca_agrupa_por_nombre() -> None:
+    res = _depurar([_fila(1, dni=None, cif=None, nombre="Ana Pérez"),
+                    _fila(2, dni=" ", cif="", nombre="ANA PEREZ")])
+    assert res.posible_misma_persona == []
+    assert _ides(res.filas) == [1, 2]
+
+
+def test_f026_r4_solo_dentro_de_la_misma_empresa() -> None:
+    res = _depurar([_fila(1, dni="1A", empresa=1),
+                    _fila(2, dni="1A", empresa=18)])
+    assert res.posible_misma_persona == []
+
+
+def test_f026_r4_solo_entre_incluidos() -> None:
+    res = _depurar([_fila(1, dni="1A"), _fila(2, dni="1A", cod_hora_mes=None)])
+    assert res.posible_misma_persona == []
+
+
+def test_f026_r4_varios_grupos_ordenados() -> None:
+    res = _depurar([_fila(9, dni="9Z"), _fila(2, dni="1A"), _fila(8, dni="9Z"),
+                    _fila(1, dni="1A")])
+    assert res.posible_misma_persona == [["MO/0001", "MO/0002"],
+                                         ["MO/0008", "MO/0009"]]
+
+
+def test_f026_r6_resultado_sin_recuentos_retirados() -> None:
+    res = _depurar([_fila(1)])
+    for retirado in ("duplicados_recurso", "duplicados_persona",
+                     "excluidos_otra_empresa"):
+        assert not hasattr(res, retirado), retirado
+
+
+def test_f026_r13_baja_anterior_a_la_ventana_fuera_y_contada() -> None:
+    res = _depurar([
+        _fila(1, fecha_baja=VENTANA - 1),          # 31/08: fuera
+        _fila(2, fecha_baja=VENTANA),              # 01/09: dentro
+        _fila(3, fecha_baja=20261015),             # en curso: dentro
+        _fila(4, fecha_baja=None),
+        _fila(5, fecha_baja=0),
+        _fila(6, fecha_baja=20200101),             # muy antigua: fuera
+    ], criterio=_criterio(excluir_baja_anterior_a_ventana=True),
+        baja_desde=VENTANA)
+    assert _ides(res.filas) == [2, 3, 4, 5]
+    assert dict(res.excluidos_estado_recurso) == {BAJA_ANTERIOR: 2}
+    assert {f["ide"]: f["fecha_baja"] for f in res.filas} == {
+        2: VENTANA, 3: 20261015, 4: None, 5: 0}
+    assert res.incluidos_con_baja == 2
+
+
+def test_f026_r13_sin_ventana_o_sin_interruptor_no_excluye_por_baja() -> None:
+    filas = [_fila(1, fecha_baja=20200101), _fila(2)]
+    sin_ventana = _depurar(filas, criterio=_criterio(
+        excluir_baja_anterior_a_ventana=True))
+    apagado = _depurar(filas, criterio=_criterio(), baja_desde=VENTANA)
+    general = _depurar(filas, criterio=_criterio(
+        excluir_baja_anterior_a_ventana=True, activo=False), baja_desde=VENTANA)
+    for res in (sin_ventana, apagado, general):
+        assert _ides(res.filas) == [1, 2]
+        assert not res.excluidos_estado_recurso
+        assert res.incluidos_con_baja == 1
+
+
+def test_f026_r13_estado_y_baja_a_la_vez_cuentan_una_vez_por_estado() -> None:
+    res = _depurar([_fila(1, estado_recurso="Baja", fecha_baja=20200101)],
+                   criterio=_criterio(estados_excluidos=("baja",),
+                                      excluir_baja_anterior_a_ventana=True),
+                   baja_desde=VENTANA)
+    assert dict(res.excluidos_estado_recurso) == {"Baja": 1}
+
+
+def test_f026_r13_baja_que_no_llega_al_upsert_no_cuenta_como_incluida() -> None:
+    res = _depurar([_fila(1, fecha_baja=20261015, cod_hora_mes=None)],
+                   baja_desde=VENTANA)
+    assert res.filas == [] and res.incluidos_con_baja == 0
+
+
+def test_f026_r13_upsert_recibe_fecha_baja_sin_auxiliares() -> None:
+    (fila,) = _depurar([_fila(1, fecha_baja=20261015, baja_laboral=20261001)],
+                       baja_desde=VENTANA).filas
+    assert fila["fecha_baja"] == 20261015
+    for auxiliar in ("cif", "estado_recurso", "baja_laboral"):
+        assert auxiliar not in fila, auxiliar
+    assert {"ide", "cod", "nombre", "dni", "empresa", "categoria",
+            "cod_hora_mes", "importe_mes"} <= set(fila)

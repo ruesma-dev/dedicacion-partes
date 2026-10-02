@@ -79,19 +79,18 @@ class FetchEmpleadosStep:
             criterio=self._criterio,
         )
         logger.info(
-            "sync empleados: %d brutos, %d de recurso de otra empresa, "
-            "%d por estado del recurso, %d duplicados de recurso, "
-            "%d duplicados de persona, %d sin código de hora mensual, "
-            "%d excluidos por categoría, %d netos (%d con baja laboral)",
+            "sync empleados: %d brutos, %d por estado del recurso, "
+            "%d sin código de hora mensual, %d excluidos por categoría, "
+            "%d netos (%d con baja laboral, %d con fecha de baja, "
+            "%d grupos de posible misma persona)",
             depurado.brutos,
-            depurado.excluidos_otra_empresa,
             sum(depurado.excluidos_estado_recurso.values()),
-            depurado.duplicados_recurso,
-            depurado.duplicados_persona,
             depurado.excluidos_sin_codigo_mes,
             depurado.excluidos_filtro,
             len(depurado.filas),
             depurado.con_baja_laboral,
+            depurado.incluidos_con_baja,
+            len(depurado.posible_misma_persona),
         )
         ctx.filas_empleados = depurado.filas
 

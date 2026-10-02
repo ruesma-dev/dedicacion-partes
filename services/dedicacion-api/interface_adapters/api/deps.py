@@ -60,8 +60,8 @@ def construir_contenedor(
     # enseña el preview es exactamente lo que el sync va a guardar.
     criterio = CriterioActivoRecurso(
         estados_excluidos=tuple(cfg_emp.get("estados_recurso_excluidos") or []),
-        excluir_con_fecha_baja=bool(
-            cfg_emp.get("excluir_recurso_con_fecha_baja", False)
+        excluir_baja_anterior_a_ventana=bool(
+            cfg_emp.get("excluir_baja_anterior_a_ventana", False)
         ),
         activo=bool(cfg_emp.get("filtro_estado_recurso", True)),
     )
