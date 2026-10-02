@@ -247,3 +247,105 @@ def test_f035_r3_sin_tocar_nada_del_servidor() -> None:
     assert not re.search(r"firewall-rule", texto, re.IGNORECASE)
     assert not re.search(r"flexible-server\s+(update|restart|db|parameter)", texto)
     assert "PG_ADMIN" not in texto
+
+
+# --- R4 · Control de caracteres antes de la primera az con el secreto ------
+
+#: Script -> (variable del secreto, patron de la primera linea de codigo que
+#: lo lleva a una llamada de `az`, directa o a traves de otra variable).
+CONTROLADOS = {
+    CREAR_BASE: [
+        ("PGADMIN_PWD", r"-p \$PGADMIN_PWD\b"),
+        ("APP_PWD", r"^\$APP_PWD_SQL\s*="),
+    ],
+    ADD_SECRETS: [
+        ("val", r"--value \$val\b"),
+    ],
+}
+
+#: Nombre de la funcion de control en los dos scripts.
+CONTROL = "Rechazar-CaracteresDeCmd"
+
+
+def _clase_de_caracteres(script: Path) -> str:
+    """La clase `[...]` del `-match` dentro de la funcion de control."""
+    codigo = _codigo(script)
+    inicio = _primera(r"^function " + CONTROL + r"\b", codigo)
+    assert inicio < len(codigo), f"falta la funcion {CONTROL} en {script.name}"
+    cuerpo = "\n".join(_bloque(codigo, inicio))
+    hallado = re.search(r"-match\s+'(\[[^']+\])'", cuerpo)
+    assert hallado, cuerpo
+    assert re.search(r"^\s*throw\b", cuerpo, re.MULTILINE), cuerpo
+    return hallado.group(1)
+
+
+@pytest.mark.parametrize("script", [CREAR_BASE, ADD_SECRETS], ids=lambda s: s.stem)
+def test_f035_r4_el_control_rechaza_justo_los_caracteres_de_cmd(script: Path) -> None:
+    # La clase de PowerShell, evaluada con el motor de Python: mismos
+    # caracteres, misma semantica para estos siete.
+    clase = re.compile(_clase_de_caracteres(script))
+    for caracter in CARACTERES_CMD:
+        assert clase.search("abc" + caracter + "123"), caracter
+    for valido in ("Abc123", "a.b-c_d~e", "x!y?z*", "comilla'simple", "a=b+c/d", "es pacio"):
+        assert not clase.search(valido), valido
+
+
+@pytest.mark.parametrize("script", [CREAR_BASE, ADD_SECRETS], ids=lambda s: s.stem)
+def test_f035_r4_el_mensaje_dice_que_caracteres_y_por_que(script: Path) -> None:
+    codigo = _codigo(script)
+    inicio = _primera(r"^function " + CONTROL + r"\b", codigo)
+    cuerpo = "\n".join(_bloque(codigo, inicio))
+    assert "cmd.exe" in cuerpo
+    assert '" & | < > ^ %' in cuerpo.replace('`"', '"')
+    # Y no imprime el valor rechazado.
+    assert "$clave" not in cuerpo.split("throw", 1)[1]
+
+
+@pytest.mark.parametrize(
+    ("script", "variable", "uso"),
+    [(s, v, u) for s, pares in CONTROLADOS.items() for v, u in pares],
+    ids=lambda x: x.stem if isinstance(x, Path) else str(x)[:12],
+)
+def test_f035_r4_el_control_va_antes_de_la_primera_az_con_el_secreto(
+        script: Path, variable: str, uso: str) -> None:
+    codigo = _codigo(script)
+    lectura = _primera(r"^\$" + variable + r"\s*=\s*\[System\.Net\.NetworkCredential\]",
+                       codigo)
+    control = _primera(r"^" + CONTROL + r"\s+\$" + variable + r"\b", codigo)
+    primera_az = _primera(uso, codigo)
+    assert lectura < control < primera_az < len(codigo), (lectura, control, primera_az)
+
+
+def test_f035_r4_barrido_ningun_secreto_por_argumento_de_az_sin_control() -> None:
+    """Todo `-p $x` / `--value $x` / `--password $x` de `infra/*.ps1`.
+
+    Solo se admiten los que pasan por el control (crear_base, add_secrets) y
+    el client secret de `setup_front_easyauth.ps1`, que lo genera Azure con
+    un juego de caracteres sin ninguno de los de cmd.exe (R5).
+    """
+    admitidos = {
+        ("crear_base_dedicacion.ps1", "PGADMIN_PWD"),
+        ("add_secrets_dedicacion.ps1", "val"),
+        ("setup_front_easyauth.ps1", "CLIENT_SECRET"),
+    }
+    vistos = set()
+    for script in sorted(INFRA.glob("*.ps1")):
+        if script.name.endswith(".local.ps1"):
+            continue  # copia local NO versionada: no se lee
+        for linea in _codigo(script):
+            for variable in re.findall(r"(?<![\w-])(?:-p|--value|--password)\s+\$(\w+)",
+                                       linea):
+                vistos.add((script.name, variable))
+    assert vistos <= admitidos, vistos - admitidos
+    # Y el barrido no esta mirando a la nada.
+    assert ("setup_front_easyauth.ps1", "CLIENT_SECRET") in vistos
+
+
+@pytest.mark.parametrize("script", [VACIAR, CREAR_BASE, ADD_SECRETS], ids=lambda s: s.stem)
+def test_f035_formato_de_los_ps1_tocados(script: Path) -> None:
+    """UTF-8 con BOM, CRLF y ASCII, la convencion de los .ps1 del repositorio."""
+    crudo = script.read_bytes()
+    assert crudo.startswith(b"\xef\xbb\xbf")
+    assert crudo.count(b"\n") == crudo.count(b"\r\n") > 0
+    crudo[3:].decode("ascii")
+    assert _texto(script).splitlines()[0] == f"# infra/{script.name}"
