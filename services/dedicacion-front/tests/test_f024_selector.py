@@ -1,5 +1,6 @@
 # tests/test_f024_selector.py
-"""F-024 · Selector de empresa en el front (R3, R4, R5, R12).
+"""F-024 · Selector de empresa en el front (R3, R4, R5, R12), con los textos
+de F-034 (R6): el aviso de la línea y el `title` del selector.
 
 Comprobación ESTÁTICA de `templates/index.html` y `static/js/app.js`: el
 front no tiene lógica de negocio, así que lo que se fija es que pinta el
@@ -110,7 +111,40 @@ def test_f024_r12_marcas_sin_empresa_y_otra_empresa():
     celda = _funcion("construirCelda")
     assert "t.empresa === null" in celda and "sin empresa" in celda
     assert "l.otra_empresa" in celda and "chip-otra-empresa" in celda
-    assert "no se registrará en esta empresa" in celda
+    # F-034 (R6): el aviso dice que la obra no es de la empresa de las obras
+    # y ya no lleva la coletilla «en esta empresa».
+    assert AVISO_OTRA_EMPRESA in celda
+    assert "no se registrará en esta empresa" not in celda
     for clase in (".selector-empresa", ".tag-sin-empresa",
                   ".chip-linea.chip-otra-empresa"):
         assert clase in CSS, clase
+
+
+# ------------------------------- F-034 R6 ------------------------------ #
+#: Texto del aviso de una línea con `otra_empresa` (F-034, R6).
+AVISO_OTRA_EMPRESA = "la obra no es de la empresa de las obras: no se registrará"
+
+
+def test_f034_r6_aviso_de_la_linea_y_title_del_selector():
+    """El aviso no dice «en esta empresa» en ningún sitio del front, y el
+    selector se presenta como la empresa de los trabajadores. Presentación
+    pura: el front no compara empresas (lo fija R5 de F-024)."""
+    assert AVISO_OTRA_EMPRESA in _funcion("construirCelda")
+    assert "en esta empresa" not in JS
+    p = _Atributos("selector-empresa")
+    p.feed(HTML)
+    assert p.atributos["title"] == "Empresa de los trabajadores"
+
+
+class _Atributos(HTMLParser):
+    """Atributos de la etiqueta con el id dado."""
+
+    def __init__(self, ide: str) -> None:
+        super().__init__()
+        self.ide = ide
+        self.atributos: dict[str, str | None] = {}
+
+    def handle_starttag(self, tag, attrs) -> None:
+        datos = dict(attrs)
+        if datos.get("id") == self.ide:
+            self.atributos = datos
