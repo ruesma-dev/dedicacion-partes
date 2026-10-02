@@ -77,9 +77,7 @@ contrato API ↔ transfer, esquemas de entrada/salida (lo fija
 | `…r15_export…` | None: `+ Carlos`; 28: `[Bea]` | R3 |
 | `front/tests/test_f024_selector.py::test_f024_r12_…` | «no se registrará en esta empresa» presente → texto nuevo presente y el viejo ausente; `+ test_f034_r6_aviso_de_la_linea_y_title_del_selector` (title) | R6 |
 
-Sin cambios, como dice §6: `test_f022_empresa_en_linea.py`, R14 de
-cuadrante y rutas, R18 de registro, R11 `empresa_del_trabajador_y_de_cada_linea`,
-y todos los tests del transfer.
+Sin cambios (§6): F-022, R14, R18, R11 de rutas y todo el transfer.
 
 ## Fase RED (trazas reales)
 
@@ -113,7 +111,6 @@ E       assert [(3, 28)] == [(3, 1)]                           # R16→R7 de F-0
 ```
 E       assert [(900, 28, False)] == [(900, 28, True)]                 # E = 28
 E       assert [(101, 1, Tru...00, 28, True)] == [(101, 1, Fal...00, 28, True)]   # PUT con E = 18
-E       assert [(101, 1, True)] == [(101, 1, False)]
 3 failed, 61 passed, 1 warning in 11.40s
 ```
 **T5 (R6)** — `services/dedicacion-front`, `tests`:
@@ -200,15 +197,10 @@ y se restauró:
   `registro/ejecutar`.**
 - **Tras desplegar (humano, no bloquea el done).** Cuadrante de producción
   con `?empresa=18`: obras de Construcciones Ruesma, **sin pulsar Registrar**.
-- **Despliegue.** Design §10: decidir si F-034 sale sola o con F-026 (con el
-  transfer en real, las líneas de la 18 y la 31 se escribirán con el recurso
-  elegido sin mirar la empresa).
+- **Despliegue (humano).** ¿F-034 sola o con F-026? (design §10).
 
-## Fuera de alcance
-
-Recurso del trabajador por empresa (F-026), universo de postventa (F-025),
-rechazar al guardar líneas en obras de otra empresa (F-031), que copiar el
-mes descarte esas líneas. Ninguna llamada a Sigrid ni a sigrid-api.
+**Fuera de alcance:** recurso por empresa (F-026), postventa (F-025),
+rechazo al guardar (F-031), copia que descarte líneas. Sin llamadas a Sigrid.
 
 ## Evidencias
 
