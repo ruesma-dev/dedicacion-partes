@@ -506,7 +506,8 @@ def test_f035_r7_no_imprime_la_contrasena_ni_su_longitud() -> None:
 
 def test_f035_r7_el_3_bis_dice_que_en_azure_sale_del_key_vault() -> None:
     seccion = _seccion("3 bis")
-    assert re.search(r"PG-PASSWORD[^\n]*Key Vault|Key Vault[^\n]*PG-PASSWORD", seccion)
+    # El parrafo esta partido en lineas: cerca, no en la misma linea.
+    assert re.search(r"Key Vault.{0,120}PG-PASSWORD", seccion, re.DOTALL)
     assert "Key Vault Secrets User" in seccion and "Officer" in seccion
     assert re.search(r"respaldo|a mano", seccion)
 
