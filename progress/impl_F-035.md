@@ -3,7 +3,8 @@
 Rama `feature/F-035-vaciado-psql-azure`, rigor **estándar**, sin spec (contra
 los `acceptance` de `harness/features.json`). Commits: `fc57b7f` T1 (vaciado
 con `psql` + `-SoloRecuento`), `33b5e9b` T2 (control de caracteres),
-`b8189d3` T3 (README), `30c28c7` T4 (tests reforzados tras mutación manual).
+`b8189d3` T3 (README), `30c28c7` T4 (tests reforzados tras mutación manual);
+ciclo 2: `301dfed` T5 (`)`), `cffd850` T6 (tabla de mutación).
 
 **Ningún script se ha ejecutado**: ni contra Azure ni contra la base local, ni
 con `-Confirmar` ni con `-SoloRecuento`. Lo único ejecutado sobre ellos: el
@@ -29,14 +30,14 @@ tres) y la función de control extraída por AST con cadenas inventadas.
 - Cabecera con los seis modos y el `$env:Path` de psql. BOM/CRLF/ASCII.
 
 **`crear_base_dedicacion.ps1` / `add_secrets_dedicacion.ps1`** — solo
-añadidos: función `Rechazar-CaracteresDeCmd` (`-match '["&|<>^%]'` → `throw`
+añadidos: función `Rechazar-CaracteresDeCmd` (`-match '["&|<>^%)]'` → `throw`
 con el porqué, sin imprimir el valor), llamada tras leer cada secreto
 (`$PGADMIN_PWD`, `$APP_PWD`; `$val`). Ejecutada aislada (extraída por AST):
-rechaza `a"b a&b a|b a<b a>b a^b a%b`, acepta `Abc123.x-y_z~`,
-`comilla'simple`, `x!y=z+/`. Mensaje real:
+rechaza `a"b a&b a|b a<b a>b a^b a%b ab)cd abc)`, acepta `Abc123.x-y_z~`,
+`a(b`, `comilla'simple`, `x!y=z+/`. Mensaje real (ciclo 2):
 
 ```
-ABORTADO: El valor de 'PG-PASSWORD' contiene alguno de estos caracteres: " & | < > ^ %. En Windows az es un .cmd y su linea de comandos pasa por cmd.exe, que los interpreta y corromperia el valor sin avisar (F-035). Si es una contrasena que eliges tu, usa una sin ellos.
+ABORTADO: El valor de 'PG-PASSWORD' contiene alguno de estos caracteres: " & | < > ^ % ). En Windows az es un .cmd y su linea de comandos pasa por cmd.exe, que los interpreta y corromperia el valor sin avisar; el ) ademas cierra el bloque IF ( ... ) dentro del que az.cmd expande sus argumentos, y corta el valor o rompe la linea (F-035). Si es una contrasena que eliges tu, usa una sin ellos.
 ```
 
 **`README_dedicacion.md`** — §3 bis: `$env:Path`, `-SoloRecuento`, «`psql`
@@ -86,13 +87,10 @@ estructura que fijan. Ninguno pierde exigencia.
 
 ## Tests nuevos: `tests/test_f035_secretos_sin_cmd.py` (28)
 
-R1 (7) psql contra el FQDN, solo `account set` + `show`, PATH, `PGSSLMODE`
-solo en Azure, `finally`; R2 (5) `-SoloRecuento`; R3 (2) mensaje de IP y nada
-de servidor; R4 (8) clase de caracteres evaluada con datos, mensaje, orden
-lectura < control < primera `az` (3 casos) y **barrido** de `infra/*.ps1` (sin
-`*.local.ps1`): todo `-p $x`/`--value $x`/`--password $x` debe ser uno de los
-tres admitidos (crear_base, add_secrets, setup_front_easyauth); formato de los
-3 `.ps1` (3); R5 (3) README.
+R1 (7) psql/FQDN/`finally`; R2 (5) `-SoloRecuento`; R3 (2) IP y nada de
+servidor; R4 (8) clase evaluada con datos, mensaje, orden lectura < control <
+primera `az` (×3) y **barrido** de `-p $x`/`--value $x`/`--password $x` en
+`infra/*.ps1`; formato de los 3 `.ps1` (3); R5 (3) README.
 
 ## Fase RED
 
@@ -116,8 +114,7 @@ E       AssertionError: ['throw "Falta `$PG. Haz primero: ...', 'throw "No encue
 13 failed, 1 passed in 0.55s
 ```
 
-(El que pasaba: `test_f035_r3_sin_tocar_nada_del_servidor`, que fija algo que
-el script ya cumplía.) Tras el código: `14 passed`.
+(Pasaba `…r3_sin_tocar_nada_del_servidor`: ya se cumplía.) Tras el código: `14 passed`.
 
 **T2** — mismo comando, con los tests de R4 añadidos y los scripts sin tocar:
 
@@ -131,8 +128,7 @@ E       AssertionError: (17, 30, 21)      # add_secrets, el valor
 7 failed, 18 passed in 0.52s
 ```
 
-(El barrido ya pasaba: hoy solo había esos tres usos; es guardián a futuro.)
-Tras el código: `25 passed`.
+(El barrido ya pasaba: es guardián a futuro.) Tras el código: `25 passed`.
 
 **T3** — `python -m pytest tests/test_f035_secretos_sin_cmd.py -q -p no:cacheprovider -k r5`:
 
@@ -143,16 +139,26 @@ E       AssertionError: ['| `vaciar_datos_prueba_dedicacion.ps1` | ... plan y `-
 3 failed, 25 deselected in 0.27s
 ```
 
-Tras el README: `3 passed` (con el filtro de §7 acotado: cogía también la
-tabla nueva de §6 bis).
+Tras el README: `3 passed` (con el filtro de §7 acotado a esa sección).
 
-## Resultado real de `bash harness/init.sh` (final, con este informe)
+## Ciclo 2 (review 1: cambios pedidos; `)` aprobado por el humano)
+
+- **T5** `)` en la clase y el mensaje de `crear_base`/`add_secrets`, y en §6 bis.
+  RED (`… test_f035_secretos_sin_cmd.py -q -p no:cacheprovider -k r4`, scripts sin tocar):
+  `E AssertionError: )` en `re.compile('["&|<>^%]').search('abc)123')` (×2) y
+  `E assert '" & | < > ^ % )' in 'if ($clave -match …` (×2) → `4 failed, 4 passed,
+  20 deselected`. Tras el código: `28 passed`; `ParseFile` 0 errores.
+- **T6** `progress/mutacion_manual_F-035.md`: 21 mutantes sobre copia, sin `-x`,
+  0 supervivientes; M8/M10 contra los tests de `b8189d3` siguen sobreviviendo.
+  El script va incrustado; extraído del `.md` y relanzado: misma tabla.
+
+## Resultado real de `bash harness/init.sh` (final del ciclo 2, con este informe)
 
 ```
-402 passed, 1 skipped in 171.51s (0:02:51)
+402 passed, 1 skipped in 147.16s (0:02:27)
 [OK] pytest en verde (con medición de cobertura)
 [OK] PUERTA COBERTURA: N/A (F-035 no cambia líneas Python de producción frente a dev)
-[OK] PUERTA TAMAÑO: F-035 dentro de los topes (impl 219/220)
+[OK] PUERTA TAMAÑO: F-035 dentro de los topes (impl 219/220, review 140/140)
 ENTORNO LISTO. Puedes trabajar.
 ```
 
@@ -198,22 +204,16 @@ Opcional, sin conectar: `-SoloRecuento -Confirmar` → «se excluyen», sin pedi
 
 - Fuera: volver a vaciar producción, la contraseña de `dedicacion_app`, el
   servidor y su firewall, `azure-apps` (no cambia lo que exponemos/consumimos).
-- `current.md` y `features.json` sin tocar. **Para el líder**: `current.md`
-  declara un test cambiado y son **tres**; y la observación de la decisión 5.
+- `current.md` y `features.json` sin tocar (los lleva el líder). Queda para
+  él la observación de la decisión 5 (orden de `crear_base`).
 
 ## Evidencias
 
 | Evidencia | Valor medido |
 |---|---|
 | Tests ejecutados (suite de `init.sh`) | **402 passed, 1 skipped**; los 28 de `test_f035_secretos_sin_cmd.py` en verde |
-| Tests de F-035 + F-026 + F-008 | 111 passed en 2.58 s (`pytest` de esos cuatro ficheros, con `test_f004_readme.py`) |
 | Cobertura de líneas cambiadas | **N/A**: `PUERTA COBERTURA: N/A (F-035 no cambia líneas Python de producción frente a dev)`. Lo cambiado es PowerShell y Markdown |
 | Mutantes (`python -m harness.mutacion --feature F-035`) | **N/A**: «ALCANCE VACÍO en F-035: ni una línea de producción que mutar… No se escribe informe». La herramienta solo muta Python |
-| Mutación manual de los `.ps1` (sustituto, script en el scratchpad de la sesión) | **19 mutantes, 0 supervivientes** tras T4. En la primera pasada sobrevivieron 2: M8 (`if ($Local -and -not (Get-Command psql…`): **hueco real**, el test solo miraba el nivel de llaves; M10 (quitar «tu IP no tenga acceso»): casi equivalente, el mensaje seguía citando «la regla de firewall de tu IP», pero el test aceptaba cualquier `throw` con «IP». Los dos tests se ajustaron en `30c28c7` |
-| Tiempo de la suite | 171.51 s en la pasada final de `init.sh` (75.94 s en la anterior, mismo árbol de código: varía con la carga de la máquina) |
+| Mutación manual de los `.ps1` (sustituto) | **21 mutantes, 0 supervivientes** (sobre copia, sin `-x`, en `301dfed`). Primera pasada: M8 (hueco real) y M10 (casi equivalente) sobrevivían; tests ajustados en `30c28c7`. Tabla, texto exacto, fallos por mutante y script: [`progress/mutacion_manual_F-035.md`](mutacion_manual_F-035.md) |
+| Tiempo de la suite | 147.16 s en la pasada final de `init.sh` (entre 75.94 y 171.51 s en las anteriores: varía con la carga de la máquina) |
 
-Mutantes: quitar del `finally` cada variable; `PGSSLMODE` en local / fuera de
-Azure; sin `return` de `-SoloRecuento`; salida solo sin `-Confirmar`; sin
-exclusión; psql solo en local; `az … execute -p`; mensaje sin IP / sin
-firewall; FQDN sin comprobar; `rdbms-connect`; sin cada control (3); clase sin
-`%` / sin `"`; control tras `az`.
