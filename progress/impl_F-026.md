@@ -1,166 +1,214 @@
-# F-026 · Informe del implementer — BLOQUEADA
+<!-- progress/impl_F-026.md -->
+# F-026 · Informe del implementer (rigor `critico`)
 
-## Motivo del bloqueo (leer primero)
+**Estado: T0-T13 hechas, `bash harness/init.sh` en verde. Pendiente: MANUAL
+T14-T16 y review.** Bloqueo previo (2026-10-02, en T2: la lista cerrada de
+design §7 se quedaba corta) resuelto por el humano: aprobó A1-A8, B1, C1-C3 y
+el cambio de método (tabla de §3). Rama `feature/F-026-recursos-sin-ficha-empleado`.
 
-**La lista cerrada de tests que cambian (design §7) se queda corta.** Al hacer
-T2 aparecen asserts de tests anteriores que la spec obliga a cambiar y que §7
-no declara. La regla del encargo es explícita («cualquier otro cambio de
-assert, para y responde `blocked`»), así que paro en T2, igual que pasó en
-F-034. Hace falta que el humano **amplíe §7** con la lista de abajo (o decida
-otra cosa caso a caso) antes de seguir.
+## 1. Qué cambió (commits `F-026 Tn`)
 
-Lo que se encontró es una **consecuencia directa de R1, R6 y R16** de la spec
-aprobada, no un fallo del código. Para que solo haya una ronda de ampliación,
-repasé de antemano los tests que tocarán T3-T9 (lectura de los tests y del
-código; T3-T9 todavía no están implementadas). La lista es mi mejor
-predicción, no una ejecución.
+| T | Commit | Cambio |
+|---|---|---|
+| T1 | `3627a6b` | `api/domain/vigencia.py`: `inicio_de_mes`, `vigente_en`, `inicio_ventana_baja` |
+| T2 | `75271a3` | SQL de `sync.empleados` desde `dbo.res` (design §6, literal), `excluir_baja_anterior_a_ventana: true`, comentarios |
+| T3 | `4470eb7` | `filtros_maestros.depurar_empleados`: sin filtro de empresa ni dedupes, `baja_desde`, `_AUXILIARES` nuevo, `incluidos_con_baja`, `posible_misma_persona`; log del step y claves R6 del preview fuera; `deps.py` con la clave nueva |
+| T4 | `7430032` | `TrabajadorORM.fecha_baja` (Integer nulable sin default), `Trabajador.fecha_baja`, `sincronizar` la guarda (0 → NULL, su cambio cuenta), `_a_trabajador` |
+| T5 | `0401422` | `sync_pipeline.ventana_de_bajas` + `FetchEmpleadosStep(hoy=date.today)` con los `ABIERTO` de `uow.periodos` |
+| T6 | `d46f839` | `listar_para_periodo`: `activo = vigente_en(...)` del mes; no vigentes solo si tienen líneas |
+| T7 | `c29bcea` | `PreviewSync(uow_factory, hoy)`: UoW solo de lectura; publica `ventana_baja`, `incluidos_con_baja`, `posible_misma_persona`; `deps.py` le pasa la fábrica |
+| T8 | `a7c59dd` | `registro_sigrid._payloads`: `recurso_ide = t.ide`, sin `empleado_ide`; no vigentes → `no_vigentes`, ni se mandan ni se trazan |
+| T9 | `9de76fb` | transfer: fuera `empleado_ide` (`LineaIn`, `LineaEntrada`, `AccionLinea`), `_horas_de_lineas`, fuera `recursos_de_empleados`, `MOTIVO_SIN_RECURSO` nuevo |
+| T10 | `4560769` | `prueba_escritura_porcentajes.py` y README del transfer con `recurso_ide` |
+| T11 | `255a1c7` | `infra/vaciar_datos_prueba_dedicacion.ps1` (BOM, CRLF, ASCII; **no ejecutado**) y §3 bis + fila §7 de `infra/README_dedicacion.md` |
+| T12 | `be5efd0` | `ARCHITECTURE.md` punto 13 `#regla-recurso` y ajustes; `INTEGRACION.md` (cabecera, avisos, contrato, vaciado, qué se rompe); `ANCLAS` |
+| T13 | `5bea52e` | test que mata el superviviente real; campaña en `progress/mutacion_F-026.md` |
 
-## Estado de la rama
+`dedicacion-front`, `.env`, `esquema.py`, `domain/empresas.py`: sin tocar. Sin
+DDL a mano (la columna la deriva `esquema.py`, test R8). Ninguna llamada a
+Sigrid, a `sigrid-api` ni a ninguna base; nadie lanzó `registro/ejecutar`.
 
-- Rama `feature/F-026-recursos-sin-ficha-empleado`, sobre `5a02ddb` (dev con
-  F-034, T0).
-- **T0 [x]** (ya estaba: `git log dev` contiene `5f498cb`, el merge de F-034;
-  `init.sh` en verde al empezar).
-- **T1 [x]**, commit `3627a6b`: `services/dedicacion-api/domain/vigencia.py`
-  (`inicio_de_mes`, `vigente_en`, `inicio_ventana_baja`) y
-  `services/dedicacion-api/tests/test_f026_vigencia.py` (R12, R14: 15 tests).
-- **T2 hecha pero SIN commit, guardada en un stash** para que la rama siga en
-  verde (si la commiteo, `init.sh` queda en rojo por un test no declarado y el
-  siguiente implementer no cumple su precondición):
-  `stash@{0}` «F-026 T2 (SQL desde dbo.res + test_f026_sync_recurso.py): en
-  espera de ampliar la lista cerrada de design §7». Contiene la SQL nueva de
-  `sync.empleados` (design §6, literal), los comentarios de `config.yaml`, la
-  clave `excluir_baja_anterior_a_ventana: true` y
-  `tests/test_f026_sync_recurso.py` (R1 + clave de R13, 7 tests en verde).
-  Para retomarla: `git stash pop` en esta rama.
-- T3-T17 sin empezar. `progress/current.md` y `harness/features.json` sin
-  tocar (lo pidió el líder): marcar `blocked` lo hace él.
+## 2. Decisiones de diseño
 
-## Tests no declarados que hay que cambiar
+1. **Orden en `_payloads`**: primero visibilidad por empresa, luego vigencia.
+   Un no vigente de OTRA empresa no sale en `no_vigentes` (no es candidato en
+   esa petición). `no_vigentes` va ordenado por `registro_id`.
+2. **`baja_desde=None` no excluye por baja** aunque el criterio lo pida
+   (design §5.1, «con él y `baja_desde`»). Step y preview siempre la pasan.
+3. **`posible_misma_persona`**: grupos ordenados de `cod` ordenados; clave
+   (empresa, documento); el documento se toma de la fila bruta (el `cif` no
+   llega al upsert).
+4. **`ventana_de_bajas`** vive en `application/sync_pipeline.py` y la
+   comparten step y preview (una sola definición de «abiertos»).
+5. **`-Local` del vaciado**: `psql -h localhost -d dedicacion -U $env:PGUSER`
+   (o `postgres` si no está), contraseña por `Read-Host -AsSecureString` a
+   `PGPASSWORD` solo durante la llamada. En Azure, rol `$PG_APP_USER`.
+6. **`git diff` intermedio**: los commits T2-T6 dejaron en rojo tests
+   DECLARADOS que dependen de pasos posteriores (r17 y r18 de F-023 necesitan
+   la ventana en step y preview; `test_f022_r13` del transfer, el script de
+   T10). Desde T7 (api) y T10 (transfer) todo en verde.
 
-### A. `services/dedicacion-api/tests/test_f023_sync_empresa.py`
+## 3. Tests anteriores cambiados (para el reviewer, uno a uno)
 
-| # | Test | Por qué cambia (requisito) | Propuesta |
-|---|---|---|---|
-| A1 | `test_f023_r5_empleados_sin_filtro_de_emphis` | Su 2.º assert prohíbe todo `WHERE` tras `) AS hm`; R1 exige `WHERE res.cla = 1` ahí. **Comprobado**: falla con la SQL de T2 | El 2.º assert pasa a «lo único tras `) AS hm` es `WHERE res.cla = 1` y no menciona `fecbaj`» (ya lo prueba `test_f026_r1_sin_where_de_actividad`); o retirarlo |
-| A2 | `test_f023_r16_criterio_vacio_no_descarta_por_estado` | `assert con_criterio.excluidos_otra_empresa == 0`: el atributo desaparece (design §5.1, R6) | Borrar esa línea; `baja_recurso=80000` → `fecha_baja=80000` |
-| A3 | `test_f023_r16_criterio_por_defecto_es_vacio` | `criterio.excluir_con_fecha_baja is False`: el campo se renombra (§5.1) | → `criterio.excluir_baja_anterior_a_ventana is False` |
-| A4 | `test_f023_r12_interruptor_apagado_no_filtra_por_estado` | Sin cambio de assert: solo `excluir_con_fecha_baja=True` → `excluir_baja_anterior_a_ventana=True` y `baja_recurso` → `fecha_baja` | Aceptar como cambio de construcción |
-| A5 | `test_f023_r18_preview_y_sync_aplican_el_mismo_criterio` | `_entrada_r18` trae `_emp(4, empresa_recurso=18)`; sin filtro de empresa (R3, §5.1) el 4 entra | `([1], [1])` → `([1, 4], [1])`; clave del config renombrada |
-| A6 | `test_f023_r18_interruptor_general_apagado_llega_a_los_dos` | Ídem | `([1, 2, 3], [1])` → `([1, 2, 3, 4], [1])`; clave renombrada |
-| A7 | `test_f023_r18_config_sin_claves_de_recurso_no_filtra_por_estado` | Ídem | `([1, 2, 3], [1])` → `([1, 2, 3, 4], [1])` |
-| A8 | `test_f023_r18_filtro_estado_recurso_encendido_por_defecto` | Ídem | `([1, 3], [1])` → `([1, 3, 4], [1])` |
+Lista aprobada (design §7 + A1-A8, B1, C1-C3) y los nuevos por el método del
+2026-10-02 (marcados **M**). Ningún assert se quita sin sustituto.
 
-Alternativa a A5-A8: quitar la fila 4 de `_entrada_r18` (ya no representa
-nada) y dejar los asserts como están. Elige el humano; yo prefiero cambiar los
-asserts, porque fijan que el filtro de empresa ya no existe.
+| Test | Viejo → nuevo | Req. |
+|---|---|---|
+| f023 `r4_..._cinco_alias` | `con.emp AS empresa`, `rcon.emp AS empresa_recurso`, `rcon.fecbaj AS baja_recurso`, `LEFT JOIN dbo.con AS rcon` → `rcon.emp AS empresa`, `NULLIF(rcon.fecbaj, 0) AS fecha_baja`, `JOIN dbo.con AS rcon ON rcon.ide = res.ide` (+ conest y baja_laboral iguales) | R1 §7 |
+| f023 `r5_sin_filtro_de_emphis` (A1) | «ningún `WHERE` tras `) AS hm`» → «tras `) AS hm` solo `WHERE res.cla = 1 ORDER BY …` y sin `fecbaj`» | R1 |
+| f023 `r5_config_...` | `excluir_recurso_con_fecha_baja is True` → `excluir_baja_anterior_a_ventana is True` | R13 §7 |
+| f023 `FECHA_BAJA`, `AUXILIARES`, `_emp` | «(fecha de baja del recurso)» → «(baja anterior a la ventana)»; `(recurso_ide, empresa_recurso, estado_recurso, baja_recurso, baja_laboral)` → `(cif, estado_recurso, baja_laboral)`; `_emp` sin `recurso_ide`/`empresa_recurso`, `baja_recurso: 0` → `fecha_baja: None` | R1 R13 §7 |
+| f023 `r9` ×3, `r10` ×3, `r11` ×3, `r14` ×3 | **retirados** (12); los sustituyen `test_f026_r3_*` (4) y `test_f026_r4_*` (7) | R3 R6 §7 |
+| f023 `r12_interruptor_apagado` (A4) | solo construcción (`fecha_baja`, clave nueva, `baja_desde`) | — |
+| f023 `r13` ×2 | construcción + `baja_desde=VENTANA`; asserts iguales (`[2, 3]`, `{FECHA_BAJA: 2}`, `{"Baja": 1}`) | R13 §7 |
+| f023 `r16_criterio_vacio` (A2) | fuera `excluidos_otra_empresa == 0` (el atributo no existe: lo prueba `test_f026_r6_*`) | R6 |
+| f023 `r16_por_defecto` (A3) | `excluir_con_fecha_baja is False` → `excluir_baja_anterior_a_ventana is False` | §5.1 |
+| f023 `r17_preview_...` | claves R6 → `not in`; `por_empresa {"1":2,"18":1}` → `{"1":4,"18":1}`; `total`/`por_codigo_mes`/`por_categoria` 3 → 5; `muestra [1,2,3]` → `[1,2,2,3,4]`; **+** `posible_misma_persona == [["E2","E2"]]`; fila 6 `baja_recurso` → `fecha_baja` | R3 R4 R6 §7 |
+| f023 `r18_preview_y_sync…` (A5) | `([1],[1])` → `([1, 4],[1])`, clave renombrada | R3 |
+| f023 `r18_interruptor…` (A6), `r18_config_sin_claves` (A7) | `([1,2,3],[1])` → `([1,2,3,4],[1])` | R3 |
+| f023 `r18_filtro…_por_defecto` (A8) | `([1,3],[1])` → `([1,3,4],[1])` | R3 |
+| f023 `r18_con_el_config_real` | `([1,2],[1])` → `([1,2,4],[1])`; `excluidos_recurso_otra_empresa == 1` → `not in emp` | R3 R6 R13 |
+| f023 `_UowEspia` (C1), `_contenedor` (C2) | + `periodos` vacío; `deps.SqlAlchemyUnitOfWork` → UoW de lectura | R12 R17 |
+| f032 fixture de `_SigridFalso` | sin `recurso_ide`/`empresa_recurso`, `baja_recurso` → `fecha_baja` | §7 |
+| f032 `_UowEspia` (C1) | + `periodos` vacío | R12 |
+| **M** f032 `_contenedor` | + `deps.SqlAlchemyUnitOfWork` → UoW de lectura (mismo motivo que C2: `r4_el_preview_real_usa_la_consulta_de_config` construye el preview real con `session_factory=None`); sin cambio de assert | R17 §5.3 |
+| f022 `_fila`, f024 `_fila` (C3) | trabajador + `activo=True, fecha_baja=None` | R14 R16 |
+| f024 `r18_trabajador_no_visible` (B1) | `{"ok": True, "obras": []}` → `+ "no_vigentes": []` | R16 |
+| transfer `conftest.linea()` | `empleado_ide=10` → `recurso_ide=200`; dobles sin `recursos_de_empleados` ni `self.recursos` | R19 §7 |
+| transfer `test_f002_reglas` (14 llamadas) | `, empleado_ide=None` borrado; `linea(recurso_ide=None, empleado_ide=10)` → `linea(recurso_ide=None)` (mismo assert: omitida por recurso) | R20 §7 |
+| transfer `test_f002_pipeline` ×2, `test_f022_obra_por_empresa` ×2 | `empleado_ide=12` → `recurso_ide=400` | §7 |
+| transfer `test_f013_sin_partida` ×3 | `empleado_ide=12` → `recurso_ide=400`; `empleado_ide=10` → `recurso_ide=200` | §7 |
+| transfer `test_pipeline_offline` | 5 líneas `empleado_ide` → `recurso_ide` (10→200, 11→300); `a1.recurso_ide == 200` ahora prueba que el recurso dado se respeta | R19 §7 |
+| transfer `test_f002_fuente_unica.ANCLAS` | + `regla-recurso` | R23 |
 
-### B. `services/dedicacion-api/tests/test_f024_registro_empresa.py`
+## 4. Verificación (resultado real)
 
-| # | Test | Por qué cambia | Propuesta |
-|---|---|---|---|
-| B1 | `test_f024_r18_trabajador_no_visible_no_llama_al_transfer` | `assert r == {"ok": True, "obras": []}`; con R16 la respuesta lleva siempre `no_vigentes` («vacía si no hay», design §5.4). §7 dice de este fichero «ningún assert cambia» | → `{"ok": True, "obras": [], "no_vigentes": []}` |
+- `bash harness/init.sh` (HEAD `5bea52e` + este informe y el de mutación):
+  **ENTORNO LISTO**. Raíz `374 passed, 1 skipped in 48.88s`; api `440 passed,
+  1 warning in 21.64s`; transfer `329 passed` y front en verde (caché);
+  `PUERTA COBERTURA` y `PUERTA TAMAÑO` en verde (§8).
+- Criterio de cada tarea: T2-T12 con sus `test_f026_*` en verde; F-023,
+  F-032, F-022, F-024, F-034, `test_f003_esquema` y `test_f008_*` en verde.
+  `grep -rn empleado_ide services/dedicacion-transfer` (T10): solo en
+  `tests/test_f026_recurso_dado.py`, que prueba que el campo se ignora.
+- `infra/vaciar_datos_prueba_dedicacion.ps1`: **no ejecutado**; parseado con
+  `[System.Management.Automation.Language.Parser]::ParseFile` → `errores: 0`.
 
-### C. Cambios de DOBLES (sin assert) que conviene dejar aceptados ya
+## 5. Fase RED (trazas reales; comando desde el servicio, con su `.venv`)
 
-No son cambios de assert, pero tocan dobles o tests que §7 no nombra; los
-listo para no volver a parar en T5-T8:
+T1 y T2: trazas del informe del bloqueo (`git show 6b53a65:progress/impl_F-026.md`):
+`15 failed` (`ImportError: cannot import name 'vigencia'`) y `7 failed`
+(`assert ' FROM dbo.res AS res JOIN dbo.con AS rcon ...' in "SELECT emp.ide AS ide, con.cod ...`).
 
-- **C1.** `_UowEspia` de `test_f023_sync_empresa.py` y de
-  `test_f032_empresas_sigrid.py` ganan `periodos` (un doble con `listar()`
-  que devuelve `[]`): `FetchEmpleadosStep` lee los periodos `ABIERTO` (design
-  §5.3). Afecta a los `r6` de F-023 y a los `r1` de F-032, sin tocar asserts.
-- **C2.** `_contenedor` de `test_f023_sync_empresa.py` construye el contenedor
-  con `session_factory=None`; con la fábrica de UoW que pide §5.3 para
-  `PreviewSync`, el preview abriría `SqlAlchemyUnitOfWork(None)`. El doble
-  sustituye `deps.SqlAlchemyUnitOfWork` por una UoW falsa de solo lectura.
-  Afecta a los seis `r18`.
-- **C3.** Los trabajadores `SimpleNamespace` de `test_f022_empresa_en_linea.py`
-  y `test_f024_registro_empresa.py` (este lo reutiliza `test_f034_*`) ganan
-  `activo=True` además de `fecha_baja=None`: `vigente_en` lee los dos (R14,
-  R16). §7 solo nombra `fecha_baja`.
-
-### D. Revisado y sin cambios previstos
-
-`test_f024_cuadrante_empresa.py` (sus `Trabajador` toman `fecha_baja=None`
-por defecto), `test_f024_rutas_empresa.py` y `test_f034_rutas.py` (el
-registro es un doble), `test_f003_esquema.py`, `test_f008_*`; en el transfer,
-la lista de §7 cuadra con lo que encontré (`grep empleado_ide`: `conftest.py`,
-`test_f002_reglas.py`, `test_f002_pipeline.py`, `test_f013_sin_partida.py`,
-`test_f022_obra_por_empresa.py`, `test_pipeline_offline.py`).
-
-## Qué cambió (lo commiteado)
-
-| Fichero | Cambio |
-|---|---|
-| `api/domain/vigencia.py` (nuevo) | `inicio_de_mes` (`AAAAMM01`), `vigente_en` (`activo and (not fecha_baja or fecha_baja >= AAAAMM01)`), `inicio_ventana_baja` (mín. del mes anterior a `hoy`, enero → diciembre, y de cada abierto) |
-| `api/tests/test_f026_vigencia.py` (nuevo) | R14 (sin baja, 0, día 1, último día, posterior, mes anterior ×2, inactivo ×2), R12 (sin abiertos, enero, abierto más antiguo, abierto posterior, iterable) |
-| `specs/F-026-.../tasks.md` | T0 y T1 marcadas |
-
-## Decisiones
-
-1. **`vigente_en` trata `0` como sin baja** (`not fecha_baja`), igual que
-   Sigrid, aunque el repositorio guardará `NULL`: así la función no depende de
-   que alguien haya normalizado antes.
-2. **T2: `test_f026_r1_sin_empleado_ide_ni_alias_antiguos`** comprueba que no
-   queda ningún `con.` de la ficha de empleado con
-   `(?<![\w.])con\.` (un `in "con.emp AS empresa"` casaba con `rcon.emp`).
-3. **Intérprete.** Los tests se lanzan con el `.venv` de cada servicio
-   (`harness/servicios.json`); el `python` de la raíz no tiene `pydantic`.
-
-## Fase RED (trazas reales)
-
-**T1 · R12/R14.** Comando (desde `services/dedicacion-api`):
-`python -m pytest tests/test_f026_vigencia.py -q -p no:cacheprovider`
-→ `15 failed in 0.31s`. Extracto (`-k "r12_ventana_en_enero or
-vigente_en_octubre and True-20261001"`):
-
+**T3** `python -m pytest tests/test_f026_sync_recurso.py -q -p no:cacheprovider` → `14 failed, 10 passed`:
 ```
-E       ImportError: cannot import name 'vigencia' from 'domain' (C:\Users\pgris\PycharmProjects\porcentajes\services\dedicacion-api\domain\__init__.py)
-tests\test_f026_vigencia.py:23: ImportError
-FAILED tests/test_f026_vigencia.py::test_f026_r14_vigente_en_octubre[True-20261001-True]
-FAILED tests/test_f026_vigencia.py::test_f026_r12_ventana_en_enero_es_diciembre_del_anio_anterior
+E       assert [736] == [61, 736]
+E       AttributeError: 'ResultadoDepuracion' object has no attribute 'posible_misma_persona'
+E           AssertionError: duplicados_recurso
+E       TypeError: depurar_empleados() got an unexpected keyword argument 'baja_desde'
 ```
+(Pasaban ya R1 ×7, `r2` y dos `r3` que el código viejo también cumplía.)
 
-Tras escribir `vigencia.py`: `15 passed in 0.08s`.
-
-**T2 · R1 (en el stash).** Comando:
-`.venv/Scripts/python -m pytest tests/test_f026_sync_recurso.py -q -p no:cacheprovider`
-con el `config.yaml` de `dev`:
-
+**T4** `python -m pytest tests/test_f026_vigencia.py -q -p no:cacheprovider` → `14 failed, 15 passed`:
 ```
-E       assert ' FROM dbo.res AS res JOIN dbo.con AS rcon ON rcon.ide = res.ide ' in "SELECT emp.ide AS ide, con.cod AS cod, con.res AS nombre, emp.dni AS dni, con.emp AS empresa, tip.res AS categoria
-E       assert 'LEFT JOIN dbo.emp AS emp ON emp.ide = res.conide AND res.conide > 0' in "SELECT emp.ide AS ide, con.cod AS cod, ...
-E       AssertionError: assert [('emp.ide', ...egoria'), ...] == [('res.ide', ...mpresa'), ...]
-E           AssertionError: recurso_ide
-E       AssertionError: assert False
-E       assert False
-E       KeyError: 'excluir_baja_anterior_a_ventana'
-7 failed in 1.01s
+E       AssertionError: assert [] == ['ALTER TABLE...baja INTEGER']
+E               TypeError: 'fecha_baja' is an invalid keyword argument for TrabajadorORM
+E       AttributeError: 'Trabajador' object has no attribute 'fecha_baja'
 ```
+**T5** `... tests/test_f026_sync_recurso.py -k "r12 or r5"` → `6 failed`:
+`TypeError: FetchEmpleadosStep.__init__() got an unexpected keyword argument 'hoy'`.
 
-Con la SQL nueva: `7 passed in 0.95s`. Suite de la API con T2 aplicada:
-`4 failed, 386 passed` — `test_f023_r4_…` y `test_f023_r5_config_…`
-(declarados, se adaptan en T2/T3), `test_f023_r18_con_el_config_real_…`
-(declarado, verde cuando lleguen T3 y T5) y **`test_f023_r5_empleados_sin_
-filtro_de_emphis` (no declarado: A1, el que dispara el bloqueo)**.
+**T6** `... tests/test_f026_vigencia.py -k r15` → fallos como:
+```
+E         Differing items:
+E         {4: True} != {4: False}
+E         Left contains 2 more items:
+E         {3: True, 6: False}
+E       assert [1, 2, 3, 7] == [1, 2, 7]
+E       AssertionError: assert 5 == 3
+```
+**T7** `... -k "r17 or r6_preview or r5_preview"` → `8 failed`:
+`TypeError: PreviewSync.__init__() got an unexpected keyword argument 'hoy'`.
 
-## Verificaciones MANUAL pendientes
+**T8** `... tests/test_f026_registro_recurso.py` → `10 failed`:
+```
+E   KeyError: 'recurso_ide'
+E       assert [1, 2, 3, 4, 5, 6] == [1, 2, 6]
+E       KeyError: 'no_vigentes'
+```
+**T9** (transfer) `... tests/test_f026_recurso_dado.py` → `6 failed, 4 passed`:
+```
+E        +  where True = hasattr(SigridWriteClient, 'recursos_de_empleados')
+E         - la línea no trae el recurso del trabajador
+E         + sin recurso en Sigrid para el empleado
+E       AssertionError: el transfer no debe resolver el recurso
+E       AssertionError: assert 'empleado_ide' not in {'registro_id': FieldInfo(...
+```
+(Los 4 que pasaban: el recurso dado ya se respetaba antes; R21 y R22.)
 
-Las de la spec (T14 vaciado + sync real en local, T15 preflight de solo
-lectura, T16 copia a `azure-apps`, despliegue de design §8) siguen intactas y
-se escribirán con su comando exacto al terminar la feature. Nada de esta
-sesión ha llamado a Sigrid, a `sigrid-api` ni a ninguna base, ni ha lanzado
-`registro/ejecutar`.
+**T11** (raíz) `python -m pytest tests/test_f026_vaciado.py -q -p no:cacheprovider`
+→ `19 failed in 0.80s`: el `.ps1` no existía (el último, `assert
+'vaciar_datos_prueba_dedicacion.ps1' in '<!-- infra/README_dedicacion.md -->…'`).
 
-## Evidencias
+**T13** test que mata el superviviente real, con la mutación aplicada a mano:
+`E       AssertionError: assert 0 == 1` (`incluidos_con_baja`); sin ella, `1 passed`.
+
+## 6. Verificaciones MANUAL pendientes (no ejecutadas por nadie)
+
+1. **T14 (R24), local, con autorización del humano para el vaciado.**
+   `cd infra; .\vaciar_datos_prueba_dedicacion.ps1 -Local` (esperado: solo el
+   plan) y `.\vaciar_datos_prueba_dedicacion.ps1 -Local -Confirmar` (pide la
+   contraseña de `$env:PGUSER` o `postgres`; esperado: recuento antes, la
+   sentencia, recuento 0/0/0/0). API de la rama:
+   `cd services\dedicacion-api; .venv\Scripts\python main.py`. Luego
+   `GET http://localhost:8090/api/v1/sync/preview` (esperado:
+   `empleados.ventana_baja` = 1 del mes anterior o del ABIERTO más antiguo;
+   `posible_misma_persona` con `MO/0061` y `MO/0736`) y
+   `POST http://localhost:8090/api/v1/sync`. En la base:
+   `SELECT ide, cod, empresa, activo, fecha_baja FROM trabajador WHERE cod IN ('MO/0772','MO/0759','MO/0760','MO/0762','MO/0774','MO/0775','MO/0776','MO/0777','MO/0779','MO/0496') AND empresa = 1`
+   (esperado: diez activos, `ide` = su `res.ide`) y
+   `SELECT COUNT(*) FROM trabajador WHERE fecha_baja < <ventana_baja>` (0).
+   Abrir el mes en curso y el siguiente: un recurso con `fecha_baja` en el
+   mes en curso sale en el primero y no en el segundo.
+2. **T15 (R25), preflight de SOLO LECTURA.** Transfer local en modo pruebas
+   (`OBRA_PRUEBAS_FORZAR=true` en su `.env`;
+   `cd services\dedicacion-transfer; .venv\Scripts\python main.py`), API de la
+   rama apuntando a él; dar a Eusebio (`1-MO/0772`) una línea en un periodo de
+   prueba local y
+   `curl -X POST http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight -H "Content-Type: application/json" -d "{}"`.
+   Esperado: su acción `escribir` con `recurso_ide` = su `res.ide`; ninguna
+   omitida por «la línea no trae el recurso del trabajador»; `no_vigentes: []`.
+   **NO lanzar `registro/ejecutar`.**
+3. **T16**: copiar a `azure-apps/dedicacion.md` las piezas de T12 de
+   `docs/INTEGRACION.md` (cabecera, avisos, vaciado en §2, contrato de la
+   línea en §9, dos filas en cada tabla de §7) — lo hace el líder.
+4. **Despliegue (D7)**: `infra/README_dedicacion.md` §3 bis, con F-034:
+   republicar transfer y api juntos → vaciado (plan y `-Confirmar`, con
+   autorización expresa) → `sync/preview` → `sync`. El transfer desplegado
+   escribe de verdad: nada de `registro/ejecutar` hasta terminar.
+
+## 7. Fuera de alcance y observaciones para el líder
+
+- **Fila tras guardar.** `ObtenerFilaTrabajador` (respuesta de guardar y
+  deshacer) usa `trabajadores.obtener`, que no conoce el mes: un trabajador
+  NO vigente con líneas, si se edita, vuelve con el `activo` del ORM hasta
+  recargar el cuadrante. `use_cases.py` queda fuera de la spec salvo
+  `PreviewSync` (design §11): no se ha tocado. Candidato a feature pequeña.
+- **El front no enseña `no_vigentes`** (el front no se toca): esas líneas no
+  se registran ni se trazan y el usuario no ve el motivo en pantalla.
+- **Arnés**: la campaña de mutación con `workers > 1` dio dos falsos
+  supervivientes (ver `progress/mutacion_F-026.md`, «Notas»). Si se confirma,
+  es una mejora para `arnes-base`.
+- `init.sh` lista **F-034 como `blocked`** en `features.json` aunque está en
+  `dev` (T0): no lo toco (lo pidió el líder).
+- `-Local` del vaciado asume `$env:PGUSER` o `postgres` en localhost.
+
+## 8. Evidencias
 
 | Evidencia | Valor |
 |---|---|
-| Tests ejecutados | `init.sh`: raíz `355 passed, 1 skipped in 46.35s`; servicio api `383 passed, 1 warning in 23.94s`; front y transfer en verde (caché) |
-| Cobertura de líneas cambiadas | `PUERTA COBERTURA: 100.0% de 12 líneas cambiadas cubiertas (12/12, umbral 80%, nivel critico)` (`vigencia.py`) |
-| Mutación | **No lanzada**: es T13 y la feature está bloqueada en T2 |
-| Tiempo de la suite | 46.35 s (raíz) y 23.94 s (api) |
-
-`bash harness/init.sh` tras escribir este informe (con T2 en el stash):
-**ENTORNO LISTO**; `PUERTA TAMAÑO: ... impl 166/220`.
+| Tests ejecutados | raíz `374 passed, 1 skipped`; api `440 passed`; transfer `329 passed`; front en verde. Nuevos de F-026: api 84 (`sync_recurso` 39 + `vigencia` 35 + `registro_recurso` 10), transfer 10, raíz 19 |
+| Cobertura de líneas cambiadas | `PUERTA COBERTURA: 100.0% de 92 líneas cambiadas cubiertas (92/92, umbral 80%, nivel critico)` |
+| Mutación (`critico`, en serie, campaña completa, HEAD `5bea52e`) | **56 generados, 50 muertos, 6 supervivientes**, 0 timeouts; los 6 son datos de ejemplo de `prueba_escritura_porcentajes.py`, equivalentes justificados uno a uno en `progress/mutacion_F-026.md`. Campaña previa (paralela): 9 supervivientes → 1 real (test nuevo), 2 falsos, 6 los mismos |
+| Tiempo de la suite | raíz 48.88 s; api 21.64 s; transfer ~2-4 s; mutación 506.4 s |
