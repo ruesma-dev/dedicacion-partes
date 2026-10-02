@@ -1,8 +1,25 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-034 y F-026 se cerraron y se
+**F-035 en curso** (script de vaciado contra Azure, rigor estándar, sin spec),
+rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
 **desplegaron el 2026-10-02** (resúmenes en `history.md`). El arnés es la **1.7.3**.
+
+## F-035 · El vaciado contra Azure sin pasar la contraseña por `cmd.exe`
+
+- **Plan aprobado por el humano el 2026-10-02** (PARADA 1). Criterios en
+  `harness/features.json`. Resumen: el vaciado usa `psql` también en Azure
+  (FQDN por `az … show`, `PGPASSWORD` + `PGSSLMODE=require` solo durante la
+  llamada); conmutador nuevo `-SoloRecuento` (cuenta y sale, sin escribir);
+  `crear_base` y `add_secrets` rechazan contraseñas con `" & | < > ^ %`
+  antes de llamar a `az`; resultado de la revisión de `infra/` en
+  `infra/README_dedicacion.md`.
+- **Fuera:** volver a vaciar producción, cambiar la contraseña de
+  `dedicacion_app`, firewall o cualquier cosa del servidor, `azure-apps`.
+- **Test anterior que cambia (declarado):** `test_f026_r10_solo_en_la_base_dedicacion`.
+- **Estado:** implementer lanzado. Informe: `progress/impl_F-035.md`.
+- **MANUAL (humano, al final, NO escribe nada):** comandos exactos en
+  `progress/impl_F-035.md` cuando el implementer termine.
 
 ## Producción, hoy
 
