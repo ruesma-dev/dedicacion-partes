@@ -349,3 +349,55 @@ def test_f035_formato_de_los_ps1_tocados(script: Path) -> None:
     assert crudo.count(b"\n") == crudo.count(b"\r\n") > 0
     crudo[3:].decode("ascii")
     assert _texto(script).splitlines()[0] == f"# infra/{script.name}"
+
+
+# --- R5 · La revision de infra/, escrita en su README ----------------------
+
+README = INFRA / "README_dedicacion.md"
+
+
+def _seccion(titulo: str) -> str:
+    """Desde el encabezado que contiene `titulo` hasta el siguiente `---`."""
+    texto = README.read_text(encoding="utf-8")
+    hallado = re.search(r"^#{2,4} [^\n]*" + re.escape(titulo) + r"[^\n]*\n(.*?)^---$",
+                        texto, re.MULTILINE | re.DOTALL)
+    assert hallado, titulo
+    return hallado.group(0)
+
+
+def test_f035_r5_el_3_bis_pide_psql_y_acceso_desde_tu_ip_en_azure() -> None:
+    seccion = _seccion("3 bis")
+    assert "-SoloRecuento" in seccion
+    assert re.search(r"psql[^\n]*(tambi[eé]n en Azure|en Azure tambi[eé]n)"
+                     r"|(tambi[eé]n en Azure|en Azure tambi[eé]n)[^\n]*psql",
+                     seccion), seccion
+    assert re.search(r"\bIP\b", seccion)
+    assert r"C:\Program Files\PostgreSQL\16\bin" in seccion
+
+
+def test_f035_r5_nota_de_cmd_exe_con_la_revision_de_infra() -> None:
+    seccion = _seccion("cmd.exe")
+    filas = [ln for ln in seccion.splitlines() if ln.startswith("| `")]
+    esperado = {
+        "vaciar_datos_prueba_dedicacion.ps1": r"psql",
+        "crear_base_dedicacion.ps1": r"rechaza",
+        "add_secrets_dedicacion.ps1": r"rechaza",
+        "setup_front_easyauth.ps1": r"generad[oa] por Azure",
+        "create_": r"Key Vault",
+        "redeploy_dedicacion.ps1": r"Key Vault",
+        "fase1_infra_dedicacion.ps1": r"Key Vault",
+    }
+    for fichero, patron in esperado.items():
+        fila = [ln for ln in filas if fichero in ln]
+        assert fila, fichero
+        assert re.search(patron, fila[0]), (fichero, fila[0])
+    for caracter in CARACTERES_CMD:
+        assert caracter in seccion, caracter
+
+
+def test_f035_r5_la_tabla_de_ficheros_cita_solo_recuento() -> None:
+    # Solo la tabla de ficheros de la §7, no la de la revision de la §6 bis.
+    texto = README.read_text(encoding="utf-8").split("\n## 7 ", 1)[1]
+    fila = [ln for ln in texto.splitlines()
+            if ln.startswith("| `vaciar_datos_prueba_dedicacion.ps1`")]
+    assert len(fila) == 1 and "-SoloRecuento" in fila[0], fila
