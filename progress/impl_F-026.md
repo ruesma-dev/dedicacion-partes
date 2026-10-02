@@ -1,8 +1,9 @@
 <!-- progress/impl_F-026.md -->
 # F-026 · Informe del implementer (rigor `critico`)
 
-**Estado: T0-T13 hechas, `bash harness/init.sh` en verde. Pendiente: MANUAL
-T14-T16 y review.** Bloqueo previo (2026-10-02, en T2: la lista cerrada de
+**Estado: T0-T13 hechas y ciclo 2 de la review 1 hecho (§5 bis), `bash
+harness/init.sh` en verde. Pendiente: aceptación del humano del superviviente
+equivalente (§8), MANUAL T14-T16 y review 2.** Bloqueo previo (2026-10-02, en T2: la lista cerrada de
 design §7 se quedaba corta) resuelto por el humano: aprobó A1-A8, B1, C1-C3 y
 el cambio de método (tabla de §3). Rama `feature/F-026-recursos-sin-ficha-empleado`.
 
@@ -23,6 +24,7 @@ el cambio de método (tabla de §3). Rama `feature/F-026-recursos-sin-ficha-empl
 | T11 | `255a1c7` | `infra/vaciar_datos_prueba_dedicacion.ps1` (BOM, CRLF, ASCII; **no ejecutado**) y §3 bis + fila §7 de `infra/README_dedicacion.md` |
 | T12 | `be5efd0` | `ARCHITECTURE.md` punto 13 `#regla-recurso` y ajustes; `INTEGRACION.md` (cabecera, avisos, contrato, vaciado, qué se rompe); `ANCLAS` |
 | T13 | `5bea52e` | test que mata el superviviente real; campaña en `progress/mutacion_F-026.md` |
+| Rev. 1 | `df7e94c`, `cdfbe94` | `test_f026_r20_lineas_de_ejemplo_sin_editar_no_escriben` (transfer, solo test); campaña relanzada |
 
 `dedicacion-front`, `.env`, `esquema.py`, `domain/empresas.py`: sin tocar. Sin
 DDL a mano (la columna la deriva `esquema.py`, test R8). Ninguna llamada a
@@ -84,10 +86,10 @@ Lista aprobada (design §7 + A1-A8, B1, C1-C3) y los nuevos por el método del
 
 ## 4. Verificación (resultado real)
 
-- `bash harness/init.sh` (HEAD `5bea52e` + este informe y el de mutación):
-  **ENTORNO LISTO**. Raíz `374 passed, 1 skipped in 48.88s`; api `440 passed,
-  1 warning in 21.64s`; transfer `329 passed` y front en verde (caché);
-  `PUERTA COBERTURA` y `PUERTA TAMAÑO` en verde (§8).
+- `bash harness/init.sh` (HEAD `cdfbe94`, ciclo 2): **ENTORNO LISTO**. Raíz
+  `374 passed, 1 skipped in 44.68s`; transfer `330 passed, 1 warning in
+  4.82s`; api y front en verde (caché; api `440 passed` en el ciclo 1, sin
+  cambios desde entonces); `PUERTA COBERTURA` y `PUERTA TAMAÑO` en verde (§8).
 - Criterio de cada tarea: T2-T12 con sus `test_f026_*` en verde; F-023,
   F-032, F-022, F-024, F-034, `test_f003_esquema` y `test_f008_*` en verde.
   `grep -rn empleado_ide services/dedicacion-transfer` (T10): solo en
@@ -154,32 +156,38 @@ E       AssertionError: assert 'empleado_ide' not in {'registro_id': FieldInfo(.
 **T13** test que mata el superviviente real, con la mutación aplicada a mano:
 `E       AssertionError: assert 0 == 1` (`incluidos_con_baja`); sin ella, `1 passed`.
 
+## 5 bis. Ciclo 2 (review 1): RED con los mutantes aplicados a mano
+
+La review probó que 5 de los 6 «equivalentes» no lo eran. Vía (a): test R20
+que fija sobre `LINEAS_PRUEBA` `registro_id` (y synckey) únicos, `recurso_ide`
+0 en todas y el preflight omitiéndolas por `MOTIVO_SIN_RECURSO`. Sin mutar:
+`1 passed`. Cada mutante con `sed` sobre el script y `git checkout` después;
+comando `.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider
+tests/test_f026_recurso_dado.py -k lineas_de_ejemplo`:
+```
+nº1 (47: 900001→900002)  E       AssertionError: [900002, 900002, 900003]
+                         E       assert 2 == 3        -> 1 failed, 10 deselected
+nº6 (53: recurso_ide 0→1) E       assert [0, 0, 1] == [0, 0, 0]  -> 1 failed
+nº3 (50: 900002→900003)  E       AssertionError: [900001, 900003, 900003]
+nº2 / nº4 (47 / 50: 0→1) E       assert [1, 0, 0] == [0, 0, 0] / [0, 1, 0] == ...
+nº5 (53: 900003→900004)  1 passed, 10 deselected   (equivalente, §8)
+```
+
 ## 6. Verificaciones MANUAL pendientes (no ejecutadas por nadie)
 
+Comandos exactos y resultado esperado en `progress/current.md` («T14», «T15»).
+
 1. **T14 (R24), local, con autorización del humano para el vaciado.**
-   `cd infra; .\vaciar_datos_prueba_dedicacion.ps1 -Local` (esperado: solo el
-   plan) y `.\vaciar_datos_prueba_dedicacion.ps1 -Local -Confirmar` (pide la
-   contraseña de `$env:PGUSER` o `postgres`; esperado: recuento antes, la
-   sentencia, recuento 0/0/0/0). API de la rama:
-   `cd services\dedicacion-api; .venv\Scripts\python main.py`. Luego
-   `GET http://localhost:8090/api/v1/sync/preview` (esperado:
-   `empleados.ventana_baja` = 1 del mes anterior o del ABIERTO más antiguo;
-   `posible_misma_persona` con `MO/0061` y `MO/0736`) y
-   `POST http://localhost:8090/api/v1/sync`. En la base:
-   `SELECT ide, cod, empresa, activo, fecha_baja FROM trabajador WHERE cod IN ('MO/0772','MO/0759','MO/0760','MO/0762','MO/0774','MO/0775','MO/0776','MO/0777','MO/0779','MO/0496') AND empresa = 1`
-   (esperado: diez activos, `ide` = su `res.ide`) y
-   `SELECT COUNT(*) FROM trabajador WHERE fecha_baja < <ventana_baja>` (0).
-   Abrir el mes en curso y el siguiente: un recurso con `fecha_baja` en el
-   mes en curso sale en el primero y no en el segundo.
-2. **T15 (R25), preflight de SOLO LECTURA.** Transfer local en modo pruebas
-   (`OBRA_PRUEBAS_FORZAR=true` en su `.env`;
-   `cd services\dedicacion-transfer; .venv\Scripts\python main.py`), API de la
-   rama apuntando a él; dar a Eusebio (`1-MO/0772`) una línea en un periodo de
-   prueba local y
-   `curl -X POST http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight -H "Content-Type: application/json" -d "{}"`.
-   Esperado: su acción `escribir` con `recurso_ide` = su `res.ide`; ninguna
-   omitida por «la línea no trae el recurso del trabajador»; `no_vigentes: []`.
-   **NO lanzar `registro/ejecutar`.**
+   `.\vaciar_datos_prueba_dedicacion.ps1 -Local` (solo plan) y luego
+   `-Local -Confirmar` (recuento 0/0/0/0); API de la rama, `GET
+   /api/v1/sync/preview` (`ventana_baja`, `posible_misma_persona` con
+   `MO/0061` y `MO/0736`) y `POST /api/v1/sync`; en la base, los diez de
+   la lista activos con `ide` = su `res.ide`, ninguno con `fecha_baja <
+   ventana_baja`, y vigencia por mes en dos meses abiertos.
+2. **T15 (R25), preflight de SOLO LECTURA** con el transfer local en modo
+   pruebas (`OBRA_PRUEBAS_FORZAR=true`): Eusebio (`1-MO/0772`) sale
+   `escribir` con `recurso_ide` = su `res.ide`, nadie omitido «sin recurso»,
+   `no_vigentes: []`. **NO lanzar `registro/ejecutar`.**
 3. **T16**: copiar a `azure-apps/dedicacion.md` las piezas de T12 de
    `docs/INTEGRACION.md` (cabecera, avisos, vaciado en §2, contrato de la
    línea en §9, dos filas en cada tabla de §7) — lo hace el líder.
@@ -197,18 +205,16 @@ E       AssertionError: assert 'empleado_ide' not in {'registro_id': FieldInfo(.
   `PreviewSync` (design §11): no se ha tocado. Candidato a feature pequeña.
 - **El front no enseña `no_vigentes`** (el front no se toca): esas líneas no
   se registran ni se trazan y el usuario no ve el motivo en pantalla.
-- **Arnés**: la campaña de mutación con `workers > 1` dio dos falsos
-  supervivientes (ver `progress/mutacion_F-026.md`, «Notas»). Si se confirma,
-  es una mejora para `arnes-base`.
-- `init.sh` lista **F-034 como `blocked`** en `features.json` aunque está en
-  `dev` (T0): no lo toco (lo pidió el líder).
-- `-Local` del vaciado asume `$env:PGUSER` o `postgres` en localhost.
+- **Arnés**: la campaña con `workers > 1` dio dos falsos supervivientes
+  (`git show 1bdb08b:progress/mutacion_F-026.md`, «Notas»); la review lo
+  confirma por tercera vez. F-034 sigue `blocked` en `features.json` (no lo toco).
 
 ## 8. Evidencias
 
 | Evidencia | Valor |
 |---|---|
-| Tests ejecutados | raíz `374 passed, 1 skipped`; api `440 passed`; transfer `329 passed`; front en verde. Nuevos de F-026: api 84 (`sync_recurso` 39 + `vigencia` 35 + `registro_recurso` 10), transfer 10, raíz 19 |
+| Tests ejecutados | raíz `374 passed, 1 skipped`; api `440 passed`; transfer `330 passed`; front en verde. Nuevos de F-026: api 84 (`sync_recurso` 39 + `vigencia` 35 + `registro_recurso` 10), transfer 11, raíz 19 |
 | Cobertura de líneas cambiadas | `PUERTA COBERTURA: 100.0% de 92 líneas cambiadas cubiertas (92/92, umbral 80%, nivel critico)` |
-| Mutación (`critico`, en serie, campaña completa, HEAD `5bea52e`) | **56 generados, 50 muertos, 6 supervivientes**, 0 timeouts; los 6 son datos de ejemplo de `prueba_escritura_porcentajes.py`, equivalentes justificados uno a uno en `progress/mutacion_F-026.md`. Campaña previa (paralela): 9 supervivientes → 1 real (test nuevo), 2 falsos, 6 los mismos |
-| Tiempo de la suite | raíz 48.88 s; api 21.64 s; transfer ~2-4 s; mutación 506.4 s |
+| Mutación (`critico`, en serie, `--workers 1`, campaña completa, HEAD `df7e94c`) | **56 generados, 55 muertos, 1 superviviente**, 0 timeouts, 0 sin veredicto; base api 14,5 s, transfer 4,5 s; media 10,3 s/mutante. Ciclo 1 (HEAD `5bea52e`): 50/56; los 5 no equivalentes que señaló la review, muertos por el test R20 (§5 bis) |
+| Superviviente (nº 5 del ciclo 1) | `prueba_escritura_porcentajes.py:53` `900003→900004`: reproducido a mano, transfer `330 passed`. Equivalente: solo cambia un identificador arbitrario; unicidad, centinela y omisión siguen fijados por el test R20. Análisis en `progress/mutacion_F-026.md`. **Pide aceptación escrita del humano antes del `done`** |
+| Tiempo de la suite | raíz 44.68 s; api 21.64 s (ciclo 1); transfer 4.82 s; mutación 576.9 s |
