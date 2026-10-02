@@ -147,10 +147,10 @@ Tras el código: `43 passed`. **T9** (`-k 3_bis`): `AssertionError: assert None`
 ## Resultado real de `bash harness/init.sh` (final del ciclo 3, con este informe)
 
 ```
-418 passed, 1 skipped in 69.23s (0:01:09)
+418 passed, 1 skipped in 67.41s (0:01:07)
 [OK] pytest en verde (con medición de cobertura)
 [OK] PUERTA COBERTURA: N/A (F-035 no cambia líneas Python de producción frente a dev)
-[OK] PUERTA TAMAÑO: F-035 dentro de los topes (impl 202/220, review 124/140)
+[OK] PUERTA TAMAÑO: F-035 dentro de los topes (impl 209/220, review 124/140)
 ENTORNO LISTO. Puedes trabajar.
 ```
 
@@ -206,4 +206,4 @@ entry`.
 | Cobertura de líneas cambiadas | **N/A**: `PUERTA COBERTURA: N/A (F-035 no cambia líneas Python de producción frente a dev)`. Lo cambiado es PowerShell y Markdown |
 | Mutantes (`python -m harness.mutacion --feature F-035`) | **N/A**: «ALCANCE VACÍO en F-035… No se escribe informe». La herramienta solo muta Python |
 | Mutación manual de los `.ps1` (sustituto) | **31 mutantes, 0 supervivientes** (sobre copia, sin `-x`, en `4e34f3b`). Primera pasada: M8 (hueco real) y M10 (casi equivalente) sobrevivían; tests ajustados en `30c28c7`, y reproducido contra los tests y `.ps1` de `b8189d3`. Tabla, texto exacto, fallos por mutante y script: [`progress/mutacion_manual_F-035.md`](mutacion_manual_F-035.md) |
-| Tiempo de la suite | 69.23 s en la pasada final de `init.sh` (entre 69 y 172 s en las de ciclos anteriores: varía con la carga de la máquina) |
+| Tiempo de la suite | 67.41 s en la pasada final de `init.sh` (entre 69 y 172 s en las de ciclos anteriores: varía con la carga de la máquina) |
