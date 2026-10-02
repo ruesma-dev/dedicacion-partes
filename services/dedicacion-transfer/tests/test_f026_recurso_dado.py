@@ -119,6 +119,32 @@ def test_f026_r20_el_contrato_ya_no_tiene_empleado_ide():
     assert "empleado_ide" not in viejo.model_dump()
 
 
+def test_f026_r20_lineas_de_ejemplo_sin_editar_no_escriben():
+    """Propiedad de seguridad del script manual que escribe en Sigrid
+    (`prueba_escritura_porcentajes.py`): sus líneas de ejemplo, tal cual
+    vienen y sin editar, no pueden escribir nada.
+
+    - Cada una lleva un `registro_id` distinto y, con él, una synckey
+      distinta: dos líneas con la misma synckey se pisarían en la
+      idempotencia (`porcentajes:{id}`) y en la fase `verificar`, que
+      relee por synckey.
+    - Todas llevan el centinela `recurso_ide = 0`, que el transfer omite
+      «sin recurso» (R20): quien lance el script sin poner recursos reales
+      no escribe en un recurso cualquiera."""
+    import prueba_escritura_porcentajes as script
+    from infrastructure.sigrid.sigrid_write_client import synckey_de
+
+    ids = [d["registro_id"] for d in script.LINEAS_PRUEBA]
+    claves = [synckey_de(i) for i in ids]
+    assert len(set(ids)) == len(ids), ids
+    assert len(set(claves)) == len(claves), claves
+    assert [d["recurso_ide"] for d in script.LINEAS_PRUEBA] == [0] * len(ids)
+
+    pf = _preflight(ClienteSinElegir(), script._lineas(2026, 7))
+    assert [(a.registro_id, a.accion, a.motivo) for a in pf.acciones] == [
+        (i, "omitir", reglas.MOTIVO_SIN_RECURSO) for i in ids]
+
+
 # ------------------------------- R21 ------------------------------- #
 
 def test_f026_r21_recurso_de_otra_empresa_en_linea_de_la_1_se_escribe():
