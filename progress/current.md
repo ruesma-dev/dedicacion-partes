@@ -1,10 +1,10 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-026 en curso** (recursos por recurso, rigor crítico): **review APROBADA**
-(pasada 3) y mergeada en `dev`; quedan la aceptación del superviviente nº 5
-y las MANUAL. **F-034 `blocked`** solo por su T9, que se hace junto con las de
-F-026. Las dos se **despliegan juntas**. El arnés es la **1.7.3**.
+**F-026 en curso** (recursos por recurso, rigor crítico): review APROBADA,
+MANUAL cumplidas; **solo falta la aceptación escrita del superviviente nº 5**.
+**F-034 cerrada** el 2026-10-02 (resumen en `history.md`). Las dos están en
+`dev` y se **despliegan juntas**. El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
@@ -40,7 +40,11 @@ F-026. Las dos se **despliegan juntas**. El arnés es la **1.7.3**.
   - **Superviviente nº 5 (humano):** aceptar por escrito el equivalente
     `prueba_escritura_porcentajes.py:53` `900003→900004`
     (`progress/mutacion_F-026.md`). Resultado: _pendiente_.
-  - **T14 (R24), local: vaciado con autorización del humano + sync.**
+  - **T14 (R24) — CUMPLIDA.** **Resultado real (2026-10-02, humano, `scripts/verif_f034_f026.ps1`, transfer
+  local en modo pruebas, api y front de `dev` con F-034 y F-026, tras el vaciado
+  local): CUMPLIDA.** Vaciado local: 35/60/12/606 → 0/0/0/0.
+    Los 10 recursos del diagnóstico activos en la 1; activos por empresa 183 / 8 / 1 / 4
+    (1 / 18 / 25 / 31). Texto original:
     `cd infra; .\vaciar_datos_prueba_dedicacion.ps1 -Local` (esperado: solo el
     plan) y `.\vaciar_datos_prueba_dedicacion.ps1 -Local -Confirmar` (pide la
     contraseña de `$env:PGUSER` o `postgres`; esperado: recuento antes, la
@@ -55,7 +59,9 @@ F-026. Las dos se **despliegan juntas**. El arnés es la **1.7.3**.
     `SELECT COUNT(*) FROM trabajador WHERE fecha_baja < <ventana_baja>` (0). Un
     recurso con `fecha_baja` en el mes en curso sale en ese mes y no en el
     siguiente. Resultado: _pendiente_.
-  - **T15 (R25), preflight de SOLO LECTURA** con el transfer local en modo
+  - **T15 (R25) — CUMPLIDA.** Eusebio (MO/0772) sale `escribir` con
+    `recurso_ide` 2798037 (su `res.ide`); `no_vigentes: []`. Texto original:
+    **preflight de SOLO LECTURA** con el transfer local en modo
     pruebas (`OBRA_PRUEBAS_FORZAR=true`;
     `cd services\dedicacion-transfer; .venv\Scripts\python main.py`): dar a
     Eusebio (`1-MO/0772`) una línea en un periodo local y
@@ -66,7 +72,7 @@ F-026. Las dos se **despliegan juntas**. El arnés es la **1.7.3**.
   - **T16 (líder, con autorización del humano): copia a
     `azure-apps/dedicacion.md`** de las piezas de T12 de `docs/INTEGRACION.md`
     (cabecera, avisos, vaciado en §2, contrato de la línea en §9, dos filas en
-    cada tabla de §7). Commit en `azure-apps`. Resultado: _pendiente_.
+    cada tabla de §7). Commit en `azure-apps`. **HECHA**: `67d0364` en `azure-apps`.
 - **Observaciones de las reviews, recogidas o descartadas por escrito:**
   - Frase de `infra/README_dedicacion.md` §3 bis («sus líneas llevarían un
     `emp.ide`… que el transfer omite (P1)»): **corregida** (tras el sync esas
@@ -84,22 +90,6 @@ F-026. Las dos se **despliegan juntas**. El arnés es la **1.7.3**.
   - Falsos supervivientes con `workers > 1` (tercera feature seguida) →
     añadido al encargo de `arnes-base` (`affff93`).
 
-## F-034 · Obras siempre de Construcciones Ruesma (`blocked` solo por T9)
-
-- En `dev` (`d6656ad`). Review APROBADA; T8 (copia a `azure-apps`, `b4d5340`)
-  hecha; M4 aceptado por el humano el 2026-10-02.
-- **T9 (humano), se hace junto con T14/T15 de F-026.** Transfer local con
-  `OBRA_PRUEBAS_FORZAR=true`; api y front de la rama (`python main.py` en
-  cada servicio). En `http://localhost:8080/?empresa=18` las obras ofrecidas
-  son las de Construcciones Ruesma; dar a un trabajador de la 18 una línea en
-  una de ellas y, desde Git Bash,
-  `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight?empresa=18" -H "Content-Type: application/json" -d "{}"`.
-  **Esperado:** `ok: true`, `obra_origen.empresa` = 1 y la acción de esa línea
-  `escribir`, no `omitir` por empresa. **No lanzar `registro/ejecutar`.**
-  Resultado: _pendiente_.
-- **Tras desplegar (humano, no bloquea el `done`):** cuadrante de producción
-  con `?empresa=18`: obras de Construcciones Ruesma, **sin pulsar Registrar**.
-
 ## Despliegue conjunto F-034 + F-026 (cuando las dos cierren)
 
 `infra/README_dedicacion.md` §3 bis: republicar transfer y api juntos →
@@ -111,14 +101,14 @@ el humano (el permiso del entorno no deja desplegar al líder).
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Tras F-034 y F-026: **F-025** (spec
+`BACKLOG.md` tiene el orden completo. Tras cerrar F-026 y desplegar F-034 + F-026: **F-025** (spec
 aprobada con D4 cambiada: solo la POSTV2 de Construcciones Ruesma; el
 spec-author la reescribe en su sitio antes de implementar), F-027, F-020,
 F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
-1. Aceptar el superviviente nº 5 de F-026, y las MANUAL T9, T14 y T15.
+1. Aceptar por escrito el superviviente nº 5 de F-026 (último paso para su `done`).
 2. **Correcciones de la review del despliegue del 2026-10-01**
    (`progress/review_despliegue_20261001.md`: digests de `imagenes.json`,
    textos de scripts que aún dicen «modo pruebas», F-017/F-018) y si **F-017**
