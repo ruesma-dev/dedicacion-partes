@@ -16,10 +16,31 @@ rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
   `infra/README_dedicacion.md`.
 - **Fuera:** volver a vaciar producción, cambiar la contraseña de
   `dedicacion_app`, firewall o cualquier cosa del servidor, `azure-apps`.
-- **Test anterior que cambia (declarado):** `test_f026_r10_solo_en_la_base_dedicacion`.
-- **Estado:** implementer lanzado. Informe: `progress/impl_F-035.md`.
-- **MANUAL (humano, al final, NO escribe nada):** comandos exactos en
-  `progress/impl_F-035.md` cuando el implementer termine.
+- **Tests anteriores que cambian (declarados, tabla en `impl_F-035.md`):**
+  tres de `tests/test_f026_vaciado.py`: `…solo_en_la_base_dedicacion` (Azure
+  pasa a psql) y, por el conmutador nuevo `-SoloRecuento` aprobado en el plan,
+  `…parametros_confirmar_y_local` y `…sin_confirmar_sale_antes_de_conectar`.
+  El plan solo nombraba el primero; los otros dos son consecuencia directa de
+  `-SoloRecuento` (método aprobado por el humano: declarados y verificados
+  fila a fila por el reviewer).
+- **Estado:** implementación terminada (`progress/impl_F-035.md`, 402 passed);
+  **review lanzada** → `progress/review_F-035.md`.
+- **Observación del implementer, no aplicada (fuera del plan):** en
+  `crear_base_dedicacion.ps1` los pasos 1-2 corren antes de pedir las
+  contraseñas, así que una contraseña rechazada llega tras ellos. Se le
+  propondrá al humano al cerrar.
+- **MANUAL (humano, NO escribe nada):** desde una consola nueva con `az login`:
+  ```powershell
+  cd C:\Users\pgris\PycharmProjects\porcentajes\infra
+  $env:Path = "C:\Program Files\PostgreSQL\16\bin;$env:Path"
+  . .\00_vars_dedicacion.ps1 ; . .\00_vars_dedicacion.local.ps1
+  .\vaciar_datos_prueba_dedicacion.ps1 -Local -SoloRecuento
+  .\vaciar_datos_prueba_dedicacion.ps1 -SoloRecuento
+  Test-Path Env:PGPASSWORD ; Test-Path Env:PGSSLMODE
+  ```
+  Esperado: las dos cuentan filas sin «password authentication failed» y
+  terminan en «SOLO RECUENTO: hecho, no se ha escrito nada»; el último
+  comando da `False False`. Resultado: _pendiente_.
 
 ## Producción, hoy
 
