@@ -503,3 +503,13 @@ def test_f026_r5_preview_falla_sin_columna_obligatoria(columna: str) -> None:
     with pytest.raises(ValueError, match=f"sync.empleados.sql.*'{columna}'"):
         _preview(filas, uow_factory=lambda: uow).ejecutar()
     assert uow.commits == 0 and uow.trabajadores.recibido is None
+
+
+def test_f026_r17_cualquier_fecha_de_baja_positiva_cuenta_como_con_baja() -> None:
+    """Superviviente de la mutación (`> 0` → `> 1`): «con baja» es cualquier
+    `fecha_baja` informada, como en el descarte (`0 < fecha_baja`), también
+    el valor mínimo 1; 0 y NULL no cuentan."""
+    res = _depurar([_fila(1, fecha_baja=1), _fila(2, fecha_baja=0),
+                    _fila(3, fecha_baja=None)])
+    assert _ides(res.filas) == [1, 2, 3]
+    assert res.incluidos_con_baja == 1
