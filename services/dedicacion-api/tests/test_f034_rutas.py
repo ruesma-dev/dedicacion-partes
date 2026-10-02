@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import pytest
+from config.settings import Settings
 
 from tests.test_f024_cuadrante_empresa import P_ANT, _ln
 from tests.test_f024_rutas_empresa import BASE, api  # noqa: F401 (fixture)
@@ -92,3 +93,18 @@ def test_f034_r5_deshacer_y_copiar_marcan_contra_la_empresa_de_las_obras(
     r = cliente.post(f"{BASE}/trabajadores/11/copiar-anterior", params=params)
     assert r.status_code == 200, r.text
     assert _marcas(r.json()["trabajador"]) == [(900, 28, True)]
+
+
+# ================================== R10 ================================= #
+def test_f034_r10_la_empresa_de_las_obras_sale_del_ajuste_en_las_rutas(
+        api):  # noqa: F811
+    """Con `EMPRESA_IMPUTACION` = 28, las obras ofrecidas y la marca de cada
+    línea se miden contra la 28, no contra un 1 fijo: Ana (1) tiene marcada
+    su línea en la 100 (de la 1) y no la de la 900 (de la 28). Cubre el
+    superviviente manual M12 de `progress/impl_F-034.md`."""
+    cliente, contenedor = api
+    contenedor.settings = Settings(_env_file=None, empresa_imputacion=28)
+    cuerpo = cliente.get(f"{BASE}/cuadrante", params={"empresa": 1}).json()
+    assert [o["ide"] for o in cuerpo["obras"]] == [900]
+    ana = next(t for t in cuerpo["trabajadores"] if t["nombre"] == "Ana")
+    assert _marcas(ana) == [(100, 1, True), (900, 28, False)]
