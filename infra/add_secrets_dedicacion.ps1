@@ -42,11 +42,12 @@ $ErrorActionPreference = "Stop"
 if (-not $KV) { throw "Falta `$KV. Haz primero:  . .\00_vars_dedicacion.ps1" }
 
 # F-035: en Windows `az` es un .cmd y su linea de comandos la interpreta
-# cmd.exe, que se come o reinterpreta estos caracteres: el secreto llegaria
+# cmd.exe, que se come o reinterpreta " & | < > ^ % ) (el ) cierra el
+# bloque IF ( ... ) en el que az.cmd expande sus argumentos): el secreto llegaria
 # corrompido al Key Vault sin que nada avise. Se rechaza ANTES de llamar a az.
 function Rechazar-CaracteresDeCmd($clave, $que) {
-    if ($clave -match '["&|<>^%]') {
-        throw ("ABORTADO: $que contiene alguno de estos caracteres: " + '" & | < > ^ %' + ". En Windows az es un .cmd y su linea de comandos pasa por cmd.exe, que los interpreta y corromperia el valor sin avisar (F-035). Si es una contrasena que eliges tu, usa una sin ellos.")
+    if ($clave -match '["&|<>^%)]') {
+        throw ("ABORTADO: $que contiene alguno de estos caracteres: " + '" & | < > ^ % )' + ". En Windows az es un .cmd y su linea de comandos pasa por cmd.exe, que los interpreta y corromperia el valor sin avisar; el ) ademas cierra el bloque IF ( ... ) dentro del que az.cmd expande sus argumentos, y corta el valor o rompe la linea (F-035). Si es una contrasena que eliges tu, usa una sin ellos.")
     }
 }
 

@@ -34,8 +34,10 @@ VACIAR = INFRA / "vaciar_datos_prueba_dedicacion.ps1"
 CREAR_BASE = INFRA / "crear_base_dedicacion.ps1"
 ADD_SECRETS = INFRA / "add_secrets_dedicacion.ps1"
 
-#: Lo que `cmd.exe` interpreta dentro de la linea de un `.cmd`.
-CARACTERES_CMD = ('"', "&", "|", "<", ">", "^", "%")
+#: Lo que `cmd.exe` interpreta dentro de la linea de un `.cmd`. El `)` se
+#: anadio en el ciclo 2 (aprobado por el humano): `az.cmd` expande `%*` dentro
+#: de un bloque `IF ( ... )`, y un `)` en el argumento cierra ese bloque.
+CARACTERES_CMD = ('"', "&", "|", "<", ">", "^", "%", ")")
 
 
 def _texto(script: Path) -> str:
@@ -303,7 +305,8 @@ def test_f035_r4_el_mensaje_dice_que_caracteres_y_por_que(script: Path) -> None:
     inicio = _primera(r"^function " + CONTROL + r"\b", codigo)
     cuerpo = "\n".join(_bloque(codigo, inicio))
     assert "cmd.exe" in cuerpo
-    assert '" & | < > ^ %' in cuerpo.replace('`"', '"')
+    assert '" & | < > ^ % )' in cuerpo.replace('`"', '"')
+    assert "IF" in cuerpo  # el motivo del `)`
     # Y no imprime el valor rechazado.
     assert "$clave" not in cuerpo.split("throw", 1)[1]
 

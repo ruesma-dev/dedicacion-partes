@@ -45,12 +45,13 @@ if (-not $PG) { throw "Falta `$PG. Haz primero:  . .\00_vars_dedicacion.ps1" }
 function Section($t) { Write-Host "`n=== $t ===" -ForegroundColor Green }
 
 # F-035: en Windows `az` es un .cmd y su linea de comandos la interpreta
-# cmd.exe, que se come o reinterpreta estos caracteres: la contrasena le
+# cmd.exe, que se come o reinterpreta " & | < > ^ % ) (el ) cierra el
+# bloque IF ( ... ) en el que az.cmd expande sus argumentos): la contrasena le
 # llegaria corrompida a PostgreSQL sin que nada avise. Se rechaza ANTES de
 # la primera llamada a az que la lleva.
 function Rechazar-CaracteresDeCmd($clave, $que) {
-    if ($clave -match '["&|<>^%]') {
-        throw ("ABORTADO: $que contiene alguno de estos caracteres: " + '" & | < > ^ %' + ". En Windows az es un .cmd y su linea de comandos pasa por cmd.exe, que los interpreta y corromperia el valor sin avisar (F-035). Usa una contrasena sin ellos.")
+    if ($clave -match '["&|<>^%)]') {
+        throw ("ABORTADO: $que contiene alguno de estos caracteres: " + '" & | < > ^ % )' + ". En Windows az es un .cmd y su linea de comandos pasa por cmd.exe, que los interpreta y corromperia el valor sin avisar; el ) ademas cierra el bloque IF ( ... ) dentro del que az.cmd expande sus argumentos, y corta el valor o rompe la linea (F-035). Usa una contrasena sin ellos.")
     }
 }
 

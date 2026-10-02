@@ -253,7 +253,10 @@ usa una persona, una vez, al ejecutar `crear_base_dedicacion.ps1`.
 ### 6 bis · Ningún secreto por la línea de comandos de `cmd.exe` (F-035)
 
 En Windows `az` es un `.cmd`: su línea de comandos la interpreta `cmd.exe`,
-que se come o reinterpreta `"` `&` `|` `<` `>` `^` `%`. Un secreto pasado como
+que se come o reinterpreta `"` `&` `|` `<` `>` `^` `%`, y también `)`: `az.cmd`
+expande sus argumentos (`%*`) dentro de un bloque `IF … ( … )`, y un `)` en el
+valor cierra ese bloque, corta el argumento o rompe la línea (añadido en el
+ciclo 2 de F-035 con la aprobación del humano). Un secreto pasado como
 argumento (`-p`, `--value`) llega **corrompido** y sin aviso: así falló el
 vaciado contra Azure del 2026-10-02 («password authentication failed» con la
 contraseña buena). Revisión de los scripts de esta carpeta:
