@@ -11,7 +11,8 @@ rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
   `harness/features.json`. Resumen: el vaciado usa `psql` también en Azure
   (FQDN por `az … show`, `PGPASSWORD` + `PGSSLMODE=require` solo durante la
   llamada); conmutador nuevo `-SoloRecuento` (cuenta y sale, sin escribir);
-  `crear_base` y `add_secrets` rechazan contraseñas con `" & | < > ^ %`
+  `crear_base` y `add_secrets` rechazan contraseñas con `" & | < > ^ %` y
+  `)` (este último aprobado por el humano tras la review 1)
   antes de llamar a `az`; resultado de la revisión de `infra/` en
   `infra/README_dedicacion.md`.
 - **Fuera:** volver a vaciar producción, cambiar la contraseña de
@@ -23,8 +24,15 @@ rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
   El plan solo nombraba el primero; los otros dos son consecuencia directa de
   `-SoloRecuento` (método aprobado por el humano: declarados y verificados
   fila a fila por el reviewer).
-- **Estado:** implementación terminada (`progress/impl_F-035.md`, 402 passed);
-  **review lanzada** → `progress/review_F-035.md`.
+- **Estado:** review 1 → **CAMBIOS PEDIDOS** (`progress/review_F-035.md`):
+  código y tests correctos; bloquea solo C4 bis, la campaña manual de 19
+  mutantes no está como tabla reproducible. **Ciclo 2 lanzado**: tabla en
+  `progress/mutacion_manual_F-035.md` (fuera del tope del impl) y `)` en la
+  clase de caracteres, con test, README y su mutante. Luego review 2.
+- **Observaciones de la review 1, recogidas:** `)` → aprobado y en el ciclo 2;
+  criterio 6 de `features.json` → ya dice «tres tests»; automejora (tabla
+  manual en fichero propio) → `arnes-base`, encargo de mutantes manuales
+  declarativos, commit `e9bc34a`.
 - **Observación del implementer, no aplicada (fuera del plan):** en
   `crear_base_dedicacion.ps1` los pasos 1-2 corren antes de pedir las
   contraseñas, así que una contraseña rechazada llega tras ellos. Se le
