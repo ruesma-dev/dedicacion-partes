@@ -26,8 +26,10 @@
 > son pruebas, no se migra; el trabajador se identifica por el recurso y los
 > datos de prueba se descartan al desplegar (vaciar tablas en producción:
 > autorización expresa del humano en ese momento). **D3 cambia**: un recurso
-> dado de baja en el mes sigue visible ese mes (criterio por periodo). Un
-> spec-author lo reescribe en su sitio en el worktree `../porcentajes-wt-f026`.
+> dado de baja en el mes sigue visible ese mes (criterio por periodo). Spec
+> enmendada en su sitio (`56cfd3e`, worktree `../porcentajes-wt-f026`):
+> **espera que el humano dé por buena la enmienda** (clave = `res.ide`, vaciado
+> con `-Confirmar` al desplegar, vigencia por mes con ventana de bajas).
 > Depende de F-034 mergeada (T0).
 > **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
 > turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.
