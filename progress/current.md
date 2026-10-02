@@ -42,8 +42,11 @@ rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
   mutación manual 31 mutantes, 0 supervivientes). Cambian además dos tests
   propios de F-035 (`…r1_fqdn_por_show_de_solo_lectura`,
   `…r3_el_error_de_azure_apunta_a_la_ip_propia`), declarados en la tabla de
-  `impl_F-035.md` con los tres de F-026. **Review 3 lanzada**; después,
-  repetir la MANUAL.
+  `impl_F-035.md` con los tres de F-026. **Review 3: APROBADO** (33/33
+  mutantes reproducidos) y mergeada en `dev`. Observación recogida: si
+  PG-PASSWORD llevara caracteres no ASCII, PS 5.1 podría decodificar mal la
+  salida de `az`; la MANUAL 2 lo comprueba con la contraseña real. **Para el
+  `done` solo falta la MANUAL 2.**
 - **Observaciones de la review 1, recogidas:** `)` → aprobado y en el ciclo 2;
   criterio 6 de `features.json` → ya dice «tres tests»; automejora (tabla
   manual en fichero propio) → `arnes-base`, encargo de mutantes manuales
