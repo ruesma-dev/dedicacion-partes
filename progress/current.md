@@ -77,7 +77,9 @@
   registra» de §9 (`git diff d34e4a1 -- docs/`). Commit en `azure-apps`.
   **Resultado: HECHA (2026-10-02)**, commit `b4d5340` en `azure-apps`, marcada
   «aún NO desplegado». (ARCHITECTURE no tiene copia en `azure-apps`.)
-- **T9 (humano, R13, D5): preflight en local, solo lectura.** Transfer local
+- **T9 (humano, R13, D5): preflight en local, solo lectura. Se hará JUNTO con
+  las verificaciones de F-026 (decisión del humano 2026-10-02); el líder le
+  guía cuando esté listo.** Transfer local
   con `OBRA_PRUEBAS_FORZAR=true` en su `.env`; api y front de esta rama
   (`python main.py` en cada servicio). En `http://localhost:8080/?empresa=18`:
   las obras ofrecidas son las de Construcciones Ruesma; dar a un trabajador
@@ -89,10 +91,10 @@
   `registro/ejecutar`.** Resultado: _pendiente_.
 - **Tras desplegar (humano, no bloquea el `done`):** cuadrante de producción
   con `?empresa=18`: obras de Construcciones Ruesma, **sin pulsar Registrar**.
-- **M4 (humano): aceptar por escrito el mutante equivalente.** En
+- **M4 — ACEPTADO. Mutante equivalente.** En
   `RegistroSigrid` `filtro.por_defecto` y `filtro.empresa_obras` salen del
   mismo ajuste (D1), así que cambiar uno por otro no lo distingue ningún test;
-  reproducido por el reviewer (RM5). Resultado: _pendiente_.
+  reproducido por el reviewer (RM5). **ACEPTADO por el humano el 2026-10-02.**
 - **Despliegue:** junto con F-026 (decisión del humano). No se despliega sola.
 - Observación de la review: una corrida de la campaña dio 3 supervivientes
   que no se reprodujeron en copia aislada. Si vuelve a pasar, encargo en
