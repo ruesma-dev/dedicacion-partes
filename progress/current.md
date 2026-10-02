@@ -13,17 +13,22 @@
 > paró antes de escribir código porque la lista cerrada de tests que cambian
 > (design §6) se quedó corta: 4 tests de F-024 (R17 registro, R10 cuadrante,
 > R6 y R6/R13 rutas) cambian como consecuencia directa de R1/R3 y no estaban
-> en la lista (`progress/impl_F-034.md`, «Motivo del bloqueo»). Propuesta al
-> humano: completar §6 con esos 4 y relanzar. **Pendiente de su respuesta.**
+> en la lista (`progress/impl_F-034.md`, «Motivo del bloqueo»). El humano acepta
+> (2026-10-02): `in_progress` de nuevo; un spec-author completa §6 y después se
+> relanza el implementer.
 > Se despliega **junto con F-026**.
 > **F-026**: decisión del humano 2026-10-01, «no debe buscar por empleado sino
 > por recurso»: el sync parte de los RECURSOS activos (sin fecha de baja) con
 > código de hora mes; la ficha de empleado es opcional (solo DNI); la api
 > manda al transfer el recurso exacto. Spec entregada (`e27f08f`, rama
-> `feature/F-026-recursos-sin-ficha-empleado`) y en `spec_ready`: **espera la
-> aprobación del humano**, con D1-D7 en `requirements.md` §7 (D1 migración
-> «adoptar»: columna nueva `trabajador.recurso_ide`, sin mover asignaciones
-> ni tocar la `synckey`). Depende de F-034 mergeada (T0).
+> `feature/F-026-recursos-sin-ficha-empleado`) y en `spec_ready`: humano (2026-10-02):
+> D2 y D4-D7 aprobadas; **D1 cambia**: lo que hay en la BBDD de producción
+> son pruebas, no se migra; el trabajador se identifica por el recurso y los
+> datos de prueba se descartan al desplegar (vaciar tablas en producción:
+> autorización expresa del humano en ese momento). **D3 cambia**: un recurso
+> dado de baja en el mes sigue visible ese mes (criterio por periodo). Un
+> spec-author lo reescribe en su sitio en el worktree `../porcentajes-wt-f026`.
+> Depende de F-034 mergeada (T0).
 > **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
 > turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.
 > **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni
