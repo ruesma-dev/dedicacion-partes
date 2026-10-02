@@ -38,7 +38,12 @@ rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
 - **Ciclo 3 aprobado por el humano (2026-10-03):** en Azure la contraseña se
   lee de `PG-PASSWORD` del Key Vault (salida de `az`, nunca argumento), con
   `Read-Host` de respaldo; el aviso de firewall solo ante tiempo agotado o
-  `no pg_hba.conf entry`. Después, review 3 y repetir la MANUAL.
+  `no pg_hba.conf entry`. **Ciclo 3 hecho** (`5a1eb13`…`89f1dac`, 418 passed;
+  mutación manual 31 mutantes, 0 supervivientes). Cambian además dos tests
+  propios de F-035 (`…r1_fqdn_por_show_de_solo_lectura`,
+  `…r3_el_error_de_azure_apunta_a_la_ip_propia`), declarados en la tabla de
+  `impl_F-035.md` con los tres de F-026. **Review 3 lanzada**; después,
+  repetir la MANUAL.
 - **Observaciones de la review 1, recogidas:** `)` → aprobado y en el ciclo 2;
   criterio 6 de `features.json` → ya dice «tres tests»; automejora (tabla
   manual en fichero propio) → `arnes-base`, encargo de mutantes manuales
