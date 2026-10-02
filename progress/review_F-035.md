@@ -1,140 +1,124 @@
-Revisión completa (pasada 1), `git diff dev...HEAD` con HEAD = `469cb2c0d0614b178c10bbc9b104b4c17f45a395`
+Revisión incremental desde 1ba7b84 (pasada 2), hasta HEAD `a7b7298`
 
 # F-035 · Review del vaciado contra Azure sin `cmd.exe`
 
-## Veredicto: CHANGES_REQUESTED (CAMBIOS PEDIDOS)
+## Veredicto: APPROVED (APROBADO)
 
-Código y tests correctos (verificado abajo). Bloquea **un solo punto de C4
-bis**: la campaña manual no está en el repo como tabla reproducible. Es
-papeleo, sin tocar código.
+El único cambio pedido en la pasada 1 está cumplido y reproducido al pie de la
+letra, y el `)` aprobado por el humano está en la clase, el mensaje, el test y
+el README. `init.sh` en verde.
 
 ## Nivel de rigor
 
-`estandar`, **declarado**: fase RED, cobertura y mutación con supervivientes analizados.
+`estandar`, **declarado** en `harness/features.json`: fase RED, cobertura y
+mutación con los supervivientes analizados.
 
-## Verificación propia (resultado real)
+## Pasada 1 (resumen; lo aprobado allí se da por bueno)
 
-- `bash harness/init.sh`: **ENTORNO LISTO**, `402 passed, 1 skipped`;
+Revisión completa de `dev...469cb2c`. Código y tests correctos: el vaciado en
+Azure usa `psql` con `PGPASSWORD`/`PGSSLMODE` puestos en el `try` y borrados en
+el `finally`; `-SoloRecuento` sale antes del TRUNCATE; sin `-Confirmar` ni
+`-SoloRecuento` no conecta; nada a nivel de servidor; el control de caracteres
+va antes de toda `az` que lleva el secreto. Los tres tests cambiados de
+`test_f026_vaciado.py` se verificaron fila a fila: ninguno pierde exigencia.
+Reproduje los 19 mutantes y 6 propios: todos muertos. **Lo que bloqueaba**
+(C4 bis) era que la campaña manual no estaba en el repo como tabla
+reproducible. Como observación quedó que `)` también rompe `az.cmd`.
+
+## Pasada 2 · Qué se ha verificado (resultado real)
+
+- **`bash harness/init.sh`**: ENTORNO LISTO, `402 passed, 1 skipped`;
   `PUERTA COBERTURA: N/A (F-035 no cambia líneas Python de producción frente a
-  dev)`; `PUERTA TAMAÑO … impl 219/220`.
-- **Contraseña fuera de `az`**: en `vaciar_datos_prueba_dedicacion.ps1` las
-  únicas `az` son `account set` y `postgres flexible-server show` (solo
-  lectura). Azure: `psql -h $PG_FQDN -d $PG_DB -U $PG_APP_USER -v
-  ON_ERROR_STOP=1 -c $sql`. `PGPASSWORD`/`PGSSLMODE` se ponen dentro del `try`
-  de `Ejecutar-Sql` y se borran en su `finally`. Sin `rdbms-connect`.
-- **`-SoloRecuento` no llega al TRUNCATE**: `if ($SoloRecuento) { … return }`
-  al primer nivel, entre el recuento y `Ejecutar-Sql $SENTENCIA`; además
-  `-Confirmar -SoloRecuento` → `throw` antes del plan. Combinando ambas,
-  el TRUNCATE solo es alcanzable con `-Confirmar`.
-- **Sin `-Confirmar` ni `-SoloRecuento` no conecta**: el `return` del plan va
-  antes del `Get-Command psql`, de toda `az` y del `Read-Host`.
-- **Nada de servidor**: sin `firewall-rule`/`update`/`restart`/`parameter`.
-- **Control de caracteres antes de `az`** (`crear_base`, `add_secrets`):
-  leído en el código. `Rechazar-CaracteresDeCmd` va justo tras leer cada
-  secreto y antes de `-p $PGADMIN_PWD` (l. 143), de `$APP_PWD_SQL` (l. 128) y
-  de `--value $val` (l. 91). Los pasos 1-2 de `crear_base` no llevan secreto.
-- **No he ejecutado ningún `.ps1`** contra Azure ni contra la BBDD.
-
-## Tests anteriores cambiados, fila a fila
-
-`git diff dev...HEAD -- tests/`: solo `test_f026_vaciado.py` (los tres
-declarados) y el nuevo `test_f035_secretos_sin_cmd.py`. Ninguno más.
-
-| Test | ¿Pierde exigencia? |
-|---|---|
-| `…parametros_confirmar_y_local` | **No.** Sigue fijando la lista EXACTA y ordenada del `param(...)` hasta `)`; solo crece en `$SoloRecuento` |
-| `…sin_confirmar_sale_antes_de_conectar` | **No.** Mismas tres comprobaciones (bloque, `return` al primer nivel, antes de `az`/`psql`/`Read-Host`). La invariante «sin `-Confirmar` no escribe» la completan `test_f035_r2_solo_recuento_sale_antes_del_vaciado` y `…_se_excluyen` |
-| `…solo_en_la_base_dedicacion` | **No; gana.** Antes: «todo `psql` es localhost/dedicacion». Ahora: exactamente 2 `psql`, local `-d dedicacion`, Azure `-d $PG_DB -U $PG_APP_USER`, sin `flexible-server execute`, sin `PG_ADMIN`. `$PG_DB = "dedicacion"` (`00_vars`, l. 55) |
+  dev)`; tamaños dentro del tope.
+- **Delta** `1ba7b84..HEAD`: `crear_base` y `add_secrets` (clase y mensaje),
+  README §6 bis, `test_f035_secretos_sin_cmd.py`, `features.json` (criterios 4
+  y 6), `current.md`, `impl_F-035.md` y el nuevo `mutacion_manual_F-035.md`.
+  `vaciar_datos_prueba_dedicacion.ps1` no cambia, así que lo aprobado sobre él
+  sigue en pie.
+- **`)` en los dos scripts**: `-match '["&|<>^%)]'` y mensaje `" & | < > ^ % )`
+  con el porqué (el bloque `IF ( … )` de `az.cmd`). Lo único que cambia es la
+  función: las llamadas siguen en el mismo sitio, antes de la `az`.
+  `CARACTERES_CMD` incluye `)` y el test del mensaje exige `% )` y `IF`. El
+  README §6 bis lo explica. `(` sigue admitido, que es lo correcto: mi prueba
+  de la pasada 1 con un `.cmd` de la misma estructura mostró que `(` no rompe
+  nada.
+- **Tests anteriores**: en el delta solo cambia el test propio de F-035.
+  `git diff dev...HEAD -- tests/` sigue mostrando, como en la pasada 1,
+  `test_f026_vaciado.py` (los tres declarados) y el nuevo de F-035. No hay
+  más cambios sin declarar.
+- **Rastro**: el criterio 6 de `features.json` ya nombra los tres tests y el 4
+  incluye `)`. `current.md` está al día: ciclo 2, review 2 lanzada, las
+  observaciones recogidas y la MANUAL con su comando exacto, pendiente. El
+  commit `e9bc34a` de `arnes-base` existe.
 
 ## Mutación
 
-- **Herramienta**: alcance recalculado con `harness.alcance` → `lineas={}`
-  (diff de `862d925` a la rama). **Prueba de control** (cero sospechoso):
-  `generar_mutantes` sin la exclusión da 12 mutantes en `test_f026_vaciado.py`
-  y 111 en `test_f035_…py`, ambos `es_produccion=False`: el cero es legítimo
-  (solo cambian tests en Python; lo de producción es PowerShell).
-- **Campaña manual del implementer** (19 mutantes, 0 supervivientes): su
-  script (`mutps1.py`, scratchpad de la sesión, fuera del repo) existe y lo he
-  **reejecutado entero sobre una copia** (`infra/` + `tests/` en el
-  scratchpad): **19/19 MUERTOS**, cada uno por el test esperado. Ninguno es
-  equivalente (RM3 ok): todos cambian comportamiento observable.
-- **Mutantes propios** (copia, sin `-x`, todos muertos): `-and`→`-or` en la
-  exclusión (1 fallo); `PGPASSWORD` antes del `try` (1); `PGSSLMODE=disable`
-  (1); `-and`→`-or` en la salida del plan (2); sin control del admin (1);
-  psql de Azure sin `-U` (2). `git status` limpio tras todo.
-- **RM6**: M8 y M10 se mataron reforzando tests (`30c28c7` solo toca el test).
-- **RM1**: medida en `30c28c7`; lo posterior solo toca `progress/`.
+- **Herramienta**: alcance vacío. En la pasada 1 hice la prueba de control:
+  el cero es legítimo, porque lo único Python del diff son tests.
+- **Campaña manual** (`progress/mutacion_manual_F-035.md`): tiene una fila por
+  mutante con fichero:línea, **texto exacto original → mutado**, resultado,
+  **nº de fallos sin `-x`** y los tests que lo matan. La tabla 2 recoge M8 y
+  M10 de la primera pasada (sobreviven contra los tests de `b8189d3`), con su
+  análisis. El script va incrustado y trabaja sobre una copia temporal.
+- **Reproducción propia**: extraje el script del `.md` y lo lancé en sus dos
+  modos (HEAD y `b8189d3`) sobre una copia en mi scratchpad. Las **23 filas
+  salen idénticas byte a byte** a las del informe: 21/21 muertos (M20 y M21
+  incluidos, cada uno con 1 fallo en `…rechaza_justo_los_caracteres_de_cmd`)
+  y M8/M10 sobreviven 2/2 con los tests antiguos. `git status` limpio después.
+- **RM3**: ningún mutante es equivalente. **RM6**: M8 y M10 se mataron
+  reforzando tests, no quitando código. **RM1**: la campaña se midió en
+  `301dfed`; después solo cambian `progress/` y `features.json`.
 
 ## Checkpoints
 
-**C1** [x] init.sh exit 0 · [x] ficheros del arnés presentes.
-**C2** [x] una sola `in_progress` (F-035) · [x] rama `feature/F-035-…` ·
-[x] `current.md` coherente con el estado real (impl terminada, review lanzada,
-tres tests declarados, MANUAL con comando exacto) · [x] F-026/F-034 en `history.md`.
-**C3** N/A hexagonal: sin Python de producción (`.ps1`, README, tests) ·
-[x] primera línea con ruta · [x] sin prints/TODOs/secretos/dependencias ·
-[x] trampas de dominio: ninguna aplica (ni porcentajes, postventa ni Sigrid).
+**C1** [x] init.sh termina con exit 0 · [x] están todos los ficheros del arnés.
+**C2** [x] una sola feature `in_progress` · [x] rama `feature/F-035-…` ·
+[x] `current.md` coherente con el estado real · [x] F-026 y F-034 en `history.md`.
+**C3** N/A hexagonal: no hay Python de producción (`.ps1`, README, tests) ·
+[x] primera línea con la ruta · [x] sin prints, TODOs, secretos ni
+dependencias nuevas · [x] trampas de dominio: no aplica ninguna.
 **C3 bis** N/A: no toca `docs/referencia/`.
-**C4** [x] cada `acceptance` con test (tabla abajo) y en verde · [x] los tests
-leen texto, sin red ni BBDD · [x] MANUAL en `current.md` con comando exacto,
-_pendiente_ del humano.
+**C4** [x] cada criterio `acceptance` tiene test y pasa · [x] los tests leen
+texto, sin red ni BBDD · [x] la MANUAL está en `current.md` con su comando
+exacto, pendiente del humano.
 **C4 bis**
 - [x] `rigor: estandar` declarado.
-- [x] Fase RED: trazas reales de T1 (13 failed), T2 (7 failed), T3 (3 failed).
-- [x] Cobertura: N/A **con motivo impreso** por `init.sh`.
-- [x] Mutación automática: N/A justificado (alcance vacío, prueba de control hecha).
-- N/A muertos/60 s, coste por mutante, «NO VÁLIDA», RM2: no hay informe de la herramienta (la manual, reejecutada 19/19).
+- [x] Fase RED: trazas reales de T1 (13 failed), T2 (7), T3 (3) y T5 (4 failed).
+- [x] Cobertura: N/A **con el motivo impreso** por `init.sh`.
+- [x] Mutación automática: N/A justificado (alcance vacío, con prueba de control).
+- N/A muertos/60 s, coste por mutante, «NO VÁLIDA» y RM2: no hay informe de la
+  herramienta. La campaña manual la reejecuté entera (23/23 filas idénticas).
 - [x] RM1 · [x] RM6 · N/A RM5 (nivel `estandar`).
-- **[ ] Campaña MANUAL con tabla reproducible.** El informe solo la describe
-  con palabras («quitar del `finally` cada variable; …»). CHECKPOINTS: «Sin
-  ese texto exacto el punto NO se marca». El texto exacto vive solo en un
-  script del scratchpad de la sesión, que no es del repo y se borra: hoy lo he
-  podido repetir yo; mañana no podría nadie.
+- [x] **Campaña MANUAL con tabla reproducible**: texto exacto, nº de fallos y
+  dos filas o más reproducidas (todas).
 - [x] Supervivientes analizados (0 al final; M8 y M10 explicados).
-- [x] «Evidencias» con los cuatro números (mutación manual en serie, workers 1).
-**C4 ter** N/A: sin `harness/rutas_sensibles.json`. **C5** N/A `tasks.md` (sdd=false) ·
-[x] commits `F-035 Tn:` · [x] sin temporales · [x] `features.json` en `in_progress`.
+- [x] «Evidencias» con los cuatro números y el enlace a la tabla.
+**C4 ter** N/A: no existe `harness/rutas_sensibles.json`.
+**C5** N/A `tasks.md` (sdd=false) · [x] commits `F-035 Tn:` · [x] sin
+temporales · [x] `features.json` en `in_progress`, a la espera del cierre.
 
 ## Cobertura de los `acceptance`
 
 | Criterio | Tests |
 |---|---|
-| 1 psql en Azure, env en `finally`, FQDN por `show`, sin rdbms-connect | `test_f035_r1_*` (7) + `test_f026_r10_solo_en_la_base_dedicacion` |
-| 2 `-SoloRecuento` | `test_f035_r2_*` (5) + `test_f026_r10_parametros_…`, `…sin_confirmar_…` |
-| 3 mensaje de IP, nada de servidor | `test_f035_r3_*` (2) + `test_f026_r10_nada_fuera_…` |
-| 4 rechazo antes de `az` | `test_f035_r4_*` (8: clase, mensaje, orden ×3, barrido) |
+| 1 psql en Azure, entorno en `finally`, FQDN por `show`, sin rdbms-connect | `test_f035_r1_*` (7) + `test_f026_r10_solo_en_la_base_dedicacion` |
+| 2 `-SoloRecuento` | `test_f035_r2_*` (5) + `test_f026_r10_parametros_…` y `…sin_confirmar_…` |
+| 3 mensaje de IP, nada del servidor | `test_f035_r3_*` (2) + `test_f026_r10_nada_fuera_…` |
+| 4 rechazo antes de `az`, con `)` | `test_f035_r4_*` (8: clase, mensaje, orden ×3, barrido) |
 | 5 revisión en el README | `test_f035_r5_*` (3) |
-| 6 test offline + declarados | este fichero de tests + tabla de arriba |
+| 6 test offline + tres declarados | `test_f035_secretos_sin_cmd.py` + la tabla de la pasada 1 |
 | 7 MANUAL | `current.md`, sección F-035 (pendiente del humano) |
 | 8 review + init.sh | este informe |
 
 ## Cambios requeridos
 
-1. Crear `progress/mutacion_manual_F-035.md` con **una fila por mutante**
-   (M1–M19): fichero y línea en `30c28c7`, **texto exacto original → mutado**
-   (el de `mutps1.py`), resultado y **número de fallos** (relanzar sin `-x`
-   para contarlos), más las dos filas de la primera pasada (M8, M10) con su
-   análisis. Incluir el comando o el script, y lanzarlo **sobre una copia**,
-   no sobre `infra/` del árbol de trabajo.
-2. En `progress/impl_F-035.md`, fila «Mutación manual» de «Evidencias»:
-   enlazar ese fichero y sustituir el párrafo final «Mutantes: …» por el
-   enlace (así el informe sigue dentro del tope de 220).
+Ninguno.
 
-## Observaciones no bloqueantes (para el humano)
+## Pendiente para cerrar (lo lleva el líder, no bloquea)
 
-- **`)` también rompe `az.cmd`.** `az.cmd` expande `%*` dentro de un bloque
-  `IF … ( … )`. Probado con un `.cmd` de estructura idéntica que solo imprime
-  `argv` (sin Azure): `ab)cd` → «No se esperaba cd en este momento», no se
-  ejecuta nada; `abc)` como último argumento → llega `abc` **truncado** y
-  además corre la rama `ELSE` (exit 1). En estos scripts el secreto nunca es
-  el último argumento, así que hoy da un fallo ruidoso con mensaje engañoso,
-  no corrupción silenciosa. Propuesta: añadir `)` a la clase y al README §6 bis.
-  Cambia la lista aprobada en el plan: decide el humano.
-- El criterio 6 de `features.json` nombra un test y son tres (`current.md`
-  ya lo explica): alinear ese texto al cerrar.
-
-## Automejora (propuesta, no aplicada)
-
-`CHECKPOINTS.md`, campaña MANUAL: que su tabla viva en
-`progress/mutacion_manual_F-XXX.md`, fuera del tope del impl (219/220 aquí:
-no cabía y acabó en prosa, justo lo que el punto prohíbe).
+- La **MANUAL** del humano (`-Local -SoloRecuento` y `-SoloRecuento` contra
+  Azure) sigue pendiente. Es la única prueba de que la contraseña llega
+  entera a Azure.
+- Queda la observación del implementer sobre el orden de `crear_base`: los
+  pasos 1 y 2 van antes de pedir las contraseñas. Hay que proponérsela al
+  humano.
