@@ -40,8 +40,10 @@
 > Review pasada 1: **CHANGES_REQUESTED** por un solo punto de evidencia: 5 de
 > los 6 supervivientes de `prueba_escritura_porcentajes.py` no son equivalentes
 > (duplican `registro_id`/`synckey` o quitan el centinela `recurso_ide: 0`).
-> **Implementer relanzado** (ciclo 2 de 2) con un test del transfer que lo
-> fije y la campaña relanzada. Manuales en «F-026 · pendiente» más abajo. F-034 queda `blocked` solo por su T9, que el
+> Ciclo 2 hecho (`df7e94c` … `bc4cf86`): test R20 que fija
+> `registro_id` únicos y `recurso_ide` 0 en el script; campaña 55/56; queda el
+> nº 5 (`900003→900004`, identificador arbitrario) como equivalente, **pendiente
+> de aceptación del humano**. **Reviewer, pasada 2, lanzado.** Manuales en «F-026 · pendiente» más abajo. F-034 queda `blocked` solo por su T9, que el
 > humano hará junto con las manuales de F-026 (el líder le guía).
 > **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
 > turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.
@@ -146,6 +148,9 @@ script versionado cuando la review apruebe).
   `-Confirmar`, **autorización expresa del humano**) → `sync/preview` → `sync`.
   El transfer desplegado escribe de verdad: **nada de `registro/ejecutar`
   hasta terminar**.
+- **Superviviente nº 5 (humano): aceptar por escrito el equivalente**
+  `prueba_escritura_porcentajes.py:53` `900003→900004` (ver
+  `progress/mutacion_F-026.md`). Resultado: _pendiente_.
 - **Observaciones del implementer, propuestas al humano como features
   aparte:** (a) la fila que devuelven guardar y deshacer no conoce el mes: un
   trabajador no vigente con líneas vuelve con el `activo` del ORM hasta
