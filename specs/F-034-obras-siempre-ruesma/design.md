@@ -121,20 +121,29 @@ equivalente.
   `linea_de_otra_empresa` no cambia.
 - `test_f024_cuadrante_empresa.py`: `_f` con `empresa_obras = DEF`.
   `test_f024_r9_…` pasa a `test_f034_r1_obras_siempre_de_la_empresa_de_las_obras`
-  (E = 1, 18 y 28 → `[100, 101, 102]`; la 900 de la 28 nunca). En R7, R13 y
-  R14 cambian **solo** los casos de trabajadores NULL: dejan de verse en la
-  28 y se ven en la 1 (p. ej. Gil, NULL con carga en la 1 y la 28, sale solo
-  en la 1).
+  (E = 1, 18 y 28 → `[100, 101, 102]`; la 900 de la 28 nunca). En R7, R10,
+  R13 y R14 cambian **solo** los casos de trabajadores NULL (R3): dejan de
+  verse en la 28 y se ven en la 1 (p. ej. Gil, NULL con carga en la 1 y la
+  28, sale solo en la 1). `test_f024_r10_puede_deshacer_se_conserva` pasa de
+  `[True, False, False, False]` a `[True, False, False, False, False]`
+  (con E = 1 entra Carlos, NULL).
 - `test_f024_registro_empresa.py`: R16 pasa a `test_f034_r7_…` con
   `None`/1 → `[(1,1),(2,1),(4,1),(5,1)]`, 28 → `[(3,1)]`, 18 → `[]` (la
   línea 4, del NULL con carga en la 28, pasa a la por defecto; todas con
-  empresa 1). R17 no cambia de valores (ya era E = 1). R18 y R19 no cambian
-  de asserts; R19 actualiza su docstring (D4).
+  empresa 1). `test_f024_r17_…` **sí cambia** (R3): la obra 9 pasa de
+  `[(2, 1)]` a `[(2, 1), (4, 1)]` porque el trabajador 12, NULL, pasa a verse
+  en la 1; la traza de la omitida 2 no cambia. R18 y R19 no cambian de
+  asserts; R19 actualiza su docstring (D4).
 - `test_f024_rutas_empresa.py`: `test_f024_r11_otra_empresa_depende_de_la_elegida`
   pasa a `test_f034_r5_otra_empresa_no_depende_de_la_elegida`: Gil con E = 1
   da `[(1, False), (28, True)]`, y lo mismo para cualquier E en que sea
-  visible. Las listas de nombres por empresa de R6/R13/R15 cambian solo en
-  los NULL, como arriba.
+  visible. `test_f024_r6_con_empresa_la_elegida` (E = 28): obras `[900]` →
+  `[100, 101, 102]` (R1), nombres `["Bea", "Carlos", "Gil"]` → `["Bea"]` y
+  `resumen.total` `3` → `1` (R3).
+  `test_f024_r6_r13_respuestas_por_fila_con_el_resumen_de_la_empresa`:
+  parámetros `(None, 4), (1, 4), (28, 3)` → `(None, 5), (1, 5), (28, 1)`
+  (R3). En el resto de R6/R13/R15 las listas de nombres cambian solo en los
+  NULL, como arriba.
 - `test_f022_empresa_en_linea.py`: **no cambia**. Construye
   `RegistroSigrid` con 1 o 28 y no pasa `empresa`: la línea lleva la empresa
   de las obras, que es ese mismo ajuste (R10).
