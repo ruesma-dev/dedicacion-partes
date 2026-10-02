@@ -396,7 +396,7 @@ def test_f022_r2_pipeline_la_linea_sin_empresa_no_frena_a_las_demas():
     """R2 · La línea sin empresa se omite con motivo y la otra se escribe."""
     cli = ClienteEmpresas()
     lineas = [linea(registro_id=1, empresa=None),
-              linea(registro_id=2, empleado_ide=12)]
+              linea(registro_id=2, recurso_ide=400)]
     res = _pl(cli).ejecutar(obra=ORIGEN_1, lineas=lineas)
     assert res.omitidas == [{"registro_id": 1,
                              "motivo": reglas.MOTIVO_SIN_EMPRESA}]
@@ -527,7 +527,7 @@ def test_f022_r16_pipeline_postventa_sin_ficha_en_la_empresa(quitar,
     cli = ClienteEmpresas(quitar=quitar, ambiguas=ambiguas)
     res = _pl(cli, forzar=False).ejecutar(obra=ORIGEN_1, lineas=[
         linea(registro_id=1, empresa=28, es_postventa=True),
-        linea(registro_id=2, empresa=28, empleado_ide=12)])
+        linea(registro_id=2, empresa=28, recurso_ide=400)])
     [omitida] = res.omitidas
     assert omitida["registro_id"] == 1
     assert "'POSTV2'" in omitida["motivo"]

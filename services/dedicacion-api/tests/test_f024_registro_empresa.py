@@ -79,8 +79,10 @@ def _fila(asig_id: int, trab: tuple[int, int | None],
     `trab` y `obra` son (ide, empresa)."""
     asignacion = SimpleNamespace(id=asig_id, porcentaje=50,
                                  es_postventa=False)
+    # `activo` y `fecha_baja` (F-026, C3): vigente en cualquier mes.
     trabajador = SimpleNamespace(ide=trab[0], dni=None, nombre=f"T{trab[0]}",
-                                 categoria="Encargado", empresa=trab[1])
+                                 categoria="Encargado", empresa=trab[1],
+                                 activo=True, fecha_baja=None)
     o = SimpleNamespace(ide=obra[0], cod=f"0{obra[0]}", descripcion="OBRA",
                         empresa=obra[1])
     return asignacion, trabajador, o
@@ -164,7 +166,8 @@ def test_f024_r18_trabajador_no_visible_no_llama_al_transfer(fase):
     else:
         r = registro.ejecutar(2026, 7, pisar_claves=[], trabajador_ide=11,
                               empresa=1)
-    assert r == {"ok": True, "obras": []}
+    # F-026 (R16, B1): la respuesta lleva siempre `no_vigentes`.
+    assert r == {"ok": True, "obras": [], "no_vigentes": []}
     assert transfer.payloads == []
 
 

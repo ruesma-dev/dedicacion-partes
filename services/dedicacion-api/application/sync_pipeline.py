@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Any, Protocol
 
 from application.filtros_maestros import (
@@ -18,8 +20,9 @@ from application.filtros_maestros import (
     depurar_empleados,
     depurar_obras,
 )
-from domain.models import ResultadoSync, ResultadoSyncMaestro
+from domain.models import EstadoPeriodo, Periodo, ResultadoSync, ResultadoSyncMaestro
 from domain.ports import SigridGateway, UnitOfWork
+from domain.vigencia import inicio_ventana_baja
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +45,16 @@ class SyncContext:
     resultado_empresas: ResultadoSyncMaestro | None = None
 
 
+def ventana_de_bajas(periodos: Iterable[Periodo], hoy: date) -> int:
+    """Ventana de bajas (F-026 R12) con los periodos `ABIERTO` de la base.
+
+    La comparten el step del sync y el preview, para que los dos depuren
+    con la misma ventana.
+    """
+    abiertos = [p.clave for p in periodos if p.estado is EstadoPeriodo.ABIERTO]
+    return inicio_ventana_baja(abiertos, hoy)
+
+
 class SyncStep(Protocol):
     nombre: str
 
@@ -62,6 +75,7 @@ class FetchEmpleadosStep:
         filtro_activo: bool = True,
         exigir_codigo_mes: bool = True,
         criterio: CriterioActivoRecurso = CRITERIO_VACIO,
+        hoy: Callable[[], date] = date.today,
     ) -> None:
         self._sigrid = sigrid
         self._sql = sql
@@ -69,29 +83,34 @@ class FetchEmpleadosStep:
         self._filtro = filtro_activo and bool(self._categorias)
         self._exigir_mes = bool(exigir_codigo_mes)
         self._criterio = criterio
+        # Reloj inyectable (F-026 R12): los tests fijan el día.
+        self._hoy = hoy
 
     def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
         brutas = self._sigrid.leer(self._sql)
         _validar_columnas(brutas, COLUMNAS_EMPLEADOS, "sync.empleados.sql")
+        baja_desde = ventana_de_bajas(uow.periodos.listar(), self._hoy())
         depurado = depurar_empleados(
             brutas, self._categorias, self._filtro,
             exigir_codigo_mes=self._exigir_mes,
             criterio=self._criterio,
+            baja_desde=baja_desde,
         )
         logger.info(
-            "sync empleados: %d brutos, %d de recurso de otra empresa, "
-            "%d por estado del recurso, %d duplicados de recurso, "
-            "%d duplicados de persona, %d sin código de hora mensual, "
-            "%d excluidos por categoría, %d netos (%d con baja laboral)",
+            "sync empleados (ventana de bajas %d): %d brutos, "
+            "%d por estado del recurso, "
+            "%d sin código de hora mensual, %d excluidos por categoría, "
+            "%d netos (%d con baja laboral, %d con fecha de baja, "
+            "%d grupos de posible misma persona)",
+            baja_desde,
             depurado.brutos,
-            depurado.excluidos_otra_empresa,
             sum(depurado.excluidos_estado_recurso.values()),
-            depurado.duplicados_recurso,
-            depurado.duplicados_persona,
             depurado.excluidos_sin_codigo_mes,
             depurado.excluidos_filtro,
             len(depurado.filas),
             depurado.con_baja_laboral,
+            depurado.incluidos_con_baja,
+            len(depurado.posible_misma_persona),
         )
         ctx.filas_empleados = depurado.filas
 

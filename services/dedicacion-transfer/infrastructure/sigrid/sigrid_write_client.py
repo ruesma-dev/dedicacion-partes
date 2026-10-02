@@ -155,22 +155,6 @@ class SigridWriteClient:
             "cosindide, unimed FROM obrparpar WHERE obride = ? "
             "ORDER BY pos, ide", [int(obride)])
 
-    def recursos_de_empleados(
-        self, emp_ides: Iterable[int]
-    ) -> dict[int, list[int]]:
-        """empleado (con/emp.ide) -> [recurso_ide, …] vía res.conide."""
-        ides = sorted({int(i) for i in emp_ides if i})
-        if not ides:
-            return {}
-        marcas = ",".join("?" for _ in ides)
-        filas = self._read(
-            "SELECT res.ide AS reside, res.conide AS empide FROM res "
-            f"WHERE res.conide IN ({marcas}) ORDER BY res.ide", ides)
-        out: dict[int, list[int]] = {}
-        for f in filas:
-            out.setdefault(int(f["empide"]), []).append(int(f["reside"]))
-        return out
-
     def horas_de_recursos(
         self, resides: Iterable[int]
     ) -> dict[int, list[HoraRecurso]]:

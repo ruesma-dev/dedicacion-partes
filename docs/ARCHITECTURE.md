@@ -87,7 +87,8 @@ atómica de asignaciones por trabajador, `deshacer`, `export.xlsx`,
 con su nombre de Sigrid y si están de baja).
 
 Tablas de PostgreSQL: `trabajador`, `obra` (copias sincronizadas de Sigrid,
-PK = el `ide` de Sigrid), `empresa` (catálogo `auxemp` de Sigrid, PK =
+PK = el `ide` de Sigrid: en `trabajador`, el `res.ide` de su **recurso**,
+[`#regla-recurso`](#regla-recurso); en `obra`, el de su ficha), `empresa` (catálogo `auxemp` de Sigrid, PK =
 `numemp`, que es el `con.emp` de las fichas; F-032), `periodo` (año+mes único, `ABIERTO`/`CERRADO`),
 `asignacion` (periodo × trabajador × obra × `es_postventa`, `porcentaje` en
 0-100) y `evento` (auditoría con `snapshot_antes` / `snapshot_despues` en
@@ -105,8 +106,9 @@ de filtro por estado. **No decide nada de negocio.**
 
 Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
-- `POST /api/registro/preflight` — pasos 1-8: resolver destinos, resolver el
-  recurso de cada empleado, cargar sus tipos de hora, aplicar las reglas,
+- `POST /api/registro/preflight` — pasos 1-8: resolver destinos, cargar los
+  tipos de hora del recurso que trae cada línea (lo manda la API, el transfer
+  no lo elige: [`#regla-recurso`](#regla-recurso)), aplicar las reglas,
   localizar el parte del mes, comprobar idempotencia y detectar conflictos.
   No escribe nada.
 - `POST /api/registro/ejecutar` — pasos 9-10: crear los partes que falten
@@ -123,8 +125,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > **Esta sección es la ÚNICA fuente normativa de las reglas P1-P5.** El
 > README del transfer, los docstrings y las specs **remiten** a las anclas
 > `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad`,
-> `#regla-sin-partida`, `#regla-pruebas` y
-> `#regla-empresa`; no vuelven a enunciar la regla con palabras propias. Lo
+> `#regla-sin-partida`, `#regla-pruebas`, `#regla-empresa` y
+> `#regla-recurso`; no vuelven a enunciar la regla con palabras propias. Lo
 > vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
@@ -133,8 +135,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 >
 > **Actualización 2026-10-01:** el humano dio esa autorización expresa y el
 > transfer desplegado está en **modo real** (`OBRA_PRUEBAS_FORZAR=false`), con
-> lo que sigue abierto a sabiendas: el motivo de abajo (F-017), el recurso
-> elegido sin mirar la empresa (F-026) y los varios códigos M* (F-011).
+> lo que sigue abierto a sabiendas: el motivo de abajo (F-017) y los varios
+> códigos M* (F-011). Desde F-026 el recurso de cada línea lo manda la API
+> ([`#regla-recurso`](#regla-recurso)).
 >
 > El motivo ya no es que falte verificar contra Sigrid —**T13 y T14 se
 > ejecutaron el 2026-08-20** y el sistema escribe de verdad en el ERP—, sino
@@ -337,8 +340,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       ofrece. Cada trabajador visible lleva **todas** sus líneas; las de una
       obra que no es de la empresa de las obras cuentan para su 100 % y
       salen marcadas, con cualquier E. Resumen, copia del mes y export
-      cuentan solo los visibles en E. Una persona con fichas en dos empresas
-      tiene una fila en cada una, cada ficha con su propio 100 %.
+      cuentan solo los visibles en E. Una persona con recursos en dos
+      empresas tiene una fila en cada una, cada recurso con su propio 100 %
+      ([`#regla-recurso`](#regla-recurso)).
     - **Se registra en la empresa de las obras.** Al registrar, la API manda
       solo las líneas de los trabajadores visibles en E, todas con `empresa`
       = la empresa de las obras; las de una obra de otra empresa se mandan
@@ -379,8 +383,49 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     de la empresa de las obras, selector que filtra solo trabajadores y
     línea con la empresa de las obras: decidido por Pablo Gris el
     2026-10-01 · F-034, decisiones D1-D5 de
-    `specs/F-034-obras-siempre-ruesma/requirements.md`.* El recurso del
-    trabajador todavía no se elige por empresa: es F-026.
+    `specs/F-034-obras-siempre-ruesma/requirements.md`.*
+13. <a id="regla-recurso"></a>**El trabajador es el recurso.** El maestro de
+    trabajadores parte de los **recursos** de Sigrid, no de las fichas de
+    empleado, y el recurso que se escribe en el parte es el del trabajador:
+
+    - **Quién entra:** los recursos persona (`res.cla = 1`) con código de
+      hora mensual `M*` ([`#regla-p1`](#regla-p1)), de todas las empresas.
+      **Una fila por recurso**: la clave del trabajador en `dedicacion` es el
+      `res.ide`, y `cod`, `nombre` y empresa (`con.emp`) son los del concepto
+      del recurso.
+    - **La ficha de empleado es opcional.** Se une por `res.conide`
+      («Empleado asociado») y solo aporta el DNI y la baja laboral, que es
+      informativa. Un recurso sin ficha entra igual.
+    - **Varios recursos de una persona no se funden nunca.** Cada uno es un
+      trabajador, en su empresa y con su propio 100 %. Si dos de la misma
+      empresa comparten documento (el DNI de la ficha o, sin él, `res.cif`),
+      el preview lo avisa en `empleados.posible_misma_persona`; por nombre,
+      nunca (homónimos).
+    - **Vigencia por mes.** La baja del recurso es `con.fecbaj` (`AAAAMMDD`,
+      0 = sin baja). Un trabajador cuenta en el mes M si está activo y no
+      tiene baja o la tiene el día 1 de M o después: **dado de baja en el
+      mes, sigue accesible ese mes**. Una sola función,
+      `dedicacion-api/domain/vigencia.vigente_en`. Cuadrante, resumen, copia
+      del mes y export enseñan el `activo` de ese mes; uno no vigente solo
+      aparece si tiene líneas en él.
+    - **Ventana de bajas del sync.** El sync conserva los recursos con baja
+      desde el primer día del más antiguo entre el mes anterior al del sync y
+      cada periodo `ABIERTO`; los de baja anterior se excluyen y el preview
+      los cuenta y publica la ventana (`empleados.ventana_baja`). Un periodo
+      antiguo abierto después del último sync no tiene sus bajas hasta el
+      siguiente: **tras abrir un periodo antiguo, sincronizar**.
+    - **La API manda el recurso; el transfer no lo elige.** Cada línea del
+      registro lleva `recurso_ide` = el `ide` del trabajador. El transfer lo
+      usa tal cual: no consulta `res.conide`, no elige entre recursos y no
+      exige que la empresa del recurso sea la de la línea (un trabajador de
+      la 18 imputa a obras de la 1, [`#regla-empresa`](#regla-empresa)). Una
+      línea sin `recurso_ide` se omite «sin recurso». Las de un trabajador
+      no vigente en el mes **no se mandan ni se trazan**: preflight y
+      ejecutar devuelven sus `registro_id` en `no_vigentes`.
+
+    *Decidido por Pablo Gris (responsable del proyecto) el 2026-10-01 («no
+    debe buscar por empleado sino por recurso») y el 2026-10-02 (D1-D7) ·
+    F-026, `specs/F-026-recursos-sin-ficha-empleado/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 

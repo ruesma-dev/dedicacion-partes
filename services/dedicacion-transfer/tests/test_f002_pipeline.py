@@ -255,7 +255,7 @@ def test_f002_r13_el_contexto_es_solo_del_mismo_recurso():
                      horide=6, can=0.3, paride=90002),
     ])
     lineas = [linea(registro_id=1),
-              linea(registro_id=9, porcentaje=0.5, empleado_ide=12,
+              linea(registro_id=9, porcentaje=0.5, recurso_ide=400,
                     nombre="Jefe de obra", categoria="Jefe de obra")]
     pf = _pipeline(cli).preflight(obra=OBRA, lineas=lineas)
 
@@ -367,7 +367,7 @@ def _pisado_y_sobrecarga_mas_otro_trabajador():
                      horide=7),
     ])
     lineas = [linea(registro_id=1, porcentaje=0.4),
-              linea(registro_id=9, porcentaje=0.5, empleado_ide=12,
+              linea(registro_id=9, porcentaje=0.5, recurso_ide=400,
                     nombre="Jefe de obra", categoria="Jefe de obra")]
     return cli, lineas
 

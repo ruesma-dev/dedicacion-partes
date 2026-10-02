@@ -124,6 +124,41 @@ no existe**: republicar no es dar de alta.
 «qué código está corriendo» sin abrir Azure: con tag fechado y sin `latest`,
 no hay otra forma de saberlo.
 
+### 3 bis · Despliegue de F-026 (una vez): vaciar los datos de prueba
+
+Desde F-026 la clave del trabajador es el `res.ide` del **recurso** de Sigrid,
+no el `emp.ide` de su ficha de empleado
+([`#regla-recurso`](../docs/ARCHITECTURE.md#regla-recurso)). Lo que hay en la
+base son pruebas y no se migra (decisión D1 del 2026-10-02): se vacía. Va
+**junto con F-034** y en este orden, con autorización expresa del humano para
+el paso 2:
+
+1. Republicar **transfer y api juntos** (`.\redeploy_dedicacion.ps1 -Solo
+   transfer,api`). Al arrancar, la api añade la columna `trabajador.fecha_baja`
+   (la deriva `esquema.py` del ORM, sin DDL a mano).
+2. Vaciado: primero el plan, luego `-Confirmar`.
+
+   ```powershell
+   . .\00_vars_dedicacion.ps1 ; . .\00_vars_dedicacion.local.ps1
+   .\vaciar_datos_prueba_dedicacion.ps1              # PLAN: no conecta
+   .\vaciar_datos_prueba_dedicacion.ps1 -Confirmar   # pide la contraseña de dedicacion_app
+   ```
+
+   Ejecuta **una** sentencia en la base `dedicacion`: `TRUNCATE TABLE
+   asignacion, evento, periodo, trabajador CONTINUE IDENTITY`. No toca `obra`
+   ni `empresa`, ni otras bases, ni nada del servidor compartido. Las
+   secuencias se conservan a propósito: si volvieran a 1, un `asignacion.id`
+   nuevo reutilizaría la `synckey` de una línea de prueba ya escrita en Sigrid
+   y el transfer la daría por registrada. En local: `-Local` (usa `psql` contra
+   `localhost/dedicacion`).
+3. `GET /api/v1/sync/preview`: revisar `empleados.ventana_baja` y
+   `empleados.posible_misma_persona`.
+4. `POST /api/v1/sync`. Solo entonces se vuelve a capturar y registrar.
+
+Si el paso 2 se olvida, nada se escribe mal: las filas viejas se desactivan en
+el sync, sus trabajadores dejan de estar vigentes y sus líneas van a
+`no_vigentes` (no se mandan al transfer ni se trazan).
+
 ---
 
 ## 4 · Las cosas que hay que saber antes de perder una tarde
@@ -213,6 +248,7 @@ usa una persona, una vez, al ejecutar `crear_base_dedicacion.ps1`.
 | `00_capps_vars_dedicacion.ps1` | derivados y ayudantes (`KvRef`, `Imagen`, `Fqdn-Interno`…) |
 | `fase1_infra_dedicacion.ps1` | provisión base |
 | `crear_base_dedicacion.ps1` | base y rol en el servidor compartido, una vez |
+| `vaciar_datos_prueba_dedicacion.ps1` | vacía los datos de prueba de `dedicacion` en el despliegue de F-026 (§3 bis), plan y `-Confirmar` |
 | `add_secrets_dedicacion.ps1` | las tres claves del Key Vault |
 | `build_images_dedicacion.ps1` | build con tag fechado + `imagenes.json` |
 | `create_transfer_dedicacion.ps1` / `create_api_dedicacion.ps1` / `create_front_dedicacion.ps1` | alta de cada Container App |

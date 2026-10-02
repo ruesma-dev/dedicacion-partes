@@ -31,7 +31,9 @@ class Base(DeclarativeBase):
 class TrabajadorORM(Base):
     __tablename__ = "trabajador"
 
-    ide: Mapped[int] = mapped_column(BigInteger, primary_key=True)  # ide de Sigrid
+    # `res.ide` del RECURSO de Sigrid (F-026, D1): es el que la API manda al
+    # transfer. Antes de F-026 era el `emp.ide` de la ficha de empleado.
+    ide: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     cod: Mapped[str | None] = mapped_column(Text)
     nombre: Mapped[str] = mapped_column(Text, nullable=False)
     dni: Mapped[str | None] = mapped_column(Text)
@@ -42,6 +44,10 @@ class TrabajadorORM(Base):
     # `esquema.alters_faltantes` y las filas previas quedan a NULL hasta el
     # siguiente sync, que las rellena.
     empresa: Mapped[int | None] = mapped_column(Integer)
+    # Fecha de baja del recurso (`con.fecbaj`, AAAAMMDD; NULL = sin baja),
+    # F-026 R8. Decide la vigencia por mes (domain/vigencia.py). Nulable y
+    # sin default: el ADD COLUMN lo deriva `esquema.alters_faltantes`.
+    fecha_baja: Mapped[int | None] = mapped_column(Integer)
     sync_en: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
