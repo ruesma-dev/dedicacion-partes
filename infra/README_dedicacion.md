@@ -156,8 +156,8 @@ el paso 2:
 4. `POST /api/v1/sync`. Solo entonces se vuelve a capturar y registrar.
 
 Si el paso 2 se olvida, nada se escribe mal: las filas viejas se desactivan en
-el sync y sus líneas llevarían un `emp.ide` sin horas `M*`, que el transfer
-omite (P1).
+el sync, sus trabajadores dejan de estar vigentes y sus líneas van a
+`no_vigentes` (no se mandan al transfer ni se trazan).
 
 ---
 
