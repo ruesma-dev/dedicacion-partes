@@ -14,8 +14,8 @@
 > (design §6) se quedó corta: 4 tests de F-024 (R17 registro, R10 cuadrante,
 > R6 y R6/R13 rutas) cambian como consecuencia directa de R1/R3 y no estaban
 > en la lista (`progress/impl_F-034.md`, «Motivo del bloqueo»). El humano acepta
-> (2026-10-02): `in_progress` de nuevo; un spec-author completa §6 y después se
-> relanza el implementer.
+> (2026-10-02): `in_progress` de nuevo; §6 completado (`ba55567`) e
+> **implementer relanzado** → `progress/impl_F-034.md`.
 > Se despliega **junto con F-026**.
 > **F-026**: decisión del humano 2026-10-01, «no debe buscar por empleado sino
 > por recurso»: el sync parte de los RECURSOS activos (sin fecha de baja) con
