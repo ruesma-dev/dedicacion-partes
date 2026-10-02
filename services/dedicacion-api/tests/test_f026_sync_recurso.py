@@ -415,3 +415,91 @@ def test_f026_r5_sync_falla_sin_columna_obligatoria_y_no_persiste(
         pipeline.ejecutar(uow)
     assert uow.trabajadores.recibido is None
     assert uow.commits == 0
+
+
+# --- R5, R6, R17: el preview publica la ventana y no persiste -----------------
+
+
+class _UowLectura(_UowEspia):
+    """UoW de la fábrica del preview: cuenta entradas, salidas y commits."""
+
+    def __init__(self, periodos: list[Any]) -> None:
+        super().__init__(periodos)
+        self.entradas = self.salidas = 0
+
+    def __enter__(self) -> "_UowLectura":
+        self.entradas += 1
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.salidas += 1
+
+
+SQL_OBR = "SELECT ... FROM dbo.obr AS obr"
+
+
+class _SigridPreview:
+    def __init__(self, empleados: list[dict[str, Any]]) -> None:
+        self._empleados = empleados
+
+    def leer(self, sql: str) -> list[dict[str, Any]]:
+        if "dbo.obr" in sql:
+            return [{"ide": 1, "cod": "0001", "descripcion": "Obra",
+                     "estado_sigrid": "En curso", "empresa": 1}]
+        return [dict(f) for f in self._empleados]
+
+
+def _preview(filas: list[dict[str, Any]], **kwargs: Any) -> Any:
+    from application.use_cases import PreviewSync
+
+    return PreviewSync(_SigridPreview(filas), "SELECT ... FROM dbo.res", SQL_OBR,
+                       criterio=_criterio(excluir_baja_anterior_a_ventana=True),
+                       hoy=lambda: HOY, **kwargs)
+
+
+def test_f026_r17_preview_con_fabrica_usa_los_periodos_abiertos() -> None:
+    uow = _UowLectura([_periodo(2026, 6), _periodo(2026, 5, abierto=False)])
+    emp = _preview(FILAS_BAJA, uow_factory=lambda: uow).ejecutar()["empleados"]
+    assert emp["ventana_baja"] == 20260601
+    assert emp["total"] == 4 and _ides(emp["muestra"]) == [3, 4, 5, 6]
+    assert emp["excluidos_por_estado_recurso"] == {BAJA_ANTERIOR: 2}
+    assert emp["incluidos_con_baja"] == 3
+    assert (uow.entradas, uow.salidas, uow.commits) == (1, 1, 0)
+    assert uow.trabajadores.recibido is None
+
+
+def test_f026_r17_preview_sin_fabrica_usa_el_mes_anterior() -> None:
+    emp = _preview(FILAS_BAJA).ejecutar()["empleados"]
+    assert emp["ventana_baja"] == 20260901
+    assert _ides(emp["muestra"]) == [5, 6]
+    assert emp["incluidos_con_baja"] == 1
+    assert emp["excluidos_por_estado_recurso"] == {BAJA_ANTERIOR: 4}
+
+
+def test_f026_r17_preview_publica_posible_misma_persona() -> None:
+    emp = _preview([_fila(61, dni="1A"), _fila(736, dni="1-a"),
+                    _fila(7)]).ejecutar()["empleados"]
+    assert emp["posible_misma_persona"] == [["MO/0061", "MO/0736"]]
+    assert emp["total"] == 3
+
+
+def test_f026_r6_preview_sin_claves_retiradas() -> None:
+    emp = _preview([_fila(1)]).ejecutar()["empleados"]
+    for retirada in ("excluidos_recurso_otra_empresa", "duplicados_recurso",
+                     "duplicados_persona"):
+        assert retirada not in emp, retirada
+
+
+def test_f026_r17_el_reloj_del_preview_por_defecto_es_el_del_dia() -> None:
+    from application.use_cases import PreviewSync
+
+    assert PreviewSync(_SigridPreview([]), "", SQL_OBR)._hoy == date.today
+
+
+@pytest.mark.parametrize("columna", ["ide", "nombre", "empresa"])
+def test_f026_r5_preview_falla_sin_columna_obligatoria(columna: str) -> None:
+    filas = [{k: v for k, v in _fila(1).items() if k != columna}]
+    uow = _UowLectura([])
+    with pytest.raises(ValueError, match=f"sync.empleados.sql.*'{columna}'"):
+        _preview(filas, uow_factory=lambda: uow).ejecutar()
+    assert uow.commits == 0 and uow.trabajadores.recibido is None

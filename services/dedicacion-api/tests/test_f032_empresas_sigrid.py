@@ -370,12 +370,28 @@ def test_f032_r1_sin_numemp_o_nombre_no_se_guarda_nada() -> None:
         assert uow.commits == 0
 
 
+class _UowLectura:
+    """UoW de solo lectura que el preview abre para la ventana de bajas
+    (F-026 R17): sin periodos abiertos, sin `commit`. Sustituye a
+    `SqlAlchemyUnitOfWork`, que con `session_factory=None` no se puede abrir."""
+
+    def __init__(self, _session_factory: Any) -> None:
+        self.periodos = _PeriodosVacios()
+
+    def __enter__(self) -> "_UowLectura":
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        return None
+
+
 def _contenedor(monkeypatch: pytest.MonkeyPatch, sigrid: _SigridFalso) -> Any:
     """Contenedor REAL (config.yaml versionado) con Sigrid sustituido."""
     from config.settings import Settings
     from interface_adapters.api import deps
 
     monkeypatch.setattr(deps, "SigridApiClient", lambda _settings: sigrid)
+    monkeypatch.setattr(deps, "SqlAlchemyUnitOfWork", _UowLectura)
     return deps.construir_contenedor(Settings(_env_file=None), None)  # type: ignore[arg-type]
 
 

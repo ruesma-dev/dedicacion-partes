@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import logging
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -346,6 +348,10 @@ class PreviewSync:
     recurso) con la misma validación de columnas, y desglosa lo incluido
     y lo excluido para poder ajustar config.yaml con datos reales. Desde
     F-032 informa también del catálogo de empresas leído.
+
+    Ventana de bajas (F-026 R12, R17): con `uow_factory`, abre una UoW SOLO
+    para leer los periodos `ABIERTO` (sin `commit`); sin ella, la ventana es
+    el mes anterior a `hoy`. Se publica en `empleados.ventana_baja`.
     """
 
     def __init__(
@@ -360,6 +366,8 @@ class PreviewSync:
         exigir_codigo_mes: bool = True,
         criterio: CriterioActivoRecurso = CRITERIO_VACIO,
         sql_empresas: str | None = None,
+        uow_factory: Callable[[], UnitOfWork] | None = None,
+        hoy: Callable[[], date] = date.today,
     ) -> None:
         self._sigrid = sigrid
         self._sql_empleados = sql_empleados
@@ -373,6 +381,16 @@ class PreviewSync:
         self._filtro_estados = filtro_estados and bool(self._estados)
         self._exigir_mes = bool(exigir_codigo_mes)
         self._criterio = criterio
+        self._uow_factory = uow_factory
+        self._hoy = hoy
+
+    def _ventana_baja(self) -> int:
+        from application.sync_pipeline import ventana_de_bajas
+
+        if self._uow_factory is None:
+            return ventana_de_bajas([], self._hoy())
+        with self._uow_factory() as uow:
+            return ventana_de_bajas(uow.periodos.listar(), self._hoy())
 
     def ejecutar(self) -> dict[str, Any]:
         from application.filtros_maestros import (
@@ -389,12 +407,14 @@ class PreviewSync:
 
         brutas_emp = self._sigrid.leer(self._sql_empleados)
         _validar_columnas(brutas_emp, COLUMNAS_EMPLEADOS, "sync.empleados.sql")
+        ventana_baja = self._ventana_baja()
         emp = depurar_empleados(
             brutas_emp,
             self._categorias,
             self._filtro_categorias,
             exigir_codigo_mes=self._exigir_mes,
             criterio=self._criterio,
+            baja_desde=ventana_baja,
         )
         brutas_obr = self._sigrid.leer(self._sql_obras)
         _validar_columnas(brutas_obr, COLUMNAS_OBRAS, "sync.obras.sql")
@@ -419,6 +439,9 @@ class PreviewSync:
                 "excluidos_por_estado_recurso": dict(
                     emp.excluidos_estado_recurso.most_common()
                 ),
+                "ventana_baja": ventana_baja,
+                "incluidos_con_baja": emp.incluidos_con_baja,
+                "posible_misma_persona": emp.posible_misma_persona,
                 "con_baja_laboral": emp.con_baja_laboral,
                 "total": len(emp.filas),
                 "por_categoria": dict(por_categoria.most_common()),

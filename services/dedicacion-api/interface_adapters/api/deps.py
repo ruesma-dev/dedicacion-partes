@@ -98,6 +98,9 @@ def construir_contenedor(
             exigir_codigo_mes=exigir_mes,
             criterio=criterio,
             sql_empresas=sql_empresas,
+            # UoW solo para leer los periodos ABIERTO de la ventana de bajas
+            # (F-026 R17); se resuelve al llamar, como `Contenedor.uow`.
+            uow_factory=lambda: SqlAlchemyUnitOfWork(session_factory),
         ),
         exporter=exporter,
         registro_sigrid=RegistroSigrid(session_factory,
