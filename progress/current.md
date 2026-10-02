@@ -14,8 +14,10 @@
 > (design §6) se quedó corta: 4 tests de F-024 (R17 registro, R10 cuadrante,
 > R6 y R6/R13 rutas) cambian como consecuencia directa de R1/R3 y no estaban
 > en la lista (`progress/impl_F-034.md`, «Motivo del bloqueo»). El humano acepta
-> (2026-10-02): `in_progress` de nuevo; §6 completado (`ba55567`) e
-> **implementer relanzado** → `progress/impl_F-034.md`.
+> (2026-10-02): `in_progress` de nuevo; §6 completado (`ba55567`).
+> **Implementer terminado** (`ef56e2d` … `573ee1e`, `progress/impl_F-034.md`);
+> **reviewer lanzado** → `progress/review_F-034.md`. Manuales y copia a
+> `azure-apps`: sección «F-034 · pendiente» más abajo.
 > Se despliega **junto con F-026**.
 > **F-026**: decisión del humano 2026-10-01, «no debe buscar por empleado sino
 > por recurso»: el sync parte de los RECURSOS activos (sin fecha de baja) con
@@ -64,6 +66,28 @@
 - Documentación al día con el modo real: `CLAUDE.md`, `README.md`,
   `docs/ARCHITECTURE.md`, `docs/INTEGRACION.md` (§8 con el comando para volver
   a pruebas) y su copia en `azure-apps`.
+
+## F-034 · pendiente antes del `done`
+
+- **T8 (líder, con autorización del humano): copia a `azure-apps/dedicacion.md`**,
+  literal, de las piezas de T7: los puntos de `#regla-empresa` cambiados en
+  `docs/ARCHITECTURE.md` y, de `docs/INTEGRACION.md`, la cabecera, la fila
+  `EMPRESA_IMPUTACION` de §3 y el párrafo «Una línea sin empresa no se
+  registra» de §9 (`git diff d34e4a1 -- docs/`). Commit en `azure-apps`.
+  Resultado: _pendiente_.
+- **T9 (humano, R13, D5): preflight en local, solo lectura.** Transfer local
+  con `OBRA_PRUEBAS_FORZAR=true` en su `.env`; api y front de esta rama
+  (`python main.py` en cada servicio). En `http://localhost:8080/?empresa=18`:
+  las obras ofrecidas son las de Construcciones Ruesma; dar a un trabajador
+  de la 18 una línea en una de ellas en 2026-09 (solo BBDD local). Después,
+  desde Git Bash:
+  `curl -s -X POST "http://localhost:8090/api/v1/periodos/2026/9/registro/preflight?empresa=18" -H "Content-Type: application/json" -d "{}"`.
+  **Esperado:** `ok: true` por obra, `obra_origen.empresa` = 1 y la acción de
+  esa línea `escribir`, no `omitir` por empresa. **No lanzar
+  `registro/ejecutar`.** Resultado: _pendiente_.
+- **Tras desplegar (humano, no bloquea el `done`):** cuadrante de producción
+  con `?empresa=18`: obras de Construcciones Ruesma, **sin pulsar Registrar**.
+- **Despliegue:** junto con F-026 (decisión del humano).
 
 ## Lo siguiente, por prioridad
 
