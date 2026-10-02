@@ -221,3 +221,143 @@ def test_f026_r8_el_dominio_expone_la_fecha_de_baja() -> None:
                       categoria=None).fecha_baja is None
     trabajador = _repo(_SesionRepo([_orm(7, fecha_baja=20261015)])).obtener(7)
     assert trabajador is not None and trabajador.fecha_baja == 20261015
+
+
+# --- R15: cuadrante, resumen y copia por mes --------------------------------
+
+
+class _SesionPeriodo:
+    """Sesión doble de `listar_para_periodo`: el periodo por `get`, los
+    trabajadores y los `trabajador_ide` con líneas según lo que se pida.
+    No evalúa SQL: si el repositorio confiara en el WHERE para filtrar, el
+    doble lo delataría devolviendo a todos."""
+
+    def __init__(self, trabajadores: list[Any], con_lineas: list[int],
+                 anio: int, mes: int) -> None:
+        self.trabajadores = trabajadores
+        self.con_lineas = con_lineas
+        self.anio, self.mes = anio, mes
+
+    def get(self, modelo: Any, ide: int) -> Any:
+        from infrastructure.db.orm_models import PeriodoORM
+
+        assert modelo is PeriodoORM
+        return PeriodoORM(id=ide, anio=self.anio, mes=self.mes, estado="ABIERTO")
+
+    def scalars(self, sentencia: Any) -> _Resultado:
+        from infrastructure.db.orm_models import TrabajadorORM
+
+        if sentencia.column_descriptions[0]["entity"] is TrabajadorORM \
+                and sentencia.column_descriptions[0]["name"] == "TrabajadorORM":
+            return _Resultado(self.trabajadores)
+        return _Resultado(self.con_lineas)
+
+
+#: Plantilla de R15: (ide, activo, fecha_baja). Con líneas: 4 y 5.
+PLANTILLA = [
+    (1, True, None),          # sin baja
+    (2, True, 20261015),      # baja en octubre
+    (3, True, 20260915),      # baja en septiembre, sin líneas en octubre
+    (4, True, 20260915),      # baja en septiembre, con líneas en octubre
+    (5, False, None),         # desactivado por el sync, con líneas
+    (6, False, None),         # desactivado, sin líneas
+    (7, True, 20261101),      # baja en noviembre
+]
+CON_LINEAS = [4, 5]
+
+
+def _listar(anio: int, mes: int) -> dict[int, bool]:
+    trabajadores = [_orm(i, fecha_baja=f, activo=a) for i, a, f in PLANTILLA]
+    sesion = _SesionPeriodo(trabajadores, CON_LINEAS, anio, mes)
+    return {t.ide: t.activo for t in _repo(sesion).listar_para_periodo(99)}
+
+
+def test_f026_r15_octubre_baja_en_el_mes_visible_y_activa() -> None:
+    assert _listar(2026, 10) == {1: True, 2: True, 4: False, 5: False, 7: True}
+
+
+def test_f026_r15_noviembre_la_baja_de_octubre_ya_no_esta() -> None:
+    assert _listar(2026, 11) == {1: True, 4: False, 5: False, 7: True}
+
+
+def test_f026_r15_septiembre_todos_vigentes() -> None:
+    assert _listar(2026, 9) == {1: True, 2: True, 3: True, 4: True, 5: False,
+                                7: True}
+
+
+def test_f026_r15_conserva_los_datos_y_el_orden_del_repositorio() -> None:
+    trabajadores = [_orm(9, fecha_baja=20261015), _orm(2)]
+    sesion = _SesionPeriodo(trabajadores, [], 2026, 10)
+    listados = _repo(sesion).listar_para_periodo(1)
+    assert [(t.ide, t.cod, t.fecha_baja, t.empresa) for t in listados] == [
+        (9, "MO/0009", 20261015, 1), (2, "MO/0002", None, 1)]
+
+
+class _UowCopia:
+    """UoW falsa de la copia del mes: el repositorio de trabajadores es el
+    real sobre `_SesionPeriodo`; el resto, dobles mínimos."""
+
+    def __init__(self, sesion: _SesionPeriodo,
+                 lineas_origen: dict[int, list[Any]]) -> None:
+        from domain.models import EstadoPeriodo, Periodo
+
+        self.trabajadores = _repo(sesion)
+        periodo = Periodo(sesion.anio, sesion.mes, EstadoPeriodo.ABIERTO)
+        origen = Periodo(sesion.anio, sesion.mes - 1, EstadoPeriodo.CERRADO)
+        lineas_destino = {i: [object()] for i in sesion.con_lineas}
+        copiados: list[int] = []
+        self.copiados = copiados
+
+        class _Periodos:
+            def obtener(self, _a: int, _m: int) -> Any:
+                return (99, periodo)
+
+            def anterior_con_datos(self, _a: int, _m: int) -> Any:
+                return (98, origen)
+
+        class _Asignaciones:
+            def lineas_del_periodo(self, periodo_id: int) -> Any:
+                return lineas_origen if periodo_id == 98 else lineas_destino
+
+            def reemplazar(self, _p: int, ide: int, _l: Any, _u: str) -> None:
+                copiados.append(ide)
+
+        class _Eventos:
+            def registrar(self, *_args: Any) -> None:
+                return None
+
+        self.periodos = _Periodos()
+        self.asignaciones = _Asignaciones()
+        self.eventos = _Eventos()
+
+    def commit(self) -> None:
+        return None
+
+
+def test_f026_r15_la_copia_del_mes_solo_copia_a_los_vigentes() -> None:
+    from decimal import Decimal
+
+    from application.use_cases import CopiarPeriodoAnterior
+    from domain.models import FiltroEmpresa, Linea
+
+    trabajadores = [_orm(i, fecha_baja=f, activo=a) for i, a, f in PLANTILLA]
+    sesion = _SesionPeriodo(trabajadores, CON_LINEAS, 2026, 10)
+    linea = Linea(obra_ide=100, es_postventa=False, porcentaje=Decimal("100"))
+    uow = _UowCopia(sesion, {i: [linea] for i, _a, _f in PLANTILLA})
+    resultado = CopiarPeriodoAnterior().ejecutar(
+        uow, 2026, 10, "pgris",
+        filtro=FiltroEmpresa(empresa=1, por_defecto=1, empresa_obras=1))
+    assert sorted(uow.copiados) == [1, 2, 7]
+    assert resultado.trabajadores_copiados == 3
+
+
+def test_f026_r15_el_resumen_no_cuenta_la_baja_anterior_sin_lineas() -> None:
+    from domain.estados import resumir
+    from domain.models import CuadranteTrabajador
+
+    trabajadores = [_orm(i, fecha_baja=f, activo=a) for i, a, f in PLANTILLA]
+    sesion = _SesionPeriodo(trabajadores, CON_LINEAS, 2026, 10)
+    filas = [CuadranteTrabajador(trabajador=t)
+             for t in _repo(sesion).listar_para_periodo(99)]
+    # 1, 2 y 7 vigentes sin carga; 4 y 5 no vigentes y aquí sin líneas.
+    assert resumir(filas).total == 3

@@ -6,6 +6,7 @@ transaccional la marca SqlAlchemyUnitOfWork (commit/rollback único).
 """
 from __future__ import annotations
 
+import dataclasses
 import logging
 from decimal import Decimal
 from typing import Any
@@ -14,6 +15,7 @@ from sqlalchemy import delete, distinct, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from domain.empresas import empresa_de_baja
+from domain.vigencia import vigente_en
 from domain.models import (
     Empresa,
     EstadoPeriodo,
@@ -97,15 +99,28 @@ class PgTrabajadorRepository:
         )
 
     def listar_para_periodo(self, periodo_id: int) -> list[Trabajador]:
+        """Vigentes en el mes del periodo más los que tienen líneas en él,
+        con `activo` = «vigente en ese mes» (F-026 R15,
+        `domain.vigencia.vigente_en`). Cuadrante, resumen, copia y export
+        del mes salen de aquí, así que todos pasan a ser por mes."""
+        periodo = self._s.get(PeriodoORM, periodo_id)
         con_lineas = select(AsignacionORM.trabajador_ide).where(
             AsignacionORM.periodo_id == periodo_id
         )
+        ides_con_lineas = set(self._s.scalars(con_lineas).all())
         stmt = (
             select(TrabajadorORM)
             .where(TrabajadorORM.activo.is_(True) | TrabajadorORM.ide.in_(con_lineas))
             .order_by(TrabajadorORM.nombre)
         )
-        return [_a_trabajador(t) for t in self._s.scalars(stmt).all()]
+        listados = []
+        for orm in self._s.scalars(stmt).all():
+            vigente = vigente_en(orm.activo, orm.fecha_baja, periodo.anio, periodo.mes)
+            if vigente or orm.ide in ides_con_lineas:
+                listados.append(
+                    dataclasses.replace(_a_trabajador(orm), activo=vigente)
+                )
+        return listados
 
     def obtener(self, ide: int) -> Trabajador | None:
         orm = self._s.get(TrabajadorORM, ide)
