@@ -14,7 +14,10 @@ importan dentro de los tests, para que cada tarea se verifique con su `-k`.
 from __future__ import annotations
 
 import re
+from datetime import date
 from typing import Any
+
+import pytest
 
 
 # --- R1: la consulta versionada parte de dbo.res ----------------------------
@@ -293,3 +296,122 @@ def test_f026_r13_upsert_recibe_fecha_baja_sin_auxiliares() -> None:
         assert auxiliar not in fila, auxiliar
     assert {"ide", "cod", "nombre", "dni", "empresa", "categoria",
             "cod_hora_mes", "importe_mes"} <= set(fila)
+
+
+# --- R5, R12: el step del sync calcula la ventana ----------------------------
+
+
+class _SigridFalso:
+    """Devuelve las filas de empleados a cualquier consulta."""
+
+    def __init__(self, filas: list[dict[str, Any]]) -> None:
+        self._filas = filas
+        self.leidas: list[str] = []
+
+    def leer(self, sql: str) -> list[dict[str, Any]]:
+        self.leidas.append(sql)
+        return [dict(f) for f in self._filas]
+
+
+class _RepoEspia:
+    def __init__(self) -> None:
+        self.recibido: list[dict[str, Any]] | None = None
+
+    def sincronizar(self, filas: list[dict[str, Any]]) -> Any:
+        from domain.models import ResultadoSyncMaestro
+
+        self.recibido = [dict(f) for f in filas]
+        return ResultadoSyncMaestro(recibidos=len(filas))
+
+
+class _PeriodosFalsos:
+    def __init__(self, periodos: list[Any]) -> None:
+        self._periodos = periodos
+        self.llamadas = 0
+
+    def listar(self) -> list[Any]:
+        self.llamadas += 1
+        return list(self._periodos)
+
+
+class _UowEspia:
+    def __init__(self, periodos: list[Any] | None = None) -> None:
+        self.trabajadores = _RepoEspia()
+        self.obras = _RepoEspia()
+        self.periodos = _PeriodosFalsos(periodos or [])
+        self.commits = 0
+
+    def commit(self) -> None:
+        self.commits += 1
+
+
+def _periodo(anio: int, mes: int, abierto: bool = True) -> Any:
+    from domain.models import EstadoPeriodo, Periodo
+
+    estado = EstadoPeriodo.ABIERTO if abierto else EstadoPeriodo.CERRADO
+    return Periodo(anio, mes, estado)
+
+
+#: Hoy en las pruebas del step y del preview.
+HOY = date(2026, 10, 2)
+
+#: Filas con bajas alrededor de las ventanas de las pruebas.
+FILAS_BAJA = [
+    _fila(1, fecha_baja=20260430),     # antes de cualquier ventana
+    _fila(2, fecha_baja=20260515),     # mayo: solo si mayo contara (cerrado)
+    _fila(3, fecha_baja=20260601),     # junio (abierto más antiguo)
+    _fila(4, fecha_baja=20260831),     # agosto
+    _fila(5, fecha_baja=20260901),     # septiembre (mes anterior a HOY)
+    _fila(6),
+]
+
+
+def _step(filas: list[dict[str, Any]], **kwargs: Any) -> Any:
+    from application.sync_pipeline import FetchEmpleadosStep
+
+    criterio = _criterio(excluir_baja_anterior_a_ventana=True)
+    return FetchEmpleadosStep(_SigridFalso(filas), "SELECT ... FROM dbo.res",
+                              criterio=criterio, hoy=lambda: HOY, **kwargs)
+
+
+def _ejecutar_step(step: Any, uow: _UowEspia) -> list[int]:
+    from application.sync_pipeline import SyncContext
+
+    ctx = SyncContext()
+    step.ejecutar(ctx, uow)
+    return _ides(ctx.filas_empleados)
+
+
+def test_f026_r12_el_step_usa_los_periodos_abiertos_y_hoy() -> None:
+    uow = _UowEspia([_periodo(2026, 10), _periodo(2026, 5, abierto=False),
+                     _periodo(2026, 6), _periodo(2026, 8)])
+    assert _ejecutar_step(_step(FILAS_BAJA), uow) == [3, 4, 5, 6]
+    assert uow.periodos.llamadas == 1
+
+
+def test_f026_r12_el_step_sin_abiertos_usa_el_mes_anterior_a_hoy() -> None:
+    uow = _UowEspia([_periodo(2026, 6, abierto=False)])
+    assert _ejecutar_step(_step(FILAS_BAJA), uow) == [5, 6]
+
+
+def test_f026_r12_el_reloj_por_defecto_es_el_del_dia() -> None:
+    from application.sync_pipeline import FetchEmpleadosStep
+
+    step = FetchEmpleadosStep(_SigridFalso([]), "SELECT 1")
+    assert step._hoy == date.today
+
+
+@pytest.mark.parametrize("columna", ["ide", "nombre", "empresa"])
+def test_f026_r5_sync_falla_sin_columna_obligatoria_y_no_persiste(
+    columna: str,
+) -> None:
+    from application import sync_pipeline as sp
+
+    filas = [{k: v for k, v in _fila(1).items() if k != columna}]
+    uow = _UowEspia()
+    pipeline = sp.SyncMaestrosPipeline([
+        _step(filas), sp.UpsertTrabajadoresStep()])
+    with pytest.raises(ValueError, match=f"sync.empleados.sql.*'{columna}'"):
+        pipeline.ejecutar(uow)
+    assert uow.trabajadores.recibido is None
+    assert uow.commits == 0

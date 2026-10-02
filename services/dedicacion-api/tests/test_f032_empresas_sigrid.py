@@ -315,11 +315,20 @@ class _RepoEspia:
         return ResultadoSyncMaestro(recibidos=len(filas), altas=len(filas))
 
 
+class _PeriodosVacios:
+    """Sin periodos abiertos: la ventana de bajas del sync es el mes anterior
+    al de hoy (F-026 R12)."""
+
+    def listar(self) -> list[Any]:
+        return []
+
+
 class _UowEspia:
     def __init__(self) -> None:
         self.trabajadores = _RepoEspia()
         self.obras = _RepoEspia()
         self.empresas = _RepoEspia()
+        self.periodos = _PeriodosVacios()  # ventana de bajas (F-026)
         self.commits = 0
 
     def commit(self) -> None:
