@@ -170,6 +170,8 @@ y se restauró:
   `test_f034_r10_la_empresa_de_las_obras_sale_del_ajuste_en_las_rutas`
   (ajuste en la 28: obras `[900]`, Ana `[(100, 1, True), (900, 28, False)]`);
   relanzado M12: muerto (`8349775`).
+Texto exacto de M1-M13 (script retirado del árbol): `git show 8349775:scripts/mutantes_manuales_f034.py`.
+
 - **M4, equivalente.** En `RegistroSigrid` los dos campos salen del mismo
   `self._por_defecto` (`_filtro`, D1), así que `filtro.por_defecto ==
   filtro.empresa_obras` para cualquier entrada: ningún test puede

@@ -1,8 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-032 se cerró el 2026-10-01 (resumen en
-`history.md`). El arnés es la **1.7.3**.
+**F-034 en curso** (review APROBADA; faltan T8, T9 y la aceptación de M4 para
+`done`). F-032 se cerró el 2026-10-01 (resumen en `history.md`). El arnés es la **1.7.3**.
 
 > **2026-10-01, en curso:** el humano aclara que las OBRAS (incluida la
 > postventa) son siempre de Construcciones Ruesma; los trabajadores, de varias
@@ -16,8 +16,9 @@
 > en la lista (`progress/impl_F-034.md`, «Motivo del bloqueo»). El humano acepta
 > (2026-10-02): `in_progress` de nuevo; §6 completado (`ba55567`).
 > **Implementer terminado** (`ef56e2d` … `573ee1e`, `progress/impl_F-034.md`);
-> **reviewer lanzado** → `progress/review_F-034.md`. Manuales y copia a
-> `azure-apps`: sección «F-034 · pendiente» más abajo.
+> **review APROBADA** (`progress/review_F-034.md`). Manuales, copia a
+> `azure-apps` y aceptación de M4: sección «F-034 · pendiente» más abajo.
+> **F-034 está en `dev` pero NO se despliega sola**: va con F-026.
 > Se despliega **junto con F-026**.
 > **F-026**: decisión del humano 2026-10-01, «no debe buscar por empleado sino
 > por recurso»: el sync parte de los RECURSOS activos (sin fecha de baja) con
@@ -69,12 +70,13 @@
 
 ## F-034 · pendiente antes del `done`
 
-- **T8 (líder, con autorización del humano): copia a `azure-apps/dedicacion.md`**,
+- **T8 — CUMPLIDA. Copia a `azure-apps/dedicacion.md`**,
   literal, de las piezas de T7: los puntos de `#regla-empresa` cambiados en
   `docs/ARCHITECTURE.md` y, de `docs/INTEGRACION.md`, la cabecera, la fila
   `EMPRESA_IMPUTACION` de §3 y el párrafo «Una línea sin empresa no se
   registra» de §9 (`git diff d34e4a1 -- docs/`). Commit en `azure-apps`.
-  Resultado: _pendiente_.
+  **Resultado: HECHA (2026-10-02)**, commit `b4d5340` en `azure-apps`, marcada
+  «aún NO desplegado». (ARCHITECTURE no tiene copia en `azure-apps`.)
 - **T9 (humano, R13, D5): preflight en local, solo lectura.** Transfer local
   con `OBRA_PRUEBAS_FORZAR=true` en su `.env`; api y front de esta rama
   (`python main.py` en cada servicio). En `http://localhost:8080/?empresa=18`:
@@ -87,7 +89,14 @@
   `registro/ejecutar`.** Resultado: _pendiente_.
 - **Tras desplegar (humano, no bloquea el `done`):** cuadrante de producción
   con `?empresa=18`: obras de Construcciones Ruesma, **sin pulsar Registrar**.
-- **Despliegue:** junto con F-026 (decisión del humano).
+- **M4 (humano): aceptar por escrito el mutante equivalente.** En
+  `RegistroSigrid` `filtro.por_defecto` y `filtro.empresa_obras` salen del
+  mismo ajuste (D1), así que cambiar uno por otro no lo distingue ningún test;
+  reproducido por el reviewer (RM5). Resultado: _pendiente_.
+- **Despliegue:** junto con F-026 (decisión del humano). No se despliega sola.
+- Observación de la review: una corrida de la campaña dio 3 supervivientes
+  que no se reprodujeron en copia aislada. Si vuelve a pasar, encargo en
+  `arnes-base` (es la misma familia que el de la caché previa de F-022).
 
 ## Lo siguiente, por prioridad
 
@@ -128,9 +137,10 @@ El backlog completo está en `BACKLOG.md`. Por orden:
 - **Avisa y espera confirmación** en tres casos, cada uno con su clave: pisar
   una línea existente, pasarse del 100 % de un trabajador (F-002) y escribir
   sin partida casada (F-013).
-- **El transfer sigue en modo pruebas.** El motivo real está en
-  `docs/ARCHITECTURE.md`: **la imputación a partidas en producción no está
-  validada**. Salir de ahí exige autorización expresa para una acción concreta.
+- **El transfer desplegado escribe DE VERDAD desde el 2026-10-01**, por
+  decisión expresa del humano (`docs/INTEGRACION.md` §8, con el comando para
+  volver a pruebas). Sigue sin validar la imputación a partidas en producción
+  (`docs/ARCHITECTURE.md`, F-017).
 
 ## Lo que NO está verificado, y consta
 
