@@ -31,8 +31,11 @@
 > tests que cambian (design §7) se queda corta, como pasó en F-034. T1 hecha
 > (`3627a6b`); T2 hecha pero guardada en `stash@{0}` para no dejar la rama en
 > rojo. El implementer listó de antemano lo que tocarán T2-T9 (A1-A8 en F-023,
-> B1 en F-024, C1-C3 dobles): `progress/impl_F-026.md`. **Pendiente del
-> humano:** aprobar la ampliación. F-034 queda `blocked` solo por su T9, que el
+> B1 en F-024, C1-C3 dobles): `progress/impl_F-026.md`. **El humano aprueba
+> (2026-10-02)** la ampliación y un cambio de método para el resto de F-026
+> (cambios de test consecuencia directa de un requisito, declarados en tabla y
+> verificados uno a uno por el reviewer; ver `features.json`). `in_progress`
+> de nuevo: **implementer relanzado**, retoma desde `stash@{0}`. F-034 queda `blocked` solo por su T9, que el
 > humano hará junto con las manuales de F-026 (el líder le guía).
 > **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
 > turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.
