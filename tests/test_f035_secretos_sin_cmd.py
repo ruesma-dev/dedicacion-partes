@@ -147,8 +147,11 @@ def test_f035_r1_psql_en_el_path_en_ambos_modos() -> None:
     codigo = _codigo(VACIAR)
     comprobacion = _primera(r"Get-Command psql\b", codigo)
     assert comprobacion < len(codigo), "falta la comprobacion de psql"
-    # Al primer nivel del script: no colgada de un `if ($Local)`.
+    # Al primer nivel del script y sin condicion de modo: ni colgada de un
+    # `if ($Local)` ni con `$Local` en su propia condicion.
     assert _nivel(codigo, comprobacion) == 0, codigo[comprobacion]
+    assert re.match(r"^if \(-not \(Get-Command psql -ErrorAction SilentlyContinue\)\) \{$",
+                    codigo[comprobacion]), codigo[comprobacion]
     assert comprobacion < _primera(r"Read-Host", codigo)
 
 
@@ -234,12 +237,16 @@ def test_f035_r2_el_plan_explica_solo_recuento() -> None:
 
 
 def test_f035_r3_el_error_de_azure_apunta_a_la_ip_propia() -> None:
-    texto = _texto(VACIAR)
-    error = re.findall(r'throw\s*\(?"[^\n]*', texto)
-    azure = [ln for ln in error if "IP" in ln]
-    assert azure, error
-    assert re.search(r"firewall", azure[0], re.IGNORECASE)
-    assert re.search(r"NO (la )?(crea|toca)", azure[0]), azure[0]
+    # El `throw` de Azure es el que sigue al de la rama local en Ejecutar-Sql.
+    cuerpo = _funcion_ejecutar_sql()
+    local = _primera(r'^if \(\$Local\) \{ throw "Fallo ejecutando SQL', cuerpo)
+    azure = _primera(r'^throw "Fallo ejecutando SQL', cuerpo, local + 1)
+    assert local < azure < len(cuerpo), (local, azure)
+    mensaje = cuerpo[azure]
+    assert "tu IP no tenga acceso" in mensaje, mensaje
+    assert re.search(r"regla de firewall de tu IP", mensaje), mensaje
+    assert re.search(r"NO (la )?(crea|toca)", mensaje), mensaje
+    assert "IP" not in cuerpo[local]
 
 
 def test_f035_r3_sin_tocar_nada_del_servidor() -> None:
