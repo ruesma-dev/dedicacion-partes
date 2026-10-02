@@ -29,15 +29,17 @@ rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
   mutantes no está como tabla reproducible. **Ciclo 2 hecho** (`301dfed`,
   `cffd850`, `eb224b5`): `)` en la clase de caracteres, con test y README;
   tabla en `progress/mutacion_manual_F-035.md` (21 mutantes, 0
-  supervivientes, script incrustado). **Review 2 lanzada.**
+  supervivientes, script incrustado). **Review 2: APROBADO** (tabla
+  reproducida 23/23 por el reviewer) y **mergeada en `dev`**. Para el `done`
+  solo falta la MANUAL de abajo.
 - **Observaciones de la review 1, recogidas:** `)` → aprobado y en el ciclo 2;
   criterio 6 de `features.json` → ya dice «tres tests»; automejora (tabla
   manual en fichero propio) → `arnes-base`, encargo de mutantes manuales
   declarativos, commit `e9bc34a`.
 - **Observación del implementer, no aplicada (fuera del plan):** en
   `crear_base_dedicacion.ps1` los pasos 1-2 corren antes de pedir las
-  contraseñas, así que una contraseña rechazada llega tras ellos. Se le
-  propondrá al humano al cerrar.
+  contraseñas, así que una contraseña rechazada llega tras ellos. **Propuesta
+  al humano el 2026-10-02**, pendiente de su decisión (sería otra feature).
 - **MANUAL (humano, NO escribe nada):** desde una consola nueva con `az login`:
   ```powershell
   cd C:\Users\pgris\PycharmProjects\porcentajes\infra
