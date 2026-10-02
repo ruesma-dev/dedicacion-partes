@@ -36,7 +36,10 @@ class Trabajador:
     dni: str | None
     categoria: str | None
     activo: bool = True
-    empresa: int | None = None  # con.emp de su ficha (F-023)
+    empresa: int | None = None  # con.emp de su recurso (F-023, F-026)
+    # Fecha de baja del recurso, AAAAMMDD o None (F-026): la vigencia por mes
+    # la decide `domain.vigencia.vigente_en`.
+    fecha_baja: int | None = None
 
 
 @dataclass(frozen=True)

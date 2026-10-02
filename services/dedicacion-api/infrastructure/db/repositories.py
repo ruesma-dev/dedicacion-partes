@@ -61,6 +61,7 @@ class PgTrabajadorRepository:
                         categoria=_texto(fila.get("categoria")),
                         activo=True,
                         empresa=_entero(fila.get("empresa")),
+                        fecha_baja=_fecha(fila.get("fecha_baja")),
                     )
                 )
                 altas += 1
@@ -71,6 +72,7 @@ class PgTrabajadorRepository:
                     or existente.categoria != _texto(fila.get("categoria"))
                     or existente.cod != _texto(fila.get("cod"))
                     or existente.empresa != _entero(fila.get("empresa"))
+                    or existente.fecha_baja != _fecha(fila.get("fecha_baja"))
                     or not existente.activo
                 )
                 existente.cod = _texto(fila.get("cod"))
@@ -78,6 +80,7 @@ class PgTrabajadorRepository:
                 existente.dni = _texto(fila.get("dni"))
                 existente.categoria = _texto(fila.get("categoria"))
                 existente.empresa = _entero(fila.get("empresa"))
+                existente.fecha_baja = _fecha(fila.get("fecha_baja"))
                 existente.activo = True
                 if cambio:
                     actualizados += 1
@@ -475,6 +478,11 @@ def _entero(valor: Any) -> int | None:
     return None if valor is None else int(valor)
 
 
+def _fecha(valor: Any) -> int | None:
+    """Fecha entera de Sigrid (AAAAMMDD) con 0 como «sin fecha» (None)."""
+    return _entero(valor) or None
+
+
 def _a_empresa(orm: EmpresaORM) -> Empresa:
     return Empresa(
         numero=orm.numemp,
@@ -492,6 +500,7 @@ def _a_trabajador(orm: TrabajadorORM) -> Trabajador:
         categoria=orm.categoria,
         activo=orm.activo,
         empresa=orm.empresa,
+        fecha_baja=orm.fecha_baja,
     )
 
 
