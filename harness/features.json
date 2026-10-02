@@ -90,7 +90,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 15,
+      "priority": 16,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -105,7 +105,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 16,
+      "priority": 17,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -154,7 +154,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 17,
+      "priority": 18,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -169,7 +169,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 18,
+      "priority": 19,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     },
     {
@@ -240,7 +240,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 19,
+      "priority": 20,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
     },
     {
@@ -259,7 +259,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 12,
+      "priority": 13,
       "branch": "feature/F-017-prueba-administracion"
     },
     {
@@ -280,7 +280,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 13,
+      "priority": 14,
       "branch": "feature/F-018-paso-a-escritura-real"
     },
     {
@@ -298,7 +298,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 14,
+      "priority": 15,
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
@@ -316,7 +316,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 5,
+      "priority": 6,
       "branch": "feature/F-020-mejorar-excel-exportacion"
     },
     {
@@ -335,7 +335,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 7,
+      "priority": 8,
       "branch": "feature/F-021-filtro-obra-chip-unico"
     },
     {
@@ -410,7 +410,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 3,
+      "priority": 4,
       "branch": "feature/F-025-obras-postventa-postv2"
     },
     {
@@ -444,7 +444,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 4,
+      "priority": 5,
       "branch": "feature/F-027-deshacer-por-usuario"
     },
     {
@@ -461,7 +461,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 6,
+      "priority": 7,
       "branch": "feature/F-028-borrar-todo-filtrado"
     },
     {
@@ -479,7 +479,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 8,
+      "priority": 9,
       "branch": "feature/F-029-seleccion-multiple-completar-100"
     },
     {
@@ -497,7 +497,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 9,
+      "priority": 10,
       "branch": "feature/F-030-dias-bajas-incidencias"
     },
     {
@@ -515,7 +515,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 10,
+      "priority": 11,
       "branch": "feature/F-031-mcp-ia"
     },
     {
@@ -552,7 +552,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 11,
+      "priority": 12,
       "branch": "feature/F-033-deshacer-linea-real"
     },
     {
@@ -573,6 +573,22 @@
       "rigor": "critico",
       "priority": 1,
       "branch": "feature/F-034-obras-siempre-ruesma"
+    },
+    {
+      "id": "F-035",
+      "title": "El script de vaciado no funciona contra Azure: la contraseña se corrompe",
+      "description": "Detectado en el despliegue del 2026-10-02. infra/vaciar_datos_prueba_dedicacion.ps1 pasa la contraseña del rol de aplicación a 'az postgres flexible-server execute -p <clave>'. En Windows az es un .cmd, así que la línea pasa por cmd.exe, que corrompe los caracteres especiales de la contraseña: 'password authentication failed' aunque la contraseña del Key Vault es correcta (la api conecta con ella). El vaciado de producción se hizo a mano con psql (PGPASSWORD en el entorno, PGSSLMODE=require) con las mismas tres sentencias del script. Corregir el script para que contra Azure use psql igual que en local (o pase la contraseña sin cmd.exe), con test. Mismo riesgo en cualquier otro script de infra/ que pase secretos a az por argumento: revisarlos.",
+      "acceptance": [
+        "El vaciado contra Azure no pasa la contraseña por argumento de az: usa psql con PGPASSWORD y sslmode=require, como en local",
+        "Revisados los demás scripts de infra/ que pasan secretos a az por argumento, con el resultado escrito",
+        "Test offline que lo fija (lectura del .ps1)",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 1,
+      "branch": "feature/F-035-vaciado-psql-azure"
     }
   ]
 }
