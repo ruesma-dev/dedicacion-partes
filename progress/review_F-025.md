@@ -15,11 +15,8 @@ El delta trae el rastro (`3bfed65`, `2790369`) y el ciclo 2: `c588879`, `e640f67
 firma pública y no se mueve ningún fichero. El alcance de la campaña crece en 11 líneas, y la
 campaña se ha repetido.
 
-- **`bash harness/init.sh`**: ENTORNO LISTO, exit 0.
-  - Raíz: `418 passed, 1 skipped`.
-  - Cobertura: `[OK]` 100 % (164/164).
-  - Tamaño: dentro del tope.
-  - ruff: 198 avisos.
+- **`bash harness/init.sh`**: ENTORNO LISTO, exit 0 (raíz `418 passed, 1 skipped`;
+  cobertura `[OK]` 100 %, 164/164; tamaño dentro del tope; ruff 198).
 - **Suites sin caché**: como init.sh usó la caché por servicio, las relancé sobre una copia
   `git archive HEAD` en el scratchpad con `-p no:cacheprovider`. Api `509 passed`, transfer
   `379 passed`, front `28 passed`; coincide con impl §8.
@@ -50,14 +47,11 @@ La MANUAL sigue con su comando exacto: T10 (pendiente en `azure-apps`), T13 y T1
   - `filtros_maestros` lo importa con el alias `_entero`, así que sus 8 usos previos no
     cambian.
   - `sync_pipeline` ya no importa nombres privados, y lo vigila un test con `ast`.
-- **`89f0d30`, ruff.** Solo cambia la forma:
-  - `Optional[X]` pasa a `X | None`. Todo es Python 3.12, en los Dockerfile y en
-    `from __future__`, y pydantic lo acepta en `UniversoIn`.
-  - Se reordenan imports, sobra un `noqa` y cambian `Decimal("50")` a `Decimal(50)`, un
-    `dict()` a literal y `getattr` a acceso directo.
-  - Ningún assert cambia de valor esperado.
-  - Contra `dev` sobre los mismos ficheros: 66 avisos antes y 64 ahora. Los 5 ficheros
-    nuevos de F-025 tienen 0.
+- **`89f0d30`, ruff**, solo forma: `Optional[X]` → `X | None` (Python 3.12 en los
+  Dockerfile, `from __future__`, pydantic lo acepta en `UniversoIn`), orden de imports, un
+  `noqa` sobrante, `Decimal(50)`, literal en vez de `dict()` y `getattr` directo. Ningún
+  assert cambia de valor esperado. Contra `dev`, mismos ficheros: 66 → 64 avisos; los 5
+  nuevos de F-025, 0.
 - **Tests anteriores**: el delta solo toca `test_f025_*`. Hay 4 tests nuevos en
   `test_f025_sync_postventa.py`, y los cambios en los tests del transfer son de estilo
   (ruff). Ningún test de otra feature se ha cambiado, declarado o no.
@@ -88,31 +82,19 @@ La MANUAL sigue con su comando exacto: T10 (pendiente en `azure-apps`), T13 y T1
   feature `done` está en `history.md`.
 - **C3** [x] arquitectura hexagonal (`entero_o_none` y `texto_o_none` en el dominio) ·
   [x] primera línea con la ruta · [x] sin prints, secretos ni dependencias nuevas.
-  [x] Las tres trampas:
-  - Escala: intacta.
-  - Postventa: `admite_postventa` es independiente de `activa`, con clave
-    `(obra, es_postventa)`.
-  - Sigrid: ninguna escritura ni SQL nueva.
-- **C3 bis**: N/A, porque no toca `docs/referencia/`.
-- **C4 ter**: N/A, porque no hay `harness/rutas_sensibles.json`.
+  [x] trampas: escala intacta; `admite_postventa` independiente de `activa`, clave
+  `(obra, es_postventa)`; ninguna escritura ni SQL nueva contra Sigrid.
+- **C3 bis** N/A (no toca `docs/referencia/`) · **C4 ter** N/A (no hay `rutas_sensibles.json`).
 - **C4** [x] R1-R25 tienen tests `test_f025_rN_*` en verde (tabla abajo), y R26 es
   documental, con la T10 · [x] sin red ni BBDD · [x] las MANUAL en `current.md`.
-- **C4 bis**
-  - [x] `rigor` declarado.
-  - [x] Fase RED: trazas de T1-T8 y del ciclo 2, y reproduje una.
-  - [x] Cobertura 100 %.
-  - [x] Recálculo de la mutación (57).
-  - [x] Campaña de 552 s no reejecutada, y lo digo aquí.
-  - [x] Coste por mutante de 9,7 s.
-  - [x] Sin «CAMPAÑA NO VÁLIDA».
-  - [x] RM1, [x] RM2, [x] RM5 en N/A justificado y [x] RM6, como arriba.
-  - [x] 0 supervivientes y nada en `PENDIENTE`.
-  - [x] «Evidencias» trae los cuatro números y los workers (`--workers 1`).
-  - [x] Ningún N/A sin motivo.
-- **C5** [x] T1-T9, T11, T12 y T15 en `[x]`, con un commit `F-025 Tn:` cada una, y los del
-  ciclo 2 como `F-025 C2-Tn`. T10, T13 y T14 son N/A **justificado**: son MANUAL (humano) y
-  bloquean el `done`, no la review · [x] sin ficheros temporales · [x] `features.json` en
-  `in_progress`.
+- **C4 bis** [x] `rigor` · [x] RED (T1-T8 y ciclo 2; una reproducida) · [x] cobertura
+  100 % · [x] recálculo (57) · [x] campaña de 552 s no reejecutada (dicho) · [x] 9,7 s por
+  mutante · [x] sin «CAMPAÑA NO VÁLIDA» · [x] RM1, RM2, RM5 (N/A justificado) y RM6, como
+  arriba · [x] 0 supervivientes, nada `PENDIENTE` · [x] «Evidencias» con los cuatro números
+  y `--workers 1` · [x] ningún N/A sin motivo.
+- **C5** [x] T1-T9, T11, T12, T15 en `[x]` con commit `F-025 Tn:` (ciclo 2: `C2-Tn`);
+  T10, T13, T14 N/A **justificado** (MANUAL, bloquean el `done`, no la review) · [x] sin
+  temporales · [x] `features.json` en `in_progress`.
 
 ## Cobertura requisito → test
 
@@ -131,15 +113,11 @@ CHANGES_REQUESTED **solo por el rastro**: la cabecera de `current.md` decía «N
 en ejecución», «Lo siguiente» estaba obsoleto y faltaban las condiciones de despliegue. Todo
 resuelto en la pasada 2. Ya se verificó entonces:
 
-- **D1**: el preflight y el universo usan las mismas `cargar_catalogo_postventa` y
-  `casar_postventa`. La api no casa y el front solo pinta.
-- **D2 = B y D8 = A**: casa el código exacto o un prefijo seguido solo de letras. `CP.1`,
-  `0678.MO`, `CI.7.5` y `0611` quedan fuera.
-- **`#regla-p5`** sigue siendo cierta, y los tests de F-002 están en verde.
-- **Tests anteriores cambiados**: solo los de design §7.1, revisados fila a fila. Ninguno
-  pierde exigencia.
-- **`_nodos_pv`**: ha desaparecido.
-- **Script de verificación**: no contiene `ejecutar` y solo llama a servicios locales.
+- **D1**: preflight y universo usan las mismas `cargar_catalogo_postventa` y
+  `casar_postventa`; la api no casa y el front solo pinta. **D2 = B y D8 = A**: exacto o
+  prefijo + solo letras (fuera `CP.1`, `0678.MO`, `CI.7.5`, `0611`).
+- `#regla-p5` cierta y F-002 en verde; tests anteriores cambiados solo los de design §7.1,
+  fila a fila, sin perder exigencia; `_nodos_pv` fuera; el script sin `ejecutar`, solo local.
 - **RM4**: los 4 «supervivientes» de la campaña en paralelo mueren en serie en una copia (el
   defecto es del arnés; encargo `0ecafc2` en `arnes-base`).
 - **RM6**: quitar `and postventa_registrar` está bien, porque el invariante vive en
