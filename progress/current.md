@@ -7,7 +7,13 @@ F-026 se cerraron y se **desplegaron el 2026-10-02** (resúmenes en
 
 ## F-025 · Obras de postventa desde los capítulos de POSTV2 (en curso)
 
-- **Estado: `in_progress`, implementer lanzado** (2026-10-03) → `progress/impl_F-025.md`. La spec
+- **Estado: `in_progress`, implementación terminada y review lanzada**
+  (2026-10-03) → `progress/impl_F-025.md`, `progress/review_F-025.md`. T1-T12
+  hechas: transfer 379, api 503, front 28, raíz 418 en verde; cobertura
+  162/162; mutación 56/56 muertos (`progress/mutacion_F-025.md`). Tests
+  anteriores cambiados: solo los de design §7.1 (tabla en el informe, §3).
+  Falsos supervivientes de la campaña en paralelo → encargo de `arnes-base`
+  (`0ecafc2`). La spec
   (`specs/F-025-obras-postventa-postv2/`) la aprobó el humano el 2026-10-01
   (`d49348c`) con **D2 = B** (la cascada de P5 no imputa a partidas ajenas),
   **D4 cambiada** (solo la POSTV2 de Construcciones Ruesma: las obras son
@@ -22,9 +28,15 @@ F-026 se cerraron y se **desplegaron el 2026-10-02** (resúmenes en
 - **Aprobada por el humano el 2026-10-03 con D8 = A** (la obra-capítulo queda
   fuera; los 8 tests de F-002 de design §7.1 cambian), cerrada en todos sus
   sitios (`0e005fe`).
-- **MANUAL al final (humano, NUNCA `registro/ejecutar`):** T10 (commit en
-  `azure-apps`), T13 (`scripts/verif_f025_postventa.ps1 -Paso M1`) y T14
-  (`-Paso M2 -Anio AAAA -Mes MM`), comandos exactos en `tasks.md`.
+- **MANUAL (humano, NUNCA `registro/ejecutar`)**, con api y transfer LOCALES
+  desde esta rama y la api contra la BBDD local; desde la raíz:
+  - **T10**: `git -C C:\Users\pgris\PycharmProjects\azure-apps diff dedicacion.md`,
+    revisar y hacer el commit en `azure-apps` (**pendiente en `azure-apps`**).
+  - **T13 (M1)**: `powershell -ExecutionPolicy Bypass -File scripts/verif_f025_postventa.ps1 -Paso M1`
+    → esperado `RESULTADO M1: OK` (83/73, `0656` `0660` `0669` `0689` solo
+    postventa, `CP` `OT` `191105` fuera). Resultado: _pendiente_.
+  - **T14 (M2)**: `powershell -ExecutionPolicy Bypass -File scripts/verif_f025_postventa.ps1 -Paso M2 -Anio AAAA -Mes MM`
+    → esperado `RESULTADO M2: OK`. Resultado: _pendiente_.
 - **Riesgo vivo en producción hasta que se despliegue:** el aviso de CP/OT de
   «Producción, hoy». El arnés es la **1.7.3**.
 
