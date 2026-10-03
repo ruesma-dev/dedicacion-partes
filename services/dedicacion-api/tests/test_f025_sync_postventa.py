@@ -97,3 +97,115 @@ def test_f025_r21_solo_la_tabla_obra_la_tiene() -> None:
     con_marca = {t.name for t in Base.metadata.tables.values()
                  if "admite_postventa" in t.columns}
     assert con_marca == {"obra"}
+
+
+# --- R15 · el cliente del transfer y el 502 -----------------------------------
+
+
+class _Respuesta:
+    def __init__(self, cuerpo: object, status: int = 200) -> None:
+        self._cuerpo = cuerpo
+        self.status_code = status
+        self.text = str(cuerpo)
+
+    def json(self) -> object:
+        if isinstance(self._cuerpo, Exception):
+            raise self._cuerpo
+        return self._cuerpo
+
+
+def _cliente(monkeypatch: pytest.MonkeyPatch, respuesta: object) -> tuple:
+    """`TransferClient` con `httpx.post` sustituido; apunta lo enviado."""
+    from types import SimpleNamespace
+
+    from infrastructure.transfer import transfer_client as modulo
+
+    enviado: list[tuple] = []
+
+    def post(url: str, json: dict, timeout: float) -> _Respuesta:
+        enviado.append((url, json, timeout))
+        if isinstance(respuesta, Exception):
+            raise respuesta
+        return respuesta  # type: ignore[return-value]
+
+    monkeypatch.setattr(modulo.httpx, "post", post)
+    ajustes = SimpleNamespace(transfer_base_url="http://transfer.invalid/",
+                              transfer_timeout_s=7.0)
+    return modulo.TransferClient(ajustes), enviado
+
+
+OBRAS = [{"ide": 10, "codigo": "0656", "nombre": "TOMARES"},
+         {"ide": 11, "codigo": "9999", "nombre": "NADA"}]
+
+
+def test_f025_r15_el_cliente_pide_el_universo_y_devuelve_los_ides(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """R15 · Un POST a `/api/postventa/universo` con la empresa y las obras;
+    vuelven los `ide` del universo y el motivo."""
+    from domain.models import ResultadoUniverso
+
+    cliente, enviado = _cliente(monkeypatch, _Respuesta({
+        "ok": True, "empresa": 1, "motivo": None, "casadas": 1,
+        "obras": [{"ide": 10, "partida": {"ide": 5, "cod": "0656"}}]}))
+    r = cliente.universo_postventa(1, OBRAS)
+    assert r == ResultadoUniverso(ides=frozenset({10}), motivo=None)
+    assert enviado == [("http://transfer.invalid/api/postventa/universo",
+                        {"empresa": 1, "obras": OBRAS}, 7.0)]
+
+
+def test_f025_r15_el_motivo_del_transfer_llega_sin_universo(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """R15 · Sin universo (obra de postventa ausente), `ok: true`, `obras`
+    vacía y el motivo del transfer: no es un fallo."""
+    cliente, _ = _cliente(monkeypatch, _Respuesta({
+        "ok": True, "motivo": "obra de postventa no encontrada",
+        "obras": []}))
+    r = cliente.universo_postventa(1, OBRAS)
+    assert r.ides == frozenset() and r.motivo == "obra de postventa no encontrada"
+
+
+@pytest.mark.parametrize(("respuesta", "causa"), [
+    (_Respuesta({"ok": False, "error": "sigrid-api caído"}, 502),
+     "sigrid-api caído"),
+    (_Respuesta({"ok": True, "motivo": None}), "no trae obras"),
+    (_Respuesta({"obras": []}), "no trae obras"),           # sin `ok`
+    (_Respuesta({"ok": "true", "obras": []}), "no trae obras"),
+    (_Respuesta(ValueError("no es JSON"), 500), "transfer HTTP 500"),
+], ids=["ok-false", "sin-obras", "sin-ok", "ok-texto", "no-json"])
+def test_f025_r15_respuesta_no_valida_es_universo_no_disponible(
+    monkeypatch: pytest.MonkeyPatch, respuesta: _Respuesta, causa: str
+) -> None:
+    """R15 · `ok` que no es `true` o sin `obras`: el universo no está
+    disponible, y el error lo nombra y dice la causa."""
+    from domain.errors import UniversoPostventaNoDisponible
+
+    cliente, _ = _cliente(monkeypatch, respuesta)
+    with pytest.raises(UniversoPostventaNoDisponible) as fallo:
+        cliente.universo_postventa(1, OBRAS)
+    assert str(fallo.value).startswith(
+        "universo de postventa no disponible: ")
+    assert causa in str(fallo.value)
+
+
+def test_f025_r15_transfer_caido_es_universo_no_disponible(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """R15 · Transfer inaccesible: mismo error, con la causa."""
+    import httpx
+    from domain.errors import UniversoPostventaNoDisponible
+
+    cliente, _ = _cliente(monkeypatch, httpx.ConnectError("sin red"))
+    with pytest.raises(UniversoPostventaNoDisponible, match="sin red"):
+        cliente.universo_postventa(1, OBRAS)
+
+
+def test_f025_r15_el_error_es_de_dominio_y_se_traduce_a_502() -> None:
+    """R15 · `UniversoPostventaNoDisponible` es un error de dominio y la
+    tabla de la app lo traduce a 502."""
+    from domain.errors import ErrorDominio, UniversoPostventaNoDisponible
+    from interface_adapters.api.app import _HTTP_POR_ERROR
+
+    assert issubclass(UniversoPostventaNoDisponible, ErrorDominio)
+    assert (UniversoPostventaNoDisponible, 502) in _HTTP_POR_ERROR
