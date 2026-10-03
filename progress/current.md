@@ -1,73 +1,9 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-035 en curso** (script de vaciado contra Azure, rigor estándar, sin spec),
-rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
-**desplegaron el 2026-10-02** (resúmenes en `history.md`). El arnés es la **1.7.3**.
-
-## F-035 · El vaciado contra Azure sin pasar la contraseña por `cmd.exe`
-
-- **Plan aprobado por el humano el 2026-10-02** (PARADA 1). Criterios en
-  `harness/features.json`. Resumen: el vaciado usa `psql` también en Azure
-  (FQDN por `az … show`, `PGPASSWORD` + `PGSSLMODE=require` solo durante la
-  llamada); conmutador nuevo `-SoloRecuento` (cuenta y sale, sin escribir);
-  `crear_base` y `add_secrets` rechazan contraseñas con `" & | < > ^ %` y
-  `)` (este último aprobado por el humano tras la review 1)
-  antes de llamar a `az`; resultado de la revisión de `infra/` en
-  `infra/README_dedicacion.md`.
-- **Fuera:** volver a vaciar producción, cambiar la contraseña de
-  `dedicacion_app`, firewall o cualquier cosa del servidor, `azure-apps`.
-- **Tests anteriores que cambian (declarados, tabla en `impl_F-035.md`):**
-  tres de `tests/test_f026_vaciado.py`: `…solo_en_la_base_dedicacion` (Azure
-  pasa a psql) y, por el conmutador nuevo `-SoloRecuento` aprobado en el plan,
-  `…parametros_confirmar_y_local` y `…sin_confirmar_sale_antes_de_conectar`.
-  El plan solo nombraba el primero; los otros dos son consecuencia directa de
-  `-SoloRecuento` (método aprobado por el humano: declarados y verificados
-  fila a fila por el reviewer).
-- **Estado:** review 1 → **CAMBIOS PEDIDOS** (`progress/review_F-035.md`):
-  código y tests correctos; bloquea solo C4 bis, la campaña manual de 19
-  mutantes no está como tabla reproducible. **Ciclo 2 hecho** (`301dfed`,
-  `cffd850`, `eb224b5`): `)` en la clase de caracteres, con test y README;
-  tabla en `progress/mutacion_manual_F-035.md` (21 mutantes, 0
-  supervivientes, script incrustado). **Review 2: APROBADO** (tabla
-  reproducida 23/23 por el reviewer) y **mergeada en `dev`**.
-- **MANUAL 1 (2026-10-03, humano): FALLA** con `password authentication
-  failed`, pero **no por el script**: comparadas en memoria, la contraseña
-  tecleada (10 caracteres) no es la del Key Vault (14). El servidor y el FQDN
-  responden; el aviso de firewall salió aunque el error era de contraseña.
-- **Ciclo 3 aprobado por el humano (2026-10-03):** en Azure la contraseña se
-  lee de `PG-PASSWORD` del Key Vault (salida de `az`, nunca argumento), con
-  `Read-Host` de respaldo; el aviso de firewall solo ante tiempo agotado o
-  `no pg_hba.conf entry`. **Ciclo 3 hecho** (`5a1eb13`…`89f1dac`, 418 passed;
-  mutación manual 31 mutantes, 0 supervivientes). Cambian además dos tests
-  propios de F-035 (`…r1_fqdn_por_show_de_solo_lectura`,
-  `…r3_el_error_de_azure_apunta_a_la_ip_propia`), declarados en la tabla de
-  `impl_F-035.md` con los tres de F-026. **Review 3: APROBADO** (33/33
-  mutantes reproducidos) y mergeada en `dev`. Observación recogida: si
-  PG-PASSWORD llevara caracteres no ASCII, PS 5.1 podría decodificar mal la
-  salida de `az`; la MANUAL 2 lo comprueba con la contraseña real. **Para el
-  `done` solo falta la MANUAL 2.**
-- **Observaciones de la review 1, recogidas:** `)` → aprobado y en el ciclo 2;
-  criterio 6 de `features.json` → ya dice «tres tests»; automejora (tabla
-  manual en fichero propio) → `arnes-base`, encargo de mutantes manuales
-  declarativos, commit `e9bc34a`.
-- **Observación del implementer, no aplicada (fuera del plan):** en
-  `crear_base_dedicacion.ps1` los pasos 1-2 corren antes de pedir las
-  contraseñas, así que una contraseña rechazada llega tras ellos. **Propuesta
-  al humano el 2026-10-02**, pendiente de su decisión (sería otra feature).
-- **MANUAL (humano, NO escribe nada):** desde una consola nueva con `az login`:
-  ```powershell
-  cd C:\Users\pgris\PycharmProjects\porcentajes\infra
-  $env:Path = "C:\Program Files\PostgreSQL\16\bin;$env:Path"
-  . .\00_vars_dedicacion.ps1 ; . .\00_vars_dedicacion.local.ps1
-  .\vaciar_datos_prueba_dedicacion.ps1 -Local -SoloRecuento
-  .\vaciar_datos_prueba_dedicacion.ps1 -SoloRecuento
-  Test-Path Env:PGPASSWORD ; Test-Path Env:PGSSLMODE
-  ```
-  Esperado: las dos cuentan filas sin «password authentication failed» y
-  terminan en «SOLO RECUENTO: hecho, no se ha escrito nada»; el último
-  comando da `False False`. Tras el ciclo 3, la de Azure ya no pide contraseña.
-  Resultado: MANUAL 1 fallida (ver arriba); repetición _pendiente_.
+**Ninguna feature en ejecución.** F-035 se cerró el 2026-10-03; F-034 y
+F-026 se cerraron y se **desplegaron el 2026-10-02** (resúmenes en
+`history.md`). El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
@@ -84,13 +20,14 @@ rama `feature/F-035-vaciado-psql-azure`. F-034 y F-026 se cerraron y se
   F-017 (partidas sin validar por Administración) y F-011 (varios códigos M*).
 - **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni
   OT (la cascada vigente de P5 las casa con partidas ajenas).
-- **El script de vaciado no funcionó contra Azure** (la contraseña se corrompe
-  al pasar por `cmd.exe`); se hizo a mano con `psql`. Corrección: **F-035**.
+- **El script de vaciado ya funciona contra Azure** (F-035, 2026-10-03): usa
+  `psql` y lee la contraseña de `PG-PASSWORD` del Key Vault. `-SoloRecuento`
+  cuenta sin escribir: el 2026-10-03 dio 0 asignaciones, 0 eventos, 1
+  periodo y 196 trabajadores.
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Primero **F-035** (script de vaciado
-contra Azure); después **F-025** (spec
+`BACKLOG.md` tiene el orden completo. Primero **F-025** (spec
 aprobada con D4 cambiada: solo la POSTV2 de Construcciones Ruesma; el
 spec-author la reescribe en su sitio antes de implementar), F-027, F-020,
 F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
@@ -108,6 +45,10 @@ F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
 4. Decidir si la corrección de `ruesma_rep` de `azure-apps/dedicacion.md` se
    lleva a `docs/INTEGRACION.md`.
 5. **F-014** y **F-016**, cuando quiera.
+6. Decidir si se abre una feature para que `crear_base_dedicacion.ps1` pida
+   las contraseñas antes de sus pasos 1-2 (observación del implementer de
+   F-035): hoy, una contraseña rechazada llega después de comprobar el
+   servidor y, si faltaba, crear la regla de servicios de Azure.
 
 > **`azure-apps` no tiene remoto configurado** (`git remote -v` vacío): vive
 > solo en local. No es de este proyecto, pero ahí está la documentación de todo

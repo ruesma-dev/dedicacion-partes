@@ -1304,3 +1304,97 @@ plan y `-Confirmar`, **autorización expresa del humano**) →
 escribe de verdad: **nada de `registro/ejecutar` hasta terminar**. Lo lanza
 el humano (el permiso del entorno no deja desplegar al líder).
 
+## 2026-10-03 · F-035 · El vaciado contra Azure sin pasar la contraseña por `cmd.exe`
+
+Rama `feature/F-035-vaciado-psql-azure` · `sdd: false` · rigor `estandar` ·
+**APROBADO** por el reviewer en la pasada 3. Nace del despliegue del
+2026-10-02: `az … -p <clave>` pasa por `cmd.exe` (`az` es un `.cmd`) y
+corrompe la contraseña.
+
+**Qué cambió.** `vaciar_datos_prueba_dedicacion.ps1` usa `psql` también en
+Azure (FQDN por `az … show`, `PGPASSWORD` y `PGSSLMODE=require` solo durante la
+llamada), lee la contraseña de `PG-PASSWORD` del Key Vault (salida de `az`,
+nunca argumento; `Read-Host` de respaldo) y tiene `-SoloRecuento`, que cuenta
+sin escribir. Los avisos son condicionales: contraseña que no coincide frente a
+regla de firewall de la IP. `crear_base` y `add_secrets` rechazan contraseñas
+con `" & | < > ^ % )` antes de llamar a `az`. Revisión del resto de `infra/` en
+`infra/README_dedicacion.md` §6 bis.
+
+**Ciclos.** Review 1: cambios pedidos solo por la tabla reproducible de la
+campaña manual; el humano añadió `)` a la clase (hallazgo del reviewer). MANUAL
+1 fallida por la contraseña tecleada (10 caracteres frente a 14 en el Key
+Vault), no por el script: el humano aprobó leerla del Key Vault (ciclo 3).
+
+**Verificado.** 418 passed; mutación del arnés N/A (solo muta Python): campaña
+manual de 31 mutantes sobre los `.ps1`, 0 supervivientes, reproducida por el
+reviewer (`progress/mutacion_manual_F-035.md`). **MANUAL 2 cumplida**
+(2026-10-03): contra Azure, sin pedir contraseña, recuento 0/0/1/196 y entorno
+limpio. Cinco tests anteriores cambiados, todos declarados.
+
+Informes: `progress/impl_F-035.md`, `progress/review_F-035.md`,
+`progress/mutacion_manual_F-035.md`. Sección retirada de `current.md`:
+
+## F-035 · El vaciado contra Azure sin pasar la contraseña por `cmd.exe`
+
+- **Plan aprobado por el humano el 2026-10-02** (PARADA 1). Criterios en
+  `harness/features.json`. Resumen: el vaciado usa `psql` también en Azure
+  (FQDN por `az … show`, `PGPASSWORD` + `PGSSLMODE=require` solo durante la
+  llamada); conmutador nuevo `-SoloRecuento` (cuenta y sale, sin escribir);
+  `crear_base` y `add_secrets` rechazan contraseñas con `" & | < > ^ %` y
+  `)` (este último aprobado por el humano tras la review 1)
+  antes de llamar a `az`; resultado de la revisión de `infra/` en
+  `infra/README_dedicacion.md`.
+- **Fuera:** volver a vaciar producción, cambiar la contraseña de
+  `dedicacion_app`, firewall o cualquier cosa del servidor, `azure-apps`.
+- **Tests anteriores que cambian (declarados, tabla en `impl_F-035.md`):**
+  tres de `tests/test_f026_vaciado.py`: `…solo_en_la_base_dedicacion` (Azure
+  pasa a psql) y, por el conmutador nuevo `-SoloRecuento` aprobado en el plan,
+  `…parametros_confirmar_y_local` y `…sin_confirmar_sale_antes_de_conectar`.
+  El plan solo nombraba el primero; los otros dos son consecuencia directa de
+  `-SoloRecuento` (método aprobado por el humano: declarados y verificados
+  fila a fila por el reviewer).
+- **Estado:** review 1 → **CAMBIOS PEDIDOS** (`progress/review_F-035.md`):
+  código y tests correctos; bloquea solo C4 bis, la campaña manual de 19
+  mutantes no está como tabla reproducible. **Ciclo 2 hecho** (`301dfed`,
+  `cffd850`, `eb224b5`): `)` en la clase de caracteres, con test y README;
+  tabla en `progress/mutacion_manual_F-035.md` (21 mutantes, 0
+  supervivientes, script incrustado). **Review 2: APROBADO** (tabla
+  reproducida 23/23 por el reviewer) y **mergeada en `dev`**.
+- **MANUAL 1 (2026-10-03, humano): FALLA** con `password authentication
+  failed`, pero **no por el script**: comparadas en memoria, la contraseña
+  tecleada (10 caracteres) no es la del Key Vault (14). El servidor y el FQDN
+  responden; el aviso de firewall salió aunque el error era de contraseña.
+- **Ciclo 3 aprobado por el humano (2026-10-03):** en Azure la contraseña se
+  lee de `PG-PASSWORD` del Key Vault (salida de `az`, nunca argumento), con
+  `Read-Host` de respaldo; el aviso de firewall solo ante tiempo agotado o
+  `no pg_hba.conf entry`. **Ciclo 3 hecho** (`5a1eb13`…`89f1dac`, 418 passed;
+  mutación manual 31 mutantes, 0 supervivientes). Cambian además dos tests
+  propios de F-035 (`…r1_fqdn_por_show_de_solo_lectura`,
+  `…r3_el_error_de_azure_apunta_a_la_ip_propia`), declarados en la tabla de
+  `impl_F-035.md` con los tres de F-026. **Review 3: APROBADO** (33/33
+  mutantes reproducidos) y mergeada en `dev`. Observación recogida: si
+  PG-PASSWORD llevara caracteres no ASCII, PS 5.1 podría decodificar mal la
+  salida de `az`; la MANUAL 2 lo comprueba con la contraseña real. **Para el
+  `done` solo falta la MANUAL 2.**
+- **Observaciones de la review 1, recogidas:** `)` → aprobado y en el ciclo 2;
+  criterio 6 de `features.json` → ya dice «tres tests»; automejora (tabla
+  manual en fichero propio) → `arnes-base`, encargo de mutantes manuales
+  declarativos, commit `e9bc34a`.
+- **Observación del implementer, no aplicada (fuera del plan):** en
+  `crear_base_dedicacion.ps1` los pasos 1-2 corren antes de pedir las
+  contraseñas, así que una contraseña rechazada llega tras ellos. **Propuesta
+  al humano el 2026-10-02**, pendiente de su decisión (sería otra feature).
+- **MANUAL (humano, NO escribe nada):** desde una consola nueva con `az login`:
+  ```powershell
+  cd C:\Users\pgris\PycharmProjects\porcentajes\infra
+  $env:Path = "C:\Program Files\PostgreSQL\16\bin;$env:Path"
+  . .\00_vars_dedicacion.ps1 ; . .\00_vars_dedicacion.local.ps1
+  .\vaciar_datos_prueba_dedicacion.ps1 -Local -SoloRecuento
+  .\vaciar_datos_prueba_dedicacion.ps1 -SoloRecuento
+  Test-Path Env:PGPASSWORD ; Test-Path Env:PGSSLMODE
+  ```
+  Esperado: las dos cuentan filas sin «password authentication failed» y
+  terminan en «SOLO RECUENTO: hecho, no se ha escrito nada»; el último
+  comando da `False False`. Tras el ciclo 3, la de Azure ya no pide contraseña.
+  Resultado: MANUAL 1 fallida (ver arriba); repetición _pendiente_.
+
