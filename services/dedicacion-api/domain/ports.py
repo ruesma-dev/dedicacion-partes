@@ -58,11 +58,15 @@ class ObraRepository(Protocol):
     def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro: ...
 
     def listar_para_periodo(self, periodo_id: int) -> list[Obra]:
-        """Activas + inactivas usadas en el periodo."""
+        """Activas + las que admiten postventa + las usadas en el periodo."""
         ...
 
     def existen(self, ides: set[int]) -> set[int]:
         """Subconjunto de `ides` que existen en el maestro."""
+        ...
+
+    def modos_ofrecibles(self, ides: set[int]) -> dict[int, tuple[bool, bool]]:
+        """(activa, admite_postventa) de cada obra de `ides` (F-025, R20)."""
         ...
 
 

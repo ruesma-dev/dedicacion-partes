@@ -49,6 +49,10 @@ class LineaOut(_Base):
     obra_activa: bool
     obra_empresa: int | None
     otra_empresa: bool
+    # F-025 (R18): la marca de la obra y si la línea se ofrece hoy en su modo
+    # (`Linea.ofrecible`). El front no lo calcula: lo pinta.
+    obra_admite_postventa: bool
+    ofrecible: bool
 
 
 class TrabajadorOut(_Base):
@@ -70,6 +74,8 @@ class ObraOut(_Base):
     descripcion: str
     activa: bool
     estado_sigrid: str | None
+    # F-025 (R17): se ofrece como `Postv-` (normal, si `activa`).
+    admite_postventa: bool
 
 
 class PeriodoOut(_Base):
@@ -158,6 +164,7 @@ def a_obra_out(obra: Obra) -> ObraOut:
         descripcion=obra.descripcion,
         activa=obra.activa,
         estado_sigrid=obra.estado_sigrid,
+        admite_postventa=obra.admite_postventa,
     )
 
 
@@ -185,6 +192,8 @@ def a_trabajador_out(fila: CuadranteTrabajador,
                 obra_empresa=ln.obra_empresa,
                 otra_empresa=linea_de_otra_empresa(ln.obra_empresa,
                                                    empresa_obras),
+                obra_admite_postventa=ln.obra_admite_postventa,
+                ofrecible=ln.ofrecible,
             )
             for ln in fila.lineas
         ],

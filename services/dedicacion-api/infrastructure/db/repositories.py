@@ -207,9 +207,15 @@ class PgObraRepository:
         usadas = select(AsignacionORM.obra_ide).where(
             AsignacionORM.periodo_id == periodo_id
         )
+        # Ofrecidas: activas (normal), las que admiten postventa (`Postv-`,
+        # también cerradas) y las usadas en el periodo (F-025, R17).
         stmt = (
             select(ObraORM)
-            .where(ObraORM.activa.is_(True) | ObraORM.ide.in_(usadas))
+            .where(
+                ObraORM.activa.is_(True)
+                | ObraORM.admite_postventa.is_(True)
+                | ObraORM.ide.in_(usadas)
+            )
             .order_by(ObraORM.cod)
         )
         return [_a_obra(o) for o in self._s.scalars(stmt).all()]
@@ -219,6 +225,16 @@ class PgObraRepository:
             return set()
         stmt = select(ObraORM.ide).where(ObraORM.ide.in_(ides))
         return set(self._s.scalars(stmt).all())
+
+    def modos_ofrecibles(self, ides: set[int]) -> dict[int, tuple[bool, bool]]:
+        """(activa, admite_postventa) de cada obra de `ides` (F-025, R20)."""
+        if not ides:
+            return {}
+        stmt = select(
+            ObraORM.ide, ObraORM.activa, ObraORM.admite_postventa
+        ).where(ObraORM.ide.in_(ides))
+        return {ide: (activa, admite)
+                for ide, activa, admite in self._s.execute(stmt).all()}
 
 
 # ----------------------------------------------------------------------
@@ -531,6 +547,7 @@ def _a_obra(orm: ObraORM) -> Obra:
         estado_sigrid=orm.estado_sigrid,
         activa=orm.activa,
         empresa=orm.empresa,
+        admite_postventa=orm.admite_postventa,
     )
 
 
@@ -547,4 +564,5 @@ def _a_linea(a: AsignacionORM, o: ObraORM) -> Linea:
         descripcion=o.descripcion,
         obra_activa=o.activa,
         obra_empresa=o.empresa,
+        obra_admite_postventa=o.admite_postventa,
     )
