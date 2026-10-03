@@ -1,23 +1,18 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-025 se cerró el 2026-10-03 y está en
-`dev` **pendiente de desplegar** (sección siguiente). F-035 se cerró el
-2026-10-03; F-034 y F-026 se **desplegaron el 2026-10-02** (resúmenes en
-`history.md`). El arnés es la **1.7.3**.
-
-## ⚠ Despliegue de F-025 (pendiente; lo lanza el humano)
-
-Condiciones (D3, `docs/INTEGRACION.md` §7):
-1. El **transfer antes o junto con la api**: la api nueva pide el universo de
-   postventa al transfer en el sync y, con el transfer viejo, el sync da 502.
-2. **Sync justo después**: la api añade `obra.admite_postventa` (DEFAULT false)
-   al arrancar y, hasta el primer sync, ninguna obra ofrece `Postv-`.
-3. Comprobar en el preview `admiten_postventa` = 83 y `solo_postventa` = 73,
-   y **retirar el aviso de CP/OT** de «Producción, hoy».
+**Ninguna feature en ejecución.** F-025 se cerró y se **desplegó el
+2026-10-03**; F-035 se cerró ese mismo día; F-034 y F-026 se desplegaron el
+2026-10-02 (resúmenes en `history.md`). El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-03: F-025** (transfer `r20261003-1444`, api
+  `r20261003-1446`, front `r20261003-1447`, en orden transfer → api → front).
+  Preview de producción: `admiten_postventa` 83, `solo_postventa` 73,
+  `motivo_postventa` nulo. **Pendiente de confirmar por el humano: el sync
+  («Actualizar Sigrid») y ver `Postv-0656` en el cuadrante**; con eso se
+  retira el aviso de CP/OT de abajo.
 - **Desplegado el 2026-10-02: F-034 y F-026**, sobre lo del 2026-10-01 (F-022,
   F-023, F-024, F-032). Imágenes `transfer:r20261002-1705`,
   `api:r20261002-1706`, `front:r20261002-1708`; la api añadió
@@ -38,8 +33,7 @@ Condiciones (D3, `docs/INTEGRACION.md` §7):
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Primero desplegar **F-025** (sección de
-arriba); después F-027, F-020,
+`BACKLOG.md` tiene el orden completo. Primero **F-027**; después F-020,
 F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano

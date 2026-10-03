@@ -1473,3 +1473,12 @@ retirada de `current.md`:
      y las líneas de postventa guardadas salen como no ofrecibles.
   3. Con ese despliegue **se retira el aviso de CP/OT** de «Producción, hoy».
 
+## 2026-10-03 · Despliegue de F-025
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1` (los tres servicios,
+orden fijo transfer → api → front, que es el que exige F-025):
+`transfer:r20261003-1444`, `api:r20261003-1446`, `front:r20261003-1447`; la api
+añade `obra.admite_postventa` al arrancar; el transfer conserva el modo real.
+Preview de producción (2026-10-04): 526 obras, `admiten_postventa` 83,
+`solo_postventa` 73, `motivo_postventa` nulo; 196 trabajadores. `azure-apps`
+actualizado en el mismo trabajo.
