@@ -147,40 +147,39 @@ E       assert 200 == 422          (test_f025_r20_el_422_por_http)
 ## 5. Resultado real de las verificaciones
 
 - transfer `python -m pytest tests -q`: **379 passed** (330 antes + 49 nuevos).
-- api: **503 passed** (440 antes + 63 nuevos). front: **28 passed** (21 + 7).
+- api: **509 passed** (440 antes + 69 nuevos). front: **28 passed** (21 + 7).
 - raíz `python -m pytest tests -q`: **418 passed, 1 skipped**.
 - T11: `Select-String -Path scripts/verif_f025_postventa.ps1 -Pattern ejecutar`
   → **0 coincidencias**; `Parser.ParseFile` → 0 errores. No se ha ejecutado.
 - `bash harness/init.sh` (final): ver §8.
 
-## 6. Campaña de mutación (T12)
+## 6. Campaña de mutación (T12 y ciclo 2)
 
-Campaña final (la que queda en `progress/mutacion_F-025.md`):
-`python -m harness.mutacion --feature F-025 --workers 1` sobre `be3d3ae` →
-**56 generados, 56 muertos, 0 supervivientes, 0 timeouts, 649.9 s**
-(17 ficheros, 458 líneas en alcance; campaña completa, sin muestreo).
+Vigente (`progress/mutacion_F-025.md`): `python -m harness.mutacion --feature
+F-025 --workers 1` sobre `89f0d30` → **57 generados, 57 muertos, 0
+supervivientes, 0 timeouts, 552.0 s** (469 líneas en alcance; sin muestreo).
 
-Historia, para que el reviewer la pueda reproducir (RM):
-1. **Campaña 1** (paralela, 4 workers, sobre `850b283`): 52 muertos y 4
-   «supervivientes»: `universo_postventa.py:31` (`frozen=True` → `False`),
-   `universo_postventa.py:80` (`is None` → `is not None`), `app.py:182`
-   (`"ok": False` → `True`, rama 422) y `app.py:190` (`502` → `503`).
-2. Tres de ellos **no eran supervivientes**: el de la línea 190 lo reproduje
-   a mano (sed en el árbol, suite del transfer) y lo caza
-   `test_f025_r6_fallo_de_sigrid_502` (`1 failed, 359 passed`); los tres los
-   cazaron `test_f025_r6_fallo_de_sigrid_502`, `test_f025_r4_…` y el cruce R2
-   en la **campaña 2** (serie, `--workers 1`, mismo `850b283`: 55 muertos, 1
-   superviviente). Los cuatro de la campaña 1 salieron seguidos ([48]-[52]):
-   apunta a un fallo de la campaña paralela del arnés, no a un hueco de
-   tests. **Aviso para el líder**: merece una feature del arnés (no lo toco).
-3. **Superviviente real**: `@dataclass(frozen=True)` → `frozen=False` en
-   `CatalogoPostventa`. No era equivalente: nada impedía modificar el catálogo
-   compartido por todas las obras de una petición (design §4.1 lo declara
-   inmutable). Test nuevo `test_f025_r9_el_catalogo_de_una_peticion_es_inmutable`;
-   con el mutante aplicado a mano: `Failed: DID NOT RAISE FrozenInstanceError`
-   (`1 failed`); con el código: verde. **Campaña 3** (serie, `be3d3ae`): 0.
+Historia (RM): **campaña 1** (paralela, 4 workers, `850b283`): 4
+«supervivientes» seguidos ([48]-[52]): `universo_postventa.py:31`
+(`frozen=True` → `False`), `:80` (`is None` → `is not None`), `app.py:182`
+(`"ok": False` → `True`) y `app.py:190` (`502` → `503`). Tres eran falsos: el
+de la 190, aplicado a mano, lo caza `test_f025_r6_fallo_de_sigrid_502`
+(`1 failed, 359 passed`), y la **campaña 2** (serie, mismo SHA) mató los tres
+(55/56). **Aviso para el líder**: fallo de la campaña paralela del arnés, no
+hueco de tests. **Superviviente real**: `frozen=False` en `CatalogoPostventa`
+(nada impedía modificar el catálogo compartido; design §4.1 lo declara
+inmutable) → test `test_f025_r9_el_catalogo_de_una_peticion_es_inmutable`;
+con el mutante a mano: `Failed: DID NOT RAISE FrozenInstanceError`.
+**Campaña 3** (serie, `be3d3ae`): 56/56. Ningún mutante dado por equivalente.
 
-Ningún mutante se ha dado por «equivalente».
+## 6 bis. Ciclo 2 (review 1: observaciones del líder)
+
+| Tarea | Commit | Cambio y RED |
+|---|---|---|
+| C2-T1 | `c588879` | `pedir_universo` manda `int(f["ide"])` y `depurar_obras` compara `int(fila["ide"]) in universo`, como `sincronizar`. Test `test_f025_r13_el_ide_en_texto_admite_postventa_igual`; RED: `assert ['10', '12'] == [10, 12]`; con solo el envío arreglado: `assert {'12': (True, False)} == {'10': (False... (True, True)}` |
+| C2-T2 | `e640f67` | `entero_o_none` público en `domain/normalizacion.py` (junto a `texto_o_none`); `filtros_maestros` lo importa con alias `_entero` porque lo usan 8 líneas previas; `sync_pipeline` importa el público. RED: `ImportError: cannot import name 'entero_o_none'` y `assert ['_entero'] == []` (test que prohíbe importar privados) |
+| C2-T3 | `89f0d30` | ruff: los 17 avisos nuevos de F-025 corregidos (`X \| None`, orden de imports, `noqa` sobrante en la ruta nueva, `Decimal(50)`, literales, `getattr` directo). `python -m ruff check .` → **198** (dev: 200; diferencia por fichero contra `dev`: ninguno nuevo) |
+| C2-T4 | este | campaña en serie (§6) |
 
 ## 7. Verificaciones MANUAL (humano) — comandos exactos
 
@@ -207,12 +206,12 @@ contra la BBDD LOCAL (`PG_HOST=localhost`).
 
 | Evidencia | Valor real |
 |---|---|
-| Tests ejecutados | transfer 379, api 503, front 28, raíz 418 (+1 skipped): **todos en verde** |
-| Tests nuevos de F-025 | transfer 49 (`test_f025_universo_postventa.py` 31, `test_f025_casado_p5.py` 18), api 63 (`test_f025_sync_postventa.py` 40, `test_f025_cuadrante_postventa.py` 23), front 7 |
-| Cobertura de líneas cambiadas | `PUERTA COBERTURA: 100.0% de 162 líneas cambiadas cubiertas (162/162, umbral 80%, nivel critico)` |
-| Mutación | 56 generados, 56 muertos, **0 supervivientes** (§6) |
-| Tiempo de la suite | raíz 71.2 s (con cobertura) en el `init.sh` final, transfer 10.8 s; api 16.8 s y front 2.2 s en su última ejecución completa |
-| `bash harness/init.sh` | **ENTORNO LISTO**; `PUERTA TAMAÑO: … impl 219/220`; ruff 215 avisos (no bloquea; 200 antes: los nuevos son del estilo ya presente, `Optional`, `noqa: BLE001` como sus vecinos, orden de imports) |
+| Tests ejecutados | transfer 379, api 509, front 28, raíz 418 (+1 skipped): **todos en verde** |
+| Tests nuevos de F-025 | transfer 49 (`…_universo_postventa.py` 31, `…_casado_p5.py` 18), api 69 (`…_sync_postventa.py` 46, `…_cuadrante_postventa.py` 23), front 7 |
+| Cobertura de líneas cambiadas | `PUERTA COBERTURA: 100.0% de 164 líneas cambiadas cubiertas (164/164, umbral 80%, nivel critico)` |
+| Mutación | 57 generados, 57 muertos, **0 supervivientes** (§6) |
+| Tiempo de la suite | `init.sh` final (ciclo 2): raíz 61.3 s (con cobertura), api 26.4 s, transfer 7.7 s; front 2.2 s en su última ejecución |
+| `bash harness/init.sh` | **ENTORNO LISTO**; `PUERTA TAMAÑO: … impl 218/220`; ruff **198** avisos (200 en `dev`) |
 
 Fuera del alcance (spec §9-§10): renombrar `capitulo_postventa`, la POSTV
 antigua (D6), validar partidas con Administración (F-017). Lo que falta para
