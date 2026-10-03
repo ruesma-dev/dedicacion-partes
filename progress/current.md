@@ -14,9 +14,14 @@ F-026 se cerraron y se **desplegaron el 2026-10-02** (resúmenes en
   siempre de la empresa de las obras, F-034) y **D6** (la POSTV antigua
   fuera). Se escribió ANTES de F-034 y F-026; la rama se puso al día con `dev`
   el 2026-10-03.
-- **Siguiente:** el spec-author reescribe D4 en todos sus sitios y adapta la
-  spec a F-034 (`EMPRESA_IMPUTACION`) y F-026 (trabajador = recurso). El
-  líder enseña el cambio al humano **antes** de implementar (PARADA 1).
+- **Spec revisada (2026-10-03)** → `progress/spec_F-025_revision.md`: D4
+  reescrita en todos sus sitios (un único universo, el de la empresa de las
+  obras; contrato de una empresa por petición, R4 pasa a 422), ajustes a
+  F-034/F-026 y lista cerrada de tests que cambian **comprobada ejecutando**
+  (design §7.1): 8 de F-002 en el transfer y 46 de la api por firma/doble.
+- **Pendiente del humano antes de implementar:** aprobar la revisión y
+  decidir **D8** (obra-capítulo `0678`→`0678.MO` con D2 = B; recomendada A:
+  aceptarlo y reescribir 4 tests de F-002 sobre el presupuesto `hojas`).
 - **Riesgo vivo en producción hasta que se despliegue:** el aviso de CP/OT de
   «Producción, hoy». El arnés es la **1.7.3**.
 
