@@ -41,7 +41,8 @@ from domain.models.registro_models import (
 
 logger = logging.getLogger(__name__)
 
-MOTIVO_SIN_RECURSO = "sin recurso en Sigrid para el empleado"
+#: La API manda el recurso de cada línea (ARCHITECTURE.md#regla-recurso).
+MOTIVO_SIN_RECURSO = "la línea no trae el recurso del trabajador"
 MOTIVO_SIN_MENSUAL = (
     "el recurso no tiene código de hora mensual (M*) en Sigrid: "
     "no se registra por porcentaje"
@@ -382,8 +383,8 @@ class ReglasPorcentajes:
         base = dict(
             registro_id=linea.registro_id, ano=int(linea.ano),
             mes=int(linea.mes), fecha_int=linea.fecha_int,
-            nombre=linea.nombre, empleado_ide=linea.empleado_ide,
-            recurso_ide=linea.recurso_ide, es_postventa=linea.es_postventa,
+            nombre=linea.nombre, recurso_ide=linea.recurso_ide,
+            es_postventa=linea.es_postventa,
         )
 
         def omitir(motivo: str) -> AccionLinea:

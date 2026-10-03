@@ -10,55 +10,66 @@
 
 sync:
   empleados:
-    # Alias obligatorios: ide, cod, nombre, dni, empresa, categoria,
-    #                     recurso_ide
-    # Alias del filtro:    cod_hora_mes, importe_mes, empresa_recurso,
-    #                     estado_recurso, baja_recurso, baja_laboral
+    # Alias obligatorios: ide, nombre, empresa (sin ellos el sync falla sin
+    #                     persistir nada, F-023 R6 / F-026 R5)
+    # Alias que se guardan: cod, dni, categoria, fecha_baja
+    # Alias del filtro:    cod_hora_mes, importe_mes, cif, estado_recurso,
+    #                     baja_laboral
+    #
+    # EL TRABAJADOR ES EL RECURSO (F-026, decisión del humano del
+    # 2026-10-01: «no debe buscar por empleado sino por recurso»). La consulta
+    # parte de `dbo.res` (recurso) unido a su `con` (`rcon`, misma ide) y se
+    # queda con los de clase PERSONA (`res.cla = 1`; 0 consumo, 2 medio). Una
+    # fila por recurso: `ide` es `res.ide`, la clave del trabajador en la
+    # base `dedicacion` y el recurso que la API manda al transfer
+    # (docs/ARCHITECTURE.md#regla-recurso). `cod`, `nombre` y `empresa`
+    # salen del concepto del RECURSO (decisión D6).
+    #
+    # La FICHA DE EMPLEADO es opcional: `LEFT JOIN dbo.emp` por
+    # `res.conide` («Empleado asociado»), que solo aporta el DNI y la baja
+    # laboral. Un recurso sin ficha (Eusebio Vindel Duro, `1-MO/0772`) entra
+    # con `dni` NULL; `cif` (`res.cif`) es el documento del propio recurso,
+    # solo para el aviso de posible misma persona del preview.
     #
     # CRITERIO PRINCIPAL: solo entran los RECURSOS con CÓDIGO DE HORA
     # MENSUAL (auxhor.cod LIKE 'M%': MENC, MCAP, MJEFO…), que son los que
     # se registran por porcentaje en el parte de trabajo. Es el mismo
     # criterio que aplica porcentajes-transfer (regla P1), así que lo que
-    # se captura y lo que se registra coinciden.
+    # se captura y lo que se registra coinciden. Si el recurso no tiene
+    # ninguno, cod_hora_mes viene NULL y el servicio descarta la fila (el
+    # preview los cuenta como "sin código de hora mensual").
     #
-    # El OUTER APPLY trae el código mensual del recurso (y su importe); si
-    # el recurso no tiene ninguno, cod_hora_mes viene NULL y el servicio
-    # descarta la fila (el preview los cuenta como "sin código de hora
-    # mensual", para poder revisarlos).
+    # EMPRESA: se sincronizan TODAS las empresas; la de cada trabajador es
+    # la del recurso (`rcon.emp`). Dos recursos de la misma persona son dos
+    # trabajadores, cada uno en su empresa (F-026 D2): no se fusionan.
     #
-    # EMPRESA (F-023): se sincronizan TODAS las empresas. `empresa` es el
-    # con.emp de la ficha de empleado (la que se guarda, decisión D2) y
-    # `empresa_recurso` el del recurso: si difieren, el servicio descarta
-    # la fila. El dedupe por persona no mezcla empresas.
-    #
-    # ACTIVO (F-023): lo decide el ESTADO DEL RECURSO, no el historial
-    # laboral. Sin WHERE: el filtro se aplica en el servicio para que el
-    # preview pueda contar los excluidos. `baja_laboral` (fecbaj del último
-    # emphis) solo se cuenta, no excluye (decisión D3).
+    # BAJA (F-026 D3): `fecha_baja` es `con.fecbaj` del recurso, con 0 como
+    # NULL. Sin WHERE de actividad: el servicio conserva los recursos sin
+    # baja o con baja desde la ventana de bajas (mes anterior al sync o el
+    # periodo ABIERTO más antiguo) y el cuadrante y el registro deciden por
+    # mes. `baja_laboral` (fecbaj del último emphis) solo se cuenta.
     sql: |
-      SELECT emp.ide      AS ide,
-             con.cod      AS cod,
-             con.res      AS nombre,
+      SELECT res.ide      AS ide,
+             rcon.cod     AS cod,
+             rcon.res     AS nombre,
              emp.dni      AS dni,
-             con.emp      AS empresa,
+             res.cif      AS cif,
+             rcon.emp     AS empresa,
              tip.res      AS categoria,
-             res.ide      AS recurso_ide,
-             rcon.emp     AS empresa_recurso,
              COALESCE(rest.res, CAST(rcon.est AS VARCHAR(16))) AS estado_recurso,
-             rcon.fecbaj  AS baja_recurso,
+             NULLIF(rcon.fecbaj, 0) AS fecha_baja,
              uh.fecbaj    AS baja_laboral,
              hm.cod       AS cod_hora_mes,
              hm.pre       AS importe_mes
-      FROM dbo.emp AS emp
-      JOIN dbo.con AS con ON con.ide = emp.ide
+      FROM dbo.res AS res
+      JOIN dbo.con AS rcon ON rcon.ide = res.ide
+      LEFT JOIN dbo.emp AS emp ON emp.ide = res.conide AND res.conide > 0
       OUTER APPLY (
           SELECT TOP 1 h.fecbaj
           FROM dbo.emphis AS h
           WHERE h.empide = emp.ide
           ORDER BY h.fec DESC, h.ide DESC
       ) AS uh
-      LEFT JOIN dbo.res AS res ON res.conide = emp.ide
-      LEFT JOIN dbo.con AS rcon ON rcon.ide = res.ide
       LEFT JOIN dbo.conest AS rest
              ON rest.tip = rcon.tip AND rest.est = rcon.est
       LEFT JOIN dbo.auxrestip AS tip ON tip.ide = res.restipide
@@ -69,29 +80,30 @@ sync:
           WHERE rh.reside = res.ide AND ah.cod LIKE 'M%'
           ORDER BY ah.cod
       ) AS hm
-      ORDER BY con.emp, con.res, res.ide
+      WHERE res.cla = 1
+      ORDER BY rcon.emp, rcon.res, res.ide
 
     # Estado del RECURSO (F-023). `res` no tiene estado propio: es el de su
     # fila de `con` (misma ide). Campos, según azure-apps/sigrid_tablas.md:
     #   - con.est «Estado», Entero (l. 5657), con su literal en `conest`
     #     por tip + est -> res (l. 6083-6089): alias `estado_recurso`;
     #   - con.fecbaj «Fecha baja», Entero tipo fecha (l. 5658): alias
-    #     `baja_recurso`.
-    # INACTIVO = recurso con fecha de baja de su concepto (con.fecbaj > 0).
-    # Decisión D1 cerrada por el humano el 2026-10-01, con el hallazgo de
-    # progress/explore_estado_recurso.md: es el criterio del data mart
-    # (personal.recursos.activo). El tipo 33 (recurso) no tiene estados en
-    # `conest`, así que `estado_recurso` llega siempre como el número de
-    # con.est en texto. El preview (empleados.excluidos_por_estado_recurso)
-    # cuenta los descartes bajo «(fecha de baja del recurso)».
+    #     `fecha_baja` (0 = sin baja, llega como NULL).
+    # El tipo 33 (recurso) no tiene estados en `conest`, así que
+    # `estado_recurso` llega siempre como el número de con.est en texto.
     filtro_estado_recurso: true
     # VACÍA A PROPÓSITO: para recursos no hay literales en `conest`. NO meter
     # «BAJA» ni «2»: son el estado del EMPLEADO (tipo 43), no del recurso. Y
     # la comparación es por subcadena normalizada: un número casaría otros
     # («1» casa «10» y «21»).
     estados_recurso_excluidos: []
-    # true = fuera todo recurso con con.fecbaj informada (> 0). Criterio D1.
-    excluir_recurso_con_fecha_baja: true
+    # true = fuera el recurso con fecha de baja ANTERIOR a la ventana de bajas
+    # (F-026 D3, sustituye a `excluir_recurso_con_fecha_baja` de F-023). El
+    # de baja en la ventana entra con su `fecha_baja` y solo cuenta en los
+    # meses en que aún estaba de alta. El preview cuenta los descartes en
+    # empleados.excluidos_por_estado_recurso bajo «(baja anterior a la
+    # ventana)» y publica la ventana en empleados.ventana_baja.
+    excluir_baja_anterior_a_ventana: true
 
     # Solo recursos con código de hora mensual (M*). Es EL filtro bueno:
     # deja fuera peones, oficiales y cualquiera que no vaya por porcentaje.

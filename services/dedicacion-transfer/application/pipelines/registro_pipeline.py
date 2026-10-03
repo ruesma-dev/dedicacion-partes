@@ -12,9 +12,9 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
   1. Resolver los DESTINOS: la obra normal (en pruebas, la de pruebas) y,
      si hay líneas de postventa, la obra de postventa con su PARTIDA
      (ARCHITECTURE.md#regla-p5), todas en la empresa de la petición.
-  2. Resolver el RECURSO de cada empleado (res.conide) si no viene dado:
-     se elige el recurso con código mensual M*; a igualdad, el más
-     reciente (ide mayor).
+  2. El RECURSO de cada línea es el que manda la API (`recurso_ide`); el
+     transfer no lo elige ni lee `res.conide`
+     (ARCHITECTURE.md#regla-recurso). Sin él, la regla omite la línea.
   3. Cargar los tipos de hora de los recursos implicados (reshor).
   4. Aplicar las REGLAS de la línea (ARCHITECTURE.md#regla-p1 … #regla-p3,
      #regla-p5).
@@ -176,32 +176,11 @@ class RegistroPipeline:
         return bool(nodo and nodo.es_hoja and nodo.activa)
 
     # ------------------------------------------------------------- #
-    def _resolver_recursos(self, lineas: list[LineaEntrada]) -> dict:
-        """Pasos 2-3: recurso de cada empleado + horas de cada recurso."""
-        pendientes = sorted({
-            int(l.empleado_ide) for l in lineas
-            if not l.recurso_ide and l.empleado_ide
-        })
-        candidatos = self._cli.recursos_de_empleados(pendientes) \
-            if pendientes else {}
+    def _horas_de_lineas(self, lineas: list[LineaEntrada]) -> dict:
+        """Pasos 2-3: horas de los recursos que traen las líneas, sin tocar
+        las líneas ni leer `res` (F-026 R19)."""
         todos = {int(l.recurso_ide) for l in lineas if l.recurso_ide}
-        for resides in candidatos.values():
-            todos.update(int(r) for r in resides)
-        horas = self._cli.horas_de_recursos(sorted(todos)) if todos else {}
-
-        for linea in lineas:
-            if linea.recurso_ide or not linea.empleado_ide:
-                continue
-            resides = candidatos.get(int(linea.empleado_ide), [])
-            if not resides:
-                continue                      # la regla lo omitirá
-            con_mensual = [
-                r for r in resides
-                if any(h.es_mensual for h in horas.get(int(r), []))
-            ]
-            linea.recurso_ide = max(con_mensual) if con_mensual \
-                else max(resides)
-        return horas
+        return self._cli.horas_de_recursos(sorted(todos)) if todos else {}
 
     # ------------------------------------------------------------- #
     def preflight(self, *, obra: ObraEntrada,
@@ -229,8 +208,8 @@ class RegistroPipeline:
             destino_pv, partida_pv, motivo_pv = self._destino_postventa(
                 obra, forzada, destino_normal, empresa)
 
-        # Pasos 2-4: recursos + reglas.
-        horas = self._resolver_recursos(lineas)
+        # Pasos 2-4: horas de los recursos dados + reglas.
+        horas = self._horas_de_lineas(lineas)
         reglas = ReglasPorcentajes(
             horas, postventa_registrar=self._st.postventa_registrar,
             partida_postventa=partida_pv, motivo_postventa=motivo_pv)

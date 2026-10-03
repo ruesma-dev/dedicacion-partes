@@ -35,20 +35,22 @@ from infrastructure.sigrid.sigrid_write_client import (
     PREFIJO_SYNCKEY, SigridWriteClient,
 )
 
-# --- Líneas de ejemplo (EDITAR con empleados reales con código M*) --- #
+# --- Líneas de ejemplo (EDITAR con RECURSOS reales con código M*) --- #
+# `recurso_ide` es el `res.ide` del recurso persona (F-026,
+# ARCHITECTURE.md#regla-recurso): el transfer lo usa tal cual.
 # Empresa (`con.emp`) de las líneas y de las obras que busca este script:
 # la obra se busca por código Y empresa (ARCHITECTURE.md#regla-empresa).
 EMPRESA_PRUEBA = 1
 
 # registro_id arbitrario para pruebas (synckey 'porcentajes:9000xx').
 LINEAS_PRUEBA = [
-    {"registro_id": 900001, "empleado_ide": 0, "dni": None,
+    {"registro_id": 900001, "recurso_ide": 0, "dni": None,
      "nombre": "EDITAR: encargado con MENC", "porcentaje": 0.40,
      "empresa": EMPRESA_PRUEBA},
-    {"registro_id": 900002, "empleado_ide": 0, "dni": None,
+    {"registro_id": 900002, "recurso_ide": 0, "dni": None,
      "nombre": "EDITAR: jefe de obra con MJEFO", "porcentaje": 0.60,
      "empresa": EMPRESA_PRUEBA},
-    {"registro_id": 900003, "empleado_ide": 0, "dni": None,
+    {"registro_id": 900003, "recurso_ide": 0, "dni": None,
      "nombre": "EDITAR: postventa del mismo encargado",
      "porcentaje": 0.10, "es_postventa": True, "empresa": EMPRESA_PRUEBA},
 ]

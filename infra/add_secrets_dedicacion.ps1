@@ -41,6 +41,16 @@ param(
 $ErrorActionPreference = "Stop"
 if (-not $KV) { throw "Falta `$KV. Haz primero:  . .\00_vars_dedicacion.ps1" }
 
+# F-035: en Windows `az` es un .cmd y su linea de comandos la interpreta
+# cmd.exe, que se come o reinterpreta " & | < > ^ % ) (el ) cierra el
+# bloque IF ( ... ) en el que az.cmd expande sus argumentos): el secreto llegaria
+# corrompido al Key Vault sin que nada avise. Se rechaza ANTES de llamar a az.
+function Rechazar-CaracteresDeCmd($clave, $que) {
+    if ($clave -match '["&|<>^%)]') {
+        throw ("ABORTADO: $que contiene alguno de estos caracteres: " + '" & | < > ^ % )' + ". En Windows az es un .cmd y su linea de comandos pasa por cmd.exe, que los interpreta y corromperia el valor sin avisar; el ) ademas cierra el bloque IF ( ... ) dentro del que az.cmd expande sus argumentos, y corta el valor o rompe la linea (F-035). Si es una contrasena que eliges tu, usa una sin ellos.")
+    }
+}
+
 # Nombre en Key Vault -> que es y quien lo consume.
 $secretos = [ordered]@{
     "PG-PASSWORD" = "contrasena del rol de aplicacion '$PG_APP_USER' en '$PG' (la que elegiste en crear_base_dedicacion.ps1). La consume: api. NO es la del administrador del servidor."
@@ -77,6 +87,7 @@ foreach ($nombre in $Solo) {
         Write-Host "  (saltado)" -ForegroundColor DarkGray
         continue
     }
+    Rechazar-CaracteresDeCmd $val "El valor de '$nombre'"
 
     az keyvault secret set --vault-name $KV --name $nombre --value $val --only-show-errors | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "No pude guardar '$nombre' en '$KV'. Tienes el rol 'Key Vault Secrets Officer'?" }

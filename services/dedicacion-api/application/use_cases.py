@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import logging
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -55,8 +57,9 @@ class Cuadrante:
 
 
 class ObtenerCuadrante:
-    """Cuadrante de la empresa del filtro: sus trabajadores visibles, con
-    TODAS sus líneas, y solo las obras de esa empresa (F-024)."""
+    """Cuadrante de la empresa elegida: sus trabajadores visibles, con TODAS
+    sus líneas (F-024), y las obras de la empresa de las obras, sea cual sea
+    la elegida (F-034, R1)."""
 
     def ejecutar(
         self, uow: UnitOfWork, anio: int, mes: int, filtro: FiltroEmpresa
@@ -66,7 +69,7 @@ class ObtenerCuadrante:
         obras = [
             o
             for o in uow.obras.listar_para_periodo(periodo_id)
-            if o.empresa == filtro.empresa
+            if o.empresa == filtro.empresa_obras
         ]
         con_deshacer = uow.eventos.trabajadores_con_pendientes(periodo_id)
         for fila in filas:
@@ -345,6 +348,10 @@ class PreviewSync:
     recurso) con la misma validación de columnas, y desglosa lo incluido
     y lo excluido para poder ajustar config.yaml con datos reales. Desde
     F-032 informa también del catálogo de empresas leído.
+
+    Ventana de bajas (F-026 R12, R17): con `uow_factory`, abre una UoW SOLO
+    para leer los periodos `ABIERTO` (sin `commit`); sin ella, la ventana es
+    el mes anterior a `hoy`. Se publica en `empleados.ventana_baja`.
     """
 
     def __init__(
@@ -359,6 +366,8 @@ class PreviewSync:
         exigir_codigo_mes: bool = True,
         criterio: CriterioActivoRecurso = CRITERIO_VACIO,
         sql_empresas: str | None = None,
+        uow_factory: Callable[[], UnitOfWork] | None = None,
+        hoy: Callable[[], date] = date.today,
     ) -> None:
         self._sigrid = sigrid
         self._sql_empleados = sql_empleados
@@ -372,6 +381,16 @@ class PreviewSync:
         self._filtro_estados = filtro_estados and bool(self._estados)
         self._exigir_mes = bool(exigir_codigo_mes)
         self._criterio = criterio
+        self._uow_factory = uow_factory
+        self._hoy = hoy
+
+    def _ventana_baja(self) -> int:
+        from application.sync_pipeline import ventana_de_bajas
+
+        if self._uow_factory is None:
+            return ventana_de_bajas([], self._hoy())
+        with self._uow_factory() as uow:
+            return ventana_de_bajas(uow.periodos.listar(), self._hoy())
 
     def ejecutar(self) -> dict[str, Any]:
         from application.filtros_maestros import (
@@ -388,12 +407,14 @@ class PreviewSync:
 
         brutas_emp = self._sigrid.leer(self._sql_empleados)
         _validar_columnas(brutas_emp, COLUMNAS_EMPLEADOS, "sync.empleados.sql")
+        ventana_baja = self._ventana_baja()
         emp = depurar_empleados(
             brutas_emp,
             self._categorias,
             self._filtro_categorias,
             exigir_codigo_mes=self._exigir_mes,
             criterio=self._criterio,
+            baja_desde=ventana_baja,
         )
         brutas_obr = self._sigrid.leer(self._sql_obras)
         _validar_columnas(brutas_obr, COLUMNAS_OBRAS, "sync.obras.sql")
@@ -410,8 +431,6 @@ class PreviewSync:
         salida: dict[str, Any] = {
             "empleados": {
                 "brutos": emp.brutos,
-                "duplicados_recurso": emp.duplicados_recurso,
-                "duplicados_persona": emp.duplicados_persona,
                 "excluidos_sin_codigo_mes": emp.excluidos_sin_codigo_mes,
                 "por_codigo_mes": dict(por_codigo_mes.most_common()),
                 "excluidos_por_categoria": dict(
@@ -420,7 +439,9 @@ class PreviewSync:
                 "excluidos_por_estado_recurso": dict(
                     emp.excluidos_estado_recurso.most_common()
                 ),
-                "excluidos_recurso_otra_empresa": emp.excluidos_otra_empresa,
+                "ventana_baja": ventana_baja,
+                "incluidos_con_baja": emp.incluidos_con_baja,
+                "posible_misma_persona": emp.posible_misma_persona,
                 "con_baja_laboral": emp.con_baja_laboral,
                 "total": len(emp.filas),
                 "por_categoria": dict(por_categoria.most_common()),
@@ -526,16 +547,15 @@ def _filas_de_empresa(
     uow: UnitOfWork, periodo_id: int, filtro: FiltroEmpresa
 ) -> list[CuadranteTrabajador]:
     """Filas del periodo visibles en la empresa del filtro, cada una con
-    TODAS sus líneas (F-024, R8 y R10). Único punto del filtro de
-    trabajadores: lo usan el cuadrante, el resumen y la copia del mes."""
+    TODAS sus líneas (F-024 R10; visibilidad de F-034 R2-R3). Único punto del
+    filtro de trabajadores: lo usan el cuadrante, el resumen y la copia del
+    mes."""
     trabajadores = uow.trabajadores.listar_para_periodo(periodo_id)
     lineas = uow.asignaciones.lineas_del_periodo(periodo_id)
     filas = []
     for t in trabajadores:
         propias = lineas.get(t.ide, [])
-        if visible_en_empresa(
-            t.empresa, [ln.obra_empresa for ln in propias], filtro
-        ):
+        if visible_en_empresa(t.empresa, filtro):
             filas.append(CuadranteTrabajador(trabajador=t, lineas=propias))
     return filas
 

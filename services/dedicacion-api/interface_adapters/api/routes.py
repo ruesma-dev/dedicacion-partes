@@ -56,8 +56,13 @@ EmpresaQ = Annotated[int | None, Query(gt=0)]
 
 
 def _filtro(contenedor: Contenedor, empresa: int | None) -> FiltroEmpresa:
-    por_defecto = contenedor.settings.empresa_imputacion
-    return FiltroEmpresa(empresa=empresa or por_defecto, por_defecto=por_defecto)
+    """Filtro de la petición. `EMPRESA_IMPUTACION` es a la vez la por
+    defecto y la empresa de las obras (D1 de F-034); separarlas mañana es
+    cambiar solo esta función y `RegistroSigrid._filtro`."""
+    empresa_imputacion = contenedor.settings.empresa_imputacion
+    return FiltroEmpresa(empresa=empresa or empresa_imputacion,
+                         por_defecto=empresa_imputacion,
+                         empresa_obras=empresa_imputacion)
 
 
 # --------------------------- Salud ------------------------------------
@@ -166,7 +171,7 @@ def obtener_cuadrante(
         empresa=cuadrante.empresa,
         obras=[a_obra_out(o) for o in cuadrante.obras],
         trabajadores=[
-            a_trabajador_out(f, cuadrante.empresa) for f in cuadrante.filas
+            a_trabajador_out(f, filtro.empresa_obras) for f in cuadrante.filas
         ],
         resumen=a_resumen_out(cuadrante.resumen),
     )
@@ -193,7 +198,7 @@ def guardar_asignaciones(
             filtro=filtro,
         )
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras),
         resumen=a_resumen_out(resumen),
     )
 
@@ -213,7 +218,7 @@ def deshacer(
             uow, anio, mes, trabajador_ide, usuario, filtro=filtro
         )
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras),
         resumen=a_resumen_out(resumen),
     )
 
@@ -233,7 +238,7 @@ def copiar_trabajador_anterior(
             uow, anio, mes, trabajador_ide, usuario, filtro=filtro
         )
     return CopiaTrabajadorOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras),
         resumen=a_resumen_out(resumen),
         periodo_origen=a_periodo_out(origen) if origen else None,
         lineas_omitidas_obra_inactiva=omitidas,

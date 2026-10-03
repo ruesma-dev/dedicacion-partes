@@ -124,6 +124,62 @@ no existe**: republicar no es dar de alta.
 «qué código está corriendo» sin abrir Azure: con tag fechado y sin `latest`,
 no hay otra forma de saberlo.
 
+### 3 bis · Despliegue de F-026 (una vez): vaciar los datos de prueba
+
+Desde F-026 la clave del trabajador es el `res.ide` del **recurso** de Sigrid,
+no el `emp.ide` de su ficha de empleado
+([`#regla-recurso`](../docs/ARCHITECTURE.md#regla-recurso)). Lo que hay en la
+base son pruebas y no se migra (decisión D1 del 2026-10-02): se vacía. Va
+**junto con F-034** y en este orden, con autorización expresa del humano para
+el paso 2:
+
+1. Republicar **transfer y api juntos** (`.\redeploy_dedicacion.ps1 -Solo
+   transfer,api`). Al arrancar, la api añade la columna `trabajador.fecha_baja`
+   (la deriva `esquema.py` del ORM, sin DDL a mano).
+2. Vaciado: primero el plan, luego `-SoloRecuento` (cuenta y sale, sin
+   escribir nada) y por último `-Confirmar`.
+
+   ```powershell
+   $env:Path = "C:\Program Files\PostgreSQL\16\bin;$env:Path"   # si psql no está en el PATH
+   . .\00_vars_dedicacion.ps1 ; . .\00_vars_dedicacion.local.ps1
+   .\vaciar_datos_prueba_dedicacion.ps1                 # PLAN: no conecta
+   .\vaciar_datos_prueba_dedicacion.ps1 -SoloRecuento   # lee la contraseña, cuenta y sale
+   .\vaciar_datos_prueba_dedicacion.ps1 -Confirmar      # lee la contraseña y vacía
+   ```
+
+   **Hace falta `psql` también en Azure** (desde F-035): el script ya no pasa
+   la contraseña a `az` (ver §6 bis), sino a `psql` por el entorno
+   (`PGPASSWORD`, con `PGSSLMODE=require`). Eso exige el cliente de
+   PostgreSQL en tu máquina y que el servidor admita conexiones **desde tu
+   IP**. Si no conecta, el script lo dice y para: la regla de acceso de tu IP
+   se revisa en el Portal (servidor compartido, Redes); el script no la crea
+   ni la toca. `-SoloRecuento` es la forma de comprobar las dos cosas sin
+   escribir nada: no necesita `-Confirmar` y no se combina con él.
+
+   **En Azure la contraseña de `dedicacion_app` sale del Key Vault**: el
+   script lee `PG-PASSWORD` de `$KV` con `az keyvault secret show` (solo
+   lectura, como salida de `az`, nunca como argumento), la misma que usa la
+   api. Hace falta el rol **Key Vault Secrets User** u **Officer** sobre
+   `$KV`. Si no se puede leer (sin `$KV`, sin permiso o vacía), avisa y la
+   pide a mano como respaldo. En local se pide siempre a mano. Si PostgreSQL
+   la rechaza, el error lo dice; el aviso de la IP solo sale ante tiempo
+   agotado o `no pg_hba.conf entry`.
+
+   Ejecuta **una** sentencia en la base `dedicacion`: `TRUNCATE TABLE
+   asignacion, evento, periodo, trabajador CONTINUE IDENTITY`. No toca `obra`
+   ni `empresa`, ni otras bases, ni nada del servidor compartido. Las
+   secuencias se conservan a propósito: si volvieran a 1, un `asignacion.id`
+   nuevo reutilizaría la `synckey` de una línea de prueba ya escrita en Sigrid
+   y el transfer la daría por registrada. En local: `-Local` (usa `psql` contra
+   `localhost/dedicacion`), también con `-SoloRecuento`.
+3. `GET /api/v1/sync/preview`: revisar `empleados.ventana_baja` y
+   `empleados.posible_misma_persona`.
+4. `POST /api/v1/sync`. Solo entonces se vuelve a capturar y registrar.
+
+Si el paso 2 se olvida, nada se escribe mal: las filas viejas se desactivan en
+el sync, sus trabajadores dejan de estar vigentes y sus líneas van a
+`no_vigentes` (no se mandan al transfer ni se trazan).
+
 ---
 
 ## 4 · Las cosas que hay que saber antes de perder una tarde
@@ -203,6 +259,28 @@ Ninguno viaja como valor: los Container Apps declaran un secret que es una
 nuestro.** El servicio no la necesita, y lo que no se guarda no se filtra. La
 usa una persona, una vez, al ejecutar `crear_base_dedicacion.ps1`.
 
+### 6 bis · Ningún secreto por la línea de comandos de `cmd.exe` (F-035)
+
+En Windows `az` es un `.cmd`: su línea de comandos la interpreta `cmd.exe`,
+que se come o reinterpreta `"` `&` `|` `<` `>` `^` `%`, y también `)`: `az.cmd`
+expande sus argumentos (`%*`) dentro de un bloque `IF … ( … )`, y un `)` en el
+valor cierra ese bloque, corta el argumento o rompe la línea (añadido en el
+ciclo 2 de F-035 con la aprobación del humano). Un secreto pasado como
+argumento (`-p`, `--value`) llega **corrompido** y sin aviso: así falló el
+vaciado contra Azure del 2026-10-02 («password authentication failed» con la
+contraseña buena). Revisión de los scripts de esta carpeta:
+
+| Script | Secreto por argumento a `az` | Resultado |
+|---|---|---|
+| `vaciar_datos_prueba_dedicacion.ps1` | antes, `-p` a `az … execute` | **corregido**: usa `psql` (un `.exe`) con la contraseña en `PGPASSWORD`, solo durante la llamada |
+| `crear_base_dedicacion.ps1` | `-p` a `az … execute` (y la del rol dentro de la consulta) | **rechaza** las contraseñas con esos caracteres antes de llamar a `az` |
+| `add_secrets_dedicacion.ps1` | `--value` a `az keyvault secret set` | **rechaza** los valores con esos caracteres antes de llamar a `az` |
+| `setup_front_easyauth.ps1` | `--value` con el client secret | sin riesgo: secreto generado por Azure (`az ad app credential reset`), con un juego de caracteres sin ninguno de esos |
+| `create_transfer_dedicacion.ps1` / `create_api_dedicacion.ps1` / `create_front_dedicacion.ps1`, `redeploy_dedicacion.ps1`, `fase1_infra_dedicacion.ps1` | ninguno | sin riesgo: solo referencias a Key Vault (`keyvaultref`, `secretref`), nunca valores |
+
+Si alguna vez hace falta una contraseña con esos caracteres, el camino es el
+de `vaciar_datos_prueba_dedicacion.ps1`: `psql` y la contraseña en el entorno.
+
 ---
 
 ## 7 · Ficheros de esta carpeta
@@ -213,6 +291,7 @@ usa una persona, una vez, al ejecutar `crear_base_dedicacion.ps1`.
 | `00_capps_vars_dedicacion.ps1` | derivados y ayudantes (`KvRef`, `Imagen`, `Fqdn-Interno`…) |
 | `fase1_infra_dedicacion.ps1` | provisión base |
 | `crear_base_dedicacion.ps1` | base y rol en el servidor compartido, una vez |
+| `vaciar_datos_prueba_dedicacion.ps1` | vacía los datos de prueba de `dedicacion` en el despliegue de F-026 (§3 bis), con `psql` también en Azure: plan, `-SoloRecuento` (solo lectura) y `-Confirmar` |
 | `add_secrets_dedicacion.ps1` | las tres claves del Key Vault |
 | `build_images_dedicacion.ps1` | build con tag fechado + `imagenes.json` |
 | `create_transfer_dedicacion.ps1` / `create_api_dedicacion.ps1` / `create_front_dedicacion.ps1` | alta de cada Container App |

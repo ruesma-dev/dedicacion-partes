@@ -30,8 +30,9 @@ class LineaEntrada:
     ano: int
     mes: int
     porcentaje: float                   # sobre 1: 40 % -> 0.4
-    empleado_ide: Optional[int] = None  # con/emp.ide (el transfer resuelve el recurso)
-    recurso_ide: Optional[int] = None   # si ya viene resuelto, se respeta
+    # Recurso del trabajador (`res.ide`), el que manda la API: se usa tal
+    # cual, el transfer no lo elige (ARCHITECTURE.md#regla-recurso, F-026).
+    recurso_ide: Optional[int] = None
     dni: Optional[str] = None
     nombre: Optional[str] = None
     categoria: Optional[str] = None     # para casar la partida (CI) del recurso
@@ -114,7 +115,6 @@ class AccionLinea:
     fecha_int: int
     nombre: Optional[str] = None
     motivo: Optional[str] = None
-    empleado_ide: Optional[int] = None
     recurso_ide: Optional[int] = None
     hora_ide: Optional[int] = None
     hora_codigo: Optional[str] = None

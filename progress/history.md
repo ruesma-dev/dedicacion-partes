@@ -970,3 +970,431 @@ Informes: `progress/impl_F-032.md`, `progress/review_F-032.md`,
   `GET /api/v1/empresas` (`de_baja`) y fila nueva de `auxemp` en «qué se
   rompe». Commit en `azure-apps`. Resultado: _pendiente_.
 
+## 2026-10-02 · Detalle de sesión retirado de `current.md` (F-034, F-026, despliegue)
+
+> Se reescribió `current.md` entero a petición de la review 2 de F-026: había
+> crecido a base de parches y se contradecía. Este es el texto retirado, tal cual.
+
+**F-034 en curso** (review APROBADA; faltan T8, T9 y la aceptación de M4 para
+`done`). F-032 se cerró el 2026-10-01 (resumen en `history.md`). El arnés es la **1.7.3**.
+
+> **2026-10-01, en curso:** el humano aclara que las OBRAS (incluida la
+> postventa) son siempre de Construcciones Ruesma; los trabajadores, de varias
+> empresas. F-024 se desplegó con la regla contraria y **los trabajadores de
+> la 18 y la 31 no pueden registrar en producción**. Entra **F-034** con
+> prioridad 1; spec **aprobada** por el humano con D1-D5 (`edab7d9`);
+> plan confirmado. **BLOCKED (2026-10-01)**: el implementer
+> paró antes de escribir código porque la lista cerrada de tests que cambian
+> (design §6) se quedó corta: 4 tests de F-024 (R17 registro, R10 cuadrante,
+> R6 y R6/R13 rutas) cambian como consecuencia directa de R1/R3 y no estaban
+> en la lista (`progress/impl_F-034.md`, «Motivo del bloqueo»). El humano acepta
+> (2026-10-02): `in_progress` de nuevo; §6 completado (`ba55567`).
+> **Implementer terminado** (`ef56e2d` … `573ee1e`, `progress/impl_F-034.md`);
+> **review APROBADA** (`progress/review_F-034.md`). Manuales, copia a
+> `azure-apps` y aceptación de M4: sección «F-034 · pendiente» más abajo.
+> **F-034 está en `dev` pero NO se despliega sola**: va con F-026.
+> Se despliega **junto con F-026**.
+> **F-026**: decisión del humano 2026-10-01, «no debe buscar por empleado sino
+> por recurso»: el sync parte de los RECURSOS activos (sin fecha de baja) con
+> código de hora mes; la ficha de empleado es opcional (solo DNI); la api
+> manda al transfer el recurso exacto. Spec aprobada por el
+> humano el 2026-10-02 con la enmienda (`56cfd3e`): clave = `res.ide` sin
+> migración (vaciado de los datos de prueba al desplegar, con autorización
+> expresa), vigencia por mes con ventana de bajas, D2 y D4-D7. `dev` (con
+> F-034) traído a su rama; **BLOCKED (2026-10-02) en T2**: la lista cerrada de
+> tests que cambian (design §7) se queda corta, como pasó en F-034. T1 hecha
+> (`3627a6b`); T2 hecha pero guardada en `stash@{0}` para no dejar la rama en
+> rojo. El implementer listó de antemano lo que tocarán T2-T9 (A1-A8 en F-023,
+> B1 en F-024, C1-C3 dobles): `progress/impl_F-026.md`. **El humano aprueba
+> (2026-10-02)** la ampliación y un cambio de método para el resto de F-026
+> (cambios de test consecuencia directa de un requisito, declarados en tabla y
+> verificados uno a uno por el reviewer; ver `features.json`). `in_progress`
+> de nuevo. **Implementer terminado** (`75271a3` … `1bdb08b`,
+> `progress/impl_F-026.md`): mutación 50/56 con 6 equivalentes justificados.
+> Review pasada 1: **CHANGES_REQUESTED** por un solo punto de evidencia: 5 de
+> los 6 supervivientes de `prueba_escritura_porcentajes.py` no son equivalentes
+> (duplican `registro_id`/`synckey` o quitan el centinela `recurso_ide: 0`).
+> Ciclo 2 hecho (`df7e94c` … `bc4cf86`): test R20 que fija
+> `registro_id` únicos y `recurso_ide` 0 en el script; campaña 55/56; queda el
+> nº 5 (`900003→900004`, identificador arbitrario) como equivalente, **pendiente
+> de aceptación del humano**. **Reviewer, pasada 2, lanzado.** Manuales en «F-026 · pendiente» más abajo. F-034 queda `blocked` solo por su T9, que el
+> humano hará junto con las manuales de F-026 (el líder le guía).
+> **F-025** tiene la spec aprobada (con D4 cambiada por esta regla) y espera
+> turno en su rama. Orden: F-034 + F-026 (un solo despliegue) → F-025.
+> **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni
+> OT (la cascada vigente de P5 las casa con partidas ajenas y se escribiría en
+> real).
+> **Pendiente de respuesta del humano:** el plan de correcciones de la review
+> del despliegue (`progress/review_despliegue_20261001.md`) y si F-017 se hace
+> en real con Administración delante.
+
+### ⚠ DESPLEGADO EN MODO REAL (2026-10-01)
+
+- **Despliegue** de F-022, F-023, F-024 y F-032 lanzado por el humano con
+  `infra/redeploy_dedicacion.ps1` (el permiso del entorno no dejó lanzarlo al
+  líder). Imágenes `transfer:r20261001-1805`, `api:r20261001-1807`,
+  `front:r20261001-1808`; las tres revisiones `…--r20261001180529` activas y
+  listas. La api aplicó el esquema al arrancar (`ALTER … ADD COLUMN empresa`
+  en `trabajador` y `obra`; tabla `empresa` por `create_all`). Ya se ha hecho
+  un sync en producción: 536 recursos fuera por fecha de baja, 38 empresas.
+- **El transfer escribe DE VERDAD** (`OBRA_PRUEBAS_FORZAR=false`) por orden
+  expresa del humano, a sabiendas de F-017, F-026 y F-011 (anotado en F-018).
+  **Incidente durante el despliegue:** el humano cambió a real ANTES de
+  desplegar y durante un rato corrió el transfer VIEJO en real (revisión
+  `--0000001`, sin F-022). Comprobado en los logs: en ese tiempo y después
+  solo hubo **preflights**, **ningún `ejecutar`**; no se escribió nada en
+  Sigrid.
+- **El primer despliegue falló** al escribir `infra/imagenes.json`: causa raíz
+  encontrada (en PowerShell `$inventario` pisaba `$INVENTARIO`, la ruta; es la
+  misma del fallo del 2026-08-20). Hotfix del líder con autorización del
+  humano en `d449a58` (rama `chore/despliegue-20261001`). **Pendiente: review
+  de ese hotfix.**
+- Documentación al día con el modo real: `CLAUDE.md`, `README.md`,
+  `docs/ARCHITECTURE.md`, `docs/INTEGRACION.md` (§8 con el comando para volver
+  a pruebas) y su copia en `azure-apps`.
+
+### F-034 · pendiente antes del `done`
+
+- **T8 — CUMPLIDA. Copia a `azure-apps/dedicacion.md`**,
+  literal, de las piezas de T7: los puntos de `#regla-empresa` cambiados en
+  `docs/ARCHITECTURE.md` y, de `docs/INTEGRACION.md`, la cabecera, la fila
+  `EMPRESA_IMPUTACION` de §3 y el párrafo «Una línea sin empresa no se
+  registra» de §9 (`git diff d34e4a1 -- docs/`). Commit en `azure-apps`.
+  **Resultado: HECHA (2026-10-02)**, commit `b4d5340` en `azure-apps`, marcada
+  «aún NO desplegado». (ARCHITECTURE no tiene copia en `azure-apps`.)
+- **T9 (humano, R13, D5): preflight en local, solo lectura. Se hará JUNTO con
+  las verificaciones de F-026 (decisión del humano 2026-10-02); el líder le
+  guía cuando esté listo.** Transfer local
+  con `OBRA_PRUEBAS_FORZAR=true` en su `.env`; api y front de esta rama
+  (`python main.py` en cada servicio). En `http://localhost:8080/?empresa=18`:
+  las obras ofrecidas son las de Construcciones Ruesma; dar a un trabajador
+  de la 18 una línea en una de ellas en 2026-09 (solo BBDD local). Después,
+  desde Git Bash:
+  `curl -s -X POST "http://localhost:8090/api/v1/periodos/2026/9/registro/preflight?empresa=18" -H "Content-Type: application/json" -d "{}"`.
+  **Esperado:** `ok: true` por obra, `obra_origen.empresa` = 1 y la acción de
+  esa línea `escribir`, no `omitir` por empresa. **No lanzar
+  `registro/ejecutar`.** Resultado: _pendiente_.
+- **Tras desplegar (humano, no bloquea el `done`):** cuadrante de producción
+  con `?empresa=18`: obras de Construcciones Ruesma, **sin pulsar Registrar**.
+- **M4 — ACEPTADO. Mutante equivalente.** En
+  `RegistroSigrid` `filtro.por_defecto` y `filtro.empresa_obras` salen del
+  mismo ajuste (D1), así que cambiar uno por otro no lo distingue ningún test;
+  reproducido por el reviewer (RM5). **ACEPTADO por el humano el 2026-10-02.**
+- **Despliegue:** junto con F-026 (decisión del humano). No se despliega sola.
+- Observación de la review: una corrida de la campaña dio 3 supervivientes
+  que no se reprodujeron en copia aislada. Si vuelve a pasar, encargo en
+  `arnes-base` (es la misma familia que el de la caché previa de F-022).
+
+### F-026 · pendiente antes del `done`
+
+El humano las hará **junto con la T9 de F-034** (el líder le guía con un
+script versionado cuando la review apruebe).
+
+- **T14 (R24), local, vaciado con autorización del humano + sync.**
+  `cd infra; .\vaciar_datos_prueba_dedicacion.ps1 -Local` (esperado: solo el
+  plan) y `.\vaciar_datos_prueba_dedicacion.ps1 -Local -Confirmar` (pide la
+  contraseña de `$env:PGUSER` o `postgres`; esperado: recuento antes, la
+  sentencia, recuento 0/0/0/0). API de la rama
+  (`cd services\dedicacion-api; .venv\Scripts\python main.py`);
+  `GET http://localhost:8090/api/v1/sync/preview` (esperado:
+  `empleados.ventana_baja` = día 1 del mes anterior o del ABIERTO más antiguo;
+  `posible_misma_persona` con `MO/0061` y `MO/0736`) y
+  `POST http://localhost:8090/api/v1/sync`. En la base:
+  `SELECT ide, cod, empresa, activo, fecha_baja FROM trabajador WHERE cod IN ('MO/0772','MO/0759','MO/0760','MO/0762','MO/0774','MO/0775','MO/0776','MO/0777','MO/0779','MO/0496') AND empresa = 1`
+  (esperado: diez activos, `ide` = su `res.ide`) y
+  `SELECT COUNT(*) FROM trabajador WHERE fecha_baja < <ventana_baja>` (0).
+  Un recurso con `fecha_baja` en el mes en curso sale en ese mes y no en el
+  siguiente. Resultado: _pendiente_.
+- **T15 (R25), preflight de SOLO LECTURA** con el transfer local en modo
+  pruebas (`OBRA_PRUEBAS_FORZAR=true`; `cd services\dedicacion-transfer;
+  .venv\Scripts\python main.py`): dar a Eusebio (`1-MO/0772`) una línea en un
+  periodo local y
+  `curl -X POST http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight -H "Content-Type: application/json" -d "{}"`.
+  Esperado: su acción `escribir` con `recurso_ide` = su `res.ide`; ninguna
+  omitida por «la línea no trae el recurso del trabajador»; `no_vigentes: []`.
+  **NO lanzar `registro/ejecutar`.** Resultado: _pendiente_.
+- **T16 (líder, con autorización del humano): copia a `azure-apps/dedicacion.md`**
+  de las piezas de T12 de `docs/INTEGRACION.md` (cabecera, avisos, vaciado en
+  §2, contrato de la línea en §9, dos filas en cada tabla de §7). Commit en
+  `azure-apps`. Resultado: _pendiente_.
+- **Despliegue conjunto F-034 + F-026 (D7)**, `infra/README_dedicacion.md` §3
+  bis: republicar transfer y api juntos → vaciado en Azure (plan y
+  `-Confirmar`, **autorización expresa del humano**) → `sync/preview` → `sync`.
+  El transfer desplegado escribe de verdad: **nada de `registro/ejecutar`
+  hasta terminar**.
+- **Superviviente nº 5 (humano): aceptar por escrito el equivalente**
+  `prueba_escritura_porcentajes.py:53` `900003→900004` (ver
+  `progress/mutacion_F-026.md`). Resultado: _pendiente_.
+- **Observaciones del implementer, propuestas al humano como features
+  aparte:** (a) la fila que devuelven guardar y deshacer no conoce el mes: un
+  trabajador no vigente con líneas vuelve con el `activo` del ORM hasta
+  recargar; (b) el front no enseña `no_vigentes`: esas líneas no se
+  registran y el usuario no ve el motivo. (c) Arnés: la mutación con
+  `workers > 1` volvió a dar falsos supervivientes (tercera vez: F-022, F-034,
+  F-026) → se añade al encargo de `arnes-base` de la caché previa.
+
+## 2026-10-02 · F-034 · Las obras son siempre de Construcciones Ruesma
+
+Rama `feature/F-034-obras-siempre-ruesma` · `sdd: true` · rigor `critico` ·
+**APROBADO** por el reviewer a la primera. Nace de la aclaración del humano del
+2026-10-01: los trabajadores son de varias empresas, pero las obras (postventa
+incluida) son siempre de Construcciones Ruesma; F-024 se había desplegado con la
+regla contraria y los trabajadores de la 18 y la 31 no podían registrar.
+
+**Qué cambió.** El selector de empresa filtra solo trabajadores; las obras
+ofrecidas son siempre las de la empresa de las obras (`EMPRESA_IMPUTACION`, D1);
+cada línea del registro viaja con esa empresa, no con la elegida. El transfer no
+cambia. Un primer implementer se bloqueó porque la lista cerrada de tests que
+cambian se quedó corta (4 casos); el humano la amplió.
+
+**Verificado.** Suites relanzadas sin caché por el reviewer (api 368, front 21,
+transfer 317); cobertura 100 %; mutación con 15 mutantes manuales (14 muertos y
+**M4 equivalente, aceptado por el humano**). **T8** (copia a `azure-apps`,
+`b4d5340`) y **T9** cumplidas: preflight local con la 18 elegida, la línea de
+MO/0003 en una obra de Ruesma sale para escribir; parte visual confirmada.
+
+**Pendiente.** En `dev`, sin desplegar: va con F-026. Tras desplegar, mirar el
+cuadrante de producción con `?empresa=18` sin pulsar Registrar.
+
+Informes: `progress/impl_F-034.md`, `progress/review_F-034.md`,
+`progress/mutacion_F-034.md`. Sección retirada de `current.md`:
+
+## F-034 · Obras siempre de Construcciones Ruesma (`blocked` solo por T9)
+
+- En `dev` (`d6656ad`). Review APROBADA; T8 (copia a `azure-apps`, `b4d5340`)
+  hecha; M4 aceptado por el humano el 2026-10-02.
+- **T9 (humano), se hace junto con T14/T15 de F-026.** Transfer local con
+  `OBRA_PRUEBAS_FORZAR=true`; api y front de la rama (`python main.py` en
+  cada servicio). En `http://localhost:8080/?empresa=18` las obras ofrecidas
+  son las de Construcciones Ruesma; dar a un trabajador de la 18 una línea en
+  una de ellas y, desde Git Bash,
+  `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight?empresa=18" -H "Content-Type: application/json" -d "{}"`.
+  **Esperado:** `ok: true`, `obra_origen.empresa` = 1 y la acción de esa línea
+  `escribir`, no `omitir` por empresa. **No lanzar `registro/ejecutar`.**
+  Resultado: _pendiente_.
+- **Tras desplegar (humano, no bloquea el `done`):** cuadrante de producción
+  con `?empresa=18`: obras de Construcciones Ruesma, **sin pulsar Registrar**.
+
+## 2026-10-02 · F-026 · El sync parte del recurso (el caso Eusebio Vindel Duro)
+
+Rama `feature/F-026-recursos-sin-ficha-empleado` · `sdd: true` · rigor
+`critico` · **APROBADO** por el reviewer en la pasada 3 (la 1 pidió evidencia:
+5 «equivalentes» que no lo eran; la 2, solo el rastro de `current.md`, que se
+reescribió entero).
+
+**Decisiones del humano.** «No debe buscar por empleado sino por recurso»;
+«solo deben aparecer empleados que no estén inactivos y que tengan código hora
+mes»; sin migración (lo de producción son pruebas: se vacía al desplegar);
+un recurso dado de baja en el mes sigue visible ese mes. Y un cambio de método
+para los tests anteriores (consecuencia directa de un requisito, declarados en
+tabla y verificados fila a fila por el reviewer), tras un segundo bloqueo por
+la lista cerrada de tests.
+
+**Qué cambió.** El sync parte de `res` (persona, código M*, vigente según la
+ventana de bajas); la ficha de empleado solo aporta el DNI; la clave del
+trabajador es el `res.ide`; vigencia por mes en cuadrante y registro
+(`no_vigentes`); la api manda `recurso_ide` y el transfer ya no lo elige por
+`res.conide`. Script `infra/vaciar_datos_prueba_dedicacion.ps1` (plan por
+defecto, `-Confirmar`, una sola `TRUNCATE … CONTINUE IDENTITY`, solo la base
+`dedicacion`).
+
+**Verificado.** Suites sin caché (api 440, transfer 329/330, front 21);
+mutación 55/56 con el **nº 5 equivalente, aceptado por el humano**. MANUAL con
+`scripts/verif_f034_f026.ps1` tras el vaciado local: los diez recursos del
+diagnóstico activos; Eusebio (MO/0772) sale para escribir con su recurso
+2798037; activos por empresa 183/8/1/4. Copia a `azure-apps`: `67d0364`.
+
+**Pendiente.** Desplegar con F-034 y vaciar los datos de prueba en Azure con
+autorización expresa. Propuestas al humano como features aparte: la fila de
+guardar/deshacer no conoce el mes, y el front no enseña `no_vigentes`.
+
+Informes: `progress/impl_F-026.md`, `progress/review_F-026.md`,
+`progress/mutacion_F-026.md`. Sección retirada de `current.md`:
+
+## F-026 · El sync parte del recurso (en curso)
+
+- Rama `feature/F-026-recursos-sin-ficha-empleado` (lleva `dev` con F-034).
+  Spec aprobada con la enmienda del humano del 2026-10-02 (clave = `res.ide`
+  sin migración; vaciado de los datos de prueba al desplegar; vigencia por
+  mes) y con el cambio de método para los tests anteriores (`features.json`).
+- Implementer: `progress/impl_F-026.md`. Review: `progress/review_F-026.md`
+  (pasada 1, un punto de evidencia resuelto en el ciclo 2; pasada 2, código y
+  campaña 55/56 correctos, cambios solo en este fichero; **pasada 3, APROBADA**).
+- **Script versionado para T9 + T14 + T15 juntas:**
+  `powershell -ExecutionPolicy Bypass -File scripts/verif_f034_f026.ps1`
+  (desde la raíz; antes, el vaciado local con autorización y transfer + api
+  locales; el script crea un periodo y dos asignaciones de prueba SOLO en la
+  BBDD local y lanza dos preflight; nunca `ejecutar`). Esperado:
+  `RESULTADO: OK`.
+- **Pendiente antes del `done`:**
+  - **Superviviente nº 5 (humano):** aceptar por escrito el equivalente
+    `prueba_escritura_porcentajes.py:53` `900003→900004`
+    (`progress/mutacion_F-026.md`). Resultado: _pendiente_.
+  - **T14 (R24) — CUMPLIDA.** **Resultado real (2026-10-02, humano, `scripts/verif_f034_f026.ps1`, transfer
+  local en modo pruebas, api y front de `dev` con F-034 y F-026, tras el vaciado
+  local): CUMPLIDA.** Vaciado local: 35/60/12/606 → 0/0/0/0.
+    Los 10 recursos del diagnóstico activos en la 1; activos por empresa 183 / 8 / 1 / 4
+    (1 / 18 / 25 / 31). Texto original:
+    `cd infra; .\vaciar_datos_prueba_dedicacion.ps1 -Local` (esperado: solo el
+    plan) y `.\vaciar_datos_prueba_dedicacion.ps1 -Local -Confirmar` (pide la
+    contraseña de `$env:PGUSER` o `postgres`; esperado: recuento antes, la
+    sentencia, recuento 0/0/0/0). API de la rama
+    (`cd services\dedicacion-api; .venv\Scripts\python main.py`);
+    `GET http://localhost:8090/api/v1/sync/preview` (esperado:
+    `empleados.ventana_baja` = día 1 del mes anterior o del ABIERTO más
+    antiguo; `posible_misma_persona` con `MO/0061` y `MO/0736`) y
+    `POST http://localhost:8090/api/v1/sync`. En la base:
+    `SELECT ide, cod, empresa, activo, fecha_baja FROM trabajador WHERE cod IN ('MO/0772','MO/0759','MO/0760','MO/0762','MO/0774','MO/0775','MO/0776','MO/0777','MO/0779','MO/0496') AND empresa = 1`
+    (esperado: diez activos, `ide` = su `res.ide`) y
+    `SELECT COUNT(*) FROM trabajador WHERE fecha_baja < <ventana_baja>` (0). Un
+    recurso con `fecha_baja` en el mes en curso sale en ese mes y no en el
+    siguiente. Resultado: _pendiente_.
+  - **T15 (R25) — CUMPLIDA.** Eusebio (MO/0772) sale `escribir` con
+    `recurso_ide` 2798037 (su `res.ide`); `no_vigentes: []`. Texto original:
+    **preflight de SOLO LECTURA** con el transfer local en modo
+    pruebas (`OBRA_PRUEBAS_FORZAR=true`;
+    `cd services\dedicacion-transfer; .venv\Scripts\python main.py`): dar a
+    Eusebio (`1-MO/0772`) una línea en un periodo local y
+    `curl -X POST http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight -H "Content-Type: application/json" -d "{}"`.
+    Esperado: su acción `escribir` con `recurso_ide` = su `res.ide`; ninguna
+    omitida por «la línea no trae el recurso del trabajador»;
+    `no_vigentes: []`. **NO lanzar `registro/ejecutar`.** Resultado: _pendiente_.
+  - **T16 (líder, con autorización del humano): copia a
+    `azure-apps/dedicacion.md`** de las piezas de T12 de `docs/INTEGRACION.md`
+    (cabecera, avisos, vaciado en §2, contrato de la línea en §9, dos filas en
+    cada tabla de §7). Commit en `azure-apps`. **HECHA**: `67d0364` en `azure-apps`.
+- **Observaciones de las reviews, recogidas o descartadas por escrito:**
+  - Frase de `infra/README_dedicacion.md` §3 bis («sus líneas llevarían un
+    `emp.ide`… que el transfer omite (P1)»): **corregida** (tras el sync esas
+    líneas son de trabajadores no vigentes y van a `no_vigentes`).
+  - `ruff I001` (orden de imports) en 4 ficheros de test nuevos:
+    **descartada** como deuda de estilo; `ruff` no bloquea (193 avisos previos)
+    y tocar los tests ahora obligaría a otra pasada de review. Entra en F-006
+    (sanear suites).
+  - Fila tras guardar/deshacer sin conocer el mes, y el front sin enseñar
+    `no_vigentes`: **propuestas al humano como features pequeñas**, pendientes
+    de su decisión.
+  - Automejoras (RM5: «que la suite pase con el mutante prueba que sobrevive,
+    no que sea equivalente»; `init.sh` compruebe que la cabecera de
+    `current.md` nombra la `in_progress`) → encargo `69df67b` en `arnes-base`.
+  - Falsos supervivientes con `workers > 1` (tercera feature seguida) →
+    añadido al encargo de `arnes-base` (`affff93`).
+
+## 2026-10-02 · Despliegue de F-034 y F-026
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1` (los tres servicios):
+`transfer:r20261002-1705`, `api:r20261002-1706`, `front:r20261002-1708`; la api
+añadió `trabajador.fecha_baja` al arrancar; el transfer conserva el modo real.
+**Vaciado de los datos de prueba** de la base `dedicacion` con autorización
+expresa del humano: el script falló contra Azure (`az … -p` en Windows pasa por
+`cmd.exe` y corrompe la contraseña; el reintento sin cifrar lo rechaza
+`pg_hba`, como debe) y se hizo a mano con `psql` (`PGPASSWORD`,
+`PGSSLMODE=require`) con las mismas tres sentencias: 312/376/7/207 → 0/0/0/0.
+**Sync**: preview con 196 trabajadores, ventana de bajas 2026-09-01, 1.034
+excluidos por baja anterior, un posible duplicado avisado (MO/0061 y MO/0736),
+38 empresas. El humano confirma que Eusebio Vindel Duro aparece. Corrección del
+script: F-035.
+
+## ⚠ Despliegue conjunto F-034 + F-026 (pendiente; lo lanza el humano)
+
+`infra/README_dedicacion.md` §3 bis: republicar transfer y api juntos →
+vaciado de los datos de prueba en Azure (`infra/vaciar_datos_prueba_dedicacion.ps1`,
+plan y `-Confirmar`, **autorización expresa del humano**) →
+`GET /api/v1/sync/preview` → `POST /api/v1/sync`. El transfer desplegado
+escribe de verdad: **nada de `registro/ejecutar` hasta terminar**. Lo lanza
+el humano (el permiso del entorno no deja desplegar al líder).
+
+## 2026-10-03 · F-035 · El vaciado contra Azure sin pasar la contraseña por `cmd.exe`
+
+Rama `feature/F-035-vaciado-psql-azure` · `sdd: false` · rigor `estandar` ·
+**APROBADO** por el reviewer en la pasada 3. Nace del despliegue del
+2026-10-02: `az … -p <clave>` pasa por `cmd.exe` (`az` es un `.cmd`) y
+corrompe la contraseña.
+
+**Qué cambió.** `vaciar_datos_prueba_dedicacion.ps1` usa `psql` también en
+Azure (FQDN por `az … show`, `PGPASSWORD` y `PGSSLMODE=require` solo durante la
+llamada), lee la contraseña de `PG-PASSWORD` del Key Vault (salida de `az`,
+nunca argumento; `Read-Host` de respaldo) y tiene `-SoloRecuento`, que cuenta
+sin escribir. Los avisos son condicionales: contraseña que no coincide frente a
+regla de firewall de la IP. `crear_base` y `add_secrets` rechazan contraseñas
+con `" & | < > ^ % )` antes de llamar a `az`. Revisión del resto de `infra/` en
+`infra/README_dedicacion.md` §6 bis.
+
+**Ciclos.** Review 1: cambios pedidos solo por la tabla reproducible de la
+campaña manual; el humano añadió `)` a la clase (hallazgo del reviewer). MANUAL
+1 fallida por la contraseña tecleada (10 caracteres frente a 14 en el Key
+Vault), no por el script: el humano aprobó leerla del Key Vault (ciclo 3).
+
+**Verificado.** 418 passed; mutación del arnés N/A (solo muta Python): campaña
+manual de 31 mutantes sobre los `.ps1`, 0 supervivientes, reproducida por el
+reviewer (`progress/mutacion_manual_F-035.md`). **MANUAL 2 cumplida**
+(2026-10-03): contra Azure, sin pedir contraseña, recuento 0/0/1/196 y entorno
+limpio. Cinco tests anteriores cambiados, todos declarados.
+
+Informes: `progress/impl_F-035.md`, `progress/review_F-035.md`,
+`progress/mutacion_manual_F-035.md`. Sección retirada de `current.md`:
+
+## F-035 · El vaciado contra Azure sin pasar la contraseña por `cmd.exe`
+
+- **Plan aprobado por el humano el 2026-10-02** (PARADA 1). Criterios en
+  `harness/features.json`. Resumen: el vaciado usa `psql` también en Azure
+  (FQDN por `az … show`, `PGPASSWORD` + `PGSSLMODE=require` solo durante la
+  llamada); conmutador nuevo `-SoloRecuento` (cuenta y sale, sin escribir);
+  `crear_base` y `add_secrets` rechazan contraseñas con `" & | < > ^ %` y
+  `)` (este último aprobado por el humano tras la review 1)
+  antes de llamar a `az`; resultado de la revisión de `infra/` en
+  `infra/README_dedicacion.md`.
+- **Fuera:** volver a vaciar producción, cambiar la contraseña de
+  `dedicacion_app`, firewall o cualquier cosa del servidor, `azure-apps`.
+- **Tests anteriores que cambian (declarados, tabla en `impl_F-035.md`):**
+  tres de `tests/test_f026_vaciado.py`: `…solo_en_la_base_dedicacion` (Azure
+  pasa a psql) y, por el conmutador nuevo `-SoloRecuento` aprobado en el plan,
+  `…parametros_confirmar_y_local` y `…sin_confirmar_sale_antes_de_conectar`.
+  El plan solo nombraba el primero; los otros dos son consecuencia directa de
+  `-SoloRecuento` (método aprobado por el humano: declarados y verificados
+  fila a fila por el reviewer).
+- **Estado:** review 1 → **CAMBIOS PEDIDOS** (`progress/review_F-035.md`):
+  código y tests correctos; bloquea solo C4 bis, la campaña manual de 19
+  mutantes no está como tabla reproducible. **Ciclo 2 hecho** (`301dfed`,
+  `cffd850`, `eb224b5`): `)` en la clase de caracteres, con test y README;
+  tabla en `progress/mutacion_manual_F-035.md` (21 mutantes, 0
+  supervivientes, script incrustado). **Review 2: APROBADO** (tabla
+  reproducida 23/23 por el reviewer) y **mergeada en `dev`**.
+- **MANUAL 1 (2026-10-03, humano): FALLA** con `password authentication
+  failed`, pero **no por el script**: comparadas en memoria, la contraseña
+  tecleada (10 caracteres) no es la del Key Vault (14). El servidor y el FQDN
+  responden; el aviso de firewall salió aunque el error era de contraseña.
+- **Ciclo 3 aprobado por el humano (2026-10-03):** en Azure la contraseña se
+  lee de `PG-PASSWORD` del Key Vault (salida de `az`, nunca argumento), con
+  `Read-Host` de respaldo; el aviso de firewall solo ante tiempo agotado o
+  `no pg_hba.conf entry`. **Ciclo 3 hecho** (`5a1eb13`…`89f1dac`, 418 passed;
+  mutación manual 31 mutantes, 0 supervivientes). Cambian además dos tests
+  propios de F-035 (`…r1_fqdn_por_show_de_solo_lectura`,
+  `…r3_el_error_de_azure_apunta_a_la_ip_propia`), declarados en la tabla de
+  `impl_F-035.md` con los tres de F-026. **Review 3: APROBADO** (33/33
+  mutantes reproducidos) y mergeada en `dev`. Observación recogida: si
+  PG-PASSWORD llevara caracteres no ASCII, PS 5.1 podría decodificar mal la
+  salida de `az`; la MANUAL 2 lo comprueba con la contraseña real. **Para el
+  `done` solo falta la MANUAL 2.**
+- **Observaciones de la review 1, recogidas:** `)` → aprobado y en el ciclo 2;
+  criterio 6 de `features.json` → ya dice «tres tests»; automejora (tabla
+  manual en fichero propio) → `arnes-base`, encargo de mutantes manuales
+  declarativos, commit `e9bc34a`.
+- **Observación del implementer, no aplicada (fuera del plan):** en
+  `crear_base_dedicacion.ps1` los pasos 1-2 corren antes de pedir las
+  contraseñas, así que una contraseña rechazada llega tras ellos. **Propuesta
+  al humano el 2026-10-02**, pendiente de su decisión (sería otra feature).
+- **MANUAL (humano, NO escribe nada):** desde una consola nueva con `az login`:
+  ```powershell
+  cd C:\Users\pgris\PycharmProjects\porcentajes\infra
+  $env:Path = "C:\Program Files\PostgreSQL\16\bin;$env:Path"
+  . .\00_vars_dedicacion.ps1 ; . .\00_vars_dedicacion.local.ps1
+  .\vaciar_datos_prueba_dedicacion.ps1 -Local -SoloRecuento
+  .\vaciar_datos_prueba_dedicacion.ps1 -SoloRecuento
+  Test-Path Env:PGPASSWORD ; Test-Path Env:PGSSLMODE
+  ```
+  Esperado: las dos cuentan filas sin «password authentication failed» y
+  terminan en «SOLO RECUENTO: hecho, no se ha escrito nada»; el último
+  comando da `False False`. Tras el ciclo 3, la de Azure ya no pide contraseña.
+  Resultado: MANUAL 1 fallida (ver arriba); repetición _pendiente_.
+

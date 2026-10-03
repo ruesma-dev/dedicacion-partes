@@ -58,9 +58,8 @@ class ClienteFalso:
              "cod": "CI.1.20", "res": "JEFE DE OBRA", "tex": None,
              "tipdes": 0, "cosindide": None, "unimed": None},
         ]
-        # emp 10 -> recursos 100 (viejo, sin M*) y 200 (MENC)
-        # emp 11 -> recurso 300 (solo HL/HE, sin M*)
-        self.recursos = {10: [100, 200], 11: [300]}
+        # Recursos (F-026: los manda la API): 100 (viejo, sin M*), 200 (MENC)
+        # y 300 (solo HL/HE, sin M*).
         self.horas = {
             100: [HoraRecurso(1, "HLPE", None, 20.0)],
             200: [HoraRecurso(5, "MENC", None, 9000.0),
@@ -112,10 +111,6 @@ class ClienteFalso:
     def obra_por_ide(self, ide):
         return self.obra
 
-    def recursos_de_empleados(self, emp_ides):
-        return {e: self.recursos.get(e, []) for e in emp_ides
-                if e in self.recursos}
-
     def horas_de_recursos(self, resides):
         return {r: self.horas.get(r, []) for r in resides}
 
@@ -152,15 +147,15 @@ class ClienteFalso:
 def lineas_entrada():
     return [
         LineaEntrada(registro_id=1, ano=2026, mes=7, porcentaje=0.4,
-                     empleado_ide=10, nombre="Acuna Mera, Antonio",
+                     recurso_ide=200, nombre="Acuna Mera, Antonio",
                      categoria="Encargado", empresa=1),
         LineaEntrada(registro_id=2, ano=2026, mes=7, porcentaje=0.6,
-                     empleado_ide=11, nombre="Peon", empresa=1),
+                     recurso_ide=300, nombre="Peon", empresa=1),
         LineaEntrada(registro_id=3, ano=2026, mes=7, porcentaje=0.5,
-                     empleado_ide=10, nombre="Encargado PV",
+                     recurso_ide=200, nombre="Encargado PV",
                      es_postventa=True, empresa=1),
         LineaEntrada(registro_id=4, ano=2026, mes=7, porcentaje=40,
-                     empleado_ide=10, nombre="Rango mal", empresa=1),
+                     recurso_ide=200, nombre="Rango mal", empresa=1),
     ]
 
 
@@ -175,7 +170,7 @@ def test_preflight():
     assert a3.accion == "escribir" and a3.destino == "postventa", a3
     assert a3.paride == 70001 and a3.partida_cod == "0678", a3
     assert a3.hora_codigo == "MENC" and a3.can == 0.5
-    # emp 10: elige el recurso 200 (el que tiene M*), MENC, can=0.4
+    # F-026 R19: el recurso 200 que manda la API se respeta; MENC, can=0.4
     a1 = por_id[1]
     assert a1.accion == "escribir" and a1.recurso_ide == 200
     assert a1.hora_codigo == "MENC" and a1.can == 0.4 and a1.pre == 9000.0
@@ -244,7 +239,7 @@ def test_override_manual():
     cli.lineas_parte = []
     pl = RegistroPipeline(cliente=cli, settings=Settings())
     linea = LineaEntrada(registro_id=9, ano=2026, mes=7, porcentaje=0.3,
-                         empleado_ide=10, nombre="Acuna", categoria="Encargado",
+                         recurso_ide=200, nombre="Acuna", categoria="Encargado",
                          paride=80002, partida_cod="CI.1.20", empresa=1)
     pf = pl.preflight(obra=ObraEntrada(codigo="0678"), lineas=[linea])
     a = pf.acciones[0]

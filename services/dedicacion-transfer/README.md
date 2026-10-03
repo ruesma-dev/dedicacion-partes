@@ -55,12 +55,16 @@ Lo que sí es de este servicio, y por eso se cuenta aquí:
     POST /api/registro/preflight   {obra, lineas[], usuario}
     POST /api/registro/ejecutar    {obra, lineas[], pisar_claves[], usuario}
 
-Línea: `{registro_id, ano, mes, porcentaje (sobre 1), empleado_ide,
-recurso_ide?, dni?, nombre?, es_postventa, empresa}`. `empresa` es la
-`con.emp` a la que se imputa: sin ella la línea se omite con motivo, y con
-líneas de dos empresas la petición se rechaza con 422
-([`#regla-empresa`](../../docs/ARCHITECTURE.md#regla-empresa)). El servicio
-resuelve el recurso del empleado (`res.conide`) eligiendo el que tenga `M*`.
+Línea: `{registro_id, ano, mes, porcentaje (sobre 1), recurso_ide, dni?,
+nombre?, es_postventa, empresa}`. `empresa` es la `con.emp` a la que se
+imputa: sin ella la línea se omite con motivo, y con líneas de dos empresas
+la petición se rechaza con 422
+([`#regla-empresa`](../../docs/ARCHITECTURE.md#regla-empresa)).
+`recurso_ide` es el `res.ide` del trabajador y lo manda la API: el servicio
+lo usa tal cual, no lo elige ni consulta `res.conide`; sin él, la línea se
+omite «sin recurso» ([`#regla-recurso`](../../docs/ARCHITECTURE.md#regla-recurso),
+F-026). El ide de la ficha de empleado ya no forma parte del contrato: si
+llega, se ignora.
 
 ## Antes de escribir nada
 

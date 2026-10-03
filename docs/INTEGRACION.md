@@ -10,24 +10,33 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-10-01** (F-032: el sync lee además el
-> catálogo de empresas `auxemp` de Sigrid y el selector toma de ahí el
-> nombre y si la empresa está de baja). **Origen:** rama
-> `feature/F-032-empresas-desde-sigrid`, pendiente de merge a `dev`. Versión
-> anterior: 2026-10-01, F-024 (selector de empresa; `EMPRESA_IMPUTACION`
-> pasa a ser la empresa por defecto), commit `a2bcbca`.
+> **Fecha del documento: 2026-10-02** (F-026: el trabajador es el
+> **recurso** de Sigrid, no la ficha de empleado; el sync parte de `res` y la
+> clave del trabajador es el `res.ide`; vigencia por mes con `con.fecbaj`;
+> cada línea del registro lleva `recurso_ide` y el transfer ya no lo elige
+> por `res.conide`; al desplegar se vacían los datos de prueba de
+> `dedicacion`, §2). **Origen:** rama
+> `feature/F-026-recursos-sin-ficha-empleado`, pendiente de merge a `dev`.
+> Versión anterior: 2026-10-02, F-034 (las obras, postventa incluida, son
+> siempre de la empresa de las obras, `EMPRESA_IMPUTACION`; el selector
+> filtra solo trabajadores y cada línea del registro viaja con la empresa de
+> las obras).
 >
 > **Estado: DESPLEGADO.** El 2026-08-20 se ejecutó la fase 7 y los tres
 > servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo. El
 > **2026-10-01** se republicaron con F-022, F-023, F-024 y F-032: imágenes
 > `dedicacion-transfer:r20261001-1805`, `dedicacion-api:r20261001-1807` y
-> `dedicacion-front:r20261001-1808` (`infra/imagenes.json`).
+> `dedicacion-front:r20261001-1808`. El **2026-10-02** se republicaron con
+> F-034 y F-026 (`dedicacion-transfer:r20261002-1705`, `dedicacion-api:r20261002-1706` y
+> `dedicacion-front:r20261002-1708`, `infra/imagenes.json`), con el vaciado de los
+> datos de prueba de `dedicacion` (§2) y un sync inmediato.
 >
 > **Desde el 2026-10-01 el transfer desplegado escribe DE VERDAD**
 > (`OBRA_PRUEBAS_FORZAR=false`), por decisión expresa del humano, tomada a
-> sabiendas de lo que sigue abierto: el recurso se elige sin mirar la empresa
-> (F-026), la imputación a partidas no la ha validado Administración (F-017)
-> y un trabajador con varios códigos M* toma el primero alfabético (F-011).
+> sabiendas de lo que sigue abierto: la imputación a partidas no la ha
+> validado Administración (F-017) y un trabajador con varios códigos M* toma
+> el primero alfabético (F-011). Desde F-026 el recurso de cada línea lo
+> manda la api (`docs/ARCHITECTURE.md#regla-recurso`).
 > Detalle y cómo volver a modo pruebas: §8.
 >
 > **URL del front:**
@@ -104,6 +113,16 @@ que por defecto **imprime el plan y no toca nada**: hace falta `-Confirmar`.
 El rol se crea `NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION`, y el
 script **aborta** si se le intenta dar la contraseña del administrador.
 
+**Vaciado de los datos de prueba (F-026, una vez).** Al desplegar F-026 la
+clave del trabajador pasa a ser el `res.ide` del recurso y lo que hay en la
+base son pruebas que no se migran: lo vacía una persona, con autorización
+expresa, con `infra/vaciar_datos_prueba_dedicacion.ps1` (plan por defecto,
+`-Confirmar` para ejecutar; contraseña del rol de aplicación, no la del
+administrador). Ejecuta **una** sentencia dentro de nuestra base,
+`TRUNCATE TABLE asignacion, evento, periodo, trabajador CONTINUE IDENTITY`:
+ni `obra` ni `empresa`, ni otras bases, ni nada del servidor. Orden y
+motivo: `infra/README_dedicacion.md` §3 bis.
+
 ---
 
 ## 3 · Variables de entorno (nombres, nunca valores)
@@ -124,7 +143,7 @@ despliegue no tenga que aprender dos vocabularios.
 | `SIGRID_API_BASE_URL`, `SIGRID_API_DATABASE`, `SIGRID_API_TIMEOUT_S`, `SIGRID_MAX_ROWS` | Lectura de maestros |
 | `SIGRID_API_FUNCTION_KEY` | **Secreto**. Por referencia a Key Vault |
 | `TRANSFER_BASE_URL`, `TRANSFER_TIMEOUT_S` | El registro en Sigrid, por HTTP interno |
-| `EMPRESA_IMPUTACION` | **Empresa por defecto** (`con.emp` de Sigrid): la que sale elegida en el selector al entrar y la que se usa si una petición no trae empresa. La empresa de cada línea del registro es la **elegida en el selector** (F-024). `1` por defecto; entero > 0 o la api no arranca |
+| `EMPRESA_IMPUTACION` | **Empresa de las obras** (`con.emp` de Sigrid): la de las obras que se ofrecen, postventa incluida, y la que viaja en cada línea del registro, sea cual sea la elegida en el selector (F-034). Es además la **empresa por defecto** del selector: la que sale elegida al entrar y la que se usa si una petición no trae empresa. `1` por defecto; entero > 0 o la api no arranca |
 
 ### `dedicacion-front`
 
@@ -324,6 +343,8 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Bajar `API_TIMEOUT_S` por debajo de `TRANSFER_TIMEOUT_S` | El usuario ve un error de un registro que sí se está haciendo |
 | Poner `OBRA_PRUEBAS_FORZAR=false` | Se escribe **de verdad** en las obras reales de Sigrid (§8) |
 | Reescribir un tag de imagen ya publicado | Deja de poder saberse qué código está corriendo |
+| Vaciar `dedicacion` reiniciando las secuencias (`RESTART IDENTITY`) | Un `asignacion.id` nuevo reutiliza la `synckey` `porcentajes:{id}` de una línea ya escrita en Sigrid y el transfer la da por registrada sin escribirla. Por eso el vaciado de F-026 usa `CONTINUE IDENTITY` |
+| Volver a mandar al transfer el `ide` de la ficha de empleado en vez de `recurso_ide` | El transfer lo ignora y omite la línea «sin recurso»: no se registra nada (F-026) |
 
 ### Si tocan algo de otros
 
@@ -336,6 +357,7 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Cambiar el contrato de `sigrid-api` (`/api/sql/read`, `/api/sql/write`) | Se cae todo: es nuestro único acceso a Sigrid |
 | Borrar o renombrar `acralbaranesdev` | No se puede publicar ni tirar ninguna imagen |
 | Cambiar tablas o campos de Sigrid (`hmo`, `hmores`, `reshor`) | El mapeo del transfer deja de casar |
+| Cambiar `res` o `con` de Sigrid en lo que lee el sync de trabajadores (`res.cla`, `res.conide`, `res.cif`, `con.fecbaj`) | El sync parte de `res` (F-026): con `res.cla` cambiada entran o salen recursos del cuadrante; `res.conide` es lo único que une la ficha de empleado (solo da el DNI); `res.cif` es el documento del aviso de posible misma persona cuando no hay ficha; y `con.fecbaj` decide en qué meses está vigente cada trabajador |
 | Cambiar `auxemp` de Sigrid (`numemp`, `res`, `fecbaj`, `desact`) | El sync de maestros falla entero (columnas obligatorias `numemp` y `nombre`) y el selector se queda con los nombres del último sync bueno |
 
 **Petición abierta al proyecto `sigrid-api`:** hoy la api y el transfer
@@ -351,9 +373,9 @@ una que no pueda escribir.
 > **ESTADO ACTUAL (2026-10-01): MODO REAL.** El humano ordenó salir del modo
 > pruebas al republicar con F-022, F-023, F-024 y F-032: el transfer está con
 > `OBRA_PRUEBAS_FORZAR=false` y **cada registro escribe en la obra real** de
-> Sigrid. Quedan abiertos F-026 (recurso sin mirar la empresa), F-017
-> (Administración no ha validado la imputación a partidas) y F-011 (varios
-> códigos M*). Volver a pruebas es un comando:
+> Sigrid. Quedan abiertos F-017 (Administración no ha validado la imputación
+> a partidas) y F-011 (varios códigos M*); el recurso de cada línea lo manda
+> la api desde F-026. Volver a pruebas es un comando:
 > `az containerapp update -n ca-dedicacion-transfer -g rg-dedicacion-dev --set-env-vars OBRA_PRUEBAS_FORZAR=true`.
 > Lo que sigue describe el modo pruebas, que es como **arranca** un alta nueva.
 
@@ -391,14 +413,24 @@ transfer, `az containerapp logs show`.
 
 **Una línea sin empresa no se registra.** El código de obra solo es único
 dentro de su empresa, así que el transfer busca cada obra por código **y**
-empresa, y la empresa llega en cada línea (la pone la api: es la **elegida
-en el selector**; `EMPRESA_IMPUTACION` solo es la por defecto). Una línea que
-llegue sin ella sale **omitida con motivo**, no con error; una petición que
-mezcle dos empresas se rechaza con **422**; y si la obra es de otra empresa
-que sus líneas, todas se omiten. En modo pruebas, una empresa sin obra de
-pruebas no escribe nada: con otra empresa que la 1 elegida, el preflight
-enseña ese error por obra. La regla completa:
-`docs/ARCHITECTURE.md#regla-empresa`.
+empresa, y la empresa llega en cada línea (la pone la api: es la **empresa
+de las obras**, `EMPRESA_IMPUTACION`, sea cual sea la elegida en el
+selector). Una línea que llegue sin ella sale **omitida con motivo**, no con
+error; una petición que mezcle dos empresas se rechaza con **422**; y si la
+obra es de otra empresa que sus líneas, todas se omiten. En modo pruebas,
+una empresa sin obra de pruebas no escribe nada y el preflight enseña ese
+error por obra. La regla completa: `docs/ARCHITECTURE.md#regla-empresa`.
+
+**La línea lleva el recurso, no el empleado (F-026).** Contrato api →
+transfer, por línea: `{registro_id, ano, mes, porcentaje (sobre 1),
+recurso_ide, dni?, nombre?, categoria?, es_postventa, empresa, paride?}`.
+`recurso_ide` es el `res.ide` del trabajador y el transfer lo usa tal cual:
+ya no consulta `res.conide` ni elige el recurso. El antiguo identificador
+de la ficha de empleado salió del contrato: si un cliente viejo lo manda, se
+ignora y la línea sale omitida «sin recurso». La respuesta de la api a
+`registro/preflight` y `registro/ejecutar` añade `no_vigentes`: los
+`registro_id` de trabajadores no vigentes en el mes, que no se mandan ni se
+trazan. La regla completa: `docs/ARCHITECTURE.md#regla-recurso`.
 
 **Si la api arranca y dice que la base no existe**, es que falta ejecutar
 `infra/crear_base_dedicacion.ps1`. El servicio ya no la crea solo, a

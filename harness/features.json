@@ -90,7 +90,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 5,
+      "priority": 16,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -105,7 +105,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 6,
+      "priority": 17,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -154,7 +154,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 7,
+      "priority": 18,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -169,7 +169,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 8,
+      "priority": 19,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     },
     {
@@ -240,7 +240,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 9,
+      "priority": 20,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
     },
     {
@@ -259,7 +259,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 1,
+      "priority": 13,
       "branch": "feature/F-017-prueba-administracion"
     },
     {
@@ -280,7 +280,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 2,
+      "priority": 14,
       "branch": "feature/F-018-paso-a-escritura-real"
     },
     {
@@ -298,7 +298,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 3,
+      "priority": 15,
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
@@ -316,7 +316,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 4,
+      "priority": 6,
       "branch": "feature/F-020-mejorar-excel-exportacion"
     },
     {
@@ -335,7 +335,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 10,
+      "priority": 8,
       "branch": "feature/F-021-filtro-obra-chip-unico"
     },
     {
@@ -410,13 +410,13 @@
       "status": "spec_ready",
       "sdd": true,
       "rigor": "critico",
-      "priority": 3,
+      "priority": 4,
       "branch": "feature/F-025-obras-postventa-postv2"
     },
     {
       "id": "F-026",
       "title": "Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro",
-      "description": "Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. El recurso MO/0772 (Eusebio Vindel Duro, activo, empresa 1, hora MENC) no tiene ficha de empleado enlazada en el data mart, y la SQL de sync parte de dbo.emp enlazando res.conide = emp.ide: un recurso sin empleado no aparece nunca. Hay otros 9 recursos de la empresa 1 en la misma situación, casi todos altas recientes. Aunque entraran, hoy no se registrarían: la API manda empleado_ide y el transfer resuelve el recurso por res.conide. CAUSA RAÍZ (progress/explore_eusebio.md): el recurso tiene vacío «Empleado asociado» (res.conide) y no existe ficha de empleado con su NIF en ninguna empresa del data mart. Es un patrón de alta: ningún ENCARGADO DE OBRA, capataz ni gruista dado de alta recientemente en la empresa 1 lo tiene, y aun así Sigrid les imputa partes (MO/0496 lleva 1.201 líneas desde 2020 sin empleado). MO/0496 es un caso aparte: su ficha de empleado existe pero solo está enlazada a su recurso de la UTE 18, así que probablemente entra en el cuadrante con el recurso de la UTE. Dos salidas: de DATOS (Administración rellena «Empleado asociado» en el recurso; rellenar solo «Recurso relacionado» en el empleado no basta) o de MODELO (el sync parte del recurso, el trabajador se identifica por recurso_ide y se envía recurso_ide al transfer, que ya lo admite). Pregunta abierta para negocio: si encargados y gruistas se dan de alta sin ficha de empleado A PROPÓSITO, el arreglo tiene que ser el de modelo. Quedan tres SELECT por lanzar contra Sigrid para confirmar, escritos en el informe. AÑADIDO 2026-09-29 (decisión D5 de la spec de F-022): el transfer elige el recurso por res.conide y se queda con el M* de ide mayor de CUALQUIER empresa (hay M* en las empresas 18, 25 y 31). Se resuelve aquí: si la API pasa a enviar recurso_ide, el transfer deja de elegir. Por eso F-026 es también requisito de F-018.",
+      "description": "Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. El recurso MO/0772 (Eusebio Vindel Duro, activo, empresa 1, hora MENC) no tiene ficha de empleado enlazada en el data mart, y la SQL de sync parte de dbo.emp enlazando res.conide = emp.ide: un recurso sin empleado no aparece nunca. Hay otros 9 recursos de la empresa 1 en la misma situación, casi todos altas recientes. Aunque entraran, hoy no se registrarían: la API manda empleado_ide y el transfer resuelve el recurso por res.conide. CAUSA RAÍZ (progress/explore_eusebio.md): el recurso tiene vacío «Empleado asociado» (res.conide) y no existe ficha de empleado con su NIF en ninguna empresa del data mart. Es un patrón de alta: ningún ENCARGADO DE OBRA, capataz ni gruista dado de alta recientemente en la empresa 1 lo tiene, y aun así Sigrid les imputa partes (MO/0496 lleva 1.201 líneas desde 2020 sin empleado). MO/0496 es un caso aparte: su ficha de empleado existe pero solo está enlazada a su recurso de la UTE 18, así que probablemente entra en el cuadrante con el recurso de la UTE. Dos salidas: de DATOS (Administración rellena «Empleado asociado» en el recurso; rellenar solo «Recurso relacionado» en el empleado no basta) o de MODELO (el sync parte del recurso, el trabajador se identifica por recurso_ide y se envía recurso_ide al transfer, que ya lo admite). Pregunta abierta para negocio: si encargados y gruistas se dan de alta sin ficha de empleado A PROPÓSITO, el arreglo tiene que ser el de modelo. Quedan tres SELECT por lanzar contra Sigrid para confirmar, escritos en el informe. AÑADIDO 2026-09-29 (decisión D5 de la spec de F-022): el transfer elige el recurso por res.conide y se queda con el M* de ide mayor de CUALQUIER empresa (hay M* en las empresas 18, 25 y 31). Se resuelve aquí: si la API pasa a enviar recurso_ide, el transfer deja de elegir. Por eso F-026 es también requisito de F-018. DECISIÓN DEL HUMANO (2026-10-01), base de la spec: «no debe buscar por empleado sino por recurso» y «aquí SOLO deben aparecer empleados que no estén inactivos y que tengan código hora mes». El sync de trabajadores parte de los RECURSOS (res + su con): recurso persona, activo (sin con.fecbaj, criterio de F-023) y con código de hora mensual (M*); la ficha de empleado (emp) es OPCIONAL y solo aporta el DNI (LEFT JOIN por res.conide). La identidad del trabajador en dedicacion pasa a ser el recurso (recurso_ide), no emp.ide. La api manda al transfer el recurso_ide exacto de cada línea y el transfer deja de elegirlo por res.conide. Una persona con recurso activo en dos empresas sale una vez por recurso, cada fila en su empresa y con su propio 100 % (coherente con D7 de F-024). La empresa del trabajador pasa a ser la del recurso (con.emp del recurso); encaja con F-034 (obras siempre de la empresa 1). SPEC en specs/F-026-recursos-sin-ficha-empleado/, con decisiones abiertas D1-D7 en requirements.md §7. SPEC APROBADA por el humano el 2026-10-02 con D2 y D4-D7; D1 (sin migración, datos de prueba descartados al desplegar) y D3 (baja en el mes = visible ese mes) reescritas a petición suya DESBLOQUEADA el 2026-10-02: el humano aprueba ampliar la lista cerrada de tests que cambian (design §7) con A1-A8 (F-023, cambiando asserts, no quitando la fila 4), B1 (F-024: la respuesta gana no_vigentes) y C1-C3 (dobles), tal como los lista progress/impl_F-026.md. Y aprueba un CAMBIO DE MÉTODO para el resto de F-026: el implementer puede cambiar un test anterior si es consecuencia DIRECTA de un requisito aprobado, declarándolo en una tabla de su informe (test, valor viejo, valor nuevo, requisito); el reviewer comprueba uno por uno que no se afloja nada; cualquier cambio que no salga de un requisito sigue obligando a parar. 2026-10-02: review APROBADA (pasada 3); T14 y T15 cumplidas (10 recursos del diagnóstico activos, Eusebio MO/0772 sale para escribir con su recurso 2798037, no_vigentes vacío); T16 (copia a azure-apps) hecha. Solo falta la aceptación escrita del superviviente nº 5 para el done. CERRADA (done) el 2026-10-02: superviviente nº 5 (900003→900004, equivalente) ACEPTADO por el humano. Pendiente de desplegar junto con F-034 (vaciado de los datos de prueba en Azure con autorización expresa).",
       "acceptance": [
         "Causa raíz documentada con evidencia y decidido por el humano si se arregla en Sigrid o en el código",
         "Eusebio Vindel Duro aparece en el cuadrante y su línea pasa el preflight del transfer",
@@ -424,10 +424,10 @@
         "El recurso que escribe el transfer es el de la empresa de la línea, nunca uno de otra empresa elegido por ide mayor",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "done",
       "sdd": true,
       "rigor": "critico",
-      "priority": 3,
+      "priority": 2,
       "branch": "feature/F-026-recursos-sin-ficha-empleado"
     },
     {
@@ -444,7 +444,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 4,
+      "priority": 5,
       "branch": "feature/F-027-deshacer-por-usuario"
     },
     {
@@ -461,7 +461,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 5,
+      "priority": 7,
       "branch": "feature/F-028-borrar-todo-filtrado"
     },
     {
@@ -479,7 +479,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 6,
+      "priority": 9,
       "branch": "feature/F-029-seleccion-multiple-completar-100"
     },
     {
@@ -497,7 +497,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 6,
+      "priority": 10,
       "branch": "feature/F-030-dias-bajas-incidencias"
     },
     {
@@ -536,6 +536,65 @@
       "rigor": "estandar",
       "priority": 2,
       "branch": "feature/F-032-empresas-desde-sigrid"
+    },
+    {
+      "id": "F-033",
+      "title": "Deshacer una línea real mal escrita en Sigrid",
+      "description": "Detectado el 2026-10-01 al pasar el transfer desplegado a modo real (decisión del humano). Hoy la única vía para borrar lo que escribe el sistema es 'prueba_escritura_porcentajes.py limpiar --confirmar', que solo toca lo marcado PRUEBA-PORC en la obra de pruebas. Una línea REAL mal escrita (recurso de otra empresa, partida equivocada, importe incorrecto) no tiene vía de retirada desde el sistema: habría que borrarla a mano en Sigrid. Hace falta un camino controlado, por synckey 'porcentajes:{id}', que solo pueda borrar lo que escribió este sistema, con preflight, confirmación del humano y traza, y decidir quién puede usarlo.",
+      "acceptance": [
+        "Una operación del transfer retira una línea escrita por el sistema identificándola por su synckey; nunca toca líneas que no lleven synckey del sistema",
+        "Tiene preflight (qué se borraría) y exige confirmación expresa antes de borrar",
+        "La asignación de dedicacion-api vuelve a quedar como no registrada y queda traza de quién y cuándo",
+        "Decidido y documentado quién puede usarla y desde dónde (front, script, ambos)",
+        "Verificado en la obra de pruebas 0404 antes de usarlo en real",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 12,
+      "branch": "feature/F-033-deshacer-linea-real"
+    },
+    {
+      "id": "F-034",
+      "title": "Las obras son siempre de Construcciones Ruesma; el selector filtra solo trabajadores",
+      "description": "Aclaración del humano el 2026-10-01: los TRABAJADORES son de varias empresas (Construcciones Ruesma, RUESMA SERVICIOS SL, UTE RUESMA-INESCO TOLEDO...), pero las OBRAS, incluida la postventa (POSTV2), son SIEMPRE de Construcciones Ruesma (empresa 1). F-024 se desplegó con la regla contraria: la empresa elegida filtra también las obras (con la 18 se ofrecen las 8 obras que Sigrid tiene en la 18) y es la empresa que viaja en cada línea, así que el transfer busca la obra en la empresa del trabajador; una línea de un trabajador de la 18 en una obra de Ruesma se OMITE. Efecto en producción, con el transfer en modo real: los trabajadores de la 18 y la 31 no pueden registrar. Corrección: el selector filtra solo trabajadores; las obras ofrecidas son siempre las de la empresa de las obras (1); cada línea viaja con la empresa de la OBRA, no con la elegida. El recurso que se escribe es el del propio trabajador en su empresa: eso es F-026, que va justo detrás. Afecta a docs/ARCHITECTURE.md#regla-empresa, a INTEGRACION y a azure-apps. Va DELANTE de todo por bloquear a usuarios en producción. SPEC APROBADA por el humano el 2026-10-01 con D1-D5 de requirements.md §8 tal como se proponen. El humano lo resume así: «puedo tener seleccionado Porsan, pero las imputaciones SIEMPRE van a obras de Construcciones Ruesma, y las obras que salen en el listado son las de Construcciones Ruesma (postventa incluida)». Pendiente: si se despliega sola o junto con F-026. DESBLOQUEADA el 2026-10-02: el humano acepta completar la lista cerrada de tests que cambian (design §6) con los 4 casos que encontró el implementer (R17 registro, R10 cuadrante, R6 y R6/R13 rutas), consecuencias directas de R1/R3. 2026-10-02: review APROBADA, T8 hecha, M4 (equivalente) aceptado por el humano. Queda en BLOCKED solo a la espera de T9 (preflight local), que el humano hará junto con las verificaciones de F-026; así F-026 puede pasar a in_progress (máximo una). En dev, sin desplegar: va con F-026. CERRADA (done) el 2026-10-02: T9 cumplida (preflight local de solo lectura con la 18 elegida: la línea de MO/0003 de la 18 en una obra de Ruesma sale para escribir, no omitida; parte visual confirmada por el humano). Pendiente de desplegar con F-026.",
+      "acceptance": [
+        "Con cualquier empresa elegida, las obras ofrecidas en el cuadrante son las de Construcciones Ruesma (empresa 1), nunca las copias de otras empresas",
+        "El selector sigue filtrando los trabajadores por su empresa",
+        "Cada línea del registro viaja con la empresa de la obra (1), no con la elegida; un trabajador de la 18 puede registrar en una obra de Ruesma",
+        "El contrato API <-> transfer no cambia; los tests de F-022 y F-024 que fijaban la regla anterior se adaptan declarándolo",
+        "Documentación (regla-empresa, INTEGRACION, azure-apps) dice la regla nueva",
+        "Verificado con un preflight real de solo lectura con la 18 elegida: sus líneas en obras de Ruesma salen para escribir, no omitidas; sin ejecutar",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "done",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 1,
+      "branch": "feature/F-034-obras-siempre-ruesma"
+    },
+    {
+      "id": "F-035",
+      "title": "El script de vaciado no funciona contra Azure: la contraseña se corrompe",
+      "description": "Detectado en el despliegue del 2026-10-02. infra/vaciar_datos_prueba_dedicacion.ps1 pasa la contraseña del rol de aplicación a 'az postgres flexible-server execute -p <clave>'. En Windows az es un .cmd, así que la línea pasa por cmd.exe, que corrompe los caracteres especiales de la contraseña: 'password authentication failed' aunque la contraseña del Key Vault es correcta (la api conecta con ella). El vaciado de producción se hizo a mano con psql (PGPASSWORD en el entorno, PGSSLMODE=require) con las mismas tres sentencias del script. Corregir el script para que contra Azure use psql igual que en local (o pase la contraseña sin cmd.exe), con test. Mismo riesgo en cualquier otro script de infra/ que pase secretos a az por argumento: revisarlos. PLAN APROBADO por el humano el 2026-10-02 (PARADA 1): ver progress/current.md, sección F-035. Review 1 (2026-10-02): CAMBIOS PEDIDOS solo por la tabla reproducible de la campaña manual (C4 bis); el humano aprobó además añadir ')' a los caracteres rechazados. MANUAL 1 (2026-10-03): FALLA con 'password authentication failed', pero por la contraseña introducida (10 caracteres frente a 14 en el Key Vault, comparadas en memoria), no por el script. Ciclo 3 aprobado por el humano: leer PG-PASSWORD del Key Vault y afinar el aviso de firewall. CERRADA (done) el 2026-10-03: review pasada 3 APROBADA; MANUAL 2 cumplida por el humano (-SoloRecuento contra Azure: contraseña leída de PG-PASSWORD sin pedirla, recuento 0/0/1/196, entorno limpio False False). No requiere despliegue: son scripts de infra/ que ejecuta una persona.",
+      "acceptance": [
+        "El vaciado contra Azure no pasa la contraseña por argumento de az: usa psql con PGPASSWORD y PGSSLMODE=require en el entorno solo durante la llamada (borrados en finally), con el FQDN leído por az postgres flexible-server show (solo lectura); sin rdbms-connect",
+        "Nuevo conmutador -SoloRecuento: pide la contraseña, cuenta las filas (solo lectura) y sale SIN ejecutar el TRUNCATE; vale en local y en Azure",
+        "Si psql no conecta con Azure, el mensaje sugiere revisar la regla de firewall de la IP propia; el script NO crea ni toca reglas ni nada del servidor",
+        "crear_base_dedicacion.ps1 y add_secrets_dedicacion.ps1 rechazan, ANTES de llamar a az, contraseñas con caracteres que cmd.exe interpreta (\" & | < > ^ % y, por decisión del humano tras la review 1, también )), con mensaje claro",
+        "Revisados los demás scripts de infra/ que pasan secretos a az, con el resultado escrito en infra/README_dedicacion.md (setup_front_easyauth: secreto generado por Azure, sin riesgo; create_*/redeploy/fase1: solo referencias a Key Vault)",
+        "Test offline que lo fija (lectura de los .ps1); los tres tests de tests/test_f026_vaciado.py que cambian (solo_en_la_base_dedicacion, parametros_confirmar_y_local, sin_confirmar_sale_antes_de_conectar) se declaran en la tabla de tests cambiados",
+        "En Azure la contraseña del rol de aplicación se lee del Key Vault (az keyvault secret show --vault-name $KV --name PG-PASSWORD, solo como salida, sin pasarla nunca como argumento); si no se puede leer (sin $KV o sin permiso), se pide con Read-Host -AsSecureString como antes. En local no cambia",
+        "El aviso de la regla de firewall de la IP solo sale ante tiempo agotado o 'no pg_hba.conf entry'; ante 'password authentication failed' el mensaje dice que la contraseña no coincide con la de PG-PASSWORD",
+        "MANUAL (la hace el humano): -Local -SoloRecuento y -SoloRecuento contra Azure, sin escribir nada",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "done",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 1,
+      "branch": "feature/F-035-vaciado-psql-azure"
     }
   ]
 }
