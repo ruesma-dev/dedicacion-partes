@@ -26,7 +26,9 @@
 > `dedicacion-front:r20261001-1808`. El **2026-10-02** se republicaron con
 > F-034 y F-026 (`dedicacion-transfer:r20261002-1705`, `dedicacion-api:r20261002-1706` y
 > `dedicacion-front:r20261002-1708`, `infra/imagenes.json`), con el vaciado de los
-> datos de prueba de `dedicacion` (§2) y un sync inmediato.
+> datos de prueba de `dedicacion` (§2) y un sync inmediato. El **2026-10-03** se
+> republicaron con F-025 (`dedicacion-transfer:r20261003-1444`, `dedicacion-api:r20261003-1446` y `dedicacion-front:r20261003-1447`,
+> en el orden transfer → api → front que exige §7).
 >
 > **Desde el 2026-10-01 el transfer desplegado escribe DE VERDAD**
 > (`OBRA_PRUEBAS_FORZAR=false`), por decisión expresa del humano, tomada a
