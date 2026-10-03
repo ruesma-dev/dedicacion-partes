@@ -212,7 +212,9 @@ def depurar_obras(
     for fila in filas:
         estado = normalizar(str(fila.get("estado_sigrid") or ""))
         activa = not (filtro_activo and any(p in estado for p in excluidos))
-        admite = fila["ide"] in universo
+        # `int` como en `sincronizar`: un `ide` en texto no puede quedarse
+        # fuera del universo sin que nada falle (review 1 de F-025).
+        admite = int(fila["ide"]) in universo
         if not (activa or admite):
             resultado.excluidos_filtro += 1
             resultado.excluidos_detalle[str(fila.get("estado_sigrid"))] += 1

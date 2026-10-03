@@ -78,7 +78,7 @@ def pedir_universo(
     el mismo universo.
     """
     obras = [
-        {"ide": f["ide"], "codigo": texto_o_none(f.get("cod")),
+        {"ide": int(f["ide"]), "codigo": texto_o_none(f.get("cod")),
          "nombre": texto_o_none(f.get("descripcion")) or ""}
         for f in filas if _entero(f.get("empresa")) == empresa_obras
     ]

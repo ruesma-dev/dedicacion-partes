@@ -552,3 +552,14 @@ def test_f025_r12_el_contenedor_comparte_un_solo_transfer(
     contenedor.preview_sync.ejecutar()
     assert [e for e, _ in creados[0].llamadas] == [7]
     assert contenedor.registro_sigrid._transfer is creados[0]
+
+
+def test_f025_r13_el_ide_en_texto_admite_postventa_igual() -> None:
+    """R13 · Si Sigrid devolviera el `ide` como texto, la obra tiene que
+    entrar en el universo igual: se convierte a entero como en
+    `sincronizar`, al pedir el universo y al marcar (review 1, obs. 1)."""
+    universo, uow = _sync([{**_o(10, "CERRADA"), "ide": "10"},
+                           {**_o(12), "ide": "12"}])
+    assert [o["ide"] for o in universo.llamadas[0][1]] == [10, 12]
+    assert _marcas(uow.obras.recibido) == {"10": (False, True),
+                                           "12": (True, True)}
