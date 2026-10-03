@@ -32,6 +32,7 @@ from tests.conftest import (
     PRESUPUESTOS_PV,
     ClienteFalso,
     SettingsFalso,
+    _fila,
     linea,
 )
 
@@ -115,12 +116,14 @@ def test_f002_r16_un_capitulo_no_es_destino(codigo):
 
 def test_f002_r16_el_capitulo_no_llega_al_paride_de_la_linea():
     """R16 · Y lo mismo visto desde el pipeline, que es donde acabaría
-    escribiéndose: el `paride` de la acción es un ide de hoja activa."""
-    _cli, pf = _pv("capitulos")
-    hojas = {n.ide for n in partidas_hoja(_nodos("capitulos"))}
+    escribiéndose: ningún capítulo llega al `paride`. Desde F-025 (D2 = B,
+    D8 = A) la obra-capítulo no casa con sus hijas, así que la línea se
+    omite por «no casa» y no lleva `paride`."""
+    cli, pf = _pv("capitulos")
     a = pf.acciones[0]
-    assert a.accion == "escribir" and a.destino == "postventa", a
-    assert a.paride in hojas, (a.paride, sorted(hojas))
+    assert a.accion == "omitir" and "no casa" in (a.motivo or ""), a
+    assert not a.paride, a.paride
+    assert cli.inserts() == []
 
 
 def test_f002_r16_una_hoja_inactiva_no_es_destino():
@@ -145,21 +148,24 @@ def test_f002_r16_la_hoja_inactiva_omite_la_linea_con_motivo():
 def test_f002_r16_un_override_manual_a_un_capitulo_se_omite():
     """R16 · La otra puerta de entrada es el override del front: el usuario
     puede mandar cualquier `paride`. Si no es hoja activa del presupuesto de
-    postventa, la línea se omite con motivo propio."""
-    cli, pf = _pv("capitulos", paride=70001, partida_cod="0678")
+    postventa, la línea se omite con motivo propio. Desde F-025 (D8 = A),
+    sobre el presupuesto `hojas` y su capítulo numérico `11`: en el
+    presupuesto `capitulos` la obra ya no casa y la línea se omite antes."""
+    cli, pf = _pv("hojas", paride=69100, partida_cod="11")
     a = pf.acciones[0]
     assert a.accion == "omitir", a
-    assert a.motivo == MOTIVO_PARTIDA_PV_NO_HOJA.format(paride=70001), a.motivo
+    assert a.motivo == MOTIVO_PARTIDA_PV_NO_HOJA.format(paride=69100), a.motivo
     assert cli.inserts() == []
 
 
 def test_f002_r16_un_override_manual_a_una_hoja_si_vale():
     """R16 · Control positivo: el override a una hoja activa se respeta tal
-    cual, que es para lo que está."""
-    _cli, pf = _pv("capitulos", paride=70011, partida_cod="0678.MO")
+    cual, que es para lo que está. Desde F-025 (D8 = A), sobre el
+    presupuesto `hojas` y la hoja `0713`."""
+    _cli, pf = _pv("hojas", paride=70002, partida_cod="0713")
     a = pf.acciones[0]
     assert a.accion == "escribir" and a.partida_metodo == "manual", a
-    assert a.paride == 70011
+    assert a.paride == 70002
 
 
 def test_f002_r16_el_override_de_la_obra_normal_no_se_valida_contra_postventa():
@@ -181,14 +187,19 @@ def test_f002_r17_el_automatico_y_el_desplegable_comparten_universo(variante):
     """R17 · Lo que el automático puede elegir y lo que el front ofrece son
     el MISMO conjunto. Si divergen, el usuario ve un desplegable que no
     incluye lo que el sistema acaba de decidir por él, y no puede corregirlo
-    sin salirse de la lista."""
+    sin salirse de la lista. Con el presupuesto `capitulos`, desde F-025
+    (D8 = A) la obra-capítulo no casa: no hay elegida, y el desplegable
+    sigue siendo el universo."""
     _cli, pf = _pv(variante)
     desplegable = {p["ide"] for p in getattr(pf, "partidas_postventa")}
     universo = {n.ide for n in partidas_hoja(_nodos(variante))}
     assert desplegable == universo, variante
 
     elegida = getattr(pf, "capitulo_postventa")
-    assert elegida is not None and elegida["ide"] in desplegable, elegida
+    if variante == "capitulos":
+        assert elegida is None, elegida
+    else:
+        assert elegida is not None and elegida["ide"] in desplegable, elegida
 
 
 def test_f002_r17_el_desplegable_no_ofrece_capitulos_ni_bajas():
@@ -205,7 +216,7 @@ def test_f002_r17_el_desplegable_no_ofrece_capitulos_ni_bajas():
 def test_f002_r18_casado_por_codigo_exacto():
     """R18 · El código de la obra se compara contra `cod`, entero. Gana el
     exacto aunque haya otra partida cuya DESCRIPCIÓN empiece por ese mismo
-    código (tercer escalón de la cascada)."""
+    código (escalón que F-025, D2, retiró)."""
     nodo = resolver_postventa(_nodos("hojas"), "0664", None)
     assert nodo is not None and nodo.cod == "0664", nodo
     assert nodo.ide == 70004
@@ -225,26 +236,26 @@ def test_f002_r18_0656_no_casa_con_656():
 
 
 def test_f002_r18_la_cascada_solo_actua_sin_exacto():
-    """R18 · Control positivo de la cascada: sin partida de código exacto sí
-    se busca el código en la descripción. La cascada se conserva; lo que R18
-    exige es que no adelante al exacto."""
+    """R18 · Sin partida de código exacto, el código en la descripción YA
+    NO casa: F-025 (D2 = B) retiró ese escalón, que imputaba a partidas de
+    otra obra (`OT` → `CI.7.5`). `0998` dice «0777» en su descripción y no
+    es la partida de `0777`."""
     nodo = resolver_postventa(_nodos("hojas"), "0777", None)
-    assert nodo is not None and nodo.ide == 70006, nodo
-    assert nodo.cod == "0998"           # casó por la descripción, no por cod
+    assert nodo is None, nodo
 
 
 def test_f002_r18_el_ultimo_escalon_casa_por_nombre_de_obra():
-    """R18 · Cuarto y último escalón: si la obra no trae código utilizable,
-    se busca su NOMBRE dentro de la descripción de la partida. Es el que
-    salva a las obras que en Sigrid se identifican por nombre."""
+    """R18 · El escalón del NOMBRE ya no existe: F-025 (D2 = B) lo retiró
+    porque casaba obras con partidas ajenas (`191105` → `0611`). Sin código
+    no hay casado, aunque el nombre aparezca en una descripción."""
     nodo = resolver_postventa(_nodos("hojas"), None, "CLUB DEPORTIVO")
-    assert nodo is not None and nodo.ide == 70002, nodo
+    assert nodo is None, nodo
 
 
 def test_f002_r18_el_escalon_del_nombre_tambien_mira_solo_hojas_activas():
-    """R18 · Y no es una puerta trasera: el último escalón busca en el mismo
-    universo que los otros tres. Con la partida de la obra dada de baja, no
-    devuelve nada aunque el nombre case."""
+    """R18 · Y no es una puerta trasera: con la partida de la obra dada de
+    baja, no devuelve nada aunque el nombre aparezca en su descripción (el
+    escalón del nombre lo retiró F-025, D2)."""
     nodos = _nodos("hojas_inactivas")
     assert "15 VIVIENDAS" in (nodos[70001].res or "")
     assert resolver_postventa(nodos, None, "15 VIVIENDAS") is None
@@ -258,13 +269,24 @@ def test_f002_r18_sin_ninguna_coincidencia_no_hay_partida():
 
 # --------------------- R19 · elección determinista --------------------- #
 
+def _nodos_0578(invertido: bool = False):
+    """Dos hojas con sufijo de letra de la misma obra (caso real `0578B`),
+    en el orden dado. Local a R19: las fixtures de `conftest.py` no tienen
+    dos candidatas que casen desde F-025 (D2 = B)."""
+    filas = [_fila(69000, 0, 0, "CD", "COSTES DIRECTOS"),
+             _fila(70101, 69000, 1, "0578B", "OBRA 0578 FASE B"),
+             _fila(70102, 69000, 2, "0578C", "OBRA 0578 FASE C")]
+    return construir_catalogo(list(reversed(filas)) if invertido else filas)
+
+
 def test_f002_r19_la_eleccion_no_depende_del_orden_de_las_filas():
     """R19 · Sigrid devuelve las filas sin `ORDER BY` garantizado. Con las
     MISMAS filas en orden inverso, la partida elegida tiene que ser la misma:
     si no, dos ejecuciones seguidas imputan a partidas distintas y nadie
-    sabría por qué."""
-    directo = resolver_postventa(_nodos("hojas"), "06", None)
-    invertido = resolver_postventa(_nodos("orden_invertido"), "06", None)
+    sabría por qué. Desde F-025 (D2 = B) el prefijo solo casa seguido de
+    letras: catálogo local con `0578B` y `0578C`."""
+    directo = resolver_postventa(_nodos_0578(), "0578", None)
+    invertido = resolver_postventa(_nodos_0578(invertido=True), "0578", None)
 
     assert directo is not None and invertido is not None
     assert directo.ide == invertido.ide, (directo.cod, invertido.cod)
@@ -272,9 +294,10 @@ def test_f002_r19_la_eleccion_no_depende_del_orden_de_las_filas():
 
 def test_f002_r19_el_desempate_es_por_codigo():
     """R19 · Y el criterio de desempate es explicable: el menor código. Que
-    sea determinista no basta si nadie puede predecirlo."""
-    nodo = resolver_postventa(_nodos("hojas"), "06", None)
-    candidatos = [n.cod for n in partidas_hoja(_nodos("hojas"))
-                  if (n.cod or "").startswith("06")]
+    sea determinista no basta si nadie puede predecirlo. Catálogo local con
+    `0578B` y `0578C` desde F-025 (D2 = B)."""
+    nodo = resolver_postventa(_nodos_0578(), "0578", None)
+    candidatos = [n.cod for n in partidas_hoja(_nodos_0578())
+                  if (n.cod or "").startswith("0578")]
     assert len(candidatos) > 1, candidatos
     assert nodo.cod == min(candidatos), (nodo.cod, candidatos)

@@ -1,5 +1,6 @@
 # infrastructure/transfer/transfer_client.py
-"""Cliente HTTP de porcentajes-transfer (preflight / ejecutar)."""
+"""Cliente HTTP de porcentajes-transfer (preflight / ejecutar y universo de
+postventa, F-025)."""
 from __future__ import annotations
 
 from typing import Any
@@ -7,6 +8,8 @@ from typing import Any
 import httpx
 
 from config.settings import Settings
+from domain.errors import UniversoPostventaNoDisponible
+from domain.models import ResultadoUniverso
 
 
 class TransferClient:
@@ -34,3 +37,19 @@ class TransferClient:
 
     def ejecutar(self, payload: dict) -> dict[str, Any]:
         return self._post("/api/registro/ejecutar", payload)
+
+    def universo_postventa(
+        self, empresa: int, obras: list[dict[str, Any]]
+    ) -> ResultadoUniverso:
+        """Universo de postventa de `empresa` (`UniversoPostventaGateway`).
+
+        Si el transfer no responde, o responde sin `ok: true` o sin `obras`,
+        no hay universo: `UniversoPostventaNoDisponible` (F-025, R15)."""
+        r = self._post("/api/postventa/universo",
+                       {"empresa": empresa, "obras": obras})
+        if r.get("ok") is not True or "obras" not in r:
+            causa = r.get("error") or "la respuesta del transfer no trae obras"
+            raise UniversoPostventaNoDisponible(
+                f"universo de postventa no disponible: {causa}")
+        return ResultadoUniverso(ides=frozenset(o["ide"] for o in r["obras"]),
+                                 motivo=r.get("motivo"))

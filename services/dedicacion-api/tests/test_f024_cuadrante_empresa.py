@@ -81,7 +81,7 @@ def test_f024_r11_a_linea_mapea_la_empresa_de_la_obra():
                                  porcentaje=Decimal("40.00"))
     for empresa in (28, None):
         obra = SimpleNamespace(cod="0009", descripcion="OBRA", activa=True,
-                               empresa=empresa)
+                               empresa=empresa, admite_postventa=False)
         assert _a_linea(asignacion, obra).obra_empresa == empresa  # type: ignore[arg-type]
 
 
@@ -163,6 +163,11 @@ class _Obras:
 
     def existen(self, ides: set[int]) -> set[int]:
         return ides & set(OBRAS)
+
+    def modos_ofrecibles(self, ides: set[int]) -> dict[int, tuple[bool, bool]]:
+        """(activa, admite_postventa), que pide guardar desde F-025 (R20)."""
+        return {i: (OBRAS[i].activa, OBRAS[i].admite_postventa)
+                for i in ides & set(OBRAS)}
 
 
 class _Periodos:

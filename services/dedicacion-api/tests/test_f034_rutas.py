@@ -19,7 +19,8 @@ from tests.test_f024_rutas_empresa import BASE, api  # noqa: F401 (fixture)
 #: quita ninguno (design §4.3).
 CAMPOS_CUADRANTE = {"periodo", "empresa", "obras", "trabajadores", "resumen"}
 CAMPOS_LINEA = {"obra_ide", "cod", "descripcion", "es_postventa",
-                "porcentaje", "obra_activa", "obra_empresa", "otra_empresa"}
+                "porcentaje", "obra_activa", "obra_empresa", "otra_empresa",
+                "obra_admite_postventa", "ofrecible"}   # + F-025 (R18)
 
 
 def _marcas(trabajador: dict) -> list[tuple[int, int | None, bool]]:

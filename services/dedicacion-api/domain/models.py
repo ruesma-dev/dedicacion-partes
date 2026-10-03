@@ -48,8 +48,12 @@ class Obra:
     cod: str
     descripcion: str
     estado_sigrid: str | None
+    # `activa`: no excluida por estado; `admite_postventa`: en el universo de
+    # postventa del transfer (F-025, docs/ARCHITECTURE.md#regla-p5).
+    # Independientes: una obra cerrada puede admitir solo postventa.
     activa: bool = True
     empresa: int | None = None  # con.emp de su ficha (F-023)
+    admite_postventa: bool = False
 
 
 @dataclass(frozen=True)
@@ -74,9 +78,22 @@ class Linea:
     descripcion: str = ""
     obra_activa: bool = True
     obra_empresa: int | None = None  # empresa de la obra (F-024, R11)
+    obra_admite_postventa: bool = False  # F-025
 
     def clave(self) -> tuple[int, bool]:
         return (self.obra_ide, self.es_postventa)
+
+    @property
+    def ofrecible(self) -> bool:
+        """¿Se ofrece hoy esta línea? La de postventa, si su obra admite
+        postventa; la normal, si su obra está activa (F-025, R18).
+
+        ÚNICA definición: la usan las copias, la validación al guardar y el
+        cuadrante. No mira la empresa: la línea en obra de otra empresa
+        conserva su propia marca (`otra_empresa`, F-034)."""
+        if self.es_postventa:
+            return self.obra_admite_postventa
+        return self.obra_activa
 
 
 @dataclass(frozen=True)
@@ -133,6 +150,15 @@ class ResumenPeriodo:
     falta: int = 0
     exceso: int = 0
     sin_carga: int = 0
+
+
+@dataclass(frozen=True)
+class ResultadoUniverso:
+    """Universo de postventa que devuelve el transfer (F-025): los `ide` de
+    las obras que admiten postventa y, si no hay universo, por qué."""
+
+    ides: frozenset[int]
+    motivo: str | None
 
 
 @dataclass(frozen=True)

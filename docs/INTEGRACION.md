@@ -10,17 +10,14 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-10-02** (F-026: el trabajador es el
-> **recurso** de Sigrid, no la ficha de empleado; el sync parte de `res` y la
-> clave del trabajador es el `res.ide`; vigencia por mes con `con.fecbaj`;
-> cada línea del registro lleva `recurso_ide` y el transfer ya no lo elige
-> por `res.conide`; al desplegar se vacían los datos de prueba de
-> `dedicacion`, §2). **Origen:** rama
-> `feature/F-026-recursos-sin-ficha-empleado`, pendiente de merge a `dev`.
-> Versión anterior: 2026-10-02, F-034 (las obras, postventa incluida, son
-> siempre de la empresa de las obras, `EMPRESA_IMPUTACION`; el selector
-> filtra solo trabajadores y cada línea del registro viaja con la empresa de
-> las obras).
+> **Fecha del documento: 2026-10-03** (F-025: las obras de postventa salen
+> de las partidas de la obra de postventa; el transfer expone, solo hacia la
+> api, `POST /api/postventa/universo`, y la api lo llama en cada sync y en
+> el preview: si el transfer no responde, el sync falla entero con 502, §5 y
+> §7; la columna `obra.admite_postventa` la añade la api al arrancar).
+> **Origen:** rama `feature/F-025-obras-postventa-postv2`, pendiente de
+> merge a `dev`. Versión anterior: 2026-10-02, F-026 (el trabajador es el
+> **recurso** de Sigrid; cada línea del registro lleva `recurso_ide`).
 >
 > **Estado: DESPLEGADO.** El 2026-08-20 se ejecutó la fase 7 y los tres
 > servicios están arriba en `rg-dedicacion-dev`, con Easy Auth activo. El
@@ -219,6 +216,15 @@ parámetro `empresa` (entero > 0, si no 422) en las rutas de
 `/api/v1/periodos/...`. Siguen siendo internas: no se exponen a otros
 proyectos.
 
+Desde F-025 el transfer expone, **solo para la api**, `POST
+/api/postventa/universo` (`{empresa, obras: [{ide, codigo, nombre}]}` →
+las obras que admiten postventa, con su partida; 422 sin empresa válida,
+502 si falla la lectura de Sigrid; nunca escribe). La api lo llama **una
+vez** en cada `POST /api/v1/sync` y en cada `GET /api/v1/sync/preview`, con
+la empresa de las obras (`EMPRESA_IMPUTACION`): son dos lecturas de Sigrid
+(la obra de postventa y su presupuesto), dentro de `TRANSFER_TIMEOUT_S`. La
+regla está en `docs/ARCHITECTURE.md#regla-p5`.
+
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 
 El acceso lo decide la pertenencia al grupo de Entra
@@ -294,7 +300,7 @@ balanceador de Azure:
 |---|---|---|
 | navegador → front | (balanceador de Azure) | **230 s, no configurable** |
 | front → api | `API_TIMEOUT_S` | **200 s** |
-| api → transfer | `TRANSFER_TIMEOUT_S` | **180 s** |
+| api → transfer (registro y, desde F-025, universo de postventa en el sync) | `TRANSFER_TIMEOUT_S` | **180 s** |
 | transfer → `sigrid-api` | `SIGRID_API_TIMEOUT_S` | 60 s |
 
 Al revés, el de fuera se rinde antes y el usuario ve un error de una escritura
@@ -345,6 +351,8 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Reescribir un tag de imagen ya publicado | Deja de poder saberse qué código está corriendo |
 | Vaciar `dedicacion` reiniciando las secuencias (`RESTART IDENTITY`) | Un `asignacion.id` nuevo reutiliza la `synckey` `porcentajes:{id}` de una línea ya escrita en Sigrid y el transfer la da por registrada sin escribirla. Por eso el vaciado de F-026 usa `CONTINUE IDENTITY` |
 | Volver a mandar al transfer el `ide` de la ficha de empleado en vez de `recurso_ide` | El transfer lo ignora y omite la línea «sin recurso»: no se registra nada (F-026) |
+| Parar el transfer, o que no responda a `POST /api/postventa/universo` | El sync de maestros (y su preview) falla entero con **502** nombrando el universo de postventa, sin persistir nada: no hay obras nuevas ni marcas al día hasta que vuelva (F-025, D3) |
+| Cambiar `POSTVENTA_OBRA_COD` del transfer | Cambia qué obras se ofrecen como `Postv-` en el **siguiente** sync, no antes; hasta entonces el cuadrante enseña la foto vieja y el preflight manda (F-025) |
 
 ### Si tocan algo de otros
 

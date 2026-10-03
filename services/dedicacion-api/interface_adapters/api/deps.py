@@ -67,12 +67,18 @@ def construir_contenedor(
     )
 
     sigrid = SigridApiClient(settings)
+    # UN cliente del transfer para el universo de postventa del sync y del
+    # preview y para el registro (F-025); la empresa de las obras es la que
+    # ya viaja en cada línea del registro (EMPRESA_IMPUTACION, F-034).
+    transfer = TransferClient(settings)
+    empresa_obras = settings.empresa_imputacion
     pipeline = SyncMaestrosPipeline(
         [
             FetchEmpleadosStep(sigrid, sql_empleados, categorias, filtro_cat,
                                exigir_codigo_mes=exigir_mes,
                                criterio=criterio),
-            FetchObrasStep(sigrid, sql_obras, estados_exc, filtro_est),
+            FetchObrasStep(sigrid, sql_obras, estados_exc, filtro_est,
+                           universo=transfer, empresa_obras=empresa_obras),
             FetchEmpresasStep(sigrid, sql_empresas),
             UpsertTrabajadoresStep(),
             UpsertObrasStep(),
@@ -101,10 +107,11 @@ def construir_contenedor(
             # UoW solo para leer los periodos ABIERTO de la ventana de bajas
             # (F-026 R17); se resuelve al llamar, como `Contenedor.uow`.
             uow_factory=lambda: SqlAlchemyUnitOfWork(session_factory),
+            universo=transfer,
+            empresa_obras=empresa_obras,
         ),
         exporter=exporter,
-        registro_sigrid=RegistroSigrid(session_factory,
-                                       TransferClient(settings),
+        registro_sigrid=RegistroSigrid(session_factory, transfer,
                                        settings.empresa_imputacion),
     )
 

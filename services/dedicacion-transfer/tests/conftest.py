@@ -196,10 +196,15 @@ class ClienteFalso:
         self.lineas_parte = list(lineas_parte or [])
         self.synckeys = dict(synckeys or {})
         self.escritos: list[dict] = []
+        # Lecturas de la obra de postventa y de presupuestos (F-025 R7): el
+        # universo las hace UNA vez por petición, no una por obra.
+        self.n_obra_por_codigo = 0
+        self.n_capitulos_de_obra = 0
 
     # --- lecturas --- #
     def obra_por_codigo(self, cod, empresa):
         """Todas las obras del doble son de `EMPRESA` (F-022)."""
+        self.n_obra_por_codigo += 1
         if empresa != EMPRESA:
             return None
         if cod == OBRA_PRUEBAS:
@@ -216,6 +221,7 @@ class ClienteFalso:
         return self.obra
 
     def capitulos_de_obra(self, obride):
+        self.n_capitulos_de_obra += 1
         if obride == self.obra_pv.ide:
             return self.capitulos
         if obride == self.obra_origen.ide:

@@ -6,6 +6,7 @@ negocio y deja al llamante (capa API) la gestión del ciclo de vida.
 """
 from __future__ import annotations
 
+import dataclasses
 import logging
 from collections import Counter
 from collections.abc import Callable
@@ -37,7 +38,7 @@ from domain.models import (
     TipoEvento,
     Trabajador,
 )
-from domain.ports import SigridGateway, UnitOfWork
+from domain.ports import SigridGateway, UnitOfWork, UniversoPostventaGateway
 
 from application.filtros_maestros import CRITERIO_VACIO, CriterioActivoRecurso
 
@@ -128,6 +129,7 @@ class GuardarAsignaciones:
         lineas = _validar_lineas(uow, lineas_entrada)
 
         antes = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
+        _rechazar_nuevas_no_ofrecibles(uow, lineas, antes)
         if _snapshot(antes) != _snapshot(lineas):
             uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas, usuario)
             uow.eventos.registrar(
@@ -178,7 +180,8 @@ class CopiarPeriodoAnterior:
 
     Solo actúa sobre trabajadores activos visibles en la empresa del filtro
     (F-024, R14) y SIN carga en el periodo destino: nunca pisa trabajo ya
-    hecho. Las líneas de obras desactivadas se omiten y se contabilizan.
+    hecho. Las líneas no ofrecibles (`Linea.ofrecible`, F-025 R19) se
+    omiten y se contabilizan.
     """
 
     def ejecutar(
@@ -210,7 +213,7 @@ class CopiarPeriodoAnterior:
             if not previas:
                 sin_datos += 1
                 continue
-            utilizables = [ln for ln in previas if ln.obra_activa]
+            utilizables = [ln for ln in previas if ln.ofrecible]
             omitidas += len(previas) - len(utilizables)
             if not utilizables:
                 sin_datos += 1
@@ -260,7 +263,7 @@ class CopiarTrabajadorAnterior:
             return fila, resumen, None, 0
         origen_id, periodo_origen = origen
         previas = uow.asignaciones.lineas_de_trabajador(origen_id, trabajador_ide)
-        utilizables = [ln for ln in previas if ln.obra_activa]
+        utilizables = [ln for ln in previas if ln.ofrecible]
         omitidas = len(previas) - len(utilizables)
         antes = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
         if _snapshot(antes) != _snapshot(utilizables):
@@ -352,6 +355,10 @@ class PreviewSync:
     Ventana de bajas (F-026 R12, R17): con `uow_factory`, abre una UoW SOLO
     para leer los periodos `ABIERTO` (sin `commit`); sin ella, la ventana es
     el mes anterior a `hoy`. Se publica en `empleados.ventana_baja`.
+
+    Universo de postventa (F-025, R16): lo pide igual que el sync
+    (`sync_pipeline.pedir_universo`) y publica en `obras`
+    `admiten_postventa`, `solo_postventa` y `motivo_postventa`.
     """
 
     def __init__(
@@ -368,6 +375,9 @@ class PreviewSync:
         sql_empresas: str | None = None,
         uow_factory: Callable[[], UnitOfWork] | None = None,
         hoy: Callable[[], date] = date.today,
+        *,
+        universo: UniversoPostventaGateway,
+        empresa_obras: int,
     ) -> None:
         self._sigrid = sigrid
         self._sql_empleados = sql_empleados
@@ -383,6 +393,8 @@ class PreviewSync:
         self._criterio = criterio
         self._uow_factory = uow_factory
         self._hoy = hoy
+        self._universo = universo
+        self._empresa_obras = empresa_obras
 
     def _ventana_baja(self) -> int:
         from application.sync_pipeline import ventana_de_bajas
@@ -403,6 +415,7 @@ class PreviewSync:
             COLUMNAS_EMPRESAS,
             COLUMNAS_OBRAS,
             _validar_columnas,
+            pedir_universo,
         )
 
         brutas_emp = self._sigrid.leer(self._sql_empleados)
@@ -418,7 +431,10 @@ class PreviewSync:
         )
         brutas_obr = self._sigrid.leer(self._sql_obras)
         _validar_columnas(brutas_obr, COLUMNAS_OBRAS, "sync.obras.sql")
-        obr = depurar_obras(brutas_obr, self._estados, self._filtro_estados)
+        universo = pedir_universo(self._universo, brutas_obr,
+                                  self._empresa_obras)
+        obr = depurar_obras(brutas_obr, self._estados, self._filtro_estados,
+                            universo.ides)
         por_categoria = Counter(
             str(f.get("categoria") or "(sin categoría)") for f in emp.filas
         )
@@ -457,6 +473,9 @@ class PreviewSync:
                 "por_estado": dict(por_estado.most_common()),
                 "por_empresa": _por_empresa(obr.filas),
                 "muestra": obr.filas[:5],
+                "admiten_postventa": obr.admiten_postventa,
+                "solo_postventa": obr.solo_postventa,
+                "motivo_postventa": universo.motivo,
             },
         }
         if self._sql_empresas is not None:
@@ -541,6 +560,30 @@ def _validar_lineas(
     if desconocidas:
         lineas = [ln for ln in lineas if ln.obra_ide in existentes]
     return lineas
+
+
+def _rechazar_nuevas_no_ofrecibles(
+    uow: UnitOfWork, lineas: list[Linea], antes: list[Linea]
+) -> None:
+    """Una línea que no estaba guardada (misma obra y modo) y no es ofrecible
+    tumba el guardado entero (F-025, R20, D7): defensa ante un cliente que
+    no sea el front. Lo ya guardado se puede volver a guardar (D5)."""
+    previas = {ln.clave() for ln in antes}
+    nuevas = [ln for ln in lineas if ln.clave() not in previas]
+    modos = uow.obras.modos_ofrecibles({ln.obra_ide for ln in nuevas})
+    rechazadas = [
+        ln.clave() for ln in nuevas
+        if not dataclasses.replace(
+            ln,
+            obra_activa=modos[ln.obra_ide][0],
+            obra_admite_postventa=modos[ln.obra_ide][1],
+        ).ofrecible
+    ]
+    if rechazadas:
+        raise ObraNoValida(
+            "Obras que no se ofrecen en ese modo (obra, postventa): "
+            f"{rechazadas}"
+        )
 
 
 def _filas_de_empresa(

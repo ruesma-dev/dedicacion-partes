@@ -18,6 +18,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -66,6 +67,13 @@ class ObraORM(Base):
     # Empresa de la ficha (`con.emp`, F-023): un mismo `cod` en dos empresas son
     # dos obras, cada una con su `ide`. Nulable y sin default, como en trabajador.
     empresa: Mapped[int | None] = mapped_column(Integer)
+    # En el universo de postventa del transfer (F-025, R21). Independiente de
+    # `activa`. `false` en servidor: el ADD COLUMN que deriva
+    # `esquema.alters_faltantes` vale sobre una tabla con filas, y el
+    # siguiente sync la rellena.
+    admite_postventa: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
     sync_en: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

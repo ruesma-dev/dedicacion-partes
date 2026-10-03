@@ -37,3 +37,8 @@ class SigridNoConfigurado(ErrorDominio):
 
 class SigridError(ErrorDominio):
     pass
+
+
+class UniversoPostventaNoDisponible(ErrorDominio):
+    """El transfer no ha dado el universo de postventa (caído, `ok` que no es
+    `true` o sin `obras`): el sync falla entero (F-025, R15, D3)."""

@@ -224,21 +224,25 @@ function aplicarCuadrante(datos) {
 }
 
 function construirCatalogoObras() {
-  // Cada obra activa se ofrece dos veces: normal y versión postventa.
+  // F-025: la API decide qué se ofrece. La entrada normal, si la obra está
+  // `activa`; la `Postv-`, si `admite_postventa` (una obra cerrada puede
+  // ofrecerse solo como `Postv-`).
   state.catalogoObras = [];
-  state.obras
-    .filter((o) => o.activa)
-    .forEach((o) => {
+  state.obras.forEach((o) => {
+    if (o.activa) {
       state.catalogoObras.push({
         obra: o, pv: false, cod: o.cod,
         clave: normalizar(o.cod + " " + o.descripcion),
       });
+    }
+    if (o.admite_postventa) {
       state.catalogoObras.push({
         obra: o, pv: true, cod: "Postv-" + o.cod,
         clave: normalizar("postv postventa postv-" + o.cod + " " +
                           o.cod + " " + o.descripcion),
       });
-    });
+    }
+  });
 }
 
 // ---------------------------------------------------------------- cabecera
@@ -591,9 +595,10 @@ function construirCelda(t, clave) {
       t.lineas.forEach((l) => {
         const chip = document.createElement("span");
         chip.className = "chip-linea" + (l.es_postventa ? " pv" : "") +
-          (l.obra_activa ? "" : " obra-baja") +
+          (l.ofrecible ? "" : " obra-baja") +
           (l.otra_empresa ? " chip-otra-empresa" : "");
-        chip.title = l.descripcion + (l.obra_activa ? "" : " (obra desactivada)") +
+        chip.title = l.descripcion +
+          (l.ofrecible ? "" : " (la obra ya no se ofrece en este modo)") +
           (l.otra_empresa
             ? " · la obra no es de la empresa de las obras: no se registrará"
             : "");
@@ -809,6 +814,14 @@ function chipEditable(linea, idx, editor) {
   btnPv.textContent = "PV";
   btnPv.title = "Alternar postventa";
   btnPv.addEventListener("click", () => {
+    // F-025 (R23): solo a un modo que la API ofrece para esa obra.
+    const ofrecido = linea.es_postventa ? linea.obra_activa : linea.obra_admite_postventa;
+    if (!ofrecido) {
+      toast(linea.es_postventa
+        ? "Esa obra no se ofrece como obra normal"
+        : "Esa obra no admite postventa", true);
+      return;
+    }
     const nuevaClave = `${linea.obra_ide}|${!linea.es_postventa}`;
     const duplicada = state.edicion.some(
       (l, i) => i !== idx && `${l.obra_ide}|${l.es_postventa}` === nuevaClave
@@ -888,7 +901,11 @@ function montarAutocompletado(input, panel, editor) {
       descripcion: entrada.obra.descripcion,
       es_postventa: entrada.pv,
       porcentaje: restante > 0 ? Math.round(restante * 100) / 100 : 100,
-      obra_activa: true,
+      // Las marcas de la obra, tal y como las da la API (las mira el botón
+      // PV); el catálogo solo ofrece entradas ofrecibles.
+      obra_activa: entrada.obra.activa,
+      obra_admite_postventa: entrada.obra.admite_postventa,
+      ofrecible: true,
     });
     pintarEditor(editor);
     enfocarPct(editor, state.edicion.length - 1);
@@ -1090,7 +1107,7 @@ async function copiarDeArriba(ide) {
   }
   const origen = visibles[idx - 1];
   const lineas = origen.lineas
-    .filter((l) => l.obra_activa)
+    .filter((l) => l.ofrecible)
     .map((l) => ({
       obra_ide: l.obra_ide,
       es_postventa: l.es_postventa,

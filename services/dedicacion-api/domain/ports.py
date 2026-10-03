@@ -15,6 +15,7 @@ from domain.models import (
     Obra,
     Periodo,
     ResultadoSyncMaestro,
+    ResultadoUniverso,
     TipoEvento,
     Trabajador,
 )
@@ -25,6 +26,17 @@ class SigridGateway(Protocol):
 
     def leer(self, sql: str) -> list[dict[str, Any]]:
         """Ejecuta la consulta y devuelve filas como dicts columna→valor."""
+        ...
+
+
+class UniversoPostventaGateway(Protocol):
+    """Universo de postventa, que calcula SOLO el transfer (F-025, D1)."""
+
+    def universo_postventa(
+        self, empresa: int, obras: list[dict[str, Any]]
+    ) -> ResultadoUniverso:
+        """Obras de `obras` (`ide`, `codigo`, `nombre`) que admiten postventa
+        en `empresa`. Lanza `UniversoPostventaNoDisponible` si no lo hay."""
         ...
 
 
@@ -46,11 +58,15 @@ class ObraRepository(Protocol):
     def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro: ...
 
     def listar_para_periodo(self, periodo_id: int) -> list[Obra]:
-        """Activas + inactivas usadas en el periodo."""
+        """Activas + las que admiten postventa + las usadas en el periodo."""
         ...
 
     def existen(self, ides: set[int]) -> set[int]:
         """Subconjunto de `ides` que existen en el maestro."""
+        ...
+
+    def modos_ofrecibles(self, ides: set[int]) -> dict[int, tuple[bool, bool]]:
+        """(activa, admite_postventa) de cada obra de `ides` (F-025, R20)."""
         ...
 
 

@@ -3,6 +3,8 @@
 
   POST /api/registro/preflight  -> analiza y devuelve qué se haría
   POST /api/registro/ejecutar   -> escribe en Sigrid (con pisar_claves)
+  POST /api/postventa/universo  -> obras de una empresa que admiten postventa
+                                   (ARCHITECTURE.md#regla-p5; solo lee)
   GET  /health
 """
 from __future__ import annotations
@@ -16,7 +18,10 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from application.pipelines.registro_pipeline import RegistroPipeline
-from application.services.reglas_porcentajes import clave_conflicto
+from application.services.reglas_porcentajes import (
+    clave_conflicto, empresa_valida,
+)
+from application.services.universo_postventa import UniversoPostventa
 from domain.errores import EmpresasMezcladas
 from domain.models.registro_models import LineaEntrada, ObraEntrada
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
@@ -61,6 +66,16 @@ class PeticionIn(BaseModel):
     usuario: Optional[str] = None
 
 
+class UniversoIn(BaseModel):
+    """Petición del universo de postventa: UNA empresa y sus obras.
+
+    `empresa` es opcional a propósito: sin ella se responde 422 con motivo,
+    no con el error genérico de validación."""
+
+    empresa: int | None = None
+    obras: list[ObraIn] = Field(default_factory=list)
+
+
 def _empresas_mezcladas(exc: EmpresasMezcladas) -> JSONResponse:
     """Una petición con líneas de varias empresas es un dato de entrada
     inválido (422), no un fallo de Sigrid (502): no se ha leído nada."""
@@ -82,6 +97,7 @@ def build_app(settings) -> FastAPI:
         est_parte=settings.est_parte_activo,
     )
     pipeline = RegistroPipeline(cliente=cliente, settings=settings)
+    universo = UniversoPostventa(cliente=cliente, settings=settings)
 
     def _dominio(p: PeticionIn):
         obra = ObraEntrada(ide=p.obra.ide, codigo=p.obra.codigo,
@@ -155,6 +171,22 @@ def build_app(settings) -> FastAPI:
             return _empresas_mezcladas(exc)
         except Exception as exc:                # noqa: BLE001
             logger.exception("ejecutar fallo")
+            return JSONResponse(status_code=502,
+                                content={"ok": False, "error": str(exc)})
+
+    @app.post("/api/postventa/universo")
+    async def universo_postventa(p: UniversoIn):
+        if not empresa_valida(p.empresa):
+            logger.warning("universo rechazado: empresa %r", p.empresa)
+            return JSONResponse(status_code=422, content={
+                "ok": False,
+                "error": f"empresa no válida: {p.empresa!r}"})
+        try:
+            obras = [ObraEntrada(ide=o.ide, codigo=o.codigo, nombre=o.nombre)
+                     for o in p.obras]
+            return {"ok": True, **universo.calcular(p.empresa, obras)}
+        except Exception as exc:
+            logger.exception("universo de postventa fallo")
             return JSONResponse(status_code=502,
                                 content={"ok": False, "error": str(exc)})
 

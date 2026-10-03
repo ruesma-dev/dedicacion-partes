@@ -165,9 +165,12 @@ sync:
              ON est.tip = con.tip AND est.est = con.est
       ORDER BY con.emp, con.cod
 
-    # Se excluyen las obras cuyo estado contenga (normalizado) alguno de
-    # estos literales. Ajustar con los estados reales que muestre el
-    # preview (obras.excluidas_por_estado).
+    # Una obra cuyo estado contenga (normalizado) alguno de estos literales
+    # no está `activa` (no se ofrece como obra normal). Si además está en el
+    # universo de postventa que calcula el transfer, se guarda igual, solo
+    # como `Postv-` (F-025, docs/ARCHITECTURE.md#regla-p5); si no, queda
+    # fuera. Ajustar con los estados reales que muestre el preview
+    # (obras.excluidas_por_estado, obras.solo_postventa).
     filtro_estados: true
     estados_excluidos:
       - "terminada"
