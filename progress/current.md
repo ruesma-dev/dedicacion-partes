@@ -3,7 +3,8 @@
 
 **F-025 en curso** (obras de postventa desde POSTV2, rigor crítico), rama
 `feature/F-025-obras-postventa-postv2`: implementada, review 1 con cambios
-pedidos (rastro de este fichero), ciclo 2 hecho y **review 2 lanzada**. F-035 se cerró el
+pedidos (rastro de este fichero), ciclo 2 hecho y **review 2 APROBADA**;
+quedan las MANUAL y el despliegue. F-035 se cerró el
 2026-10-03; F-034 y F-026 se **desplegaron el 2026-10-02** (resúmenes en
 `history.md`). El arnés es la **1.7.3**.
 
@@ -14,9 +15,9 @@ pedidos (rastro de este fichero), ciclo 2 hecho y **review 2 lanzada**. F-035 se
   POSTV2 de Construcciones Ruesma; D6: la POSTV antigua fuera), revisada tras
   F-034/F-026 (`progress/spec_F-025_revision.md`) y reaprobada el 2026-10-03
   con **D8 = A** (la obra-capítulo queda fuera; `0e005fe`).
-- **Implementación** (`progress/impl_F-025.md`): T1-T12 hechas. Transfer 379,
-  api 503, front 28, raíz 418 en verde; cobertura 162/162; mutación 56/56
-  muertos (`progress/mutacion_F-025.md`). Tests anteriores cambiados: solo los
+- **Implementación** (`progress/impl_F-025.md`): T1-T12 hechas. Tras el
+  ciclo 2: transfer 379, api 509, front 28, raíz 418 en verde; cobertura
+  164/164; mutación en serie 57/57 muertos (`progress/mutacion_F-025.md`). Tests anteriores cambiados: solo los
   de design §7.1 (tabla en el informe, §3). Falsos supervivientes de la
   campaña en paralelo → encargo de `arnes-base` (`0ecafc2`).
 - **Review 1 (2026-10-03) → CAMBIOS PEDIDOS solo por este fichero**
@@ -28,8 +29,9 @@ pedidos (rastro de este fichero), ciclo 2 hecho y **review 2 lanzada**. F-035 se
   de ruff de las líneas de F-025 se corrigen. **Hecho** (`c588879`,
   `e640f67`, `89f0d30`, `7fda87a`): test nuevo del `ide` en texto;
   `entero_o_none` público en `domain/normalizacion.py`; ruff 215 → 198;
-  campaña en serie 57/57 muertos. **Review 2 lanzada.**
-- **Quedan para el `done`:** review 2 aprobada y las MANUAL.
+  campaña en serie 57/57 muertos. **Review 2: APROBADO** (`a7779aa`).
+- **Quedan para el `done`:** T10 (commit en `azure-apps`), T13 y T14, con su
+  resultado real aquí. Después, desplegar con las tres condiciones de abajo.
 - **MANUAL (humano, NUNCA `registro/ejecutar`)**, con api y transfer LOCALES
   desde esta rama y la api contra la BBDD local; desde la raíz:
   - **T10**: `git -C C:\Users\pgris\PycharmProjects\azure-apps diff dedicacion.md`,
