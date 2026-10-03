@@ -362,3 +362,17 @@ def test_f025_r11_el_universo_del_cruce_solo_tiene_exactas_y_sufijos():
     r = _universo(_cli_cruce())
     assert {o["ide"]: o["partida"]["cod"] for o in r["obras"]} == {
         1: "0656", 2: "0578B", 3: "0654-B"}
+
+
+def test_f025_r9_el_catalogo_de_una_peticion_es_inmutable():
+    """R9 · El catálogo que comparten el casado de todas las obras de una
+    petición no se puede modificar a medias: es inmutable (design §4.1)."""
+    import dataclasses
+
+    from application.services.universo_postventa import (
+        cargar_catalogo_postventa,
+    )
+
+    catalogo = cargar_catalogo_postventa(_cli_cruce(), SettingsFalso(), 1)
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        catalogo.obra = None  # type: ignore[misc]
