@@ -563,3 +563,28 @@ def test_f025_r13_el_ide_en_texto_admite_postventa_igual() -> None:
     assert [o["ide"] for o in universo.llamadas[0][1]] == [10, 12]
     assert _marcas(uow.obras.recibido) == {"10": (False, True),
                                            "12": (True, True)}
+
+
+@pytest.mark.parametrize(("valor", "esperado"),
+                         [(None, None), ("28", 28), (0, 0), (1, 1)])
+def test_f025_r12_entero_o_none_es_del_dominio(valor: object,
+                                               esperado: int | None) -> None:
+    """R12 · La conversión de la empresa de Sigrid a entero es pública y
+    vive en el dominio, junto a `texto_o_none`: la usan la depuración y el
+    sync sin importar nombres privados de otro módulo (review 1, obs. 2)."""
+    from domain.normalizacion import entero_o_none
+
+    assert entero_o_none(valor) == esperado
+
+
+def test_f025_r12_el_sync_no_importa_nombres_privados() -> None:
+    """R12 · `sync_pipeline.py` no importa ningún `_nombre` de otro módulo."""
+    import ast
+    from pathlib import Path
+
+    from application import sync_pipeline
+
+    arbol = ast.parse(Path(sync_pipeline.__file__).read_text(encoding="utf-8"))
+    privados = [a.name for n in ast.walk(arbol) if isinstance(n, ast.ImportFrom)
+                for a in n.names if a.name.startswith("_")]
+    assert privados == []

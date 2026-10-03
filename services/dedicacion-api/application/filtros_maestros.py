@@ -36,6 +36,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from domain.empresas import empresa_de_baja
+from domain.normalizacion import entero_o_none as _entero
 from domain.normalizacion import normalizar
 
 
@@ -158,11 +159,6 @@ def _motivo_recurso_inactivo(
             and 0 < fecha_baja < baja_desde):
         return MOTIVO_BAJA_ANTERIOR
     return None
-
-
-def _entero(valor: Any) -> int | None:
-    """Entero de Sigrid (empresa, fecha tipo entero) o None si viene NULL."""
-    return None if valor is None else int(valor)
 
 
 def _documento(fila: dict[str, Any]) -> str:

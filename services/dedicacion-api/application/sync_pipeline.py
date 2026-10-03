@@ -17,7 +17,6 @@ from typing import Any, Protocol
 from application.filtros_maestros import (
     CRITERIO_VACIO,
     CriterioActivoRecurso,
-    _entero,
     depurar_empleados,
     depurar_obras,
 )
@@ -28,7 +27,7 @@ from domain.models import (
     ResultadoSyncMaestro,
     ResultadoUniverso,
 )
-from domain.normalizacion import texto_o_none
+from domain.normalizacion import entero_o_none, texto_o_none
 from domain.ports import SigridGateway, UniversoPostventaGateway, UnitOfWork
 from domain.vigencia import inicio_ventana_baja
 
@@ -80,7 +79,7 @@ def pedir_universo(
     obras = [
         {"ide": int(f["ide"]), "codigo": texto_o_none(f.get("cod")),
          "nombre": texto_o_none(f.get("descripcion")) or ""}
-        for f in filas if _entero(f.get("empresa")) == empresa_obras
+        for f in filas if entero_o_none(f.get("empresa")) == empresa_obras
     ]
     return universo.universo_postventa(empresa_obras, obras)
 

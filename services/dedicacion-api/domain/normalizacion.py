@@ -22,6 +22,14 @@ def texto_o_none(valor: object) -> str | None:
     return texto or None
 
 
+def entero_o_none(valor: object) -> int | None:
+    """Entero de Sigrid (empresa, fecha tipo entero) o `None` si viene NULL.
+
+    Pública y en el dominio (review 1 de F-025): la usan la depuración de
+    maestros y el sync al elegir las obras de la empresa de las obras."""
+    return None if valor is None else int(valor)
+
+
 def normalizar(texto: str | None) -> str:
     """minúsculas + sin acentos + espacios colapsados + sin bordes."""
     if not texto:
