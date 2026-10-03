@@ -1398,3 +1398,78 @@ Informes: `progress/impl_F-035.md`, `progress/review_F-035.md`,
   comando da `False False`. Tras el ciclo 3, la de Azure ya no pide contraseña.
   Resultado: MANUAL 1 fallida (ver arriba); repetición _pendiente_.
 
+## 2026-10-03 · F-025 · Obras de postventa sacadas de los capítulos de POSTV2
+
+Rama `feature/F-025-obras-postventa-postv2` · `sdd: true` · rigor `critico` ·
+**APROBADO** por el reviewer en la pasada 2 (la 1 pidió cambios solo en el
+rastro de `current.md`: cabecera, «Lo siguiente» y condiciones de despliegue).
+
+**Decisiones del humano.** D2 = B (la cascada de P5 no imputa a partidas
+ajenas: fuera CP→CP.1, OT→CI.7.5); D4: solo la POSTV2 de Construcciones Ruesma
+(las obras son siempre de la empresa de las obras, F-034); D6: la POSTV antigua
+fuera; D8 = A (2026-10-03, tras revisar la spec contra F-034/F-026: la
+obra-capítulo queda fuera; ocho tests de F-002 cambian).
+
+**Qué cambió.** El transfer calcula el universo de postventa por petición
+(`POST /api/postventa/universo`, sin arrastrar el catálogo entre llamadas) y P5
+casa solo por código exacto o prefijo + letras. La api lo pide en el sync y
+guarda `obra.admite_postventa`; una obra cerrada se ofrece solo como `Postv-`.
+El cuadrante publica `ofrecible` y guardar rechaza líneas nuevas no ofrecibles.
+El front pinta el catálogo con esas marcas.
+
+**Verificado.** Transfer 379, api 509, front 28, raíz 418; cobertura 164/164;
+mutación en serie 57/57 (la campaña en paralelo dio tres falsos supervivientes:
+encargo de `arnes-base`). MANUAL del humano: **M1** 83/73, `0656` `0660` `0669`
+`0689` solo `Postv-`, `CP` `OT` `191105` fuera, cuadrante igual con la 1 y la 18;
+**M2** `Postv-0656` casa con el capítulo 0656 (`ide` 381828), sin partidas en la
+obra sin postventa, `no_vigentes` vacío. `azure-apps`: `897587f`.
+
+**Pendiente.** Desplegar (transfer antes o con la api, sync, retirar el aviso
+de CP/OT). Detalle menor: el script de verificación muestra mal las tildes de
+los nombres en la consola de PowerShell 5.1 (solo salida, no datos).
+
+Informes: `progress/impl_F-025.md`, `progress/review_F-025.md`,
+`progress/mutacion_F-025.md`, `progress/spec_F-025_revision.md`. Sección
+retirada de `current.md`:
+
+## F-025 · Obras de postventa desde los capítulos de POSTV2 (en curso)
+
+- **Spec** (`specs/F-025-obras-postventa-postv2/`): aprobada el 2026-10-01
+  (`d49348c`; D2 = B, la cascada de P5 no imputa a partidas ajenas; D4: solo la
+  POSTV2 de Construcciones Ruesma; D6: la POSTV antigua fuera), revisada tras
+  F-034/F-026 (`progress/spec_F-025_revision.md`) y reaprobada el 2026-10-03
+  con **D8 = A** (la obra-capítulo queda fuera; `0e005fe`).
+- **Implementación** (`progress/impl_F-025.md`): T1-T12 hechas. Tras el
+  ciclo 2: transfer 379, api 509, front 28, raíz 418 en verde; cobertura
+  164/164; mutación en serie 57/57 muertos (`progress/mutacion_F-025.md`). Tests anteriores cambiados: solo los
+  de design §7.1 (tabla en el informe, §3). Falsos supervivientes de la
+  campaña en paralelo → encargo de `arnes-base` (`0ecafc2`).
+- **Review 1 (2026-10-03) → CAMBIOS PEDIDOS solo por este fichero**
+  (`progress/review_F-025.md`): código, tests, `#regla-p5` y mutación bien.
+  Corregido aquí: cabecera, «Lo siguiente» y condiciones de despliegue.
+- **Observaciones de la review 1, recogidas en el ciclo 2** (implementer):
+  `depurar_obras` compara el `ide` sin convertir (con `_entero`, más test);
+  `_entero` deja de ser privado si lo usa otro módulo; y los 15 avisos nuevos
+  de ruff de las líneas de F-025 se corrigen. **Hecho** (`c588879`,
+  `e640f67`, `89f0d30`, `7fda87a`): test nuevo del `ide` en texto;
+  `entero_o_none` público en `domain/normalizacion.py`; ruff 215 → 198;
+  campaña en serie 57/57 muertos. **Review 2: APROBADO** (`a7779aa`).
+- **Quedan para el `done`:** T10 (commit en `azure-apps`), T13 y T14, con su
+  resultado real aquí. Después, desplegar con las tres condiciones de abajo.
+- **MANUAL (humano, NUNCA `registro/ejecutar`)**, con api y transfer LOCALES
+  desde esta rama y la api contra la BBDD local; desde la raíz:
+  - **T10**: `git -C C:\Users\pgris\PycharmProjects\azure-apps diff dedicacion.md`,
+    revisar y hacer el commit en `azure-apps` (**pendiente en `azure-apps`**).
+  - **T13 (M1)**: `powershell -ExecutionPolicy Bypass -File scripts/verif_f025_postventa.ps1 -Paso M1`
+    → esperado `RESULTADO M1: OK` (83/73, `0656` `0660` `0669` `0689` solo
+    postventa, `CP` `OT` `191105` fuera). Resultado: _pendiente_.
+  - **T14 (M2)**: `powershell -ExecutionPolicy Bypass -File scripts/verif_f025_postventa.ps1 -Paso M2 -Anio AAAA -Mes MM`
+    → esperado `RESULTADO M2: OK`. Resultado: _pendiente_.
+- **Condiciones de despliegue** (D3, `docs/INTEGRACION.md` §7, impl §7):
+  1. El **transfer antes o junto con la api**: la api nueva pide el universo
+     al transfer en el sync y, con el transfer viejo, el sync da 502.
+  2. **Sync justo después**: la api añade `obra.admite_postventa` (DEFAULT
+     false) al arrancar y, hasta el primer sync, ninguna obra ofrece `Postv-`
+     y las líneas de postventa guardadas salen como no ofrecibles.
+  3. Con ese despliegue **se retira el aviso de CP/OT** de «Producción, hoy».
+

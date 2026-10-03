@@ -1,53 +1,20 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-025 en curso** (obras de postventa desde POSTV2, rigor crítico), rama
-`feature/F-025-obras-postventa-postv2`: implementada, review 1 con cambios
-pedidos (rastro de este fichero), ciclo 2 hecho y **review 2 APROBADA**;
-quedan las MANUAL y el despliegue. F-035 se cerró el
+**Ninguna feature en ejecución.** F-025 se cerró el 2026-10-03 y está en
+`dev` **pendiente de desplegar** (sección siguiente). F-035 se cerró el
 2026-10-03; F-034 y F-026 se **desplegaron el 2026-10-02** (resúmenes en
 `history.md`). El arnés es la **1.7.3**.
 
-## F-025 · Obras de postventa desde los capítulos de POSTV2 (en curso)
+## ⚠ Despliegue de F-025 (pendiente; lo lanza el humano)
 
-- **Spec** (`specs/F-025-obras-postventa-postv2/`): aprobada el 2026-10-01
-  (`d49348c`; D2 = B, la cascada de P5 no imputa a partidas ajenas; D4: solo la
-  POSTV2 de Construcciones Ruesma; D6: la POSTV antigua fuera), revisada tras
-  F-034/F-026 (`progress/spec_F-025_revision.md`) y reaprobada el 2026-10-03
-  con **D8 = A** (la obra-capítulo queda fuera; `0e005fe`).
-- **Implementación** (`progress/impl_F-025.md`): T1-T12 hechas. Tras el
-  ciclo 2: transfer 379, api 509, front 28, raíz 418 en verde; cobertura
-  164/164; mutación en serie 57/57 muertos (`progress/mutacion_F-025.md`). Tests anteriores cambiados: solo los
-  de design §7.1 (tabla en el informe, §3). Falsos supervivientes de la
-  campaña en paralelo → encargo de `arnes-base` (`0ecafc2`).
-- **Review 1 (2026-10-03) → CAMBIOS PEDIDOS solo por este fichero**
-  (`progress/review_F-025.md`): código, tests, `#regla-p5` y mutación bien.
-  Corregido aquí: cabecera, «Lo siguiente» y condiciones de despliegue.
-- **Observaciones de la review 1, recogidas en el ciclo 2** (implementer):
-  `depurar_obras` compara el `ide` sin convertir (con `_entero`, más test);
-  `_entero` deja de ser privado si lo usa otro módulo; y los 15 avisos nuevos
-  de ruff de las líneas de F-025 se corrigen. **Hecho** (`c588879`,
-  `e640f67`, `89f0d30`, `7fda87a`): test nuevo del `ide` en texto;
-  `entero_o_none` público en `domain/normalizacion.py`; ruff 215 → 198;
-  campaña en serie 57/57 muertos. **Review 2: APROBADO** (`a7779aa`).
-- **Quedan para el `done`:** T10 (commit en `azure-apps`), T13 y T14, con su
-  resultado real aquí. Después, desplegar con las tres condiciones de abajo.
-- **MANUAL (humano, NUNCA `registro/ejecutar`)**, con api y transfer LOCALES
-  desde esta rama y la api contra la BBDD local; desde la raíz:
-  - **T10**: `git -C C:\Users\pgris\PycharmProjects\azure-apps diff dedicacion.md`,
-    revisar y hacer el commit en `azure-apps` (**pendiente en `azure-apps`**).
-  - **T13 (M1)**: `powershell -ExecutionPolicy Bypass -File scripts/verif_f025_postventa.ps1 -Paso M1`
-    → esperado `RESULTADO M1: OK` (83/73, `0656` `0660` `0669` `0689` solo
-    postventa, `CP` `OT` `191105` fuera). Resultado: _pendiente_.
-  - **T14 (M2)**: `powershell -ExecutionPolicy Bypass -File scripts/verif_f025_postventa.ps1 -Paso M2 -Anio AAAA -Mes MM`
-    → esperado `RESULTADO M2: OK`. Resultado: _pendiente_.
-- **Condiciones de despliegue** (D3, `docs/INTEGRACION.md` §7, impl §7):
-  1. El **transfer antes o junto con la api**: la api nueva pide el universo
-     al transfer en el sync y, con el transfer viejo, el sync da 502.
-  2. **Sync justo después**: la api añade `obra.admite_postventa` (DEFAULT
-     false) al arrancar y, hasta el primer sync, ninguna obra ofrece `Postv-`
-     y las líneas de postventa guardadas salen como no ofrecibles.
-  3. Con ese despliegue **se retira el aviso de CP/OT** de «Producción, hoy».
+Condiciones (D3, `docs/INTEGRACION.md` §7):
+1. El **transfer antes o junto con la api**: la api nueva pide el universo de
+   postventa al transfer en el sync y, con el transfer viejo, el sync da 502.
+2. **Sync justo después**: la api añade `obra.admite_postventa` (DEFAULT false)
+   al arrancar y, hasta el primer sync, ninguna obra ofrece `Postv-`.
+3. Comprobar en el preview `admiten_postventa` = 83 y `solo_postventa` = 73,
+   y **retirar el aviso de CP/OT** de «Producción, hoy».
 
 ## Producción, hoy
 
@@ -71,8 +38,8 @@ quedan las MANUAL y el despliegue. F-035 se cerró el
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Primero cerrar y desplegar **F-025**
-(sección de arriba); después F-027, F-020,
+`BACKLOG.md` tiene el orden completo. Primero desplegar **F-025** (sección de
+arriba); después F-027, F-020,
 F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
