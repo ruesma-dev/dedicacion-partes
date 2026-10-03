@@ -5,9 +5,9 @@
 F-026 se cerraron y se **desplegaron el 2026-10-02** (resúmenes en
 `history.md`).
 
-## F-025 · Obras de postventa desde los capítulos de POSTV2 (en spec)
+## F-025 · Obras de postventa desde los capítulos de POSTV2 (en curso)
 
-- **Estado: `spec_ready`, revisión de spec en curso** (2026-10-03). La spec
+- **Estado: `in_progress`, implementer lanzado** (2026-10-03) → `progress/impl_F-025.md`. La spec
   (`specs/F-025-obras-postventa-postv2/`) la aprobó el humano el 2026-10-01
   (`d49348c`) con **D2 = B** (la cascada de P5 no imputa a partidas ajenas),
   **D4 cambiada** (solo la POSTV2 de Construcciones Ruesma: las obras son
@@ -19,9 +19,12 @@ F-026 se cerraron y se **desplegaron el 2026-10-02** (resúmenes en
   obras; contrato de una empresa por petición, R4 pasa a 422), ajustes a
   F-034/F-026 y lista cerrada de tests que cambian **comprobada ejecutando**
   (design §7.1): 8 de F-002 en el transfer y 46 de la api por firma/doble.
-- **Pendiente del humano antes de implementar:** aprobar la revisión y
-  decidir **D8** (obra-capítulo `0678`→`0678.MO` con D2 = B; recomendada A:
-  aceptarlo y reescribir 4 tests de F-002 sobre el presupuesto `hojas`).
+- **Aprobada por el humano el 2026-10-03 con D8 = A** (la obra-capítulo queda
+  fuera; los 8 tests de F-002 de design §7.1 cambian), cerrada en todos sus
+  sitios (`0e005fe`).
+- **MANUAL al final (humano, NUNCA `registro/ejecutar`):** T10 (commit en
+  `azure-apps`), T13 (`scripts/verif_f025_postventa.ps1 -Paso M1`) y T14
+  (`-Paso M2 -Anio AAAA -Mes MM`), comandos exactos en `tasks.md`.
 - **Riesgo vivo en producción hasta que se despliegue:** el aviso de CP/OT de
   «Producción, hoy». El arnés es la **1.7.3**.
 
