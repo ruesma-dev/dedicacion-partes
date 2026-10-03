@@ -51,37 +51,26 @@ def resolver_postventa(
 ) -> Optional[PartidaNodo]:
     """Partida de la obra de postventa que corresponde a la obra original.
 
-    Cascada: código exacto > empieza por > código en la descripción >
-    nombre. Ver `docs/ARCHITECTURE.md#regla-p5`.
+    El criterio de casado es el de `docs/ARCHITECTURE.md#regla-p5` (F-025,
+    D2): aquí solo se implementa. `obra_nombre` ya no casa: sigue en la
+    firma porque quien llama la usa para su motivo.
 
-    El universo de búsqueda son las **hojas activas** ordenadas por código,
-    que es EXACTAMENTE el mismo que el preflight publica en
-    `partidas_postventa` para el desplegable del front. Dos consecuencias
-    que antes no se cumplían: la cascada no puede devolver un capítulo (que
-    nunca es destino válido), y el desempate de cada escalón deja de
-    depender del orden en que Sigrid haya devuelto las filas.
+    El universo de búsqueda son las **hojas activas** del presupuesto, el
+    MISMO que el preflight publica en `partidas_postventa`: la resolución
+    nunca devuelve un capítulo ni una partida de baja. El desempate se hace
+    sobre el código normalizado, no sobre el orden de las filas de Sigrid.
     """
     cod = tm.normalize_code(obra_cod)
+    if not cod:
+        return None
     candidatos = partidas_hoja(nodos)
-    if cod:
-        exactas = [n for n in candidatos if tm.normalize_code(n.cod) == cod]
-        if exactas:
-            return exactas[0]
-        empieza = [n for n in candidatos
-                   if tm.normalize_code(n.cod).startswith(cod)]
-        if empieza:
-            return sorted(empieza,
-                          key=lambda n: len(tm.normalize_code(n.cod)))[0]
-        en_res = [n for n in candidatos
-                  if tm.normalize(n.res or "").startswith(cod.lower())
-                  or f" {cod.lower()} " in f" {tm.normalize(n.res or '')} "
-                  or tm.normalize(n.res or "").split(" ")[:1] == [cod.lower()]]
-        if en_res:
-            return en_res[0]
-    nombre_n = tm.normalize(obra_nombre)
-    if nombre_n:
-        en_res = [n for n in candidatos
-                  if nombre_n in tm.normalize(n.res or "")]
-        if en_res:
-            return en_res[0]
-    return None
+    exactas = [n for n in candidatos if tm.normalize_code(n.cod) == cod]
+    if exactas:
+        return exactas[0]
+    con_letras = [n for n in candidatos
+                  if tm.normalize_code(n.cod).startswith(cod)
+                  and tm.normalize_code(n.cod)[len(cod):].isalpha()]
+    if not con_letras:
+        return None
+    return min(con_letras, key=lambda n: (len(tm.normalize_code(n.cod)),
+                                          tm.normalize_code(n.cod)))

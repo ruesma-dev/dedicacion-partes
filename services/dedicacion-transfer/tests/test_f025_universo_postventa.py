@@ -351,3 +351,14 @@ def test_f025_r25_el_modulo_nuevo_no_lleva_el_literal():
              "services" / "universo_postventa.py").read_text(encoding="utf-8")
     assert "POSTV2" not in texto
     assert "POSTVENTA_OBRA_COD" in texto
+
+
+# ----------- R10-R11 · quién queda dentro del universo del cruce ---------- #
+
+def test_f025_r11_el_universo_del_cruce_solo_tiene_exactas_y_sufijos():
+    """R10-R11 · Del cruce de R2, en el universo solo quedan la exacta y las
+    dos de sufijo de letra; `CP`, la obra-capítulo, la de la descripción, la
+    del nombre y la que no casa, fuera."""
+    r = _universo(_cli_cruce())
+    assert {o["ide"]: o["partida"]["cod"] for o in r["obras"]} == {
+        1: "0656", 2: "0578B", 3: "0654-B"}
