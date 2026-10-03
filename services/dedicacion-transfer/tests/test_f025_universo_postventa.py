@@ -75,8 +75,8 @@ def test_f025_r9_override_validado_contra_el_presupuesto_de_su_peticion():
     mismo override se omite: se valida contra lo leído en ESA petición."""
     cli = ClienteFalso()
     pl = _pipeline(cli)
-    override = dict(registro_id=3, es_postventa=True, paride=70002,
-                    partida_cod="0713")
+    override = {"registro_id": 3, "es_postventa": True, "paride": 70002,
+                "partida_cod": "0713"}
     primero = pl.preflight(obra=OBRA, lineas=[linea(**override)])
     assert primero.acciones[0].partida_metodo == "manual", primero.acciones
 
@@ -156,7 +156,7 @@ def test_f025_r2_universo_y_preflight_casan_igual(ide, codigo, nombre):
     universo = {o["ide"]: o["partida"]
                 for o in _universo(_cli_cruce())["obras"]}
     pf = _preflight_pv(_cli_cruce(), ide, codigo, nombre)
-    publicada = getattr(pf, "capitulo_postventa")
+    publicada = pf.capitulo_postventa
     a = pf.acciones[0]
 
     assert universo.get(ide) == publicada, (codigo, universo.get(ide))

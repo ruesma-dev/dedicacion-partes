@@ -38,7 +38,7 @@ from domain.models import (
     TipoEvento,
     Trabajador,
 )
-from domain.ports import SigridGateway, UniversoPostventaGateway, UnitOfWork
+from domain.ports import SigridGateway, UnitOfWork, UniversoPostventaGateway
 
 from application.filtros_maestros import CRITERIO_VACIO, CriterioActivoRecurso
 

@@ -17,15 +17,16 @@ que lo leyó.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Optional
+
+from domain.errores import ObraAmbigua
+from domain.models.registro_models import ObraEntrada
 
 from application.services.partida_catalog import PartidaNodo
 from application.services.partida_resolver import (
-    construir_catalogo, resolver_postventa,
+    construir_catalogo,
+    resolver_postventa,
 )
 from application.services.reglas_porcentajes import MOTIVO_POSTVENTA_OFF
-from domain.errores import ObraAmbigua
-from domain.models.registro_models import ObraEntrada
 
 
 @dataclass(frozen=True)
@@ -35,9 +36,9 @@ class CatalogoPostventa:
     Sin obra (`obra is None`), `nodos` está vacío y `motivo` dice por qué.
     """
 
-    obra: Optional[ObraEntrada]
+    obra: ObraEntrada | None
     nodos: dict[int, PartidaNodo]
-    motivo: Optional[str]
+    motivo: str | None
 
 
 def cargar_catalogo_postventa(cliente, settings,
@@ -67,9 +68,9 @@ def cargar_catalogo_postventa(cliente, settings,
     return CatalogoPostventa(obra=obra_pv, nodos=nodos, motivo=None)
 
 
-def casar_postventa(catalogo: CatalogoPostventa, codigo: Optional[str],
-                    nombre: Optional[str]
-                    ) -> tuple[Optional[dict], Optional[str]]:
+def casar_postventa(catalogo: CatalogoPostventa, codigo: str | None,
+                    nombre: str | None
+                    ) -> tuple[dict | None, str | None]:
     """(partida, motivo) de una obra contra el catálogo ya cargado.
 
     Sin catálogo, el motivo es el suyo; sin casado, «no casa».

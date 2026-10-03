@@ -144,5 +144,5 @@ def test_f025_r11_el_preflight_omite_la_linea_por_no_casa(codigo):
     assert a.accion == "omitir", a
     assert a.motivo == (f"la obra {codigo} no casa con ninguna partida de "
                         f"POSTV2")
-    assert getattr(pf, "capitulo_postventa") is None
+    assert pf.capitulo_postventa is None
     assert cli.inserts() == []

@@ -24,7 +24,7 @@ DIALECTO = postgresql.dialect()
 
 def _linea(es_postventa: bool, activa: bool, admite: bool) -> Linea:
     return Linea(obra_ide=1, es_postventa=es_postventa,
-                 porcentaje=Decimal("50"), obra_activa=activa,
+                 porcentaje=Decimal(50), obra_activa=activa,
                  obra_admite_postventa=admite)
 
 
@@ -44,7 +44,7 @@ def test_f025_r18_ofrecible_segun_el_modo_de_la_linea(
 
 def test_f025_r18_por_defecto_una_linea_no_admite_postventa() -> None:
     """R18 · Sin marca, una línea de postventa no es ofrecible."""
-    linea = Linea(obra_ide=1, es_postventa=True, porcentaje=Decimal("1"))
+    linea = Linea(obra_ide=1, es_postventa=True, porcentaje=Decimal(1))
     assert linea.obra_admite_postventa is False
     assert linea.ofrecible is False
 
@@ -88,8 +88,8 @@ def test_f025_r21_el_alter_lo_deriva_esquema() -> None:
     assert alters_faltantes(Base.metadata, existentes) == []
     existentes["obra"].discard("admite_postventa")
     assert alters_faltantes(Base.metadata, existentes) == [
-        "ALTER TABLE obra ADD COLUMN IF NOT EXISTS admite_postventa BOOLEAN "
-        "DEFAULT false NOT NULL"]
+        ("ALTER TABLE obra ADD COLUMN IF NOT EXISTS admite_postventa BOOLEAN "
+         "DEFAULT false NOT NULL")]
 
 
 def test_f025_r21_solo_la_tabla_obra_la_tiene() -> None:
@@ -240,7 +240,7 @@ def _obras_sigrid() -> list[dict]:
 
 
 def _sigrid(obras: list[dict] | None = None):
-    from tests.test_f023_sync_empresa import _SigridFalso, _emp
+    from tests.test_f023_sync_empresa import _emp, _SigridFalso
 
     return _SigridFalso([_emp(1)], _obras_sigrid() if obras is None else obras)
 

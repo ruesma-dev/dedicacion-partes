@@ -72,7 +72,7 @@ class UniversoIn(BaseModel):
     `empresa` es opcional a propósito: sin ella se responde 422 con motivo,
     no con el error genérico de validación."""
 
-    empresa: Optional[int] = None
+    empresa: int | None = None
     obras: list[ObraIn] = Field(default_factory=list)
 
 
@@ -185,7 +185,7 @@ def build_app(settings) -> FastAPI:
             obras = [ObraEntrada(ide=o.ide, codigo=o.codigo, nombre=o.nombre)
                      for o in p.obras]
             return {"ok": True, **universo.calcular(p.empresa, obras)}
-        except Exception as exc:                # noqa: BLE001
+        except Exception as exc:
             logger.exception("universo de postventa fallo")
             return JSONResponse(status_code=502,
                                 content={"ok": False, "error": str(exc)})
