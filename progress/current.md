@@ -1,33 +1,32 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-035 se cerró el 2026-10-03; F-034 y
-F-026 se cerraron y se **desplegaron el 2026-10-02** (resúmenes en
-`history.md`).
+**F-025 en curso** (obras de postventa desde POSTV2, rigor crítico), rama
+`feature/F-025-obras-postventa-postv2`: implementada, review 1 con cambios
+pedidos (rastro de este fichero) y ciclo 2 en marcha. F-035 se cerró el
+2026-10-03; F-034 y F-026 se **desplegaron el 2026-10-02** (resúmenes en
+`history.md`). El arnés es la **1.7.3**.
 
 ## F-025 · Obras de postventa desde los capítulos de POSTV2 (en curso)
 
-- **Estado: `in_progress`, implementación terminada y review lanzada**
-  (2026-10-03) → `progress/impl_F-025.md`, `progress/review_F-025.md`. T1-T12
-  hechas: transfer 379, api 503, front 28, raíz 418 en verde; cobertura
-  162/162; mutación 56/56 muertos (`progress/mutacion_F-025.md`). Tests
-  anteriores cambiados: solo los de design §7.1 (tabla en el informe, §3).
-  Falsos supervivientes de la campaña en paralelo → encargo de `arnes-base`
-  (`0ecafc2`). La spec
-  (`specs/F-025-obras-postventa-postv2/`) la aprobó el humano el 2026-10-01
-  (`d49348c`) con **D2 = B** (la cascada de P5 no imputa a partidas ajenas),
-  **D4 cambiada** (solo la POSTV2 de Construcciones Ruesma: las obras son
-  siempre de la empresa de las obras, F-034) y **D6** (la POSTV antigua
-  fuera). Se escribió ANTES de F-034 y F-026; la rama se puso al día con `dev`
-  el 2026-10-03.
-- **Spec revisada (2026-10-03)** → `progress/spec_F-025_revision.md`: D4
-  reescrita en todos sus sitios (un único universo, el de la empresa de las
-  obras; contrato de una empresa por petición, R4 pasa a 422), ajustes a
-  F-034/F-026 y lista cerrada de tests que cambian **comprobada ejecutando**
-  (design §7.1): 8 de F-002 en el transfer y 46 de la api por firma/doble.
-- **Aprobada por el humano el 2026-10-03 con D8 = A** (la obra-capítulo queda
-  fuera; los 8 tests de F-002 de design §7.1 cambian), cerrada en todos sus
-  sitios (`0e005fe`).
+- **Spec** (`specs/F-025-obras-postventa-postv2/`): aprobada el 2026-10-01
+  (`d49348c`; D2 = B, la cascada de P5 no imputa a partidas ajenas; D4: solo la
+  POSTV2 de Construcciones Ruesma; D6: la POSTV antigua fuera), revisada tras
+  F-034/F-026 (`progress/spec_F-025_revision.md`) y reaprobada el 2026-10-03
+  con **D8 = A** (la obra-capítulo queda fuera; `0e005fe`).
+- **Implementación** (`progress/impl_F-025.md`): T1-T12 hechas. Transfer 379,
+  api 503, front 28, raíz 418 en verde; cobertura 162/162; mutación 56/56
+  muertos (`progress/mutacion_F-025.md`). Tests anteriores cambiados: solo los
+  de design §7.1 (tabla en el informe, §3). Falsos supervivientes de la
+  campaña en paralelo → encargo de `arnes-base` (`0ecafc2`).
+- **Review 1 (2026-10-03) → CAMBIOS PEDIDOS solo por este fichero**
+  (`progress/review_F-025.md`): código, tests, `#regla-p5` y mutación bien.
+  Corregido aquí: cabecera, «Lo siguiente» y condiciones de despliegue.
+- **Observaciones de la review 1, recogidas en el ciclo 2** (implementer):
+  `depurar_obras` compara el `ide` sin convertir (con `_entero`, más test);
+  `_entero` deja de ser privado si lo usa otro módulo; y los 15 avisos nuevos
+  de ruff de las líneas de F-025 se corrigen. Luego, review 2.
+- **Quedan para el `done`:** review 2 aprobada y las MANUAL.
 - **MANUAL (humano, NUNCA `registro/ejecutar`)**, con api y transfer LOCALES
   desde esta rama y la api contra la BBDD local; desde la raíz:
   - **T10**: `git -C C:\Users\pgris\PycharmProjects\azure-apps diff dedicacion.md`,
@@ -37,8 +36,13 @@ F-026 se cerraron y se **desplegaron el 2026-10-02** (resúmenes en
     postventa, `CP` `OT` `191105` fuera). Resultado: _pendiente_.
   - **T14 (M2)**: `powershell -ExecutionPolicy Bypass -File scripts/verif_f025_postventa.ps1 -Paso M2 -Anio AAAA -Mes MM`
     → esperado `RESULTADO M2: OK`. Resultado: _pendiente_.
-- **Riesgo vivo en producción hasta que se despliegue:** el aviso de CP/OT de
-  «Producción, hoy». El arnés es la **1.7.3**.
+- **Condiciones de despliegue** (D3, `docs/INTEGRACION.md` §7, impl §7):
+  1. El **transfer antes o junto con la api**: la api nueva pide el universo
+     al transfer en el sync y, con el transfer viejo, el sync da 502.
+  2. **Sync justo después**: la api añade `obra.admite_postventa` (DEFAULT
+     false) al arrancar y, hasta el primer sync, ninguna obra ofrece `Postv-`
+     y las líneas de postventa guardadas salen como no ofrecibles.
+  3. Con ese despliegue **se retira el aviso de CP/OT** de «Producción, hoy».
 
 ## Producción, hoy
 
@@ -62,9 +66,8 @@ F-026 se cerraron y se **desplegaron el 2026-10-02** (resúmenes en
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Primero **F-025** (spec
-aprobada con D4 cambiada: solo la POSTV2 de Construcciones Ruesma; el
-spec-author la reescribe en su sitio antes de implementar), F-027, F-020,
+`BACKLOG.md` tiene el orden completo. Primero cerrar y desplegar **F-025**
+(sección de arriba); después F-027, F-020,
 F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
