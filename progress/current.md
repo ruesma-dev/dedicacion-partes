@@ -3,7 +3,7 @@
 
 **F-025 en curso** (obras de postventa desde POSTV2, rigor crítico), rama
 `feature/F-025-obras-postventa-postv2`: implementada, review 1 con cambios
-pedidos (rastro de este fichero) y ciclo 2 en marcha. F-035 se cerró el
+pedidos (rastro de este fichero), ciclo 2 hecho y **review 2 lanzada**. F-035 se cerró el
 2026-10-03; F-034 y F-026 se **desplegaron el 2026-10-02** (resúmenes en
 `history.md`). El arnés es la **1.7.3**.
 
@@ -25,7 +25,10 @@ pedidos (rastro de este fichero) y ciclo 2 en marcha. F-035 se cerró el
 - **Observaciones de la review 1, recogidas en el ciclo 2** (implementer):
   `depurar_obras` compara el `ide` sin convertir (con `_entero`, más test);
   `_entero` deja de ser privado si lo usa otro módulo; y los 15 avisos nuevos
-  de ruff de las líneas de F-025 se corrigen. Luego, review 2.
+  de ruff de las líneas de F-025 se corrigen. **Hecho** (`c588879`,
+  `e640f67`, `89f0d30`, `7fda87a`): test nuevo del `ide` en texto;
+  `entero_o_none` público en `domain/normalizacion.py`; ruff 215 → 198;
+  campaña en serie 57/57 muertos. **Review 2 lanzada.**
 - **Quedan para el `done`:** review 2 aprobada y las MANUAL.
 - **MANUAL (humano, NUNCA `registro/ejecutar`)**, con api y transfer LOCALES
   desde esta rama y la api contra la BBDD local; desde la raíz:
