@@ -3,15 +3,12 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **33 features**, 18 abiertas, 15 terminadas.
-
-En curso: **F-025**.
+Resumen: **33 features**, 17 abiertas, 16 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 4 | en curso | critico | `feature/F-025-obras-postventa-postv2` |
 | F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 5 | pendiente | estandar | `feature/F-027-deshacer-por-usuario` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 6 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
 | F-028 | Borrar todo lo que está en pantalla | 7 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
@@ -48,15 +45,10 @@ En curso: **F-025**.
 | F-004 | README del monorepo y arranque local en orden | 4 | documental |
 | F-013 | Una linea sin partida no se escribe en silencio | 4 | critico |
 | F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | documental |
+| F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 4 | critico |
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
-
-### F-025 · Obras de postventa sacadas de los capítulos de POSTV2
-
-estado **en curso** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-025-obras-postventa-postv2`
-
-Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio echa en falta obras de postventa. Causa: las obras en postventa están CERRADAS en Sigrid y el filtro estados_excluidos de config.yaml las quita; sin la obra en el maestro el front no ofrece su Postv-XXXX (app.js ~175-191). 69 de 78 obras con postventa en POSTV2 no llegan. Decisión del humano 2026-09-29: la lista de obras de postventa sale de los CAPÍTULOS del proyecto POSTV2, sea cual sea el estado de la obra. Propuesta del líder pendiente de objeción: una obra cerrada se ofrece solo como Postv-, no como obra normal. RIESGOS para la spec: (a) F-002 dejó escrito en docs/ARCHITECTURE.md que P5 imputa por PARTIDA en POSTV2; hay que conciliar capítulos y partidas sin romper esa regla; (b) límite de servicio: POSTVENTA_OBRA_COD vive hoy solo en el transfer; decidir si la API lo lee o pregunta al transfer, pero el universo de postventa del front y el del transfer no pueden divergir. RECOGIDO del cierre de F-022 (2026-09-30): el preflight del transfer publica partidas_postventa también en obras sin líneas de postventa, porque el catálogo _nodos_pv se queda en la instancia del pipeline entre llamadas. Inofensivo hoy; como esta feature redefine el universo de postventa, se corrige aquí. SPEC APROBADA por el humano el 2026-10-01 con D1-D7 de requirements.md, con estas precisiones: D2 = B (solo código exacto o código seguido solo de letras; fuera los escalones por descripción y por nombre, que hoy dan falsos casados como CP -> CP.1 y OT -> CI.7.5; cambian 4 tests de F-002 y el texto de P5, firmado por el humano con esta aprobación); D4 CAMBIA: el humano aclara que TODAS las obras, incluida la postventa, son de Construcciones Ruesma (empresa 1): solo existe la POSTV2 de la empresa 1 y el universo de postventa es siempre el de la empresa 1; el spec-author debe reescribir D4 y lo que dependa de «empresa E» EN SU SITIO antes de implementar; D6 POSTV antigua fuera. Espera turno: van antes F-034 (obras siempre de Ruesma) y F-026. 2026-10-03: spec revisada tras F-034/F-026 (progress/spec_F-025_revision.md) y APROBADA por el humano con D8 = A (la obra-capítulo queda fuera; 8 tests de F-002 cambian, design §7.1). Pasa a implementación.
 
 ### F-027 · Deshacer solo lo propio: nadie deshace lo de otro usuario
 
@@ -243,6 +235,12 @@ Decision del humano el 2026-08-20, al ver el preflight real de julio: hoy, cuand
 estado **terminada** · prioridad 4 · rigor `documental` · SDD sí · rama `dev`
 
 Pedida por el humano el 2026-08-20, con el sistema ya desplegado. Sin esto el sistema esta vivo pero nadie puede llegar a el: no hay tarjeta en el Portal Ruesma desde la que entrar, y solo tiene acceso quien ya este en el grupo de Entra. Dos partes. (1) TARJETA: pasar al proyecto front-portal la URL publica del front (ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io) y el objectId del grupo 'dedicacion-portal-users' para que anada la tarjeta. El objectId NO se escribe en este repositorio: se saca con 'az ad group show --group dedicacion-portal-users --query id -o tsv' y se pasa por el canal que se use con ese proyecto. Es trabajo que cruza la frontera del proyecto, asi que hay que mirar antes el documento de front-portal en azure-apps/. (2) USUARIOS: decidir quien entra (la decision D3 de F-008, que quedo abierta) y darles de alta con 'infra/setup_front_easyauth.ps1 -Miembros persona@ruesma.es'. La Enterprise App tiene asignacion requerida, asi que quien no este en el grupo no obtiene token: no basta con tener cuenta de Ruesma. Sale de F-008 (era su T30) para que aquella pueda cerrarse. DECISIONES DEL HUMANO 2026-08-20: el icono lo elige el lider ('chart', por ser un cuadrante de porcentajes y no una comparativa); y la tarjeta se deja PUESTA CON EL GRUPO CONFIGURADO pero SIN dar de alta usuarios: el humano los mete a mano cuando decida quien entra. Con eso D3 deja de bloquear la feature. NOTA DE METODO: esta feature se trabajo directamente en 'dev', sin rama propia, y el campo branch lo dice. El CLAUDE.md exige rama por feature; la excepcion se toma a conciencia y se deja escrita: F-015 no toca una linea de codigo de este repositorio (su unico cambio real vive en front-portal, otro repo), y se hizo intercalada con el despliegue en vivo de F-008, donde el arbol tenia que estar en dev para arreglar los scripts sobre la marcha. Rehacer la historia ahora seria peor que el problema: los commits estan en origin/dev.
+
+### F-025 · Obras de postventa sacadas de los capítulos de POSTV2
+
+estado **terminada** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-025-obras-postventa-postv2`
+
+Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio echa en falta obras de postventa. Causa: las obras en postventa están CERRADAS en Sigrid y el filtro estados_excluidos de config.yaml las quita; sin la obra en el maestro el front no ofrece su Postv-XXXX (app.js ~175-191). 69 de 78 obras con postventa en POSTV2 no llegan. Decisión del humano 2026-09-29: la lista de obras de postventa sale de los CAPÍTULOS del proyecto POSTV2, sea cual sea el estado de la obra. Propuesta del líder pendiente de objeción: una obra cerrada se ofrece solo como Postv-, no como obra normal. RIESGOS para la spec: (a) F-002 dejó escrito en docs/ARCHITECTURE.md que P5 imputa por PARTIDA en POSTV2; hay que conciliar capítulos y partidas sin romper esa regla; (b) límite de servicio: POSTVENTA_OBRA_COD vive hoy solo en el transfer; decidir si la API lo lee o pregunta al transfer, pero el universo de postventa del front y el del transfer no pueden divergir. RECOGIDO del cierre de F-022 (2026-09-30): el preflight del transfer publica partidas_postventa también en obras sin líneas de postventa, porque el catálogo _nodos_pv se queda en la instancia del pipeline entre llamadas. Inofensivo hoy; como esta feature redefine el universo de postventa, se corrige aquí. SPEC APROBADA por el humano el 2026-10-01 con D1-D7 de requirements.md, con estas precisiones: D2 = B (solo código exacto o código seguido solo de letras; fuera los escalones por descripción y por nombre, que hoy dan falsos casados como CP -> CP.1 y OT -> CI.7.5; cambian 4 tests de F-002 y el texto de P5, firmado por el humano con esta aprobación); D4 CAMBIA: el humano aclara que TODAS las obras, incluida la postventa, son de Construcciones Ruesma (empresa 1): solo existe la POSTV2 de la empresa 1 y el universo de postventa es siempre el de la empresa 1; el spec-author debe reescribir D4 y lo que dependa de «empresa E» EN SU SITIO antes de implementar; D6 POSTV antigua fuera. Espera turno: van antes F-034 (obras siempre de Ruesma) y F-026. 2026-10-03: spec revisada tras F-034/F-026 (progress/spec_F-025_revision.md) y APROBADA por el humano con D8 = A (la obra-capítulo queda fuera; 8 tests de F-002 cambian, design §7.1). Pasa a implementación. CERRADA (done) el 2026-10-03: review pasada 2 APROBADA; T13 (M1: 83/73, 0656 0660 0669 0689 solo Postv-, CP OT 191105 fuera, cuadrante igual con la 1 y la 18) y T14 (M2: Postv-0656 casa con el capítulo 0656, partidas_postventa vacío en la obra sin postventa, no_vigentes vacío) cumplidas por el humano; T10 commit 897587f en azure-apps. PENDIENTE DE DESPLEGAR (transfer antes o con la api, sync justo después, retirar el aviso de CP/OT).
 
 ### F-009 · Higiene: los artefactos de cobertura no se versionan
 
