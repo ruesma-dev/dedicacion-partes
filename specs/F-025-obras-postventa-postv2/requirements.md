@@ -128,11 +128,11 @@ módulo nuevo del transfer no lleva el literal del código de postventa.
 R26. `docs/INTEGRACION.md` debe documentar el endpoint nuevo y que la api lo consume
 en el sync; `azure-apps/dedicacion.md` se refresca (commit del humano).
 
-## Decisiones (aprobadas por el humano el 2026-10-01, salvo D8)
+## Decisiones (D1-D7 aprobadas por el humano el 2026-10-01; D8, el 2026-10-03)
 
 - **D1 · El universo vive en el transfer** (único que conoce `POSTVENTA_OBRA_COD` y P5).
 - **D2 = B · Cascada de P5 sin escalones ajenos** (R10-R11): 83 obras, no 86 (fuera `CP`,
-  `OT`, `191105`); cambian P5 y **ocho** tests de F-002, no cuatro (design §7.1, D8).
+  `OT`, `191105`); cambian P5 y **ocho** tests de F-002, aprobados con D8 (design §7.1).
 - **D3 · Transfer caído en el sync: falla entero** (como F-032); con D4, dos lecturas.
 - **D4 · Solo la POSTV2 de Construcciones Ruesma** (cambiada por el humano al aprobar):
   las obras, postventa incluida, son siempre de la empresa de las obras (F-034), aunque
@@ -142,8 +142,8 @@ en el sync; `azure-apps/dedicacion.md` se refresca (commit del humano).
   la omite; T13: siete líneas). Lo guardado se queda, marcado; entra al crear su partida.
 - **D6 · POSTV antigua fuera** (15 hojas, 14 obras solo ahí): un solo código de postventa.
 - **D7 · Guardar rechaza líneas nuevas no ofrecibles (R20)**, defensa ante otro cliente.
-- **D8 · ABIERTA · La obra-capítulo con D2 = B.** R10 deja fuera también a la obra que en
-  POSTV2 fuera un capítulo con partidas debajo (`0678` → `0678.MO`, como `CP` → `CP.1`).
-  En el presupuesto real no hay ninguna (las 86 son hojas, `sigrid_F-002.md` §C2). (A,
-  **propuesta**) aceptarlo y reescribir cuatro tests más de F-002 (design §7.1). (B), (C)
-  y su descarte: `progress/spec_F-025_revision.md` §4.
+- **D8 = A · La obra-capítulo queda fuera** (decidido por el humano el 2026-10-03): con
+  D2 = B, la obra que en POSTV2 fuera un capítulo con partidas debajo (`0678` → `0678.MO`,
+  como `CP` → `CP.1`) no casa. No hay ninguna en el presupuesto real (`sigrid_F-002.md`
+  §C2); sus cuatro tests de F-002 se reescriben sobre el presupuesto `hojas` (design §7.1).
+  Descartadas: excepción al capítulo exacto y prefijo `.letras` (revisión §4).

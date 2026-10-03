@@ -3,7 +3,7 @@
 
 Requisitos: `requirements.md` (R1-R26, D1-D8). Normativa: `docs/ARCHITECTURE.md`
 (`#regla-p5`, `#regla-empresa`, `#regla-recurso`), `docs/CONVENTIONS.md`. D1-D7 aprobadas
-(D4 cambiada), D8 en su opción **propuesta**; revisión: `progress/spec_F-025_revision.md`.
+(D4 cambiada), D8 = A el 2026-10-03; revisión: `progress/spec_F-025_revision.md`.
 
 ## 1. Encaje y límite de servicio
 
@@ -194,7 +194,7 @@ assert viejo y nuevo, requisito); si falla otro, el implementer **para y avisa**
 - `test_f002_postventa.py`, D2 (aprobados): `r18_la_cascada_solo_actua_sin_exacto` y
   `r18_el_ultimo_escalon_casa_por_nombre_de_obra` esperan `None`; los dos `r19` usan un
   catálogo local con `0578B` y `0578C` (las fixtures de `conftest.py` no se tocan).
-- `test_f002_postventa.py`, D8 (pendiente):
+- `test_f002_postventa.py`, D8 = A (aprobados el 2026-10-03):
   `r16_el_capitulo_no_llega_al_paride_de_la_linea` (omitida «no casa», sin `paride`);
   `r17_el_automatico_y_el_desplegable_comparten_universo[capitulos]` (`elegida` es `None`,
   el resto igual); `r16_un_override_manual_a_un_capitulo_se_omite` y
