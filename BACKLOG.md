@@ -3,15 +3,12 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **33 features**, 19 abiertas, 14 terminadas.
-
-En curso: **F-035**.
+Resumen: **33 features**, 18 abiertas, 15 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-035 | El script de vaciado no funciona contra Azure: la contraseña se corrompe | 1 | en curso | estandar | `feature/F-035-vaciado-psql-azure` |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 4 | pendiente | critico | `feature/F-025-obras-postventa-postv2` |
 | F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 5 | pendiente | estandar | `feature/F-027-deshacer-por-usuario` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 6 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
@@ -37,6 +34,7 @@ En curso: **F-035**.
 |---|---|---|---|
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | estandar |
 | F-034 | Las obras son siempre de Construcciones Ruesma; el selector filtra solo trabajadores | 1 | critico |
+| F-035 | El script de vaciado no funciona contra Azure: la contraseña se corrompe | 1 | estandar |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | critico |
@@ -51,12 +49,6 @@ En curso: **F-035**.
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
-
-### F-035 · El script de vaciado no funciona contra Azure: la contraseña se corrompe
-
-estado **en curso** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-035-vaciado-psql-azure`
-
-Detectado en el despliegue del 2026-10-02. infra/vaciar_datos_prueba_dedicacion.ps1 pasa la contraseña del rol de aplicación a 'az postgres flexible-server execute -p <clave>'. En Windows az es un .cmd, así que la línea pasa por cmd.exe, que corrompe los caracteres especiales de la contraseña: 'password authentication failed' aunque la contraseña del Key Vault es correcta (la api conecta con ella). El vaciado de producción se hizo a mano con psql (PGPASSWORD en el entorno, PGSSLMODE=require) con las mismas tres sentencias del script. Corregir el script para que contra Azure use psql igual que en local (o pase la contraseña sin cmd.exe), con test. Mismo riesgo en cualquier otro script de infra/ que pase secretos a az por argumento: revisarlos. PLAN APROBADO por el humano el 2026-10-02 (PARADA 1): ver progress/current.md, sección F-035. Review 1 (2026-10-02): CAMBIOS PEDIDOS solo por la tabla reproducible de la campaña manual (C4 bis); el humano aprobó además añadir ')' a los caracteres rechazados. MANUAL 1 (2026-10-03): FALLA con 'password authentication failed', pero por la contraseña introducida (10 caracteres frente a 14 en el Key Vault, comparadas en memoria), no por el script. Ciclo 3 aprobado por el humano: leer PG-PASSWORD del Key Vault y afinar el aviso de firewall.
 
 ### F-025 · Obras de postventa sacadas de los capítulos de POSTV2
 
@@ -177,6 +169,12 @@ Calentamiento del circuito. dedicacion-api no tiene un solo test: se crea servic
 estado **terminada** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-034-obras-siempre-ruesma`
 
 Aclaración del humano el 2026-10-01: los TRABAJADORES son de varias empresas (Construcciones Ruesma, RUESMA SERVICIOS SL, UTE RUESMA-INESCO TOLEDO...), pero las OBRAS, incluida la postventa (POSTV2), son SIEMPRE de Construcciones Ruesma (empresa 1). F-024 se desplegó con la regla contraria: la empresa elegida filtra también las obras (con la 18 se ofrecen las 8 obras que Sigrid tiene en la 18) y es la empresa que viaja en cada línea, así que el transfer busca la obra en la empresa del trabajador; una línea de un trabajador de la 18 en una obra de Ruesma se OMITE. Efecto en producción, con el transfer en modo real: los trabajadores de la 18 y la 31 no pueden registrar. Corrección: el selector filtra solo trabajadores; las obras ofrecidas son siempre las de la empresa de las obras (1); cada línea viaja con la empresa de la OBRA, no con la elegida. El recurso que se escribe es el del propio trabajador en su empresa: eso es F-026, que va justo detrás. Afecta a docs/ARCHITECTURE.md#regla-empresa, a INTEGRACION y a azure-apps. Va DELANTE de todo por bloquear a usuarios en producción. SPEC APROBADA por el humano el 2026-10-01 con D1-D5 de requirements.md §8 tal como se proponen. El humano lo resume así: «puedo tener seleccionado Porsan, pero las imputaciones SIEMPRE van a obras de Construcciones Ruesma, y las obras que salen en el listado son las de Construcciones Ruesma (postventa incluida)». Pendiente: si se despliega sola o junto con F-026. DESBLOQUEADA el 2026-10-02: el humano acepta completar la lista cerrada de tests que cambian (design §6) con los 4 casos que encontró el implementer (R17 registro, R10 cuadrante, R6 y R6/R13 rutas), consecuencias directas de R1/R3. 2026-10-02: review APROBADA, T8 hecha, M4 (equivalente) aceptado por el humano. Queda en BLOCKED solo a la espera de T9 (preflight local), que el humano hará junto con las verificaciones de F-026; así F-026 puede pasar a in_progress (máximo una). En dev, sin desplegar: va con F-026. CERRADA (done) el 2026-10-02: T9 cumplida (preflight local de solo lectura con la 18 elegida: la línea de MO/0003 de la 18 en una obra de Ruesma sale para escribir, no omitida; parte visual confirmada por el humano). Pendiente de desplegar con F-026.
+
+### F-035 · El script de vaciado no funciona contra Azure: la contraseña se corrompe
+
+estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-035-vaciado-psql-azure`
+
+Detectado en el despliegue del 2026-10-02. infra/vaciar_datos_prueba_dedicacion.ps1 pasa la contraseña del rol de aplicación a 'az postgres flexible-server execute -p <clave>'. En Windows az es un .cmd, así que la línea pasa por cmd.exe, que corrompe los caracteres especiales de la contraseña: 'password authentication failed' aunque la contraseña del Key Vault es correcta (la api conecta con ella). El vaciado de producción se hizo a mano con psql (PGPASSWORD en el entorno, PGSSLMODE=require) con las mismas tres sentencias del script. Corregir el script para que contra Azure use psql igual que en local (o pase la contraseña sin cmd.exe), con test. Mismo riesgo en cualquier otro script de infra/ que pase secretos a az por argumento: revisarlos. PLAN APROBADO por el humano el 2026-10-02 (PARADA 1): ver progress/current.md, sección F-035. Review 1 (2026-10-02): CAMBIOS PEDIDOS solo por la tabla reproducible de la campaña manual (C4 bis); el humano aprobó además añadir ')' a los caracteres rechazados. MANUAL 1 (2026-10-03): FALLA con 'password authentication failed', pero por la contraseña introducida (10 caracteres frente a 14 en el Key Vault, comparadas en memoria), no por el script. Ciclo 3 aprobado por el humano: leer PG-PASSWORD del Key Vault y afinar el aviso de firewall. CERRADA (done) el 2026-10-03: review pasada 3 APROBADA; MANUAL 2 cumplida por el humano (-SoloRecuento contra Azure: contraseña leída de PG-PASSWORD sin pedirla, recuento 0/0/1/196, entorno limpio False False). No requiere despliegue: son scripts de infra/ que ejecuta una persona.
 
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 
