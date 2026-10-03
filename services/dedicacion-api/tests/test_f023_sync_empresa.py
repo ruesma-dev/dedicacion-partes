@@ -24,6 +24,8 @@ from domain.models import ResultadoSyncMaestro
 from infrastructure.db.orm_models import Base, ObraORM, TrabajadorORM
 from sqlalchemy.dialects import postgresql
 
+from tests.conftest import UniversoFalso
+
 DIALECTO = postgresql.dialect()
 SQL_EMP = "SELECT ... FROM dbo.emp AS emp"
 SQL_OBR = "SELECT ... FROM dbo.obr AS obr"
@@ -66,6 +68,9 @@ def _obr(ide: int, **cambios: Any) -> dict[str, Any]:
         "descripcion": f"Obra {ide}",
         "estado_sigrid": "En curso",
         "empresa": 1,
+        # Marcas de F-025: las pone `depurar_obras` y las lee `sincronizar`.
+        "activa": True,
+        "admite_postventa": False,
     }
     fila.update(cambios)
     return fila
@@ -167,7 +172,8 @@ def _pipeline(sigrid: _SigridFalso, criterio: Any = None) -> Any:
     extra = {} if criterio is None else {"criterio": criterio}
     return sp.SyncMaestrosPipeline([
         sp.FetchEmpleadosStep(sigrid, SQL_EMP, **extra),
-        sp.FetchObrasStep(sigrid, SQL_OBR),
+        sp.FetchObrasStep(sigrid, SQL_OBR, universo=UniversoFalso(),
+                          empresa_obras=1),
         sp.UpsertTrabajadoresStep(),
         sp.UpsertObrasStep(),
     ])
@@ -177,7 +183,8 @@ def _preview(sigrid: _SigridFalso, criterio: Any = None) -> Any:
     from application.use_cases import PreviewSync
 
     extra = {} if criterio is None else {"criterio": criterio}
-    return PreviewSync(sigrid, SQL_EMP, SQL_OBR, **extra)
+    return PreviewSync(sigrid, SQL_EMP, SQL_OBR, universo=UniversoFalso(),
+                       empresa_obras=1, **extra)
 
 
 # --- R1-R2: esquema derivado del ORM ------------------------------------------
@@ -348,7 +355,7 @@ def _obra_orm(ide: int, empresa: int | None) -> ObraORM:
     fila = _obr(ide)
     return ObraORM(ide=ide, cod=fila["cod"], descripcion=fila["descripcion"],
                    estado_sigrid=fila["estado_sigrid"], activa=True,
-                   empresa=empresa)
+                   empresa=empresa, admite_postventa=False)
 
 
 @pytest.mark.parametrize(("previa", "nueva", "actualizados"), [
@@ -535,6 +542,7 @@ def test_f023_r17_preview_publica_claves_nuevas_y_antiguas() -> None:
         estados_excluidos=["terminada"],
         criterio=_criterio(estados_excluidos=("baja",),
                            excluir_baja_anterior_a_ventana=True),
+        universo=UniversoFalso(), empresa_obras=1,
     ).ejecutar()
     emp, obr = salida["empleados"], salida["obras"]
     assert emp["excluidos_por_estado_recurso"] == {
@@ -614,6 +622,7 @@ def _contenedor(monkeypatch: pytest.MonkeyPatch, sigrid: _SigridFalso,
 
     monkeypatch.setattr(deps, "SigridApiClient", lambda _settings: sigrid)
     monkeypatch.setattr(deps, "SqlAlchemyUnitOfWork", _UowLectura)
+    monkeypatch.setattr(deps, "TransferClient", lambda _s: UniversoFalso())
     if config is not None:
         monkeypatch.setattr(deps, "cargar_config", lambda: config)
     return deps.construir_contenedor(Settings(_env_file=None), None)

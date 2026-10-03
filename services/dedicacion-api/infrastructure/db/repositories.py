@@ -15,6 +15,7 @@ from sqlalchemy import delete, distinct, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from domain.empresas import empresa_de_baja
+from domain.normalizacion import texto_o_none as _texto
 from domain.vigencia import vigente_en
 from domain.models import (
     Empresa,
@@ -152,6 +153,10 @@ class PgObraRepository:
                 logger.warning("Obra %s sin código; omitida", ide)
                 continue
             recibidos.add(ide)
+            # Las dos marcas las decide `depurar_obras` (F-025, R13):
+            # `activa` por estado y `admite_postventa` por el universo.
+            activa = fila["activa"]
+            admite = fila["admite_postventa"]
             existente = actuales.get(ide)
             if existente is None:
                 self._s.add(
@@ -160,8 +165,9 @@ class PgObraRepository:
                         cod=cod,
                         descripcion=_texto(fila.get("descripcion")) or "",
                         estado_sigrid=_texto(fila.get("estado_sigrid")),
-                        activa=True,
+                        activa=activa,
                         empresa=_entero(fila.get("empresa")),
+                        admite_postventa=admite,
                     )
                 )
                 altas += 1
@@ -171,19 +177,24 @@ class PgObraRepository:
                     or existente.descripcion != (_texto(fila.get("descripcion")) or "")
                     or existente.estado_sigrid != _texto(fila.get("estado_sigrid"))
                     or existente.empresa != _entero(fila.get("empresa"))
-                    or not existente.activa
+                    or existente.activa != activa
+                    or existente.admite_postventa != admite
                 )
                 existente.cod = cod
                 existente.descripcion = _texto(fila.get("descripcion")) or ""
                 existente.estado_sigrid = _texto(fila.get("estado_sigrid"))
                 existente.empresa = _entero(fila.get("empresa"))
-                existente.activa = True
+                existente.activa = activa
+                existente.admite_postventa = admite
                 if cambio:
                     actualizados += 1
+        # La que no llega (excluida por estado y fuera del universo) se queda
+        # sin ninguna marca, como antes de F-025 (R14).
         desactivadas = 0
         for ide, orm in actuales.items():
-            if ide not in recibidos and orm.activa:
+            if ide not in recibidos and (orm.activa or orm.admite_postventa):
                 orm.activa = False
+                orm.admite_postventa = False
                 desactivadas += 1
         return ResultadoSyncMaestro(
             recibidos=len(recibidos),
@@ -481,13 +492,6 @@ class SqlAlchemyUnitOfWork:
 # ----------------------------------------------------------------------
 # Mapeos ORM → dominio
 # ----------------------------------------------------------------------
-def _texto(valor: Any) -> str | None:
-    if valor is None:
-        return None
-    texto = str(valor).strip()
-    return texto or None
-
-
 def _entero(valor: Any) -> int | None:
     """Entero de Sigrid (p. ej. `con.emp`) o None si viene NULL."""
     return None if valor is None else int(valor)

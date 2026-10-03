@@ -17,11 +17,19 @@ from typing import Any, Protocol
 from application.filtros_maestros import (
     CRITERIO_VACIO,
     CriterioActivoRecurso,
+    _entero,
     depurar_empleados,
     depurar_obras,
 )
-from domain.models import EstadoPeriodo, Periodo, ResultadoSync, ResultadoSyncMaestro
-from domain.ports import SigridGateway, UnitOfWork
+from domain.models import (
+    EstadoPeriodo,
+    Periodo,
+    ResultadoSync,
+    ResultadoSyncMaestro,
+    ResultadoUniverso,
+)
+from domain.normalizacion import texto_o_none
+from domain.ports import SigridGateway, UniversoPostventaGateway, UnitOfWork
 from domain.vigencia import inicio_ventana_baja
 
 logger = logging.getLogger(__name__)
@@ -53,6 +61,28 @@ def ventana_de_bajas(periodos: Iterable[Periodo], hoy: date) -> int:
     """
     abiertos = [p.clave for p in periodos if p.estado is EstadoPeriodo.ABIERTO]
     return inicio_ventana_baja(abiertos, hoy)
+
+
+def pedir_universo(
+    universo: UniversoPostventaGateway,
+    filas: list[dict[str, Any]],
+    empresa_obras: int,
+) -> ResultadoUniverso:
+    """Pide al transfer, UNA vez, el universo de postventa de la empresa de
+    las obras (F-025, R12): todas las obras leídas de esa empresa, también
+    las excluidas por estado; las de otras empresas no. Cada obra viaja con
+    el `cod` y la `descripcion` que se guardarán, que son los que el
+    preflight recibe después.
+
+    La comparten el step del sync y el preview, para que los dos calculen
+    el mismo universo.
+    """
+    obras = [
+        {"ide": f["ide"], "codigo": texto_o_none(f.get("cod")),
+         "nombre": texto_o_none(f.get("descripcion")) or ""}
+        for f in filas if _entero(f.get("empresa")) == empresa_obras
+    ]
+    return universo.universo_postventa(empresa_obras, obras)
 
 
 class SyncStep(Protocol):
@@ -116,6 +146,10 @@ class FetchEmpleadosStep:
 
 
 class FetchObrasStep:
+    """Lee las obras, pide el universo de postventa y marca cada obra con
+    `activa` y `admite_postventa` (F-025). Sin universo, el sync falla
+    entero: `UniversoPostventaNoDisponible` sube antes de persistir nada."""
+
     nombre = "fetch_obras"
 
     def __init__(
@@ -124,21 +158,32 @@ class FetchObrasStep:
         sql: str,
         estados_excluidos: list[str] | None = None,
         filtro_activo: bool = True,
+        *,
+        universo: UniversoPostventaGateway,
+        empresa_obras: int,
     ) -> None:
         self._sigrid = sigrid
         self._sql = sql
         self._estados = estados_excluidos or []
         self._filtro = filtro_activo and bool(self._estados)
+        self._universo = universo
+        self._empresa_obras = empresa_obras
 
     def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
         brutas = self._sigrid.leer(self._sql)
         _validar_columnas(brutas, COLUMNAS_OBRAS, "sync.obras.sql")
-        depurado = depurar_obras(brutas, self._estados, self._filtro)
+        universo = pedir_universo(self._universo, brutas, self._empresa_obras)
+        depurado = depurar_obras(brutas, self._estados, self._filtro,
+                                 universo.ides)
         logger.info(
-            "sync obras: %d brutas, %d excluidas por estado, %d netas",
+            "sync obras: %d brutas, %d excluidas por estado, %d netas "
+            "(%d admiten postventa, %d solo postventa; motivo: %s)",
             depurado.brutos,
             depurado.excluidos_filtro,
             len(depurado.filas),
+            depurado.admiten_postventa,
+            depurado.solo_postventa,
+            universo.motivo,
         )
         ctx.filas_obras = depurado.filas
 

@@ -28,6 +28,8 @@ from typing import Any
 import pytest
 from sqlalchemy.dialects import postgresql
 
+from tests.conftest import UniversoFalso
+
 DIALECTO = postgresql.dialect()
 SQL_EMPRESAS = "SELECT ... FROM dbo.auxemp AS emp"
 
@@ -342,7 +344,8 @@ def test_f032_r1_pipeline_lee_y_guarda_las_empresas() -> None:
     sigrid, uow = _SigridFalso(filas), _UowEspia()
     resultado = sp.SyncMaestrosPipeline([
         sp.FetchEmpleadosStep(sigrid, "SELECT ... FROM dbo.emp"),
-        sp.FetchObrasStep(sigrid, "SELECT ... FROM dbo.obr"),
+        sp.FetchObrasStep(sigrid, "SELECT ... FROM dbo.obr",
+                          universo=UniversoFalso(), empresa_obras=1),
         sp.FetchEmpresasStep(sigrid, SQL_EMPRESAS),
         sp.UpsertTrabajadoresStep(),
         sp.UpsertObrasStep(),
@@ -392,6 +395,7 @@ def _contenedor(monkeypatch: pytest.MonkeyPatch, sigrid: _SigridFalso) -> Any:
 
     monkeypatch.setattr(deps, "SigridApiClient", lambda _settings: sigrid)
     monkeypatch.setattr(deps, "SqlAlchemyUnitOfWork", _UowLectura)
+    monkeypatch.setattr(deps, "TransferClient", lambda _s: UniversoFalso())
     return deps.construir_contenedor(Settings(_env_file=None), None)  # type: ignore[arg-type]
 
 
@@ -435,7 +439,8 @@ def test_f032_r1_pipeline_sin_pasos_de_empresas_las_deja_a_cero() -> None:
     sigrid = _SigridFalso()
     resultado = sp.SyncMaestrosPipeline([
         sp.FetchEmpleadosStep(sigrid, "SELECT ... FROM dbo.emp"),
-        sp.FetchObrasStep(sigrid, "SELECT ... FROM dbo.obr"),
+        sp.FetchObrasStep(sigrid, "SELECT ... FROM dbo.obr",
+                          universo=UniversoFalso(), empresa_obras=1),
         sp.UpsertTrabajadoresStep(),
         sp.UpsertObrasStep(),
     ]).ejecutar(_UowEspia())
@@ -449,7 +454,8 @@ def _preview(sigrid: _SigridFalso, sql_empresas: str | None = SQL_EMPRESAS) -> A
     from application.use_cases import PreviewSync
 
     return PreviewSync(sigrid, "SELECT ... FROM dbo.emp",
-                       "SELECT ... FROM dbo.obr", sql_empresas=sql_empresas)
+                       "SELECT ... FROM dbo.obr", sql_empresas=sql_empresas,
+                       universo=UniversoFalso(), empresa_obras=1)
 
 
 def test_f032_r4_preview_informa_de_las_empresas_leidas() -> None:

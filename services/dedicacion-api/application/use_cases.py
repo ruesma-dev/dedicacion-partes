@@ -37,7 +37,7 @@ from domain.models import (
     TipoEvento,
     Trabajador,
 )
-from domain.ports import SigridGateway, UnitOfWork
+from domain.ports import SigridGateway, UniversoPostventaGateway, UnitOfWork
 
 from application.filtros_maestros import CRITERIO_VACIO, CriterioActivoRecurso
 
@@ -352,6 +352,10 @@ class PreviewSync:
     Ventana de bajas (F-026 R12, R17): con `uow_factory`, abre una UoW SOLO
     para leer los periodos `ABIERTO` (sin `commit`); sin ella, la ventana es
     el mes anterior a `hoy`. Se publica en `empleados.ventana_baja`.
+
+    Universo de postventa (F-025, R16): lo pide igual que el sync
+    (`sync_pipeline.pedir_universo`) y publica en `obras`
+    `admiten_postventa`, `solo_postventa` y `motivo_postventa`.
     """
 
     def __init__(
@@ -368,6 +372,9 @@ class PreviewSync:
         sql_empresas: str | None = None,
         uow_factory: Callable[[], UnitOfWork] | None = None,
         hoy: Callable[[], date] = date.today,
+        *,
+        universo: UniversoPostventaGateway,
+        empresa_obras: int,
     ) -> None:
         self._sigrid = sigrid
         self._sql_empleados = sql_empleados
@@ -383,6 +390,8 @@ class PreviewSync:
         self._criterio = criterio
         self._uow_factory = uow_factory
         self._hoy = hoy
+        self._universo = universo
+        self._empresa_obras = empresa_obras
 
     def _ventana_baja(self) -> int:
         from application.sync_pipeline import ventana_de_bajas
@@ -403,6 +412,7 @@ class PreviewSync:
             COLUMNAS_EMPRESAS,
             COLUMNAS_OBRAS,
             _validar_columnas,
+            pedir_universo,
         )
 
         brutas_emp = self._sigrid.leer(self._sql_empleados)
@@ -418,7 +428,10 @@ class PreviewSync:
         )
         brutas_obr = self._sigrid.leer(self._sql_obras)
         _validar_columnas(brutas_obr, COLUMNAS_OBRAS, "sync.obras.sql")
-        obr = depurar_obras(brutas_obr, self._estados, self._filtro_estados)
+        universo = pedir_universo(self._universo, brutas_obr,
+                                  self._empresa_obras)
+        obr = depurar_obras(brutas_obr, self._estados, self._filtro_estados,
+                            universo.ides)
         por_categoria = Counter(
             str(f.get("categoria") or "(sin categoría)") for f in emp.filas
         )
@@ -457,6 +470,9 @@ class PreviewSync:
                 "por_estado": dict(por_estado.most_common()),
                 "por_empresa": _por_empresa(obr.filas),
                 "muestra": obr.filas[:5],
+                "admiten_postventa": obr.admiten_postventa,
+                "solo_postventa": obr.solo_postventa,
+                "motivo_postventa": universo.motivo,
             },
         }
         if self._sql_empresas is not None:

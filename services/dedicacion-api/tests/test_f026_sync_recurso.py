@@ -19,6 +19,8 @@ from typing import Any
 
 import pytest
 
+from tests.conftest import UniversoFalso
+
 
 # --- R1: la consulta versionada parte de dbo.res ----------------------------
 
@@ -454,7 +456,8 @@ def _preview(filas: list[dict[str, Any]], **kwargs: Any) -> Any:
 
     return PreviewSync(_SigridPreview(filas), "SELECT ... FROM dbo.res", SQL_OBR,
                        criterio=_criterio(excluir_baja_anterior_a_ventana=True),
-                       hoy=lambda: HOY, **kwargs)
+                       hoy=lambda: HOY, universo=UniversoFalso(),
+                       empresa_obras=1, **kwargs)
 
 
 def test_f026_r17_preview_con_fabrica_usa_los_periodos_abiertos() -> None:
@@ -493,7 +496,9 @@ def test_f026_r6_preview_sin_claves_retiradas() -> None:
 def test_f026_r17_el_reloj_del_preview_por_defecto_es_el_del_dia() -> None:
     from application.use_cases import PreviewSync
 
-    assert PreviewSync(_SigridPreview([]), "", SQL_OBR)._hoy == date.today
+    assert PreviewSync(_SigridPreview([]), "", SQL_OBR,
+                       universo=UniversoFalso(),
+                       empresa_obras=1)._hoy == date.today
 
 
 @pytest.mark.parametrize("columna", ["ide", "nombre", "empresa"])

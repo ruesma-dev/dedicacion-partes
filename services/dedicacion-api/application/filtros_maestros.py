@@ -16,8 +16,11 @@ Sin dedupes ni descarte por empresa (F-026 D2): dos recursos de la misma
 persona son dos trabajadores, cada uno en su empresa. Si comparten
 documento dentro de la misma empresa, se avisa en `posible_misma_persona`.
 
-Obras: se excluyen las obras cuyo estado (conest.res) case con la lista
-de estados excluidos (terminada, cerrada, ...).
+Obras (F-025): cada obra sale con dos marcas independientes, `activa`
+(su estado no case con la lista de estados excluidos: terminada, cerrada,
+...) y `admite_postventa` (está en el universo de postventa que calcula el
+transfer, docs/ARCHITECTURE.md#regla-p5). Solo se descarta la que no tiene
+ninguna de las dos.
 
 Empresas (F-032): no se depuran; `resumir_empresas` solo las cuenta para
 el preview.
@@ -77,6 +80,10 @@ class ResultadoDepuracion:
     con_baja_laboral: int = 0
     incluidos_con_baja: int = 0
     posible_misma_persona: list[list[str]] = field(default_factory=list)
+    # Obras (F-025): en el universo de postventa, y de esas, las excluidas
+    # por estado que solo se ofrecen como postventa.
+    admiten_postventa: int = 0
+    solo_postventa: int = 0
 
 
 # ----------------------------------------------------------------------
@@ -194,17 +201,26 @@ def depurar_obras(
     filas: list[dict[str, Any]],
     estados_excluidos: list[str],
     filtro_activo: bool,
+    universo: frozenset[int],
 ) -> ResultadoDepuracion:
+    """Marca cada obra con `activa` (por estado) y `admite_postventa` (su
+    `ide` está en `universo`); descarta solo la que no tiene ninguna, y la
+    cuenta como excluida por estado, como antes de F-025 (R13-R14)."""
     resultado = ResultadoDepuracion(filas=[], brutos=len(filas))
     excluidos = [normalizar(e) for e in estados_excluidos if normalizar(e)]
 
     for fila in filas:
         estado = normalizar(str(fila.get("estado_sigrid") or ""))
-        if filtro_activo and any(patron in estado for patron in excluidos):
+        activa = not (filtro_activo and any(p in estado for p in excluidos))
+        admite = fila["ide"] in universo
+        if not (activa or admite):
             resultado.excluidos_filtro += 1
             resultado.excluidos_detalle[str(fila.get("estado_sigrid"))] += 1
             continue
-        resultado.filas.append(fila)
+        resultado.admiten_postventa += admite
+        resultado.solo_postventa += not activa
+        resultado.filas.append({**fila, "activa": activa,
+                                "admite_postventa": admite})
     return resultado
 
 
