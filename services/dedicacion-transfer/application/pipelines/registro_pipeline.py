@@ -41,7 +41,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from application.services.partida_resolver import (
-    construir_catalogo, resolver_normal, resolver_postventa,
+    construir_catalogo, resolver_normal,
 )
 from application.services.reglas_porcentajes import (
     AVISO_SIN_PARTIDA, MOTIVO_EMPRESA_OBRA, MOTIVO_PARTIDA_PV_NO_HOJA,
@@ -49,7 +49,9 @@ from application.services.reglas_porcentajes import (
     clave_sin_partida, clave_sobrecarga, criterio_choque, empresa_de_peticion,
     es_linea_mensual, evaluar_capacidad, sin_partida,
 )
-from domain.errores import ObraAmbigua
+from application.services.universo_postventa import (
+    cargar_catalogo_postventa, casar_postventa,
+)
 from domain.models.registro_models import (
     AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
     Preflight, ResultadoRegistro,
@@ -133,45 +135,32 @@ class RegistroPipeline:
     def _destino_postventa(
         self, obra_origen: ObraEntrada, forzada: bool,
         destino_pruebas: ObraEntrada, empresa: int,
-    ) -> tuple[Optional[ObraEntrada], Optional[dict], Optional[str]]:
+    ) -> tuple[Optional[ObraEntrada], Optional[dict], Optional[str], dict]:
         """Paso 1b. Obra de postventa + partida de la obra original.
 
-        Devuelve (obra_destino_pv, partida, motivo_si_falla). En modo
-        pruebas el parte se escribe en la obra de pruebas, pero la partida
-        se resuelve igualmente contra la obra de postventa real (para
-        validar el casado). Ver `ARCHITECTURE.md#regla-p5`.
+        Devuelve (obra_destino_pv, partida, motivo_si_falla, catálogo). El
+        catálogo es el de ESTA petición: no se guarda en la instancia (F-025
+        R9). Carga y casado son las mismas funciones que el universo de
+        postventa (`universo_postventa`). En modo pruebas el parte se
+        escribe en la obra de pruebas, pero la partida se resuelve
+        igualmente contra la obra de postventa real (para validar el
+        casado). Ver `ARCHITECTURE.md#regla-p5`.
         """
-        cod_pv = self._st.postventa_obra_cod
-        try:
-            obra_pv = self._cli.obra_por_codigo(cod_pv, empresa)
-        except ObraAmbigua as exc:
-            return None, None, (f"obra de postventa '{cod_pv}' ambigua en "
-                                f"la empresa {empresa}: {exc}")
-        if obra_pv is None:
-            return None, None, (f"obra de postventa '{cod_pv}' "
-                                f"no encontrada en Sigrid en la empresa "
-                                f"{empresa}")
-        filas = self._cli.capitulos_de_obra(int(obra_pv.ide))
-        nodos = construir_catalogo(filas)
-        self._nodos_pv = nodos
-        nodo = resolver_postventa(nodos, obra_origen.codigo,
-                                  obra_origen.nombre)
-        partida = ({"ide": nodo.ide, "cod": nodo.cod, "res": nodo.res}
-                   if nodo else None)
+        catalogo = cargar_catalogo_postventa(self._cli, self._st, empresa)
+        partida, motivo = casar_postventa(catalogo, obra_origen.codigo,
+                                          obra_origen.nombre)
         if partida is None:
-            return (None, None,
-                    f"la obra {obra_origen.codigo or obra_origen.nombre} "
-                    f"no casa con ninguna partida de "
-                    f"{self._st.postventa_obra_cod}")
-        destino = destino_pruebas if forzada else obra_pv
-        return destino, partida, None
+            return None, None, motivo, catalogo.nodos
+        destino = destino_pruebas if forzada else catalogo.obra
+        return destino, partida, None, catalogo.nodos
 
     # ------------------------------------------------------------- #
-    def _es_hoja_activa_pv(self, paride: int) -> bool:
+    @staticmethod
+    def _es_hoja_activa_pv(nodos: dict, paride: int) -> bool:
         """¿`paride` es una partida hoja activa del presupuesto de la obra
-        de postventa? Es el universo de `ARCHITECTURE.md#regla-p5`, el mismo
-        que se publica en `partidas_postventa`."""
-        nodos = getattr(self, "_nodos_pv", None) or {}
+        de postventa leído en esta petición? Es el universo de
+        `ARCHITECTURE.md#regla-p5`, el mismo que se publica en
+        `partidas_postventa`."""
         nodo = nodos.get(int(paride))
         return bool(nodo and nodo.es_hoja and nodo.activa)
 
@@ -200,13 +189,15 @@ class RegistroPipeline:
         destino_normal, forzada = self._obra_destino(origen, empresa)
 
         # Paso 1b: destino de postventa (solo si hace falta).
+        # Sin líneas de postventa no se lee ni se publica catálogo (R8).
         destino_pv: Optional[ObraEntrada] = None
         partida_pv: Optional[dict] = None
         motivo_pv: Optional[str] = None
-        if any(l.es_postventa for l in lineas) \
-                and self._st.postventa_registrar:
-            destino_pv, partida_pv, motivo_pv = self._destino_postventa(
-                obra, forzada, destino_normal, empresa)
+        nodos_pv: dict = {}
+        if any(l.es_postventa for l in lineas):
+            destino_pv, partida_pv, motivo_pv, nodos_pv = \
+                self._destino_postventa(obra, forzada, destino_normal,
+                                        empresa)
 
         # Pasos 2-4: horas de los recursos dados + reglas.
         horas = self._horas_de_lineas(lineas)
@@ -231,7 +222,8 @@ class RegistroPipeline:
                 # universo válido de la postventa (un capítulo, una partida
                 # de baja). Ahí no se escribe: ver ARCHITECTURE #regla-p5.
                 if a.destino == "postventa" \
-                        and not self._es_hoja_activa_pv(linea.paride):
+                        and not self._es_hoja_activa_pv(nodos_pv,
+                                                        linea.paride):
                     a.accion = "omitir"
                     a.motivo = MOTIVO_PARTIDA_PV_NO_HOJA.format(
                         paride=int(linea.paride))
@@ -427,8 +419,7 @@ class RegistroPipeline:
                     for n in nodos.values() if n.es_hoja and n.activa]
 
         setattr(pf, "partidas_obra", _cat(nodos_origen))
-        setattr(pf, "partidas_postventa",
-                _cat(getattr(self, "_nodos_pv", None)))
+        setattr(pf, "partidas_postventa", _cat(nodos_pv))
         return pf
 
     # ------------------------------------------------------------- #
