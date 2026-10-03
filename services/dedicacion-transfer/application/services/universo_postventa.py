@@ -16,7 +16,7 @@ que lo leyó.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Optional
 
 from application.services.partida_catalog import PartidaNodo
@@ -81,3 +81,35 @@ def casar_postventa(catalogo: CatalogoPostventa, codigo: Optional[str],
         return None, (f"la obra {codigo or nombre} no casa con ninguna "
                       f"partida de {catalogo.obra.codigo}")
     return {"ide": nodo.ide, "cod": nodo.cod, "res": nodo.res}, None
+
+
+class UniversoPostventa:
+    """Universo de postventa de una empresa: sus obras que casan con una
+    partida de la obra de postventa (contrato de
+    `POST /api/postventa/universo`). Solo lee; sin estado entre peticiones."""
+
+    def __init__(self, *, cliente, settings) -> None:
+        self._cli = cliente
+        self._st = settings
+
+    def calcular(self, empresa: int, obras: list[ObraEntrada]) -> dict:
+        """Una carga del catálogo por petición (R7) y un casado por obra.
+
+        Sin obras no se lee nada. Un fallo de lectura sube tal cual: no hay
+        universo parcial (R6).
+        """
+        catalogo = (cargar_catalogo_postventa(self._cli, self._st, empresa)
+                    if obras else CatalogoPostventa(None, {}, None))
+        casadas = []
+        for obra in obras:
+            partida, _motivo = casar_postventa(catalogo, obra.codigo,
+                                               obra.nombre)
+            if partida is not None:
+                casadas.append({"ide": obra.ide, "partida": partida})
+        return {
+            "empresa": empresa,
+            "obra_postventa": asdict(catalogo.obra) if catalogo.obra else None,
+            "motivo": catalogo.motivo,
+            "casadas": len(casadas),
+            "obras": casadas,
+        }
