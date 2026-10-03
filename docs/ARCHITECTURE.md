@@ -88,7 +88,10 @@ con su nombre de Sigrid y si están de baja).
 
 Tablas de PostgreSQL: `trabajador`, `obra` (copias sincronizadas de Sigrid,
 PK = el `ide` de Sigrid: en `trabajador`, el `res.ide` de su **recurso**,
-[`#regla-recurso`](#regla-recurso); en `obra`, el de su ficha), `empresa` (catálogo `auxemp` de Sigrid, PK =
+[`#regla-recurso`](#regla-recurso); en `obra`, el de su ficha, con dos marcas
+independientes que pone el sync: `activa`, que su estado no esté excluido, y
+`admite_postventa`, que esté en el universo de postventa,
+[`#regla-p5`](#regla-p5), F-025), `empresa` (catálogo `auxemp` de Sigrid, PK =
 `numemp`, que es el `con.emp` de las fichas; F-032), `periodo` (año+mes único, `ABIERTO`/`CERRADO`),
 `asignacion` (periodo × trabajador × obra × `es_postventa`, `porcentaje` en
 0-100) y `evento` (auditoría con `snapshot_antes` / `snapshot_despues` en
@@ -188,15 +191,30 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      el mismo universo que el preflight publica en `partidas_postventa` para
      el desplegable del front: el automático y el desplegable **no pueden
      apuntar a sitios distintos**.
-   - **Casado por código exacto.** En `obrparpar` el código y la
-     descripción son campos separados (`cod`, `res`); lo que la pantalla de
-     Sigrid enseña junto es la concatenación de los dos. Se compara el
-     código de la obra original contra `cod` normalizado, **entero**: `0656`
-     y `656` son códigos **distintos** y no casan entre sí. Solo si no hay
-     coincidencia exacta se aplican las cascadas (empieza por → código en la
-     descripción → nombre), siempre sobre hojas activas y de forma
-     **determinista** (el orden en que Sigrid devuelva las filas no puede
-     cambiar la partida elegida).
+   - **Casado por código, sin escalones ajenos.** En `obrparpar` el código y
+     la descripción son campos separados (`cod`, `res`); lo que la pantalla
+     de Sigrid enseña junto es la concatenación de los dos. Se compara el
+     código de la obra original contra `cod` normalizado (mayúsculas, sin
+     espacios ni guiones), **entero**: `0656` y `656` son códigos
+     **distintos** y no casan entre sí. Sin coincidencia exacta solo vale la
+     partida cuyo código normalizado **empieza por el de la obra seguido
+     solo de letras** (`0578` → `0578B`, `0654` → `0654-B`): la más corta y,
+     a igualdad, la menor. Nada más: ni el prefijo seguido de otra cosa
+     (`CP` → `CP.1`; una obra que en el presupuesto fuera un capítulo, con
+     sus hijas), ni el código en la descripción, ni el nombre de la obra,
+     que casaban obras con partidas ajenas. Siempre sobre hojas activas y de
+     forma **determinista** (el orden en que Sigrid devuelva las filas no
+     puede cambiar la partida elegida).
+   - **Universo de postventa.** Las obras que admiten `Postv-` son las de la
+     empresa de las obras a las que este casado encuentra partida en la
+     obra de postventa de **esa misma** empresa. Lo calcula **solo** el
+     transfer (`POST /api/postventa/universo`, con las mismas funciones que
+     el preflight); la api lo pide en cada sync y lo guarda en
+     `obra.admite_postventa`, independiente de `obra.activa` (el filtro de
+     estado). Una obra excluida por estado (cerrada, terminada…) que esté en
+     el universo **solo se ofrece como `Postv-`**; una abierta fuera de él,
+     solo como obra normal. Es la foto del último sync: el preflight sigue
+     mandando, y lo ya guardado se queda, marcado como no ofrecible.
    - **Sin casado no se escribe.** La línea se omite con su motivo, visible
      en el preflight. Lo mismo si la obra de postventa no existe en Sigrid.
    - **La obra de postventa es la de la empresa de la petición**: ver
@@ -208,6 +226,10 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
    las **86** partidas de obra, todas hojas, **82 colgando de `CD` y cuatro
    sueltas en la raíz** — `656`, `664`, `680` y `693`, duplicados sin el cero
    inicial que Administración debería limpiar; ver F-014).
+   *El casado sin escalones ajenos y el universo los decidió el responsable
+   del proyecto el 2026-10-01 (F-025, D2 = B y D4: un único universo, el de
+   la empresa de las obras) y el 2026-10-03 (D8 = A: la obra-capítulo queda
+   fuera), `specs/F-025-obras-postventa-postv2/requirements.md`.*
 6. <a id="regla-p4"></a><a id="regla-conflicto"></a>**Identidad de la línea e idempotencia (P4 · Regla A).**
    `synckey = "porcentajes:{asignacion_id}"` (no se cruza con los partes
    diarios, que usan otro prefijo): reejecutar no duplica.

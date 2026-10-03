@@ -54,6 +54,11 @@ Lo que sí es de este servicio, y por eso se cuenta aquí:
     GET  /health
     POST /api/registro/preflight   {obra, lineas[], usuario}
     POST /api/registro/ejecutar    {obra, lineas[], pisar_claves[], usuario}
+    POST /api/postventa/universo   {empresa, obras[]}   (solo lee; F-025)
+
+`/api/postventa/universo` devuelve las obras que admiten postventa en esa
+empresa, con su partida, calculadas con las mismas funciones que el
+preflight ([`#regla-p5`](../../docs/ARCHITECTURE.md#regla-p5)).
 
 Línea: `{registro_id, ano, mes, porcentaje (sobre 1), recurso_ide, dni?,
 nombre?, es_postventa, empresa}`. `empresa` es la `con.emp` a la que se
