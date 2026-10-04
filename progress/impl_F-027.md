@@ -2,7 +2,8 @@
 
 Rama `feature/F-027-deshacer-por-usuario`, rigor **estándar**, `sdd: false`
 (se trabaja contra los `acceptance` de `harness/features.json`). Decisión A
-del humano (2026-10-04). Solo **api**; front comprobado, sin cambios.
+del humano (2026-10-04). Código solo en **api**; front comprobado, sin
+cambios. Copia de `azure-apps/dedicacion.md` refrescada **sin commit** (§ líder).
 
 ## Qué cambió
 
@@ -15,6 +16,8 @@ del humano (2026-10-04). Solo **api**; front comprobado, sin cambios.
 | `9e0c472` T5 | `docs/ARCHITECTURE.md`: regla 14 `#regla-deshacer` (y el ancla en la lista de fuentes únicas y en los endpoints) |
 | `cc91bca` | Orden de imports del test (ruff I001) |
 | `3d2db3b` T6 | Test que mata el superviviente de la 1.ª campaña de mutación |
+| `20ac8e3` T7 | `docs/INTEGRACION.md` § «La cadena de identidad»: `X-Usuario` decide además quién deshace (enlace a `#regla-deshacer`); sin cabecera todos son `local` (o el `DEFAULT_USER`) y cuentan como uno; lo guardado como `local` no lo deshace nadie con Easy Auth. Cabecera del documento con fecha y origen |
+| `ea95a29` T8 | Test de inmutabilidad de `EventoPendiente` (mata el mutante `frozen`) |
 
 **Regla** (`application/use_cases.py`): sin pendiente → `NadaQueDeshacer`
 (igual que antes); pendiente de otro → `DeshacerAjeno("La última modificación
@@ -74,11 +77,11 @@ entrada; otro periodo aparte. Salida real: `periodo 3: {10: 'pablo', 14:
 
 Ningún test perdió exigencia ni cambió por otra causa.
 
-## Tests nuevos — `services/dedicacion-api/tests/test_f027_deshacer_propio.py` (25)
+## Tests nuevos — `services/dedicacion-api/tests/test_f027_deshacer_propio.py` (26)
 
 Dominio: misma persona con mayúsculas/espacios (3 casos); otro usuario,
 prefijo, interior distinto y sin pendiente (4); `clave_usuario`; jerarquía de
-`DeshacerAjeno`. Repositorio: `ultimo_pendiente` trae el autor; SQL y
+`DeshacerAjeno`. Repositorio: `ultimo_pendiente` trae el autor; `EventoPendiente` inmutable; SQL y
 parámetros de `autores_ultimo_pendiente`. Casos de uso con **Ana y Pablo**:
 deshago lo mío; no deshago lo del otro (mensaje exacto, nada reemplazado ni
 deshecho); el otro cambia después → bloqueado, y cuando él deshace el suyo,
@@ -137,31 +140,41 @@ E       assert 400 == 409
 `test_f027_r3_por_http_puede_deshacer_por_usuario` no tuvo RED propio: pasó
 en T4 porque las rutas ya pasaban el usuario desde T3 (su RED es el de T3).
 
-## `bash harness/init.sh` (resultado real, tras T6)
+T8 — `@dataclass(frozen=False)` aplicado a mano en `EventoPendiente`,
+`.venv/Scripts/python.exe -m pytest tests/test_f027_deshacer_propio.py -q -k inmutable`
+(después `git checkout domain/models.py` y 26 passed):
+```
+E       Failed: DID NOT RAISE FrozenInstanceError
+FAILED tests/test_f027_deshacer_propio.py::test_f027_r3_evento_pendiente_es_inmutable
+1 failed, 25 deselected, 1 warning in 2.26s
+```
 
-`ENTORNO LISTO`. Raíz: 418 passed, 1 skipped (43.81 s; 36.07 s en la última pasada). Servicio api: **534
-passed** (16.34 s); front y transfer en verde (caché). `PUERTA COBERTURA:
-100.0% de 33 líneas cambiadas cubiertas (33/33, umbral 80%)`. ruff: 198
-avisos, los mismos que al empezar (la 1.ª pasada dio 199 por el orden de
-imports del test nuevo; corregido en `cc91bca`). `PUERTA TAMAÑO: F-027 dentro
-de los topes (impl 196/220)`.
+## `bash harness/init.sh` (resultado real, tras T8)
+
+`ENTORNO LISTO`. Raíz: 418 passed, 1 skipped (40.85 s). Servicio api: **535
+passed** (14.40 s); front y transfer en verde (caché). `PUERTA COBERTURA:
+100.0% de 33 líneas cambiadas cubiertas (33/33, umbral 80%)`. `PUERTA TAMAÑO:
+impl 212/220`. ruff: 198 avisos, los mismos que al empezar (una pasada
+intermedia dio 199 por el orden de imports del test; corregido).
 
 ## Mutación — `python -m harness.mutacion --feature F-027 --workers 1`
 
-Detalle y análisis en `progress/mutacion_F-027.md`.
+Tres campañas, todas en serie. Detalle en `progress/mutacion_F-027.md`.
 
-- **1.ª campaña** (HEAD `cc91bca`): 8 generados, 6 muertos, **2
-  supervivientes**, 77.9 s. Uno era **hueco real**: `use_cases.py:186`
-  `permitir_inactivas=True → False` (ningún test deshacía un snapshot con una
-  obra que ya no existe; comportamiento anterior a F-027 en una línea que
-  reescribí). Cerrado con `test_f027_r6_deshacer_lo_mio_con_una_obra_que_ya_no_existe`,
-  comprobado a mano contra el mutante (`ObraNoValida: Obras inexistentes: [777]`).
-- **2.ª campaña** (HEAD `3d2db3b`, la que queda en el informe): 8 generados,
-  **7 muertos, 1 superviviente**, 0 timeouts, 67.3 s.
-- Superviviente: `models.py:134` `@dataclass(frozen=True) → frozen=False` en
-  `EventoPendiente`. **Equivalente**: nadie modifica el valor; no hay
-  comportamiento observable que cambie.
-- Límite honesto: el generador solo produjo 8 mutantes (no muta llamadas como
+| Campaña | HEAD | Generados | Muertos | Supervivientes | Tiempo |
+|---|---|---|---|---|---|
+| 1.ª | `cc91bca` | 8 | 6 | 2 | 77.9 s |
+| 2.ª | `3d2db3b` | 8 | 7 | 1 | 67.3 s |
+| **3.ª (vigente)** | `ea95a29` | **8** | **8** | **0** | 58.2 s |
+
+- `use_cases.py:186` `permitir_inactivas=True → False`: **hueco real**
+  (ningún test deshacía un snapshot con una obra que ya no existe;
+  comportamiento anterior a F-027 en una línea que reescribí). Cerrado en T6,
+  comprobado contra el mutante (`ObraNoValida: Obras inexistentes: [777]`).
+- `models.py:134` `frozen=True → False` en `EventoPendiente`: en la 2.ª lo di
+  por equivalente; por coherencia con F-025 (`CatalogoPostventa`), se mata
+  con un test de inmutabilidad (T8, RED arriba).
+- Límite honesto: el generador solo produce 8 mutantes (no muta llamadas como
   `strip`/`casefold` ni `max`/`group_by`). Esos puntos los fijan tests
   directos (normalización y sentencia SQL compilada), no la campaña.
 
@@ -174,10 +187,12 @@ la fila no se refresca hasta recargar (no hay push; sin cambio en F-027).
 
 ## Pendiente para el líder
 
-- **`azure-apps/dedicacion.md`** (§ «La cadena de identidad»): `X-Usuario`
-  ya no es solo auditoría, **decide quién puede deshacer**. Propuesta: en el
-  diagrama, `auditoría (tabla evento) y permiso de deshacer (F-027)`. No lo he
-  tocado: es otro repositorio y no estaba en el encargo.
+- **`azure-apps/dedicacion.md`, modificado SIN commit** (lo hace el líder):
+  copia literal del diagrama y de los dos párrafos nuevos de
+  `docs/INTEGRACION.md` § «La cadena de identidad», y cabecera de origen
+  (rama F-027, commit `20ac8e3`, 2026-10-04, sin merge ni despliegue; la
+  anterior pasa a «Versión anterior»). CRLF del fichero conservado; el resto
+  intacto. El enlace `ARCHITECTURE.md#regla-deshacer` se copió tal cual.
 - **MANUAL tras desplegar** (no hay ninguna antes del `done`): con dos
   personas en el mismo mes y trabajador, A guarda → B no ve el botón y su
   Ctrl+Z da el toast «La última modificación de este trabajador es de A…»; A
@@ -190,7 +205,7 @@ la fila no se refresca hasta recargar (no hay push; sin cambio en F-027).
 
 | Evidencia | Valor medido |
 |---|---|
-| Tests ejecutados | api 534 passed (25 nuevos de F-027); raíz 418 passed, 1 skipped; front y transfer en verde |
+| Tests ejecutados | api 535 passed (26 nuevos de F-027); raíz 418 passed, 1 skipped; front y transfer en verde |
 | Cobertura de líneas cambiadas | **100.0 %** (33/33), `PUERTA COBERTURA` |
-| Mutantes generados / supervivientes | 8 / **1** (equivalente); 1.ª campaña 8 / 2, hueco cerrado |
-| Tiempo de la suite | api 16.34 s; raíz 43.81 s (init.sh) |
+| Mutantes generados / supervivientes | 8 / **0** (3.ª campaña, `--workers 1`); antes 8/2 y 8/1, ambos cerrados con test |
+| Tiempo de la suite | api 14.40 s; raíz 40.85 s (init.sh) |
