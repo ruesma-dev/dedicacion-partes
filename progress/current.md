@@ -14,7 +14,17 @@
   `puede_deshacer` por usuario. Solo api. Criterios en `features.json`.
 - **Fuera:** deshacer un cambio que no sea el último, deshacer por línea,
   historial visible.
-- **Estado:** implementer lanzado → `progress/impl_F-027.md`.
+- **Estado:** implementación terminada (`progress/impl_F-027.md`): regla A
+  en `DeshacerUltimaModificacion` (409 `DeshacerAjeno`, como «nada que
+  deshacer»), `puede_deshacer` por usuario, normalización en
+  `domain/deshacer.py`, `#regla-deshacer` en ARCHITECTURE e INTEGRACION
+  (`X-Usuario` decide quién deshace). 25+ tests con dos usuarios; mutación en
+  serie 8/8 muertos (`progress/mutacion_F-027.md`). Tests anteriores
+  cambiados solo por firma o doble (tabla en el informe). Front sin cambios:
+  Ctrl+Z llama a la API y el 409 enseña el motivo (criterio 5 reescrito con
+  ese comportamiento). **Review lanzada** → `progress/review_F-027.md`.
+- **`azure-apps`:** copia de la cadena de identidad en `dedicacion.md`;
+  la confirma el líder (commit en `azure-apps` antes del `done`).
 - **MANUAL:** ninguna antes del `done` (lo cubren los tests con dos
   usuarios). Tras desplegar, se puede mirar con dos personas.
  El arnés es la **1.7.3**.

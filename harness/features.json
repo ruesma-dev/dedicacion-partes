@@ -439,7 +439,7 @@
         "Decisión A (2026-10-04): si después de mi último cambio hay uno de otro usuario, NO puedo deshacer (se bloquea); no se deshace un cambio que no sea el último",
         "puede_deshacer (cuadrante y fila devuelta tras guardar/deshacer) es verdadero solo si el último cambio pendiente es del usuario que pregunta",
         "Los usuarios se comparan sin distinguir mayúsculas ni espacios en los extremos",
-        "El front no decide nada: el botón y Ctrl+Z siguen dependiendo de puede_deshacer (comprobado; si hiciera falta un cambio, solo de presentación)",
+        "El front no decide nada: el botón se pinta solo con puede_deshacer; Ctrl+Z llama a la API, que con un cambio ajeno responde 409 y no deshace nada, y el toast enseña el motivo con el nombre del otro usuario (comprobado; front sin cambios)",
         "Tests de API con dos usuarios: deshago lo mío; no deshago lo del otro; el otro cambia después y ya no puedo; puede_deshacer distinto por usuario. Tests anteriores que cambien por la firma, declarados en tabla",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
