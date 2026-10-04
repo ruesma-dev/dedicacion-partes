@@ -13,15 +13,25 @@ casos de uso con la UnitOfWork en memoria de `test_f024_cuadrante_empresa`
 """
 from __future__ import annotations
 
+from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from application.use_cases import (
+    CopiarTrabajadorAnterior,
+    DeshacerUltimaModificacion,
+    GuardarAsignaciones,
+    ObtenerCuadrante,
+    ObtenerFilaTrabajador,
+)
 from domain.deshacer import clave_usuario, deshacer_permitido
 from domain.errors import DeshacerAjeno, ErrorDominio, NadaQueDeshacer
-from domain.models import EventoPendiente
+from domain.models import EventoPendiente, FiltroEmpresa
 from infrastructure.db.repositories import PgEventoRepository
 from sqlalchemy.dialects import postgresql
+
+from tests.test_f024_cuadrante_empresa import ANIO, MES, P_ACT, P_ANT, _ln, _uow, _Uow
 
 
 # =========================== dominio (T1) ============================== #
@@ -110,3 +120,128 @@ def test_f027_r3_autores_del_ultimo_pendiente_de_todo_el_periodo():
         "WHERE evento.periodo_id = %(periodo_id_1)s "
         "AND evento.deshecho IS false GROUP BY evento.trabajador_ide)")
     assert params == {"periodo_id_1": 3}
+
+
+# ========================= casos de uso (T3) =========================== #
+ANA = "ana@ruesma.es"
+PABLO = "pablo@ruesma.es"
+EVA = 14            # Eva, de la 1 y sin carga: lienzo limpio
+F1 = FiltroEmpresa(empresa=1, por_defecto=1, empresa_obras=1)
+
+
+def _guardar(uow: _Uow, usuario: str, *lineas: tuple[int, str], ide=EVA):
+    return GuardarAsignaciones().ejecutar(
+        uow, ANIO, MES, ide,
+        [{"obra_ide": o, "porcentaje": p} for o, p in lineas], usuario,
+        filtro=F1)
+
+
+def _deshacer(uow: _Uow, usuario: str, ide=EVA):
+    return DeshacerUltimaModificacion().ejecutar(
+        uow, ANIO, MES, ide, usuario, filtro=F1)
+
+
+def _obras(uow: _Uow, ide=EVA) -> list[tuple[int, Decimal]]:
+    return [(ln.obra_ide, ln.porcentaje)
+            for ln in uow.lineas[P_ACT].get(ide, [])]
+
+
+def _mensaje_ajeno(autor: str) -> str:
+    return (f"La última modificación de este trabajador es de {autor}: "
+            "solo puede deshacerla quien la hizo")
+
+
+def test_f027_r6_deshago_lo_mio():
+    uow = _uow()
+    _guardar(uow, PABLO, (100, "100"))
+    fila, _ = _deshacer(uow, PABLO)
+    assert fila.lineas == [] and _obras(uow) == []
+    assert uow.eventos.deshechos == {1}
+
+
+def test_f027_r1_no_deshago_lo_del_otro():
+    """Motivo legible que nombra al autor; nada se toca."""
+    uow = _uow()
+    _guardar(uow, ANA, (100, "100"))
+    with pytest.raises(DeshacerAjeno) as exc:
+        _deshacer(uow, PABLO)
+    assert str(exc.value) == _mensaje_ajeno(ANA)
+    assert _obras(uow) == [(100, Decimal(100))]
+    assert uow.reemplazados == [EVA]          # solo el guardado de Ana
+    assert uow.eventos.deshechos == set()
+
+
+def test_f027_r2_el_otro_cambia_despues_y_ya_no_puedo():
+    """Decisión A: tras mi cambio hay uno de Ana; no deshago el mío (no es el
+    último) ni el suyo. Cuando Ana deshace el suyo, el mío vuelve a ser el
+    último y entonces sí."""
+    uow = _uow()
+    _guardar(uow, PABLO, (100, "100"))
+    _guardar(uow, ANA, (101, "100"))
+    with pytest.raises(DeshacerAjeno) as exc:
+        _deshacer(uow, PABLO)
+    assert str(exc.value) == _mensaje_ajeno(ANA)
+    assert _obras(uow) == [(101, Decimal(100))]
+    assert uow.eventos.deshechos == set()
+
+    fila_ana, _ = _deshacer(uow, ANA)
+    assert _obras(uow) == [(100, Decimal(100))]
+    assert fila_ana.puede_deshacer is False   # el último es ya de Pablo
+    fila_pablo, _ = _deshacer(uow, PABLO)
+    assert _obras(uow) == [] and fila_pablo.puede_deshacer is False
+    assert uow.eventos.deshechos == {1, 2}
+
+
+def test_f027_r1_nada_que_deshacer_sigue_igual():
+    with pytest.raises(NadaQueDeshacer):
+        _deshacer(_uow(), PABLO)
+
+
+def test_f027_r4_deshago_lo_mio_con_otras_mayusculas_y_espacios():
+    uow = _uow()
+    _guardar(uow, ANA, (100, "100"))
+    _deshacer(uow, "  ANA@Ruesma.ES ")
+    assert _obras(uow) == []
+
+
+@pytest.mark.parametrize("usuario, esperado", [
+    (ANA, {"Ana": True, "Eva": False}),
+    (PABLO, {"Ana": False, "Eva": True}),
+    (" PABLO@ruesma.es ", {"Ana": False, "Eva": True}),
+    ("eva@ruesma.es", {"Ana": False, "Eva": False}),
+])
+def test_f027_r3_puede_deshacer_por_usuario_en_el_cuadrante(usuario, esperado):
+    """Ana tocó a Ana (10) y Pablo a Eva; Pablo tocó antes a Ana, pero el
+    último de Ana es de Ana: no basta con «tener algo pendiente mío»."""
+    uow = _uow()
+    _guardar(uow, PABLO, (100, "100"), ide=10)
+    _guardar(uow, ANA, (101, "100"), ide=10)
+    _guardar(uow, PABLO, (100, "100"))
+    cuadrante = ObtenerCuadrante().ejecutar(uow, ANIO, MES, F1,
+                                            usuario=usuario)
+    por_nombre = {f.trabajador.nombre: f.puede_deshacer
+                  for f in cuadrante.filas}
+    assert {n: por_nombre[n] for n in esperado} == esperado
+    assert sum(por_nombre.values()) == sum(esperado.values())
+
+
+def test_f027_r3_puede_deshacer_por_usuario_en_la_fila():
+    """La fila de guardar, de deshacer y de copiar es la del que pregunta."""
+    uow = _uow()
+    fila, _ = _guardar(uow, ANA, (100, "100"))
+    assert fila.puede_deshacer is True
+    fila, _ = ObtenerFilaTrabajador().ejecutar(uow, ANIO, MES, EVA,
+                                               filtro=F1, usuario=PABLO)
+    assert fila.puede_deshacer is False
+    # Pablo guarda lo mismo que hay: no hay evento y el último sigue de Ana.
+    fila, _ = _guardar(uow, PABLO, (100, "100"))
+    assert fila.puede_deshacer is False
+    # Dos cambios seguidos de Pablo: deshecho uno, el otro sigue siendo suyo.
+    _guardar(uow, PABLO, (101, "100"))
+    _guardar(uow, PABLO, (101, "50"), (100, "50"))
+    fila, _ = _deshacer(uow, PABLO)
+    assert fila.puede_deshacer is True
+    uow.lineas[P_ANT] = {EVA: [_ln(102, "100")]}
+    fila, _r, _o, _om = CopiarTrabajadorAnterior().ejecutar(
+        uow, ANIO, MES, EVA, ANA, filtro=F1)
+    assert fila.puede_deshacer is True

@@ -161,11 +161,14 @@ def copiar_periodo_anterior(
 @router.get("/periodos/{anio}/{mes}/cuadrante", response_model=CuadranteOut,
             tags=["cuadrante"])
 def obtener_cuadrante(
-    anio: int, mes: int, contenedor: Cont, empresa: EmpresaQ = None
+    anio: int, mes: int, contenedor: Cont, usuario: Usuario,
+    empresa: EmpresaQ = None,
 ) -> CuadranteOut:
+    """`puede_deshacer` de cada fila es el del usuario que pregunta (F-027)."""
     filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
-        cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes, filtro)
+        cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes, filtro,
+                                                usuario=usuario)
     return CuadranteOut(
         periodo=a_periodo_out(cuadrante.periodo),
         empresa=cuadrante.empresa,
@@ -248,11 +251,13 @@ def copiar_trabajador_anterior(
 # --------------------------- Export -----------------------------------
 @router.get("/periodos/{anio}/{mes}/export.xlsx", tags=["export"])
 def exportar(
-    anio: int, mes: int, contenedor: Cont, empresa: EmpresaQ = None
+    anio: int, mes: int, contenedor: Cont, usuario: Usuario,
+    empresa: EmpresaQ = None,
 ) -> Response:
     filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
-        cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes, filtro)
+        cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes, filtro,
+                                                usuario=usuario)
     contenido = contenedor.exporter.exportar(cuadrante.periodo, cuadrante.filas)
     plantilla = cargar_config()["export"]["nombre_fichero"]
     nombre = plantilla.format(anio=anio, mes=mes, empresa=cuadrante.empresa)

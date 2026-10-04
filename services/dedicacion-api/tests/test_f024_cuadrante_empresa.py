@@ -275,7 +275,8 @@ def _nombres(filas) -> list[str]:
     (31, []),
 ])
 def test_f024_r7_cuadrante_solo_trabajadores_visibles(empresa, nombres):
-    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa))
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa),
+                                            usuario="u")
     assert _nombres(cuadrante.filas) == nombres
     assert cuadrante.empresa == empresa
 
@@ -286,13 +287,14 @@ def test_f034_r1_obras_siempre_de_la_empresa_de_las_obras(empresa):
     """F-034 (R1) · Con cualquier E, las obras de la empresa de las obras
     (activas o inactivas con líneas); la 900 de la 28 y la 500 NULL nunca.
     Sustituye a `test_f024_r9_obras_solo_de_la_empresa_y_nunca_las_null`."""
-    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa))
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa),
+                                            usuario="u")
     assert [o.ide for o in cuadrante.obras] == [100, 101, 102]
 
 
 # --------------------------------- R10 -------------------------------- #
 def test_f024_r10_fila_con_todas_sus_lineas_y_total_sobre_todas():
-    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(1))
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(1), usuario="u")
     ana = cuadrante.filas[0]
     assert [(ln.obra_ide, ln.obra_empresa) for ln in ana.lineas] == [
         (100, 1), (900, 28)]
@@ -302,7 +304,7 @@ def test_f024_r10_fila_con_todas_sus_lineas_y_total_sobre_todas():
 def test_f024_r10_puede_deshacer_se_conserva():
     uow = _uow()
     uow.eventos.registrar(P_ACT, 10, TipoEvento.GUARDAR, "u", [], [])
-    cuadrante = ObtenerCuadrante().ejecutar(uow, ANIO, MES, _f(1))
+    cuadrante = ObtenerCuadrante().ejecutar(uow, ANIO, MES, _f(1), usuario="u")
     # F-034 (R3): con E = 1 entra Carlos (NULL): cinco filas.
     assert [f.puede_deshacer for f in cuadrante.filas] == [
         True, False, False, False, False]
@@ -318,7 +320,8 @@ RESUMEN_28 = ResumenPeriodo(total=1, ok=1, falta=0, exceso=0, sin_carga=0)
 @pytest.mark.parametrize("empresa, resumen", [(1, RESUMEN_1),
                                               (28, RESUMEN_28)])
 def test_f024_r13_resumen_del_cuadrante_solo_visibles(empresa, resumen):
-    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa))
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa),
+                                            usuario="u")
     assert cuadrante.resumen == resumen
 
 
@@ -328,7 +331,7 @@ def test_f024_r13_resumen_de_las_respuestas_por_fila(empresa, resumen):
     """Fila, guardar, deshacer y copiar trabajador devuelven el resumen de
     la empresa elegida; la fila lleva todas sus líneas (R10)."""
     fila, res = ObtenerFilaTrabajador().ejecutar(
-        _uow(), ANIO, MES, 16, filtro=_f(empresa))
+        _uow(), ANIO, MES, 16, filtro=_f(empresa), usuario="u")
     assert res == resumen and len(fila.lineas) == 2
 
     uow = _uow()

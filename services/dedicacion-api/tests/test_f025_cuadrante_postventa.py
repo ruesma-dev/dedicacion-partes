@@ -246,7 +246,8 @@ def test_f025_r17_el_cuadrante_ofrece_las_de_la_empresa_de_las_obras(filtro):
     """R17 · Con cualquier empresa elegida, las obras ofrecidas son las de
     la empresa de las obras: también la cerrada que solo admite postventa
     (201) y la usada sin ninguna marca (203); la 900 (de la 28), no."""
-    cuadrante = ObtenerCuadrante().ejecutar(_Uow({}), ANIO, MES, filtro)
+    cuadrante = ObtenerCuadrante().ejecutar(_Uow({}), ANIO, MES, filtro,
+                                            usuario="u")
     assert sorted(o.ide for o in cuadrante.obras) == [200, 201, 202, 203]
 
 
