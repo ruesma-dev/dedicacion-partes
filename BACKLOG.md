@@ -3,15 +3,12 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **33 features**, 17 abiertas, 16 terminadas.
-
-En curso: **F-027**.
+Resumen: **33 features**, 16 abiertas, 17 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 5 | en curso | estandar | `feature/F-027-deshacer-por-usuario` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 6 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
 | F-028 | Borrar todo lo que está en pantalla | 7 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 8 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
@@ -48,15 +45,10 @@ En curso: **F-027**.
 | F-013 | Una linea sin partida no se escribe en silencio | 4 | critico |
 | F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | documental |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 4 | critico |
+| F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 5 | estandar |
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
-
-### F-027 · Deshacer solo lo propio: nadie deshace lo de otro usuario
-
-estado **en curso** · prioridad 5 · rigor `estandar` · SDD no · rama `feature/F-027-deshacer-por-usuario`
-
-Salida de la revisión de negocio del 2026-09-29. Hoy el deshacer es por trabajador y deshace su última modificación (DeshacerUltimaModificacion, ruta /periodos/{anio}/{mes}/trabajadores/{ide}/deshacer; botón y Ctrl+Z en app.js ~563 y ~975) sin mirar quién la hizo. Se pide que un usuario solo pueda deshacer sus propios cambios. La regla vive en la API con el usuario que inyecta el front desde Easy Auth; el front solo oculta el botón. PLAN APROBADO por el humano el 2026-10-04 (PARADA 1) con la decisión A: solo se deshace si el ÚLTIMO cambio pendiente del trabajador en el mes es del usuario actual; si es de otro, se bloquea (deshacer restaura la fila entera y borraría en silencio lo posterior del otro). Solo api; el front en principio no cambia.
 
 ### F-020 · Revisar y mejorar el formato del Excel de exportacion actual
 
@@ -243,6 +235,12 @@ Pedida por el humano el 2026-08-20, con el sistema ya desplegado. Sin esto el si
 estado **terminada** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-025-obras-postventa-postv2`
 
 Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio echa en falta obras de postventa. Causa: las obras en postventa están CERRADAS en Sigrid y el filtro estados_excluidos de config.yaml las quita; sin la obra en el maestro el front no ofrece su Postv-XXXX (app.js ~175-191). 69 de 78 obras con postventa en POSTV2 no llegan. Decisión del humano 2026-09-29: la lista de obras de postventa sale de los CAPÍTULOS del proyecto POSTV2, sea cual sea el estado de la obra. Propuesta del líder pendiente de objeción: una obra cerrada se ofrece solo como Postv-, no como obra normal. RIESGOS para la spec: (a) F-002 dejó escrito en docs/ARCHITECTURE.md que P5 imputa por PARTIDA en POSTV2; hay que conciliar capítulos y partidas sin romper esa regla; (b) límite de servicio: POSTVENTA_OBRA_COD vive hoy solo en el transfer; decidir si la API lo lee o pregunta al transfer, pero el universo de postventa del front y el del transfer no pueden divergir. RECOGIDO del cierre de F-022 (2026-09-30): el preflight del transfer publica partidas_postventa también en obras sin líneas de postventa, porque el catálogo _nodos_pv se queda en la instancia del pipeline entre llamadas. Inofensivo hoy; como esta feature redefine el universo de postventa, se corrige aquí. SPEC APROBADA por el humano el 2026-10-01 con D1-D7 de requirements.md, con estas precisiones: D2 = B (solo código exacto o código seguido solo de letras; fuera los escalones por descripción y por nombre, que hoy dan falsos casados como CP -> CP.1 y OT -> CI.7.5; cambian 4 tests de F-002 y el texto de P5, firmado por el humano con esta aprobación); D4 CAMBIA: el humano aclara que TODAS las obras, incluida la postventa, son de Construcciones Ruesma (empresa 1): solo existe la POSTV2 de la empresa 1 y el universo de postventa es siempre el de la empresa 1; el spec-author debe reescribir D4 y lo que dependa de «empresa E» EN SU SITIO antes de implementar; D6 POSTV antigua fuera. Espera turno: van antes F-034 (obras siempre de Ruesma) y F-026. 2026-10-03: spec revisada tras F-034/F-026 (progress/spec_F-025_revision.md) y APROBADA por el humano con D8 = A (la obra-capítulo queda fuera; 8 tests de F-002 cambian, design §7.1). Pasa a implementación. CERRADA (done) el 2026-10-03: review pasada 2 APROBADA; T13 (M1: 83/73, 0656 0660 0669 0689 solo Postv-, CP OT 191105 fuera, cuadrante igual con la 1 y la 18) y T14 (M2: Postv-0656 casa con el capítulo 0656, partidas_postventa vacío en la obra sin postventa, no_vigentes vacío) cumplidas por el humano; T10 commit 897587f en azure-apps. PENDIENTE DE DESPLEGAR (transfer antes o con la api, sync justo después, retirar el aviso de CP/OT). DESPLEGADA el 2026-10-03 (transfer r20261003-1444, api r20261003-1446, front r20261003-1447); preview de producción: admiten_postventa 83, solo_postventa 73, motivo_postventa null.
+
+### F-027 · Deshacer solo lo propio: nadie deshace lo de otro usuario
+
+estado **terminada** · prioridad 5 · rigor `estandar` · SDD no · rama `feature/F-027-deshacer-por-usuario`
+
+Salida de la revisión de negocio del 2026-09-29. Hoy el deshacer es por trabajador y deshace su última modificación (DeshacerUltimaModificacion, ruta /periodos/{anio}/{mes}/trabajadores/{ide}/deshacer; botón y Ctrl+Z en app.js ~563 y ~975) sin mirar quién la hizo. Se pide que un usuario solo pueda deshacer sus propios cambios. La regla vive en la API con el usuario que inyecta el front desde Easy Auth; el front solo oculta el botón. PLAN APROBADO por el humano el 2026-10-04 (PARADA 1) con la decisión A: solo se deshace si el ÚLTIMO cambio pendiente del trabajador en el mes es del usuario actual; si es de otro, se bloquea (deshacer restaura la fila entera y borraría en silencio lo posterior del otro). Solo api; el front en principio no cambia. CERRADA (done) el 2026-10-04: review APROBADA a la primera; sin MANUAL antes del done. PENDIENTE DE DESPLEGAR (solo api).
 
 ### F-009 · Higiene: los artefactos de cobertura no se versionan
 

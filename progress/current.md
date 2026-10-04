@@ -1,33 +1,19 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-027 en curso** (deshacer solo lo propio, rigor estándar, sin spec), rama
-`feature/F-027-deshacer-por-usuario`. F-025 se cerró y se **desplegó el
-2026-10-03**; F-035 se cerró ese mismo día; F-034 y F-026 se desplegaron el
-2026-10-02 (resúmenes en `history.md`).
+**Ninguna feature en ejecución.** F-027 se cerró el 2026-10-04 y está en
+`dev` **pendiente de desplegar** (sección siguiente). F-025 se desplegó el
+2026-10-03 (resúmenes en `history.md`). El arnés es la **1.7.3**.
 
-## F-027 · Deshacer solo lo propio
+## ⚠ Despliegue de F-027 (pendiente; lo lanza el humano)
 
-- **Plan aprobado por el humano el 2026-10-04 con la decisión A**: solo se
-  deshace si el último cambio pendiente del trabajador en el mes es del
-  usuario actual; si es de otro, se bloquea con mensaje que lo nombra.
-  `puede_deshacer` por usuario. Solo api. Criterios en `features.json`.
-- **Fuera:** deshacer un cambio que no sea el último, deshacer por línea,
-  historial visible.
-- **Estado:** implementación terminada (`progress/impl_F-027.md`): regla A
-  en `DeshacerUltimaModificacion` (409 `DeshacerAjeno`, como «nada que
-  deshacer»), `puede_deshacer` por usuario, normalización en
-  `domain/deshacer.py`, `#regla-deshacer` en ARCHITECTURE e INTEGRACION
-  (`X-Usuario` decide quién deshace). 25+ tests con dos usuarios; mutación en
-  serie 8/8 muertos (`progress/mutacion_F-027.md`). Tests anteriores
-  cambiados solo por firma o doble (tabla en el informe). Front sin cambios:
-  Ctrl+Z llama a la API y el 409 enseña el motivo (criterio 5 reescrito con
-  ese comportamiento). **Review lanzada** → `progress/review_F-027.md`.
-- **`azure-apps`:** copia de la cadena de identidad en `dedicacion.md`,
-  confirmada por el líder (`e4a304c`, «pendiente de desplegar»).
-- **MANUAL:** ninguna antes del `done` (lo cubren los tests con dos
-  usuarios). Tras desplegar, se puede mirar con dos personas.
- El arnés es la **1.7.3**.
+- Solo cambia la **api** (`.\redeploy_dedicacion.ps1 -Solo api`); sin columnas
+  ni sync. Los eventos anteriores conservan su autor: uno guardado como
+  `local` no lo podrá deshacer nadie que entre con Easy Auth (es lo correcto).
+- **Comprobación tras desplegar, con dos personas (A y B) en el mismo mes y
+  trabajador:** A guarda → B no ve el botón de deshacer y su Ctrl+Z enseña «La
+  última modificación de este trabajador es de A…» (con el nombre real de
+  Easy Auth); A deshace bien; si B guarda después de A, A ya no puede.
 
 ## Producción, hoy
 
@@ -57,7 +43,7 @@
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Primero **F-027** (en curso); después F-020,
+`BACKLOG.md` tiene el orden completo. Primero desplegar **F-027**; después F-020,
 F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
