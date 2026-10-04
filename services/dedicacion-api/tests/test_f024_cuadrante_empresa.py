@@ -26,11 +26,13 @@ from application.use_cases import (
 )
 from domain.models import (
     Empresa,
+    EventoPendiente,
     FiltroEmpresa,
     Linea,
     Obra,
     Periodo,
     ResumenPeriodo,
+    TipoEvento,
     Trabajador,
 )
 from infrastructure.db.repositories import PgTrabajadorRepository, _a_linea
@@ -199,20 +201,30 @@ class _Asignaciones:
 
 
 class _Eventos:
+    """Eventos en memoria, en orden de llegada y con su autor (F-027: el
+    doble devuelve `EventoPendiente` y deshace de uno en uno, como el
+    repositorio). Un solo periodo: el de los casos de uso."""
+
     def __init__(self) -> None:
-        self.pendientes: dict[int, list[dict[str, Any]]] = {}
+        self.eventos: list[tuple[int, EventoPendiente]] = []
+        self.deshechos: set[int] = set()
 
     def registrar(self, periodo_id, ide, tipo, usuario, antes, despues):
-        self.pendientes[ide] = antes
+        self.eventos.append(
+            (ide, EventoPendiente(len(self.eventos) + 1, usuario, antes)))
+
+    def _pendientes(self) -> list[tuple[int, EventoPendiente]]:
+        return [(i, e) for i, e in self.eventos if e.id not in self.deshechos]
 
     def ultimo_pendiente(self, periodo_id: int, ide: int):
-        return (1, self.pendientes[ide]) if ide in self.pendientes else None
+        propios = [e for i, e in self._pendientes() if i == ide]
+        return propios[-1] if propios else None
 
     def marcar_deshecho(self, evento_id: int) -> None:
-        self.pendientes.clear()
+        self.deshechos.add(evento_id)
 
-    def trabajadores_con_pendientes(self, periodo_id: int) -> set[int]:
-        return set(self.pendientes)
+    def autores_ultimo_pendiente(self, periodo_id: int) -> dict[int, str]:
+        return {i: e.usuario for i, e in self._pendientes()}
 
 
 class _Empresas:
@@ -289,7 +301,7 @@ def test_f024_r10_fila_con_todas_sus_lineas_y_total_sobre_todas():
 
 def test_f024_r10_puede_deshacer_se_conserva():
     uow = _uow()
-    uow.eventos.pendientes[10] = []
+    uow.eventos.registrar(P_ACT, 10, TipoEvento.GUARDAR, "u", [], [])
     cuadrante = ObtenerCuadrante().ejecutar(uow, ANIO, MES, _f(1))
     # F-034 (R3): con E = 1 entra Carlos (NULL): cinco filas.
     assert [f.puede_deshacer for f in cuadrante.filas] == [

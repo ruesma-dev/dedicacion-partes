@@ -72,9 +72,9 @@ class ObtenerCuadrante:
             for o in uow.obras.listar_para_periodo(periodo_id)
             if o.empresa == filtro.empresa_obras
         ]
-        con_deshacer = uow.eventos.trabajadores_con_pendientes(periodo_id)
+        autores = uow.eventos.autores_ultimo_pendiente(periodo_id)
         for fila in filas:
-            fila.puede_deshacer = fila.trabajador.ide in con_deshacer
+            fila.puede_deshacer = fila.trabajador.ide in autores
         return Cuadrante(
             periodo=periodo,
             obras=obras,
@@ -162,10 +162,11 @@ class DeshacerUltimaModificacion:
         pendiente = uow.eventos.ultimo_pendiente(periodo_id, trabajador_ide)
         if pendiente is None:
             raise NadaQueDeshacer("No hay modificaciones que deshacer")
-        evento_id, snapshot_antes = pendiente
-        lineas = _validar_lineas(uow, snapshot_antes, permitir_inactivas=True)
+        lineas = _validar_lineas(
+            uow, pendiente.snapshot_antes, permitir_inactivas=True
+        )
         uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas, usuario)
-        uow.eventos.marcar_deshecho(evento_id)
+        uow.eventos.marcar_deshecho(pendiente.id)
         uow.commit()
         return ObtenerFilaTrabajador().ejecutar(
             uow, anio, mes, trabajador_ide, filtro=filtro

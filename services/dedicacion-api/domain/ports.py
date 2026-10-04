@@ -11,6 +11,7 @@ from typing import Any, Protocol
 from domain.models import (
     CuadranteTrabajador,
     Empresa,
+    EventoPendiente,
     Linea,
     Obra,
     Periodo,
@@ -129,13 +130,16 @@ class EventoRepository(Protocol):
 
     def ultimo_pendiente(
         self, periodo_id: int, trabajador_ide: int
-    ) -> tuple[int, list[dict[str, Any]]] | None:
-        """(id evento, snapshot_antes) del último evento no deshecho."""
+    ) -> EventoPendiente | None:
+        """Último evento no deshecho del trabajador, con su autor."""
         ...
 
     def marcar_deshecho(self, evento_id: int) -> None: ...
 
-    def trabajadores_con_pendientes(self, periodo_id: int) -> set[int]: ...
+    def autores_ultimo_pendiente(self, periodo_id: int) -> dict[int, str]:
+        """trabajador → autor de SU ÚLTIMO evento no deshecho del periodo
+        (F-027); sin entrada si no tiene ninguno pendiente."""
+        ...
 
 
 class UnitOfWork(Protocol):

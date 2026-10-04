@@ -13,9 +13,15 @@ casos de uso con la UnitOfWork en memoria de `test_f024_cuadrante_empresa`
 """
 from __future__ import annotations
 
+from types import SimpleNamespace
+from typing import Any
+
 import pytest
 from domain.deshacer import clave_usuario, deshacer_permitido
 from domain.errors import DeshacerAjeno, ErrorDominio, NadaQueDeshacer
+from domain.models import EventoPendiente
+from infrastructure.db.repositories import PgEventoRepository
+from sqlalchemy.dialects import postgresql
 
 
 # =========================== dominio (T1) ============================== #
@@ -45,3 +51,62 @@ def test_f027_r4_clave_usuario_es_la_unica_normalizacion():
 def test_f027_r1_el_error_es_de_dominio_y_distinto_de_nada_que_deshacer():
     assert issubclass(DeshacerAjeno, ErrorDominio)
     assert not issubclass(DeshacerAjeno, NadaQueDeshacer)
+
+
+# ========================= repositorio (T2) ============================ #
+class _Filas:
+    def __init__(self, valores: list[Any]) -> None:
+        self._valores = valores
+
+    def all(self) -> list[Any]:
+        return list(self._valores)
+
+    def first(self) -> Any:
+        return self._valores[0] if self._valores else None
+
+
+class _Sesion:
+    """Sesión falsa: guarda cada sentencia y devuelve los valores fijados."""
+
+    def __init__(self, valores: list[Any]) -> None:
+        self.valores = valores
+        self.sentencias: list[Any] = []
+
+    def scalars(self, stmt: Any) -> _Filas:
+        self.sentencias.append(stmt)
+        return _Filas(self.valores)
+
+    def execute(self, stmt: Any) -> _Filas:
+        self.sentencias.append(stmt)
+        return _Filas(self.valores)
+
+
+def _compilada(stmt: Any) -> tuple[str, dict[str, Any]]:
+    c = stmt.compile(dialect=postgresql.dialect())
+    return " ".join(str(c).split()), dict(c.params)
+
+
+def test_f027_r3_ultimo_pendiente_trae_su_autor():
+    orm = SimpleNamespace(id=7, usuario="ana@ruesma.es",
+                          snapshot_antes=[{"obra_ide": 100}])
+    sesion = _Sesion([orm])
+    pendiente = PgEventoRepository(sesion).ultimo_pendiente(3, 10)  # type: ignore[arg-type]
+    assert pendiente == EventoPendiente(id=7, usuario="ana@ruesma.es",
+                                        snapshot_antes=[{"obra_ide": 100}])
+    assert PgEventoRepository(_Sesion([])).ultimo_pendiente(3, 10) is None  # type: ignore[arg-type]
+
+
+def test_f027_r3_autores_del_ultimo_pendiente_de_todo_el_periodo():
+    """El autor es el del ÚLTIMO pendiente de cada trabajador (max(id) de
+    los no deshechos del periodo), no «alguno pendiente mío»."""
+    sesion = _Sesion([(10, "ana@ruesma.es"), (14, "pablo@ruesma.es")])
+    autores = PgEventoRepository(sesion).autores_ultimo_pendiente(3)  # type: ignore[arg-type]
+    assert autores == {10: "ana@ruesma.es", 14: "pablo@ruesma.es"}
+    [stmt] = sesion.sentencias
+    sql, params = _compilada(stmt)
+    assert sql.startswith(
+        "SELECT evento.trabajador_ide, evento.usuario FROM evento "
+        "WHERE evento.id IN (SELECT max(evento.id) AS max_1 FROM evento "
+        "WHERE evento.periodo_id = %(periodo_id_1)s "
+        "AND evento.deshecho IS false GROUP BY evento.trabajador_ide)")
+    assert params == {"periodo_id_1": 3}

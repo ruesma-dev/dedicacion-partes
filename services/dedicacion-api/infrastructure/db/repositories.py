@@ -11,7 +11,7 @@ import logging
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import delete, distinct, select, update
+from sqlalchemy import delete, distinct, func, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from domain.empresas import empresa_de_baja
@@ -20,6 +20,7 @@ from domain.vigencia import vigente_en
 from domain.models import (
     Empresa,
     EstadoPeriodo,
+    EventoPendiente,
     Linea,
     Obra,
     Periodo,
@@ -436,7 +437,7 @@ class PgEventoRepository:
 
     def ultimo_pendiente(
         self, periodo_id: int, trabajador_ide: int
-    ) -> tuple[int, list[dict[str, Any]]] | None:
+    ) -> EventoPendiente | None:
         stmt = (
             select(EventoORM)
             .where(
@@ -448,22 +449,31 @@ class PgEventoRepository:
             .limit(1)
         )
         orm = self._s.scalars(stmt).first()
-        return (orm.id, orm.snapshot_antes) if orm else None
+        if orm is None:
+            return None
+        return EventoPendiente(id=orm.id, usuario=orm.usuario,
+                               snapshot_antes=orm.snapshot_antes)
 
     def marcar_deshecho(self, evento_id: int) -> None:
         self._s.execute(
             update(EventoORM).where(EventoORM.id == evento_id).values(deshecho=True)
         )
 
-    def trabajadores_con_pendientes(self, periodo_id: int) -> set[int]:
-        stmt = (
-            select(EventoORM.trabajador_ide)
+    def autores_ultimo_pendiente(self, periodo_id: int) -> dict[int, str]:
+        """Autor del ÚLTIMO evento no deshecho de cada trabajador del
+        periodo, en una sola consulta (F-027): el último es el de mayor `id`
+        (el mismo orden que `ultimo_pendiente`), no «alguno pendiente»."""
+        ultimos = (
+            select(func.max(EventoORM.id))
             .where(
                 EventoORM.periodo_id == periodo_id, EventoORM.deshecho.is_(False)
             )
-            .distinct()
+            .group_by(EventoORM.trabajador_ide)
         )
-        return set(self._s.scalars(stmt).all())
+        stmt = select(EventoORM.trabajador_ide, EventoORM.usuario).where(
+            EventoORM.id.in_(ultimos)
+        )
+        return {ide: usuario for ide, usuario in self._s.execute(stmt).all()}
 
 
 # ----------------------------------------------------------------------
