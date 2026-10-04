@@ -27,7 +27,7 @@ from application.use_cases import (
 )
 from domain.deshacer import clave_usuario, deshacer_permitido
 from domain.errors import DeshacerAjeno, ErrorDominio, NadaQueDeshacer
-from domain.models import EventoPendiente, FiltroEmpresa
+from domain.models import EventoPendiente, FiltroEmpresa, TipoEvento
 from infrastructure.db.repositories import PgEventoRepository
 from sqlalchemy.dialects import postgresql
 
@@ -203,6 +203,21 @@ def test_f027_r4_deshago_lo_mio_con_otras_mayusculas_y_espacios():
     _guardar(uow, ANA, (100, "100"))
     _deshacer(uow, "  ANA@Ruesma.ES ")
     assert _obras(uow) == []
+
+
+def test_f027_r6_deshacer_lo_mio_con_una_obra_que_ya_no_existe():
+    """Deshacer restaura lo de antes aunque una de sus obras ya no exista:
+    esa línea se cae y el resto vuelve (`permitir_inactivas`), sin error.
+    Cubre la línea que F-027 reescribió al leer `snapshot_antes` del
+    `EventoPendiente` (superviviente de la campaña de mutación)."""
+    uow = _uow()
+    uow.eventos.registrar(P_ACT, EVA, TipoEvento.GUARDAR, PABLO, [
+        {"obra_ide": 777, "es_postventa": False, "porcentaje": "40"},
+        {"obra_ide": 100, "es_postventa": False, "porcentaje": "60"},
+    ], [])
+    fila, _ = _deshacer(uow, PABLO)
+    assert [(ln.obra_ide, ln.porcentaje) for ln in fila.lineas] == [
+        (100, Decimal(60))]
 
 
 @pytest.mark.parametrize("usuario, esperado", [
