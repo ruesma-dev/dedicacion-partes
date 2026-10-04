@@ -154,7 +154,7 @@ FAILED tests/test_f027_deshacer_propio.py::test_f027_r3_evento_pendiente_es_inmu
 `ENTORNO LISTO`. Raíz: 418 passed, 1 skipped (40.85 s). Servicio api: **535
 passed** (14.40 s); front y transfer en verde (caché). `PUERTA COBERTURA:
 100.0% de 33 líneas cambiadas cubiertas (33/33, umbral 80%)`. `PUERTA TAMAÑO:
-impl 212/220`. ruff: 198 avisos, los mismos que al empezar (una pasada
+impl 211/220`. ruff: 198 avisos, los mismos que al empezar (una pasada
 intermedia dio 199 por el orden de imports del test; corregido).
 
 ## Mutación — `python -m harness.mutacion --feature F-027 --workers 1`
