@@ -9,7 +9,8 @@ sea el último.
 
 Único sitio de la regla y de cómo se comparan los usuarios: la usan el caso
 de uso de deshacer y el cálculo de `puede_deshacer` del cuadrante y de la
-fila (`application/use_cases.py`).
+fila (`application/use_cases.py`). La regla, en
+`docs/ARCHITECTURE.md#regla-deshacer`.
 """
 from __future__ import annotations
 
