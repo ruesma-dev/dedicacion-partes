@@ -1482,3 +1482,54 @@ añade `obra.admite_postventa` al arrancar; el transfer conserva el modo real.
 Preview de producción (2026-10-04): 526 obras, `admiten_postventa` 83,
 `solo_postventa` 73, `motivo_postventa` nulo; 196 trabajadores. `azure-apps`
 actualizado en el mismo trabajo.
+
+## 2026-10-04 · F-027 · Deshacer solo lo propio
+
+Rama `feature/F-027-deshacer-por-usuario` · `sdd: false` · rigor `estandar` ·
+**APROBADO** por el reviewer a la primera.
+
+**Decisión del humano (A).** Solo se deshace si el último cambio pendiente del
+trabajador en el mes es del usuario actual; si es de otro, se bloquea (deshacer
+restaura la fila entera: deshacer uno anterior borraría en silencio lo del
+otro).
+
+**Qué cambió.** `DeshacerUltimaModificacion` rechaza con `DeshacerAjeno` (409,
+motivo con el nombre del otro); `puede_deshacer` por usuario en cuadrante y
+filas (SQL: autor del `max(id)` pendiente por trabajador); normalización del
+usuario en `domain/deshacer.py`; `#regla-deshacer` en ARCHITECTURE; cadena de
+identidad en INTEGRACION (y `azure-apps`, `e4a304c`). Front sin cambios: el
+botón depende de `puede_deshacer` y Ctrl+Z llama a la API, cuyo 409 enseña el
+motivo. **El criterio 5 se reescribió tras la PARADA 1** para reflejar ese
+comportamiento de Ctrl+Z (antes decía que Ctrl+Z dependía de `puede_deshacer`).
+
+**Verificado.** api en verde con 25+ tests nuevos de dos usuarios; cobertura
+33/33; mutación en serie 8/8 (el superviviente `frozen` se mató con un test,
+como en F-025). Observación fuera de alcance, previa a F-027: no hay bloqueo de
+fila entre leer el último pendiente y restaurarlo (dos peticiones simultáneas).
+
+Informes: `progress/impl_F-027.md`, `progress/review_F-027.md`,
+`progress/mutacion_F-027.md`. Sección retirada de `current.md`:
+
+## F-027 · Deshacer solo lo propio
+
+- **Plan aprobado por el humano el 2026-10-04 con la decisión A**: solo se
+  deshace si el último cambio pendiente del trabajador en el mes es del
+  usuario actual; si es de otro, se bloquea con mensaje que lo nombra.
+  `puede_deshacer` por usuario. Solo api. Criterios en `features.json`.
+- **Fuera:** deshacer un cambio que no sea el último, deshacer por línea,
+  historial visible.
+- **Estado:** implementación terminada (`progress/impl_F-027.md`): regla A
+  en `DeshacerUltimaModificacion` (409 `DeshacerAjeno`, como «nada que
+  deshacer»), `puede_deshacer` por usuario, normalización en
+  `domain/deshacer.py`, `#regla-deshacer` en ARCHITECTURE e INTEGRACION
+  (`X-Usuario` decide quién deshace). 25+ tests con dos usuarios; mutación en
+  serie 8/8 muertos (`progress/mutacion_F-027.md`). Tests anteriores
+  cambiados solo por firma o doble (tabla en el informe). Front sin cambios:
+  Ctrl+Z llama a la API y el 409 enseña el motivo (criterio 5 reescrito con
+  ese comportamiento). **Review lanzada** → `progress/review_F-027.md`.
+- **`azure-apps`:** copia de la cadena de identidad en `dedicacion.md`,
+  confirmada por el líder (`e4a304c`, «pendiente de desplegar»).
+- **MANUAL:** ninguna antes del `done` (lo cubren los tests con dos
+  usuarios). Tras desplegar, se puede mirar con dos personas.
+ El arnés es la **1.7.3**.
+
