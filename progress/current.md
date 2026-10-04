@@ -23,8 +23,8 @@
   cambiados solo por firma o doble (tabla en el informe). Front sin cambios:
   Ctrl+Z llama a la API y el 409 enseña el motivo (criterio 5 reescrito con
   ese comportamiento). **Review lanzada** → `progress/review_F-027.md`.
-- **`azure-apps`:** copia de la cadena de identidad en `dedicacion.md`;
-  la confirma el líder (commit en `azure-apps` antes del `done`).
+- **`azure-apps`:** copia de la cadena de identidad en `dedicacion.md`,
+  confirmada por el líder (`e4a304c`, «pendiente de desplegar»).
 - **MANUAL:** ninguna antes del `done` (lo cubren los tests con dos
   usuarios). Tras desplegar, se puede mirar con dos personas.
  El arnés es la **1.7.3**.
