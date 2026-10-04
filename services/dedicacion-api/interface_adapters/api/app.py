@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from config.settings import Settings, get_settings
 from domain.errors import (
+    DeshacerAjeno,
     ErrorDominio,
     LineasInvalidas,
     NadaQueDeshacer,
@@ -31,6 +32,7 @@ _HTTP_POR_ERROR: list[tuple[type[ErrorDominio], int]] = [
     (TrabajadorNoEncontrado, 404),
     (PeriodoCerrado, 409),
     (NadaQueDeshacer, 409),
+    (DeshacerAjeno, 409),     # F-027: mismo trato que «nada que deshacer»
     (ObraNoValida, 422),
     (LineasInvalidas, 422),
     (SigridNoConfigurado, 503),

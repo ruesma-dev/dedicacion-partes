@@ -26,11 +26,13 @@ from application.use_cases import (
 )
 from domain.models import (
     Empresa,
+    EventoPendiente,
     FiltroEmpresa,
     Linea,
     Obra,
     Periodo,
     ResumenPeriodo,
+    TipoEvento,
     Trabajador,
 )
 from infrastructure.db.repositories import PgTrabajadorRepository, _a_linea
@@ -199,20 +201,30 @@ class _Asignaciones:
 
 
 class _Eventos:
+    """Eventos en memoria, en orden de llegada y con su autor (F-027: el
+    doble devuelve `EventoPendiente` y deshace de uno en uno, como el
+    repositorio). Un solo periodo: el de los casos de uso."""
+
     def __init__(self) -> None:
-        self.pendientes: dict[int, list[dict[str, Any]]] = {}
+        self.eventos: list[tuple[int, EventoPendiente]] = []
+        self.deshechos: set[int] = set()
 
     def registrar(self, periodo_id, ide, tipo, usuario, antes, despues):
-        self.pendientes[ide] = antes
+        self.eventos.append(
+            (ide, EventoPendiente(len(self.eventos) + 1, usuario, antes)))
+
+    def _pendientes(self) -> list[tuple[int, EventoPendiente]]:
+        return [(i, e) for i, e in self.eventos if e.id not in self.deshechos]
 
     def ultimo_pendiente(self, periodo_id: int, ide: int):
-        return (1, self.pendientes[ide]) if ide in self.pendientes else None
+        propios = [e for i, e in self._pendientes() if i == ide]
+        return propios[-1] if propios else None
 
     def marcar_deshecho(self, evento_id: int) -> None:
-        self.pendientes.clear()
+        self.deshechos.add(evento_id)
 
-    def trabajadores_con_pendientes(self, periodo_id: int) -> set[int]:
-        return set(self.pendientes)
+    def autores_ultimo_pendiente(self, periodo_id: int) -> dict[int, str]:
+        return {i: e.usuario for i, e in self._pendientes()}
 
 
 class _Empresas:
@@ -263,7 +275,8 @@ def _nombres(filas) -> list[str]:
     (31, []),
 ])
 def test_f024_r7_cuadrante_solo_trabajadores_visibles(empresa, nombres):
-    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa))
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa),
+                                            usuario="u")
     assert _nombres(cuadrante.filas) == nombres
     assert cuadrante.empresa == empresa
 
@@ -274,13 +287,14 @@ def test_f034_r1_obras_siempre_de_la_empresa_de_las_obras(empresa):
     """F-034 (R1) · Con cualquier E, las obras de la empresa de las obras
     (activas o inactivas con líneas); la 900 de la 28 y la 500 NULL nunca.
     Sustituye a `test_f024_r9_obras_solo_de_la_empresa_y_nunca_las_null`."""
-    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa))
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa),
+                                            usuario="u")
     assert [o.ide for o in cuadrante.obras] == [100, 101, 102]
 
 
 # --------------------------------- R10 -------------------------------- #
 def test_f024_r10_fila_con_todas_sus_lineas_y_total_sobre_todas():
-    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(1))
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(1), usuario="u")
     ana = cuadrante.filas[0]
     assert [(ln.obra_ide, ln.obra_empresa) for ln in ana.lineas] == [
         (100, 1), (900, 28)]
@@ -289,8 +303,8 @@ def test_f024_r10_fila_con_todas_sus_lineas_y_total_sobre_todas():
 
 def test_f024_r10_puede_deshacer_se_conserva():
     uow = _uow()
-    uow.eventos.pendientes[10] = []
-    cuadrante = ObtenerCuadrante().ejecutar(uow, ANIO, MES, _f(1))
+    uow.eventos.registrar(P_ACT, 10, TipoEvento.GUARDAR, "u", [], [])
+    cuadrante = ObtenerCuadrante().ejecutar(uow, ANIO, MES, _f(1), usuario="u")
     # F-034 (R3): con E = 1 entra Carlos (NULL): cinco filas.
     assert [f.puede_deshacer for f in cuadrante.filas] == [
         True, False, False, False, False]
@@ -306,7 +320,8 @@ RESUMEN_28 = ResumenPeriodo(total=1, ok=1, falta=0, exceso=0, sin_carga=0)
 @pytest.mark.parametrize("empresa, resumen", [(1, RESUMEN_1),
                                               (28, RESUMEN_28)])
 def test_f024_r13_resumen_del_cuadrante_solo_visibles(empresa, resumen):
-    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa))
+    cuadrante = ObtenerCuadrante().ejecutar(_uow(), ANIO, MES, _f(empresa),
+                                            usuario="u")
     assert cuadrante.resumen == resumen
 
 
@@ -316,7 +331,7 @@ def test_f024_r13_resumen_de_las_respuestas_por_fila(empresa, resumen):
     """Fila, guardar, deshacer y copiar trabajador devuelven el resumen de
     la empresa elegida; la fila lleva todas sus líneas (R10)."""
     fila, res = ObtenerFilaTrabajador().ejecutar(
-        _uow(), ANIO, MES, 16, filtro=_f(empresa))
+        _uow(), ANIO, MES, 16, filtro=_f(empresa), usuario="u")
     assert res == resumen and len(fila.lineas) == 2
 
     uow = _uow()

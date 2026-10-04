@@ -31,6 +31,12 @@ class NadaQueDeshacer(ErrorDominio):
     pass
 
 
+class DeshacerAjeno(ErrorDominio):
+    """El último cambio pendiente del trabajador es de otro usuario: solo
+    puede deshacerlo quien lo hizo (F-027, decisión A). Mismo HTTP que
+    `NadaQueDeshacer`."""
+
+
 class SigridNoConfigurado(ErrorDominio):
     pass
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import Enum
+from typing import Any
 
 
 class EstadoPeriodo(str, Enum):
@@ -128,6 +129,16 @@ class Empresa:
     numero: int
     nombre: str | None
     de_baja: bool = False
+
+
+@dataclass(frozen=True)
+class EventoPendiente:
+    """Último evento no deshecho de un trabajador en un periodo: qué se
+    restauraría al deshacer y quién lo hizo (F-027, `domain/deshacer.py`)."""
+
+    id: int
+    usuario: str
+    snapshot_antes: list[dict[str, Any]]
 
 
 @dataclass

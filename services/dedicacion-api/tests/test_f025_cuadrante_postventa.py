@@ -27,6 +27,7 @@ from application.use_cases import (
 from domain.errors import ObraNoValida
 from domain.models import (
     CuadranteTrabajador,
+    EventoPendiente,
     FiltroEmpresa,
     Linea,
     Obra,
@@ -187,7 +188,7 @@ class _Uow:
     def __init__(self, lineas: dict[int, dict[int, list[Linea]]]) -> None:
         self.lineas = lineas
         self.reemplazos: list[tuple[int, list[tuple[int, bool]]]] = []
-        self.pendientes: dict[int, list[dict[str, Any]]] = {}
+        self.pendientes: dict[int, EventoPendiente] = {}
         t = Trabajador(ide=10, cod="10", nombre="Ana", dni=None,
                        categoria=None, empresa=1)
         uow = self
@@ -214,17 +215,16 @@ class _Uow:
 
         class _Eventos:
             def registrar(self, p, ide, tipo, usuario, antes, despues):
-                uow.pendientes[ide] = antes
+                uow.pendientes[ide] = EventoPendiente(1, usuario, antes)
 
             def ultimo_pendiente(self, p, ide):
-                return (1, uow.pendientes[ide]) if ide in uow.pendientes \
-                    else None
+                return uow.pendientes.get(ide)
 
             def marcar_deshecho(self, evento_id):
                 uow.pendientes.clear()
 
-            def trabajadores_con_pendientes(self, p):
-                return set(uow.pendientes)
+            def autores_ultimo_pendiente(self, p):
+                return {i: e.usuario for i, e in uow.pendientes.items()}
 
         self.asignaciones = _Asig()
         self.eventos = _Eventos()
@@ -246,7 +246,8 @@ def test_f025_r17_el_cuadrante_ofrece_las_de_la_empresa_de_las_obras(filtro):
     """R17 · Con cualquier empresa elegida, las obras ofrecidas son las de
     la empresa de las obras: también la cerrada que solo admite postventa
     (201) y la usada sin ninguna marca (203); la 900 (de la 28), no."""
-    cuadrante = ObtenerCuadrante().ejecutar(_Uow({}), ANIO, MES, filtro)
+    cuadrante = ObtenerCuadrante().ejecutar(_Uow({}), ANIO, MES, filtro,
+                                            usuario="u")
     assert sorted(o.ide for o in cuadrante.obras) == [200, 201, 202, 203]
 
 

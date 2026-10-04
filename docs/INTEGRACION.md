@@ -10,7 +10,10 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-10-03** (F-025: las obras de postventa salen
+> **Fecha del documento: 2026-10-04** (F-027: `X-Usuario` decide además
+> quién puede deshacer; §5, «La cadena de identidad»). **Origen:** rama
+> `feature/F-027-deshacer-por-usuario`, pendiente de merge a `dev`.
+> Versión anterior: 2026-10-03 (F-025: las obras de postventa salen
 > de las partidas de la obra de postventa; el transfer expone, solo hacia la
 > api, `POST /api/postventa/universo`, y la api lo llama en cada sync y en
 > el preview: si el transfer no responde, el sync falla entero con 502, §5 y
@@ -281,11 +284,29 @@ Entra ──▶ Easy Auth ──▶ X-MS-CLIENT-PRINCIPAL-NAME
                             │  (proxy del front)
                             ▼  X-Usuario
                         dedicacion-api ──▶ auditoría (tabla `evento`)
+                                       └──▶ quién puede deshacer (F-027)
 ```
 
 El `X-Usuario` que llegue **de fuera** se descarta: el proxy lo escribe él, no
 lo reenvía. Si lo reenviara, cualquiera con sesión podría firmar la auditoría
 con el nombre de otro.
+
+**Desde F-027, `X-Usuario` no sirve solo para la auditoría: decide quién puede
+deshacer.** Solo se deshace el último cambio pendiente de un trabajador en el
+mes si lo hizo ese mismo usuario, comparado sin mayúsculas ni espacios en los
+extremos; si es de otro, la api responde 409 con su nombre
+([`docs/ARCHITECTURE.md#regla-deshacer`](ARCHITECTURE.md#regla-deshacer)).
+Dos consecuencias:
+
+- **Sin cabecera, todos son `local` y cuentan como el mismo usuario.** La api
+  pone `local` cuando no llega `X-Usuario`, y el front sin Easy Auth manda
+  su `DEFAULT_USER` (`local` en desarrollo, `desconocido` en Azure, §3).
+  Todas las peticiones sin identidad comparten ese nombre: cualquiera de
+  ellas puede deshacer lo de las demás.
+- **Los eventos guardados como `local` no los podrá deshacer nadie que entre
+  con Easy Auth**: su autor no coincide con ningún usuario real. Es lo
+  correcto —no se sabe de quién son—, no una avería. Lo mismo vale para los
+  guardados como `desconocido`.
 
 ### La tarjeta del Portal Ruesma
 

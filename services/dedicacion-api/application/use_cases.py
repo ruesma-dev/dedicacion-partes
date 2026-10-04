@@ -15,8 +15,10 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
+from domain.deshacer import deshacer_permitido
 from domain.empresas import visible_en_empresa
 from domain.errors import (
+    DeshacerAjeno,
     LineasInvalidas,
     NadaQueDeshacer,
     ObraNoValida,
@@ -60,10 +62,11 @@ class Cuadrante:
 class ObtenerCuadrante:
     """Cuadrante de la empresa elegida: sus trabajadores visibles, con TODAS
     sus líneas (F-024), y las obras de la empresa de las obras, sea cual sea
-    la elegida (F-034, R1)."""
+    la elegida (F-034, R1). `puede_deshacer` es el de `usuario` (F-027)."""
 
     def ejecutar(
-        self, uow: UnitOfWork, anio: int, mes: int, filtro: FiltroEmpresa
+        self, uow: UnitOfWork, anio: int, mes: int, filtro: FiltroEmpresa,
+        *, usuario: str,
     ) -> Cuadrante:
         periodo_id, periodo = _periodo_o_error(uow, anio, mes)
         filas = _filas_de_empresa(uow, periodo_id, filtro)
@@ -72,9 +75,11 @@ class ObtenerCuadrante:
             for o in uow.obras.listar_para_periodo(periodo_id)
             if o.empresa == filtro.empresa_obras
         ]
-        con_deshacer = uow.eventos.trabajadores_con_pendientes(periodo_id)
+        autores = uow.eventos.autores_ultimo_pendiente(periodo_id)
         for fila in filas:
-            fila.puede_deshacer = fila.trabajador.ide in con_deshacer
+            fila.puede_deshacer = deshacer_permitido(
+                autores.get(fila.trabajador.ide), usuario
+            )
         return Cuadrante(
             periodo=periodo,
             obras=obras,
@@ -86,7 +91,7 @@ class ObtenerCuadrante:
 
 class ObtenerFilaTrabajador:
     """Fila de un trabajador con todas sus líneas; el resumen es el de la
-    empresa del filtro."""
+    empresa del filtro y `puede_deshacer`, el de `usuario` (F-027)."""
 
     def ejecutar(
         self,
@@ -96,14 +101,17 @@ class ObtenerFilaTrabajador:
         trabajador_ide: int,
         *,
         filtro: FiltroEmpresa,
+        usuario: str,
     ) -> tuple[CuadranteTrabajador, ResumenPeriodo]:
         periodo_id, _ = _periodo_o_error(uow, anio, mes)
         trabajador = _trabajador_o_error(uow, trabajador_ide)
+        pendiente = uow.eventos.ultimo_pendiente(periodo_id, trabajador_ide)
         fila = CuadranteTrabajador(
             trabajador=trabajador,
             lineas=uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide),
-            puede_deshacer=uow.eventos.ultimo_pendiente(periodo_id, trabajador_ide)
-            is not None,
+            puede_deshacer=deshacer_permitido(
+                pendiente.usuario if pendiente else None, usuario
+            ),
         )
         resumen = _resumen_periodo(uow, periodo_id, filtro)
         return fila, resumen
@@ -142,11 +150,18 @@ class GuardarAsignaciones:
             )
         uow.commit()
         return ObtenerFilaTrabajador().ejecutar(
-            uow, anio, mes, trabajador_ide, filtro=filtro
+            uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
         )
 
 
 class DeshacerUltimaModificacion:
+    """Restaura la fila al `snapshot_antes` de su último evento pendiente.
+
+    Solo si ese evento es de `usuario` (F-027, decisión A,
+    `domain/deshacer.py`): si es de otro, `DeshacerAjeno` sin tocar nada.
+    Nunca se deshace un evento que no sea el último.
+    """
+
     def ejecutar(
         self,
         uow: UnitOfWork,
@@ -162,13 +177,19 @@ class DeshacerUltimaModificacion:
         pendiente = uow.eventos.ultimo_pendiente(periodo_id, trabajador_ide)
         if pendiente is None:
             raise NadaQueDeshacer("No hay modificaciones que deshacer")
-        evento_id, snapshot_antes = pendiente
-        lineas = _validar_lineas(uow, snapshot_antes, permitir_inactivas=True)
+        if not deshacer_permitido(pendiente.usuario, usuario):
+            raise DeshacerAjeno(
+                "La última modificación de este trabajador es de "
+                f"{pendiente.usuario}: solo puede deshacerla quien la hizo"
+            )
+        lineas = _validar_lineas(
+            uow, pendiente.snapshot_antes, permitir_inactivas=True
+        )
         uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas, usuario)
-        uow.eventos.marcar_deshecho(evento_id)
+        uow.eventos.marcar_deshecho(pendiente.id)
         uow.commit()
         return ObtenerFilaTrabajador().ejecutar(
-            uow, anio, mes, trabajador_ide, filtro=filtro
+            uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
         )
 
 
@@ -258,7 +279,7 @@ class CopiarTrabajadorAnterior:
         origen = uow.periodos.anterior_con_datos(anio, mes)
         if origen is None:
             fila, resumen = ObtenerFilaTrabajador().ejecutar(
-                uow, anio, mes, trabajador_ide, filtro=filtro
+                uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
             )
             return fila, resumen, None, 0
         origen_id, periodo_origen = origen
@@ -280,7 +301,7 @@ class CopiarTrabajadorAnterior:
             )
         uow.commit()
         fila, resumen = ObtenerFilaTrabajador().ejecutar(
-            uow, anio, mes, trabajador_ide, filtro=filtro
+            uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
         )
         return fila, resumen, periodo_origen, omitidas
 

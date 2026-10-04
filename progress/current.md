@@ -1,9 +1,33 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-025 se cerró y se **desplegó el
+**F-027 en curso** (deshacer solo lo propio, rigor estándar, sin spec), rama
+`feature/F-027-deshacer-por-usuario`. F-025 se cerró y se **desplegó el
 2026-10-03**; F-035 se cerró ese mismo día; F-034 y F-026 se desplegaron el
-2026-10-02 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+2026-10-02 (resúmenes en `history.md`).
+
+## F-027 · Deshacer solo lo propio
+
+- **Plan aprobado por el humano el 2026-10-04 con la decisión A**: solo se
+  deshace si el último cambio pendiente del trabajador en el mes es del
+  usuario actual; si es de otro, se bloquea con mensaje que lo nombra.
+  `puede_deshacer` por usuario. Solo api. Criterios en `features.json`.
+- **Fuera:** deshacer un cambio que no sea el último, deshacer por línea,
+  historial visible.
+- **Estado:** implementación terminada (`progress/impl_F-027.md`): regla A
+  en `DeshacerUltimaModificacion` (409 `DeshacerAjeno`, como «nada que
+  deshacer»), `puede_deshacer` por usuario, normalización en
+  `domain/deshacer.py`, `#regla-deshacer` en ARCHITECTURE e INTEGRACION
+  (`X-Usuario` decide quién deshace). 25+ tests con dos usuarios; mutación en
+  serie 8/8 muertos (`progress/mutacion_F-027.md`). Tests anteriores
+  cambiados solo por firma o doble (tabla en el informe). Front sin cambios:
+  Ctrl+Z llama a la API y el 409 enseña el motivo (criterio 5 reescrito con
+  ese comportamiento). **Review lanzada** → `progress/review_F-027.md`.
+- **`azure-apps`:** copia de la cadena de identidad en `dedicacion.md`,
+  confirmada por el líder (`e4a304c`, «pendiente de desplegar»).
+- **MANUAL:** ninguna antes del `done` (lo cubren los tests con dos
+  usuarios). Tras desplegar, se puede mirar con dos personas.
+ El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
@@ -33,7 +57,7 @@
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Primero **F-027**; después F-020,
+`BACKLOG.md` tiene el orden completo. Primero **F-027** (en curso); después F-020,
 F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano

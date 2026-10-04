@@ -82,7 +82,8 @@ Hexagonal estricto:
 
 Endpoints bajo `/api/v1`: `health`, `sync` y `sync/preview`, CRUD de
 `periodos` (crear/cerrar/reabrir/copiar-anterior), `cuadrante`, sustitución
-atómica de asignaciones por trabajador, `deshacer`, `export.xlsx`,
+atómica de asignaciones por trabajador, `deshacer` (solo lo propio,
+[`#regla-deshacer`](#regla-deshacer)), `export.xlsx`,
 `registro/preflight` + `registro/ejecutar` y `empresas` (las del selector,
 con su nombre de Sigrid y si están de baja).
 
@@ -128,8 +129,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > **Esta sección es la ÚNICA fuente normativa de las reglas P1-P5.** El
 > README del transfer, los docstrings y las specs **remiten** a las anclas
 > `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad`,
-> `#regla-sin-partida`, `#regla-pruebas`, `#regla-empresa` y
-> `#regla-recurso`; no vuelven a enunciar la regla con palabras propias. Lo
+> `#regla-sin-partida`, `#regla-pruebas`, `#regla-empresa`,
+> `#regla-recurso` y `#regla-deshacer`; no vuelven a enunciar la regla con palabras propias. Lo
 > vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
@@ -448,6 +449,28 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     *Decidido por Pablo Gris (responsable del proyecto) el 2026-10-01 («no
     debe buscar por empleado sino por recurso») y el 2026-10-02 (D1-D7) ·
     F-026, `specs/F-026-recursos-sin-ficha-empleado/requirements.md`.*
+14. <a id="regla-deshacer"></a>**Cada uno deshace solo lo suyo.** Deshacer
+    devuelve la fila **entera** del trabajador al `snapshot_antes` de su
+    último evento pendiente (no deshecho) del periodo; el autor del evento
+    es el usuario que llega en `X-Usuario` (Easy Auth, vía el front).
+
+    - **Solo se deshace si ese último evento es del usuario que lo pide.**
+      Si es de otro, la API responde **409** —como «nada que deshacer»—
+      con el motivo, que nombra al autor, y no toca nada. Nunca se deshace
+      un evento que no sea el último: si después de mi cambio hay uno de
+      otro, ya no puedo deshacer el mío (deshacerlo borraría en silencio el
+      suyo); vuelvo a poder cuando él deshace el suyo.
+    - **`puede_deshacer`** del cuadrante y de la fila que devuelven guardar,
+      deshacer y copiar trabajador es esa misma regla para quien pregunta:
+      el último pendiente de cada trabajador sale en SQL (`max(id)` de los no
+      deshechos del periodo), no «tiene algo pendiente mío».
+    - **Los usuarios se comparan sin mayúsculas ni espacios en los
+      extremos.** Una sola función: `dedicacion-api/domain/deshacer.py`. El
+      front no decide: el botón sigue a `puede_deshacer` y `Ctrl+Z` pregunta
+      a la API, que enseña su motivo.
+
+    *Decidido por Pablo Gris el 2026-10-04 (decisión A) · F-027, criterios
+    `acceptance` en `harness/features.json`.*
 
 ## Acceso a datos y sistemas externos
 

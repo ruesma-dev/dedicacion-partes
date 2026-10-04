@@ -433,15 +433,17 @@
     {
       "id": "F-027",
       "title": "Deshacer solo lo propio: nadie deshace lo de otro usuario",
-      "description": "Salida de la revisión de negocio del 2026-09-29. Hoy el deshacer es por trabajador y deshace su última modificación (DeshacerUltimaModificacion, ruta /periodos/{anio}/{mes}/trabajadores/{ide}/deshacer; botón y Ctrl+Z en app.js ~563 y ~975) sin mirar quién la hizo. Se pide que un usuario solo pueda deshacer sus propios cambios. La regla vive en la API con el usuario que inyecta el front desde Easy Auth; el front solo oculta el botón.",
+      "description": "Salida de la revisión de negocio del 2026-09-29. Hoy el deshacer es por trabajador y deshace su última modificación (DeshacerUltimaModificacion, ruta /periodos/{anio}/{mes}/trabajadores/{ide}/deshacer; botón y Ctrl+Z en app.js ~563 y ~975) sin mirar quién la hizo. Se pide que un usuario solo pueda deshacer sus propios cambios. La regla vive en la API con el usuario que inyecta el front desde Easy Auth; el front solo oculta el botón. PLAN APROBADO por el humano el 2026-10-04 (PARADA 1) con la decisión A: solo se deshace si el ÚLTIMO cambio pendiente del trabajador en el mes es del usuario actual; si es de otro, se bloquea (deshacer restaura la fila entera y borraría en silencio lo posterior del otro). Solo api; el front en principio no cambia.",
       "acceptance": [
-        "La API rechaza deshacer una modificación hecha por otro usuario, con motivo legible",
-        "Si la última modificación es de otro, puede_deshacer es falso para el usuario actual y el botón y Ctrl+Z no actúan",
-        "Decidido y escrito si se deshace la última propia aunque haya cambios posteriores de otro, o se bloquea",
-        "Tests de API con dos usuarios",
+        "La API rechaza deshacer cuando el último cambio pendiente del trabajador en el mes es de otro usuario, con motivo legible que nombra a ese usuario y el mismo tratamiento HTTP que 'nada que deshacer'",
+        "Decisión A (2026-10-04): si después de mi último cambio hay uno de otro usuario, NO puedo deshacer (se bloquea); no se deshace un cambio que no sea el último",
+        "puede_deshacer (cuadrante y fila devuelta tras guardar/deshacer) es verdadero solo si el último cambio pendiente es del usuario que pregunta",
+        "Los usuarios se comparan sin distinguir mayúsculas ni espacios en los extremos",
+        "El front no decide nada: el botón se pinta solo con puede_deshacer; Ctrl+Z llama a la API, que con un cambio ajeno responde 409 y no deshace nada, y el toast enseña el motivo con el nombre del otro usuario (comprobado; front sin cambios)",
+        "Tests de API con dos usuarios: deshago lo mío; no deshago lo del otro; el otro cambia después y ya no puedo; puede_deshacer distinto por usuario. Tests anteriores que cambien por la firma, declarados en tabla",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "sdd": false,
       "rigor": "estandar",
       "priority": 5,
