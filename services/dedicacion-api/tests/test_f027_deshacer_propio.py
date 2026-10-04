@@ -31,7 +31,7 @@ from domain.models import EventoPendiente, FiltroEmpresa
 from infrastructure.db.repositories import PgEventoRepository
 from sqlalchemy.dialects import postgresql
 
-from tests.test_f024_cuadrante_empresa import ANIO, MES, P_ACT, P_ANT, _ln, _uow, _Uow
+from tests.test_f024_cuadrante_empresa import ANIO, MES, P_ACT, P_ANT, _ln, _Uow, _uow
 from tests.test_f024_rutas_empresa import BASE, api  # noqa: F401 (fixture)
 
 
