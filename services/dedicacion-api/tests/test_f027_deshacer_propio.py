@@ -13,6 +13,7 @@ casos de uso con la UnitOfWork en memoria de `test_f024_cuadrante_empresa`
 """
 from __future__ import annotations
 
+import dataclasses
 from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any
@@ -105,6 +106,17 @@ def test_f027_r3_ultimo_pendiente_trae_su_autor():
     assert pendiente == EventoPendiente(id=7, usuario="ana@ruesma.es",
                                         snapshot_antes=[{"obra_ide": 100}])
     assert PgEventoRepository(_Sesion([])).ultimo_pendiente(3, 10) is None  # type: ignore[arg-type]
+
+
+def test_f027_r3_evento_pendiente_es_inmutable():
+    """Lo que el repositorio dice que se restaurará y quién lo hizo no se
+    puede reescribir por el camino entre la lectura y la regla A: cambiar el
+    autor de un `EventoPendiente` saltaría la comprobación."""
+    pendiente = EventoPendiente(id=7, usuario="ana@ruesma.es",
+                                snapshot_antes=[])
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        pendiente.usuario = "pablo@ruesma.es"  # type: ignore[misc]
+    assert pendiente.usuario == "ana@ruesma.es"
 
 
 def test_f027_r3_autores_del_ultimo_pendiente_de_todo_el_periodo():
