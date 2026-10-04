@@ -32,6 +32,7 @@ from infrastructure.db.repositories import PgEventoRepository
 from sqlalchemy.dialects import postgresql
 
 from tests.test_f024_cuadrante_empresa import ANIO, MES, P_ACT, P_ANT, _ln, _uow, _Uow
+from tests.test_f024_rutas_empresa import BASE, api  # noqa: F401 (fixture)
 
 
 # =========================== dominio (T1) ============================== #
@@ -245,3 +246,58 @@ def test_f027_r3_puede_deshacer_por_usuario_en_la_fila():
     fila, _r, _o, _om = CopiarTrabajadorAnterior().ejecutar(
         uow, ANIO, MES, EVA, ANA, filtro=F1)
     assert fila.puede_deshacer is True
+
+
+# ============================== API (T4) =============================== #
+EVA_URL = f"{BASE}/trabajadores/{EVA}"
+
+
+def _como(usuario: str) -> dict[str, str]:
+    return {"x-usuario": usuario}
+
+
+def _put(cliente, usuario: str, obra: int = 100):
+    return cliente.put(f"{EVA_URL}/asignaciones", headers=_como(usuario),
+                       json={"lineas": [{"obra_ide": obra, "porcentaje": 100}]})
+
+
+def _puede(cliente, usuario: str) -> dict[str, bool]:
+    r = cliente.get(f"{BASE}/cuadrante", headers=_como(usuario))
+    assert r.status_code == 200, r.text
+    return {t["nombre"]: t["puede_deshacer"] for t in r.json()["trabajadores"]}
+
+
+def test_f027_r1_por_http_lo_del_otro_es_409_con_su_nombre(api):  # noqa: F811
+    """Mismo código que «nada que deshacer» y el motivo en `error`."""
+    cliente, _ = api
+    assert _put(cliente, ANA).json()["trabajador"]["puede_deshacer"] is True
+    r = cliente.post(f"{EVA_URL}/deshacer", headers=_como(PABLO))
+    assert r.status_code == 409, r.text
+    assert r.json() == {"error": _mensaje_ajeno(ANA)}
+    nada = cliente.post(f"{BASE}/trabajadores/10/deshacer",
+                        headers=_como(PABLO))
+    assert nada.status_code == r.status_code
+
+    r = cliente.post(f"{EVA_URL}/deshacer", headers=_como(" Ana@Ruesma.es "))
+    assert r.status_code == 200, r.text
+    assert r.json()["trabajador"]["lineas"] == []
+
+
+def test_f027_r2_por_http_el_otro_cambia_despues(api):  # noqa: F811
+    cliente, _ = api
+    _put(cliente, PABLO, 100)
+    _put(cliente, ANA, 101)
+    r = cliente.post(f"{EVA_URL}/deshacer", headers=_como(PABLO))
+    assert r.status_code == 409 and ANA in r.json()["error"]
+    r = cliente.post(f"{EVA_URL}/deshacer", headers=_como(ANA))
+    assert r.status_code == 200, r.text
+    assert r.json()["trabajador"]["puede_deshacer"] is False
+
+
+def test_f027_r3_por_http_puede_deshacer_por_usuario(api):  # noqa: F811
+    cliente, _ = api
+    _put(cliente, PABLO)
+    assert _puede(cliente, PABLO)["Eva"] is True
+    assert _puede(cliente, " PABLO@ruesma.es")["Eva"] is True
+    assert _puede(cliente, ANA)["Eva"] is False
+    assert not any(_puede(cliente, ANA).values())
