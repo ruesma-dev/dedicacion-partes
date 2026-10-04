@@ -5,11 +5,13 @@
 
 Resumen: **33 features**, 17 abiertas, 16 terminadas.
 
+En curso: **F-027**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 5 | pendiente | estandar | `feature/F-027-deshacer-por-usuario` |
+| F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 5 | en curso | estandar | `feature/F-027-deshacer-por-usuario` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 6 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
 | F-028 | Borrar todo lo que está en pantalla | 7 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 8 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
@@ -52,9 +54,9 @@ Resumen: **33 features**, 17 abiertas, 16 terminadas.
 
 ### F-027 · Deshacer solo lo propio: nadie deshace lo de otro usuario
 
-estado **pendiente** · prioridad 5 · rigor `estandar` · SDD no · rama `feature/F-027-deshacer-por-usuario`
+estado **en curso** · prioridad 5 · rigor `estandar` · SDD no · rama `feature/F-027-deshacer-por-usuario`
 
-Salida de la revisión de negocio del 2026-09-29. Hoy el deshacer es por trabajador y deshace su última modificación (DeshacerUltimaModificacion, ruta /periodos/{anio}/{mes}/trabajadores/{ide}/deshacer; botón y Ctrl+Z en app.js ~563 y ~975) sin mirar quién la hizo. Se pide que un usuario solo pueda deshacer sus propios cambios. La regla vive en la API con el usuario que inyecta el front desde Easy Auth; el front solo oculta el botón.
+Salida de la revisión de negocio del 2026-09-29. Hoy el deshacer es por trabajador y deshace su última modificación (DeshacerUltimaModificacion, ruta /periodos/{anio}/{mes}/trabajadores/{ide}/deshacer; botón y Ctrl+Z en app.js ~563 y ~975) sin mirar quién la hizo. Se pide que un usuario solo pueda deshacer sus propios cambios. La regla vive en la API con el usuario que inyecta el front desde Easy Auth; el front solo oculta el botón. PLAN APROBADO por el humano el 2026-10-04 (PARADA 1) con la decisión A: solo se deshace si el ÚLTIMO cambio pendiente del trabajador en el mes es del usuario actual; si es de otro, se bloquea (deshacer restaura la fila entera y borraría en silencio lo posterior del otro). Solo api; el front en principio no cambia.
 
 ### F-020 · Revisar y mejorar el formato del Excel de exportacion actual
 

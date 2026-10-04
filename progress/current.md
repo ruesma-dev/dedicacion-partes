@@ -1,9 +1,23 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-025 se cerró y se **desplegó el
+**F-027 en curso** (deshacer solo lo propio, rigor estándar, sin spec), rama
+`feature/F-027-deshacer-por-usuario`. F-025 se cerró y se **desplegó el
 2026-10-03**; F-035 se cerró ese mismo día; F-034 y F-026 se desplegaron el
-2026-10-02 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+2026-10-02 (resúmenes en `history.md`).
+
+## F-027 · Deshacer solo lo propio
+
+- **Plan aprobado por el humano el 2026-10-04 con la decisión A**: solo se
+  deshace si el último cambio pendiente del trabajador en el mes es del
+  usuario actual; si es de otro, se bloquea con mensaje que lo nombra.
+  `puede_deshacer` por usuario. Solo api. Criterios en `features.json`.
+- **Fuera:** deshacer un cambio que no sea el último, deshacer por línea,
+  historial visible.
+- **Estado:** implementer lanzado → `progress/impl_F-027.md`.
+- **MANUAL:** ninguna antes del `done` (lo cubren los tests con dos
+  usuarios). Tras desplegar, se puede mirar con dos personas.
+ El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
@@ -33,7 +47,7 @@
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Primero **F-027**; después F-020,
+`BACKLOG.md` tiene el orden completo. Primero **F-027** (en curso); después F-020,
 F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
