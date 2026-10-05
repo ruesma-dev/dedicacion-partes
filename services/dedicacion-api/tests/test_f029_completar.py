@@ -54,6 +54,7 @@ from tests.test_f024_cuadrante_empresa import (
     _Periodos,
     _Uow,
 )
+from tests.test_f024_rutas_empresa import BASE, api  # noqa: F401 (fixture)
 
 
 # ============================== dominio (T1) ============================ #
@@ -456,3 +457,93 @@ def test_f029_r25_caso_resumen_despues_del_lote_y_un_solo_commit():
     assert resumen == ResumenPeriodo(total=5, ok=3, falta=2, exceso=0,
                                      sin_carga=0)
     assert uow.commits == 1
+
+
+# ================================ ruta (T3) ============================= #
+COMPLETAR = f"{BASE}/completar"
+
+
+def test_f029_r25_ruta_200_con_resultados_y_resumen(api):
+    """Eva (14) sin carga → 100 en la 101; Bea (11) no visible en la 1; Ana
+    (10) ya al 100 %. El resumen es el de E después del lote."""
+    cliente, contenedor = api
+    r = cliente.post(COMPLETAR, json={"trabajadores": [14, 11, 10, 14],
+                                      "obra_ide": 101},
+                     headers={"X-Usuario": USUARIO})
+    assert r.status_code == 200, r.text
+    assert r.json() == {
+        "resultados": [
+            {"trabajador_ide": 14, "resultado": "COMPLETADO", "anadido": 100.0},
+            {"trabajador_ide": 11, "resultado": "NO_VISIBLE", "anadido": 0.0},
+            {"trabajador_ide": 10, "resultado": "YA_AL_100", "anadido": 0.0},
+        ],
+        "resumen": {"total": 5, "ok": 3, "falta": 2, "exceso": 0,
+                    "sin_carga": 0},
+    }
+    [uow] = contenedor.uows
+    assert uow.reemplazados == [14]
+    # R19 · el evento lleva el usuario de `X-Usuario`: solo él lo deshace.
+    assert uow.eventos.ultimo_pendiente(P_ACT, 14).usuario == USUARIO
+    # R26 · ni transfer ni Sigrid.
+    assert contenedor.registro_sigrid.llamadas == []
+
+
+def test_f029_r14_ruta_empresa_por_query_como_el_resto(api):
+    """Con E = 28 Eva no es visible y Bea (100 en la 900) ya está al 100."""
+    cliente, contenedor = api
+    r = cliente.post(COMPLETAR, params={"empresa": 28},
+                     json={"trabajadores": [14, 11], "obra_ide": 101})
+    assert r.status_code == 200, r.text
+    assert [x["resultado"] for x in r.json()["resultados"]] == [
+        "NO_VISIBLE", "YA_AL_100"]
+    assert r.json()["resumen"]["total"] == 1
+    assert contenedor.uows[0].reemplazados == []
+
+
+@pytest.mark.parametrize("params, cuerpo", [
+    ({"empresa": "0"}, {"trabajadores": [14], "obra_ide": 101}),
+    ({"empresa": "abc"}, {"trabajadores": [14], "obra_ide": 101}),
+    ({}, {"trabajadores": [], "obra_ide": 101}),
+    ({}, {"trabajadores": list(range(1, 502)), "obra_ide": 101}),
+    ({}, {"trabajadores": [14], "obra_ide": 101, "porcentaje": 50}),
+    ({}, {"trabajadores": [14]}),
+    ({}, {"trabajadores": [14], "obra_ide": 101, "es_postventa": "quizá"}),
+], ids=["empresa-0", "empresa-texto", "lista-vacia", "501-ides",
+        "campo-extra", "sin-obra", "postventa-no-booleano"])
+def test_f029_r14_ruta_422_sin_abrir_uow(api, params, cuerpo):
+    cliente, contenedor = api
+    r = cliente.post(COMPLETAR, params=params, json=cuerpo)
+    assert r.status_code == 422, r.text
+    assert contenedor.uows == []
+
+
+def test_f029_r14_ruta_admite_500_ides():
+    """El tope es 500 incluido (R14)."""
+    from interface_adapters.api.schemas import CompletarIn
+
+    entrada = CompletarIn(trabajadores=list(range(1, 501)), obra_ide=101)
+    assert len(entrada.trabajadores) == 500
+    assert entrada.es_postventa is False
+
+
+@pytest.mark.parametrize("obra, pv, motivo", [
+    (102, False, "no se ofrece como normal"),
+    (101, True, "no se ofrece como Postv-"),
+    (900, False, "no existe o no es de la empresa de las obras"),
+    (999, False, "no existe o no es de la empresa de las obras"),
+])
+def test_f029_r22_ruta_obra_no_valida_422_con_motivo(api, obra, pv, motivo):
+    cliente, contenedor = api
+    r = cliente.post(COMPLETAR, json={"trabajadores": [14], "obra_ide": obra,
+                                      "es_postventa": pv})
+    assert r.status_code == 422, r.text
+    assert motivo in r.json()["error"]
+    assert contenedor.uows[0].reemplazados == []
+
+
+def test_f029_r21_ruta_periodo_inexistente_404(api):
+    cliente, contenedor = api
+    r = cliente.post(f"/api/v1/periodos/{ANIO}/{MES + 1}/completar",
+                     json={"trabajadores": [14], "obra_ide": 101})
+    assert r.status_code == 404, r.text
+    assert contenedor.uows[0].reemplazados == []
