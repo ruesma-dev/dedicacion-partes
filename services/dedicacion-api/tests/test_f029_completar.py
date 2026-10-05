@@ -190,6 +190,19 @@ def test_f029_r19_dominio_tipos_nuevos():
     assert r.anadido == Decimal("0")
 
 
+def test_f029_r25_dominio_resultados_inmutables():
+    """R25 · Lo que devuelve la regla y el resultado por trabajador no se
+    pueden reescribir entre el caso de uso y la respuesta (como
+    `EventoPendiente` en F-027): son `frozen`."""
+    completado = Completado(lineas=[], anadido=Decimal("1"))
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        completado.anadido = Decimal("2")  # type: ignore[misc]
+    r = ResultadoCompletarTrabajador(7, ResultadoCompletado.EXCESO)
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        r.resultado = ResultadoCompletado.COMPLETADO  # type: ignore[misc]
+    assert (completado.anadido, r.resultado) == (
+        Decimal("1"), ResultadoCompletado.EXCESO)
+
 # =========================== caso de uso (T2) =========================== #
 # Doble de F-024 SIN editarlo: lo que le falta (conservar `es_postventa` al
 # reemplazar, anotar el tipo de evento, contar los commits y un periodo
