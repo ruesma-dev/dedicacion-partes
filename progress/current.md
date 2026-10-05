@@ -59,6 +59,12 @@
   `caaide` (`<obra>.CIMOxx` del tipo de hora) y no escribe asientos.
   **Espera al humano / Juan Romero** con D1-D11 abiertas
   (requirements §6).
+- **Ajustada con la respuesta de Juan del 2026-10-05** (`4c3d7d1`): la
+  cuenta analítica sale del TIPO DE HORA del recurso (540 de 540 líneas
+  manuales), no de la partida; el centro (`hmores.cenide`) ya lo escribe
+  bien el transfer; «Contabiliza parte…» deja el parte en `con.est = 10`
+  (502 partes con ANA desde 2025). T0 bloquea: preguntas a Juan sobre el
+  botón, MPRL (`CIMO16` o `CIMO04`) y escribir en un parte contabilizado.
 - **Riesgo vivo:** el transfer desplegado escribe en real; lo que se
   registre antes de F-037 queda con `caaide = 0` y fuera del ANA.
 - **Fuera del proyecto (aviso al humano):** `partes-persistencia` también
