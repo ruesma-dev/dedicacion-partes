@@ -72,6 +72,13 @@
   por obra y mes, sin enlace). **Abiertas para el humano:** D8, D10, D12,
   D13, D14 y **D15** (copiar `cuenta_analitica.py` de `partes` = ampliar la
   lista cerrada de `CLAUDE.md`, decisión expresa).
+- **2026-10-06: aprobada por el humano con A en D8, D10 y D12-D15**
+  (`3e6c7c4`); `CLAUDE.md` amplía la lista cerrada con `cuenta_analitica.py`
+  (`b7ef1e6`). «Lo aprendido en partes» en design §13: la F-031 de `partes`
+  (`feature/F-031-asiento-analitico`, en curso allí) añade el respaldo de la
+  partida (R3) y entiende «cerrado» como estado ≠ 1. **Pendiente del humano:**
+  D16 (qué estado manda al complementario) y si se espera a que la F-031 de
+  `partes` llegue a su `dev` antes de copiar (sin ella, R3 queda `blocked`).
 - **Riesgo vivo:** el transfer desplegado escribe en real; lo que se
   registre antes de F-037 queda con `caaide = 0` y fuera del ANA.
 - **Fuera del proyecto (aviso al humano):** `partes-persistencia` también
