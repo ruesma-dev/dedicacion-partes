@@ -65,6 +65,13 @@
   bien el transfer; «Contabiliza parte…» deja el parte en `con.est = 10`
   (502 partes con ANA desde 2025). T0 bloquea: preguntas a Juan sobre el
   botón, MPRL (`CIMO16` o `CIMO04`) y escribir en un parte contabilizado.
+- **Decisiones del humano (2026-10-05) aplicadas** (`52e1c02`): la cuenta
+  sale del recurso con la regla de `partes` F-021 (`reshor.caaide`,
+  subcuenta en el centro de la obra destino); un parte contabilizado va a
+  un **complementario** (en Sigrid no hay convención: 9 casos de dos partes
+  por obra y mes, sin enlace). **Abiertas para el humano:** D8, D10, D12,
+  D13, D14 y **D15** (copiar `cuenta_analitica.py` de `partes` = ampliar la
+  lista cerrada de `CLAUDE.md`, decisión expresa).
 - **Riesgo vivo:** el transfer desplegado escribe en real; lo que se
   registre antes de F-037 queda con `caaide = 0` y fuera del ANA.
 - **Fuera del proyecto (aviso al humano):** `partes-persistencia` también
