@@ -16,7 +16,7 @@ Si D1 sale B o C, este diseño no vale y se rehace. Evidencia y cifras:
   escriben asientos (R11). Generar o regenerar ANA es de Administración.
 - `dedicacion-api` y `dedicacion-front` **no se tocan**: los campos nuevos
   (`AccionLinea.caaide`, `AccionLinea.cuenta_analitica`,
-  `ParteDestino.asiento_analitico`, `escritas[].cuenta_analitica`) viajan
+  `ParteDestino.contabilizado`, `escritas[].cuenta_analitica`) viajan
   dentro de listas que la api reenvía sin esquema, y el front ya pinta
   `AccionLinea.aviso` (`app.js`, tabla del preflight). Las claves de primer
   nivel de las respuestas no cambian (`test_f024_r21`).
@@ -38,14 +38,14 @@ Si D1 sale B o C, este diseño no vale y se rehace. Evidencia y cifras:
 
 | Ruta | Qué cambia |
 |---|---|
-| `services/dedicacion-transfer/domain/models/registro_models.py` | `HoraRecurso.hoja_analitica: Optional[str] = None` (5.º campo, con defecto: los `HoraRecurso(...)` posicionales de los tests siguen valiendo); `AccionLinea.caaide: int = 0` y `AccionLinea.cuenta_analitica: Optional[str] = None`; `ParteDestino.asiento_analitico: Optional[str] = None`; docstring del módulo remite a `#regla-analitica` |
-| `services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py` | `_read` falla si `truncated` (R7); `horas_de_recursos` con la hoja (§6.1); métodos nuevos `cuentas_de_centro` (§6.2) y `asiento_analitico_del_parte` (§6.3); `stmt_insert_linea(..., caaide: int = 0)` con `caaide` como parámetro `?` en vez del literal 0; docstring de cabecera sin «caaide=0» ni «pendiente de confirmar» |
-| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | Pasos 5 bis y 6 ter (§7); `ejecutar` pasa `caaide` al insert y añade `cuenta_analitica` a `escritas`; docstring de pasos |
+| `services/dedicacion-transfer/domain/models/registro_models.py` | `HoraRecurso.hoja_analitica: Optional[str] = None` (5.º campo, con defecto: los `HoraRecurso(...)` posicionales de los tests siguen valiendo); `AccionLinea.caaide: int = 0` y `AccionLinea.cuenta_analitica: Optional[str] = None`; `ParteDestino.contabilizado: bool = False`; constante de dominio `ESTADO_PARTE_CONTABILIZADO = 10`; docstring del módulo remite a `#regla-analitica` |
+| `services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py` | `_read` falla si `truncated` (R7); `horas_de_recursos` con la hoja (§6.1); método nuevo `cuentas_de_centro` (§6.2); `partes_existentes` lee `con.est` y rellena `contabilizado` (§6.3); `stmt_insert_linea(..., caaide: int = 0)` con `caaide` como parámetro `?` en vez del literal 0; docstring de cabecera sin «caaide=0» ni «pendiente de confirmar» |
+| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | Paso 6 ter (§7); `ejecutar` pasa `caaide` al insert y añade `cuenta_analitica` a `escritas`; docstring de pasos |
 | `services/dedicacion-transfer/tests/conftest.py` | Solo el doble (§9.2) |
 | `services/dedicacion-transfer/tests/test_pipeline_offline.py` | Solo el doble (§9.2) |
 | `services/dedicacion-transfer/tests/test_f002_fuente_unica.py` | `"regla-analitica"` en `ANCLAS` (§9.2) |
 | `docs/ARCHITECTURE.md` | Punto 16 `#regla-analitica`; lista de anclas de la cabecera de la sección; frase de `#regla-sin-partida` (R15); fila de `sigrid-api`/transfer en «Acceso a datos» con las lecturas nuevas |
-| `docs/INTEGRACION.md` | Fecha y origen; §1 fila de `sigrid-api` (lecturas del transfer: `caa`, `con` tipo 32); §7 «Si tocan algo de otros»: filas de `caa`/`reshor.caaide`/`auxhor.caacod` y del proceso de ANA de Administración |
+| `docs/INTEGRACION.md` | Fecha y origen; §1 fila de `sigrid-api` (lecturas del transfer: `caa`, `con.est` del parte); §7 «Si tocan algo de otros»: filas de `caa`/`reshor.caaide`/`auxhor.caacod` y de «Contabiliza parte…» (`con.est = 10`) de Administración |
 | `azure-apps/dedicacion.md` (otro repo) | Copia literal de las piezas de `INTEGRACION.md` (T12; commit en `azure-apps` lo hace el humano) |
 
 ## 4. Ficheros que NO se tocan
@@ -86,9 +86,10 @@ def componer_aviso(actual: str | None, nuevo: str | None) -> str | None
 Textos (constantes del módulo, cada uno cabe en los 300 caracteres de
 `sigrid_motivo`): `AVISO_SIN_HOJA`, `AVISO_SIN_CENTRO`, `AVISO_SIN_CUENTA`
 (`{obra}`, `{hoja}`), `AVISO_CUENTA_AMBIGUA` (`{obra}`, `{hoja}`, `{n}`) y
-`AVISO_ANA_GENERADO` (`{parte}`, `{ana}`). Todos dicen qué pasa: «se escribe
-sin cuenta analítica: no entrará en el asiento analítico del parte» o «no
-entrará en el asiento analítico {ana} hasta que Administración lo regenere».
+`AVISO_PARTE_CONTABILIZADO` (`{parte}`). Todos dicen qué pasa: «se escribe
+sin cuenta analítica: no entrará en el asiento analítico del parte» o «el
+parte {parte} ya está contabilizado: la línea no entrará en su asiento
+analítico hasta que Administración lo regenere».
 
 ### 5.2 `SigridWriteClient` (infrastructure)
 
@@ -96,9 +97,8 @@ entrará en el asiento analítico {ana} hasta que Administración lo regenere».
   cada `HoraRecurso` con `hoja_analitica = hoja_analitica(caa_reshor,
   caa_tipo)`.
 - `cuentas_de_centro(cenide: int) -> list[dict]`: filas `{ide, cod}`.
-- `asiento_analitico_del_parte(hmoide: int) -> str | None`: códigos ANA
-  separados por `, ` (informativo: si hubiera dos se enseñan los dos), o
-  `None`.
+- `partes_existentes(obra_ide, periodos)`: misma firma; cada `ParteDestino`
+  existente con `contabilizado = (est == ESTADO_PARTE_CONTABILIZADO)`.
 - `stmt_insert_linea(..., paride: int = 0, caaide: int = 0) -> dict`.
 
 ## 6. SQL (en el cliente del transfer, parametrizado, base `ruesma`)
@@ -113,24 +113,23 @@ El transfer no tiene YAML de consultas: sus SQL viven en
 2. `cuentas_de_centro`: `SELECT caa.ide AS ide, con.cod AS cod FROM caa JOIN
    con ON con.ide = caa.ide WHERE caa.cenide = ? ORDER BY caa.ide` (~270
    filas por obra; `max_rows` 2000).
-3. `asiento_analitico_del_parte`: `SELECT a.cod AS cod FROM con a JOIN con p
-   ON p.ide = ? WHERE a.tip = 32 AND a.emp = p.emp AND a.fec = p.fec AND
-   a.res = p.res ORDER BY a.ide` (`con.res` es texto de 128, no TEXT).
+3. `partes_existentes`: la de hoy más `con.est AS est` (misma lectura, R10).
+   El 10 es el estado que deja «Contabiliza parte…»: 502 de 502 partes con
+   ANA desde 2025 y ninguno sin él (explore §9).
 4. `INSERT INTO hmores`: igual que hoy salvo `caaide = ?`.
 
 ## 7. Flujo en el pipeline
 
-- **Paso 5 bis (R9-R10)**, tras localizar los partes: por cada parte con
-  `existe` e `ide`, `parte.asiento_analitico =
-  cli.asiento_analitico_del_parte(parte.ide)`. Los partes nuevos no se leen.
+- **R9-R10** no añaden paso: `contabilizado` llega con el parte (paso 5).
+  Un parte nuevo nunca lo está.
 - **Paso 6 ter (R1-R7)**, tras la idempotencia y antes de los conflictos, por
   cada acción `escribir`: `d = obra_de(a)`; `cenide = getattr(d, "cenide",
   0)`; índice del centro desde una caché local de la petición (una lectura
   por `cenide > 0`; `None` si 0); hoja = la de la `HoraRecurso` de
   `horas[a.recurso_ide]` con `horide == a.hora_ide`; `a.caaide,
   a.cuenta_analitica, aviso = resolver_cuenta(...)`; `a.aviso =
-  componer_aviso(a.aviso, aviso)`; y si su parte tiene `asiento_analitico`,
-  `componer_aviso` con `AVISO_ANA_GENERADO`.
+  componer_aviso(a.aviso, aviso)`; y si su parte está `contabilizado`,
+  `componer_aviso` con `AVISO_PARTE_CONTABILIZADO`.
 - `obra_de(a)` ya da la obra de pruebas en modo pruebas y la de postventa en
   postventa (o la de pruebas si ambas): R3 sale sin ramas nuevas.
 - **`ejecutar`**: `stmt_insert_linea(..., caaide=int(a.caaide or 0))`;
@@ -140,7 +139,7 @@ El transfer no tiene YAML de consultas: sus SQL viven en
 ## 8. Contrato HTTP (aditivo)
 
 `acciones[]`: `caaide` (int, 0 sin cuenta) y `cuenta_analitica` (str|null).
-`partes[]`: `asiento_analitico` (str|null). `escritas[]` (ejecutar):
+`partes[]`: `contabilizado` (bool). `escritas[]` (ejecutar):
 `cuenta_analitica`. Nada se quita ni se renombra; `PeticionIn` no cambia.
 
 ## 9. Tests
@@ -155,7 +154,8 @@ El transfer no tiene YAML de consultas: sus SQL viven en
   lleva el valor en la posición de la columna `caaide`, `cenide` el de la
   obra y la SQL no nombra `cuaide`); R7 (`_read` con `truncated: true` lanza;
   `horas_de_recursos` rellena `hoja_analitica` desde las dos columnas);
-  §6.3 (la SQL filtra `tip = 32` con `emp`, `fec`, `res` y es parametrizada);
+  R10 (`partes_existentes` lee `con.est` en la misma consulta; 10 ->
+  `contabilizado`, 1 y 3 -> no);
   R11 (ninguna SQL de `stmts_crear_parte`, `stmt_insert_linea`,
   `stmt_borrar_linea` nombra `asi`, `asa`, `apu`, `apa`; el `con` insertado
   lleva `tip` del parte).
@@ -163,8 +163,8 @@ El transfer no tiene YAML de consultas: sus SQL viven en
   modo normal, postventa y pruebas (el centro leído es el de la obra
   destino); R4/R5 (sin cuenta: se escribe con 0, aviso, sin conflicto; con
   «sin partida» los dos textos); R6 (`acciones` y `escritas`); R7 (dos
-  líneas del mismo centro: una lectura de cuentas); R9/R10 (parte con ANA:
-  `asiento_analitico` y aviso, sin conflicto; parte nuevo: no se consulta);
+  líneas del mismo centro: una lectura de cuentas); R9/R10 (parte contabilizado:
+  aviso, sin conflicto; parte nuevo o sin contabilizar: sin aviso);
   R12 (`ya_registrado` sin insert ni cuenta); R13 (pisado confirmado: el
   insert nuevo lleva su `caaide`, el borrado es el de siempre).
 - R14-R16: `test_f002_fuente_unica.py` con la ancla nueva, y revisión del
@@ -174,13 +174,13 @@ El transfer no tiene YAML de consultas: sus SQL viven en
 
 1. `tests/conftest.py`, **solo el doble y sus datos**: `cenide` en las cuatro
    obras de `ClienteFalso`; hoja en `HoraRecurso` de MENC (`CIMO03`) y MJEFO
-   (`CIMO02`); métodos `cuentas_de_centro` (devuelve esas dos hojas para
-   cualquier `cenide > 0`, contando lecturas) y
-   `asiento_analitico_del_parte` (`None` por defecto, configurable). Ningún
+   (`CIMO02`); método `cuentas_de_centro` (devuelve esas dos hojas para
+   cualquier `cenide > 0`, contando lecturas). `partes_existentes` no cambia:
+   su `ParteDestino` ya trae `contabilizado = False`. Ningún
    assert cambia: así ninguna acción de los tests anteriores gana un aviso
    (`test_f013_r1_el_aviso_de_la_accion_ya_no_promete_que_se_escribe`
    compara el aviso entero).
-2. `tests/test_pipeline_offline.py`: los dos métodos en su `ClienteFalso`.
+2. `tests/test_pipeline_offline.py`: `cuentas_de_centro` en su `ClienteFalso`.
    Ningún assert cambia.
 3. `tests/test_f002_fuente_unica.py`: `"regla-analitica"` en `ANCLAS`.
 
@@ -195,16 +195,17 @@ Campaña completa sobre las líneas cambiadas de `cuenta_analitica.py`,
 `registro_pipeline.py` y `sigrid_write_client.py`. Puntos que la campaña
 tiene que encontrar muertos: el orden `reshor` > tipo; el `== 1` de
 `resolver_cuenta` (un `>= 1` elegiría la primera); el `cenide > 0`; la caché
-por centro (R7); `caaide` en la posición correcta del INSERT; el `tip = 32`;
-la condición «parte existe» del paso 5 bis.
+por centro (R7); `caaide` en la posición correcta del INSERT; el `== 10` del
+estado contabilizado.
 
 ## 11. Riesgos y decisiones
 
 - **Alternativas descartadas** (D1): ANA propio del transfer (duplica el de
   Administración, que es por parte, y no tiene `synckey`); asiento 64X
   (duplica la nómina); cuenta desde la partida (`obrparpar.caaide` vacío en
-  postventa y distinto del tipo de hora en la línea `KM` de 0702).
-- **El proceso que genera el ANA no consta en la base** (explore §4). Que
+  postventa; cuando partida y tipo de hora difieren, 540 de 540 líneas M\*
+  siguen al tipo, explore §9).
+- **El ANA lo genera, casi seguro, «Contabiliza parte…»** (explore §9). Que
   lea `hmores.caaide` es inferencia fuerte (GG sin cuenta = sin ANA; 438/440
   al céntimo), no prueba: la confirma R18 con Administración. Si no la lee,
   se para y se vuelve a D1.
@@ -212,8 +213,8 @@ la condición «parte existe» del paso 5 bis.
   front. Riesgo: un aviso que nadie atiende (lo que pasó con «sin partida»
   antes de F-013). Mitigación: el aviso dice la consecuencia, y la mutación
   vigila que no desaparezca.
-- **Enlace parte ↔ ANA por `res` + `fec` + `emp`**: heurístico pero exacto en
-  2025. Solo alimenta un aviso: un falso positivo no bloquea nada.
+- **`con.est = 10` como «contabilizado»**: inferido (502/502), no documentado.
+  Solo alimenta un aviso: un falso positivo no bloquea nada. Lo confirma T0.
 - **Modo real ya activo**: hasta desplegar F-037 el transfer seguirá
   escribiendo `caaide = 0` (D10). Hoy hay 0 líneas `porcentajes:` en Sigrid.
 - **`_read` y `truncated`**: hoy el transfer lo ignora; se corrige aquí

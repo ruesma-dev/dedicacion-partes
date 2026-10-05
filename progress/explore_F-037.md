@@ -16,8 +16,8 @@ parte de trabajo** (obra y mes), titulado `Parte <obra>`, a partir de las
 líneas del parte: **debe** a la cuenta analítica de cada línea
 (`hmores.caaide`, p. ej. `0702.CIMO02 JEFE DE OBRA`) y **haber** a la cuenta
 analítica de contrapartida del recurso (`res.caaconide`, `CP.<persona>` del
-centro `CP` «CENTRO DE PERSONAL»). Lo genera Administración **por lotes y con
-retraso** (último lote: 2026-09-02 y 2026-09-14, para enero-febrero de 2026).
+centro `CP` «CENTRO DE PERSONAL»). Lo genera Administración, casi seguro con
+el botón «Contabiliza parte…» (§9), **por lotes y con retraso** (último lote: 2026-09-02 y 2026-09-14, para enero-febrero de 2026).
 
 El coste financiero (6XX) **ya lo contabiliza la nómina**: asientos tipo 20
 con 640/642 desglosados a `CP.<persona>`. El ANA del parte solo **traspasa**
@@ -122,10 +122,9 @@ Líneas `hmores` desde 2025-01-01 por origen:
   2026-03-02 (oct-dic), 2026-09-02 y 2026-09-14 (ene-feb 2026 y unos pocos
   de mar-jul). De marzo de 2026 en adelante faltan casi todos (2, 2, 2, 1, 1
   frente a ~35 partes al mes).
-- **Qué herramienta lo genera**: no consta en la base (ni `apa.doc`, ni
-  `con.doc`, ni `obride`; el único enlace con el parte es `res` + `fec` +
-  `emp`). Por la regularidad (lotes de decenas en minutos) es un proceso, no
-  apuntes a mano. **A confirmar con Administración** (D1 de la spec).
+- **Qué herramienta lo genera**: no consta en `apa`/`con` (ni `doc` ni
+  `obride`; enlace por `res` + `fec` + `emp`). Por la captura de §9, casi
+  seguro el botón «Contabiliza parte…», que deja el parte en `con.est = 10`.
 
 ## 5. Coste de personal: nómina y traspaso (pregunta d)
 
@@ -175,3 +174,49 @@ asiento por `con.cod`; `apu`/`apa` por `asiide`/`apuide`; `obr`+`cen`+`caa`+
 de `synckey` y por patrón de `caaide`; `con.tip = 32` por mes, serie y
 `tiemod`; cuadre parte-ANA de 2025 (CTE por `res`+`fec`+`emp`); `apa` del
 centro `CP` por cuenta financiera; `res.caaconide` de recursos M\*.
+
+## 9. Captura de Juan Romero (2026-10-05) contrastada con los datos
+
+Respuesta a «¿Dedicación también lleva la cuenta analítica?»: «La dedicación,
+entiendo que te refieres al equipo de obra, tiene también analíticas», con la
+captura del parte `PT26/00316` (obra 0711, septiembre de 2026, estado «REG En
+registro»), columnas **Centro** y **Cue. analítica** por línea y botón
+**«Contabiliza parte…»**.
+
+**El parte es así en los datos.** `con` ide 2832442, `tip 35`, `est 1`, fec
+20260930; `hmo.cenide` = centro 0711, `hmo.caaide = 0` (la «Cuenta analítica
+(opcional)» vacía de la cabecera). Todas sus líneas manuales llevan `cenide` =
+centro 0711 y su `caaide`. Pares tipo de hora · partida → cuenta de la línea
+(con la hoja de `reshor` del recurso):
+
+| Tipo | Partida (su cuenta) | Línea | `reshor` |
+|---|---|---|---|
+| MJG / MJEFO / MENC / MAJO / MADM / MCAP | CI.1.1 / .2 / .3 / .4 / .5 / .8 (`CIMO0N`) | igual | igual |
+| HLGR, HEGR | CI.1.10 (`CIMO10`) | `CIMO10` | `CIMO10` |
+| **MPRL** | CI.1.16 (`0711.CIMO16`) | **`0711.CIMO04`** | `CIMO16` |
+| KM (3 líneas, 2 recursos) | CI.4.1 (`CICO01`) | `CIMJ09` / `CIMP09` | `CIMJ09` / `CIMP09` |
+| OGAS (1 de 8 líneas) | CI.4.1 (`CICO01`) | `CICO13` | `CICO13` |
+| HLOF | 02.xx (sin cuenta o `INGR02`) | `CIMO09` | `CIMO09` |
+
+- **MPRL → CIMO04 no es un respaldo**: 0711 tiene CIMO01-CIMO16 completos,
+  `CIMO16` incluida, y la partida y `reshor` dicen `CIMO16`. Es un cambio a
+  mano (línea de 0 €). Se pregunta a Administración (D9).
+- **La cuenta sigue al tipo de hora del recurso, no a la partida.** En todas
+  las líneas manuales con partida con cuenta desde 2025: M\* con partida y
+  tipo **iguales** 4.897 (4.802 casan); con los dos **distintos 540, y las
+  540 siguen al tipo, 0 a la partida**. Resto de tipos distintos: 4.208 al
+  tipo y 954 a la partida. Que `CI.1.N` ↔ `CIMO0N` coincidan en la captura es
+  porque Administración monta las partidas así, no porque la cuenta salga de
+  ellas. Una `reshor` con prefijo de otro centro (`0165.CICO01`) da
+  `0711.CICO01`: la hoja se toma por sufijo.
+- **«Contabiliza parte…» y el estado.** Partes de la empresa 1 desde 2025:
+  `est = 10` y con ANA **502**; `est = 1` sin ANA 42; `est = 3` sin ANA 240;
+  ningún `est = 10` sin ANA ni con ANA en otro estado. El 10 es «parte
+  contabilizado», y da el enlace parte ↔ ANA sin la heurística de `res` +
+  `fec` (que además casa dos obras de nombre parecido: «76 VIVIENDAS…» de
+  0664 y 0711 tienen dos ANA por mes con `LIKE`, uno con igualdad exacta).
+- **El centro de la línea**: `hmores.cenide`. El transfer **ya** lo escribe
+  con `obr.cenide` de la obra destino (`_obra` → `stmt_insert_linea`), y la
+  cabecera `hmo.cenide` igual (`stmts_crear_parte`); es lo mismo que hacen
+  las 3.469 líneas M\* manuales de 2026 (§3). Lo único que falta es
+  `caaide`.
