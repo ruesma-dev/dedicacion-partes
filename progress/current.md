@@ -21,7 +21,9 @@ F-027 se cerró el 2026-10-04 y se **desplegó el 2026-10-05**; F-025 se despleg
   (`b09e333`…). Cobertura 84/84; mutación en serie 20/20 muertos tras matar
   dos `frozen` con un test (`progress/mutacion_F-029.md`); un falso
   superviviente en serie → encargo de `arnes-base` (`58403df`). Ningún test
-  anterior cambiado. **Review lanzada** → `progress/review_F-029.md`.
+  anterior cambiado. **Review 1: CAMBIOS PEDIDOS solo por el rastro** (T7
+  sin marcar en `tasks.md` y «Lo siguiente» desfasado), corregidos por el
+  líder; código, tests, mutación y docs revisados y bien. **Review 2 lanzada.**
 - **Condición del humano: NO se despliega hasta que pruebe la usabilidad en
   local** (T9, `tasks.md`: api y front locales desde la rama, BBDD local, sin
   Sigrid; clics, diálogo, tecla C, Ctrl+Z y regresión del teclado).
@@ -32,7 +34,8 @@ F-027 se cerró el 2026-10-04 y se **desplegó el 2026-10-05**; F-025 se despleg
   Bash, `cd services/dedicacion-api && .venv/Scripts/python main.py` y, en
   otra, `cd services/dedicacion-front && .venv/Scripts/python main.py`;
   abrir `http://localhost:8080`. NO pulsar «Registrar en Sigrid».
-  Resultado: _pendiente_.
+  Mirar además (observación de la review 1): Ctrl/Shift+clic con el editor
+  abierto repinta la tabla y el foco puede saltar. Resultado: _pendiente_.
 
 ## Producción, hoy
 
@@ -66,9 +69,9 @@ F-027 se cerró el 2026-10-04 y se **desplegó el 2026-10-05**; F-025 se despleg
 ## Lo siguiente, por prioridad
 
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020). Primero
-**F-028**; después F-021, F-029, F-030, F-020, F-031, F-033 y, detrás,
-F-017, F-018…
+2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020). Ahora, **F-029**
+(en curso, sección de arriba, adelantada por el humano). Después de F-029:
+**F-028**, F-021, F-030, F-020, F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
