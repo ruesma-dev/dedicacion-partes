@@ -1,16 +1,35 @@
-Revisión completa (pasada 1): `git diff 651bc4c..HEAD` (HEAD `3ae2caf`; alcance de mutación desde `9f20dd5`, merge-base con `dev`)
+Revisión incremental desde 3ae2caf (pasada 2): `git diff ba07996..HEAD` (HEAD `1bf6ecf`; `ba07996` solo añadió este informe)
 
 # F-029 · Review · Selección múltiple con Ctrl/Shift y completar hasta el 100 %
 
-**Veredicto: CHANGES_REQUESTED.** Solo por el **rastro** (dos cambios de una línea, abajo).
-El código, los tests, la mutación y la documentación quedan **revisados y bien**: la pasada 2
-puede ser incremental y limitarse a `tasks.md` y `current.md`.
+**Veredicto: APPROVED.**
 
 **Nivel de rigor:** `estandar`, declarado en `features.json`. Exige C1-C5, fase RED en los
 requisitos centrales, cobertura ≥ 80 % de lo cambiado y campaña de mutación (muestreada a 20,
 semilla 20260820) con los supervivientes analizados; RM5 es N/A por nivel.
 
-## Lo que se verificó, con resultado real
+## Pasada 2 · El delta
+
+Un commit, `1bf6ecf`, que solo toca `progress/current.md` y `tasks.md`: ni código, ni tests,
+ni documentación, ni alcance de mutación (`git diff --name-only 3ae2caf..HEAD`). Nada
+invalida lo aprobado en la pasada 1.
+
+1. **T7 `[x]`** en `tasks.md`. Hecho: el trabajo es `a593bd4` de `azure-apps`, comprobado
+   literal en la pasada 1.
+2. **«Lo siguiente»** dice ahora «Ahora, **F-029** (en curso…). Después de F-029: **F-028**,
+   F-021, F-030, F-020…»: ya no lista como futura la feature en curso. Hecho.
+3. La observación del foco (Ctrl/Shift+clic con el editor abierto) está en la T9 de
+   `current.md`, junto al «Resultado: _pendiente_».
+
+- `grep -n "Ninguna feature" progress/current.md` → **vacío**.
+- **`bash harness/init.sh`** tal cual: ENTORNO LISTO, exit 0 (raíz `418 passed, 1 skipped`;
+  cobertura `[OK]` 100 %, 84/84; tamaño dentro de los topes). Las suites de servicio salen de
+  caché, pero ningún fichero de servicio ha cambiado desde la pasada 1, donde las relancé sin
+  caché sobre una copia limpia (api 586, front 53, transfer 379).
+- **Queda para cerrar (no para la review):** T9 MANUAL del humano en local, antes de
+  desplegar, con su comando exacto en `current.md`.
+
+## Pasada 1 (completa, `651bc4c..3ae2caf`): lo que se verificó
 
 - **`bash harness/init.sh`** tal cual: ENTORNO LISTO, exit 0. Raíz `418 passed, 1 skipped`;
   `PUERTA COBERTURA [OK] 100.0 %` (84/84); tamaño dentro de los topes; ruff 222 (deuda previa).
@@ -55,7 +74,7 @@ semilla 20260820) con los supervivientes analizados; RM5 es N/A por nivel.
    y la cabecera dice «Sin desplegar todavía».
 8. **Rastro:** `grep -n "Ninguna feature" progress/current.md` → **vacío**. T9 MANUAL listada
    con el comando exacto de arranque, la URL y «Resultado: _pendiente_»; la condición del
-   humano (probar en local antes de desplegar) consta. **Dos incoherencias**: cambios 1 y 2.
+   humano (probar en local antes de desplegar) consta. Dos incoherencias, corregidas en la pasada 2.
 
 ## Mutación (C4 bis)
 
@@ -84,7 +103,7 @@ semilla 20260820) con los supervivientes analizados; RM5 es N/A por nivel.
 
 - **C1** [x] init.sh exit 0 · [x] ficheros base.
 - **C2** [x] una sola `in_progress` (F-029) · [x] rama `feature/F-029-…` · [x] `current.md`
-  de la sesión activa (con la deriva del cambio 2) · [x] `done` con resumen en `history.md`.
+  de la sesión activa («Lo siguiente» corregido en `1bf6ecf`) · [x] `done` con resumen en `history.md`.
 - **C3** [x] hexagonal: `estados.py` solo importa `domain.models`; el caso de uso, dominio
   y puertos existentes · [x] primera línea con ruta (también los tests nuevos, como F-024/25)
   · [x] sin prints, TODOs, secretos ni dependencias nuevas (el correo de prueba ya está en
@@ -98,8 +117,8 @@ semilla 20260820) con los supervivientes analizados; RM5 es N/A por nivel.
   · [x] 19,9 s por mutante · [x] sin cabecera de no válida · [x] RM1, RM2 · [x] RM5 y RM6
   N/A justificados · [x] nada `PENDIENTE` · [x] «Evidencias» con los cuatro números y
   `--workers 1` · [x] ningún N/A sin motivo.
-- **C5** [ ] **T7 hecha pero sin marcar** (cambio 1); T1-T6, T8, T10 `[x]` con commit
-  `F-029 Tn:`; T9 N/A **justificado** (MANUAL del humano: bloquea el `done`, no la review)
+- **C5** [x] T1-T8 y T10 `[x]` (T7 marcada en `1bf6ecf`; su trabajo es el commit `a593bd4`
+  de `azure-apps`, del líder); T1-T6, T8, T10 con commit `F-029 Tn:`; T9 N/A **justificado** (MANUAL del humano: bloquea el `done`, no la review)
   · [x] sin temporales · [x] `features.json` en `in_progress`.
 
 ## Cobertura requisito → test
@@ -114,25 +133,3 @@ semilla 20260820) con los supervivientes analizados; RM5 es N/A por nivel.
 | R20-R22 | `r22_caso_obra_no_valida…` (×5, `commits == 0`), `r22_caso_postv_de_obra_cerrada…`, `r21_caso…`, `r22_ruta` (×4), `r21_ruta_…404` |
 | R23-R26 | `r23_r24_caso…`, `r25_caso_resumen…`, `r25_ruta_200…` (forma + R26), `r25_dominio_resultados_inmutables` |
 | R27 | documental: leído (punto 7 arriba); `test_f002_fuente_unica` y `test_f004_readme` en verde |
-
-## Cambios requeridos
-
-1. **`specs/F-029-seleccion-multiple-completar-100/tasks.md`, T7:** está `[ ]`, pero
-   `current.md` y el commit `3ae2caf` la dan por hecha (`azure-apps` `a593bd4`, literal, lo
-   he comprobado). Marcarla `[x]`. No es una MANUAL pendiente: dejarla abierta dice lo
-   contrario de lo que pasó.
-2. **`progress/current.md`, «Lo siguiente, por prioridad»:** dice «Primero **F-028**;
-   después F-021, F-029, F-030…», con F-029 ya en curso por decisión del humano (cabecera
-   y sección F-029). Reescribirlo para que diga qué viene **después de F-029** (F-028, F-021,
-   F-030, …) sin listar como futura la feature en curso.
-
-## Observaciones (no bloquean; para T9)
-
-- **Ctrl/Shift+clic con el editor abierto** repinta la tabla (`renderTabla` reconstruye la
-  fila del editor desde `state.edicion`): no se pierde nada, pero el foco puede saltar.
-  Merece un vistazo en T9 (a).
-- **Front, solo estático.** El comportamiento real (rango, foco, Enter en el diálogo) solo lo
-  cubren T9 y la comprobación en node del implementer, no versionada. Es lo previsto en el
-  design §11; la condición del humano de probar en local antes de desplegar lo cubre.
-- `progress/impl_F-029.md` dice aún «Falta: T7»: es el informe del implementer en su
-  momento; no hace falta tocarlo.
