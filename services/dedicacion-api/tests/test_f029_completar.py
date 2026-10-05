@@ -11,17 +11,48 @@ editarla: lo que falta se amplía aquí) y la ruta
 """
 from __future__ import annotations
 
+import dataclasses
 from decimal import Decimal
 
 import pytest
+from application.use_cases import (
+    CompletarHasta100,
+    DeshacerUltimaModificacion,
+    ObtenerCuadrante,
+    _snapshot,
+)
+from domain.errors import (
+    DeshacerAjeno,
+    ObraNoValida,
+    PeriodoCerrado,
+    PeriodoNoEncontrado,
+)
 from domain.estados import calcular_estado, completar_hasta_100
 from domain.models import (
     Completado,
+    EstadoPeriodo,
     EstadoTrabajador,
+    FiltroEmpresa,
     Linea,
+    Obra,
+    Periodo,
     ResultadoCompletado,
     ResultadoCompletarTrabajador,
+    ResumenPeriodo,
     TipoEvento,
+)
+
+from tests.test_f024_cuadrante_empresa import (
+    ANIO,
+    MES,
+    OBRAS,
+    P_ACT,
+    _Asignaciones,
+    _Eventos,
+    _lineas_actuales,
+    _ln,
+    _Periodos,
+    _Uow,
 )
 
 
@@ -156,3 +187,272 @@ def test_f029_r19_dominio_tipos_nuevos():
     r = ResultadoCompletarTrabajador(trabajador_ide=7,
                                      resultado=ResultadoCompletado.NO_VISIBLE)
     assert r.anadido == Decimal("0")
+
+
+# =========================== caso de uso (T2) =========================== #
+# Doble de F-024 SIN editarlo: lo que le falta (conservar `es_postventa` al
+# reemplazar, anotar el tipo de evento, contar los commits y un periodo
+# CERRADO) se amplía aquí con subclases.
+USUARIO = "pablo@ruesma.es"
+
+
+def _lnv(obra_ide: int, pct: str, pv: bool = False) -> Linea:
+    """Línea del doble con su modo (el `_ln` de F-024 es siempre normal)."""
+    o = OBRAS[obra_ide]
+    return dataclasses.replace(_ln(obra_ide, pct), es_postventa=pv,
+                               obra_admite_postventa=o.admite_postventa)
+
+
+class _AsignacionesConModo(_Asignaciones):
+    """Como el de F-024, pero conserva `es_postventa` (aquel usa `_ln`)."""
+
+    def reemplazar(self, periodo_id: int, ide: int, lineas: list[Linea],
+                   usuario: str) -> None:
+        self._uow.lineas.setdefault(periodo_id, {})[ide] = [
+            _lnv(ln.obra_ide, str(ln.porcentaje), ln.es_postventa)
+            for ln in lineas]
+        self._uow.reemplazados.append(ide)
+
+
+class _EventosConTipo(_Eventos):
+    """Como el de F-024, pero anota tipo, autor y snapshots de cada uno."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.registros: list[tuple] = []
+
+    def registrar(self, periodo_id, ide, tipo, usuario, antes, despues):
+        self.registros.append((periodo_id, ide, tipo, usuario, antes, despues))
+        super().registrar(periodo_id, ide, tipo, usuario, antes, despues)
+
+
+class _PeriodosCerrados(_Periodos):
+    def obtener(self, anio: int, mes: int) -> tuple[int, Periodo] | None:
+        encontrado = super().obtener(anio, mes)
+        if encontrado is None:
+            return None
+        return encontrado[0], Periodo(anio, mes, EstadoPeriodo.CERRADO)
+
+
+class _UowF029(_Uow):
+    def __init__(self, lineas: dict[int, dict[int, list[Linea]]]) -> None:
+        super().__init__(lineas)
+        self.asignaciones = _AsignacionesConModo(self)
+        self.eventos = _EventosConTipo()
+        self.commits = 0
+
+    def commit(self) -> None:
+        self.commits += 1
+
+
+def _uow29(**cambios: list[Linea]) -> _UowF029:
+    """Periodo en curso de F-024 con las filas cambiadas que se pidan
+    (clave `t<ide>`)."""
+    lineas = _lineas_actuales()
+    for clave, valor in cambios.items():
+        lineas[int(clave[1:])] = valor
+    return _UowF029({P_ACT: lineas})
+
+
+F1 = FiltroEmpresa(empresa=1, por_defecto=1, empresa_obras=1)
+
+
+def _completar(uow, trabajadores, obra_ide, pv=False, usuario=USUARIO,
+               anio=ANIO, mes=MES):
+    return CompletarHasta100().ejecutar(uow, anio, mes, trabajadores,
+                                        obra_ide, pv, usuario, filtro=F1)
+
+
+def _r(ide, resultado, anadido="0"):
+    return ResultadoCompletarTrabajador(ide, ResultadoCompletado[resultado],
+                                        Decimal(anadido))
+
+
+def _claves(lineas: list[Linea]) -> list[tuple[int, bool, Decimal]]:
+    return [(ln.obra_ide, ln.es_postventa, ln.porcentaje) for ln in lineas]
+
+
+@pytest.fixture
+def obras_pv(monkeypatch):
+    """Obras de la 1 que admiten postventa: 103 (activa) y 104 (cerrada:
+    solo `Postv-`)."""
+    for obra in (Obra(103, "0103", "OBRA 103", None, activa=True, empresa=1,
+                      admite_postventa=True),
+                 Obra(104, "0104", "OBRA 104", None, activa=False, empresa=1,
+                      admite_postventa=True)):
+        monkeypatch.setitem(OBRAS, obra.ide, obra)
+
+
+# ------------------------------ R15 / R16 ------------------------------ #
+def test_f029_r15_caso_falta_suma_a_la_linea_existente():
+    uow = _uow29(t14=[_ln(100, "30"), _ln(900, "20.50")])
+    resultados, _ = _completar(uow, [14], 100)
+    assert resultados == [_r(14, "COMPLETADO", "49.50")]
+    assert _claves(uow.lineas[P_ACT][14]) == [
+        (100, False, Decimal("79.50")), (900, False, Decimal("20.50"))]
+
+
+def test_f029_r15_caso_sin_linea_crea_una_y_las_demas_no_cambian():
+    uow = _uow29(t14=[_ln(100, "30"), _ln(900, "20.50")])
+    resultados, _ = _completar(uow, [14], 101)
+    assert resultados == [_r(14, "COMPLETADO", "49.50")]
+    assert _claves(uow.lineas[P_ACT][14]) == [
+        (100, False, Decimal("30")), (900, False, Decimal("20.50")),
+        (101, False, Decimal("49.50"))]
+
+
+def test_f029_r15_caso_sin_carga_queda_al_100_en_el_destino():
+    """Eva (14, de la 1, sin carga) → 100 en la 101."""
+    uow = _uow29()
+    resultados, _ = _completar(uow, [14], 101)
+    assert resultados == [_r(14, "COMPLETADO", "100.00")]
+    assert _claves(uow.lineas[P_ACT][14]) == [(101, False, Decimal("100.00"))]
+
+
+def test_f029_r16_caso_total_100_y_estado_ok_en_el_cuadrante():
+    uow = _uow29(t14=[_ln(100, "33.33"), _ln(900, "33.33")])
+    _completar(uow, [14], 101)
+    cuadrante = ObtenerCuadrante().ejecutar(uow, ANIO, MES, F1,
+                                            usuario=USUARIO)
+    [eva] = [f for f in cuadrante.filas if f.trabajador.ide == 14]
+    assert eva.total == Decimal("100.00")
+    assert calcular_estado(eva.total, len(eva.lineas)) is EstadoTrabajador.OK
+
+
+# --------------------------------- R17 --------------------------------- #
+def test_f029_r17_caso_ok_y_exceso_no_se_tocan_ni_dejan_evento():
+    """Ana (10, 60 + 40) sale YA_AL_100; con 60 + 50, EXCESO."""
+    uow = _uow29()
+    resultados, _ = _completar(uow, [10], 101)
+    assert resultados == [_r(10, "YA_AL_100")]
+    assert uow.reemplazados == [] and uow.eventos.registros == []
+    uow = _uow29(t10=[_ln(100, "60"), _ln(900, "50")])
+    resultados, _ = _completar(uow, [10], 101)
+    assert resultados == [_r(10, "EXCESO")]
+    assert uow.reemplazados == [] and uow.eventos.registros == []
+    assert _claves(uow.lineas[P_ACT][10]) == [
+        (100, False, Decimal("60")), (900, False, Decimal("50"))]
+
+
+# --------------------------------- R18 --------------------------------- #
+def test_f029_r18_caso_postv_no_suma_a_la_normal(obras_pv):
+    uow = _uow29(t14=[_lnv(103, "40")])
+    resultados, _ = _completar(uow, [14], 103, pv=True)
+    assert resultados == [_r(14, "COMPLETADO", "60")]
+    assert _claves(uow.lineas[P_ACT][14]) == [
+        (103, False, Decimal("40")), (103, True, Decimal("60"))]
+
+
+def test_f029_r18_caso_normal_no_suma_a_la_postv(obras_pv):
+    uow = _uow29(t14=[_lnv(103, "40", pv=True)])
+    _completar(uow, [14], 103, pv=False)
+    assert _claves(uow.lineas[P_ACT][14]) == [
+        (103, True, Decimal("40")), (103, False, Decimal("60"))]
+
+
+def test_f029_r18_caso_postv_suma_a_la_postv(obras_pv):
+    uow = _uow29(t14=[_lnv(103, "40"), _lnv(103, "10", pv=True)])
+    _completar(uow, [14], 103, pv=True)
+    assert _claves(uow.lineas[P_ACT][14]) == [
+        (103, False, Decimal("40")), (103, True, Decimal("60"))]
+
+
+# --------------------------------- R19 --------------------------------- #
+def test_f029_r19_caso_un_evento_completar_por_trabajador_cambiado():
+    uow = _uow29(t14=[_ln(100, "30")])
+    _completar(uow, [14, 10, 11], 101)
+    [(periodo, ide, tipo, usuario, antes, despues)] = uow.eventos.registros
+    assert (periodo, ide, tipo, usuario) == (
+        P_ACT, 14, TipoEvento.COMPLETAR, USUARIO)
+    assert antes == _snapshot([_ln(100, "30")])
+    assert despues == [
+        {"obra_ide": 100, "es_postventa": False, "porcentaje": "30"},
+        {"obra_ide": 101, "es_postventa": False, "porcentaje": "70.00"}]
+
+
+def test_f029_r19_caso_deshacer_lo_devuelve_solo_para_quien_lanzo_el_lote():
+    uow = _uow29(t14=[_ln(100, "30")])
+    _completar(uow, [14], 101)
+
+    def puede(usuario):
+        cuadrante = ObtenerCuadrante().ejecutar(uow, ANIO, MES, F1,
+                                                usuario=usuario)
+        return {f.trabajador.ide: f.puede_deshacer for f in cuadrante.filas}
+
+    assert puede(USUARIO)[14] is True
+    assert puede("ana@ruesma.es")[14] is False
+    with pytest.raises(DeshacerAjeno):
+        DeshacerUltimaModificacion().ejecutar(uow, ANIO, MES, 14,
+                                              "ana@ruesma.es", filtro=F1)
+    fila, _ = DeshacerUltimaModificacion().ejecutar(uow, ANIO, MES, 14,
+                                                    USUARIO, filtro=F1)
+    assert _claves(fila.lineas) == [(100, False, Decimal("30"))]
+
+
+# ------------------------------ R20 / R22 ------------------------------ #
+@pytest.mark.parametrize("obra, pv, motivo", [
+    (102, False, "no se ofrece como normal"),      # inactiva
+    (101, True, "no se ofrece como Postv-"),       # no admite postventa
+    (104, False, "no se ofrece como normal"),      # cerrada, solo Postv-
+    (900, False, "no existe o no es de la empresa de las obras"),  # de la 28
+    (999, False, "no existe o no es de la empresa de las obras"),
+])
+def test_f029_r22_caso_obra_no_valida_422_sin_tocar_a_nadie(obras_pv, obra,
+                                                            pv, motivo):
+    uow = _uow29(t14=[_ln(100, "30")])
+    with pytest.raises(ObraNoValida, match=motivo):
+        _completar(uow, [14, 10], obra, pv=pv)
+    assert uow.reemplazados == [] and uow.eventos.registros == []
+    assert uow.commits == 0
+
+
+def test_f029_r22_caso_postv_de_obra_cerrada_que_la_admite(obras_pv):
+    uow = _uow29()
+    resultados, _ = _completar(uow, [14], 104, pv=True)
+    assert resultados == [_r(14, "COMPLETADO", "100.00")]
+
+
+# --------------------------------- R21 --------------------------------- #
+def test_f029_r21_caso_periodo_inexistente_o_cerrado():
+    uow = _uow29(t14=[_ln(100, "30")])
+    with pytest.raises(PeriodoNoEncontrado):
+        _completar(uow, [14], 101, mes=MES + 1)
+    uow.periodos = _PeriodosCerrados()
+    with pytest.raises(PeriodoCerrado):
+        _completar(uow, [14], 101)
+    assert uow.reemplazados == [] and uow.eventos.registros == []
+    assert uow.commits == 0
+
+
+# ---------------------------- R14 / R23 / R24 -------------------------- #
+def test_f029_r23_r24_caso_no_visible_y_no_vigente_no_paran_el_lote():
+    """Bea (11, de la 28), Fran (15, de la 18) y 999 (no existe): no
+    visibles en E = 1. Carlos (12) y Dani (13), en FALTA pero no vigentes:
+    no se tocan. Eva (14) sí."""
+    uow = _uow29()
+    resultados, _ = _completar(uow, [11, 12, 999, 13, 15, 14], 101)
+    assert resultados == [
+        _r(11, "NO_VISIBLE"), _r(12, "NO_VIGENTE"), _r(999, "NO_VISIBLE"),
+        _r(13, "NO_VIGENTE"), _r(15, "NO_VISIBLE"),
+        _r(14, "COMPLETADO", "100.00")]
+    assert uow.reemplazados == [14]
+    assert _claves(uow.lineas[P_ACT][12]) == [(900, False, Decimal("50"))]
+
+
+def test_f029_r14_caso_repetidos_una_vez_en_orden_de_llegada():
+    uow = _uow29()
+    resultados, _ = _completar(uow, [14, 11, 14, 10, 11], 101)
+    assert [r.trabajador_ide for r in resultados] == [14, 11, 10]
+    assert uow.reemplazados == [14]
+    assert len(uow.eventos.registros) == 1
+
+
+# --------------------------------- R25 --------------------------------- #
+def test_f029_r25_caso_resumen_despues_del_lote_y_un_solo_commit():
+    """Antes: 5 visibles, 2 OK, 2 FALTA, 1 sin carga (Eva). Después de
+    completar a Eva: 3 OK y ninguno sin carga."""
+    uow = _uow29()
+    _, resumen = _completar(uow, [14, 10], 101)
+    assert resumen == ResumenPeriodo(total=5, ok=3, falta=2, exceso=0,
+                                     sin_carga=0)
+    assert uow.commits == 1
