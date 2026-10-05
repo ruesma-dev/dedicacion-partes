@@ -1,18 +1,22 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-029 en spec** (selección múltiple y completar hasta el 100 %, rigor
+**F-029 en `spec_ready`** (selección múltiple y completar hasta el 100 %, rigor
 estándar, `sdd: true`), rama `feature/F-029-seleccion-multiple-completar-100`.
 F-027 se cerró el 2026-10-04 y se **desplegó el 2026-10-05**; F-025 se desplegó el 2026-10-03 (resúmenes en
 `history.md`). El arnés es la **1.7.3**.
 
-## F-029 · Selección múltiple y completar hasta el 100 % (en spec)
+## F-029 · Selección múltiple y completar hasta el 100 % (spec lista)
 
 - **Elegida por el humano el 2026-10-05** por delante de F-021, de la que
   dependía. La spec trabaja con el filtro de obra que YA existe en el front;
   la selección automática desde Sesame sigue siendo de F-021.
-- **Estado:** spec-author lanzado → `specs/F-029-seleccion-multiple-completar-100/`.
-  El líder enseña la spec al humano **antes** de implementar (PARADA 1).
+- **Estado:** spec entregada (`631273c`, `specs/F-029-seleccion-multiple-completar-100/`):
+  api `POST /periodos/{a}/{m}/completar` por lote (un evento `COMPLETAR`
+  deshacible por trabajador) + front con Ctrl/Shift, diálogo y botón. Lista
+  cerrada de tests anteriores que cambian: **ninguno** (comprobado con un
+  prototipo desechable). **Espera la aprobación del humano** con D1-D6
+  abiertas (requirements §6, recomendadas: A en todas).
 
 ## Producción, hoy
 
