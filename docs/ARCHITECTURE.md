@@ -83,7 +83,8 @@ Hexagonal estricto:
 Endpoints bajo `/api/v1`: `health`, `sync` y `sync/preview`, CRUD de
 `periodos` (crear/cerrar/reabrir/copiar-anterior), `cuadrante`, sustitución
 atómica de asignaciones por trabajador, `deshacer` (solo lo propio,
-[`#regla-deshacer`](#regla-deshacer)), `export.xlsx`,
+[`#regla-deshacer`](#regla-deshacer)), `completar` (lote «completar al
+100 %» en una obra, [`#regla-completar`](#regla-completar)), `export.xlsx`,
 `registro/preflight` + `registro/ejecutar` y `empresas` (las del selector,
 con su nombre de Sigrid y si están de baja).
 
@@ -130,7 +131,7 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > README del transfer, los docstrings y las specs **remiten** a las anclas
 > `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad`,
 > `#regla-sin-partida`, `#regla-pruebas`, `#regla-empresa`,
-> `#regla-recurso` y `#regla-deshacer`; no vuelven a enunciar la regla con palabras propias. Lo
+> `#regla-recurso`, `#regla-deshacer` y `#regla-completar`; no vuelven a enunciar la regla con palabras propias. Lo
 > vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
@@ -471,6 +472,38 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
     *Decidido por Pablo Gris el 2026-10-04 (decisión A) · F-027, criterios
     `acceptance` en `harness/features.json`.*
+15. <a id="regla-completar"></a>**Completar al 100 % en una obra, por
+    lote.** `POST /api/v1/periodos/{a}/{m}/completar` recibe los
+    trabajadores, la obra destino y su modo (normal o `Postv-`), y a cada
+    uno le pone **lo que le falta**: 100 menos el total de **todas** sus
+    líneas, a centésimas (la escala de la columna; el total queda en
+    100,00).
+
+    - **Dónde.** En la línea del trabajador con la misma clave (obra,
+      `es_postventa`), sumándolo; si no la tiene, en una línea nueva. Sus
+      demás líneas no cambian. `Postv-X` y X son líneas distintas
+      ([`#regla-p5`](#regla-p5)): completar en una nunca suma a la otra.
+    - **A quién no.** Al que ya está en `OK` o en `EXCESO` según la misma
+      regla del 100 % del cuadrante (`calcular_estado` y su épsilon: no hay
+      otro criterio de «al 100 %»), ni se le resta; al no vigente en el mes
+      ([`#regla-recurso`](#regla-recurso)); al que no es visible en la
+      empresa elegida ([`#regla-empresa`](#regla-empresa)). Cada uno sale
+      con su resultado y el lote sigue con los demás.
+    - **Todo o nada.** Periodo inexistente (404) o `CERRADO` (409), y obra
+      que no existe, no es de la empresa de las obras o no se ofrece en ese
+      modo (`Linea.ofrecible`) (422): no se toca a nadie. Es una sola
+      transacción.
+    - **Deshacer.** Cada trabajador cambiado deja **un** evento
+      `COMPLETAR` con su `X-Usuario`, que se deshace trabajador a
+      trabajador como cualquier otro ([`#regla-deshacer`](#regla-deshacer)).
+    - **No registra en Sigrid** ni llama al transfer: registrar sigue
+      siendo el botón de siempre. El front solo manda quiénes y el destino
+      (sin porcentajes): la cifra la pone la API, `domain/estados.py`
+      (`completar_hasta_100`).
+
+    *Decidido por Pablo Gris el 2026-09-29 (completar con el cálculo en la
+    API, por lote) y el 2026-10-05 (D1-D6, las seis A) · F-029,
+    `specs/F-029-seleccion-multiple-completar-100/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 

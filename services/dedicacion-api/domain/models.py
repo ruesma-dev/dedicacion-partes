@@ -27,6 +27,18 @@ class EstadoTrabajador(str, Enum):
 class TipoEvento(str, Enum):
     GUARDAR = "GUARDAR"
     COPIA = "COPIA"
+    COMPLETAR = "COMPLETAR"  # lote «completar al 100 %» (F-029)
+
+
+class ResultadoCompletado(str, Enum):
+    """Qué le pasó a cada trabajador del lote «completar al 100 %» (F-029,
+    docs/ARCHITECTURE.md#regla-completar)."""
+
+    COMPLETADO = "COMPLETADO"
+    YA_AL_100 = "YA_AL_100"
+    EXCESO = "EXCESO"
+    NO_VIGENTE = "NO_VIGENTE"
+    NO_VISIBLE = "NO_VISIBLE"
 
 
 @dataclass(frozen=True)
@@ -95,6 +107,25 @@ class Linea:
         if self.es_postventa:
             return self.obra_admite_postventa
         return self.obra_activa
+
+
+@dataclass(frozen=True)
+class Completado:
+    """Lo que devuelve la regla pura `completar_hasta_100` (F-029): las
+    líneas del trabajador tras completar y lo añadido (escala 0-100)."""
+
+    lineas: list[Linea]
+    anadido: Decimal
+
+
+@dataclass(frozen=True)
+class ResultadoCompletarTrabajador:
+    """Resultado del lote para un trabajador (F-029, R25); `anadido` es 0
+    si no se tocó."""
+
+    trabajador_ide: int
+    resultado: ResultadoCompletado
+    anadido: Decimal = Decimal("0")
 
 
 @dataclass(frozen=True)

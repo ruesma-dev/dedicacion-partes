@@ -1546,3 +1546,65 @@ El humano confirma que, tras el sync («Actualizar Sigrid»), el cuadrante de
 producción ofrece `Postv-0656`. Se retira el aviso a usuarios de no registrar
 postventa en las obras CP ni OT: con D2 = B la cascada de P5 ya no las casa con
 partidas ajenas.
+
+## 2026-10-05 · F-029 · Selección múltiple y completar hasta el 100 %
+
+Rama `feature/F-029-seleccion-multiple-completar-100` · `sdd: true` · rigor
+`estandar` · **APROBADO** por el reviewer en la pasada 2 (la 1 pidió solo
+rastro: T7 sin marcar y «Lo siguiente» desfasado). Adelantada por el humano por
+delante de F-021: usa el filtro «Filtrar obra…» de hoy; Sesame queda para F-021.
+
+**Decisiones del humano (D1-D6 = A).** Destino elegido en un diálogo entre las
+entradas del catálogo que casan con el filtro; normal o `Postv-` según la
+entrada; el no vigente no se toca y la obra no ofrecible da 422 para todo el
+lote; botón «Completar al 100 %» y tecla C; lo que falta a 0,01 con la épsilon
+compartida; solo se tocan los seleccionados visibles.
+
+**Qué cambió.** api: `POST /api/v1/periodos/{anio}/{mes}/completar`, una
+transacción, un evento `COMPLETAR` deshacible por trabajador (regla F-027),
+`#regla-completar`. Front: Ctrl/Shift+clic, Esc, contador, diálogo, tecla C.
+Teclado anterior intacto. Nada en Sigrid.
+
+**Verificado.** Cobertura 84/84; mutación en serie 20/20 (dos `frozen` muertos
+con un test; un falso superviviente también en serie → encargo de
+`arnes-base` `58403df`); ningún test anterior cambiado; `azure-apps`
+`a593bd4`. **T9 cumplida por el humano** en local: «está todo ok, podemos
+desplegarlo». Aclarado al humano: el deshacer tiene historial completo por
+trabajador y mes (solo lo propio, sin rehacer).
+
+Informes: `progress/impl_F-029.md`, `progress/review_F-029.md`,
+`progress/mutacion_F-029.md`. Sección retirada de `current.md`:
+
+## F-029 · Selección múltiple y completar hasta el 100 % (en curso)
+
+- **Elegida por el humano el 2026-10-05** por delante de F-021, de la que
+  dependía. La spec trabaja con el filtro de obra que YA existe en el front;
+  la selección automática desde Sesame sigue siendo de F-021.
+- **Estado:** spec entregada (`631273c`, `specs/F-029-seleccion-multiple-completar-100/`):
+  api `POST /periodos/{a}/{m}/completar` por lote (un evento `COMPLETAR`
+  deshacible por trabajador) + front con Ctrl/Shift, diálogo y botón. Lista
+  cerrada de tests anteriores que cambian: **ninguno** (comprobado con un
+  prototipo desechable). **Aprobada por el humano el 2026-10-05 con D1-D6 =
+  A**, cerradas en todos sus sitios (`8d5172d`).
+- **Implementación terminada** (`progress/impl_F-029.md`): T1-T6, T8, T10
+  (`b09e333`…). Cobertura 84/84; mutación en serie 20/20 muertos tras matar
+  dos `frozen` con un test (`progress/mutacion_F-029.md`); un falso
+  superviviente en serie → encargo de `arnes-base` (`58403df`). Ningún test
+  anterior cambiado. **Review 1: CAMBIOS PEDIDOS solo por el rastro** (T7
+  sin marcar en `tasks.md` y «Lo siguiente» desfasado), corregidos por el
+  líder; código, tests, mutación y docs revisados y bien. **Review 2:
+  APROBADO.** Para el `done` solo falta la T9 del humano; la rama NO se
+  mergea a `dev` hasta entonces (puede traer ajustes de usabilidad).
+- **Condición del humano: NO se despliega hasta que pruebe la usabilidad en
+  local** (T9, `tasks.md`: api y front locales desde la rama, BBDD local, sin
+  Sigrid; clics, diálogo, tecla C, Ctrl+Z y regresión del teclado).
+- **T7 (líder): hecha**, párrafo de §5 copiado literal a
+  `azure-apps/dedicacion.md`, commit `a593bd4` («sin desplegar»).
+- **T9 MANUAL (humano), pendiente:** pasos (a)-(e) en `tasks.md` T9 y
+  arranque en `progress/impl_F-029.md` § «Cómo probarlo en local»: en Git
+  Bash, `cd services/dedicacion-api && .venv/Scripts/python main.py` y, en
+  otra, `cd services/dedicacion-front && .venv/Scripts/python main.py`;
+  abrir `http://localhost:8080`. NO pulsar «Registrar en Sigrid».
+  Mirar además (observación de la review 1): Ctrl/Shift+clic con el editor
+  abierto repinta la tabla y el foco puede saltar. Resultado: _pendiente_.
+

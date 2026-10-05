@@ -1,9 +1,17 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-027 se cerró el 2026-10-04 y se
-**desplegó el 2026-10-05**; F-025 se desplegó el 2026-10-03 (resúmenes en
-`history.md`). El arnés es la **1.7.3**.
+**Ninguna feature en ejecución.** F-029 se cerró el 2026-10-05 y está en
+`dev` **pendiente de desplegar** (sección siguiente). F-027 se desplegó el
+2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+
+## ⚠ Despliegue de F-029 (pendiente; lo lanza el humano)
+
+- Cambian la **api** y el **front** (`redeploy_dedicacion.ps1 -Solo api,front`,
+  que respeta el orden api → front); sin DDL (`evento.tipo` es texto) ni sync.
+- **Comprobación tras desplegar:** en producción, seleccionar con Ctrl+clic a
+  un trabajador en FALTA, pulsar C, confirmar la obra y ver que queda al
+  100 %; Ctrl+Z lo devuelve. No hace falta registrar en Sigrid.
 
 ## Producción, hoy
 
@@ -37,8 +45,8 @@
 ## Lo siguiente, por prioridad
 
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020). Primero
-**F-028**; después F-021, F-029, F-030, F-020, F-031, F-033 y, detrás,
+2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020). Primero desplegar
+**F-029**; después **F-028**, F-021, F-030, F-020, F-031, F-033 y, detrás,
 F-017, F-018…
 
 ## ⚠ Lo que espera al humano

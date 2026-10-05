@@ -26,15 +26,18 @@ from domain.errors import (
     PeriodoNoEncontrado,
     TrabajadorNoEncontrado,
 )
-from domain.estados import resumir
+from domain.estados import calcular_estado, completar_hasta_100, resumir
 from domain.models import (
     CuadranteTrabajador,
     Empresa,
     EstadoPeriodo,
+    EstadoTrabajador,
     FiltroEmpresa,
     Linea,
     Obra,
     Periodo,
+    ResultadoCompletado,
+    ResultadoCompletarTrabajador,
     ResultadoCopia,
     ResumenPeriodo,
     TipoEvento,
@@ -304,6 +307,126 @@ class CopiarTrabajadorAnterior:
             uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
         )
         return fila, resumen, periodo_origen, omitidas
+
+
+# ----------------------------------------------------------------------
+# Completar hasta el 100 % por lote (F-029)
+# ----------------------------------------------------------------------
+class CompletarHasta100:
+    """Pone a cada trabajador del lote lo que le falta hasta el 100 % en la
+    obra destino (obra + modo), en UNA transacción
+    (docs/ARCHITECTURE.md#regla-completar).
+
+    Todo o nada ante un error global (periodo inexistente o cerrado, obra
+    que no existe, no es de la empresa de las obras o no se ofrece en ese
+    modo): se valida antes de tocar a nadie. Por trabajador, en el orden de
+    llegada y una vez cada `ide`: no visible en la empresa del filtro →
+    `NO_VISIBLE`; no vigente en el mes → `NO_VIGENTE`; en OK o EXCESO →
+    `YA_AL_100` / `EXCESO` sin tocarlo; si no, se completa y deja un evento
+    `COMPLETAR`, deshacible como cualquier otro (`#regla-deshacer`). No
+    llama ni al transfer ni a Sigrid.
+    """
+
+    def ejecutar(
+        self,
+        uow: UnitOfWork,
+        anio: int,
+        mes: int,
+        trabajadores: list[int],
+        obra_ide: int,
+        es_postventa: bool,
+        usuario: str,
+        *,
+        filtro: FiltroEmpresa,
+    ) -> tuple[list[ResultadoCompletarTrabajador], ResumenPeriodo]:
+        periodo_id, _ = _periodo_abierto_o_error(uow, anio, mes)
+        _obra_destino_o_error(uow, periodo_id, obra_ide, es_postventa, filtro)
+        filas = {
+            f.trabajador.ide: f
+            for f in _filas_de_empresa(uow, periodo_id, filtro)
+        }
+        resultados = [
+            _completar_uno(uow, periodo_id, ide, filas.get(ide), obra_ide,
+                           es_postventa, usuario)
+            for ide in dict.fromkeys(trabajadores)
+        ]
+        uow.commit()
+        return resultados, _resumen_periodo(uow, periodo_id, filtro)
+
+
+def _completar_uno(
+    uow: UnitOfWork,
+    periodo_id: int,
+    ide: int,
+    fila: CuadranteTrabajador | None,
+    obra_ide: int,
+    es_postventa: bool,
+    usuario: str,
+) -> ResultadoCompletarTrabajador:
+    """Un trabajador del lote: qué le pasa y, si se completa, su escritura y
+    su evento `COMPLETAR` (R15-R19, R23, R24)."""
+    if fila is None:
+        return ResultadoCompletarTrabajador(ide, ResultadoCompletado.NO_VISIBLE)
+    if not fila.trabajador.activo:
+        return ResultadoCompletarTrabajador(ide, ResultadoCompletado.NO_VIGENTE)
+    completado = completar_hasta_100(fila.lineas, obra_ide, es_postventa)
+    if completado is None:
+        # Mismo `calcular_estado` que decidió no tocarlo: no hay un segundo
+        # criterio de «al 100 %» (D5).
+        estado = calcular_estado(fila.total, len(fila.lineas))
+        return ResultadoCompletarTrabajador(
+            ide,
+            ResultadoCompletado.EXCESO
+            if estado is EstadoTrabajador.EXCESO
+            else ResultadoCompletado.YA_AL_100,
+        )
+    uow.asignaciones.reemplazar(periodo_id, ide, completado.lineas, usuario)
+    uow.eventos.registrar(
+        periodo_id,
+        ide,
+        TipoEvento.COMPLETAR,
+        usuario,
+        _snapshot(fila.lineas),
+        _snapshot(completado.lineas),
+    )
+    return ResultadoCompletarTrabajador(
+        ide, ResultadoCompletado.COMPLETADO, completado.anadido
+    )
+
+
+def _obra_destino_o_error(
+    uow: UnitOfWork,
+    periodo_id: int,
+    obra_ide: int,
+    es_postventa: bool,
+    filtro: FiltroEmpresa,
+) -> Obra:
+    """Obra destino del lote (F-029, R22): la de la lista que ofrece el
+    cuadrante (empresa de las obras) y ofrecible en ese modo según la ÚNICA
+    definición, `Linea.ofrecible`. Si no, `ObraNoValida` con el motivo."""
+    obra = next(
+        (
+            o
+            for o in uow.obras.listar_para_periodo(periodo_id)
+            if o.ide == obra_ide and o.empresa == filtro.empresa_obras
+        ),
+        None,
+    )
+    if obra is None:
+        raise ObraNoValida(
+            f"La obra {obra_ide} no existe o no es de la empresa de las obras"
+        )
+    linea = Linea(
+        obra_ide=obra_ide,
+        es_postventa=es_postventa,
+        porcentaje=Decimal("0"),
+        obra_activa=obra.activa,
+        obra_admite_postventa=obra.admite_postventa,
+    )
+    if not linea.ofrecible:
+        modo = "como Postv-" if es_postventa else "como normal"
+        raise ObraNoValida(f"La obra {obra.cod} no se ofrece {modo}")
+    return obra
 
 
 # ----------------------------------------------------------------------
@@ -612,8 +735,8 @@ def _filas_de_empresa(
 ) -> list[CuadranteTrabajador]:
     """Filas del periodo visibles en la empresa del filtro, cada una con
     TODAS sus líneas (F-024 R10; visibilidad de F-034 R2-R3). Único punto del
-    filtro de trabajadores: lo usan el cuadrante, el resumen y la copia del
-    mes."""
+    filtro de trabajadores: lo usan el cuadrante, el resumen, la copia del
+    mes y el lote de completar al 100 % (F-029)."""
     trabajadores = uow.trabajadores.listar_para_periodo(periodo_id)
     lineas = uow.asignaciones.lineas_del_periodo(periodo_id)
     filas = []

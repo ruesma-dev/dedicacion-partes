@@ -222,6 +222,14 @@ parámetro `empresa` (entero > 0, si no 422) en las rutas de
 `/api/v1/periodos/...`. Siguen siendo internas: no se exponen a otros
 proyectos.
 
+Desde F-029 la api sirve además, **solo para el front**, `POST
+/api/v1/periodos/{anio}/{mes}/completar` (`{trabajadores: [ide], obra_ide,
+es_postventa}`, con el mismo parámetro `empresa`): pone a cada trabajador lo
+que le falta hasta el 100 % en esa obra, en una transacción, y devuelve el
+resultado de cada uno y el resumen. Escribe solo en la base `dedicacion`:
+**no llama al transfer ni a `sigrid-api`**. Interna como las demás. La regla
+está en `docs/ARCHITECTURE.md#regla-completar`.
+
 Desde F-025 el transfer expone, **solo para la api**, `POST
 /api/postventa/universo` (`{empresa, obras: [{ide, codigo, nombre}]}` →
 las obras que admiten postventa, con su partida; 422 sin empresa válida,
