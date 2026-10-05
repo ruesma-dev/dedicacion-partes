@@ -38,8 +38,10 @@
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Primero **F-020**; después
-F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
+`BACKLOG.md` tiene el orden completo (reordenado por el humano el
+2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020). Primero
+**F-028**; después F-021, F-029, F-030, F-020, F-031, F-033 y, detrás,
+F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
