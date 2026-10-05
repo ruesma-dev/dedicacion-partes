@@ -22,9 +22,9 @@
 # node o jq. Si no hay ninguno, la validación DEGRADA a una comprobación por
 # texto (avisa de ello) en vez de fallar.
 
-# --- [ADAPTAR] Configuración por proyecto -----------------------------------
+# --- Configuración por proyecto (adaptada al monorepo porcentajes) ----------
 PROYECTO_PYTHON=auto     # auto (detecta) | 1 (forzar sí) | 0 (forzar no)
-REQUIERE_ENV=1           # 1 si el proyecto usa .env; 0 si no
+REQUIERE_ENV=0           # los .env viven en cada servicio, no en la raíz
 RUTAS_PYTHON=""          # rutas a compilar; vacío = todo el árbol. Si lo
                          # rellenas, incluye `harness` (las herramientas del
                          # arnés también son código que debe compilar).
@@ -32,7 +32,7 @@ COMANDO_TESTS=""         # proyectos NO Python: p.ej. "npm test --silent"
 LINT_BLOQUEA=0           # 1 para que el lint tumbe el arnés; 0 = solo avisa
 RAMA_BASE=dev            # rama de integración contra la que se calcula el
                          # diff de la feature (puerta de cobertura y mutación)
-COMPROBACIONES_EXTRA=0   # 1 para activar la sección 9 (personalizada)
+COMPROBACIONES_EXTRA=1   # sección 9: .env no versionados, YAML y .env.example
 
 # Modo ligero (para hooks): con ARNES_SALTAR_SUITES=1 el portero salta las
 # suites de tests y la puerta de cobertura, avisándolo en cada sección. NO
@@ -94,6 +94,33 @@ if [ "$ES_PYTHON" -eq 1 ]; then
     fi
 else
     warn "Proyecto no Python: se saltan compilación, lint y pytest (ver cabecera de este fichero)"
+fi
+
+# --- 1 bis. ¿Hay una campaña de mutación en curso? --------------------------
+# Mientras una campaña de mutación corre, puede haber un mutante APLICADO en el
+# árbol: un `!=` donde el código dice `==`. Todo lo que este portero mida a
+# partir de ahí —compilación, lint, tests, cobertura— estaría midiendo ese
+# mutante, no el código, y su rojo no significa nada. Pasó el 2026-08-19: un
+# agente lanzó init.sh mientras otro tenía una campaña corriendo, salió en rojo
+# y la reacción natural —restaurar el fichero— habría contaminado la campaña
+# ajena.
+#
+# La campaña deja constancia en un centinela (.arnes_cache/mutacion_en_curso.json,
+# ver harness/mutacion.py) y aquí se lee con `--estado`, que devuelve 0 (no hay
+# campaña), 3 (la hay, pero muta en worktrees aparte) o 4 (la hay y el árbol
+# principal tiene un mutante escrito AHORA MISMO). El 4 es KO: no se puede dar
+# por bueno ni por malo un veredicto medido sobre un mutante.
+if [ -f ".arnes_cache/mutacion_en_curso.json" ]; then
+    if [ -n "$PY" ]; then
+        ESTADO_MUTACION=$($PY -m harness.mutacion --estado 2>&1)
+        case "$?" in
+            0) : ;;   # el centinela desapareció entre el test y la lectura
+            3) warn "$ESTADO_MUTACION" ;;
+            *) ko "$ESTADO_MUTACION" ;;
+        esac
+    else
+        ko "Hay un centinela de campaña de mutación (.arnes_cache/mutacion_en_curso.json) y sin Python no se puede leer: el árbol puede tener un mutante aplicado y NADA de lo que mida este portero es de fiar"
+    fi
 fi
 
 # --- 2. Ficheros del arnés --------------------------------------------------
@@ -221,7 +248,7 @@ fi
 
 # --- 3b. Niveles de rigor: configuración válida y niveles declarados válidos -
 # Lo que exige cada nivel vive en harness/rigor.json. Una feature que no
-# declara nivel NO es un error: se le aplica el más exigente. Declarar uno
+# declara nivel NO es un error: se le aplica el nivel por defecto. Declarar uno
 # inexistente sí lo es. Necesita Python: sin él, degrada con aviso.
 if [ -n "$PY" ]; then
     if $PY -m harness.rigor --validar; then
@@ -436,6 +463,10 @@ elif [ "$ES_PYTHON" -eq 1 ] && [ -n "$PY" ]; then
     else
         ko "$SALIDA_COBERTURA"
     fi
+elif [ -z "$PY" ]; then
+    warn "PUERTA COBERTURA: N/A (no hay intérprete de Python en el PATH: la puerta no se puede medir)"
+else
+    warn "PUERTA COBERTURA: N/A (proyecto sin Python: harness.cobertura solo mide líneas cambiadas de .py)"
 fi
 
 # --- 7 ter. Puerta de RUTAS SENSIBLES (solo si hay declaración) -------------
@@ -463,6 +494,61 @@ if [ -f "harness/rutas_sensibles.json" ] && [ "$ES_PYTHON" -eq 1 ] && [ -n "$PY"
     esac
 fi
 
+# --- 7 quater. Puerta de TAMAÑO del papeleo de la feature en curso ----------
+# Cada línea de una spec se paga TRES veces: la escribe el spec-author, la lee
+# el implementer y la relee el reviewer. El arnés no decía nada del tamaño y
+# por eso los agentes escribían cuanto se les ocurría (978 líneas de spec para
+# arreglar un script PowerShell). Los topes viven en el bloque `tamano` de
+# harness/rigor.json: aquí no hay ningún número que tocar.
+#
+# Se mide SOLO la feature en curso, a propósito: las specs anteriores exceden
+# hoy los topes y medirlas dejaría el portero en rojo permanente o exigiría una
+# lista de excepciones que mantener. Lo viejo queda amnistiado por
+# construcción; lo que se retome y se edite pasará a medirse.
+#
+# «En curso» excluye las `done`: una feature cerrada es papeleo cerrado. Sin
+# esa exclusión, la amnistía se cae justo en la rama base -donde arranca cada
+# sesión- en cuanto una feature cerrada declara esa rama como suya, que es lo
+# que pasó con F-015 de `porcentajes`, hecha directamente en `dev`: 546 líneas
+# de un review anterior a los topes dejaban `dev` en rojo para siempre.
+#
+# Códigos de harness.tamano: 0 cabe, 1 se pasa (KO: el portero se pone rojo),
+# 2 no aplica (sin configuración o sin bloque `tamano`) => AVISO con el motivo
+# impreso, nunca un verde silencioso.
+#
+# Y por eso hay rama para CADA caso en que la puerta no puede medir, incluido
+# el proyecto sin Python: CHECKPOINTS.md promete un N/A "con su motivo impreso"
+# y un tramo mudo convierte esa promesa en un checkbox que nadie puede marcar.
+if [ "$ES_PYTHON" -eq 1 ] && [ -n "$PY" ] && [ -f "harness/tamano.py" ]; then
+    FEATURE_TAMANO=$($PY - <<'EOF'
+from harness.alcance import ejecutar_git
+from harness.rigor import cargar_features, feature_de_rama
+
+rama = ejecutar_git(["branch", "--show-current"]).strip()
+ficha = feature_de_rama(rama, cargar_features())
+if ficha and ficha.get("status") == "done":
+    ficha = None  # papeleo cerrado: no hay nada que se vaya a escribir
+print(ficha.get("id", "") if ficha else "")
+EOF
+)
+    if [ -z "$FEATURE_TAMANO" ]; then
+        warn "PUERTA TAMAÑO: N/A (no hay papeleo abierto que medir: ni la rama actual corresponde a una feature sin cerrar ni hay ninguna in_progress)"
+    else
+        SALIDA_TAMANO=$($PY -m harness.tamano --feature "$FEATURE_TAMANO" 2>&1)
+        case "$?" in
+            0) ok "$SALIDA_TAMANO" ;;
+            1) ko "$SALIDA_TAMANO" ;;
+            *) warn "$SALIDA_TAMANO" ;;
+        esac
+    fi
+elif [ "$ES_PYTHON" -eq 1 ] && [ -n "$PY" ]; then
+    warn "PUERTA TAMAÑO: N/A (no existe harness/tamano.py: arnés anterior a la puerta de tamaño)"
+elif [ -z "$PY" ]; then
+    warn "PUERTA TAMAÑO: N/A (no hay intérprete de Python en el PATH: la puerta no se puede medir)"
+else
+    warn "PUERTA TAMAÑO: N/A (proyecto sin Python: harness.tamano necesita el intérprete del arnés)"
+fi
+
 # --- 8. Marcas de adaptación sin resolver -----------------------------------
 # Un arnés recién instalado y sin adaptar engaña: parece configurado y no lo
 # está. Esto no bloquea, pero lo dice en cada arranque hasta que se resuelva.
@@ -475,14 +561,43 @@ if [ -n "$PENDIENTES" ]; then
     warn "Marcas [$MARCA] sin resolver en: $PENDIENTES"
 fi
 
-# --- 9. [ADAPTAR] Comprobaciones específicas del proyecto -------------------
-# Ejemplos según proyecto:
-#   - Azurite levantado y colas creadas (proyectos con colas):
-#       curl -s http://127.0.0.1:10001/devstoreaccount1 >/dev/null || ko "Azurite no responde"
-#   - YAML de configuración parseable:
-#       $PY -c "import yaml; yaml.safe_load(open('config/xxx.yaml'))" || ko "YAML inválido"
+# --- 9. Comprobaciones específicas del proyecto -----------------------------
+# 9a. Ningún .env versionado: la única escritura del sistema va contra el ERP
+#     con una function key, y este repositorio es git (lo que entra, se queda).
+# 9b. El YAML de consultas de la API tiene que parsear: si no, el sync muere
+#     al arrancar y no en un test.
+# 9c. Cada servicio conserva su .env.example: es el único inventario de
+#     variables que queda al no versionar los .env.
 if [ "$COMPROBACIONES_EXTRA" -eq 1 ]; then
-    warn "COMPROBACIONES_EXTRA activado pero sin implementar: edita la sección 9"
+    if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then
+        ENV_VERSIONADOS=$(git ls-files | grep -E '(^|/)\.env$' || true)
+        if [ -n "$ENV_VERSIONADOS" ]; then
+            ko "Hay .env versionados: $ENV_VERSIONADOS"
+        else
+            ok "Ningún .env versionado"
+        fi
+    fi
+
+    YAML_API="services/dedicacion-api/config/config.yaml"
+    if [ -n "$PY" ] && [ -f "$YAML_API" ]; then
+        if ! $PY -c "import yaml" >/dev/null 2>&1; then
+            warn "PyYAML no instalado: no se valida $YAML_API (pip install -r requirements-dev.txt)"
+        elif $PY -c "import sys,yaml; yaml.safe_load(open(sys.argv[1],encoding='utf-8'))" "$YAML_API" >/dev/null 2>&1; then
+            ok "config.yaml de dedicacion-api: válido"
+        else
+            ko "config.yaml de dedicacion-api no parsea"
+        fi
+    fi
+
+    FALTAN_EJEMPLO=""
+    for SRV in dedicacion-api dedicacion-front dedicacion-transfer; do
+        [ -f "services/$SRV/.env.example" ] || FALTAN_EJEMPLO="$FALTAN_EJEMPLO $SRV"
+    done
+    if [ -n "$FALTAN_EJEMPLO" ]; then
+        ko "Servicios sin .env.example:$FALTAN_EJEMPLO"
+    else
+        ok "Los tres servicios tienen .env.example"
+    fi
 fi
 
 # --- 10. Rama actual (informativo + guardarraíl) ----------------------------

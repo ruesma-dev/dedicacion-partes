@@ -1,0 +1,35 @@
+# .gitattributes
+* text=auto eol=lf
+
+*.py    text eol=lf
+*.sql   text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.toml  text eol=lf
+*.txt   text eol=lf
+*.env   text eol=lf
+
+# Excepción a la línea base: docs/CONVENTIONS.md pide PowerShell en UTF-8 con
+# BOM y CRLF. Sin esta regla, `* text=auto eol=lf` los materializaba en LF.
+*.ps1   text eol=crlf
+
+# Los ejecuta Git Bash: explícito para que ninguna regla futura los pase a CRLF.
+*.sh    text eol=lf
+
+# Fragmentos que se anexan a ficheros del proyecto destino: LF como el resto.
+*.arnes text eol=lf
+
+# VERSION lo lee `source` desde init.sh (bash): LF obligatorio.
+# Sin barra en el patrón: así casa en cualquier nivel, no solo en la raíz.
+VERSION text eol=lf
+
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.pdf   binary
+*.xlsx  binary
+*.xls   binary
+*.docx  binary
+*.zip   binary

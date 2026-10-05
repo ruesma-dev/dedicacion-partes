@@ -1,0 +1,205 @@
+# infrastructure/db/orm_models.py
+"""Modelos ORM (SQLAlchemy 2.0, estilo Mapped/mapped_column)."""
+from __future__ import annotations
+
+from datetime import datetime
+from decimal import Decimal
+from typing import Any
+
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    false,
+    func,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class TrabajadorORM(Base):
+    __tablename__ = "trabajador"
+
+    # `res.ide` del RECURSO de Sigrid (F-026, D1): es el que la API manda al
+    # transfer. Antes de F-026 era el `emp.ide` de la ficha de empleado.
+    ide: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    cod: Mapped[str | None] = mapped_column(Text)
+    nombre: Mapped[str] = mapped_column(Text, nullable=False)
+    dni: Mapped[str | None] = mapped_column(Text)
+    categoria: Mapped[str | None] = mapped_column(Text)
+    activo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Empresa de la ficha en Sigrid (`con.emp`, F-023). Nulable y sin default a
+    # propósito: sobre una tabla con filas el ADD COLUMN lo deriva
+    # `esquema.alters_faltantes` y las filas previas quedan a NULL hasta el
+    # siguiente sync, que las rellena.
+    empresa: Mapped[int | None] = mapped_column(Integer)
+    # Fecha de baja del recurso (`con.fecbaj`, AAAAMMDD; NULL = sin baja),
+    # F-026 R8. Decide la vigencia por mes (domain/vigencia.py). Nulable y
+    # sin default: el ADD COLUMN lo deriva `esquema.alters_faltantes`.
+    fecha_baja: Mapped[int | None] = mapped_column(Integer)
+    sync_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (Index("ix_trabajador_activo_nombre", "activo", "nombre"),)
+
+
+class ObraORM(Base):
+    __tablename__ = "obra"
+
+    ide: Mapped[int] = mapped_column(BigInteger, primary_key=True)  # ide de Sigrid
+    cod: Mapped[str] = mapped_column(Text, nullable=False)
+    descripcion: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    estado_sigrid: Mapped[str | None] = mapped_column(Text)
+    activa: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Empresa de la ficha (`con.emp`, F-023): un mismo `cod` en dos empresas son
+    # dos obras, cada una con su `ide`. Nulable y sin default, como en trabajador.
+    empresa: Mapped[int | None] = mapped_column(Integer)
+    # En el universo de postventa del transfer (F-025, R21). Independiente de
+    # `activa`. `false` en servidor: el ADD COLUMN que deriva
+    # `esquema.alters_faltantes` vale sobre una tabla con filas, y el
+    # siguiente sync la rellena.
+    admite_postventa: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    sync_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (Index("ix_obra_activa_cod", "activa", "cod"),)
+
+
+class EmpresaORM(Base):
+    """Catálogo de empresas de Sigrid (`auxemp`), copia de solo lectura (F-032).
+
+    La clave es `auxemp.numemp`, que es lo que casa con `con.emp` de las
+    fichas de trabajador y obra; por eso NO se llama `empresa` (en este
+    esquema esa columna es la referencia de las fichas a la empresa). La
+    tabla la crea `create_all` al arrancar: nada de DDL a mano.
+    """
+
+    __tablename__ = "empresa"
+
+    numemp: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=False
+    )
+    cod: Mapped[str | None] = mapped_column(Text)
+    nombre: Mapped[str | None] = mapped_column(Text)  # auxemp.res
+    # Tal cual vienen de Sigrid: «de baja» lo decide el dominio
+    # (`domain.empresas.empresa_de_baja`), no la tabla.
+    fecbaj: Mapped[int | None] = mapped_column(Integer)
+    desact: Mapped[int | None] = mapped_column(Integer)
+    sync_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class PeriodoORM(Base):
+    __tablename__ = "periodo"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    anio: Mapped[int] = mapped_column(Integer, nullable=False)
+    mes: Mapped[int] = mapped_column(Integer, nullable=False)
+    estado: Mapped[str] = mapped_column(Text, nullable=False, default="ABIERTO")
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    cerrado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        UniqueConstraint("anio", "mes", name="uq_periodo_anio_mes"),
+        CheckConstraint("mes BETWEEN 1 AND 12", name="ck_periodo_mes"),
+        CheckConstraint("estado IN ('ABIERTO','CERRADO')", name="ck_periodo_estado"),
+    )
+
+
+class AsignacionORM(Base):
+    __tablename__ = "asignacion"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    periodo_id: Mapped[int] = mapped_column(
+        ForeignKey("periodo.id", ondelete="CASCADE"), nullable=False
+    )
+    trabajador_ide: Mapped[int] = mapped_column(
+        ForeignKey("trabajador.ide"), nullable=False
+    )
+    obra_ide: Mapped[int] = mapped_column(ForeignKey("obra.ide"), nullable=False)
+    es_postventa: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    porcentaje: Mapped[Decimal] = mapped_column(Numeric(6, 2), nullable=False)
+    actualizado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    actualizado_por: Mapped[str] = mapped_column(Text, nullable=False, default="local")
+
+    # Traza del registro en Sigrid, escrita por `application/registro_sigrid.py`
+    # y por nadie más (ningún endpoint ni esquema Pydantic la expone). Las seis
+    # son NULABLES y sin default a propósito: una asignación recién creada aún
+    # no está registrada, y esa ausencia de valor es su estado inicial legítimo.
+    # `String(N)` en vez del `Text` del resto del fichero porque son las
+    # longitudes que la tabla ya tiene en la base; cambiarlas sería una
+    # migración de tipo (ver `specs/F-003-orm-columnas-sigrid/design.md` §2).
+    sigrid_estado: Mapped[str | None] = mapped_column(String(16))
+    sigrid_parte_cod: Mapped[str | None] = mapped_column(String(24))
+    sigrid_hmores_ide: Mapped[int | None] = mapped_column(Integer)
+    sigrid_motivo: Mapped[str | None] = mapped_column(String(300))
+    sigrid_registrado_at_utc: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    sigrid_registrado_by: Mapped[str | None] = mapped_column(String(64))
+
+    __table_args__ = (
+        UniqueConstraint(
+            "periodo_id",
+            "trabajador_ide",
+            "obra_ide",
+            "es_postventa",
+            name="uq_asignacion_linea",
+        ),
+        CheckConstraint(
+            "porcentaje > 0 AND porcentaje <= 100", name="ck_asignacion_pct"
+        ),
+        Index("ix_asignacion_periodo_trab", "periodo_id", "trabajador_ide"),
+    )
+
+
+class EventoORM(Base):
+    __tablename__ = "evento"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    periodo_id: Mapped[int] = mapped_column(
+        ForeignKey("periodo.id", ondelete="CASCADE"), nullable=False
+    )
+    trabajador_ide: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    tipo: Mapped[str] = mapped_column(Text, nullable=False)
+    usuario: Mapped[str] = mapped_column(Text, nullable=False, default="local")
+    snapshot_antes: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, default=list
+    )
+    snapshot_despues: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, default=list
+    )
+    deshecho: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_evento_periodo_trab_id",
+            "periodo_id",
+            "trabajador_ide",
+            "id",
+        ),
+    )

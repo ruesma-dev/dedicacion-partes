@@ -18,7 +18,7 @@
   producción; permitido en scripts puntuales.
 - Errores transitorios de red: reintentos con backoff, nunca bucle desnudo.
 
-### Python (borrar si el proyecto no es Python)
+### Python
 
 - Python 3.12, PEP8, type hints en firmas públicas.
 - Pydantic v2. `default=` solo en la firma, nunca duplicado dentro de
@@ -27,12 +27,33 @@
 - Logging con structlog. Reintentos con tenacity.
 - PDF en servidor: ReportLab (no HTML/CSS print).
 
-## SQL (borrar si el proyecto no lleva SQL)
+### JavaScript (solo `dedicacion-front`)
 
-- Un fichero por unidad lógica, numerado `NN_nombre.sql` dentro de su capa.
-- Idempotente: `CREATE ... IF NOT EXISTS` / `CREATE OR REPLACE VIEW`.
-- Comentario de cabecera explicando qué construye y de qué capa lee.
-- Palabras reservadas siempre entre comillas si se usan como identificador.
+- JS vanilla, sin framework ni bundler: todo en `static/js/app.js`, servido
+  tal cual. Nada de añadir dependencias de front sin decisión del humano.
+- El front no calcula reglas de negocio: pinta lo que devuelve la API y le
+  manda lo que el usuario teclea.
+
+## SQL
+
+- **Las consultas contra Sigrid van en YAML versionado**
+  (`services/dedicacion-api/config/config.yaml`), no incrustadas en el
+  código, y devuelven los alias exactos que espera el mapeo (por nombre de
+  columna, nunca por posición).
+- Parámetros SIEMPRE parametrizados: prohibido concatenar valores en la
+  cadena SQL.
+- El esquema de PostgreSQL se declara en `orm_models.py` y **solo** ahí. Si
+  una feature necesita una columna nueva, entra en el ORM; el
+  `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` complementario que pone al día
+  una base ya creada lo **deriva** del ORM
+  `services/dedicacion-api/infrastructure/db/esquema.py`, y se ejecuta al
+  arrancar (`main.py`), nunca al construir la app. Prohibido escribir DDL a
+  mano en paralelo: dos verdades del esquema divergen sin que nada avise
+  (la avería que costó la F-003 aquí y la F-010 en `partes`).
+- Ese mecanismo solo sabe **añadir columnas**. Cambiar un tipo, renombrar,
+  borrar o mover datos existentes exige una migración escrita por una
+  persona; ese es también el momento de meter Alembic (criterio en
+  `specs/F-003-orm-columnas-sigrid/design.md` §6).
 
 ## Tests
 

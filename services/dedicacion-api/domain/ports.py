@@ -1,0 +1,169 @@
+# domain/ports.py
+"""Puertos de la arquitectura hexagonal.
+
+Los casos de uso dependen de estos Protocols; las implementaciones viven
+en infrastructure/ (PostgreSQL, sigrid-api, openpyxl).
+"""
+from __future__ import annotations
+
+from typing import Any, Protocol
+
+from domain.models import (
+    CuadranteTrabajador,
+    Empresa,
+    EventoPendiente,
+    Linea,
+    Obra,
+    Periodo,
+    ResultadoSyncMaestro,
+    ResultadoUniverso,
+    TipoEvento,
+    Trabajador,
+)
+
+
+class SigridGateway(Protocol):
+    """Acceso de solo lectura a Sigrid vía sigrid-api."""
+
+    def leer(self, sql: str) -> list[dict[str, Any]]:
+        """Ejecuta la consulta y devuelve filas como dicts columna→valor."""
+        ...
+
+
+class UniversoPostventaGateway(Protocol):
+    """Universo de postventa, que calcula SOLO el transfer (F-025, D1)."""
+
+    def universo_postventa(
+        self, empresa: int, obras: list[dict[str, Any]]
+    ) -> ResultadoUniverso:
+        """Obras de `obras` (`ide`, `codigo`, `nombre`) que admiten postventa
+        en `empresa`. Lanza `UniversoPostventaNoDisponible` si no lo hay."""
+        ...
+
+
+class TrabajadorRepository(Protocol):
+    def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro: ...
+
+    def listar_para_periodo(self, periodo_id: int) -> list[Trabajador]:
+        """Activos + inactivos que tengan líneas en el periodo."""
+        ...
+
+    def obtener(self, ide: int) -> Trabajador | None: ...
+
+    def empresas_activas(self) -> set[int]:
+        """Empresas (`con.emp`) con al menos un trabajador activo, sin NULL."""
+        ...
+
+
+class ObraRepository(Protocol):
+    def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro: ...
+
+    def listar_para_periodo(self, periodo_id: int) -> list[Obra]:
+        """Activas + las que admiten postventa + las usadas en el periodo."""
+        ...
+
+    def existen(self, ides: set[int]) -> set[int]:
+        """Subconjunto de `ides` que existen en el maestro."""
+        ...
+
+    def modos_ofrecibles(self, ides: set[int]) -> dict[int, tuple[bool, bool]]:
+        """(activa, admite_postventa) de cada obra de `ides` (F-025, R20)."""
+        ...
+
+
+class EmpresaRepository(Protocol):
+    """Catálogo de empresas copiado de Sigrid (`auxemp`, F-032)."""
+
+    def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro:
+        """Upsert idempotente por `numemp`; no borra las que ya no llegan."""
+        ...
+
+    def listar(self) -> list[Empresa]:
+        """Todas las empresas de la tabla, por número."""
+        ...
+
+
+class PeriodoRepository(Protocol):
+    def listar(self) -> list[Periodo]: ...
+
+    def obtener(self, anio: int, mes: int) -> tuple[int, Periodo] | None:
+        """Devuelve (id interno, Periodo) o None."""
+        ...
+
+    def crear(self, anio: int, mes: int) -> tuple[int, Periodo]: ...
+
+    def cambiar_estado(self, anio: int, mes: int, estado: str) -> Periodo: ...
+
+    def anterior_con_datos(self, anio: int, mes: int) -> tuple[int, Periodo] | None:
+        """Último periodo anterior a (anio, mes) con alguna asignación."""
+        ...
+
+
+class AsignacionRepository(Protocol):
+    def lineas_de_trabajador(self, periodo_id: int, trabajador_ide: int) -> list[Linea]: ...
+
+    def lineas_del_periodo(self, periodo_id: int) -> dict[int, list[Linea]]:
+        """Mapa trabajador_ide → líneas (con datos de obra resueltos)."""
+        ...
+
+    def reemplazar(
+        self,
+        periodo_id: int,
+        trabajador_ide: int,
+        lineas: list[Linea],
+        usuario: str,
+    ) -> None:
+        """Sustituye en bloque las líneas del trabajador (transaccional)."""
+        ...
+
+
+class EventoRepository(Protocol):
+    def registrar(
+        self,
+        periodo_id: int,
+        trabajador_ide: int,
+        tipo: TipoEvento,
+        usuario: str,
+        antes: list[dict[str, Any]],
+        despues: list[dict[str, Any]],
+    ) -> None: ...
+
+    def ultimo_pendiente(
+        self, periodo_id: int, trabajador_ide: int
+    ) -> EventoPendiente | None:
+        """Último evento no deshecho del trabajador, con su autor."""
+        ...
+
+    def marcar_deshecho(self, evento_id: int) -> None: ...
+
+    def autores_ultimo_pendiente(self, periodo_id: int) -> dict[int, str]:
+        """trabajador → autor de SU ÚLTIMO evento no deshecho del periodo
+        (F-027); sin entrada si no tiene ninguno pendiente."""
+        ...
+
+
+class UnitOfWork(Protocol):
+    """Frontera transaccional que agrupa los repositorios."""
+
+    trabajadores: TrabajadorRepository
+    obras: ObraRepository
+    empresas: EmpresaRepository
+    periodos: PeriodoRepository
+    asignaciones: AsignacionRepository
+    eventos: EventoRepository
+
+    def __enter__(self) -> "UnitOfWork": ...
+
+    def __exit__(self, *exc: object) -> None: ...
+
+    def commit(self) -> None: ...
+
+    def rollback(self) -> None: ...
+
+
+class ExcelExporter(Protocol):
+    def exportar(
+        self,
+        periodo: Periodo,
+        filas: list[CuadranteTrabajador],
+    ) -> bytes: ...

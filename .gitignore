@@ -1,6 +1,8 @@
 # >>> ARNES-BASE: reglas anadidas por el instalador del arnes. >>>
 .env
 .arnes_cache/
+.coverage
+coverage.json
 *.pdf
 *.docx
 *.xlsx
@@ -16,3 +18,6 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Logs de los servicios (los crea el propio arranque)
+logs/

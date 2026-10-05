@@ -1,0 +1,17 @@
+# infra/.gitignore
+# Las COPIAS LOCALES con los valores reales no se versionan NUNCA.
+#
+# Los scripts versionados llevan marcadores REDACTADO-VER-COPIA-LOCAL en el
+# sitio de la suscripcion y el tenant. Quien despliega crea su propia copia
+# (por ejemplo 00_vars_dedicacion.local.ps1) con los valores de verdad, la
+# dot-sourcea DESPUES del fichero versionado y la deja aqui, ignorada.
+#
+# Esto es un repositorio git: lo que entra, se queda en el historial aunque
+# luego se borre (F-008, R21). El test tests/test_f008_infra_sin_secretos.py
+# vigila que no entre.
+*.local.ps1
+*.local.json
+
+# Salidas de az que a veces se guardan al depurar. No deben acabar aqui.
+*.tmp.json
+*.log
