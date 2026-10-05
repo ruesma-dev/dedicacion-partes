@@ -286,3 +286,37 @@ grupos; 9 con obra en `con` (18 partes), que son estos:
   original contabilizado no se vería (D14).
 
 Lo no aclarado por los datos queda como D12-D14 en la spec.
+
+## 11. Lo aprendido en `partes` y comprobaciones del 2026-10-06
+
+Fuentes (repositorio `partes`, solo lectura): `progress/current.md` (F-021,
+M1-M4), `progress/history.md`, `progress/review_F-021.md` (O1),
+`specs/F-021-cuenta-analitica-sigrid/design.md` (DA1-DA13) y la rama
+`feature/F-031-asiento-analitico` (spec v4 `b816059`, `spec_ready`, sin
+implementar; su anexo `progress/spec_F-031.md` §D1-§D11).
+
+- **`cuenta_analitica.py` vigente en `dev` de `partes`**: commit `b038943`
+  (2026-10-01, estilo; la regla es `9947927`). Ningún cambio posterior. La
+  F-031 de `partes` le añade `subcuenta_de_partida` (respaldo `CI`/`CD`
+  cuando el recurso no da subcuenta), decidido por su humano el 2026-10-05.
+- **Estados del parte** (`conest`, `tip = 35`, leído aquí): 1 `REG` «En
+  registro» (`edi = 0`); 3 `CER` «Cerrado» y 10 `IMP` «Imputado» (`edi = 1`,
+  roles `ADM, COS`). `partes` §D2: el log de Sigrid registra «Proceso de
+  Cambio de estado (HMO Seleccionados: N): Contabilizar parte»; lotes
+  recientes 2026-03-02, 2026-09-02 y 2026-09-14 (los mismos de §4).
+- **Qué es «cerrado»**: `partes` F-031 lo toma como cualquier estado distinto
+  de En registro (pendiente de confirmar, su M0). Aquí, desde 2025: 502
+  Imputados (todos con ANA), 240 Cerrados (ninguno con ANA), 42 En registro.
+  `partes` §D4: de marzo a agosto de 2026, 31-39 Cerrados por mes y 0-2
+  Imputados. Por eso D16 importa: decide si esos meses van a complementario.
+- **Recursos M\* activos con subcuenta** (por `reshor` del tipo M\* o del tipo
+  por defecto), por empresa del recurso: 1 → 183/183; 18 → 7/8; 25 → 0/1;
+  31 → 4/4. Dos irían sin cuenta y sin aviso. En `partes`, la 28 (Porsan)
+  no tiene ninguna (DA13: nada en código; se rellena `reshor` en Sigrid).
+- **Lectura que falla** (`partes` DA7 y O1): la petición falla entera; allí
+  el docstring prometía un reintento de cola que no existe. Aquí no hay cola.
+- **Rendimiento** (`partes` explore F-021): media 231 cuentas por centro,
+  máximo 768; la lectura filtra por subcuenta. Cuentas de baja: 1 de 184.234,
+  ninguna usada; no se filtran.
+- **Pendiente allí**: M2 (escritura en 0404), M3 y M4 (Administración ve la
+  línea como una tecleada; Porsan). La R21 de esta spec cubre lo mismo.
