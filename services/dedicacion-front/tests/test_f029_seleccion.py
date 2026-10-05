@@ -173,3 +173,144 @@ def test_f029_r7_fijar_seleccion_es_la_puerta_de_f021():
     assert "renderTabla();" in fijar
     # Independiente de los filtros: no mira los visibles.
     assert "trabajadoresVisibles" not in fijar
+
+
+# ================================ T5 ==================================== #
+# --------------------------------- R8 ---------------------------------- #
+def test_f029_r8_boton_en_la_toolbar_y_desactivado_si_cerrado():
+    toolbar = HTML.split('<div class="toolbar">')[1].split("</div>")[0]
+    assert re.search(r'<button id="btn-completar"[^>]*>\s*Completar al 100 %'
+                     r"\s*</button>", toolbar), toolbar
+    assert '$("#btn-completar").disabled = !abierto;' in _plano(
+        _funcion("renderCabecera"))
+    assert '$("#btn-completar").addEventListener("click", abrirCompletar);' \
+        in _plano(_funcion("enlazarEventos"))
+
+
+def test_f029_r8_tecla_c_sin_modificadores_detras_de_las_ramas_de_antes():
+    nuevo = _plano(_funcion("teclas"))[len(TECLAS_ANTES):]
+    assert ('else if ((ev.key === "c" || ev.key === "C") && !ev.ctrlKey && '
+            "!ev.metaKey && !ev.altKey) { if (abierto) abrirCompletar(); }"
+            ) in nuevo, nuevo
+
+
+def test_f029_r8_sin_periodo_abierto_o_con_el_editor_no_se_abre():
+    abrir = _plano(_funcion("abrirCompletar"))
+    guardas = abrir.split("const filas = seleccionEfectiva();")[0]
+    assert 'if (state.periodoEstado !== "ABIERTO") return;' in guardas
+    assert re.search(r"if \(state\.editandoIde !== null\) \{ toast\([^;]*\); "
+                     r"return; \}", guardas), guardas
+    assert "if (!filas.length) {" in abrir
+
+
+# --------------------------------- R9 ---------------------------------- #
+def test_f029_r9_seleccion_efectiva_visibles_o_el_cursor():
+    efectiva = _plano(_funcion("seleccionEfectiva"))
+    assert "const visibles = trabajadoresVisibles();" in efectiva
+    assert ("if (state.seleccion.size) { return visibles.filter((t) => "
+            "state.seleccion.has(t.ide)); }") in efectiva
+    assert ("return visibles.filter((t) => t.ide === state.seleccionIde);"
+            ) in efectiva
+
+
+def test_f029_r9_el_dialogo_cuenta_los_ocultos():
+    abrir = _plano(_funcion("abrirCompletar"))
+    assert ("const ocultos = state.seleccion.size ? state.seleccion.size - "
+            "filas.length : 0;") in abrir
+    assert "ocultos por los filtros" in abrir
+
+
+# --------------------------------- R10 --------------------------------- #
+def test_f029_r10_candidatas_del_catalogo_como_el_autocompletado():
+    cand = _plano(_funcion("candidatasDestino"))
+    assert "const q = normalizar(texto);" in cand
+    assert "if (!q) return [];" in cand
+    assert ("const casan = state.catalogoObras.filter((e) => "
+            "e.clave.includes(q));") in cand
+    assert "const exactas = casan.filter((e) => normalizar(e.cod) === q);" \
+        in cand
+    assert ("return exactas.concat(casan.filter((e) => "
+            "!exactas.includes(e)));") in cand
+    # Misma comparación que el autocompletado del editor (D1).
+    assert "e.clave.includes(q)" in _plano(_funcion("montarAutocompletado"))
+
+
+def test_f029_r10_el_campo_se_precarga_con_filtrar_obra():
+    dialogo = _plano(_funcion("montarDialogoCompletar"))
+    assert 'input.value = state.filtrosCol.asignaciones || "";' in dialogo
+    assert "candidatasDestino(input.value)" in dialogo
+
+
+# --------------------------------- R11 --------------------------------- #
+def test_f029_r11_teclas_del_dialogo_no_llegan_a_teclas():
+    dialogo = _plano(_funcion("montarDialogoCompletar"))
+    campo = dialogo.split('input.addEventListener("keydown", (ev) => {')[1]
+    assert campo.strip().startswith("ev.stopPropagation();"), campo
+    assert 'ev.key === "Enter") { ev.preventDefault(); confirmar(); }' in campo
+    assert 'ev.key === "Escape") { ev.preventDefault(); cerrarModal(); }' \
+        in campo
+    caja = dialogo.split('modal.addEventListener("keydown", (ev) => {')[1]
+    assert caja.strip().startswith("ev.stopPropagation();"), caja
+
+
+def test_f029_r11_la_api_solo_se_llama_al_confirmar():
+    dialogo = _plano(_funcion("montarDialogoCompletar"))
+    assert dialogo.count("lanzarCompletar(") == 1
+    confirmar = dialogo.split("const confirmar = () => {")[1].split("};")[0]
+    assert "lanzarCompletar(elegida, filas)" in confirmar
+    assert "if (!elegida || enviando) return;" in confirmar
+    assert "lanzarCompletar(" not in _funcion("abrirCompletar")
+    # Una sola llamada a la ruta en todo el front.
+    assert JS.count("/completar`") == 1
+
+
+def test_f029_r11_el_dialogo_ensena_destino_y_nombres():
+    abrir = _plano(_funcion("abrirCompletar"))
+    assert "filas.map((t) => `<li>${escapeHtml(t.nombre)}</li>`)" in abrir
+    dialogo = _plano(_funcion("montarDialogoCompletar"))
+    assert "escapeHtml(elegida.cod)" in dialogo
+    assert "escapeHtml(elegida.obra.descripcion)" in dialogo
+
+
+# --------------------------------- R12 --------------------------------- #
+def test_f029_r12_el_front_no_calcula_cifras():
+    lanzar = _plano(_funcion("lanzarCompletar"))
+    assert ("JSON.stringify({ trabajadores: filas.map((t) => t.ide), "
+            "obra_ide: entrada.obra.ide, es_postventa: entrada.pv, })"
+            ) in lanzar, lanzar
+    for prohibido in ("porcentaje", "total", "100", "restante"):
+        assert prohibido not in lanzar, prohibido
+    for nombre in ("seleccionEfectiva", "candidatasDestino", "abrirCompletar",
+                   "montarDialogoCompletar", "pintarResultadoCompletar"):
+        cuerpo = _funcion(nombre)
+        for prohibido in ("porcentaje", ".total", "restante"):
+            assert prohibido not in cuerpo, (nombre, prohibido)
+
+
+# --------------------------------- R13 --------------------------------- #
+def test_f029_r13_resultado_con_nombres_y_recarga():
+    lanzar = _plano(_funcion("lanzarCompletar"))
+    ok, error = lanzar.split("} catch (err) {")
+    assert ok.index("pintarResultadoCompletar(entrada, datos.resultados);") < \
+        ok.index("fijarSeleccion([]);") < \
+        ok.index("await cargarPeriodo(state.anio, state.mes);")
+    # En error: el motivo y la selección se conserva.
+    assert "toast(err.message, true);" in error
+    assert "fijarSeleccion" not in error
+    pintar = _plano(_funcion("pintarResultadoCompletar"))
+    assert "trabajadorPorIde(r.trabajador_ide)" in pintar
+    assert "fmtPct(r.anadido)" in pintar
+    for codigo in ("COMPLETADO", "YA_AL_100", "EXCESO", "NO_VIGENTE",
+                   "NO_VISIBLE"):
+        assert re.search(rf"^\s+{codigo}: \"", JS, re.MULTILINE), codigo
+
+
+def test_f029_r8_pie_de_ayuda_con_los_atajos_nuevos():
+    pie = _plano(HTML.split('<p class="pie-ayuda')[1].split("</p>")[0])
+    assert "Ctrl/Shift+clic seleccionar varios" in pie
+    assert "C completar al 100 %" in pie
+    # Lo de antes sigue.
+    for atajo in ("↑↓ moverse", "Enter editar", "Esc cerrar",
+                  "F7 copiar fila superior", "F8 repetir mes anterior",
+                  "Ctrl+Z deshacer", "/ buscar"):
+        assert atajo in pie, atajo

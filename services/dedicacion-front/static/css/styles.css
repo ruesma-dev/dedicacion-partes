@@ -511,4 +511,13 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
   border: 1px solid var(--warn-border); color: var(--warn);
   border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: .84rem; }
 
+/* ---------- Diálogo «Completar al 100 %» (F-029) ---------- */
+.modal #completar-obra { width: 100%; }
+.modal .completar-candidatas { max-height: 220px; overflow-y: auto;
+  border: 1px solid var(--line-strong); border-radius: 8px; margin-top: 6px; }
+.modal .completar-candidatas:empty { display: none; }
+.modal .completar-elegida { margin: 10px 0 4px; font-size: .9rem; }
+.modal .completar-nombres { columns: 3; margin: 4px 0; padding-left: 18px;
+  font-size: .84rem; }
+
 .btn-sigrid-fila { color: var(--brand); font-weight: 700; }

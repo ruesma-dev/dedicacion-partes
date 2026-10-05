@@ -261,6 +261,7 @@ function renderCabecera() {
   $("#aviso-cerrado").classList.toggle("oculto", abierto);
   $("#btn-cerrar").classList.toggle("oculto", !abierto);
   ["#btn-copiar-mes", "#btn-sync"].forEach((s) => { $(s).disabled = !abierto; });
+  $("#btn-completar").disabled = !abierto;
 
   const r = state.resumen || { total: 0, ok: 0, falta: 0, exceso: 0, sin_carga: 0 };
   const chips = [
@@ -627,6 +628,204 @@ function fijarSeleccion(ides) {
   const habia = state.seleccion.size > 0;
   state.seleccion = new Set(ides);
   if (habia || state.seleccion.size > 0) renderTabla();
+}
+
+// ------------------------------------------- completar al 100 % (F-029)
+// Lo que falta hasta el 100 % lo calcula la API (R12): aquí solo se elige a
+// quién y en qué obra, se pregunta y se pinta lo que responde.
+
+// Selección efectiva (D6): la múltiple ∩ visibles; sin múltiple, el cursor.
+function seleccionEfectiva() {
+  const visibles = trabajadoresVisibles();
+  if (state.seleccion.size) {
+    return visibles.filter((t) => state.seleccion.has(t.ide));
+  }
+  return visibles.filter((t) => t.ide === state.seleccionIde);
+}
+
+// Entradas del catálogo del cuadrante (normal y `Postv-` por separado, D2)
+// que casan con el texto, con la misma comparación que el autocompletado
+// del editor (D1); las de código exacto, primero. Sin texto, ninguna.
+function candidatasDestino(texto) {
+  const q = normalizar(texto);
+  if (!q) return [];
+  const casan = state.catalogoObras.filter((e) => e.clave.includes(q));
+  const exactas = casan.filter((e) => normalizar(e.cod) === q);
+  return exactas.concat(casan.filter((e) => !exactas.includes(e)));
+}
+
+// Botón «Completar al 100 %» y tecla C (D4): abre el diálogo (R8-R11).
+function abrirCompletar() {
+  if (state.periodoEstado !== "ABIERTO") return;
+  if (state.editandoIde !== null) {
+    toast("Cierra el editor (Esc) antes de completar al 100 %", true);
+    return;
+  }
+  if (!$("#modal-registro").classList.contains("oculto")) return;
+  const filas = seleccionEfectiva();
+  if (!filas.length) {
+    toast("No hay trabajadores seleccionados a la vista", true);
+    return;
+  }
+  const ocultos = state.seleccion.size ? state.seleccion.size - filas.length : 0;
+  const nombres = filas.map((t) => `<li>${escapeHtml(t.nombre)}</li>`).join("");
+  abrirModal(
+    `<h2>Completar al 100 % · ${MESES[state.mes - 1]} ${state.anio}</h2>` +
+    '<div class="motivo">A cada uno se le pone en la obra elegida lo que le ' +
+    "falta hasta el 100 %. Quien ya está al 100 % o por encima no se toca. " +
+    "No se registra nada en Sigrid.</div>" +
+    '<h3>Obra destino</h3><input id="completar-obra" class="input" ' +
+    'autocomplete="off" placeholder="Obra o Postv- (código o nombre)…">' +
+    '<div id="completar-candidatas" class="completar-candidatas"></div>' +
+    '<div id="completar-elegida" class="completar-elegida"></div>' +
+    `<h3>Trabajadores (${filas.length})</h3>` +
+    `<ul class="completar-nombres">${nombres}</ul>` +
+    (ocultos
+      ? `<div class="aviso">${ocultos} seleccionado(s) quedan fuera por ` +
+        "estar ocultos por los filtros.</div>"
+      : "") +
+    '<div class="pie-modal"><button class="btn secondary" ' +
+    'id="btn-completar-cancelar">Cancelar (Esc)</button>' +
+    '<button class="btn primary" id="btn-completar-confirmar">' +
+    "Completar (Enter)</button></div>"
+  );
+  montarDialogoCompletar(filas);
+}
+
+// Destino: el campo se precarga con «Filtrar obra…»; una candidata queda
+// elegida, varias se eligen con ↑ ↓ (o clic), ninguna: se escribe (R10).
+// Ninguna tecla del diálogo llega a `teclas` (R11).
+function montarDialogoCompletar(filas) {
+  const modal = $("#modal-registro .modal");
+  const input = $("#completar-obra");
+  const lista = $("#completar-candidatas");
+  let candidatas = [];
+  let activa = -1;
+  let enviando = false;
+
+  const pintar = () => {
+    lista.innerHTML = "";
+    candidatas.forEach((e, i) => {
+      const fila = document.createElement("div");
+      fila.className = "sugerencia" + (i === activa ? " activa" : "") +
+        (e.pv ? " es-pv" : "");
+      fila.innerHTML =
+        `<span class="cod">${escapeHtml(e.cod)}</span>` +
+        `<span class="desc">${escapeHtml(e.obra.descripcion)}</span>`;
+      fila.addEventListener("mousedown", (ev) => {
+        ev.preventDefault();
+        activa = i;
+        pintar();
+      });
+      lista.appendChild(fila);
+    });
+    const elegida = candidatas[activa];
+    $("#completar-elegida").innerHTML = elegida
+      ? `Destino: <strong>${escapeHtml(elegida.cod)}</strong> · ` +
+        `${escapeHtml(elegida.obra.descripcion)}`
+      : (input.value
+        ? "Ninguna obra del cuadrante casa con ese texto."
+        : "Escribe el código o el nombre de la obra.");
+    const boton = $("#btn-completar-confirmar");
+    if (boton) boton.disabled = !elegida || enviando;
+  };
+  const refrescar = () => {
+    candidatas = candidatasDestino(input.value).slice(0, 14);
+    activa = candidatas.length ? 0 : -1;
+    pintar();
+  };
+  const confirmar = () => {
+    const elegida = candidatas[activa];
+    if (!elegida || enviando) return;
+    enviando = true;
+    pintar();
+    lanzarCompletar(elegida, filas).finally(() => {
+      enviando = false;
+      if ($("#completar-obra") === input) pintar();
+    });
+  };
+
+  input.addEventListener("keydown", (ev) => {
+    ev.stopPropagation();
+    if (ev.key === "ArrowDown" && candidatas.length) {
+      ev.preventDefault();
+      activa = Math.min(activa + 1, candidatas.length - 1);
+      pintar();
+    } else if (ev.key === "ArrowUp" && candidatas.length) {
+      ev.preventDefault();
+      activa = Math.max(activa - 1, 0);
+      pintar();
+    } else if (ev.key === "Enter") { ev.preventDefault(); confirmar(); }
+    else if (ev.key === "Escape") { ev.preventDefault(); cerrarModal(); }
+  });
+  input.addEventListener("input", refrescar);
+  // Fuera del campo (los botones), tampoco llega nada a `teclas`.
+  modal.addEventListener("keydown", (ev) => {
+    ev.stopPropagation();
+    if (ev.key === "Escape") cerrarModal();
+  });
+  $("#btn-completar-cancelar").addEventListener("click", cerrarModal);
+  $("#btn-completar-confirmar").addEventListener("click", confirmar);
+
+  input.value = state.filtrosCol.asignaciones || "";
+  refrescar();
+  input.focus();
+}
+
+// Manda el lote: solo quiénes y el destino, ninguna cifra (R12). Si va
+// bien, pinta el resultado, vacía la selección (R6) y recarga el cuadrante;
+// si no, enseña el motivo y conserva la selección (R13).
+async function lanzarCompletar(entrada, filas) {
+  try {
+    const datos = await api(
+      `/periodos/${state.anio}/${state.mes}/completar`,
+      { method: "POST", body: JSON.stringify({
+          trabajadores: filas.map((t) => t.ide),
+          obra_ide: entrada.obra.ide,
+          es_postventa: entrada.pv,
+        }) });
+    pintarResultadoCompletar(entrada, datos.resultados);
+    fijarSeleccion([]);
+    await cargarPeriodo(state.anio, state.mes);
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+// Resultado por trabajador, con su nombre, tal y como lo da la API (R13).
+function pintarResultadoCompletar(entrada, resultados) {
+  const TEXTO_RESULTADO = {
+    COMPLETADO: "completado",
+    YA_AL_100: "sin cambios: ya estaba al 100 %",
+    EXCESO: "sin cambios: está por encima del 100 %",
+    NO_VIGENTE: "sin cambios: no vigente en el mes",
+    NO_VISIBLE: "sin cambios: no visible con la empresa elegida",
+  };
+  const filas = resultados.map((r) => {
+    const t = trabajadorPorIde(r.trabajador_ide);
+    const nombre = t ? t.nombre : `Trabajador ${r.trabajador_ide}`;
+    const texto = (TEXTO_RESULTADO[r.resultado] || r.resultado) +
+      (r.resultado === "COMPLETADO" ? ` (+${fmtPct(r.anadido)})` : "");
+    return `<tr><td>${escapeHtml(nombre)}</td><td>${escapeHtml(texto)}</td></tr>`;
+  }).join("");
+  abrirModal(
+    `<h2>Completar al 100 % en ${escapeHtml(entrada.cod)}</h2>` +
+    `<div class="motivo">${escapeHtml(entrada.obra.descripcion)}</div>` +
+    '<table class="tabla-reg"><thead><tr><th>Trabajador</th>' +
+    `<th>Resultado</th></tr></thead><tbody>${filas}</tbody></table>` +
+    '<div class="pie-modal"><button class="btn primary" ' +
+    'id="btn-completar-cerrar">Cerrar</button></div>'
+  );
+  $("#modal-registro .modal").addEventListener("keydown", (ev) => {
+    ev.stopPropagation();
+    if (ev.key === "Escape" || ev.key === "Enter") {
+      ev.preventDefault();
+      cerrarModal();
+    }
+  });
+  const cerrar = $("#btn-completar-cerrar");
+  cerrar.addEventListener("click", cerrarModal);
+  cerrar.focus();
 }
 
 function construirCelda(t, clave) {
@@ -1256,6 +1455,7 @@ function enlazarEventos() {
   $("#btn-mes-next").addEventListener("click", () => moverMes(1));
   $("#btn-sync").addEventListener("click", sincronizar);
   $("#btn-copiar-mes").addEventListener("click", copiarMesAnterior);
+  $("#btn-completar").addEventListener("click", abrirCompletar);
   $("#btn-export").addEventListener("click", () => {
     window.location.href =
       "/api/v1" + conEmpresa(`/periodos/${state.anio}/${state.mes}/export.xlsx`);
@@ -1362,6 +1562,9 @@ function teclas(ev) {
     }
   } else if (ev.key === "Escape" && state.seleccion.size) {
     fijarSeleccion([]);
+  } else if ((ev.key === "c" || ev.key === "C") &&
+             !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+    if (abierto) abrirCompletar();
   }
 }
 
