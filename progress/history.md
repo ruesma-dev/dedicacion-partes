@@ -1533,3 +1533,9 @@ Informes: `progress/impl_F-027.md`, `progress/review_F-027.md`,
   usuarios). Tras desplegar, se puede mirar con dos personas.
  El arnés es la **1.7.3**.
 
+## 2026-10-05 · Despliegue de F-027
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo api`:
+`api:r20261005-0915` (transfer y front sin cambios: `r20261003-1444` y
+`r20261003-1447`). Sin columnas nuevas ni sync. `azure-apps` actualizado en el
+mismo trabajo. Comprobación con dos personas: pendiente (en `current.md`).

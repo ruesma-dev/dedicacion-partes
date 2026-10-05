@@ -11,8 +11,8 @@
                                               },
                       "dedicacion-api":  {
                                              "repositorio":  "dedicacion-api",
-                                             "tag":  "r20261003-1446",
-                                             "publicado":  "2026-10-03T14:46:09",
+                                             "tag":  "r20261005-0915",
+                                             "publicado":  "2026-10-05T09:15:16",
                                              "nota":  "Publicado por build_images_dedicacion.ps1.",
                                              "digest":  "sha256:d5b4a18a32c260e7aeb6eafc1b19d66aba789f2ea4a09e2cee02ab6983edb84e"
                                          },
