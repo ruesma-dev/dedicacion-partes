@@ -1,12 +1,12 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-029 en `spec_ready`** (selección múltiple y completar hasta el 100 %, rigor
+**F-029 en curso** (selección múltiple y completar hasta el 100 %, rigor
 estándar, `sdd: true`), rama `feature/F-029-seleccion-multiple-completar-100`.
 F-027 se cerró el 2026-10-04 y se **desplegó el 2026-10-05**; F-025 se desplegó el 2026-10-03 (resúmenes en
 `history.md`). El arnés es la **1.7.3**.
 
-## F-029 · Selección múltiple y completar hasta el 100 % (spec lista)
+## F-029 · Selección múltiple y completar hasta el 100 % (en curso)
 
 - **Elegida por el humano el 2026-10-05** por delante de F-021, de la que
   dependía. La spec trabaja con el filtro de obra que YA existe en el front;
@@ -15,8 +15,14 @@ F-027 se cerró el 2026-10-04 y se **desplegó el 2026-10-05**; F-025 se despleg
   api `POST /periodos/{a}/{m}/completar` por lote (un evento `COMPLETAR`
   deshacible por trabajador) + front con Ctrl/Shift, diálogo y botón. Lista
   cerrada de tests anteriores que cambian: **ninguno** (comprobado con un
-  prototipo desechable). **Espera la aprobación del humano** con D1-D6
-  abiertas (requirements §6, recomendadas: A en todas).
+  prototipo desechable). **Aprobada por el humano el 2026-10-05 con D1-D6 =
+  A**, cerradas en todos sus sitios (`8d5172d`). **Implementer lanzado** →
+  `progress/impl_F-029.md`.
+- **Condición del humano: NO se despliega hasta que pruebe la usabilidad en
+  local** (T9, `tasks.md`: api y front locales desde la rama, BBDD local, sin
+  Sigrid; clics, diálogo, tecla C, Ctrl+Z y regresión del teclado).
+- **T7 (líder):** copiar a `azure-apps/dedicacion.md` el párrafo nuevo de
+  `docs/INTEGRACION.md` §5 (ruta `completar`) y hacer el commit allí.
 
 ## Producción, hoy
 
