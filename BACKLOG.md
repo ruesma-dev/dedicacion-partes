@@ -9,7 +9,7 @@ Resumen: **35 features**, 17 abiertas, 18 terminadas.
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-037 | El registro de partes genera el asiento analítico en la cuenta de la obra | 1 | pendiente | critico | `feature/F-037-asiento-analitico-obra` |
+| F-037 | El registro de partes genera el asiento analítico en la cuenta de la obra | 1 | spec lista | critico | `feature/F-037-asiento-analitico-obra` |
 | F-028 | Borrar todo lo que está en pantalla | 2 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 3 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 4 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
@@ -54,7 +54,7 @@ Resumen: **35 features**, 17 abiertas, 18 terminadas.
 
 ### F-037 · El registro de partes genera el asiento analítico en la cuenta de la obra
 
-estado **pendiente** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-037-asiento-analitico-obra`
+estado **spec lista** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-037-asiento-analitico-obra`
 
 Pedida por el humano el 2026-10-05 («el parte debe generar asiento en la cuenta analítica en Sigrid»), a partir del correo de Juan Romero (Dir. Admón y Control de Costes) «ARBOL ANALITICO OBRAS» del 2026-09-29. Las cuentas analíticas están vinculadas al centro de coste de cada obra (Obra > Contabilidad > Cuentas analíticas: centro de coste asociado, p. ej. 0702), con un árbol C COSTES (CD directos, CI indirectos, CP proporcionales CP0001-CP0010) e I INGRESOS (INGR01 producción, INGR02 certificación). Dentro del asiento se define la cuenta financiera y la cuenta analítica del gasto (6XX): ejemplo real, asiento XRT26/05432 con la línea 6260000000 desglosada al 100 % al centro 0702, cuenta 0702.CP0004 (avales). Lo que se pide: que lo que registra el transfer (la dedicación del trabajador a la obra) genere también su asiento con desglose analítico en la cuenta de la obra. Es ESCRITURA en Sigrid (solo el transfer, P1-P5): rigor crítico, modo pruebas y autorización expresa como el resto. Primero exploración del modelo de asientos y desglose analítico de Sigrid (azure-apps/sigrid_tablas.md, lecturas por sigrid-api) y de si el parte ya genera coste analítico por sí mismo; las decisiones de negocio (qué 6XX, qué cuenta analítica CD/CI/CP, contrapartida, importe, fecha, agrupación, deshacer) las valida Administración (Juan Romero).
 

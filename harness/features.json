@@ -627,7 +627,7 @@
         "Verificado en Sigrid sobre la obra de pruebas con Administración",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "spec_ready",
       "sdd": true,
       "rigor": "critico",
       "priority": 1,
