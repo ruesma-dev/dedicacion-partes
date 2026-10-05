@@ -1,22 +1,17 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-027 se cerró el 2026-10-04 y está en
-`dev` **pendiente de desplegar** (sección siguiente). F-025 se desplegó el
-2026-10-03 (resúmenes en `history.md`). El arnés es la **1.7.3**.
-
-## ⚠ Despliegue de F-027 (pendiente; lo lanza el humano)
-
-- Solo cambia la **api** (`.\redeploy_dedicacion.ps1 -Solo api`); sin columnas
-  ni sync. Los eventos anteriores conservan su autor: uno guardado como
-  `local` no lo podrá deshacer nadie que entre con Easy Auth (es lo correcto).
-- **Comprobación tras desplegar, con dos personas (A y B) en el mismo mes y
-  trabajador:** A guarda → B no ve el botón de deshacer y su Ctrl+Z enseña «La
-  última modificación de este trabajador es de A…» (con el nombre real de
-  Easy Auth); A deshace bien; si B guarda después de A, A ya no puede.
+**Ninguna feature en ejecución.** F-027 se cerró el 2026-10-04 y se
+**desplegó el 2026-10-05**; F-025 se desplegó el 2026-10-03 (resúmenes en
+`history.md`). El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-05: F-027** (solo la api, `r20261005-0915`): cada
+  usuario solo deshace lo suyo. **Comprobación pendiente, con dos personas
+  (A y B) en el mismo mes y trabajador:** A guarda → B no ve el botón y su
+  Ctrl+Z enseña «La última modificación de este trabajador es de A…»; A
+  deshace bien; si B guarda después de A, A ya no puede.
 - **Desplegado el 2026-10-03: F-025** (transfer `r20261003-1444`, api
   `r20261003-1446`, front `r20261003-1447`, en orden transfer → api → front).
   Preview de producción: `admiten_postventa` 83, `solo_postventa` 73,
@@ -43,7 +38,7 @@
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Primero desplegar **F-027**; después F-020,
+`BACKLOG.md` tiene el orden completo. Primero **F-020**; después
 F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
