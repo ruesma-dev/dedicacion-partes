@@ -15,9 +15,9 @@
 - **Desplegado el 2026-10-03: F-025** (transfer `r20261003-1444`, api
   `r20261003-1446`, front `r20261003-1447`, en orden transfer → api → front).
   Preview de producción: `admiten_postventa` 83, `solo_postventa` 73,
-  `motivo_postventa` nulo. **Pendiente de confirmar por el humano: el sync
-  («Actualizar Sigrid») y ver `Postv-0656` en el cuadrante**; con eso se
-  retira el aviso de CP/OT de abajo.
+  `motivo_postventa` nulo. **Sync hecho y `Postv-0656` visible en el
+  cuadrante** (confirmado por el humano el 2026-10-05): ya se puede
+  registrar postventa con normalidad.
 - **Desplegado el 2026-10-02: F-034 y F-026**, sobre lo del 2026-10-01 (F-022,
   F-023, F-024, F-032). Imágenes `transfer:r20261002-1705`,
   `api:r20261002-1706`, `front:r20261002-1708`; la api añadió
@@ -29,8 +29,6 @@
 - **El transfer desplegado escribe DE VERDAD** (`OBRA_PRUEBAS_FORZAR=false`)
   por orden expresa del humano (`docs/INTEGRACION.md` §8). Siguen abiertos
   F-017 (partidas sin validar por Administración) y F-011 (varios códigos M*).
-- **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni
-  OT (la cascada vigente de P5 las casa con partidas ajenas).
 - **El script de vaciado ya funciona contra Azure** (F-035, 2026-10-03): usa
   `psql` y lee la contraseña de `PG-PASSWORD` del Key Vault. `-SoloRecuento`
   cuenta sin escribir: el 2026-10-03 dio 0 asignaciones, 0 eventos, 1
