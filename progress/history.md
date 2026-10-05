@@ -1539,3 +1539,10 @@ Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo api`:
 `api:r20261005-0915` (transfer y front sin cambios: `r20261003-1444` y
 `r20261003-1447`). Sin columnas nuevas ni sync. `azure-apps` actualizado en el
 mismo trabajo. Comprobación con dos personas: pendiente (en `current.md`).
+
+## 2026-10-05 · F-025 confirmada en producción
+
+El humano confirma que, tras el sync («Actualizar Sigrid»), el cuadrante de
+producción ofrece `Postv-0656`. Se retira el aviso a usuarios de no registrar
+postventa en las obras CP ni OT: con D2 = B la cascada de P5 ya no las casa con
+partidas ajenas.
