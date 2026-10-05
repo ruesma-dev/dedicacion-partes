@@ -23,7 +23,9 @@ F-027 se cerró el 2026-10-04 y se **desplegó el 2026-10-05**; F-025 se despleg
   superviviente en serie → encargo de `arnes-base` (`58403df`). Ningún test
   anterior cambiado. **Review 1: CAMBIOS PEDIDOS solo por el rastro** (T7
   sin marcar en `tasks.md` y «Lo siguiente» desfasado), corregidos por el
-  líder; código, tests, mutación y docs revisados y bien. **Review 2 lanzada.**
+  líder; código, tests, mutación y docs revisados y bien. **Review 2:
+  APROBADO.** Para el `done` solo falta la T9 del humano; la rama NO se
+  mergea a `dev` hasta entonces (puede traer ajustes de usabilidad).
 - **Condición del humano: NO se despliega hasta que pruebe la usabilidad en
   local** (T9, `tasks.md`: api y front locales desde la rama, BBDD local, sin
   Sigrid; clics, diálogo, tecla C, Ctrl+Z y regresión del teclado).
