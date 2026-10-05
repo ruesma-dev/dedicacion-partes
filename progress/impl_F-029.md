@@ -32,8 +32,7 @@ Ficheros nuevos de test: `services/dedicacion-api/tests/test_f029_completar.py`
   lee «si no estaba» en el momento del clic (`const estaba` antes de que
   entre el cursor), así esa fila queda marcada en vez de entrar y salir. Es
   lectura literal de R1, no desviación.
-- **R2, Shift+clic sin ancla visible:** el rango sale del cursor. El ancla no
-  se mueve con Shift (se puede rehacer el rango); sí con clic y Ctrl+clic.
+- **R2:** sin ancla visible, el rango sale del cursor; Shift no mueve el ancla.
 - **Diálogo (R10, R11):** el campo y el contenedor `.modal` cortan la
   propagación (ni Enter/Esc sobre los botones llegan a `teclas`). Confirmar
   desactivado sin destino o con el envío en curso (no hay doble lote). Con
@@ -212,10 +211,9 @@ Local, SIN Sigrid, con api y front como arriba. Periodo en curso ABIERTO.
   `obra_ide` inexistente → 422 con el motivo).
 
 Resultado de (a)-(e): **pendiente del humano**.
-
 ## Fuera de alcance / qué falta para cerrar
 
-- Fuera (design §9): Sesame (F-021), deshacer el lote de una vez, vista
-  previa de cifras, Shift+flechas, registrar en Sigrid tras completar.
+- Fuera (design §9): Sesame (F-021), deshacer el lote entero, vista previa,
+  Shift+flechas, registrar tras completar.
 - Falta: **T7** (líder: copiar el párrafo nuevo de `INTEGRACION.md` §5 a
   `azure-apps/dedicacion.md`, literal), **T9** (humano) y la review.
