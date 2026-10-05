@@ -84,6 +84,16 @@
 - **Fuera del proyecto (aviso al humano):** `partes-persistencia` también
   escribe `caaide = 0` en sus líneas `partes:`.
 
+- **2026-10-06, nueva instrucción del humano:** no esperar a que la F-031 de
+  `partes` llegue a su `dev`: revisarla en su rama y copiarla ADAPTADA, porque
+  porcentajes y partes escriben en el MISMO parte. La condición de entrada de
+  `tasks.md` (`655dbdc`) queda anulada; revisión de la rama en curso.
+
+## F-028 · Borrar lo filtrado (plan aprobado, va después de F-037)
+
+- Plan aprobado por el humano el 2026-10-06 con **A** (siempre todo lo
+  visible). Detalle en la descripción de `features.json`.
+
 ## Recursos cerrados en bloque en Sigrid (2026-10-05)
 
 - Correo de Miguel Ángel: recursos que salen en agosto y no en septiembre.
