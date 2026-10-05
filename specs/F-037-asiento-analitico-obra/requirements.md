@@ -5,145 +5,142 @@ Rigor **`critico`**: cambia lo que el transfer escribe en Sigrid, y el transfer
 desplegado escribe **de verdad** desde el 2026-10-01 (`docs/INTEGRACION.md` §8).
 Ninguna verificación automática lanza `registro/ejecutar`.
 
-Servicio: **solo `dedicacion-transfer`**, más documentación (`docs/`,
-`azure-apps/dedicacion.md`). La línea nueva de `CLAUDE.md` (D15) la pone el
-líder. Api y front no se tocan: los campos nuevos son aditivos y el front ya
-pinta `AccionLinea.aviso`. Evidencia: **`progress/explore_F-037.md`**.
+Servicio: **solo `dedicacion-transfer`** y documentación. Las líneas de
+`CLAUDE.md` (D15, D18) las pone el líder. Api y front no se tocan. Evidencia:
+`progress/explore_F-037.md` y **`progress/explore_F-037_partes_F-031.md`**
+(revisión de la F-031 de `partes`).
 
-**Base:** el humano, 2026-10-05: «el parte debe generar asiento en la cuenta
+**Base (humano):** 2026-10-05, «el parte debe generar asiento en la cuenta
 analítica en Sigrid» (correo «ARBOL ANALITICO OBRAS» de Juan Romero, Dir.
-Admón y Control de Costes, 2026-09-29); «la cuenta analítica sale del
-recurso; mira en partes»; «un parte ya contabilizado va a complementario».
-**Spec aprobada el 2026-10-06** con A en D8, D10 y D12-D16, y «para lo de la
-cuenta analítica recoge lo que estamos aprendiendo en partes, funciona igual».
+Admón y Control de Costes, 2026-09-29), «la cuenta analítica sale del
+recurso; mira en partes», «un parte ya contabilizado va a complementario».
+2026-10-06: spec aprobada (D8, D10, D12, D14-D16 = A) y **«la f31 de partes
+ya in progress, revísalo, y copia adaptándolo aquí a porcentajes (se usa el
+mismo parte realmente)»**: lo que toca el parte es **idéntico** a `partes`.
 
 ## 0. Conclusión de la exploración
 
-El asiento analítico del parte **ya lo genera Sigrid**: «Contabiliza parte…»
-crea un `ANA<aa>/nnnnn` (`con.tip = 32`) por parte, debe a `hmores.caaide` de
-cada línea y haber a `res.caaconide`, y pasa el parte a Imputado. El 6XX lo
-pone la nómina. **Falta que el transfer escriba `hmores.caaide`** (hoy 0).
-La regla es la de `partes` (F-021, desplegada, y su F-031, aprobada sin
-mergear): design §13.
+Sigrid ya genera el asiento analítico: «Contabiliza parte…» crea un ANA
+(`con.tip = 32`) por parte con debe a `hmores.caaide` y haber a
+`res.caaconide`, y pasa el parte a Imputado. El 6XX lo pone la nómina. Falta
+que el transfer escriba `hmores.caaide` (hoy 0) y que no escriba en partes
+cerrados. **Fuente de la copia:** rama `feature/F-031-asiento-analitico` de
+`partes` (design §13).
 
 Glosario. **Subcuenta**: texto tras el primer punto del código, sin espacios
-a los lados; sin punto o vacío, no hay. **Obra destino**: la obra en cuyo
-parte se escribe (normal, postventa o, en pruebas, la de pruebas). **Partes
-del mes**: los `hmo` de la obra destino, `ano` y `mes`, `reside = 0`, tipo
-de parte, con su `con.est` (`conest`: 1 En registro, 3 Cerrado, 10
-Imputado). **Parte cerrado**: Cerrado o Imputado (D16).
-**Complementario**: el parte elegido cuando el mes tiene alguno cerrado.
+a los lados. **Obra destino**: aquella en cuyo parte se escribe (normal,
+postventa o, en pruebas, la de pruebas). **Partes del periodo**: los `hmo` de
+la obra destino, `ano` y `mes`, `reside = 0`, tipo de parte, con su `con.est`.
+**Cerrado**: `con.est` distinto de En registro (1): Cerrado (3), Imputado
+(10) u otro (D16). **Complementario**: el parte elegido cuando el periodo
+tiene alguno cerrado.
 
-## 1. Cuenta analítica de cada línea (#regla-analitica)
+## 1. Cuenta analítica de cada línea (#regla-analitica; = `partes` F-021/F-031)
 
 - **R1.** CUANDO el transfer inserta una línea en `hmores`, debe escribir en
   `caaide` la cuenta resuelta según R2-R5, y no un 0 fijo.
-- **R2.** La subcuenta debe salir de `reshor.caaide` del recurso para el tipo
-  de hora que se escribe; si no da, de la del tipo por defecto (`res.horide`).
-- **R3.** SI el recurso no da subcuenta Y la partida de la línea tiene cuenta
-  cuya subcuenta empieza por `CI` o `CD`, ENTONCES vale esa subcuenta (respaldo
-  de `partes` F-031). Ni `res.caaide` ni `auxhor.caacod` intervienen.
-- **R4.** La cuenta debe ser la **única** `caa` con `caa.cenide` = centro de
-  la obra destino, `con.emp` = empresa de esa obra y esa subcuenta.
-- **R5.** Sin subcuenta por R2 ni R3: `caaide = 0` sin aviso. Obra sin esa
-  cuenta o con varias: `caaide = 0` con aviso que nombra obra y subcuenta.
-  La línea se escribe igual y **nunca se elige la primera**.
-- **R6.** Los avisos de R5 y R12 no crean `Conflicto` ni retienen la línea, y
-  se suman al de «sin partida» si lo hay.
-- **R7.** El preflight debe publicar en cada acción `escribir` `caa_ide`,
-  `caa_cod` y `caa_origen` (`recurso`, `partida` o nulo); `ejecutar` añade
-  `caa_cod` a cada `escritas`. Las acciones no `escribir` van con `caa_ide = 0`.
-- **R8.** Las cuentas de los centros y las partidas del respaldo deben leerse
-  **una vez por petición**, y `reshor.caaide` en la misma lectura de horas que
-  hoy. SI una lectura falla o viene `truncated`, ENTONCES falla la petición.
-- **R9.** `hmores.cenide` sigue siendo el centro de la obra destino, y
-  `cuaide` no se escribe.
+- **R2.** La subcuenta sale de `reshor.caaide` del recurso para el tipo de
+  hora escrito; si no da, de la de su tipo por defecto (`res.horide`).
+- **R3.** SI el recurso no da subcuenta Y la cuenta de la partida de la línea
+  (`obrparpar.caaide`) tiene subcuenta que empieza por `CI` o `CD`, ENTONCES
+  vale esa, con `caa_origen = "partida"` y una `caa_nota` que nombra partida
+  y subcuenta. Nunca `CP` ni `INGR`, ni `res.caaide` ni `auxhor.caacod`.
+- **R4.** La cuenta es la **única** `caa` con `caa.cenide` = centro de la obra
+  destino, `con.emp` = empresa de esa obra y esa subcuenta.
+- **R5.** Sin subcuenta: `caaide = 0` sin aviso. Obra sin esa cuenta o con
+  varias: `caaide = 0` y `caa_aviso`. La línea se escribe igual y **nunca se
+  elige la primera**. Los avisos no crean `Conflicto` ni retienen la línea.
+- **R6.** Cada acción lleva `caa_ide`, `caa_cod`, `caa_motivo`, `caa_aviso`,
+  `caa_origen` y `caa_nota` (contrato de `partes`); `caa_aviso`, `caa_nota` y
+  el aviso del parte se suman además a `AccionLinea.aviso`, que es lo que
+  pinta el front. `escritas[]` lleva `caa_cod`.
+- **R7.** Partidas y cuentas de centro se leen **una vez por petición**;
+  `reshor.caaide`, en la lectura de horas de hoy. SI una lectura falla o
+  viene `truncated`, ENTONCES la petición falla sin escribir nada.
+- **R8.** `hmores.cenide` sigue siendo el centro de la obra destino; `cuaide`
+  no se escribe.
 
-## 2. Parte cerrado: complementario
+## 2. El parte del periodo (= `partes` F-031 R1-R16)
 
-- **R10.** El transfer debe leer **todos** los partes del mes con su estado en
-  la misma lectura que hoy localiza el parte.
-- **R11.** Las líneas deben ir al parte En registro de **mayor `ide`** del mes;
-  SI todos están cerrados, a uno nuevo creado con `stmts_crear_parte` (último
-  día del mes, En registro, empresa de la obra, `Parte <obra>
-  (complementario)`); SI tras crearlo la relectura no lo da, la petición
-  falla sin insertar líneas. El original no se toca.
-- **R12.** El preflight debe publicar por parte `estado`, `complementario` y
-  los códigos de los cerrados, y avisar en cada acción `escribir` del parte
-  complementario al que va.
-- **R13.** Identidad (P4) y capacidad deben evaluarse contra las líneas de
-  **todos** los partes del mes. SI la línea que se pisaría está en un parte
-  cerrado, ENTONCES no se borra: la acción pasa a `omitir` con un motivo que
-  nombra el parte y su estado, y sin cuenta.
-- **R14.** La `synckey` `porcentajes:{id}` se busca en **cualquier** parte:
-  una línea ya escrita en un parte cerrado es `ya_registrado`.
+- **R9.** Por periodo con acciones `escribir`, el transfer lee **todos** sus
+  partes con su estado en **una** consulta.
+- **R10.** Las líneas van al parte En registro de **mayor `ide`**, aunque haya
+  cerrados de `ide` mayor; SI no hay ninguno, a uno nuevo (complementario si
+  hay cerrados). Se reutiliza el complementario que haya creado `partes`.
+- **R11.** El parte nuevo se crea con el alta de hoy: `con` (empresa de la
+  obra, tipo 35, En registro, `PT<AA>/NNNNN` **correlativo por empresa**,
+  descripción según D13, último día del mes) y `hmo` localizado por código,
+  tipo **y empresa**. Tras crearlo se relee el periodo; SI no aparece En
+  registro, ENTONCES la petición falla sin insertar líneas.
+- **R12.** Una `synckey` `porcentajes:{id}` en cualquier parte, también
+  cerrado, es `ya_registrado`, sin escribir ni borrar.
+- **R13.** Identidad (P4) y capacidad se evalúan contra las líneas de
+  **todos** los partes del periodo. CUANDO la acción choca con una línea
+  ajena de un parte **cerrado**, ENTONCES pasa a `omitir` con motivo
+  `parte_cerrado: …` (parte y estado) y `caa_*` vacíos; con una de un parte
+  En registro, conflicto confirmable como hoy con el `parte_cod` donde vive.
+  El primero prevalece.
+- **R14.** `pisar_claves` solo borra líneas de partes En registro.
+- **R15.** Cada parte del preflight y del resultado lleva `estado`,
+  `complementario`, `cerrados`, `del_periodo` y `aviso` (texto de `partes`).
+- **R16.** SI la lectura de partes o de líneas existentes falla o viene
+  `truncated`, ENTONCES la petición falla sin escribir.
 
 ## 3. Lo que el transfer NO hace
 
-- **R15.** Ninguna sentencia de `registro/ejecutar` toca `asi`, `asa`, `apu`
-  ni `apa`, cambia `con.est`, inserta un `con` de otro tipo que el parte ni
-  borra o inserta en un parte cerrado.
-- **R16.** Una línea `ya_registrado` no se reescribe ni se rellena su cuenta.
-- **R17.** CUANDO se confirma un pisado (solo en partes En registro), la línea
-  nueva lleva su cuenta según R1-R5.
+- **R17.** Ninguna sentencia toca `asi`, `asa`, `apu` ni `apa`, cambia
+  `con.est` o el `con`/`hmo` de un parte existente, ni inserta o borra en un
+  parte cerrado. Una línea `ya_registrado` no se reescribe ni se rellena su
+  cuenta. Un pisado confirmado lleva su cuenta según R1-R5.
 
 ## 4. Documentación
 
 - **R18.** `docs/ARCHITECTURE.md`: `#regla-analitica` (R1-R17, quién genera el
-  ANA, deshacer y corregir, que hereda F-033, y que la regla es común con
-  `partes`); alcance «los partes del mes» en `#regla-conflicto` y
-  `#regla-capacidad`; `#regla-sin-partida` sin llamar «imputación analítica» a
-  la partida; ancla exigida por el test de fuente única.
-- **R19.** `docs/INTEGRACION.md` (§1, §7, fecha): lecturas nuevas (`caa`,
-  `con.est`, `reshor.caaide`, `res.horide`, `obrparpar.caaide`), el
-  complementario y la dependencia de «Contabiliza parte…»; copia en
-  `azure-apps/dedicacion.md`.
+  ANA, deshacer y corregir, F-033, y que la regla es la de `partes`); alcance
+  «partes del periodo» en `#regla-conflicto` y `#regla-capacidad`;
+  `#regla-sin-partida` sin llamar «imputación analítica» a la partida; ancla
+  en el test de fuente única.
+- **R19.** `docs/INTEGRACION.md` (§1, §7, fecha): lecturas nuevas, el
+  complementario, «Contabiliza parte…» y que el parte se comparte con
+  `partes`; copia en `azure-apps/dedicacion.md`.
 
 ## 5. Verificación con Administración (MANUAL, obra de pruebas)
 
 - **R20.** En local, transfer de la rama con `OBRA_PRUEBAS_FORZAR=true` y
   autorización expresa del humano: una línea MENC o MJEFO en 0404 en un mes
-  sin más actividad lleva `caaide` = `0404.CIMO03` o `0404.CIMO02` y `cenide`
-  = centro de 0404.
-- **R21.** Administración pulsa «Contabiliza parte…» (parte a Imputado; ANA
-  con debe a `0404.CIMOxx` por `tot` y haber a `CP.<persona>`) y **confirma
-  que la línea se ve como una tecleada**; otra línea del mismo mes va a un
+  sin más actividad lleva `caaide` = `0404.CIMO03` o `0404.CIMO02`.
+- **R21.** Administración pulsa «Contabiliza parte…» (parte a Imputado, ANA
+  con debe a `0404.CIMOxx` por `tot` y haber a `CP.<persona>`) y confirma que
+  la línea se ve como una tecleada; otra línea del mismo mes va a un
   complementario que se contabiliza aparte. Limpieza: `limpiar --confirmar`
   y Administración anula los ANA y el complementario.
 
 ## 6. Decisiones
 
-**Decididas por el humano el 2026-10-05:** D1 = A (rellenar `caaide`; el
-transfer no escribe asientos; descartados ANA propio y asiento 64X). D3 y D9
-= la regla de `partes` (R2-R5). D11 = complementario.
+**Decididas por el humano.** 2026-10-05: D1 = A (rellenar `caaide`, sin
+asientos propios; descartados ANA propio y 64X); D3 y D9 = regla de `partes`;
+D11 = complementario. 2026-10-06, todas A: **D8** en En registro como hoy, en
+cerrado nada se borra y ajusta Administración (F-033 lo hereda; descartado
+regenerar el ANA). **D10** nada que rellenar (hoy cero líneas; descartado un
+script). **D12** En registro de mayor `ide` (descartado el de menor). **D14**
+choque con cerrado → `omitir` (descartado mirar solo el destino). **D15**
+copia de `cuenta_analitica.py` de `partes` en la lista cerrada (descartado
+reescribirla). **D16** cerrado = no En registro, como `partes` (descartado
+solo Imputado). D2, D4-D7: el 6XX, la contrapartida, el importe, la fecha, la
+serie y la agrupación son del ANA de Administración (explore §4-§5).
 
-**Decididas por el humano el 2026-10-06** (todas A):
+**Abiertas** (opciones, recomendación):
 
-- **D8 · Deshacer o corregir.** En un parte En registro, como hoy; en uno
-  cerrado nada se borra (R13, R15) y Administración ajusta; F-033 lo hereda.
-  Descartado: que el transfer regenere el ANA.
-- **D10 · Líneas anteriores a F-037** (hoy **cero**): nada. Descartado: script
-  de relleno.
-- **D12 · Parte reutilizado**: el En registro de mayor `ide`, como hoy.
-  Descartado: el de menor.
-- **D13 · Complementario**: `Parte <obra> (complementario)`, sin enlace.
-  Descartado: el texto del original (lo que hace `partes`, design §13).
-- **D14 · Pisado contra un cerrado**: `omitir` con motivo. Descartado: mirar
-  solo el parte destino.
-- **D15 · `cuenta_analitica.py`**: copia literal de la de `partes` tras su F-031,
-  en la lista cerrada de `CLAUDE.md` (la línea la pone el líder), con un test
-  que compara las dos. Descartado: reescribirla.
-- **D16 · Qué estado manda al complementario**: cualquiera distinto de En
-  registro (Cerrado o Imputado), igual que `partes` F-031. Descartado: solo
-  Imputado. Consecuencia: de marzo a agosto de 2026, casi todo Cerrado sin
-  contabilizar, las líneas van a complementarios (explore §11).
-
-| D | Pregunta | Respuesta | Evidencia (explore) |
-|---|---|---|---|
-| D2 | 6XX | Ninguna desde el transfer: la nómina | §5 |
-| D4 | Contrapartida | `res.caaconide`, la pone el ANA | §4 |
-| D5-D7 | Importe, fecha, serie, agrupación | `hmores.tot`; fecha del parte; `ANA<aa>`; uno por parte | §4 |
-
-**Implementación (humano, 2026-10-06):** espera a que la F-031 de `partes`
-llegue a su `dev` y se copia su versión final, con el respaldo de R3
-(condición de entrada en `tasks.md`).
+- **D13 · Descripción del complementario (reabierta el 2026-10-06).** El
+  humano decidió `Parte <obra> (complementario)`; `partes` (F-031 R3) y
+  Administración en sus 7 complementarios reales usan `Parte <obra>`.
+  A) `Parte <obra>`; B) `Parte <obra> (complementario)`. **Recomendada A**:
+  es el mismo parte y lo reutilizan los dos servicios.
+- **D17 · Carrera entre servicios** (ninguna spec la trata). A) alta
+  condicional en una transacción con bloqueo (código libre en la empresa y
+  ningún parte En registro del periodo), relectura y un reintento (design
+  §7); B) aceptarla y detectarla en la relectura. **Recomendada A**, y avisar
+  a `partes` para que haga lo mismo.
+- **D18 · `estado_parte.py`** también es copia de `partes`. A) a la lista
+  cerrada de `CLAUDE.md` junto a `cuenta_analitica.py`; B) reescribirlo.
+  **Recomendada A**.

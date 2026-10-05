@@ -320,3 +320,15 @@ implementar; su anexo `progress/spec_F-031.md` §D1-§D11).
   ninguna usada; no se filtran.
 - **Pendiente allí**: M2 (escritura en 0404), M3 y M4 (Administración ve la
   línea como una tecleada; Porsan). La R21 de esta spec cubre lo mismo.
+
+## 12. Copia adaptada de la F-031 de `partes` (2026-10-06)
+
+El humano: «la f31 de partes ya in progress, revísalo, y copia adaptándolo
+aquí a porcentajes (se usa el mismo parte realmente)». La revisión de la rama
+está en `progress/explore_F-037_partes_F-031.md` (punta `9b202e9`). Al
+reescribir la spec la rama estaba en `5ff4d91` (T7-T9: cliente y tests); los
+dos ficheros que se copian (`estado_parte.py`, `cuenta_analitica.py`) no
+cambian entre esas dos puntas (`git diff 9b202e9 5ff4d91 --
+services/partes-transfer/application/services/` vacío). Fallos propios que
+salen al compararnos: `siguiente_cod_pt` sin `emp` y `INSERT INTO hmo` sin
+`emp`; y la carrera entre los dos servicios al crear un parte (D17).
