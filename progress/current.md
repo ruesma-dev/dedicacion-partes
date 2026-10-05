@@ -16,13 +16,23 @@ F-027 se cerró el 2026-10-04 y se **desplegó el 2026-10-05**; F-025 se despleg
   deshacible por trabajador) + front con Ctrl/Shift, diálogo y botón. Lista
   cerrada de tests anteriores que cambian: **ninguno** (comprobado con un
   prototipo desechable). **Aprobada por el humano el 2026-10-05 con D1-D6 =
-  A**, cerradas en todos sus sitios (`8d5172d`). **Implementer lanzado** →
-  `progress/impl_F-029.md`.
+  A**, cerradas en todos sus sitios (`8d5172d`).
+- **Implementación terminada** (`progress/impl_F-029.md`): T1-T6, T8, T10
+  (`b09e333`…). Cobertura 84/84; mutación en serie 20/20 muertos tras matar
+  dos `frozen` con un test (`progress/mutacion_F-029.md`); un falso
+  superviviente en serie → encargo de `arnes-base` (`58403df`). Ningún test
+  anterior cambiado. **Review lanzada** → `progress/review_F-029.md`.
 - **Condición del humano: NO se despliega hasta que pruebe la usabilidad en
   local** (T9, `tasks.md`: api y front locales desde la rama, BBDD local, sin
   Sigrid; clics, diálogo, tecla C, Ctrl+Z y regresión del teclado).
-- **T7 (líder):** copiar a `azure-apps/dedicacion.md` el párrafo nuevo de
-  `docs/INTEGRACION.md` §5 (ruta `completar`) y hacer el commit allí.
+- **T7 (líder): hecha**, párrafo de §5 copiado literal a
+  `azure-apps/dedicacion.md`, commit `a593bd4` («sin desplegar»).
+- **T9 MANUAL (humano), pendiente:** pasos (a)-(e) en `tasks.md` T9 y
+  arranque en `progress/impl_F-029.md` § «Cómo probarlo en local»: en Git
+  Bash, `cd services/dedicacion-api && .venv/Scripts/python main.py` y, en
+  otra, `cd services/dedicacion-front && .venv/Scripts/python main.py`;
+  abrir `http://localhost:8080`. NO pulsar «Registrar en Sigrid».
+  Resultado: _pendiente_.
 
 ## Producción, hoy
 
