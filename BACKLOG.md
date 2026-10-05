@@ -3,9 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **33 features**, 16 abiertas, 17 terminadas.
-
-En curso: **F-029**.
+Resumen: **33 features**, 15 abiertas, 18 terminadas.
 
 ## Trabajo abierto
 
@@ -13,7 +11,6 @@ En curso: **F-029**.
 |---|---|---|---|---|---|
 | F-028 | Borrar todo lo que está en pantalla | 1 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 2 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
-| F-029 | Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada | 3 | en curso | estandar | `feature/F-029-seleccion-multiple-completar-100` |
 | F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 4 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 5 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
 | F-031 | MCP para que una IA haga el trabajo del usuario | 6 | pendiente | critico | `feature/F-031-mcp-ia` |
@@ -43,6 +40,7 @@ En curso: **F-029**.
 | F-032 | Nombres de empresa sincronizados desde Sigrid | 2 | estandar |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | critico |
 | F-008 | Infraestructura y despliegue en Azure | 3 | critico |
+| F-029 | Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada | 3 | estandar |
 | F-004 | README del monorepo y arranque local en orden | 4 | documental |
 | F-013 | Una linea sin partida no se escribe en silencio | 4 | critico |
 | F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | documental |
@@ -63,12 +61,6 @@ Salida de la revisión de negocio del 2026-09-29. Botón «Borrar todo». Decisi
 estado **pendiente** · prioridad 2 · rigor `estandar` · SDD sí · rama `feature/F-021-filtro-obra-chip-unico`
 
 Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asignaciones pinta un chip por cada obra del trabajador (dedicacion-front/static/js/app.js, construirCelda ~530-545). El filtro 'Filtrar obra...' de esa columna (trabajadoresVisibles ~439) decide que FILAS se ven, pero cada fila sigue pintando TODOS sus chips: filtras por una obra y ves al trabajador con las otras cuatro al lado. Se pide que, con el filtro activo, cada fila muestre solo el chip que coincide. A DECIDIR EN LA SPEC: la columna total y el estado (OK/FALTA/EXCESO) seguirian refiriendose al 100 % de TODAS las obras, asi que la fila se contradice a simple vista; hay que decidir si se recalcula sobre lo filtrado -y entonces el estado deja de significar lo que significa- o si se avisa de que hay chips ocultos. Es presentacion pura: no toca dedicacion-api ni el transfer y no cambia nada de lo que se registra en Sigrid. AMPLIADA 2026-09-29 (revisión de negocio): el filtro por obra debe además SELECCIONAR los recursos asignados a esa obra en Sesame (el humano confirma que Sesame guarda la obra de cada persona). Eso deja de ser presentación pura: cruza la frontera del proyecto (sesame-api, ver azure-apps/partes.md 5.3 bis) y la consulta la hace la API, no el front. Pendiente en la spec: si sesame-api expone la obra asignada y si está desplegado; cómo se casa la persona (DNI) y la obra de Sesame con las de Sigrid. La selección que produce es la que usa F-029.
-
-### F-029 · Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada
-
-estado **en curso** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-029-seleccion-multiple-completar-100`
-
-Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas con Ctrl (sueltas) y Shift (rango) y aplicarles una acción que asigna a la obra filtrada. Decisión del humano 2026-09-29: COMPLETA HASTA EL 100 %, es decir, a cada trabajador le pone en la obra filtrada lo que le falte para llegar al 100 %, sin tocar sus otras obras. Depende del filtro por obra (F-021). El cálculo de lo que falta vive en la API, no en app.js. 2026-10-05: el humano la pone por delante de F-021 (trabaja con el filtro de obra que ya existe; Sesame queda en F-021). SPEC en specs/F-029-seleccion-multiple-completar-100/, con decisiones abiertas D1-D6 en requirements.md §6 y lista cerrada de tests anteriores que cambian: ninguno (comprobado con un prototipo). 2026-10-05: spec APROBADA por el humano con D1-D6 = A (las recomendadas). Pasa a implementación. CONDICIÓN DEL HUMANO: antes de desplegar quiere probar la usabilidad en local (T9).
 
 ### F-030 · Dedicación por días, bajas e incidencias con calendario del trabajador
 
@@ -213,6 +205,12 @@ application/registro_sigrid.py añade seis columnas (sigrid_estado, sigrid_parte
 estado **terminada** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-008-infra-azure`
 
 Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo el patrón de partes (Container Apps, imágenes en acralbaranesdev con tag fechado, secretos en Key Vault por identidad gestionada, Easy Auth en el front), decidir dónde vive la BBDD dedicacion, y escribir el documento del proyecto en azure-apps. El transfer arranca en modo pruebas y solo sale de él con decisión expresa.
+
+### F-029 · Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada
+
+estado **terminada** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-029-seleccion-multiple-completar-100`
+
+Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas con Ctrl (sueltas) y Shift (rango) y aplicarles una acción que asigna a la obra filtrada. Decisión del humano 2026-09-29: COMPLETA HASTA EL 100 %, es decir, a cada trabajador le pone en la obra filtrada lo que le falte para llegar al 100 %, sin tocar sus otras obras. Depende del filtro por obra (F-021). El cálculo de lo que falta vive en la API, no en app.js. 2026-10-05: el humano la pone por delante de F-021 (trabaja con el filtro de obra que ya existe; Sesame queda en F-021). SPEC en specs/F-029-seleccion-multiple-completar-100/, con decisiones abiertas D1-D6 en requirements.md §6 y lista cerrada de tests anteriores que cambian: ninguno (comprobado con un prototipo). 2026-10-05: spec APROBADA por el humano con D1-D6 = A (las recomendadas). Pasa a implementación. CONDICIÓN DEL HUMANO: antes de desplegar quiere probar la usabilidad en local (T9). CERRADA (done) el 2026-10-05: review pasada 2 APROBADA; T9 (usabilidad en local) cumplida por el humano: «está todo ok, podemos desplegarlo». PENDIENTE DE DESPLEGAR (api y front; sin DDL ni sync).
 
 ### F-004 · README del monorepo y arranque local en orden
 

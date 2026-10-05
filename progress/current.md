@@ -1,43 +1,17 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-029 en curso** (selección múltiple y completar hasta el 100 %, rigor
-estándar, `sdd: true`), rama `feature/F-029-seleccion-multiple-completar-100`.
-F-027 se cerró el 2026-10-04 y se **desplegó el 2026-10-05**; F-025 se desplegó el 2026-10-03 (resúmenes en
-`history.md`). El arnés es la **1.7.3**.
+**Ninguna feature en ejecución.** F-029 se cerró el 2026-10-05 y está en
+`dev` **pendiente de desplegar** (sección siguiente). F-027 se desplegó el
+2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
 
-## F-029 · Selección múltiple y completar hasta el 100 % (en curso)
+## ⚠ Despliegue de F-029 (pendiente; lo lanza el humano)
 
-- **Elegida por el humano el 2026-10-05** por delante de F-021, de la que
-  dependía. La spec trabaja con el filtro de obra que YA existe en el front;
-  la selección automática desde Sesame sigue siendo de F-021.
-- **Estado:** spec entregada (`631273c`, `specs/F-029-seleccion-multiple-completar-100/`):
-  api `POST /periodos/{a}/{m}/completar` por lote (un evento `COMPLETAR`
-  deshacible por trabajador) + front con Ctrl/Shift, diálogo y botón. Lista
-  cerrada de tests anteriores que cambian: **ninguno** (comprobado con un
-  prototipo desechable). **Aprobada por el humano el 2026-10-05 con D1-D6 =
-  A**, cerradas en todos sus sitios (`8d5172d`).
-- **Implementación terminada** (`progress/impl_F-029.md`): T1-T6, T8, T10
-  (`b09e333`…). Cobertura 84/84; mutación en serie 20/20 muertos tras matar
-  dos `frozen` con un test (`progress/mutacion_F-029.md`); un falso
-  superviviente en serie → encargo de `arnes-base` (`58403df`). Ningún test
-  anterior cambiado. **Review 1: CAMBIOS PEDIDOS solo por el rastro** (T7
-  sin marcar en `tasks.md` y «Lo siguiente» desfasado), corregidos por el
-  líder; código, tests, mutación y docs revisados y bien. **Review 2:
-  APROBADO.** Para el `done` solo falta la T9 del humano; la rama NO se
-  mergea a `dev` hasta entonces (puede traer ajustes de usabilidad).
-- **Condición del humano: NO se despliega hasta que pruebe la usabilidad en
-  local** (T9, `tasks.md`: api y front locales desde la rama, BBDD local, sin
-  Sigrid; clics, diálogo, tecla C, Ctrl+Z y regresión del teclado).
-- **T7 (líder): hecha**, párrafo de §5 copiado literal a
-  `azure-apps/dedicacion.md`, commit `a593bd4` («sin desplegar»).
-- **T9 MANUAL (humano), pendiente:** pasos (a)-(e) en `tasks.md` T9 y
-  arranque en `progress/impl_F-029.md` § «Cómo probarlo en local»: en Git
-  Bash, `cd services/dedicacion-api && .venv/Scripts/python main.py` y, en
-  otra, `cd services/dedicacion-front && .venv/Scripts/python main.py`;
-  abrir `http://localhost:8080`. NO pulsar «Registrar en Sigrid».
-  Mirar además (observación de la review 1): Ctrl/Shift+clic con el editor
-  abierto repinta la tabla y el foco puede saltar. Resultado: _pendiente_.
+- Cambian la **api** y el **front** (`redeploy_dedicacion.ps1 -Solo api,front`,
+  que respeta el orden api → front); sin DDL (`evento.tipo` es texto) ni sync.
+- **Comprobación tras desplegar:** en producción, seleccionar con Ctrl+clic a
+  un trabajador en FALTA, pulsar C, confirmar la obra y ver que queda al
+  100 %; Ctrl+Z lo devuelve. No hace falta registrar en Sigrid.
 
 ## Producción, hoy
 
@@ -71,9 +45,9 @@ F-027 se cerró el 2026-10-04 y se **desplegó el 2026-10-05**; F-025 se despleg
 ## Lo siguiente, por prioridad
 
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020). Ahora, **F-029**
-(en curso, sección de arriba, adelantada por el humano). Después de F-029:
-**F-028**, F-021, F-030, F-020, F-031, F-033 y, detrás, F-017, F-018…
+2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020). Primero desplegar
+**F-029**; después **F-028**, F-021, F-030, F-020, F-031, F-033 y, detrás,
+F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
