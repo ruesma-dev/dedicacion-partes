@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-037 en spec** (asiento analítico, rigor crítico), rama
+**F-037 en `spec_ready`** (asiento analítico, rigor crítico), rama
 `feature/F-037-asiento-analitico-obra`. F-029 se cerró el 2026-10-05 y está en
 `dev` **pendiente de desplegar** (sección siguiente). F-027 se desplegó el
 2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
@@ -43,16 +43,26 @@
   cuenta sin escribir: el 2026-10-03 dio 0 asignaciones, 0 eventos, 1
   periodo y 196 trabajadores.
 
-## F-037 · El registro genera el asiento analítico de la obra (en spec)
+## F-037 · El registro genera el asiento analítico de la obra (spec lista)
 
 - **Pedida por el humano el 2026-10-05** a partir del correo de Juan Romero
   «ARBOL ANALITICO OBRAS» (2026-09-29): cuentas analíticas por centro de
   coste de la obra; ejemplo, asiento con 6XX desglosado al 100 % en
   `0702.CP0004`. Escritura en Sigrid: rigor crítico, solo el transfer.
-- **Estado:** spec-author lanzado: primero exploración del modelo de
-  asientos de Sigrid (solo lecturas) en `progress/explore_F-037.md`, luego
-  spec con las decisiones para Administración. El líder la enseña al humano
-  **antes** de implementar.
+- **Exploración** (`progress/explore_F-037.md`): Sigrid YA genera el asiento
+  analítico de cada parte (documento `ANA`, uno por obra y mes, lo lanza
+  Administración por lotes): debe a `hmores.caaide` de cada línea, haber a
+  `res.caaconide`; el 6XX lo pone la nómina. **El transfer escribe hoy
+  `caaide = 0`**, así que sus líneas no entrarían en el ANA. Cero líneas
+  `porcentajes:` en Sigrid a día de hoy.
+- **Spec entregada** (`5dd3d75`), recomendada D1 = A: el transfer rellena
+  `caaide` (`<obra>.CIMOxx` del tipo de hora) y no escribe asientos.
+  **Espera al humano / Juan Romero** con D1-D11 abiertas
+  (requirements §6).
+- **Riesgo vivo:** el transfer desplegado escribe en real; lo que se
+  registre antes de F-037 queda con `caaide = 0` y fuera del ANA.
+- **Fuera del proyecto (aviso al humano):** `partes-persistencia` también
+  escribe `caaide = 0` en sus líneas `partes:`.
 
 ## Recursos cerrados en bloque en Sigrid (2026-10-05)
 
