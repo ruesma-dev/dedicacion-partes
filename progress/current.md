@@ -91,7 +91,8 @@
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
 2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
 primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
-(asiento analítico, en spec); después F-028, F-021, F-030, F-020, **F-036**
+(asiento analítico, en spec); después F-028, F-021, F-030, F-020 (Excel), **F-038**
+(pestaña de analítica, pedida el 2026-10-06 justo detrás del Excel), **F-036**
 (solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
