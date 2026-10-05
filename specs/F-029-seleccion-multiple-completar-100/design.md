@@ -1,9 +1,8 @@
 <!-- specs/F-029-seleccion-multiple-completar-100/design.md -->
 # F-029 · Diseño
 
-Requisitos en `requirements.md`; decisiones D1-D6 en su §6. Este diseño
-aplica las **recomendadas**: si el humano elige otra, se reescribe la sección
-afectada antes de implementar.
+Requisitos en `requirements.md`; decisiones D1-D6 en su §6, decididas por el
+humano el 2026-10-05 (las seis, A). Este diseño las aplica.
 
 ## 1. Límite de servicio
 
@@ -208,8 +207,8 @@ Ninguno. `evento.tipo` es `Text`: `COMPLETAR` entra sin DDL. No cambia
   (OK/EXCESO por la misma épsilon, no vigente, no visible), todo o nada ante
   obra no ofrecible o periodo cerrado, un evento `COMPLETAR` por trabajador
   deshacible con `#regla-deshacer`, y que no registra en Sigrid. Con su línea
-  de procedencia (decisiones del humano y D1-D6). No se añade a `ANCLAS` de
-  `test_f002_fuente_unica.py` (tampoco se añadió `regla-deshacer`).
+  de procedencia (D1-D6, decididas por el humano el 2026-10-05). No va a
+  `ANCLAS` de `test_f002_fuente_unica.py` (tampoco `regla-deshacer`).
 - `INTEGRACION.md` §5: un párrafo como el de F-024. La copia literal a
   `azure-apps/dedicacion.md` la hace el líder (T7).
 

@@ -115,34 +115,31 @@ no se editan (design §6). Si al implementar cambia alguno, se para.
 
 `tasks.md` T9, con pasos exactos: local, sin Sigrid; clics, diálogo y teclado.
 
-## 6. Decisiones abiertas (las valida el humano antes de implementar)
+## 6. Decisiones (aprobadas por el humano el 2026-10-05)
 
-- **D1 · Cómo se elige el destino.** A) Diálogo con las entradas del catálogo
-  que casan con el filtro: una, elegida; varias, se elige; ninguna, se escribe
-  (R10). B) Solo si casa una entrada exacta; si no, no se lanza y se pide
-  afinar el filtro. C) Tomar en cada fila el chip que casa: cada trabajador
-  podría ir a una obra distinta. **Recomendada A**: parte del filtro y, si casa
-  varias (`0656` casa `0656` y `Postv-0656`) o ninguna, hay salida.
-- **D2 · Normal o `Postv-`.** A) Lo dice la entrada elegida del catálogo, como
-  en el editor. B) Solo normal. C) Normal con conmutador PV en el diálogo.
-  **Recomendada A**: un solo mecanismo, con los modos que marca la API.
-- **D3 · No vigente y obra no ofrecible.** No vigente: A) no se toca y se dice
-  (R24); B) se completa, como permite guardar. Obra no ofrecible: A) 422
-  entera (R22); B) sumar solo a quien ya tiene la línea (D5 de F-025).
-  **Recomendadas A y A**: copia y registro ya dejan fuera al no vigente, y el
-  front nunca ofrece una obra no ofrecible.
-- **D4 · Botón y atajo** (ocupadas: ↑ ↓ Enter Esc / R F7 F8 Ctrl+Z). A) Botón
-  «Completar al 100 %» y tecla **C** sin modificadores, editor cerrado y fuera
-  de campo, como R. B) Botón y F9. C) Solo botón. **Recomendada A**: C está
-  libre, no pisa Ctrl+C y solo abre el diálogo.
-- **D5 · Precisión.** A) Lo que falta = 100 − total a 0,01 (`Numeric(6,2)`:
-  resta exacta, total 100,00); si se toca lo decide `calcular_estado` (épsilon
-  0,005), así que falta 0,01 se completa. B) Umbral propio (no completar si
-  falta < 0,5). C) Redondear a entero. **Recomendada A**: B es un tercer
-  criterio de «al 100 %» frente a API y transfer (`#regla-capacidad`), y C deja
-  `FALTA` o `EXCESO` residual.
-- **D6 · Seleccionados ocultos por los filtros.** A) Solo la selección efectiva
-  (visibles); el diálogo cuenta los ocultos (R9). B) Todos, ocultos incluidos,
-  listados en el diálogo. C) Vaciar la selección al cambiar un filtro.
-  **Recomendada A**: se toca lo que se ve (para F-021: lo que Sesame
-  preseleccione tendrá que estar visible).
+Decidido por el humano el 2026-10-05: **D1-D6 = A** en las seis.
+
+- **D1 · Destino.** Diálogo con las entradas del catálogo que casan con el
+  filtro: una, elegida; varias, se elige; ninguna, se escribe (R10). Así hay
+  salida si casa varias (`0656` y `Postv-0656`) o ninguna. Descartadas: solo
+  con una coincidencia exacta; el chip que casa en cada fila.
+- **D2 · Normal o `Postv-`.** Lo dice la entrada elegida del catálogo, como en
+  el editor: un solo mecanismo, con los modos que marca la API. Descartadas:
+  solo normal; conmutador PV en el diálogo.
+- **D3 · No vigente y obra no ofrecible.** El no vigente no se toca y se dice
+  (R24): copia y registro ya lo dejan fuera. Obra no ofrecible: 422 entera
+  (R22): el front nunca la ofrece. Descartadas: completar al no vigente;
+  sumar solo a quien ya tiene la línea (D5 de F-025).
+- **D4 · Botón y atajo.** Botón «Completar al 100 %» y tecla **C** sin
+  modificadores, editor cerrado y fuera de campo, como R (ocupadas: ↑ ↓ Enter
+  Esc / R F7 F8 Ctrl+Z): C está libre, no pisa Ctrl+C y solo abre el diálogo.
+  Descartadas: F9; solo botón.
+- **D5 · Precisión.** Lo que falta = 100 − total a 0,01 (`Numeric(6,2)`: resta
+  exacta, total 100,00); si se toca lo decide `calcular_estado` (épsilon
+  0,005), así que falta 0,01 se completa. Sin un tercer criterio de «al 100 %»
+  frente a API y transfer (`#regla-capacidad`). Descartadas: umbral propio
+  (< 0,5); redondear a entero.
+- **D6 · Seleccionados ocultos.** Solo la selección efectiva (visibles); el
+  diálogo cuenta los ocultos (R9): se toca lo que se ve. Para F-021: lo que
+  Sesame preseleccione tendrá que estar visible. Descartadas: mandar también
+  los ocultos; vaciar la selección al cambiar un filtro.
