@@ -254,6 +254,12 @@ tr.fila.seleccionada td {
   box-shadow: inset 3px 0 0 var(--brand);
 }
 tr.fila.editando td { background: var(--brand-soft); }
+/* Selección múltiple (F-029): distinta del cursor (`.seleccionada`). */
+tr.fila.multi td { background: var(--pv-soft); }
+tr.fila.multi td:first-child { box-shadow: inset 3px 0 0 var(--pv); }
+tr.fila.multi.seleccionada td:first-child {
+  box-shadow: inset 3px 0 0 var(--brand), inset 6px 0 0 var(--pv);
+}
 tr.fila.inactivo td { opacity: 0.55; }
 
 .celda-nombre .nombre { font-weight: 600; }

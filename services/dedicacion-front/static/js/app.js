@@ -58,7 +58,12 @@ const state = {
   orden: { campo: "pendientes", dir: 1 },
   columnas: ORDEN_COLUMNAS_DEFECTO.slice(),
   anchos: {},
-  seleccionIde: null,
+  seleccionIde: null,          // cursor: la fila de las teclas (↑ ↓ Enter R F7 F8)
+  // Selección múltiple (F-029): `ide` marcados con Ctrl/Shift+clic,
+  // independiente de los filtros. Solo la escriben `marcarSeleccion` y
+  // `fijarSeleccion`.
+  seleccion: new Set(),
+  ancla: null,                 // fila desde la que Shift+clic hace el rango
   editandoIde: null,
   edicion: [],
   timerGuardado: null,
@@ -193,6 +198,7 @@ async function cambiarEmpresa(valor) {
   url.searchParams.set("empresa", String(state.empresa));
   history.replaceState(null, "", url);
   state.seleccionIde = null;
+  fijarSeleccion([]);
   await cargarPeriodo(state.anio, state.mes);
 }
 
@@ -533,7 +539,8 @@ function renderTabla() {
   const contador = $("#contador");
   if (contador) {
     contador.textContent = totalBase
-      ? `Mostrando ${visibles.length} de ${totalBase}`
+      ? `Mostrando ${visibles.length} de ${totalBase}` +
+        (state.seleccion.size ? ` · ${state.seleccion.size} seleccionados` : "")
       : "";
   }
   const vacio = $("#vacio");
@@ -558,18 +565,68 @@ function construirFila(t) {
   tr.dataset.ide = t.ide;
   if (!t.activo) tr.classList.add("inactivo");
   if (t.ide === state.seleccionIde) tr.classList.add("seleccionada");
+  if (state.seleccion.has(t.ide)) tr.classList.add("multi");
   if (t.ide === state.editandoIde) tr.classList.add("editando");
 
   state.columnas.forEach((clave) => {
     tr.appendChild(construirCelda(t, clave));
   });
 
-  tr.addEventListener("click", () => {
+  // Shift+clic no debe seleccionar el texto de la tabla (F-029, R2).
+  tr.addEventListener("mousedown", (ev) => {
+    if (ev.shiftKey) ev.preventDefault();
+  });
+  // Ctrl/Cmd+clic alterna, Shift+clic hace un rango: sin editor (F-029).
+  tr.addEventListener("click", (ev) => {
+    if (ev.ctrlKey || ev.metaKey || ev.shiftKey) {
+      marcarSeleccion(t.ide, ev.shiftKey);
+      return;
+    }
     state.seleccionIde = t.ide;
+    state.ancla = t.ide;
+    fijarSeleccion([]);
     if (state.periodoEstado === "ABIERTO") abrirEditor(t.ide);
     else renderTabla();
   });
   return tr;
+}
+
+// ------------------------------------------- selección múltiple (F-029)
+// Ctrl/Cmd+clic (`rango` falso): alterna la fila; si la selección estaba
+// vacía, el cursor entra antes en ella. Shift+clic (`rango`): la selección
+// pasa a ser el rango de filas VISIBLES, en su orden, entre el ancla (o el
+// cursor, si no hay ancla visible) y la fila. Con `fijarSeleccion`, la única
+// que escribe en `state.seleccion` (R7).
+function marcarSeleccion(ide, rango) {
+  if (rango) {
+    const visibles = trabajadoresVisibles().map((t) => t.ide);
+    const a = visibles.indexOf(
+      visibles.includes(state.ancla) ? state.ancla : state.seleccionIde);
+    const b = visibles.indexOf(ide);
+    if (a >= 0 && b >= 0) {
+      const [desde, hasta] = a <= b ? [a, b] : [b, a];
+      state.seleccion = new Set(visibles.slice(desde, hasta + 1));
+      state.seleccionIde = ide;
+      renderTabla();
+      return;
+    }
+  }
+  const estaba = state.seleccion.has(ide);
+  if (state.seleccion.size === 0 && state.seleccionIde !== null)
+    state.seleccion.add(state.seleccionIde);
+  if (estaba) state.seleccion.delete(ide);
+  else state.seleccion.add(ide);
+  state.seleccionIde = ide;
+  state.ancla = ide;
+  renderTabla();
+}
+
+// Fija la selección múltiple tal cual (vacía con `[]`). Es la puerta por la
+// que F-021 la llenará desde Sesame; no mira los filtros (R7).
+function fijarSeleccion(ides) {
+  const habia = state.seleccion.size > 0;
+  state.seleccion = new Set(ides);
+  if (habia || state.seleccion.size > 0) renderTabla();
 }
 
 function construirCelda(t, clave) {
@@ -1249,6 +1306,7 @@ async function moverMes(delta) {
   if (mes > 12) { mes = 1; anio += 1; }
   state.seleccionIde = null;
   state.filtroEstado = null;
+  fijarSeleccion([]);
   await cargarPeriodo(anio, mes);
 }
 
@@ -1302,6 +1360,8 @@ function teclas(ev) {
       ev.preventDefault();
       deshacer(state.seleccionIde);
     }
+  } else if (ev.key === "Escape" && state.seleccion.size) {
+    fijarSeleccion([]);
   }
 }
 
