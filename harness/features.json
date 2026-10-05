@@ -469,7 +469,7 @@
     {
       "id": "F-029",
       "title": "Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada",
-      "description": "Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas con Ctrl (sueltas) y Shift (rango) y aplicarles una acción que asigna a la obra filtrada. Decisión del humano 2026-09-29: COMPLETA HASTA EL 100 %, es decir, a cada trabajador le pone en la obra filtrada lo que le falte para llegar al 100 %, sin tocar sus otras obras. Depende del filtro por obra (F-021). El cálculo de lo que falta vive en la API, no en app.js.",
+      "description": "Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas con Ctrl (sueltas) y Shift (rango) y aplicarles una acción que asigna a la obra filtrada. Decisión del humano 2026-09-29: COMPLETA HASTA EL 100 %, es decir, a cada trabajador le pone en la obra filtrada lo que le falte para llegar al 100 %, sin tocar sus otras obras. Depende del filtro por obra (F-021). El cálculo de lo que falta vive en la API, no en app.js. 2026-10-05: el humano la pone por delante de F-021 (trabaja con el filtro de obra que ya existe; Sesame queda en F-021). SPEC en specs/F-029-seleccion-multiple-completar-100/, con decisiones abiertas D1-D6 en requirements.md §6 y lista cerrada de tests anteriores que cambian: ninguno (comprobado con un prototipo).",
       "acceptance": [
         "Ctrl+clic añade o quita filas, Shift+clic selecciona un rango, y la selección se ve",
         "La acción pone en la obra filtrada 100 menos lo que ya suma el trabajador; si ya está al 100 % o por encima no toca nada y lo dice",
@@ -478,7 +478,7 @@
         "No interfiere con la secuencia de teclado actual (% Enter obra Enter)",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "spec_ready",
       "sdd": true,
       "rigor": "estandar",
       "priority": 3,

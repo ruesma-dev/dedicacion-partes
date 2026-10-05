@@ -11,7 +11,7 @@ Resumen: **33 features**, 16 abiertas, 17 terminadas.
 |---|---|---|---|---|---|
 | F-028 | Borrar todo lo que está en pantalla | 1 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 2 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
-| F-029 | Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada | 3 | pendiente | estandar | `feature/F-029-seleccion-multiple-completar-100` |
+| F-029 | Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada | 3 | spec lista | estandar | `feature/F-029-seleccion-multiple-completar-100` |
 | F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 4 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 5 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
 | F-031 | MCP para que una IA haga el trabajo del usuario | 6 | pendiente | critico | `feature/F-031-mcp-ia` |
@@ -64,9 +64,9 @@ Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asigna
 
 ### F-029 · Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada
 
-estado **pendiente** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-029-seleccion-multiple-completar-100`
+estado **spec lista** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-029-seleccion-multiple-completar-100`
 
-Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas con Ctrl (sueltas) y Shift (rango) y aplicarles una acción que asigna a la obra filtrada. Decisión del humano 2026-09-29: COMPLETA HASTA EL 100 %, es decir, a cada trabajador le pone en la obra filtrada lo que le falte para llegar al 100 %, sin tocar sus otras obras. Depende del filtro por obra (F-021). El cálculo de lo que falta vive en la API, no en app.js.
+Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas con Ctrl (sueltas) y Shift (rango) y aplicarles una acción que asigna a la obra filtrada. Decisión del humano 2026-09-29: COMPLETA HASTA EL 100 %, es decir, a cada trabajador le pone en la obra filtrada lo que le falte para llegar al 100 %, sin tocar sus otras obras. Depende del filtro por obra (F-021). El cálculo de lo que falta vive en la API, no en app.js. 2026-10-05: el humano la pone por delante de F-021 (trabaja con el filtro de obra que ya existe; Sesame queda en F-021). SPEC en specs/F-029-seleccion-multiple-completar-100/, con decisiones abiertas D1-D6 en requirements.md §6 y lista cerrada de tests anteriores que cambian: ninguno (comprobado con un prototipo).
 
 ### F-030 · Dedicación por días, bajas e incidencias con calendario del trabajador
 
