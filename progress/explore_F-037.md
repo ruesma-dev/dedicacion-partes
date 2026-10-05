@@ -162,9 +162,11 @@ idempotencia sigue siendo la `synckey` de `hmores`, sin cambios.
   Administración en la ficha del recurso; fuera del alcance del transfer.
 - El parte que crea el transfer se titula `Parte <obra>` (como los manuales),
   así que su ANA seguirá el mismo patrón.
-- **Aviso para el humano (otro repositorio):** las 4 líneas `partes:` de
-  `partes-persistencia` tampoco llevan `caaide`. Mismo hueco, fuera de este
-  monorepo.
+- **Corregido el 2026-10-05 (ver §10):** la nota anterior decía que
+  `partes-persistencia` escribe `caaide = 0`. Es falso: ese 0 fijo era del
+  repositorio archivado `partes-transfer` y de `prueba_escritura_sigrid.py`.
+  Las 4 líneas `partes:` sin cuenta son de hasta el 2026-09-28, anteriores a
+  la F-021 de `partes` (desplegada el 2026-10-01), que ya rellena `caaide`.
 
 ## 8. Consultas (resumen)
 
@@ -220,3 +222,67 @@ centro 0711 y su `caaide`. Pares tipo de hora · partida → cuenta de la línea
   cabecera `hmo.cenide` igual (`stmts_crear_parte`); es lo mismo que hacen
   las 3.469 líneas M\* manuales de 2026 (§3). Lo único que falta es
   `caaide`.
+
+## 10. Decisiones del humano (2026-10-05): regla de `partes` y complementario
+
+### 10.1 «La cuenta analítica sale del recurso; mira en partes»
+
+`partes` lo resolvió en su F-021 (desplegada el 2026-10-01; spec en
+`partes/specs/F-021-cuenta-analitica-sigrid/`, medida al 99,64 % en la
+empresa 1). Código: `partes/services/partes-transfer/application/services/
+cuenta_analitica.py` (l. 7-96), SQL en su `sigrid_write_client.py` (l.
+231-242 y 265-270) y pipeline (l. 206-245, lectura sin `try`).
+
+- **Origen:** código de `reshor.caaide` del recurso para el tipo de hora que
+  se escribe; si no da, el del tipo por defecto (`reshor` de `res.horide`).
+  Solo vale la **subcuenta** (tras el primer punto, `strip`; sin punto, nada).
+  `res.caaide` vale 0 en todos; `auxhor.caacod` y la partida no intervienen.
+- **Destino:** la única `caa JOIN con` con `caa.cenide = obr.cenide` de la obra
+  destino, `con.emp` = empresa de la obra y esa subcuenta.
+- **Sin cuenta:** recurso sin subcuenta → 0 sin aviso; obra sin esa cuenta o
+  con varias → 0 con aviso. La línea se escribe igual.
+- **Contraste con §3** (M\* manuales desde 2025): las 447 líneas cuyo
+  `reshor` del tipo escrito no tiene cuenta y que yo atribuía a `auxhor.caacod`
+  las cubre el respaldo del tipo por defecto: 349 casan con la línea y 98 dan
+  otra cuenta (ninguna queda sin subcuenta). La diferencia frente a la regla
+  con `auxhor` es marginal y la regla común con `partes` manda.
+- **Compatible con F-026 R19**: lee `res.horide`, no `res.conide`.
+
+### 10.2 «Un parte ya contabilizado va a complementario»
+
+En `partes` no hay nada parecido (allí «complementario» es solo su DDL de
+PostgreSQL): se diseña aquí. Partes de Sigrid con **dos o más** `hmo` de la
+misma obra, año y mes, `reside = 0` y `con.tip = 35`, de 2023 a 2026: 11
+grupos; 9 con obra en `con` (18 partes), que son estos:
+
+| Obra / mes | Partes (estado) | Qué son |
+|---|---|---|
+| GG 2023-12, 2024-01, 2024-02 | 2 por mes (3) | «Parte GASTOS GENERALES» y «… RETENCIONES»: estructura, sin ANA |
+| 0655 2024-05 | `PT24/00190` (10) y `PT24/00205` (10) | el segundo, 11 días después, «PARTE HORAS COORDINACIÓN MOBILIARIO…», fec 20240528; **cada uno con su ANA** |
+| 0665 2024-06 | `PT24/00218` (10) y `PT24/00241` (10) | mismo texto, fechas 0531 y 0630; cada uno con su ANA |
+| 0660 2024-09 (emp 28) | dos (1) | uno vacío, duplicado de alta |
+| 0704 2025-06 | `PT25/00228` (10) y `PT25/00281` (10) | el segundo, 41 días después, «Parte COSTES PREVIOS AL INICIO DE OBRA», fec 20250630 con líneas de enero-abril; **cada uno con su ANA** |
+| 0687 2026-07 | dos (3) | uno con fec del mes anterior; sin contabilizar |
+| 0692 2026-09 | `PT26/00322` y `PT26/00341` (1) | el segundo creado el 2026-10-05, fec 20261031; ninguno contabilizado |
+
+- **Ningún complementario creado después de contabilizar**: en los tres casos
+  con ANA, los dos partes ya existían cuando se contabilizó el mes
+  (2024-09-02 y 2025-11-21) y «Contabiliza parte…» dio **un ANA a cada
+  parte**. Prueba de que un segundo parte del mes se contabiliza aparte.
+- **Nombre**: ni «COMPLEMENTARIO» ni marca; los únicos `con.res` con
+  «COMPLEMENT» (3, de 2011) son el nombre de una obra. Texto libre o
+  `Parte <obra>`.
+- **Fecha y estado**: `con.fec` normalmente el último día del mes; se crean
+  en estado 1 («REG»); se contabilizan a 10; el 3 aparece en partes sin ANA.
+- **Enlace con el original: ninguno.** `con.doc`, `con.obr`, `con.tex` vacíos
+  y `hmo.caaide = 0`; solo comparten obra, año y mes.
+- **Selección de hoy**: `partes_existentes` toma el de mayor `hmo.ide`
+  (`ORDER BY hmo.ide DESC`), sin mirar el estado: con un contabilizado y uno
+  nuevo funcionaría por casualidad; con el contabilizado como único parte,
+  escribiría en él.
+- **Idempotencia**: `lineas_por_synckey` ya busca la `synckey` en todo
+  `hmores`, sea cual sea el parte. **Identidad y capacidad** miran hoy solo el
+  parte destino: con un complementario, una línea M\* del mismo recurso en el
+  original contabilizado no se vería (D14).
+
+Lo no aclarado por los datos queda como D12-D14 en la spec.
