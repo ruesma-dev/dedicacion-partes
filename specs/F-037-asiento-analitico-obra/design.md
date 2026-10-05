@@ -1,8 +1,8 @@
 <!-- specs/F-037-asiento-analitico-obra/design.md -->
 # F-037 · Diseño técnico
 
-Decisiones del humano del 2026-10-05 y 2026-10-06 (requirements §6); queda
-abierta D16. El transfer rellena `hmores.caaide` con la regla de `partes`
+Decisiones del humano del 2026-10-05 y 2026-10-06 (requirements §6), todas
+cerradas. El transfer rellena `hmores.caaide` con la regla de `partes`
 y, si el parte del mes está cerrado, escribe en un complementario. El ANA lo
 genera Administración con «Contabiliza parte…». Evidencia:
 `progress/explore_F-037.md` (§9-§11). Lo que trae `partes`: §13.
@@ -82,8 +82,8 @@ del mes `{ide, cod, est}` en cualquier orden. Sin filas → `existe=False`. Con
 alguna en `est_activo` → la de **mayor `ide`** de ellas (`existe=True`,
 `estado`). Todas cerradas → `existe=False, complementario=True`. Siempre
 `cerrados` = códigos de las cerradas, `ides_mes` = todos los `ide`, por
-`ide`; `complementario` = hay alguna cerrada. **D16 vive aquí**: «cerrada» =
-`est != est_activo` (A); con B sería `est == 10`. Determinista.
+`ide`; `complementario` = hay alguna cerrada. D16 (decidida): «cerrada» =
+`est != est_activo`, como `partes`. Determinista.
 
 ### 5.3 `SigridWriteClient` (infrastructure)
 
@@ -197,10 +197,10 @@ caché por centro; la posición de `caaide`. `partes` cerró 33/33 en F-021.
 - **«Contabiliza parte…» deja el parte en Imputado (10)**: lo confirma el log
   de Sigrid («Contabilizar parte», `partes` §D2) y 502/502 partes. Que el ANA
   lea `hmores.caaide` se confirma en R21.
-- **D16 abierta**: con A, de marzo a agosto de 2026 las líneas irían a
-  complementarios de partes Cerrados; con B, a los Cerrados. Un predicado.
-- **Respaldo de partida (R3) aún no está en `partes`** (su F-031, aprobada y
-  sin mergear): §13.1 dice cómo se copia.
+- **D16 = A**: de marzo a agosto de 2026 las líneas van a complementarios
+  de partes Cerrados (un predicado en `elegir_parte`).
+- **Respaldo de partida (R3)**: llega con la F-031 de `partes`; la
+  implementación la espera (§13.1).
 - **Complementario sin precedente posterior a contabilizar** (explore §10);
   R21 comprueba que se contabiliza aparte.
 - **Aviso y no conflicto** (un conflicto tocaría api y front). **Modo real
@@ -216,12 +216,12 @@ serie y agrupación son del ANA, R15, D8 (heredado por F-033) y procedencia.
 1. **Versión que se copia.** Hoy la vigente en `dev` de `partes` es la de
    F-021, commit `b038943` (2026-10-01; único cambio posterior a `9947927`,
    estilo), **sin** `subcuenta_de_partida`, que añade su F-031 (rama
-   `feature/F-031-asiento-analitico`, spec v4 `b816059`, sin implementar). En
-   T2 se copia la vigente **en ese momento** y su commit queda en el
-   docstring y en `progress/impl_F-037.md`. Si F-031 aún no está en `dev`, se
-   copia `b038943` y R3 queda en rojo y `blocked` hasta que lo esté: no se
-   escribe un respaldo propio (dos verdades). El test de §9.1 obliga a
-   recopiar cuando `partes` cambie.
+   `feature/F-031-asiento-analitico`, spec v4 `b816059`, sin implementar).
+   **Decidido por el humano el 2026-10-06: la implementación espera** a que
+   F-031 esté en `dev` de `partes` (condición de entrada de `tasks.md`) y T2
+   copia esa versión final; su commit queda en el docstring y en
+   `progress/impl_F-037.md`. Nunca un respaldo propio (dos verdades). El
+   test de §9.1 obliga a recopiar cuando `partes` cambie.
 2. **Medido allí** (`partes/progress/explore_F-021_sigrid.md`): 99,64 % de
    coincidencia con las líneas manuales en la empresa 1; `res.caaide` 0 en
    todos; 1 cuenta de baja de 184.234 y ninguna usada (no se filtran bajas);

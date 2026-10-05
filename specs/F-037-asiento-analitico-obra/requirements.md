@@ -14,7 +14,7 @@ pinta `AccionLinea.aviso`. Evidencia: **`progress/explore_F-037.md`**.
 analítica en Sigrid» (correo «ARBOL ANALITICO OBRAS» de Juan Romero, Dir.
 Admón y Control de Costes, 2026-09-29); «la cuenta analítica sale del
 recurso; mira en partes»; «un parte ya contabilizado va a complementario».
-**Spec aprobada el 2026-10-06** con A en D8, D10 y D12-D15, y «para lo de la
+**Spec aprobada el 2026-10-06** con A en D8, D10 y D12-D16, y «para lo de la
 cuenta analítica recoge lo que estamos aprendiendo en partes, funciona igual».
 
 ## 0. Conclusión de la exploración
@@ -31,7 +31,7 @@ a los lados; sin punto o vacío, no hay. **Obra destino**: la obra en cuyo
 parte se escribe (normal, postventa o, en pruebas, la de pruebas). **Partes
 del mes**: los `hmo` de la obra destino, `ano` y `mes`, `reside = 0`, tipo
 de parte, con su `con.est` (`conest`: 1 En registro, 3 Cerrado, 10
-Imputado). **Parte cerrado**: estado distinto de En registro (D16).
+Imputado). **Parte cerrado**: Cerrado o Imputado (D16).
 **Complementario**: el parte elegido cuando el mes tiene alguno cerrado.
 
 ## 1. Cuenta analítica de cada línea (#regla-analitica)
@@ -130,9 +130,13 @@ transfer no escribe asientos; descartados ANA propio y asiento 64X). D3 y D9
   Descartado: el texto del original (lo que hace `partes`, design §13).
 - **D14 · Pisado contra un cerrado**: `omitir` con motivo. Descartado: mirar
   solo el parte destino.
-- **D15 · `cuenta_analitica.py`**: copia literal de la vigente de `partes`,
+- **D15 · `cuenta_analitica.py`**: copia literal de la de `partes` tras su F-031,
   en la lista cerrada de `CLAUDE.md` (la línea la pone el líder), con un test
   que compara las dos. Descartado: reescribirla.
+- **D16 · Qué estado manda al complementario**: cualquiera distinto de En
+  registro (Cerrado o Imputado), igual que `partes` F-031. Descartado: solo
+  Imputado. Consecuencia: de marzo a agosto de 2026, casi todo Cerrado sin
+  contabilizar, las líneas van a complementarios (explore §11).
 
 | D | Pregunta | Respuesta | Evidencia (explore) |
 |---|---|---|---|
@@ -140,9 +144,6 @@ transfer no escribe asientos; descartados ANA propio y asiento 64X). D3 y D9
 | D4 | Contrapartida | `res.caaconide`, la pone el ANA | §4 |
 | D5-D7 | Importe, fecha, serie, agrupación | `hmores.tot`; fecha del parte; `ANA<aa>`; uno por parte | §4 |
 
-**Abierta (nueva, 2026-10-06): D16 · Qué estado manda al complementario.**
-A) cualquiera distinto de En registro (Cerrado o Imputado), como `partes`
-F-031, donde está pendiente de confirmar (su M0); B) solo Imputado (10).
-**Recomendada A**, decidida a la vez que en `partes`: de marzo a agosto de
-2026 casi todos los partes están Cerrados sin contabilizar (explore §11).
-Solo cambia `elegir_parte`.
+**Implementación (humano, 2026-10-06):** espera a que la F-031 de `partes`
+llegue a su `dev` y se copia su versión final, con el respaldo de R3
+(condición de entrada en `tasks.md`).
