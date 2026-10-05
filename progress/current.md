@@ -1,7 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-029 se cerró el 2026-10-05 y está en
+**F-037 en spec** (asiento analítico, rigor crítico), rama
+`feature/F-037-asiento-analitico-obra`. F-029 se cerró el 2026-10-05 y está en
 `dev` **pendiente de desplegar** (sección siguiente). F-027 se desplegó el
 2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
 
@@ -41,6 +42,17 @@
   `psql` y lee la contraseña de `PG-PASSWORD` del Key Vault. `-SoloRecuento`
   cuenta sin escribir: el 2026-10-03 dio 0 asignaciones, 0 eventos, 1
   periodo y 196 trabajadores.
+
+## F-037 · El registro genera el asiento analítico de la obra (en spec)
+
+- **Pedida por el humano el 2026-10-05** a partir del correo de Juan Romero
+  «ARBOL ANALITICO OBRAS» (2026-09-29): cuentas analíticas por centro de
+  coste de la obra; ejemplo, asiento con 6XX desglosado al 100 % en
+  `0702.CP0004`. Escritura en Sigrid: rigor crítico, solo el transfer.
+- **Estado:** spec-author lanzado: primero exploración del modelo de
+  asientos de Sigrid (solo lecturas) en `progress/explore_F-037.md`, luego
+  spec con las decisiones para Administración. El líder la enseña al humano
+  **antes** de implementar.
 
 ## Recursos cerrados en bloque en Sigrid (2026-10-05)
 
