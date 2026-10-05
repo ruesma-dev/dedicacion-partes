@@ -42,12 +42,22 @@
   cuenta sin escribir: el 2026-10-03 dio 0 asignaciones, 0 eventos, 1
   periodo y 196 trabajadores.
 
+## Recursos cerrados en bloque en Sigrid (2026-10-05)
+
+- Correo de Miguel Ángel: recursos que salen en agosto y no en septiembre.
+  Causa comprobada en Sigrid: el 2026-08-06 se cerraron en bloque 46 fichas
+  de recurso de personas que se fueron en 2024-2025; por la regla de F-026
+  cuentan en agosto. **Decisión del humano: opción B** (que Administración
+  corrija la fecha de baja en Sigrid) y **spec de la A** como F-036, sin
+  implementar de momento.
+
 ## Lo siguiente, por prioridad
 
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020). Primero desplegar
-**F-029**; después **F-028**, F-021, F-030, F-020, F-031, F-033 y, detrás,
-F-017, F-018…
+2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
+primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
+(asiento analítico, en spec); después F-028, F-021, F-030, F-020, **F-036**
+(solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
