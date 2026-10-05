@@ -87,7 +87,15 @@
 - **2026-10-06, nueva instrucción del humano:** no esperar a que la F-031 de
   `partes` llegue a su `dev`: revisarla en su rama y copiarla ADAPTADA, porque
   porcentajes y partes escriben en el MISMO parte. La condición de entrada de
-  `tasks.md` (`655dbdc`) queda anulada; revisión de la rama en curso.
+  `tasks.md` (`655dbdc`) queda anulada.
+- **Spec reescrita como copia adaptada de la F-031 de `partes`** (`497f224`;
+  revisión de su rama en `progress/explore_F-037_partes_F-031.md`): copia
+  literal de `estado_parte.py` y `cuenta_analitica.py` (rama `9b202e9`, sin
+  cambios hasta `5ff4d91`) con test anti-divergencia; elección del parte,
+  complementario, relectura, conflictos y avisos idénticos; corrige
+  `siguiente_cod_pt` y el alta de `hmo` sin `emp`. **Pendiente del humano:**
+  D13 reabierta (título `Parte <obra>` como partes), D17 (carrera entre
+  servicios al crear el parte) y D18 (`estado_parte.py` a la lista cerrada).
 
 ## F-028 · Borrar lo filtrado (plan aprobado, va después de F-037)
 
