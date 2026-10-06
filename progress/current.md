@@ -27,7 +27,11 @@
   - **T12 (M1):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M1`
     → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en el
     cuadrante, sin `VAR` normal ni obras de 6+ dígitos; `RESULTADO M1: OK`.
-    Resultado: _pendiente_.
+    **Resultado (2026-10-06, humano): CUMPLIDA.** Preview: brutas 923, total
+    289, `excluidas_por_codigo` 240, `entradas_var` 1, `obra_var` VAR, motivos
+    nulos. Sync local: obras 289 recibidas, 240 desactivadas. Cuadrante:
+    `VAR-29` (ide -417055, activa), sin VAR normal, sin `150414`, 0 obras
+    activas con 6+ dígitos. `RESULTADO M1: OK`.
   - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
     (periodo de prueba LOCAL) → grupo de la obra `VAR`, `escribir`,
     `paride = 417055`, `partida_cod = "29"`, `partida_metodo = "var"`;
