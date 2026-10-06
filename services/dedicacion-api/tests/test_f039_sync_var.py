@@ -44,9 +44,12 @@ def test_f039_r10_sin_filtro_con_n_cero_o_negativo(n: int) -> None:
 
 
 def test_f039_r10_el_umbral_es_el_que_se_pasa() -> None:
-    """R10 · Con N = 5, `12345` cae; con N = 7, `150414` no."""
+    """R10 · Con N = 5, `12345` cae; con N = 7, `150414` no; con N = 1,
+    cualquier dígito basta (solo `N <= 0` apaga el filtro)."""
     from domain.obras import tiene_digitos_seguidos
 
+    assert tiene_digitos_seguidos("A1", 1) is True
+    assert tiene_digitos_seguidos("VAR", 1) is False
     assert tiene_digitos_seguidos("12345", 5) is True
     assert tiene_digitos_seguidos("1234", 5) is False
     assert tiene_digitos_seguidos("150414", 7) is False
@@ -514,6 +517,17 @@ def test_f039_r17_sin_obra_var_el_preview_publica_el_motivo() -> None:
         **SIN_VAR, motivo=motivo))).ejecutar()["obras"]
     assert (obr["obra_var"], obr["entradas_var"]) == (None, 0)
     assert obr["motivo_var"] == motivo
+
+
+def test_f039_r17_lo_preparado_es_inmutable() -> None:
+    """R17 · `ObrasPreparadas`, lo que comparten el step y el preview, no se
+    puede cambiar a medias: es inmutable (design §4.2, «una función»)."""
+    from application.sync_pipeline import preparar_obras
+
+    prep = preparar_obras(_obras_sigrid(), _universo(), 1, ["cerrada"], True, 6)
+    assert len(prep.entradas) == 2 and len(prep.descartadas) == 5
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        prep.descartadas = []  # type: ignore[misc]
 
 
 def test_f039_r17_la_muestra_de_excluidas_llega_a_diez() -> None:
