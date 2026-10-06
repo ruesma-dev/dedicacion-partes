@@ -26,7 +26,7 @@ import pytest
 
 #: Commit de `partes` del que se copiaron los dos ficheros: el último que
 #: los cambia en la rama (la punta de la rama al copiar era `dc5666b`).
-COMMIT_COPIADO = "9b202e9f6fa3571d778bb39b27c77ff65660ee11"
+COMMIT_COPIADO = "e85ef0e833f01f69ff25cd2937dee1e703a03fd3"
 #: Ref que se vigila (design §12).
 REF_VIGILADA = "feature/F-031-asiento-analitico"
 
