@@ -1,10 +1,22 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-039 en `spec_ready`** (obras VAR y de 6 dígitos, esperando decisiones), rama
-`feature/F-039-obras-var-y-seis-digitos`. F-037 se cerró el 2026-10-06 y está en
-`dev` **pendiente de desplegar** (sección siguiente). F-029 se desplegó el
-2026-10-06 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+**F-041 en curso en esta rama** (filtro de obra con el texto visible, `Postv-`),
+rama `feature/F-041-filtro-obra-postventa`, en la copia
+`PycharmProjects/porcentajes-f041`. En paralelo, por decisión del humano: F-039
+(copia principal) y F-040 (`porcentajes-f040`), las dos aprobadas en review y a
+la espera solo de las MANUAL del humano. El arnés es la **1.7.3**.
+
+## F-041 · Filtro de obra con el texto visible (en curso)
+
+- **Qué es** (pedida el 2026-10-06): el filtro de obra, el buscador global y las
+  candidatas de «Completar al 100 %» casan con el texto tal como sale en el
+  chip (`Postv-…`), por línea y sin mayúsculas ni tildes. Causa real: el
+  buscador global no casaba con `Postv-` y la columna mezclaba chips. Spec
+  `specs/F-041-filtro-obra-postventa/`, aprobada con D1-D4 = A (`9b5fc46`).
+- **Estado:** implementer lanzado → `progress/impl_F-041.md`.
+- **MANUAL (humano):** prueba en local con los pasos de `tasks.md` (front de
+  esta rama contra la api local). Resultado: _pendiente_.
 
 ## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (spec lista)
 

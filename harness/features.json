@@ -676,7 +676,7 @@
     {
       "id": "F-041",
       "title": "El filtro de obra casa con el texto tal como sale en la app (incluido Postv-)",
-      "description": "Pedida por el humano el 2026-10-06: «al filtrar por obra no filtra bien postventa. Quiero filtrar todas las obras de postventa (es decir, empiezan por Postv-), y me gustaría que si pongo pos, y voy completando, filtre por texto incluido en el nombre de la obra tal cual sale en la app». Causa vista por el líder: el filtro de la columna de asignaciones (`trabajadoresVisibles` y `textoColumna` en services/dedicacion-front/static/js/app.js) compara con `l.cod` y `l.descripcion`, no con la etiqueta que pinta el chip (`Postv-0656 …`, y `VAR-29` cuando llegue F-039). Es presentación: solo front. 2026-10-06: el humano pide spec («lanza spec del filtro»): pasa a sdd. 2026-10-06: SPEC en specs/F-041-filtro-obra-postventa/ (spec_ready). Causa comprobada en node: la columna ya casaba con Postv-; el que no es el buscador global, y la columna casaba a caballo entre chips. 2026-10-06: spec APROBADA por el humano con D1-D4 = A (requirements.md §6). Tests anteriores que cambian: ninguno (prototipo).",
+      "description": "Pedida por el humano el 2026-10-06: «al filtrar por obra no filtra bien postventa. Quiero filtrar todas las obras de postventa (es decir, empiezan por Postv-), y me gustaría que si pongo pos, y voy completando, filtre por texto incluido en el nombre de la obra tal cual sale en la app». Causa vista por el líder: el filtro de la columna de asignaciones (`trabajadoresVisibles` y `textoColumna` en services/dedicacion-front/static/js/app.js) compara con `l.cod` y `l.descripcion`, no con la etiqueta que pinta el chip (`Postv-0656 …`, y `VAR-29` cuando llegue F-039). Es presentación: solo front. 2026-10-06: el humano pide spec («lanza spec del filtro»): pasa a sdd. 2026-10-06: SPEC en specs/F-041-filtro-obra-postventa/ (spec_ready). Causa comprobada en node: la columna ya casaba con Postv-; el que no es el buscador global, y la columna casaba a caballo entre chips. 2026-10-06: spec APROBADA por el humano con D1-D4 = A (requirements.md §6). Tests anteriores que cambian: ninguno (prototipo). 2026-10-06: pasa a implementación en su copia (porcentajes-f041), en paralelo con las MANUAL de F-039 y F-040.",
       "acceptance": [
         "El filtro de obra compara, sin mayúsculas ni tildes, con el texto del chip tal como se ve (prefijo Postv- incluido)",
         "Escribir «pos» y seguir completando deja solo los trabajadores con alguna línea de postventa, y se va acotando con cada letra",
@@ -685,7 +685,7 @@
         "Tests del front que fijen el casado con Postv-; probado por el humano en local",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "spec_ready",
+      "status": "in_progress",
       "sdd": true,
       "rigor": "estandar",
       "priority": 3,
