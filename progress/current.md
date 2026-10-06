@@ -20,7 +20,11 @@ a la espera solo de las MANUAL del humano; y F-041 tiene la spec aprobada en
   (`c16af41`).
 - **Implementación terminada** (`progress/impl_F-040.md`, `fad6334`…`b429b81`):
   api 619 en verde (33 nuevos), ningún test anterior cambiado; cobertura 100 %;
-  mutación en serie 20/20. **Review lanzada** → `progress/review_F-040.md`.
+  mutación en serie 20/20. **Review 1: CAMBIOS PEDIDOS** (un test que decía
+  fijar el «sin -0» y no lo fijaba); ciclo 2 hecho (test reforzado con el XML,
+  mutante a mano muerto, `obra_ide` determinista). **Review 2 lanzada.**
+- **Para la M1 (observación de la review):** openpyxl enseña vacías las
+  combinadas al releer; el XML sí las tiene: el humano lo mira en Excel.
 - **`azure-apps`: no cambia** (no describe el Excel; R21).
 - **MANUAL (humano, M1, solo lectura):**
   - Muestra inventada ya generada: `%TEMP%/f040/f040_muestra.xlsx`.
