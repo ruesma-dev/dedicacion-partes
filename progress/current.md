@@ -1,22 +1,42 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-039 en `spec_ready`** (obras VAR y de 6 dígitos, esperando decisiones), rama
-`feature/F-039-obras-var-y-seis-digitos`. F-037 se cerró el 2026-10-06 y está en
-`dev` **pendiente de desplegar** (sección siguiente). F-029 se desplegó el
-2026-10-06 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+**F-040 en curso en esta rama** (el Excel como el modelo de Juan Romero), rama
+`feature/F-040-excel-modelo-juan`, en la copia de trabajo
+`PycharmProjects/porcentajes-f040`. **En paralelo, en la copia principal**, F-039
+(obras VAR y de 6 dígitos) está implementada y aprobada en review, en su rama,
+a la espera solo de las MANUAL del humano; y F-041 tiene la spec aprobada en
+`PycharmProjects/porcentajes-f041`. F-037 se cerró el 2026-10-06 y está en `dev`
+**pendiente de desplegar**. El arnés es la **1.7.3**.
 
-## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (spec lista)
+## F-040 · El Excel como el modelo de Juan Romero (en curso)
 
-- **Pedida por el humano el 2026-10-06** (texto literal y datos leídos en
-  Sigrid en la descripción de `features.json`). Primera del backlog.
-- **Spec entregada** (`a9056b4`): el transfer calcula el universo VAR
-  (`POST /api/var/universo`) y valida la partida en el preflight; la api
-  descarta las obras de 6 dígitos en el sync y guarda cada partida como
-  fila de `obra` (`VAR-29`). **Espera al humano con D1-D6** (requirements).
-- **Backlog reordenado por el humano el 2026-10-06:** F-040 (Excel como el
-  modelo de Juan, absorbe F-020) primera, F-038 (cuadro de mando = el Excel
-  navegable con filtros) segunda, F-039 tercera. No hay F-041.
+- **Qué es** (pedida el 2026-10-06; absorbe F-020): hojas Detalle (agrupado
+  por trabajador, celdas combinadas con el valor en todo el grupo para que el
+  autofiltro saque el grupo entero, bandas blanco/`DDEBF7`, línea gruesa bajo
+  cada trabajador, cabecera en la fila 2, sin «Obra(código)») y Resumen («código
+  descripción = NN% + …»). Corrige la notación científica del exportador actual
+  («1E+2%»). Spec `specs/F-040-excel-modelo-juan/`, aprobada con D1-D6 = A
+  (`c16af41`).
+- **Implementación terminada** (`progress/impl_F-040.md`, `fad6334`…`b429b81`):
+  api 619 en verde (33 nuevos), ningún test anterior cambiado; cobertura 100 %;
+  mutación en serie 20/20. **Review lanzada** → `progress/review_F-040.md`.
+- **`azure-apps`: no cambia** (no describe el Excel; R21).
+- **MANUAL (humano, M1, solo lectura):**
+  - Muestra inventada ya generada: `%TEMP%/f040/f040_muestra.xlsx`.
+  - El real, desde esta copia y con la BBDD local (la api en el 8090; si la de
+    F-039 está arrancada, pararla antes): `cd C:/Users/pgris/PycharmProjects/porcentajes-f040/services/dedicacion-api`
+    y `.venv/Scripts/python.exe main.py`; en otra ventana
+    `curl.exe -o "$env:TEMP/f040.xlsx" "http://127.0.0.1:8090/api/v1/periodos/AAAA/MM/export.xlsx?empresa=1"`
+    y abrirlo. Recorrer los 7 puntos de design §6: abre sin reparación;
+    filtrar por empleado saca todas sus filas; filtrar por obra enseña quién y
+    su estado; filtrar por estado ≠ OK; bandas y línea gruesa; Resumen con
+    «código nombre = NN%»; impresión horizontal a una página de ancho con
+    cabecera repetida. Mirar la combinada cuya primera fila oculta el filtro.
+    Resultado: _pendiente_.
+- **Al fusionar con F-039:** la línea `VAR-29` se trata como una obra normal y
+  está probada con datos inventados; si F-039 trae un test que lea el xlsx, se
+  ajusta en el merge (design §8).
 
 ## ⚠ Despliegue de F-037 (pendiente; lo lanza el humano)
 
@@ -78,11 +98,10 @@
 ## Lo siguiente, por prioridad
 
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
-primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
-(asiento analítico, cerrada, pendiente de desplegar); **F-040** (Excel como el
-modelo de Juan), **F-038** (cuadro de mando), **F-039** (spec lista); después F-028, F-021, F-030, **F-036**
-(solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
+2026-10-06): **F-040** (en curso aquí), **F-038** (cuadro de mando = el Excel
+navegable), **F-041** (filtro de obra, spec aprobada), **F-039** (en su rama,
+pendiente de las MANUAL), F-028 (plan aprobado), F-021, F-030, F-036, F-031,
+F-033 y, detrás, F-017, F-018… F-037 está cerrada y pendiente de desplegar.
 
 ## ⚠ Lo que espera al humano
 
