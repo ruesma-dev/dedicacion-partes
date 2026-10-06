@@ -1,9 +1,19 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución en `dev`** (F-037 está en curso en su rama).
-F-029 se cerró el 2026-10-05 y se **desplegó el 2026-10-06**; F-027 se
-desplegó el 2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+**Ninguna feature en ejecución.** F-037 se cerró el 2026-10-06 y está en
+`dev` **pendiente de desplegar** (sección siguiente). F-029 se desplegó el
+2026-10-06 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+
+## ⚠ Despliegue de F-037 (pendiente; lo lanza el humano)
+
+- Cambia **solo el transfer** (`.\redeploy_dedicacion.ps1 -Solo transfer`,
+  desde `dev`); el transfer desplegado ya escribe en real
+  (`OBRA_PRUEBAS_FORZAR=false`), no hay que tocar permisos ni variables. Sin
+  DDL ni sync.
+- **Comprobación tras desplegar:** un preflight de producción (solo lectura)
+  con una línea MENC o MJEFO: `caa_cod` `<obra>.CIMO0x`, `caa_origen`
+  `recurso`. Desde ese momento, lo registrado lleva la cuenta analítica.
 
 ## Producción, hoy
 
@@ -38,6 +48,11 @@ desplegó el 2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
   cuenta sin escribir: el 2026-10-03 dio 0 asignaciones, 0 eventos, 1
   periodo y 196 trabajadores.
 
+## F-028 · Borrar lo filtrado (plan aprobado, va después de F-037)
+
+- Plan aprobado por el humano el 2026-10-06 con **A** (siempre todo lo
+  visible). Detalle en la descripción de `features.json`.
+
 ## Recursos cerrados en bloque en Sigrid (2026-10-05)
 
 - Correo de Miguel Ángel: recursos que salen en agosto y no en septiembre.
@@ -52,7 +67,8 @@ desplegó el 2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
 2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
 primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
-(asiento analítico, en spec); después F-028, F-021, F-030, F-020, **F-036**
+(asiento analítico, cerrada, pendiente de desplegar); después F-028, F-021, F-030, F-020 (Excel), **F-038**
+(pestaña de analítica, pedida el 2026-10-06 justo detrás del Excel), **F-036**
 (solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
@@ -72,6 +88,18 @@ primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
    las contraseñas antes de sus pasos 1-2 (observación del implementer de
    F-035): hoy, una contraseña rechazada llega después de comprobar el
    servidor y, si faltaba, crear la regla de servicios de Azure.
+
+7. **F-037, complementario en real (aplazado por el humano el 2026-10-06):**
+   probar con Administración que, con el parte del mes contabilizado, una
+   línea nueva va a un complementario `Parte <obra>`. Los tests lo cubren;
+   en Sigrid no se ha visto.
+8. **F-037, aviso a `partes` (T11):** ya recogieron la carrera (D17, su
+   `9ea7c59`); falta pasarles el test de inmutabilidad de `OrigenSubcuenta`.
+   Su DA11 pondrá en rojo `test_f037_copias_partes.py::…ref_vigilada`:
+   recopiar y mover `COMMIT_COPIADO`.
+9. Decidir si se abre como feature lo que vio el implementer de F-037: la
+   capacidad no se evalúa en un periodo sin ningún parte (dos líneas nuevas
+   del mismo recurso que sumen más del 100 % no avisan). Preexistente.
 
 > **`azure-apps` no tiene remoto configurado** (`git remote -v` vacío): vive
 > solo en local. No es de este proyecto, pero ahí está la documentación de todo

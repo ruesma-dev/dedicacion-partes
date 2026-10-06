@@ -90,7 +90,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 12,
+      "priority": 13,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -105,7 +105,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 13,
+      "priority": 14,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -154,7 +154,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 14,
+      "priority": 15,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -169,7 +169,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 15,
+      "priority": 16,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     },
     {
@@ -206,7 +206,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 16,
+      "priority": 17,
       "branch": "feature/F-014-cabos-sigrid-administracion"
     },
     {
@@ -240,7 +240,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 17,
+      "priority": 18,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
     },
     {
@@ -259,7 +259,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 9,
+      "priority": 10,
       "branch": "feature/F-017-prueba-administracion"
     },
     {
@@ -280,7 +280,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 10,
+      "priority": 11,
       "branch": "feature/F-018-paso-a-escritura-real"
     },
     {
@@ -298,13 +298,13 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 11,
+      "priority": 12,
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
       "id": "F-020",
       "title": "Revisar y mejorar el formato del Excel de exportacion actual",
-      "description": "Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio.",
+      "description": "Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio. 2026-10-06: el humano pide «mejorar el excel» como feature y, inmediatamente después, una pestaña de cuadros y análisis (F-038).",
       "acceptance": [
         "La hoja Detalle ya no lleva la columna «Obra(código)» (antigua columna E)",
         "Lista escrita de que se cambia y que se deja, revisada con el humano ANTES de tocar el codigo",
@@ -452,7 +452,7 @@
     {
       "id": "F-028",
       "title": "Borrar todo lo que está en pantalla",
-      "description": "Salida de la revisión de negocio del 2026-09-29. Botón «Borrar todo». Decisión del humano 2026-09-29: borra SOLO lo filtrado que aparece en pantalla en ese momento, no el mes entero. El borrado lo hace la API sobre la lista de trabajadores que le pasa el front.",
+      "description": "Salida de la revisión de negocio del 2026-09-29. Botón «Borrar todo». Decisión del humano 2026-09-29: borra SOLO lo filtrado que aparece en pantalla en ese momento, no el mes entero. El borrado lo hace la API sobre la lista de trabajadores que le pasa el front. PLAN APROBADO por el humano el 2026-10-06 (PARADA 1) con la opción A: siempre todo lo visible, aunque haya selección de F-029. Plan: POST /periodos/{a}/{m}/borrar con lista de trabajadores y modo «solo calcular» para el diálogo; borra solo líneas no registradas y conserva las registradas; un evento deshacible por trabajador (F-027); periodo cerrado → rechazo entero; botón sin atajo, foco en Cancelar; prueba de usabilidad en local antes de desplegar. Se hace DESPUÉS de F-037 (decisión del humano).",
       "acceptance": [
         "Borra las asignaciones solo de los trabajadores visibles con el filtro actual",
         "Pide confirmación diciendo cuántos trabajadores y líneas se van a borrar",
@@ -517,7 +517,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 7,
+      "priority": 8,
       "branch": "feature/F-031-mcp-ia"
     },
     {
@@ -554,7 +554,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 8,
+      "priority": 9,
       "branch": "feature/F-033-deshacer-linea-real"
     },
     {
@@ -612,26 +612,45 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 6,
+      "priority": 7,
       "branch": "feature/F-036-baja-efectiva-recurso"
     },
     {
       "id": "F-037",
       "title": "El registro de partes genera el asiento analítico en la cuenta de la obra",
-      "description": "Pedida por el humano el 2026-10-05 («el parte debe generar asiento en la cuenta analítica en Sigrid»), a partir del correo de Juan Romero (Dir. Admón y Control de Costes) «ARBOL ANALITICO OBRAS» del 2026-09-29. Las cuentas analíticas están vinculadas al centro de coste de cada obra (Obra > Contabilidad > Cuentas analíticas: centro de coste asociado, p. ej. 0702), con un árbol C COSTES (CD directos, CI indirectos, CP proporcionales CP0001-CP0010) e I INGRESOS (INGR01 producción, INGR02 certificación). Dentro del asiento se define la cuenta financiera y la cuenta analítica del gasto (6XX): ejemplo real, asiento XRT26/05432 con la línea 6260000000 desglosada al 100 % al centro 0702, cuenta 0702.CP0004 (avales). Lo que se pide: que lo que registra el transfer (la dedicación del trabajador a la obra) genere también su asiento con desglose analítico en la cuenta de la obra. Es ESCRITURA en Sigrid (solo el transfer, P1-P5): rigor crítico, modo pruebas y autorización expresa como el resto. Primero exploración del modelo de asientos y desglose analítico de Sigrid (azure-apps/sigrid_tablas.md, lecturas por sigrid-api) y de si el parte ya genera coste analítico por sí mismo; las decisiones de negocio (qué 6XX, qué cuenta analítica CD/CI/CP, contrapartida, importe, fecha, agrupación, deshacer) las valida Administración (Juan Romero).",
+      "description": "Pedida por el humano el 2026-10-05 («el parte debe generar asiento en la cuenta analítica en Sigrid»), a partir del correo de Juan Romero (Dir. Admón y Control de Costes) «ARBOL ANALITICO OBRAS» del 2026-09-29. Las cuentas analíticas están vinculadas al centro de coste de cada obra (Obra > Contabilidad > Cuentas analíticas: centro de coste asociado, p. ej. 0702), con un árbol C COSTES (CD directos, CI indirectos, CP proporcionales CP0001-CP0010) e I INGRESOS (INGR01 producción, INGR02 certificación). Dentro del asiento se define la cuenta financiera y la cuenta analítica del gasto (6XX): ejemplo real, asiento XRT26/05432 con la línea 6260000000 desglosada al 100 % al centro 0702, cuenta 0702.CP0004 (avales). Lo que se pide: que lo que registra el transfer (la dedicación del trabajador a la obra) genere también su asiento con desglose analítico en la cuenta de la obra. Es ESCRITURA en Sigrid (solo el transfer, P1-P5): rigor crítico, modo pruebas y autorización expresa como el resto. Primero exploración del modelo de asientos y desglose analítico de Sigrid (azure-apps/sigrid_tablas.md, lecturas por sigrid-api) y de si el parte ya genera coste analítico por sí mismo; las decisiones de negocio (qué 6XX, qué cuenta analítica CD/CI/CP, contrapartida, importe, fecha, agrupación, deshacer) las valida Administración (Juan Romero). 2026-10-06: spec APROBADA por el humano como copia adaptada de la F-031 de partes (mismo parte): D1-D18 decididas (D13 = `Parte <obra>`, D17 alta protegida, D15/D18 copias en la lista cerrada de CLAUDE.md). Pasa a implementación. CERRADA (done) el 2026-10-06: review pasada 2 APROBADA; T12 cumplida (preflight local: CIMO03/CIMO02 del recurso, MPRL sin cuenta con aviso); T13 AUTORIZADA y hecha en modo pruebas: PT26/00343 creado con dos líneas en 0404.CIMO03, contabilizado por Administración («ha funcionado perfectamente», humano) y limpiado por el humano; el paso del complementario en real queda APLAZADO por decisión del humano. PENDIENTE DE DESPLEGAR (solo transfer).",
       "acceptance": [
-        "Exploración escrita del modelo de Sigrid: tablas de asiento, líneas y desglose analítico; centro de coste y cuentas analíticas de una obra; y si el parte de trabajo ya genera coste analítico sin asiento",
-        "Decididas y escritas con Administración la cuenta 6XX, la cuenta analítica, la contrapartida, el importe, la fecha y la agrupación del asiento",
-        "El transfer genera el asiento con su desglose analítico al registrar, idempotente (synckey) y en modo pruebas mientras no se autorice el real",
-        "Deshacer o corregir una línea ya registrada deja el asiento coherente (o queda escrito por qué no y qué hace Administración)",
-        "Verificado en Sigrid sobre la obra de pruebas con Administración",
+        "Exploración escrita del modelo de Sigrid: el asiento analítico (ANA) lo genera Sigrid con «Contabiliza parte…» desde hmores.caaide de cada línea; el 6XX lo pone la nómina (D1 = A: el transfer NO escribe asientos)",
+        "El transfer rellena hmores.caaide con la regla de partes (subcuenta de la ficha de horas del recurso o, si no, de la partida C[ID]; cuenta del centro de la obra destino); sin cuenta, 0 con aviso según el caso",
+        "El transfer elige el parte igual que partes (cerrado = estado distinto de En registro), crea o reutiliza el complementario `Parte <obra>` con alta protegida y relectura, y evalúa duplicados y conflictos contra todos los partes del periodo",
+        "estado_parte.py y cuenta_analitica.py son copia literal de partes (lista cerrada de CLAUDE.md) con un test que vigila que no diverjan",
+        "Idempotente por synckey en cualquier parte del periodo y en modo pruebas mientras no se autorice el real",
+        "Verificado en Sigrid sobre la obra de pruebas con Administración (preflight T12 y escritura T13 en modo pruebas)",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "done",
       "sdd": true,
       "rigor": "critico",
       "priority": 1,
       "branch": "feature/F-037-asiento-analitico-obra"
+    },
+    {
+      "id": "F-038",
+      "title": "Cuadros y análisis: una pestaña de analítica en la app",
+      "description": "Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar el Excel (F-020). Una pestaña nueva en el front con cuadros y análisis de la dedicación: por obra, por trabajador, por empresa, por categoría y por mes, y su evolución. Qué cuadros, con qué cortes y si llevan coste (dedicación × importe mensual del recurso, P3) se decide en la spec con el humano. Los cálculos y agregados los hace la API (el front no lleva lógica de negocio); solo lectura de la base `dedicacion`, nada en Sigrid. Si incluye coste, cuidar quién lo ve.",
+      "acceptance": [
+        "Lista de cuadros y cortes decidida con el humano antes de implementar",
+        "Los agregados los calcula la API (endpoints de solo lectura) y cuadran con el cuadrante y el Excel del mismo mes",
+        "La pestaña respeta el selector de empresa y el periodo, y no interfiere con el cuadrante ni con su teclado",
+        "Decidido y escrito si se muestran importes y para quién",
+        "Probado por el humano en local antes de desplegar",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 6,
+      "branch": "feature/F-038-pestana-analitica"
     }
   ]
 }

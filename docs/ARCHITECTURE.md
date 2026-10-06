@@ -114,11 +114,12 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 - `POST /api/registro/preflight` — pasos 1-8: resolver destinos, cargar los
   tipos de hora del recurso que trae cada línea (lo manda la API, el transfer
   no lo elige: [`#regla-recurso`](#regla-recurso)), aplicar las reglas,
-  localizar el parte del mes, comprobar idempotencia y detectar conflictos.
-  No escribe nada.
+  resolver la cuenta analítica de cada línea, elegir el parte del periodo,
+  comprobar idempotencia y detectar conflictos
+  ([`#regla-analitica`](#regla-analitica)). No escribe nada.
 - `POST /api/registro/ejecutar` — pasos 9-10: crear los partes que falten
-  (`con` + `hmo`, releyendo el `ide`) y borrar las pisadas confirmadas +
-  insertar las líneas nuevas, por lotes.
+  (`con` + `hmo` con alta protegida, releyendo el periodo) y borrar las
+  pisadas confirmadas + insertar las líneas nuevas, por lotes.
 
 `application/services/reglas_porcentajes.py` concentra las reglas P1-P5;
 `application/pipelines/registro_pipeline.py` las orquesta;
@@ -131,7 +132,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > README del transfer, los docstrings y las specs **remiten** a las anclas
 > `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad`,
 > `#regla-sin-partida`, `#regla-pruebas`, `#regla-empresa`,
-> `#regla-recurso`, `#regla-deshacer` y `#regla-completar`; no vuelven a enunciar la regla con palabras propias. Lo
+> `#regla-recurso`, `#regla-deshacer`, `#regla-completar` y
+> `#regla-analitica`; no vuelven a enunciar la regla con palabras propias. Lo
 > vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
@@ -253,6 +255,14 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
    - Hay un tercer caso que también se confirma antes de escribir y que no
      mira lo que ya hay en el parte, sino dónde se imputa lo que vamos a
      escribir: [`#regla-sin-partida`](#regla-sin-partida).
+   - **Alcance: todos los partes del periodo** de la obra destino, no solo
+     el que recibe las líneas (F-037). Una `synckey` nuestra en cualquiera
+     de ellos, también cerrado, es «ya registrada». Si la línea que choca
+     está en un parte **cerrado**, la nuestra se **omite** con motivo
+     `parte_cerrado` (y prevalece sobre un choque En registro): en un
+     cerrado no se escribe ni se borra. Si está en uno En registro, es el
+     conflicto de siempre, con el código del parte donde vive. Ver
+     [`#regla-analitica`](#regla-analitica).
 
    El criterio de choque y la clave del conflicto salen de **una sola
    función**, `application/services/reglas_porcentajes.campos_identidad`:
@@ -283,9 +293,12 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      confirmación **no se escribe** ninguna de las líneas que lo provocan, y
      quedan listadas como omitidas con su motivo. Confirmar una sobrecarga
      escribe **y no borra nada**.
-   - **Alcance: un parte, es decir, una obra.** El 100 % del trabajador
-     entre **todas** sus obras es otra regla, la del punto 4, y vive en
-     `dedicacion-api`. Esta solo ve el parte que tiene delante, y por eso
+   - **Alcance: los partes del periodo de una obra.** Suma las líneas `M*`
+     del trabajador en **todos** los partes de esa obra y mes, cerrados
+     incluidos (F-037, [`#regla-analitica`](#regla-analitica)): un
+     complementario no es una jornada nueva. El 100 % del trabajador entre
+     **todas** sus obras es otra regla, la del punto 4, y vive en
+     `dedicacion-api`. Esta solo ve la obra que tiene delante, y por eso
      tampoco detecta sobrecargas previas en las que no participa.
 
    *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
@@ -316,8 +329,10 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      partida casada no tiene destino posible en un presupuesto ajeno al de
      su obra, así que [`#regla-p5`](#regla-p5) la **omite** y no hay nada que
      confirmar. En la obra normal sí hay destino —la propia obra— y lo único
-     que falta es la imputación analítica: por eso se puede escribir, y por
-     eso se pregunta.
+     que falta es la partida del presupuesto: por eso se puede escribir, y
+     por eso se pregunta. La partida **no** es la cuenta analítica de la
+     línea: esa sale del recurso
+     ([`#regla-analitica`](#regla-analitica)).
    - **La elección alternativa sigue existiendo:** el preflight publica las
      partidas de la obra en `partidas_obra` y el front las ofrece en un
      desplegable. Confirmar «sin partida» es lo que se hace cuando ninguna
@@ -504,13 +519,68 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     *Decidido por Pablo Gris el 2026-09-29 (completar con el cálculo en la
     API, por lote) y el 2026-10-05 (D1-D6, las seis A) · F-029,
     `specs/F-029-seleccion-multiple-completar-100/requirements.md`.*
+16. <a id="regla-analitica"></a>**La línea lleva su cuenta analítica y va
+    a un parte En registro.** Es la regla de `partes` (su F-021 y su F-031),
+    **la misma** porque los dos servicios escriben en el mismo parte de
+    Sigrid: `estado_parte.py` y `cuenta_analitica.py` del transfer son
+    **copia literal** de los de `partes` (lista cerrada de `CLAUDE.md`,
+    vigilada por `tests/test_f037_copias_partes.py`).
+
+    - **El asiento lo hace Sigrid, no el transfer.** Administración pulsa
+      «Contabiliza parte…»: Sigrid genera un asiento analítico (`ANA`,
+      `con.tip = 32`) por parte, con debe a la cuenta de cada línea
+      (`hmores.caaide`) y haber a la contrapartida del recurso
+      (`res.caaconide`), y deja el parte en Imputado. El 6XX es de la
+      nómina. El transfer **solo rellena `hmores.caaide`**: no escribe
+      asientos (`asi`, `asa`, `apu`, `apa`), no cambia `con.est` ni toca el
+      `con`/`hmo` de un parte existente.
+    - **De dónde sale la cuenta.** La **subcuenta** (el texto tras el primer
+      punto del código) de `reshor.caaide` del recurso para el tipo de hora
+      que se escribe; si no da, la de su tipo por defecto (`res.horide`); si
+      tampoco, la de la cuenta de la **partida** de la línea, solo si es de
+      coste (empieza por `CI` o `CD`; nunca `CP` ni `INGR`), con una nota.
+      La cuenta es la **única** `caa` del centro de la obra destino, de su
+      empresa, con esa subcuenta (en pruebas, la de `0404`; en postventa, la
+      de la obra de postventa). `hmores.cenide` sigue siendo ese centro.
+    - **Sin cuenta se escribe igual.** Sin subcuenta, `caaide = 0` sin
+      aviso; con la obra sin esa cuenta o con varias, `caaide = 0` y un
+      aviso. **Nunca se elige la primera.** Los avisos no retienen la línea.
+    - **El parte del periodo.** Se leen **todos** los partes de la obra y
+      el mes con su estado. Cerrado es todo lo que no está En registro
+      (Cerrado, Imputado u otro). Las líneas van al En registro de **mayor
+      `ide`**, aunque haya cerrados de `ide` mayor; si no hay ninguno, a uno
+      nuevo, **complementario** si el periodo tiene cerrados, con
+      descripción `Parte <obra>` como los de Administración. Se reutiliza el
+      que haya creado `partes`.
+    - **Alta protegida.** El parte nuevo se crea en una transacción que solo
+      inserta si su código `PT<AA>/NNNNN` (correlativo **por empresa**) está
+      libre y el periodo no tiene ya uno En registro; el `hmo` se cuelga por
+      código, tipo y empresa. Se relee el periodo: si hay uno En registro,
+      sea el nuestro o el de `partes`, se usa; si no, **un** reintento con
+      otro código y, si tampoco, la petición falla sin insertar líneas.
+    - **Duplicados y conflictos** contra todos los partes del periodo:
+      [`#regla-conflicto`](#regla-conflicto) y
+      [`#regla-capacidad`](#regla-capacidad). En un parte cerrado **nunca**
+      se inserta ni se borra.
+    - **Lecturas.** Partidas y cuentas de centro, una vez por petición;
+      partes y líneas, por periodo. Si una falla o viene `truncated`, la
+      petición falla sin escribir nada.
+    - **Deshacer y corregir.** En un parte En registro, como hasta ahora
+      (`limpiar`, pisado confirmado: la línea nueva lleva su cuenta). En uno
+      cerrado **no se borra nada**: lo ajusta Administración (anula el `ANA`
+      o hace el complementario), y lo heredará F-033. Una línea ya
+      registrada no se reescribe ni se le rellena la cuenta.
+
+    *Decidido por Pablo Gris el 2026-10-05 (rellenar `caaide`, la regla de
+    `partes`, complementario) y el 2026-10-06 (D8-D18) · F-037,
+    `specs/F-037-asiento-analitico-obra/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 
 | Sistema | Quién | Modo | Notas |
 |---|---|---|---|
 | `sigrid-api` (Function App) | api | **solo lectura** (`POST /api/sql/read`) | maestros de empleados y obras y catálogo de empresas (`auxemp`, F-032); consultas parametrizadas en `config/config.yaml` |
-| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura) |
+| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura). Lee además partes del periodo con su estado, cuentas analíticas del centro y cuentas de partida ([`#regla-analitica`](#regla-analitica)); un `truncated` es error |
 | PostgreSQL `dedicacion` | api | lectura y escritura | en local, `localhost`. Desplegado, **base propia dentro del servidor compartido `psql-albaranes-rs9k2`** (decisión del humano, 2026-08-20), esquema `public`, rol de aplicación propio y `PG_SSLMODE=require` |
 | `dedicacion-transfer` | api | HTTP interno | `TRANSFER_BASE_URL`, timeout 180 s |
 

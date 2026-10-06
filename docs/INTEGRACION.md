@@ -10,9 +10,14 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-10-04** (F-027: `X-Usuario` decide además
-> quién puede deshacer; §5, «La cadena de identidad»). **Origen:** rama
-> `feature/F-027-deshacer-por-usuario`, pendiente de merge a `dev`.
+> **Fecha del documento: 2026-10-06** (F-037: el transfer rellena la cuenta
+> analítica de cada línea, `hmores.caaide`, y no escribe nunca en un parte
+> cerrado: las líneas van a un parte complementario; lee además los partes
+> del periodo con su estado, las cuentas del centro y las de las partidas;
+> §1 y §7). **Origen:** rama `feature/F-037-asiento-analitico-obra`,
+> pendiente de merge a `dev`. Versión anterior: 2026-10-04 (F-027:
+> `X-Usuario` decide además quién puede deshacer; §5, «La cadena de
+> identidad»; rama `feature/F-027-deshacer-por-usuario`).
 > Versión anterior: 2026-10-03 (F-025: las obras de postventa salen
 > de las partidas de la obra de postventa; el transfer expone, solo hacia la
 > api, `POST /api/postventa/universo`, y la api lo llama en cada sync y en
@@ -58,9 +63,18 @@
 | Recurso | Compartido con | Qué hacemos | Desde |
 |---|---|---|---|
 | PostgreSQL `psql-albaranes-rs9k2` | `albaranes`, `partes`, `datamart-seg-anual`, `postventa-incidencias` | Base propia `dedicacion`: periodos, cuadrante, asignaciones y auditoría | **F-008** |
-| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma` | F-001, F-002 |
+| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada | F-001, F-002, F-037 |
 | `acralbaranesdev` | `albaranes`, `partes` | Publicar y tirar las tres imágenes, por identidad gestionada | **F-008** |
 | Entra ID | todo el ecosistema | Autenticación del front (Easy Auth) y grupo de acceso | **F-008** |
+
+**El parte de Sigrid se comparte con `partes`** (F-037): los dos servicios
+escriben líneas en el **mismo** parte de obra y mes, y eligen igual en cuál
+(el En registro de mayor `ide`; si todos están cerrados, un complementario
+`Parte <obra>` que cualquiera de los dos reutiliza). Las reglas son copia
+literal de las de `partes` (`estado_parte.py`, `cuenta_analitica.py`). El
+asiento analítico (`ANA`) **no** lo escribe el transfer: lo genera Sigrid
+cuando Administración pulsa «Contabiliza parte…», que deja el parte en
+Imputado; desde entonces el transfer no escribe en él.
 
 **Lo nuevo de F-008 son tres de esas cuatro filas.** La primera es la que
 convierte a este proyecto en **quinto inquilino** de un servidor que ya usaban
@@ -386,6 +400,7 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Volver a mandar al transfer el `ide` de la ficha de empleado en vez de `recurso_ide` | El transfer lo ignora y omite la línea «sin recurso»: no se registra nada (F-026) |
 | Parar el transfer, o que no responda a `POST /api/postventa/universo` | El sync de maestros (y su preview) falla entero con **502** nombrando el universo de postventa, sin persistir nada: no hay obras nuevas ni marcas al día hasta que vuelva (F-025, D3) |
 | Cambiar `POSTVENTA_OBRA_COD` del transfer | Cambia qué obras se ofrecen como `Postv-` en el **siguiente** sync, no antes; hasta entonces el cuadrante enseña la foto vieja y el preflight manda (F-025) |
+| Cambiar en el transfer la elección del parte o la regla de la cuenta (`estado_parte.py`, `cuenta_analitica.py`) sin cambiarla en `partes` | Los dos servicios dejan de caer en el mismo parte o de poner la misma cuenta: dos complementarios en un mes, o un asiento analítico (`ANA`) con cuentas distintas para la misma persona. Las copias se vigilan con `tests/test_f037_copias_partes.py` (F-037) |
 
 ### Si tocan algo de otros
 
@@ -398,6 +413,9 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Cambiar el contrato de `sigrid-api` (`/api/sql/read`, `/api/sql/write`) | Se cae todo: es nuestro único acceso a Sigrid |
 | Borrar o renombrar `acralbaranesdev` | No se puede publicar ni tirar ninguna imagen |
 | Cambiar tablas o campos de Sigrid (`hmo`, `hmores`, `reshor`) | El mapeo del transfer deja de casar |
+| Cambiar los estados del parte (`con.est`: 1 En registro, 3 Cerrado, 10 Imputado) o las cuentas analíticas (`caa`, `reshor.caaide`, `obrparpar.caaide`) | Con otro código de «En registro», el transfer da todos los partes por cerrados y crea complementarios; sin cuenta del centro, las líneas van con `caaide = 0` y no entran en el asiento analítico del parte (F-037) |
+| Que `partes` cree un parte del mismo periodo a la vez que nosotros | El alta del transfer es condicional (código libre en la empresa y ningún parte En registro del periodo) y relee el periodo: usa el que haya. La protección es solo de nuestro lado; `partes` está avisado (F-037, D17) |
+| Que Administración contabilice un parte («Contabiliza parte…») | Pasa a Imputado: el transfer ya no escribe ni borra en él; lo nuevo va a un complementario y lo que choque con sus líneas se omite (`parte_cerrado`). Corregirlo es de Administración (F-037) |
 | Cambiar `res` o `con` de Sigrid en lo que lee el sync de trabajadores (`res.cla`, `res.conide`, `res.cif`, `con.fecbaj`) | El sync parte de `res` (F-026): con `res.cla` cambiada entran o salen recursos del cuadrante; `res.conide` es lo único que une la ficha de empleado (solo da el DNI); `res.cif` es el documento del aviso de posible misma persona cuando no hay ficha; y `con.fecbaj` decide en qué meses está vigente cada trabajador |
 | Cambiar `auxemp` de Sigrid (`numemp`, `res`, `fecbaj`, `desact`) | El sync de maestros falla entero (columnas obligatorias `numemp` y `nombre`) y el selector se queda con los nombres del último sync bueno |
 

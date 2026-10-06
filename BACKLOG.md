@@ -3,29 +3,29 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **35 features**, 17 abiertas, 18 terminadas.
+Resumen: **36 features**, 17 abiertas, 19 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-037 | El registro de partes genera el asiento analítico en la cuenta de la obra | 1 | pendiente | critico | `feature/F-037-asiento-analitico-obra` |
 | F-028 | Borrar todo lo que está en pantalla | 2 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 3 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 4 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
 | F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 5 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
-| F-036 | Un recurso cerrado en bloque en Sigrid no cuenta en el mes de su cierre | 6 | pendiente | critico | `feature/F-036-baja-efectiva-recurso` |
-| F-031 | MCP para que una IA haga el trabajo del usuario | 7 | pendiente | critico | `feature/F-031-mcp-ia` |
-| F-033 | Deshacer una línea real mal escrita en Sigrid | 8 | pendiente | critico | `feature/F-033-deshacer-linea-real` |
-| F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 9 | pendiente | documental | `feature/F-017-prueba-administracion` |
-| F-018 | Pasar a escritura real cuando Administracion apruebe | 10 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
-| F-019 | Excel de importacion en formato Carmen | 11 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
-| F-005 | Alinear los literales internos con el nombre «dedicación» | 12 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
-| F-006 | Sanear la suite del transfer | 13 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
-| F-011 | Un solo codigo de hora mes por trabajador | 14 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
-| F-012 | El test de la epsilon compartida ata el transfer al monorepo | 15 | pendiente | estandar | `feature/F-012-epsilon-compartida-entre-servicios` |
-| F-014 | Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14 | 16 | pendiente | documental | `feature/F-014-cabos-sigrid-administracion` |
-| F-016 | Una function key de solo lectura para dedicacion-api | 17 | pendiente | estandar | `feature/F-016-sigrid-key-solo-lectura` |
+| F-038 | Cuadros y análisis: una pestaña de analítica en la app | 6 | pendiente | estandar | `feature/F-038-pestana-analitica` |
+| F-036 | Un recurso cerrado en bloque en Sigrid no cuenta en el mes de su cierre | 7 | pendiente | critico | `feature/F-036-baja-efectiva-recurso` |
+| F-031 | MCP para que una IA haga el trabajo del usuario | 8 | pendiente | critico | `feature/F-031-mcp-ia` |
+| F-033 | Deshacer una línea real mal escrita en Sigrid | 9 | pendiente | critico | `feature/F-033-deshacer-linea-real` |
+| F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 10 | pendiente | documental | `feature/F-017-prueba-administracion` |
+| F-018 | Pasar a escritura real cuando Administracion apruebe | 11 | pendiente | critico | `feature/F-018-paso-a-escritura-real` |
+| F-019 | Excel de importacion en formato Carmen | 12 | pendiente | estandar | `feature/F-019-excel-formato-carmen` |
+| F-005 | Alinear los literales internos con el nombre «dedicación» | 13 | pendiente | estandar | `feature/F-005-nomenclatura-dedicacion` |
+| F-006 | Sanear la suite del transfer | 14 | pendiente | estandar | `feature/F-006-sanear-suite-transfer` |
+| F-011 | Un solo codigo de hora mes por trabajador | 15 | pendiente | estandar | `feature/F-011-codigo-hora-mes-unico` |
+| F-012 | El test de la epsilon compartida ata el transfer al monorepo | 16 | pendiente | estandar | `feature/F-012-epsilon-compartida-entre-servicios` |
+| F-014 | Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14 | 17 | pendiente | documental | `feature/F-014-cabos-sigrid-administracion` |
+| F-016 | Una function key de solo lectura para dedicacion-api | 18 | pendiente | estandar | `feature/F-016-sigrid-key-solo-lectura` |
 
 ## Terminadas
 
@@ -34,6 +34,7 @@ Resumen: **35 features**, 17 abiertas, 18 terminadas.
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | estandar |
 | F-034 | Las obras son siempre de Construcciones Ruesma; el selector filtra solo trabajadores | 1 | critico |
 | F-035 | El script de vaciado no funciona contra Azure: la contraseña se corrompe | 1 | estandar |
+| F-037 | El registro de partes genera el asiento analítico en la cuenta de la obra | 1 | critico |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | critico |
@@ -52,17 +53,11 @@ Resumen: **35 features**, 17 abiertas, 18 terminadas.
 
 ## Detalle
 
-### F-037 · El registro de partes genera el asiento analítico en la cuenta de la obra
-
-estado **pendiente** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-037-asiento-analitico-obra`
-
-Pedida por el humano el 2026-10-05 («el parte debe generar asiento en la cuenta analítica en Sigrid»), a partir del correo de Juan Romero (Dir. Admón y Control de Costes) «ARBOL ANALITICO OBRAS» del 2026-09-29. Las cuentas analíticas están vinculadas al centro de coste de cada obra (Obra > Contabilidad > Cuentas analíticas: centro de coste asociado, p. ej. 0702), con un árbol C COSTES (CD directos, CI indirectos, CP proporcionales CP0001-CP0010) e I INGRESOS (INGR01 producción, INGR02 certificación). Dentro del asiento se define la cuenta financiera y la cuenta analítica del gasto (6XX): ejemplo real, asiento XRT26/05432 con la línea 6260000000 desglosada al 100 % al centro 0702, cuenta 0702.CP0004 (avales). Lo que se pide: que lo que registra el transfer (la dedicación del trabajador a la obra) genere también su asiento con desglose analítico en la cuenta de la obra. Es ESCRITURA en Sigrid (solo el transfer, P1-P5): rigor crítico, modo pruebas y autorización expresa como el resto. Primero exploración del modelo de asientos y desglose analítico de Sigrid (azure-apps/sigrid_tablas.md, lecturas por sigrid-api) y de si el parte ya genera coste analítico por sí mismo; las decisiones de negocio (qué 6XX, qué cuenta analítica CD/CI/CP, contrapartida, importe, fecha, agrupación, deshacer) las valida Administración (Juan Romero).
-
 ### F-028 · Borrar todo lo que está en pantalla
 
 estado **pendiente** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-028-borrar-todo-filtrado`
 
-Salida de la revisión de negocio del 2026-09-29. Botón «Borrar todo». Decisión del humano 2026-09-29: borra SOLO lo filtrado que aparece en pantalla en ese momento, no el mes entero. El borrado lo hace la API sobre la lista de trabajadores que le pasa el front.
+Salida de la revisión de negocio del 2026-09-29. Botón «Borrar todo». Decisión del humano 2026-09-29: borra SOLO lo filtrado que aparece en pantalla en ese momento, no el mes entero. El borrado lo hace la API sobre la lista de trabajadores que le pasa el front. PLAN APROBADO por el humano el 2026-10-06 (PARADA 1) con la opción A: siempre todo lo visible, aunque haya selección de F-029. Plan: POST /periodos/{a}/{m}/borrar con lista de trabajadores y modo «solo calcular» para el diálogo; borra solo líneas no registradas y conserva las registradas; un evento deshacible por trabajador (F-027); periodo cerrado → rechazo entero; botón sin atajo, foco en Cancelar; prueba de usabilidad en local antes de desplegar. Se hace DESPUÉS de F-037 (decisión del humano).
 
 ### F-021 · Filtro por obra: solo su chip y los recursos asignados en Sesame
 
@@ -80,77 +75,83 @@ Salida de la revisión de negocio del 2026-09-29. Dos peticiones que se resuelve
 
 estado **pendiente** · prioridad 5 · rigor `estandar` · SDD no · rama `feature/F-020-mejorar-excel-exportacion`
 
-Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio.
+Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio. 2026-10-06: el humano pide «mejorar el excel» como feature y, inmediatamente después, una pestaña de cuadros y análisis (F-038).
+
+### F-038 · Cuadros y análisis: una pestaña de analítica en la app
+
+estado **pendiente** · prioridad 6 · rigor `estandar` · SDD sí · rama `feature/F-038-pestana-analitica`
+
+Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar el Excel (F-020). Una pestaña nueva en el front con cuadros y análisis de la dedicación: por obra, por trabajador, por empresa, por categoría y por mes, y su evolución. Qué cuadros, con qué cortes y si llevan coste (dedicación × importe mensual del recurso, P3) se decide en la spec con el humano. Los cálculos y agregados los hace la API (el front no lleva lógica de negocio); solo lectura de la base `dedicacion`, nada en Sigrid. Si incluye coste, cuidar quién lo ve.
 
 ### F-036 · Un recurso cerrado en bloque en Sigrid no cuenta en el mes de su cierre
 
-estado **pendiente** · prioridad 6 · rigor `critico` · SDD sí · rama `feature/F-036-baja-efectiva-recurso`
+estado **pendiente** · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-036-baja-efectiva-recurso`
 
 Detectado el 2026-10-05 (correo de Miguel Ángel Gómez, captura del cuadrante): recursos que salen en agosto y no en septiembre. Causa comprobada en Sigrid (solo lectura): el 2026-08-06 se cerraron en bloque 46 fichas de recurso (con.fecbaj = 20260806) de personas que dejaron la empresa en 2024 (18) y 2025 (28) según su última baja laboral (emphis.fecbaj); por la regla de F-026 (vigente en el mes de su baja) cuentan en agosto. Opción A elegida para la spec: si el recurso está de baja, su fecha de baja efectiva es la MÁS TEMPRANA entre la del recurso y la última baja laboral; un recurso activo no cambia aunque tenga una baja laboral antigua. DE MOMENTO SOLO SPEC (decisión del humano 2026-10-05): se aplica la opción B, que Administración corrija en Sigrid la fecha de baja de esas fichas.
 
 ### F-031 · MCP para que una IA haga el trabajo del usuario
 
-estado **pendiente** · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-031-mcp-ia`
+estado **pendiente** · prioridad 8 · rigor `critico` · SDD sí · rama `feature/F-031-mcp-ia`
 
 Salida de la revisión de negocio del 2026-09-29. Servidor MCP para que una IA responda sobre la información de la BBDD de la app y, sobre todo, pueda ESCRIBIR: hacer el trabajo del usuario en el cuadrante. Límites propuestos por el líder para la spec: escribe SIEMPRE a través de dedicacion-api con la identidad del usuario, nunca directo a PostgreSQL, para que valgan las mismas reglas (100 %, periodo abierto, deshacer propio de F-027); NO puede lanzar el registro en Sigrid, ese paso sigue siendo humano desde el front. A decidir: dónde vive (dentro de la API o servicio aparte), autenticación, y si toma como referencia mcp-bbdd (azure-apps/mcp_bbdd.md). Cambia lo que el proyecto expone: azure-apps/dedicacion.md se actualiza en el mismo trabajo. RECOGIDO de la review de F-024 (O1, 2026-10-01): guardar, deshacer y copiar trabajador NO comprueban que el trabajador sea visible en la empresa elegida; hoy no pasa nada porque el único cliente es el front, que no lo provoca. Un MCP que escriba es un segundo cliente: aquí hay que cerrar ese hueco en la API, no confiar en el cliente.
 
 ### F-033 · Deshacer una línea real mal escrita en Sigrid
 
-estado **pendiente** · prioridad 8 · rigor `critico` · SDD sí · rama `feature/F-033-deshacer-linea-real`
+estado **pendiente** · prioridad 9 · rigor `critico` · SDD sí · rama `feature/F-033-deshacer-linea-real`
 
 Detectado el 2026-10-01 al pasar el transfer desplegado a modo real (decisión del humano). Hoy la única vía para borrar lo que escribe el sistema es 'prueba_escritura_porcentajes.py limpiar --confirmar', que solo toca lo marcado PRUEBA-PORC en la obra de pruebas. Una línea REAL mal escrita (recurso de otra empresa, partida equivocada, importe incorrecto) no tiene vía de retirada desde el sistema: habría que borrarla a mano en Sigrid. Hace falta un camino controlado, por synckey 'porcentajes:{id}', que solo pueda borrar lo que escribió este sistema, con preflight, confirmación del humano y traza, y decidir quién puede usarlo.
 
 ### F-017 · Probar con Administracion sobre la obra de pruebas 0404
 
-estado **pendiente** · prioridad 9 · rigor `documental` · SDD no · rama `feature/F-017-prueba-administracion`
+estado **pendiente** · prioridad 10 · rigor `documental` · SDD no · rama `feature/F-017-prueba-administracion`
 
 Pedida por el humano el 2026-08-25. El sistema esta desplegado, en uso por 8 personas y escribiendo de verdad en Sigrid, pero TODO se desvia a la obra de pruebas 0404 marcada PRUEBA-PORC. Falta la validacion que nadie ha hecho todavia: que Administracion mire lo que el sistema escribe y diga si es correcto. No toca codigo; si sale un defecto se abre su propia feature en vez de parchearlo aqui. Es la puerta de entrada de F-018 (pasar a real): sin la firma de Administracion, F-018 no arranca.
 
 ### F-018 · Pasar a escritura real cuando Administracion apruebe
 
-estado **pendiente** · prioridad 10 · rigor `critico` · SDD sí · rama `feature/F-018-paso-a-escritura-real`
+estado **pendiente** · prioridad 11 · rigor `critico` · SDD sí · rama `feature/F-018-paso-a-escritura-real`
 
 Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga. AÑADIDO 2026-09-29: también depende de F-022. El transfer resuelve la obra por código sin empresa y POSTV2 existe en las empresas 1 y 28; sin F-022 la primera escritura real podría caer en la ficha de Porsan. HECHO FUERA DE ESTA FEATURE, 2026-10-01: el humano ordenó expresamente desplegar en MODO REAL al republicar con F-022, F-023, F-024 y F-032 («despliega en real 100%»), tras escuchar los riesgos abiertos y rechazar la prueba acotada que proponía el líder. El transfer desplegado está con OBRA_PRUEBAS_FORZAR=false desde ese día. Siguen abiertos a sabiendas: F-017 (Administración no ha validado la imputación a partidas), F-026 (el recurso se elige sin mirar la empresa; caso conocido MO/0496 con ficha solo en la UTE 18) y F-011 (varios códigos M*). Lo que queda de esta feature: validar el primer registro real, la vía para deshacer una línea real mal escrita y la documentación que aún dependa del modo pruebas.
 
 ### F-019 · Excel de importacion en formato Carmen
 
-estado **pendiente** · prioridad 11 · rigor `estandar` · SDD sí · rama `feature/F-019-excel-formato-carmen`
+estado **pendiente** · prioridad 12 · rigor `estandar` · SDD sí · rama `feature/F-019-excel-formato-carmen`
 
 Pedida por el humano el 2026-09-03. Hoy la API exporta un unico Excel (services/dedicacion-api/infrastructure/excel/exporter.py: hojas Detalle y Resumen, declaradas compatibles con la plantilla v14), pensado para leerlo, no para que otro sistema lo importe. Hace falta poder generar ADEMAS un segundo Excel con otro formato, el que usa Carmen para la importacion adicion. PENDIENTE DE DATOS (la feature no arranca sin esto): el humano tiene que pasar el fichero de ejemplo del formato Carmen -se convierte con markitdown y se guarda en docs/referencia/, el original no se versiona- y explicar que es la importacion adicion y en que sistema entra ese Excel. Sin las dos cosas no hay criterio de aceptacion verificable y lo que se escriba sera una adivinanza.
 
 ### F-005 · Alinear los literales internos con el nombre «dedicación»
 
-estado **pendiente** · prioridad 12 · rigor `estandar` · SDD sí · rama `feature/F-005-nomenclatura-dedicacion`
+estado **pendiente** · prioridad 13 · rigor `estandar` · SDD sí · rama `feature/F-005-nomenclatura-dedicacion`
 
 El proyecto se llama de dos maneras y el humano decidió el 2026-08-19 el reparto: el nombre de dominio y de los servicios es «dedicación» (las carpetas ya son dedicacion-*), la carpeta del monorepo se queda como «porcentajes», y la synckey 'porcentajes:{id}' NO se toca, porque es un identificador funcional escrito en Sigrid y cambiarlo invalidaría la idempotencia de lo ya registrado. Queda alinear lo que aún dice otra cosa: service_name del transfer, sus README y los literales internos, y dejar las dos decisiones escritas donde se busquen.
 
 ### F-006 · Sanear la suite del transfer
 
-estado **pendiente** · prioridad 13 · rigor `estandar` · SDD no · rama `feature/F-006-sanear-suite-transfer`
+estado **pendiente** · prioridad 14 · rigor `estandar` · SDD no · rama `feature/F-006-sanear-suite-transfer`
 
 tests/test_pipeline_offline.py tiene un test que devuelve un objeto Preflight en vez de comprobarlo con assert: pytest lo avisa y ese test no verifica nada. Se revisa la suite entera con el mismo criterio.
 
 ### F-011 · Un solo codigo de hora mes por trabajador
 
-estado **pendiente** · prioridad 14 · rigor `estandar` · SDD no · rama `feature/F-011-codigo-hora-mes-unico`
+estado **pendiente** · prioridad 15 · rigor `estandar` · SDD no · rama `feature/F-011-codigo-hora-mes-unico`
 
 Detectado el 2026-08-19 al revisar el original porcentajes-transfer. Cuando un recurso tiene varios codigos de hora mensual (MENC, MJEFO...), reglas_porcentajes.py:105 elige el PRIMERO POR ORDEN ALFABETICO y de ahi sale el importe mensual (pre) que se escribe en Sigrid. Es una heuristica que nadie ha confirmado y que puede escribir un importe distinto del correcto. Decision del humano: de momento se deja el primero, y se abre esta feature para que la situacion no se de. Dos partes: que el sistema avise en el preflight cuando un recurso tenga mas de un codigo M* vigente (hoy solo lo escribe en el log, donde nadie lo ve), y llevar a Administracion la peticion de que en Sigrid un trabajador solo pueda tener un codigo de hora mes.
 
 ### F-012 · El test de la epsilon compartida ata el transfer al monorepo
 
-estado **pendiente** · prioridad 15 · rigor `estandar` · SDD no · rama `feature/F-012-epsilon-compartida-entre-servicios`
+estado **pendiente** · prioridad 16 · rigor `estandar` · SDD no · rama `feature/F-012-epsilon-compartida-entre-servicios`
 
 Detectado por la review de la Fase 2 de F-002 (observacion 9.4). El test test_f002_r26_la_tolerancia_es_la_del_cuadrante navega con Path(__file__).resolve().parents[3] hasta services/dedicacion-api/domain/estados.py para comprobar que la tolerancia del transfer (0.00005) sigue siendo el equivalente exacto del _EPSILON del cuadrante (0.005 en escala 0-100). La decision es la correcta y NO viola el limite de servicio: no importa codigo ni duplica logica, y sin ese test las dos epsilon se separarian sin que nadie se entere. Pero ata la suite del transfer a la disposicion del monorepo: si algun dia el servicio se extrae a su propio repositorio, el test se cae con un error de ruta en vez de con el mensaje de negocio que lleva escrito. Hay que decidir como se vigila esa invariante entre servicios sin depender de rutas relativas.
 
 ### F-014 · Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14
 
-estado **pendiente** · prioridad 16 · rigor `documental` · SDD no · rama `feature/F-014-cabos-sigrid-administracion`
+estado **pendiente** · prioridad 17 · rigor `documental` · SDD no · rama `feature/F-014-cabos-sigrid-administracion`
 
 Decision del humano el 2026-08-20: estas dos cosas dejan de bloquear F-002 y la fase 7 de F-008, y se agrupan aqui con prioridad baja. (1) LIMPIEZA EN SIGRID: quedo viva la fila de la primera escritura real del sistema, hmores.ide=403039, synckey 'porcentajes:77', marca PRUEBA-PORC, en el parte PT26/00296 (hmo.ide=2820419) de la obra de pruebas 0404, escrita el 2026-08-20. El humano queria verla en la pantalla del ERP antes de borrarla. Se borra con 'prueba_escritura_porcentajes.py limpiar --confirmar --ano 2026 --mes 7', que solo toca lo marcado PRUEBA-PORC; la cabecera del parte quedaria creada y vacia y hay que decidir si se borra tambien. OJO: cuando se pruebe el registro desde Azure se escribiran MAS lineas PRUEBA-PORC en la misma obra y mes, indistinguibles de esa, asi que conviene hacerlo antes o asumir que habra que distinguirlas por ide. (2) ADMINISTRACION: avisar de las cuatro partidas duplicadas sin cero inicial en el presupuesto de POSTV2 (656, 664, 680, 693, colgando de la raiz en vez de CD; tabla en progress/sigrid_F-002.md), y decidir si la procedencia de las reglas P4/P5 la firma el responsable del proyecto (como hoy) o pasa por Administracion. El test de procedencia no clava el interlocutor, asi que cambiar esa linea no rompe nada. ANADIDO al cerrar F-002 (review de cierre, seccion 5): la Regla B de capacidad del 100 % esta implementada y probada offline (35 tests, cobertura y mutacion), pero NUNCA se ha ejercitado contra Sigrid real, porque el preflight de julio no llego a dispararla: el parte de la obra destino no existia y por tanto no habia lineas M* previas con las que chocar. No es un defecto de F-002. Conviene que la primera vez que un parte real tenga lineas M* previas alguien mire ese preflight con atencion. ESTADO 2026-08-20: los dos puntos de Sigrid (limpieza y cabecera del parte) estan CERRADOS. Queda solo lo de Administracion: el aviso de las cuatro partidas duplicadas, quien firma la procedencia, y mirar el primer preflight real que tenga lineas M* previas para ver la Regla B ejercitada.
 
 ### F-016 · Una function key de solo lectura para dedicacion-api
 
-estado **pendiente** · prioridad 17 · rigor `estandar` · SDD no · rama `feature/F-016-sigrid-key-solo-lectura`
+estado **pendiente** · prioridad 18 · rigor `estandar` · SDD no · rama `feature/F-016-sigrid-key-solo-lectura`
 
 Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T30, T30 se movio a F-015 y F-015 solo se llevo la mitad del Portal. La review de cierre de F-008 la busco en las trece entradas del backlog y no aparecia en ninguna. El problema: la api y el transfer comparten HOY la misma function key de sigrid-api, y lo unico que impide que la api escriba en el ERP es que su codigo no tiene rutas de escritura, NO la credencial. Es decir, la separacion es por disciplina, no por permisos: cualquiera que anada por error una llamada de escritura a la api tendria credencial para ejecutarla. Hay que preguntar al dueno de sigrid-api si puede emitir una clave de SOLO LECTURA y, si puede, desplegarla en la api. Si no puede, hay que dejar escrito que la separacion depende del codigo y que eso es un riesgo aceptado a conciencia.
 
@@ -171,6 +172,12 @@ Aclaración del humano el 2026-10-01: los TRABAJADORES son de varias empresas (C
 estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-035-vaciado-psql-azure`
 
 Detectado en el despliegue del 2026-10-02. infra/vaciar_datos_prueba_dedicacion.ps1 pasa la contraseña del rol de aplicación a 'az postgres flexible-server execute -p <clave>'. En Windows az es un .cmd, así que la línea pasa por cmd.exe, que corrompe los caracteres especiales de la contraseña: 'password authentication failed' aunque la contraseña del Key Vault es correcta (la api conecta con ella). El vaciado de producción se hizo a mano con psql (PGPASSWORD en el entorno, PGSSLMODE=require) con las mismas tres sentencias del script. Corregir el script para que contra Azure use psql igual que en local (o pase la contraseña sin cmd.exe), con test. Mismo riesgo en cualquier otro script de infra/ que pase secretos a az por argumento: revisarlos. PLAN APROBADO por el humano el 2026-10-02 (PARADA 1): ver progress/current.md, sección F-035. Review 1 (2026-10-02): CAMBIOS PEDIDOS solo por la tabla reproducible de la campaña manual (C4 bis); el humano aprobó además añadir ')' a los caracteres rechazados. MANUAL 1 (2026-10-03): FALLA con 'password authentication failed', pero por la contraseña introducida (10 caracteres frente a 14 en el Key Vault, comparadas en memoria), no por el script. Ciclo 3 aprobado por el humano: leer PG-PASSWORD del Key Vault y afinar el aviso de firewall. CERRADA (done) el 2026-10-03: review pasada 3 APROBADA; MANUAL 2 cumplida por el humano (-SoloRecuento contra Azure: contraseña leída de PG-PASSWORD sin pedirla, recuento 0/0/1/196, entorno limpio False False). No requiere despliegue: son scripts de infra/ que ejecuta una persona.
+
+### F-037 · El registro de partes genera el asiento analítico en la cuenta de la obra
+
+estado **terminada** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-037-asiento-analitico-obra`
+
+Pedida por el humano el 2026-10-05 («el parte debe generar asiento en la cuenta analítica en Sigrid»), a partir del correo de Juan Romero (Dir. Admón y Control de Costes) «ARBOL ANALITICO OBRAS» del 2026-09-29. Las cuentas analíticas están vinculadas al centro de coste de cada obra (Obra > Contabilidad > Cuentas analíticas: centro de coste asociado, p. ej. 0702), con un árbol C COSTES (CD directos, CI indirectos, CP proporcionales CP0001-CP0010) e I INGRESOS (INGR01 producción, INGR02 certificación). Dentro del asiento se define la cuenta financiera y la cuenta analítica del gasto (6XX): ejemplo real, asiento XRT26/05432 con la línea 6260000000 desglosada al 100 % al centro 0702, cuenta 0702.CP0004 (avales). Lo que se pide: que lo que registra el transfer (la dedicación del trabajador a la obra) genere también su asiento con desglose analítico en la cuenta de la obra. Es ESCRITURA en Sigrid (solo el transfer, P1-P5): rigor crítico, modo pruebas y autorización expresa como el resto. Primero exploración del modelo de asientos y desglose analítico de Sigrid (azure-apps/sigrid_tablas.md, lecturas por sigrid-api) y de si el parte ya genera coste analítico por sí mismo; las decisiones de negocio (qué 6XX, qué cuenta analítica CD/CI/CP, contrapartida, importe, fecha, agrupación, deshacer) las valida Administración (Juan Romero). 2026-10-06: spec APROBADA por el humano como copia adaptada de la F-031 de partes (mismo parte): D1-D18 decididas (D13 = `Parte <obra>`, D17 alta protegida, D15/D18 copias en la lista cerrada de CLAUDE.md). Pasa a implementación. CERRADA (done) el 2026-10-06: review pasada 2 APROBADA; T12 cumplida (preflight local: CIMO03/CIMO02 del recurso, MPRL sin cuenta con aviso); T13 AUTORIZADA y hecha en modo pruebas: PT26/00343 creado con dos líneas en 0404.CIMO03, contabilizado por Administración («ha funcionado perfectamente», humano) y limpiado por el humano; el paso del complementario en real queda APLAZADO por decisión del humano. PENDIENTE DE DESPLEGAR (solo transfer).
 
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 
