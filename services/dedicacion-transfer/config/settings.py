@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     # --- Constantes del modelo Sigrid (confirmadas con datos reales) --- #
     tip_parte_trabajo: int = Field(35, alias="TIP_PARTE_TRABAJO")
     est_parte_activo: int = Field(1, alias="EST_PARTE_ACTIVO")
+    # F-037: estados de un parte CERRADO, solo para los textos de los avisos
+    # (DA7 de `partes`). «Cerrado» es todo lo que no es `est_parte_activo`.
+    est_parte_cerrado: int = Field(3, alias="EST_PARTE_CERRADO")
+    est_parte_imputado: int = Field(10, alias="EST_PARTE_IMPUTADO")
     paso_pos: int = Field(64, alias="PASO_POS")
 
     # --- Servidor --- #

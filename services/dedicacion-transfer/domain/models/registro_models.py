@@ -12,7 +12,9 @@ se propone hacer. No deciden nada; las reglas que las gobiernan viven en
   - cuánta jornada admite un parte: ARCHITECTURE.md#regla-capacidad;
   - qué pasa con una línea que no casa partida:
     ARCHITECTURE.md#regla-sin-partida;
-  - a qué empresa pertenece la obra: ARCHITECTURE.md#regla-empresa.
+  - a qué empresa pertenece la obra: ARCHITECTURE.md#regla-empresa;
+  - la cuenta analítica de la línea y el parte del periodo que la recibe:
+    ARCHITECTURE.md#regla-analitica (F-037, copia de la F-031 de `partes`).
 """
 from __future__ import annotations
 
@@ -69,11 +71,35 @@ class HoraRecurso:
     cod: str
     res: Optional[str]
     pre: float
+    # F-037 (R2): código de la cuenta analítica de `reshor.caaide` (la
+    # plantilla del recurso para este tipo de hora) y si este tipo es el
+    # tipo por defecto del recurso (`reshor.horide = res.horide`). Con valor
+    # por defecto: los `HoraRecurso(...)` posicionales siguen valiendo.
+    caa_cod: Optional[str] = None
+    defecto: bool = False
 
     @property
     def es_mensual(self) -> bool:
         """Códigos M* (MENC, MCAP, MJEFO…): mensual / porcentual."""
         return (self.cod or "").upper().startswith("M")
+
+
+@dataclass(frozen=True)
+class ParteSigrid:
+    """F-037 (R9): un parte (`hmo`) del periodo tal como está en Sigrid, con
+    su estado `con.est` (1 En registro, 3 Cerrado, 10 Imputado...)."""
+    ide: int
+    cod: Optional[str]
+    est: Optional[int]
+
+
+@dataclass(frozen=True)
+class PartidaCuenta:
+    """F-037 (R3): partida (`obrparpar`) y el código de su cuenta analítica
+    (`con.cod` de `obrparpar.caaide`; None si no tiene)."""
+    ide: int
+    cod: Optional[str]
+    caa_cod: Optional[str]
 
 
 @dataclass
@@ -86,6 +112,14 @@ class ParteDestino:
     ide: Optional[int] = None
     cod: Optional[str] = None           # existente o propuesto
     creado: bool = False
+    # F-037 (R15, contrato de `partes`): estado del elegido (None si es
+    # nuevo), si es un complementario (el periodo tiene partes cerrados),
+    # los códigos de los cerrados, todos los partes del periodo y el aviso.
+    estado: Optional[int] = None
+    complementario: bool = False
+    cerrados: list[str] = field(default_factory=list)
+    del_periodo: list[ParteSigrid] = field(default_factory=list)
+    aviso: Optional[str] = None
 
 
 @dataclass
@@ -133,6 +167,17 @@ class AccionLinea:
     # alguien confirme (ARCHITECTURE.md#regla-sin-partida).
     aviso: Optional[str] = None
     hmores_ide: Optional[int] = None    # si ya estaba registrada
+    # F-037 (R6, contrato de `partes`): cuenta analítica que se escribirá en
+    # `hmores.caaide`. `caa_ide = 0` = sin cuenta (la línea se escribe
+    # igual); `caa_motivo` None = cuenta resuelta; `caa_aviso` solo si la
+    # obra podría arreglarse; `caa_origen` "recurso" | "partida" | None y
+    # `caa_nota` si la subcuenta sale de la partida.
+    caa_ide: int = 0
+    caa_cod: Optional[str] = None
+    caa_motivo: Optional[str] = None
+    caa_aviso: Optional[str] = None
+    caa_origen: Optional[str] = None
+    caa_nota: Optional[str] = None
     # La CLAVE de conflicto de esta acción no se calcula aquí: sale de
     # `application.services.reglas_porcentajes.clave_conflicto`, junto al
     # criterio de choque que la tiene que respetar. Tenerla en dos capas es
