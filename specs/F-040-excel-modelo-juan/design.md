@@ -1,6 +1,6 @@
 # F-040 · Diseño técnico
 
-Escrito con las recomendaciones de D1-D6 (`requirements.md`). Solo cambia
+Escrito con D1-D6 = A, decididas por el humano el 2026-10-06 (`requirements.md`). Solo cambia
 `dedicacion-api/infrastructure/excel/`: es presentación de un dato que ya entrega la API.
 
 ## 1. Encaje en la arquitectura y límite de servicio
@@ -15,7 +15,7 @@ Escrito con las recomendaciones de D1-D6 (`requirements.md`). Solo cambia
 - Las cifras salen de `domain/estados.py`, la regla del 100 %. El exportador solo les da formato (R16).
 - Límite de servicio: todo cae dentro de `dedicacion-api`. Nada de esto pertenece al front (no
   decide nada) ni al transfer.
-- D1 = C (nombre corto editable) **no** cabe aquí: sería ORM, endpoint y front. Feature aparte.
+- D1 = A: el «nombre corto» editable (la opción C, descartada) **no** cabría aquí, porque necesitaría ORM, endpoint y front.
 
 ## 2. Ficheros
 
@@ -101,7 +101,7 @@ def _rematar(hoja, columnas: int, anchos: tuple[int, ...], ultima: int) -> None 
 Constantes del módulo: `_CABECERA_FILL = "1F3864"`, `_BANDAS = ("FFFFFF", "DDEBF7")`, borde
 `_FINO = Side("thin", "BFBFBF")`, `_GRUESO = Side("medium", "000000")`, `_COMBINADAS = (1, 2, 6, 7, 8)`.
 Son de presentación y van en código, no en `config.yaml`, para no abrir otra superficie de
-configuración. Cambiar D3 es cambiar dos literales.
+configuración. D3 decidida: si negocio pide retocar los colores, son dos literales.
 
 Pintado del Detalle, por grupo `g` con índice `n`, filas `ini..fin`:
 
@@ -123,7 +123,7 @@ fila mínima 2 (R3). Impresión: `page_setup.orientation = "landscape"`,
 `sheet_properties.pageSetUpPr.fitToPage = True`, `page_setup.fitToWidth = 1`,
 `fitToHeight = 0` y `print_title_rows = "1:2"`.
 
-## 5. Celdas combinadas con autofiltro: opciones y evidencia (D2)
+## 5. Celdas combinadas con autofiltro: evidencia de D2 = A (decidida)
 
 `ws.merge_cells()` de openpyxl convierte las celdas no ancla en `MergedCell`, de valor `None` y
 solo lectura. Al guardar, solo la primera fila del grupo tiene valor, y por eso el filtro pierde

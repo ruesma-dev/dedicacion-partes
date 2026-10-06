@@ -19,47 +19,33 @@ formatos, cabeceras, autofiltro e impresión; quitar la columna E «Obra(código
 - Ningún test ejecuta el exportador: con `coverage run --include="infrastructure/excel/*"` sobre
   los 586 tests de la api, `exporter.py` queda al 26 % (solo las líneas de módulo).
 
-## Decisiones abiertas (las valida el humano antes de implementar)
+## Decisiones (D1-D6 = A, decididas por el humano el 2026-10-06 al aprobar la spec)
 
-**D1 · Nombre de la obra en «Obras» del Resumen.** El modelo usa abreviaturas hechas a mano.
-- A: la `descripcion` de la obra tal cual (la de la columna Obra del Detalle, sin prefijo).
-- B: la descripción recortada a N caracteres (`export.resumen_max_nombre` en `config.yaml`).
-- C: un campo «nombre corto» editable por obra (ORM, endpoint y front): otra feature; F-040 iría con A.
-- **Recomendación: A.** Reproducible y sin mantenimiento; la celda se ajusta en varias líneas.
+**D1 · Nombre de la obra en «Obras» del Resumen** (el modelo usa abreviaturas a mano): la
+`descripcion` de la obra tal cual, sin prefijo; la celda se ajusta en varias líneas.
+Descartadas: B, recortarla a N caracteres; C, un «nombre corto» editable (ORM, endpoint y
+front), que sería otra feature.
 
-**D2 · ¿Celdas combinadas o solo agrupación visual?** (evidencia en design §5)
-- A: combinar por trabajador Empleado, Categoría, Total, Desviación y Estado, **con el valor en
-  todas las celdas del grupo**: el autofiltro devuelve el grupo entero, como el modelo. A cambio,
-  Excel no deja ordenar la hoja («todas las celdas combinadas deben tener el mismo tamaño»).
-- B: no combinar. El valor va en cada fila, con la banda de color y la línea gruesa. Se puede ordenar.
-- **Recomendación: A** (lo pide negocio y el prototipo filtra bien en Excel 16; la combinación
-  normal de openpyxl se descarta: el filtro pierde las filas del grupo).
+**D2 · Celdas combinadas:** se combinan por trabajador Empleado, Categoría, Total, Desviación y
+Estado, **con el valor en todas las celdas del grupo**, para que el autofiltro devuelva el grupo
+entero como en el modelo (evidencia en design §5). Se acepta que Excel no deje ordenar la hoja.
+Descartadas: B, no combinar; y la combinación normal de openpyxl, porque el filtro pierde las
+filas del grupo.
 
-**D3 · Colores.**
-- A: bandas blanco / azul claro `DDEBF7` alternas por trabajador y línea gruesa `medium` negra
-  bajo el último de cada uno. La cabecera, `1F3864` con texto blanco en negrita, como hoy.
-- B: lo mismo con gris `F2F2F2`. Variante de las dos: borde `thick` (impreso pesa mucho).
-- El Resumen, sin bandas («formato actual»). **Recomendación: A.**
+**D3 · Colores:** bandas blanco / `DDEBF7` alternas por trabajador; línea `medium` negra bajo el
+último de cada uno; cabecera `1F3864` con texto blanco en negrita, como hoy; el Resumen, sin
+bandas. Descartadas: B, gris `F2F2F2`; y el borde `thick`.
 
-**D4 · Filas y columnas que hoy lee negocio** (F-020 no permitía moverlas sin decisión expresa).
-- A: adoptar el modelo. La cabecera pasa a la fila 2 (fuera la fila en blanco), sale «Obra(código)» y
-  desde la F todas las columnas se corren una a la izquierda (% dedicación en E, Estado en H).
-- B: conservar la fila en blanco y la cabecera en la fila 3.
-- **Recomendación: A.** El modelo es de negocio, y el 2026-09-29 el humano confirmó que solo lo lee negocio.
+**D4 · Filas y columnas que lee negocio:** se adopta el modelo. Es la decisión expresa que
+pedía F-020. La cabecera pasa a la fila 2, sale «Obra(código)» y desde la F las columnas se
+corren a la izquierda (% en E, Estado en H). Descartada: B, conservar la cabecera en la fila 3.
 
-**D5 · ¿Se mantiene alguna hoja?**
-- A: solo «Detalle» y «Resumen», como hoy, ya en el formato nuevo.
-- B: una tercera hoja «Datos» plana (sin combinar) para ordenar y hacer tablas dinámicas.
-  **Recomendación: A**; B, si hace falta, en F-038 (la pestaña de análisis).
+**D5 · Hojas:** solo «Detalle» y «Resumen». Descartada: B, una hoja «Datos» plana; si hace
+falta, irá en F-038.
 
-**D6 · Postventa y VAR en el Detalle.** El modelo trae «RESTO POSTVENTA» sin código y «VAR»
-con «OBRAS VARIAS (…)», que son convenios suyos hechos a mano.
-- A: el convenio del sistema. Postventa sale `Postv-0702` / `Postv-<descripción>` (como hoy, una
-  por obra); la entrada de F-039 sale `VAR-29` con la descripción de su partida (F-039 R21).
-- B: imitar el modelo. Se pierde de qué obra es cada postventa. **Recomendación: A.**
-
-Los requisitos van escritos con las recomendaciones; si el humano elige otra opción, se
-reescribe el requisito marcado con esa D **antes** de implementar.
+**D6 · Postventa y VAR en el Detalle:** el convenio del sistema, `Postv-0702` /
+`Postv-<descripción>` (una por obra) y `VAR-29` con su partida (F-039 R21). Descartada: B,
+imitar «RESTO POSTVENTA» / «VAR» del modelo, que pierde la obra de cada postventa.
 
 ## Libro
 

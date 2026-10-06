@@ -1,6 +1,6 @@
 # F-040 · Tareas
 
-Antes de T1: el humano ha validado D1-D6 de `requirements.md`. Si alguna D no es la recomendada, se reescriben los requisitos marcados con esa D y design §3-§5 antes de empezar. Rigor estándar: fase RED antes de cada tarea de código, cobertura de líneas cambiadas y mutación muestreada (`harness/rigor.json`). Todos los comandos de pytest se lanzan desde `services/dedicacion-api`.
+Precondición cumplida: el humano aprobó la spec el 2026-10-06 con D1-D6 = A (`requirements.md`). Rigor estándar: fase RED antes de cada tarea de código, cobertura de líneas cambiadas y mutación muestreada (`harness/rigor.json`). Todos los comandos de pytest se lanzan desde `services/dedicacion-api`.
 
 - [ ] T1: Tests RED de contenido en `tests/test_f040_excel.py` (R7-R9, R14-R16, R18, R19: orden, prefijo, `VAR-29`, sin líneas, «Obras», 99,996 → OK, `texto_pct` sin «E+», FALTA/EXCESO)  |  Verificación: `python -m pytest tests/test_f040_excel.py -q` falla por `ModuleNotFoundError` de `infrastructure.excel.contenido` (traza RED en el informe)
 - [ ] T2: Crear `infrastructure/excel/contenido.py` según design §3.1 (dataclasses, `grupos_detalle`, `filas_resumen`, `texto_pct`, `texto_estado`, `es_entero`)  |  Verificación: `python -m pytest tests/test_f040_excel.py -q` en verde
