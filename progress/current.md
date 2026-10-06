@@ -1,9 +1,17 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-037 se cerró el 2026-10-06 y está en
+**F-039 en spec** (obras VAR y de 6 dígitos), rama
+`feature/F-039-obras-var-y-seis-digitos`. F-037 se cerró el 2026-10-06 y está en
 `dev` **pendiente de desplegar** (sección siguiente). F-029 se desplegó el
 2026-10-06 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+
+## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (en spec)
+
+- **Pedida por el humano el 2026-10-06** (texto literal y datos leídos en
+  Sigrid en la descripción de `features.json`). Primera del backlog.
+- **Estado:** spec-author lanzado → `specs/F-039-obras-var-y-seis-digitos/`.
+  El líder la enseña al humano **antes** de implementar (PARADA 1).
 
 ## ⚠ Despliegue de F-037 (pendiente; lo lanza el humano)
 
@@ -67,7 +75,8 @@
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
 2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
 primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
-(asiento analítico, cerrada, pendiente de desplegar); después F-028, F-021, F-030, F-020 (Excel), **F-038**
+(asiento analítico, cerrada, pendiente de desplegar); **F-039** (en spec,
+primera); después F-028, F-021, F-030, F-020 (Excel), **F-038**
 (pestaña de analítica, pedida el 2026-10-06 justo detrás del Excel), **F-036**
 (solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
 
