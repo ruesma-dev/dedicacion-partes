@@ -1820,3 +1820,13 @@ docstring; su DA11, prevista en nuestro design §12: «texto, se recopia»).
 `test_f037_copias_partes.py::…ref_vigilada` lo detectó y dejó `dev` en rojo.
 Se recopiaron los dos ficheros y `COMMIT_COPIADO` pasa a `e85ef0e`; la regla
 no cambia. Suite del transfer en verde.
+
+## 2026-10-06 · Aviso de `partes` (F-031): confluencia con F-037
+
+Recibido del humano: `partes` cambió la cabecera de `estado_parte.py` y
+`cuenta_analitica.py` (solo docstring, `e85ef0e`; ya recopiado en `c906219`),
+su F-031 está mergeada en su `dev`, y su `stmts_crear_parte` es ahora idéntico
+en texto y parámetros al nuestro (`40b9feb`). Se cambia `REF_VIGILADA` de
+`test_f037_copias_partes.py` a `dev` (la rama de la F-031 ya no existe), se
+anota la confluencia del alta en su docstring y en INTEGRACION §7 (y su copia
+en `azure-apps`): si se cambia el alta, se avisa a `partes`.
