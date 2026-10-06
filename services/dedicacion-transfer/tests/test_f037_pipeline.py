@@ -328,3 +328,15 @@ def test_f037_r8_la_linea_va_al_centro_de_la_obra_destino_sin_cuaide():
                           database="ruesma"), **ins)
     assert st["parameters"][2] == CEN_ORIGEN          # hmores.cenide
     assert "cuaide" not in st["sql"]
+
+
+# ================ R11 · correlativo de la empresa de la obra ================ #
+
+def test_f037_r11_el_codigo_propuesto_es_el_de_la_empresa_de_la_obra():
+    cli = ClienteF037(parte_existe=False)
+    cli.obra.empresa = 28                   # dato del test, no del doble
+    cli.obra_por_codigo = lambda cod, emp: (
+        cli.obra if cod == "0404" else cli.obra_origen)
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
+    assert cli.de("siguiente") == [(2026, 28)]
+    assert pf.partes[0].cod == "PT26/00350"

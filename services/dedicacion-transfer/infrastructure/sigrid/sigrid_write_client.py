@@ -287,11 +287,14 @@ class SigridWriteClient:
                 out[(ano, mes)] = ParteDestino(ano=ano, mes=mes, existe=False)
         return out
 
-    def siguiente_cod_pt(self, ano: int) -> str:
+    def siguiente_cod_pt(self, ano: int, empresa: int) -> str:
+        """Siguiente `PT<AA>/NNNNN` de ESA empresa (F-037 R11, como
+        `partes`): el correlativo es por empresa y los números se repiten
+        entre ellas. Antes de F-037 salía del mayor de TODAS."""
         yy = str(int(ano))[-2:]
         filas = self._read(
-            "SELECT MAX(cod) AS maxcod FROM con WHERE cod LIKE ?",
-            [f"PT{yy}/%"])
+            "SELECT MAX(cod) AS maxcod FROM con WHERE cod LIKE ? AND emp = ?",
+            [f"PT{yy}/%", int(empresa)])
         maxcod = (filas[0]["maxcod"] or "") if filas else ""
         try:
             n = int(str(maxcod).split("/")[1]) + 1
@@ -372,11 +375,20 @@ class SigridWriteClient:
     def stmts_crear_parte(
         self, *, obra: ObraEntrada, ano: int, mes: int, cod: str, desc: str
     ) -> list[dict]:
-        """Cabecera (con) + extensión (hmo) del parte de obra/mes.
+        """Cabecera (con) + extensión (hmo) del parte de obra/mes, en UNA
+        transacción (un solo lote de `escribir`).
 
         `con.emp` es la empresa de la obra destino: el parte es de la
         empresa de su obra (ARCHITECTURE.md#regla-empresa). Sin ella no se
         adivina: `ValueError`.
+
+        F-037 D17 (alta protegida, la carrera con `partes`): la cabecera
+        solo se inserta si el código está libre en la empresa y si el
+        periodo NO tiene ya un parte En registro, comprobado con bloqueo. Las
+        dos condiciones van FUERA del agregado: un `SELECT MAX(...) ...
+        WHERE NOT EXISTS` devuelve una fila aunque la condición falle. El
+        `hmo` se cuelga del `con` por código, tipo y EMPRESA, y solo si ese
+        `con` aún no lo tiene. El pipeline relee el periodo después.
         """
         if not obra.empresa:
             raise ValueError(
@@ -384,17 +396,33 @@ class SigridWriteClient:
         ultimo = calendar.monthrange(int(ano), int(mes))[1]
         fec = int(f"{int(ano)}{int(mes):02d}{ultimo:02d}")
         cenide = int(getattr(obra, "cenide", 0) or 0)
+        empresa = int(obra.empresa)
         return [
             {"sql": ("INSERT INTO con (ide, emp, tip, est, cod, res, fec) "
-                     "SELECT ISNULL(MAX(ide),0)+1, ?, ?, ?, ?, ?, ? "
-                     "FROM con WITH (UPDLOCK, HOLDLOCK)"),
-             "parameters": [int(obra.empresa), self._tip, self._est,
-                            cod, desc[:128], fec]},
+                     "SELECT x.n, ?, ?, ?, ?, ?, ? FROM "
+                     "(SELECT ISNULL(MAX(ide),0)+1 AS n "
+                     "FROM con WITH (UPDLOCK, HOLDLOCK)) x "
+                     "WHERE NOT EXISTS (SELECT 1 FROM con c "
+                     "WITH (UPDLOCK, HOLDLOCK) "
+                     "WHERE c.cod = ? AND c.emp = ? AND c.tip = ?) "
+                     "AND NOT EXISTS (SELECT 1 FROM hmo h "
+                     "WITH (UPDLOCK, HOLDLOCK) JOIN con r "
+                     "WITH (UPDLOCK, HOLDLOCK) ON r.ide = h.ide "
+                     "WHERE h.obride = ? AND h.ano = ? AND h.mes = ? "
+                     "AND ISNULL(h.reside, 0) = 0 AND r.tip = ? "
+                     "AND r.est = ?)"),
+             "parameters": [empresa, self._tip, self._est,
+                            cod, desc[:128], fec,
+                            cod, empresa, self._tip,
+                            int(obra.ide), int(ano), int(mes), self._tip,
+                            self._est]},
             {"sql": ("INSERT INTO hmo (ide, cenide, obride, ano, mes, reside, "
                      "cenmul) SELECT ide, ?, ?, ?, ?, 0, 0 FROM con "
-                     "WHERE cod = ? AND tip = ?"),
+                     "WHERE cod = ? AND tip = ? AND emp = ? "
+                     "AND NOT EXISTS (SELECT 1 FROM hmo h "
+                     "WHERE h.ide = con.ide)"),
              "parameters": [cenide, int(obra.ide), int(ano), int(mes),
-                            cod, self._tip]},
+                            cod, self._tip, empresa]},
         ]
 
     def stmt_insert_linea(

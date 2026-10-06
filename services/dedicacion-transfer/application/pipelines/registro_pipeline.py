@@ -332,7 +332,8 @@ class RegistroPipeline:
                 int(d.ide), [(a.ano, a.mes)])[(a.ano, a.mes)]
             encontrado.obra_cod = d.codigo
             if not encontrado.existe and not encontrado.cod:
-                encontrado.cod = self._cli.siguiente_cod_pt(a.ano)
+                encontrado.cod = self._cli.siguiente_cod_pt(a.ano,
+                                                         int(d.empresa))
             partes[clave] = encontrado
 
         # Paso 6: idempotencia por synckey.
@@ -576,7 +577,7 @@ class RegistroPipeline:
             marca = (f" ({self._st.marca_pruebas})" if pf.forzada_pruebas
                      else "")
             desc = f"Parte {d.nombre or d.codigo}{marca}"
-            cod = p.cod or self._cli.siguiente_cod_pt(a.ano)
+            cod = p.cod or self._cli.siguiente_cod_pt(a.ano, int(d.empresa))
             self._cli.escribir(self._cli.stmts_crear_parte(
                 obra=d, ano=a.ano, mes=a.mes, cod=cod, desc=desc))
             nuevos = self._cli.partes_existentes(int(d.ide),

@@ -251,3 +251,130 @@ def test_f037_r17_ninguna_sentencia_toca_asientos_ni_estados():
         assert not sql.startswith("update"), sql
         assert "update con" not in sql and "delete from con" not in sql
         assert "delete from hmo " not in sql
+
+
+# ============ R11 · correlativo por empresa (bug de antes de F-037) ============ #
+
+@pytest.mark.parametrize("maxcod, esperado", [
+    ("PT26/00349", "PT26/00350"), (None, "PT26/00001"),
+    ("PT26/raro", "PT26/00001"), ("PT26", "PT26/00001"),
+])
+def test_f037_r11_siguiente_cod_pt_es_por_empresa(maxcod, esperado):
+    cli, lectura = _cliente([{"maxcod": maxcod}])
+    assert cli.siguiente_cod_pt(2026, 28) == esperado
+    [(sql, params)] = lectura.llamadas
+    assert sql == ("SELECT MAX(cod) AS maxcod FROM con WHERE cod LIKE ? "
+                   "AND emp = ?")
+    assert params == ["PT26/%", 28]
+
+
+def test_f037_r11_siguiente_cod_pt_sin_filas_y_empresa_obligatoria():
+    import inspect
+
+    cli, _ = _cliente([])
+    assert cli.siguiente_cod_pt(2027, 1) == "PT27/00001"
+    empresa = inspect.signature(SigridWriteClient.siguiente_cod_pt
+                                ).parameters["empresa"]
+    assert empresa.default is inspect.Parameter.empty
+
+
+# ================= R11 y D17 · alta protegida del parte ================= #
+
+def _alta(empresa: int = 1, cod: str = "PT26/00350") -> list[dict]:
+    cli, _ = _cliente()
+    return cli.stmts_crear_parte(obra=_obra(empresa), ano=2026, mes=7,
+                                 cod=cod, desc="Parte PRUEBAS")
+
+
+def test_f037_r11_d17_forma_del_alta_y_sus_parametros():
+    con, hmo = _alta(empresa=28)
+    sql = " ".join(con["sql"].split())
+    assert sql.count("?") == len(con["parameters"])
+    # Los seis primeros, en el orden de antes (test_f022_r17).
+    assert con["parameters"][:6] == [28, 35, 1, "PT26/00350",
+                                     "Parte PRUEBAS", 20260731]
+    # Código libre en la empresa y ningún parte En registro del periodo.
+    assert con["parameters"][6:] == ["PT26/00350", 28, 35,
+                                     828942, 2026, 7, 35, 1]
+    # La condición va FUERA del agregado (design §6.5, la trampa).
+    assert "AS n FROM con WITH (UPDLOCK, HOLDLOCK)) x WHERE NOT EXISTS" in sql
+    assert sql.count("NOT EXISTS") == 2
+    assert sql.count("WITH (UPDLOCK, HOLDLOCK)") == 4
+    sql_hmo = " ".join(hmo["sql"].split())
+    assert sql_hmo.count("?") == len(hmo["parameters"])
+    assert "WHERE cod = ? AND tip = ? AND emp = ?" in sql_hmo
+    assert "NOT EXISTS (SELECT 1 FROM hmo h WHERE h.ide = con.ide)" in sql_hmo
+    assert hmo["parameters"] == [828943, 828942, 2026, 7, "PT26/00350", 35,
+                                 28]
+
+
+def _sqlite(*partes: tuple) -> "sqlite3.Connection":  # noqa: F821
+    """Emulación EN MEMORIA de `con` y `hmo` para ejecutar el alta tal cual
+    (sin las pistas de bloqueo de SQL Server). No es Sigrid ni ninguna BBDD
+    del sistema: es un fixture. `partes`: (ide, emp, est, cod, obride)."""
+    import sqlite3
+
+    db = sqlite3.connect(":memory:")
+    db.execute("CREATE TABLE con (ide INTEGER, emp INTEGER, tip INTEGER, "
+               "est INTEGER, cod TEXT, res TEXT, fec INTEGER)")
+    db.execute("CREATE TABLE hmo (ide INTEGER, cenide INTEGER, "
+               "obride INTEGER, ano INTEGER, mes INTEGER, reside INTEGER, "
+               "cenmul INTEGER)")
+    for ide, emp, est, cod, obride in partes:
+        db.execute("INSERT INTO con VALUES (?, ?, 35, ?, ?, 'x', 20260731)",
+                   [ide, emp, est, cod])
+        db.execute("INSERT INTO hmo VALUES (?, 1, ?, 2026, 7, NULL, 0)",
+                   [ide, obride])
+    db.execute("INSERT INTO con VALUES (900, 1, 20, 1, 'XRT', 'otro', 0)")
+    return db
+
+
+def _ejecutar(db, sentencias: list[dict]) -> None:
+    for st in sentencias:
+        sql = (st["sql"].replace(" WITH (UPDLOCK, HOLDLOCK)", "")
+               .replace("ISNULL(", "IFNULL("))
+        db.execute(sql, st["parameters"])
+
+
+def _partes(db) -> list[tuple]:
+    return db.execute(
+        "SELECT con.ide, con.emp, con.est, con.cod, hmo.obride FROM con "
+        "JOIN hmo ON hmo.ide = con.ide ORDER BY con.ide").fetchall()
+
+
+def test_f037_d17_alta_libre_crea_con_y_hmo():
+    db = _sqlite()
+    _ejecutar(db, _alta())
+    assert _partes(db) == [(901, 1, 1, "PT26/00350", 828942)]
+    _ejecutar(db, _alta()[1:])              # el hmo no se duplica
+    assert db.execute("SELECT COUNT(*) FROM hmo").fetchone() == (1,)
+
+
+def test_f037_d17_con_un_parte_en_registro_del_periodo_no_crea_nada():
+    db = _sqlite((500, 1, 1, "PT26/00300", 828942))
+    _ejecutar(db, _alta())
+    assert _partes(db) == [(500, 1, 1, "PT26/00300", 828942)]
+    assert db.execute("SELECT COUNT(*) FROM con").fetchone() == (2,)
+
+
+def test_f037_d17_con_solo_cerrados_crea_el_complementario():
+    db = _sqlite((500, 1, 10, "PT26/00300", 828942),
+                 (501, 1, 1, "PT26/00301", 111))       # En registro, OTRA obra
+    _ejecutar(db, _alta())
+    assert _partes(db)[-1] == (901, 1, 1, "PT26/00350", 828942)
+
+
+def test_f037_d17_codigo_ocupado_en_la_empresa_no_crea_nada():
+    db = _sqlite((500, 1, 10, "PT26/00350", 111))
+    _ejecutar(db, _alta())
+    assert _partes(db) == [(500, 1, 10, "PT26/00350", 111)]
+
+
+def test_f037_r11_codigo_ocupado_en_otra_empresa_si_crea_y_hmo_por_emp():
+    """El correlativo es por empresa: el mismo código en la 28 no impide el
+    alta en la 1, y el `hmo` solo se cuelga del `con` de SU empresa."""
+    db = _sqlite((500, 28, 1, "PT26/00350", 111))
+    db.execute("DELETE FROM hmo WHERE ide = 500")    # con sin hmo en la 28
+    _ejecutar(db, _alta(empresa=1))
+    assert _partes(db) == [(901, 1, 1, "PT26/00350", 828942)]
+    assert db.execute("SELECT COUNT(*) FROM hmo").fetchone() == (1,)
