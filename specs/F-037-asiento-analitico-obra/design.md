@@ -3,7 +3,7 @@
 
 Copia adaptada de la F-031 de `partes` (humano, 2026-10-06: «se usa el mismo
 parte realmente»). Fuente: rama `feature/F-031-asiento-analitico`, revisada
-en `progress/explore_F-037_partes_F-031.md`. Abiertas: D13, D17, D18.
+en `progress/explore_F-037_partes_F-031.md`. Todas las decisiones cerradas.
 
 ## 1. Encaje y límite de servicio
 
@@ -123,7 +123,7 @@ en `progress/explore_F-037_partes_F-031.md`. Abiertas: D13, D17, D18.
   conflicto como hoy con el `parte_cod` del parte donde vive la línea. La
   capacidad suma las líneas de todos los partes.
 - **Paso 9 (R11, D17)**: si el elegido no existe, `stmts_crear_parte` con
-  `desc` según D13 (+ marca de pruebas), luego `partes_del_periodo` +
+  `desc = "Parte <obra>"` (D13; + marca de pruebas), luego `partes_del_periodo` +
   `elegir_parte`. Si hay uno En registro (el nuestro o el que creó `partes`
   en ese instante), se usa y se registra en el log cuál. Si no (código
   ocupado), se recalcula `siguiente_cod_pt` y se reintenta **una** vez; si
@@ -199,7 +199,7 @@ correlativo y del `hmo`; las dos condiciones del alta; el reintento único.
 
 - **La rama de `partes` se mueve** (de `9b202e9` a `5ff4d91` durante la
   revisión): §12 dice cómo se sigue.
-- **D17**: la mitigación solo cubre nuestro lado; `partes` puede crear su
+- **D17 (decidida)**: la mitigación solo cubre nuestro lado; `partes` puede crear su
   parte justo después de nuestra comprobación. Hay que avisarles.
 - **Synckeys ajenas**: para `partes` nuestras líneas son ajenas y viceversa.
   Escribimos `M*` el último día del mes y `partes` manda los `M*` a

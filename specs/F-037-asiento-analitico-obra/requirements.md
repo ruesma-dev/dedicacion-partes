@@ -69,7 +69,7 @@ tiene alguno cerrado.
   hay cerrados). Se reutiliza el complementario que haya creado `partes`.
 - **R11.** El parte nuevo se crea con el alta de hoy: `con` (empresa de la
   obra, tipo 35, En registro, `PT<AA>/NNNNN` **correlativo por empresa**,
-  descripción según D13, último día del mes) y `hmo` localizado por código,
+  descripción `Parte <obra>` (D13), último día del mes) y `hmo` localizado por código,
   tipo **y empresa**. Tras crearlo se relee el periodo; SI no aparece En
   registro, ENTONCES la petición falla sin insertar líneas.
 - **R12.** Una `synckey` `porcentajes:{id}` en cualquier parte, también
@@ -129,18 +129,16 @@ reescribirla). **D16** cerrado = no En registro, como `partes` (descartado
 solo Imputado). D2, D4-D7: el 6XX, la contrapartida, el importe, la fecha, la
 serie y la agrupación son del ANA de Administración (explore §4-§5).
 
-**Abiertas** (opciones, recomendación):
+**Decididas por el humano el 2026-10-06** (tras la revisión de `partes`):
 
-- **D13 · Descripción del complementario (reabierta el 2026-10-06).** El
-  humano decidió `Parte <obra> (complementario)`; `partes` (F-031 R3) y
-  Administración en sus 7 complementarios reales usan `Parte <obra>`.
-  A) `Parte <obra>`; B) `Parte <obra> (complementario)`. **Recomendada A**:
-  es el mismo parte y lo reutilizan los dos servicios.
-- **D17 · Carrera entre servicios** (ninguna spec la trata). A) alta
-  condicional en una transacción con bloqueo (código libre en la empresa y
-  ningún parte En registro del periodo), relectura y un reintento (design
-  §7); B) aceptarla y detectarla en la relectura. **Recomendada A**, y avisar
-  a `partes` para que haga lo mismo.
-- **D18 · `estado_parte.py`** también es copia de `partes`. A) a la lista
-  cerrada de `CLAUDE.md` junto a `cuenta_analitica.py`; B) reescribirlo.
-  **Recomendada A**.
+- **D13 · Descripción del complementario: `Parte <obra>`**, como `partes`
+  (F-031 R3) y Administración en sus 7 complementarios reales; es el mismo
+  parte. **Sustituye a la decisión del 2026-10-05** (`Parte <obra>
+  (complementario)`), que queda descartada.
+- **D17 · Carrera entre servicios: alta protegida**, en una transacción con
+  bloqueo (código libre en la empresa y ningún parte En registro del
+  periodo), relectura y un reintento (design §6.5, §7); se avisa a `partes`
+  (T11). Descartado: aceptarla y detectarla solo en la relectura.
+- **D18 · `estado_parte.py`** entra en la lista cerrada de copias de
+  `CLAUDE.md` junto a `cuenta_analitica.py` (la línea la pone el líder).
+  Descartado: reescribirlo.
