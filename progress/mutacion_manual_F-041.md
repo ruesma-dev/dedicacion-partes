@@ -8,7 +8,10 @@ escribe informe, porque lo único de producción que cambia es
 (design §7, patrón de `progress/mutacion_manual_F-035.md`).
 
 - **Medida sobre** `1a0019c` (rama `feature/F-041-filtro-obra-postventa`, tras
-  T4). Las líneas de la tabla son las de ese commit.
+  T4). Las líneas de la tabla son las de ese commit. **Repetida sobre
+  `93c1a0e`** (tras cambiar `zip` por `itertools.pairwise` en el test de R5,
+  aviso RUF007): línea base `26 passed in 5.16s` y tabla **idéntica fila a
+  fila** (comparada con `diff`).
 - **Siempre sobre una copia**: el script copia `static/js/app.js` y `tests/` del
   front a un directorio temporal, aplica la sustitución (el texto original
   tiene que aparecer **una sola vez**; si no, aborta), comprueba la sintaxis con
