@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-039 en curso** (obras VAR y de 6 dígitos), rama
+**F-039 en curso** (obras VAR y de 6 dígitos; implementada, en review), rama
 `feature/F-039-obras-var-y-seis-digitos`. F-037 se cerró el 2026-10-06 y está en
 `dev` **pendiente de desplegar** (sección siguiente). F-029 se desplegó el
 2026-10-06 (resúmenes en `history.md`). El arnés es la **1.7.3**.
@@ -15,10 +15,30 @@
   descarta las obras de 6 dígitos en el sync y guarda cada partida como
   fila de `obra` (`VAR-29`). **Aprobada por el humano el 2026-10-06** (D1-D6;
   D4 final: código que CONTENGA 6+ dígitos seguidos, 240 obras).
-  **Implementer lanzado** → `progress/impl_F-039.md`. En paralelo, por
-  decisión del humano, la spec de **F-040** en la copia de trabajo
-  `PycharmProjects/porcentajes-f040` (rama
-  `feature/F-040-excel-modelo-juan`; los `.venv` son uniones a los de aquí).
+- **Implementación terminada** (`progress/impl_F-039.md`, `…`→`e69ff2a`):
+  mutación en serie 60/60; tests anteriores cambiados solo los de design §7.1
+  (dobles `_fila` y `UniversoFalso`, ANCLAS). **Review lanzada** →
+  `progress/review_F-039.md`.
+- **T9 (líder): hecha**, copia a `azure-apps` `f01156f` («sin desplegar»).
+- **MANUAL (humano, NADA escribe en Sigrid)**, transfer y api LOCALES desde
+  esta rama (api con `PG_HOST=localhost`), desde la raíz:
+  - **T12 (M1):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M1`
+    → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en
+    el cuadrante, sin `VAR` normal ni obras de 6+ dígitos;
+    `RESULTADO M1: OK`. Resultado: _pendiente_.
+  - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
+    → grupo de la obra `VAR`, `escribir`, `paride = 417055`, `partida_cod
+    = "29"`, `partida_metodo = "var"`; `RESULTADO M2: OK`. Resultado: _pendiente_.
+  - **T14 (M3, usabilidad):** además el front local; buscar «29» y «arroyo»
+    → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
+    `VAR-29`; «Registrar en Sigrid» enseña la partida fija «29» (cerrar SIN
+    registrar). Resultado: _pendiente_.
+  - **Despliegue:** orden transfer → api → front (la api nueva llama a
+    `POST /api/var/universo`).
+- **En paralelo, por decisión del humano:** specs de **F-040** y **F-041**
+  aprobadas en sus copias `PycharmProjects/porcentajes-f040` y
+  `PycharmProjects/porcentajes-f041` (sus `.venv` son uniones a los de aquí);
+  se implementan después de F-039.
 - **F-040, spec lista** (copia `porcentajes-f040`, `2469852`): espera al
   humano con D1-D6. Hallazgo: el exportador ACTUAL saca notación científica
   en el Resumen («0702 = 1E+2%», por `Decimal.normalize()`) y ningún test lo
