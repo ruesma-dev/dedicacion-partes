@@ -192,7 +192,8 @@ def test_f039_r21_el_excel_lleva_el_codigo_de_la_entrada():
                       descripcion=ENTRADA.descripcion)])
     libro = load_workbook(io.BytesIO(OpenpyxlExcelExporter("Postv-").exportar(
         Periodo(anio=2026, mes=8), [fila])))
-    detalle = [c.value for c in libro["Detalle"][4]]
-    assert detalle[2:5] == ["VAR-29", "ACOND. NAVE MODUL-A",
-                            "ACOND. NAVE MODUL-A (VAR-29)"]
-    assert libro["Resumen"]["C4"].value == "VAR-29 = 45.5%"
+    # Formato de F-040: datos desde la fila 3, sin la columna «Obra(código)»;
+    # Código en C, Obra en D y % en E. Una sola línea: nada combinado.
+    detalle = [c.value for c in libro["Detalle"][3]]
+    assert detalle[2:5] == ["VAR-29", "ACOND. NAVE MODUL-A", 0.455]
+    assert libro["Resumen"]["C3"].value == "VAR-29 ACOND. NAVE MODUL-A = 45,50%"

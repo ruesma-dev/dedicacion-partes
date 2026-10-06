@@ -138,8 +138,7 @@ Después de T4, con
 
 ## 5. Comprobación extra en Excel 16 (COM, solo lectura, sobre la muestra inventada)
 
-La muestra se abrió por COM (`Workbooks.Open`, solo lectura) y se probaron
-los filtros con `Range("A2:H12").AutoFilter`:
+Muestra abierta por COM en solo lectura; filtros con `Range("A2:H12").AutoFilter`:
 
 ```
 Hojas: Detalle,Resumen
@@ -151,10 +150,8 @@ Texto E3: 55% / F7: 90% / E7: 33.33%
 Resumen C7: 0105 Obra Ficticia Centro = 100%
 ```
 
-Excel muestra «33.33%» con punto por la configuración regional de la
-máquina: la celda guarda 0,3333 con formato `0.00%`. Lo que el COM no deja
-ver es la imagen ni si sale el aviso de reparación (con `DisplayAlerts`
-apagado, Excel repara sin preguntar). Eso queda para M1.
+«33.33%» con punto es la configuración regional (la celda guarda 0,3333).
+La imagen y el aviso de reparación no se ven por COM: quedan para M1.
 
 ## 6. Verificación MANUAL pendiente (T6 / M1, humano)
 
@@ -175,16 +172,13 @@ curl.exe -o "$env:TEMP\f040.xlsx" "http://127.0.0.1:8090/api/v1/periodos/AAAA/MM
 start "$env:TEMP\f040.xlsx"
 ```
 
-También vale el botón «Exportar» del front local.
-
-Hay que recorrer los 7 puntos de design §6: (1) abre sin aviso de reparación;
+También vale el botón «Exportar» del front local. Hay que recorrer los 7 puntos de design §6: (1) abre sin aviso de reparación;
 (2) filtrar por un Empleado saca todas sus filas; (3) filtrar por una Obra:
 cada fila visible enseña quién es y su Estado; (4) filtrar Estado ≠ OK;
 (5) bandas y línea gruesa entre trabajadores; (6) Resumen con «código nombre
 = NN%»; (7) vista previa en horizontal, a una página de ancho, con la
-cabecera repetida. Mirar también cómo se ve una combinada cuya primera fila oculta el filtro.
-El humano da el visto bueno a los colores, la línea y los anchos, y el
-resultado se anota en `progress/`.
+cabecera repetida. Mirar también una combinada cuya primera fila oculta el
+filtro. El humano da el visto bueno al aspecto; el resultado va a `progress/`.
 
 ## 7. Qué queda fuera y qué falta
 
@@ -193,10 +187,17 @@ resultado se anota en `progress/`.
   poder ordenar con «Ordenar» de Excel en el Detalle, el precio asumido de D2 = A.
 - **`azure-apps/` no cambia**, porque no describe el Excel (R21).
 - **Falta para cerrar:** M1 (humano), la review y el `done` del líder.
-- **Convivencia con F-039**, que también toca el export de VAR: la línea
-  `VAR-29` se trata como una obra normal y está probada aquí con datos
-  inventados. Si F-039 trae algún test que lea el xlsx real, se ajusta al
-  fusionar (design §8).
+
+## 8. Ajuste al fusionar con F-039 (rama `chore/f039-test-excel-f040`)
+
+Al fusionar F-040 en `dev` (`f34b2da`) cayó un test de F-039 que leía el
+formato antiguo, como preveía design §8. Es consecuencia directa de R2/R6 y
+R14/R18 de F-040, y conserva la exigencia de F-039 R21: código y descripción
+de la entrada, sin prefijo de postventa.
+
+| Test | Antes | Ahora | Requisito |
+|---|---|---|---|
+| `test_f039_registro_var.py::test_f039_r21_el_excel_lleva_el_codigo_de_la_entrada` | Detalle fila 4, `[2:5]` = `VAR-29`, `ACOND. NAVE MODUL-A`, `ACOND. NAVE MODUL-A (VAR-29)`; Resumen C4 = `VAR-29 = 45.5%` | Detalle fila 3, `[2:5]` = `VAR-29`, `ACOND. NAVE MODUL-A`, `0.455` (% en E); Resumen C3 = `VAR-29 ACOND. NAVE MODUL-A = 45,50%` | F-039 R21; F-040 R2, R6 (sin «Obra(código)»), R14, R18 |
 
 ## Evidencias
 
