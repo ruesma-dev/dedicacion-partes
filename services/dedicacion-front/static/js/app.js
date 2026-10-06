@@ -490,13 +490,7 @@ const ORDEN_ESTADO = { SIN_CARGA: 0, FALTA: 1, EXCESO: 2, OK: 3 };
 function textoColumna(t, clave) {
   if (clave === "nombre") return t.nombre;
   if (clave === "categoria") return t.categoria || "";
-  if (clave === "asignaciones") {
-    return t.lineas
-      .map((l) =>
-        (l.es_postventa ? "postv postv-" : "") + l.cod + " " + l.descripcion
-      )
-      .join(" ");
-  }
+  // La columna de obras no pasa por aquí: casa línea a línea (F-041, R4).
   if (clave === "total") {
     const partes = [fmtPct(t.total), String(Math.round(t.total))];
     if (t.estado === "OK") partes.push("ok 100");
@@ -517,14 +511,19 @@ function trabajadoresVisibles() {
     if (state.soloPendientes && t.estado === "OK") return false;
     for (const clave of state.columnas) {
       const filtro = normalizar(state.filtrosCol[clave] || "");
-      if (filtro && !normalizar(textoColumna(t, clave)).includes(filtro)) {
-        return false;
-      }
+      if (!filtro) continue;
+      // Obras: alguna línea cuyo texto visible case, no todas juntas (D2).
+      const casa = clave === "asignaciones"
+        ? t.lineas.some((l) => lineaCasa(l, filtro))
+        : normalizar(textoColumna(t, clave)).includes(filtro);
+      if (!casa) return false;
     }
     if (!q) return true;
+    // Buscador libre de la fila: todos los campos juntos, y de cada línea su
+    // texto visible, con su `Postv-` (F-041, R9).
     const pajar = normalizar(
       t.nombre + " " + (t.categoria || "") + " " +
-      t.lineas.map((l) => l.cod + " " + l.descripcion).join(" ")
+      t.lineas.map((l) => textoObra(l.cod, l.descripcion, l.es_postventa)).join(" ")
     );
     return pajar.includes(q);
   });
