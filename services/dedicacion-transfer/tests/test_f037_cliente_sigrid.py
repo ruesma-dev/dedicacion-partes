@@ -238,6 +238,15 @@ def test_f037_r1_insert_sin_cuenta_escribe_cero():
     assert _insert(cli, caaide=None)["parameters"][-3] == 0
 
 
+def test_f037_r1_insert_sin_partida_escribe_cero():
+    """T10: la firma conserva `paride = 0` por defecto."""
+    cli, _ = _cliente()
+    datos = dict(hmoide=777, obra=_obra(), reside=200, pos=128,
+                 fecha_int=20260731, horide=5, can=0.4, pre=9000.0,
+                 ano=2026, mes=7, synckey="porcentajes:1", tex=None)
+    assert cli.stmt_insert_linea(**datos)["parameters"][4] == 0
+
+
 # ======================= R17 · lo que NO se hace ======================= #
 
 def test_f037_r17_ninguna_sentencia_toca_asientos_ni_estados():
@@ -284,6 +293,14 @@ def _alta(empresa: int = 1, cod: str = "PT26/00350") -> list[dict]:
     cli, _ = _cliente()
     return cli.stmts_crear_parte(obra=_obra(empresa), ano=2026, mes=7,
                                  cod=cod, desc="Parte PRUEBAS")
+
+
+def test_f037_r11_la_descripcion_del_parte_se_corta_a_128():
+    """T10: `con.res` admite 128 caracteres; el alta no los excede."""
+    cli, _ = _cliente()
+    [con, _hmo] = cli.stmts_crear_parte(obra=_obra(), ano=2026, mes=7,
+                                        cod="PT26/00350", desc="P" * 200)
+    assert con["parameters"][4] == "P" * 128
 
 
 def test_f037_r11_d17_forma_del_alta_y_sus_parametros():

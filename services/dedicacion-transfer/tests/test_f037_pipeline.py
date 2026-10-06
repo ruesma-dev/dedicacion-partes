@@ -403,13 +403,16 @@ def test_f037_r10_r11_todos_cerrados_crea_el_complementario_parte_obra():
     assert (p.existe, p.cod, p.complementario, p.aviso) == (
         False, "PT26/00350", True, aviso)
     cli.cods = iter(["PT26/00350"])
-    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    # Dos líneas del mismo parte nuevo: se crea UNA vez (T10).
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[
+        linea(registro_id=1), linea(registro_id=2, recurso_ide=400)])
     [crear] = [s["parameters"] for s in cli.escritos if s["sql"] == "crear"]
     assert crear["desc"] == "Parte PRUEBAS (PRUEBA-PORC)"       # D13
     assert (crear["cod"], crear["obra"], crear["ano"], crear["mes"]) == (
         "PT26/00350", cli.obra, 2026, 7)
-    assert [i["hmoide"] for i in cli.inserts()] == [950]
-    assert (res.partes[0].ide, res.partes[0].creado) == (950, True)
+    assert [i["hmoide"] for i in cli.inserts()] == [950, 950]
+    assert (res.partes[0].existe, res.partes[0].ide,
+            res.partes[0].creado) == (True, 950, True)
 
 
 def test_f037_r11_d13_en_modo_normal_la_descripcion_es_parte_obra():
@@ -477,6 +480,8 @@ def test_f037_r12_synckey_en_un_parte_cerrado_es_ya_registrado():
     res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
     assert res.ya_registradas == [1]
     assert cli.escritos == []               # ni se reescribe ni se rellena
+    # Sin acciones `escribir` en el periodo no hay líneas que mirar (T10).
+    assert cli.de("lineas") == []
 
 
 def test_f037_r13_choque_con_un_parte_cerrado_se_omite_sin_cuenta():
@@ -599,3 +604,42 @@ def test_f037_r15_el_contrato_http_de_partes_y_acciones_es_aditivo():
     accion = dataclasses.asdict(pf.acciones[0])
     assert {"caa_ide", "caa_cod", "caa_motivo", "caa_aviso", "caa_origen",
             "caa_nota", "aviso", "motivo"} <= set(accion)
+
+
+# ============= T10 · casos que la campaña de mutación dejó vivos ============= #
+
+def test_f037_r3_una_linea_sin_partida_no_hereda_la_de_otra():
+    """`paride = 0` no es una partida: nunca toma la cuenta de otra línea,
+    aunque esa otra sea la partida de `ide` 1."""
+    cli = ClienteF037(partidas={1: PartidaCuenta(1, "CI.9", "0678.CIMO04")})
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[
+        linea(registro_id=1, recurso_ide=SIN_CUENTA, paride=1,
+              partida_cod="CI.9"),
+        linea(registro_id=2, recurso_ide=SIN_CUENTA, categoria="Peon",
+              nombre="Nadie Conocido")])
+    assert [(a.paride, a.caa_origen, a.caa_cod) for a in pf.acciones] == [
+        (1, "partida", "0404.CIMO04"), (0, None, None)]
+
+
+@pytest.mark.parametrize("sin_centro", ["sin_atributo", "cero"])
+def test_f037_r4_obra_sin_centro_no_lee_cuentas_y_avisa(sin_centro):
+    cli = ClienteF037()
+    if sin_centro == "sin_atributo":
+        delattr(cli.obra, "cenide")
+    else:
+        cli.obra.cenide = 0
+    (a,) = _pl(cli).preflight(obra=OBRA, lineas=[linea()]).acciones
+    assert cli.de("cuentas") == []
+    assert (a.caa_ide, a.caa_motivo) == (0, "obra_sin_cuenta")
+
+
+def test_f037_r7_el_log_cuenta_las_lineas_por_origen(caplog):
+    cli = ClienteF037(partidas={80001: PartidaCuenta(80001, "CI.1.10",
+                                                     "0678.CIMO03")})
+    with caplog.at_level("INFO",
+                         logger="application.pipelines.registro_pipeline"):
+        _pl(cli).preflight(obra=OBRA, lineas=[
+            linea(registro_id=1), linea(registro_id=2, recurso_ide=400),
+            linea(registro_id=3, recurso_ide=SIN_CUENTA)])
+    assert ("[registro] cuenta analitica obra=0404 recurso=2 partida=1 "
+            "ninguna=0") in caplog.messages
