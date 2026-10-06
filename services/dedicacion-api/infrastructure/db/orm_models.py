@@ -74,6 +74,12 @@ class ObraORM(Base):
     admite_postventa: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=false()
     )
+    # Entrada VAR (F-039, docs/ARCHITECTURE.md#regla-var): obra y partida de
+    # Sigrid donde se registran sus líneas. `NULL` en las obras normales;
+    # nulables y sin default, así el ADD COLUMN derivado vale sin migración.
+    registro_obra_ide: Mapped[int | None] = mapped_column(BigInteger)
+    registro_obra_cod: Mapped[str | None] = mapped_column(Text)
+    registro_paride: Mapped[int | None] = mapped_column(BigInteger)
     sync_en: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

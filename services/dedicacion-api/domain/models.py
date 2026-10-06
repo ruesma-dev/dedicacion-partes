@@ -204,6 +204,28 @@ class ResultadoUniverso:
 
 
 @dataclass(frozen=True)
+class PartidaVar:
+    """Una partida del universo VAR (F-039, docs/ARCHITECTURE.md#regla-var):
+    `ide`, `cod` y `res` de `obrparpar`."""
+
+    ide: int
+    cod: str
+    res: str | None
+
+
+@dataclass(frozen=True)
+class ResultadoUniversoVar:
+    """Universo VAR que devuelve el transfer (F-039): la obra VAR de la
+    empresa y sus partidas; sin obra (`obra_ide` nulo), por qué."""
+
+    obra_ide: int | None
+    obra_cod: str | None
+    empresa: int | None
+    partidas: tuple[PartidaVar, ...]
+    motivo: str | None
+
+
+@dataclass(frozen=True)
 class ResultadoSyncMaestro:
     recibidos: int = 0
     altas: int = 0
