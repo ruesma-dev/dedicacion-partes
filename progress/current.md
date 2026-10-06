@@ -35,7 +35,10 @@
   - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
     (periodo de prueba LOCAL) → grupo de la obra `VAR`, `escribir`,
     `paride = 417055`, `partida_cod = "29"`, `partida_metodo = "var"`;
-    `RESULTADO M2: OK`. Resultado: _pendiente_.
+    `RESULTADO M2: OK`. **Resultado (2026-10-06, humano): CUMPLIDA.** Periodo
+    2026-10, trabajador 2750167: grupo VAR (ide 683806) `escribir`, `paride`
+    417055, `partida_cod` 29, método `var`, `caa_cod` `0404.CIMO03` (modo
+    pruebas: centro de la 0404; en real, el de VAR); `no_vigentes` vacío.
   - **T14 (M3, usabilidad):** además `python main.py` en
     `services/dedicacion-front` y abrir `http://127.0.0.1:8080`; buscar «29» y
     «arroyo» → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
