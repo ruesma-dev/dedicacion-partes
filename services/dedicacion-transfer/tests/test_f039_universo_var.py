@@ -306,3 +306,84 @@ def test_f039_r1_ajustes_del_transfer():
                ).read_text(encoding="utf-8")
     assert f"VAR_OBRA_COD={OBRA_VAR}" in ejemplo
     assert f"VAR_PARTIDA_DESDE={DESDE}" in ejemplo
+
+
+# ================ R4 · la ruta POST /api/var/universo ================= #
+
+@pytest.fixture
+def ruta(monkeypatch):
+    """`build_app` con ajustes falsos (con los dos VAR) y el cliente de
+    Sigrid sustituido por el doble que se le pase."""
+    from types import SimpleNamespace
+
+    from fastapi.testclient import TestClient
+    from interface_adapters.api import app as modulo
+
+    def fabricar(cli, **cambios):
+        ajustes = SimpleNamespace(**{
+            **vars(ajustes_var()),
+            "sigrid_api_base_url": "http://sigrid.invalid",
+            "sigrid_api_function_key": "sin-clave",
+            "sigrid_api_database": "ruesma", "sigrid_api_timeout_s": 1.0,
+            "sigrid_max_statements": 15, "tip_parte_trabajo": 35,
+            "est_parte_activo": 1, **cambios})
+        monkeypatch.setattr(modulo, "SigridWriteClient", lambda **_kw: cli)
+        return TestClient(modulo.build_app(ajustes))
+
+    return fabricar
+
+
+def test_f039_r1_ruta_devuelve_el_contrato(ruta):
+    """R1 · Contrato de design §5 por HTTP: `ok`, `empresa`, `desde`,
+    `motivo`, `obra_var` y `partidas`, sin escribir."""
+    cli = ClienteVar()
+    r = ruta(cli).post("/api/var/universo", json={"empresa": 1})
+    assert r.status_code == 200, r.text
+    cuerpo = r.json()
+    assert cuerpo == {
+        "ok": True, "empresa": 1, "desde": DESDE, "motivo": None,
+        "obra_var": {"ide": VAR_IDE, "codigo": OBRA_VAR,
+                     "nombre": "OBRAS VARIAS", "empresa": 1},
+        "partidas": cuerpo["partidas"]}
+    assert cuerpo["partidas"][0] == {
+        "ide": 417055, "cod": "29",
+        "res": "ACOND. NAVE MODUL-A, ARROYOMOLINOS"}
+    assert len(cuerpo["partidas"]) == len(UNIVERSO_29)
+    assert cli.escritos == []
+
+
+def test_f039_r3_ruta_sin_obra_var_200_con_motivo(ruta):
+    """R3 · Sin obra VAR no es un error: 200, `obra_var` nula, sin
+    partidas y el motivo."""
+    r = ruta(ClienteVar(var_existe=False)).post("/api/var/universo",
+                                                json={"empresa": 1})
+    assert r.status_code == 200, r.text
+    assert r.json()["obra_var"] is None and r.json()["partidas"] == []
+    assert "no encontrada" in r.json()["motivo"]
+
+
+@pytest.mark.parametrize("empresa", ["ausente", None, 0, -1])
+def test_f039_r4_sin_empresa_valida_422_sin_leer(ruta, empresa):
+    """R4 · Sin empresa válida: 422 `{"ok": false, "error": …}` y ninguna
+    lectura de Sigrid."""
+    cli = ClienteVar()
+    cuerpo = {} if empresa == "ausente" else {"empresa": empresa}
+    r = ruta(cli).post("/api/var/universo", json=cuerpo)
+    assert r.status_code == 422, r.text
+    assert r.json() == {"ok": False,
+                        "error": f"empresa no válida: {cuerpo.get('empresa')!r}"}
+    assert (cli.n_obra_por_codigo, cli.n_capitulos_de_obra) == (0, 0)
+
+
+def test_f039_r4_fallo_de_sigrid_502(ruta):
+    """R4 · Un fallo de lectura de Sigrid es un 502 con el error, nunca un
+    universo parcial."""
+    cli = ClienteVar()
+
+    def _roto(_obride):
+        raise RuntimeError("sigrid-api caído")
+
+    cli.capitulos_de_obra = _roto
+    r = ruta(cli).post("/api/var/universo", json={"empresa": 1})
+    assert r.status_code == 502, r.text
+    assert r.json() == {"ok": False, "error": "sigrid-api caído"}
