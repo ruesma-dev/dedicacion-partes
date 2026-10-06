@@ -161,7 +161,7 @@ def test_f039_r21_completar_hacia_la_entrada(con_entrada):
     resultados, _ = _completar(uow, [14], ENTRADA.ide)
     assert resultados == [_r(14, "COMPLETADO", "70.00")]
     assert [(ln.obra_ide, ln.porcentaje) for ln in uow.lineas[P_ACT][14]] == [
-        (100, Decimal("30")), (ENTRADA.ide, Decimal("70.00"))]
+        (100, Decimal(30)), (ENTRADA.ide, Decimal("70.00"))]
 
 
 def test_f039_r21_completar_en_postventa_hacia_la_entrada_no_vale(con_entrada):
@@ -188,7 +188,7 @@ def test_f039_r21_el_excel_lleva_el_codigo_de_la_entrada():
         trabajador=Trabajador(ide=10, cod="10", nombre="Ana", dni=None,
                               categoria="Encargado"),
         lineas=[Linea(obra_ide=ENTRADA.ide, es_postventa=False,
-                      porcentaje=Decimal("45.50"), cod=ENTRADA.cod,
+                      porcentaje=Decimal("45.5"), cod=ENTRADA.cod,
                       descripcion=ENTRADA.descripcion)])
     libro = load_workbook(io.BytesIO(OpenpyxlExcelExporter("Postv-").exportar(
         Periodo(anio=2026, mes=8), [fila])))

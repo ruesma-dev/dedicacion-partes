@@ -219,8 +219,8 @@ def test_f039_r1_la_obra_se_busca_con_el_codigo_del_ajuste():
     (lambda: ClienteVar(var_existe=False),
      f"obra VAR '{OBRA_VAR}' no encontrada en Sigrid en la empresa 1"),
     (lambda: ClienteVar(var_ambigua=True),
-     f"obra VAR '{OBRA_VAR}' ambigua en la empresa 1: obra {OBRA_VAR} "
-     f"ambigua: 2 fichas en la empresa 1"),
+     (f"obra VAR '{OBRA_VAR}' ambigua en la empresa 1: obra {OBRA_VAR} "
+      f"ambigua: 2 fichas en la empresa 1")),
 ], ids=["ausente", "ambigua"])
 def test_f039_r3_sin_obra_var_universo_vacio_con_su_motivo(cliente, motivo):
     """R3 · Obra VAR ausente o ambigua en la empresa: `obra_var` nula,
