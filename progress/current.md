@@ -22,7 +22,8 @@ a la espera solo de las MANUAL del humano; y F-041 tiene la spec aprobada en
   api 619 en verde (33 nuevos), ningún test anterior cambiado; cobertura 100 %;
   mutación en serie 20/20. **Review 1: CAMBIOS PEDIDOS** (un test que decía
   fijar el «sin -0» y no lo fijaba); ciclo 2 hecho (test reforzado con el XML,
-  mutante a mano muerto, `obra_ide` determinista). **Review 2 lanzada.**
+  mutante a mano muerto, `obra_ide` determinista). **Review 2: APROBADO.**
+  Para el `done` solo falta la M1 del humano.
 - **Para la M1 (observación de la review):** openpyxl enseña vacías las
   combinadas al releer; el XML sí las tiene: el humano lo mira en Excel.
 - **`azure-apps`: no cambia** (no describe el Excel; R21).
