@@ -11,7 +11,7 @@ Resumen: **38 features**, 19 abiertas, 19 terminadas.
 |---|---|---|---|---|---|
 | F-040 | El Excel de exportación como el modelo de Juan Romero (Detalle agrupado por trabajador y Resumen) | 1 | pendiente | estandar | `feature/F-040-excel-modelo-juan` |
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 2 | pendiente | estandar | `feature/F-038-pestana-analitica` |
-| F-041 | El filtro de obra casa con el texto tal como sale en la app (incluido Postv-) | 3 | pendiente | estandar | `feature/F-041-filtro-obra-postventa` |
+| F-041 | El filtro de obra casa con el texto tal como sale en la app (incluido Postv-) | 3 | spec lista | estandar | `feature/F-041-filtro-obra-postventa` |
 | F-039 | Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos | 4 | spec lista | critico | `feature/F-039-obras-var-y-seis-digitos` |
 | F-028 | Borrar todo lo que está en pantalla | 5 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 6 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
@@ -69,9 +69,9 @@ Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar e
 
 ### F-041 · El filtro de obra casa con el texto tal como sale en la app (incluido Postv-)
 
-estado **pendiente** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-041-filtro-obra-postventa`
+estado **spec lista** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-041-filtro-obra-postventa`
 
-Pedida por el humano el 2026-10-06: «al filtrar por obra no filtra bien postventa. Quiero filtrar todas las obras de postventa (es decir, empiezan por Postv-), y me gustaría que si pongo pos, y voy completando, filtre por texto incluido en el nombre de la obra tal cual sale en la app». Causa vista por el líder: el filtro de la columna de asignaciones (`trabajadoresVisibles` y `textoColumna` en services/dedicacion-front/static/js/app.js) compara con `l.cod` y `l.descripcion`, no con la etiqueta que pinta el chip (`Postv-0656 …`, y `VAR-29` cuando llegue F-039). Es presentación: solo front. 2026-10-06: el humano pide spec («lanza spec del filtro»): pasa a sdd.
+Pedida por el humano el 2026-10-06: «al filtrar por obra no filtra bien postventa. Quiero filtrar todas las obras de postventa (es decir, empiezan por Postv-), y me gustaría que si pongo pos, y voy completando, filtre por texto incluido en el nombre de la obra tal cual sale en la app». Causa vista por el líder: el filtro de la columna de asignaciones (`trabajadoresVisibles` y `textoColumna` en services/dedicacion-front/static/js/app.js) compara con `l.cod` y `l.descripcion`, no con la etiqueta que pinta el chip (`Postv-0656 …`, y `VAR-29` cuando llegue F-039). Es presentación: solo front. 2026-10-06: el humano pide spec («lanza spec del filtro»): pasa a sdd. 2026-10-06: SPEC en specs/F-041-filtro-obra-postventa/ (spec_ready). Causa comprobada en node: la columna ya casaba con Postv-; el que no es el buscador global, y la columna casaba a caballo entre chips. Decisiones abiertas D1-D4 en requirements.md §6 (recomendadas: A). Tests anteriores que cambian: ninguno (prototipo).
 
 ### F-039 · Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos
 
