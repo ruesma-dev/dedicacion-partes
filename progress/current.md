@@ -1,19 +1,27 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-039 en `spec_ready`** (obras VAR y de 6 dígitos, esperando decisiones), rama
+**F-039 en curso** (obras VAR y de 6 dígitos), rama
 `feature/F-039-obras-var-y-seis-digitos`. F-037 se cerró el 2026-10-06 y está en
 `dev` **pendiente de desplegar** (sección siguiente). F-029 se desplegó el
 2026-10-06 (resúmenes en `history.md`). El arnés es la **1.7.3**.
 
-## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (spec lista)
+## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (en curso)
 
 - **Pedida por el humano el 2026-10-06** (texto literal y datos leídos en
   Sigrid en la descripción de `features.json`). Primera del backlog.
 - **Spec entregada** (`a9056b4`): el transfer calcula el universo VAR
   (`POST /api/var/universo`) y valida la partida en el preflight; la api
   descarta las obras de 6 dígitos en el sync y guarda cada partida como
-  fila de `obra` (`VAR-29`). **Espera al humano con D1-D6** (requirements).
+  fila de `obra` (`VAR-29`). **Aprobada por el humano el 2026-10-06** (D1-D6;
+  D4 final: código que CONTENGA 6+ dígitos seguidos, 240 obras).
+  **Implementer lanzado** → `progress/impl_F-039.md`. En paralelo, por
+  decisión del humano, la spec de **F-040** en la copia de trabajo
+  `PycharmProjects/porcentajes-f040` (rama
+  `feature/F-040-excel-modelo-juan`; los `.venv` son uniones a los de aquí).
+- **Recopia de `partes` (2026-10-06):** su `e85ef0e` (cabecera de
+  dependencia, solo docstring) puso `dev` en rojo; recopiado y
+  `COMMIT_COPIADO` movido (`c906219`).
 - **Backlog reordenado por el humano el 2026-10-06:** F-040 (Excel como el
   modelo de Juan, absorbe F-020) primera, F-038 (cuadro de mando = el Excel
   navegable con filtros) segunda, F-039 tercera. No hay F-041.

@@ -5,13 +5,15 @@
 
 Resumen: **37 features**, 18 abiertas, 19 terminadas.
 
+En curso: **F-039**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-040 | El Excel de exportación como el modelo de Juan Romero (Detalle agrupado por trabajador y Resumen) | 1 | pendiente | estandar | `feature/F-040-excel-modelo-juan` |
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 2 | pendiente | estandar | `feature/F-038-pestana-analitica` |
-| F-039 | Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos | 3 | spec lista | critico | `feature/F-039-obras-var-y-seis-digitos` |
+| F-039 | Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos | 3 | en curso | critico | `feature/F-039-obras-var-y-seis-digitos` |
 | F-028 | Borrar todo lo que está en pantalla | 4 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 5 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 6 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
@@ -68,9 +70,9 @@ Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar e
 
 ### F-039 · Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos
 
-estado **spec lista** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-039-obras-var-y-seis-digitos`
+estado **en curso** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-039-obras-var-y-seis-digitos`
 
-Pedida por el humano el 2026-10-06: «añade como se ha hecho en postventa la obra de código VAR, hay que coger sus partidas, pero a partir de la que empieza por 29 (inclusive), si empieza por un número inferior no. Por otro lado las obras con código de 6 números juntos o más ignóralas». Datos leídos por el líder en Sigrid (solo lectura): la obra VAR «OBRAS VARIAS» de la empresa 1 (con.ide 683806, est 15) tiene bajo su capítulo CD (obrparpar 52979) 29 partidas hoja numeradas 01-29, cada una una obra pequeña (p. ej. 29 «ACOND. NAVE MODUL-A, ARROYOMOLINOS»); hoy solo entraría la 29. Hay otra VAR en la empresa 28 con una partida 28 (las obras son siempre de la empresa de las obras, F-034). Obras con 6+ dígitos seguidos en el código: 240 (239 de la empresa 1, 1 de la 25), todas antiguas (090201, 191105, 0902051…). Como en postventa (F-025), cada partida de VAR se ofrece como una entrada propia y registra en la obra VAR con esa partida. 2026-10-06: spec escrita (`specs/F-039-obras-var-y-seis-digitos/`), con D1-D6 pendientes del humano; lecturas del spec-author: VAR está EN CURSO (hoy se ofrece como obra normal), su centro tiene cuentas VAR.CIMO01-16, la partida 29 es la ide 417055 con 4 líneas de Administración en 2026-08, y de las 240 obras de 6+ dígitos ninguna tiene parte desde 2024 ni asignaciones en la base local.
+Pedida por el humano el 2026-10-06: «añade como se ha hecho en postventa la obra de código VAR, hay que coger sus partidas, pero a partir de la que empieza por 29 (inclusive), si empieza por un número inferior no. Por otro lado las obras con código de 6 números juntos o más ignóralas». Datos leídos por el líder en Sigrid (solo lectura): la obra VAR «OBRAS VARIAS» de la empresa 1 (con.ide 683806, est 15) tiene bajo su capítulo CD (obrparpar 52979) 29 partidas hoja numeradas 01-29, cada una una obra pequeña (p. ej. 29 «ACOND. NAVE MODUL-A, ARROYOMOLINOS»); hoy solo entraría la 29. Hay otra VAR en la empresa 28 con una partida 28 (las obras son siempre de la empresa de las obras, F-034). Obras con 6+ dígitos seguidos en el código: 240 (239 de la empresa 1, 1 de la 25), todas antiguas (090201, 191105, 0902051…). Como en postventa (F-025), cada partida de VAR se ofrece como una entrada propia y registra en la obra VAR con esa partida. 2026-10-06: spec escrita (`specs/F-039-obras-var-y-seis-digitos/`), con D1-D6 pendientes del humano; lecturas del spec-author: VAR está EN CURSO (hoy se ofrece como obra normal), su centro tiene cuentas VAR.CIMO01-16, la partida 29 es la ide 417055 con 4 líneas de Administración en 2026-08, y de las 240 obras de 6+ dígitos ninguna tiene parte desde 2024 ni asignaciones en la base local. 2026-10-06: spec APROBADA por el humano (D1-D6; D4 final: se ignora toda obra cuyo código contenga 6 o más dígitos seguidos, 240 obras). Pasa a implementación en paralelo con la spec de F-040 (worktree aparte), por decisión del humano.
 
 ### F-028 · Borrar todo lo que está en pantalla
 
