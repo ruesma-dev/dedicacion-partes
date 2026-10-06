@@ -389,3 +389,10 @@ def test_f037_r5_motivos_distintos_y_estables():
     c = resolver_cuenta("LAB", CUENTAS, "0404")
     with pytest.raises(dataclasses.FrozenInstanceError):
         c.caa_ide = 1  # type: ignore[misc]
+
+
+def test_f037_r3_el_origen_de_la_subcuenta_es_inmutable():
+    """T10 (campaña sin el test de copias): `OrigenSubcuenta` es un valor."""
+    o = origen_subcuenta(CON_CUENTA, HL, None)
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        o.sub = "OTRA"  # type: ignore[misc]
