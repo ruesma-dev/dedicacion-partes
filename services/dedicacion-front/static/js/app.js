@@ -1637,11 +1637,17 @@ function pintarModalPreflight(pf) {
     const filas = (o.acciones || []).map((a) => {
       const partidas = a.destino === "postventa" ? o.partidas_postventa
         : o.partidas_obra;
-      const sel = a.accion === "escribir"
-        ? `<select class="sel-partida" data-reg="${a.registro_id}">` +
-          `${opcionesPartida(partidas, a.paride)}</select>` +
-          (a.aviso ? `<div class="aviso">${escapeHtml(a.aviso)}</div>` : "")
-        : `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
+      const aviso = a.aviso ? `<div class="aviso">${escapeHtml(a.aviso)}</div>` : "";
+      let sel;
+      if (a.accion === "escribir" && a.partida_metodo === "var") {
+        // Partida VAR fija: la decide el transfer, no se edita (F-039).
+        sel = `<span class="partida-fija">${escapeHtml(a.partida_cod || "")}</span>` + aviso;
+      } else if (a.accion === "escribir") {
+        sel = `<select class="sel-partida" data-reg="${a.registro_id}">` +
+          `${opcionesPartida(partidas, a.paride)}</select>` + aviso;
+      } else {
+        sel = `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
+      }
       return `<tr><td>${escapeHtml(a.nombre || "")}</td>` +
         `<td>${a.destino === "postventa" ? "Postventa" : "Obra"}</td>` +
         `<td>${a.accion}</td>` +
