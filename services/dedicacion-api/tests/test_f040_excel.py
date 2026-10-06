@@ -16,6 +16,7 @@ vive en memoria.
 from __future__ import annotations
 
 import io
+import itertools
 import xml.etree.ElementTree as ET
 import zipfile
 from decimal import Decimal
@@ -49,8 +50,13 @@ def _trabajador(ide: int, nombre: str, categoria: str | None = "OFICIAL 1ª"):
                       categoria=categoria)
 
 
+#: `obra_ide` deterministas: el exportador no los usa, pero un `hash()`
+#: cambiaría de un proceso a otro.
+_OBRA_IDES = itertools.count(1)
+
+
 def _linea(cod: str, descripcion: str, pct: str, postventa: bool = False):
-    return Linea(obra_ide=hash((cod, postventa)) & 0xFFFF, es_postventa=postventa,
+    return Linea(obra_ide=next(_OBRA_IDES), es_postventa=postventa,
                  porcentaje=Decimal(pct), cod=cod, descripcion=descripcion)
 
 
@@ -420,9 +426,12 @@ def test_f040_r16_sin_formulas():
 def test_f040_r16_99996_sale_ok_y_desviacion_cero_en_el_libro():
     fila = _fila(7, "ZETA", _linea("0101", "A", "33.332"),
                  _linea("0102", "B", "33.332"), _linea("0103", "C", "33.332"))
-    det = _libro(_exportar([fila]))["Detalle"]
+    contenido = _exportar([fila])
+    det = _libro(contenido)["Detalle"]
     assert det["H3"].value == "OK"
     assert det["G3"].value == 0
+    # En el XML, «0» y no «-0»: vigila el `+ 0.0` de `_celda_pct`.
+    assert _xml_hoja(contenido, 1)[0]["G3"]["v"] == "0"
     assert det["F3"].value == pytest.approx(0.99996)
     assert det["F3"].number_format == "0.00%"
 

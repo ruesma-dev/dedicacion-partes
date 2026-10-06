@@ -47,18 +47,30 @@ transfer.
    `0105 Obra Ficticia Centro = 100%` y `FALTA 10%`.
 3. **Sin «-0» en el libro.** Con 99,996 la desviación del dominio es
    `Decimal("-0.00")`. `_celda_pct` suma `+ 0.0` para que la celda guarde 0 y
-   no -0. El test `test_f040_r16_99996_…` lo fija.
+   no -0. **Ciclo 2 (review 1):** antes ningún test lo vigilaba, porque
+   `load_workbook` lee -0 como 0. Ahora `test_f040_r16_99996_…` comprueba
+   también el XML: `_xml_hoja(contenido, 1)[0]["G3"]["v"] == "0"`. Prueba
+   hecha en una copia del servicio en el scratchpad, sin tocar el árbol, con
+   el mutante `float(valor) / 100 + 0.0` → `float(valor) / 100 - 0.0`:
+   `pytest tests/test_f040_excel.py -q -p no:cacheprovider`
+
+   ```
+   E       AssertionError: assert '-0' == '0'
+   E         - 0
+   E         + -0
+   FAILED tests/test_f040_excel.py::test_f040_r16_99996_sale_ok_y_desviacion_cero_en_el_libro
+   1 failed, 32 passed in 1.15s
+   ```
 4. **Desviación vacía en SIN CARGA (R9).** El grupo guarda `desviacion=None`
    y el estado sale de `texto_estado(estado, desviacion)` del dominio.
-5. **Desviaciones menores respecto a design §3.2:**
-   - `_rematar(hoja, anchos, ultima)` no recibe `columnas`, porque las saca
-     de `len(anchos)`.
-   - Hay un ayudante `_mes(periodo)` para el «Septiembre 2026» de los dos
-     títulos.
-
-   El comportamiento no cambia.
-6. **El Resumen no lleva relleno ni bordes en los datos.** R13 no los pide,
-   así que no se añaden.
+5. **Desviaciones menores respecto a design §3.2, sin cambio de
+   comportamiento:** `_rematar(hoja, anchos, ultima)` no recibe `columnas`
+   (salen de `len(anchos)`), y hay un ayudante `_mes(periodo)` para los dos
+   títulos.
+6. **El Resumen no lleva relleno ni bordes en los datos.** R13 no los pide.
+7. **Ciclo 2:** `_linea` de los tests usa `obra_ide` de un
+   `itertools.count(1)` en vez de `hash((cod, …))`, que cambiaba de un
+   proceso a otro. El exportador no lee `obra_ide`.
 
 ## 3. Tests anteriores cambiados
 
@@ -148,15 +160,8 @@ apagado, Excel repara sin preguntar). Eso queda para M1.
 
 **Muestra con datos inventados**, ya generada y lista para abrir:
 `C:\Users\pgris\AppData\Local\Temp\f040\f040_muestra.xlsx` (`$env:TEMP\f040\`).
-Tiene cinco trabajadores ficticios:
-
-- uno con 4 obras;
-- uno en FALTA;
-- uno con VAR-29 y Postv-0702 en EXCESO;
-- uno sin carga;
-- uno con una sola obra.
-
-Se regenera desde `services\dedicacion-api` con
+Tiene cinco trabajadores ficticios: uno con 4 obras, uno en FALTA, uno con
+VAR-29 y Postv-0702 en EXCESO, uno sin carga y uno con una sola obra. Se regenera desde `services\dedicacion-api` con
 `.\.venv\Scripts\python.exe $env:TEMP\f040\muestra_f040.py $env:TEMP\f040\f040_muestra.xlsx`.
 
 **El real, en local desde la app.** En PowerShell, con la BBDD local y un
@@ -172,28 +177,20 @@ start "$env:TEMP\f040.xlsx"
 
 También vale el botón «Exportar» del front local.
 
-Hay que recorrer los 7 puntos de design §6:
-
-1. Abre sin aviso de reparación.
-2. Filtrar por un Empleado saca todas sus filas.
-3. Filtrar por una Obra: cada fila visible enseña quién es y su Estado.
-4. Filtrar por Estado ≠ OK.
-5. Se ven las bandas y la línea gruesa entre trabajadores.
-6. El Resumen enseña «código nombre = NN%».
-7. La vista previa de impresión sale en horizontal, a una página de ancho y
-   con la cabecera repetida.
-
-Mirar también cómo se ve una combinada cuya primera fila oculta el filtro.
+Hay que recorrer los 7 puntos de design §6: (1) abre sin aviso de reparación;
+(2) filtrar por un Empleado saca todas sus filas; (3) filtrar por una Obra:
+cada fila visible enseña quién es y su Estado; (4) filtrar Estado ≠ OK;
+(5) bandas y línea gruesa entre trabajadores; (6) Resumen con «código nombre
+= NN%»; (7) vista previa en horizontal, a una página de ancho, con la
+cabecera repetida. Mirar también cómo se ve una combinada cuya primera fila oculta el filtro.
 El humano da el visto bueno a los colores, la línea y los anchos, y el
 resultado se anota en `progress/`.
 
 ## 7. Qué queda fuera y qué falta
 
-- **Fuera de alcance (lo dice la spec):**
-  - el nombre corto editable de la obra (D1-C);
-  - la hoja «Datos» plana (D5-B, irá en F-038 si hace falta);
-  - poder ordenar con «Ordenar» de Excel en el Detalle, que es el precio
-    asumido de D2 = A.
+- **Fuera de alcance (lo dice la spec):** el nombre corto editable de la
+  obra (D1-C); la hoja «Datos» plana (D5-B, irá en F-038 si hace falta); y
+  poder ordenar con «Ordenar» de Excel en el Detalle, el precio asumido de D2 = A.
 - **`azure-apps/` no cambia**, porque no describe el Excel (R21).
 - **Falta para cerrar:** M1 (humano), la review y el `done` del líder.
 - **Convivencia con F-039**, que también toca el export de VAR: la línea
@@ -205,8 +202,8 @@ resultado se anota en `progress/`.
 
 | Evidencia | Valor real |
 |---|---|
-| Tests de la api | **619 passed**, 1 warning, en 21.63 s (`bash harness/init.sh`, servicio api) |
-| Tests de la raíz | **418 passed, 1 skipped**, en 49.33 s |
+| Tests de la api | **619 passed**, 1 warning, en 36.85 s (`bash harness/init.sh`, servicio api, ciclo 2) |
+| Tests de la raíz | **418 passed, 1 skipped**, en 87.12 s |
 | Tests nuevos de F-040 | 33, en `tests/test_f040_excel.py` (~1 s) |
 | Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 132 líneas cambiadas cubiertas (132/132, umbral 80%, nivel estandar)` |
 | Mutación | `python -m harness.mutacion --feature F-040 --workers 1`. 77 generados, **20 evaluados (muestreo, semilla 20260820), 20 muertos, 0 supervivientes**, 0 timeouts, en 439.9 s. Detalle en `progress/mutacion_F-040.md` |
@@ -216,4 +213,7 @@ resultado se anota en `progress/`.
 La mutación se midió en `2b14802`. El commit siguiente (`94854d3`) solo
 reordena imports y cambia literales `Decimal("0")` por `Decimal(0)` (ruff), y
 no toca ninguna de las líneas mutadas. Sin supervivientes no hay análisis
-pendiente.
+pendiente. **Ciclo 2:** solo cambia `tests/test_f040_excel.py` y ningún
+fichero de producción, así que la campaña no se repite: sus mutantes y su
+veredicto siguen valiendo. La api pasa a 619 tests con una aserción más
+(§2.3).
