@@ -1811,3 +1811,12 @@ Sección retirada de `current.md`:
        complementario.
     Resultado: _pendiente_.
 
+
+## 2026-10-06 · Recopia de las copias de `partes` (e85ef0e)
+
+La F-031 de `partes` añadió a `estado_parte.py` y `cuenta_analitica.py` una
+cabecera de dependencia con porcentajes (su commit `e85ef0e`, «T28», solo
+docstring; su DA11, prevista en nuestro design §12: «texto, se recopia»).
+`test_f037_copias_partes.py::…ref_vigilada` lo detectó y dejó `dev` en rojo.
+Se recopiaron los dos ficheros y `COMMIT_COPIADO` pasa a `e85ef0e`; la regla
+no cambia. Suite del transfer en verde.
