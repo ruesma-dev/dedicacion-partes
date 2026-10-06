@@ -1,7 +1,7 @@
 <!-- specs/F-039-obras-var-y-seis-digitos/design.md -->
 # F-039 · Obras VAR por partidas y fuera las de 6 dígitos — diseño
 
-Requisitos: `requirements.md` (R1-R24, D1-D6 con la recomendada). Normativa:
+Requisitos: `requirements.md` (R1-R24; D1-D6 decididas por el humano el 2026-10-06). Normativa:
 `docs/ARCHITECTURE.md` (`#regla-p5`, `#regla-empresa`, `#regla-recurso`, `#regla-analitica`,
 `#regla-completar`), `docs/CONVENTIONS.md`. Patrón: F-025 (universo de postventa).
 
@@ -166,8 +166,8 @@ Contrato de línea api → transfer: gana `var_paride` opcional; nada más cambi
   instancia de `SettingsFalso`; obra VAR ausente y ambigua; `VAR_OBRA_COD` vacío sin lecturas;
   422/502 por `TestClient`; una carga por petición. **Cruce parametrizado**: «en el universo»
   ⇔ «el preflight la escribe con `partida_metodo = "var"`», en real y en pruebas.
-- API: `UniversoFalso.universo_var` configurable; sync y preview con obras `150414`, `160310 `,
-  `12345` (5 dígitos, se queda) y la VAR; 502 sin `commit`; ALTER derivado; `_payloads` con una
+- API: `UniversoFalso.universo_var` configurable; sync y preview con `150414`, `0902051`,
+  `090205A`, `150301-1` (caen), `12345` (se queda) y la VAR; 502 sin `commit`; ALTER derivado; `_payloads` con una
   entrada y una normal de la misma obra (una petición) y con override ignorado; `ofrecible`
   tras R11/R15; Completar y export con `VAR-29` (dobles existentes de F-029 y del exporter).
 - Front estático: rama `partida_metodo === "var"` y ningún literal `VAR`/`"29"` en `app.js`.

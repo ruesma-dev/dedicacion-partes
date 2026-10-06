@@ -67,7 +67,8 @@ R9. Una línea sin `var_paride` debe tratarse exactamente como hoy.
 
 R10. [D4] CUANDO se sincronizan los maestros o se pide el preview, el sistema debe descartar,
 antes de pedir ningún universo, toda obra cuyo código contenga N o más dígitos seguidos, con
-N = `sync.obras.digitos_seguidos_excluidos` de `config.yaml` (6; 0 = sin filtro).
+N = `sync.obras.digitos_seguidos_excluidos` de `config.yaml` (6; 0 = sin filtro), lleve o no
+letras o sufijo: `150414`, `0902051`, `090205A` y `150301-1` caen; `12345` y `VAR` no.
 
 R11. Una obra descartada por R10 no debe mandarse al universo de postventa ni guardarse; si ya
 estaba en la base, debe quedar con `activa` y `admite_postventa` a `false`.
@@ -124,24 +125,20 @@ R24. `docs/INTEGRACION.md` debe documentar el endpoint (§5), los ajustes del tr
 orden de despliegue transfer → api y lo que se rompe (§7); `azure-apps/dedicacion.md` se
 refresca (commit del humano).
 
-## Decisiones abiertas (las valida el humano; recomendación en negrita)
+## Decisiones (todas decididas por el humano el 2026-10-06: D4 con sus palabras, el resto «lo demás ok»)
 
-- **D1 · ¿VAR sigue como obra normal?** **A) No: solo sus entradas `VAR-NN` (R14).** Nadie
-  imputa M* a `CI.*` de VAR, y una línea normal caería por la cascada en `CI.1.x`. B) Sí, como
-  hoy, además de las entradas (fuera R14).
-- **D2 · Nombre de la entrada.** **A) Código `VAR-29`, descripción la de la partida**: se
-  encuentra por «29», «var» o el nombre, y el Excel dice `VAR-29`. B) Código `29` y
-  descripción `VAR · …`. C) `VAR29`.
-- **D3 · «Empieza por 29».** **A) Número inicial ≥ 29 (R2)**: deja entrar `29.1` si
-  Administración parte una obra. B) Solo códigos de dígitos con valor ≥ 29 (`29.1` fuera).
-  C) Texto ≥ `'29'`: descartada (`'3'` entraría y `'100'` no). El 29 es ajuste del transfer
-  (`VAR_PARTIDA_DESDE`), no constante.
-- **D4 · Excepciones a los 6 dígitos.** **A) Ninguna: fuera las 240.** Ojo: `240101`, `250801`
-  y `260901` son de 2024-2026 (EN ESTUDIO); si una se adjudica con ese código, no saldrá.
-  B) Lista blanca en `config.yaml`. C) Solo a las no EN CURSO.
-- **D5 · Líneas ya guardadas en obras que desaparecen.** **A) Se quedan marcadas (R19)**, como
-  en F-025; local: cero. B) Además el registro no las manda. C) Borrarlas: descartada.
-- **D6 · Cómo se guarda la entrada.** **A) Fila propia en `obra` (R13)**: solo `ADD COLUMN`;
-  cuadrante, Completar, copias, deshacer y Excel no cambian porque todo va por `obra_ide`.
-  B) `paride` en la clave de `asignacion`: migración a mano y tocar todo lo que usa
-  (`obra_ide`, `es_postventa`).
+- **D1 = A · VAR no se ofrece como obra normal**, solo sus entradas `VAR-NN` (R14): nadie
+  imputa M* a `CI.*` de VAR. Descartada B (seguir ofreciéndola, con cascada a `CI.1.x`).
+- **D2 = A · Entrada `VAR-29` con la descripción de la partida** (R13). Descartadas B (código
+  `29`, descripción `VAR · …`) y C (`VAR29`).
+- **D3 = A · «Empieza por 29» es número inicial ≥ 29** (R2; `29.1` entra). Descartadas B
+  (códigos numéricos con valor ≥ 29) y C (texto ≥ `'29'`: `'3'` entraría y `'100'` no). El 29 es
+  ajuste del transfer (`VAR_PARTIDA_DESDE`), no constante.
+- **D4 · Fuera toda obra cuyo código CONTENGA 6 o más dígitos seguidos** (R10): «si tienen 6
+  números seguidos también ignóralas». Solo numéricas (`090201`, `0902051`) y con letras o
+  sufijo (`090205A`, `150301-1`, `160304-LOCAL`): las 240, sin excepciones. Ojo: `240101`,
+  `250801` y `260901` son de 2024-2026 (EN ESTUDIO); si una se adjudica así, no saldrá.
+- **D5 = A · Las líneas ya guardadas en obras que desaparecen se quedan marcadas** (R19), como
+  en F-025; local: cero. Descartadas B (no mandarlas al registro) y C (borrarlas).
+- **D6 = A · La entrada es una fila propia de `obra`** (R13): solo `ADD COLUMN`. Descartada B
+  (`paride` en la clave de `asignacion`: migración a mano y tocar todo lo que usa `obra_ide`).
