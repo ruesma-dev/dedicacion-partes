@@ -1608,3 +1608,10 @@ Informes: `progress/impl_F-029.md`, `progress/review_F-029.md`,
   Mirar además (observación de la review 1): Ctrl/Shift+clic con el editor
   abierto repinta la tabla y el foco puede saltar. Resultado: _pendiente_.
 
+## 2026-10-06 · Despliegue de F-029
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo api,front` desde
+una copia de trabajo de `dev` (`porcentajes-despliegue`, para no subir F-037,
+en curso en su rama): `api:r20261006-1140`, `front:r20261006-1141`; transfer
+sin cambios (`r20261003-1444`, modo real). Sin DDL ni sync. `azure-apps`
+actualizado en el mismo trabajo.

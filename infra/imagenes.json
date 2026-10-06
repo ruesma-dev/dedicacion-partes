@@ -11,15 +11,15 @@
                                               },
                       "dedicacion-api":  {
                                              "repositorio":  "dedicacion-api",
-                                             "tag":  "r20261005-0915",
-                                             "publicado":  "2026-10-05T09:15:16",
+                                             "tag":  "r20261006-1140",
+                                             "publicado":  "2026-10-06T11:40:22",
                                              "nota":  "Publicado por build_images_dedicacion.ps1.",
                                              "digest":  "sha256:d5b4a18a32c260e7aeb6eafc1b19d66aba789f2ea4a09e2cee02ab6983edb84e"
                                          },
                       "dedicacion-front":  {
                                                "repositorio":  "dedicacion-front",
-                                               "tag":  "r20261003-1447",
-                                               "publicado":  "2026-10-03T14:47:25",
+                                               "tag":  "r20261006-1141",
+                                               "publicado":  "2026-10-06T11:41:47",
                                                "nota":  "Publicado por build_images_dedicacion.ps1.",
                                                "digest":  "sha256:abd1b6f40e802b112a5d3a1ce2e580ba6bb4fc1149d895050adba72129cec8f3"
                                            }

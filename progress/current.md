@@ -1,20 +1,16 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-029 se cerró el 2026-10-05 y está en
-`dev` **pendiente de desplegar** (sección siguiente). F-027 se desplegó el
-2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
-
-## ⚠ Despliegue de F-029 (pendiente; lo lanza el humano)
-
-- Cambian la **api** y el **front** (`redeploy_dedicacion.ps1 -Solo api,front`,
-  que respeta el orden api → front); sin DDL (`evento.tipo` es texto) ni sync.
-- **Comprobación tras desplegar:** en producción, seleccionar con Ctrl+clic a
-  un trabajador en FALTA, pulsar C, confirmar la obra y ver que queda al
-  100 %; Ctrl+Z lo devuelve. No hace falta registrar en Sigrid.
+**Ninguna feature en ejecución en `dev`** (F-037 está en curso en su rama).
+F-029 se cerró el 2026-10-05 y se **desplegó el 2026-10-06**; F-027 se
+desplegó el 2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-06: F-029** (api `r20261006-1140`, front
+  `r20261006-1141`): selección múltiple con Ctrl/Shift y «Completar al
+  100 %» (tecla C). **Comprobación pendiente:** un trabajador en FALTA,
+  Ctrl+clic, C, confirmar la obra → 100 %; Ctrl+Z lo devuelve.
 - **Desplegado el 2026-10-05: F-027** (solo la api, `r20261005-0915`): cada
   usuario solo deshace lo suyo. **Comprobación pendiente, con dos personas
   (A y B) en el mismo mes y trabajador:** A guarda → B no ve el botón y su
