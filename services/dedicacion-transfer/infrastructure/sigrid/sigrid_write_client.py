@@ -8,11 +8,23 @@ Modelo del parte de trabajo (confirmado contra datos reales, 25/07/2026):
            reside=0 (es parte de obra, no de recurso).
   hmores : hmoide, reside, cenide, obride, paride, pos (de 64 en 64), fec,
            horide, can, pre, tot, ano, mes, fac=0, ortide=0 (NOT NULL sin
-           default), caaide=0, tex, synckey (clave de idempotencia).
+           default), caaide, tex, synckey (clave de idempotencia).
 
 Particular de PORCENTAJES: fec = último día del mes, horide = código M*
 del recurso, can = porcentaje sobre 1, pre = importe mensual (reshor),
 synckey con prefijo propio para no cruzarse con los partes diarios.
+
+F-037 (ARCHITECTURE.md#regla-analitica, copia de la F-031 de `partes`):
+`hmores.caaide` es la cuenta analítica de la línea, resuelta en el pipeline
+y recibida como parámetro (0 = sin cuenta). `horas_de_recursos` trae la
+plantilla del recurso (`reshor.caaide`) y si el tipo es el de por defecto,
+`cuentas_de_centro` las cuentas candidatas del centro de la obra,
+`partidas_de_lineas` la cuenta de cada partida (respaldo) y
+`partes_del_periodo` TODOS los partes de obra y mes con su estado
+(`con.est`), para no escribir nunca en uno cerrado. Una lectura con
+``truncated: true`` es una excepción: nunca se decide con filas parciales.
+Ninguna sentencia toca asientos (`asi`, `asa`, `apu`, `apa`) ni cambia el
+estado de un parte: el asiento analítico lo genera Sigrid al contabilizar.
 """
 from __future__ import annotations
 
@@ -22,9 +34,11 @@ from typing import Any, Iterable
 
 import httpx
 
+from application.services.cuenta_analitica import indexar_cuentas
 from domain.errores import ObraAmbigua
 from domain.models.registro_models import (
-    HoraRecurso, LineaSigrid, ObraEntrada, ParteDestino,
+    HoraRecurso, LineaSigrid, ObraEntrada, ParteDestino, ParteSigrid,
+    PartidaCuenta,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,6 +86,9 @@ class SigridWriteClient:
         body = r.json()
         if not body.get("ok"):
             raise RuntimeError(f"sigrid-api read ok=false: {str(body)[:400]}")
+        if body.get("truncated"):
+            # F-037 (R7, R16): nunca se decide con filas parciales.
+            raise RuntimeError("sigrid-api devolvio una respuesta truncada")
         cols = [c.lower() for c in body["columns"]]
         return [dict(zip(cols, row)) for row in body["rows"]]
 
@@ -162,23 +179,97 @@ class SigridWriteClient:
         if not ides:
             return {}
         marcas = ",".join("?" for _ in ides)
+        # F-037 (R2, la de `partes` F-021): en la MISMA consulta, el código
+        # de la cuenta de la ficha (`reshor.caaide`, 0 = ninguna) y si es el
+        # tipo por defecto del recurso (`res.horide`).
         filas = self._read(
             "SELECT reshor.reside AS reside, reshor.horide AS horide, "
-            "auxhor.cod AS cod, auxhor.res AS res, reshor.pre AS pre "
+            "auxhor.cod AS cod, auxhor.res AS res, reshor.pre AS pre, "
+            "cc.cod AS caacod, "
+            "CASE WHEN reshor.horide = res.horide THEN 1 ELSE 0 END "
+            "AS defecto "
             "FROM reshor JOIN auxhor ON auxhor.ide = reshor.horide "
+            "LEFT JOIN res ON res.ide = reshor.reside "
+            "LEFT JOIN con cc ON cc.ide = reshor.caaide "
+            "AND ISNULL(reshor.caaide, 0) <> 0 "
             f"WHERE reshor.reside IN ({marcas}) "
             "ORDER BY reshor.reside, auxhor.cod", ides)
         out: dict[int, list[HoraRecurso]] = {}
         for f in filas:
             out.setdefault(int(f["reside"]), []).append(HoraRecurso(
                 horide=int(f["horide"]), cod=(f["cod"] or "").strip(),
-                res=f["res"], pre=float(f["pre"] or 0.0)))
+                res=f["res"], pre=float(f["pre"] or 0.0),
+                caa_cod=(f["caacod"] or "").strip() or None,
+                defecto=bool(f["defecto"])))
         return out
+
+    def cuentas_de_centro(
+        self, cenide: int, empresa: int, subcuentas: Iterable[str | None]
+    ) -> dict[str, list[tuple[int, str]]]:
+        """Cuentas analíticas del centro, de esa empresa, con esas
+        subcuentas (F-037 R4): UNA lectura, agrupada por subcuenta.
+
+        El filtro SQL solo acota; la agrupación la rehace `indexar_cuentas`
+        con la misma `subcuenta()` del origen. Un fallo o un `truncated`
+        sube como excepción (R7)."""
+        subs = sorted({s for s in subcuentas if s})
+        if not subs:
+            return {}
+        marcas = ",".join("?" for _ in subs)
+        filas = self._read(
+            "SELECT a.ide AS caaide, c.cod AS cod FROM caa a "
+            "JOIN con c ON c.ide = a.ide WHERE a.cenide = ? AND c.emp = ? "
+            "AND LTRIM(RTRIM(SUBSTRING(c.cod, CHARINDEX('.', c.cod) + 1, "
+            f"24))) IN ({marcas})", [int(cenide), int(empresa)] + subs)
+        return indexar_cuentas((f["caaide"], f["cod"]) for f in filas)
+
+    def partidas_de_lineas(
+        self, parides: Iterable[int | None]
+    ) -> dict[int, PartidaCuenta]:
+        """F-037 (R3, R7): partida -> su cuenta analítica
+        (`obrparpar.caaide`, 0 = ninguna), en UNA lectura. Sin partidas no
+        se lee."""
+        ides = sorted({int(i) for i in parides if i})
+        if not ides:
+            return {}
+        marcas = ",".join("?" for _ in ides)
+        filas = self._read(
+            "SELECT p.ide AS ide, p.cod AS cod, pc.cod AS caacod "
+            "FROM obrparpar p LEFT JOIN con pc ON pc.ide = p.caaide "
+            "AND ISNULL(p.caaide, 0) <> 0 "
+            f"WHERE p.ide IN ({marcas})", ides)
+        out: dict[int, PartidaCuenta] = {}
+        for f in filas:
+            ide = int(f["ide"])
+            out[ide] = PartidaCuenta(
+                ide=ide, cod=(f["cod"] or "").strip() or None,
+                caa_cod=(f["caacod"] or "").strip() or None)
+        return out
+
+    def partes_del_periodo(self, obra_ide: int, ano: int,
+                           mes: int) -> list[ParteSigrid]:
+        """F-037 (R9): TODOS los partes de obra (sin recurso) y mes, con su
+        estado, por `ide` descendente. UNA lectura; un `truncated` sube como
+        excepción (R16)."""
+        filas = self._read(
+            "SELECT hmo.ide AS ide, con.cod AS cod, con.est AS est FROM hmo "
+            "JOIN con ON con.ide = hmo.ide "
+            "WHERE hmo.obride = ? AND hmo.ano = ? AND hmo.mes = ? "
+            "AND ISNULL(hmo.reside, 0) = 0 AND con.tip = ? "
+            "ORDER BY hmo.ide DESC",
+            [int(obra_ide), int(ano), int(mes), self._tip])
+        return [ParteSigrid(ide=int(f["ide"]), cod=f["cod"],
+                            est=None if f["est"] is None else int(f["est"]))
+                for f in filas]
 
     def partes_existentes(
         self, obra_ide: int, periodos: Iterable[tuple[int, int]]
     ) -> dict[tuple[int, int], ParteDestino]:
-        """Parte (hmo) de obra+mes SIN recurso (el parte de obra)."""
+        """Parte (hmo) de obra+mes SIN recurso (el parte de obra).
+
+        Desde F-037 el pipeline NO la usa (elige con `partes_del_periodo`,
+        que mira el estado); solo la fase `estado`, de solo lectura, del
+        script manual `prueba_escritura_porcentajes.py`."""
         out: dict[tuple[int, int], ParteDestino] = {}
         for ano, mes in sorted(set(periodos)):
             filas = self._read(
@@ -310,23 +401,24 @@ class SigridWriteClient:
         self, *, hmoide: int, obra: ObraEntrada, reside: int, pos: int,
         fecha_int: int, horide: int, can: float, pre: float,
         ano: int, mes: int, synckey: str, tex: str | None,
-        paride: int = 0,
+        paride: int = 0, caaide: int = 0,
     ) -> dict:
-        """Línea porcentual: can = % sobre 1. paride = capítulo (solo
-        postventa); caaide a 0 (pendiente de confirmar con 'inspeccionar'
-        si Sigrid lo exige)."""
+        """Línea porcentual: can = % sobre 1. paride = partida de
+        imputación; caaide = cuenta analítica resuelta en el pipeline
+        (F-037 R1; 0 = sin cuenta)."""
         cenide = int(getattr(obra, "cenide", 0) or 0)
         return {"sql": (
             "INSERT INTO hmores (ide, hmoide, reside, cenide, obride, paride, "
             "pos, fec, horide, can, pre, tot, ano, mes, fac, ortide, caaide, "
             "tex, synckey) SELECT ISNULL(MAX(ide),0)+1, ?, ?, ?, ?, ?, ?, ?, "
-            "?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ? "
+            "?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ? "
             "FROM hmores WITH (UPDLOCK, HOLDLOCK)"),
             "parameters": [int(hmoide), int(reside), cenide, int(obra.ide),
                            int(paride or 0), int(pos), int(fecha_int),
                            int(horide), round(float(can), 4), float(pre),
                            round(float(can) * float(pre), 2), int(ano),
-                           int(mes), (tex or ""), synckey]}
+                           int(mes), int(caaide or 0), (tex or ""),
+                           synckey]}
 
     @staticmethod
     def stmt_borrar_linea(ide: int) -> dict:
