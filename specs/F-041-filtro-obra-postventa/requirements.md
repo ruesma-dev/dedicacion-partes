@@ -92,28 +92,24 @@ descripción es la que enseñan el `title` del chip y el autocompletado).
   casar por `var`, `var-2`, `29` o su descripción, sin que `app.js` contenga
   ningún literal `VAR` ni ninguna rama por prefijo de código.
 
-## 6. Decisiones abiertas para el humano
+## 6. Decisiones (decididas por el humano el 2026-10-06: D1-D4 = A)
 
-- **D1 · El alias «postventa».** Hoy el autocompletado encuentra una `Postv-`
-  escribiendo `postventa`; la columna y el buscador, no.
-  **A (recomendada)**: fuera; solo casa el texto que se ve (`pos`, `postv`,
-  `postv-0656` siguen valiendo; `postve…` deja de valer). Es lo que pide el
-  humano («tal cual sale en la app») y deja una sola regla.
-  B: mantener `postventa` como alias en los tres sitios (un texto oculto más).
-- **D2 · Casar por línea o sobre todas juntas.** **A (recomendada)**: por
-  línea (R4); evita que `naves postv` case con dos chips distintos y deja lista
-  la pieza que F-021 necesitará para saber qué chip casa. B: como hoy, juntas.
-- **D3 · Ocultar los chips que no casan (F-021).** **A (recomendada)**: fuera de
-  F-041. F-021 tiene abiertas cosas que no son de esta feature (qué pasa con el
-  total y el estado si se ocultan chips; la selección por Sesame). F-041 deja
-  hecho el criterio por línea (D2) que F-021 reutilizará. B: meter aquí solo
-  el ocultado, adelantando el debate de total/estado.
-- **D4 · Tests de lógica en node.** **A (recomendada)**: además de los
-  estáticos, tests que ejecutan las funciones reales de `app.js` en `node`
-  (instalado en la máquina de desarrollo, v24) con datos de prueba; si `node`
-  no está, el test se salta **con su motivo** y el reviewer exige verlos
-  pasar. Es la única forma de fijar R5 (acotar letra a letra) y R11.
-  B: solo estáticos (patrón de F-025/F-029), sin prueba de comportamiento.
+- **D1 · El alias «postventa» = A: fuera.** Solo casa el texto que se ve
+  (`pos`, `postv`, `postv-0656` valen; `postve…` deja de valer, también en el
+  autocompletado, que hoy sí la encontraba). Una sola regla, «tal cual sale en
+  la app». Descartada B: mantener `postventa` como alias oculto en los tres sitios.
+- **D2 · Casar por línea = A** (R4): `naves postv` ya no casa con dos chips
+  distintos, y queda lista la pieza que F-021 usará para saber qué chip casa.
+  Descartada B: casar sobre todas las líneas juntas, como antes.
+- **D3 · Ocultar los chips que no casan = A: fuera de F-041**, sigue en F-021,
+  donde están las cuestiones que no son de esta feature (total y estado con
+  chips ocultos; selección por Sesame); F-021 reutilizará el criterio por línea
+  (D2). Descartada B: meter aquí el ocultado y adelantar ese debate.
+- **D4 · Tests de lógica en node = A**: además de los estáticos, tests que
+  ejecutan las funciones reales de `app.js` en `node` (v24 en la máquina de
+  desarrollo) con datos de prueba; sin `node`, el test se salta **con su
+  motivo** y el reviewer exige verlos `passed`. Fijan R5 (acotar letra a letra)
+  y R11. Descartada B: solo estáticos (patrón de F-025/F-029).
 
 ## 7. Tests anteriores que cambian (lista CERRADA)
 
@@ -124,5 +120,5 @@ front `53 passed` y `services/dedicacion-transfer/tests/test_f013_sin_partida.py
 ## 8. Verificación manual (humano, en local)
 
 En tasks.md, T6: front de la rama contra la api local, `pos` → `postv-0656`
-en la columna y en el buscador, `postventa` (según D1), `naves postv`, Completar
+en la columna y en el buscador, `postventa` no filtra (D1), `naves postv`, Completar
 al 100 % precargado con `postv` y sin filtro igual que hoy.

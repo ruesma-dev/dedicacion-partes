@@ -1,7 +1,7 @@
 <!-- specs/F-041-filtro-obra-postventa/tasks.md -->
 # F-041 · Tareas
 
-Rama `feature/F-041-filtro-obra-postventa`, en la copia `C:\Users\pgris\PycharmProjects\porcentajes-f041`. Un commit por tarea (`F-041 Tn: …`). Rigor estándar: tests primero (traza RED en `progress/impl_F-041.md`), nombres `test_f041_rN_…`, sin red ni BBDD. Tests del front desde `services/dedicacion-front` con `.venv/Scripts/python -m pytest tests -q`. Tests anteriores que cambian: NINGUNO (requirements §7); si falla otro, PARA y avisa. Las tareas asumen D1-D4 = A; si el humano elige otra, el spec-author ajusta antes.
+Rama `feature/F-041-filtro-obra-postventa`, en la copia `C:\Users\pgris\PycharmProjects\porcentajes-f041`. Un commit por tarea (`F-041 Tn: …`). Rigor estándar: tests primero (traza RED en `progress/impl_F-041.md`), nombres `test_f041_rN_…`, sin red ni BBDD. Tests del front desde `services/dedicacion-front` con `.venv/Scripts/python -m pytest tests -q`. Tests anteriores que cambian: NINGUNO (requirements §7); si falla otro, PARA y avisa. D1-D4 = A, decididas por el humano el 2026-10-06 (requirements §6).
 
 - [ ] T1: Tests estáticos y de lógica en node de design §6 en `services/dedicacion-front/tests/test_f041_filtro_obra.py` (ayudante `_node` con skip si no hay `node`); fase RED anotada  |  Verificación: `python -m pytest tests/test_f041_filtro_obra.py -q -rs` en rojo por las funciones que faltan, sin ningún `skipped`
 - [ ] T2: `app.js`: `etiquetaObra`, `textoObra` y `lineaCasa` tras `normalizar` (R1, R2; design §3)  |  Verificación: `node --check static/js/app.js` y `python -m pytest tests/test_f041_filtro_obra.py -q -rs -k "r1 or r2"`

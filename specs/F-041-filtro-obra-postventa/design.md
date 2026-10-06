@@ -70,9 +70,8 @@ es la pieza que F-021 usará para decidir qué chip se ve.
      `clave: normalizar(textoObra(o.cod, o.descripcion, false))`;
    - postventa: `cod: etiquetaObra(o.cod, true)`,
      `clave: normalizar(textoObra(o.cod, o.descripcion, true))`.
-   Desaparece el alias `"postv postventa postv-" + o.cod + " " + o.cod` (D1 = A).
-   Con D1 = B, el alias `postventa` iría **dentro de `textoObra`** (los tres
-   sitios a la vez), nunca solo en el catálogo.
+   Desaparece el alias `"postv postventa postv-" + o.cod + " " + o.cod`
+   (D1 = A, decidido por el humano el 2026-10-06).
 2. **`textoColumna`**: se borra su rama `asignaciones` (con el alias
    `"postv postv-"`); las de `nombre`, `categoria` y `total` no cambian.
 3. **`trabajadoresVisibles`**, bucle de filtros por columna (R4, R8):
@@ -84,8 +83,7 @@ es la pieza que F-021 usará para decidir qué chip se ve.
      : normalizar(textoColumna(t, clave)).includes(filtro);
    if (!casa) return false;
    ```
-   (Con D2 = B: casar `normalizar(t.lineas.map((l) => textoObra(l.cod,
-   l.descripcion, l.es_postventa)).join(" "))`, sin `some`.)
+   (D2 = A, decidido por el humano el 2026-10-06; descartado casar todas juntas.)
 4. **`trabajadoresVisibles`**, buscador global (R9): en el `pajar`, las líneas
    pasan de `l.cod + " " + l.descripcion` a
    `textoObra(l.cod, l.descripcion, l.es_postventa)`. Resto igual.
@@ -127,13 +125,13 @@ Nombres `test_f041_rN_…`. Sin red ni BBDD. Dos familias:
   `construirCatalogoObras` llaman a `etiquetaObra`.
 - R4/R9/R10: `trabajadoresVisibles` usa `lineaCasa` y `textoObra`;
   `construirCatalogoObras` usa `textoObra`; `textoColumna` ya no tiene la rama
-  `asignaciones`; ni `"postv postv-"` ni (D1 = A) `postventa` en minúsculas
+  `asignaciones`; ni `"postv postv-"` ni (D1) `postventa` en minúsculas
   dentro de una clave.
 - R12: `candidatasDestino` sin cambios (las aserciones de `test_f029_r10_*`
   ya lo fijan; no se duplican).
 - R13: ni `"VAR` ni `'VAR` en `app.js`; `etiquetaObra` sin más ramas que `esPostventa`.
 
-**Lógica en node** (D4 = A). Un ayudante `_node(funciones, cuerpo) -> object`:
+**Lógica en node** (D4 = A, decidido por el humano el 2026-10-06). Un ayudante `_node(funciones, cuerpo) -> object`:
 1. extrae con `_funcion` el código real de `normalizar`, `etiquetaObra`,
    `textoObra`, `lineaCasa`, `fmtPct`, `textoColumna`, `trabajadoresVisibles`,
    `construirCatalogoObras` y `candidatasDestino` (ninguna toca el DOM);
@@ -156,8 +154,8 @@ Casos (filas visibles por nombre):
   `Postv-0656` → Ana, Carla; y cada prefijo ⊆ el anterior.
 - R6: `POSTV-0656 Edif` → Ana, Carla; `depósito` = `DEPOSITO` → Benito.
 - R7: `0656` → Ana, Carla, Dani; `0656 edif` → Ana, Carla, Dani.
-- D2 = A: `naves postv` → nadie (hoy: Carla).
-- D1 = A: `postventa` → nadie en la columna y ninguna candidata.
+- D2: `naves postv` → nadie (hoy: Carla).
+- D1: `postventa` → nadie en la columna y ninguna candidata.
 - R8: sin filtro → todos menos Gil, por nombre (`orden = {campo: "nombre",
   dir: 1}`), que es lo que da el `app.js` de hoy con esos datos.
 - R9: buscador `postv` → Ana, Carla; `beni` → Benito; `naves postv` → Carla.
@@ -171,7 +169,7 @@ Casos (filas visibles por nombre):
 ## 7. Prototipo y riesgos
 
 **Prototipo** (desechable, aplicado sobre la rama y revertido con
-`git checkout`): §3 + §4 con D1 = A y D2 = A. `node --check` OK; front
+`git checkout`): §3 + §4 tal cual (D1 = A y D2 = A). `node --check` OK; front
 `53 passed`; transfer `test_f013_sin_partida.py` `44 passed`; en node, todos
 los casos de §6 dan lo esperado. Por eso la lista de tests que cambian es
 **ninguno**.
@@ -192,7 +190,7 @@ juzga el reviewer).
 - *Merge con F-039* (en paralelo): F-039 toca `pintarModalPreflight` y añade
   `test_f039_partida_fija.py`; F-041 toca otras seis funciones. Sin solape
   previsto. Quien entre segundo pasa la suite del front completa.
-- *D1 = A quita `postventa` del autocompletado*: quien la busque así tendrá que
-  escribir `postv`. Lo decide el humano.
+- *D1 quita `postventa` del autocompletado*: quien la busque así tendrá que
+  escribir `postv`. Aceptado por el humano el 2026-10-06.
 - *Rendimiento*: `lineaCasa` normaliza cada línea en cada pulsación, como hoy
   hacía `textoColumna` con todas juntas; mismo orden de coste (cientos de filas).
