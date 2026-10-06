@@ -340,3 +340,262 @@ def test_f037_r11_el_codigo_propuesto_es_el_de_la_empresa_de_la_obra():
     pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
     assert cli.de("siguiente") == [(2026, 28)]
     assert pf.partes[0].cod == "PT26/00350"
+
+
+# ======================= R9-R11, R15 · el parte ======================= #
+
+PT_REG7 = ParteSigrid(7, "PT26/00007", REG)
+PT_REG5 = ParteSigrid(5, "PT26/00005", REG)
+PT_CER9 = ParteSigrid(9, "PT26/00009", CER)
+PT_IMP4 = ParteSigrid(4, "PT26/00004", IMP)
+
+
+def test_f037_r9_una_lectura_de_partes_por_destino_y_periodo():
+    cli = ClienteF037()
+    _pl(cli).preflight(obra=OBRA, lineas=[
+        linea(registro_id=1), linea(registro_id=2, recurso_ide=400),
+        linea(registro_id=3, mes=8), linea(registro_id=4, recurso_ide=100)])
+    assert cli.de("partes") == [(828942, 2026, 7), (828942, 2026, 8)]
+
+
+def test_f037_r9_sin_acciones_escribir_no_se_leen_partes():
+    cli = ClienteF037()
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea(recurso_ide=100)])
+    assert cli.de("partes") == [] and pf.partes == []
+
+
+def test_f037_r10_r15_en_registro_aunque_haya_un_cerrado_de_ide_mayor():
+    cli = ClienteF037(periodo=[PT_CER9, PT_REG7],
+                      lineas_por_parte={})
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
+    (p,) = pf.partes
+    aviso = ("el parte PT26/00009 (Cerrado) de 07/2026 esta cerrado: las "
+             "lineas van al parte complementario PT26/00007 (ya existe, en "
+             "registro)")
+    assert (p.existe, p.ide, p.cod, p.estado, p.complementario, p.cerrados,
+            p.del_periodo, p.aviso, p.obra_cod) == (
+        True, 7, "PT26/00007", REG, True, ["PT26/00009"],
+        [PT_CER9, PT_REG7], aviso, "0404")
+    assert pf.acciones[0].aviso == aviso            # R6: se suma
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert [i["hmoide"] for i in cli.inserts()] == [7]
+    assert [s for s in cli.escritos if s["sql"] == "crear"] == []
+    assert res.partes[0].aviso == aviso
+
+
+def test_f037_r10_el_complementario_que_creo_partes_se_reutiliza():
+    cli = ClienteF037(periodo=[ParteSigrid(11, "PT26/00350", REG), PT_IMP4],
+                      lineas_por_parte={})
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert [i["hmoide"] for i in cli.inserts()] == [11]
+    assert res.partes[0].complementario and not res.partes[0].creado
+    assert cli.de("siguiente") == []
+
+
+def test_f037_r10_r11_todos_cerrados_crea_el_complementario_parte_obra():
+    nuevo = ParteSigrid(950, "PT26/00350", REG)
+    cli = ClienteF037(periodo=[PT_IMP4], lineas_por_parte={},
+                      tras_crear=[[nuevo, PT_IMP4]])
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
+    aviso = ("el parte PT26/00004 (Imputado) de 07/2026 esta cerrado: las "
+             "lineas van al parte complementario PT26/00350 (se creara)")
+    (p,) = pf.partes
+    assert (p.existe, p.cod, p.complementario, p.aviso) == (
+        False, "PT26/00350", True, aviso)
+    cli.cods = iter(["PT26/00350"])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    [crear] = [s["parameters"] for s in cli.escritos if s["sql"] == "crear"]
+    assert crear["desc"] == "Parte PRUEBAS (PRUEBA-PORC)"       # D13
+    assert (crear["cod"], crear["obra"], crear["ano"], crear["mes"]) == (
+        "PT26/00350", cli.obra, 2026, 7)
+    assert [i["hmoide"] for i in cli.inserts()] == [950]
+    assert (res.partes[0].ide, res.partes[0].creado) == (950, True)
+
+
+def test_f037_r11_d13_en_modo_normal_la_descripcion_es_parte_obra():
+    cli = ClienteF037(periodo=[], tras_crear=[[ParteSigrid(950, "PT26/00350",
+                                                           REG)]])
+    _pl(cli, forzar=False).ejecutar(obra=OBRA, lineas=[linea()])
+    [crear] = [s["parameters"] for s in cli.escritos if s["sql"] == "crear"]
+    assert crear["desc"] == "Parte 15 VIVIENDAS"
+    assert crear["obra"] is cli.obra_origen
+
+
+def test_f037_r10_sin_partes_del_periodo_parte_nuevo_sin_aviso():
+    cli = ClienteF037(periodo=[])
+    (p,) = _pl(cli).preflight(obra=OBRA, lineas=[linea()]).partes
+    assert (p.existe, p.complementario, p.aviso, p.cod) == (
+        False, False, None, "PT26/00350")
+    assert cli.de("lineas") == []           # nada que mirar
+
+
+def test_f037_d17_si_otro_servicio_creo_el_parte_a_la_vez_se_usa_el_suyo():
+    suyo = ParteSigrid(951, "PT26/00360", REG)
+    cli = ClienteF037(periodo=[], tras_crear=[[suyo]])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert [i["hmoide"] for i in cli.inserts()] == [951]
+    assert (res.partes[0].cod, res.partes[0].creado) == ("PT26/00360", False)
+    assert len([s for s in cli.escritos if s["sql"] == "crear"]) == 1
+
+
+def test_f037_r11_d17_codigo_ocupado_reintenta_una_vez_con_otro_codigo():
+    nuevo = ParteSigrid(952, "PT26/00351", REG)
+    cli = ClienteF037(periodo=[PT_IMP4], lineas_por_parte={},
+                      tras_crear=[[PT_IMP4], [nuevo, PT_IMP4]])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    crear = [s["parameters"]["cod"] for s in cli.escritos
+             if s["sql"] == "crear"]
+    assert crear == ["PT26/00350", "PT26/00351"]
+    assert cli.de("siguiente") == [(2026, 1), (2026, 1)]
+    assert [i["hmoide"] for i in cli.inserts()] == [952]
+    assert res.partes[0].creado is True
+
+
+def test_f037_r11_d17_sin_parte_en_registro_tras_reintentar_falla_sin_lineas():
+    cli = ClienteF037(periodo=[PT_IMP4], lineas_por_parte={},
+                      tras_crear=[[PT_IMP4], [PT_IMP4], [PT_IMP4]])
+    with pytest.raises(RuntimeError, match="no se pudo crear el parte"):
+        _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert len([s for s in cli.escritos if s["sql"] == "crear"]) == 2
+    assert len(cli.de("siguiente")) == 2        # preflight + UN reintento
+    assert cli.inserts() == [] and cli.borrados() == []
+
+
+# ================== R12-R14, R17 · todos los partes del periodo ================== #
+
+def _previa(ide: int, **kw) -> LineaSigrid:
+    """Línea ajena con la MISMA identidad que `linea()` (MENC, CI.1.10)."""
+    return linea_previa(ide=ide, paride=80001, **kw)
+
+
+def test_f037_r12_synckey_en_un_parte_cerrado_es_ya_registrado():
+    hit = _previa(6001, synckey=synckey_de(1), nuestra=True)
+    setattr(hit, "hmoide", 9)
+    cli = ClienteF037(periodo=[PT_CER9, PT_REG7],
+                      synckeys={synckey_de(1): hit},
+                      lineas_por_parte={9: [hit]})
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert res.ya_registradas == [1]
+    assert cli.escritos == []               # ni se reescribe ni se rellena
+
+
+def test_f037_r13_choque_con_un_parte_cerrado_se_omite_sin_cuenta():
+    cli = ClienteF037(periodo=[PT_CER9, PT_REG7],
+                      lineas_por_parte={9: [_previa(6001)], 7: []})
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
+    (a,) = pf.acciones
+    assert a.accion == "omitir"
+    assert a.motivo == ("parte_cerrado: ya hay horas de ese recurso, dia y "
+                        "tipo en el parte PT26/00009 (Cerrado); no se "
+                        "registran")
+    assert _caa(a) == (0, None, None, None, None, None)
+    assert pf.conflictos == []
+    assert sorted(cli.de("lineas")) == [(7,), (9,)]
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert cli.escritos == [] and res.escritas == []
+    assert res.omitidas == [{"registro_id": 1, "motivo": a.motivo}]
+
+
+def test_f037_r13_choque_con_cerrado_aunque_el_elegido_sea_nuevo():
+    cli = ClienteF037(periodo=[PT_IMP4],
+                      lineas_por_parte={4: [_previa(6001)]})
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
+    assert pf.acciones[0].accion == "omitir"
+    assert "PT26/00004 (Imputado)" in pf.acciones[0].motivo
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert cli.escritos == [] and res.escritas == []
+
+
+def test_f037_r13_el_cerrado_prevalece_sobre_el_en_registro():
+    cli = ClienteF037(periodo=[PT_CER9, PT_REG7],
+                      lineas_por_parte={7: [_previa(6002)],
+                                        9: [_previa(6001)]})
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
+    assert pf.acciones[0].accion == "omitir" and pf.conflictos == []
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()],
+                            pisar_claves={"200|202607|5|80001"})
+    assert cli.borrados() == [] and res.borradas == 0
+
+
+def test_f037_r13_choque_en_registro_es_conflicto_con_el_parte_donde_vive():
+    cli = ClienteF037(periodo=[PT_REG7, PT_REG5],
+                      lineas_por_parte={5: [_previa(6005)]})
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
+    (c,) = pf.conflictos
+    assert (c.motivo, c.parte_cod, [ls.ide for ls in c.lineas]) == (
+        "pisado", "PT26/00005", [6005])
+    assert pf.partes[0].cod == "PT26/00007"
+    # R14: confirmado, se borra (parte En registro) y se escribe en el 7.
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()],
+                            pisar_claves={c.clave})
+    assert cli.borrados() == [6005] and res.borradas == 1
+    assert [i["hmoide"] for i in cli.inserts()] == [7]
+    assert cli.inserts()[0]["caaide"] == 90001        # R17: con su cuenta
+
+
+def test_f037_r13_sin_partida_que_choca_con_cerrado_solo_se_omite():
+    cli = ClienteF037(periodo=[PT_CER9, PT_REG7], lineas_por_parte={
+        9: [linea_previa(ide=6001, reside=400, horide=6,
+                         hora_codigo="MJEFO", paride=0)]})
+    lin = linea(recurso_ide=400, categoria="Peon", nombre="Nadie Conocido")
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[lin])
+    assert pf.acciones[0].accion == "omitir" and pf.conflictos == []
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[lin])
+    assert [o["registro_id"] for o in res.omitidas] == [1]
+    assert res.pendientes_confirmacion == []
+
+
+def test_f037_r13_la_capacidad_suma_las_lineas_del_parte_cerrado():
+    cli = ClienteF037(periodo=[PT_CER9, PT_REG7], lineas_por_parte={
+        9: [linea_previa(ide=6001, can=0.7, paride=80002)], 7: []})
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
+    (c,) = pf.conflictos
+    assert (c.motivo, c.suma_existente, c.suma_total) == (
+        "sobrecarga", 0.7, 1.1)
+    assert [ls.ide for ls in c.contexto] == [6001]
+    assert pf.acciones[0].accion == "escribir"
+
+
+def test_f037_r13_la_capacidad_no_cuenta_la_accion_omitida_por_cerrado():
+    cli = ClienteF037(periodo=[PT_CER9, PT_REG7], lineas_por_parte={
+        9: [_previa(6001, can=0.9)]})
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[
+        linea(registro_id=1, porcentaje=0.4),
+        linea(registro_id=2, porcentaje=0.05, paride=80002,
+              partida_cod="CI.1.20")])
+    assert [a.accion for a in pf.acciones] == ["omitir", "escribir"]
+    assert pf.conflictos == []              # 0.9 + 0.05: cabe
+
+
+@pytest.mark.parametrize("lectura", ["partes", "lineas"])
+def test_f037_r16_si_falla_la_lectura_del_periodo_no_se_escribe(lectura):
+    cli = ClienteF037(periodo=[PT_REG7], falla={lectura})
+    with pytest.raises(RuntimeError, match=lectura):
+        _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert cli.escritos == []
+
+
+def test_f037_r17_solo_se_crean_partes_y_se_insertan_o_borran_lineas():
+    cli = ClienteF037(periodo=[PT_IMP4], lineas_por_parte={},
+                      tras_crear=[[ParteSigrid(950, "PT26/00350", REG)]])
+    _pl(cli).ejecutar(obra=OBRA, lineas=[linea(registro_id=1),
+                                         linea(registro_id=2, mes=8)])
+    assert {s["sql"] for s in cli.escritos} <= {"crear", "insert", "delete"}
+    assert all(i["hmoide"] != 4 for i in cli.inserts())
+
+
+def test_f037_r15_el_contrato_http_de_partes_y_acciones_es_aditivo():
+    """La app serializa con `asdict`: los campos nuevos viajan solos."""
+    import dataclasses
+
+    cli = ClienteF037(periodo=[PT_CER9, PT_REG7], lineas_por_parte={})
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
+    parte = dataclasses.asdict(pf.partes[0])
+    assert {"estado", "complementario", "cerrados", "del_periodo",
+            "aviso", "obra_cod", "cod", "ide", "existe"} <= set(parte)
+    assert parte["del_periodo"] == [
+        {"ide": 9, "cod": "PT26/00009", "est": CER},
+        {"ide": 7, "cod": "PT26/00007", "est": REG}]
+    accion = dataclasses.asdict(pf.acciones[0])
+    assert {"caa_ide", "caa_cod", "caa_motivo", "caa_aviso", "caa_origen",
+            "caa_nota", "aviso", "motivo"} <= set(accion)

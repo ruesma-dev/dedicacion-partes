@@ -22,19 +22,26 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
      destino (ARCHITECTURE.md#regla-analitica): la del recurso y, si no da,
      la de la partida de coste. Una lectura de partidas por petición y una
      de cuentas por centro, sin `try`: si fallan, la petición falla.
-  5. Localizar el parte de cada DESTINO+MES; proponer código si no existe.
-  6. Idempotencia por synckey ('porcentajes:{id}') -> ya_registrado.
+  5. Elegir el parte de cada DESTINO+MES entre TODOS los del periodo
+     (ARCHITECTURE.md#regla-analitica): el En registro de mayor `ide`; si
+     no hay ninguno, uno nuevo (complementario si hay cerrados) con el
+     código de la empresa de la obra.
+  6. Idempotencia por synckey ('porcentajes:{id}') -> ya_registrado, en
+     cualquier parte, también cerrado.
   6 bis. CONFLICTOS de línea SIN PARTIDA, por línea
      (ARCHITECTURE.md#regla-sin-partida) -> confirmar la imputación sin
      partida. Van los PRIMEROS: los otros dos avisos dan por hecho que esa
      línea se escribe.
   7. CONFLICTOS de pisado, por identidad de la línea
-     (ARCHITECTURE.md#regla-conflicto) -> confirmar pisado.
+     (ARCHITECTURE.md#regla-conflicto), contra las líneas de TODOS los
+     partes del periodo -> confirmar pisado; si choca con un parte
+     CERRADO, la acción se omite (`parte_cerrado`).
   7 bis. CONFLICTOS de sobrecarga, por jornada del recurso en el parte
      (ARCHITECTURE.md#regla-capacidad) -> confirmar escritura. Van DESPUÉS
      de los de pisado: su cifra ya presupone que el pisado ocurre.
   8. (fin del preflight)
-  9. Crear los partes que falten (con + hmo, releer el ide).
+  9. Crear los partes que falten (alta protegida, releer el periodo y,
+     si no aparece uno En registro, UN reintento con otro código).
  10. Borrar las pisadas confirmadas + insertar las nuevas (por lotes).
 """
 from __future__ import annotations
@@ -46,6 +53,9 @@ from typing import Optional
 
 from application.services.cuenta_analitica import (
     origen_subcuenta, resolver_cuenta, subcuenta_de_linea,
+)
+from application.services.estado_parte import (
+    aviso_de_parte, elegir_parte, motivo_choque, nombre_estado,
 )
 from application.services.partida_resolver import (
     construir_catalogo, resolver_normal,
@@ -231,6 +241,49 @@ class RegistroPipeline:
                 por_origen["partida"], por_origen[None])
 
     # ------------------------------------------------------------- #
+    def _nombre_estado(self, est: Optional[int]) -> str:
+        return nombre_estado(est, est_cerrado=self._st.est_parte_cerrado,
+                             est_imputado=self._st.est_parte_imputado)
+
+    # ------------------------------------------------------------- #
+    def _parte_del_periodo(self, d: ObraEntrada, ano: int,
+                           mes: int) -> ParteDestino:
+        """El parte que recibe las líneas de la obra `d` en el periodo
+        (`estado_parte.elegir_parte`, la regla de `partes`)."""
+        return elegir_parte(
+            ano, mes, self._cli.partes_del_periodo(int(d.ide), ano, mes),
+            est_registro=self._st.est_parte_activo)
+
+    # ------------------------------------------------------------- #
+    def _crear_parte(self, p: ParteDestino, d: ObraEntrada,
+                     desc: str) -> None:
+        """Paso 9 (F-037 R11, D17): alta protegida y relectura del periodo.
+
+        El alta no inserta si el código ya está ocupado en la empresa o si
+        el periodo ya tiene un parte En registro (el que haya creado
+        `partes` en ese instante). Tras el alta se relee: si hay uno En
+        registro, se usa, sea el nuestro o no; si no, se pide otro código y
+        se reintenta UNA vez. Si tampoco, falla antes de insertar líneas."""
+        cod = p.cod
+        for intento in range(2):
+            self._cli.escribir(self._cli.stmts_crear_parte(
+                obra=d, ano=p.ano, mes=p.mes, cod=cod, desc=desc))
+            leido = self._parte_del_periodo(d, p.ano, p.mes)
+            if leido.existe:
+                p.existe, p.ide, p.cod = True, leido.ide, leido.cod
+                p.estado, p.creado = leido.estado, leido.cod == cod
+                logger.info(
+                    "[registro] parte %s %s (ide=%s) obra=%s %s/%s",
+                    "creado" if p.creado else "de otro servicio, se usa",
+                    p.cod, p.ide, d.codigo, p.ano, p.mes)
+                return
+            if intento == 0:
+                cod = self._cli.siguiente_cod_pt(p.ano, int(d.empresa))
+        raise RuntimeError(
+            f"no se pudo crear el parte {cod} de la obra {d.codigo} "
+            f"{p.mes:02d}/{p.ano}: no hay ninguno En registro tras el alta")
+
+    # ------------------------------------------------------------- #
     def preflight(self, *, obra: ObraEntrada,
                   lineas: list[LineaEntrada]) -> Preflight:
         # Paso 0: empresa y obra de origen (ARCHITECTURE.md#regla-empresa).
@@ -321,20 +374,22 @@ class RegistroPipeline:
         if escribir:
             self._cuentas(escribir, horas, obra_de)
 
-        # Paso 5: parte por DESTINO + periodo.
+        # Paso 5: parte por DESTINO + periodo, entre TODOS los del periodo
+        # (F-037 R9-R11, R15; ARCHITECTURE.md#regla-analitica).
         partes: dict[tuple[int, int, int], ParteDestino] = {}
         for a in escribir:
             d = obra_de(a)
             clave = (int(d.ide), a.ano, a.mes)
-            if clave in partes:
-                continue
-            encontrado = self._cli.partes_existentes(
-                int(d.ide), [(a.ano, a.mes)])[(a.ano, a.mes)]
-            encontrado.obra_cod = d.codigo
-            if not encontrado.existe and not encontrado.cod:
-                encontrado.cod = self._cli.siguiente_cod_pt(a.ano,
-                                                         int(d.empresa))
-            partes[clave] = encontrado
+            if clave not in partes:
+                p = self._parte_del_periodo(d, a.ano, a.mes)
+                p.obra_cod = d.codigo
+                if not p.existe:
+                    p.cod = self._cli.siguiente_cod_pt(a.ano, int(d.empresa))
+                p.aviso = aviso_de_parte(p, {
+                    ps.cod: self._nombre_estado(ps.est)
+                    for ps in p.del_periodo if ps.cod in p.cerrados})
+                partes[clave] = p
+            _sumar_aviso(a, partes[clave].aviso)
 
         # Paso 6: idempotencia por synckey.
         ya = self._cli.lineas_por_synckey(
@@ -383,17 +438,25 @@ class RegistroPipeline:
                 "no se escribe sin confirmar", a.recurso_ide, a.registro_id,
                 a.ano, a.mes)
 
-        # Paso 7: conflictos (ver ARCHITECTURE `#regla-conflicto`).
+        # Paso 7: conflictos (ver ARCHITECTURE `#regla-conflicto`) contra
+        # las líneas de TODOS los partes del periodo, aunque el elegido sea
+        # nuevo (F-037 R13): un choque con un parte CERRADO omite la acción
+        # (en un cerrado no se escribe ni se borra) y prevalece; con uno En
+        # registro es el conflicto de siempre, con el parte donde vive.
         pendientes = [a for a in acciones if a.accion == "escribir"]
+        en_cerrado: set[int] = set()
         for clave_p, parte in sorted(partes.items()):
-            if not parte.existe or not parte.ide:
-                continue            # parte nuevo: no puede haber conflicto
             grupo = [a for a in pendientes
                      if (int(obra_de(a).ide), a.ano, a.mes) == clave_p]
-            if not grupo:
-                continue
-            existentes = self._cli.lineas_del_parte(
-                int(parte.ide), [a.recurso_ide for a in grupo])
+            if not grupo or not parte.del_periodo:
+                continue            # sin partes en el periodo: nada choca
+            existentes = []
+            donde = {}
+            for ps in parte.del_periodo:
+                for ls in self._cli.lineas_del_parte(
+                        int(ps.ide), [a.recurso_ide for a in grupo]):
+                    existentes.append(ls)
+                    donde[ls.ide] = ps
             mias = {synckey_de(a.registro_id) for a in grupo}
             por_clave: dict[str, Conflicto] = {}
             for a in grupo:
@@ -402,6 +465,17 @@ class RegistroPipeline:
                            if criterio_choque(ls, a, mias=mias)]
                 if not choques:
                     continue        # nada previo con esa identidad
+                cerrado = next((donde[ls.ide] for ls in choques
+                                if donde[ls.ide].cod in parte.cerrados),
+                               None)
+                if cerrado is not None:
+                    a.accion = "omitir"
+                    a.motivo = motivo_choque(
+                        cerrado.cod, self._nombre_estado(cerrado.est))
+                    a.caa_ide, a.caa_cod, a.caa_motivo = 0, None, None
+                    a.caa_aviso, a.caa_origen, a.caa_nota = None, None, None
+                    en_cerrado.add(a.registro_id)
+                    continue
                 c = por_clave.get(k)
                 if c is None:
                     contexto = [
@@ -411,7 +485,8 @@ class RegistroPipeline:
                     ]
                     c = Conflicto(
                         clave=k, recurso_ide=int(a.recurso_ide or 0),
-                        ano=parte.ano, mes=parte.mes, parte_cod=parte.cod,
+                        ano=parte.ano, mes=parte.mes,
+                        parte_cod=donde[choques[0].ide].cod,
                         nombre=a.nombre, horide=a.hora_ide,
                         hora_codigo=a.hora_codigo,
                         lineas=choques, contexto=contexto)
@@ -422,7 +497,10 @@ class RegistroPipeline:
 
             # Paso 7 bis: capacidad (ver ARCHITECTURE `#regla-capacidad`).
             # Va DESPUÉS de los pisados del mismo parte, y no antes: su
-            # cifra ya presupone que todos ellos se confirman.
+            # cifra ya presupone que todos ellos se confirman. Suma las
+            # líneas de todos los partes del periodo y solo las acciones que
+            # siguen siendo `escribir`.
+            grupo = [a for a in grupo if a.accion == "escribir"]
             pisadas: dict[int, set[int]] = {}
             for c in por_clave.values():
                 pisadas.setdefault(c.recurso_ide, set()).update(
@@ -456,6 +534,12 @@ class RegistroPipeline:
                     "[registro] sobrecarga recurso=%s parte=%s existente=%s "
                     "nueva=%s total=%s", recurso, parte.cod,
                     cap.existente, cap.nueva, cap.total)
+
+        # Una línea omitida por un parte cerrado ya no se escribe: su aviso
+        # de «sin partida» del paso 6 bis no tiene nada que confirmar.
+        conflictos = [c for c in conflictos
+                      if not (c.motivo == "sin_partida"
+                              and set(c.registros) <= en_cerrado)]
 
         pf = Preflight(
             obra_destino=destino_normal, obra_origen=obra,
@@ -576,19 +660,9 @@ class RegistroPipeline:
                 continue
             marca = (f" ({self._st.marca_pruebas})" if pf.forzada_pruebas
                      else "")
-            desc = f"Parte {d.nombre or d.codigo}{marca}"
-            cod = p.cod or self._cli.siguiente_cod_pt(a.ano, int(d.empresa))
-            self._cli.escribir(self._cli.stmts_crear_parte(
-                obra=d, ano=a.ano, mes=a.mes, cod=cod, desc=desc))
-            nuevos = self._cli.partes_existentes(int(d.ide),
-                                                 [(a.ano, a.mes)])
-            creado = nuevos.get((a.ano, a.mes))
-            if creado is None or not creado.ide:
-                raise RuntimeError(f"no se pudo crear el parte {cod}")
-            p.existe, p.ide, p.cod, p.creado = (True, creado.ide,
-                                                creado.cod, True)
-            logger.info("[registro] parte creado %s (ide=%s) obra=%s %s/%s",
-                        p.cod, p.ide, d.codigo, a.ano, a.mes)
+            # D13: `Parte <obra>`, como `partes` y Administración: el
+            # complementario es «un parte más» del periodo.
+            self._crear_parte(p, d, f"Parte {d.nombre or d.codigo}{marca}")
 
         # Paso 10: borrar pisadas + insertar.
         statements: list[dict] = []
