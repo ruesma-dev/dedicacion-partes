@@ -1608,3 +1608,87 @@ Informes: `progress/impl_F-029.md`, `progress/review_F-029.md`,
   Mirar además (observación de la review 1): Ctrl/Shift+clic con el editor
   abierto repinta la tabla y el foco puede saltar. Resultado: _pendiente_.
 
+## 2026-10-06 · F-037 · Rastro de spec retirado de `current.md` (review 1)
+
+## F-037 · El registro genera el asiento analítico de la obra (en curso)
+
+- **Pedida por el humano el 2026-10-05** a partir del correo de Juan Romero
+  «ARBOL ANALITICO OBRAS» (2026-09-29): cuentas analíticas por centro de
+  coste de la obra; ejemplo, asiento con 6XX desglosado al 100 % en
+  `0702.CP0004`. Escritura en Sigrid: rigor crítico, solo el transfer.
+- **Exploración** (`progress/explore_F-037.md`): Sigrid YA genera el asiento
+  analítico de cada parte (documento `ANA`, uno por obra y mes, lo lanza
+  Administración por lotes): debe a `hmores.caaide` de cada línea, haber a
+  `res.caaconide`; el 6XX lo pone la nómina. **El transfer escribe hoy
+  `caaide = 0`**, así que sus líneas no entrarían en el ANA. Cero líneas
+  `porcentajes:` en Sigrid a día de hoy.
+- **Spec entregada** (`5dd3d75`), recomendada D1 = A: el transfer rellena
+  `caaide` (`<obra>.CIMOxx` del tipo de hora) y no escribe asientos.
+  **Espera al humano / Juan Romero** con D1-D11 abiertas
+  (requirements §6).
+- **Ajustada con la respuesta de Juan del 2026-10-05** (`4c3d7d1`): la
+  cuenta analítica sale del TIPO DE HORA del recurso (540 de 540 líneas
+  manuales), no de la partida; el centro (`hmores.cenide`) ya lo escribe
+  bien el transfer; «Contabiliza parte…» deja el parte en `con.est = 10`
+  (502 partes con ANA desde 2025). T0 bloquea: preguntas a Juan sobre el
+  botón, MPRL (`CIMO16` o `CIMO04`) y escribir en un parte contabilizado.
+- **Decisiones del humano (2026-10-05) aplicadas** (`52e1c02`): la cuenta
+  sale del recurso con la regla de `partes` F-021 (`reshor.caaide`,
+  subcuenta en el centro de la obra destino); un parte contabilizado va a
+  un **complementario** (en Sigrid no hay convención: 9 casos de dos partes
+  por obra y mes, sin enlace). **Abiertas para el humano:** D8, D10, D12,
+  D13, D14 y **D15** (copiar `cuenta_analitica.py` de `partes` = ampliar la
+  lista cerrada de `CLAUDE.md`, decisión expresa).
+- **2026-10-06: aprobada por el humano con A en D8, D10 y D12-D15**
+  (`3e6c7c4`); `CLAUDE.md` amplía la lista cerrada con `cuenta_analitica.py`
+  (`b7ef1e6`). «Lo aprendido en partes» en design §13: la F-031 de `partes`
+  (`feature/F-031-asiento-analitico`, en curso allí) añade el respaldo de la
+  partida (R3) y entiende «cerrado» como estado ≠ 1. **Pendiente del humano:**
+  D16 (qué estado manda al complementario) y si se espera a que la F-031 de
+  `partes` llegue a su `dev` antes de copiar (sin ella, R3 queda `blocked`).
+- **Riesgo vivo:** el transfer desplegado escribe en real; lo que se
+  registre antes de F-037 queda con `caaide = 0` y fuera del ANA.
+- **Fuera del proyecto (aviso al humano):** `partes-persistencia` también
+  escribe `caaide = 0` en sus líneas `partes:`.
+
+- **2026-10-06, nueva instrucción del humano:** no esperar a que la F-031 de
+  `partes` llegue a su `dev`: revisarla en su rama y copiarla ADAPTADA, porque
+  porcentajes y partes escriben en el MISMO parte. La condición de entrada de
+  `tasks.md` (`655dbdc`) queda anulada.
+- **Spec reescrita como copia adaptada de la F-031 de `partes`** (`497f224`;
+  revisión de su rama en `progress/explore_F-037_partes_F-031.md`): copia
+  literal de `estado_parte.py` y `cuenta_analitica.py` (rama `9b202e9`, sin
+  cambios hasta `5ff4d91`) con test anti-divergencia; elección del parte,
+  complementario, relectura, conflictos y avisos idénticos; corrige
+  `siguiente_cod_pt` y el alta de `hmo` sin `emp`. **Pendiente del humano:**
+  D13 reabierta (título `Parte <obra>` como partes), D17 (carrera entre
+  servicios al crear el parte) y D18 (`estado_parte.py` a la lista cerrada).
+- **2026-10-06: el humano aprueba D13 = `Parte <obra>`, D17 y D18**
+  (`3fe200a`); `CLAUDE.md` con `estado_parte.py` en la lista (`32c33ad`).
+- **Implementación terminada** (`progress/impl_F-037.md`, T1-T10 y T15,
+  `6f97dc2`…`40b9feb`): copia literal de `partes` `9b202e9` con test
+  anti-divergencia; mutación en serie 85/85 (y 25/25 en las copias sin el
+  test de copias; 13 huecos reales cerrados con tests). Tests anteriores:
+  solo los dobles y la ancla de la lista cerrada. Desviaciones declaradas en
+  el informe §3 (p. ej. `partes_existentes` se queda porque la usa el script
+  de prueba). **Review lanzada** → `progress/review_F-037.md`.
+- **T14 (líder): hecha**, piezas de INTEGRACION copiadas a `azure-apps`
+  (`5416cd1`, «sin desplegar»).
+- **T11 (humano): pendiente.** Pasar a la sesión de `partes` el aviso de la
+  carrera al crear el parte (D17) y del hueco de `OrigenSubcuenta` sin test
+  de inmutabilidad. INTEGRACION §7 ya dice «`partes` está avisado»: será
+  cierto antes del `done`.
+- **Observación del implementer para el humano:** preexistente, la capacidad
+  no se evalúa en un periodo sin ningún parte (dos líneas nuevas del mismo
+  recurso que sumen > 1 no avisan). Se le propone abrirla como feature.
+- **MANUAL (humano):**
+  - **T12, solo lectura:** transfer de la rama con `OBRA_PRUEBAS_FORZAR=true`
+    y api local; en un periodo de prueba con un MENC o MJEFO y un MPRL:
+    `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight" -H "Content-Type: application/json" -d "{}"`.
+    Esperado: MENC/MJEFO `escribir` con `caa_cod` `0404.CIMO03`/`CIMO02` y
+    `caa_origen` `recurso`; MPRL con `caa_ide` 0 y aviso de `.CIMO16`; en
+    `partes[]` el `estado`, `complementario` y `aviso`. NO `ejecutar`.
+    Resultado: _pendiente_.
+  - **T13:** escritura en modo pruebas en la 0404 con autorización expresa
+    y Administración avisada (pasos en `tasks.md`). Resultado: _pendiente_.
+
