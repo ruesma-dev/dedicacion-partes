@@ -1,57 +1,36 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-040 en curso en esta rama** (el Excel como el modelo de Juan Romero), rama
-`feature/F-040-excel-modelo-juan`, en la copia de trabajo
-`PycharmProjects/porcentajes-f040`. **En paralelo, en la copia principal**, F-039
-(obras VAR y de 6 dígitos) está implementada y aprobada en review, en su rama,
-a la espera solo de las MANUAL del humano; y F-041 tiene la spec aprobada en
-`PycharmProjects/porcentajes-f041`. F-037 se cerró el 2026-10-06 y está en `dev`
-**pendiente de desplegar**. El arnés es la **1.7.3**.
+**Ninguna feature en ejecución en la copia principal.** F-040 y F-039 se
+cerraron el 2026-10-06; F-037, F-039 y F-040 están en `dev` **pendientes de
+desplegar juntas** (sección de despliegue). En paralelo, por decisión del
+humano: F-041 (implementándose) en `PycharmProjects/porcentajes-f041`. El arnés
+es la **1.7.3**.
 
-## F-040 · El Excel como el modelo de Juan Romero (en curso)
+## Features en paralelo (copia de trabajo aparte)
 
-- **Qué es** (pedida el 2026-10-06; absorbe F-020): hojas Detalle (agrupado
-  por trabajador, celdas combinadas con el valor en todo el grupo para que el
-  autofiltro saque el grupo entero, bandas blanco/`DDEBF7`, línea gruesa bajo
-  cada trabajador, cabecera en la fila 2, sin «Obra(código)») y Resumen («código
-  descripción = NN% + …»). Corrige la notación científica del exportador actual
-  («1E+2%»). Spec `specs/F-040-excel-modelo-juan/`, aprobada con D1-D6 = A
-  (`c16af41`).
-- **Implementación terminada** (`progress/impl_F-040.md`, `fad6334`…`b429b81`):
-  api 619 en verde (33 nuevos), ningún test anterior cambiado; cobertura 100 %;
-  mutación en serie 20/20. **Review 1: CAMBIOS PEDIDOS** (un test que decía
-  fijar el «sin -0» y no lo fijaba); ciclo 2 hecho (test reforzado con el XML,
-  mutante a mano muerto, `obra_ide` determinista). **Review 2: APROBADO.**
-  Para el `done` solo falta la M1 del humano.
-- **Para la M1 (observación de la review):** openpyxl enseña vacías las
-  combinadas al releer; el XML sí las tiene: el humano lo mira en Excel.
-- **`azure-apps`: no cambia** (no describe el Excel; R21).
-- **MANUAL (humano, M1, solo lectura):**
-  - Muestra inventada ya generada: `%TEMP%/f040/f040_muestra.xlsx`.
-  - El real, desde esta copia y con la BBDD local (la api en el 8090; si la de
-    F-039 está arrancada, pararla antes): `cd C:/Users/pgris/PycharmProjects/porcentajes-f040/services/dedicacion-api`
-    y `.venv/Scripts/python.exe main.py`; en otra ventana
-    `curl.exe -o "$env:TEMP/f040.xlsx" "http://127.0.0.1:8090/api/v1/periodos/AAAA/MM/export.xlsx?empresa=1"`
-    y abrirlo. Recorrer los 7 puntos de design §6: abre sin reparación;
-    filtrar por empleado saca todas sus filas; filtrar por obra enseña quién y
-    su estado; filtrar por estado ≠ OK; bandas y línea gruesa; Resumen con
-    «código nombre = NN%»; impresión horizontal a una página de ancho con
-    cabecera repetida. Mirar la combinada cuya primera fila oculta el filtro.
-    Resultado: _pendiente_.
-- **Al fusionar con F-039:** la línea `VAR-29` se trata como una obra normal y
-  está probada con datos inventados; si F-039 trae un test que lea el xlsx, se
-  ajusta en el merge (design §8).
+- **F-041 · Filtro de obra con el texto visible** (prioridad 3; implementándose
+  en su copia): spec aprobada con D1-D4 = A (`9b5fc46`) en `PycharmProjects/porcentajes-f041`, rama
+  `feature/F-041-filtro-obra-postventa`. La causa real: el buscador global no
+  casa con `Postv-` y la columna mezcla chips.
+- La copia tiene los `.venv` como uniones a los de esta carpeta; no tiene
+  `.env` (no se copia): para probar en local, abrir la rama en la carpeta
+  principal con `git checkout --detach <rama>`.
 
-## ⚠ Despliegue de F-037 (pendiente; lo lanza el humano)
+## ⚠ Despliegue de F-037 + F-039 + F-040 (pendiente; lo lanza el humano)
 
-- Cambia **solo el transfer** (`.\redeploy_dedicacion.ps1 -Solo transfer`,
-  desde `dev`); el transfer desplegado ya escribe en real
-  (`OBRA_PRUEBAS_FORZAR=false`), no hay que tocar permisos ni variables. Sin
-  DDL ni sync.
-- **Comprobación tras desplegar:** un preflight de producción (solo lectura)
-  con una línea MENC o MJEFO: `caa_cod` `<obra>.CIMO0x`, `caa_origen`
-  `recurso`. Desde ese momento, lo registrado lleva la cuenta analítica.
+- **Orden obligatorio transfer → api → front** (`.\redeploy_dedicacion.ps1`
+  sin `-Solo`, que ya respeta ese orden), desde `dev`: la api de F-039 llama a
+  `POST /api/var/universo`, que solo tiene el transfer nuevo. El transfer
+  desplegado ya escribe en real; no hay que tocar permisos. La api añade sus
+  tres columnas de `obra` al arrancar.
+- F-040 solo cambia la api (el Excel); va en el mismo despliegue.
+- **Después: sync** («Actualizar Sigrid»): hasta entonces no aparece `VAR-29` ni
+  desaparecen las obras de 6+ dígitos.
+- **Comprobación:** preview de producción con `excluidas_por_codigo` 240 y
+  `entradas_var` 1; un preflight (solo lectura) con una línea MENC o MJEFO
+  (`caa_cod` `<obra>.CIMO0x`, F-037) y otra en `VAR-29` (`paride` 417055,
+  cuenta `VAR.CIMO0x`).
 
 ## Producción, hoy
 
@@ -103,10 +82,11 @@ a la espera solo de las MANUAL del humano; y F-041 tiene la spec aprobada en
 ## Lo siguiente, por prioridad
 
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-06): **F-040** (en curso aquí), **F-038** (cuadro de mando = el Excel
-navegable), **F-041** (filtro de obra, spec aprobada), **F-039** (en su rama,
-pendiente de las MANUAL), F-028 (plan aprobado), F-021, F-030, F-036, F-031,
-F-033 y, detrás, F-017, F-018… F-037 está cerrada y pendiente de desplegar.
+2026-10-06): F-040 (Excel, cerrada), **F-038** (cuadro de mando = el Excel
+navegable), **F-041** (filtro de obra), **F-039** (cerrada, pendiente de desplegar),
+F-028 (plan aprobado), F-021, F-030, F-036 (solo spec de momento), F-031,
+F-033 y, detrás, F-017, F-018… F-037 está cerrada y pendiente de desplegar
+(sección de despliegue).
 
 ## ⚠ Lo que espera al humano
 

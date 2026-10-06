@@ -45,6 +45,10 @@ class LineaEntrada:
     # Empresa (`con.emp`) a la que se imputa la línea. Sin ella no se adivina
     # nada: ver ARCHITECTURE.md#regla-empresa.
     empresa: Optional[int] = None
+    # F-039: partida VAR de una entrada `VAR-NN` del cuadrante. Si viene, la
+    # partida es esa y solo esa, o la línea se omite: ver
+    # ARCHITECTURE.md#regla-var.
+    var_paride: Optional[int] = None
 
     @property
     def fecha_int(self) -> int:
@@ -160,7 +164,8 @@ class AccionLinea:
     paride: int = 0                     # partida de imputación
     partida_cod: Optional[str] = None
     partida_metodo: Optional[str] = None  # manual | auto_nombre |
-                                          # auto_categoria | postventa
+                                          # auto_categoria | postventa |
+                                          # var (F-039, fija)
     # Aviso informativo que acompaña a la acción en la tabla del preflight.
     # Que haya aviso NO implica que la línea se vaya a escribir: si es el de
     # «sin partida», además viaja un Conflicto que la retiene hasta que

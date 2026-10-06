@@ -17,7 +17,9 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
      (ARCHITECTURE.md#regla-recurso). Sin él, la regla omite la línea.
   3. Cargar los tipos de hora de los recursos implicados (reshor).
   4. Aplicar las REGLAS de la línea (ARCHITECTURE.md#regla-p1 … #regla-p3,
-     #regla-p5).
+     #regla-p5). La línea que trae `var_paride` (una entrada VAR del
+     cuadrante) va a esa partida o se omite, antes del override manual
+     (ARCHITECTURE.md#regla-var).
   4 bis. CUENTA ANALÍTICA de cada acción `escribir` en el centro de su obra
      destino (ARCHITECTURE.md#regla-analitica): la del recurso y, si no da,
      la de la partida de coste. Una lectura de partidas por petición y una
@@ -68,6 +70,9 @@ from application.services.reglas_porcentajes import (
 )
 from application.services.universo_postventa import (
     cargar_catalogo_postventa, casar_postventa,
+)
+from application.services.universo_var import (
+    MOTIVO_VAR_POSTVENTA, cargar_catalogo_var, partida_var_de,
 )
 from domain.models.registro_models import (
     AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
@@ -324,11 +329,32 @@ class RegistroPipeline:
         # nombre), y la POSTVENTA ya trae el suyo de la obra de postventa
         # (`POSTVENTA_OBRA_COD`).
         nodos_origen = None
+        catalogo_var = None
         por_id = {l.registro_id: l for l in lineas}
         for a in acciones:
             if a.accion != "escribir":
                 continue
             linea = por_id.get(a.registro_id)
+            if linea is not None and linea.var_paride is not None:
+                # Entrada VAR (ARCHITECTURE.md#regla-var): su partida o nada,
+                # sin casado ni override. El catálogo, una vez por petición.
+                if a.destino == "postventa":
+                    a.accion = "omitir"
+                    a.motivo = MOTIVO_VAR_POSTVENTA.format(
+                        paride=linea.var_paride)
+                    continue
+                if catalogo_var is None:
+                    catalogo_var = cargar_catalogo_var(self._cli, self._st,
+                                                       empresa)
+                nodo, motivo = partida_var_de(
+                    catalogo_var, origen.ide, int(linea.var_paride),
+                    int(self._st.var_partida_desde))
+                if nodo is None:
+                    a.accion, a.motivo = "omitir", motivo
+                    continue
+                a.paride, a.partida_cod = int(nodo.ide), nodo.cod
+                a.partida_metodo = "var"
+                continue
             if linea is not None and linea.paride:
                 # El override del front manda… salvo que apunte fuera del
                 # universo válido de la postventa (un capítulo, una partida

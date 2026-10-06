@@ -43,7 +43,7 @@ from domain.models import (
     TipoEvento,
     Trabajador,
 )
-from domain.ports import SigridGateway, UnitOfWork, UniversoPostventaGateway
+from domain.ports import SigridGateway, UnitOfWork, UniversosGateway
 
 from application.filtros_maestros import CRITERIO_VACIO, CriterioActivoRecurso
 
@@ -503,6 +503,11 @@ class PreviewSync:
     Universo de postventa (F-025, R16): lo pide igual que el sync
     (`sync_pipeline.pedir_universo`) y publica en `obras`
     `admiten_postventa`, `solo_postventa` y `motivo_postventa`.
+
+    Código de obra y VAR (F-039, R17): prepara las obras con la MISMA
+    `sync_pipeline.preparar_obras` y publica `excluidas_por_codigo`,
+    `muestra_excluidas_por_codigo` (hasta 10), `entradas_var`, `obra_var`
+    y `motivo_var`.
     """
 
     def __init__(
@@ -520,8 +525,9 @@ class PreviewSync:
         uow_factory: Callable[[], UnitOfWork] | None = None,
         hoy: Callable[[], date] = date.today,
         *,
-        universo: UniversoPostventaGateway,
+        universo: UniversosGateway,
         empresa_obras: int,
+        digitos_excluidos: int = 0,
     ) -> None:
         self._sigrid = sigrid
         self._sql_empleados = sql_empleados
@@ -539,6 +545,7 @@ class PreviewSync:
         self._hoy = hoy
         self._universo = universo
         self._empresa_obras = empresa_obras
+        self._digitos = digitos_excluidos
 
     def _ventana_baja(self) -> int:
         from application.sync_pipeline import ventana_de_bajas
@@ -551,7 +558,6 @@ class PreviewSync:
     def ejecutar(self) -> dict[str, Any]:
         from application.filtros_maestros import (
             depurar_empleados,
-            depurar_obras,
             resumir_empresas,
         )
         from application.sync_pipeline import (
@@ -559,7 +565,7 @@ class PreviewSync:
             COLUMNAS_EMPRESAS,
             COLUMNAS_OBRAS,
             _validar_columnas,
-            pedir_universo,
+            preparar_obras,
         )
 
         brutas_emp = self._sigrid.leer(self._sql_empleados)
@@ -575,10 +581,10 @@ class PreviewSync:
         )
         brutas_obr = self._sigrid.leer(self._sql_obras)
         _validar_columnas(brutas_obr, COLUMNAS_OBRAS, "sync.obras.sql")
-        universo = pedir_universo(self._universo, brutas_obr,
-                                  self._empresa_obras)
-        obr = depurar_obras(brutas_obr, self._estados, self._filtro_estados,
-                            universo.ides)
+        prep = preparar_obras(brutas_obr, self._universo,
+                              self._empresa_obras, self._estados,
+                              self._filtro_estados, self._digitos)
+        obr, universo, uvar = prep.depurado, prep.universo_pv, prep.universo_var
         por_categoria = Counter(
             str(f.get("categoria") or "(sin categoría)") for f in emp.filas
         )
@@ -620,6 +626,12 @@ class PreviewSync:
                 "admiten_postventa": obr.admiten_postventa,
                 "solo_postventa": obr.solo_postventa,
                 "motivo_postventa": universo.motivo,
+                "excluidas_por_codigo": len(prep.descartadas),
+                "muestra_excluidas_por_codigo": [
+                    f.get("cod") for f in prep.descartadas[:10]],
+                "entradas_var": len(prep.entradas),
+                "obra_var": uvar.obra_cod,
+                "motivo_var": uvar.motivo,
             },
         }
         if self._sql_empresas is not None:

@@ -5,6 +5,8 @@
   POST /api/registro/ejecutar   -> escribe en Sigrid (con pisar_claves)
   POST /api/postventa/universo  -> obras de una empresa que admiten postventa
                                    (ARCHITECTURE.md#regla-p5; solo lee)
+  POST /api/var/universo        -> obra VAR de una empresa y sus partidas VAR
+                                   (ARCHITECTURE.md#regla-var; solo lee)
   GET  /health
 """
 from __future__ import annotations
@@ -22,6 +24,7 @@ from application.services.reglas_porcentajes import (
     clave_conflicto, empresa_valida,
 )
 from application.services.universo_postventa import UniversoPostventa
+from application.services.universo_var import UniversoVar
 from domain.errores import EmpresasMezcladas
 from domain.models.registro_models import LineaEntrada, ObraEntrada
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
@@ -57,6 +60,8 @@ class LineaIn(BaseModel):
     # PROPÓSITO: una línea sin empresa tiene que llegar al pipeline para
     # omitirse con motivo, no morir aquí en un 422 que no deja traza.
     empresa: Optional[int] = None
+    # Partida VAR de una entrada `VAR-NN` (ARCHITECTURE.md#regla-var).
+    var_paride: Optional[int] = None
 
 
 class PeticionIn(BaseModel):
@@ -74,6 +79,13 @@ class UniversoIn(BaseModel):
 
     empresa: int | None = None
     obras: list[ObraIn] = Field(default_factory=list)
+
+
+class UniversoVarIn(BaseModel):
+    """Petición del universo VAR (F-039): UNA empresa. Opcional por lo
+    mismo que en `UniversoIn`: sin ella, 422 con motivo."""
+
+    empresa: int | None = None
 
 
 def _empresas_mezcladas(exc: EmpresasMezcladas) -> JSONResponse:
@@ -98,6 +110,7 @@ def build_app(settings) -> FastAPI:
     )
     pipeline = RegistroPipeline(cliente=cliente, settings=settings)
     universo = UniversoPostventa(cliente=cliente, settings=settings)
+    universo_var = UniversoVar(cliente=cliente, settings=settings)
 
     def _dominio(p: PeticionIn):
         obra = ObraEntrada(ide=p.obra.ide, codigo=p.obra.codigo,
@@ -187,6 +200,20 @@ def build_app(settings) -> FastAPI:
             return {"ok": True, **universo.calcular(p.empresa, obras)}
         except Exception as exc:
             logger.exception("universo de postventa fallo")
+            return JSONResponse(status_code=502,
+                                content={"ok": False, "error": str(exc)})
+
+    @app.post("/api/var/universo")
+    async def universo_de_var(p: UniversoVarIn):
+        if not empresa_valida(p.empresa):
+            logger.warning("universo VAR rechazado: empresa %r", p.empresa)
+            return JSONResponse(status_code=422, content={
+                "ok": False,
+                "error": f"empresa no válida: {p.empresa!r}"})
+        try:
+            return {"ok": True, **universo_var.calcular(p.empresa)}
+        except Exception as exc:
+            logger.exception("universo VAR fallo")
             return JSONResponse(status_code=502,
                                 content={"ok": False, "error": str(exc)})
 

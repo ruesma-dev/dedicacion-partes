@@ -139,6 +139,11 @@ class PgTrabajadorRepository:
 # ----------------------------------------------------------------------
 # Obras
 # ----------------------------------------------------------------------
+#: Columnas de la entrada VAR que `sincronizar` copia tal cual de la fila
+#: (F-039, R13, docs/ARCHITECTURE.md#regla-var).
+_REGISTRO_VAR = ("registro_obra_ide", "registro_obra_cod", "registro_paride")
+
+
 class PgObraRepository:
     def __init__(self, session: Session) -> None:
         self._s = session
@@ -158,6 +163,9 @@ class PgObraRepository:
             # `activa` por estado y `admite_postventa` por el universo.
             activa = fila["activa"]
             admite = fila["admite_postventa"]
+            # Obra y partida de registro de una entrada VAR (F-039, R13);
+            # `None` en las obras normales, que no traen las claves.
+            registro = {campo: fila.get(campo) for campo in _REGISTRO_VAR}
             existente = actuales.get(ide)
             if existente is None:
                 self._s.add(
@@ -169,6 +177,7 @@ class PgObraRepository:
                         activa=activa,
                         empresa=_entero(fila.get("empresa")),
                         admite_postventa=admite,
+                        **registro,
                     )
                 )
                 altas += 1
@@ -180,6 +189,8 @@ class PgObraRepository:
                     or existente.empresa != _entero(fila.get("empresa"))
                     or existente.activa != activa
                     or existente.admite_postventa != admite
+                    or any(getattr(existente, campo) != valor
+                           for campo, valor in registro.items())
                 )
                 existente.cod = cod
                 existente.descripcion = _texto(fila.get("descripcion")) or ""
@@ -187,6 +198,8 @@ class PgObraRepository:
                 existente.empresa = _entero(fila.get("empresa"))
                 existente.activa = activa
                 existente.admite_postventa = admite
+                for campo, valor in registro.items():
+                    setattr(existente, campo, valor)
                 if cambio:
                     actualizados += 1
         # La que no llega (excluida por estado y fuera del universo) se queda

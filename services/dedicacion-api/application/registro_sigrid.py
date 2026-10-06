@@ -5,6 +5,10 @@ Agrupa las asignaciones del periodo por OBRA (el contrato del transfer es
 por obra), llama a preflight/ejecutar secuencialmente y persiste la traza
 en la propia asignación (columnas sigrid_*). El porcentaje viaja SOBRE 1.
 
+Las entradas VAR (filas de `obra` con `registro_obra_ide`, F-039) se
+agrupan con su obra de registro y cada línea lleva `var_paride` en vez de un
+`paride` manual (docs/ARCHITECTURE.md#regla-var).
+
 Cada línea lleva el RECURSO del trabajador (`recurso_ide` = su `ide`, que
 es el `res.ide` de Sigrid): el transfer no lo elige (F-026 R18-R19). Las
 líneas de un trabajador no vigente en el mes no se mandan ni se trazan; sus
@@ -87,11 +91,14 @@ class RegistroSigrid:
             if not vigente_en(t.activo, t.fecha_baja, anio, mes):
                 no_vigentes.append(a.id)
                 continue
-            grupo = por_obra.setdefault(o.ide, {
-                "obra": {"ide": o.ide, "codigo": o.cod,
-                         "nombre": o.descripcion},
-                "lineas": [],
-            })
+            # Entrada VAR (F-039, R20): a la petición de su obra de registro,
+            # junto a las demás líneas de esa obra.
+            obra = ({"ide": o.registro_obra_ide,
+                     "codigo": o.registro_obra_cod, "nombre": None}
+                    if o.registro_obra_ide else
+                    {"ide": o.ide, "codigo": o.cod, "nombre": o.descripcion})
+            grupo = por_obra.setdefault(obra["ide"], {"obra": obra,
+                                                      "lineas": []})
             linea = {
                 "registro_id": a.id, "ano": anio, "mes": mes,
                 "porcentaje": round(float(a.porcentaje) / 100.0, 4),
@@ -100,7 +107,10 @@ class RegistroSigrid:
                 "es_postventa": bool(a.es_postventa),
                 "empresa": filtro.empresa_obras,
             }
-            if overrides.get(a.id):
+            if o.registro_paride:
+                # Su partida es la de la entrada; un override no la cambia.
+                linea["var_paride"] = int(o.registro_paride)
+            elif overrides.get(a.id):
                 linea["paride"] = int(overrides[a.id])
             grupo["lineas"].append(linea)
         return list(por_obra.values()), sorted(no_vigentes)
