@@ -2001,3 +2001,15 @@ retirada de `current.md`:
   está probada con datos inventados; si F-039 trae un test que lea el xlsx, se
   ajusta en el merge (design §8).
 
+
+## 2026-10-06 · Merge de F-040 en `dev` con la api en rojo (corregido)
+
+El líder mergeó F-040 en `dev` (`f34b2da`) con la suite de la api en ROJO:
+encadenó `init.sh | grep … && git commit && git merge`, y el `grep` salió con 0
+aunque había un `[KO]`. Cayó `test_f039_registro_var.py::test_f039_r21_el_excel_lleva_el_codigo_de_la_entrada`,
+que leía el Excel con el formato anterior (F-039 y F-040 se desarrollaron en
+paralelo; el design §8 de F-040 lo preveía). Ajustado al formato de F-040 sin
+perder exigencia en `chore/f039-test-excel-f040` (`fde8ade`; tabla en
+`impl_F-040.md`) y `init.sh` en verde con código de salida 0 (api 689, raíz
+418). Lección guardada en la memoria del líder. Nada se desplegó ni se subió
+en rojo.
