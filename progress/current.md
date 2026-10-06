@@ -98,11 +98,32 @@
   servicios al crear el parte) y D18 (`estado_parte.py` a la lista cerrada).
 - **2026-10-06: el humano aprueba D13 = `Parte <obra>`, D17 y D18**
   (`3fe200a`); `CLAUDE.md` con `estado_parte.py` en la lista (`32c33ad`).
-  **Implementer lanzado** → `progress/impl_F-037.md` (T1-T10, T15).
-- **Tareas del líder y del humano:** T11 avisar a `partes` de la carrera y
-  del alta protegida (D17); T14 copiar a `azure-apps`; T12 preflight de solo
-  lectura en local y T13 escritura en modo pruebas en la 0404 con
-  autorización expresa y Administración avisada (comandos en `tasks.md`).
+- **Implementación terminada** (`progress/impl_F-037.md`, T1-T10 y T15,
+  `6f97dc2`…`40b9feb`): copia literal de `partes` `9b202e9` con test
+  anti-divergencia; mutación en serie 85/85 (y 25/25 en las copias sin el
+  test de copias; 13 huecos reales cerrados con tests). Tests anteriores:
+  solo los dobles y la ancla de la lista cerrada. Desviaciones declaradas en
+  el informe §3 (p. ej. `partes_existentes` se queda porque la usa el script
+  de prueba). **Review lanzada** → `progress/review_F-037.md`.
+- **T14 (líder): hecha**, piezas de INTEGRACION copiadas a `azure-apps`
+  (`5416cd1`, «sin desplegar»).
+- **T11 (humano): pendiente.** Pasar a la sesión de `partes` el aviso de la
+  carrera al crear el parte (D17) y del hueco de `OrigenSubcuenta` sin test
+  de inmutabilidad. INTEGRACION §7 ya dice «`partes` está avisado»: será
+  cierto antes del `done`.
+- **Observación del implementer para el humano:** preexistente, la capacidad
+  no se evalúa en un periodo sin ningún parte (dos líneas nuevas del mismo
+  recurso que sumen > 1 no avisan). Se le propone abrirla como feature.
+- **MANUAL (humano):**
+  - **T12, solo lectura:** transfer de la rama con `OBRA_PRUEBAS_FORZAR=true`
+    y api local; en un periodo de prueba con un MENC o MJEFO y un MPRL:
+    `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight" -H "Content-Type: application/json" -d "{}"`.
+    Esperado: MENC/MJEFO `escribir` con `caa_cod` `0404.CIMO03`/`CIMO02` y
+    `caa_origen` `recurso`; MPRL con `caa_ide` 0 y aviso de `.CIMO16`; en
+    `partes[]` el `estado`, `complementario` y `aviso`. NO `ejecutar`.
+    Resultado: _pendiente_.
+  - **T13:** escritura en modo pruebas en la 0404 con autorización expresa
+    y Administración avisada (pasos en `tasks.md`). Resultado: _pendiente_.
 
 ## F-028 · Borrar lo filtrado (plan aprobado, va después de F-037)
 
