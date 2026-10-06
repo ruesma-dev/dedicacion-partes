@@ -82,20 +82,20 @@ function normalizar(texto) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-// Etiqueta de una obra tal como la pinta la app: \u00abPostv-\u00bb delante si es de
-// postventa; el c\u00f3digo, tal cual, en otro caso (F-041, R1).
+// Etiqueta de una obra tal como la pinta la app: «Postv-» delante si es de
+// postventa; el código, tal cual, en otro caso (F-041, R1).
 function etiquetaObra(cod, esPostventa) {
   return (esPostventa ? "Postv-" : "") + cod;
 }
 
-// Texto visible: etiqueta y descripci\u00f3n, lo que ense\u00f1an el chip, su `title` y
-// el autocompletado. De aqu\u00ed salen todos los casados de obra (F-041, R2).
+// Texto visible: etiqueta y descripción, lo que enseñan el chip, su `title` y
+// el autocompletado. De aquí salen todos los casados de obra (F-041, R2).
 function textoObra(cod, descripcion, esPostventa) {
   return etiquetaObra(cod, esPostventa) + " " + (descripcion || "");
 }
 
-// \u00bfLa l\u00ednea del cuadrante casa con el filtro? `q` llega ya normalizado
-// (F-041, R4). F-021 la reutilizar\u00e1 para saber qu\u00e9 chip casa.
+// ¿La línea del cuadrante casa con el filtro? `q` llega ya normalizado
+// (F-041, R4). F-021 la reutilizará para saber qué chip casa.
 function lineaCasa(l, q) {
   return normalizar(textoObra(l.cod, l.descripcion, l.es_postventa)).includes(q);
 }
