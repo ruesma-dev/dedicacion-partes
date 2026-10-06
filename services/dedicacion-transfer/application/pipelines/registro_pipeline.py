@@ -18,6 +18,10 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
   3. Cargar los tipos de hora de los recursos implicados (reshor).
   4. Aplicar las REGLAS de la línea (ARCHITECTURE.md#regla-p1 … #regla-p3,
      #regla-p5).
+  4 bis. CUENTA ANALÍTICA de cada acción `escribir` en el centro de su obra
+     destino (ARCHITECTURE.md#regla-analitica): la del recurso y, si no da,
+     la de la partida de coste. Una lectura de partidas por petición y una
+     de cuentas por centro, sin `try`: si fallan, la petición falla.
   5. Localizar el parte de cada DESTINO+MES; proponer código si no existe.
   6. Idempotencia por synckey ('porcentajes:{id}') -> ya_registrado.
   6 bis. CONFLICTOS de línea SIN PARTIDA, por línea
@@ -40,6 +44,9 @@ import unicodedata
 from datetime import datetime, timezone
 from typing import Optional
 
+from application.services.cuenta_analitica import (
+    origen_subcuenta, resolver_cuenta, subcuenta_de_linea,
+)
 from application.services.partida_resolver import (
     construir_catalogo, resolver_normal,
 )
@@ -65,6 +72,13 @@ def _norm(texto: Optional[str]) -> str:
     plano = unicodedata.normalize("NFD", texto or "")
     sin = "".join(c for c in plano if unicodedata.category(c) != "Mn")
     return " ".join(sin.lower().split())
+
+
+def _sumar_aviso(a: AccionLinea, *textos: Optional[str]) -> None:
+    """Suma textos al `aviso` de la acción, que es lo que pinta el front
+    (F-037 R6): nunca sustituye al que ya traía."""
+    partes = [x for x in (a.aviso, *textos) if x]
+    a.aviso = " · ".join(partes) if partes else None
 
 
 def _nueva(a: AccionLinea) -> dict:
@@ -172,6 +186,51 @@ class RegistroPipeline:
         return self._cli.horas_de_recursos(sorted(todos)) if todos else {}
 
     # ------------------------------------------------------------- #
+    def _cuentas(self, escribir: list[AccionLinea], horas: dict,
+                 obra_de) -> None:
+        """Paso 4 bis (ARCHITECTURE.md#regla-analitica): `caa_*` de cada
+        acción `escribir` en el centro de SU obra destino.
+
+        Las partidas se leen UNA vez por petición y solo las de las líneas
+        cuyo recurso no da subcuenta; las cuentas, una vez por centro con
+        las subcuentas de los dos orígenes. Sin `try` (R7): escribir 0 en
+        silencio porque una lectura falló es el defecto que se corrige."""
+        def horas_de(a: AccionLinea) -> list:
+            return horas.get(int(a.recurso_ide), [])
+
+        parides = {int(a.paride) for a in escribir
+                   if a.paride and not subcuenta_de_linea(horas_de(a),
+                                                          a.hora_ide)}
+        partidas = self._cli.partidas_de_lineas(parides) if parides else {}
+        por_obra: dict[int, tuple[ObraEntrada, list[AccionLinea]]] = {}
+        for a in escribir:
+            d = obra_de(a)
+            por_obra.setdefault(int(d.ide), (d, []))[1].append(a)
+        for d, grupo in por_obra.values():
+            origenes = {id(a): origen_subcuenta(
+                            horas_de(a), a.hora_ide,
+                            partidas.get(int(a.paride or 0)))
+                        for a in grupo}
+            cenide = int(getattr(d, "cenide", 0) or 0)
+            pedidas = {o.sub for o in origenes.values() if o.sub}
+            cuentas = (self._cli.cuentas_de_centro(cenide, int(d.empresa),
+                                                   pedidas)
+                       if pedidas and cenide else {})
+            por_origen = {"recurso": 0, "partida": 0, None: 0}
+            for a in grupo:
+                o = origenes[id(a)]
+                c = resolver_cuenta(o.sub, cuentas, d.codigo)
+                a.caa_ide, a.caa_cod = c.caa_ide, c.caa_cod
+                a.caa_motivo, a.caa_aviso = c.motivo, c.aviso
+                a.caa_origen, a.caa_nota = o.origen, o.nota
+                _sumar_aviso(a, c.aviso, o.nota)
+                por_origen[o.origen] += 1
+            logger.info(
+                "[registro] cuenta analitica obra=%s recurso=%s partida=%s "
+                "ninguna=%s", d.codigo, por_origen["recurso"],
+                por_origen["partida"], por_origen[None])
+
+    # ------------------------------------------------------------- #
     def preflight(self, *, obra: ObraEntrada,
                   lineas: list[LineaEntrada]) -> Preflight:
         # Paso 0: empresa y obra de origen (ARCHITECTURE.md#regla-empresa).
@@ -257,6 +316,10 @@ class RegistroPipeline:
 
         def obra_de(a: AccionLinea) -> ObraEntrada:
             return destino_pv if a.destino == "postventa" else destino_normal
+
+        # Paso 4 bis: cuenta analítica (ARCHITECTURE.md#regla-analitica).
+        if escribir:
+            self._cuentas(escribir, horas, obra_de)
 
         # Paso 5: parte por DESTINO + periodo.
         partes: dict[tuple[int, int, int], ParteDestino] = {}
@@ -566,13 +629,15 @@ class RegistroPipeline:
                 pos=pos_por_parte[hmoide], fecha_int=a.fecha_int,
                 horide=int(a.hora_ide), can=float(a.can), pre=float(a.pre),
                 ano=a.ano, mes=a.mes, synckey=synckey_de(a.registro_id),
-                tex=tex, paride=int(a.paride or 0)))
+                tex=tex, paride=int(a.paride or 0),
+                caaide=int(a.caa_ide or 0)))
             res.escritas.append({"registro_id": a.registro_id,
                                  "hmoide": hmoide, "parte_cod": p.cod,
                                  "obra_cod": d.codigo,
                                  "destino": a.destino,
                                  "hora_codigo": a.hora_codigo,
                                  "partida_cod": a.partida_cod,
+                                 "caa_cod": a.caa_cod,
                                  "can": a.can, "pre": a.pre, "tot": a.tot})
 
         afectadas = self._cli.escribir(statements)
