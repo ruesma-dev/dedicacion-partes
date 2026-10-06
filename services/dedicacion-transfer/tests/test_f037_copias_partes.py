@@ -11,8 +11,8 @@ checkout ni tocar nada en `partes`:
 
 - contra `COMMIT_COPIADO`, el commit del que se copió (inmutable: si falla,
   la copia de aquí se ha editado);
-- contra `REF_VIGILADA`, la rama de la F-031 de `partes` hasta que llegue a
-  su `dev`; entonces se cambia a `dev` en el mismo trabajo. Si falla, se
+- contra `REF_VIGILADA`, el `dev` de `partes` (la F-031 llegó a su `dev` el
+  2026-10-06, aviso de `partes`; antes vigilaba su rama). Si falla, se
   mira el diff (design §12): estilo o texto, se recopia; regla, se para.
 
 Sin el repositorio `partes` al lado, o sin la ref: `skip` con motivo.
@@ -28,7 +28,7 @@ import pytest
 #: los cambia en la rama (la punta de la rama al copiar era `dc5666b`).
 COMMIT_COPIADO = "e85ef0e833f01f69ff25cd2937dee1e703a03fd3"
 #: Ref que se vigila (design §12).
-REF_VIGILADA = "feature/F-031-asiento-analitico"
+REF_VIGILADA = "dev"
 
 TRANSFER = Path(__file__).resolve().parents[1]
 REPO_PARTES = TRANSFER.parents[2] / "partes"
