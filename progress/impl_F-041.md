@@ -129,18 +129,29 @@ las dos (el script trabaja en un directorio temporal).
 | Evidencia | Valor real |
 |---|---|
 | Tests de F-041 | `26 passed in 4.10s` (`tests/test_f041_filtro_obra.py`, 0 `skipped`, node v24.14.1) |
-| Suite del front | `79 passed` (53 anteriores + 26 nuevos), `11.70s` dentro de `init.sh` |
+| Suite del front | `79 passed` (53 anteriores + 26 nuevos), `10.20s` dentro de `init.sh` |
 | Transfer `test_f013_sin_partida.py` | `44 passed in 2.25s` |
-| Suite global de `init.sh` | `418 passed, 1 skipped in 107.99s` (el `skipped` es previo, ajeno a F-041) |
+| Suite global de `init.sh` | `418 passed, 1 skipped in 70.11s` (el `skipped` es previo, ajeno a F-041) |
 | Cobertura de líneas cambiadas | **N/A** con motivo impreso por `init.sh`: «F-041 no cambia líneas Python de producción frente a dev». `coverage` no mide JS |
 | Mutantes generados / supervivientes | herramienta: alcance vacío (solo Python). Manual: **20 / 0** (`progress/mutacion_manual_F-041.md`) |
 | Workers de la campaña manual | 1 (en serie); ~7 s por mutante, línea base `26 passed` |
 | `node --check static/js/app.js` | OK tras T2, T3, T4 y el ajuste de tildes |
 
-### `bash harness/init.sh` (desde `porcentajes-f041`)
+### `bash harness/init.sh` (desde `porcentajes-f041`, sobre `7276ad6`), extracto
 
 ```
-INIT_FINAL
+[OK] compileall: sin errores de sintaxis
+[AVISO] ruff: 237 avisos (deuda previa, no bloquea)      <- los mismos 237 que antes de F-041
+418 passed, 1 skipped in 70.11s (0:01:10)
+[OK] pytest en verde (con medición de cobertura)
+[OK] servicio api (services/dedicacion-api): pytest en verde (caché: árbol sin cambios desde el último verde)
+79 passed, 19 warnings in 10.20s
+[OK] servicio front (services/dedicacion-front): pytest en verde
+[OK] servicio transfer (services/dedicacion-transfer): pytest en verde (caché: árbol sin cambios desde el último verde)
+[OK] PUERTA COBERTURA: N/A (F-041 no cambia líneas Python de producción frente a dev)
+[OK] PUERTA TAMAÑO: F-041 dentro de los topes (requirements 124/150, design 196/250, impl 194/220)
+[OK] Rama actual: feature/F-041-filtro-obra-postventa
+ENTORNO LISTO. Puedes trabajar.
 ```
 
 ## Fuera del alcance
@@ -159,7 +170,8 @@ INIT_FINAL
 1. Review contra `CHECKPOINTS.md`.
 2. **T6, MANUAL (humano)**, en local, antes de desplegar (abajo). Su resultado
    va a `progress/current.md` (lo escribe el líder, no el implementer).
-3. Marcar `[x]` T6 y T7 en `tasks.md` tras la review (T7 hecha: init en verde).
+3. Marcar `[x]` T6 en `tasks.md` cuando el humano la haga (T1-T5 y T7, ya
+   marcadas).
 
 ## MANUAL (humano) · T6, prueba en local
 
