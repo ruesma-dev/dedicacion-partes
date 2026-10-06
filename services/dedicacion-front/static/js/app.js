@@ -250,20 +250,20 @@ function aplicarCuadrante(datos) {
 function construirCatalogoObras() {
   // F-025: la API decide qué se ofrece. La entrada normal, si la obra está
   // `activa`; la `Postv-`, si `admite_postventa` (una obra cerrada puede
-  // ofrecerse solo como `Postv-`).
+  // ofrecerse solo como `Postv-`). F-041: la clave es el texto visible de la
+  // entrada, sin alias (D1): casa lo mismo que su chip en la columna (R11).
   state.catalogoObras = [];
   state.obras.forEach((o) => {
     if (o.activa) {
       state.catalogoObras.push({
-        obra: o, pv: false, cod: o.cod,
-        clave: normalizar(o.cod + " " + o.descripcion),
+        obra: o, pv: false, cod: etiquetaObra(o.cod, false),
+        clave: normalizar(textoObra(o.cod, o.descripcion, false)),
       });
     }
     if (o.admite_postventa) {
       state.catalogoObras.push({
-        obra: o, pv: true, cod: "Postv-" + o.cod,
-        clave: normalizar("postv postventa postv-" + o.cod + " " +
-                          o.cod + " " + o.descripcion),
+        obra: o, pv: true, cod: etiquetaObra(o.cod, true),
+        clave: normalizar(textoObra(o.cod, o.descripcion, true)),
       });
     }
   });
@@ -877,8 +877,7 @@ function construirCelda(t, clave) {
             ? " · la obra no es de la empresa de las obras: no se registrará"
             : "");
         chip.innerHTML =
-          `<span class="cod">${l.es_postventa ? "Postv-" : ""}` +
-          `${escapeHtml(l.cod)}</span>` +
+          `<span class="cod">${escapeHtml(etiquetaObra(l.cod, l.es_postventa))}</span>` +
           `<span class="pct">${fmtPct(l.porcentaje)}</span>`;
         chips.appendChild(chip);
       });
@@ -1049,7 +1048,7 @@ function chipEditable(linea, idx, editor) {
 
   const cod = document.createElement("span");
   cod.className = "cod";
-  cod.textContent = (linea.es_postventa ? "Postv-" : "") + linea.cod;
+  cod.textContent = etiquetaObra(linea.cod, linea.es_postventa);
   cod.title = linea.descripcion;
   chip.appendChild(cod);
 
