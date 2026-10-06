@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-037 en `spec_ready`** (asiento analítico, rigor crítico), rama
+**F-037 en curso** (asiento analítico, rigor crítico), rama
 `feature/F-037-asiento-analitico-obra`. F-029 se cerró el 2026-10-05 y está en
 `dev` **pendiente de desplegar** (sección siguiente). F-027 se desplegó el
 2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
@@ -43,7 +43,7 @@
   cuenta sin escribir: el 2026-10-03 dio 0 asignaciones, 0 eventos, 1
   periodo y 196 trabajadores.
 
-## F-037 · El registro genera el asiento analítico de la obra (spec lista)
+## F-037 · El registro genera el asiento analítico de la obra (en curso)
 
 - **Pedida por el humano el 2026-10-05** a partir del correo de Juan Romero
   «ARBOL ANALITICO OBRAS» (2026-09-29): cuentas analíticas por centro de
@@ -96,6 +96,13 @@
   `siguiente_cod_pt` y el alta de `hmo` sin `emp`. **Pendiente del humano:**
   D13 reabierta (título `Parte <obra>` como partes), D17 (carrera entre
   servicios al crear el parte) y D18 (`estado_parte.py` a la lista cerrada).
+- **2026-10-06: el humano aprueba D13 = `Parte <obra>`, D17 y D18**
+  (`3fe200a`); `CLAUDE.md` con `estado_parte.py` en la lista (`32c33ad`).
+  **Implementer lanzado** → `progress/impl_F-037.md` (T1-T10, T15).
+- **Tareas del líder y del humano:** T11 avisar a `partes` de la carrera y
+  del alta protegida (D17); T14 copiar a `azure-apps`; T12 preflight de solo
+  lectura en local y T13 escritura en modo pruebas en la 0404 con
+  autorización expresa y Administración avisada (comandos en `tasks.md`).
 
 ## F-028 · Borrar lo filtrado (plan aprobado, va después de F-037)
 
