@@ -8,47 +8,50 @@
 
 ## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (en curso)
 
-- **Pedida por el humano el 2026-10-06** (texto literal y datos leídos en
-  Sigrid en la descripción de `features.json`). Primera del backlog.
-- **Spec entregada** (`a9056b4`): el transfer calcula el universo VAR
-  (`POST /api/var/universo`) y valida la partida en el preflight; la api
-  descarta las obras de 6 dígitos en el sync y guarda cada partida como
-  fila de `obra` (`VAR-29`). **Aprobada por el humano el 2026-10-06** (D1-D6;
-  D4 final: código que CONTENGA 6+ dígitos seguidos, 240 obras).
-- **Implementación terminada** (`progress/impl_F-039.md`, `…`→`e69ff2a`):
-  mutación en serie 60/60; tests anteriores cambiados solo los de design §7.1
-  (dobles `_fila` y `UniversoFalso`, ANCLAS). **Review lanzada** →
-  `progress/review_F-039.md`.
+- **Qué es** (pedida el 2026-10-06; spec `specs/F-039-obras-var-y-seis-digitos/`,
+  aprobada con D1-D6): las partidas de la obra VAR desde la 29 se ofrecen como
+  obras propias `VAR-NN` (universo en el transfer, `POST /api/var/universo`;
+  registro en VAR con la partida fija); VAR deja de ofrecerse como obra normal;
+  se ignoran las obras cuyo código contiene 6+ dígitos seguidos (240).
+- **Implementación** (`progress/impl_F-039.md`): cobertura 181/181, mutación en
+  serie 60/60; tests anteriores, solo los de design §7.1. **Review 1: CAMBIOS
+  PEDIDOS solo por este fichero**, corregidos por el líder; código, tests,
+  mutación y docs dados por buenos hasta `3b531ac`. **Review 2 lanzada.**
 - **T9 (líder): hecha**, copia a `azure-apps` `f01156f` («sin desplegar»).
-- **MANUAL (humano, NADA escribe en Sigrid)**, transfer y api LOCALES desde
-  esta rama (api con `PG_HOST=localhost`), desde la raíz:
+- **MANUAL (humano, NADA escribe en Sigrid).** Arranque, en ventanas aparte y
+  desde esta rama: `python main.py` con la `.venv` de cada servicio en
+  `services/dedicacion-transfer` y en `services/dedicacion-api` (la api con
+  `PG_HOST=localhost`). Luego, desde la raíz:
   - **T12 (M1):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M1`
-    → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en
-    el cuadrante, sin `VAR` normal ni obras de 6+ dígitos;
-    `RESULTADO M1: OK`. Resultado: _pendiente_.
+    → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en el
+    cuadrante, sin `VAR` normal ni obras de 6+ dígitos; `RESULTADO M1: OK`.
+    Resultado: _pendiente_.
   - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
-    → grupo de la obra `VAR`, `escribir`, `paride = 417055`, `partida_cod
-    = "29"`, `partida_metodo = "var"`; `RESULTADO M2: OK`. Resultado: _pendiente_.
-  - **T14 (M3, usabilidad):** además el front local; buscar «29» y «arroyo»
-    → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
+    (periodo de prueba LOCAL) → grupo de la obra `VAR`, `escribir`,
+    `paride = 417055`, `partida_cod = "29"`, `partida_metodo = "var"`;
+    `RESULTADO M2: OK`. Resultado: _pendiente_.
+  - **T14 (M3, usabilidad):** además `python main.py` en
+    `services/dedicacion-front` y abrir `http://127.0.0.1:8080`; buscar «29» y
+    «arroyo» → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
     `VAR-29`; «Registrar en Sigrid» enseña la partida fija «29» (cerrar SIN
     registrar). Resultado: _pendiente_.
-  - **Despliegue:** orden transfer → api → front (la api nueva llama a
-    `POST /api/var/universo`).
-- **En paralelo, por decisión del humano:** specs de **F-040** y **F-041**
-  aprobadas en sus copias `PycharmProjects/porcentajes-f040` y
-  `PycharmProjects/porcentajes-f041` (sus `.venv` son uniones a los de aquí);
-  se implementan después de F-039.
-- **F-040, spec lista** (copia `porcentajes-f040`, `2469852`): espera al
-  humano con D1-D6. Hallazgo: el exportador ACTUAL saca notación científica
-  en el Resumen («0702 = 1E+2%», por `Decimal.normalize()`) y ningún test lo
-  ejecuta; F-040 lo corrige.
-- **Recopia de `partes` (2026-10-06):** su `e85ef0e` (cabecera de
-  dependencia, solo docstring) puso `dev` en rojo; recopiado y
-  `COMMIT_COPIADO` movido (`c906219`).
-- **Backlog reordenado por el humano el 2026-10-06:** F-040 (Excel como el
-  modelo de Juan, absorbe F-020) primera, F-038 (cuadro de mando = el Excel
-  navegable con filtros) segunda, F-039 tercera. No hay F-041.
+  - **Despliegue:** orden transfer → api → front.
+- **Observaciones de la review 1, recogidas:** `registro_sigrid.py` da 0
+  mutantes automáticos (lo cubren dos mutantes a mano) y la 1.ª campaña dio
+  dos falsos supervivientes → encargo de `arnes-base` (falsos supervivientes /
+  generador).
+
+## Features con spec aprobada, en cola (copias de trabajo aparte)
+
+- **F-040 · Excel como el modelo de Juan** (prioridad 1; absorbe F-020): spec
+  aprobada con D1-D6 = A (`c16af41`) en `PycharmProjects/porcentajes-f040`,
+  rama `feature/F-040-excel-modelo-juan`. Corrige además la notación
+  científica del Resumen actual («0702 = 1E+2%»). Se implementa al cerrar F-039.
+- **F-041 · Filtro de obra con el texto visible** (prioridad 3): spec aprobada
+  con D1-D4 = A (`9b5fc46`) en `PycharmProjects/porcentajes-f041`, rama
+  `feature/F-041-filtro-obra-postventa`. La causa real: el buscador global no
+  casa con `Postv-` y la columna mezcla chips.
+- Las dos copias tienen los `.venv` como uniones a los de esta carpeta.
 
 ## ⚠ Despliegue de F-037 (pendiente; lo lanza el humano)
 
@@ -110,11 +113,11 @@
 ## Lo siguiente, por prioridad
 
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
-primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
-(asiento analítico, cerrada, pendiente de desplegar); **F-040** (Excel como el
-modelo de Juan), **F-038** (cuadro de mando), **F-039** (spec lista); después F-028, F-021, F-030, **F-036**
-(solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
+2026-10-06): **F-040** (Excel), **F-038** (cuadro de mando = el Excel
+navegable), **F-041** (filtro de obra), **F-039** (en curso, implementada),
+F-028 (plan aprobado), F-021, F-030, F-036 (solo spec de momento), F-031,
+F-033 y, detrás, F-017, F-018… F-037 está cerrada y pendiente de desplegar
+(sección de despliegue).
 
 ## ⚠ Lo que espera al humano
 

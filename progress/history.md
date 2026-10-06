@@ -1830,3 +1830,59 @@ en texto y parámetros al nuestro (`40b9feb`). Se cambia `REF_VIGILADA` de
 `test_f037_copias_partes.py` a `dev` (la rama de la F-031 ya no existe), se
 anota la confluencia del alta en su docstring y en INTEGRACION §7 (y su copia
 en `azure-apps`): si se cambia el alta, se avisa a `partes`.
+
+## 2026-10-06 · Rastro retirado de `current.md` (review 1 de F-039)
+
+## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (en curso)
+
+- **Pedida por el humano el 2026-10-06** (texto literal y datos leídos en
+  Sigrid en la descripción de `features.json`). Primera del backlog.
+- **Spec entregada** (`a9056b4`): el transfer calcula el universo VAR
+  (`POST /api/var/universo`) y valida la partida en el preflight; la api
+  descarta las obras de 6 dígitos en el sync y guarda cada partida como
+  fila de `obra` (`VAR-29`). **Aprobada por el humano el 2026-10-06** (D1-D6;
+  D4 final: código que CONTENGA 6+ dígitos seguidos, 240 obras).
+- **Implementación terminada** (`progress/impl_F-039.md`, `…`→`e69ff2a`):
+  mutación en serie 60/60; tests anteriores cambiados solo los de design §7.1
+  (dobles `_fila` y `UniversoFalso`, ANCLAS). **Review lanzada** →
+  `progress/review_F-039.md`.
+- **T9 (líder): hecha**, copia a `azure-apps` `f01156f` («sin desplegar»).
+- **MANUAL (humano, NADA escribe en Sigrid)**, transfer y api LOCALES desde
+  esta rama (api con `PG_HOST=localhost`), desde la raíz:
+  - **T12 (M1):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M1`
+    → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en
+    el cuadrante, sin `VAR` normal ni obras de 6+ dígitos;
+    `RESULTADO M1: OK`. Resultado: _pendiente_.
+  - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
+    → grupo de la obra `VAR`, `escribir`, `paride = 417055`, `partida_cod
+    = "29"`, `partida_metodo = "var"`; `RESULTADO M2: OK`. Resultado: _pendiente_.
+  - **T14 (M3, usabilidad):** además el front local; buscar «29» y «arroyo»
+    → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
+    `VAR-29`; «Registrar en Sigrid» enseña la partida fija «29» (cerrar SIN
+    registrar). Resultado: _pendiente_.
+  - **Despliegue:** orden transfer → api → front (la api nueva llama a
+    `POST /api/var/universo`).
+- **En paralelo, por decisión del humano:** specs de **F-040** y **F-041**
+  aprobadas en sus copias `PycharmProjects/porcentajes-f040` y
+  `PycharmProjects/porcentajes-f041` (sus `.venv` son uniones a los de aquí);
+  se implementan después de F-039.
+- **F-040, spec lista** (copia `porcentajes-f040`, `2469852`): espera al
+  humano con D1-D6. Hallazgo: el exportador ACTUAL saca notación científica
+  en el Resumen («0702 = 1E+2%», por `Decimal.normalize()`) y ningún test lo
+  ejecuta; F-040 lo corrige.
+- **Recopia de `partes` (2026-10-06):** su `e85ef0e` (cabecera de
+  dependencia, solo docstring) puso `dev` en rojo; recopiado y
+  `COMMIT_COPIADO` movido (`c906219`).
+- **Backlog reordenado por el humano el 2026-10-06:** F-040 (Excel como el
+  modelo de Juan, absorbe F-020) primera, F-038 (cuadro de mando = el Excel
+  navegable con filtros) segunda, F-039 tercera. No hay F-041.
+
+### Lo siguiente, por prioridad
+
+`BACKLOG.md` tiene el orden completo (reordenado por el humano el
+2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
+primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
+(asiento analítico, cerrada, pendiente de desplegar); **F-040** (Excel como el
+modelo de Juan), **F-038** (cuadro de mando), **F-039** (spec lista); después F-028, F-021, F-030, **F-036**
+(solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
+
