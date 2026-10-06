@@ -20,6 +20,7 @@ import json
 import re
 import shutil
 import subprocess
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
@@ -224,7 +225,7 @@ def test_f041_r5_pos_y_completando_acota_letra_a_letra():
     assert res["pos"] == ["Ana", "Benito", "Carla"]
     for q in PREFIJOS[1:]:
         assert res[q] == ["Ana", "Carla"], q
-    for anterior, siguiente in zip(PREFIJOS, PREFIJOS[1:]):
+    for anterior, siguiente in pairwise(PREFIJOS):
         assert set(res[siguiente]) <= set(res[anterior]), siguiente
 
 
