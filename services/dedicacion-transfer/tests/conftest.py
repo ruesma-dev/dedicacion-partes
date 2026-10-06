@@ -18,6 +18,11 @@ todo lo que la feature necesita variar está **parametrizado**:
 - ``synckeys``: las líneas que ya escribimos nosotros (idempotencia).
 - ``obra_postventa_existe``: si la obra de postventa no está en Sigrid.
 
+F-037 le añade, solo como doble y datos: el centro (`cenide`) de las cuatro
+obras, la cuenta de plantilla de MENC y MJEFO, una cuenta por subcuenta en
+cada centro (ninguna acción anterior gana aviso), partidas sin cuenta y los
+partes del periodo derivados de ``parte`` en cada llamada.
+
 Los `ide` son inventados y no coinciden con ningún dato real.
 """
 from __future__ import annotations
@@ -31,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from domain.models.registro_models import (
     HoraRecurso, LineaEntrada, LineaSigrid, ObraEntrada, ParteDestino,
+    ParteSigrid,
 )
 
 #: Código de la obra de pruebas y de la obra de postventa usados por el
@@ -65,6 +71,10 @@ class SettingsFalso:
         self.postventa_registrar = postventa_registrar
         self.postventa_obra_cod = postventa_obra_cod
         self.paso_pos = paso_pos
+        # F-037: estados del parte (`con.est`) como en `config/settings.py`.
+        self.est_parte_activo = 1
+        self.est_parte_cerrado = 3
+        self.est_parte_imputado = 10
 
 
 def _fila(ide: int, padide: int, pos: int, cod: str, res: str,
@@ -174,6 +184,11 @@ class ClienteFalso:
         self.obra_sin_partida_pv = ObraEntrada(
             ide=555002, codigo=OBRA_SIN_PARTIDA_PV, nombre="SIN PARTIDA PV",
             empresa=EMPRESA)
+        # F-037: centro de coste (`obr.cenide`) de cada obra.
+        for o, cenide in ((self.obra, 828943), (self.obra_pv, 999002),
+                          (self.obra_origen, 555101),
+                          (self.obra_sin_partida_pv, 555102)):
+            setattr(o, "cenide", cenide)
         self.capitulos = PRESUPUESTOS_PV[presupuesto_postventa]
         self.partidas_origen = PRESUPUESTO_ORIGEN
         self._obra_pv_existe = bool(obra_postventa_existe)
@@ -184,11 +199,13 @@ class ClienteFalso:
         # que quedar otro que sí se escriba.
         self.horas = {
             100: [HoraRecurso(1, "HLPE", None, 20.0)],
-            200: [HoraRecurso(5, "MENC", None, 9000.0),
+            200: [HoraRecurso(5, "MENC", None, 9000.0,
+                              caa_cod="00000.CIMO03"),
                   HoraRecurso(9, "HEGR", None, 30.0)],
             300: [HoraRecurso(1, "HLPE", None, 20.0),
                   HoraRecurso(9, "HEGR", None, 30.0)],
-            400: [HoraRecurso(6, "MJEFO", None, 11000.0)],
+            400: [HoraRecurso(6, "MJEFO", None, 11000.0,
+                              caa_cod="00000.CIMO02")],
         }
         self.parte = ParteDestino(ano=2026, mes=7, existe=parte_existe,
                                   ide=777 if parte_existe else None,
@@ -234,7 +251,26 @@ class ClienteFalso:
     def partes_existentes(self, obra_ide, periodos):
         return {(p[0], p[1]): self.parte for p in periodos}
 
-    def siguiente_cod_pt(self, ano):
+    def partes_del_periodo(self, obra_ide, ano, mes):
+        """F-037: se deriva de ``parte`` EN CADA LLAMADA (En registro si
+        existe), así la relectura tras crear ve el parte nuevo."""
+        if not (self.parte.existe and self.parte.ide):
+            return []
+        return [ParteSigrid(int(self.parte.ide), self.parte.cod, 1)]
+
+    def cuentas_de_centro(self, cenide, empresa, subcuentas):
+        """F-037: UNA cuenta `<obra>.<subcuenta>` por subcuenta pedida."""
+        obras = (self.obra, self.obra_pv, self.obra_origen,
+                 self.obra_sin_partida_pv)
+        cod = {getattr(o, "cenide", 0): o.codigo for o in obras}.get(cenide)
+        return {s: [(90000 + i, f"{cod}.{s}")]
+                for i, s in enumerate(sorted(subcuentas), start=1)}
+
+    def partidas_de_lineas(self, parides):
+        """F-037: las partidas del doble no tienen cuenta."""
+        return {}
+
+    def siguiente_cod_pt(self, ano, empresa=None):
         return "PT26/09999"
 
     def max_pos(self, hmoide):

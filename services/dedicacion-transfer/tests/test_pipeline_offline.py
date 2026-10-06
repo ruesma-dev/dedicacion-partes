@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from application.pipelines.registro_pipeline import RegistroPipeline
 from domain.models.registro_models import (
     HoraRecurso, LineaEntrada, LineaSigrid, ObraEntrada, ParteDestino,
+    ParteSigrid,
 )
 from infrastructure.sigrid.sigrid_write_client import synckey_de
 
@@ -21,6 +22,10 @@ class Settings:
     postventa_registrar = True
     postventa_obra_cod = "POSTV2"
     paso_pos = 64
+    # F-037: estados del parte (`con.est`).
+    est_parte_activo = 1
+    est_parte_cerrado = 3
+    est_parte_imputado = 10
 
 
 class ClienteFalso:
@@ -117,7 +122,19 @@ class ClienteFalso:
     def partes_existentes(self, obra_ide, periodos):
         return {(p[0], p[1]): self.parte for p in periodos}
 
-    def siguiente_cod_pt(self, ano):
+    # F-037: los mismos métodos y firma que el doble de `conftest.py`.
+    def partes_del_periodo(self, obra_ide, ano, mes):
+        if not (self.parte.existe and self.parte.ide):
+            return []
+        return [ParteSigrid(int(self.parte.ide), self.parte.cod, 1)]
+
+    def cuentas_de_centro(self, cenide, empresa, subcuentas):
+        return {}
+
+    def partidas_de_lineas(self, parides):
+        return {}
+
+    def siguiente_cod_pt(self, ano, empresa=None):
         return "PT26/09999"
 
     def max_pos(self, hmoide):
