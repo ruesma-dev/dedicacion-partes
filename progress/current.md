@@ -90,6 +90,14 @@
     `PT26/00343`, `complementario` falso, sin cerrados (el camino del
     complementario se ejercita en T13). La MPRL trae además el conflicto
     `sin_partida` de F-013 (preexistente, no de F-037).
+  - **T13 — AUTORIZADA por el humano el 2026-10-06 («autorizo»).** Paso 1
+    hecho por el humano (`ejecutar` con `trabajador_ide` 2750167): creado
+    `PT26/00343` (con.ide 2848891, est 1, «Parte CUBIERTA NAVE 14 - JOHN
+    DEERE (PRUEBA-PORC)», fec 20261031, obra 828942, centro 828943); 2 líneas
+    (`porcentajes:124` y `:125`, hmores 408963-408964, MENC 0,5 × 6.000 =
+    3.000 cada una) con `cenide` 828943 y `caaide` 829178 = `0404.CIMO03`,
+    `tex` PRUEBA-PORC. Leído por el líder (solo lectura). Siguiente: paso 3
+    (Administración contabiliza `PT26/00343`).
   - **T13, ESCRITURA en modo pruebas (0404).** Condición previa: autorización
     expresa del humano para esta acción y Administración avisada. Pasos:
     1. `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/ejecutar" -H "Content-Type: application/json" -d "{\"trabajador_ide\": <ide>}"`
