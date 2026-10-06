@@ -302,24 +302,6 @@
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
-      "id": "F-020",
-      "title": "Revisar y mejorar el formato del Excel de exportacion actual",
-      "description": "Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio. 2026-10-06: el humano pide «mejorar el excel» como feature y, inmediatamente después, una pestaña de cuadros y análisis (F-038).",
-      "acceptance": [
-        "La hoja Detalle ya no lleva la columna «Obra(código)» (antigua columna E)",
-        "Lista escrita de que se cambia y que se deja, revisada con el humano ANTES de tocar el codigo",
-        "Ningun cambio que mueva o renombre columnas de la hoja Detalle sin decision expresa del humano en esa lista",
-        "Se ensena el resultado real -un fichero generado y abierto-, no solo tests en verde",
-        "Tests que fijan el formato que se decida, para que no se pierda en el siguiente cambio",
-        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
-      ],
-      "status": "pending",
-      "sdd": false,
-      "rigor": "estandar",
-      "priority": 5,
-      "branch": "feature/F-020-mejorar-excel-exportacion"
-    },
-    {
       "id": "F-021",
       "title": "Filtro por obra: solo su chip y los recursos asignados en Sesame",
       "description": "Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asignaciones pinta un chip por cada obra del trabajador (dedicacion-front/static/js/app.js, construirCelda ~530-545). El filtro 'Filtrar obra...' de esa columna (trabajadoresVisibles ~439) decide que FILAS se ven, pero cada fila sigue pintando TODOS sus chips: filtras por una obra y ves al trabajador con las otras cuatro al lado. Se pide que, con el filtro activo, cada fila muestre solo el chip que coincide. A DECIDIR EN LA SPEC: la columna total y el estado (OK/FALTA/EXCESO) seguirian refiriendose al 100 % de TODAS las obras, asi que la fila se contradice a simple vista; hay que decidir si se recalcula sobre lo filtrado -y entonces el estado deja de significar lo que significa- o si se avisa de que hay chips ocultos. Es presentacion pura: no toca dedicacion-api ni el transfer y no cambia nada de lo que se registra en Sigrid. AMPLIADA 2026-09-29 (revisión de negocio): el filtro por obra debe además SELECCIONAR los recursos asignados a esa obra en Sesame (el humano confirma que Sesame guarda la obra de cada persona). Eso deja de ser presentación pura: cruza la frontera del proyecto (sesame-api, ver azure-apps/partes.md 5.3 bis) y la consulta la hace la API, no el front. Pendiente en la spec: si sesame-api expone la obra asignada y si está desplegado; cómo se casa la persona (DNI) y la obra de Sesame con las de Sigrid. La selección que produce es la que usa F-029.",
@@ -335,7 +317,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 3,
+      "priority": 5,
       "branch": "feature/F-021-filtro-obra-chip-unico"
     },
     {
@@ -463,7 +445,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 2,
+      "priority": 4,
       "branch": "feature/F-028-borrar-todo-filtrado"
     },
     {
@@ -499,7 +481,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 4,
+      "priority": 6,
       "branch": "feature/F-030-dias-bajas-incidencias"
     },
     {
@@ -636,9 +618,10 @@
     },
     {
       "id": "F-038",
-      "title": "Cuadros y análisis: una pestaña de analítica en la app",
-      "description": "Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar el Excel (F-020). Una pestaña nueva en el front con cuadros y análisis de la dedicación: por obra, por trabajador, por empresa, por categoría y por mes, y su evolución. Qué cuadros, con qué cortes y si llevan coste (dedicación × importe mensual del recurso, P3) se decide en la spec con el humano. Los cálculos y agregados los hace la API (el front no lleva lógica de negocio); solo lectura de la base `dedicacion`, nada en Sigrid. Si incluye coste, cuidar quién lo ve.",
+      "title": "Cuadro de mando: el Excel navegable con filtros en una pestaña de la app",
+      "description": "Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar el Excel (F-020). Una pestaña nueva en el front con cuadros y análisis de la dedicación: por obra, por trabajador, por empresa, por categoría y por mes, y su evolución. Qué cuadros, con qué cortes y si llevan coste (dedicación × importe mensual del recurso, P3) se decide en la spec con el humano. Los cálculos y agregados los hace la API (el front no lleva lógica de negocio); solo lectura de la base `dedicacion`, nada en Sigrid. Si incluye coste, cuidar quién lo ve. REDEFINIDA por el humano el 2026-10-06: «crear una pestaña que genere un cuadro de mando que sea el excel (que sea navegable con filtros, etc.)»; usa F-038 en vez de abrir otra feature, con prioridad 2, detrás de F-040 (el Excel del modelo de Juan, que define el contenido: Detalle y Resumen).",
       "acceptance": [
+        "La pestaña muestra lo mismo que el Excel de F-040 (Detalle agrupado por trabajador y Resumen), navegable y con filtros por columna",
         "Lista de cuadros y cortes decidida con el humano antes de implementar",
         "Los agregados los calcula la API (endpoints de solo lectura) y cuadran con el cuadrante y el Excel del mismo mes",
         "La pestaña respeta el selector de empresa y el periodo, y no interfiere con el cuadrante ni con su teclado",
@@ -649,7 +632,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 6,
+      "priority": 2,
       "branch": "feature/F-038-pestana-analitica"
     },
     {
@@ -667,8 +650,28 @@
       "status": "spec_ready",
       "sdd": true,
       "rigor": "critico",
-      "priority": 1,
+      "priority": 3,
       "branch": "feature/F-039-obras-var-y-seis-digitos"
+    },
+    {
+      "id": "F-040",
+      "title": "El Excel de exportación como el modelo de Juan Romero (Detalle agrupado por trabajador y Resumen)",
+      "description": "Pedida por el humano el 2026-10-06: «modifique el excel que se genera para que sea como el del email de juan último. Que se agrupen los resultados por trabajador, separando con color y línea gruesa entre trabajadores». Modelo: correo de Juan Romero «RV: ARCHIVO PRUEBA DEFINITIVO» (2026-10-06, adjunto «Reparto Mensual_PruebaDEF.xlsx»; NO se versiona: lleva nombres de personas). «Dos pestañas: Detalle y Resumen, que pueda aplicar filtros»; «en la pestaña Resumen mantendríamos el formato actual. Está configurado el filtro para que lo haga bien, ya que hay celdas combinadas». Estructura leída por el líder: Detalle con título «DETALLE DE DEDICACIÓN · <Mes> <Año>» y columnas Empleado, Categoría, Código, Obra, % dedicación, Total empleado, Desviación, Estado (una fila por obra del trabajador, agrupadas por trabajador; casos como Código VAR, o vacío con «RESTO POSTVENTA»); Resumen con título «RESUMEN · <Mes> <Año>» y columnas Empleado, Categoría, Obras (una celda: «0702 Hotel Virgen Puerto = 33% + 0707 Tomillar El Escorial = 67%»), Total %, Estado. ABSORBE F-020 (decisión del humano 2026-10-06), cuya descripción era: Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio. 2026-10-06: el humano pide «mejorar el excel» como feature y, inmediatamente después, una pestaña de cuadros y análisis (F-038).",
+      "acceptance": [
+        "Pestaña Detalle como el modelo: título con mes y año, columnas Empleado, Categoría, Código, Obra, % dedicación, Total empleado, Desviación, Estado, agrupada por trabajador",
+        "Separación visual entre trabajadores con color alterno y línea gruesa; los autofiltros funcionan con las celdas combinadas como en el modelo",
+        "Pestaña Resumen como el modelo: una fila por trabajador con la columna Obras «<código> <nombre> = NN% + …», Total % y Estado",
+        "Decidido y escrito de dónde sale el nombre corto de la obra del Resumen (el modelo usa abreviaturas hechas a mano)",
+        "Heredado de F-020: la hoja Detalle ya no lleva la antigua columna «Obra(código)» y no se mueven columnas sin decisión expresa",
+        "Los totales y estados los calcula la API con la regla del 100 % (el exportador no decide cifras propias)",
+        "Se enseña el resultado real (un fichero generado y abierto) y lo revisa el humano antes de cerrar",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 1,
+      "branch": "feature/F-040-excel-modelo-juan"
     }
   ]
 }

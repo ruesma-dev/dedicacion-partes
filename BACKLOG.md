@@ -9,12 +9,12 @@ Resumen: **37 features**, 18 abiertas, 19 terminadas.
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-039 | Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos | 1 | spec lista | critico | `feature/F-039-obras-var-y-seis-digitos` |
-| F-028 | Borrar todo lo que está en pantalla | 2 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
-| F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 3 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
-| F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 4 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
-| F-020 | Revisar y mejorar el formato del Excel de exportacion actual | 5 | pendiente | estandar | `feature/F-020-mejorar-excel-exportacion` |
-| F-038 | Cuadros y análisis: una pestaña de analítica en la app | 6 | pendiente | estandar | `feature/F-038-pestana-analitica` |
+| F-040 | El Excel de exportación como el modelo de Juan Romero (Detalle agrupado por trabajador y Resumen) | 1 | pendiente | estandar | `feature/F-040-excel-modelo-juan` |
+| F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 2 | pendiente | estandar | `feature/F-038-pestana-analitica` |
+| F-039 | Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos | 3 | spec lista | critico | `feature/F-039-obras-var-y-seis-digitos` |
+| F-028 | Borrar todo lo que está en pantalla | 4 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
+| F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 5 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
+| F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 6 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
 | F-036 | Un recurso cerrado en bloque en Sigrid no cuenta en el mes de su cierre | 7 | pendiente | critico | `feature/F-036-baja-efectiva-recurso` |
 | F-031 | MCP para que una IA haga el trabajo del usuario | 8 | pendiente | critico | `feature/F-031-mcp-ia` |
 | F-033 | Deshacer una línea real mal escrita en Sigrid | 9 | pendiente | critico | `feature/F-033-deshacer-linea-real` |
@@ -54,41 +54,41 @@ Resumen: **37 features**, 18 abiertas, 19 terminadas.
 
 ## Detalle
 
+### F-040 · El Excel de exportación como el modelo de Juan Romero (Detalle agrupado por trabajador y Resumen)
+
+estado **pendiente** · prioridad 1 · rigor `estandar` · SDD sí · rama `feature/F-040-excel-modelo-juan`
+
+Pedida por el humano el 2026-10-06: «modifique el excel que se genera para que sea como el del email de juan último. Que se agrupen los resultados por trabajador, separando con color y línea gruesa entre trabajadores». Modelo: correo de Juan Romero «RV: ARCHIVO PRUEBA DEFINITIVO» (2026-10-06, adjunto «Reparto Mensual_PruebaDEF.xlsx»; NO se versiona: lleva nombres de personas). «Dos pestañas: Detalle y Resumen, que pueda aplicar filtros»; «en la pestaña Resumen mantendríamos el formato actual. Está configurado el filtro para que lo haga bien, ya que hay celdas combinadas». Estructura leída por el líder: Detalle con título «DETALLE DE DEDICACIÓN · <Mes> <Año>» y columnas Empleado, Categoría, Código, Obra, % dedicación, Total empleado, Desviación, Estado (una fila por obra del trabajador, agrupadas por trabajador; casos como Código VAR, o vacío con «RESTO POSTVENTA»); Resumen con título «RESUMEN · <Mes> <Año>» y columnas Empleado, Categoría, Obras (una celda: «0702 Hotel Virgen Puerto = 33% + 0707 Tomillar El Escorial = 67%»), Total %, Estado. ABSORBE F-020 (decisión del humano 2026-10-06), cuya descripción era: Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio. 2026-10-06: el humano pide «mejorar el excel» como feature y, inmediatamente después, una pestaña de cuadros y análisis (F-038).
+
+### F-038 · Cuadro de mando: el Excel navegable con filtros en una pestaña de la app
+
+estado **pendiente** · prioridad 2 · rigor `estandar` · SDD sí · rama `feature/F-038-pestana-analitica`
+
+Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar el Excel (F-020). Una pestaña nueva en el front con cuadros y análisis de la dedicación: por obra, por trabajador, por empresa, por categoría y por mes, y su evolución. Qué cuadros, con qué cortes y si llevan coste (dedicación × importe mensual del recurso, P3) se decide en la spec con el humano. Los cálculos y agregados los hace la API (el front no lleva lógica de negocio); solo lectura de la base `dedicacion`, nada en Sigrid. Si incluye coste, cuidar quién lo ve. REDEFINIDA por el humano el 2026-10-06: «crear una pestaña que genere un cuadro de mando que sea el excel (que sea navegable con filtros, etc.)»; usa F-038 en vez de abrir otra feature, con prioridad 2, detrás de F-040 (el Excel del modelo de Juan, que define el contenido: Detalle y Resumen).
+
 ### F-039 · Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos
 
-estado **spec lista** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-039-obras-var-y-seis-digitos`
+estado **spec lista** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-039-obras-var-y-seis-digitos`
 
 Pedida por el humano el 2026-10-06: «añade como se ha hecho en postventa la obra de código VAR, hay que coger sus partidas, pero a partir de la que empieza por 29 (inclusive), si empieza por un número inferior no. Por otro lado las obras con código de 6 números juntos o más ignóralas». Datos leídos por el líder en Sigrid (solo lectura): la obra VAR «OBRAS VARIAS» de la empresa 1 (con.ide 683806, est 15) tiene bajo su capítulo CD (obrparpar 52979) 29 partidas hoja numeradas 01-29, cada una una obra pequeña (p. ej. 29 «ACOND. NAVE MODUL-A, ARROYOMOLINOS»); hoy solo entraría la 29. Hay otra VAR en la empresa 28 con una partida 28 (las obras son siempre de la empresa de las obras, F-034). Obras con 6+ dígitos seguidos en el código: 240 (239 de la empresa 1, 1 de la 25), todas antiguas (090201, 191105, 0902051…). Como en postventa (F-025), cada partida de VAR se ofrece como una entrada propia y registra en la obra VAR con esa partida. 2026-10-06: spec escrita (`specs/F-039-obras-var-y-seis-digitos/`), con D1-D6 pendientes del humano; lecturas del spec-author: VAR está EN CURSO (hoy se ofrece como obra normal), su centro tiene cuentas VAR.CIMO01-16, la partida 29 es la ide 417055 con 4 líneas de Administración en 2026-08, y de las 240 obras de 6+ dígitos ninguna tiene parte desde 2024 ni asignaciones en la base local.
 
 ### F-028 · Borrar todo lo que está en pantalla
 
-estado **pendiente** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-028-borrar-todo-filtrado`
+estado **pendiente** · prioridad 4 · rigor `estandar` · SDD no · rama `feature/F-028-borrar-todo-filtrado`
 
 Salida de la revisión de negocio del 2026-09-29. Botón «Borrar todo». Decisión del humano 2026-09-29: borra SOLO lo filtrado que aparece en pantalla en ese momento, no el mes entero. El borrado lo hace la API sobre la lista de trabajadores que le pasa el front. PLAN APROBADO por el humano el 2026-10-06 (PARADA 1) con la opción A: siempre todo lo visible, aunque haya selección de F-029. Plan: POST /periodos/{a}/{m}/borrar con lista de trabajadores y modo «solo calcular» para el diálogo; borra solo líneas no registradas y conserva las registradas; un evento deshacible por trabajador (F-027); periodo cerrado → rechazo entero; botón sin atajo, foco en Cancelar; prueba de usabilidad en local antes de desplegar. Se hace DESPUÉS de F-037 (decisión del humano).
 
 ### F-021 · Filtro por obra: solo su chip y los recursos asignados en Sesame
 
-estado **pendiente** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-021-filtro-obra-chip-unico`
+estado **pendiente** · prioridad 5 · rigor `estandar` · SDD sí · rama `feature/F-021-filtro-obra-chip-unico`
 
 Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asignaciones pinta un chip por cada obra del trabajador (dedicacion-front/static/js/app.js, construirCelda ~530-545). El filtro 'Filtrar obra...' de esa columna (trabajadoresVisibles ~439) decide que FILAS se ven, pero cada fila sigue pintando TODOS sus chips: filtras por una obra y ves al trabajador con las otras cuatro al lado. Se pide que, con el filtro activo, cada fila muestre solo el chip que coincide. A DECIDIR EN LA SPEC: la columna total y el estado (OK/FALTA/EXCESO) seguirian refiriendose al 100 % de TODAS las obras, asi que la fila se contradice a simple vista; hay que decidir si se recalcula sobre lo filtrado -y entonces el estado deja de significar lo que significa- o si se avisa de que hay chips ocultos. Es presentacion pura: no toca dedicacion-api ni el transfer y no cambia nada de lo que se registra en Sigrid. AMPLIADA 2026-09-29 (revisión de negocio): el filtro por obra debe además SELECCIONAR los recursos asignados a esa obra en Sesame (el humano confirma que Sesame guarda la obra de cada persona). Eso deja de ser presentación pura: cruza la frontera del proyecto (sesame-api, ver azure-apps/partes.md 5.3 bis) y la consulta la hace la API, no el front. Pendiente en la spec: si sesame-api expone la obra asignada y si está desplegado; cómo se casa la persona (DNI) y la obra de Sesame con las de Sigrid. La selección que produce es la que usa F-029.
 
 ### F-030 · Dedicación por días, bajas e incidencias con calendario del trabajador
 
-estado **pendiente** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-030-dias-bajas-incidencias`
+estado **pendiente** · prioridad 6 · rigor `critico` · SDD sí · rama `feature/F-030-dias-bajas-incidencias`
 
 Salida de la revisión de negocio del 2026-09-29. Dos peticiones que se resuelven con el mismo mecanismo: (1) en vez de teclear el %, indicar un rango de fechas y que el % salga de los días laborables; (2) poder indicar bajas y otras incidencias como en partes (V/B/AT/FJ/F/H/M, ver azure-apps/partes.md), con el % calculado por días. Decisiones del humano 2026-09-29: el calendario es el mismo que usa nominas-extras, cada trabajador con el suyo (allí: convenio por CCC, festivos por convenio y año, fines de semana no laborables; application/services/convenio_calendar.py). UX: una tecla especial (por ejemplo +) sobre la obra del recurso despliega una subfila debajo para fechas y tipo; NO debe interferir ni ralentizar la secuencia actual % Enter obra Enter, que funciona bien. A DECIDIR EN LA SPEC: de dónde sale el convenio de cada trabajador aquí; dónde viven los festivos sin copiar lógica ni datos entre proyectos (regla de límite de servicio); si las incidencias se escriben en Sigrid como en partes o solo descuentan días del 100 %; cómo afecta a P1-P5 del transfer.
-
-### F-020 · Revisar y mejorar el formato del Excel de exportacion actual
-
-estado **pendiente** · prioridad 5 · rigor `estandar` · SDD no · rama `feature/F-020-mejorar-excel-exportacion`
-
-Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio. 2026-10-06: el humano pide «mejorar el excel» como feature y, inmediatamente después, una pestaña de cuadros y análisis (F-038).
-
-### F-038 · Cuadros y análisis: una pestaña de analítica en la app
-
-estado **pendiente** · prioridad 6 · rigor `estandar` · SDD sí · rama `feature/F-038-pestana-analitica`
-
-Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar el Excel (F-020). Una pestaña nueva en el front con cuadros y análisis de la dedicación: por obra, por trabajador, por empresa, por categoría y por mes, y su evolución. Qué cuadros, con qué cortes y si llevan coste (dedicación × importe mensual del recurso, P3) se decide en la spec con el humano. Los cálculos y agregados los hace la API (el front no lleva lógica de negocio); solo lectura de la base `dedicacion`, nada en Sigrid. Si incluye coste, cuidar quién lo ve.
 
 ### F-036 · Un recurso cerrado en bloque en Sigrid no cuenta en el mes de su cierre
 
