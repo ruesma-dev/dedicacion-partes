@@ -1886,3 +1886,68 @@ primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
 modelo de Juan), **F-038** (cuadro de mando), **F-039** (spec lista); después F-028, F-021, F-030, **F-036**
 (solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
 
+## 2026-10-06 · F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos
+
+Rama `feature/F-039-obras-var-y-seis-digitos` · `sdd: true` · rigor `critico` ·
+**APROBADO** en la pasada 2 (la 1 pidió solo rastro). Decisiones del humano
+D1-D6 (2026-10-06): VAR deja de ofrecerse como obra normal; entradas `VAR-NN`;
+«desde la 29» = número inicial ≥ 29; D4 final: se ignora toda obra cuyo código
+CONTENGA 6 o más dígitos seguidos (240); líneas existentes en obras que
+desaparecen se quedan marcadas; cada entrada es una fila de `obra`.
+
+**Qué cambió.** El transfer calcula el universo VAR (`POST /api/var/universo`)
+y valida la partida (`var_paride`) en el preflight; la api lo pide en el sync y
+el preview, descarta las obras de 6+ dígitos y guarda cada partida como fila
+`VAR-NN` (ide negativo, tres columnas nuevas) que se registra en la obra VAR
+con su partida fija; el front pinta la partida fija. Cobertura 181/181,
+mutación en serie 60/60. MANUAL del humano: M1 (240 excluidas, `VAR-29`
+activa), M2 (preflight a VAR con partida 29) y M3 (usabilidad, «todo ok»).
+`azure-apps`: `f01156f`.
+
+Informes: `progress/impl_F-039.md`, `progress/review_F-039.md`. Sección
+retirada de `current.md`:
+
+## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (en curso)
+
+- **Qué es** (pedida el 2026-10-06; spec `specs/F-039-obras-var-y-seis-digitos/`,
+  aprobada con D1-D6): las partidas de la obra VAR desde la 29 se ofrecen como
+  obras propias `VAR-NN` (universo en el transfer, `POST /api/var/universo`;
+  registro en VAR con la partida fija); VAR deja de ofrecerse como obra normal;
+  se ignoran las obras cuyo código contiene 6+ dígitos seguidos (240).
+- **Implementación** (`progress/impl_F-039.md`): cobertura 181/181, mutación en
+  serie 60/60; tests anteriores, solo los de design §7.1. **Review 1: CAMBIOS
+  PEDIDOS solo por este fichero**, corregidos por el líder; código, tests,
+  mutación y docs dados por buenos hasta `3b531ac`. **Review 2: APROBADO.**
+  Para el `done` solo faltan las MANUAL T12-T14 del humano; no se mergea a
+  `dev` hasta entonces.
+- **T9 (líder): hecha**, copia a `azure-apps` `f01156f` («sin desplegar»).
+- **MANUAL (humano, NADA escribe en Sigrid).** Arranque, en ventanas aparte y
+  desde esta rama: `python main.py` con la `.venv` de cada servicio en
+  `services/dedicacion-transfer` y en `services/dedicacion-api` (la api con
+  `PG_HOST=localhost`). Luego, desde la raíz:
+  - **T12 (M1):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M1`
+    → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en el
+    cuadrante, sin `VAR` normal ni obras de 6+ dígitos; `RESULTADO M1: OK`.
+    **Resultado (2026-10-06, humano): CUMPLIDA.** Preview: brutas 923, total
+    289, `excluidas_por_codigo` 240, `entradas_var` 1, `obra_var` VAR, motivos
+    nulos. Sync local: obras 289 recibidas, 240 desactivadas. Cuadrante:
+    `VAR-29` (ide -417055, activa), sin VAR normal, sin `150414`, 0 obras
+    activas con 6+ dígitos. `RESULTADO M1: OK`.
+  - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
+    (periodo de prueba LOCAL) → grupo de la obra `VAR`, `escribir`,
+    `paride = 417055`, `partida_cod = "29"`, `partida_metodo = "var"`;
+    `RESULTADO M2: OK`. **Resultado (2026-10-06, humano): CUMPLIDA.** Periodo
+    2026-10, trabajador 2750167: grupo VAR (ide 683806) `escribir`, `paride`
+    417055, `partida_cod` 29, método `var`, `caa_cod` `0404.CIMO03` (modo
+    pruebas: centro de la 0404; en real, el de VAR); `no_vigentes` vacío.
+  - **T14 (M3, usabilidad):** además `python main.py` en
+    `services/dedicacion-front` y abrir `http://127.0.0.1:8080`; buscar «29» y
+    «arroyo» → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
+    `VAR-29`; «Registrar en Sigrid» enseña la partida fija «29» (cerrar SIN
+    registrar). Resultado: _pendiente_.
+  - **Despliegue:** orden transfer → api → front.
+- **Observaciones de la review 1, recogidas:** `registro_sigrid.py` da 0
+  mutantes automáticos (lo cubren dos mutantes a mano) y la 1.ª campaña dio
+  dos falsos supervivientes → encargo de `arnes-base` (falsos supervivientes /
+  generador).
+

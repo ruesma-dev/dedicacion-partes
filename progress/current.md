@@ -1,79 +1,39 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-039 en curso** (obras VAR y de 6 dígitos; implementada, en review), rama
-`feature/F-039-obras-var-y-seis-digitos`. F-037 se cerró el 2026-10-06 y está en
-`dev` **pendiente de desplegar** (sección siguiente). F-029 se desplegó el
-2026-10-06 (resúmenes en `history.md`). El arnés es la **1.7.3**.
-
-## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (en curso)
-
-- **Qué es** (pedida el 2026-10-06; spec `specs/F-039-obras-var-y-seis-digitos/`,
-  aprobada con D1-D6): las partidas de la obra VAR desde la 29 se ofrecen como
-  obras propias `VAR-NN` (universo en el transfer, `POST /api/var/universo`;
-  registro en VAR con la partida fija); VAR deja de ofrecerse como obra normal;
-  se ignoran las obras cuyo código contiene 6+ dígitos seguidos (240).
-- **Implementación** (`progress/impl_F-039.md`): cobertura 181/181, mutación en
-  serie 60/60; tests anteriores, solo los de design §7.1. **Review 1: CAMBIOS
-  PEDIDOS solo por este fichero**, corregidos por el líder; código, tests,
-  mutación y docs dados por buenos hasta `3b531ac`. **Review 2: APROBADO.**
-  Para el `done` solo faltan las MANUAL T12-T14 del humano; no se mergea a
-  `dev` hasta entonces.
-- **T9 (líder): hecha**, copia a `azure-apps` `f01156f` («sin desplegar»).
-- **MANUAL (humano, NADA escribe en Sigrid).** Arranque, en ventanas aparte y
-  desde esta rama: `python main.py` con la `.venv` de cada servicio en
-  `services/dedicacion-transfer` y en `services/dedicacion-api` (la api con
-  `PG_HOST=localhost`). Luego, desde la raíz:
-  - **T12 (M1):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M1`
-    → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en el
-    cuadrante, sin `VAR` normal ni obras de 6+ dígitos; `RESULTADO M1: OK`.
-    **Resultado (2026-10-06, humano): CUMPLIDA.** Preview: brutas 923, total
-    289, `excluidas_por_codigo` 240, `entradas_var` 1, `obra_var` VAR, motivos
-    nulos. Sync local: obras 289 recibidas, 240 desactivadas. Cuadrante:
-    `VAR-29` (ide -417055, activa), sin VAR normal, sin `150414`, 0 obras
-    activas con 6+ dígitos. `RESULTADO M1: OK`.
-  - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
-    (periodo de prueba LOCAL) → grupo de la obra `VAR`, `escribir`,
-    `paride = 417055`, `partida_cod = "29"`, `partida_metodo = "var"`;
-    `RESULTADO M2: OK`. **Resultado (2026-10-06, humano): CUMPLIDA.** Periodo
-    2026-10, trabajador 2750167: grupo VAR (ide 683806) `escribir`, `paride`
-    417055, `partida_cod` 29, método `var`, `caa_cod` `0404.CIMO03` (modo
-    pruebas: centro de la 0404; en real, el de VAR); `no_vigentes` vacío.
-  - **T14 (M3, usabilidad):** además `python main.py` en
-    `services/dedicacion-front` y abrir `http://127.0.0.1:8080`; buscar «29» y
-    «arroyo» → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
-    `VAR-29`; «Registrar en Sigrid» enseña la partida fija «29» (cerrar SIN
-    registrar). Resultado: _pendiente_.
-  - **Despliegue:** orden transfer → api → front.
-- **Observaciones de la review 1, recogidas:** `registro_sigrid.py` da 0
-  mutantes automáticos (lo cubren dos mutantes a mano) y la 1.ª campaña dio
-  dos falsos supervivientes → encargo de `arnes-base` (falsos supervivientes /
-  generador).
+**Ninguna feature en ejecución en esta copia.** F-039 se cerró el 2026-10-06;
+F-037 y F-039 están en `dev` **pendientes de desplegar juntas** (sección
+siguiente). En paralelo, por decisión del humano: F-040 (aprobada en review,
+falta su M1) en `PycharmProjects/porcentajes-f040` y F-041 (implementándose)
+en `PycharmProjects/porcentajes-f041`. El arnés es la **1.7.3**.
 
 ## Features con spec aprobada, en cola (copias de trabajo aparte)
 
 - **F-040 · Excel como el modelo de Juan** (prioridad 1; absorbe F-020): spec
   aprobada con D1-D6 = A (`c16af41`) en `PycharmProjects/porcentajes-f040`,
   rama `feature/F-040-excel-modelo-juan`. Corrige además la notación
-  científica del Resumen actual («0702 = 1E+2%»). **Implementer lanzado en
-  su copia el 2026-10-06** con F-039 ya aprobada y a la espera solo de las
-  MANUAL del humano (dos ramas en curso a la vez, por decisión del humano de
-  trabajar en paralelo; en cada rama solo hay una `in_progress`).
-- **F-041 · Filtro de obra con el texto visible** (prioridad 3): spec aprobada
-  con D1-D4 = A (`9b5fc46`) en `PycharmProjects/porcentajes-f041`, rama
+  científica del Resumen actual («0702 = 1E+2%»). **Implementada y aprobada
+  en review (pasada 2) en su copia; falta la M1 del humano** (revisar el
+  Excel real; comando en el `current.md` de esa copia).
+- **F-041 · Filtro de obra con el texto visible** (prioridad 3; implementándose
+  en su copia): spec aprobada con D1-D4 = A (`9b5fc46`) en `PycharmProjects/porcentajes-f041`, rama
   `feature/F-041-filtro-obra-postventa`. La causa real: el buscador global no
   casa con `Postv-` y la columna mezcla chips.
 - Las dos copias tienen los `.venv` como uniones a los de esta carpeta.
 
-## ⚠ Despliegue de F-037 (pendiente; lo lanza el humano)
+## ⚠ Despliegue de F-037 + F-039 (pendiente; lo lanza el humano)
 
-- Cambia **solo el transfer** (`.\redeploy_dedicacion.ps1 -Solo transfer`,
-  desde `dev`); el transfer desplegado ya escribe en real
-  (`OBRA_PRUEBAS_FORZAR=false`), no hay que tocar permisos ni variables. Sin
-  DDL ni sync.
-- **Comprobación tras desplegar:** un preflight de producción (solo lectura)
-  con una línea MENC o MJEFO: `caa_cod` `<obra>.CIMO0x`, `caa_origen`
-  `recurso`. Desde ese momento, lo registrado lleva la cuenta analítica.
+- **Orden obligatorio transfer → api → front** (`.\redeploy_dedicacion.ps1`
+  sin `-Solo`, que ya respeta ese orden), desde `dev`: la api de F-039 llama a
+  `POST /api/var/universo`, que solo tiene el transfer nuevo. El transfer
+  desplegado ya escribe en real; no hay que tocar permisos. La api añade sus
+  tres columnas de `obra` al arrancar.
+- **Después: sync** («Actualizar Sigrid»): hasta entonces no aparece `VAR-29` ni
+  desaparecen las obras de 6+ dígitos.
+- **Comprobación:** preview de producción con `excluidas_por_codigo` 240 y
+  `entradas_var` 1; un preflight (solo lectura) con una línea MENC o MJEFO
+  (`caa_cod` `<obra>.CIMO0x`, F-037) y otra en `VAR-29` (`paride` 417055,
+  cuenta `VAR.CIMO0x`).
 
 ## Producción, hoy
 
@@ -126,7 +86,7 @@
 
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
 2026-10-06): **F-040** (Excel), **F-038** (cuadro de mando = el Excel
-navegable), **F-041** (filtro de obra), **F-039** (en curso, implementada),
+navegable), **F-041** (filtro de obra), **F-039** (cerrada, pendiente de desplegar),
 F-028 (plan aprobado), F-021, F-030, F-036 (solo spec de momento), F-031,
 F-033 y, detrás, F-017, F-018… F-037 está cerrada y pendiente de desplegar
 (sección de despliegue).

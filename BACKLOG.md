@@ -3,9 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **38 features**, 19 abiertas, 19 terminadas.
-
-En curso: **F-039**.
+Resumen: **38 features**, 18 abiertas, 20 terminadas.
 
 ## Trabajo abierto
 
@@ -14,7 +12,6 @@ En curso: **F-039**.
 | F-040 | El Excel de exportación como el modelo de Juan Romero (Detalle agrupado por trabajador y Resumen) | 1 | pendiente | estandar | `feature/F-040-excel-modelo-juan` |
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 2 | pendiente | estandar | `feature/F-038-pestana-analitica` |
 | F-041 | El filtro de obra casa con el texto tal como sale en la app (incluido Postv-) | 3 | pendiente | estandar | `feature/F-041-filtro-obra-postventa` |
-| F-039 | Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos | 4 | en curso | critico | `feature/F-039-obras-var-y-seis-digitos` |
 | F-028 | Borrar todo lo que está en pantalla | 5 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 6 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 7 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
@@ -52,6 +49,7 @@ En curso: **F-039**.
 | F-013 | Una linea sin partida no se escribe en silencio | 4 | critico |
 | F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | documental |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 4 | critico |
+| F-039 | Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos | 4 | critico |
 | F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 5 | estandar |
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
@@ -74,12 +72,6 @@ Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar e
 estado **pendiente** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-041-filtro-obra-postventa`
 
 Pedida por el humano el 2026-10-06: «al filtrar por obra no filtra bien postventa. Quiero filtrar todas las obras de postventa (es decir, empiezan por Postv-), y me gustaría que si pongo pos, y voy completando, filtre por texto incluido en el nombre de la obra tal cual sale en la app». Causa vista por el líder: el filtro de la columna de asignaciones (`trabajadoresVisibles` y `textoColumna` en services/dedicacion-front/static/js/app.js) compara con `l.cod` y `l.descripcion`, no con la etiqueta que pinta el chip (`Postv-0656 …`, y `VAR-29` cuando llegue F-039). Es presentación: solo front.
-
-### F-039 · Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos
-
-estado **en curso** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-039-obras-var-y-seis-digitos`
-
-Pedida por el humano el 2026-10-06: «añade como se ha hecho en postventa la obra de código VAR, hay que coger sus partidas, pero a partir de la que empieza por 29 (inclusive), si empieza por un número inferior no. Por otro lado las obras con código de 6 números juntos o más ignóralas». Datos leídos por el líder en Sigrid (solo lectura): la obra VAR «OBRAS VARIAS» de la empresa 1 (con.ide 683806, est 15) tiene bajo su capítulo CD (obrparpar 52979) 29 partidas hoja numeradas 01-29, cada una una obra pequeña (p. ej. 29 «ACOND. NAVE MODUL-A, ARROYOMOLINOS»); hoy solo entraría la 29. Hay otra VAR en la empresa 28 con una partida 28 (las obras son siempre de la empresa de las obras, F-034). Obras con 6+ dígitos seguidos en el código: 240 (239 de la empresa 1, 1 de la 25), todas antiguas (090201, 191105, 0902051…). Como en postventa (F-025), cada partida de VAR se ofrece como una entrada propia y registra en la obra VAR con esa partida. 2026-10-06: spec escrita (`specs/F-039-obras-var-y-seis-digitos/`), con D1-D6 pendientes del humano; lecturas del spec-author: VAR está EN CURSO (hoy se ofrece como obra normal), su centro tiene cuentas VAR.CIMO01-16, la partida 29 es la ide 417055 con 4 líneas de Administración en 2026-08, y de las 240 obras de 6+ dígitos ninguna tiene parte desde 2024 ni asignaciones en la base local. 2026-10-06: spec APROBADA por el humano (D1-D6; D4 final: se ignora toda obra cuyo código contenga 6 o más dígitos seguidos, 240 obras). Pasa a implementación en paralelo con la spec de F-040 (worktree aparte), por decisión del humano.
 
 ### F-028 · Borrar todo lo que está en pantalla
 
@@ -272,6 +264,12 @@ Pedida por el humano el 2026-08-20, con el sistema ya desplegado. Sin esto el si
 estado **terminada** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-025-obras-postventa-postv2`
 
 Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en progress/explore_maestros_sync.md. Negocio echa en falta obras de postventa. Causa: las obras en postventa están CERRADAS en Sigrid y el filtro estados_excluidos de config.yaml las quita; sin la obra en el maestro el front no ofrece su Postv-XXXX (app.js ~175-191). 69 de 78 obras con postventa en POSTV2 no llegan. Decisión del humano 2026-09-29: la lista de obras de postventa sale de los CAPÍTULOS del proyecto POSTV2, sea cual sea el estado de la obra. Propuesta del líder pendiente de objeción: una obra cerrada se ofrece solo como Postv-, no como obra normal. RIESGOS para la spec: (a) F-002 dejó escrito en docs/ARCHITECTURE.md que P5 imputa por PARTIDA en POSTV2; hay que conciliar capítulos y partidas sin romper esa regla; (b) límite de servicio: POSTVENTA_OBRA_COD vive hoy solo en el transfer; decidir si la API lo lee o pregunta al transfer, pero el universo de postventa del front y el del transfer no pueden divergir. RECOGIDO del cierre de F-022 (2026-09-30): el preflight del transfer publica partidas_postventa también en obras sin líneas de postventa, porque el catálogo _nodos_pv se queda en la instancia del pipeline entre llamadas. Inofensivo hoy; como esta feature redefine el universo de postventa, se corrige aquí. SPEC APROBADA por el humano el 2026-10-01 con D1-D7 de requirements.md, con estas precisiones: D2 = B (solo código exacto o código seguido solo de letras; fuera los escalones por descripción y por nombre, que hoy dan falsos casados como CP -> CP.1 y OT -> CI.7.5; cambian 4 tests de F-002 y el texto de P5, firmado por el humano con esta aprobación); D4 CAMBIA: el humano aclara que TODAS las obras, incluida la postventa, son de Construcciones Ruesma (empresa 1): solo existe la POSTV2 de la empresa 1 y el universo de postventa es siempre el de la empresa 1; el spec-author debe reescribir D4 y lo que dependa de «empresa E» EN SU SITIO antes de implementar; D6 POSTV antigua fuera. Espera turno: van antes F-034 (obras siempre de Ruesma) y F-026. 2026-10-03: spec revisada tras F-034/F-026 (progress/spec_F-025_revision.md) y APROBADA por el humano con D8 = A (la obra-capítulo queda fuera; 8 tests de F-002 cambian, design §7.1). Pasa a implementación. CERRADA (done) el 2026-10-03: review pasada 2 APROBADA; T13 (M1: 83/73, 0656 0660 0669 0689 solo Postv-, CP OT 191105 fuera, cuadrante igual con la 1 y la 18) y T14 (M2: Postv-0656 casa con el capítulo 0656, partidas_postventa vacío en la obra sin postventa, no_vigentes vacío) cumplidas por el humano; T10 commit 897587f en azure-apps. PENDIENTE DE DESPLEGAR (transfer antes o con la api, sync justo después, retirar el aviso de CP/OT). DESPLEGADA el 2026-10-03 (transfer r20261003-1444, api r20261003-1446, front r20261003-1447); preview de producción: admiten_postventa 83, solo_postventa 73, motivo_postventa null.
+
+### F-039 · Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos
+
+estado **terminada** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-039-obras-var-y-seis-digitos`
+
+Pedida por el humano el 2026-10-06: «añade como se ha hecho en postventa la obra de código VAR, hay que coger sus partidas, pero a partir de la que empieza por 29 (inclusive), si empieza por un número inferior no. Por otro lado las obras con código de 6 números juntos o más ignóralas». Datos leídos por el líder en Sigrid (solo lectura): la obra VAR «OBRAS VARIAS» de la empresa 1 (con.ide 683806, est 15) tiene bajo su capítulo CD (obrparpar 52979) 29 partidas hoja numeradas 01-29, cada una una obra pequeña (p. ej. 29 «ACOND. NAVE MODUL-A, ARROYOMOLINOS»); hoy solo entraría la 29. Hay otra VAR en la empresa 28 con una partida 28 (las obras son siempre de la empresa de las obras, F-034). Obras con 6+ dígitos seguidos en el código: 240 (239 de la empresa 1, 1 de la 25), todas antiguas (090201, 191105, 0902051…). Como en postventa (F-025), cada partida de VAR se ofrece como una entrada propia y registra en la obra VAR con esa partida. 2026-10-06: spec escrita (`specs/F-039-obras-var-y-seis-digitos/`), con D1-D6 pendientes del humano; lecturas del spec-author: VAR está EN CURSO (hoy se ofrece como obra normal), su centro tiene cuentas VAR.CIMO01-16, la partida 29 es la ide 417055 con 4 líneas de Administración en 2026-08, y de las 240 obras de 6+ dígitos ninguna tiene parte desde 2024 ni asignaciones en la base local. 2026-10-06: spec APROBADA por el humano (D1-D6; D4 final: se ignora toda obra cuyo código contenga 6 o más dígitos seguidos, 240 obras). Pasa a implementación en paralelo con la spec de F-040 (worktree aparte), por decisión del humano. CERRADA (done) el 2026-10-06: review pasada 2 APROBADA; M1 (sync: 240 excluidas, VAR-29 activa), M2 (preflight VAR-29 → obra VAR, partida 29) y M3 (usabilidad) cumplidas por el humano («todo ok»). PENDIENTE DE DESPLEGAR (transfer → api → front, junto con F-037).
 
 ### F-027 · Deshacer solo lo propio: nadie deshace lo de otro usuario
 
