@@ -1692,3 +1692,122 @@ Informes: `progress/impl_F-029.md`, `progress/review_F-029.md`,
   - **T13:** escritura en modo pruebas en la 0404 con autorización expresa
     y Administración avisada (pasos en `tasks.md`). Resultado: _pendiente_.
 
+## 2026-10-06 · Despliegue de F-029
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo api,front` desde
+una copia de trabajo de `dev` (`porcentajes-despliegue`, para no subir F-037,
+en curso en su rama): `api:r20261006-1140`, `front:r20261006-1141`; transfer
+sin cambios (`r20261003-1444`, modo real). Sin DDL ni sync. `azure-apps`
+actualizado en el mismo trabajo.
+
+## 2026-10-06 · F-037 · El registro rellena la cuenta analítica de la obra
+
+Rama `feature/F-037-asiento-analitico-obra` · `sdd: true` · rigor `critico` ·
+**APROBADO** por el reviewer en la pasada 2 (la 1 pidió solo rastro).
+
+**Qué se descubrió.** Sigrid ya genera el asiento analítico de cada parte
+(`ANA`, botón «Contabiliza parte…», que deja el parte en Imputado) desde
+`hmores.caaide` de cada línea; el 6XX lo pone la nómina. El transfer escribía
+`caaide = 0`, así que sus líneas no entraban en el `ANA`.
+
+**Qué cambió.** El transfer rellena `caaide` con la regla de `partes` (cuenta de
+la ficha de horas del recurso o, si no, de la partida C[ID], en el centro de la
+obra destino) y NO escribe asientos. Copia adaptada de la F-031 de `partes`
+(mismo parte): copia literal de `estado_parte.py` y `cuenta_analitica.py`
+(`9b202e9`, lista cerrada de `CLAUDE.md`) con test anti-divergencia; elige el
+parte igual que `partes` (cerrado = estado ≠ En registro), crea o reutiliza el
+complementario `Parte <obra>` con alta protegida (D17) y evalúa duplicados y
+conflictos contra todos los partes del periodo. Corrige de paso
+`siguiente_cod_pt` y el alta de `hmo`, que no filtraban por empresa.
+
+**Decisiones del humano.** D1-D18 (2026-10-05 y 2026-10-06): sin asientos; la
+cuenta sale del recurso («mira en partes»); parte cerrado → complementario;
+copiar adaptada la F-031 de `partes` en curso («se usa el mismo parte
+realmente»); D13 `Parte <obra>`; D17 alta protegida; D15/D18 copias.
+
+**Verificado.** Cobertura 219/219; mutación en serie 85/85 (y 25/25 en las
+copias sin el test de copias). T12 (preflight local) cumplida. T13 en modo
+pruebas, autorizada: `PT26/00343` creado con dos líneas en `0404.CIMO03`,
+contabilizado por Administración («ha funcionado perfectamente») y borrado por
+el humano. **Aplazado por el humano:** probar el complementario en real.
+`azure-apps`: `5416cd1`.
+
+Informes: `progress/impl_F-037.md`, `progress/review_F-037.md`,
+`progress/mutacion_F-037.md`, `progress/mutacion_F-037_copias.md`,
+`progress/explore_F-037.md`, `progress/explore_F-037_partes_F-031.md`.
+Sección retirada de `current.md`:
+
+## F-037 · El registro genera el asiento analítico de la obra (en curso)
+
+- **Qué es** (pedida el 2026-10-05; correo de Juan Romero «ARBOL ANALITICO
+  OBRAS»): Sigrid YA genera el asiento analítico de cada parte (`ANA`, botón
+  «Contabiliza parte…», que deja el parte en Imputado); el 6XX lo pone la
+  nómina. El transfer escribía `hmores.caaide = 0` y sus líneas no entraban en
+  el `ANA`. **F-037 rellena `caaide` y no escribe asientos** (D1 = A).
+- **Spec aprobada** (D1-D18 decididas el 2026-10-05 y 2026-10-06; resumen en
+  `history.md` al cerrar): copia ADAPTADA de la F-031 de `partes`, porque los
+  dos escriben en el MISMO parte. Copia literal de `estado_parte.py` y
+  `cuenta_analitica.py` (rama de `partes` `9b202e9`; lista cerrada de
+  `CLAUDE.md` ampliada, `b7ef1e6` y `32c33ad`); complementario `Parte <obra>`
+  (D13); alta protegida (D17); cualquier estado ≠ En registro es cerrado (D16).
+- **Implementación** (`progress/impl_F-037.md`, `6f97dc2`…`40b9feb`): cobertura
+  219/219; mutación en serie 85/85 (y 25/25 en las copias sin el test de
+  copias). Tests anteriores: solo dobles y la ancla de la lista cerrada.
+- **Review 1 (2026-10-06): CAMBIOS PEDIDOS solo por el rastro** (este fichero y
+  la `acceptance` de `features.json`), corregidos por el líder; código, tests,
+  mutación y docs dados por buenos hasta `ac125cb`. **Review 2: APROBADO.**
+  NO se mergea a `dev` hasta cumplir T12 y T13 (para que un despliegue
+  desde `dev` no lleve F-037 sin verificar en Sigrid).
+- **T14 (líder): hecha**, copia a `azure-apps` `5416cd1` («sin desplegar»).
+- **T11 (aviso a `partes`):** `partes` YA recogió la carrera y el alta
+  protegida de D17 (su commit `9ea7c59`). **Falta avisarles** del hueco de
+  `OrigenSubcuenta` sin test de inmutabilidad (lo pasa el humano). Además su
+  DA11 cambiará la cabecera de las copias: pondrá en rojo
+  `test_f037_copias_partes.py::…ref_vigilada` y habrá que **recopiar** y mover
+  `COMMIT_COPIADO` (design §12: «texto, se recopia»).
+- **Observación del implementer, propuesta al humano como feature:** la
+  capacidad no se evalúa en un periodo sin ningún parte (dos líneas nuevas del
+  mismo recurso que sumen > 1 no avisan). Preexistente.
+- **MANUAL (humano), API y transfer LOCALES desde esta rama:**
+  - **T12, solo lectura.** Transfer con `OBRA_PRUEBAS_FORZAR=true` y api con
+    `TRANSFER_BASE_URL=http://127.0.0.1:8006`; periodo de prueba local con un
+    MENC o MJEFO y un MPRL:
+    `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight" -H "Content-Type: application/json" -d "{}"`.
+    Esperado: MENC/MJEFO `escribir` con `caa_cod` `0404.CIMO03`/`CIMO02` y
+    `caa_origen` `recurso`; MPRL con `caa_ide` 0 y aviso de `.CIMO16`; en
+    `partes[]` `estado`, `complementario` y `aviso`. **NO `ejecutar`.**
+    **Resultado (2026-10-06, humano, octubre 2026, 7 obras forzadas a 0404):
+    CUMPLIDA.** 11 acciones `escribir`: MENC → `0404.CIMO03` y MJEFO →
+    `0404.CIMO02`, `caa_origen` `recurso`; MPRL → sin cuenta,
+    `caa_motivo` `obra_sin_cuenta` y aviso «la obra 0404 no tiene la cuenta
+    analitica .CIMO16». Parte de 0404 2026-10 inexistente: se crearía
+    `PT26/00343`, `complementario` falso, sin cerrados (el camino del
+    complementario se ejercita en T13). La MPRL trae además el conflicto
+    `sin_partida` de F-013 (preexistente, no de F-037).
+  - **T13 — AUTORIZADA por el humano el 2026-10-06 («autorizo»).** Paso 1
+    hecho por el humano (`ejecutar` con `trabajador_ide` 2750167): creado
+    `PT26/00343` (con.ide 2848891, est 1, «Parte CUBIERTA NAVE 14 - JOHN
+    DEERE (PRUEBA-PORC)», fec 20261031, obra 828942, centro 828943); 2 líneas
+    (`porcentajes:124` y `:125`, hmores 408963-408964, MENC 0,5 × 6.000 =
+    3.000 cada una) con `cenide` 828943 y `caaide` 829178 = `0404.CIMO03`,
+    `tex` PRUEBA-PORC. Leído por el líder (solo lectura). Siguiente: paso 3
+    (Administración contabiliza `PT26/00343`).
+  - **T13, ESCRITURA en modo pruebas (0404).** Condición previa: autorización
+    expresa del humano para esta acción y Administración avisada. Pasos:
+    1. `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/ejecutar" -H "Content-Type: application/json" -d "{\"trabajador_ide\": <ide>}"`
+       (mes sin actividad en 0404). Esperado: la línea `registrado`.
+    2. Lectura, desde `services/dedicacion-api` con `PYTHONPATH=.`:
+       `.venv/Scripts/python -c "from config.settings import get_settings; from infrastructure.sigrid.sigrid_client import SigridApiClient as C; print(C(get_settings()).leer(\"SELECT hmores.caaide, cc.cod AS cuenta, pt.cod AS parte, pt.est, hmores.cenide, hmores.tot FROM hmores JOIN con pt ON pt.ide = hmores.hmoide LEFT JOIN con cc ON cc.ide = hmores.caaide WHERE hmores.synckey = 'porcentajes:<id>'\"))"` (Git Bash; `<id>` = el `registro_id` de la línea: el transfer desplegado escribe en real y `LIKE` traería líneas reales).
+       Esperado: `caaide` ≠ 0, `cuenta` `0404.CIMOxx`, `cenide` el de 0404,
+       parte `est` 1.
+    3. Administración pulsa «Contabiliza parte…»: parte en `est` 10 y `ANA` con
+       debe a `0404.CIMOxx` por `tot` y haber a `CP.<persona>`; confirma que la
+       línea se ve como una tecleada.
+    4. Otra línea del mismo mes (paso 1 con otro trabajador): va a un
+       complementario `Parte 0404 …` nuevo, que se contabiliza aparte.
+    5. Limpieza, desde `services/dedicacion-transfer`:
+       `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar` (dry-run)
+       y luego `… limpiar --confirmar`; Administración anula los `ANA` y el
+       complementario.
+    Resultado: _pendiente_.
+

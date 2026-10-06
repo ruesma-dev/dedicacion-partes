@@ -1,21 +1,26 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-037 en curso** (asiento analítico, rigor crítico), rama
-`feature/F-037-asiento-analitico-obra`. F-029 se cerró el 2026-10-05 y está en
-`dev` **pendiente de desplegar** (sección siguiente). F-027 se desplegó el
-2026-10-05 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+**Ninguna feature en ejecución.** F-037 se cerró el 2026-10-06 y está en
+`dev` **pendiente de desplegar** (sección siguiente). F-029 se desplegó el
+2026-10-06 (resúmenes en `history.md`). El arnés es la **1.7.3**.
 
-## ⚠ Despliegue de F-029 (pendiente; lo lanza el humano)
+## ⚠ Despliegue de F-037 (pendiente; lo lanza el humano)
 
-- Cambian la **api** y el **front** (`redeploy_dedicacion.ps1 -Solo api,front`,
-  que respeta el orden api → front); sin DDL (`evento.tipo` es texto) ni sync.
-- **Comprobación tras desplegar:** en producción, seleccionar con Ctrl+clic a
-  un trabajador en FALTA, pulsar C, confirmar la obra y ver que queda al
-  100 %; Ctrl+Z lo devuelve. No hace falta registrar en Sigrid.
+- Cambia **solo el transfer** (`.\redeploy_dedicacion.ps1 -Solo transfer`,
+  desde `dev`); el transfer desplegado ya escribe en real
+  (`OBRA_PRUEBAS_FORZAR=false`), no hay que tocar permisos ni variables. Sin
+  DDL ni sync.
+- **Comprobación tras desplegar:** un preflight de producción (solo lectura)
+  con una línea MENC o MJEFO: `caa_cod` `<obra>.CIMO0x`, `caa_origen`
+  `recurso`. Desde ese momento, lo registrado lleva la cuenta analítica.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-06: F-029** (api `r20261006-1140`, front
+  `r20261006-1141`): selección múltiple con Ctrl/Shift y «Completar al
+  100 %» (tecla C). **Comprobación pendiente:** un trabajador en FALTA,
+  Ctrl+clic, C, confirmar la obra → 100 %; Ctrl+Z lo devuelve.
 - **Desplegado el 2026-10-05: F-027** (solo la api, `r20261005-0915`): cada
   usuario solo deshace lo suyo. **Comprobación pendiente, con dos personas
   (A y B) en el mismo mes y trabajador:** A guarda → B no ve el botón y su
@@ -43,80 +48,6 @@
   cuenta sin escribir: el 2026-10-03 dio 0 asignaciones, 0 eventos, 1
   periodo y 196 trabajadores.
 
-## F-037 · El registro genera el asiento analítico de la obra (en curso)
-
-- **Qué es** (pedida el 2026-10-05; correo de Juan Romero «ARBOL ANALITICO
-  OBRAS»): Sigrid YA genera el asiento analítico de cada parte (`ANA`, botón
-  «Contabiliza parte…», que deja el parte en Imputado); el 6XX lo pone la
-  nómina. El transfer escribía `hmores.caaide = 0` y sus líneas no entraban en
-  el `ANA`. **F-037 rellena `caaide` y no escribe asientos** (D1 = A).
-- **Spec aprobada** (D1-D18 decididas el 2026-10-05 y 2026-10-06; resumen en
-  `history.md` al cerrar): copia ADAPTADA de la F-031 de `partes`, porque los
-  dos escriben en el MISMO parte. Copia literal de `estado_parte.py` y
-  `cuenta_analitica.py` (rama de `partes` `9b202e9`; lista cerrada de
-  `CLAUDE.md` ampliada, `b7ef1e6` y `32c33ad`); complementario `Parte <obra>`
-  (D13); alta protegida (D17); cualquier estado ≠ En registro es cerrado (D16).
-- **Implementación** (`progress/impl_F-037.md`, `6f97dc2`…`40b9feb`): cobertura
-  219/219; mutación en serie 85/85 (y 25/25 en las copias sin el test de
-  copias). Tests anteriores: solo dobles y la ancla de la lista cerrada.
-- **Review 1 (2026-10-06): CAMBIOS PEDIDOS solo por el rastro** (este fichero y
-  la `acceptance` de `features.json`), corregidos por el líder; código, tests,
-  mutación y docs dados por buenos hasta `ac125cb`. **Review 2: APROBADO.**
-  NO se mergea a `dev` hasta cumplir T12 y T13 (para que un despliegue
-  desde `dev` no lleve F-037 sin verificar en Sigrid).
-- **T14 (líder): hecha**, copia a `azure-apps` `5416cd1` («sin desplegar»).
-- **T11 (aviso a `partes`):** `partes` YA recogió la carrera y el alta
-  protegida de D17 (su commit `9ea7c59`). **Falta avisarles** del hueco de
-  `OrigenSubcuenta` sin test de inmutabilidad (lo pasa el humano). Además su
-  DA11 cambiará la cabecera de las copias: pondrá en rojo
-  `test_f037_copias_partes.py::…ref_vigilada` y habrá que **recopiar** y mover
-  `COMMIT_COPIADO` (design §12: «texto, se recopia»).
-- **Observación del implementer, propuesta al humano como feature:** la
-  capacidad no se evalúa en un periodo sin ningún parte (dos líneas nuevas del
-  mismo recurso que sumen > 1 no avisan). Preexistente.
-- **MANUAL (humano), API y transfer LOCALES desde esta rama:**
-  - **T12, solo lectura.** Transfer con `OBRA_PRUEBAS_FORZAR=true` y api con
-    `TRANSFER_BASE_URL=http://127.0.0.1:8006`; periodo de prueba local con un
-    MENC o MJEFO y un MPRL:
-    `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight" -H "Content-Type: application/json" -d "{}"`.
-    Esperado: MENC/MJEFO `escribir` con `caa_cod` `0404.CIMO03`/`CIMO02` y
-    `caa_origen` `recurso`; MPRL con `caa_ide` 0 y aviso de `.CIMO16`; en
-    `partes[]` `estado`, `complementario` y `aviso`. **NO `ejecutar`.**
-    **Resultado (2026-10-06, humano, octubre 2026, 7 obras forzadas a 0404):
-    CUMPLIDA.** 11 acciones `escribir`: MENC → `0404.CIMO03` y MJEFO →
-    `0404.CIMO02`, `caa_origen` `recurso`; MPRL → sin cuenta,
-    `caa_motivo` `obra_sin_cuenta` y aviso «la obra 0404 no tiene la cuenta
-    analitica .CIMO16». Parte de 0404 2026-10 inexistente: se crearía
-    `PT26/00343`, `complementario` falso, sin cerrados (el camino del
-    complementario se ejercita en T13). La MPRL trae además el conflicto
-    `sin_partida` de F-013 (preexistente, no de F-037).
-  - **T13 — AUTORIZADA por el humano el 2026-10-06 («autorizo»).** Paso 1
-    hecho por el humano (`ejecutar` con `trabajador_ide` 2750167): creado
-    `PT26/00343` (con.ide 2848891, est 1, «Parte CUBIERTA NAVE 14 - JOHN
-    DEERE (PRUEBA-PORC)», fec 20261031, obra 828942, centro 828943); 2 líneas
-    (`porcentajes:124` y `:125`, hmores 408963-408964, MENC 0,5 × 6.000 =
-    3.000 cada una) con `cenide` 828943 y `caaide` 829178 = `0404.CIMO03`,
-    `tex` PRUEBA-PORC. Leído por el líder (solo lectura). Siguiente: paso 3
-    (Administración contabiliza `PT26/00343`).
-  - **T13, ESCRITURA en modo pruebas (0404).** Condición previa: autorización
-    expresa del humano para esta acción y Administración avisada. Pasos:
-    1. `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/ejecutar" -H "Content-Type: application/json" -d "{\"trabajador_ide\": <ide>}"`
-       (mes sin actividad en 0404). Esperado: la línea `registrado`.
-    2. Lectura, desde `services/dedicacion-api` con `PYTHONPATH=.`:
-       `.venv/Scripts/python -c "from config.settings import get_settings; from infrastructure.sigrid.sigrid_client import SigridApiClient as C; print(C(get_settings()).leer(\"SELECT hmores.caaide, cc.cod AS cuenta, pt.cod AS parte, pt.est, hmores.cenide, hmores.tot FROM hmores JOIN con pt ON pt.ide = hmores.hmoide LEFT JOIN con cc ON cc.ide = hmores.caaide WHERE hmores.synckey = 'porcentajes:<id>'\"))"` (Git Bash; `<id>` = el `registro_id` de la línea: el transfer desplegado escribe en real y `LIKE` traería líneas reales).
-       Esperado: `caaide` ≠ 0, `cuenta` `0404.CIMOxx`, `cenide` el de 0404,
-       parte `est` 1.
-    3. Administración pulsa «Contabiliza parte…»: parte en `est` 10 y `ANA` con
-       debe a `0404.CIMOxx` por `tot` y haber a `CP.<persona>`; confirma que la
-       línea se ve como una tecleada.
-    4. Otra línea del mismo mes (paso 1 con otro trabajador): va a un
-       complementario `Parte 0404 …` nuevo, que se contabiliza aparte.
-    5. Limpieza, desde `services/dedicacion-transfer`:
-       `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar` (dry-run)
-       y luego `… limpiar --confirmar`; Administración anula los `ANA` y el
-       complementario.
-    Resultado: _pendiente_.
-
 ## F-028 · Borrar lo filtrado (plan aprobado, va después de F-037)
 
 - Plan aprobado por el humano el 2026-10-06 con **A** (siempre todo lo
@@ -136,7 +67,7 @@
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
 2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
 primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
-(asiento analítico, en curso, sección de arriba); después F-028, F-021, F-030, F-020 (Excel), **F-038**
+(asiento analítico, cerrada, pendiente de desplegar); después F-028, F-021, F-030, F-020 (Excel), **F-038**
 (pestaña de analítica, pedida el 2026-10-06 justo detrás del Excel), **F-036**
 (solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
 
@@ -157,6 +88,18 @@ primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
    las contraseñas antes de sus pasos 1-2 (observación del implementer de
    F-035): hoy, una contraseña rechazada llega después de comprobar el
    servidor y, si faltaba, crear la regla de servicios de Azure.
+
+7. **F-037, complementario en real (aplazado por el humano el 2026-10-06):**
+   probar con Administración que, con el parte del mes contabilizado, una
+   línea nueva va a un complementario `Parte <obra>`. Los tests lo cubren;
+   en Sigrid no se ha visto.
+8. **F-037, aviso a `partes` (T11):** ya recogieron la carrera (D17, su
+   `9ea7c59`); falta pasarles el test de inmutabilidad de `OrigenSubcuenta`.
+   Su DA11 pondrá en rojo `test_f037_copias_partes.py::…ref_vigilada`:
+   recopiar y mover `COMMIT_COPIADO`.
+9. Decidir si se abre como feature lo que vio el implementer de F-037: la
+   capacidad no se evalúa en un periodo sin ningún parte (dos líneas nuevas
+   del mismo recurso que sumen más del 100 % no avisan). Preexistente.
 
 > **`azure-apps` no tiene remoto configurado** (`git remote -v` vacío): vive
 > solo en local. No es de este proyecto, pero ahí está la documentación de todo

@@ -3,15 +3,12 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **36 features**, 18 abiertas, 18 terminadas.
-
-En curso: **F-037**.
+Resumen: **36 features**, 17 abiertas, 19 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-037 | El registro de partes genera el asiento analítico en la cuenta de la obra | 1 | en curso | critico | `feature/F-037-asiento-analitico-obra` |
 | F-028 | Borrar todo lo que está en pantalla | 2 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 3 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 4 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
@@ -37,6 +34,7 @@ En curso: **F-037**.
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | 1 | estandar |
 | F-034 | Las obras son siempre de Construcciones Ruesma; el selector filtra solo trabajadores | 1 | critico |
 | F-035 | El script de vaciado no funciona contra Azure: la contraseña se corrompe | 1 | estandar |
+| F-037 | El registro de partes genera el asiento analítico en la cuenta de la obra | 1 | critico |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | critico |
@@ -54,12 +52,6 @@ En curso: **F-037**.
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
-
-### F-037 · El registro de partes genera el asiento analítico en la cuenta de la obra
-
-estado **en curso** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-037-asiento-analitico-obra`
-
-Pedida por el humano el 2026-10-05 («el parte debe generar asiento en la cuenta analítica en Sigrid»), a partir del correo de Juan Romero (Dir. Admón y Control de Costes) «ARBOL ANALITICO OBRAS» del 2026-09-29. Las cuentas analíticas están vinculadas al centro de coste de cada obra (Obra > Contabilidad > Cuentas analíticas: centro de coste asociado, p. ej. 0702), con un árbol C COSTES (CD directos, CI indirectos, CP proporcionales CP0001-CP0010) e I INGRESOS (INGR01 producción, INGR02 certificación). Dentro del asiento se define la cuenta financiera y la cuenta analítica del gasto (6XX): ejemplo real, asiento XRT26/05432 con la línea 6260000000 desglosada al 100 % al centro 0702, cuenta 0702.CP0004 (avales). Lo que se pide: que lo que registra el transfer (la dedicación del trabajador a la obra) genere también su asiento con desglose analítico en la cuenta de la obra. Es ESCRITURA en Sigrid (solo el transfer, P1-P5): rigor crítico, modo pruebas y autorización expresa como el resto. Primero exploración del modelo de asientos y desglose analítico de Sigrid (azure-apps/sigrid_tablas.md, lecturas por sigrid-api) y de si el parte ya genera coste analítico por sí mismo; las decisiones de negocio (qué 6XX, qué cuenta analítica CD/CI/CP, contrapartida, importe, fecha, agrupación, deshacer) las valida Administración (Juan Romero). 2026-10-06: spec APROBADA por el humano como copia adaptada de la F-031 de partes (mismo parte): D1-D18 decididas (D13 = `Parte <obra>`, D17 alta protegida, D15/D18 copias en la lista cerrada de CLAUDE.md). Pasa a implementación.
 
 ### F-028 · Borrar todo lo que está en pantalla
 
@@ -181,6 +173,12 @@ estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `featu
 
 Detectado en el despliegue del 2026-10-02. infra/vaciar_datos_prueba_dedicacion.ps1 pasa la contraseña del rol de aplicación a 'az postgres flexible-server execute -p <clave>'. En Windows az es un .cmd, así que la línea pasa por cmd.exe, que corrompe los caracteres especiales de la contraseña: 'password authentication failed' aunque la contraseña del Key Vault es correcta (la api conecta con ella). El vaciado de producción se hizo a mano con psql (PGPASSWORD en el entorno, PGSSLMODE=require) con las mismas tres sentencias del script. Corregir el script para que contra Azure use psql igual que en local (o pase la contraseña sin cmd.exe), con test. Mismo riesgo en cualquier otro script de infra/ que pase secretos a az por argumento: revisarlos. PLAN APROBADO por el humano el 2026-10-02 (PARADA 1): ver progress/current.md, sección F-035. Review 1 (2026-10-02): CAMBIOS PEDIDOS solo por la tabla reproducible de la campaña manual (C4 bis); el humano aprobó además añadir ')' a los caracteres rechazados. MANUAL 1 (2026-10-03): FALLA con 'password authentication failed', pero por la contraseña introducida (10 caracteres frente a 14 en el Key Vault, comparadas en memoria), no por el script. Ciclo 3 aprobado por el humano: leer PG-PASSWORD del Key Vault y afinar el aviso de firewall. CERRADA (done) el 2026-10-03: review pasada 3 APROBADA; MANUAL 2 cumplida por el humano (-SoloRecuento contra Azure: contraseña leída de PG-PASSWORD sin pedirla, recuento 0/0/1/196, entorno limpio False False). No requiere despliegue: son scripts de infra/ que ejecuta una persona.
 
+### F-037 · El registro de partes genera el asiento analítico en la cuenta de la obra
+
+estado **terminada** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-037-asiento-analitico-obra`
+
+Pedida por el humano el 2026-10-05 («el parte debe generar asiento en la cuenta analítica en Sigrid»), a partir del correo de Juan Romero (Dir. Admón y Control de Costes) «ARBOL ANALITICO OBRAS» del 2026-09-29. Las cuentas analíticas están vinculadas al centro de coste de cada obra (Obra > Contabilidad > Cuentas analíticas: centro de coste asociado, p. ej. 0702), con un árbol C COSTES (CD directos, CI indirectos, CP proporcionales CP0001-CP0010) e I INGRESOS (INGR01 producción, INGR02 certificación). Dentro del asiento se define la cuenta financiera y la cuenta analítica del gasto (6XX): ejemplo real, asiento XRT26/05432 con la línea 6260000000 desglosada al 100 % al centro 0702, cuenta 0702.CP0004 (avales). Lo que se pide: que lo que registra el transfer (la dedicación del trabajador a la obra) genere también su asiento con desglose analítico en la cuenta de la obra. Es ESCRITURA en Sigrid (solo el transfer, P1-P5): rigor crítico, modo pruebas y autorización expresa como el resto. Primero exploración del modelo de asientos y desglose analítico de Sigrid (azure-apps/sigrid_tablas.md, lecturas por sigrid-api) y de si el parte ya genera coste analítico por sí mismo; las decisiones de negocio (qué 6XX, qué cuenta analítica CD/CI/CP, contrapartida, importe, fecha, agrupación, deshacer) las valida Administración (Juan Romero). 2026-10-06: spec APROBADA por el humano como copia adaptada de la F-031 de partes (mismo parte): D1-D18 decididas (D13 = `Parte <obra>`, D17 alta protegida, D15/D18 copias en la lista cerrada de CLAUDE.md). Pasa a implementación. CERRADA (done) el 2026-10-06: review pasada 2 APROBADA; T12 cumplida (preflight local: CIMO03/CIMO02 del recurso, MPRL sin cuenta con aviso); T13 AUTORIZADA y hecha en modo pruebas: PT26/00343 creado con dos líneas en 0404.CIMO03, contabilizado por Administración («ha funcionado perfectamente», humano) y limpiado por el humano; el paso del complementario en real queda APLAZADO por decisión del humano. PENDIENTE DE DESPLEGAR (solo transfer).
+
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 
 estado **terminada** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-002-reglas-postventa-conflicto`
@@ -233,7 +231,7 @@ Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo
 
 estado **terminada** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-029-seleccion-multiple-completar-100`
 
-Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas con Ctrl (sueltas) y Shift (rango) y aplicarles una acción que asigna a la obra filtrada. Decisión del humano 2026-09-29: COMPLETA HASTA EL 100 %, es decir, a cada trabajador le pone en la obra filtrada lo que le falte para llegar al 100 %, sin tocar sus otras obras. Depende del filtro por obra (F-021). El cálculo de lo que falta vive en la API, no en app.js. 2026-10-05: el humano la pone por delante de F-021 (trabaja con el filtro de obra que ya existe; Sesame queda en F-021). SPEC en specs/F-029-seleccion-multiple-completar-100/, con decisiones abiertas D1-D6 en requirements.md §6 y lista cerrada de tests anteriores que cambian: ninguno (comprobado con un prototipo). 2026-10-05: spec APROBADA por el humano con D1-D6 = A (las recomendadas). Pasa a implementación. CONDICIÓN DEL HUMANO: antes de desplegar quiere probar la usabilidad en local (T9). CERRADA (done) el 2026-10-05: review pasada 2 APROBADA; T9 (usabilidad en local) cumplida por el humano: «está todo ok, podemos desplegarlo». PENDIENTE DE DESPLEGAR (api y front; sin DDL ni sync).
+Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas con Ctrl (sueltas) y Shift (rango) y aplicarles una acción que asigna a la obra filtrada. Decisión del humano 2026-09-29: COMPLETA HASTA EL 100 %, es decir, a cada trabajador le pone en la obra filtrada lo que le falte para llegar al 100 %, sin tocar sus otras obras. Depende del filtro por obra (F-021). El cálculo de lo que falta vive en la API, no en app.js. 2026-10-05: el humano la pone por delante de F-021 (trabaja con el filtro de obra que ya existe; Sesame queda en F-021). SPEC en specs/F-029-seleccion-multiple-completar-100/, con decisiones abiertas D1-D6 en requirements.md §6 y lista cerrada de tests anteriores que cambian: ninguno (comprobado con un prototipo). 2026-10-05: spec APROBADA por el humano con D1-D6 = A (las recomendadas). Pasa a implementación. CONDICIÓN DEL HUMANO: antes de desplegar quiere probar la usabilidad en local (T9). CERRADA (done) el 2026-10-05: review pasada 2 APROBADA; T9 (usabilidad en local) cumplida por el humano: «está todo ok, podemos desplegarlo». PENDIENTE DE DESPLEGAR (api y front; sin DDL ni sync). DESPLEGADA el 2026-10-06 (api r20261006-1140, front r20261006-1141).
 
 ### F-004 · README del monorepo y arranque local en orden
 
