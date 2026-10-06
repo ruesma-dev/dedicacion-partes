@@ -19,6 +19,10 @@
   decisión del humano, la spec de **F-040** en la copia de trabajo
   `PycharmProjects/porcentajes-f040` (rama
   `feature/F-040-excel-modelo-juan`; los `.venv` son uniones a los de aquí).
+- **F-040, spec lista** (copia `porcentajes-f040`, `2469852`): espera al
+  humano con D1-D6. Hallazgo: el exportador ACTUAL saca notación científica
+  en el Resumen («0702 = 1E+2%», por `Decimal.normalize()`) y ningún test lo
+  ejecuta; F-040 lo corrige.
 - **Recopia de `partes` (2026-10-06):** su `e85ef0e` (cabecera de
   dependencia, solo docstring) puso `dev` en rojo; recopiado y
   `COMMIT_COPIADO` movido (`c906219`).
