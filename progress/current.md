@@ -1,33 +1,30 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución en esta copia.** F-039 se cerró el 2026-10-06;
-F-037 y F-039 están en `dev` **pendientes de desplegar juntas** (sección
-siguiente). En paralelo, por decisión del humano: F-040 (aprobada en review,
-falta su M1) en `PycharmProjects/porcentajes-f040` y F-041 (implementándose)
-en `PycharmProjects/porcentajes-f041`. El arnés es la **1.7.3**.
+**Ninguna feature en ejecución en la copia principal.** F-040 y F-039 se
+cerraron el 2026-10-06; F-037, F-039 y F-040 están en `dev` **pendientes de
+desplegar juntas** (sección de despliegue). En paralelo, por decisión del
+humano: F-041 (implementándose) en `PycharmProjects/porcentajes-f041`. El arnés
+es la **1.7.3**.
 
-## Features con spec aprobada, en cola (copias de trabajo aparte)
+## Features en paralelo (copia de trabajo aparte)
 
-- **F-040 · Excel como el modelo de Juan** (prioridad 1; absorbe F-020): spec
-  aprobada con D1-D6 = A (`c16af41`) en `PycharmProjects/porcentajes-f040`,
-  rama `feature/F-040-excel-modelo-juan`. Corrige además la notación
-  científica del Resumen actual («0702 = 1E+2%»). **Implementada y aprobada
-  en review (pasada 2) en su copia; falta la M1 del humano** (revisar el
-  Excel real; comando en el `current.md` de esa copia).
 - **F-041 · Filtro de obra con el texto visible** (prioridad 3; implementándose
   en su copia): spec aprobada con D1-D4 = A (`9b5fc46`) en `PycharmProjects/porcentajes-f041`, rama
   `feature/F-041-filtro-obra-postventa`. La causa real: el buscador global no
   casa con `Postv-` y la columna mezcla chips.
-- Las dos copias tienen los `.venv` como uniones a los de esta carpeta.
+- La copia tiene los `.venv` como uniones a los de esta carpeta; no tiene
+  `.env` (no se copia): para probar en local, abrir la rama en la carpeta
+  principal con `git checkout --detach <rama>`.
 
-## ⚠ Despliegue de F-037 + F-039 (pendiente; lo lanza el humano)
+## ⚠ Despliegue de F-037 + F-039 + F-040 (pendiente; lo lanza el humano)
 
 - **Orden obligatorio transfer → api → front** (`.\redeploy_dedicacion.ps1`
   sin `-Solo`, que ya respeta ese orden), desde `dev`: la api de F-039 llama a
   `POST /api/var/universo`, que solo tiene el transfer nuevo. El transfer
   desplegado ya escribe en real; no hay que tocar permisos. La api añade sus
   tres columnas de `obra` al arrancar.
+- F-040 solo cambia la api (el Excel); va en el mismo despliegue.
 - **Después: sync** («Actualizar Sigrid»): hasta entonces no aparece `VAR-29` ni
   desaparecen las obras de 6+ dígitos.
 - **Comprobación:** preview de producción con `excluidas_por_codigo` 240 y
@@ -85,7 +82,7 @@ en `PycharmProjects/porcentajes-f041`. El arnés es la **1.7.3**.
 ## Lo siguiente, por prioridad
 
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-06): **F-040** (Excel), **F-038** (cuadro de mando = el Excel
+2026-10-06): F-040 (Excel, cerrada), **F-038** (cuadro de mando = el Excel
 navegable), **F-041** (filtro de obra), **F-039** (cerrada, pendiente de desplegar),
 F-028 (plan aprobado), F-021, F-030, F-036 (solo spec de momento), F-031,
 F-033 y, detrás, F-017, F-018… F-037 está cerrada y pendiente de desplegar

@@ -38,7 +38,7 @@ cambio de esquema es una migración que escribe una persona.
 | POST | /periodos/{a}/{m}/trabajadores/{ide}/deshacer | Deshacer (multi-nivel, con auditoría) |
 | POST | /periodos/{a}/{m}/trabajadores/{ide}/copiar-anterior | Repetir mes anterior de un trabajador |
 | POST | /periodos/{a}/{m}/completar | Completar al 100 % en una obra a un lote de trabajadores (`docs/ARCHITECTURE.md#regla-completar`); no toca Sigrid |
-| GET  | /periodos/{a}/{m}/export.xlsx | Excel compatible (hoja Detalle + Resumen, convenio Postv-) |
+| GET  | /periodos/{a}/{m}/export.xlsx | Excel con el modelo de negocio: Detalle agrupado por trabajador (combinadas, bandas y línea gruesa) y Resumen con «código nombre = NN%»; convenio Postv- |
 
 ## Pendiente de decidir con datos reales
 

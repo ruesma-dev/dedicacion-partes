@@ -1951,3 +1951,53 @@ retirada de `current.md`:
   dos falsos supervivientes → encargo de `arnes-base` (falsos supervivientes /
   generador).
 
+## 2026-10-06 · F-040 · El Excel como el modelo de Juan Romero
+
+Rama `feature/F-040-excel-modelo-juan` (copia `porcentajes-f040`) · `sdd: true`
+· rigor `estandar` · **APROBADO** en la pasada 2 (la 1 pidió reforzar el test
+del «sin -0», que no lo fijaba). Absorbe F-020. Decisiones del humano D1-D6 = A
+(2026-10-06): descripción completa en el Resumen, combinadas con el valor en
+todo el grupo (el autofiltro saca el grupo entero; no se puede ordenar), bandas
+blanco/`DDEBF7` y línea gruesa, cabecera en la fila 2 sin «Obra(código)», solo
+Detalle y Resumen, convenio de la app (`Postv-`, `VAR-NN`). Corrige la notación
+científica del exportador anterior («1E+2%»). Api 619 en verde, ningún test
+anterior cambiado, cobertura 100 %, mutación en serie 20/20. **M1 cumplida**:
+el humano generó y revisó el Excel real de 2026-10 («perfecto»).
+
+Informes: `progress/impl_F-040.md`, `progress/review_F-040.md`. Sección
+retirada de `current.md`:
+
+## F-040 · El Excel como el modelo de Juan Romero (en curso)
+
+- **Qué es** (pedida el 2026-10-06; absorbe F-020): hojas Detalle (agrupado
+  por trabajador, celdas combinadas con el valor en todo el grupo para que el
+  autofiltro saque el grupo entero, bandas blanco/`DDEBF7`, línea gruesa bajo
+  cada trabajador, cabecera en la fila 2, sin «Obra(código)») y Resumen («código
+  descripción = NN% + …»). Corrige la notación científica del exportador actual
+  («1E+2%»). Spec `specs/F-040-excel-modelo-juan/`, aprobada con D1-D6 = A
+  (`c16af41`).
+- **Implementación terminada** (`progress/impl_F-040.md`, `fad6334`…`b429b81`):
+  api 619 en verde (33 nuevos), ningún test anterior cambiado; cobertura 100 %;
+  mutación en serie 20/20. **Review 1: CAMBIOS PEDIDOS** (un test que decía
+  fijar el «sin -0» y no lo fijaba); ciclo 2 hecho (test reforzado con el XML,
+  mutante a mano muerto, `obra_ide` determinista). **Review 2: APROBADO.**
+  Para el `done` solo falta la M1 del humano.
+- **Para la M1 (observación de la review):** openpyxl enseña vacías las
+  combinadas al releer; el XML sí las tiene: el humano lo mira en Excel.
+- **`azure-apps`: no cambia** (no describe el Excel; R21).
+- **MANUAL (humano, M1, solo lectura):**
+  - Muestra inventada ya generada: `%TEMP%/f040/f040_muestra.xlsx`.
+  - El real, desde esta copia y con la BBDD local (la api en el 8090; si la de
+    F-039 está arrancada, pararla antes): `cd C:/Users/pgris/PycharmProjects/porcentajes-f040/services/dedicacion-api`
+    y `.venv/Scripts/python.exe main.py`; en otra ventana
+    `curl.exe -o "$env:TEMP/f040.xlsx" "http://127.0.0.1:8090/api/v1/periodos/AAAA/MM/export.xlsx?empresa=1"`
+    y abrirlo. Recorrer los 7 puntos de design §6: abre sin reparación;
+    filtrar por empleado saca todas sus filas; filtrar por obra enseña quién y
+    su estado; filtrar por estado ≠ OK; bandas y línea gruesa; Resumen con
+    «código nombre = NN%»; impresión horizontal a una página de ancho con
+    cabecera repetida. Mirar la combinada cuya primera fila oculta el filtro.
+    Resultado: _pendiente_.
+- **Al fusionar con F-039:** la línea `VAR-29` se trata como una obra normal y
+  está probada con datos inventados; si F-039 trae un test que lea el xlsx, se
+  ajusta en el merge (design §8).
+
