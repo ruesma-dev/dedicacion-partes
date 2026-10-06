@@ -56,6 +56,9 @@ def construir_contenedor(
     exigir_mes = bool(cfg_emp.get("filtro_codigo_mes", True))
     estados_exc = cfg_obr.get("estados_excluidos", [])
     filtro_est = bool(cfg_obr.get("filtro_estados", True))
+    # F-039 (docs/ARCHITECTURE.md#regla-seis-digitos): sin la clave, sin
+    # filtro de código. El mismo número para el step y el preview.
+    digitos_exc = int(cfg_obr.get("digitos_seguidos_excluidos", 0))
     # UN solo criterio para el step y para el preview (F-023 R18): lo que
     # enseña el preview es exactamente lo que el sync va a guardar.
     criterio = CriterioActivoRecurso(
@@ -67,9 +70,10 @@ def construir_contenedor(
     )
 
     sigrid = SigridApiClient(settings)
-    # UN cliente del transfer para el universo de postventa del sync y del
-    # preview y para el registro (F-025); la empresa de las obras es la que
-    # ya viaja en cada línea del registro (EMPRESA_IMPUTACION, F-034).
+    # UN cliente del transfer para los universos de postventa (F-025) y VAR
+    # (F-039) del sync y del preview y para el registro; la empresa de las
+    # obras es la que ya viaja en cada línea del registro
+    # (EMPRESA_IMPUTACION, F-034).
     transfer = TransferClient(settings)
     empresa_obras = settings.empresa_imputacion
     pipeline = SyncMaestrosPipeline(
@@ -78,7 +82,8 @@ def construir_contenedor(
                                exigir_codigo_mes=exigir_mes,
                                criterio=criterio),
             FetchObrasStep(sigrid, sql_obras, estados_exc, filtro_est,
-                           universo=transfer, empresa_obras=empresa_obras),
+                           universo=transfer, empresa_obras=empresa_obras,
+                           digitos_excluidos=digitos_exc),
             FetchEmpresasStep(sigrid, sql_empresas),
             UpsertTrabajadoresStep(),
             UpsertObrasStep(),
@@ -109,6 +114,7 @@ def construir_contenedor(
             uow_factory=lambda: SqlAlchemyUnitOfWork(session_factory),
             universo=transfer,
             empresa_obras=empresa_obras,
+            digitos_excluidos=digitos_exc,
         ),
         exporter=exporter,
         registro_sigrid=RegistroSigrid(session_factory, transfer,

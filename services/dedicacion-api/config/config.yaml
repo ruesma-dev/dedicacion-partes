@@ -182,6 +182,14 @@ sync:
       - "anulada"
       - "anulado"
 
+    # F-039 (docs/ARCHITECTURE.md#regla-seis-digitos): se ignora toda obra cuyo
+    # código CONTENGA N o más dígitos seguidos, lleve o no letras o sufijo
+    # (150414, 0902051, 090205A, 150301-1 caen; 12345 y VAR no). Ni se ofrece,
+    # ni va al universo de postventa, ni se guarda; la ya guardada queda sin
+    # marcas. Decidido por el humano el 2026-10-06 (D4). 0 = sin filtro.
+    # Ojo: un código de 6 dígitos que se adjudique tampoco saldrá.
+    digitos_seguidos_excluidos: 6
+
   empresas:
     # Catálogo de empresas de Sigrid (F-032): tabla `auxemp`, campos según
     # azure-apps/sigrid_tablas.md. Se guarda en la tabla `empresa` de la BBDD
