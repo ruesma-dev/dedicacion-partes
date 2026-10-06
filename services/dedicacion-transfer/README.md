@@ -21,6 +21,7 @@ trabajo de Sigrid**. Réplica del patrón validado en `partes-transfer`:
 | P5 | dónde y contra qué se imputa la postventa | [`#regla-p5`](../../docs/ARCHITECTURE.md#regla-p5) |
 | — | modo pruebas | [`#regla-pruebas`](../../docs/ARCHITECTURE.md#regla-pruebas) |
 | — | a qué empresa se imputa y cómo se busca la obra | [`#regla-empresa`](../../docs/ARCHITECTURE.md#regla-empresa) |
+| — | las partidas de obras varias como obras propias | [`#regla-var`](../../docs/ARCHITECTURE.md#regla-var) |
 
 Dónde se implementan: la identidad, la capacidad y el «sin partida», en
 `application/services/reglas_porcentajes.py` (funciones puras, sin I/O); la
@@ -55,13 +56,17 @@ Lo que sí es de este servicio, y por eso se cuenta aquí:
     POST /api/registro/preflight   {obra, lineas[], usuario}
     POST /api/registro/ejecutar    {obra, lineas[], pisar_claves[], usuario}
     POST /api/postventa/universo   {empresa, obras[]}   (solo lee; F-025)
+    POST /api/var/universo         {empresa}            (solo lee; F-039)
 
 `/api/postventa/universo` devuelve las obras que admiten postventa en esa
 empresa, con su partida, calculadas con las mismas funciones que el
 preflight ([`#regla-p5`](../../docs/ARCHITECTURE.md#regla-p5)).
+`/api/var/universo` devuelve la obra VAR de esa empresa y sus partidas VAR,
+con las mismas funciones que validan `var_paride` en el preflight
+([`#regla-var`](../../docs/ARCHITECTURE.md#regla-var)).
 
 Línea: `{registro_id, ano, mes, porcentaje (sobre 1), recurso_ide, dni?,
-nombre?, es_postventa, empresa}`. `empresa` es la `con.emp` a la que se
+nombre?, es_postventa, empresa, var_paride?}`. `empresa` es la `con.emp` a la que se
 imputa: sin ella la línea se omite con motivo, y con líneas de dos empresas
 la petición se rechaza con 422
 ([`#regla-empresa`](../../docs/ARCHITECTURE.md#regla-empresa)).
