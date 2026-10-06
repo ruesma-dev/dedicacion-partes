@@ -71,6 +71,9 @@ class ClienteVar(ClienteFalso):
         self._var_ambigua = var_ambigua
         self.presupuesto_var = (PRESUPUESTO_VAR if presupuesto_var is None
                                 else presupuesto_var)
+        # Lecturas del presupuesto de la obra VAR (además del contador
+        # común `n_capitulos_de_obra`, que suma todas las obras).
+        self.n_presupuesto_var = 0
 
     def obra_por_codigo(self, cod, empresa):
         if cod == OBRA_VAR and empresa == EMPRESA:
@@ -90,6 +93,7 @@ class ClienteVar(ClienteFalso):
     def capitulos_de_obra(self, obride):
         if obride == VAR_IDE:
             self.n_capitulos_de_obra += 1
+            self.n_presupuesto_var += 1
             return self.presupuesto_var
         return super().capitulos_de_obra(obride)
 

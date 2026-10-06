@@ -60,6 +60,8 @@ class LineaIn(BaseModel):
     # PROPÓSITO: una línea sin empresa tiene que llegar al pipeline para
     # omitirse con motivo, no morir aquí en un 422 que no deja traza.
     empresa: Optional[int] = None
+    # Partida VAR de una entrada `VAR-NN` (ARCHITECTURE.md#regla-var).
+    var_paride: Optional[int] = None
 
 
 class PeticionIn(BaseModel):
