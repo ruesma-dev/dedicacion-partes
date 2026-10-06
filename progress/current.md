@@ -61,7 +61,9 @@
   copias). Tests anteriores: solo dobles y la ancla de la lista cerrada.
 - **Review 1 (2026-10-06): CAMBIOS PEDIDOS solo por el rastro** (este fichero y
   la `acceptance` de `features.json`), corregidos por el líder; código, tests,
-  mutación y docs dados por buenos hasta `ac125cb`. **Review 2 lanzada.**
+  mutación y docs dados por buenos hasta `ac125cb`. **Review 2: APROBADO.**
+  NO se mergea a `dev` hasta cumplir T12 y T13 (para que un despliegue
+  desde `dev` no lleve F-037 sin verificar en Sigrid).
 - **T14 (líder): hecha**, copia a `azure-apps` `5416cd1` («sin desplegar»).
 - **T11 (aviso a `partes`):** `partes` YA recogió la carrera y el alta
   protegida de D17 (su commit `9ea7c59`). **Falta avisarles** del hueco de
@@ -86,7 +88,7 @@
     1. `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/ejecutar" -H "Content-Type: application/json" -d "{\"trabajador_ide\": <ide>}"`
        (mes sin actividad en 0404). Esperado: la línea `registrado`.
     2. Lectura, desde `services/dedicacion-api` con `PYTHONPATH=.`:
-       `.venv/Scripts/python -c "from config.settings import get_settings; from infrastructure.sigrid.sigrid_client import SigridApiClient as C; print(C(get_settings()).leer(\"SELECT hmores.caaide, cc.cod AS cuenta, pt.cod AS parte, pt.est, hmores.cenide, hmores.tot FROM hmores JOIN con pt ON pt.ide = hmores.hmoide LEFT JOIN con cc ON cc.ide = hmores.caaide WHERE hmores.synckey LIKE 'porcentajes:%'\"))"` (Git Bash).
+       `.venv/Scripts/python -c "from config.settings import get_settings; from infrastructure.sigrid.sigrid_client import SigridApiClient as C; print(C(get_settings()).leer(\"SELECT hmores.caaide, cc.cod AS cuenta, pt.cod AS parte, pt.est, hmores.cenide, hmores.tot FROM hmores JOIN con pt ON pt.ide = hmores.hmoide LEFT JOIN con cc ON cc.ide = hmores.caaide WHERE hmores.synckey = 'porcentajes:<id>'\"))"` (Git Bash; `<id>` = el `registro_id` de la línea: el transfer desplegado escribe en real y `LIKE` traería líneas reales).
        Esperado: `caaide` ≠ 0, `cuenta` `0404.CIMOxx`, `cenide` el de 0404,
        parte `est` 1.
     3. Administración pulsa «Contabiliza parte…»: parte en `est` 10 y `ANA` con
