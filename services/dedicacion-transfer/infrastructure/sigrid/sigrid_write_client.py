@@ -378,6 +378,11 @@ class SigridWriteClient:
         """Cabecera (con) + extensión (hmo) del parte de obra/mes, en UNA
         transacción (un solo lote de `escribir`).
 
+        CONFLUENCIA CON `partes` (aviso de su F-031, 2026-10-06): su
+        `stmts_crear_parte` es idéntico en texto y parámetros a este (el de
+        `40b9feb`). Si se cambia aquí, se avisa a `partes` en el mismo
+        trabajo (docs/INTEGRACION.md §7).
+
         `con.emp` es la empresa de la obra destino: el parte es de la
         empresa de su obra (ARCHITECTURE.md#regla-empresa). Sin ella no se
         adivina: `ValueError`.
