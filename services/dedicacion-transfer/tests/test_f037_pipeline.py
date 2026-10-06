@@ -13,15 +13,23 @@ se acumulan en `escritos`.
 from __future__ import annotations
 
 import pytest
+
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.reglas_porcentajes import AVISO_SIN_PARTIDA
 from domain.models.registro_models import (
-    HoraRecurso, LineaSigrid, ObraEntrada, ParteSigrid, PartidaCuenta,
+    HoraRecurso,
+    LineaSigrid,
+    ObraEntrada,
+    ParteSigrid,
+    PartidaCuenta,
 )
 from infrastructure.sigrid.sigrid_write_client import synckey_de
-
 from tests.conftest import (
-    OBRA_ORIGEN, ClienteFalso, SettingsFalso, linea, linea_previa,
+    OBRA_ORIGEN,
+    ClienteFalso,
+    SettingsFalso,
+    linea,
+    linea_previa,
 )
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
@@ -473,7 +481,7 @@ def _previa(ide: int, **kw) -> LineaSigrid:
 
 def test_f037_r12_synckey_en_un_parte_cerrado_es_ya_registrado():
     hit = _previa(6001, synckey=synckey_de(1), nuestra=True)
-    setattr(hit, "hmoide", 9)
+    hit.hmoide = 9
     cli = ClienteF037(periodo=[PT_CER9, PT_REG7],
                       synckeys={synckey_de(1): hit},
                       lineas_por_parte={9: [hit]})

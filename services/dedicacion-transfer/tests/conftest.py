@@ -188,7 +188,7 @@ class ClienteFalso:
         for o, cenide in ((self.obra, 828943), (self.obra_pv, 999002),
                           (self.obra_origen, 555101),
                           (self.obra_sin_partida_pv, 555102)):
-            setattr(o, "cenide", cenide)
+            o.cenide = cenide
         self.capitulos = PRESUPUESTOS_PV[presupuesto_postventa]
         self.partidas_origen = PRESUPUESTO_ORIGEN
         self._obra_pv_existe = bool(obra_postventa_existe)

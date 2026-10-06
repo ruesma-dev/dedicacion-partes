@@ -15,8 +15,13 @@ from __future__ import annotations
 import dataclasses
 
 import pytest
+
 from domain.models.registro_models import (
-    AccionLinea, HoraRecurso, ParteDestino, ParteSigrid, PartidaCuenta,
+    AccionLinea,
+    HoraRecurso,
+    ParteDestino,
+    ParteSigrid,
+    PartidaCuenta,
 )
 
 REG, CER, IMP = 1, 3, 10
@@ -80,8 +85,11 @@ def test_f037_r15_ajustes_de_estado_solo_para_textos():
 
 # ================= estado_parte.py (copia de `partes`, T2) ================= #
 
-from application.services.estado_parte import (  # noqa: E402
-    MOTIVO_PARTE_CERRADO, aviso_de_parte, elegir_parte, motivo_choque,
+from application.services.estado_parte import (
+    MOTIVO_PARTE_CERRADO,
+    aviso_de_parte,
+    elegir_parte,
+    motivo_choque,
     nombre_estado,
 )
 
@@ -141,7 +149,7 @@ def test_f037_r10_sin_partes_parte_nuevo_sin_complementario():
 
 
 def test_f037_r15_nombres_de_estado():
-    kw = dict(est_cerrado=CER, est_imputado=IMP)
+    kw = {"est_cerrado": CER, "est_imputado": IMP}
     assert nombre_estado(CER, **kw) == "Cerrado"
     assert nombre_estado(IMP, **kw) == "Imputado"
     assert nombre_estado(4, **kw) == "estado 4"
@@ -194,10 +202,18 @@ def test_f037_r13_motivo_choque_con_prefijo_y_sin_nombres():
 
 # =============== cuenta_analitica.py (copia de `partes`, T2) =============== #
 
-from application.services.cuenta_analitica import (  # noqa: E402
-    MOTIVO_CUENTA_AMBIGUA, MOTIVO_OBRA_SIN_CUENTA, MOTIVO_RECURSO_SIN_CUENTA,
-    SUBCUENTAS_COSTE_PARTIDA, CuentaLinea, OrigenSubcuenta, indexar_cuentas,
-    origen_subcuenta, resolver_cuenta, subcuenta, subcuenta_de_linea,
+from application.services.cuenta_analitica import (
+    MOTIVO_CUENTA_AMBIGUA,
+    MOTIVO_OBRA_SIN_CUENTA,
+    MOTIVO_RECURSO_SIN_CUENTA,
+    SUBCUENTAS_COSTE_PARTIDA,
+    CuentaLinea,
+    OrigenSubcuenta,
+    indexar_cuentas,
+    origen_subcuenta,
+    resolver_cuenta,
+    subcuenta,
+    subcuenta_de_linea,
     subcuenta_de_partida,
 )
 

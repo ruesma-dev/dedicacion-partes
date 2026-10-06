@@ -84,7 +84,7 @@ def _norm(texto: Optional[str]) -> str:
     return " ".join(sin.lower().split())
 
 
-def _sumar_aviso(a: AccionLinea, *textos: Optional[str]) -> None:
+def _sumar_aviso(a: AccionLinea, *textos: str | None) -> None:
     """Suma textos al `aviso` de la acción, que es lo que pinta el front
     (F-037 R6): nunca sustituye al que ya traía."""
     partes = [x for x in (a.aviso, *textos) if x]
@@ -241,7 +241,7 @@ class RegistroPipeline:
                 por_origen["partida"], por_origen[None])
 
     # ------------------------------------------------------------- #
-    def _nombre_estado(self, est: Optional[int]) -> str:
+    def _nombre_estado(self, est: int | None) -> str:
         return nombre_estado(est, est_cerrado=self._st.est_parte_cerrado,
                              est_imputado=self._st.est_parte_imputado)
 

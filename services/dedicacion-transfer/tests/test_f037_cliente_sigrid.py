@@ -13,10 +13,15 @@ y `httpx.post` por una respuesta fija cuando lo que se prueba es `_read`.
 from __future__ import annotations
 
 import re
+import sqlite3
 
 import pytest
+
 from domain.models.registro_models import (
-    HoraRecurso, ObraEntrada, ParteSigrid, PartidaCuenta,
+    HoraRecurso,
+    ObraEntrada,
+    ParteSigrid,
+    PartidaCuenta,
 )
 from infrastructure.sigrid import sigrid_write_client as mod
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
@@ -48,7 +53,7 @@ def _cliente(*respuestas) -> tuple[SigridWriteClient, LecturaFalsa]:
 def _obra(empresa: int = 1) -> ObraEntrada:
     o = ObraEntrada(ide=828942, codigo="0404", nombre="PRUEBAS",
                     empresa=empresa)
-    setattr(o, "cenide", 828943)
+    o.cenide = 828943
     return o
 
 
@@ -107,11 +112,11 @@ def test_f037_r2_horas_traen_cuenta_de_plantilla_y_defecto():
     [(sql, params)] = lectura.llamadas
     assert params == [200, 400]
     for trozo in ("cc.cod AS caacod",
-                  "CASE WHEN reshor.horide = res.horide THEN 1 ELSE 0 END "
-                  "AS defecto",
+                  ("CASE WHEN reshor.horide = res.horide THEN 1 ELSE 0 END "
+                   "AS defecto"),
                   "LEFT JOIN res ON res.ide = reshor.reside",
-                  "LEFT JOIN con cc ON cc.ide = reshor.caaide AND "
-                  "ISNULL(reshor.caaide, 0) <> 0",
+                  ("LEFT JOIN con cc ON cc.ide = reshor.caaide AND "
+                   "ISNULL(reshor.caaide, 0) <> 0"),
                   "WHERE reshor.reside IN (?,?)"):
         assert trozo in sql, trozo
     assert "conide" not in sql                  # F-026 R19
@@ -205,10 +210,10 @@ def test_f037_r3_partidas_sin_ides_no_lee():
 # ===================== R1 · caaide en la línea ===================== #
 
 def _insert(cli, **kw):
-    datos = dict(hmoide=777, obra=_obra(), reside=200, pos=128,
-                 fecha_int=20260731, horide=5, can=0.4, pre=9000.0,
-                 ano=2026, mes=7, synckey="porcentajes:1", tex=None,
-                 paride=80001)
+    datos = {"hmoide": 777, "obra": _obra(), "reside": 200, "pos": 128,
+             "fecha_int": 20260731, "horide": 5, "can": 0.4, "pre": 9000.0,
+             "ano": 2026, "mes": 7, "synckey": "porcentajes:1", "tex": None,
+             "paride": 80001}
     datos.update(kw)
     return cli.stmt_insert_linea(**datos)
 
@@ -241,9 +246,9 @@ def test_f037_r1_insert_sin_cuenta_escribe_cero():
 def test_f037_r1_insert_sin_partida_escribe_cero():
     """T10: la firma conserva `paride = 0` por defecto."""
     cli, _ = _cliente()
-    datos = dict(hmoide=777, obra=_obra(), reside=200, pos=128,
-                 fecha_int=20260731, horide=5, can=0.4, pre=9000.0,
-                 ano=2026, mes=7, synckey="porcentajes:1", tex=None)
+    datos = {"hmoide": 777, "obra": _obra(), "reside": 200, "pos": 128,
+             "fecha_int": 20260731, "horide": 5, "can": 0.4, "pre": 9000.0,
+             "ano": 2026, "mes": 7, "synckey": "porcentajes:1", "tex": None}
     assert cli.stmt_insert_linea(**datos)["parameters"][4] == 0
 
 
@@ -325,11 +330,10 @@ def test_f037_r11_d17_forma_del_alta_y_sus_parametros():
                                  28]
 
 
-def _sqlite(*partes: tuple) -> "sqlite3.Connection":  # noqa: F821
+def _sqlite(*partes: tuple) -> sqlite3.Connection:
     """Emulación EN MEMORIA de `con` y `hmo` para ejecutar el alta tal cual
     (sin las pistas de bloqueo de SQL Server). No es Sigrid ni ninguna BBDD
     del sistema: es un fixture. `partes`: (ide, emp, est, cod, obride)."""
-    import sqlite3
 
     db = sqlite3.connect(":memory:")
     db.execute("CREATE TABLE con (ide INTEGER, emp INTEGER, tip INTEGER, "
