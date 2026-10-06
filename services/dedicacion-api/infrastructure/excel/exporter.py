@@ -15,12 +15,12 @@ from __future__ import annotations
 import io
 from decimal import Decimal
 
+from domain.models import CuadranteTrabajador, Periodo
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.merge import MergedCellRange
 
-from domain.models import CuadranteTrabajador, Periodo
 from infrastructure.excel.contenido import (
     FilaResumen,
     GrupoTrabajador,

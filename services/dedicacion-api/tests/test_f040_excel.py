@@ -103,7 +103,7 @@ def test_f040_r8_postventa_con_prefijo_y_var_como_obra_normal():
         "VAR-29", "Varios partida 29", "Varios partida 29")
     assert (postv.codigo, postv.obra, postv.nombre) == (
         "Postv-0702", "Postv-Hotel Inventado", "Hotel Inventado")
-    assert postv.porcentaje == Decimal("30")
+    assert postv.porcentaje == Decimal(30)
     # El prefijo sale de la configuración, no de un literal del código.
     [otro] = grupos_detalle([_cuadrante_muestra()[2]], "PV_")
     assert otro.lineas[1].codigo == "PV_0702"
@@ -121,7 +121,7 @@ def test_f040_r9_trabajador_sin_lineas_una_fila_sin_carga():
     vacia = delta.lineas[0]
     assert (vacia.codigo, vacia.obra, vacia.nombre, vacia.porcentaje) == (
         "", "", "", None)
-    assert delta.total == Decimal("0")
+    assert delta.total == Decimal(0)
     assert delta.desviacion is None
     assert delta.estado == "SIN CARGA"
 
@@ -148,7 +148,7 @@ def test_f040_r15_resumen_con_total_y_el_mismo_estado_que_el_detalle():
     assert [f.estado for f in resumen] == [
         "OK", "FALTA 10%", "EXCESO 10%", "SIN CARGA", "OK"]
     assert [f.total for f in resumen] == [
-        Decimal("100"), Decimal("90"), Decimal("110"), Decimal("0"), Decimal("100")]
+        Decimal(100), Decimal(90), Decimal(110), Decimal(0), Decimal(100)]
 
 
 def test_f040_r16_las_cifras_son_las_de_la_regla_del_100():
@@ -179,14 +179,14 @@ def test_f040_r18_texto_pct_sin_notacion_cientifica(valor, texto):
 
 def test_f040_r17_es_entero_decide_el_formato():
     assert es_entero(Decimal("100.00"))
-    assert es_entero(Decimal("55"))
+    assert es_entero(Decimal(55))
     assert not es_entero(Decimal("33.33"))
     assert not es_entero(Decimal("0.5"))
 
 
 def test_f040_r19_textos_de_estado():
-    assert texto_estado(EstadoTrabajador.OK, Decimal("0")) == "OK"
-    assert texto_estado(EstadoTrabajador.SIN_CARGA, Decimal("0")) == "SIN CARGA"
+    assert texto_estado(EstadoTrabajador.OK, Decimal(0)) == "OK"
+    assert texto_estado(EstadoTrabajador.SIN_CARGA, Decimal(0)) == "SIN CARGA"
     assert texto_estado(EstadoTrabajador.FALTA, Decimal("-10.00")) == "FALTA 10%"
     assert texto_estado(EstadoTrabajador.EXCESO, Decimal("10.00")) == "EXCESO 10%"
     assert texto_estado(EstadoTrabajador.FALTA, Decimal("-0.50")) == "FALTA 0,50%"
