@@ -75,8 +75,8 @@ Hexagonal estricto:
 - `infrastructure/` — `db/` (SQLAlchemy 2, `orm_models.py` como única verdad
   del esquema + `esquema.py`, que deriva de él el DDL del arranque, +
   repositorios),
-  `sigrid/` (cliente de `sigrid-api`), `excel/` (export compatible con la
-  plantilla), `transfer/` (cliente HTTP del transfer).
+  `sigrid/` (cliente de `sigrid-api`), `excel/` (export con el modelo de negocio:
+  Detalle agrupado por trabajador y Resumen), `transfer/` (cliente HTTP del transfer).
 - `interface_adapters/api/` — FastAPI: `routes.py`, `schemas.py`, `deps.py`
   (contenedor de dependencias), `app.py`.
 
