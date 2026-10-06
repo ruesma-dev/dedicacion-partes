@@ -16,7 +16,9 @@
 - **Implementación** (`progress/impl_F-039.md`): cobertura 181/181, mutación en
   serie 60/60; tests anteriores, solo los de design §7.1. **Review 1: CAMBIOS
   PEDIDOS solo por este fichero**, corregidos por el líder; código, tests,
-  mutación y docs dados por buenos hasta `3b531ac`. **Review 2 lanzada.**
+  mutación y docs dados por buenos hasta `3b531ac`. **Review 2: APROBADO.**
+  Para el `done` solo faltan las MANUAL T12-T14 del humano; no se mergea a
+  `dev` hasta entonces.
 - **T9 (líder): hecha**, copia a `azure-apps` `f01156f` («sin desplegar»).
 - **MANUAL (humano, NADA escribe en Sigrid).** Arranque, en ventanas aparte y
   desde esta rama: `python main.py` con la `.venv` de cada servicio en
@@ -46,7 +48,10 @@
 - **F-040 · Excel como el modelo de Juan** (prioridad 1; absorbe F-020): spec
   aprobada con D1-D6 = A (`c16af41`) en `PycharmProjects/porcentajes-f040`,
   rama `feature/F-040-excel-modelo-juan`. Corrige además la notación
-  científica del Resumen actual («0702 = 1E+2%»). Se implementa al cerrar F-039.
+  científica del Resumen actual («0702 = 1E+2%»). **Implementer lanzado en
+  su copia el 2026-10-06** con F-039 ya aprobada y a la espera solo de las
+  MANUAL del humano (dos ramas en curso a la vez, por decisión del humano de
+  trabajar en paralelo; en cada rama solo hay una `in_progress`).
 - **F-041 · Filtro de obra con el texto visible** (prioridad 3): spec aprobada
   con D1-D4 = A (`9b5fc46`) en `PycharmProjects/porcentajes-f041`, rama
   `feature/F-041-filtro-obra-postventa`. La causa real: el buscador global no
