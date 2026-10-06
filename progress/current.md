@@ -1,9 +1,22 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-037 se cerró el 2026-10-06 y está en
+**F-039 en `spec_ready`** (obras VAR y de 6 dígitos, esperando decisiones), rama
+`feature/F-039-obras-var-y-seis-digitos`. F-037 se cerró el 2026-10-06 y está en
 `dev` **pendiente de desplegar** (sección siguiente). F-029 se desplegó el
 2026-10-06 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+
+## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (spec lista)
+
+- **Pedida por el humano el 2026-10-06** (texto literal y datos leídos en
+  Sigrid en la descripción de `features.json`). Primera del backlog.
+- **Spec entregada** (`a9056b4`): el transfer calcula el universo VAR
+  (`POST /api/var/universo`) y valida la partida en el preflight; la api
+  descarta las obras de 6 dígitos en el sync y guarda cada partida como
+  fila de `obra` (`VAR-29`). **Espera al humano con D1-D6** (requirements).
+- **Backlog reordenado por el humano el 2026-10-06:** F-040 (Excel como el
+  modelo de Juan, absorbe F-020) primera, F-038 (cuadro de mando = el Excel
+  navegable con filtros) segunda, F-039 tercera. No hay F-041.
 
 ## ⚠ Despliegue de F-037 (pendiente; lo lanza el humano)
 
@@ -67,8 +80,8 @@
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
 2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
 primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
-(asiento analítico, cerrada, pendiente de desplegar); después F-028, F-021, F-030, F-020 (Excel), **F-038**
-(pestaña de analítica, pedida el 2026-10-06 justo detrás del Excel), **F-036**
+(asiento analítico, cerrada, pendiente de desplegar); **F-040** (Excel como el
+modelo de Juan), **F-038** (cuadro de mando), **F-039** (spec lista); después F-028, F-021, F-030, **F-036**
 (solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
