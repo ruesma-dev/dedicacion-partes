@@ -82,7 +82,14 @@
     Esperado: MENC/MJEFO `escribir` con `caa_cod` `0404.CIMO03`/`CIMO02` y
     `caa_origen` `recurso`; MPRL con `caa_ide` 0 y aviso de `.CIMO16`; en
     `partes[]` `estado`, `complementario` y `aviso`. **NO `ejecutar`.**
-    Resultado: _pendiente_.
+    **Resultado (2026-10-06, humano, octubre 2026, 7 obras forzadas a 0404):
+    CUMPLIDA.** 11 acciones `escribir`: MENC → `0404.CIMO03` y MJEFO →
+    `0404.CIMO02`, `caa_origen` `recurso`; MPRL → sin cuenta,
+    `caa_motivo` `obra_sin_cuenta` y aviso «la obra 0404 no tiene la cuenta
+    analitica .CIMO16». Parte de 0404 2026-10 inexistente: se crearía
+    `PT26/00343`, `complementario` falso, sin cerrados (el camino del
+    complementario se ejercita en T13). La MPRL trae además el conflicto
+    `sin_partida` de F-013 (preexistente, no de F-037).
   - **T13, ESCRITURA en modo pruebas (0404).** Condición previa: autorización
     expresa del humano para esta acción y Administración avisada. Pasos:
     1. `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/ejecutar" -H "Content-Type: application/json" -d "{\"trabajador_ide\": <ide>}"`
