@@ -27,6 +27,18 @@ class EstadoTrabajador(str, Enum):
 class TipoEvento(str, Enum):
     GUARDAR = "GUARDAR"
     COPIA = "COPIA"
+    COMPLETAR = "COMPLETAR"  # lote «completar al 100 %» (F-029)
+
+
+class ResultadoCompletado(str, Enum):
+    """Qué le pasó a cada trabajador del lote «completar al 100 %» (F-029,
+    docs/ARCHITECTURE.md#regla-completar)."""
+
+    COMPLETADO = "COMPLETADO"
+    YA_AL_100 = "YA_AL_100"
+    EXCESO = "EXCESO"
+    NO_VIGENTE = "NO_VIGENTE"
+    NO_VISIBLE = "NO_VISIBLE"
 
 
 @dataclass(frozen=True)
@@ -95,6 +107,25 @@ class Linea:
         if self.es_postventa:
             return self.obra_admite_postventa
         return self.obra_activa
+
+
+@dataclass(frozen=True)
+class Completado:
+    """Lo que devuelve la regla pura `completar_hasta_100` (F-029): las
+    líneas del trabajador tras completar y lo añadido (escala 0-100)."""
+
+    lineas: list[Linea]
+    anadido: Decimal
+
+
+@dataclass(frozen=True)
+class ResultadoCompletarTrabajador:
+    """Resultado del lote para un trabajador (F-029, R25); `anadido` es 0
+    si no se tocó."""
+
+    trabajador_ide: int
+    resultado: ResultadoCompletado
+    anadido: Decimal = Decimal("0")
 
 
 @dataclass(frozen=True)
@@ -169,6 +200,28 @@ class ResultadoUniverso:
     las obras que admiten postventa y, si no hay universo, por qué."""
 
     ides: frozenset[int]
+    motivo: str | None
+
+
+@dataclass(frozen=True)
+class PartidaVar:
+    """Una partida del universo VAR (F-039, docs/ARCHITECTURE.md#regla-var):
+    `ide`, `cod` y `res` de `obrparpar`."""
+
+    ide: int
+    cod: str
+    res: str | None
+
+
+@dataclass(frozen=True)
+class ResultadoUniversoVar:
+    """Universo VAR que devuelve el transfer (F-039): la obra VAR de la
+    empresa y sus partidas; sin obra (`obra_ide` nulo), por qué."""
+
+    obra_ide: int | None
+    obra_cod: str | None
+    empresa: int | None
+    partidas: tuple[PartidaVar, ...]
     motivo: str | None
 
 

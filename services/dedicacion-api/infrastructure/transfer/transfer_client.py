@@ -1,6 +1,6 @@
 # infrastructure/transfer/transfer_client.py
-"""Cliente HTTP de porcentajes-transfer (preflight / ejecutar y universo de
-postventa, F-025)."""
+"""Cliente HTTP de porcentajes-transfer (preflight / ejecutar, universo de
+postventa, F-025, y universo VAR, F-039)."""
 from __future__ import annotations
 
 from typing import Any
@@ -8,8 +8,8 @@ from typing import Any
 import httpx
 
 from config.settings import Settings
-from domain.errors import UniversoPostventaNoDisponible
-from domain.models import ResultadoUniverso
+from domain.errors import UniversoPostventaNoDisponible, UniversoVarNoDisponible
+from domain.models import PartidaVar, ResultadoUniverso, ResultadoUniversoVar
 
 
 class TransferClient:
@@ -53,3 +53,23 @@ class TransferClient:
                 f"universo de postventa no disponible: {causa}")
         return ResultadoUniverso(ides=frozenset(o["ide"] for o in r["obras"]),
                                  motivo=r.get("motivo"))
+
+    def universo_var(self, empresa: int) -> ResultadoUniversoVar:
+        """Universo VAR de `empresa` (`UniversoVarGateway`, F-039,
+        docs/ARCHITECTURE.md#regla-var).
+
+        Si el transfer no responde, o responde sin `ok: true` o sin
+        `partidas`, no hay universo: `UniversoVarNoDisponible` (R16)."""
+        r = self._post("/api/var/universo", {"empresa": empresa})
+        if r.get("ok") is not True or "partidas" not in r:
+            causa = (r.get("error")
+                     or "la respuesta del transfer no trae partidas")
+            raise UniversoVarNoDisponible(
+                f"universo VAR no disponible: {causa}")
+        obra = r.get("obra_var") or {}
+        return ResultadoUniversoVar(
+            obra_ide=obra.get("ide"), obra_cod=obra.get("codigo"),
+            empresa=obra.get("empresa"), motivo=r.get("motivo"),
+            partidas=tuple(PartidaVar(ide=p["ide"], cod=p["cod"],
+                                      res=p.get("res"))
+                           for p in r["partidas"]))

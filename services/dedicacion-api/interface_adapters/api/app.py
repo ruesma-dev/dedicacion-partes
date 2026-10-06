@@ -20,6 +20,7 @@ from domain.errors import (
     SigridNoConfigurado,
     TrabajadorNoEncontrado,
     UniversoPostventaNoDisponible,
+    UniversoVarNoDisponible,
 )
 from infrastructure.db.database import crear_engine, crear_session_factory
 from interface_adapters.api.deps import construir_contenedor
@@ -38,6 +39,7 @@ _HTTP_POR_ERROR: list[tuple[type[ErrorDominio], int]] = [
     (SigridNoConfigurado, 503),
     (SigridError, 502),
     (UniversoPostventaNoDisponible, 502),
+    (UniversoVarNoDisponible, 502),
 ]
 
 

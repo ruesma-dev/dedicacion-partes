@@ -83,8 +83,10 @@ def _fila(asig_id: int, trab: tuple[int, int | None],
     trabajador = SimpleNamespace(ide=trab[0], dni=None, nombre=f"T{trab[0]}",
                                  categoria="Encargado", empresa=trab[1],
                                  activo=True, fecha_baja=None)
+    # F-039: sin obra ni partida de registro (no es una entrada VAR).
     o = SimpleNamespace(ide=obra[0], cod=f"0{obra[0]}", descripcion="OBRA",
-                        empresa=obra[1])
+                        empresa=obra[1], registro_obra_ide=None,
+                        registro_obra_cod=None, registro_paride=None)
     return asignacion, trabajador, o
 
 

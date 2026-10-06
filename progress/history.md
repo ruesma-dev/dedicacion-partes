@@ -1539,3 +1539,477 @@ Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo api`:
 `api:r20261005-0915` (transfer y front sin cambios: `r20261003-1444` y
 `r20261003-1447`). Sin columnas nuevas ni sync. `azure-apps` actualizado en el
 mismo trabajo. Comprobación con dos personas: pendiente (en `current.md`).
+
+## 2026-10-05 · F-025 confirmada en producción
+
+El humano confirma que, tras el sync («Actualizar Sigrid»), el cuadrante de
+producción ofrece `Postv-0656`. Se retira el aviso a usuarios de no registrar
+postventa en las obras CP ni OT: con D2 = B la cascada de P5 ya no las casa con
+partidas ajenas.
+
+## 2026-10-05 · F-029 · Selección múltiple y completar hasta el 100 %
+
+Rama `feature/F-029-seleccion-multiple-completar-100` · `sdd: true` · rigor
+`estandar` · **APROBADO** por el reviewer en la pasada 2 (la 1 pidió solo
+rastro: T7 sin marcar y «Lo siguiente» desfasado). Adelantada por el humano por
+delante de F-021: usa el filtro «Filtrar obra…» de hoy; Sesame queda para F-021.
+
+**Decisiones del humano (D1-D6 = A).** Destino elegido en un diálogo entre las
+entradas del catálogo que casan con el filtro; normal o `Postv-` según la
+entrada; el no vigente no se toca y la obra no ofrecible da 422 para todo el
+lote; botón «Completar al 100 %» y tecla C; lo que falta a 0,01 con la épsilon
+compartida; solo se tocan los seleccionados visibles.
+
+**Qué cambió.** api: `POST /api/v1/periodos/{anio}/{mes}/completar`, una
+transacción, un evento `COMPLETAR` deshacible por trabajador (regla F-027),
+`#regla-completar`. Front: Ctrl/Shift+clic, Esc, contador, diálogo, tecla C.
+Teclado anterior intacto. Nada en Sigrid.
+
+**Verificado.** Cobertura 84/84; mutación en serie 20/20 (dos `frozen` muertos
+con un test; un falso superviviente también en serie → encargo de
+`arnes-base` `58403df`); ningún test anterior cambiado; `azure-apps`
+`a593bd4`. **T9 cumplida por el humano** en local: «está todo ok, podemos
+desplegarlo». Aclarado al humano: el deshacer tiene historial completo por
+trabajador y mes (solo lo propio, sin rehacer).
+
+Informes: `progress/impl_F-029.md`, `progress/review_F-029.md`,
+`progress/mutacion_F-029.md`. Sección retirada de `current.md`:
+
+## F-029 · Selección múltiple y completar hasta el 100 % (en curso)
+
+- **Elegida por el humano el 2026-10-05** por delante de F-021, de la que
+  dependía. La spec trabaja con el filtro de obra que YA existe en el front;
+  la selección automática desde Sesame sigue siendo de F-021.
+- **Estado:** spec entregada (`631273c`, `specs/F-029-seleccion-multiple-completar-100/`):
+  api `POST /periodos/{a}/{m}/completar` por lote (un evento `COMPLETAR`
+  deshacible por trabajador) + front con Ctrl/Shift, diálogo y botón. Lista
+  cerrada de tests anteriores que cambian: **ninguno** (comprobado con un
+  prototipo desechable). **Aprobada por el humano el 2026-10-05 con D1-D6 =
+  A**, cerradas en todos sus sitios (`8d5172d`).
+- **Implementación terminada** (`progress/impl_F-029.md`): T1-T6, T8, T10
+  (`b09e333`…). Cobertura 84/84; mutación en serie 20/20 muertos tras matar
+  dos `frozen` con un test (`progress/mutacion_F-029.md`); un falso
+  superviviente en serie → encargo de `arnes-base` (`58403df`). Ningún test
+  anterior cambiado. **Review 1: CAMBIOS PEDIDOS solo por el rastro** (T7
+  sin marcar en `tasks.md` y «Lo siguiente» desfasado), corregidos por el
+  líder; código, tests, mutación y docs revisados y bien. **Review 2:
+  APROBADO.** Para el `done` solo falta la T9 del humano; la rama NO se
+  mergea a `dev` hasta entonces (puede traer ajustes de usabilidad).
+- **Condición del humano: NO se despliega hasta que pruebe la usabilidad en
+  local** (T9, `tasks.md`: api y front locales desde la rama, BBDD local, sin
+  Sigrid; clics, diálogo, tecla C, Ctrl+Z y regresión del teclado).
+- **T7 (líder): hecha**, párrafo de §5 copiado literal a
+  `azure-apps/dedicacion.md`, commit `a593bd4` («sin desplegar»).
+- **T9 MANUAL (humano), pendiente:** pasos (a)-(e) en `tasks.md` T9 y
+  arranque en `progress/impl_F-029.md` § «Cómo probarlo en local»: en Git
+  Bash, `cd services/dedicacion-api && .venv/Scripts/python main.py` y, en
+  otra, `cd services/dedicacion-front && .venv/Scripts/python main.py`;
+  abrir `http://localhost:8080`. NO pulsar «Registrar en Sigrid».
+  Mirar además (observación de la review 1): Ctrl/Shift+clic con el editor
+  abierto repinta la tabla y el foco puede saltar. Resultado: _pendiente_.
+
+## 2026-10-06 · F-037 · Rastro de spec retirado de `current.md` (review 1)
+
+## F-037 · El registro genera el asiento analítico de la obra (en curso)
+
+- **Pedida por el humano el 2026-10-05** a partir del correo de Juan Romero
+  «ARBOL ANALITICO OBRAS» (2026-09-29): cuentas analíticas por centro de
+  coste de la obra; ejemplo, asiento con 6XX desglosado al 100 % en
+  `0702.CP0004`. Escritura en Sigrid: rigor crítico, solo el transfer.
+- **Exploración** (`progress/explore_F-037.md`): Sigrid YA genera el asiento
+  analítico de cada parte (documento `ANA`, uno por obra y mes, lo lanza
+  Administración por lotes): debe a `hmores.caaide` de cada línea, haber a
+  `res.caaconide`; el 6XX lo pone la nómina. **El transfer escribe hoy
+  `caaide = 0`**, así que sus líneas no entrarían en el ANA. Cero líneas
+  `porcentajes:` en Sigrid a día de hoy.
+- **Spec entregada** (`5dd3d75`), recomendada D1 = A: el transfer rellena
+  `caaide` (`<obra>.CIMOxx` del tipo de hora) y no escribe asientos.
+  **Espera al humano / Juan Romero** con D1-D11 abiertas
+  (requirements §6).
+- **Ajustada con la respuesta de Juan del 2026-10-05** (`4c3d7d1`): la
+  cuenta analítica sale del TIPO DE HORA del recurso (540 de 540 líneas
+  manuales), no de la partida; el centro (`hmores.cenide`) ya lo escribe
+  bien el transfer; «Contabiliza parte…» deja el parte en `con.est = 10`
+  (502 partes con ANA desde 2025). T0 bloquea: preguntas a Juan sobre el
+  botón, MPRL (`CIMO16` o `CIMO04`) y escribir en un parte contabilizado.
+- **Decisiones del humano (2026-10-05) aplicadas** (`52e1c02`): la cuenta
+  sale del recurso con la regla de `partes` F-021 (`reshor.caaide`,
+  subcuenta en el centro de la obra destino); un parte contabilizado va a
+  un **complementario** (en Sigrid no hay convención: 9 casos de dos partes
+  por obra y mes, sin enlace). **Abiertas para el humano:** D8, D10, D12,
+  D13, D14 y **D15** (copiar `cuenta_analitica.py` de `partes` = ampliar la
+  lista cerrada de `CLAUDE.md`, decisión expresa).
+- **2026-10-06: aprobada por el humano con A en D8, D10 y D12-D15**
+  (`3e6c7c4`); `CLAUDE.md` amplía la lista cerrada con `cuenta_analitica.py`
+  (`b7ef1e6`). «Lo aprendido en partes» en design §13: la F-031 de `partes`
+  (`feature/F-031-asiento-analitico`, en curso allí) añade el respaldo de la
+  partida (R3) y entiende «cerrado» como estado ≠ 1. **Pendiente del humano:**
+  D16 (qué estado manda al complementario) y si se espera a que la F-031 de
+  `partes` llegue a su `dev` antes de copiar (sin ella, R3 queda `blocked`).
+- **Riesgo vivo:** el transfer desplegado escribe en real; lo que se
+  registre antes de F-037 queda con `caaide = 0` y fuera del ANA.
+- **Fuera del proyecto (aviso al humano):** `partes-persistencia` también
+  escribe `caaide = 0` en sus líneas `partes:`.
+
+- **2026-10-06, nueva instrucción del humano:** no esperar a que la F-031 de
+  `partes` llegue a su `dev`: revisarla en su rama y copiarla ADAPTADA, porque
+  porcentajes y partes escriben en el MISMO parte. La condición de entrada de
+  `tasks.md` (`655dbdc`) queda anulada.
+- **Spec reescrita como copia adaptada de la F-031 de `partes`** (`497f224`;
+  revisión de su rama en `progress/explore_F-037_partes_F-031.md`): copia
+  literal de `estado_parte.py` y `cuenta_analitica.py` (rama `9b202e9`, sin
+  cambios hasta `5ff4d91`) con test anti-divergencia; elección del parte,
+  complementario, relectura, conflictos y avisos idénticos; corrige
+  `siguiente_cod_pt` y el alta de `hmo` sin `emp`. **Pendiente del humano:**
+  D13 reabierta (título `Parte <obra>` como partes), D17 (carrera entre
+  servicios al crear el parte) y D18 (`estado_parte.py` a la lista cerrada).
+- **2026-10-06: el humano aprueba D13 = `Parte <obra>`, D17 y D18**
+  (`3fe200a`); `CLAUDE.md` con `estado_parte.py` en la lista (`32c33ad`).
+- **Implementación terminada** (`progress/impl_F-037.md`, T1-T10 y T15,
+  `6f97dc2`…`40b9feb`): copia literal de `partes` `9b202e9` con test
+  anti-divergencia; mutación en serie 85/85 (y 25/25 en las copias sin el
+  test de copias; 13 huecos reales cerrados con tests). Tests anteriores:
+  solo los dobles y la ancla de la lista cerrada. Desviaciones declaradas en
+  el informe §3 (p. ej. `partes_existentes` se queda porque la usa el script
+  de prueba). **Review lanzada** → `progress/review_F-037.md`.
+- **T14 (líder): hecha**, piezas de INTEGRACION copiadas a `azure-apps`
+  (`5416cd1`, «sin desplegar»).
+- **T11 (humano): pendiente.** Pasar a la sesión de `partes` el aviso de la
+  carrera al crear el parte (D17) y del hueco de `OrigenSubcuenta` sin test
+  de inmutabilidad. INTEGRACION §7 ya dice «`partes` está avisado»: será
+  cierto antes del `done`.
+- **Observación del implementer para el humano:** preexistente, la capacidad
+  no se evalúa en un periodo sin ningún parte (dos líneas nuevas del mismo
+  recurso que sumen > 1 no avisan). Se le propone abrirla como feature.
+- **MANUAL (humano):**
+  - **T12, solo lectura:** transfer de la rama con `OBRA_PRUEBAS_FORZAR=true`
+    y api local; en un periodo de prueba con un MENC o MJEFO y un MPRL:
+    `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight" -H "Content-Type: application/json" -d "{}"`.
+    Esperado: MENC/MJEFO `escribir` con `caa_cod` `0404.CIMO03`/`CIMO02` y
+    `caa_origen` `recurso`; MPRL con `caa_ide` 0 y aviso de `.CIMO16`; en
+    `partes[]` el `estado`, `complementario` y `aviso`. NO `ejecutar`.
+    Resultado: _pendiente_.
+  - **T13:** escritura en modo pruebas en la 0404 con autorización expresa
+    y Administración avisada (pasos en `tasks.md`). Resultado: _pendiente_.
+
+## 2026-10-06 · Despliegue de F-029
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo api,front` desde
+una copia de trabajo de `dev` (`porcentajes-despliegue`, para no subir F-037,
+en curso en su rama): `api:r20261006-1140`, `front:r20261006-1141`; transfer
+sin cambios (`r20261003-1444`, modo real). Sin DDL ni sync. `azure-apps`
+actualizado en el mismo trabajo.
+
+## 2026-10-06 · F-037 · El registro rellena la cuenta analítica de la obra
+
+Rama `feature/F-037-asiento-analitico-obra` · `sdd: true` · rigor `critico` ·
+**APROBADO** por el reviewer en la pasada 2 (la 1 pidió solo rastro).
+
+**Qué se descubrió.** Sigrid ya genera el asiento analítico de cada parte
+(`ANA`, botón «Contabiliza parte…», que deja el parte en Imputado) desde
+`hmores.caaide` de cada línea; el 6XX lo pone la nómina. El transfer escribía
+`caaide = 0`, así que sus líneas no entraban en el `ANA`.
+
+**Qué cambió.** El transfer rellena `caaide` con la regla de `partes` (cuenta de
+la ficha de horas del recurso o, si no, de la partida C[ID], en el centro de la
+obra destino) y NO escribe asientos. Copia adaptada de la F-031 de `partes`
+(mismo parte): copia literal de `estado_parte.py` y `cuenta_analitica.py`
+(`9b202e9`, lista cerrada de `CLAUDE.md`) con test anti-divergencia; elige el
+parte igual que `partes` (cerrado = estado ≠ En registro), crea o reutiliza el
+complementario `Parte <obra>` con alta protegida (D17) y evalúa duplicados y
+conflictos contra todos los partes del periodo. Corrige de paso
+`siguiente_cod_pt` y el alta de `hmo`, que no filtraban por empresa.
+
+**Decisiones del humano.** D1-D18 (2026-10-05 y 2026-10-06): sin asientos; la
+cuenta sale del recurso («mira en partes»); parte cerrado → complementario;
+copiar adaptada la F-031 de `partes` en curso («se usa el mismo parte
+realmente»); D13 `Parte <obra>`; D17 alta protegida; D15/D18 copias.
+
+**Verificado.** Cobertura 219/219; mutación en serie 85/85 (y 25/25 en las
+copias sin el test de copias). T12 (preflight local) cumplida. T13 en modo
+pruebas, autorizada: `PT26/00343` creado con dos líneas en `0404.CIMO03`,
+contabilizado por Administración («ha funcionado perfectamente») y borrado por
+el humano. **Aplazado por el humano:** probar el complementario en real.
+`azure-apps`: `5416cd1`.
+
+Informes: `progress/impl_F-037.md`, `progress/review_F-037.md`,
+`progress/mutacion_F-037.md`, `progress/mutacion_F-037_copias.md`,
+`progress/explore_F-037.md`, `progress/explore_F-037_partes_F-031.md`.
+Sección retirada de `current.md`:
+
+## F-037 · El registro genera el asiento analítico de la obra (en curso)
+
+- **Qué es** (pedida el 2026-10-05; correo de Juan Romero «ARBOL ANALITICO
+  OBRAS»): Sigrid YA genera el asiento analítico de cada parte (`ANA`, botón
+  «Contabiliza parte…», que deja el parte en Imputado); el 6XX lo pone la
+  nómina. El transfer escribía `hmores.caaide = 0` y sus líneas no entraban en
+  el `ANA`. **F-037 rellena `caaide` y no escribe asientos** (D1 = A).
+- **Spec aprobada** (D1-D18 decididas el 2026-10-05 y 2026-10-06; resumen en
+  `history.md` al cerrar): copia ADAPTADA de la F-031 de `partes`, porque los
+  dos escriben en el MISMO parte. Copia literal de `estado_parte.py` y
+  `cuenta_analitica.py` (rama de `partes` `9b202e9`; lista cerrada de
+  `CLAUDE.md` ampliada, `b7ef1e6` y `32c33ad`); complementario `Parte <obra>`
+  (D13); alta protegida (D17); cualquier estado ≠ En registro es cerrado (D16).
+- **Implementación** (`progress/impl_F-037.md`, `6f97dc2`…`40b9feb`): cobertura
+  219/219; mutación en serie 85/85 (y 25/25 en las copias sin el test de
+  copias). Tests anteriores: solo dobles y la ancla de la lista cerrada.
+- **Review 1 (2026-10-06): CAMBIOS PEDIDOS solo por el rastro** (este fichero y
+  la `acceptance` de `features.json`), corregidos por el líder; código, tests,
+  mutación y docs dados por buenos hasta `ac125cb`. **Review 2: APROBADO.**
+  NO se mergea a `dev` hasta cumplir T12 y T13 (para que un despliegue
+  desde `dev` no lleve F-037 sin verificar en Sigrid).
+- **T14 (líder): hecha**, copia a `azure-apps` `5416cd1` («sin desplegar»).
+- **T11 (aviso a `partes`):** `partes` YA recogió la carrera y el alta
+  protegida de D17 (su commit `9ea7c59`). **Falta avisarles** del hueco de
+  `OrigenSubcuenta` sin test de inmutabilidad (lo pasa el humano). Además su
+  DA11 cambiará la cabecera de las copias: pondrá en rojo
+  `test_f037_copias_partes.py::…ref_vigilada` y habrá que **recopiar** y mover
+  `COMMIT_COPIADO` (design §12: «texto, se recopia»).
+- **Observación del implementer, propuesta al humano como feature:** la
+  capacidad no se evalúa en un periodo sin ningún parte (dos líneas nuevas del
+  mismo recurso que sumen > 1 no avisan). Preexistente.
+- **MANUAL (humano), API y transfer LOCALES desde esta rama:**
+  - **T12, solo lectura.** Transfer con `OBRA_PRUEBAS_FORZAR=true` y api con
+    `TRANSFER_BASE_URL=http://127.0.0.1:8006`; periodo de prueba local con un
+    MENC o MJEFO y un MPRL:
+    `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/preflight" -H "Content-Type: application/json" -d "{}"`.
+    Esperado: MENC/MJEFO `escribir` con `caa_cod` `0404.CIMO03`/`CIMO02` y
+    `caa_origen` `recurso`; MPRL con `caa_ide` 0 y aviso de `.CIMO16`; en
+    `partes[]` `estado`, `complementario` y `aviso`. **NO `ejecutar`.**
+    **Resultado (2026-10-06, humano, octubre 2026, 7 obras forzadas a 0404):
+    CUMPLIDA.** 11 acciones `escribir`: MENC → `0404.CIMO03` y MJEFO →
+    `0404.CIMO02`, `caa_origen` `recurso`; MPRL → sin cuenta,
+    `caa_motivo` `obra_sin_cuenta` y aviso «la obra 0404 no tiene la cuenta
+    analitica .CIMO16». Parte de 0404 2026-10 inexistente: se crearía
+    `PT26/00343`, `complementario` falso, sin cerrados (el camino del
+    complementario se ejercita en T13). La MPRL trae además el conflicto
+    `sin_partida` de F-013 (preexistente, no de F-037).
+  - **T13 — AUTORIZADA por el humano el 2026-10-06 («autorizo»).** Paso 1
+    hecho por el humano (`ejecutar` con `trabajador_ide` 2750167): creado
+    `PT26/00343` (con.ide 2848891, est 1, «Parte CUBIERTA NAVE 14 - JOHN
+    DEERE (PRUEBA-PORC)», fec 20261031, obra 828942, centro 828943); 2 líneas
+    (`porcentajes:124` y `:125`, hmores 408963-408964, MENC 0,5 × 6.000 =
+    3.000 cada una) con `cenide` 828943 y `caaide` 829178 = `0404.CIMO03`,
+    `tex` PRUEBA-PORC. Leído por el líder (solo lectura). Siguiente: paso 3
+    (Administración contabiliza `PT26/00343`).
+  - **T13, ESCRITURA en modo pruebas (0404).** Condición previa: autorización
+    expresa del humano para esta acción y Administración avisada. Pasos:
+    1. `curl -s -X POST "http://localhost:8090/api/v1/periodos/AAAA/MM/registro/ejecutar" -H "Content-Type: application/json" -d "{\"trabajador_ide\": <ide>}"`
+       (mes sin actividad en 0404). Esperado: la línea `registrado`.
+    2. Lectura, desde `services/dedicacion-api` con `PYTHONPATH=.`:
+       `.venv/Scripts/python -c "from config.settings import get_settings; from infrastructure.sigrid.sigrid_client import SigridApiClient as C; print(C(get_settings()).leer(\"SELECT hmores.caaide, cc.cod AS cuenta, pt.cod AS parte, pt.est, hmores.cenide, hmores.tot FROM hmores JOIN con pt ON pt.ide = hmores.hmoide LEFT JOIN con cc ON cc.ide = hmores.caaide WHERE hmores.synckey = 'porcentajes:<id>'\"))"` (Git Bash; `<id>` = el `registro_id` de la línea: el transfer desplegado escribe en real y `LIKE` traería líneas reales).
+       Esperado: `caaide` ≠ 0, `cuenta` `0404.CIMOxx`, `cenide` el de 0404,
+       parte `est` 1.
+    3. Administración pulsa «Contabiliza parte…»: parte en `est` 10 y `ANA` con
+       debe a `0404.CIMOxx` por `tot` y haber a `CP.<persona>`; confirma que la
+       línea se ve como una tecleada.
+    4. Otra línea del mismo mes (paso 1 con otro trabajador): va a un
+       complementario `Parte 0404 …` nuevo, que se contabiliza aparte.
+    5. Limpieza, desde `services/dedicacion-transfer`:
+       `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar` (dry-run)
+       y luego `… limpiar --confirmar`; Administración anula los `ANA` y el
+       complementario.
+    Resultado: _pendiente_.
+
+
+## 2026-10-06 · Recopia de las copias de `partes` (e85ef0e)
+
+La F-031 de `partes` añadió a `estado_parte.py` y `cuenta_analitica.py` una
+cabecera de dependencia con porcentajes (su commit `e85ef0e`, «T28», solo
+docstring; su DA11, prevista en nuestro design §12: «texto, se recopia»).
+`test_f037_copias_partes.py::…ref_vigilada` lo detectó y dejó `dev` en rojo.
+Se recopiaron los dos ficheros y `COMMIT_COPIADO` pasa a `e85ef0e`; la regla
+no cambia. Suite del transfer en verde.
+
+## 2026-10-06 · Aviso de `partes` (F-031): confluencia con F-037
+
+Recibido del humano: `partes` cambió la cabecera de `estado_parte.py` y
+`cuenta_analitica.py` (solo docstring, `e85ef0e`; ya recopiado en `c906219`),
+su F-031 está mergeada en su `dev`, y su `stmts_crear_parte` es ahora idéntico
+en texto y parámetros al nuestro (`40b9feb`). Se cambia `REF_VIGILADA` de
+`test_f037_copias_partes.py` a `dev` (la rama de la F-031 ya no existe), se
+anota la confluencia del alta en su docstring y en INTEGRACION §7 (y su copia
+en `azure-apps`): si se cambia el alta, se avisa a `partes`.
+
+## 2026-10-06 · Rastro retirado de `current.md` (review 1 de F-039)
+
+## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (en curso)
+
+- **Pedida por el humano el 2026-10-06** (texto literal y datos leídos en
+  Sigrid en la descripción de `features.json`). Primera del backlog.
+- **Spec entregada** (`a9056b4`): el transfer calcula el universo VAR
+  (`POST /api/var/universo`) y valida la partida en el preflight; la api
+  descarta las obras de 6 dígitos en el sync y guarda cada partida como
+  fila de `obra` (`VAR-29`). **Aprobada por el humano el 2026-10-06** (D1-D6;
+  D4 final: código que CONTENGA 6+ dígitos seguidos, 240 obras).
+- **Implementación terminada** (`progress/impl_F-039.md`, `…`→`e69ff2a`):
+  mutación en serie 60/60; tests anteriores cambiados solo los de design §7.1
+  (dobles `_fila` y `UniversoFalso`, ANCLAS). **Review lanzada** →
+  `progress/review_F-039.md`.
+- **T9 (líder): hecha**, copia a `azure-apps` `f01156f` («sin desplegar»).
+- **MANUAL (humano, NADA escribe en Sigrid)**, transfer y api LOCALES desde
+  esta rama (api con `PG_HOST=localhost`), desde la raíz:
+  - **T12 (M1):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M1`
+    → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en
+    el cuadrante, sin `VAR` normal ni obras de 6+ dígitos;
+    `RESULTADO M1: OK`. Resultado: _pendiente_.
+  - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
+    → grupo de la obra `VAR`, `escribir`, `paride = 417055`, `partida_cod
+    = "29"`, `partida_metodo = "var"`; `RESULTADO M2: OK`. Resultado: _pendiente_.
+  - **T14 (M3, usabilidad):** además el front local; buscar «29» y «arroyo»
+    → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
+    `VAR-29`; «Registrar en Sigrid» enseña la partida fija «29» (cerrar SIN
+    registrar). Resultado: _pendiente_.
+  - **Despliegue:** orden transfer → api → front (la api nueva llama a
+    `POST /api/var/universo`).
+- **En paralelo, por decisión del humano:** specs de **F-040** y **F-041**
+  aprobadas en sus copias `PycharmProjects/porcentajes-f040` y
+  `PycharmProjects/porcentajes-f041` (sus `.venv` son uniones a los de aquí);
+  se implementan después de F-039.
+- **F-040, spec lista** (copia `porcentajes-f040`, `2469852`): espera al
+  humano con D1-D6. Hallazgo: el exportador ACTUAL saca notación científica
+  en el Resumen («0702 = 1E+2%», por `Decimal.normalize()`) y ningún test lo
+  ejecuta; F-040 lo corrige.
+- **Recopia de `partes` (2026-10-06):** su `e85ef0e` (cabecera de
+  dependencia, solo docstring) puso `dev` en rojo; recopiado y
+  `COMMIT_COPIADO` movido (`c906219`).
+- **Backlog reordenado por el humano el 2026-10-06:** F-040 (Excel como el
+  modelo de Juan, absorbe F-020) primera, F-038 (cuadro de mando = el Excel
+  navegable con filtros) segunda, F-039 tercera. No hay F-041.
+
+### Lo siguiente, por prioridad
+
+`BACKLOG.md` tiene el orden completo (reordenado por el humano el
+2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
+primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
+(asiento analítico, cerrada, pendiente de desplegar); **F-040** (Excel como el
+modelo de Juan), **F-038** (cuadro de mando), **F-039** (spec lista); después F-028, F-021, F-030, **F-036**
+(solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
+
+## 2026-10-06 · F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos
+
+Rama `feature/F-039-obras-var-y-seis-digitos` · `sdd: true` · rigor `critico` ·
+**APROBADO** en la pasada 2 (la 1 pidió solo rastro). Decisiones del humano
+D1-D6 (2026-10-06): VAR deja de ofrecerse como obra normal; entradas `VAR-NN`;
+«desde la 29» = número inicial ≥ 29; D4 final: se ignora toda obra cuyo código
+CONTENGA 6 o más dígitos seguidos (240); líneas existentes en obras que
+desaparecen se quedan marcadas; cada entrada es una fila de `obra`.
+
+**Qué cambió.** El transfer calcula el universo VAR (`POST /api/var/universo`)
+y valida la partida (`var_paride`) en el preflight; la api lo pide en el sync y
+el preview, descarta las obras de 6+ dígitos y guarda cada partida como fila
+`VAR-NN` (ide negativo, tres columnas nuevas) que se registra en la obra VAR
+con su partida fija; el front pinta la partida fija. Cobertura 181/181,
+mutación en serie 60/60. MANUAL del humano: M1 (240 excluidas, `VAR-29`
+activa), M2 (preflight a VAR con partida 29) y M3 (usabilidad, «todo ok»).
+`azure-apps`: `f01156f`.
+
+Informes: `progress/impl_F-039.md`, `progress/review_F-039.md`. Sección
+retirada de `current.md`:
+
+## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (en curso)
+
+- **Qué es** (pedida el 2026-10-06; spec `specs/F-039-obras-var-y-seis-digitos/`,
+  aprobada con D1-D6): las partidas de la obra VAR desde la 29 se ofrecen como
+  obras propias `VAR-NN` (universo en el transfer, `POST /api/var/universo`;
+  registro en VAR con la partida fija); VAR deja de ofrecerse como obra normal;
+  se ignoran las obras cuyo código contiene 6+ dígitos seguidos (240).
+- **Implementación** (`progress/impl_F-039.md`): cobertura 181/181, mutación en
+  serie 60/60; tests anteriores, solo los de design §7.1. **Review 1: CAMBIOS
+  PEDIDOS solo por este fichero**, corregidos por el líder; código, tests,
+  mutación y docs dados por buenos hasta `3b531ac`. **Review 2: APROBADO.**
+  Para el `done` solo faltan las MANUAL T12-T14 del humano; no se mergea a
+  `dev` hasta entonces.
+- **T9 (líder): hecha**, copia a `azure-apps` `f01156f` («sin desplegar»).
+- **MANUAL (humano, NADA escribe en Sigrid).** Arranque, en ventanas aparte y
+  desde esta rama: `python main.py` con la `.venv` de cada servicio en
+  `services/dedicacion-transfer` y en `services/dedicacion-api` (la api con
+  `PG_HOST=localhost`). Luego, desde la raíz:
+  - **T12 (M1):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M1`
+    → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en el
+    cuadrante, sin `VAR` normal ni obras de 6+ dígitos; `RESULTADO M1: OK`.
+    **Resultado (2026-10-06, humano): CUMPLIDA.** Preview: brutas 923, total
+    289, `excluidas_por_codigo` 240, `entradas_var` 1, `obra_var` VAR, motivos
+    nulos. Sync local: obras 289 recibidas, 240 desactivadas. Cuadrante:
+    `VAR-29` (ide -417055, activa), sin VAR normal, sin `150414`, 0 obras
+    activas con 6+ dígitos. `RESULTADO M1: OK`.
+  - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
+    (periodo de prueba LOCAL) → grupo de la obra `VAR`, `escribir`,
+    `paride = 417055`, `partida_cod = "29"`, `partida_metodo = "var"`;
+    `RESULTADO M2: OK`. **Resultado (2026-10-06, humano): CUMPLIDA.** Periodo
+    2026-10, trabajador 2750167: grupo VAR (ide 683806) `escribir`, `paride`
+    417055, `partida_cod` 29, método `var`, `caa_cod` `0404.CIMO03` (modo
+    pruebas: centro de la 0404; en real, el de VAR); `no_vigentes` vacío.
+  - **T14 (M3, usabilidad):** además `python main.py` en
+    `services/dedicacion-front` y abrir `http://127.0.0.1:8080`; buscar «29» y
+    «arroyo» → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
+    `VAR-29`; «Registrar en Sigrid» enseña la partida fija «29» (cerrar SIN
+    registrar). Resultado: _pendiente_.
+  - **Despliegue:** orden transfer → api → front.
+- **Observaciones de la review 1, recogidas:** `registro_sigrid.py` da 0
+  mutantes automáticos (lo cubren dos mutantes a mano) y la 1.ª campaña dio
+  dos falsos supervivientes → encargo de `arnes-base` (falsos supervivientes /
+  generador).
+
+## 2026-10-06 · F-040 · El Excel como el modelo de Juan Romero
+
+Rama `feature/F-040-excel-modelo-juan` (copia `porcentajes-f040`) · `sdd: true`
+· rigor `estandar` · **APROBADO** en la pasada 2 (la 1 pidió reforzar el test
+del «sin -0», que no lo fijaba). Absorbe F-020. Decisiones del humano D1-D6 = A
+(2026-10-06): descripción completa en el Resumen, combinadas con el valor en
+todo el grupo (el autofiltro saca el grupo entero; no se puede ordenar), bandas
+blanco/`DDEBF7` y línea gruesa, cabecera en la fila 2 sin «Obra(código)», solo
+Detalle y Resumen, convenio de la app (`Postv-`, `VAR-NN`). Corrige la notación
+científica del exportador anterior («1E+2%»). Api 619 en verde, ningún test
+anterior cambiado, cobertura 100 %, mutación en serie 20/20. **M1 cumplida**:
+el humano generó y revisó el Excel real de 2026-10 («perfecto»).
+
+Informes: `progress/impl_F-040.md`, `progress/review_F-040.md`. Sección
+retirada de `current.md`:
+
+## F-040 · El Excel como el modelo de Juan Romero (en curso)
+
+- **Qué es** (pedida el 2026-10-06; absorbe F-020): hojas Detalle (agrupado
+  por trabajador, celdas combinadas con el valor en todo el grupo para que el
+  autofiltro saque el grupo entero, bandas blanco/`DDEBF7`, línea gruesa bajo
+  cada trabajador, cabecera en la fila 2, sin «Obra(código)») y Resumen («código
+  descripción = NN% + …»). Corrige la notación científica del exportador actual
+  («1E+2%»). Spec `specs/F-040-excel-modelo-juan/`, aprobada con D1-D6 = A
+  (`c16af41`).
+- **Implementación terminada** (`progress/impl_F-040.md`, `fad6334`…`b429b81`):
+  api 619 en verde (33 nuevos), ningún test anterior cambiado; cobertura 100 %;
+  mutación en serie 20/20. **Review 1: CAMBIOS PEDIDOS** (un test que decía
+  fijar el «sin -0» y no lo fijaba); ciclo 2 hecho (test reforzado con el XML,
+  mutante a mano muerto, `obra_ide` determinista). **Review 2: APROBADO.**
+  Para el `done` solo falta la M1 del humano.
+- **Para la M1 (observación de la review):** openpyxl enseña vacías las
+  combinadas al releer; el XML sí las tiene: el humano lo mira en Excel.
+- **`azure-apps`: no cambia** (no describe el Excel; R21).
+- **MANUAL (humano, M1, solo lectura):**
+  - Muestra inventada ya generada: `%TEMP%/f040/f040_muestra.xlsx`.
+  - El real, desde esta copia y con la BBDD local (la api en el 8090; si la de
+    F-039 está arrancada, pararla antes): `cd C:/Users/pgris/PycharmProjects/porcentajes-f040/services/dedicacion-api`
+    y `.venv/Scripts/python.exe main.py`; en otra ventana
+    `curl.exe -o "$env:TEMP/f040.xlsx" "http://127.0.0.1:8090/api/v1/periodos/AAAA/MM/export.xlsx?empresa=1"`
+    y abrirlo. Recorrer los 7 puntos de design §6: abre sin reparación;
+    filtrar por empleado saca todas sus filas; filtrar por obra enseña quién y
+    su estado; filtrar por estado ≠ OK; bandas y línea gruesa; Resumen con
+    «código nombre = NN%»; impresión horizontal a una página de ancho con
+    cabecera repetida. Mirar la combinada cuya primera fila oculta el filtro.
+    Resultado: _pendiente_.
+- **Al fusionar con F-039:** la línea `VAR-29` se trata como una obra normal y
+  está probada con datos inventados; si F-039 trae un test que lea el xlsx, se
+  ajusta en el merge (design §8).
+
+
+## 2026-10-06 · Merge de F-040 en `dev` con la api en rojo (corregido)
+
+El líder mergeó F-040 en `dev` (`f34b2da`) con la suite de la api en ROJO:
+encadenó `init.sh | grep … && git commit && git merge`, y el `grep` salió con 0
+aunque había un `[KO]`. Cayó `test_f039_registro_var.py::test_f039_r21_el_excel_lleva_el_codigo_de_la_entrada`,
+que leía el Excel con el formato anterior (F-039 y F-040 se desarrollaron en
+paralelo; el design §8 de F-040 lo preveía). Ajustado al formato de F-040 sin
+perder exigencia en `chore/f039-test-excel-f040` (`fde8ade`; tabla en
+`impl_F-040.md`) y `init.sh` en verde con código de salida 0 (api 689, raíz
+418). Lección guardada en la memoria del líder. Nada se desplegó ni se subió
+en rojo.

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Body, Depends, Query, Response
 
 from application.use_cases import (
     CambiarEstadoPeriodo,
+    CompletarHasta100,
     CopiarPeriodoAnterior,
     CopiarTrabajadorAnterior,
     CrearObtenerPeriodo,
@@ -27,6 +28,8 @@ from interface_adapters.api.deps import (
 )
 from interface_adapters.api.schemas import (
     AsignacionesIn,
+    CompletarIn,
+    CompletarOut,
     CopiaPeriodoOut,
     CopiaTrabajadorOut,
     CuadranteOut,
@@ -37,6 +40,7 @@ from interface_adapters.api.schemas import (
     PeriodoIn,
     PeriodoOut,
     SyncOut,
+    a_completar_out,
     a_copia_periodo_out,
     a_obra_out,
     a_periodo_out,
@@ -246,6 +250,31 @@ def copiar_trabajador_anterior(
         periodo_origen=a_periodo_out(origen) if origen else None,
         lineas_omitidas_obra_inactiva=omitidas,
     )
+
+
+@router.post(
+    "/periodos/{anio}/{mes}/completar",
+    response_model=CompletarOut,
+    tags=["cuadrante"],
+)
+def completar_lote(
+    anio: int,
+    mes: int,
+    payload: CompletarIn,
+    contenedor: Cont,
+    usuario: Usuario,
+    empresa: EmpresaQ = None,
+) -> CompletarOut:
+    """Completa hasta el 100 % en la obra destino a los trabajadores del
+    lote, en una transacción (F-029, docs/ARCHITECTURE.md#regla-completar).
+    No registra en Sigrid ni llama al transfer."""
+    filtro = _filtro(contenedor, empresa)
+    with contenedor.uow() as uow:
+        resultados, resumen = CompletarHasta100().ejecutar(
+            uow, anio, mes, payload.trabajadores, payload.obra_ide,
+            payload.es_postventa, usuario, filtro=filtro,
+        )
+    return a_completar_out(resultados, resumen)
 
 
 # --------------------------- Export -----------------------------------

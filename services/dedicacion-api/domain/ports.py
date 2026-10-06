@@ -17,6 +17,7 @@ from domain.models import (
     Periodo,
     ResultadoSyncMaestro,
     ResultadoUniverso,
+    ResultadoUniversoVar,
     TipoEvento,
     Trabajador,
 )
@@ -39,6 +40,20 @@ class UniversoPostventaGateway(Protocol):
         """Obras de `obras` (`ide`, `codigo`, `nombre`) que admiten postventa
         en `empresa`. Lanza `UniversoPostventaNoDisponible` si no lo hay."""
         ...
+
+
+class UniversoVarGateway(Protocol):
+    """Universo VAR, que calcula SOLO el transfer (F-039,
+    docs/ARCHITECTURE.md#regla-var)."""
+
+    def universo_var(self, empresa: int) -> ResultadoUniversoVar:
+        """Obra VAR de `empresa` y sus partidas VAR. Lanza
+        `UniversoVarNoDisponible` si el transfer no lo da."""
+        ...
+
+
+class UniversosGateway(UniversoPostventaGateway, UniversoVarGateway, Protocol):
+    """Los dos universos que el sync pide al transfer (un solo cliente)."""
 
 
 class TrabajadorRepository(Protocol):

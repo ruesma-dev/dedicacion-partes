@@ -75,15 +75,16 @@ Hexagonal estricto:
 - `infrastructure/` — `db/` (SQLAlchemy 2, `orm_models.py` como única verdad
   del esquema + `esquema.py`, que deriva de él el DDL del arranque, +
   repositorios),
-  `sigrid/` (cliente de `sigrid-api`), `excel/` (export compatible con la
-  plantilla), `transfer/` (cliente HTTP del transfer).
+  `sigrid/` (cliente de `sigrid-api`), `excel/` (export con el modelo de negocio:
+  Detalle agrupado por trabajador y Resumen), `transfer/` (cliente HTTP del transfer).
 - `interface_adapters/api/` — FastAPI: `routes.py`, `schemas.py`, `deps.py`
   (contenedor de dependencias), `app.py`.
 
 Endpoints bajo `/api/v1`: `health`, `sync` y `sync/preview`, CRUD de
 `periodos` (crear/cerrar/reabrir/copiar-anterior), `cuadrante`, sustitución
 atómica de asignaciones por trabajador, `deshacer` (solo lo propio,
-[`#regla-deshacer`](#regla-deshacer)), `export.xlsx`,
+[`#regla-deshacer`](#regla-deshacer)), `completar` (lote «completar al
+100 %» en una obra, [`#regla-completar`](#regla-completar)), `export.xlsx`,
 `registro/preflight` + `registro/ejecutar` y `empresas` (las del selector,
 con su nombre de Sigrid y si están de baja).
 
@@ -92,7 +93,10 @@ PK = el `ide` de Sigrid: en `trabajador`, el `res.ide` de su **recurso**,
 [`#regla-recurso`](#regla-recurso); en `obra`, el de su ficha, con dos marcas
 independientes que pone el sync: `activa`, que su estado no esté excluido, y
 `admite_postventa`, que esté en el universo de postventa,
-[`#regla-p5`](#regla-p5), F-025), `empresa` (catálogo `auxemp` de Sigrid, PK =
+[`#regla-p5`](#regla-p5), F-025; además, una fila por partida VAR, con `ide`
+negativo y su obra y partida de registro, [`#regla-var`](#regla-var), y
+ninguna obra con 6 o más dígitos seguidos en el código,
+[`#regla-seis-digitos`](#regla-seis-digitos), F-039), `empresa` (catálogo `auxemp` de Sigrid, PK =
 `numemp`, que es el `con.emp` de las fichas; F-032), `periodo` (año+mes único, `ABIERTO`/`CERRADO`),
 `asignacion` (periodo × trabajador × obra × `es_postventa`, `porcentaje` en
 0-100) y `evento` (auditoría con `snapshot_antes` / `snapshot_despues` en
@@ -113,11 +117,12 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 - `POST /api/registro/preflight` — pasos 1-8: resolver destinos, cargar los
   tipos de hora del recurso que trae cada línea (lo manda la API, el transfer
   no lo elige: [`#regla-recurso`](#regla-recurso)), aplicar las reglas,
-  localizar el parte del mes, comprobar idempotencia y detectar conflictos.
-  No escribe nada.
+  resolver la cuenta analítica de cada línea, elegir el parte del periodo,
+  comprobar idempotencia y detectar conflictos
+  ([`#regla-analitica`](#regla-analitica)). No escribe nada.
 - `POST /api/registro/ejecutar` — pasos 9-10: crear los partes que falten
-  (`con` + `hmo`, releyendo el `ide`) y borrar las pisadas confirmadas +
-  insertar las líneas nuevas, por lotes.
+  (`con` + `hmo` con alta protegida, releyendo el periodo) y borrar las
+  pisadas confirmadas + insertar las líneas nuevas, por lotes.
 
 `application/services/reglas_porcentajes.py` concentra las reglas P1-P5;
 `application/pipelines/registro_pipeline.py` las orquesta;
@@ -130,8 +135,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > README del transfer, los docstrings y las specs **remiten** a las anclas
 > `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad`,
 > `#regla-sin-partida`, `#regla-pruebas`, `#regla-empresa`,
-> `#regla-recurso` y `#regla-deshacer`; no vuelven a enunciar la regla con palabras propias. Lo
-> vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
+> `#regla-recurso`, `#regla-deshacer`, `#regla-completar`,
+> `#regla-analitica`, `#regla-var` y `#regla-seis-digitos`; no vuelven a
+> enunciar la regla con palabras propias. Lo vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
 > Todos los puntos están validados. Que la regla esté escrita no autoriza a
@@ -252,6 +258,14 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
    - Hay un tercer caso que también se confirma antes de escribir y que no
      mira lo que ya hay en el parte, sino dónde se imputa lo que vamos a
      escribir: [`#regla-sin-partida`](#regla-sin-partida).
+   - **Alcance: todos los partes del periodo** de la obra destino, no solo
+     el que recibe las líneas (F-037). Una `synckey` nuestra en cualquiera
+     de ellos, también cerrado, es «ya registrada». Si la línea que choca
+     está en un parte **cerrado**, la nuestra se **omite** con motivo
+     `parte_cerrado` (y prevalece sobre un choque En registro): en un
+     cerrado no se escribe ni se borra. Si está en uno En registro, es el
+     conflicto de siempre, con el código del parte donde vive. Ver
+     [`#regla-analitica`](#regla-analitica).
 
    El criterio de choque y la clave del conflicto salen de **una sola
    función**, `application/services/reglas_porcentajes.campos_identidad`:
@@ -282,9 +296,12 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      confirmación **no se escribe** ninguna de las líneas que lo provocan, y
      quedan listadas como omitidas con su motivo. Confirmar una sobrecarga
      escribe **y no borra nada**.
-   - **Alcance: un parte, es decir, una obra.** El 100 % del trabajador
-     entre **todas** sus obras es otra regla, la del punto 4, y vive en
-     `dedicacion-api`. Esta solo ve el parte que tiene delante, y por eso
+   - **Alcance: los partes del periodo de una obra.** Suma las líneas `M*`
+     del trabajador en **todos** los partes de esa obra y mes, cerrados
+     incluidos (F-037, [`#regla-analitica`](#regla-analitica)): un
+     complementario no es una jornada nueva. El 100 % del trabajador entre
+     **todas** sus obras es otra regla, la del punto 4, y vive en
+     `dedicacion-api`. Esta solo ve la obra que tiene delante, y por eso
      tampoco detecta sobrecargas previas en las que no participa.
 
    *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
@@ -315,8 +332,10 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      partida casada no tiene destino posible en un presupuesto ajeno al de
      su obra, así que [`#regla-p5`](#regla-p5) la **omite** y no hay nada que
      confirmar. En la obra normal sí hay destino —la propia obra— y lo único
-     que falta es la imputación analítica: por eso se puede escribir, y por
-     eso se pregunta.
+     que falta es la partida del presupuesto: por eso se puede escribir, y
+     por eso se pregunta. La partida **no** es la cuenta analítica de la
+     línea: esa sale del recurso
+     ([`#regla-analitica`](#regla-analitica)).
    - **La elección alternativa sigue existiendo:** el preflight publica las
      partidas de la obra en `partidas_obra` y el front las ofrece en un
      desplegable. Confirmar «sin partida» es lo que se hace cuando ninguna
@@ -471,13 +490,166 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
     *Decidido por Pablo Gris el 2026-10-04 (decisión A) · F-027, criterios
     `acceptance` en `harness/features.json`.*
+15. <a id="regla-completar"></a>**Completar al 100 % en una obra, por
+    lote.** `POST /api/v1/periodos/{a}/{m}/completar` recibe los
+    trabajadores, la obra destino y su modo (normal o `Postv-`), y a cada
+    uno le pone **lo que le falta**: 100 menos el total de **todas** sus
+    líneas, a centésimas (la escala de la columna; el total queda en
+    100,00).
+
+    - **Dónde.** En la línea del trabajador con la misma clave (obra,
+      `es_postventa`), sumándolo; si no la tiene, en una línea nueva. Sus
+      demás líneas no cambian. `Postv-X` y X son líneas distintas
+      ([`#regla-p5`](#regla-p5)): completar en una nunca suma a la otra.
+    - **A quién no.** Al que ya está en `OK` o en `EXCESO` según la misma
+      regla del 100 % del cuadrante (`calcular_estado` y su épsilon: no hay
+      otro criterio de «al 100 %»), ni se le resta; al no vigente en el mes
+      ([`#regla-recurso`](#regla-recurso)); al que no es visible en la
+      empresa elegida ([`#regla-empresa`](#regla-empresa)). Cada uno sale
+      con su resultado y el lote sigue con los demás.
+    - **Todo o nada.** Periodo inexistente (404) o `CERRADO` (409), y obra
+      que no existe, no es de la empresa de las obras o no se ofrece en ese
+      modo (`Linea.ofrecible`) (422): no se toca a nadie. Es una sola
+      transacción.
+    - **Deshacer.** Cada trabajador cambiado deja **un** evento
+      `COMPLETAR` con su `X-Usuario`, que se deshace trabajador a
+      trabajador como cualquier otro ([`#regla-deshacer`](#regla-deshacer)).
+    - **No registra en Sigrid** ni llama al transfer: registrar sigue
+      siendo el botón de siempre. El front solo manda quiénes y el destino
+      (sin porcentajes): la cifra la pone la API, `domain/estados.py`
+      (`completar_hasta_100`).
+
+    *Decidido por Pablo Gris el 2026-09-29 (completar con el cálculo en la
+    API, por lote) y el 2026-10-05 (D1-D6, las seis A) · F-029,
+    `specs/F-029-seleccion-multiple-completar-100/requirements.md`.*
+16. <a id="regla-analitica"></a>**La línea lleva su cuenta analítica y va
+    a un parte En registro.** Es la regla de `partes` (su F-021 y su F-031),
+    **la misma** porque los dos servicios escriben en el mismo parte de
+    Sigrid: `estado_parte.py` y `cuenta_analitica.py` del transfer son
+    **copia literal** de los de `partes` (lista cerrada de `CLAUDE.md`,
+    vigilada por `tests/test_f037_copias_partes.py`).
+
+    - **El asiento lo hace Sigrid, no el transfer.** Administración pulsa
+      «Contabiliza parte…»: Sigrid genera un asiento analítico (`ANA`,
+      `con.tip = 32`) por parte, con debe a la cuenta de cada línea
+      (`hmores.caaide`) y haber a la contrapartida del recurso
+      (`res.caaconide`), y deja el parte en Imputado. El 6XX es de la
+      nómina. El transfer **solo rellena `hmores.caaide`**: no escribe
+      asientos (`asi`, `asa`, `apu`, `apa`), no cambia `con.est` ni toca el
+      `con`/`hmo` de un parte existente.
+    - **De dónde sale la cuenta.** La **subcuenta** (el texto tras el primer
+      punto del código) de `reshor.caaide` del recurso para el tipo de hora
+      que se escribe; si no da, la de su tipo por defecto (`res.horide`); si
+      tampoco, la de la cuenta de la **partida** de la línea, solo si es de
+      coste (empieza por `CI` o `CD`; nunca `CP` ni `INGR`), con una nota.
+      La cuenta es la **única** `caa` del centro de la obra destino, de su
+      empresa, con esa subcuenta (en pruebas, la de `0404`; en postventa, la
+      de la obra de postventa). `hmores.cenide` sigue siendo ese centro.
+    - **Sin cuenta se escribe igual.** Sin subcuenta, `caaide = 0` sin
+      aviso; con la obra sin esa cuenta o con varias, `caaide = 0` y un
+      aviso. **Nunca se elige la primera.** Los avisos no retienen la línea.
+    - **El parte del periodo.** Se leen **todos** los partes de la obra y
+      el mes con su estado. Cerrado es todo lo que no está En registro
+      (Cerrado, Imputado u otro). Las líneas van al En registro de **mayor
+      `ide`**, aunque haya cerrados de `ide` mayor; si no hay ninguno, a uno
+      nuevo, **complementario** si el periodo tiene cerrados, con
+      descripción `Parte <obra>` como los de Administración. Se reutiliza el
+      que haya creado `partes`.
+    - **Alta protegida.** El parte nuevo se crea en una transacción que solo
+      inserta si su código `PT<AA>/NNNNN` (correlativo **por empresa**) está
+      libre y el periodo no tiene ya uno En registro; el `hmo` se cuelga por
+      código, tipo y empresa. Se relee el periodo: si hay uno En registro,
+      sea el nuestro o el de `partes`, se usa; si no, **un** reintento con
+      otro código y, si tampoco, la petición falla sin insertar líneas.
+    - **Duplicados y conflictos** contra todos los partes del periodo:
+      [`#regla-conflicto`](#regla-conflicto) y
+      [`#regla-capacidad`](#regla-capacidad). En un parte cerrado **nunca**
+      se inserta ni se borra.
+    - **Lecturas.** Partidas y cuentas de centro, una vez por petición;
+      partes y líneas, por periodo. Si una falla o viene `truncated`, la
+      petición falla sin escribir nada.
+    - **Deshacer y corregir.** En un parte En registro, como hasta ahora
+      (`limpiar`, pisado confirmado: la línea nueva lleva su cuenta). En uno
+      cerrado **no se borra nada**: lo ajusta Administración (anula el `ANA`
+      o hace el complementario), y lo heredará F-033. Una línea ya
+      registrada no se reescribe ni se le rellena la cuenta.
+
+    *Decidido por Pablo Gris el 2026-10-05 (rellenar `caaide`, la regla de
+    `partes`, complementario) y el 2026-10-06 (D8-D18) · F-037,
+    `specs/F-037-asiento-analitico-obra/requirements.md`.*
+17. <a id="regla-var"></a>**Obras varias: sus partidas se ofrecen como obras
+    propias.** La obra del ajuste `VAR_OBRA_COD` del transfer (el valor vive
+    en el `.env`, no aquí) agrupa en su presupuesto obras pequeñas, una por
+    partida. Se trabaja con esas partidas, no con la obra.
+
+    - **Partida VAR.** Hoja activa del presupuesto de la obra VAR de la
+      empresa de las obras cuyo **número inicial** (los dígitos con que
+      empieza el código) es mayor o igual que `VAR_PARTIDA_DESDE` (29 hoy):
+      `29`, `30`, `100`, `029`, `29.1` y `29A` entran; `28`, `05`,
+      `CI.1.1`, un capítulo o una partida de baja, no. La obra VAR de otra
+      empresa no cuenta.
+    - **El universo, solo en el transfer.** `POST /api/var/universo` (una
+      empresa → la obra VAR y sus partidas VAR por `ide`) y la validación
+      del preflight usan **las mismas** funciones (`universo_var.py`): una
+      partida está en el universo si y solo si el preflight acepta una
+      línea imputada a ella. Sin obra VAR en la empresa, con la obra
+      ambigua o sin `VAR_OBRA_COD`: universo vacío con su motivo.
+    - **La entrada, en la api.** Cada sync y cada preview piden el universo
+      **una vez**, con la empresa de las obras, y guardan cada partida como
+      una fila propia de `obra`: `ide` = −(`ide` de la partida), código
+      `<obra VAR>-<partida>` (`VAR-29`), la descripción de la partida,
+      activa, sin postventa y con `registro_obra_ide`, `registro_obra_cod`
+      y `registro_paride` (obra y partida de Sigrid donde se registra; a
+      `NULL` en las obras normales). La partida que sale del universo deja
+      su entrada inactiva; no se borra nada. Si el transfer no da el
+      universo, sync y preview fallan enteros con 502, sin persistir nada.
+    - **La obra VAR no se ofrece como obra normal**, sea cual sea su
+      estado: nadie imputa a sus partidas `CI.*`. Las líneas ya guardadas
+      en ella o en una entrada retirada se conservan, no ofrecibles, como en
+      [`#regla-p5`](#regla-p5), y se registran como hoy.
+    - **Registro.** Las líneas de una entrada viajan en la petición de su
+      obra de registro, junto a las demás de esa obra, con `var_paride` y
+      sin `paride` manual. El transfer las imputa a esa partida, fija
+      (`partida_metodo = "var"`; el front la pinta sin desplegable), si y
+      solo si está en el universo VAR de la empresa de la línea y la obra
+      de la petición es la obra VAR; si no, o si la línea es de postventa,
+      la omite con un motivo que nombra la partida o la obra, sin aviso de
+      «sin partida». Lo demás, como cualquier línea: modo pruebas
+      ([`#regla-pruebas`](#regla-pruebas)), cuenta del centro de la obra
+      destino ([`#regla-analitica`](#regla-analitica)), parte del periodo,
+      `synckey`, identidad con su partida
+      ([`#regla-conflicto`](#regla-conflicto)) y capacidad
+      ([`#regla-capacidad`](#regla-capacidad)).
+    - **Para el cuadrante, Completar, las copias y el Excel** una entrada es
+      una obra normal, sin modo postventa.
+
+    *Decidido por Pablo Gris el 2026-10-06 (D1, D2, D3, D5 y D6 = A) ·
+    F-039, `specs/F-039-obras-var-y-seis-digitos/requirements.md`.*
+18. <a id="regla-seis-digitos"></a>**Fuera las obras con 6 o más dígitos
+    seguidos en el código.** En el sync y en el preview, antes de pedir
+    ningún universo, se descarta toda obra cuyo código **contenga** N o más
+    dígitos seguidos, lleve o no letras o sufijo (`150414`, `0902051`,
+    `090205A`, `150301-1` caen; `12345` y `VAR`, no), con N =
+    `sync.obras.digitos_seguidos_excluidos` de `config.yaml` (6; 0 = sin
+    filtro).
+
+    - La descartada no va al universo de postventa ni se guarda; si ya
+      estaba en la base, queda con `activa` y `admite_postventa` a `false`.
+      Sus líneas ya guardadas se conservan, no ofrecibles, y se registran
+      como hoy.
+    - El preview publica cuántas caen y una muestra de sus códigos.
+    - Sin excepciones: un código así que se adjudique tampoco saldrá.
+
+    *Decidido por Pablo Gris el 2026-10-06 (D4: «si tienen 6 números
+    seguidos también ignóralas»; D5 = A) · F-039,
+    `specs/F-039-obras-var-y-seis-digitos/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 
 | Sistema | Quién | Modo | Notas |
 |---|---|---|---|
 | `sigrid-api` (Function App) | api | **solo lectura** (`POST /api/sql/read`) | maestros de empleados y obras y catálogo de empresas (`auxemp`, F-032); consultas parametrizadas en `config/config.yaml` |
-| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura) |
+| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura). Lee además partes del periodo con su estado, cuentas analíticas del centro y cuentas de partida ([`#regla-analitica`](#regla-analitica)); un `truncated` es error |
 | PostgreSQL `dedicacion` | api | lectura y escritura | en local, `localhost`. Desplegado, **base propia dentro del servidor compartido `psql-albaranes-rs9k2`** (decisión del humano, 2026-08-20), esquema `public`, rol de aplicación propio y `PG_SSLMODE=require` |
 | `dedicacion-transfer` | api | HTTP interno | `TRANSFER_BASE_URL`, timeout 180 s |
 

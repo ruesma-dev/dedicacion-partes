@@ -173,9 +173,13 @@ original NO se versiona: al repositorio entra solo el Markdown.
   dos la necesitan, se propone al humano dónde debe vivir. Duplicación
   tolerada hoy, lista cerrada: `partida_catalog.py`, `partida_matcher.py` y
   `text_match.py` del transfer son **copias de `partes-persistencia`** (otro
-  repositorio). Quien corrija un fallo en una de ellas avisa al humano de que
-  la copia de `partes` tiene el mismo fallo. La lista solo crece con decisión
-  expresa. Una responsabilidad nueva que no encaje en ningún servicio ⇒
+  repositorio), y `cuenta_analitica.py` y `estado_parte.py` del transfer son
+  **copias de `partes-transfer`** (monorepo `partes`, sus F-021 y F-031;
+  añadidas por decisión expresa del humano el 2026-10-06, F-037 D15 y D18:
+  «funciona igual», «se usa el mismo parte realmente»).
+  Quien corrija un fallo en una de ellas avisa al humano de que la copia de
+  `partes` tiene el mismo fallo, y lo que se aprenda en `partes` sobre la
+  cuenta analítica se trae aquí. La lista solo crece con decisión expresa. Una responsabilidad nueva que no encaje en ningún servicio ⇒
   `blocked` y se consulta.
 - El front NO lleva lógica de negocio. Si una feature pide calcular algo en
   `app.js` que decide qué se registra en Sigrid, va a la API o al transfer.

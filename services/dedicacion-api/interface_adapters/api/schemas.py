@@ -13,6 +13,7 @@ from domain.models import (
     CuadranteTrabajador,
     Obra,
     Periodo,
+    ResultadoCompletarTrabajador,
     ResultadoCopia,
     ResultadoSync,
     ResumenPeriodo,
@@ -37,6 +38,15 @@ class AsignacionesIn(_Base):
 class PeriodoIn(_Base):
     anio: int = Field(ge=2020, le=2100)
     mes: int = Field(ge=1, le=12)
+
+
+class CompletarIn(_Base):
+    """Lote «completar al 100 %» (F-029, R14). Sin porcentajes: lo que
+    falta lo calcula la API (R12)."""
+
+    trabajadores: list[int] = Field(min_length=1, max_length=500)
+    obra_ide: int
+    es_postventa: bool = False
 
 
 # --------------------------- Salida -----------------------------------
@@ -128,6 +138,20 @@ class CopiaPeriodoOut(_Base):
     con_carga_previa: int
     sin_datos_origen: int
     lineas_omitidas_obra_inactiva: int
+
+
+class ResultadoCompletarOut(_Base):
+    trabajador_ide: int
+    resultado: str
+    anadido: float  # escala 0-100; 0 si no se tocó
+
+
+class CompletarOut(_Base):
+    """Respuesta del lote (F-029, R25): sin filas; el front recarga el
+    cuadrante, que ya trae `puede_deshacer` por usuario."""
+
+    resultados: list[ResultadoCompletarOut]
+    resumen: ResumenOut
 
 
 class SyncMaestroOut(_Base):
@@ -234,6 +258,22 @@ def a_copia_periodo_out(resultado: ResultadoCopia) -> CopiaPeriodoOut:
         con_carga_previa=resultado.con_carga_previa,
         sin_datos_origen=resultado.sin_datos_origen,
         lineas_omitidas_obra_inactiva=resultado.lineas_omitidas_obra_inactiva,
+    )
+
+
+def a_completar_out(
+    resultados: list[ResultadoCompletarTrabajador], resumen: ResumenPeriodo
+) -> CompletarOut:
+    return CompletarOut(
+        resultados=[
+            ResultadoCompletarOut(
+                trabajador_ide=r.trabajador_ide,
+                resultado=r.resultado.value,
+                anadido=float(r.anadido),
+            )
+            for r in resultados
+        ],
+        resumen=a_resumen_out(resumen),
     )
 
 

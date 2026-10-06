@@ -1,12 +1,43 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-027 se cerró el 2026-10-04 y se
-**desplegó el 2026-10-05**; F-025 se desplegó el 2026-10-03 (resúmenes en
-`history.md`). El arnés es la **1.7.3**.
+**Ninguna feature en ejecución en la copia principal.** F-040 y F-039 se
+cerraron el 2026-10-06; F-037, F-039 y F-040 están en `dev` **pendientes de
+desplegar juntas** (sección de despliegue). En paralelo, por decisión del
+humano: F-041 (implementándose) en `PycharmProjects/porcentajes-f041`. El arnés
+es la **1.7.3**.
+
+## Features en paralelo (copia de trabajo aparte)
+
+- **F-041 · Filtro de obra con el texto visible** (prioridad 3; implementándose
+  en su copia): spec aprobada con D1-D4 = A (`9b5fc46`) en `PycharmProjects/porcentajes-f041`, rama
+  `feature/F-041-filtro-obra-postventa`. La causa real: el buscador global no
+  casa con `Postv-` y la columna mezcla chips.
+- La copia tiene los `.venv` como uniones a los de esta carpeta; no tiene
+  `.env` (no se copia): para probar en local, abrir la rama en la carpeta
+  principal con `git checkout --detach <rama>`.
+
+## ⚠ Despliegue de F-037 + F-039 + F-040 (pendiente; lo lanza el humano)
+
+- **Orden obligatorio transfer → api → front** (`.\redeploy_dedicacion.ps1`
+  sin `-Solo`, que ya respeta ese orden), desde `dev`: la api de F-039 llama a
+  `POST /api/var/universo`, que solo tiene el transfer nuevo. El transfer
+  desplegado ya escribe en real; no hay que tocar permisos. La api añade sus
+  tres columnas de `obra` al arrancar.
+- F-040 solo cambia la api (el Excel); va en el mismo despliegue.
+- **Después: sync** («Actualizar Sigrid»): hasta entonces no aparece `VAR-29` ni
+  desaparecen las obras de 6+ dígitos.
+- **Comprobación:** preview de producción con `excluidas_por_codigo` 240 y
+  `entradas_var` 1; un preflight (solo lectura) con una línea MENC o MJEFO
+  (`caa_cod` `<obra>.CIMO0x`, F-037) y otra en `VAR-29` (`paride` 417055,
+  cuenta `VAR.CIMO0x`).
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-06: F-029** (api `r20261006-1140`, front
+  `r20261006-1141`): selección múltiple con Ctrl/Shift y «Completar al
+  100 %» (tecla C). **Comprobación pendiente:** un trabajador en FALTA,
+  Ctrl+clic, C, confirmar la obra → 100 %; Ctrl+Z lo devuelve.
 - **Desplegado el 2026-10-05: F-027** (solo la api, `r20261005-0915`): cada
   usuario solo deshace lo suyo. **Comprobación pendiente, con dos personas
   (A y B) en el mismo mes y trabajador:** A guarda → B no ve el botón y su
@@ -15,9 +46,9 @@
 - **Desplegado el 2026-10-03: F-025** (transfer `r20261003-1444`, api
   `r20261003-1446`, front `r20261003-1447`, en orden transfer → api → front).
   Preview de producción: `admiten_postventa` 83, `solo_postventa` 73,
-  `motivo_postventa` nulo. **Pendiente de confirmar por el humano: el sync
-  («Actualizar Sigrid») y ver `Postv-0656` en el cuadrante**; con eso se
-  retira el aviso de CP/OT de abajo.
+  `motivo_postventa` nulo. **Sync hecho y `Postv-0656` visible en el
+  cuadrante** (confirmado por el humano el 2026-10-05): ya se puede
+  registrar postventa con normalidad.
 - **Desplegado el 2026-10-02: F-034 y F-026**, sobre lo del 2026-10-01 (F-022,
   F-023, F-024, F-032). Imágenes `transfer:r20261002-1705`,
   `api:r20261002-1706`, `front:r20261002-1708`; la api añadió
@@ -29,17 +60,33 @@
 - **El transfer desplegado escribe DE VERDAD** (`OBRA_PRUEBAS_FORZAR=false`)
   por orden expresa del humano (`docs/INTEGRACION.md` §8). Siguen abiertos
   F-017 (partidas sin validar por Administración) y F-011 (varios códigos M*).
-- **Aviso a usuarios hasta F-025:** no registrar postventa en las obras CP ni
-  OT (la cascada vigente de P5 las casa con partidas ajenas).
 - **El script de vaciado ya funciona contra Azure** (F-035, 2026-10-03): usa
   `psql` y lee la contraseña de `PG-PASSWORD` del Key Vault. `-SoloRecuento`
   cuenta sin escribir: el 2026-10-03 dio 0 asignaciones, 0 eventos, 1
   periodo y 196 trabajadores.
 
+## F-028 · Borrar lo filtrado (plan aprobado, va después de F-037)
+
+- Plan aprobado por el humano el 2026-10-06 con **A** (siempre todo lo
+  visible). Detalle en la descripción de `features.json`.
+
+## Recursos cerrados en bloque en Sigrid (2026-10-05)
+
+- Correo de Miguel Ángel: recursos que salen en agosto y no en septiembre.
+  Causa comprobada en Sigrid: el 2026-08-06 se cerraron en bloque 46 fichas
+  de recurso de personas que se fueron en 2024-2025; por la regla de F-026
+  cuentan en agosto. **Decisión del humano: opción B** (que Administración
+  corrija la fecha de baja en Sigrid) y **spec de la A** como F-036, sin
+  implementar de momento.
+
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Primero **F-020**; después
-F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
+`BACKLOG.md` tiene el orden completo (reordenado por el humano el
+2026-10-06): F-040 (Excel, cerrada), **F-038** (cuadro de mando = el Excel
+navegable), **F-041** (filtro de obra), **F-039** (cerrada, pendiente de desplegar),
+F-028 (plan aprobado), F-021, F-030, F-036 (solo spec de momento), F-031,
+F-033 y, detrás, F-017, F-018… F-037 está cerrada y pendiente de desplegar
+(sección de despliegue).
 
 ## ⚠ Lo que espera al humano
 
@@ -58,6 +105,18 @@ F-028, F-021, F-029, F-030, F-031, F-033 y, detrás, F-017, F-018…
    las contraseñas antes de sus pasos 1-2 (observación del implementer de
    F-035): hoy, una contraseña rechazada llega después de comprobar el
    servidor y, si faltaba, crear la regla de servicios de Azure.
+
+7. **F-037, complementario en real (aplazado por el humano el 2026-10-06):**
+   probar con Administración que, con el parte del mes contabilizado, una
+   línea nueva va a un complementario `Parte <obra>`. Los tests lo cubren;
+   en Sigrid no se ha visto.
+8. **F-037, aviso a `partes` (T11):** ya recogieron la carrera (D17, su
+   `9ea7c59`); falta pasarles el test de inmutabilidad de `OrigenSubcuenta`.
+   Su DA11 pondrá en rojo `test_f037_copias_partes.py::…ref_vigilada`:
+   recopiar y mover `COMMIT_COPIADO`.
+9. Decidir si se abre como feature lo que vio el implementer de F-037: la
+   capacidad no se evalúa en un periodo sin ningún parte (dos líneas nuevas
+   del mismo recurso que sumen más del 100 % no avisan). Preexistente.
 
 > **`azure-apps` no tiene remoto configurado** (`git remote -v` vacío): vive
 > solo en local. No es de este proyecto, pero ahí está la documentación de todo
