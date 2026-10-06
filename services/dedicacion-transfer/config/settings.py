@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     postventa_registrar: bool = Field(True, alias="POSTVENTA_REGISTRAR")
     postventa_obra_cod: str = Field("POSTV2",
                                     alias="POSTVENTA_OBRA_COD")
+    # F-039 (ARCHITECTURE.md#regla-var): obra de obras varias cuyas partidas
+    # hoja activas con número inicial >= VAR_PARTIDA_DESDE se ofrecen como
+    # obras propias. Vacío = sin obra VAR (ni universo ni líneas VAR).
+    var_obra_cod: str = Field("VAR", alias="VAR_OBRA_COD")
+    var_partida_desde: int = Field(29, alias="VAR_PARTIDA_DESDE")
 
     # --- Constantes del modelo Sigrid (confirmadas con datos reales) --- #
     tip_parte_trabajo: int = Field(35, alias="TIP_PARTE_TRABAJO")

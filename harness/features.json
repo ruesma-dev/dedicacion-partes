@@ -90,7 +90,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 13,
+      "priority": 14,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -105,7 +105,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 14,
+      "priority": 15,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -154,7 +154,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 15,
+      "priority": 16,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -169,7 +169,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 16,
+      "priority": 17,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     },
     {
@@ -206,7 +206,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 17,
+      "priority": 18,
       "branch": "feature/F-014-cabos-sigrid-administracion"
     },
     {
@@ -240,7 +240,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 18,
+      "priority": 19,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
     },
     {
@@ -259,7 +259,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 10,
+      "priority": 11,
       "branch": "feature/F-017-prueba-administracion"
     },
     {
@@ -280,7 +280,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 11,
+      "priority": 12,
       "branch": "feature/F-018-paso-a-escritura-real"
     },
     {
@@ -298,7 +298,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 12,
+      "priority": 13,
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
@@ -317,7 +317,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 5,
+      "priority": 6,
       "branch": "feature/F-021-filtro-obra-chip-unico"
     },
     {
@@ -445,7 +445,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 4,
+      "priority": 5,
       "branch": "feature/F-028-borrar-todo-filtrado"
     },
     {
@@ -481,7 +481,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 6,
+      "priority": 7,
       "branch": "feature/F-030-dias-bajas-incidencias"
     },
     {
@@ -499,7 +499,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 8,
+      "priority": 9,
       "branch": "feature/F-031-mcp-ia"
     },
     {
@@ -536,7 +536,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 9,
+      "priority": 10,
       "branch": "feature/F-033-deshacer-linea-real"
     },
     {
@@ -594,7 +594,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 7,
+      "priority": 8,
       "branch": "feature/F-036-baja-efectiva-recurso"
     },
     {
@@ -638,7 +638,7 @@
     {
       "id": "F-039",
       "title": "Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos",
-      "description": "Pedida por el humano el 2026-10-06: «añade como se ha hecho en postventa la obra de código VAR, hay que coger sus partidas, pero a partir de la que empieza por 29 (inclusive), si empieza por un número inferior no. Por otro lado las obras con código de 6 números juntos o más ignóralas». Datos leídos por el líder en Sigrid (solo lectura): la obra VAR «OBRAS VARIAS» de la empresa 1 (con.ide 683806, est 15) tiene bajo su capítulo CD (obrparpar 52979) 29 partidas hoja numeradas 01-29, cada una una obra pequeña (p. ej. 29 «ACOND. NAVE MODUL-A, ARROYOMOLINOS»); hoy solo entraría la 29. Hay otra VAR en la empresa 28 con una partida 28 (las obras son siempre de la empresa de las obras, F-034). Obras con 6+ dígitos seguidos en el código: 240 (239 de la empresa 1, 1 de la 25), todas antiguas (090201, 191105, 0902051…). Como en postventa (F-025), cada partida de VAR se ofrece como una entrada propia y registra en la obra VAR con esa partida. 2026-10-06: spec escrita (`specs/F-039-obras-var-y-seis-digitos/`), con D1-D6 pendientes del humano; lecturas del spec-author: VAR está EN CURSO (hoy se ofrece como obra normal), su centro tiene cuentas VAR.CIMO01-16, la partida 29 es la ide 417055 con 4 líneas de Administración en 2026-08, y de las 240 obras de 6+ dígitos ninguna tiene parte desde 2024 ni asignaciones en la base local.",
+      "description": "Pedida por el humano el 2026-10-06: «añade como se ha hecho en postventa la obra de código VAR, hay que coger sus partidas, pero a partir de la que empieza por 29 (inclusive), si empieza por un número inferior no. Por otro lado las obras con código de 6 números juntos o más ignóralas». Datos leídos por el líder en Sigrid (solo lectura): la obra VAR «OBRAS VARIAS» de la empresa 1 (con.ide 683806, est 15) tiene bajo su capítulo CD (obrparpar 52979) 29 partidas hoja numeradas 01-29, cada una una obra pequeña (p. ej. 29 «ACOND. NAVE MODUL-A, ARROYOMOLINOS»); hoy solo entraría la 29. Hay otra VAR en la empresa 28 con una partida 28 (las obras son siempre de la empresa de las obras, F-034). Obras con 6+ dígitos seguidos en el código: 240 (239 de la empresa 1, 1 de la 25), todas antiguas (090201, 191105, 0902051…). Como en postventa (F-025), cada partida de VAR se ofrece como una entrada propia y registra en la obra VAR con esa partida. 2026-10-06: spec escrita (`specs/F-039-obras-var-y-seis-digitos/`), con D1-D6 pendientes del humano; lecturas del spec-author: VAR está EN CURSO (hoy se ofrece como obra normal), su centro tiene cuentas VAR.CIMO01-16, la partida 29 es la ide 417055 con 4 líneas de Administración en 2026-08, y de las 240 obras de 6+ dígitos ninguna tiene parte desde 2024 ni asignaciones en la base local. 2026-10-06: spec APROBADA por el humano (D1-D6; D4 final: se ignora toda obra cuyo código contenga 6 o más dígitos seguidos, 240 obras). Pasa a implementación en paralelo con la spec de F-040 (worktree aparte), por decisión del humano. CERRADA (done) el 2026-10-06: review pasada 2 APROBADA; M1 (sync: 240 excluidas, VAR-29 activa), M2 (preflight VAR-29 → obra VAR, partida 29) y M3 (usabilidad) cumplidas por el humano («todo ok»). PENDIENTE DE DESPLEGAR (transfer → api → front, junto con F-037).",
       "acceptance": [
         "Las partidas de VAR (empresa de las obras) cuyo código empieza por un número >= 29 se ofrecen como entradas propias en el cuadrante; las de número menor, no",
         "Una línea en una de esas entradas se registra en la obra VAR con esa partida (y su cuenta analítica según F-037)",
@@ -647,10 +647,10 @@
         "Una sola fuente de la regla; el front no decide nada; probado con datos reales en local antes de desplegar",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "spec_ready",
+      "status": "done",
       "sdd": true,
       "rigor": "critico",
-      "priority": 3,
+      "priority": 4,
       "branch": "feature/F-039-obras-var-y-seis-digitos"
     },
     {
@@ -672,6 +672,24 @@
       "rigor": "estandar",
       "priority": 1,
       "branch": "feature/F-040-excel-modelo-juan"
+    },
+    {
+      "id": "F-041",
+      "title": "El filtro de obra casa con el texto tal como sale en la app (incluido Postv-)",
+      "description": "Pedida por el humano el 2026-10-06: «al filtrar por obra no filtra bien postventa. Quiero filtrar todas las obras de postventa (es decir, empiezan por Postv-), y me gustaría que si pongo pos, y voy completando, filtre por texto incluido en el nombre de la obra tal cual sale en la app». Causa vista por el líder: el filtro de la columna de asignaciones (`trabajadoresVisibles` y `textoColumna` en services/dedicacion-front/static/js/app.js) compara con `l.cod` y `l.descripcion`, no con la etiqueta que pinta el chip (`Postv-0656 …`, y `VAR-29` cuando llegue F-039). Es presentación: solo front.",
+      "acceptance": [
+        "El filtro de obra compara, sin mayúsculas ni tildes, con el texto del chip tal como se ve (prefijo Postv- incluido)",
+        "Escribir «pos» y seguir completando deja solo los trabajadores con alguna línea de postventa, y se va acotando con cada letra",
+        "Lo mismo para cualquier otra parte del nombre visible (código o descripción); sin filtro, la tabla queda como hoy",
+        "Coherente con las candidatas a destino de «Completar al 100 %» (F-029), que parten del mismo texto",
+        "Tests del front que fijen el casado con Postv-; probado por el humano en local",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 3,
+      "branch": "feature/F-041-filtro-obra-postventa"
     }
   ]
 }

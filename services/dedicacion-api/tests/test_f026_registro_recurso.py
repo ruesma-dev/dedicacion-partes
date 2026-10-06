@@ -32,8 +32,11 @@ def _fila(asig_id: int, trab_ide: int, obra_ide: int, *,
     trabajador = SimpleNamespace(ide=trab_ide, dni=None, nombre=f"T{trab_ide}",
                                  categoria="Encargado", empresa=empresa,
                                  activo=activo, fecha_baja=fecha_baja)
+    # F-039: sin obra ni partida de registro (no es una entrada VAR).
     obra = SimpleNamespace(ide=obra_ide, cod=f"0{obra_ide}",
-                           descripcion="OBRA", empresa=1)
+                           descripcion="OBRA", empresa=1,
+                           registro_obra_ide=None, registro_obra_cod=None,
+                           registro_paride=None)
     return asignacion, trabajador, obra
 
 

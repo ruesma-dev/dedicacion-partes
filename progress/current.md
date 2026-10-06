@@ -1,32 +1,39 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-039 en `spec_ready`** (obras VAR y de 6 dígitos, esperando decisiones), rama
-`feature/F-039-obras-var-y-seis-digitos`. F-037 se cerró el 2026-10-06 y está en
-`dev` **pendiente de desplegar** (sección siguiente). F-029 se desplegó el
-2026-10-06 (resúmenes en `history.md`). El arnés es la **1.7.3**.
+**Ninguna feature en ejecución en esta copia.** F-039 se cerró el 2026-10-06;
+F-037 y F-039 están en `dev` **pendientes de desplegar juntas** (sección
+siguiente). En paralelo, por decisión del humano: F-040 (aprobada en review,
+falta su M1) en `PycharmProjects/porcentajes-f040` y F-041 (implementándose)
+en `PycharmProjects/porcentajes-f041`. El arnés es la **1.7.3**.
 
-## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (spec lista)
+## Features con spec aprobada, en cola (copias de trabajo aparte)
 
-- **Pedida por el humano el 2026-10-06** (texto literal y datos leídos en
-  Sigrid en la descripción de `features.json`). Primera del backlog.
-- **Spec entregada** (`a9056b4`): el transfer calcula el universo VAR
-  (`POST /api/var/universo`) y valida la partida en el preflight; la api
-  descarta las obras de 6 dígitos en el sync y guarda cada partida como
-  fila de `obra` (`VAR-29`). **Espera al humano con D1-D6** (requirements).
-- **Backlog reordenado por el humano el 2026-10-06:** F-040 (Excel como el
-  modelo de Juan, absorbe F-020) primera, F-038 (cuadro de mando = el Excel
-  navegable con filtros) segunda, F-039 tercera. No hay F-041.
+- **F-040 · Excel como el modelo de Juan** (prioridad 1; absorbe F-020): spec
+  aprobada con D1-D6 = A (`c16af41`) en `PycharmProjects/porcentajes-f040`,
+  rama `feature/F-040-excel-modelo-juan`. Corrige además la notación
+  científica del Resumen actual («0702 = 1E+2%»). **Implementada y aprobada
+  en review (pasada 2) en su copia; falta la M1 del humano** (revisar el
+  Excel real; comando en el `current.md` de esa copia).
+- **F-041 · Filtro de obra con el texto visible** (prioridad 3; implementándose
+  en su copia): spec aprobada con D1-D4 = A (`9b5fc46`) en `PycharmProjects/porcentajes-f041`, rama
+  `feature/F-041-filtro-obra-postventa`. La causa real: el buscador global no
+  casa con `Postv-` y la columna mezcla chips.
+- Las dos copias tienen los `.venv` como uniones a los de esta carpeta.
 
-## ⚠ Despliegue de F-037 (pendiente; lo lanza el humano)
+## ⚠ Despliegue de F-037 + F-039 (pendiente; lo lanza el humano)
 
-- Cambia **solo el transfer** (`.\redeploy_dedicacion.ps1 -Solo transfer`,
-  desde `dev`); el transfer desplegado ya escribe en real
-  (`OBRA_PRUEBAS_FORZAR=false`), no hay que tocar permisos ni variables. Sin
-  DDL ni sync.
-- **Comprobación tras desplegar:** un preflight de producción (solo lectura)
-  con una línea MENC o MJEFO: `caa_cod` `<obra>.CIMO0x`, `caa_origen`
-  `recurso`. Desde ese momento, lo registrado lleva la cuenta analítica.
+- **Orden obligatorio transfer → api → front** (`.\redeploy_dedicacion.ps1`
+  sin `-Solo`, que ya respeta ese orden), desde `dev`: la api de F-039 llama a
+  `POST /api/var/universo`, que solo tiene el transfer nuevo. El transfer
+  desplegado ya escribe en real; no hay que tocar permisos. La api añade sus
+  tres columnas de `obra` al arrancar.
+- **Después: sync** («Actualizar Sigrid»): hasta entonces no aparece `VAR-29` ni
+  desaparecen las obras de 6+ dígitos.
+- **Comprobación:** preview de producción con `excluidas_por_codigo` 240 y
+  `entradas_var` 1; un preflight (solo lectura) con una línea MENC o MJEFO
+  (`caa_cod` `<obra>.CIMO0x`, F-037) y otra en `VAR-29` (`paride` 417055,
+  cuenta `VAR.CIMO0x`).
 
 ## Producción, hoy
 
@@ -78,11 +85,11 @@
 ## Lo siguiente, por prioridad
 
 `BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
-primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
-(asiento analítico, cerrada, pendiente de desplegar); **F-040** (Excel como el
-modelo de Juan), **F-038** (cuadro de mando), **F-039** (spec lista); después F-028, F-021, F-030, **F-036**
-(solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
+2026-10-06): **F-040** (Excel), **F-038** (cuadro de mando = el Excel
+navegable), **F-041** (filtro de obra), **F-039** (cerrada, pendiente de desplegar),
+F-028 (plan aprobado), F-021, F-030, F-036 (solo spec de momento), F-031,
+F-033 y, detrás, F-017, F-018… F-037 está cerrada y pendiente de desplegar
+(sección de despliegue).
 
 ## ⚠ Lo que espera al humano
 
