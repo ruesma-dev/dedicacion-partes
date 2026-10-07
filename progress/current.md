@@ -12,9 +12,14 @@ por la noche. El arnés es la **1.7.3**.
 - **Qué es** (humano, 2026-10-07): la postventa en una pestaña propia con la
   línea agregada de obras de cada trabajador, y una pestaña de obras con la
   línea agregada de postventa; en cada una, el detalle de lo suyo.
-- **Estado:** el humano dice «vamos con la feature del Excel» (2026-10-07) por
-  delante de F-048. Spec-author lanzado; la spec vuelve con decisiones abiertas
-  para el humano (pestañas, Resumen, trabajadores sin postventa, VAR, rótulos).
+- **Estado:** `spec_ready` (2026-10-07): spec escrita en
+  `specs/F-045-excel-obras-postventa/`, **pendiente de que el humano decida
+  D1-D9** (recomendadas A: Obras sustituye a Detalle; Resumen igual; todos los
+  trabajadores en las dos; sin agregada vacía; VAR en Obras; agregada
+  «POSTVENTA / RESTO POSTVENTA» y «OBRAS / RESTO OBRAS» en cursiva; combinadas
+  y autofiltro como F-040; Total del trabajador completo). Prototipo en Excel
+  16 por COM: filtro y combinación funcionan con la agregada (design §5).
+  Cambian 12 tests anteriores, lista cerrada en design §7.
 
 ## Producción, hoy
 

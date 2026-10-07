@@ -756,7 +756,7 @@
         "Test del exportador que lo fije; Excel real de un mes generado en local y revisado por el humano",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "spec_ready",
       "sdd": true,
       "rigor": "estandar",
       "priority": 2,
