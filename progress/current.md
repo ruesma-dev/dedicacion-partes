@@ -1,16 +1,18 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-041 se cerró el 2026-10-07 y está en `dev`
-**pendiente de desplegar** (solo el front, sección siguiente). F-037, F-039 y
+**Ninguna feature en ejecución.** F-041 y F-042 están cerradas en `dev` y
+**pendientes de desplegar** (solo el front, sección siguiente). F-037, F-039 y
 F-040 se desplegaron el 2026-10-07. El arnés es la **1.7.3**.
 
-## ⚠ Despliegue de F-041 (pendiente; lo lanza el humano)
+## ⚠ Despliegue de F-041 + F-042 (pendiente; lo lanza el humano)
 
 - Cambia **solo el front** (`.\redeploy_dedicacion.ps1 -Solo front`, desde
   `dev`). Sin DDL ni sync.
-- **Comprobación:** Ctrl+F5 y escribir `pos` en «Filtrar obra…» y en el
+- **Comprobación F-041:** Ctrl+F5 y escribir `pos` en «Filtrar obra…» y en el
   buscador global (`/`): salen los trabajadores con líneas `Postv-`.
+- **Comprobación F-042:** en la última fila del cuadrante, Enter y escribir
+  parte de una obra: sale el desplegable. Esc dos veces sin elegir.
 
 ## Producción, hoy
 
@@ -69,10 +71,16 @@ F-040 se desplegaron el 2026-10-07. El arnés es la **1.7.3**.
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. F-041 cerrada (pendiente de desplegar); ahora
-**F-038** (cuadro de mando = el Excel de F-040 navegable), F-028 (plan
-aprobado), F-021, F-030, F-036 (solo spec de momento), F-031, F-033 y, detrás,
-F-017, F-018… F-037, F-039 y F-040 están cerradas y desplegadas (2026-10-07).
+`BACKLOG.md` tiene el orden completo. Nuevas el 2026-10-07 (pedidas por el
+humano): **F-042** (fallo: la última fila no abre el autocompletado de obras),
+**F-043** (partida del modal de registro con predictivo, ordenada y selector
+CI/CD como en `partes`) y **F-044** (repartir también los recursos vinculados
+al trabajador: teléfono, vehículo, gasoil…), **F-045** (Excel desglosado:
+pestaña de obras con la postventa en una línea agregada y pestaña de
+postventa con las obras agregadas) y **F-046** (cerrar y reabrir el periodo
+solo para ciertos usuarios). F-042 cerrada (pendiente de desplegar). Orden: F-045, F-046, F-038 (cuadro de
+mando), F-043, F-044, F-028, F-021, F-030, F-036, F-031, F-033 y, detrás,
+F-017, F-018… F-041 está cerrada y pendiente de desplegar (solo el front).
 
 ## ⚠ Lo que espera al humano
 
