@@ -20,7 +20,7 @@ en ejecución: F-037, F-039 y F-040 se **desplegaron el 2026-10-07** (sección
   (`progress/mutacion_manual_F-041.md`). **Review 1: CAMBIOS PEDIDOS solo por
   este fichero** (MANUAL incompleta y restos caducados), corregidos por el líder
   trayendo `dev` a la rama; código, tests y campaña sin objeciones hasta
-  `d2bc7f9`. **Review 2 lanzada.**
+  `d2bc7f9`. **Review 2: APROBADO.** Para el `done` solo falta la T6 del humano.
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local de siempre: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
