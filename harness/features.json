@@ -90,7 +90,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 14,
+      "priority": 16,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -105,7 +105,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 15,
+      "priority": 17,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -154,7 +154,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 16,
+      "priority": 18,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -169,7 +169,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 17,
+      "priority": 19,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     },
     {
@@ -206,7 +206,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 18,
+      "priority": 20,
       "branch": "feature/F-014-cabos-sigrid-administracion"
     },
     {
@@ -240,7 +240,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 19,
+      "priority": 21,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
     },
     {
@@ -259,7 +259,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 11,
+      "priority": 13,
       "branch": "feature/F-017-prueba-administracion"
     },
     {
@@ -280,7 +280,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 12,
+      "priority": 14,
       "branch": "feature/F-018-paso-a-escritura-real"
     },
     {
@@ -298,7 +298,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 13,
+      "priority": 15,
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
@@ -317,7 +317,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 6,
+      "priority": 8,
       "branch": "feature/F-021-filtro-obra-chip-unico"
     },
     {
@@ -445,7 +445,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 5,
+      "priority": 7,
       "branch": "feature/F-028-borrar-todo-filtrado"
     },
     {
@@ -481,7 +481,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 7,
+      "priority": 9,
       "branch": "feature/F-030-dias-bajas-incidencias"
     },
     {
@@ -499,7 +499,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 9,
+      "priority": 11,
       "branch": "feature/F-031-mcp-ia"
     },
     {
@@ -536,7 +536,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 10,
+      "priority": 12,
       "branch": "feature/F-033-deshacer-linea-real"
     },
     {
@@ -594,7 +594,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 8,
+      "priority": 10,
       "branch": "feature/F-036-baja-efectiva-recurso"
     },
     {
@@ -632,7 +632,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 2,
+      "priority": 4,
       "branch": "feature/F-038-pestana-analitica"
     },
     {
@@ -723,7 +723,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 3,
+      "priority": 5,
       "branch": "feature/F-043-partida-predictiva-ci-cd"
     },
     {
@@ -741,8 +741,43 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 4,
+      "priority": 6,
       "branch": "feature/F-044-recursos-vinculados"
+    },
+    {
+      "id": "F-045",
+      "title": "Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea",
+      "description": "Pedida por el humano el 2026-10-07: «desglosar excel, la postventa va [en] una pestaña independiente, y se crea otra [de] obra donde sale una línea agregada de postventa en el recurso. En la postventa sale la línea agregada de obras xxx en el recurso, de forma que en ambas pestañas sale detallado en una postventa y en otra obra». Lectura del líder (a confirmar en la spec): sobre el Excel de F-040 (Detalle agrupado por trabajador y Resumen; services/dedicacion-api/infrastructure/excel/), dos pestañas de detalle por trabajador: «Obras», con el detalle de sus obras y UNA línea agregada con la suma de toda su postventa; y «Postventa», con el detalle de sus líneas Postv- y UNA línea agregada con la suma de todas sus obras. Así cada trabajador suma lo mismo en las dos pestañas y cada una detalla una parte. Solo la api (exportador); el agregado lo calcula la api, no el front. DECISIONES PARA LA SPEC: si «Obras» sustituye a «Detalle» o se añade; si se mantiene «Resumen» y cómo; si en «Postventa» salen los trabajadores sin postventa; dónde va VAR (VAR-NN) y el «RESTO POSTVENTA»; el texto de las líneas agregadas («POSTVENTA» / «OBRAS») y su formato (color, negrita) dentro de las bandas por trabajador de F-040; si conservan las celdas combinadas y el autofiltro de F-040. Afecta a F-038 (cuadro de mando «que sea el Excel»), por eso va delante de ella.",
+      "acceptance": [
+        "Spec aprobada por el humano con las decisiones de pestañas, agregados, VAR y trabajadores sin postventa",
+        "Pestaña de obras: por trabajador, el detalle de sus obras y una línea agregada con el total de su postventa",
+        "Pestaña de postventa: por trabajador, el detalle de su postventa y una línea agregada con el total de sus obras",
+        "Por trabajador, las dos pestañas suman lo mismo; agrupación, bandas y autofiltro como en F-040",
+        "Test del exportador que lo fije; Excel real de un mes generado en local y revisado por el humano",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 2,
+      "branch": "feature/F-045-excel-obras-postventa"
+    },
+    {
+      "id": "F-046",
+      "title": "Cerrar y reabrir el periodo solo para ciertos usuarios",
+      "description": "Pedida por el humano el 2026-10-07: «que cerrar y abrir solo sea posible en ciertos usuarios». Hoy cualquier usuario puede pulsar «Cerrar periodo» (deja el mes en solo lectura) y «Reabrir» (aviso amarillo). El permiso lo hace cumplir la api (el usuario llega del front por la cabecera de Easy Auth); el front solo oculta o desactiva los botones a quien no lo tiene, sin decidir nada. DECISIONES PARA LA SPEC: qué usuarios (lista en configuración de la api, por variable de entorno, sin secretos; o tabla en la base `dedicacion`); si cerrar y reabrir llevan el mismo permiso; qué ve quien no lo tiene; si se registra quién cerró y reabrió; cómo se configura en Azure al desplegar (azure-apps en el mismo trabajo).",
+      "acceptance": [
+        "Spec aprobada por el humano con la lista de usuarios y dónde se configura",
+        "La api rechaza cerrar y reabrir a un usuario sin permiso (403 con mensaje claro) y lo permite a los autorizados",
+        "El front no ofrece los botones a quien no tiene permiso; el resto de la app sigue igual para todos",
+        "Tests de la api con usuario autorizado y no autorizado; probado por el humano en local",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 3,
+      "branch": "feature/F-046-permiso-cerrar-periodo"
     }
   ]
 }
