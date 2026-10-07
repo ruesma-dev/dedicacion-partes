@@ -1,52 +1,23 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-047 en curso en esta rama** (`feature/F-047-tope-filas-transfer`, copia
-principal): corrección urgente, en producción no se registra en obras con más de
-2.000 partidas. F-037, F-039 y F-040 se desplegaron el 2026-10-07 por la
-mañana, y F-041 y F-042 (solo el front) por la tarde. El arnés es la
+**Ninguna feature en ejecución.** F-047 (corrección urgente: obras con más de
+2.000 partidas) está cerrada en `dev` y **pendiente de desplegar** (solo el
+transfer, sección siguiente). F-037, F-039 y F-040 se desplegaron el 2026-10-07
+por la mañana, y F-041 y F-042 (solo el front) por la tarde. El arnés es la
 **1.7.3**.
 
-## F-047 · Obras con más de 2.000 partidas: «respuesta truncada» (en curso)
+## ⚠ Despliegue de F-047 (pendiente; lo lanza el humano)
 
-- **Fallo** (humano, 2026-10-07): Bas Leal, José María, septiembre 2026; el
-  preflight de la 0696 sale con «sigrid-api devolvio una respuesta truncada».
-- **Causa** (líder, lectura en Sigrid): `_read` del transfer pide `max_rows:
-  2000` fijo y `capitulos_de_obra` lee todo el presupuesto de la obra; la 0696
-  tiene 3.024 partidas. Igual en 0644, 0668, 0695, 0678, 0713, 0686, 0655, 0407…
-- **Plan aprobado por el humano el 2026-10-07** («ponle 200k. apruebo»): tope
-  configurable, 200.000 por defecto; el `truncated` sigue siendo error; ver si
-  un error en una obra bloquea las demás y proponerlo antes de tocarlo.
-  `sdd: false`, rigor crítico (producción), solo el transfer.
-- **Estado:** implementada (`7c81b7c`..`b4ae279`, `progress/impl_F-047.md`):
-  `SIGRID_MAX_ROWS` del transfer, 200.000 por defecto (infra no la declara:
-  vale el defecto); el `truncated` sigue siendo error; 10 tests nuevos (RED
-  reproduce el error de producción), init.sh en verde, mutación 2/2 muertos
-  más campaña manual 11 mutantes, 10 muertos y **M8 equivalente (alias del
-  ajuste): en rigor crítico necesita que el humano acepte la justificación**.
-  `azure-apps/dedicacion.md` ya lleva las dos filas nuevas, **sin commit hasta
-  desplegar**. **Review lanzada.**
-- **Punto 4 (un error en una obra, ¿bloquea las demás?):** NO; cada obra es
-  una petición aparte y las demás se escriben. Pero el aviso final solo da
-  cuentas («0 escritas» en rojo) sin decir qué obra falló ni por qué; y el
-  botón de fila «⇪ Sigrid» manda solo ese trabajador. Se propondrá al humano
-  como feature aparte (no se toca en F-047).
-- **Riesgo residual:** la lectura del presupuesto de la obra mayor (`BD`, 26.812
-  partidas) contra el corte de 230 s del balanceador; no medido.
-- **Aviso a `partes`:** su transfer pide `max_rows: 1000` fijo, pero lee
-  `obrparpar` por lista de ids, no el presupuesto entero; contárselo al humano.
-- **MANUAL (humano, en local, solo lectura; el transfer local en modo pruebas):**
-  1. Transfer: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-transfer`
-     y `.venv/Scripts/python main.py` (8006). En otra consola
-     `Invoke-RestMethod http://localhost:8006/health`: `modo_pruebas` = True.
-  2. Api: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
-     y `.venv/Scripts/python main.py` (8090).
-  3. Front: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-front`
-     y `.venv/Scripts/python main.py` (8080); `http://127.0.0.1:8080`, Ctrl+F5.
-  4. Septiembre 2026, fila de **Bas Leal, José María**, botón «⇪ Sigrid» de la
-     fila: en el modal, la obra **0696** sin «respuesta truncada» y con partida.
-  5. **Cancelar** (NO pulsar «Registrar»).
-  Resultado: _pendiente_.
+- Cambia **solo el transfer** (`.\redeploy_dedicacion.ps1 -Solo transfer`,
+  desde `dev`, con `00_vars_dedicacion.ps1`, `00_vars_dedicacion.local.ps1` y
+  `00_capps_vars_dedicacion.ps1` cargados). Sin DDL ni sync; `SIGRID_MAX_ROWS`
+  no se declara (vale el defecto, 200.000). El transfer conserva el modo real.
+- **Comprobación (solo lectura):** Ctrl+F5, septiembre 2026, «⇪ Sigrid» en la
+  fila de Bas Leal, José María: la 0696 sin «respuesta truncada» y con partida.
+  **Cancelar.**
+- Al confirmarlo: commit en `azure-apps` (las dos filas de `SIGRID_MAX_ROWS` ya
+  están escritas en `dedicacion.md`, sin commit).
 
 ## Producción, hoy
 
@@ -120,7 +91,8 @@ CI/CD como en `partes`) y **F-044** (repartir también los recursos vinculados
 al trabajador: teléfono, vehículo, gasoil…), **F-045** (Excel desglosado:
 pestaña de obras con la postventa en una línea agregada y pestaña de
 postventa con las obras agregadas) y **F-046** (cerrar y reabrir el periodo
-solo para ciertos usuarios). F-041 y F-042 desplegadas. Orden: F-047 (urgente, en curso), F-045, F-046, F-038 (cuadro de
+solo para ciertos usuarios). F-041 y F-042 desplegadas. F-047 cerrada (pendiente de desplegar). Nueva **F-048** (decir qué obra falló
+al registrar). Orden: F-048, F-045, F-046, F-038 (cuadro de
 mando), F-043, F-044, F-028, F-021, F-030, F-036, F-031, F-033 y, detrás,
 F-017, F-018… F-041 está cerrada y pendiente de desplegar (solo el front).
 

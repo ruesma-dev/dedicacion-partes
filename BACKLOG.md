@@ -3,15 +3,13 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **44 features**, 21 abiertas, 23 terminadas.
-
-En curso: **F-047**.
+Resumen: **45 features**, 21 abiertas, 24 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-047 | El transfer no registra en obras con más de 2.000 partidas («respuesta truncada») | 1 | en curso | critico | `feature/F-047-tope-filas-transfer` |
+| F-048 | Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas») | 1 | pendiente | estandar | `feature/F-048-aviso-obra-fallida` |
 | F-045 | Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea | 2 | pendiente | estandar | `feature/F-045-excel-obras-postventa` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 3 | pendiente | estandar | `feature/F-046-permiso-cerrar-periodo` |
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 4 | pendiente | estandar | `feature/F-038-pestana-analitica` |
@@ -43,6 +41,7 @@ En curso: **F-047**.
 | F-037 | El registro de partes genera el asiento analítico en la cuenta de la obra | 1 | critico |
 | F-040 | El Excel de exportación como el modelo de Juan Romero (Detalle agrupado por trabajador y Resumen) | 1 | estandar |
 | F-042 | La última fila del cuadrante no abre el desplegable de obras al escribir | 1 | estandar |
+| F-047 | El transfer no registra en obras con más de 2.000 partidas («respuesta truncada») | 1 | critico |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | critico |
@@ -63,11 +62,11 @@ En curso: **F-047**.
 
 ## Detalle
 
-### F-047 · El transfer no registra en obras con más de 2.000 partidas («respuesta truncada»)
+### F-048 · Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas»)
 
-estado **en curso** · prioridad 1 · rigor `critico` · SDD no · rama `feature/F-047-tope-filas-transfer`
+estado **pendiente** · prioridad 1 · rigor `estandar` · SDD sí · rama `feature/F-048-aviso-obra-fallida`
 
-Fallo en producción comunicado por el humano el 2026-10-07 (Bas Leal, José María, septiembre 2026): el preflight de la obra 0696 sale con «sigrid-api devolvio una respuesta truncada» y no se registra nada. CAUSA (líder, lectura en Sigrid vía sigrid-api): `SigridWriteClient._read` pide `max_rows: 2000` fijo (services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py:82) y `capitulos_de_obra` lee todo `obrparpar` de la obra para resolver la partida; la 0696 tiene 3.024 partidas (la 0699, 194). Afecta a toda obra con más de 2.000: hoy 0644 (3.752), 0668, 0695, 0678, 0713, 0686, 0655, 0407… (la mayor, `BD`, 26.812). sigrid-api desplegada admite 500.000 (azure-apps/sigrid_api.md §4.1). PLAN APROBADO por el humano el 2026-10-07 («ponle 200k. apruebo»): tope configurable en el transfer, por defecto 200.000; se MANTIENE el error ante `truncated` (nunca decidir con filas parciales, F-037 R7/R16); tests del tope enviado, del truncado y de una obra con más de 2.000 partidas; investigar si un error en una obra impide registrar las demás y, si es así, PROPONERLO al humano antes de tocarlo; preview local en modo pruebas de Bas Leal 2026-09 (solo lectura); desplegar solo el transfer. Avisar a `partes` de que compruebe su tope con estas obras.
+Pedida por el humano el 2026-10-07 («2 ok»), a raíz de F-047: cuando una obra falla al registrar (p. ej. «sigrid-api devolvio una respuesta truncada»), las demás sí se escriben (cada obra es una petición aparte al transfer, `services/dedicacion-api/application/registro_sigrid.py`), pero el aviso final del front (`static/js/app.js`, tras ejecutar) solo da cuentas, en rojo si `!r.ok`, sin nombrar la obra ni el error; el humano lo leyó como «no me registra nada». La api ya devuelve por obra `ok` y `error`: el front solo tiene que enseñarlo (sin lógica de negocio). DECISIONES PARA LA SPEC: dónde se enseña (aviso, modal que no se cierra, lista por obra), si se ofrece reintentar solo las fallidas y cómo se distingue «escritas 0 porque ya estaba todo registrado» de «0 por error».
 
 ### F-045 · Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea
 
@@ -224,6 +223,12 @@ Pedida por el humano el 2026-10-06: «modifique el excel que se genera para que 
 estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-042-ultima-fila-autocompletado`
 
 Fallo comunicado por el humano el 2026-10-07: «la última línea de la lista de trabajadores no funciona bien, al escribir la obra no sale el desplegable ni busca. Si reordeno y ese mismo trabajador no está el último, entonces sí funciona». Solo front (editor en línea y autocompletado de obras en services/dedicacion-front/static/js/app.js y su CSS): probablemente el desplegable se pinta fuera del área visible o queda recortado/tapado en la última fila. Reproducir primero. CAUSA (líder, 2026-10-07, solo lectura): el panel `.sugerencias` es `position: absolute` (top 40px, hasta 280px de alto) dentro de la tabla, y la tabla está en `.panel { overflow: hidden }` + `.panel-tabla { overflow-x: auto }`; en las filas intermedias el panel cae sobre las filas de abajo y se ve, en la última no hay nada debajo y queda recortado. Busca, pero no se ve. Plan A APROBADO por el humano el 2026-10-07 («la A»): posicionar el panel respecto a la ventana (`position: fixed`, coordenadas con getBoundingClientRect del campo), abrir hacia arriba si no cabe debajo, recolocar en scroll/resize y cerrar/limpiar al cerrar el editor; sin tocar teclado ni búsqueda. Descartada B (dejar hueco bajo la tabla). CERRADA (done) el 2026-10-07: review APROBADA a la primera; MANUAL cumplida por el humano en local («todo ok»). PENDIENTE DE DESPLEGAR (solo front, junto con F-041). DESPLEGADA el 2026-10-07 (front r20261007-1734).
+
+### F-047 · El transfer no registra en obras con más de 2.000 partidas («respuesta truncada»)
+
+estado **terminada** · prioridad 1 · rigor `critico` · SDD no · rama `feature/F-047-tope-filas-transfer`
+
+Fallo en producción comunicado por el humano el 2026-10-07 (Bas Leal, José María, septiembre 2026): el preflight de la obra 0696 sale con «sigrid-api devolvio una respuesta truncada» y no se registra nada. CAUSA (líder, lectura en Sigrid vía sigrid-api): `SigridWriteClient._read` pide `max_rows: 2000` fijo (services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py:82) y `capitulos_de_obra` lee todo `obrparpar` de la obra para resolver la partida; la 0696 tiene 3.024 partidas (la 0699, 194). Afecta a toda obra con más de 2.000: hoy 0644 (3.752), 0668, 0695, 0678, 0713, 0686, 0655, 0407… (la mayor, `BD`, 26.812). sigrid-api desplegada admite 500.000 (azure-apps/sigrid_api.md §4.1). PLAN APROBADO por el humano el 2026-10-07 («ponle 200k. apruebo»): tope configurable en el transfer, por defecto 200.000; se MANTIENE el error ante `truncated` (nunca decidir con filas parciales, F-037 R7/R16); tests del tope enviado, del truncado y de una obra con más de 2.000 partidas; investigar si un error en una obra impide registrar las demás y, si es así, PROPONERLO al humano antes de tocarlo; preview local en modo pruebas de Bas Leal 2026-09 (solo lectura); desplegar solo el transfer. Avisar a `partes` de que compruebe su tope con estas obras. CERRADA (done) el 2026-10-07: review APROBADA a la primera (observación O1 recogida en la tabla de mutación; O2 sin objeto: la MANUAL ya estaba hecha); MANUAL cumplida por el humano en local («he probado y funciona»: la 0696 sale sin «respuesta truncada» y con partida); justificación del mutante equivalente M8 ACEPTADA por el humano («1 acepto»). Punto 4: un error en una obra no bloquea las demás; el aviso que no dice qué obra falló pasa a F-048. PENDIENTE DE DESPLEGAR (solo el transfer).
 
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 

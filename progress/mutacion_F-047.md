@@ -73,3 +73,6 @@ el alias cambie: el test lo pone a 350.000 y lo lee. El contrato documentado
 (`SIGRID_MAX_ROWS`) se mantiene; el mutante solo añade un nombre aceptado más.
 No es un hueco: ningún comportamiento observable del contrato cambia. Pasa lo
 mismo con todos los ajustes del transfer (p. ej. `SIGRID_MAX_STATEMENTS`).
+
+**Aceptada por el humano el 2026-10-07** («1 acepto»), con el matiz del reviewer: el
+mutante además honraría `SIGRID_API_MAX_ROWS`; riesgo nulo hoy (infra no declara ninguna).

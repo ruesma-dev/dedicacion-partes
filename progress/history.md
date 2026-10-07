@@ -2144,3 +2144,59 @@ lectura). Sin cambios de contrato. Primer intento sin variables cargadas
 («Falta $RG»); en el segundo no se cargó la copia local y `az account set`
 falló con la suscripción redactada, pero `az` siguió con la suscripción por
 defecto, que era la correcta. `azure-apps` actualizado en el mismo trabajo.
+
+## 2026-10-07 · F-047 · Obras con más de 2.000 partidas («respuesta truncada»)
+
+Rama `feature/F-047-tope-filas-transfer` · `sdd: false` · rigor `critico` ·
+**APROBADO** a la primera. Fallo de producción (Bas Leal, 0696, septiembre):
+el transfer pedía `max_rows: 2000` fijo y lee el presupuesto entero de la obra
+(la 0696 tiene 3.024 partidas). Ahora `SIGRID_MAX_ROWS`, 200.000 por defecto
+(«ponle 200k»); el `truncated` sigue siendo error. 10 tests (la fase RED
+reproducía el error de producción), mutación automática 2/2 y manual 11
+mutantes con M8 equivalente, justificación aceptada por el humano. Un error en
+una obra no bloquea las demás, pero el aviso no dice cuál: F-048. MANUAL
+cumplida por el humano en local («he probado y funciona»).
+
+Informes: `progress/impl_F-047.md`, `progress/review_F-047.md`,
+`progress/mutacion_F-047.md`. Sección retirada de `current.md`:
+
+### F-047 · Obras con más de 2.000 partidas: «respuesta truncada» (en curso)
+
+- **Fallo** (humano, 2026-10-07): Bas Leal, José María, septiembre 2026; el
+  preflight de la 0696 sale con «sigrid-api devolvio una respuesta truncada».
+- **Causa** (líder, lectura en Sigrid): `_read` del transfer pide `max_rows:
+  2000` fijo y `capitulos_de_obra` lee todo el presupuesto de la obra; la 0696
+  tiene 3.024 partidas. Igual en 0644, 0668, 0695, 0678, 0713, 0686, 0655, 0407…
+- **Plan aprobado por el humano el 2026-10-07** («ponle 200k. apruebo»): tope
+  configurable, 200.000 por defecto; el `truncated` sigue siendo error; ver si
+  un error en una obra bloquea las demás y proponerlo antes de tocarlo.
+  `sdd: false`, rigor crítico (producción), solo el transfer.
+- **Estado:** implementada (`7c81b7c`..`b4ae279`, `progress/impl_F-047.md`):
+  `SIGRID_MAX_ROWS` del transfer, 200.000 por defecto (infra no la declara:
+  vale el defecto); el `truncated` sigue siendo error; 10 tests nuevos (RED
+  reproduce el error de producción), init.sh en verde, mutación 2/2 muertos
+  más campaña manual 11 mutantes, 10 muertos y **M8 equivalente (alias del
+  ajuste): en rigor crítico necesita que el humano acepte la justificación**.
+  `azure-apps/dedicacion.md` ya lleva las dos filas nuevas, **sin commit hasta
+  desplegar**. **Review lanzada.**
+- **Punto 4 (un error en una obra, ¿bloquea las demás?):** NO; cada obra es
+  una petición aparte y las demás se escriben. Pero el aviso final solo da
+  cuentas («0 escritas» en rojo) sin decir qué obra falló ni por qué; y el
+  botón de fila «⇪ Sigrid» manda solo ese trabajador. Se propondrá al humano
+  como feature aparte (no se toca en F-047).
+- **Riesgo residual:** la lectura del presupuesto de la obra mayor (`BD`, 26.812
+  partidas) contra el corte de 230 s del balanceador; no medido.
+- **Aviso a `partes`:** su transfer pide `max_rows: 1000` fijo, pero lee
+  `obrparpar` por lista de ids, no el presupuesto entero; contárselo al humano.
+- **MANUAL (humano, en local, solo lectura; el transfer local en modo pruebas):**
+  1. Transfer: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-transfer`
+     y `.venv/Scripts/python main.py` (8006). En otra consola
+     `Invoke-RestMethod http://localhost:8006/health`: `modo_pruebas` = True.
+  2. Api: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
+     y `.venv/Scripts/python main.py` (8090).
+  3. Front: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-front`
+     y `.venv/Scripts/python main.py` (8080); `http://127.0.0.1:8080`, Ctrl+F5.
+  4. Septiembre 2026, fila de **Bas Leal, José María**, botón «⇪ Sigrid» de la
+     fila: en el modal, la obra **0696** sin «respuesta truncada» y con partida.
+  5. **Cancelar** (NO pulsar «Registrar»).
+  Resultado: **funciona** (humano, 2026-10-07, «he probado y funciona»).
