@@ -48,7 +48,8 @@
 > republicó solo la api con F-027 (`dedicacion-api:r20261005-0915`). El
 > **2026-10-06** se republicaron la api y el front con F-029 (`dedicacion-api:r20261006-1140` y `dedicacion-front:r20261006-1141`).
 > El **2026-10-07** se republicaron los tres con F-037, F-039 y F-040 (`dedicacion-transfer:r20261007-0851`, `dedicacion-api:r20261007-0852` y `dedicacion-front:r20261007-0853`,
-> en el orden transfer → api → front que exige §7).
+> en el orden transfer → api → front que exige §7). Ese mismo día, por la tarde, se
+> republicó solo el front con F-041 y F-042 (`dedicacion-front:r20261007-1734`; sin cambios de contrato).
 >
 > **Desde el 2026-10-01 el transfer desplegado escribe DE VERDAD**
 > (`OBRA_PRUEBAS_FORZAR=false`), por decisión expresa del humano, tomada a
