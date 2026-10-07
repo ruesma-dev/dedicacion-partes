@@ -3,15 +3,12 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **43 features**, 21 abiertas, 22 terminadas.
-
-En curso: **F-042**.
+Resumen: **43 features**, 20 abiertas, 23 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-042 | La última fila del cuadrante no abre el desplegable de obras al escribir | 1 | en curso | estandar | `feature/F-042-ultima-fila-autocompletado` |
 | F-045 | Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea | 2 | pendiente | estandar | `feature/F-045-excel-obras-postventa` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 3 | pendiente | estandar | `feature/F-046-permiso-cerrar-periodo` |
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 4 | pendiente | estandar | `feature/F-038-pestana-analitica` |
@@ -42,6 +39,7 @@ En curso: **F-042**.
 | F-035 | El script de vaciado no funciona contra Azure: la contraseña se corrompe | 1 | estandar |
 | F-037 | El registro de partes genera el asiento analítico en la cuenta de la obra | 1 | critico |
 | F-040 | El Excel de exportación como el modelo de Juan Romero (Detalle agrupado por trabajador y Resumen) | 1 | estandar |
+| F-042 | La última fila del cuadrante no abre el desplegable de obras al escribir | 1 | estandar |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | critico |
@@ -61,12 +59,6 @@ En curso: **F-042**.
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
-
-### F-042 · La última fila del cuadrante no abre el desplegable de obras al escribir
-
-estado **en curso** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-042-ultima-fila-autocompletado`
-
-Fallo comunicado por el humano el 2026-10-07: «la última línea de la lista de trabajadores no funciona bien, al escribir la obra no sale el desplegable ni busca. Si reordeno y ese mismo trabajador no está el último, entonces sí funciona». Solo front (editor en línea y autocompletado de obras en services/dedicacion-front/static/js/app.js y su CSS): probablemente el desplegable se pinta fuera del área visible o queda recortado/tapado en la última fila. Reproducir primero. CAUSA (líder, 2026-10-07, solo lectura): el panel `.sugerencias` es `position: absolute` (top 40px, hasta 280px de alto) dentro de la tabla, y la tabla está en `.panel { overflow: hidden }` + `.panel-tabla { overflow-x: auto }`; en las filas intermedias el panel cae sobre las filas de abajo y se ve, en la última no hay nada debajo y queda recortado. Busca, pero no se ve. Plan A APROBADO por el humano el 2026-10-07 («la A»): posicionar el panel respecto a la ventana (`position: fixed`, coordenadas con getBoundingClientRect del campo), abrir hacia arriba si no cabe debajo, recolocar en scroll/resize y cerrar/limpiar al cerrar el editor; sin tocar teclado ni búsqueda. Descartada B (dejar hueco bajo la tabla).
 
 ### F-045 · Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea
 
@@ -217,6 +209,12 @@ Pedida por el humano el 2026-10-05 («el parte debe generar asiento en la cuenta
 estado **terminada** · prioridad 1 · rigor `estandar` · SDD sí · rama `feature/F-040-excel-modelo-juan`
 
 Pedida por el humano el 2026-10-06: «modifique el excel que se genera para que sea como el del email de juan último. Que se agrupen los resultados por trabajador, separando con color y línea gruesa entre trabajadores». Modelo: correo de Juan Romero «RV: ARCHIVO PRUEBA DEFINITIVO» (2026-10-06, adjunto «Reparto Mensual_PruebaDEF.xlsx»; NO se versiona: lleva nombres de personas). «Dos pestañas: Detalle y Resumen, que pueda aplicar filtros»; «en la pestaña Resumen mantendríamos el formato actual. Está configurado el filtro para que lo haga bien, ya que hay celdas combinadas». Estructura leída por el líder: Detalle con título «DETALLE DE DEDICACIÓN · <Mes> <Año>» y columnas Empleado, Categoría, Código, Obra, % dedicación, Total empleado, Desviación, Estado (una fila por obra del trabajador, agrupadas por trabajador; casos como Código VAR, o vacío con «RESTO POSTVENTA»); Resumen con título «RESUMEN · <Mes> <Año>» y columnas Empleado, Categoría, Obras (una celda: «0702 Hotel Virgen Puerto = 33% + 0707 Tomillar El Escorial = 67%»), Total %, Estado. ABSORBE F-020 (decisión del humano 2026-10-06), cuya descripción era: Pedida por el humano el 2026-09-03 junto con F-019, pero separada de ella a proposito: esta se puede hacer ya, sin esperar al formato Carmen. El exportador de hoy (services/dedicacion-api/infrastructure/excel/exporter.py, 172 lineas) nacio para replicar la plantilla v14 y desde entonces nadie ha revisado si el resultado se lee bien: anchos de columna, formato de numero y de porcentaje, cabeceras congeladas, autofiltro, totales y que se ve al imprimir. Hay que revisarlo con el humano delante y mejorarlo. RESTRICCION: hay consumidores externos de la plantilla v14, asi que mover o renombrar columnas de la hoja Detalle puede romper a quien la lee. AÑADIDO 2026-09-29 (revisión de negocio): quitar la columna E de la hoja Detalle, «Obra(código)». El humano confirma que la plantilla solo la lee negocio, así que la restricción de consumidores externos no bloquea este cambio. 2026-10-06: el humano pide «mejorar el excel» como feature y, inmediatamente después, una pestaña de cuadros y análisis (F-038). 2026-10-06: spec escrita (`specs/F-040-excel-modelo-juan/`), con D1-D6 pendientes del humano (nombre de obra del Resumen, combinar celdas, colores, filas y columnas que lee negocio, hojas, postventa y VAR). SPEC APROBADA por el humano el 2026-10-06 con D1-D6 = A (todas las recomendadas): descripción completa de la obra en el Resumen, celdas combinadas con el valor en todo el grupo, bandas blanco/DDEBF7 con línea medium, cabecera en la fila 2 sin «Obra(código)», solo Detalle y Resumen, y Postv-/VAR-29 como convenio del sistema. Hallazgos: el exportador de hoy no lleva autofiltro, ningún test lo ejecuta y saca notación científica («0702 = 1E+2%», «FALTA 1E+1%»); el prototipo con celdas combinadas que repiten el valor en todo el grupo filtra bien en Excel 16 (la combinación normal de openpyxl no) y, como el modelo, impide ordenar. 2026-10-06: pasa a implementación (en la copia porcentajes-f040, en paralelo con las MANUAL de F-039). CERRADA (done) el 2026-10-06: review pasada 2 APROBADA; M1 cumplida por el humano (Excel real de 2026-10 generado en local y revisado: «perfecto»). PENDIENTE DE DESPLEGAR (api). DESPLEGADA el 2026-10-07 (transfer r20261007-0851, api r20261007-0852, front r20261007-0853).
+
+### F-042 · La última fila del cuadrante no abre el desplegable de obras al escribir
+
+estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-042-ultima-fila-autocompletado`
+
+Fallo comunicado por el humano el 2026-10-07: «la última línea de la lista de trabajadores no funciona bien, al escribir la obra no sale el desplegable ni busca. Si reordeno y ese mismo trabajador no está el último, entonces sí funciona». Solo front (editor en línea y autocompletado de obras en services/dedicacion-front/static/js/app.js y su CSS): probablemente el desplegable se pinta fuera del área visible o queda recortado/tapado en la última fila. Reproducir primero. CAUSA (líder, 2026-10-07, solo lectura): el panel `.sugerencias` es `position: absolute` (top 40px, hasta 280px de alto) dentro de la tabla, y la tabla está en `.panel { overflow: hidden }` + `.panel-tabla { overflow-x: auto }`; en las filas intermedias el panel cae sobre las filas de abajo y se ve, en la última no hay nada debajo y queda recortado. Busca, pero no se ve. Plan A APROBADO por el humano el 2026-10-07 («la A»): posicionar el panel respecto a la ventana (`position: fixed`, coordenadas con getBoundingClientRect del campo), abrir hacia arriba si no cabe debajo, recolocar en scroll/resize y cerrar/limpiar al cerrar el editor; sin tocar teclado ni búsqueda. Descartada B (dejar hueco bajo la tabla). CERRADA (done) el 2026-10-07: review APROBADA a la primera; MANUAL cumplida por el humano en local («todo ok»). PENDIENTE DE DESPLEGAR (solo front, junto con F-041).
 
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 

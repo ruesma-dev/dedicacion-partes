@@ -1,60 +1,18 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-042 en curso en esta rama** (`feature/F-042-ultima-fila-autocompletado`,
-copia principal): la última fila del cuadrante no enseña el desplegable de
-obras. F-041 está cerrada en `dev` y **pendiente de desplegar** (solo el front,
-sección de despliegue). F-037, F-039 y F-040 se desplegaron el 2026-10-07. El
-arnés es la **1.7.3**.
+**Ninguna feature en ejecución.** F-041 y F-042 están cerradas en `dev` y
+**pendientes de desplegar** (solo el front, sección siguiente). F-037, F-039 y
+F-040 se desplegaron el 2026-10-07. El arnés es la **1.7.3**.
 
-## F-042 · El desplegable de obras en la última fila (en curso)
-
-- **Causa** (líder, solo lectura): el panel `.sugerencias` es `position:
-  absolute` dentro de la tabla, y `.panel { overflow: hidden }` /
-  `.panel-tabla { overflow-x: auto }` lo recortan. En las filas intermedias cae
-  sobre las de abajo; en la última no hay nada debajo y no se ve (sí busca).
-- **Plan A aprobado por el humano el 2026-10-07** («la A»): `sdd: false`, rigor
-  estándar, solo front (`static/js/app.js` y `static/css/styles.css`). El panel
-  se coloca respecto a la ventana (`position: fixed`) bajo el campo, se abre
-  hacia arriba si no cabe, se recoloca con scroll y resize, y se retira al
-  cerrar el editor. Sin cambios de teclado ni de búsqueda. Descartada la B.
-- **Estado:** implementada (T1-T4, `12272a9`..`cca97a5`), `init.sh` en verde;
-  informe en `progress/impl_F-042.md`, mutación manual en
-  `progress/mutacion_manual_F-042.md` (38 mutantes, 37 muertos, 1 equivalente).
-  El panel cuelga de `document.body` y, si no cabe por ningún lado, va al lado
-  con más sitio y recorta su alto. `dev` traído a la rama (F-045 y F-046 en el
-  backlog). **Review APROBADA** (`progress/review_F-042.md`); sus observaciones
-  1 y 2 (MANUAL fiel al foco y a lo que guarda, cierre sin paneles huérfanos y
-  scroll horizontal) ya están en la MANUAL. Aviso para la próxima feature que
-  toque el autocompletado: los `test_f042_r3_*` comparan texto literal a
-  propósito, habrá que actualizarlos y decirlo. **Espera la MANUAL del humano.**
-- **MANUAL (humano, en local, nada contra Azure):**
-  1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
-     y `.venv/Scripts/python main.py` (8090).
-  2. Front de esta rama: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-front`
-     y `.venv/Scripts/python main.py` (8080).
-  3. `http://127.0.0.1:8080`, **Ctrl+F5**, un periodo abierto.
-  4. **Última fila** de la tabla: Enter (el foco ya queda en el campo de obra)
-     → escribir parte de una obra → sale el desplegable (en una ventana normal,
-     **encima** del campo) → flechas + Enter → el cursor salta al % → teclear un
-     % y Enter → vuelve al campo de obra → escribir otra obra → vuelve a salir.
-     Ojo: lo elegido **se guarda** en la base local (nada va a Sigrid); se
-     deshace después con Ctrl+Z.
-  5. Lo mismo con un filtro que deje **una sola fila**, y con la ventana
-     pequeña (el desplegable se abre donde haya más sitio y se acorta).
-  6. Una fila intermedia: igual que antes.
-  7. Con el desplegable abierto, scroll de la página **y** scroll horizontal
-     de la tabla: el desplegable acompaña al campo.
-  8. Con el desplegable abierto, cerrar el editor (Esc dos veces, «Hecho» o
-     clic en otra fila): no queda ningún panel flotando.
-  Resultado: _pendiente_.
-
-## ⚠ Despliegue de F-041 (pendiente; lo lanza el humano)
+## ⚠ Despliegue de F-041 + F-042 (pendiente; lo lanza el humano)
 
 - Cambia **solo el front** (`.\redeploy_dedicacion.ps1 -Solo front`, desde
   `dev`). Sin DDL ni sync.
-- **Comprobación:** Ctrl+F5 y escribir `pos` en «Filtrar obra…» y en el
+- **Comprobación F-041:** Ctrl+F5 y escribir `pos` en «Filtrar obra…» y en el
   buscador global (`/`): salen los trabajadores con líneas `Postv-`.
+- **Comprobación F-042:** en la última fila del cuadrante, Enter y escribir
+  parte de una obra: sale el desplegable. Esc dos veces sin elegir.
 
 ## Producción, hoy
 
@@ -120,7 +78,7 @@ CI/CD como en `partes`) y **F-044** (repartir también los recursos vinculados
 al trabajador: teléfono, vehículo, gasoil…), **F-045** (Excel desglosado:
 pestaña de obras con la postventa en una línea agregada y pestaña de
 postventa con las obras agregadas) y **F-046** (cerrar y reabrir el periodo
-solo para ciertos usuarios). Orden: F-042, F-045, F-046, F-038 (cuadro de
+solo para ciertos usuarios). F-042 cerrada (pendiente de desplegar). Orden: F-045, F-046, F-038 (cuadro de
 mando), F-043, F-044, F-028, F-021, F-030, F-036, F-031, F-033 y, detrás,
 F-017, F-018… F-041 está cerrada y pendiente de desplegar (solo el front).
 
