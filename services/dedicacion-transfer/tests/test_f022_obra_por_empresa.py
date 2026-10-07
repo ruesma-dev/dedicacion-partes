@@ -618,6 +618,7 @@ def app_falsa(monkeypatch):
         sigrid_api_base_url="http://sigrid.invalid",
         sigrid_api_function_key="sin-clave", sigrid_api_database="ruesma",
         sigrid_api_timeout_s=1.0, sigrid_max_statements=15,
+        sigrid_max_rows=200_000,
         tip_parte_trabajo=35, est_parte_activo=1, obra_pruebas_forzar=True,
         obra_pruebas_cod="0404", marca_pruebas="PRUEBA-PORC",
         postventa_registrar=True, postventa_obra_cod="POSTV2", paso_pos=64)

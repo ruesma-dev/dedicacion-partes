@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     sigrid_api_timeout_s: float = Field(60.0, alias="SIGRID_API_TIMEOUT_S")
     # Tope de sentencias por batch de sigrid-api (MAX_STATEMENTS_PER_BATCH=20).
     sigrid_max_statements: int = Field(15, alias="SIGRID_MAX_STATEMENTS")
+    # F-047: filas por lectura (`max_rows`). Con 2.000 fijo, las obras con
+    # más partidas no se podían registrar (la 0696 tiene 3.024). Tiene que
+    # caber en el `MAX_ALLOWED_ROWS` de sigrid-api (500.000 desplegado). Un
+    # `truncated` sigue siendo error: nunca se decide con filas parciales.
+    sigrid_max_rows: int = Field(200_000, alias="SIGRID_MAX_ROWS")
 
     # --- Modo PRUEBAS: fuerza TODAS las escrituras a una obra --- #
     obra_pruebas_forzar: bool = Field(True, alias="OBRA_PRUEBAS_FORZAR")
