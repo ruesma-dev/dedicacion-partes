@@ -206,3 +206,10 @@ ENTORNO LISTO. Puedes trabajar.
    `progress/current.md` (sección F-042), con Ctrl+F5. Su resultado lo apunta
    el líder en `current.md`.
 3. Despliegue (lo lanza el humano, desde `dev`): solo el front.
+
+## Resultado final de `bash harness/init.sh` (sobre `cca97a5`)
+
+Código de salida 0, ningún `[KO]`: `418 passed, 1 skipped in 49.57s`; front,
+api y transfer en verde (caché, árbol sin cambios desde el verde anterior);
+`PUERTA COBERTURA: N/A` (sin Python de producción); `PUERTA TAMAÑO: impl
+208/220`; «ENTORNO LISTO».
