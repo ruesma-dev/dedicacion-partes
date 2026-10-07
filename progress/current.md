@@ -23,20 +23,30 @@ arnés es la **1.7.3**.
   `progress/mutacion_manual_F-042.md` (38 mutantes, 37 muertos, 1 equivalente).
   El panel cuelga de `document.body` y, si no cabe por ningún lado, va al lado
   con más sitio y recorta su alto. `dev` traído a la rama (F-045 y F-046 en el
-  backlog). **Review lanzada.** Después, la MANUAL del humano.
+  backlog). **Review APROBADA** (`progress/review_F-042.md`); sus observaciones
+  1 y 2 (MANUAL fiel al foco y a lo que guarda, cierre sin paneles huérfanos y
+  scroll horizontal) ya están en la MANUAL. Aviso para la próxima feature que
+  toque el autocompletado: los `test_f042_r3_*` comparan texto literal a
+  propósito, habrá que actualizarlos y decirlo. **Espera la MANUAL del humano.**
 - **MANUAL (humano, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
   2. Front de esta rama: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-front`
      y `.venv/Scripts/python main.py` (8080).
   3. `http://127.0.0.1:8080`, **Ctrl+F5**, un periodo abierto.
-  4. Última fila de la tabla: Enter, `%`, Enter, escribir parte de una obra →
-     sale el desplegable, flechas y Enter eligen. Esc sin guardar.
+  4. **Última fila** de la tabla: Enter (el foco ya queda en el campo de obra)
+     → escribir parte de una obra → sale el desplegable (en una ventana normal,
+     **encima** del campo) → flechas + Enter → el cursor salta al % → teclear un
+     % y Enter → vuelve al campo de obra → escribir otra obra → vuelve a salir.
+     Ojo: lo elegido **se guarda** en la base local (nada va a Sigrid); se
+     deshace después con Ctrl+Z.
   5. Lo mismo con un filtro que deje **una sola fila**, y con la ventana
-     pequeña (el desplegable se abre hacia arriba si no cabe).
+     pequeña (el desplegable se abre donde haya más sitio y se acorta).
   6. Una fila intermedia: igual que antes.
-  7. Con el desplegable abierto, hacer scroll de la página: acompaña al campo
-     o se cierra, pero no se queda flotando en otro sitio.
+  7. Con el desplegable abierto, scroll de la página **y** scroll horizontal
+     de la tabla: el desplegable acompaña al campo.
+  8. Con el desplegable abierto, cerrar el editor (Esc dos veces, «Hecho» o
+     clic en otra fila): no queda ningún panel flotando.
   Resultado: _pendiente_.
 
 ## ⚠ Despliegue de F-041 (pendiente; lo lanza el humano)
