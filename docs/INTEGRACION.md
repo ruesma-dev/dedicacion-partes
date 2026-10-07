@@ -188,6 +188,7 @@ despliegue no tenga que aprender dos vocabularios.
 |---|---|
 | `SIGRID_API_BASE_URL`, `SIGRID_API_DATABASE` | La base es **siempre** `ruesma`. **No hay `SIGRID_EMPRESA`** desde F-022: la empresa llega en cada línea, y una variable que quede en un despliegue viejo se ignora |
 | `SIGRID_API_FUNCTION_KEY` | **Secreto**. Es la credencial de **escritura** sobre el ERP |
+| `SIGRID_MAX_ROWS` | Filas por lectura (`max_rows`) que el transfer pide a `sigrid-api`. **200.000 por defecto en el código** (F-047): no hace falta declararla al desplegar. Tiene que caber en el `MAX_ALLOWED_ROWS` de `sigrid-api` (500.000 en la instancia desplegada). Hasta F-047 era 2.000 fijo y las obras con más partidas no se podían registrar (la 0696 tiene 3.024). Una respuesta `truncated` sigue siendo un error: nunca se decide con filas parciales |
 | `OBRA_PRUEBAS_FORZAR`, `OBRA_PRUEBAS_COD`, `MARCA_PRUEBAS` | Modo pruebas (§8) |
 | `VAR_OBRA_COD`, `VAR_PARTIDA_DESDE` | Obra de obras varias y número inicial desde el que sus partidas se ofrecen como obras propias (F-039, `docs/ARCHITECTURE.md#regla-var`). Con defecto en el código (`VAR`, `29`): no hace falta declararlas al desplegar. `VAR_OBRA_COD` vacío = sin entradas VAR |
 | `LOG_DIR` | `/tmp/logs` en el contenedor: `/app` no tiene por qué ser escribible |
@@ -439,6 +440,7 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Restaurar el servidor a un punto anterior | Arrastra **todas** las bases, la nuestra incluida |
 | Rotar la function key de `sigrid-api` | Se caen la lectura de maestros **y** la escritura en el ERP. Hay que actualizar `SIGRID-API-FUNCTION-KEY` en el Key Vault y crear revisión nueva de api y transfer |
 | Cambiar el contrato de `sigrid-api` (`/api/sql/read`, `/api/sql/write`) | Se cae todo: es nuestro único acceso a Sigrid |
+| Bajar el `MAX_ALLOWED_ROWS` de `sigrid-api` por debajo de lo que ocupa el presupuesto de una obra | El transfer lee el presupuesto entero de la obra (`obrparpar`) para resolver la partida: esa obra deja de poder registrarse con «sigrid-api devolvio una respuesta truncada» (F-047). Hoy pedimos 200.000 (`SIGRID_MAX_ROWS`); la obra mayor (`BD`) tiene 26.812 partidas |
 | Borrar o renombrar `acralbaranesdev` | No se puede publicar ni tirar ninguna imagen |
 | Cambiar tablas o campos de Sigrid (`hmo`, `hmores`, `reshor`) | El mapeo del transfer deja de casar |
 | Renumerar o dar de baja partidas de la obra de obras varias en Sigrid | Cambian las entradas `VAR-NN` del siguiente sync; las que desaparecen quedan inactivas y el preflight omite sus líneas con motivo. Una obra nueva con código de 6 o más dígitos seguidos no sale en el cuadrante (F-039) |

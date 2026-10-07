@@ -71,6 +71,7 @@ def _cliente(st) -> SigridWriteClient:
         database=st.sigrid_api_database,
         timeout_s=st.sigrid_api_timeout_s,
         max_statements=st.sigrid_max_statements,
+        max_rows=st.sigrid_max_rows,
         tip_parte=st.tip_parte_trabajo, est_parte=st.est_parte_activo)
 
 

@@ -778,6 +778,41 @@
       "rigor": "estandar",
       "priority": 3,
       "branch": "feature/F-046-permiso-cerrar-periodo"
+    },
+    {
+      "id": "F-047",
+      "title": "El transfer no registra en obras con más de 2.000 partidas («respuesta truncada»)",
+      "description": "Fallo en producción comunicado por el humano el 2026-10-07 (Bas Leal, José María, septiembre 2026): el preflight de la obra 0696 sale con «sigrid-api devolvio una respuesta truncada» y no se registra nada. CAUSA (líder, lectura en Sigrid vía sigrid-api): `SigridWriteClient._read` pide `max_rows: 2000` fijo (services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py:82) y `capitulos_de_obra` lee todo `obrparpar` de la obra para resolver la partida; la 0696 tiene 3.024 partidas (la 0699, 194). Afecta a toda obra con más de 2.000: hoy 0644 (3.752), 0668, 0695, 0678, 0713, 0686, 0655, 0407… (la mayor, `BD`, 26.812). sigrid-api desplegada admite 500.000 (azure-apps/sigrid_api.md §4.1). PLAN APROBADO por el humano el 2026-10-07 («ponle 200k. apruebo»): tope configurable en el transfer, por defecto 200.000; se MANTIENE el error ante `truncated` (nunca decidir con filas parciales, F-037 R7/R16); tests del tope enviado, del truncado y de una obra con más de 2.000 partidas; investigar si un error en una obra impide registrar las demás y, si es así, PROPONERLO al humano antes de tocarlo; preview local en modo pruebas de Bas Leal 2026-09 (solo lectura); desplegar solo el transfer. Avisar a `partes` de que compruebe su tope con estas obras. CERRADA (done) el 2026-10-07: review APROBADA a la primera (observación O1 recogida en la tabla de mutación; O2 sin objeto: la MANUAL ya estaba hecha); MANUAL cumplida por el humano en local («he probado y funciona»: la 0696 sale sin «respuesta truncada» y con partida); justificación del mutante equivalente M8 ACEPTADA por el humano («1 acepto»). Punto 4: un error en una obra no bloquea las demás; el aviso que no dice qué obra falló pasa a F-048. PENDIENTE DE DESPLEGAR (solo el transfer).",
+      "acceptance": [
+        "El tope de filas de las lecturas del transfer es configurable y vale 200.000 por defecto (documentado en el .env.example y en INTEGRACION/azure-apps)",
+        "Una respuesta `truncated` sigue siendo un error: nunca se decide con filas parciales",
+        "Tests: el tope que se envía a sigrid-api, el truncado y una obra con más de 2.000 partidas resuelve su partida",
+        "Explicado con evidencia si un error en una obra impide registrar las demás; cualquier cambio de ese comportamiento, aprobado antes por el humano",
+        "MANUAL (humano): preview local en modo pruebas de Bas Leal 2026-09 sin «respuesta truncada» y con partida en la 0696",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "done",
+      "sdd": false,
+      "rigor": "critico",
+      "priority": 1,
+      "branch": "feature/F-047-tope-filas-transfer"
+    },
+    {
+      "id": "F-048",
+      "title": "Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas»)",
+      "description": "Pedida por el humano el 2026-10-07 («2 ok»), a raíz de F-047: cuando una obra falla al registrar (p. ej. «sigrid-api devolvio una respuesta truncada»), las demás sí se escriben (cada obra es una petición aparte al transfer, `services/dedicacion-api/application/registro_sigrid.py`), pero el aviso final del front (`static/js/app.js`, tras ejecutar) solo da cuentas, en rojo si `!r.ok`, sin nombrar la obra ni el error; el humano lo leyó como «no me registra nada». La api ya devuelve por obra `ok` y `error`: el front solo tiene que enseñarlo (sin lógica de negocio). DECISIONES PARA LA SPEC: dónde se enseña (aviso, modal que no se cierra, lista por obra), si se ofrece reintentar solo las fallidas y cómo se distingue «escritas 0 porque ya estaba todo registrado» de «0 por error».",
+      "acceptance": [
+        "Tras registrar, el usuario ve qué obras se escribieron, cuáles fallaron y el error de cada una",
+        "Un fallo en una obra no esconde lo escrito en las demás; «nada que escribir» no se confunde con un error",
+        "Sin lógica de negocio en el front: usa lo que ya devuelve la api por obra",
+        "Test del front; probado por el humano en local (con una obra que falle simulada, sin escribir en Sigrid real)",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 1,
+      "branch": "feature/F-048-aviso-obra-fallida"
     }
   ]
 }

@@ -71,6 +71,8 @@ class SettingsFalso:
         self.postventa_registrar = postventa_registrar
         self.postventa_obra_cod = postventa_obra_cod
         self.paso_pos = paso_pos
+        # F-047: tope de filas de las lecturas, como en `config/settings.py`.
+        self.sigrid_max_rows = 200_000
         # F-037: estados del parte (`con.est`) como en `config/settings.py`.
         self.est_parte_activo = 1
         self.est_parte_cerrado = 3

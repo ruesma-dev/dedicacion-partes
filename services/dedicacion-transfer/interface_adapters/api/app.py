@@ -105,6 +105,7 @@ def build_app(settings) -> FastAPI:
         database=settings.sigrid_api_database,
         timeout_s=settings.sigrid_api_timeout_s,
         max_statements=settings.sigrid_max_statements,
+        max_rows=settings.sigrid_max_rows,
         tip_parte=settings.tip_parte_trabajo,
         est_parte=settings.est_parte_activo,
     )

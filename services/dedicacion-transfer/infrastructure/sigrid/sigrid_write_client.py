@@ -25,6 +25,12 @@ plantilla del recurso (`reshor.caaide`) y si el tipo es el de por defecto,
 ``truncated: true`` es una excepción: nunca se decide con filas parciales.
 Ninguna sentencia toca asientos (`asi`, `asa`, `apu`, `apa`) ni cambia el
 estado de un parte: el asiento analítico lo genera Sigrid al contabilizar.
+
+F-047: el tope de filas que se pide a sigrid-api (`max_rows`) es
+configurable (`SIGRID_MAX_ROWS`, 200.000 por defecto). Hasta el 2026-10-07
+era 2.000 fijo y `capitulos_de_obra`, que lee el presupuesto entero, se
+truncaba en las obras con más partidas (la 0696 tiene 3.024). Subir el tope
+no relaja la regla: un `truncated` sigue siendo un error.
 """
 from __future__ import annotations
 
@@ -44,6 +50,10 @@ from domain.models.registro_models import (
 logger = logging.getLogger(__name__)
 
 PREFIJO_SYNCKEY = "porcentajes:"
+#: F-047: filas por lectura que se piden a sigrid-api si nadie dice otra
+#: cosa. Debe caber en su `MAX_ALLOWED_ROWS` (500.000 en la instancia
+#: desplegada, `azure-apps/sigrid_api.md` §4.1).
+MAX_ROWS_POR_DEFECTO = 200_000
 
 
 def synckey_de(registro_id: int) -> str:
@@ -61,6 +71,7 @@ class SigridWriteClient:
         max_statements: int = 15,
         tip_parte: int = 35,
         est_parte: int = 1,
+        max_rows: int = MAX_ROWS_POR_DEFECTO,
     ) -> None:
         self._base = base_url.rstrip("/")
         self._headers = {"x-functions-key": function_key,
@@ -70,6 +81,7 @@ class SigridWriteClient:
         self._max_st = int(max_statements)
         self._tip = int(tip_parte)
         self._est = int(est_parte)
+        self._max_rows = int(max_rows)
 
     # ----------------------------- HTTP ----------------------------- #
 
@@ -79,7 +91,7 @@ class SigridWriteClient:
                            "database": self._db, "sql": sql,
                            "parameters": params,
                            "timeout_seconds": int(self._timeout),
-                           "max_rows": 2000})
+                           "max_rows": self._max_rows})
         if r.status_code >= 400:
             raise RuntimeError(f"sigrid-api read HTTP {r.status_code}: "
                                f"{r.text[:400]}")
