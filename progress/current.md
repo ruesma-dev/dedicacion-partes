@@ -14,9 +14,20 @@ la espera solo de las MANUAL del humano. El arnés es la **1.7.3**.
   chip (`Postv-…`), por línea y sin mayúsculas ni tildes. Causa real: el
   buscador global no casaba con `Postv-` y la columna mezclaba chips. Spec
   `specs/F-041-filtro-obra-postventa/`, aprobada con D1-D4 = A (`9b5fc46`).
-- **Estado:** implementer lanzado → `progress/impl_F-041.md`.
-- **MANUAL (humano):** prueba en local con los pasos de `tasks.md` (front de
-  esta rama contra la api local). Resultado: _pendiente_.
+- **Implementación terminada** (`progress/impl_F-041.md`, `a448ffc`…`e57675f`):
+  solo front; ningún test anterior cambiado; la herramienta de mutación no
+  muta JavaScript → campaña manual de 20 mutantes, 0 supervivientes
+  (`progress/mutacion_manual_F-041.md`). **Review lanzada** →
+  `progress/review_F-041.md`.
+- **MANUAL (humano, T6, en local, nada contra Azure):** api local de siempre
+  (`cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api` y
+  `.venv/Scripts/python main.py`) y el front DE ESTA COPIA (`cd
+  C:/Users/pgris/PycharmProjects/porcentajes-f041/services/dedicacion-front` y
+  `.venv/Scripts/python main.py`; el front no necesita `.env` de secretos);
+  abrir `http://127.0.0.1:8080`, Ctrl+F5, y seguir los pasos 4-8 del informe:
+  `p`…`postv-0656` acota letra a letra en la columna y en el buscador (`/`);
+  `postventa` no casa (D1); tildes y mayúsculas igual; `naves postv` ya no
+  casa en la columna (D2). Resultado: _pendiente_.
 
 ## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (spec lista)
 
