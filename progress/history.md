@@ -2013,3 +2013,12 @@ perder exigencia en `chore/f039-test-excel-f040` (`fde8ade`; tabla en
 `impl_F-040.md`) y `init.sh` en verde con código de salida 0 (api 689, raíz
 418). Lección guardada en la memoria del líder. Nada se desplegó ni se subió
 en rojo.
+
+## 2026-10-07 · Despliegue de F-037, F-039 y F-040
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1` (los tres servicios,
+orden transfer → api → front) desde `dev`: `transfer:r20261007-0851`,
+`api:r20261007-0852`, `front:r20261007-0853`. El transfer conserva el modo
+real. La api añade al arrancar las tres columnas de `obra` de F-039. Pendiente
+de confirmar: sync y preview (240 excluidas, `VAR-29`). `azure-apps`
+actualizado en el mismo trabajo.
