@@ -1,26 +1,22 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-047 (corrección urgente: obras con más de
-2.000 partidas) está cerrada en `dev` y **pendiente de desplegar** (solo el
-transfer, sección siguiente). F-037, F-039 y F-040 se desplegaron el 2026-10-07
-por la mañana, y F-041 y F-042 (solo el front) por la tarde. El arnés es la
+**Ninguna feature en ejecución.** El 2026-10-07 se desplegaron F-037, F-039 y
+F-040 por la mañana, F-041 y F-042 (solo el front) por la tarde y F-047 (solo
+el transfer) por la noche. El arnés es la
 **1.7.3**.
-
-## ⚠ Despliegue de F-047 (pendiente; lo lanza el humano)
-
-- Cambia **solo el transfer** (`.\redeploy_dedicacion.ps1 -Solo transfer`,
-  desde `dev`, con `00_vars_dedicacion.ps1`, `00_vars_dedicacion.local.ps1` y
-  `00_capps_vars_dedicacion.ps1` cargados). Sin DDL ni sync; `SIGRID_MAX_ROWS`
-  no se declara (vale el defecto, 200.000). El transfer conserva el modo real.
-- **Comprobación (solo lectura):** Ctrl+F5, septiembre 2026, «⇪ Sigrid» en la
-  fila de Bas Leal, José María: la 0696 sin «respuesta truncada» y con partida.
-  **Cancelar.**
-- Al confirmarlo: commit en `azure-apps` (las dos filas de `SIGRID_MAX_ROWS` ya
-  están escritas en `dedicacion.md`, sin commit).
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-07 (noche): F-047**, solo el transfer
+  (`r20261007-2029`): lecturas de hasta 200.000 filas, ya se registra en obras
+  con más de 2.000 partidas. Comprobado por el líder (solo lectura): el
+  transfer desplegado sigue en **modo real** (`OBRA_PRUEBAS_FORZAR=false`) y
+  la línea de Bas Leal (`porcentajes:3599`) está en la **0696 real**, parte
+  PT26/00298 (En registro), partida CI.1.8, con cuenta analítica. Las dos
+  líneas de Bas Leal en la **0404** (`porcentajes:148` y `:149`, parte
+  PT26/00344) son de la prueba LOCAL en modo pruebas (ids de la base local):
+  **pendiente que el humano las borre**, como las de F-037.
 - **Desplegado el 2026-10-07 (tarde): F-041 y F-042**, solo el front
   (`r20261007-1734`, revisión `Running` comprobada con `az containerapp show`):
   el filtro de obra casa con `Postv-` y la última fila abre el desplegable de
@@ -91,10 +87,10 @@ CI/CD como en `partes`) y **F-044** (repartir también los recursos vinculados
 al trabajador: teléfono, vehículo, gasoil…), **F-045** (Excel desglosado:
 pestaña de obras con la postventa en una línea agregada y pestaña de
 postventa con las obras agregadas) y **F-046** (cerrar y reabrir el periodo
-solo para ciertos usuarios). F-041 y F-042 desplegadas. F-047 cerrada (pendiente de desplegar). Nueva **F-048** (decir qué obra falló
+solo para ciertos usuarios). F-041 y F-042 desplegadas. F-047 desplegada. Nueva **F-048** (decir qué obra falló
 al registrar). Orden: F-048, F-045, F-046, F-038 (cuadro de
 mando), F-043, F-044, F-028, F-021, F-030, F-036, F-031, F-033 y, detrás,
-F-017, F-018… F-041 está cerrada y pendiente de desplegar (solo el front).
+F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 

@@ -2200,3 +2200,14 @@ Informes: `progress/impl_F-047.md`, `progress/review_F-047.md`,
      fila: en el modal, la obra **0696** sin «respuesta truncada» y con partida.
   5. **Cancelar** (NO pulsar «Registrar»).
   Resultado: **funciona** (humano, 2026-10-07, «he probado y funciona»).
+
+## 2026-10-07 · Despliegue de F-047 (solo el transfer)
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo transfer` desde
+`dev`: `transfer:r20261007-2029`, revisión `ca-dedicacion-transfer--r20261007202840`
+en `Running`. Comprobado por el líder (solo lectura, a petición del humano:
+«comprueba que no registra en la 404 sino en la buena»): `OBRA_PRUEBAS_FORZAR`
+sigue en `false` y la línea de Bas Leal de septiembre está en la 0696 real
+(PT26/00298, CI.1.8, `porcentajes:3599`). En la 0404 hay dos líneas suyas de la
+prueba local en modo pruebas (`porcentajes:148` y `:149`, PT26/00344), pendientes
+de que el humano las borre. `azure-apps` actualizado en el mismo trabajo.
