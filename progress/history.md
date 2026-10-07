@@ -1830,3 +1830,195 @@ en texto y parámetros al nuestro (`40b9feb`). Se cambia `REF_VIGILADA` de
 `test_f037_copias_partes.py` a `dev` (la rama de la F-031 ya no existe), se
 anota la confluencia del alta en su docstring y en INTEGRACION §7 (y su copia
 en `azure-apps`): si se cambia el alta, se avisa a `partes`.
+
+## 2026-10-06 · Rastro retirado de `current.md` (review 1 de F-039)
+
+## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (en curso)
+
+- **Pedida por el humano el 2026-10-06** (texto literal y datos leídos en
+  Sigrid en la descripción de `features.json`). Primera del backlog.
+- **Spec entregada** (`a9056b4`): el transfer calcula el universo VAR
+  (`POST /api/var/universo`) y valida la partida en el preflight; la api
+  descarta las obras de 6 dígitos en el sync y guarda cada partida como
+  fila de `obra` (`VAR-29`). **Aprobada por el humano el 2026-10-06** (D1-D6;
+  D4 final: código que CONTENGA 6+ dígitos seguidos, 240 obras).
+- **Implementación terminada** (`progress/impl_F-039.md`, `…`→`e69ff2a`):
+  mutación en serie 60/60; tests anteriores cambiados solo los de design §7.1
+  (dobles `_fila` y `UniversoFalso`, ANCLAS). **Review lanzada** →
+  `progress/review_F-039.md`.
+- **T9 (líder): hecha**, copia a `azure-apps` `f01156f` («sin desplegar»).
+- **MANUAL (humano, NADA escribe en Sigrid)**, transfer y api LOCALES desde
+  esta rama (api con `PG_HOST=localhost`), desde la raíz:
+  - **T12 (M1):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M1`
+    → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en
+    el cuadrante, sin `VAR` normal ni obras de 6+ dígitos;
+    `RESULTADO M1: OK`. Resultado: _pendiente_.
+  - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
+    → grupo de la obra `VAR`, `escribir`, `paride = 417055`, `partida_cod
+    = "29"`, `partida_metodo = "var"`; `RESULTADO M2: OK`. Resultado: _pendiente_.
+  - **T14 (M3, usabilidad):** además el front local; buscar «29» y «arroyo»
+    → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
+    `VAR-29`; «Registrar en Sigrid» enseña la partida fija «29» (cerrar SIN
+    registrar). Resultado: _pendiente_.
+  - **Despliegue:** orden transfer → api → front (la api nueva llama a
+    `POST /api/var/universo`).
+- **En paralelo, por decisión del humano:** specs de **F-040** y **F-041**
+  aprobadas en sus copias `PycharmProjects/porcentajes-f040` y
+  `PycharmProjects/porcentajes-f041` (sus `.venv` son uniones a los de aquí);
+  se implementan después de F-039.
+- **F-040, spec lista** (copia `porcentajes-f040`, `2469852`): espera al
+  humano con D1-D6. Hallazgo: el exportador ACTUAL saca notación científica
+  en el Resumen («0702 = 1E+2%», por `Decimal.normalize()`) y ningún test lo
+  ejecuta; F-040 lo corrige.
+- **Recopia de `partes` (2026-10-06):** su `e85ef0e` (cabecera de
+  dependencia, solo docstring) puso `dev` en rojo; recopiado y
+  `COMMIT_COPIADO` movido (`c906219`).
+- **Backlog reordenado por el humano el 2026-10-06:** F-040 (Excel como el
+  modelo de Juan, absorbe F-020) primera, F-038 (cuadro de mando = el Excel
+  navegable con filtros) segunda, F-039 tercera. No hay F-041.
+
+### Lo siguiente, por prioridad
+
+`BACKLOG.md` tiene el orden completo (reordenado por el humano el
+2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
+primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
+(asiento analítico, cerrada, pendiente de desplegar); **F-040** (Excel como el
+modelo de Juan), **F-038** (cuadro de mando), **F-039** (spec lista); después F-028, F-021, F-030, **F-036**
+(solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
+
+## 2026-10-06 · F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos
+
+Rama `feature/F-039-obras-var-y-seis-digitos` · `sdd: true` · rigor `critico` ·
+**APROBADO** en la pasada 2 (la 1 pidió solo rastro). Decisiones del humano
+D1-D6 (2026-10-06): VAR deja de ofrecerse como obra normal; entradas `VAR-NN`;
+«desde la 29» = número inicial ≥ 29; D4 final: se ignora toda obra cuyo código
+CONTENGA 6 o más dígitos seguidos (240); líneas existentes en obras que
+desaparecen se quedan marcadas; cada entrada es una fila de `obra`.
+
+**Qué cambió.** El transfer calcula el universo VAR (`POST /api/var/universo`)
+y valida la partida (`var_paride`) en el preflight; la api lo pide en el sync y
+el preview, descarta las obras de 6+ dígitos y guarda cada partida como fila
+`VAR-NN` (ide negativo, tres columnas nuevas) que se registra en la obra VAR
+con su partida fija; el front pinta la partida fija. Cobertura 181/181,
+mutación en serie 60/60. MANUAL del humano: M1 (240 excluidas, `VAR-29`
+activa), M2 (preflight a VAR con partida 29) y M3 (usabilidad, «todo ok»).
+`azure-apps`: `f01156f`.
+
+Informes: `progress/impl_F-039.md`, `progress/review_F-039.md`. Sección
+retirada de `current.md`:
+
+## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (en curso)
+
+- **Qué es** (pedida el 2026-10-06; spec `specs/F-039-obras-var-y-seis-digitos/`,
+  aprobada con D1-D6): las partidas de la obra VAR desde la 29 se ofrecen como
+  obras propias `VAR-NN` (universo en el transfer, `POST /api/var/universo`;
+  registro en VAR con la partida fija); VAR deja de ofrecerse como obra normal;
+  se ignoran las obras cuyo código contiene 6+ dígitos seguidos (240).
+- **Implementación** (`progress/impl_F-039.md`): cobertura 181/181, mutación en
+  serie 60/60; tests anteriores, solo los de design §7.1. **Review 1: CAMBIOS
+  PEDIDOS solo por este fichero**, corregidos por el líder; código, tests,
+  mutación y docs dados por buenos hasta `3b531ac`. **Review 2: APROBADO.**
+  Para el `done` solo faltan las MANUAL T12-T14 del humano; no se mergea a
+  `dev` hasta entonces.
+- **T9 (líder): hecha**, copia a `azure-apps` `f01156f` («sin desplegar»).
+- **MANUAL (humano, NADA escribe en Sigrid).** Arranque, en ventanas aparte y
+  desde esta rama: `python main.py` con la `.venv` de cada servicio en
+  `services/dedicacion-transfer` y en `services/dedicacion-api` (la api con
+  `PG_HOST=localhost`). Luego, desde la raíz:
+  - **T12 (M1):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M1`
+    → `excluidas_por_codigo = 240`, `entradas_var = 1`, `VAR-29` activa en el
+    cuadrante, sin `VAR` normal ni obras de 6+ dígitos; `RESULTADO M1: OK`.
+    **Resultado (2026-10-06, humano): CUMPLIDA.** Preview: brutas 923, total
+    289, `excluidas_por_codigo` 240, `entradas_var` 1, `obra_var` VAR, motivos
+    nulos. Sync local: obras 289 recibidas, 240 desactivadas. Cuadrante:
+    `VAR-29` (ide -417055, activa), sin VAR normal, sin `150414`, 0 obras
+    activas con 6+ dígitos. `RESULTADO M1: OK`.
+  - **T13 (M2):** `powershell -ExecutionPolicy Bypass -File scripts/verif_f039_var.ps1 -Paso M2 -Anio AAAA -Mes MM`
+    (periodo de prueba LOCAL) → grupo de la obra `VAR`, `escribir`,
+    `paride = 417055`, `partida_cod = "29"`, `partida_metodo = "var"`;
+    `RESULTADO M2: OK`. **Resultado (2026-10-06, humano): CUMPLIDA.** Periodo
+    2026-10, trabajador 2750167: grupo VAR (ide 683806) `escribir`, `paride`
+    417055, `partida_cod` 29, método `var`, `caa_cod` `0404.CIMO03` (modo
+    pruebas: centro de la 0404; en real, el de VAR); `no_vigentes` vacío.
+  - **T14 (M3, usabilidad):** además `python main.py` en
+    `services/dedicacion-front` y abrir `http://127.0.0.1:8080`; buscar «29» y
+    «arroyo» → `VAR-29`; no salen `VAR` ni `150414`; Completar al 100 % hacia
+    `VAR-29`; «Registrar en Sigrid» enseña la partida fija «29» (cerrar SIN
+    registrar). Resultado: _pendiente_.
+  - **Despliegue:** orden transfer → api → front.
+- **Observaciones de la review 1, recogidas:** `registro_sigrid.py` da 0
+  mutantes automáticos (lo cubren dos mutantes a mano) y la 1.ª campaña dio
+  dos falsos supervivientes → encargo de `arnes-base` (falsos supervivientes /
+  generador).
+
+## 2026-10-06 · F-040 · El Excel como el modelo de Juan Romero
+
+Rama `feature/F-040-excel-modelo-juan` (copia `porcentajes-f040`) · `sdd: true`
+· rigor `estandar` · **APROBADO** en la pasada 2 (la 1 pidió reforzar el test
+del «sin -0», que no lo fijaba). Absorbe F-020. Decisiones del humano D1-D6 = A
+(2026-10-06): descripción completa en el Resumen, combinadas con el valor en
+todo el grupo (el autofiltro saca el grupo entero; no se puede ordenar), bandas
+blanco/`DDEBF7` y línea gruesa, cabecera en la fila 2 sin «Obra(código)», solo
+Detalle y Resumen, convenio de la app (`Postv-`, `VAR-NN`). Corrige la notación
+científica del exportador anterior («1E+2%»). Api 619 en verde, ningún test
+anterior cambiado, cobertura 100 %, mutación en serie 20/20. **M1 cumplida**:
+el humano generó y revisó el Excel real de 2026-10 («perfecto»).
+
+Informes: `progress/impl_F-040.md`, `progress/review_F-040.md`. Sección
+retirada de `current.md`:
+
+## F-040 · El Excel como el modelo de Juan Romero (en curso)
+
+- **Qué es** (pedida el 2026-10-06; absorbe F-020): hojas Detalle (agrupado
+  por trabajador, celdas combinadas con el valor en todo el grupo para que el
+  autofiltro saque el grupo entero, bandas blanco/`DDEBF7`, línea gruesa bajo
+  cada trabajador, cabecera en la fila 2, sin «Obra(código)») y Resumen («código
+  descripción = NN% + …»). Corrige la notación científica del exportador actual
+  («1E+2%»). Spec `specs/F-040-excel-modelo-juan/`, aprobada con D1-D6 = A
+  (`c16af41`).
+- **Implementación terminada** (`progress/impl_F-040.md`, `fad6334`…`b429b81`):
+  api 619 en verde (33 nuevos), ningún test anterior cambiado; cobertura 100 %;
+  mutación en serie 20/20. **Review 1: CAMBIOS PEDIDOS** (un test que decía
+  fijar el «sin -0» y no lo fijaba); ciclo 2 hecho (test reforzado con el XML,
+  mutante a mano muerto, `obra_ide` determinista). **Review 2: APROBADO.**
+  Para el `done` solo falta la M1 del humano.
+- **Para la M1 (observación de la review):** openpyxl enseña vacías las
+  combinadas al releer; el XML sí las tiene: el humano lo mira en Excel.
+- **`azure-apps`: no cambia** (no describe el Excel; R21).
+- **MANUAL (humano, M1, solo lectura):**
+  - Muestra inventada ya generada: `%TEMP%/f040/f040_muestra.xlsx`.
+  - El real, desde esta copia y con la BBDD local (la api en el 8090; si la de
+    F-039 está arrancada, pararla antes): `cd C:/Users/pgris/PycharmProjects/porcentajes-f040/services/dedicacion-api`
+    y `.venv/Scripts/python.exe main.py`; en otra ventana
+    `curl.exe -o "$env:TEMP/f040.xlsx" "http://127.0.0.1:8090/api/v1/periodos/AAAA/MM/export.xlsx?empresa=1"`
+    y abrirlo. Recorrer los 7 puntos de design §6: abre sin reparación;
+    filtrar por empleado saca todas sus filas; filtrar por obra enseña quién y
+    su estado; filtrar por estado ≠ OK; bandas y línea gruesa; Resumen con
+    «código nombre = NN%»; impresión horizontal a una página de ancho con
+    cabecera repetida. Mirar la combinada cuya primera fila oculta el filtro.
+    Resultado: _pendiente_.
+- **Al fusionar con F-039:** la línea `VAR-29` se trata como una obra normal y
+  está probada con datos inventados; si F-039 trae un test que lea el xlsx, se
+  ajusta en el merge (design §8).
+
+
+## 2026-10-06 · Merge de F-040 en `dev` con la api en rojo (corregido)
+
+El líder mergeó F-040 en `dev` (`f34b2da`) con la suite de la api en ROJO:
+encadenó `init.sh | grep … && git commit && git merge`, y el `grep` salió con 0
+aunque había un `[KO]`. Cayó `test_f039_registro_var.py::test_f039_r21_el_excel_lleva_el_codigo_de_la_entrada`,
+que leía el Excel con el formato anterior (F-039 y F-040 se desarrollaron en
+paralelo; el design §8 de F-040 lo preveía). Ajustado al formato de F-040 sin
+perder exigencia en `chore/f039-test-excel-f040` (`fde8ade`; tabla en
+`impl_F-040.md`) y `init.sh` en verde con código de salida 0 (api 689, raíz
+418). Lección guardada en la memoria del líder. Nada se desplegó ni se subió
+en rojo.
+
+## 2026-10-07 · Despliegue de F-037, F-039 y F-040
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1` (los tres servicios,
+orden transfer → api → front) desde `dev`: `transfer:r20261007-0851`,
+`api:r20261007-0852`, `front:r20261007-0853`. El transfer conserva el modo
+real. La api añade al arrancar las tres columnas de `obra` de F-039. Pendiente
+de confirmar: sync y preview (240 excluidas, `VAR-29`). `azure-apps`
+actualizado en el mismo trabajo.

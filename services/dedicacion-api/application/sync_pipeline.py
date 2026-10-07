@@ -17,8 +17,11 @@ from typing import Any, Protocol
 from application.filtros_maestros import (
     CRITERIO_VACIO,
     CriterioActivoRecurso,
+    ResultadoDepuracion,
     depurar_empleados,
     depurar_obras,
+    descartar_por_codigo,
+    entradas_var,
 )
 from domain.models import (
     EstadoPeriodo,
@@ -26,9 +29,15 @@ from domain.models import (
     ResultadoSync,
     ResultadoSyncMaestro,
     ResultadoUniverso,
+    ResultadoUniversoVar,
 )
 from domain.normalizacion import entero_o_none, texto_o_none
-from domain.ports import SigridGateway, UniversoPostventaGateway, UnitOfWork
+from domain.ports import (
+    SigridGateway,
+    UniversoPostventaGateway,
+    UniversosGateway,
+    UnitOfWork,
+)
 from domain.vigencia import inicio_ventana_baja
 
 logger = logging.getLogger(__name__)
@@ -82,6 +91,52 @@ def pedir_universo(
         for f in filas if entero_o_none(f.get("empresa")) == empresa_obras
     ]
     return universo.universo_postventa(empresa_obras, obras)
+
+
+@dataclass(frozen=True)
+class ObrasPreparadas:
+    """Lo que el sync guarda de las obras y lo que el preview enseña (F-039):
+    las filas depuradas (con las entradas VAR), los dos universos, las
+    entradas VAR y las obras descartadas por código."""
+
+    depurado: ResultadoDepuracion
+    universo_pv: ResultadoUniverso
+    universo_var: ResultadoUniversoVar
+    entradas: list[dict[str, Any]]
+    descartadas: list[dict[str, Any]]
+
+
+def preparar_obras(
+    brutas: list[dict[str, Any]],
+    universo: UniversosGateway,
+    empresa_obras: int,
+    estados: list[str],
+    filtro: bool,
+    digitos: int,
+) -> ObrasPreparadas:
+    """Depura las obras leídas de Sigrid. UNA función para el step y el
+    preview: lo que enseña el preview es lo que se guarda.
+
+    1. Fuera las de código con `digitos`+ dígitos seguidos, antes de pedir
+       ningún universo (docs/ARCHITECTURE.md#regla-seis-digitos).
+    2. Universo de postventa con las que quedan (F-025) y universo VAR de la
+       empresa de las obras, una petición cada uno (#regla-var).
+    3. Marcas de F-025; la obra VAR no se ofrece como normal (D1) y cada
+       partida VAR entra como fila propia (`entradas_var`).
+    """
+    quedan, descartadas = descartar_por_codigo(brutas, digitos)
+    universo_pv = pedir_universo(universo, quedan, empresa_obras)
+    universo_var = universo.universo_var(empresa_obras)
+    no_normales = (frozenset({universo_var.obra_ide})
+                   if universo_var.obra_ide is not None else frozenset())
+    depurado = depurar_obras(quedan, estados, filtro, universo_pv.ides,
+                             no_normales)
+    depurado.brutos = len(brutas)
+    entradas = entradas_var(universo_var)
+    depurado.filas.extend(entradas)
+    return ObrasPreparadas(depurado=depurado, universo_pv=universo_pv,
+                           universo_var=universo_var, entradas=entradas,
+                           descartadas=descartadas)
 
 
 class SyncStep(Protocol):
@@ -145,9 +200,10 @@ class FetchEmpleadosStep:
 
 
 class FetchObrasStep:
-    """Lee las obras, pide el universo de postventa y marca cada obra con
-    `activa` y `admite_postventa` (F-025). Sin universo, el sync falla
-    entero: `UniversoPostventaNoDisponible` sube antes de persistir nada."""
+    """Lee las obras y las prepara con `preparar_obras`: descarte por código
+    (F-039), marcas `activa` y `admite_postventa` (F-025) y entradas VAR
+    (F-039). Sin universo de postventa o VAR, el sync falla entero: el error
+    sube antes de persistir nada."""
 
     nombre = "fetch_obras"
 
@@ -158,8 +214,9 @@ class FetchObrasStep:
         estados_excluidos: list[str] | None = None,
         filtro_activo: bool = True,
         *,
-        universo: UniversoPostventaGateway,
+        universo: UniversosGateway,
         empresa_obras: int,
+        digitos_excluidos: int = 0,
     ) -> None:
         self._sigrid = sigrid
         self._sql = sql
@@ -167,22 +224,27 @@ class FetchObrasStep:
         self._filtro = filtro_activo and bool(self._estados)
         self._universo = universo
         self._empresa_obras = empresa_obras
+        self._digitos = digitos_excluidos
 
     def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
         brutas = self._sigrid.leer(self._sql)
         _validar_columnas(brutas, COLUMNAS_OBRAS, "sync.obras.sql")
-        universo = pedir_universo(self._universo, brutas, self._empresa_obras)
-        depurado = depurar_obras(brutas, self._estados, self._filtro,
-                                 universo.ides)
+        prep = preparar_obras(brutas, self._universo, self._empresa_obras,
+                              self._estados, self._filtro, self._digitos)
+        depurado = prep.depurado
         logger.info(
-            "sync obras: %d brutas, %d excluidas por estado, %d netas "
-            "(%d admiten postventa, %d solo postventa; motivo: %s)",
+            "sync obras: %d brutas, %d excluidas por código, %d excluidas "
+            "por estado, %d netas (%d admiten postventa, %d solo postventa; "
+            "motivo: %s; %d entradas VAR; motivo VAR: %s)",
             depurado.brutos,
+            len(prep.descartadas),
             depurado.excluidos_filtro,
             len(depurado.filas),
             depurado.admiten_postventa,
             depurado.solo_postventa,
-            universo.motivo,
+            prep.universo_pv.motivo,
+            len(prep.entradas),
+            prep.universo_var.motivo,
         )
         ctx.filas_obras = depurado.filas
 

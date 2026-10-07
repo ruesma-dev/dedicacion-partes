@@ -1,23 +1,33 @@
 # infrastructure/excel/exporter.py
-"""Exportación a Excel del periodo.
+"""Exportación a Excel del periodo, con el modelo de negocio (F-040).
 
-Genera dos hojas compatibles con los consumidores de la plantilla actual:
-  - "Detalle": salida normalizada (una fila por trabajador y obra), con
-    las mismas columnas que la hoja Detalle del Excel v14. Las líneas de
-    postventa se exportan con el convenio "Postv-<código>".
-  - "Resumen": una fila por trabajador con total y estado.
+Dos hojas:
+  - "Detalle": una fila por línea, agrupadas por trabajador. Empleado,
+    Categoría, Total, Desviación y Estado van en todas las filas del grupo y
+    combinadas (con el valor en todas, para que el autofiltro saque el grupo
+    entero). Bandas blanco / azul claro y línea gruesa bajo cada trabajador.
+  - "Resumen": una fila por trabajador con sus obras, total y estado.
+
+Lo que se escribe sale de `contenido.py`; aquí solo se pinta.
 """
 from __future__ import annotations
 
 import io
 from decimal import Decimal
 
+from domain.models import CuadranteTrabajador, Periodo
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.merge import MergedCellRange
 
-from domain.estados import calcular_desviacion, calcular_estado
-from domain.models import CuadranteTrabajador, EstadoTrabajador, Periodo
+from infrastructure.excel.contenido import (
+    FilaResumen,
+    GrupoTrabajador,
+    es_entero,
+    filas_resumen,
+    grupos_detalle,
+)
 
 _MESES = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -26,11 +36,23 @@ _MESES = [
 
 _CABECERA_FILL = PatternFill("solid", fgColor="1F3864")
 _CABECERA_FONT = Font(color="FFFFFF", bold=True)
+_BANDAS = (PatternFill("solid", fgColor="FFFFFF"),
+           PatternFill("solid", fgColor="DDEBF7"))
+_FINO = Side(style="thin", color="BFBFBF")
+_GRUESO = Side(style="medium", color="000000")
+_BORDE = Border(left=_FINO, right=_FINO, top=_FINO, bottom=_FINO)
+_BORDE_ULTIMA = Border(left=_FINO, right=_FINO, top=_FINO, bottom=_GRUESO)
+_CENTRADA = Alignment(vertical="center")
 
-_ESTADO_TEXTO = {
-    EstadoTrabajador.OK: "OK",
-    EstadoTrabajador.SIN_CARGA: "SIN CARGA",
-}
+_CABECERA_DETALLE = [
+    "Empleado", "Categoría", "Código", "Obra", "% dedicación",
+    "Total empleado", "Desviación", "Estado",
+]
+_CABECERA_RESUMEN = ["Empleado", "Categoría", "Obras", "Total %", "Estado"]
+_ANCHOS_DETALLE = (34, 22, 12, 44, 13, 15, 12, 16)
+_ANCHOS_RESUMEN = (34, 22, 90, 10, 16)
+#: Columnas del Detalle que se combinan por trabajador: A, B, F, G y H.
+_COMBINADAS = (1, 2, 6, 7, 8)
 
 
 class OpenpyxlExcelExporter:
@@ -41,132 +63,102 @@ class OpenpyxlExcelExporter:
     def exportar(
         self, periodo: Periodo, filas: list[CuadranteTrabajador]
     ) -> bytes:
+        grupos = grupos_detalle(filas, self._prefijo)
         libro = Workbook()
-        self._hoja_detalle(libro.active, periodo, filas)
-        self._hoja_resumen(libro.create_sheet("Resumen"), periodo, filas)
+        self._hoja_detalle(libro.active, periodo, grupos)
+        self._hoja_resumen(
+            libro.create_sheet("Resumen"), periodo, filas_resumen(grupos)
+        )
         buffer = io.BytesIO()
         libro.save(buffer)
         return buffer.getvalue()
 
     # ------------------------------------------------------------------
     def _hoja_detalle(
-        self, hoja, periodo: Periodo, filas: list[CuadranteTrabajador]
+        self, hoja, periodo: Periodo, grupos: list[GrupoTrabajador]
     ) -> None:
         hoja.title = "Detalle"
-        hoja.append(
-            [f"DETALLE DE DEDICACIÓN · {_MESES[periodo.mes - 1]} {periodo.anio}"]
+        _titulo_y_cabecera(
+            hoja, f"DETALLE DE DEDICACIÓN · {_mes(periodo)}", _CABECERA_DETALLE
         )
-        hoja["A1"].font = Font(bold=True, size=13)
-        hoja.append([])
-        cabecera = [
-            "Empleado", "Categoría", "Código", "Obra", "Obra(código)",
-            "% dedicación", "Total empleado", "Desviación", "Estado",
-        ]
-        hoja.append(cabecera)
-        for celda in hoja[3]:
-            celda.fill = _CABECERA_FILL
-            celda.font = _CABECERA_FONT
-            celda.alignment = Alignment(vertical="center")
-
-        for fila in filas:
-            total = fila.total
-            estado = calcular_estado(total, len(fila.lineas))
-            desviacion = calcular_desviacion(total, len(fila.lineas))
-            texto_estado = self._texto_estado(estado, desviacion)
-            for linea in fila.lineas:
-                codigo = (
-                    f"{self._prefijo}{linea.cod}" if linea.es_postventa else linea.cod
-                )
-                nombre_obra = (
-                    f"{self._prefijo}{linea.descripcion}"
-                    if linea.es_postventa
-                    else linea.descripcion
-                )
-                hoja.append(
-                    [
-                        fila.trabajador.nombre,
-                        fila.trabajador.categoria or "",
-                        codigo,
-                        nombre_obra,
-                        f"{nombre_obra} ({codigo})",
-                        _pct(linea.porcentaje),
-                        _pct(total),
-                        _pct(desviacion),
-                        texto_estado,
-                    ]
-                )
-            if not fila.lineas:
-                hoja.append(
-                    [
-                        fila.trabajador.nombre,
-                        fila.trabajador.categoria or "",
-                        "", "", "",
-                        None,
-                        _pct(Decimal("0")),
-                        None,
-                        self._texto_estado(estado, desviacion),
-                    ]
-                )
-        self._formatear(hoja, num_cols=9, cols_pct=(6, 7, 8))
+        fila = 3
+        for n, grupo in enumerate(grupos):
+            ini, fin = fila, fila + len(grupo.lineas) - 1
+            for r, linea in zip(range(ini, fin + 1), grupo.lineas):
+                hoja.cell(r, 1, grupo.empleado)
+                hoja.cell(r, 2, grupo.categoria)
+                hoja.cell(r, 3, linea.codigo)
+                hoja.cell(r, 4, linea.obra)
+                _celda_pct(hoja.cell(r, 5), linea.porcentaje)
+                _celda_pct(hoja.cell(r, 6), grupo.total)
+                _celda_pct(hoja.cell(r, 7), grupo.desviacion)
+                hoja.cell(r, 8, grupo.estado)
+                for col in range(1, 9):
+                    celda = hoja.cell(r, col)
+                    celda.fill = _BANDAS[n % 2]
+                    celda.border = _BORDE_ULTIMA if r == fin else _BORDE
+            if fin > ini:
+                for col in _COMBINADAS:
+                    _combinar_con_valor(hoja, col, ini, fin)
+            fila = fin + 1
+        _rematar(hoja, _ANCHOS_DETALLE, fila - 1)
 
     def _hoja_resumen(
-        self, hoja, periodo: Periodo, filas: list[CuadranteTrabajador]
+        self, hoja, periodo: Periodo, resumen: list[FilaResumen]
     ) -> None:
-        hoja.append(
-            [f"RESUMEN · {_MESES[periodo.mes - 1]} {periodo.anio}"]
-        )
-        hoja["A1"].font = Font(bold=True, size=13)
-        hoja.append([])
-        hoja.append(["Empleado", "Categoría", "Obras", "Total %", "Estado"])
-        for celda in hoja[3]:
-            celda.fill = _CABECERA_FILL
-            celda.font = _CABECERA_FONT
-        for fila in filas:
-            total = fila.total
-            estado = calcular_estado(total, len(fila.lineas))
-            desviacion = calcular_desviacion(total, len(fila.lineas))
-            partes = []
-            for linea in fila.lineas:
-                codigo = (
-                    f"{self._prefijo}{linea.cod}" if linea.es_postventa else linea.cod
-                )
-                partes.append(f"{codigo} = {linea.porcentaje.normalize()}%")
-            hoja.append(
-                [
-                    fila.trabajador.nombre,
-                    fila.trabajador.categoria or "",
-                    " + ".join(partes),
-                    _pct(total),
-                    self._texto_estado(estado, desviacion),
-                ]
-            )
-        self._formatear(hoja, num_cols=5, cols_pct=(4,))
-
-    # ------------------------------------------------------------------
-    def _texto_estado(
-        self, estado: EstadoTrabajador, desviacion: Decimal
-    ) -> str:
-        if estado in _ESTADO_TEXTO:
-            return _ESTADO_TEXTO[estado]
-        magnitud = abs(desviacion).normalize()
-        if estado is EstadoTrabajador.FALTA:
-            return f"FALTA {magnitud}%"
-        return f"EXCESO {magnitud}%"
-
-    @staticmethod
-    def _formatear(hoja, num_cols: int, cols_pct: tuple[int, ...]) -> None:
-        anchos = {1: 38, 2: 24, 3: 14, 4: 38, 5: 46}
-        for col in range(1, num_cols + 1):
-            letra = get_column_letter(col)
-            hoja.column_dimensions[letra].width = anchos.get(col, 14)
-        for fila in hoja.iter_rows(min_row=4):
-            for idx in cols_pct:
-                celda = fila[idx - 1]
-                if celda.value is not None:
-                    celda.number_format = "0.00%"
-        hoja.freeze_panes = "A4"
+        _titulo_y_cabecera(hoja, f"RESUMEN · {_mes(periodo)}", _CABECERA_RESUMEN)
+        for r, fila in enumerate(resumen, start=3):
+            hoja.cell(r, 1, fila.empleado)
+            hoja.cell(r, 2, fila.categoria)
+            obras = hoja.cell(r, 3, fila.obras)
+            obras.alignment = Alignment(wrap_text=True, vertical="top")
+            _celda_pct(hoja.cell(r, 4), fila.total)
+            hoja.cell(r, 5, fila.estado)
+        _rematar(hoja, _ANCHOS_RESUMEN, len(resumen) + 2)
 
 
-def _pct(valor: Decimal) -> float:
-    """Excel espera la fracción (0.25) para el formato 0.00%."""
-    return float(valor) / 100.0
+def _mes(periodo: Periodo) -> str:
+    return f"{_MESES[periodo.mes - 1]} {periodo.anio}"
+
+
+def _titulo_y_cabecera(hoja, titulo: str, cabecera: list[str]) -> None:
+    hoja.cell(1, 1, titulo).font = Font(bold=True, size=13)
+    for col, texto in enumerate(cabecera, start=1):
+        celda = hoja.cell(2, col, texto)
+        celda.fill = _CABECERA_FILL
+        celda.font = _CABECERA_FONT
+        celda.alignment = _CENTRADA
+
+
+def _combinar_con_valor(hoja, columna: int, desde: int, hasta: int) -> None:
+    """Combina sin vaciar las celdas no ancla (design §5).
+
+    `merge_cells()` las convertiría en `MergedCell` sin valor y el autofiltro
+    perdería las filas del grupo; añadir el rango a mano conserva el valor.
+    """
+    letra = get_column_letter(columna)
+    hoja.merged_cells.add(MergedCellRange(hoja, f"{letra}{desde}:{letra}{hasta}"))
+    for r in range(desde, hasta + 1):
+        hoja.cell(r, columna).alignment = _CENTRADA
+
+
+def _celda_pct(celda, valor: Decimal | None) -> None:
+    """La fracción (55 % → 0,55) con `0%` si es entero y `0.00%` si no."""
+    if valor is None:
+        return
+    celda.value = float(valor) / 100 + 0.0  # + 0.0: sin «-0» en el libro
+    celda.number_format = "0%" if es_entero(valor) else "0.00%"
+
+
+def _rematar(hoja, anchos: tuple[int, ...], ultima: int) -> None:
+    """Autofiltro, paneles, anchos e impresión (R3, R4)."""
+    ultima_col = get_column_letter(len(anchos))
+    hoja.auto_filter.ref = f"A2:{ultima_col}{max(ultima, 2)}"
+    hoja.freeze_panes = "A3"
+    for col, ancho in enumerate(anchos, start=1):
+        hoja.column_dimensions[get_column_letter(col)].width = ancho
+    hoja.page_setup.orientation = "landscape"
+    hoja.sheet_properties.pageSetUpPr.fitToPage = True
+    hoja.page_setup.fitToWidth = 1
+    hoja.page_setup.fitToHeight = 0
+    hoja.print_title_rows = "1:2"

@@ -20,7 +20,9 @@ Obras (F-025): cada obra sale con dos marcas independientes, `activa`
 (su estado no case con la lista de estados excluidos: terminada, cerrada,
 ...) y `admite_postventa` (está en el universo de postventa que calcula el
 transfer, docs/ARCHITECTURE.md#regla-p5). Solo se descarta la que no tiene
-ninguna de las dos.
+ninguna de las dos. Antes, fuera las de código con N+ dígitos seguidos
+(F-039, #regla-seis-digitos); después, la obra VAR no se ofrece como normal
+y sus partidas entran como filas propias (`entradas_var`, #regla-var).
 
 Empresas (F-032): no se depuran; `resumir_empresas` solo las cuenta para
 el preview.
@@ -36,8 +38,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from domain.empresas import empresa_de_baja
+from domain.models import ResultadoUniversoVar
 from domain.normalizacion import entero_o_none as _entero
 from domain.normalizacion import normalizar
+from domain.obras import codigo_entrada, ide_entrada, tiene_digitos_seguidos
 
 
 #: Clave con la que se cuentan los descartes por fecha de baja del recurso
@@ -193,33 +197,77 @@ def _cod_mes(fila: dict[str, Any]) -> str:
 # ----------------------------------------------------------------------
 # Obras
 # ----------------------------------------------------------------------
+def descartar_por_codigo(
+    filas: list[dict[str, Any]], n: int
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """(quedan, descartadas): fuera toda obra cuyo `cod`, tal como llega,
+    contiene `n` o más dígitos seguidos (F-039,
+    docs/ARCHITECTURE.md#regla-seis-digitos). Con `n <= 0`, ninguna."""
+    quedan: list[dict[str, Any]] = []
+    descartadas: list[dict[str, Any]] = []
+    for fila in filas:
+        cae = tiene_digitos_seguidos(str(fila.get("cod")), n)
+        (descartadas if cae else quedan).append(fila)
+    return quedan, descartadas
+
+
 def depurar_obras(
     filas: list[dict[str, Any]],
     estados_excluidos: list[str],
     filtro_activo: bool,
     universo: frozenset[int],
+    no_normales: frozenset[int] = frozenset(),
 ) -> ResultadoDepuracion:
     """Marca cada obra con `activa` (por estado) y `admite_postventa` (su
     `ide` está en `universo`); descarta solo la que no tiene ninguna, y la
-    cuenta como excluida por estado, como antes de F-025 (R13-R14)."""
+    cuenta como excluida por estado, como antes de F-025 (R13-R14).
+
+    La obra de `no_normales` (la obra VAR, F-039 D1) sale siempre, con
+    `activa = False` sea cual sea su estado: no se ofrece como obra normal."""
     resultado = ResultadoDepuracion(filas=[], brutos=len(filas))
     excluidos = [normalizar(e) for e in estados_excluidos if normalizar(e)]
 
     for fila in filas:
-        estado = normalizar(str(fila.get("estado_sigrid") or ""))
-        activa = not (filtro_activo and any(p in estado for p in excluidos))
         # `int` como en `sincronizar`: un `ide` en texto no puede quedarse
         # fuera del universo sin que nada falle (review 1 de F-025).
-        admite = int(fila["ide"]) in universo
-        if not (activa or admite):
+        ide = int(fila["ide"])
+        normal = ide not in no_normales
+        estado = normalizar(str(fila.get("estado_sigrid") or ""))
+        activa = normal and not (
+            filtro_activo and any(p in estado for p in excluidos))
+        admite = ide in universo
+        if normal and not (activa or admite):
             resultado.excluidos_filtro += 1
             resultado.excluidos_detalle[str(fila.get("estado_sigrid"))] += 1
             continue
         resultado.admiten_postventa += admite
-        resultado.solo_postventa += not activa
+        resultado.solo_postventa += admite and not activa
         resultado.filas.append({**fila, "activa": activa,
                                 "admite_postventa": admite})
     return resultado
+
+
+def entradas_var(uvar: ResultadoUniversoVar) -> list[dict[str, Any]]:
+    """Una fila de `obra` por partida del universo VAR, con las claves que
+    guarda `sincronizar` (F-039, R13, docs/ARCHITECTURE.md#regla-var). Sin
+    obra VAR, ninguna."""
+    if uvar.obra_ide is None:
+        return []
+    return [
+        {
+            "ide": ide_entrada(p.ide),
+            "cod": codigo_entrada(str(uvar.obra_cod), p.cod),
+            "descripcion": p.res,
+            "empresa": uvar.empresa,
+            "estado_sigrid": None,
+            "activa": True,
+            "admite_postventa": False,
+            "registro_obra_ide": uvar.obra_ide,
+            "registro_obra_cod": uvar.obra_cod,
+            "registro_paride": p.ide,
+        }
+        for p in uvar.partidas
+    ]
 
 
 def resumir_empresas(filas: list[dict[str, Any]]) -> dict[str, Any]:

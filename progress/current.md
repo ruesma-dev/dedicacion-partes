@@ -3,9 +3,9 @@
 
 **F-041 en curso en esta rama** (filtro de obra con el texto visible, `Postv-`),
 rama `feature/F-041-filtro-obra-postventa`, en la copia
-`PycharmProjects/porcentajes-f041`. En paralelo, por decisión del humano: F-039
-(copia principal) y F-040 (`porcentajes-f040`), las dos aprobadas en review y a
-la espera solo de las MANUAL del humano. El arnés es la **1.7.3**.
+`PycharmProjects/porcentajes-f041`. En la copia principal no hay ninguna feature
+en ejecución: F-037, F-039 y F-040 se **desplegaron el 2026-10-07** (sección
+«Producción, hoy»). El arnés es la **1.7.3**.
 
 ## F-041 · Filtro de obra con el texto visible (en curso)
 
@@ -15,44 +15,46 @@ la espera solo de las MANUAL del humano. El arnés es la **1.7.3**.
   buscador global no casaba con `Postv-` y la columna mezclaba chips. Spec
   `specs/F-041-filtro-obra-postventa/`, aprobada con D1-D4 = A (`9b5fc46`).
 - **Implementación terminada** (`progress/impl_F-041.md`, `a448ffc`…`e57675f`):
-  solo front; ningún test anterior cambiado; la herramienta de mutación no
-  muta JavaScript → campaña manual de 20 mutantes, 0 supervivientes
-  (`progress/mutacion_manual_F-041.md`). **Review lanzada** →
-  `progress/review_F-041.md`.
-- **MANUAL (humano, T6, en local, nada contra Azure):** api local de siempre
-  (`cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api` y
-  `.venv/Scripts/python main.py`) y el front DE ESTA COPIA (`cd
-  C:/Users/pgris/PycharmProjects/porcentajes-f041/services/dedicacion-front` y
-  `.venv/Scripts/python main.py`; el front no necesita `.env` de secretos);
-  abrir `http://127.0.0.1:8080`, Ctrl+F5, y seguir los pasos 4-8 del informe:
-  `p`…`postv-0656` acota letra a letra en la columna y en el buscador (`/`);
-  `postventa` no casa (D1); tildes y mayúsculas igual; `naves postv` ya no
-  casa en la columna (D2). Resultado: _pendiente_.
-
-## F-039 · Obras VAR desde la 29 y fuera las de 6 dígitos (spec lista)
-
-- **Pedida por el humano el 2026-10-06** (texto literal y datos leídos en
-  Sigrid en la descripción de `features.json`). Primera del backlog.
-- **Spec entregada** (`a9056b4`): el transfer calcula el universo VAR
-  (`POST /api/var/universo`) y valida la partida en el preflight; la api
-  descarta las obras de 6 dígitos en el sync y guarda cada partida como
-  fila de `obra` (`VAR-29`). **Espera al humano con D1-D6** (requirements).
-- **Backlog reordenado por el humano el 2026-10-06:** F-040 (Excel como el
-  modelo de Juan, absorbe F-020) primera, F-038 (cuadro de mando = el Excel
-  navegable con filtros) segunda, F-039 tercera. No hay F-041.
-
-## ⚠ Despliegue de F-037 (pendiente; lo lanza el humano)
-
-- Cambia **solo el transfer** (`.\redeploy_dedicacion.ps1 -Solo transfer`,
-  desde `dev`); el transfer desplegado ya escribe en real
-  (`OBRA_PRUEBAS_FORZAR=false`), no hay que tocar permisos ni variables. Sin
-  DDL ni sync.
-- **Comprobación tras desplegar:** un preflight de producción (solo lectura)
-  con una línea MENC o MJEFO: `caa_cod` `<obra>.CIMO0x`, `caa_origen`
-  `recurso`. Desde ese momento, lo registrado lleva la cuenta analítica.
+  solo front; ningún test anterior cambiado; la herramienta de mutación no muta
+  JavaScript → campaña manual de 20 mutantes, 0 supervivientes
+  (`progress/mutacion_manual_F-041.md`). **Review 1: CAMBIOS PEDIDOS solo por
+  este fichero** (MANUAL incompleta y restos caducados), corregidos por el líder
+  trayendo `dev` a la rama; código, tests y campaña sin objeciones hasta
+  `d2bc7f9`. **Review 2 lanzada.**
+- **MANUAL (humano, T6, en local, nada contra Azure):**
+  1. Api local de siempre: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
+     y `.venv/Scripts/python main.py` (8090).
+  2. Parar cualquier otro front en el 8080 y arrancar el de esta copia:
+     `cd C:/Users/pgris/PycharmProjects/porcentajes-f041/services/dedicacion-front`
+     y `.venv/Scripts/python main.py`.
+  3. Abrir `http://127.0.0.1:8080`, **Ctrl+F5**, y un periodo con líneas `Postv-`.
+  4. En «Filtrar obra…», letra a letra: `p`, `po`, `pos`, `post`, `postv`,
+     `postv-`, `postv-0656`. Esperado: con `pos` salen los que tienen alguna
+     `Postv-` (y quien tenga «pos» en el nombre de una obra); desde `post`, solo
+     postventa; con cada letra, la lista igual o más corta.
+  5. Esc, y lo mismo en el buscador global (tecla `/`): el mismo comportamiento.
+  6. `postventa` en «Filtrar obra…»: nadie (D1 = A).
+  7. Un trozo del nombre de una obra con tilde, sin ella y en mayúsculas
+     (`DEPOSITO`): casa igual.
+  8. Alguien con una obra normal y una `Postv-` de otra: `<nombre de la normal>
+     postv` (p. ej. `naves postv`) ya NO sale en la columna (D2), sí en el
+     buscador global.
+  9. Con `postv` en «Filtrar obra…», Ctrl+clic en dos filas y **C**: el diálogo
+     sale precargado con `postv` y solo ofrece entradas `Postv-`. **Cerrar con
+     Esc, SIN completar** (es el único paso que abre un diálogo que escribe).
+  10. «Limpiar»: la tabla queda como antes de filtrar (mismas filas y orden).
+  Resultado: _pendiente_.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-07: F-037, F-039 y F-040** (transfer
+  `r20261007-0851`, api `r20261007-0852`, front `r20261007-0853`, en orden
+  transfer → api → front). Desde ya, cada línea registrada lleva la cuenta
+  analítica de la obra (F-037), las partidas de VAR desde la 29 se ofrecen
+  como `VAR-NN` y se ignoran las obras con 6+ dígitos (F-039, **tras el
+  sync**), y el Excel sale como el modelo de Juan (F-040). **Pendiente de
+  confirmar por el humano:** sync («Actualizar Sigrid») y preview con
+  `excluidas_por_codigo` 240 y `entradas_var` 1; un Excel de producción.
 - **Desplegado el 2026-10-06: F-029** (api `r20261006-1140`, front
   `r20261006-1141`): selección múltiple con Ctrl/Shift y «Completar al
   100 %» (tecla C). **Comprobación pendiente:** un trabajador en FALTA,
@@ -100,12 +102,10 @@ la espera solo de las MANUAL del humano. El arnés es la **1.7.3**.
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-05: F-028, F-021, F-029 y F-030 delante de F-020; F-037 nueva y
-primera). **F-029 espera a que el humano decida desplegar.** Ahora **F-037**
-(asiento analítico, cerrada, pendiente de desplegar); **F-040** (Excel como el
-modelo de Juan), **F-038** (cuadro de mando), **F-039** (spec lista); después F-028, F-021, F-030, **F-036**
-(solo spec de momento), F-031, F-033 y, detrás, F-017, F-018…
+`BACKLOG.md` tiene el orden completo. Ahora **F-041** (en curso, esta rama);
+después **F-038** (cuadro de mando = el Excel de F-040 navegable), F-028 (plan
+aprobado), F-021, F-030, F-036 (solo spec de momento), F-031, F-033 y, detrás,
+F-017, F-018… F-037, F-039 y F-040 están cerradas y desplegadas (2026-10-07).
 
 ## ⚠ Lo que espera al humano
 

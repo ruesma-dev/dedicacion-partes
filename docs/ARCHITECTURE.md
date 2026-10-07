@@ -75,8 +75,8 @@ Hexagonal estricto:
 - `infrastructure/` — `db/` (SQLAlchemy 2, `orm_models.py` como única verdad
   del esquema + `esquema.py`, que deriva de él el DDL del arranque, +
   repositorios),
-  `sigrid/` (cliente de `sigrid-api`), `excel/` (export compatible con la
-  plantilla), `transfer/` (cliente HTTP del transfer).
+  `sigrid/` (cliente de `sigrid-api`), `excel/` (export con el modelo de negocio:
+  Detalle agrupado por trabajador y Resumen), `transfer/` (cliente HTTP del transfer).
 - `interface_adapters/api/` — FastAPI: `routes.py`, `schemas.py`, `deps.py`
   (contenedor de dependencias), `app.py`.
 
@@ -93,7 +93,10 @@ PK = el `ide` de Sigrid: en `trabajador`, el `res.ide` de su **recurso**,
 [`#regla-recurso`](#regla-recurso); en `obra`, el de su ficha, con dos marcas
 independientes que pone el sync: `activa`, que su estado no esté excluido, y
 `admite_postventa`, que esté en el universo de postventa,
-[`#regla-p5`](#regla-p5), F-025), `empresa` (catálogo `auxemp` de Sigrid, PK =
+[`#regla-p5`](#regla-p5), F-025; además, una fila por partida VAR, con `ide`
+negativo y su obra y partida de registro, [`#regla-var`](#regla-var), y
+ninguna obra con 6 o más dígitos seguidos en el código,
+[`#regla-seis-digitos`](#regla-seis-digitos), F-039), `empresa` (catálogo `auxemp` de Sigrid, PK =
 `numemp`, que es el `con.emp` de las fichas; F-032), `periodo` (año+mes único, `ABIERTO`/`CERRADO`),
 `asignacion` (periodo × trabajador × obra × `es_postventa`, `porcentaje` en
 0-100) y `evento` (auditoría con `snapshot_antes` / `snapshot_despues` en
@@ -132,9 +135,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > README del transfer, los docstrings y las specs **remiten** a las anclas
 > `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad`,
 > `#regla-sin-partida`, `#regla-pruebas`, `#regla-empresa`,
-> `#regla-recurso`, `#regla-deshacer`, `#regla-completar` y
-> `#regla-analitica`; no vuelven a enunciar la regla con palabras propias. Lo
-> vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
+> `#regla-recurso`, `#regla-deshacer`, `#regla-completar`,
+> `#regla-analitica`, `#regla-var` y `#regla-seis-digitos`; no vuelven a
+> enunciar la regla con palabras propias. Lo vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
 > Todos los puntos están validados. Que la regla esté escrita no autoriza a
@@ -574,6 +577,72 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     *Decidido por Pablo Gris el 2026-10-05 (rellenar `caaide`, la regla de
     `partes`, complementario) y el 2026-10-06 (D8-D18) · F-037,
     `specs/F-037-asiento-analitico-obra/requirements.md`.*
+17. <a id="regla-var"></a>**Obras varias: sus partidas se ofrecen como obras
+    propias.** La obra del ajuste `VAR_OBRA_COD` del transfer (el valor vive
+    en el `.env`, no aquí) agrupa en su presupuesto obras pequeñas, una por
+    partida. Se trabaja con esas partidas, no con la obra.
+
+    - **Partida VAR.** Hoja activa del presupuesto de la obra VAR de la
+      empresa de las obras cuyo **número inicial** (los dígitos con que
+      empieza el código) es mayor o igual que `VAR_PARTIDA_DESDE` (29 hoy):
+      `29`, `30`, `100`, `029`, `29.1` y `29A` entran; `28`, `05`,
+      `CI.1.1`, un capítulo o una partida de baja, no. La obra VAR de otra
+      empresa no cuenta.
+    - **El universo, solo en el transfer.** `POST /api/var/universo` (una
+      empresa → la obra VAR y sus partidas VAR por `ide`) y la validación
+      del preflight usan **las mismas** funciones (`universo_var.py`): una
+      partida está en el universo si y solo si el preflight acepta una
+      línea imputada a ella. Sin obra VAR en la empresa, con la obra
+      ambigua o sin `VAR_OBRA_COD`: universo vacío con su motivo.
+    - **La entrada, en la api.** Cada sync y cada preview piden el universo
+      **una vez**, con la empresa de las obras, y guardan cada partida como
+      una fila propia de `obra`: `ide` = −(`ide` de la partida), código
+      `<obra VAR>-<partida>` (`VAR-29`), la descripción de la partida,
+      activa, sin postventa y con `registro_obra_ide`, `registro_obra_cod`
+      y `registro_paride` (obra y partida de Sigrid donde se registra; a
+      `NULL` en las obras normales). La partida que sale del universo deja
+      su entrada inactiva; no se borra nada. Si el transfer no da el
+      universo, sync y preview fallan enteros con 502, sin persistir nada.
+    - **La obra VAR no se ofrece como obra normal**, sea cual sea su
+      estado: nadie imputa a sus partidas `CI.*`. Las líneas ya guardadas
+      en ella o en una entrada retirada se conservan, no ofrecibles, como en
+      [`#regla-p5`](#regla-p5), y se registran como hoy.
+    - **Registro.** Las líneas de una entrada viajan en la petición de su
+      obra de registro, junto a las demás de esa obra, con `var_paride` y
+      sin `paride` manual. El transfer las imputa a esa partida, fija
+      (`partida_metodo = "var"`; el front la pinta sin desplegable), si y
+      solo si está en el universo VAR de la empresa de la línea y la obra
+      de la petición es la obra VAR; si no, o si la línea es de postventa,
+      la omite con un motivo que nombra la partida o la obra, sin aviso de
+      «sin partida». Lo demás, como cualquier línea: modo pruebas
+      ([`#regla-pruebas`](#regla-pruebas)), cuenta del centro de la obra
+      destino ([`#regla-analitica`](#regla-analitica)), parte del periodo,
+      `synckey`, identidad con su partida
+      ([`#regla-conflicto`](#regla-conflicto)) y capacidad
+      ([`#regla-capacidad`](#regla-capacidad)).
+    - **Para el cuadrante, Completar, las copias y el Excel** una entrada es
+      una obra normal, sin modo postventa.
+
+    *Decidido por Pablo Gris el 2026-10-06 (D1, D2, D3, D5 y D6 = A) ·
+    F-039, `specs/F-039-obras-var-y-seis-digitos/requirements.md`.*
+18. <a id="regla-seis-digitos"></a>**Fuera las obras con 6 o más dígitos
+    seguidos en el código.** En el sync y en el preview, antes de pedir
+    ningún universo, se descarta toda obra cuyo código **contenga** N o más
+    dígitos seguidos, lleve o no letras o sufijo (`150414`, `0902051`,
+    `090205A`, `150301-1` caen; `12345` y `VAR`, no), con N =
+    `sync.obras.digitos_seguidos_excluidos` de `config.yaml` (6; 0 = sin
+    filtro).
+
+    - La descartada no va al universo de postventa ni se guarda; si ya
+      estaba en la base, queda con `activa` y `admite_postventa` a `false`.
+      Sus líneas ya guardadas se conservan, no ofrecibles, y se registran
+      como hoy.
+    - El preview publica cuántas caen y una muestra de sus códigos.
+    - Sin excepciones: un código así que se adjudique tampoco saldrá.
+
+    *Decidido por Pablo Gris el 2026-10-06 (D4: «si tienen 6 números
+    seguidos también ignóralas»; D5 = A) · F-039,
+    `specs/F-039-obras-var-y-seis-digitos/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 

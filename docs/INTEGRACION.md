@@ -10,12 +10,20 @@
 > de suscripción, tenant u objeto. Lo vigila un test que falla si alguno
 > entra: `tests/test_f008_infra_sin_secretos.py`.
 >
-> **Fecha del documento: 2026-10-06** (F-037: el transfer rellena la cuenta
-> analítica de cada línea, `hmores.caaide`, y no escribe nunca en un parte
-> cerrado: las líneas van a un parte complementario; lee además los partes
-> del periodo con su estado, las cuentas del centro y las de las partidas;
-> §1 y §7). **Origen:** rama `feature/F-037-asiento-analitico-obra`,
-> pendiente de merge a `dev`. Versión anterior: 2026-10-04 (F-027:
+> **Fecha del documento: 2026-10-06** (F-039: las partidas de la obra de
+> obras varias desde la 29 se ofrecen como obras propias `VAR-NN`; el
+> transfer expone, solo hacia la api, `POST /api/var/universo`, y la api lo
+> llama en cada sync y en el preview: si el transfer no responde, el sync
+> falla entero con 502; las columnas `obra.registro_obra_ide`,
+> `registro_obra_cod` y `registro_paride` las añade la api al arrancar; y
+> fuera las obras con 6 o más dígitos seguidos en el código; §3, §5 y §7).
+> **Origen:** rama `feature/F-039-obras-var-y-seis-digitos`, pendiente de
+> merge a `dev`. Versión anterior: 2026-10-06 (F-037: el transfer rellena la
+> cuenta analítica de cada línea, `hmores.caaide`, y no escribe nunca en un
+> parte cerrado: las líneas van a un parte complementario; lee además los
+> partes del periodo con su estado, las cuentas del centro y las de las
+> partidas; §1 y §7; rama `feature/F-037-asiento-analitico-obra`).
+> Versión anterior: 2026-10-04 (F-027:
 > `X-Usuario` decide además quién puede deshacer; §5, «La cadena de
 > identidad»; rama `feature/F-027-deshacer-por-usuario`).
 > Versión anterior: 2026-10-03 (F-025: las obras de postventa salen
@@ -39,6 +47,8 @@
 > en el orden transfer → api → front que exige §7). El **2026-10-05** se
 > republicó solo la api con F-027 (`dedicacion-api:r20261005-0915`). El
 > **2026-10-06** se republicaron la api y el front con F-029 (`dedicacion-api:r20261006-1140` y `dedicacion-front:r20261006-1141`).
+> El **2026-10-07** se republicaron los tres con F-037, F-039 y F-040 (`dedicacion-transfer:r20261007-0851`, `dedicacion-api:r20261007-0852` y `dedicacion-front:r20261007-0853`,
+> en el orden transfer → api → front que exige §7).
 >
 > **Desde el 2026-10-01 el transfer desplegado escribe DE VERDAD**
 > (`OBRA_PRUEBAS_FORZAR=false`), por decisión expresa del humano, tomada a
@@ -178,6 +188,7 @@ despliegue no tenga que aprender dos vocabularios.
 | `SIGRID_API_BASE_URL`, `SIGRID_API_DATABASE` | La base es **siempre** `ruesma`. **No hay `SIGRID_EMPRESA`** desde F-022: la empresa llega en cada línea, y una variable que quede en un despliegue viejo se ignora |
 | `SIGRID_API_FUNCTION_KEY` | **Secreto**. Es la credencial de **escritura** sobre el ERP |
 | `OBRA_PRUEBAS_FORZAR`, `OBRA_PRUEBAS_COD`, `MARCA_PRUEBAS` | Modo pruebas (§8) |
+| `VAR_OBRA_COD`, `VAR_PARTIDA_DESDE` | Obra de obras varias y número inicial desde el que sus partidas se ofrecen como obras propias (F-039, `docs/ARCHITECTURE.md#regla-var`). Con defecto en el código (`VAR`, `29`): no hace falta declararlas al desplegar. `VAR_OBRA_COD` vacío = sin entradas VAR |
 | `LOG_DIR` | `/tmp/logs` en el contenedor: `/app` no tiene por qué ser escribible |
 
 Secretos en el Key Vault propio, por su clave: `PG-PASSWORD`,
@@ -253,6 +264,18 @@ vez** en cada `POST /api/v1/sync` y en cada `GET /api/v1/sync/preview`, con
 la empresa de las obras (`EMPRESA_IMPUTACION`): son dos lecturas de Sigrid
 (la obra de postventa y su presupuesto), dentro de `TRANSFER_TIMEOUT_S`. La
 regla está en `docs/ARCHITECTURE.md#regla-p5`.
+
+Desde F-039 el transfer expone además, **solo para la api**, `POST
+/api/var/universo` (`{empresa}` → la obra VAR de esa empresa y sus partidas
+VAR, `{ide, cod, res}` por `ide`, con el umbral y el motivo si no hay obra;
+422 sin empresa válida, 502 si falla la lectura de Sigrid; nunca escribe).
+La api lo llama **una vez** en cada `POST /api/v1/sync` y en cada `GET
+/api/v1/sync/preview`, con la empresa de las obras: dos lecturas de Sigrid
+(la obra VAR y su presupuesto). Las líneas del registro ganan un campo
+opcional, `var_paride`. En el mismo sync la api descarta las obras cuyo
+código contiene 6 o más dígitos seguidos (`sync.obras.digitos_seguidos_excluidos`
+de `config.yaml`). Las reglas están en `docs/ARCHITECTURE.md#regla-var` y
+`#regla-seis-digitos`.
 
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 
@@ -400,6 +423,10 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Volver a mandar al transfer el `ide` de la ficha de empleado en vez de `recurso_ide` | El transfer lo ignora y omite la línea «sin recurso»: no se registra nada (F-026) |
 | Parar el transfer, o que no responda a `POST /api/postventa/universo` | El sync de maestros (y su preview) falla entero con **502** nombrando el universo de postventa, sin persistir nada: no hay obras nuevas ni marcas al día hasta que vuelva (F-025, D3) |
 | Cambiar `POSTVENTA_OBRA_COD` del transfer | Cambia qué obras se ofrecen como `Postv-` en el **siguiente** sync, no antes; hasta entonces el cuadrante enseña la foto vieja y el preflight manda (F-025) |
+| Parar el transfer, o que no responda a `POST /api/var/universo` | El sync de maestros (y su preview) falla entero con **502** nombrando el universo VAR, sin persistir nada (F-039, como F-025 D3) |
+| Publicar la api de F-039 antes que el transfer | La api nueva llama a `POST /api/var/universo`, que el transfer viejo no tiene: el sync queda en 502 hasta publicar el transfer. **Orden de despliegue: transfer → api → front** (F-039) |
+| Cambiar `VAR_OBRA_COD` o `VAR_PARTIDA_DESDE` del transfer | Cambia qué entradas `VAR-NN` se ofrecen en el **siguiente** sync; las que salen quedan inactivas y sus líneas ya guardadas, no ofrecibles. El preflight manda: una línea en una partida que ya no está en el universo se omite con motivo (F-039) |
+| Cambiar `sync.obras.digitos_seguidos_excluidos` de `config.yaml` | Cambia qué obras se ignoran por su código en el siguiente sync; con `0`, vuelven todas (F-039) |
 | Cambiar en el transfer la elección del parte o la regla de la cuenta (`estado_parte.py`, `cuenta_analitica.py`) sin cambiarla en `partes` | Los dos servicios dejan de caer en el mismo parte o de poner la misma cuenta: dos complementarios en un mes, o un asiento analítico (`ANA`) con cuentas distintas para la misma persona. Las copias se vigilan con `tests/test_f037_copias_partes.py` (F-037) |
 
 ### Si tocan algo de otros
@@ -413,6 +440,7 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Cambiar el contrato de `sigrid-api` (`/api/sql/read`, `/api/sql/write`) | Se cae todo: es nuestro único acceso a Sigrid |
 | Borrar o renombrar `acralbaranesdev` | No se puede publicar ni tirar ninguna imagen |
 | Cambiar tablas o campos de Sigrid (`hmo`, `hmores`, `reshor`) | El mapeo del transfer deja de casar |
+| Renumerar o dar de baja partidas de la obra de obras varias en Sigrid | Cambian las entradas `VAR-NN` del siguiente sync; las que desaparecen quedan inactivas y el preflight omite sus líneas con motivo. Una obra nueva con código de 6 o más dígitos seguidos no sale en el cuadrante (F-039) |
 | Cambiar los estados del parte (`con.est`: 1 En registro, 3 Cerrado, 10 Imputado) o las cuentas analíticas (`caa`, `reshor.caaide`, `obrparpar.caaide`) | Con otro código de «En registro», el transfer da todos los partes por cerrados y crea complementarios; sin cuenta del centro, las líneas van con `caaide = 0` y no entran en el asiento analítico del parte (F-037) |
 | Que `partes` cree un parte del mismo periodo a la vez que nosotros | El alta del transfer es condicional (código libre en la empresa y ningún parte En registro del periodo) y relee el periodo: usa el que haya. `partes` recogió la misma protección en su F-031 (`9ea7c59`) y su alta (`stmts_crear_parte`) es hoy idéntica a la nuestra (F-037, D17) |
 | Cambiar en el transfer el alta del parte (`stmts_crear_parte`) | Deja de ser idéntica a la de `partes` (aviso de su F-031, 2026-10-06) y los dos servicios podrían crear partes distintos para el mismo periodo: avisar a `partes` en el mismo trabajo, igual que con `estado_parte.py` y `cuenta_analitica.py` |
