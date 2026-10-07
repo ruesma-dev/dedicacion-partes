@@ -26,11 +26,11 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-
 from application.pipelines.registro_pipeline import RegistroPipeline
 from domain.models.registro_models import ObraEntrada
 from infrastructure.sigrid import sigrid_write_client as mod
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
+
 from tests.conftest import (
     OBRA_ORIGEN,
     PRESUPUESTO_ORIGEN,
