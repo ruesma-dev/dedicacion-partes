@@ -690,6 +690,59 @@
       "rigor": "estandar",
       "priority": 3,
       "branch": "feature/F-041-filtro-obra-postventa"
+    },
+    {
+      "id": "F-042",
+      "title": "La última fila del cuadrante no abre el desplegable de obras al escribir",
+      "description": "Fallo comunicado por el humano el 2026-10-07: «la última línea de la lista de trabajadores no funciona bien, al escribir la obra no sale el desplegable ni busca. Si reordeno y ese mismo trabajador no está el último, entonces sí funciona». Solo front (editor en línea y autocompletado de obras en services/dedicacion-front/static/js/app.js y su CSS): probablemente el desplegable se pinta fuera del área visible o queda recortado/tapado en la última fila. Reproducir primero.",
+      "acceptance": [
+        "Reproducido y explicada la causa con evidencia",
+        "En la última fila (y en cualquier fila) el autocompletado de obras se abre, busca y deja elegir con el teclado como en las demás",
+        "Sin cambios en el teclado ni en la secuencia «% Enter obra Enter»",
+        "Test del front que fije el caso de la última fila; probado por el humano en local",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 1,
+      "branch": "feature/F-042-ultima-fila-autocompletado"
+    },
+    {
+      "id": "F-043",
+      "title": "Partida del modal de registro: buscador predictivo, ordenada y con selector CI/CD como en partes",
+      "description": "Pedida por el humano el 2026-10-07: «cuando registro y me sale el modal de registrar, quiero que el desplegable de partida no solo sea desplegable, sino que pueda escribir con predictivo. Además la lista debe estar ordenada y, como en partes, que tenga un selector CI CD para que filtre (en partes está muy bien eso)». Mirar cómo lo hace el front de `partes` (C:/Users/pgris/PycharmProjects/partes, sv4) y llevarlo aquí. Presentación: la lista de partidas viene del preflight; el front no decide qué partida se registra salvo lo que elija el usuario.",
+      "acceptance": [
+        "El campo de partida del modal de registro admite escribir y filtra en vivo (código y descripción, sin mayúsculas ni tildes)",
+        "La lista sale ordenada por código",
+        "Selector CI / CD (y «todas») que filtra la lista, con el mismo comportamiento que el de partes",
+        "Se elige con ratón y teclado; la partida fija de VAR (F-039) y el override de postventa siguen igual",
+        "Probado por el humano en local antes de desplegar",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 3,
+      "branch": "feature/F-043-partida-predictiva-ci-cd"
+    },
+    {
+      "id": "F-044",
+      "title": "Aplicar los porcentajes también a los recursos vinculados al trabajador",
+      "description": "Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte).",
+      "acceptance": [
+        "Exploración escrita: cómo se vincula en Sigrid un recurso a un trabajador, sus tipos de hora/importe y cómo se imputan hoy en los partes reales",
+        "Al registrar un trabajador, sus recursos vinculados se registran en las mismas obras con los mismos porcentajes (decisiones de importe, partida y cuenta validadas por el humano/Administración)",
+        "Regla del humano (2026-10-07): nunca se escribe ni se borra en un parte que no esté en estado 1 «En registro»; lo que iría a un parte cerrado va al complementario (regla de F-037, copia de partes)",
+        "Idempotente por synckey, con el mismo parte que el trabajador (F-037) y sin pisar líneas de partes",
+        "Verificado en modo pruebas con Administración",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 4,
+      "branch": "feature/F-044-recursos-vinculados"
     }
   ]
 }
