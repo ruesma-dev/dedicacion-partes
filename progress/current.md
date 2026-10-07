@@ -17,7 +17,9 @@ mañana, y F-041 y F-042 (solo el front) por la tarde.
   configurable, 200.000 por defecto; el `truncated` sigue siendo error; ver si
   un error en una obra bloquea las demás y proponerlo antes de tocarlo.
   `sdd: false`, rigor crítico (producción), solo el transfer.
-- **Estado:** implementer lanzado.
+- **Estado:** implementer terminado (`progress/impl_F-047.md`): tope
+  `SIGRID_MAX_ROWS` configurable (200.000), `truncated` sigue siendo error,
+  init.sh en verde. Pendiente de review.
 - **MANUAL (humano, en local, transfer en modo pruebas):** se concreta con el
   comando exacto cuando termine el implementer.
   Resultado: _pendiente_. El arnés es la **1.7.3**.
