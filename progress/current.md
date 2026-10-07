@@ -18,7 +18,8 @@ arnés es la **1.7.3**.
   se coloca respecto a la ventana (`position: fixed`) bajo el campo, se abre
   hacia arriba si no cabe, se recoloca con scroll y resize, y se retira al
   cerrar el editor. Sin cambios de teclado ni de búsqueda. Descartada la B.
-- **Estado:** implementer lanzado.
+- **Estado:** implementada (T1-T4, `12272a9`..`0e2e0a9`), `init.sh` en verde;
+  informe en `progress/impl_F-042.md`. Pendiente: review y MANUAL del humano.
 - **MANUAL (humano, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
