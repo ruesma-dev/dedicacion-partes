@@ -1,10 +1,20 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** El 2026-10-07 se desplegaron F-037, F-039 y
-F-040 por la mañana, F-041 y F-042 (solo el front) por la tarde y F-047 (solo
-el transfer) por la noche. El arnés es la
-**1.7.3**.
+**F-045 en spec en esta rama** (`feature/F-045-excel-obras-postventa`, copia
+principal): Excel desglosado en pestaña de obras y pestaña de postventa. Ninguna
+feature en implementación. El 2026-10-07 se desplegaron F-037, F-039 y F-040 por
+la mañana, F-041 y F-042 (solo el front) por la tarde y F-047 (solo el transfer)
+por la noche. El arnés es la **1.7.3**.
+
+## F-045 · Excel desglosado: obras y postventa (en spec)
+
+- **Qué es** (humano, 2026-10-07): la postventa en una pestaña propia con la
+  línea agregada de obras de cada trabajador, y una pestaña de obras con la
+  línea agregada de postventa; en cada una, el detalle de lo suyo.
+- **Estado:** el humano dice «vamos con la feature del Excel» (2026-10-08) por
+  delante de F-048. Spec-author lanzado; la spec vuelve con decisiones abiertas
+  para el humano (pestañas, Resumen, trabajadores sin postventa, VAR, rótulos).
 
 ## Producción, hoy
 
