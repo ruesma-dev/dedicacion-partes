@@ -119,8 +119,12 @@ class El {
   }
   querySelectorAll(sel) { return this.children.filter((x) => x.classList.contains(sel.slice(1))); }
   getBoundingClientRect() { return this.rect; }
-  // Alto natural: 36 px por sugerencia, con el tope de 280 px del CSS.
-  get offsetHeight() { return Math.min(280, this.children.length * 36); }
+  // Alto: 36 px por sugerencia, con el tope de 280 px del CSS y, como en el
+  // navegador, el `max-height` que lleve puesto en línea.
+  get offsetHeight() {
+    return Math.min(280, this.children.length * 36,
+                    parseFloat(this.style.maxHeight) || Infinity);
+  }
 }
 var escuchas = [];
 var window = {
@@ -345,6 +349,25 @@ def test_f042_r2_acompana_al_campo_con_scroll_y_resize():
     assert res["trasResize"]["top"] == "640px"
     assert res["cerrado"]["oculto"] is True
     assert res["cerrado"]["top"] == "640px"
+
+
+def test_f042_r2_al_agrandar_la_ventana_recupera_el_alto():
+    """Con la ventana baja el panel se recorta; al agrandarla vuelve a su
+    alto natural (se mide sin el `max-height` de la vez anterior).
+    Añadido por la campaña de mutación (M18)."""
+    res = _ciclo("""
+      document.documentElement.clientHeight = 150;
+      var campo = nuevoCampo({ top: 40, bottom: 76, left: 300 });
+      var panel = nuevoPanel();
+      montarAutocompletado(campo, panel, {});
+      escribir(campo, "arroyo");
+      var baja = foto(panel).maxHeight;
+      document.documentElement.clientHeight = 800;
+      window.fire("resize");
+      resultado = { baja, alta: foto(panel).maxHeight };
+    """)
+    # Baja: debajo quedan 150 - 76 - 4 - 8 = 62 px. Alta: 3 x 36 = 108.
+    assert res == {"baja": "62px", "alta": "108px"}
 
 
 def test_f042_r2_scroll_en_captura_para_el_de_la_tabla():
