@@ -12,7 +12,7 @@ por la noche. El arnés es la **1.7.3**.
 - **Qué es** (humano, 2026-10-07): la postventa en una pestaña propia con la
   línea agregada de obras de cada trabajador, y una pestaña de obras con la
   línea agregada de postventa; en cada una, el detalle de lo suyo.
-- **Estado:** el humano dice «vamos con la feature del Excel» (2026-10-08) por
+- **Estado:** el humano dice «vamos con la feature del Excel» (2026-10-07) por
   delante de F-048. Spec-author lanzado; la spec vuelve con decisiones abiertas
   para el humano (pestañas, Resumen, trabajadores sin postventa, VAR, rótulos).
 
