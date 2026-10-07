@@ -1,39 +1,27 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución en la copia principal.** F-040 y F-039 se
-cerraron el 2026-10-06; F-037, F-039 y F-040 están en `dev` **pendientes de
-desplegar juntas** (sección de despliegue). En paralelo, por decisión del
-humano: F-041 (implementándose) en `PycharmProjects/porcentajes-f041`. El arnés
-es la **1.7.3**.
+**Ninguna feature en ejecución.** F-041 se cerró el 2026-10-07 y está en `dev`
+**pendiente de desplegar** (solo el front, sección siguiente). F-037, F-039 y
+F-040 se desplegaron el 2026-10-07. El arnés es la **1.7.3**.
 
-## Features en paralelo (copia de trabajo aparte)
+## ⚠ Despliegue de F-041 (pendiente; lo lanza el humano)
 
-- **F-041 · Filtro de obra con el texto visible** (prioridad 3; implementándose
-  en su copia): spec aprobada con D1-D4 = A (`9b5fc46`) en `PycharmProjects/porcentajes-f041`, rama
-  `feature/F-041-filtro-obra-postventa`. La causa real: el buscador global no
-  casa con `Postv-` y la columna mezcla chips.
-- La copia tiene los `.venv` como uniones a los de esta carpeta; no tiene
-  `.env` (no se copia): para probar en local, abrir la rama en la carpeta
-  principal con `git checkout --detach <rama>`.
-
-## ⚠ Despliegue de F-037 + F-039 + F-040 (pendiente; lo lanza el humano)
-
-- **Orden obligatorio transfer → api → front** (`.\redeploy_dedicacion.ps1`
-  sin `-Solo`, que ya respeta ese orden), desde `dev`: la api de F-039 llama a
-  `POST /api/var/universo`, que solo tiene el transfer nuevo. El transfer
-  desplegado ya escribe en real; no hay que tocar permisos. La api añade sus
-  tres columnas de `obra` al arrancar.
-- F-040 solo cambia la api (el Excel); va en el mismo despliegue.
-- **Después: sync** («Actualizar Sigrid»): hasta entonces no aparece `VAR-29` ni
-  desaparecen las obras de 6+ dígitos.
-- **Comprobación:** preview de producción con `excluidas_por_codigo` 240 y
-  `entradas_var` 1; un preflight (solo lectura) con una línea MENC o MJEFO
-  (`caa_cod` `<obra>.CIMO0x`, F-037) y otra en `VAR-29` (`paride` 417055,
-  cuenta `VAR.CIMO0x`).
+- Cambia **solo el front** (`.\redeploy_dedicacion.ps1 -Solo front`, desde
+  `dev`). Sin DDL ni sync.
+- **Comprobación:** Ctrl+F5 y escribir `pos` en «Filtrar obra…» y en el
+  buscador global (`/`): salen los trabajadores con líneas `Postv-`.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-07: F-037, F-039 y F-040** (transfer
+  `r20261007-0851`, api `r20261007-0852`, front `r20261007-0853`, en orden
+  transfer → api → front). Desde ya, cada línea registrada lleva la cuenta
+  analítica de la obra (F-037), las partidas de VAR desde la 29 se ofrecen
+  como `VAR-NN` y se ignoran las obras con 6+ dígitos (F-039, **tras el
+  sync**), y el Excel sale como el modelo de Juan (F-040). **Pendiente de
+  confirmar por el humano:** sync («Actualizar Sigrid») y preview con
+  `excluidas_por_codigo` 240 y `entradas_var` 1; un Excel de producción.
 - **Desplegado el 2026-10-06: F-029** (api `r20261006-1140`, front
   `r20261006-1141`): selección múltiple con Ctrl/Shift y «Completar al
   100 %» (tecla C). **Comprobación pendiente:** un trabajador en FALTA,
@@ -81,12 +69,10 @@ es la **1.7.3**.
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-06): F-040 (Excel, cerrada), **F-038** (cuadro de mando = el Excel
-navegable), **F-041** (filtro de obra), **F-039** (cerrada, pendiente de desplegar),
-F-028 (plan aprobado), F-021, F-030, F-036 (solo spec de momento), F-031,
-F-033 y, detrás, F-017, F-018… F-037 está cerrada y pendiente de desplegar
-(sección de despliegue).
+`BACKLOG.md` tiene el orden completo. F-041 cerrada (pendiente de desplegar); ahora
+**F-038** (cuadro de mando = el Excel de F-040 navegable), F-028 (plan
+aprobado), F-021, F-030, F-036 (solo spec de momento), F-031, F-033 y, detrás,
+F-017, F-018… F-037, F-039 y F-040 están cerradas y desplegadas (2026-10-07).
 
 ## ⚠ Lo que espera al humano
 
