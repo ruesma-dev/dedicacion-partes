@@ -1,9 +1,38 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-041 se cerró el 2026-10-07 y está en `dev`
-**pendiente de desplegar** (solo el front, sección siguiente). F-037, F-039 y
-F-040 se desplegaron el 2026-10-07. El arnés es la **1.7.3**.
+**F-042 en curso en esta rama** (`feature/F-042-ultima-fila-autocompletado`,
+copia principal): la última fila del cuadrante no enseña el desplegable de
+obras. F-041 está cerrada en `dev` y **pendiente de desplegar** (solo el front,
+sección de despliegue). F-037, F-039 y F-040 se desplegaron el 2026-10-07. El
+arnés es la **1.7.3**.
+
+## F-042 · El desplegable de obras en la última fila (en curso)
+
+- **Causa** (líder, solo lectura): el panel `.sugerencias` es `position:
+  absolute` dentro de la tabla, y `.panel { overflow: hidden }` /
+  `.panel-tabla { overflow-x: auto }` lo recortan. En las filas intermedias cae
+  sobre las de abajo; en la última no hay nada debajo y no se ve (sí busca).
+- **Plan A aprobado por el humano el 2026-10-07** («la A»): `sdd: false`, rigor
+  estándar, solo front (`static/js/app.js` y `static/css/styles.css`). El panel
+  se coloca respecto a la ventana (`position: fixed`) bajo el campo, se abre
+  hacia arriba si no cabe, se recoloca con scroll y resize, y se retira al
+  cerrar el editor. Sin cambios de teclado ni de búsqueda. Descartada la B.
+- **Estado:** implementer lanzado.
+- **MANUAL (humano, en local, nada contra Azure):**
+  1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
+     y `.venv/Scripts/python main.py` (8090).
+  2. Front de esta rama: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-front`
+     y `.venv/Scripts/python main.py` (8080).
+  3. `http://127.0.0.1:8080`, **Ctrl+F5**, un periodo abierto.
+  4. Última fila de la tabla: Enter, `%`, Enter, escribir parte de una obra →
+     sale el desplegable, flechas y Enter eligen. Esc sin guardar.
+  5. Lo mismo con un filtro que deje **una sola fila**, y con la ventana
+     pequeña (el desplegable se abre hacia arriba si no cabe).
+  6. Una fila intermedia: igual que antes.
+  7. Con el desplegable abierto, hacer scroll de la página: acompaña al campo
+     o se cierra, pero no se queda flotando en otro sitio.
+  Resultado: _pendiente_.
 
 ## ⚠ Despliegue de F-041 (pendiente; lo lanza el humano)
 

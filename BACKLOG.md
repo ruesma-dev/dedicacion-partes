@@ -5,11 +5,13 @@
 
 Resumen: **41 features**, 19 abiertas, 22 terminadas.
 
+En curso: **F-042**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-042 | La última fila del cuadrante no abre el desplegable de obras al escribir | 1 | pendiente | estandar | `feature/F-042-ultima-fila-autocompletado` |
+| F-042 | La última fila del cuadrante no abre el desplegable de obras al escribir | 1 | en curso | estandar | `feature/F-042-ultima-fila-autocompletado` |
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 2 | pendiente | estandar | `feature/F-038-pestana-analitica` |
 | F-043 | Partida del modal de registro: buscador predictivo, ordenada y con selector CI/CD como en partes | 3 | pendiente | estandar | `feature/F-043-partida-predictiva-ci-cd` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 4 | pendiente | critico | `feature/F-044-recursos-vinculados` |
@@ -60,9 +62,9 @@ Resumen: **41 features**, 19 abiertas, 22 terminadas.
 
 ### F-042 · La última fila del cuadrante no abre el desplegable de obras al escribir
 
-estado **pendiente** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-042-ultima-fila-autocompletado`
+estado **en curso** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-042-ultima-fila-autocompletado`
 
-Fallo comunicado por el humano el 2026-10-07: «la última línea de la lista de trabajadores no funciona bien, al escribir la obra no sale el desplegable ni busca. Si reordeno y ese mismo trabajador no está el último, entonces sí funciona». Solo front (editor en línea y autocompletado de obras en services/dedicacion-front/static/js/app.js y su CSS): probablemente el desplegable se pinta fuera del área visible o queda recortado/tapado en la última fila. Reproducir primero.
+Fallo comunicado por el humano el 2026-10-07: «la última línea de la lista de trabajadores no funciona bien, al escribir la obra no sale el desplegable ni busca. Si reordeno y ese mismo trabajador no está el último, entonces sí funciona». Solo front (editor en línea y autocompletado de obras en services/dedicacion-front/static/js/app.js y su CSS): probablemente el desplegable se pinta fuera del área visible o queda recortado/tapado en la última fila. Reproducir primero. CAUSA (líder, 2026-10-07, solo lectura): el panel `.sugerencias` es `position: absolute` (top 40px, hasta 280px de alto) dentro de la tabla, y la tabla está en `.panel { overflow: hidden }` + `.panel-tabla { overflow-x: auto }`; en las filas intermedias el panel cae sobre las filas de abajo y se ve, en la última no hay nada debajo y queda recortado. Busca, pero no se ve. Plan A APROBADO por el humano el 2026-10-07 («la A»): posicionar el panel respecto a la ventana (`position: fixed`, coordenadas con getBoundingClientRect del campo), abrir hacia arriba si no cabe debajo, recolocar en scroll/resize y cerrar/limpiar al cerrar el editor; sin tocar teclado ni búsqueda. Descartada B (dejar hueco bajo la tabla).
 
 ### F-038 · Cuadro de mando: el Excel navegable con filtros en una pestaña de la app
 
