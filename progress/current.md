@@ -73,7 +73,10 @@ F-040 se desplegaron el 2026-10-07. El arnés es la **1.7.3**.
 humano): **F-042** (fallo: la última fila no abre el autocompletado de obras),
 **F-043** (partida del modal de registro con predictivo, ordenada y selector
 CI/CD como en `partes`) y **F-044** (repartir también los recursos vinculados
-al trabajador: teléfono, vehículo, gasoil…). Orden: F-042, F-038 (cuadro de
+al trabajador: teléfono, vehículo, gasoil…), **F-045** (Excel desglosado:
+pestaña de obras con la postventa en una línea agregada y pestaña de
+postventa con las obras agregadas) y **F-046** (cerrar y reabrir el periodo
+solo para ciertos usuarios). Orden: F-042, F-045, F-046, F-038 (cuadro de
 mando), F-043, F-044, F-028, F-021, F-030, F-036, F-031, F-033 y, detrás,
 F-017, F-018… F-041 está cerrada y pendiente de desplegar (solo el front).
 
