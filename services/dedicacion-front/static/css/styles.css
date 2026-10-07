@@ -377,8 +377,11 @@ tr.fila-editor > td {
   box-shadow: 0 0 0 3px var(--brand-soft);
 }
 
+/* F-042: fijo respecto a la ventana y colgado de <body>, fuera de la tabla
+   (ningún overflow lo recorta en la última fila). top, left, ancho y alto
+   los pone colocarSugerencias en app.js; aquí, el tope natural de 280 px. */
 .sugerencias {
-  position: absolute; top: 40px; left: 0; width: 430px; max-height: 280px;
+  position: fixed; left: 0; width: 430px; max-height: 280px;
   overflow-y: auto; background: var(--paper);
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
   box-shadow: 0 18px 38px -18px rgba(29, 32, 36, 0.45); z-index: 30;

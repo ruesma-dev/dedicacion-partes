@@ -70,8 +70,8 @@ def _node(programa: str) -> object:
 def _posicion(campo: dict, alto: float, ventana: dict) -> dict:
     programa = "\n".join([
         _funcion("posicionSugerencias"),
-        "process.stdout.write(JSON.stringify(posicionSugerencias("
-        f"{json.dumps(campo)}, {json.dumps(alto)}, {json.dumps(ventana)})));"])
+        ("process.stdout.write(JSON.stringify(posicionSugerencias("
+         f"{json.dumps(campo)}, {json.dumps(alto)}, {json.dumps(ventana)})));")])
     return _node(programa)
 
 
