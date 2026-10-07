@@ -548,6 +548,7 @@ function trabajadoresVisibles() {
 
 // ---------------------------------------------------------------- tabla
 function renderTabla() {
+  retirarSugerencias();             // F-042: el campo de obra se va a rehacer
   const cuerpo = $("#cuerpo");
   cuerpo.innerHTML = "";
   const visibles = trabajadoresVisibles();
@@ -994,9 +995,10 @@ function pintarEditor(editor) {
   inputObra.placeholder = "Añadir obra o Postv- (código o nombre)…";
   inputObra.autocomplete = "off";
   anadir.appendChild(inputObra);
+  // El panel de sugerencias NO va dentro de la fila: lo cuelga de <body>
+  // montarAutocompletado (F-042).
   const sugerencias = document.createElement("div");
   sugerencias.className = "sugerencias oculto";
-  anadir.appendChild(sugerencias);
   editor.appendChild(anadir);
   montarAutocompletado(inputObra, sugerencias, editor);
 
@@ -1122,9 +1124,68 @@ function chipEditable(linea, idx, editor) {
   return chip;
 }
 
+// ------------------------------------------- panel de sugerencias (F-042)
+// El panel cuelga de <body> y es `position: fixed` (styles.css): ni
+// `.panel { overflow: hidden }` ni `.panel-tabla { overflow-x: auto }` lo
+// recortan, también en la última fila. Hay uno solo a la vez; esta variable
+// guarda cómo quitar el vivo (su nodo y sus escuchas de scroll y resize).
+let desmontarSugerencias = null;
+
+// Dónde va el panel, en coordenadas de la ventana. `campo` es el
+// getBoundingClientRect() del campo de obra, `alto` el alto natural del
+// panel (con el tope de 280 px del CSS) y `ventana` {alto, ancho}. Debajo
+// del campo; si ahí no cabe y encima hay más sitio, encima. Nunca se sale de
+// la ventana: el ancho y el alto se limitan al sitio que hay.
+function posicionSugerencias(campo, alto, ventana) {
+  const HUECO = 4;     // entre el campo y el panel
+  const MARGEN = 8;    // con el borde de la ventana
+  const ancho = Math.min(430, ventana.ancho - 2 * MARGEN);
+  const left = Math.max(MARGEN, Math.min(campo.left, ventana.ancho - MARGEN - ancho));
+  const abajo = ventana.alto - campo.bottom - HUECO - MARGEN;
+  const arriba = campo.top - HUECO - MARGEN;
+  const haciaArriba = alto > abajo && arriba > abajo;
+  const altoMax = Math.max(0, Math.min(alto, haciaArriba ? arriba : abajo));
+  const top = haciaArriba ? campo.top - HUECO - altoMax : campo.bottom + HUECO;
+  return { top, left, ancho, altoMax, haciaArriba };
+}
+
+// Coloca el panel junto al campo (si está abierto).
+function colocarSugerencias(input, panel) {
+  if (panel.classList.contains("oculto")) return;
+  panel.style.maxHeight = "";       // alto natural, con el tope del CSS
+  const pos = posicionSugerencias(input.getBoundingClientRect(), panel.offsetHeight, {
+    alto: document.documentElement.clientHeight,
+    ancho: document.documentElement.clientWidth,
+  });
+  panel.style.top = `${pos.top}px`;
+  panel.style.left = `${pos.left}px`;
+  panel.style.width = `${pos.ancho}px`;
+  panel.style.maxHeight = `${pos.altoMax}px`;
+}
+
+// Quita el panel vivo y sus escuchas. La llaman renderTabla (cerrar el
+// editor, cambiar de fila o repintar destruyen el campo) y
+// montarAutocompletado antes de montar uno nuevo.
+function retirarSugerencias() {
+  if (desmontarSugerencias) desmontarSugerencias();
+  desmontarSugerencias = null;
+}
+
 function montarAutocompletado(input, panel, editor) {
   let candidatas = [];
   let activa = -1;
+
+  retirarSugerencias();
+  document.body.appendChild(panel);
+  const recolocar = () => colocarSugerencias(input, panel);
+  // En captura: el scroll de `.panel-tabla` no burbujea hasta window.
+  window.addEventListener("scroll", recolocar, true);
+  window.addEventListener("resize", recolocar);
+  desmontarSugerencias = () => {
+    window.removeEventListener("scroll", recolocar, true);
+    window.removeEventListener("resize", recolocar);
+    panel.remove();
+  };
 
   const refrescar = () => {
     const q = normalizar(input.value);
@@ -1147,6 +1208,7 @@ function montarAutocompletado(input, panel, editor) {
       panel.appendChild(fila);
     });
     panel.classList.toggle("oculto", !q || candidatas.length === 0);
+    colocarSugerencias(input, panel);
   };
 
   const marcarActiva = () => {

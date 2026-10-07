@@ -2075,3 +2075,62 @@ Informes: `progress/impl_F-041.md`, `progress/review_F-041.md`,
   10. «Limpiar»: la tabla queda como antes de filtrar (mismas filas y orden).
   Resultado: _pendiente_.
 
+## 2026-10-07 · F-042 · El desplegable de obras en la última fila
+
+Rama `feature/F-042-ultima-fila-autocompletado` · `sdd: false` · rigor
+`estandar` · **APROBADO** a la primera. Causa: el panel `.sugerencias`
+(`position: absolute`) quedaba recortado por `.panel { overflow: hidden }` /
+`.panel-tabla { overflow-x: auto }` en la última fila. Plan A del humano: el
+panel cuelga de `document.body` con `position: fixed`, junto al campo, abre
+hacia el lado con más sitio y se recoloca con scroll (en captura) y resize; se
+retira al cerrar el editor o re-renderizar. Sin cambios de teclado ni
+búsqueda; ningún test anterior cambiado; mutación manual 38 mutantes, 37
+muertos y 1 equivalente. Las observaciones 1 y 2 de la review se recogieron en
+la MANUAL; la 3 (los `test_f042_r3_*` comparan texto literal) queda como aviso
+para la próxima feature que toque el autocompletado. MANUAL cumplida por el
+humano en local («todo ok»).
+
+Informes: `progress/impl_F-042.md`, `progress/review_F-042.md`,
+`progress/mutacion_manual_F-042.md`. Sección retirada de `current.md`:
+
+### F-042 · El desplegable de obras en la última fila (en curso)
+
+- **Causa** (líder, solo lectura): el panel `.sugerencias` es `position:
+  absolute` dentro de la tabla, y `.panel { overflow: hidden }` /
+  `.panel-tabla { overflow-x: auto }` lo recortan. En las filas intermedias cae
+  sobre las de abajo; en la última no hay nada debajo y no se ve (sí busca).
+- **Plan A aprobado por el humano el 2026-10-07** («la A»): `sdd: false`, rigor
+  estándar, solo front (`static/js/app.js` y `static/css/styles.css`). El panel
+  se coloca respecto a la ventana (`position: fixed`) bajo el campo, se abre
+  hacia arriba si no cabe, se recoloca con scroll y resize, y se retira al
+  cerrar el editor. Sin cambios de teclado ni de búsqueda. Descartada la B.
+- **Estado:** implementada (T1-T4, `12272a9`..`cca97a5`), `init.sh` en verde;
+  informe en `progress/impl_F-042.md`, mutación manual en
+  `progress/mutacion_manual_F-042.md` (38 mutantes, 37 muertos, 1 equivalente).
+  El panel cuelga de `document.body` y, si no cabe por ningún lado, va al lado
+  con más sitio y recorta su alto. `dev` traído a la rama (F-045 y F-046 en el
+  backlog). **Review APROBADA** (`progress/review_F-042.md`); sus observaciones
+  1 y 2 (MANUAL fiel al foco y a lo que guarda, cierre sin paneles huérfanos y
+  scroll horizontal) ya están en la MANUAL. Aviso para la próxima feature que
+  toque el autocompletado: los `test_f042_r3_*` comparan texto literal a
+  propósito, habrá que actualizarlos y decirlo. **Espera la MANUAL del humano.**
+- **MANUAL (humano, en local, nada contra Azure):**
+  1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
+     y `.venv/Scripts/python main.py` (8090).
+  2. Front de esta rama: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-front`
+     y `.venv/Scripts/python main.py` (8080).
+  3. `http://127.0.0.1:8080`, **Ctrl+F5**, un periodo abierto.
+  4. **Última fila** de la tabla: Enter (el foco ya queda en el campo de obra)
+     → escribir parte de una obra → sale el desplegable (en una ventana normal,
+     **encima** del campo) → flechas + Enter → el cursor salta al % → teclear un
+     % y Enter → vuelve al campo de obra → escribir otra obra → vuelve a salir.
+     Ojo: lo elegido **se guarda** en la base local (nada va a Sigrid); se
+     deshace después con Ctrl+Z.
+  5. Lo mismo con un filtro que deje **una sola fila**, y con la ventana
+     pequeña (el desplegable se abre donde haya más sitio y se acorta).
+  6. Una fila intermedia: igual que antes.
+  7. Con el desplegable abierto, scroll de la página **y** scroll horizontal
+     de la tabla: el desplegable acompaña al campo.
+  8. Con el desplegable abierto, cerrar el editor (Esc dos veces, «Hecho» o
+     clic en otra fila): no queda ningún panel flotando.
+  Resultado: **todo ok** (humano, 2026-10-07).

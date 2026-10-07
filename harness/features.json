@@ -694,7 +694,7 @@
     {
       "id": "F-042",
       "title": "La última fila del cuadrante no abre el desplegable de obras al escribir",
-      "description": "Fallo comunicado por el humano el 2026-10-07: «la última línea de la lista de trabajadores no funciona bien, al escribir la obra no sale el desplegable ni busca. Si reordeno y ese mismo trabajador no está el último, entonces sí funciona». Solo front (editor en línea y autocompletado de obras en services/dedicacion-front/static/js/app.js y su CSS): probablemente el desplegable se pinta fuera del área visible o queda recortado/tapado en la última fila. Reproducir primero.",
+      "description": "Fallo comunicado por el humano el 2026-10-07: «la última línea de la lista de trabajadores no funciona bien, al escribir la obra no sale el desplegable ni busca. Si reordeno y ese mismo trabajador no está el último, entonces sí funciona». Solo front (editor en línea y autocompletado de obras en services/dedicacion-front/static/js/app.js y su CSS): probablemente el desplegable se pinta fuera del área visible o queda recortado/tapado en la última fila. Reproducir primero. CAUSA (líder, 2026-10-07, solo lectura): el panel `.sugerencias` es `position: absolute` (top 40px, hasta 280px de alto) dentro de la tabla, y la tabla está en `.panel { overflow: hidden }` + `.panel-tabla { overflow-x: auto }`; en las filas intermedias el panel cae sobre las filas de abajo y se ve, en la última no hay nada debajo y queda recortado. Busca, pero no se ve. Plan A APROBADO por el humano el 2026-10-07 («la A»): posicionar el panel respecto a la ventana (`position: fixed`, coordenadas con getBoundingClientRect del campo), abrir hacia arriba si no cabe debajo, recolocar en scroll/resize y cerrar/limpiar al cerrar el editor; sin tocar teclado ni búsqueda. Descartada B (dejar hueco bajo la tabla). CERRADA (done) el 2026-10-07: review APROBADA a la primera; MANUAL cumplida por el humano en local («todo ok»). PENDIENTE DE DESPLEGAR (solo front, junto con F-041).",
       "acceptance": [
         "Reproducido y explicada la causa con evidencia",
         "En la última fila (y en cualquier fila) el autocompletado de obras se abre, busca y deja elegir con el teclado como en las demás",
@@ -702,7 +702,7 @@
         "Test del front que fije el caso de la última fila; probado por el humano en local",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "done",
       "sdd": false,
       "rigor": "estandar",
       "priority": 1,
