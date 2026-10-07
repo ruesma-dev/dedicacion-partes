@@ -1,8 +1,26 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-037, F-039 y F-040 se desplegaron el
-2026-10-07 por la mañana, y F-041 y F-042 (solo el front) por la tarde. El arnés es la **1.7.3**.
+**F-047 en curso en esta rama** (`feature/F-047-tope-filas-transfer`, copia
+principal): corrección urgente, en producción no se registra en obras con más de
+2.000 partidas. F-037, F-039 y F-040 se desplegaron el 2026-10-07 por la
+mañana, y F-041 y F-042 (solo el front) por la tarde.
+
+## F-047 · Obras con más de 2.000 partidas: «respuesta truncada» (en curso)
+
+- **Fallo** (humano, 2026-10-07): Bas Leal, José María, septiembre 2026; el
+  preflight de la 0696 sale con «sigrid-api devolvio una respuesta truncada».
+- **Causa** (líder, lectura en Sigrid): `_read` del transfer pide `max_rows:
+  2000` fijo y `capitulos_de_obra` lee todo el presupuesto de la obra; la 0696
+  tiene 3.024 partidas. Igual en 0644, 0668, 0695, 0678, 0713, 0686, 0655, 0407…
+- **Plan aprobado por el humano el 2026-10-07** («ponle 200k. apruebo»): tope
+  configurable, 200.000 por defecto; el `truncated` sigue siendo error; ver si
+  un error en una obra bloquea las demás y proponerlo antes de tocarlo.
+  `sdd: false`, rigor crítico (producción), solo el transfer.
+- **Estado:** implementer lanzado.
+- **MANUAL (humano, en local, transfer en modo pruebas):** se concreta con el
+  comando exacto cuando termine el implementer.
+  Resultado: _pendiente_. El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
@@ -76,7 +94,7 @@ CI/CD como en `partes`) y **F-044** (repartir también los recursos vinculados
 al trabajador: teléfono, vehículo, gasoil…), **F-045** (Excel desglosado:
 pestaña de obras con la postventa en una línea agregada y pestaña de
 postventa con las obras agregadas) y **F-046** (cerrar y reabrir el periodo
-solo para ciertos usuarios). F-041 y F-042 desplegadas. Orden: F-045, F-046, F-038 (cuadro de
+solo para ciertos usuarios). F-041 y F-042 desplegadas. Orden: F-047 (urgente, en curso), F-045, F-046, F-038 (cuadro de
 mando), F-043, F-044, F-028, F-021, F-030, F-036, F-031, F-033 y, detrás,
 F-017, F-018… F-041 está cerrada y pendiente de desplegar (solo el front).
 

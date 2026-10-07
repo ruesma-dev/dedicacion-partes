@@ -778,6 +778,24 @@
       "rigor": "estandar",
       "priority": 3,
       "branch": "feature/F-046-permiso-cerrar-periodo"
+    },
+    {
+      "id": "F-047",
+      "title": "El transfer no registra en obras con más de 2.000 partidas («respuesta truncada»)",
+      "description": "Fallo en producción comunicado por el humano el 2026-10-07 (Bas Leal, José María, septiembre 2026): el preflight de la obra 0696 sale con «sigrid-api devolvio una respuesta truncada» y no se registra nada. CAUSA (líder, lectura en Sigrid vía sigrid-api): `SigridWriteClient._read` pide `max_rows: 2000` fijo (services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py:82) y `capitulos_de_obra` lee todo `obrparpar` de la obra para resolver la partida; la 0696 tiene 3.024 partidas (la 0699, 194). Afecta a toda obra con más de 2.000: hoy 0644 (3.752), 0668, 0695, 0678, 0713, 0686, 0655, 0407… (la mayor, `BD`, 26.812). sigrid-api desplegada admite 500.000 (azure-apps/sigrid_api.md §4.1). PLAN APROBADO por el humano el 2026-10-07 («ponle 200k. apruebo»): tope configurable en el transfer, por defecto 200.000; se MANTIENE el error ante `truncated` (nunca decidir con filas parciales, F-037 R7/R16); tests del tope enviado, del truncado y de una obra con más de 2.000 partidas; investigar si un error en una obra impide registrar las demás y, si es así, PROPONERLO al humano antes de tocarlo; preview local en modo pruebas de Bas Leal 2026-09 (solo lectura); desplegar solo el transfer. Avisar a `partes` de que compruebe su tope con estas obras.",
+      "acceptance": [
+        "El tope de filas de las lecturas del transfer es configurable y vale 200.000 por defecto (documentado en el .env.example y en INTEGRACION/azure-apps)",
+        "Una respuesta `truncated` sigue siendo un error: nunca se decide con filas parciales",
+        "Tests: el tope que se envía a sigrid-api, el truncado y una obra con más de 2.000 partidas resuelve su partida",
+        "Explicado con evidencia si un error en una obra impide registrar las demás; cualquier cambio de ese comportamiento, aprobado antes por el humano",
+        "MANUAL (humano): preview local en modo pruebas de Bas Leal 2026-09 sin «respuesta truncada» y con partida en la 0696",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "in_progress",
+      "sdd": false,
+      "rigor": "critico",
+      "priority": 1,
+      "branch": "feature/F-047-tope-filas-transfer"
     }
   ]
 }

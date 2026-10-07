@@ -3,12 +3,15 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **43 features**, 20 abiertas, 23 terminadas.
+Resumen: **44 features**, 21 abiertas, 23 terminadas.
+
+En curso: **F-047**.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
+| F-047 | El transfer no registra en obras con más de 2.000 partidas («respuesta truncada») | 1 | en curso | critico | `feature/F-047-tope-filas-transfer` |
 | F-045 | Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea | 2 | pendiente | estandar | `feature/F-045-excel-obras-postventa` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 3 | pendiente | estandar | `feature/F-046-permiso-cerrar-periodo` |
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 4 | pendiente | estandar | `feature/F-038-pestana-analitica` |
@@ -59,6 +62,12 @@ Resumen: **43 features**, 20 abiertas, 23 terminadas.
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
+
+### F-047 · El transfer no registra en obras con más de 2.000 partidas («respuesta truncada»)
+
+estado **en curso** · prioridad 1 · rigor `critico` · SDD no · rama `feature/F-047-tope-filas-transfer`
+
+Fallo en producción comunicado por el humano el 2026-10-07 (Bas Leal, José María, septiembre 2026): el preflight de la obra 0696 sale con «sigrid-api devolvio una respuesta truncada» y no se registra nada. CAUSA (líder, lectura en Sigrid vía sigrid-api): `SigridWriteClient._read` pide `max_rows: 2000` fijo (services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py:82) y `capitulos_de_obra` lee todo `obrparpar` de la obra para resolver la partida; la 0696 tiene 3.024 partidas (la 0699, 194). Afecta a toda obra con más de 2.000: hoy 0644 (3.752), 0668, 0695, 0678, 0713, 0686, 0655, 0407… (la mayor, `BD`, 26.812). sigrid-api desplegada admite 500.000 (azure-apps/sigrid_api.md §4.1). PLAN APROBADO por el humano el 2026-10-07 («ponle 200k. apruebo»): tope configurable en el transfer, por defecto 200.000; se MANTIENE el error ante `truncated` (nunca decidir con filas parciales, F-037 R7/R16); tests del tope enviado, del truncado y de una obra con más de 2.000 partidas; investigar si un error en una obra impide registrar las demás y, si es así, PROPONERLO al humano antes de tocarlo; preview local en modo pruebas de Bas Leal 2026-09 (solo lectura); desplegar solo el transfer. Avisar a `partes` de que compruebe su tope con estas obras.
 
 ### F-045 · Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea
 
