@@ -18,8 +18,8 @@
                                          },
                       "dedicacion-front":  {
                                                "repositorio":  "dedicacion-front",
-                                               "tag":  "r20261007-1408",
-                                               "publicado":  "2026-10-07T14:08:59",
+                                               "tag":  "r20261007-1734",
+                                               "publicado":  "2026-10-07T17:34:50",
                                                "nota":  "Publicado por build_images_dedicacion.ps1.",
                                                "digest":  "sha256:abd1b6f40e802b112a5d3a1ce2e580ba6bb4fc1149d895050adba72129cec8f3"
                                            }

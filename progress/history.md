@@ -2134,3 +2134,13 @@ Informes: `progress/impl_F-042.md`, `progress/review_F-042.md`,
   8. Con el desplegable abierto, cerrar el editor (Esc dos veces, «Hecho» o
      clic en otra fila): no queda ningún panel flotando.
   Resultado: **todo ok** (humano, 2026-10-07).
+
+## 2026-10-07 · Despliegue de F-041 y F-042 (solo el front)
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo front` desde
+`dev`: `front:r20261007-1734`, revisión `ca-dedicacion-front--r20261007173423`
+en `Running` (comprobado por el líder con `az containerapp show`, solo
+lectura). Sin cambios de contrato. Primer intento sin variables cargadas
+(«Falta $RG»); en el segundo no se cargó la copia local y `az account set`
+falló con la suscripción redactada, pero `az` siguió con la suscripción por
+defecto, que era la correcta. `azure-apps` actualizado en el mismo trabajo.

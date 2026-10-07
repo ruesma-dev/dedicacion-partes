@@ -1,21 +1,19 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-041 y F-042 están cerradas en `dev` y
-**pendientes de desplegar** (solo el front, sección siguiente). F-037, F-039 y
-F-040 se desplegaron el 2026-10-07. El arnés es la **1.7.3**.
-
-## ⚠ Despliegue de F-041 + F-042 (pendiente; lo lanza el humano)
-
-- Cambia **solo el front** (`.\redeploy_dedicacion.ps1 -Solo front`, desde
-  `dev`). Sin DDL ni sync.
-- **Comprobación F-041:** Ctrl+F5 y escribir `pos` en «Filtrar obra…» y en el
-  buscador global (`/`): salen los trabajadores con líneas `Postv-`.
-- **Comprobación F-042:** en la última fila del cuadrante, Enter y escribir
-  parte de una obra: sale el desplegable. Esc dos veces sin elegir.
+**Ninguna feature en ejecución.** F-037, F-039 y F-040 se desplegaron el
+2026-10-07 por la mañana, y F-041 y F-042 (solo el front) por la tarde. El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-07 (tarde): F-041 y F-042**, solo el front
+  (`r20261007-1734`, revisión `Running` comprobada con `az containerapp show`):
+  el filtro de obra casa con `Postv-` y la última fila abre el desplegable de
+  obras. **Comprobación pendiente del humano** (Ctrl+F5): `pos` en «Filtrar
+  obra…» y en `/`; en la última fila, Enter y escribir una obra (Esc dos veces).
+  Al lanzarlo salió `The subscription of 'redactado-ver-copia-local' doesn't
+  exist`: no se cargó `00_vars_dedicacion.local.ps1` y `az` siguió con la
+  suscripción por defecto, que era la buena. Ver «Lo que espera al humano».
 - **Desplegado el 2026-10-07: F-037, F-039 y F-040** (transfer
   `r20261007-0851`, api `r20261007-0852`, front `r20261007-0853`, en orden
   transfer → api → front). Desde ya, cada línea registrada lleva la cuenta
@@ -78,12 +76,17 @@ CI/CD como en `partes`) y **F-044** (repartir también los recursos vinculados
 al trabajador: teléfono, vehículo, gasoil…), **F-045** (Excel desglosado:
 pestaña de obras con la postventa en una línea agregada y pestaña de
 postventa con las obras agregadas) y **F-046** (cerrar y reabrir el periodo
-solo para ciertos usuarios). F-042 cerrada (pendiente de desplegar). Orden: F-045, F-046, F-038 (cuadro de
+solo para ciertos usuarios). F-041 y F-042 desplegadas. Orden: F-045, F-046, F-038 (cuadro de
 mando), F-043, F-044, F-028, F-021, F-030, F-036, F-031, F-033 y, detrás,
 F-017, F-018… F-041 está cerrada y pendiente de desplegar (solo el front).
 
 ## ⚠ Lo que espera al humano
 
+- **Cargar también la copia local de variables al desplegar.** El orden es
+  `. .\00_vars_dedicacion.ps1`, `. .\00_vars_dedicacion.local.ps1` y
+  `. .\00_capps_vars_dedicacion.ps1`. Si falta la local, `redeploy` sigue con
+  la suscripción por defecto de `az` (el 2026-10-07 acertó por suerte).
+  Propuesto al humano: que `redeploy` pare si `SUBSCRIPTION` está redactada.
 1. Decidir si se abren como features las dos observaciones de F-026: la fila
    de guardar/deshacer no conoce el mes, y el front no enseña `no_vigentes`.
 2. **Correcciones de la review del despliegue del 2026-10-01**
