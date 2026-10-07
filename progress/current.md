@@ -18,8 +18,12 @@ arnés es la **1.7.3**.
   se coloca respecto a la ventana (`position: fixed`) bajo el campo, se abre
   hacia arriba si no cabe, se recoloca con scroll y resize, y se retira al
   cerrar el editor. Sin cambios de teclado ni de búsqueda. Descartada la B.
-- **Estado:** implementada (T1-T4, `12272a9`..`0e2e0a9`), `init.sh` en verde;
-  informe en `progress/impl_F-042.md`. Pendiente: review y MANUAL del humano.
+- **Estado:** implementada (T1-T4, `12272a9`..`cca97a5`), `init.sh` en verde;
+  informe en `progress/impl_F-042.md`, mutación manual en
+  `progress/mutacion_manual_F-042.md` (38 mutantes, 37 muertos, 1 equivalente).
+  El panel cuelga de `document.body` y, si no cabe por ningún lado, va al lado
+  con más sitio y recorta su alto. `dev` traído a la rama (F-045 y F-046 en el
+  backlog). **Review lanzada.** Después, la MANUAL del humano.
 - **MANUAL (humano, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
@@ -103,7 +107,10 @@ arnés es la **1.7.3**.
 humano): **F-042** (fallo: la última fila no abre el autocompletado de obras),
 **F-043** (partida del modal de registro con predictivo, ordenada y selector
 CI/CD como en `partes`) y **F-044** (repartir también los recursos vinculados
-al trabajador: teléfono, vehículo, gasoil…). Orden: F-042, F-038 (cuadro de
+al trabajador: teléfono, vehículo, gasoil…), **F-045** (Excel desglosado:
+pestaña de obras con la postventa en una línea agregada y pestaña de
+postventa con las obras agregadas) y **F-046** (cerrar y reabrir el periodo
+solo para ciertos usuarios). Orden: F-042, F-045, F-046, F-038 (cuadro de
 mando), F-043, F-044, F-028, F-021, F-030, F-036, F-031, F-033 y, detrás,
 F-017, F-018… F-041 está cerrada y pendiente de desplegar (solo el front).
 
