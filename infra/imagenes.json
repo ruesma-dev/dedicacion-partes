@@ -4,8 +4,8 @@
     "servicios":  {
                       "dedicacion-transfer":  {
                                                   "repositorio":  "dedicacion-transfer",
-                                                  "tag":  "r20261007-0851",
-                                                  "publicado":  "2026-10-07T08:51:11",
+                                                  "tag":  "r20261007-2029",
+                                                  "publicado":  "2026-10-07T20:29:21",
                                                   "nota":  "Publicado por build_images_dedicacion.ps1.",
                                                   "digest":  "sha256:cf872c89d1bcc9dfd613baea8a0e196c87391edd0da2cf848100c21dff413e3f"
                                               },
