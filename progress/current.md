@@ -1,20 +1,16 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución en la copia principal.** F-037, F-039 y F-040
-se **desplegaron el 2026-10-07** (sección «Producción, hoy»). En paralelo, por decisión del
-humano: F-041 (implementándose) en `PycharmProjects/porcentajes-f041`. El arnés
-es la **1.7.3**.
+**Ninguna feature en ejecución.** F-041 se cerró el 2026-10-07 y está en `dev`
+**pendiente de desplegar** (solo el front, sección siguiente). F-037, F-039 y
+F-040 se desplegaron el 2026-10-07. El arnés es la **1.7.3**.
 
-## Features en paralelo (copia de trabajo aparte)
+## ⚠ Despliegue de F-041 (pendiente; lo lanza el humano)
 
-- **F-041 · Filtro de obra con el texto visible** (prioridad 3; implementándose
-  en su copia): spec aprobada con D1-D4 = A (`9b5fc46`) en `PycharmProjects/porcentajes-f041`, rama
-  `feature/F-041-filtro-obra-postventa`. La causa real: el buscador global no
-  casa con `Postv-` y la columna mezcla chips.
-- La copia tiene los `.venv` como uniones a los de esta carpeta; no tiene
-  `.env` (no se copia): para probar en local, abrir la rama en la carpeta
-  principal con `git checkout --detach <rama>`.
+- Cambia **solo el front** (`.\redeploy_dedicacion.ps1 -Solo front`, desde
+  `dev`). Sin DDL ni sync.
+- **Comprobación:** Ctrl+F5 y escribir `pos` en «Filtrar obra…» y en el
+  buscador global (`/`): salen los trabajadores con líneas `Postv-`.
 
 ## Producción, hoy
 
@@ -73,11 +69,10 @@ es la **1.7.3**.
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo (reordenado por el humano el
-2026-10-06): F-040 (Excel, cerrada), **F-038** (cuadro de mando = el Excel
-navegable), **F-041** (filtro de obra), **F-039** (cerrada, pendiente de desplegar),
-F-028 (plan aprobado), F-021, F-030, F-036 (solo spec de momento), F-031,
-F-033 y, detrás, F-017, F-018… F-037, F-039 y F-040 están desplegadas.
+`BACKLOG.md` tiene el orden completo. F-041 cerrada (pendiente de desplegar); ahora
+**F-038** (cuadro de mando = el Excel de F-040 navegable), F-028 (plan
+aprobado), F-021, F-030, F-036 (solo spec de momento), F-031, F-033 y, detrás,
+F-017, F-018… F-037, F-039 y F-040 están cerradas y desplegadas (2026-10-07).
 
 ## ⚠ Lo que espera al humano
 

@@ -2022,3 +2022,56 @@ orden transfer → api → front) desde `dev`: `transfer:r20261007-0851`,
 real. La api añade al arrancar las tres columnas de `obra` de F-039. Pendiente
 de confirmar: sync y preview (240 excluidas, `VAR-29`). `azure-apps`
 actualizado en el mismo trabajo.
+
+## 2026-10-07 · F-041 · El filtro de obra casa con el texto visible
+
+Rama `feature/F-041-filtro-obra-postventa` (copia `porcentajes-f041`) · `sdd:
+true` · rigor `estandar` · **APROBADO** en la pasada 2 (la 1 pidió solo rastro).
+Decisiones del humano D1-D4 = A (2026-10-06): fuera el alias «postventa», casado
+por línea, ocultar chips queda para F-021, tests de lógica en node. Una sola
+función con el texto visible del chip para la columna, el buscador global y
+las candidatas de «Completar al 100 %». Solo front; ningún test anterior
+cambiado; campaña manual de 20 mutantes sobre `app.js`, 0 supervivientes. **T6
+cumplida** por el humano en local («perfecto»).
+
+Informes: `progress/impl_F-041.md`, `progress/review_F-041.md`,
+`progress/mutacion_manual_F-041.md`. Sección retirada de `current.md`:
+
+## F-041 · Filtro de obra con el texto visible (en curso)
+
+- **Qué es** (pedida el 2026-10-06): el filtro de obra, el buscador global y las
+  candidatas de «Completar al 100 %» casan con el texto tal como sale en el
+  chip (`Postv-…`), por línea y sin mayúsculas ni tildes. Causa real: el
+  buscador global no casaba con `Postv-` y la columna mezclaba chips. Spec
+  `specs/F-041-filtro-obra-postventa/`, aprobada con D1-D4 = A (`9b5fc46`).
+- **Implementación terminada** (`progress/impl_F-041.md`, `a448ffc`…`e57675f`):
+  solo front; ningún test anterior cambiado; la herramienta de mutación no muta
+  JavaScript → campaña manual de 20 mutantes, 0 supervivientes
+  (`progress/mutacion_manual_F-041.md`). **Review 1: CAMBIOS PEDIDOS solo por
+  este fichero** (MANUAL incompleta y restos caducados), corregidos por el líder
+  trayendo `dev` a la rama; código, tests y campaña sin objeciones hasta
+  `d2bc7f9`. **Review 2: APROBADO.** Para el `done` solo falta la T6 del humano.
+- **MANUAL (humano, T6, en local, nada contra Azure):**
+  1. Api local de siempre: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
+     y `.venv/Scripts/python main.py` (8090).
+  2. Parar cualquier otro front en el 8080 y arrancar el de esta copia:
+     `cd C:/Users/pgris/PycharmProjects/porcentajes-f041/services/dedicacion-front`
+     y `.venv/Scripts/python main.py`.
+  3. Abrir `http://127.0.0.1:8080`, **Ctrl+F5**, y un periodo con líneas `Postv-`.
+  4. En «Filtrar obra…», letra a letra: `p`, `po`, `pos`, `post`, `postv`,
+     `postv-`, `postv-0656`. Esperado: con `pos` salen los que tienen alguna
+     `Postv-` (y quien tenga «pos» en el nombre de una obra); desde `post`, solo
+     postventa; con cada letra, la lista igual o más corta.
+  5. Esc, y lo mismo en el buscador global (tecla `/`): el mismo comportamiento.
+  6. `postventa` en «Filtrar obra…»: nadie (D1 = A).
+  7. Un trozo del nombre de una obra con tilde, sin ella y en mayúsculas
+     (`DEPOSITO`): casa igual.
+  8. Alguien con una obra normal y una `Postv-` de otra: `<nombre de la normal>
+     postv` (p. ej. `naves postv`) ya NO sale en la columna (D2), sí en el
+     buscador global.
+  9. Con `postv` en «Filtrar obra…», Ctrl+clic en dos filas y **C**: el diálogo
+     sale precargado con `postv` y solo ofrece entradas `Postv-`. **Cerrar con
+     Esc, SIN completar** (es el único paso que abre un diálogo que escribe).
+  10. «Limpiar»: la tabla queda como antes de filtrar (mismas filas y orden).
+  Resultado: _pendiente_.
+

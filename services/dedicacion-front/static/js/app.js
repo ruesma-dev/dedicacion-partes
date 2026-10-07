@@ -82,6 +82,24 @@ function normalizar(texto) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+// Etiqueta de una obra tal como la pinta la app: «Postv-» delante si es de
+// postventa; el código, tal cual, en otro caso (F-041, R1).
+function etiquetaObra(cod, esPostventa) {
+  return (esPostventa ? "Postv-" : "") + cod;
+}
+
+// Texto visible: etiqueta y descripción, lo que enseñan el chip, su `title` y
+// el autocompletado. De aquí salen todos los casados de obra (F-041, R2).
+function textoObra(cod, descripcion, esPostventa) {
+  return etiquetaObra(cod, esPostventa) + " " + (descripcion || "");
+}
+
+// ¿La línea del cuadrante casa con el filtro? `q` llega ya normalizado
+// (F-041, R4). F-021 la reutilizará para saber qué chip casa.
+function lineaCasa(l, q) {
+  return normalizar(textoObra(l.cod, l.descripcion, l.es_postventa)).includes(q);
+}
+
 function fmtPct(valor) {
   const n = Math.round(valor * 100) / 100;
   const texto = Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0+$/, "");
@@ -232,20 +250,20 @@ function aplicarCuadrante(datos) {
 function construirCatalogoObras() {
   // F-025: la API decide qué se ofrece. La entrada normal, si la obra está
   // `activa`; la `Postv-`, si `admite_postventa` (una obra cerrada puede
-  // ofrecerse solo como `Postv-`).
+  // ofrecerse solo como `Postv-`). F-041: la clave es el texto visible de la
+  // entrada, sin alias (D1): casa lo mismo que su chip en la columna (R11).
   state.catalogoObras = [];
   state.obras.forEach((o) => {
     if (o.activa) {
       state.catalogoObras.push({
-        obra: o, pv: false, cod: o.cod,
-        clave: normalizar(o.cod + " " + o.descripcion),
+        obra: o, pv: false, cod: etiquetaObra(o.cod, false),
+        clave: normalizar(textoObra(o.cod, o.descripcion, false)),
       });
     }
     if (o.admite_postventa) {
       state.catalogoObras.push({
-        obra: o, pv: true, cod: "Postv-" + o.cod,
-        clave: normalizar("postv postventa postv-" + o.cod + " " +
-                          o.cod + " " + o.descripcion),
+        obra: o, pv: true, cod: etiquetaObra(o.cod, true),
+        clave: normalizar(textoObra(o.cod, o.descripcion, true)),
       });
     }
   });
@@ -472,13 +490,7 @@ const ORDEN_ESTADO = { SIN_CARGA: 0, FALTA: 1, EXCESO: 2, OK: 3 };
 function textoColumna(t, clave) {
   if (clave === "nombre") return t.nombre;
   if (clave === "categoria") return t.categoria || "";
-  if (clave === "asignaciones") {
-    return t.lineas
-      .map((l) =>
-        (l.es_postventa ? "postv postv-" : "") + l.cod + " " + l.descripcion
-      )
-      .join(" ");
-  }
+  // La columna de obras no pasa por aquí: casa línea a línea (F-041, R4).
   if (clave === "total") {
     const partes = [fmtPct(t.total), String(Math.round(t.total))];
     if (t.estado === "OK") partes.push("ok 100");
@@ -499,14 +511,19 @@ function trabajadoresVisibles() {
     if (state.soloPendientes && t.estado === "OK") return false;
     for (const clave of state.columnas) {
       const filtro = normalizar(state.filtrosCol[clave] || "");
-      if (filtro && !normalizar(textoColumna(t, clave)).includes(filtro)) {
-        return false;
-      }
+      if (!filtro) continue;
+      // Obras: alguna línea cuyo texto visible case, no todas juntas (D2).
+      const casa = clave === "asignaciones"
+        ? t.lineas.some((l) => lineaCasa(l, filtro))
+        : normalizar(textoColumna(t, clave)).includes(filtro);
+      if (!casa) return false;
     }
     if (!q) return true;
+    // Buscador libre de la fila: todos los campos juntos, y de cada línea su
+    // texto visible, con su `Postv-` (F-041, R9).
     const pajar = normalizar(
       t.nombre + " " + (t.categoria || "") + " " +
-      t.lineas.map((l) => l.cod + " " + l.descripcion).join(" ")
+      t.lineas.map((l) => textoObra(l.cod, l.descripcion, l.es_postventa)).join(" ")
     );
     return pajar.includes(q);
   });
@@ -859,8 +876,7 @@ function construirCelda(t, clave) {
             ? " · la obra no es de la empresa de las obras: no se registrará"
             : "");
         chip.innerHTML =
-          `<span class="cod">${l.es_postventa ? "Postv-" : ""}` +
-          `${escapeHtml(l.cod)}</span>` +
+          `<span class="cod">${escapeHtml(etiquetaObra(l.cod, l.es_postventa))}</span>` +
           `<span class="pct">${fmtPct(l.porcentaje)}</span>`;
         chips.appendChild(chip);
       });
@@ -1031,7 +1047,7 @@ function chipEditable(linea, idx, editor) {
 
   const cod = document.createElement("span");
   cod.className = "cod";
-  cod.textContent = (linea.es_postventa ? "Postv-" : "") + linea.cod;
+  cod.textContent = etiquetaObra(linea.cod, linea.es_postventa);
   cod.title = linea.descripcion;
   chip.appendChild(cod);
 
