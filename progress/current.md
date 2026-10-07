@@ -69,10 +69,13 @@ F-040 se desplegaron el 2026-10-07. El arnés es la **1.7.3**.
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. F-041 cerrada (pendiente de desplegar); ahora
-**F-038** (cuadro de mando = el Excel de F-040 navegable), F-028 (plan
-aprobado), F-021, F-030, F-036 (solo spec de momento), F-031, F-033 y, detrás,
-F-017, F-018… F-037, F-039 y F-040 están cerradas y desplegadas (2026-10-07).
+`BACKLOG.md` tiene el orden completo. Nuevas el 2026-10-07 (pedidas por el
+humano): **F-042** (fallo: la última fila no abre el autocompletado de obras),
+**F-043** (partida del modal de registro con predictivo, ordenada y selector
+CI/CD como en `partes`) y **F-044** (repartir también los recursos vinculados
+al trabajador: teléfono, vehículo, gasoil…). Orden: F-042, F-038 (cuadro de
+mando), F-043, F-044, F-028, F-021, F-030, F-036, F-031, F-033 y, detrás,
+F-017, F-018… F-041 está cerrada y pendiente de desplegar (solo el front).
 
 ## ⚠ Lo que espera al humano
 

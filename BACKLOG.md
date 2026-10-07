@@ -3,13 +3,16 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **38 features**, 16 abiertas, 22 terminadas.
+Resumen: **41 features**, 19 abiertas, 22 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
+| F-042 | La última fila del cuadrante no abre el desplegable de obras al escribir | 1 | pendiente | estandar | `feature/F-042-ultima-fila-autocompletado` |
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 2 | pendiente | estandar | `feature/F-038-pestana-analitica` |
+| F-043 | Partida del modal de registro: buscador predictivo, ordenada y con selector CI/CD como en partes | 3 | pendiente | estandar | `feature/F-043-partida-predictiva-ci-cd` |
+| F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 4 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-028 | Borrar todo lo que está en pantalla | 5 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 6 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 7 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
@@ -55,11 +58,29 @@ Resumen: **38 features**, 16 abiertas, 22 terminadas.
 
 ## Detalle
 
+### F-042 · La última fila del cuadrante no abre el desplegable de obras al escribir
+
+estado **pendiente** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-042-ultima-fila-autocompletado`
+
+Fallo comunicado por el humano el 2026-10-07: «la última línea de la lista de trabajadores no funciona bien, al escribir la obra no sale el desplegable ni busca. Si reordeno y ese mismo trabajador no está el último, entonces sí funciona». Solo front (editor en línea y autocompletado de obras en services/dedicacion-front/static/js/app.js y su CSS): probablemente el desplegable se pinta fuera del área visible o queda recortado/tapado en la última fila. Reproducir primero.
+
 ### F-038 · Cuadro de mando: el Excel navegable con filtros en una pestaña de la app
 
 estado **pendiente** · prioridad 2 · rigor `estandar` · SDD sí · rama `feature/F-038-pestana-analitica`
 
 Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar el Excel (F-020). Una pestaña nueva en el front con cuadros y análisis de la dedicación: por obra, por trabajador, por empresa, por categoría y por mes, y su evolución. Qué cuadros, con qué cortes y si llevan coste (dedicación × importe mensual del recurso, P3) se decide en la spec con el humano. Los cálculos y agregados los hace la API (el front no lleva lógica de negocio); solo lectura de la base `dedicacion`, nada en Sigrid. Si incluye coste, cuidar quién lo ve. REDEFINIDA por el humano el 2026-10-06: «crear una pestaña que genere un cuadro de mando que sea el excel (que sea navegable con filtros, etc.)»; usa F-038 en vez de abrir otra feature, con prioridad 2, detrás de F-040 (el Excel del modelo de Juan, que define el contenido: Detalle y Resumen).
+
+### F-043 · Partida del modal de registro: buscador predictivo, ordenada y con selector CI/CD como en partes
+
+estado **pendiente** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-043-partida-predictiva-ci-cd`
+
+Pedida por el humano el 2026-10-07: «cuando registro y me sale el modal de registrar, quiero que el desplegable de partida no solo sea desplegable, sino que pueda escribir con predictivo. Además la lista debe estar ordenada y, como en partes, que tenga un selector CI CD para que filtre (en partes está muy bien eso)». Mirar cómo lo hace el front de `partes` (C:/Users/pgris/PycharmProjects/partes, sv4) y llevarlo aquí. Presentación: la lista de partidas viene del preflight; el front no decide qué partida se registra salvo lo que elija el usuario.
+
+### F-044 · Aplicar los porcentajes también a los recursos vinculados al trabajador
+
+estado **pendiente** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-044-recursos-vinculados`
+
+Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte).
 
 ### F-028 · Borrar todo lo que está en pantalla
 
