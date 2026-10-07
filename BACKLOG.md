@@ -3,16 +3,13 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **38 features**, 17 abiertas, 21 terminadas.
-
-En curso: **F-041**.
+Resumen: **38 features**, 16 abiertas, 22 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 2 | pendiente | estandar | `feature/F-038-pestana-analitica` |
-| F-041 | El filtro de obra casa con el texto tal como sale en la app (incluido Postv-) | 3 | en curso | estandar | `feature/F-041-filtro-obra-postventa` |
 | F-028 | Borrar todo lo que está en pantalla | 5 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
 | F-021 | Filtro por obra: solo su chip y los recursos asignados en Sesame | 6 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-030 | Dedicación por días, bajas e incidencias con calendario del trabajador | 7 | pendiente | critico | `feature/F-030-dias-bajas-incidencias` |
@@ -47,6 +44,7 @@ En curso: **F-041**.
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | critico |
 | F-008 | Infraestructura y despliegue en Azure | 3 | critico |
 | F-029 | Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada | 3 | estandar |
+| F-041 | El filtro de obra casa con el texto tal como sale en la app (incluido Postv-) | 3 | estandar |
 | F-004 | README del monorepo y arranque local en orden | 4 | documental |
 | F-013 | Una linea sin partida no se escribe en silencio | 4 | critico |
 | F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | documental |
@@ -62,12 +60,6 @@ En curso: **F-041**.
 estado **pendiente** · prioridad 2 · rigor `estandar` · SDD sí · rama `feature/F-038-pestana-analitica`
 
 Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar el Excel (F-020). Una pestaña nueva en el front con cuadros y análisis de la dedicación: por obra, por trabajador, por empresa, por categoría y por mes, y su evolución. Qué cuadros, con qué cortes y si llevan coste (dedicación × importe mensual del recurso, P3) se decide en la spec con el humano. Los cálculos y agregados los hace la API (el front no lleva lógica de negocio); solo lectura de la base `dedicacion`, nada en Sigrid. Si incluye coste, cuidar quién lo ve. REDEFINIDA por el humano el 2026-10-06: «crear una pestaña que genere un cuadro de mando que sea el excel (que sea navegable con filtros, etc.)»; usa F-038 en vez de abrir otra feature, con prioridad 2, detrás de F-040 (el Excel del modelo de Juan, que define el contenido: Detalle y Resumen).
-
-### F-041 · El filtro de obra casa con el texto tal como sale en la app (incluido Postv-)
-
-estado **en curso** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-041-filtro-obra-postventa`
-
-Pedida por el humano el 2026-10-06: «al filtrar por obra no filtra bien postventa. Quiero filtrar todas las obras de postventa (es decir, empiezan por Postv-), y me gustaría que si pongo pos, y voy completando, filtre por texto incluido en el nombre de la obra tal cual sale en la app». Causa vista por el líder: el filtro de la columna de asignaciones (`trabajadoresVisibles` y `textoColumna` en services/dedicacion-front/static/js/app.js) compara con `l.cod` y `l.descripcion`, no con la etiqueta que pinta el chip (`Postv-0656 …`, y `VAR-29` cuando llegue F-039). Es presentación: solo front. 2026-10-06: el humano pide spec («lanza spec del filtro»): pasa a sdd. 2026-10-06: SPEC en specs/F-041-filtro-obra-postventa/ (spec_ready). Causa comprobada en node: la columna ya casaba con Postv-; el que no es el buscador global, y la columna casaba a caballo entre chips. 2026-10-06: spec APROBADA por el humano con D1-D4 = A (requirements.md §6). Tests anteriores que cambian: ninguno (prototipo). 2026-10-06: pasa a implementación en su copia (porcentajes-f041), en paralelo con las MANUAL de F-039 y F-040.
 
 ### F-028 · Borrar todo lo que está en pantalla
 
@@ -242,6 +234,12 @@ Hoy no hay nada desplegado ni carpeta infra/. Provisionar los recursos siguiendo
 estado **terminada** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-029-seleccion-multiple-completar-100`
 
 Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas con Ctrl (sueltas) y Shift (rango) y aplicarles una acción que asigna a la obra filtrada. Decisión del humano 2026-09-29: COMPLETA HASTA EL 100 %, es decir, a cada trabajador le pone en la obra filtrada lo que le falte para llegar al 100 %, sin tocar sus otras obras. Depende del filtro por obra (F-021). El cálculo de lo que falta vive en la API, no en app.js. 2026-10-05: el humano la pone por delante de F-021 (trabaja con el filtro de obra que ya existe; Sesame queda en F-021). SPEC en specs/F-029-seleccion-multiple-completar-100/, con decisiones abiertas D1-D6 en requirements.md §6 y lista cerrada de tests anteriores que cambian: ninguno (comprobado con un prototipo). 2026-10-05: spec APROBADA por el humano con D1-D6 = A (las recomendadas). Pasa a implementación. CONDICIÓN DEL HUMANO: antes de desplegar quiere probar la usabilidad en local (T9). CERRADA (done) el 2026-10-05: review pasada 2 APROBADA; T9 (usabilidad en local) cumplida por el humano: «está todo ok, podemos desplegarlo». PENDIENTE DE DESPLEGAR (api y front; sin DDL ni sync). DESPLEGADA el 2026-10-06 (api r20261006-1140, front r20261006-1141).
+
+### F-041 · El filtro de obra casa con el texto tal como sale en la app (incluido Postv-)
+
+estado **terminada** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-041-filtro-obra-postventa`
+
+Pedida por el humano el 2026-10-06: «al filtrar por obra no filtra bien postventa. Quiero filtrar todas las obras de postventa (es decir, empiezan por Postv-), y me gustaría que si pongo pos, y voy completando, filtre por texto incluido en el nombre de la obra tal cual sale en la app». Causa vista por el líder: el filtro de la columna de asignaciones (`trabajadoresVisibles` y `textoColumna` en services/dedicacion-front/static/js/app.js) compara con `l.cod` y `l.descripcion`, no con la etiqueta que pinta el chip (`Postv-0656 …`, y `VAR-29` cuando llegue F-039). Es presentación: solo front. 2026-10-06: el humano pide spec («lanza spec del filtro»): pasa a sdd. 2026-10-06: SPEC en specs/F-041-filtro-obra-postventa/ (spec_ready). Causa comprobada en node: la columna ya casaba con Postv-; el que no es el buscador global, y la columna casaba a caballo entre chips. 2026-10-06: spec APROBADA por el humano con D1-D4 = A (requirements.md §6). Tests anteriores que cambian: ninguno (prototipo). 2026-10-06: pasa a implementación en su copia (porcentajes-f041), en paralelo con las MANUAL de F-039 y F-040. CERRADA (done) el 2026-10-07: review pasada 2 APROBADA; T6 cumplida por el humano en local («perfecto»). PENDIENTE DE DESPLEGAR (solo front).
 
 ### F-004 · README del monorepo y arranque local en orden
 

@@ -1,49 +1,16 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-041 en curso en esta rama** (filtro de obra con el texto visible, `Postv-`),
-rama `feature/F-041-filtro-obra-postventa`, en la copia
-`PycharmProjects/porcentajes-f041`. En la copia principal no hay ninguna feature
-en ejecución: F-037, F-039 y F-040 se **desplegaron el 2026-10-07** (sección
-«Producción, hoy»). El arnés es la **1.7.3**.
+**Ninguna feature en ejecución.** F-041 se cerró el 2026-10-07 y está en `dev`
+**pendiente de desplegar** (solo el front, sección siguiente). F-037, F-039 y
+F-040 se desplegaron el 2026-10-07. El arnés es la **1.7.3**.
 
-## F-041 · Filtro de obra con el texto visible (en curso)
+## ⚠ Despliegue de F-041 (pendiente; lo lanza el humano)
 
-- **Qué es** (pedida el 2026-10-06): el filtro de obra, el buscador global y las
-  candidatas de «Completar al 100 %» casan con el texto tal como sale en el
-  chip (`Postv-…`), por línea y sin mayúsculas ni tildes. Causa real: el
-  buscador global no casaba con `Postv-` y la columna mezclaba chips. Spec
-  `specs/F-041-filtro-obra-postventa/`, aprobada con D1-D4 = A (`9b5fc46`).
-- **Implementación terminada** (`progress/impl_F-041.md`, `a448ffc`…`e57675f`):
-  solo front; ningún test anterior cambiado; la herramienta de mutación no muta
-  JavaScript → campaña manual de 20 mutantes, 0 supervivientes
-  (`progress/mutacion_manual_F-041.md`). **Review 1: CAMBIOS PEDIDOS solo por
-  este fichero** (MANUAL incompleta y restos caducados), corregidos por el líder
-  trayendo `dev` a la rama; código, tests y campaña sin objeciones hasta
-  `d2bc7f9`. **Review 2: APROBADO.** Para el `done` solo falta la T6 del humano.
-- **MANUAL (humano, T6, en local, nada contra Azure):**
-  1. Api local de siempre: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
-     y `.venv/Scripts/python main.py` (8090).
-  2. Parar cualquier otro front en el 8080 y arrancar el de esta copia:
-     `cd C:/Users/pgris/PycharmProjects/porcentajes-f041/services/dedicacion-front`
-     y `.venv/Scripts/python main.py`.
-  3. Abrir `http://127.0.0.1:8080`, **Ctrl+F5**, y un periodo con líneas `Postv-`.
-  4. En «Filtrar obra…», letra a letra: `p`, `po`, `pos`, `post`, `postv`,
-     `postv-`, `postv-0656`. Esperado: con `pos` salen los que tienen alguna
-     `Postv-` (y quien tenga «pos» en el nombre de una obra); desde `post`, solo
-     postventa; con cada letra, la lista igual o más corta.
-  5. Esc, y lo mismo en el buscador global (tecla `/`): el mismo comportamiento.
-  6. `postventa` en «Filtrar obra…»: nadie (D1 = A).
-  7. Un trozo del nombre de una obra con tilde, sin ella y en mayúsculas
-     (`DEPOSITO`): casa igual.
-  8. Alguien con una obra normal y una `Postv-` de otra: `<nombre de la normal>
-     postv` (p. ej. `naves postv`) ya NO sale en la columna (D2), sí en el
-     buscador global.
-  9. Con `postv` en «Filtrar obra…», Ctrl+clic en dos filas y **C**: el diálogo
-     sale precargado con `postv` y solo ofrece entradas `Postv-`. **Cerrar con
-     Esc, SIN completar** (es el único paso que abre un diálogo que escribe).
-  10. «Limpiar»: la tabla queda como antes de filtrar (mismas filas y orden).
-  Resultado: _pendiente_.
+- Cambia **solo el front** (`.\redeploy_dedicacion.ps1 -Solo front`, desde
+  `dev`). Sin DDL ni sync.
+- **Comprobación:** Ctrl+F5 y escribir `pos` en «Filtrar obra…» y en el
+  buscador global (`/`): salen los trabajadores con líneas `Postv-`.
 
 ## Producción, hoy
 
@@ -102,8 +69,8 @@ en ejecución: F-037, F-039 y F-040 se **desplegaron el 2026-10-07** (sección
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Ahora **F-041** (en curso, esta rama);
-después **F-038** (cuadro de mando = el Excel de F-040 navegable), F-028 (plan
+`BACKLOG.md` tiene el orden completo. F-041 cerrada (pendiente de desplegar); ahora
+**F-038** (cuadro de mando = el Excel de F-040 navegable), F-028 (plan
 aprobado), F-021, F-030, F-036 (solo spec de momento), F-031, F-033 y, detrás,
 F-017, F-018… F-037, F-039 y F-040 están cerradas y desplegadas (2026-10-07).
 
