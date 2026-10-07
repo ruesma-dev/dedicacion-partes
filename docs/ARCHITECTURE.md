@@ -671,6 +671,11 @@ Reglas duras:
   seguir con datos a medias. No pagina —hoy no le hace falta con `max_rows`
   a 5.000 y unos 156 empleados—, así que si el volumen crece, lo que hay que
   añadir es paginación, no subir el tope.
+  El **transfer** es la excepción, por decisión del humano del 2026-10-07
+  (F-047): pide **200.000** (`SIGRID_MAX_ROWS`) porque lee el presupuesto
+  entero de una obra (`obrparpar`) para resolver la partida, y con el 2.000
+  fijo de antes las obras más grandes no se podían registrar (la 0696 tiene
+  3.024 partidas; `BD`, 26.812). También lanza ante `truncated`.
 - Documentación del sistema origen: `azure-apps/sigrid_api.md` (la pasarela)
   y `azure-apps/sigrid_tablas.md` (diccionario de tablas). No se duplican
   aquí, se enlazan.
