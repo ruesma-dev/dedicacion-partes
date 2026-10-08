@@ -22,7 +22,7 @@ ruta, puerto ni `config.yaml`.
 - «RESTO POSTVENTA» **no existe en el sistema**. Es el rótulo del modelo de Juan que F-040 D6
   descartó para el detalle. Aquí vuelve como línea agregada de la pestaña Obras (D6).
 
-## Decisiones abiertas (las decide el humano; recomendada = A)
+## Decisiones (DECIDIDAS por el humano el 2026-10-08: todas A, «todo A»)
 
 Los R están escritos con todas en A y marcan con `[Dn]` de cuál dependen; otra opción obliga
 a reescribir esos R antes de implementar.

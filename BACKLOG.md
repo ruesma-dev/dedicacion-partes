@@ -5,12 +5,14 @@
 
 Resumen: **45 features**, 21 abiertas, 24 terminadas.
 
+En curso: **F-045**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-048 | Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas») | 1 | pendiente | estandar | `feature/F-048-aviso-obra-fallida` |
-| F-045 | Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea | 2 | spec lista | estandar | `feature/F-045-excel-obras-postventa` |
+| F-045 | Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea | 2 | en curso | estandar | `feature/F-045-excel-obras-postventa` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 3 | pendiente | estandar | `feature/F-046-permiso-cerrar-periodo` |
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 4 | pendiente | estandar | `feature/F-038-pestana-analitica` |
 | F-043 | Partida del modal de registro: buscador predictivo, ordenada y con selector CI/CD como en partes | 5 | pendiente | estandar | `feature/F-043-partida-predictiva-ci-cd` |
@@ -70,9 +72,9 @@ Pedida por el humano el 2026-10-07 («2 ok»), a raíz de F-047: cuando una obra
 
 ### F-045 · Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea
 
-estado **spec lista** · prioridad 2 · rigor `estandar` · SDD sí · rama `feature/F-045-excel-obras-postventa`
+estado **en curso** · prioridad 2 · rigor `estandar` · SDD sí · rama `feature/F-045-excel-obras-postventa`
 
-Pedida por el humano el 2026-10-07: «desglosar excel, la postventa va [en] una pestaña independiente, y se crea otra [de] obra donde sale una línea agregada de postventa en el recurso. En la postventa sale la línea agregada de obras xxx en el recurso, de forma que en ambas pestañas sale detallado en una postventa y en otra obra». Lectura del líder (a confirmar en la spec): sobre el Excel de F-040 (Detalle agrupado por trabajador y Resumen; services/dedicacion-api/infrastructure/excel/), dos pestañas de detalle por trabajador: «Obras», con el detalle de sus obras y UNA línea agregada con la suma de toda su postventa; y «Postventa», con el detalle de sus líneas Postv- y UNA línea agregada con la suma de todas sus obras. Así cada trabajador suma lo mismo en las dos pestañas y cada una detalla una parte. Solo la api (exportador); el agregado lo calcula la api, no el front. DECISIONES PARA LA SPEC: si «Obras» sustituye a «Detalle» o se añade; si se mantiene «Resumen» y cómo; si en «Postventa» salen los trabajadores sin postventa; dónde va VAR (VAR-NN) y el «RESTO POSTVENTA»; el texto de las líneas agregadas («POSTVENTA» / «OBRAS») y su formato (color, negrita) dentro de las bandas por trabajador de F-040; si conservan las celdas combinadas y el autofiltro de F-040. Afecta a F-038 (cuadro de mando «que sea el Excel»), por eso va delante de ella.
+Pedida por el humano el 2026-10-07: «desglosar excel, la postventa va [en] una pestaña independiente, y se crea otra [de] obra donde sale una línea agregada de postventa en el recurso. En la postventa sale la línea agregada de obras xxx en el recurso, de forma que en ambas pestañas sale detallado en una postventa y en otra obra». Lectura del líder (a confirmar en la spec): sobre el Excel de F-040 (Detalle agrupado por trabajador y Resumen; services/dedicacion-api/infrastructure/excel/), dos pestañas de detalle por trabajador: «Obras», con el detalle de sus obras y UNA línea agregada con la suma de toda su postventa; y «Postventa», con el detalle de sus líneas Postv- y UNA línea agregada con la suma de todas sus obras. Así cada trabajador suma lo mismo en las dos pestañas y cada una detalla una parte. Solo la api (exportador); el agregado lo calcula la api, no el front. DECISIONES PARA LA SPEC: si «Obras» sustituye a «Detalle» o se añade; si se mantiene «Resumen» y cómo; si en «Postventa» salen los trabajadores sin postventa; dónde va VAR (VAR-NN) y el «RESTO POSTVENTA»; el texto de las líneas agregadas («POSTVENTA» / «OBRAS») y su formato (color, negrita) dentro de las bandas por trabajador de F-040; si conservan las celdas combinadas y el autofiltro de F-040. Afecta a F-038 (cuadro de mando «que sea el Excel»), por eso va delante de ella. 2026-10-07: spec escrita (`specs/F-045-excel-obras-postventa/`) con D1-D9. SPEC APROBADA por el humano el 2026-10-08 con D1-D9 = A («todo A»): Obras sustituye a Detalle; Resumen igual; todos los trabajadores en las dos; sin agregada vacía; VAR en Obras; agregada «POSTVENTA / RESTO POSTVENTA» y «OBRAS / RESTO OBRAS» en cursiva; combinadas y autofiltro como F-040; Total del trabajador completo. Cambian 12 tests anteriores (lista cerrada en design §7). Pasa a implementación.
 
 ### F-046 · Cerrar y reabrir el periodo solo para ciertos usuarios
 

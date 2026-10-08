@@ -1,25 +1,32 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-045 en spec en esta rama** (`feature/F-045-excel-obras-postventa`, copia
-principal): Excel desglosado en pestaña de obras y pestaña de postventa. Ninguna
-feature en implementación. El 2026-10-07 se desplegaron F-037, F-039 y F-040 por
+**F-045 en curso en esta rama** (`feature/F-045-excel-obras-postventa`, copia
+principal): Excel desglosado en pestaña de obras y pestaña de postventa. El 2026-10-07 se desplegaron F-037, F-039 y F-040 por
 la mañana, F-041 y F-042 (solo el front) por la tarde y F-047 (solo el transfer)
 por la noche. El arnés es la **1.7.3**.
 
-## F-045 · Excel desglosado: obras y postventa (en spec)
+## F-045 · Excel desglosado: obras y postventa (en curso)
 
 - **Qué es** (humano, 2026-10-07): la postventa en una pestaña propia con la
   línea agregada de obras de cada trabajador, y una pestaña de obras con la
   línea agregada de postventa; en cada una, el detalle de lo suyo.
-- **Estado:** `spec_ready` (2026-10-07): spec escrita en
-  `specs/F-045-excel-obras-postventa/`, **pendiente de que el humano decida
-  D1-D9** (recomendadas A: Obras sustituye a Detalle; Resumen igual; todos los
-  trabajadores en las dos; sin agregada vacía; VAR en Obras; agregada
-  «POSTVENTA / RESTO POSTVENTA» y «OBRAS / RESTO OBRAS» en cursiva; combinadas
-  y autofiltro como F-040; Total del trabajador completo). Prototipo en Excel
-  16 por COM: filtro y combinación funcionan con la agregada (design §5).
-  Cambian 12 tests anteriores, lista cerrada en design §7.
+- **Spec aprobada por el humano el 2026-10-08 con D1-D9 = A** («todo A»):
+  libro «Obras», «Postventa» y «Resumen» (Obras sustituye a Detalle); todos los
+  trabajadores en las dos; agregada «POSTVENTA / RESTO POSTVENTA» y «OBRAS /
+  RESTO OBRAS» al final del grupo, en cursiva, solo si no es 0; VAR en Obras;
+  Total, Desviación y Estado del trabajador completo. Solo la api. Cambian 12
+  tests anteriores (lista cerrada en design §7). Rigor estándar.
+- **Estado:** implementer lanzado.
+- **MANUAL (humano, T6, en local, nada contra Azure):**
+  1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
+     y `.venv/Scripts/python main.py` (8090).
+  2. En PowerShell: `curl.exe -o "$env:TEMP\f045.xlsx" "http://127.0.0.1:8090/api/v1/periodos/2026/09/export.xlsx?empresa=1"`
+     y `start "$env:TEMP\f045.xlsx"` (un mes con postventa).
+  3. Abre sin aviso de reparación; tres hojas Obras, Postventa y Resumen.
+  4. Recorrer los filtros de design §6 (Empleado, Código «POSTVENTA»/«OBRAS»,
+     Estado) y dar el visto bueno al aspecto.
+  Resultado: _pendiente_.
 
 ## Producción, hoy
 
