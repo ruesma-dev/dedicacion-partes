@@ -34,8 +34,13 @@ la **1.7.3**.
   haya líneas de obra, aunque todas lleven partida manual (hoy sale vacío y el
   desplegable dice «— sin partida —» mientras se escribiría la elegida antes);
   e) el aviso amarillo no se sale del recuadro. Despliegue: transfer y front.
-  **Estado:** implementer lanzado para la ampliación; después review 3 y la
-  MANUAL (que se rehace con estos puntos).
+  **Estado:** ampliación implementada (T4-T7 desde `24bef2f`,
+  `progress/impl_F-049.md`): RED→verde en transfer y front, mutación 7/7
+  (Python) y 32/32 (manual JS/CSS), init.sh en verde. Ojo:
+  `test_f013_r4` del transfer llevaba en rojo desde T1, oculto por la caché
+  de init.sh; ajustado con justificación (informe, decisión 3). La MANUAL
+  nueva (a-e; el transfer, con el código de esta copia) está en el informe.
+  Siguiente: review 3.
 - **MANUAL (humano, en local, sin pulsar «Registrar»):** transfer y api desde
   la copia principal (tienen `.env`; transfer en modo pruebas), **front desde
   esta copia** (la principal está en la rama de F-045).

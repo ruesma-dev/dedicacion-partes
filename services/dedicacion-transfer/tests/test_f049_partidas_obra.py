@@ -68,7 +68,7 @@ def _pf(cli, lineas):
 
 
 def _manual(**kw):
-    datos = dict(registro_id=1, paride=80002, partida_cod="CI.1.20")
+    datos = {"registro_id": 1, "paride": 80002, "partida_cod": "CI.1.20"}
     datos.update(kw)
     return linea(**datos)
 

@@ -65,6 +65,8 @@ def _node(programa: str) -> object:
     return json.loads(salida.stdout)
 
 
+MESES_JS = ("const MESES = ['ene','feb','mar','abr','may','jun','jul',"
+            "'ago','sep','oct','nov','dic'];")
 ESCAPE = ("function escapeHtml(t) { return (t == null ? '' : String(t))"
           ".replace(/&/g,'&amp;').replace(/</g,'&lt;')"
           ".replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }")
@@ -258,8 +260,7 @@ def _modal(obras: list[dict], escenario: str = "",
     """Pinta con el código REAL y devuelve el HTML y lo que haya apuntado
     el escenario (con el `change` del desplegable a mano)."""
     programa = "\n".join([
-        "const MESES = ['ene','feb','mar','abr','may','jun','jul','ago',"
-        "'sep','oct','nov','dic'];",
+        MESES_JS,
         "const state = {anio: 2026, mes: 9};",
         _registro(),
         "registro.pisar = new Set(" + json.dumps(pisar or []) + ");",
@@ -325,6 +326,38 @@ def test_f049_a_cambiar_la_partida_la_apunta_y_repite_el_preflight():
     assert obs["tras_uno"] == {"3002": 80002} and obs["n1"] == 1
     assert obs["overrides"] == {"3002": 80002, "3001": 0}
     assert obs["n2"] == 2
+
+
+def test_f049_a_el_preflight_repetido_lleva_la_partida_recien_elegida():
+    """De punta a punta con el código real (modal, `change`, repreflight y
+    petición): lo que viaja es la partida que se acaba de elegir. Mutante
+    A27 de la campaña manual: con el orden al revés (repreflight antes de
+    apuntar la partida) solo lo cazaba la comprobación estática."""
+    programa = "\n".join([
+        MESES_JS,
+        "const state = {anio: 2026, mes: 9};",
+        _registro(), ESCAPE,
+        "const llamadas = [];",
+        ("function api(url, o) { llamadas.push(JSON.parse(o.body));"
+         " return new Promise(() => {}); }"),
+        "function toast() {} function registroEjecutar() {}",
+        "function abrirModal(h) {}",
+        ("const sel = {dataset: {reg: '3001'}, value: '0', _h: null,"
+         " addEventListener(ev, fn) { this._h = fn; }};"),
+        ("const document = {querySelectorAll: (s) =>"
+         " s === '.sel-partida' ? [sel] : []};"),
+        ("const $ = (s) => s === '#modal-registro'"
+         " ? {classList: {contains: () => false}}"
+         " : {addEventListener() {}, disabled: false, textContent: ''};"),
+        *(_funcion(f) for f in (*FUNCIONES_MODAL, "pedirPreflight",
+                                 "repreflightPartida")),
+        "registro.trabajadorIde = 42;",
+        "pintarModalPreflight(" + json.dumps(
+            {"obras": [_obra([_accion()], PARTIDAS)]}) + ");",
+        "sel.value = '80002'; sel._h();",
+        "process.stdout.write(JSON.stringify(llamadas));"])
+    assert _node(programa) == [{"overrides": {"3001": 80002},
+                                "trabajador_ide": 42}]
 
 
 def test_f049_a_las_casillas_de_registro_pisar_salen_marcadas():
