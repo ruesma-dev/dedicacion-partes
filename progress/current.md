@@ -152,17 +152,19 @@ por la noche. El arnés es la **1.7.3**.
 
 ## Lo siguiente, por prioridad
 
-`BACKLOG.md` tiene el orden completo. Nuevas el 2026-10-07 (pedidas por el
-humano): **F-042** (fallo: la última fila no abre el autocompletado de obras),
-**F-043** (partida del modal de registro con predictivo, ordenada y selector
-CI/CD como en `partes`) y **F-044** (repartir también los recursos vinculados
-al trabajador: teléfono, vehículo, gasoil…), **F-045** (Excel desglosado:
-pestaña de obras con la postventa en una línea agregada y pestaña de
-postventa con las obras agregadas) y **F-046** (cerrar y reabrir el periodo
-solo para ciertos usuarios). F-041 y F-042 desplegadas. F-047 desplegada. Nueva **F-048** (decir qué obra falló
-al registrar). Orden: F-048, F-045, F-046, F-038 (cuadro de
-mando), F-043, F-044, F-028, F-021, F-030, F-036, F-031, F-033 y, detrás,
-F-017, F-018…
+`BACKLOG.md` tiene el orden completo. Nuevas el 2026-10-08 (pedidas por el
+humano): **F-049** (los avisos del modal de registro rotulados por tipo, con su
+%; aprobada), **F-051** (pisar las líneas del parte al 0 % que ya existan),
+**F-050** (subfilas por obra con columna Partida y partida propuesta; absorbe
+F-043) y **F-021** redefinida (velar las etiquetas de las demás obras al
+filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
+2026-10-08: **F-052** (una línea de mensajería por obra en curso y mes, con
+la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
+obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
+(KM no). Juan quiere registrar **octubre entero desde la app**. Orden: F-045
+(en curso), F-049, F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+que ya hay en los partes de Sigrid; 2026-10-08), F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
+F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
