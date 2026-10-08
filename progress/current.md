@@ -14,19 +14,27 @@ por la noche. El arnés es la **1.7.3**.
 - **Spec aprobada por el humano el 2026-10-08 con D1-D9 = A** («todo A»):
   libro «Obras», «Postventa» y «Resumen» (Obras sustituye a Detalle); todos los
   trabajadores en las dos; agregada «POSTVENTA / RESTO POSTVENTA» y «OBRAS /
-  RESTO OBRAS» al final del grupo, en cursiva, solo si no es 0; VAR en Obras;
+  RESTO OBRAS» al final del grupo, en cursiva, solo si el trabajador tiene
+  líneas de la otra parte; VAR en Obras;
   Total, Desviación y Estado del trabajador completo. Solo la api. Cambian 12
   tests anteriores (lista cerrada en design §7). Rigor estándar.
 - **Estado:** implementada (T1-T5 y T7, `2017b20`..`39aae1f`,
   `progress/impl_F-045.md`); init.sh en verde, cobertura 30/30, mutación 14/14
   muertos en la campaña repetida (la primera dio un falso superviviente que no
   se reproduce: anotado en el encargo de `arnes-base` de falsos supervivientes,
-  `5370838`). **Review lanzada.** Después, la MANUAL T6 del humano.
+  `5370838`). **Review 1: CAMBIOS PEDIDOS solo por este fichero** (la MANUAL
+  apuntaba a 2026/09, sin postventa en la base local, y el resumen de D4 decía
+  «solo si no es 0»); corregidos por el líder. Código, tests y campaña sin
+  objeciones; el reviewer da la campaña por fiable. Se conserva adrede el
+  nombre de `test_f040_r1_dos_hojas_detalle_y_resumen` (trazabilidad, impl
+  §3). **Review 2 lanzada.** Después, la MANUAL T6 del humano.
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
-  2. En PowerShell: `curl.exe -o "$env:TEMP\f045.xlsx" "http://127.0.0.1:8090/api/v1/periodos/2026/09/export.xlsx?empresa=1"`
-     y `start "$env:TEMP\f045.xlsx"` (un mes con postventa).
+  2. En PowerShell: `curl.exe -o "$env:TEMP\f045.xlsx" "http://127.0.0.1:8090/api/v1/periodos/2026/10/export.xlsx?empresa=1"`
+     y `start "$env:TEMP\f045.xlsx"`. Octubre es el mes de la base local con
+     postventa (12 líneas, 1 de postventa, de un trabajador que también tiene
+     una obra); septiembre no tiene ninguna.
   3. Abre sin aviso de reparación, con las hojas Obras, Postventa y Resumen.
   4. En las dos pestañas, filtrar un Empleado con obras y postventa: sale el
      grupo entero y la Suma de la columna E (barra de estado) da lo mismo.
