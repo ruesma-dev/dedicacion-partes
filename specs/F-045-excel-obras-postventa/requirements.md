@@ -3,71 +3,58 @@
 Pedida por el humano el 2026-10-07: «desglosar excel, la postventa va [en] una pestaña
 independiente, y se crea otra [de] obra donde sale una línea agregada de postventa en el
 recurso. En la postventa sale la línea agregada de obras xxx en el recurso, de forma que en
-ambas pestañas sale detallado en una postventa y en otra obra».
+ambas pestañas sale detallado en una postventa y en otra obra». Ampliada el 2026-10-08: «añade
+una columna de observaciones a la derecha de cada tabla» (D11, R20-R21).
 
-**Lectura (a confirmar con D1-D9):** sobre el Excel de F-040, dos pestañas agrupadas por
-trabajador. «Obras» lleva el detalle de sus obras y UNA línea con la suma de toda su postventa.
-«Postventa» lleva el detalle de sus líneas `Postv-` y UNA línea con la suma de todas sus obras.
-Cada trabajador suma lo mismo en las dos. **Servicio: solo `dedicacion-api`**
-(`infrastructure/excel/`). El agregado lo calcula la api; no cambian front, transfer, esquema,
-ruta, puerto ni `config.yaml`.
+**Lectura:** sobre el Excel de F-040, «Obras» lleva por trabajador sus obras y UNA línea con la
+suma de su postventa; «Postventa», sus líneas `Postv-` y UNA línea con la suma de sus obras.
+Cada trabajador suma lo mismo en las dos. **Servicio: solo `dedicacion-api`**, que calcula el
+agregado (`infrastructure/excel/`); no cambian front, transfer, esquema, ruta, puerto ni `config.yaml`.
 
-## Lo que hay hoy (leído el 2026-10-07)
+## Lo que hay hoy (leído el 2026-10-07 y el 2026-10-08)
 
-- F-040: «Detalle» con todas las líneas y la postventa intercalada (el repositorio ordena por
-  `ObraORM.cod, es_postventa`: `0702` y luego `Postv-0702`), y «Resumen».
-- La postventa se distingue **solo** por `Linea.es_postventa`. Código y Obra llevan el prefijo
-  `export.prefijo_postventa` (F-040 R8). `VAR-NN` es una obra normal en el Excel (F-039 R21,
-  F-040 D6), y una entrada VAR no admite postventa.
-- «RESTO POSTVENTA» **no existe en el sistema**: es el rótulo del modelo de Juan (F-040 D6).
+- F-040: «Detalle» con todas las líneas, la postventa intercalada (el repositorio ordena por
+  `ObraORM.cod, es_postventa`: `0702` y luego `Postv-0702`), y «Resumen». La postventa se
+  distingue **solo** por `Linea.es_postventa`; Código y Obra llevan el prefijo
+  `export.prefijo_postventa` (F-040 R8). `VAR-NN` es una obra normal (F-039 R21, F-040 D6).
+- «RESTO POSTVENTA» **no existe en el sistema** (rótulo del modelo de Juan, F-040 D6), y la app
+  **no guarda observaciones** (ni `Linea` ni el esquema tienen ese campo).
 
-## Decisiones (D1-D10 DECIDIDAS por el humano el 2026-10-08)
+## Decisiones (D1-D11 DECIDIDAS por el humano el 2026-10-08; D12 ABIERTA)
 
 Los R marcan con `[Dn]` de cuál dependen. D3-D9 son la A aprobada («todo A»); D1 y D2, lo que
-el humano eligió en la MANUAL T6 al ver el libro, que sustituye a su A. D10 no cambia ningún R.
+el humano eligió en la MANUAL T6 al ver el libro, que sustituye a su A. Las alternativas
+descartadas de D1-D10 están en `git show 628b9bb:specs/F-045-excel-obras-postventa/requirements.md`.
 
-**D1 · Hojas.** DECIDIDA por el humano el 2026-10-08, en la MANUAL T6: Obras y Postventa «está
-bien», pero «quiero que la hoja resumen sea la primera pestaña original que tenía todas las
-obras, postventa y normales juntas, no la de resumen». El libro queda con **«Obras»,
-«Postventa» y «Detalle»**, en ese orden. «Detalle» es la hoja de F-040 **sin cambios**: nombre,
-título «DETALLE DE DEDICACIÓN · <Mes> <Año>», todas las líneas juntas (obras y postventa
-intercalada), bandas, combinadas y autofiltro. Antes era la A («Obras» sustituía a «Detalle»).
+- **D1 · Hojas.** DECIDIDA por el humano el 2026-10-08, en la MANUAL T6: Obras y Postventa «está
+  bien», pero «quiero que la hoja resumen sea la primera pestaña original que tenía todas las
+  obras, postventa y normales juntas, no la de resumen». El libro queda con **«Obras»,
+  «Postventa» y «Detalle»**, en ese orden. «Detalle» es la hoja de F-040: nombre, título
+  «DETALLE DE DEDICACIÓN · <Mes> <Año>», todas las líneas juntas, bandas, combinadas y
+  autofiltro, **con una sola diferencia desde D11: la columna I «Observaciones»**.
+- **D2 · Resumen.** DECIDIDA por el humano el 2026-10-08: **desaparece** («si», tras avisarle
+  de que Juan pidió el Resumen en F-040).
+- **D3 · Trabajadores:** todos en las dos pestañas, en el mismo orden; quien no tiene nada de
+  esa parte sale solo con su agregada, y el que no tiene carga, «SIN CARGA» en las dos (R4).
+- **D4 · Agregada vacía:** no la hay; nada de «RESTO POSTVENTA 0%» (R8).
+- **D5 · VAR:** `VAR-NN` va en «Obras» como obra normal (F-039) y suma en «RESTO OBRAS» (R5).
+- **D6 · Texto de la agregada:** la última del grupo, con Código «POSTVENTA» u «OBRAS» y Obra
+  «RESTO POSTVENTA» o «RESTO OBRAS»; con el Código vacío se mezclaba con los «SIN CARGA» (R7).
+- **D7 · Formato de la agregada:** banda y bordes de su grupo; Código, Obra y % en cursiva (R15).
+- **D8 · Combinadas:** como F-040: A, B, F, G y H, con el valor en todas las filas (R13).
+- **D9 · Total, Desviación y Estado:** los del trabajador completo, en las tres hojas (R11, R12).
+- **D10 · `LineaDetalle.nombre`:** DECIDIDA por el humano el 2026-10-08: A («si»), se conserva.
 
-**D2 · Resumen.** DECIDIDA por el humano el 2026-10-08: **desaparece** («si», tras avisarle de
-que Juan pidió el Resumen en F-040). Antes era la A, «como está». *Tests:* se borran los que
-leen la hoja Resumen o prueban `filas_resumen` (design §7).
+**D11 · Observaciones.** DECIDIDA por el humano el 2026-10-08: «añade una columna de
+observaciones a la derecha de cada tabla»; avisado de que la app no guarda observaciones,
+elige **A** («a»): columna «Observaciones» **vacía**, para escribir en el Excel, una celda por
+línea (sin combinar), a la derecha de las tres hojas, ancha, con ajuste de texto y dentro del
+autofiltro. Lo escrito vive solo en ese fichero: un export nuevo sale vacío (design §8). R20, R21.
 
-**D3 · Qué trabajadores salen en cada pestaña.** A: **todos en las dos**, en el mismo orden.
-Quien no tiene nada de esa parte sale solo con su línea agregada, y el que no tiene carga sale
-«SIN CARGA» en las dos. B: en «Postventa», solo los que tienen alguna línea de postventa. C:
-cada pestaña, solo los que tienen alguna línea suya. *Tests:* R4.
-
-**D4 · Línea agregada vacía.** A: si el trabajador no tiene nada de la otra parte, **no**
-hay agregada (nada de «RESTO POSTVENTA 0%»). B: siempre hay una, aunque sea al 0 %. *Tests:* R8.
-
-**D5 · VAR.** A: `VAR-NN` va en «Obras» como obra normal (F-039) y suma en «RESTO OBRAS» de
-«Postventa». B: en «Postventa», «VAR» como segunda agregada. *Tests:* R5.
-
-**D6 · Texto de la línea agregada.** Siempre va la **última** del grupo. A: Código «POSTVENTA»
-u «OBRAS» y Obra «RESTO POSTVENTA» o «RESTO OBRAS», como el modelo de Juan pero con código.
-B: el Código vacío, como el modelo; filtrar Código «(Vacías)» mezcla las agregadas con los
-«SIN CARGA» (design §5). C: Código vacío y Obra «TOTAL POSTVENTA» o «TOTAL OBRAS». *Tests:* R7.
-
-**D7 · Formato de la línea agregada.** A: con la banda y los bordes de su grupo, y Código,
-Obra y % en **cursiva**. B: en negrita. C: relleno gris `F2F2F2`, que corta la banda. *Tests:* R15.
-
-**D8 · Combinadas y autofiltro.** A: **como F-040** en las dos pestañas. A, B, F, G y H van
-combinadas con el valor en todas las filas, también en la agregada, y el autofiltro es
-`A2:H<n>`. B: sin combinar en las pestañas nuevas. *Tests:* R13.
-
-**D9 · Total, Desviación y Estado.** A: los del **trabajador completo** (obras más postventa),
-iguales en las dos pestañas y en «Detalle». La columna % del grupo suma ese Total. B: el total
-de la parte de la pestaña, sin Desviación ni Estado, que solo tienen sentido sobre el 100 %.
-*Tests:* R11 y R12.
-
-**D10 · `LineaDetalle.nombre` (DECIDIDA por el humano el 2026-10-08: A, «si»).** Sin el Resumen nadie lo lee. **A
-(recomendada):** se conserva, sin más tests tocados. B: se borra, y cambian seis tests de
-contenido que lo comprueban (design §8).
+**D12 · Observaciones en la agregada y en «SIN CARGA».** ABIERTA. **A (recomendada):** en todas
+las filas de datos, también la agregada y la «SIN CARGA» (sirve para anotar por qué no tiene
+carga), con la banda y los bordes de su grupo. B: solo en las líneas reales de obra o
+postventa; en las otras, I queda sin formato y corta la banda. R21.
 
 ## Libro
 
@@ -78,9 +65,8 @@ R2. [D1] Las hojas deben llevar en la fila 1 los títulos «OBRAS · <Mes> <Año
 <Mes> <Año>» y «DETALLE DE DEDICACIÓN · <Mes> <Año>», con el formato de F-040 R2: negrita a
 13 pt, la cabecera en la fila 2 y los datos desde la 3.
 
-R3. «Obras» y «Postventa» deben tener la cabecera del Detalle de F-040 R6, sus anchos, el
-autofiltro `A2:H<n>`, los paneles en `A3` y la impresión de F-040 R3-R5. Sin trabajadores, el
-autofiltro cubre solo la cabecera.
+R3. «Obras» y «Postventa» deben tener la cabecera, los anchos, los paneles en `A3`, la
+impresión y el autofiltro del Detalle de F-040 R3-R6, con la columna I de R20 (`A2:I<n>`).
 
 ## Pestañas Obras y Postventa
 
@@ -114,37 +100,50 @@ en «Obras» y en «Postventa», e igual a su Total empleado.
 
 R13. [D8] Empleado, Categoría, Total, Desviación y Estado deben ir en todas las filas del grupo,
 la agregada incluida (F-040 R10). En los grupos de más de una fila, A, B, F, G y H van
-combinadas como en F-040 R11.
+combinadas como en F-040 R11; la columna I, nunca (R21).
 
 R14. Cada pestaña debe alternar las bandas por trabajador y poner la línea `medium` bajo el
-último, como F-040 R12. La cuenta va por pestaña, con el primer grupo en blanco, y la agregada
-lleva la banda de su grupo.
+último, como F-040 R12 (la columna I, según R21). La cuenta va por pestaña, con el primer grupo
+en blanco, y la agregada lleva la banda de su grupo.
 
-R15. [D7] En la línea agregada, Código, Obra y % deben ir en cursiva. Ninguna otra fila lleva
-cursiva, en ninguna hoja, y el resto del formato es el de su grupo.
+R15. [D7] En la línea agregada, Código, Obra y % deben ir en cursiva. Ninguna otra celda lleva
+cursiva, en ninguna hoja (tampoco la I de la agregada), y el resto del formato es el de su grupo.
 
 R16. El % de la agregada debe guardar la fracción con el formato de F-040 R17 (`0%` si es
 entero y `0.00%` si no) y ser un valor, nunca una fórmula.
 
-## Detalle y lo que no cambia
+## Detalle, lo que no cambia y documentación
 
-R17. [D1] «Detalle» debe ser la hoja de F-040 sin cambios (sus R2-R12 y R16-R19): un grupo
+R17. [D1, D11] «Detalle» debe ser la hoja de F-040 (sus R2-R12 y R16-R19) con **una sola
+diferencia**, la columna I de R20-R21, por la que deja de ser idéntica a la de F-040: un grupo
 por trabajador con todas sus líneas en el orden de la API, la postventa intercalada con el
-prefijo y **sin** línea agregada, con sus combinadas, bandas, línea gruesa y autofiltro
-`A2:H<n>`. Va la tercera, con los mismos trabajadores y en el mismo orden que las pestañas.
+prefijo y **sin** agregada. Va la tercera, con los mismos trabajadores y orden que las pestañas.
 
 R18. Ruta `export.xlsx`, filtro por empresa, nombre del fichero, puerto `ExcelExporter` y
 `config.yaml` no cambian (los tests de F-024, en verde sin tocarlos). El prefijo de postventa
 sale de la configuración, no de un literal: un test lo comprueba con «PV_».
 
-## Documentación
-
 R19. La línea de `excel/` en `docs/ARCHITECTURE.md` y la fila de `export.xlsx` en el README de
-la api deben describir las tres hojas (Obras, Postventa y Detalle) y no mencionar el Resumen.
-`azure-apps/` no cambia: no describe el Excel.
+la api deben describir las tres hojas (Obras, Postventa y Detalle) con la columna Observaciones
+vacía y no mencionar el Resumen. `azure-apps/` no cambia: no describe el Excel.
+
+## Columna Observaciones (ampliación del 2026-10-08)
+
+R20. [D11] Las tres hojas deben llevar en la columna I, a la derecha de Estado, la cabecera
+«Observaciones» con el formato del resto de la cabecera (F-040 R5) y un ancho de 50. El
+autofiltro de las tres debe llegar a I (`A2:I<n>`, `A2:I2` sin trabajadores) y la impresión,
+horizontal a una página de ancho, la incluye.
+
+R21. [D11, D12] Cada fila de datos de las tres hojas, también la agregada y la «SIN CARGA»,
+debe tener en I una celda **vacía** (sin valor ni fórmula), sin combinar, con ajuste de texto
+y alineada arriba, con la banda de su grupo, borde fino y la línea `medium` si es la última
+del grupo. Ningún dato de la app se escribe en esa columna.
 
 ## Verificación manual (humano)
 
-M1. Excel real de un mes generado en local y abierto en Excel, sin aviso de reparación. Se
-recorren los filtros de design §6 (Empleado, Código de la agregada y Estado) y el humano da el
-visto bueno al aspecto.
+M1. Excel de un mes generado en local y abierto en Excel: sin aviso de reparación, filtros de
+design §6 y visto bueno al aspecto. Cumplida el 2026-10-08 («todo ok», MANUAL T6).
+
+M2. El Excel de 2026/10 con la columna Observaciones: a la derecha en las tres hojas, un texto
+largo escrito a mano se ajusta en la celda, el filtro de Observaciones la incluye y la vista
+previa de impresión cabe en una página de ancho (design §6).
