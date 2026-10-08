@@ -17,15 +17,24 @@ por la noche. El arnés es la **1.7.3**.
   RESTO OBRAS» al final del grupo, en cursiva, solo si no es 0; VAR en Obras;
   Total, Desviación y Estado del trabajador completo. Solo la api. Cambian 12
   tests anteriores (lista cerrada en design §7). Rigor estándar.
-- **Estado:** implementación terminada (T1-T5 y T7; `progress/impl_F-045.md`). Pendiente: review y la MANUAL T6 del humano.
+- **Estado:** implementada (T1-T5 y T7, `2017b20`..`39aae1f`,
+  `progress/impl_F-045.md`); init.sh en verde, cobertura 30/30, mutación 14/14
+  muertos en la campaña repetida (la primera dio un falso superviviente que no
+  se reproduce: anotado en el encargo de `arnes-base` de falsos supervivientes,
+  `5370838`). **Review lanzada.** Después, la MANUAL T6 del humano.
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
   2. En PowerShell: `curl.exe -o "$env:TEMP\f045.xlsx" "http://127.0.0.1:8090/api/v1/periodos/2026/09/export.xlsx?empresa=1"`
      y `start "$env:TEMP\f045.xlsx"` (un mes con postventa).
-  3. Abre sin aviso de reparación; tres hojas Obras, Postventa y Resumen.
-  4. Recorrer los filtros de design §6 (Empleado, Código «POSTVENTA»/«OBRAS»,
-     Estado) y dar el visto bueno al aspecto.
+  3. Abre sin aviso de reparación, con las hojas Obras, Postventa y Resumen.
+  4. En las dos pestañas, filtrar un Empleado con obras y postventa: sale el
+     grupo entero y la Suma de la columna E (barra de estado) da lo mismo.
+  5. En Obras, Código = POSTVENTA; en Postventa, Código = OBRAS: solo salen las
+     líneas agregadas.
+  6. Estado distinto de OK: salen los grupos completos.
+  7. Aspecto: bandas, línea gruesa entre trabajadores y la agregada en cursiva.
+  8. El Resumen, como hasta ahora.
   Resultado: _pendiente_.
 
 ## Producción, hoy
