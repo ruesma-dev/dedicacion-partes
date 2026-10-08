@@ -17,7 +17,7 @@ por la noche. El arnés es la **1.7.3**.
   RESTO OBRAS» al final del grupo, en cursiva, solo si no es 0; VAR en Obras;
   Total, Desviación y Estado del trabajador completo. Solo la api. Cambian 12
   tests anteriores (lista cerrada en design §7). Rigor estándar.
-- **Estado:** implementer lanzado.
+- **Estado:** implementación terminada (T1-T5 y T7; `progress/impl_F-045.md`). Pendiente: review y la MANUAL T6 del humano.
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
