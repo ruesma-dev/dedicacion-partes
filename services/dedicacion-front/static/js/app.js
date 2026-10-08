@@ -1697,6 +1697,55 @@ async function registroPreflight(trabajadorIde = null) {
   finally { btn.disabled = false; btn.textContent = "Registrar en Sigrid"; }
 }
 
+// F-049: los avisos del preflight se rotulan según su `motivo`. Funciones
+// puras (sin DOM): devuelven texto plano y quien lo pinta lo escapa. Solo
+// formatean lo que manda el transfer (`Conflicto` serializado con `asdict`):
+// no deciden qué se confirma ni qué se escribe. `can`, `suma_*` y `exceso`
+// llegan en la escala 0-1 de Sigrid.
+
+// % de lo que se escribiría: la suma de `nuevas`, como la propiedad
+// `nueva_can` del `Conflicto` del transfer (que `asdict` no publica).
+function pctNuevas(c) {
+  const suma = (c.nuevas || []).reduce((s, n) => s + (Number(n.can) || 0), 0);
+  return fmtPct(suma * 100);
+}
+
+function rotuloConflicto(c) {
+  const quien = c.nombre || String(c.recurso_ide);
+  const hora = c.hora_codigo || "";
+  const enParte = c.parte_cod ? ` en el parte ${c.parte_cod}` : "";
+  const nuevo = pctNuevas(c);
+  const motivo = c.motivo || "pisado";
+  if (motivo === "sin_partida") {
+    return { tipo: motivo, titulo: "Sin partida",
+      detalle: `${quien}, ${hora} ${nuevo}${enParte}: se escribiría sin ` +
+        `partida de imputación. Elige una partida en la tabla o marca la ` +
+        `casilla para escribirlo sin partida` };
+  }
+  if (motivo === "sobrecarga") {
+    const ya = (c.contexto || []).map((l) =>
+      `${l.hora_codigo || ""} ${fmtPct((Number(l.can) || 0) * 100)}`).join(", ");
+    return { tipo: motivo, titulo: "Sobrecarga",
+      detalle: `${quien}${enParte}: ya tiene ` +
+        `${fmtPct(c.suma_existente * 100)}${ya ? ` (${ya})` : ""}, ` +
+        `se añade ${nuevo} y sumaría ${fmtPct(c.suma_total * 100)}, un ` +
+        `${fmtPct(c.exceso * 100)} por encima de la jornada. Marca la ` +
+        `casilla para escribirlo igualmente` };
+  }
+  if (motivo === "pisado") {
+    const viejas = (c.lineas || []).map((l) =>
+      `línea ${l.ide} (${l.hora_codigo || ""} ` +
+      `${fmtPct((Number(l.can) || 0) * 100)}, fec ${l.fecha_int})`).join(", ");
+    return { tipo: motivo, titulo: "Pisar",
+      detalle: `${hora} de ${quien}${enParte}: se borran ${viejas} y se ` +
+        `escribe ${nuevo}` };
+  }
+  // Un motivo que este front aún no conoce no se disfraza de «Pisar»: se
+  // enseña tal cual, con lo que se escribiría.
+  return { tipo: motivo, titulo: "Confirmar",
+    detalle: `${quien}, ${hora} ${nuevo}${enParte}: ${motivo}` };
+}
+
 function pintarModalPreflight(pf) {
   let html = `<h2>Registrar en Sigrid · ${MESES[state.mes - 1]} ${state.anio}</h2>`;
   (pf.obras || []).forEach((o) => {
@@ -1737,13 +1786,11 @@ function pintarModalPreflight(pf) {
       `<th>Partida de imputación (editable)</th></tr></thead>` +
       `<tbody>${filas}</tbody></table>`;
     (o.conflictos || []).forEach((c) => {
-      const viejas = (c.lineas || []).map((l) =>
-        `línea ${l.ide} (fec ${l.fecha_int}, can ${l.can})`).join(", ");
+      // F-049: rótulo por tipo; la casilla sigue llevando la misma `clave`.
+      const r = rotuloConflicto(c);
       html += `<div class="conflicto"><label class="check">` +
         `<input type="checkbox" class="chk-pisar" value="${escapeHtml(c.clave)}"> ` +
-        `Pisar ${escapeHtml(c.hora_codigo || "")} de ` +
-        `${escapeHtml(c.nombre || String(c.recurso_ide))}: se borran ${viejas} ` +
-        `y se escribe ${fmtPct(c.nueva_can != null ? c.nueva_can * 100 : 0)}` +
+        `<strong>${escapeHtml(r.titulo)}</strong> · ${escapeHtml(r.detalle)}` +
         `</label></div>`;
     });
   });
