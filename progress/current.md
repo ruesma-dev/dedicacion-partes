@@ -32,7 +32,7 @@ por la noche. El arnés es la **1.7.3**.
   bien», pero el libro pasa a ser **«Obras», «Postventa» y «Detalle»** (la hoja
   de F-040 sin cambios, al final) y **«Resumen» desaparece** («si», avisado de
   que Juan pidió el Resumen en F-040). **Estado:** spec revisada (`a135217`) y APROBADA por el humano el
-  2026-10-08 con D10 = A («si»). Implementer lanzado (T8-T11).
+  2026-10-08 con D10 = A («si»). T8-T11 implementadas (`24b2dae`..`9d2e361` + T11): Detalle de F-040 tercera, Resumen fuera, 713 api en verde, mutación 14/14 muertos, init.sh en verde; falta la MANUAL T6 y la review (`progress/impl_F-045.md` §8).
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).

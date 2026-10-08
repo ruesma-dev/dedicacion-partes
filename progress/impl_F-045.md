@@ -2,13 +2,13 @@
 # F-045 · Informe del implementer
 
 Copia principal, rama `feature/F-045-excel-obras-postventa`, rigor **estándar**
-y SDD. Spec aprobada por el humano el 2026-10-08 con D1-D9 = A. Hechas **T1-T5
-y T7**. **T6 (M1) es MANUAL** y le toca al humano (§6).
+y SDD. Spec aprobada el 2026-10-08 con D1-D9 = A; hechas T1-T5 y T7. Tras la
+MANUAL T6 el humano cambió el libro (D1, D2 reescritas; D10 = A) y la spec
+revisada se aprobó: hechas **T8-T11** (§8). **T6 (M1) es MANUAL** (§6).
 
-Solo `dedicacion-api`: `infrastructure/excel/`, sus tests y las dos líneas de
-documentación de T5. No se ha tocado `.env`, ni Azure, ni Sigrid, ni el front,
-ni el transfer, ni `config.yaml`, ni `azure-apps/`. Sin push. Todos los datos
-de los tests son inventados.
+Solo `dedicacion-api` (`infrastructure/excel/` y sus tests) y las dos líneas de
+documentación (T5, T10). Ni `.env`, ni Azure, ni Sigrid, ni front, ni transfer,
+ni `config.yaml`, ni `azure-apps/`. Sin push. Datos de test inventados.
 
 ## 1. Qué cambió, por tarea (un commit cada una)
 
@@ -19,6 +19,9 @@ de los tests son inventados.
 | T3 | `2f84bb6` | 14 tests RED del libro (R1-R3, R11-R18) y los 12 tests de la lista cerrada de design §7 |
 | T4 | `3957525` | `exporter.py`: tres hojas, `_hoja_detalle` → `_hoja_grupos`, `_CURSIVA`, docstring. Incluye la corrección de dos tests nuevos de T3 (§3) |
 | T5 | `77e124b` | `docs/ARCHITECTURE.md` (línea de `excel/`) y fila `export.xlsx` de `services/dedicacion-api/README.md` (R19) |
+| T8 | `24b2dae` | Tests RED del libro nuevo: solo los «adaptados» de design §7.1-§7.3 |
+| T9 | `3b5ef24` | `exportar` pinta Obras, Postventa y **Detalle**; fuera `_hoja_resumen`, `FilaResumen`, `filas_resumen` y los 4 tests «Se borra» |
+| T10 | `9d2e361` | Las mismas dos líneas de documentación, con Detalle y sin Resumen (R19) |
 
 Ficheros de producción: `services/dedicacion-api/infrastructure/excel/contenido.py`
 y `services/dedicacion-api/infrastructure/excel/exporter.py`. Tests:
@@ -43,15 +46,13 @@ cerrada). No cambian `domain/`, `application/`, `routes.py`, `deps.py`,
    `float` solo aparece al escribir la celda, en `_celda_pct` de F-040.
 4. **Rótulos como tuplas en `contenido.py`**, no en `config.yaml` (design §8).
    El campo `agregada`, no el texto, decide la cursiva.
-5. **`exportar`**: «Obras» es `libro.active`, «Postventa» `create_sheet()` y
-   «Resumen» `create_sheet("Resumen")`, así que los XML son `sheet1`, `sheet2`
-   y `sheet3`. El Resumen sale de `filas_resumen(grupos_detalle(...))`, como
-   en F-040 (R17). Las bandas se cuentan por hoja porque el `enumerate` es el
-   de cada llamada a `_hoja_grupos` (R14).
+5. **`exportar`** (tras T9): «Obras» es `libro.active`, «Postventa» y
+   «Detalle» `create_sheet()` (`sheet1`-`sheet3`). Las bandas se cuentan por
+   hoja: el `enumerate` es el de cada llamada a `_hoja_grupos` (R14).
 6. **Cursiva**: `_CURSIVA = Font(italic=True)` en C, D y E de la agregada,
    después de bandas y bordes, que no tocan la fuente (R15). Sin negrita.
 
-## 3. Tests anteriores cambiados y correcciones
+## 3. Tests anteriores cambiados y correcciones (T3; los de T8-T9 en §8)
 
 **Lista cerrada de design §7, y solo ella** (12 tests). El `git diff` de
 `test_f040_excel.py` y `test_f039_registro_var.py` solo cambia el nombre o el
@@ -125,58 +126,25 @@ líneas de `KeyError` están agrupadas por test para caber en el tope; la
 traza completa se generó en el scratchpad de la sesión.) Tras T4:
 `pytest tests -q` de la api → **717 passed, 1 warning in 9.86s**.
 
-## 5. Mutación
+## 5. Mutación (campaña de T5)
 
-`python -m harness.mutacion --feature F-045 --workers 1` →
-`progress/mutacion_F-045.md`, medida en `77e124b` (HEAD de T5; nada de
-producción cambia después). 99 líneas en alcance, 14 mutantes (por debajo
-del tope de 20 del muestreo: campaña completa).
-
-**Campaña definitiva (la del informe): 14 evaluados, 14 muertos, 0
-supervivientes**, 0 timeouts, en 160.9 s.
-
-**Aviso para el líder: la primera campaña dio un veredicto que no se
-reproduce.** La primera ejecución, idéntica y sobre el mismo SHA, dio 13
-muertos y **1 superviviente**: `contenido.py:98`, `agregada=True` →
-`agregada=False` (en 176.1 s, exit 1). No cuadraba, porque ese mutante deja
-la agregada sin marca y `test_f045_r7` compara la tupla con `True`. Lo
-comprobé a mano con el mismo comando y el mismo entorno que usa
-`EjecutorPytest.correr`, con el `.pyc` de `contenido` borrado:
-
-```
-$ sed -i '98s/agregada=True,/agregada=False,/' infrastructure/excel/contenido.py
-$ PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe -m pytest -x -q --tb=no -p no:cacheprovider tests
-FAILED tests/test_f045_excel_pestanas.py::test_f045_r7_agregada_unica_al_final_con_rotulos_y_suma
-1 failed, 692 passed, 1 warning in 9.19s        rc=1
-$ git checkout infrastructure/excel/contenido.py
-```
-
-Sin `-x` caen 4 tests (r7, r9, r15 y r18 de F-045). Al repetir la campaña,
-ese mutante salió **muerto**. Así que no es un hueco de los tests, sino un
-veredicto de la herramienta que no se reproduce. Diferencia entre las dos
-ejecuciones: antes de la primera había en `infrastructure/excel/__pycache__/`
-un `contenido.cpython-312.pyc` de mis ejecuciones de pytest, y antes de la
-segunda no. `_purgar_bytecode` se traga el `OSError` al borrar en Windows. No
-he podido confirmar la causa y no he tocado `harness/`. Si el líder lo ve
-oportuno, merece un aviso al arnés (`arnes-base`). El informe de la primera
-campaña lo sobrescribió la segunda; tengo copia en el scratchpad de la sesión.
+`python -m harness.mutacion --feature F-045 --workers 1` sobre `77e124b`: 14
+mutantes (campaña completa, tope 20), **14 muertos, 0 supervivientes**, en
+160.9 s. Una primera ejecución idéntica dio 1 superviviente
+(`contenido.py:98`, `agregada=True` → `False`) que no se reproduce: a mano,
+con el `.pyc` borrado, ese mutante tumba r7, r9, r15 y r18 de F-045. Única
+diferencia: un `contenido.cpython-312.pyc` en `infrastructure/excel/__pycache__/`
+antes de la primera (`_purgar_bytecode` se traga el `OSError` en Windows).
+Anotado en el encargo de `arnes-base` de falsos supervivientes (`5370838`).
+La campaña de T9 está en §8.
 
 ## 6. Verificación MANUAL pendiente (T6 / M1, humano)
 
-Con la api local (`python main.py` en `services/dedicacion-api`, BBDD local con
-un periodo que tenga postventa):
-
-```powershell
-curl.exe -o "$env:TEMP\f045.xlsx" "http://127.0.0.1:8090/api/v1/periodos/AAAA/MM/export.xlsx?empresa=1"
-start "$env:TEMP\f045.xlsx"
-```
-
-Los 6 puntos de design §6: abre sin reparación con Obras, Postventa y
-Resumen; filtrar un Empleado con obras y postventa da el grupo entero y la
-misma Suma de E en las dos; Código = POSTVENTA (Obras) / OBRAS (Postventa)
-saca solo las agregadas; Estado ≠ OK saca filas completas; bandas, línea
-gruesa y cursiva; Resumen como en F-040. No comprobado aquí por COM: la
-imagen de la cursiva y una combinada con la primera fila oculta (design §5).
+Con el libro nuevo: comando exacto y los 8 pasos en `progress/current.md`
+(octubre de 2026, `empresa=1`, api local) y design §6: abre sin reparación con
+Obras, Postventa y Detalle y sin Resumen; filtro por Empleado con la misma Suma
+de E en las tres; Código = POSTVENTA / OBRAS saca solo las agregadas; Estado
+≠ OK; bandas, línea gruesa y cursiva; Detalle como en F-040, sin «RESTO …».
 
 ## 7. Qué queda fuera y qué falta
 
@@ -185,19 +153,63 @@ imagen de la cursiva y una combinada con la primera fila oculta (design §5).
   `config.yaml`. `azure-apps/` no describe el Excel (R19): sin cambios.
 - Falta para cerrar: M1 del humano, review y despliegue de la api (nueva
   imagen; ninguna variable de entorno nueva).
-- Riesgo de design §8: quien lea el libro por el nombre «Detalle» o por
-  posición se rompe; M1 lo confirma con el humano.
+- Riesgo de design §8: quien leía la hoja «Resumen» la pierde (D2, decidido
+  por el humano) y quien lea por posición ve Obras primero; M1 lo confirma.
 - Ruff: los ficheros de F-045 pasan `ruff check` desde la raíz; el total del
   repositorio sigue en 237 avisos de deuda previa.
 
+## 8. Cambio del libro tras la MANUAL T6 (T8-T11)
+
+Libro «Obras», «Postventa» y «Detalle» (F-040 sin cambios, tercera), sin
+«Resumen». `exportar` llama a `_hoja_grupos` con `grupos_detalle` y «DETALLE DE
+DEDICACIÓN · …» (design §3.2). Fuera `_hoja_resumen`, `_CABECERA_RESUMEN`,
+`_ANCHOS_RESUMEN`, `FilaResumen` y `filas_resumen`; D10 = A: se conserva
+`LineaDetalle.nombre` (comentario ajustado). Docstrings de ambos módulos al día.
+
+**Tests (solo la lista cerrada de design §7):** 6 de F-045 (r1 renombrado a
+`…_y_detalle`, r2, r11 contra `_GRUPOS_DETALLE`, r13 con las combinadas de
+Detalle, r17 → `test_f045_r17_detalle_igual_que_en_f040`, r18 `Detalle!C5`);
+13 adaptados de F-040, casi todos a su forma de `dev` con `_HOJA_DETALLE = 3`,
+y `test_f039_r21` (Detalle fila 3, y la misma comprobación en Obras, D5). Solo
+salen aserciones que leían el Resumen. En T9 se borran los 4 «Se borra» (r13,
+r14_r15 del libro; r14, r15 de contenido) y la importación de `filas_resumen`.
+
+**RED de T8**, con el exportador de T4 (Obras, Postventa, Resumen):
+
+```
+$ .venv/Scripts/python.exe -m pytest tests/test_f045_excel_pestanas.py tests/test_f040_excel.py tests/test_f039_registro_var.py -q
+FAILED test_f045_r1_tres_hojas_obras_postventa_y_detalle   assert ['Obras', 'Po...a', 'Resumen'] == ['Obras', 'Po...a', 'Detalle']
+FAILED test_f045_r2_… / r11_… / r17_detalle_igual_que_en_f040 / r18_…   KeyError: 'Worksheet Detalle does not exist.'
+FAILED test_f045_r13_valor_en_todas_las_filas_y_combinadas_con_la_agregada   assert set() == {'A11:A13', '... 'B3:B5', ...}
+FAILED test_f040_r1_dos_hojas_detalle_y_resumen            assert ['Obras', 'Po...a', 'Resumen'] == ['Obras', 'Po...a', 'Detalle']
+FAILED test_f040_r2_ r3_ r6_ r7_r8_ r9_ r10_ r11_ r12_ r16_99996_ r17_   KeyError: 'Worksheet Detalle does not exist.'
+FAILED test_f040_r4_impresion_y_anchos                     KeyError: 'Resumen'
+FAILED test_f039_r21_el_excel_lleva_el_codigo_de_la_entrada  KeyError: 'Worksheet Detalle does not exist.'
+19 failed, 52 passed, 1 warning in 20.76s        (exit=1)
+```
+
+19 = 6 de F-045 + 12 de F-040 + 1 de F-039. El 13.º de F-040,
+`test_f040_r18_ningun_texto_en_notacion_cientifica`, pasa en RED: solo cambia
+el texto de muestra (el del Resumen → «EXCESO 10%», que también está en Obras).
+Tras T9: `pytest tests -q` de la api → **713 passed** (717 − 4 borrados).
+`git grep -e filas_resumen -e FilaResumen -e _hoja_resumen -e _RESUMEN --
+services/dedicacion-api` → sin resultados (el `grep -rn` de tasks.md solo
+encuentra `coverage.json`, ignorado por git, y `.pyc` viejos).
+
+**Mutación** (`__pycache__` de `infrastructure/excel` borrado antes;
+`progress/mutacion_F-045.md`, HEAD `9d2e361`): 100 líneas en alcance, 14
+mutantes, **14 muertos, 0 supervivientes**, 0 timeouts, 745.7 s (línea base
+62.8 s, la máquina iba cargada). Sin supervivientes que analizar. Las líneas
+nuevas de Detalle en `exportar` son llamada y literal: no generan mutante; las
+cubren r1, r2 y r17 de F-045 y los de F-040.
+
 ## Evidencias
 
-| Evidencia | Valor real |
+| Evidencia | Valor real (tras T9-T11) |
 |---|---|
-| Tests de la api | **717 passed**, 1 warning (deprecación de starlette, previa), en 19.63 s (`bash harness/init.sh`, servicio api) |
-| Tests de la raíz | **418 passed, 1 skipped**, en 37.38 s |
+| Tests de la api | **713 passed**, 1 warning (deprecación de starlette, previa), en 70.03 s (`bash harness/init.sh`, servicio api) |
+| Tests de la raíz | **418 passed, 1 skipped**, en 103.24 s |
 | Tests de F-045 | 28 casos en `tests/test_f045_excel_pestanas.py` (14 de contenido, 14 del libro) |
-| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 30 líneas cambiadas cubiertas (30/30, umbral 80%, nivel estandar)` |
-| Mutación | `python -m harness.mutacion --feature F-045 --workers 1`: 14 generados, **14 evaluados, 14 muertos, 0 supervivientes**, 0 timeouts, en 160.9 s (campaña completa: 14 < tope 20). Detalle en `progress/mutacion_F-045.md`. Una primera ejecución dio 1 superviviente que no se reproduce (§5) |
-| Línea base por mutante | 12.1 s; timeout efectivo de 120 s |
-| `bash harness/init.sh` | **ENTORNO LISTO**, cobertura OK, tamaño OK. Ruff 237 avisos de deuda previa (igual que al empezar) |
+| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 33 líneas cambiadas cubiertas (33/33, umbral 80%, nivel estandar)` |
+| Mutación | 14 generados, **14 evaluados, 14 muertos, 0 supervivientes**, 0 timeouts, en 745.7 s (§8; `progress/mutacion_F-045.md`) |
+| `bash harness/init.sh` | **ENTORNO LISTO**, exit 0, cobertura OK, tamaño OK. Ruff 237 avisos de deuda previa (igual que al empezar) |
