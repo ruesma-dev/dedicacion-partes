@@ -22,9 +22,11 @@ la **1.7.3**.
   mutantes muertos (`progress/mutacion_manual_F-049.md`), init.sh en verde.
   **Review 1: CAMBIOS PEDIDOS** (`progress/review_F-049.md`): falta el nº de
   fallos por mutante en la tabla manual (implementer relanzado); O1 al
-  informe (implementer); O2 y O3 ya en la MANUAL; O4 (el aviso final dice
-  «repite y marca pisar» para todo) llevado a F-048. Después, review 2 y la
-  MANUAL del humano.
+  informe; O2 y O3 ya en la MANUAL; O4 (el aviso final dice «repite y marca
+  pisar» para todo) llevado a F-048. Cambio 1 y O1 recogidos por el
+  implementer (`81dbbd8`: nº de fallos de los 33 mutantes, iguales a los del
+  reviewer; campaña en serie, 1 worker, 299 s). **Review 2 lanzada.** Después,
+  la MANUAL del humano.
 - **MANUAL (humano, en local, sin pulsar «Registrar»):** transfer y api desde
   la copia principal (tienen `.env`; transfer en modo pruebas), **front desde
   esta copia** (la principal está en la rama de F-045).
