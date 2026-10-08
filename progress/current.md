@@ -27,7 +27,8 @@ por la noche. El arnés es la **1.7.3**.
   «solo si no es 0»); corregidos por el líder. Código, tests y campaña sin
   objeciones; el reviewer da la campaña por fiable. Se conserva adrede el
   nombre de `test_f040_r1_dos_hojas_detalle_y_resumen` (trazabilidad, impl
-  §3). **Review 2 lanzada.** Después, la MANUAL T6 del humano.
+  §3). **Review 2 APROBADA** (`progress/review_F-045.md`); su observación
+  sobre el paso 6 ya está en la MANUAL. **Espera la MANUAL T6 del humano.**
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
@@ -40,7 +41,8 @@ por la noche. El arnés es la **1.7.3**.
      grupo entero y la Suma de la columna E (barra de estado) da lo mismo.
   5. En Obras, Código = POSTVENTA; en Postventa, Código = OBRAS: solo salen las
      líneas agregadas.
-  6. Estado distinto de OK: salen los grupos completos.
+  6. Estado distinto de OK: en octubre todos los que tienen líneas están OK,
+     así que solo salen los «SIN CARGA», de una fila cada uno.
   7. Aspecto: bandas, línea gruesa entre trabajadores y la agregada en cursiva.
   8. El Resumen, como hasta ahora.
   Resultado: _pendiente_.

@@ -1,15 +1,14 @@
 <!-- progress/review_F-045.md -->
-Revisión completa (pasada 1), `dev...6959c91`
+Revisión incremental desde 6959c91 (pasada 2) · la pasada 1 fue completa, `dev...6959c91`
 
 # F-045 · Review
 
-**Veredicto: CHANGES_REQUESTED** (CAMBIOS PEDIDOS). El código, los tests y la
-campaña están bien y se aprobarían tal cual; lo único que falla es el rastro:
-la MANUAL T6 de `progress/current.md` apunta a un mes que **no tiene postventa**
-en la base local, así que no se puede seguir (C4, tercer punto). Arreglo de una
-línea; la pasada 2 será incremental sobre `6959c91`.
+**Veredicto vigente: APPROVED** (pasada 2, al final; la 1, resumida por el tope).
 
-**Rigor:** `estandar` (declarado): fase RED, cobertura ≥ 80 % y mutación.
+**Pasada 1 · CHANGES_REQUESTED.** Código, tests y campaña bien; solo falla el
+rastro: la MANUAL T6 de `current.md` apuntaba a un mes **sin postventa** en la
+base local y no se podía seguir (C4, tercer punto). **Rigor:** `estandar`
+(declarado): fase RED, cobertura ≥ 80 % y mutación.
 
 ## Lo comprobado
 
@@ -77,25 +76,11 @@ línea; la pasada 2 será incremental sobre `6959c91`.
 
 ## Valoración del superviviente que no se reproduce (impl §5)
 
-**La campaña definitiva es fiable; no hay que repetirla.** Tres razones:
-
-1. **Tres ejecuciones, dos limpias e iguales.** La mía (con
-   `contenido.cpython-312.pyc` presente en `__pycache__`, es decir, la misma
-   condición que el implementer culpa de la primera) da 14/14 muertos, igual
-   que la definitiva. El mutante `contenido.py:98 agregada=True→False` lo
-   matan r7, r9, r15 y r18 (reproducido también a mano por el implementer).
-2. **El fallo va en la dirección segura.** Con `PYTHONDONTWRITEBYTECODE=1` la
-   campaña no escribe `.pyc` mutados; el único bytecode que puede colarse es
-   el del código original, que pasa la suite. Un `.pyc` viejo solo fabrica
-   **supervivientes falsos**, nunca **muertos falsos**: un 0 de supervivientes
-   no se infla por esa vía.
-3. **La hipótesis del `.pyc` no explica el caso tal cual.** Ese mutante añade
-   un byte (5784 → 5785) y CPython invalida el `.pyc` por tamaño, así que el
-   `.pyc` previo no debería cargarse. Sea cual sea la causa (bloqueo de
-   ficheros en Windows, un proceso o IDE que reescribe el fichero durante la
-   campaña…), es un defecto de la herramienta y está bien que esté en el
-   encargo de `arnes-base` (`5370838`). Conviene añadir allí este dato del
-   tamaño y que con el `.pyc` presente no se reproduce.
+**La campaña definitiva es fiable.** Mi reejecución, con el `.pyc` presente,
+da 14/14 como la definitiva (`contenido.py:98 agregada=True→False` lo matan r7,
+r9, r15 y r18); un `.pyc` viejo solo fabrica supervivientes falsos, nunca
+muertos falsos; y el mutante cambia el tamaño (5784 → 5785), así que CPython
+invalidaría el `.pyc`. Detalle: encargo de `arnes-base` `5370838` y `d413189`.
 
 ## Cobertura requisito → test (`test_f045_*` salvo indicación)
 
@@ -111,29 +96,44 @@ R1 `r1_tres_hojas…` (+ f040 r1) · R2 `r2_titulos…` · R3 `r3_cabecera_autof
 F-024 en verde sin tocar · R19 documental, por el diff (`ARCHITECTURE.md:79`,
 `services/dedicacion-api/README.md:41`).
 
-## Cambios requeridos
+## Cambios requeridos (pasada 1)
 
-1. **`progress/current.md`, MANUAL paso 2: cambiar `periodos/2026/09` por
-   `periodos/2026/10`.** Consulta de solo lectura a la base local (la que usa
-   la api local del paso 1): `2026/09` tiene 2 líneas y **0 de postventa**
-   (un solo trabajador, dos obras); `2026/10` tiene 12 líneas y 1 de
-   postventa, de un trabajador de la empresa 1 (`ide 1140584`) que además
-   tiene una obra. Con `2026/09` no hay agregadas, y los pasos 4, 5 y 7 no se
-   pueden hacer. design §6 ya decía `2026/10`.
-2. **`progress/current.md`, resumen de la spec: «en cursiva, solo si no es
-   0»** no es lo que dice D4/R8. La agregada sale cuando el trabajador tiene
-   **alguna línea de la otra parte**, valga lo que valga; no depende de que la
-   suma sea 0. Dejarlo como «solo si tiene líneas de la otra parte».
+1. `progress/current.md`, MANUAL paso 2: `periodos/2026/09` → `2026/10`
+   (septiembre no tiene postventa en la base local; octubre, 1 línea, de un
+   trabajador con obra; design §6 ya decía `2026/10`).
+2. `progress/current.md`, resumen de D4: «solo si no es 0» → «solo si tiene
+   líneas de la otra parte» (R8).
 
-El resto de la MANUAL casa con el código: puerto 8090 (`settings.py:34`),
-ruta `/api/v1/periodos/{anio}/{mes}/export.xlsx` (`routes.py:53,281`) y
-`x-usuario` cae a «local» (`deps.py:131`): el `curl.exe` anónimo funciona.
+El resto de la MANUAL casaba con el código (8090 `settings.py:34`, ruta
+`routes.py:53,281`, `x-usuario` → «local» `deps.py:131`). Observación: nombre de
+`test_f040_r1_dos_hojas_detalle_y_resumen`, conservado adrede (impl §3).
+Automejora (C4 «… y apuntando a datos que existen»): en `arnes-base` `d413189`.
 
-Observación (no bloquea): `test_f040_r1_dos_hojas_detalle_y_resumen` ya no
-describe lo que comprueba; se conservó adrede por trazabilidad (impl §3).
+## Pasada 2 · Revisión incremental desde 6959c91
 
-## Automejora (propuesta, no aplicada)
+**Veredicto: APPROVED.** `git diff 6959c91 --stat`: solo `current.md` y este
+informe; ni código ni tests. Lo aprobado en la pasada 1 queda dado por bueno;
+RM1 sigue valiendo (`77e124b..HEAD` solo toca `progress/` y `tasks.md`).
 
-- `CHECKPOINTS.md` C4, tercer punto: «… con su comando exacto **y apuntando a
-  datos que existen y permiten ver lo verificado**». Un comando exacto contra
-  un mes vacío cumple la letra y no verifica nada. Candidato a `arnes-base`.
+- `bash harness/init.sh` (tal cual, solo): **ENTORNO LISTO**, 418 passed /
+  1 skipped, cobertura 100 % (30/30), tamaño OK. Árbol limpio.
+- **Cambio 1 resuelto.** La MANUAL apunta a `2026/10` y se puede seguir. Contra
+  la base local, solo lectura (`build_app` en proceso, sin el DDL de `main.py`;
+  `GET …/2026/10/export.xlsx?empresa=1`, xlsx en mi scratchpad): 200, hojas
+  Obras/Postventa/Resumen (paso 3). ALVAREZ SEGUIDO, ROBERTO: Obras 0726 50 % +
+  `POSTVENTA / RESTO POSTVENTA` 50 %; Postventa `Postv-0626` 50 % + `OBRAS /
+  RESTO OBRAS` 50 %; agregadas en cursiva, suma 100 % en las dos (pasos 4, 7).
+  Las combinadas guardan el valor en el XML (`A10`, `A8`): el filtro saca el
+  grupo entero. Código = POSTVENTA: 1 fila en Obras; OBRAS: 10 en Postventa
+  (paso 5). Contraprueba: `2026/09` da 0 agregadas en Obras.
+- **Cambio 2 resuelto.** `current.md:16-17` dice «solo si el trabajador tiene
+  líneas de la otra parte»; no queda ningún «no es 0» salvo la cita histórica
+  de la review 1 (líneas 26-27). Encargos de `arnes-base` en `d413189` (`.pyc`
+  y C4), comprobados.
+
+**Checkpoints (pasada 2):** C1 [x] · C2 [x] · C3 [x] y C3 bis N/A (sin cambio
+desde la pasada 1) · **C4 [x]** (el `[ ]` de la MANUAL queda resuelto) · C4 bis
+[x] (sin cambio de alcance, campaña vigente) · C4 ter N/A · C5 [x].
+
+Observación (no bloquea): en octubre todos los que tienen líneas están OK; el
+paso 6 solo enseña grupos SIN CARGA de una fila (el grupo entero ya va en el 4).
