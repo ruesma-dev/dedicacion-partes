@@ -196,4 +196,6 @@ def test_f039_r21_el_excel_lleva_el_codigo_de_la_entrada():
     # Código en C, Obra en D y % en E. Una sola línea: nada combinado.
     detalle = [c.value for c in libro["Detalle"][3]]
     assert detalle[2:5] == ["VAR-29", "ACOND. NAVE MODUL-A", 0.455]
-    assert libro["Resumen"]["C3"].value == "VAR-29 ACOND. NAVE MODUL-A = 45,50%"
+    # VAR va en la pestaña Obras como obra normal (F-045 D5).
+    obras = [c.value for c in libro["Obras"][3]]
+    assert obras[2:5] == ["VAR-29", "ACOND. NAVE MODUL-A", 0.455]

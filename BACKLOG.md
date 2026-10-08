@@ -3,13 +3,12 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **51 features**, 26 abiertas, 25 terminadas.
+Resumen: **51 features**, 25 abiertas, 26 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-045 | Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea | 1 | pendiente | estandar | `feature/F-045-excel-obras-postventa` |
 | F-049 | Los avisos del modal de registro se rotulan según su tipo (sin partida, sobrecarga, pisar) y con su % | 2 | pendiente | estandar | `feature/F-049-avisos-registro-por-tipo` |
 | F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 3 | pendiente | critico | `feature/F-051-pisar-lineas-cero` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 4 | pendiente | critico | `feature/F-044-recursos-vinculados` |
@@ -46,6 +45,7 @@ Resumen: **51 features**, 26 abiertas, 25 terminadas.
 | F-037 | El registro de partes genera el asiento analítico en la cuenta de la obra | 1 | critico |
 | F-040 | El Excel de exportación como el modelo de Juan Romero (Detalle agrupado por trabajador y Resumen) | 1 | estandar |
 | F-042 | La última fila del cuadrante no abre el desplegable de obras al escribir | 1 | estandar |
+| F-045 | Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea | 1 | estandar |
 | F-047 | El transfer no registra en obras con más de 2.000 partidas («respuesta truncada») | 1 | critico |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
@@ -67,12 +67,6 @@ Resumen: **51 features**, 26 abiertas, 25 terminadas.
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
-
-### F-045 · Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea
-
-estado **pendiente** · prioridad 1 · rigor `estandar` · SDD sí · rama `feature/F-045-excel-obras-postventa`
-
-Pedida por el humano el 2026-10-07: «desglosar excel, la postventa va [en] una pestaña independiente, y se crea otra [de] obra donde sale una línea agregada de postventa en el recurso. En la postventa sale la línea agregada de obras xxx en el recurso, de forma que en ambas pestañas sale detallado en una postventa y en otra obra». Lectura del líder (a confirmar en la spec): sobre el Excel de F-040 (Detalle agrupado por trabajador y Resumen; services/dedicacion-api/infrastructure/excel/), dos pestañas de detalle por trabajador: «Obras», con el detalle de sus obras y UNA línea agregada con la suma de toda su postventa; y «Postventa», con el detalle de sus líneas Postv- y UNA línea agregada con la suma de todas sus obras. Así cada trabajador suma lo mismo en las dos pestañas y cada una detalla una parte. Solo la api (exportador); el agregado lo calcula la api, no el front. DECISIONES PARA LA SPEC: si «Obras» sustituye a «Detalle» o se añade; si se mantiene «Resumen» y cómo; si en «Postventa» salen los trabajadores sin postventa; dónde va VAR (VAR-NN) y el «RESTO POSTVENTA»; el texto de las líneas agregadas («POSTVENTA» / «OBRAS») y su formato (color, negrita) dentro de las bandas por trabajador de F-040; si conservan las celdas combinadas y el autofiltro de F-040. Afecta a F-038 (cuadro de mando «que sea el Excel»), por eso va delante de ella.
 
 ### F-049 · Los avisos del modal de registro se rotulan según su tipo (sin partida, sobrecarga, pisar) y con su %
 
@@ -259,6 +253,12 @@ Pedida por el humano el 2026-10-06: «modifique el excel que se genera para que 
 estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-042-ultima-fila-autocompletado`
 
 Fallo comunicado por el humano el 2026-10-07: «la última línea de la lista de trabajadores no funciona bien, al escribir la obra no sale el desplegable ni busca. Si reordeno y ese mismo trabajador no está el último, entonces sí funciona». Solo front (editor en línea y autocompletado de obras en services/dedicacion-front/static/js/app.js y su CSS): probablemente el desplegable se pinta fuera del área visible o queda recortado/tapado en la última fila. Reproducir primero. CAUSA (líder, 2026-10-07, solo lectura): el panel `.sugerencias` es `position: absolute` (top 40px, hasta 280px de alto) dentro de la tabla, y la tabla está en `.panel { overflow: hidden }` + `.panel-tabla { overflow-x: auto }`; en las filas intermedias el panel cae sobre las filas de abajo y se ve, en la última no hay nada debajo y queda recortado. Busca, pero no se ve. Plan A APROBADO por el humano el 2026-10-07 («la A»): posicionar el panel respecto a la ventana (`position: fixed`, coordenadas con getBoundingClientRect del campo), abrir hacia arriba si no cabe debajo, recolocar en scroll/resize y cerrar/limpiar al cerrar el editor; sin tocar teclado ni búsqueda. Descartada B (dejar hueco bajo la tabla). CERRADA (done) el 2026-10-07: review APROBADA a la primera; MANUAL cumplida por el humano en local («todo ok»). PENDIENTE DE DESPLEGAR (solo front, junto con F-041). DESPLEGADA el 2026-10-07 (front r20261007-1734).
+
+### F-045 · Excel desglosado: pestaña de obras y pestaña de postventa, cada una con la otra agregada en una línea
+
+estado **terminada** · prioridad 1 · rigor `estandar` · SDD sí · rama `feature/F-045-excel-obras-postventa`
+
+Pedida por el humano el 2026-10-07: «desglosar excel, la postventa va [en] una pestaña independiente, y se crea otra [de] obra donde sale una línea agregada de postventa en el recurso. En la postventa sale la línea agregada de obras xxx en el recurso, de forma que en ambas pestañas sale detallado en una postventa y en otra obra». Lectura del líder (a confirmar en la spec): sobre el Excel de F-040 (Detalle agrupado por trabajador y Resumen; services/dedicacion-api/infrastructure/excel/), dos pestañas de detalle por trabajador: «Obras», con el detalle de sus obras y UNA línea agregada con la suma de toda su postventa; y «Postventa», con el detalle de sus líneas Postv- y UNA línea agregada con la suma de todas sus obras. Así cada trabajador suma lo mismo en las dos pestañas y cada una detalla una parte. Solo la api (exportador); el agregado lo calcula la api, no el front. DECISIONES PARA LA SPEC: si «Obras» sustituye a «Detalle» o se añade; si se mantiene «Resumen» y cómo; si en «Postventa» salen los trabajadores sin postventa; dónde va VAR (VAR-NN) y el «RESTO POSTVENTA»; el texto de las líneas agregadas («POSTVENTA» / «OBRAS») y su formato (color, negrita) dentro de las bandas por trabajador de F-040; si conservan las celdas combinadas y el autofiltro de F-040. Afecta a F-038 (cuadro de mando «que sea el Excel»), por eso va delante de ella. 2026-10-07: spec escrita (`specs/F-045-excel-obras-postventa/`) con D1-D9. SPEC APROBADA por el humano el 2026-10-08 con D1-D9 = A («todo A»): Obras sustituye a Detalle; Resumen igual; todos los trabajadores en las dos; sin agregada vacía; VAR en Obras; agregada «POSTVENTA / RESTO POSTVENTA» y «OBRAS / RESTO OBRAS» en cursiva; combinadas y autofiltro como F-040; Total del trabajador completo. Cambian 12 tests anteriores (lista cerrada en design §7). Pasa a implementación. 2026-10-08: review pasada 2 APROBADA. En la MANUAL T6 el humano da por buenas Obras y Postventa («está bien») pero CAMBIA D1/D2: «quiero que la hoja resumen sea la primera pestaña original que tenía todas las obras, postventa y normales juntas, no la de resumen». Elegido por el humano: libro «Obras», «Postventa» y «Detalle» (la hoja de F-040 sin cambios, nombre y título incluidos, al final); «Resumen» DESAPARECE («si», tras avisarle de que Juan pidió el Resumen en F-040). Vuelve a spec (D1/D2 y R dependientes) y a implementación. 2026-10-08: spec revisada (D1/D2 reescritas, D10 técnica) APROBADA por el humano con D10 = A (se conserva `LineaDetalle.nombre`). Vuelve a implementación (T8-T11). 2026-10-08: MANUAL T6 del libro nuevo cumplida («todo ok»). AMPLIACIÓN pedida por el humano: «añade una columna de observaciones a la derecha de cada tabla»; la app no guarda observaciones y el humano elige A («a»): columna «Observaciones» VACÍA, por línea (sin combinar), a la derecha de las tres hojas (Obras, Postventa y Detalle), ancha y con ajuste de texto, dentro del autofiltro; para escribir en el Excel. Vuelve a spec e implementación. 2026-10-08: spec ampliada (D11, R20-R21) aprobada; D12 = A («la celda va en todas, vacía»: también en la agregada y en «SIN CARGA»). Implementación T12-T16. CERRADA (done) el 2026-10-08: review pasada 4 APROBADA (campaña de mutación repetida por el reviewer en una copia aislada: 20/20 muertos; los supervivientes de las campañas del implementer eran falsos, de entorno); M1 (T6) y M2 (T16) cumplidas por el humano («todo ok»). PENDIENTE DE DESPLEGAR (solo la api).
 
 ### F-047 · El transfer no registra en obras con más de 2.000 partidas («respuesta truncada»)
 
