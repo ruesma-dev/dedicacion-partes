@@ -1,10 +1,26 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** El 2026-10-07 se desplegaron F-037, F-039 y
-F-040 por la mañana, F-041 y F-042 (solo el front) por la tarde y F-047 (solo
-el transfer) por la noche. El arnés es la
-**1.7.3**.
+**F-049 en curso en esta rama** (`feature/F-049-avisos-registro-por-tipo`,
+copia `PycharmProjects/porcentajes-f041`): los avisos del modal de registro,
+rotulados por tipo. En la copia principal, F-045 (Excel) en su rama. El arnés es
+la **1.7.3**.
+
+## F-049 · Avisos del modal de registro por tipo (en curso)
+
+- **Causa** (líder, lectura del código y de Sigrid): `app.js` ~1739-1747 pinta
+  todos los conflictos como «Pisar … se borran … y se escribe <%>» sin mirar
+  `motivo`, y el % sale de `nueva_can`, que el transfer ya no manda (siempre
+  0 %). Caso del humano: GONZALEZ PANIAGUA, 2026-09: en la 0672 era «sin
+  partida»; en la 0694, «sin partida» y una sobrecarga (MADM 95 % a mano en
+  PT26/00319).
+- **Plan aprobado por el humano el 2026-10-08** («si»): solo front, `sdd:
+  false`, rigor estándar. Texto por tipo y % de `nuevas`; mismas claves a
+  ejecutar.
+- **Estado:** implementer lanzado.
+- **MANUAL (humano, en local; transfer local en modo pruebas):** se concreta
+  con el comando exacto cuando termine el implementer.
+  Resultado: _pendiente_.
 
 ## Producción, hoy
 

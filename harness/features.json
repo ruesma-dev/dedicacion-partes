@@ -825,7 +825,7 @@
         "Test del front (lógica de rotulado en node, como F-041/F-042); probado por el humano en local con el caso de la captura (sin pulsar Registrar)",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "sdd": false,
       "rigor": "estandar",
       "priority": 2,
