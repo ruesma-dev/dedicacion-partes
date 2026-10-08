@@ -55,7 +55,7 @@ por la noche. El arnés es la **1.7.3**.
      fila crece y la celda es de una sola fila.
   5. Filtro de Observaciones → «(No vacías)»: solo esa fila. Quitar el filtro.
   6. Vista previa de impresión: una página de ancho, con I dentro y legible.
-  Resultado: _pendiente_.
+  Resultado: **todo ok** (humano, 2026-10-08).
 - **MANUAL T6 (humano, cumplida; libro Obras, Postventa y Detalle):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
