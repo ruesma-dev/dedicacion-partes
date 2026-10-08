@@ -2211,3 +2211,98 @@ sigue en `false` y la línea de Bas Leal de septiembre está en la 0696 real
 (PT26/00298, CI.1.8, `porcentajes:3599`). En la 0404 hay dos líneas suyas de la
 prueba local en modo pruebas (`porcentajes:148` y `:149`, PT26/00344), pendientes
 de que el humano las borre. `azure-apps` actualizado en el mismo trabajo.
+
+## 2026-10-08 · F-045 · Excel desglosado: Obras, Postventa y Detalle, con Observaciones
+
+Rama `feature/F-045-excel-obras-postventa` · `sdd: true` · rigor `estandar` ·
+**APROBADO** en la pasada 4. Spec con D1-D9 = A; tras la MANUAL T6 el humano
+cambió el libro (D1/D2: «Obras», «Postventa» y «Detalle» de F-040, sin
+«Resumen») y pidió la columna «Observaciones» (D11 = A, vacía; D12 = A, en todas
+las filas). Reviews 1 y 3 rechazadas solo por el rastro del líder (MANUAL contra
+un mes sin postventa; D10 «abierta» en design.md): anotado en los encargos de
+`arnes-base`. Mutación: falsos supervivientes de entorno (otros procesos
+importando la copia); el reviewer la repitió en una copia aislada, 20/20.
+MANUAL T6 y M2 cumplidas por el humano («todo ok»). Solo la api.
+
+Informes: `progress/impl_F-045.md`, `progress/review_F-045.md`,
+`progress/mutacion_F-045.md`. Sección retirada de `current.md`:
+
+### F-045 · Excel desglosado: obras y postventa (en curso)
+
+- **Qué es** (humano, 2026-10-07): la postventa en una pestaña propia con la
+  línea agregada de obras de cada trabajador, y una pestaña de obras con la
+  línea agregada de postventa; en cada una, el detalle de lo suyo.
+- **Spec aprobada por el humano el 2026-10-08 con D1-D9 = A** («todo A»):
+  todos los trabajadores en las dos pestañas; agregada «POSTVENTA / RESTO
+  POSTVENTA» y «OBRAS / RESTO OBRAS» al final del grupo, en cursiva, solo si el
+  trabajador tiene líneas de la otra parte; VAR en Obras; Total, Desviación y
+  Estado del trabajador completo. Solo la api. Rigor estándar.
+- **Primera implementación** (T1-T5, T7; `2017b20`..`39aae1f`): review 1
+  CAMBIOS PEDIDOS solo por este fichero (MANUAL contra 2026/09 sin postventa),
+  review 2 APROBADA (`progress/review_F-045.md`).
+- **Cambio del humano en la MANUAL T6 (2026-10-08):** Obras y Postventa «está
+  bien», pero el libro pasa a **«Obras», «Postventa» y «Detalle»** (la hoja de
+  F-040 sin cambios, al final) y **«Resumen» desaparece** («si», avisado de que
+  Juan pidió el Resumen en F-040). Spec revisada (`a135217`) y aprobada con
+  D10 = A (se conserva `LineaDetalle.nombre`).
+- **Estado:** cambio implementado (T8-T11, `24b2dae`..`020e7cd`,
+  `progress/impl_F-045.md` §8): Detalle de F-040 tercera, Resumen fuera, 4
+  tests del Resumen borrados (lista cerrada de design §7), 713 tests de la api
+  en verde, mutación 14/14 muertos, init.sh en verde. **Review 3: CAMBIOS
+  PEDIDOS solo en el rastro** (D10 seguía «abierta» en design.md; el recuento
+  de octubre de la MANUAL); corregidos por el líder. MANUAL T6 cumplida.
+- **Petición nueva del humano (2026-10-08):** «añade una columna de
+  observaciones a la derecha de cada tabla». La app no guarda observaciones:
+  el humano elige **A** («a»): columna «Observaciones» vacía, por línea, sin
+  combinar, a la derecha de las tres hojas, ancha, con ajuste de texto y dentro
+  del autofiltro. Spec ampliada (D11, R20-R21, T12-T16; 9 tests anteriores
+  cambian, design §7.2) y **D12 = A** decidida por el humano el 2026-10-08
+  («la celda va en todas, vacía»: también en la agregada y en «SIN CARGA»).
+  **Estado:** ampliación implementada (T12-T15, `b7e3616`..`33b9011`,
+  `progress/impl_F-045.md` §9): columna I vacía en las tres hojas, 715 tests
+  de la api en verde, init.sh en verde, cobertura 38/38. Mutación inestable
+  (3, 1 y 1 supervivientes distintos en tres campañas; todos mueren a mano):
+  procesos ajenos importaban la copia durante la campaña; anotado en el
+  encargo de `arnes-base` (`7c5983d`). **Review 4 lanzada.** Después, M2.
+- **MANUAL M2 (humano, T16, en local, nada contra Azure):** la columna
+  Observaciones.
+  1. **Reiniciar la api local** (la arrancada a las 14:01 cargó un `exporter.py`
+     mutado): Ctrl+C y `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`,
+     `.venv/Scripts/python main.py` (8090).
+  2. `curl.exe -o "$env:TEMP\f045.xlsx" "http://127.0.0.1:8090/api/v1/periodos/2026/10/export.xlsx?empresa=1"`
+     y `start "$env:TEMP\f045.xlsx"`.
+  3. En las tres hojas, la última columna es «Observaciones», cabecera azul y ancha.
+  4. Texto largo en una celda de I de un grupo de varias filas: se ajusta, la
+     fila crece y la celda es de una sola fila.
+  5. Filtro de Observaciones → «(No vacías)»: solo esa fila. Quitar el filtro.
+  6. Vista previa de impresión: una página de ancho, con I dentro y legible.
+  Resultado: **todo ok** (humano, 2026-10-08).
+- **MANUAL T6 (humano, cumplida; libro Obras, Postventa y Detalle):**
+  1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
+     y `.venv/Scripts/python main.py` (8090).
+  2. En PowerShell: `curl.exe -o "$env:TEMP\f045.xlsx" "http://127.0.0.1:8090/api/v1/periodos/2026/10/export.xlsx?empresa=1"`
+     y `start "$env:TEMP\f045.xlsx"`. Octubre es el mes de la base local con
+     postventa: el Excel de la empresa 1 enseña 11 líneas de 8 trabajadores,
+     1 de postventa (`Postv-0626`, de un trabajador que también tiene una
+     obra). La base tiene 12, pero una es de otra empresa y no sale.
+     Septiembre no tiene ninguna de postventa.
+  3. Abre sin aviso de reparación, con las hojas Obras, Postventa y Detalle, en
+     ese orden, y sin Resumen.
+  4. En las tres hojas, filtrar un Empleado con obras y postventa: sale el
+     grupo entero y la Suma de la columna E (barra de estado) da lo mismo.
+  5. En Obras, Código = POSTVENTA; en Postventa, Código = OBRAS: solo salen las
+     líneas agregadas.
+  6. Estado distinto de OK: en octubre todos los que tienen líneas están OK,
+     así que solo salen los «SIN CARGA», de una fila cada uno.
+  7. Aspecto: bandas, línea gruesa entre trabajadores y la agregada en cursiva.
+  8. «Detalle», como el de F-040: título «DETALLE DE DEDICACIÓN · Octubre
+     2026», la postventa intercalada con `Postv-`, sin «RESTO …» ni cursiva.
+  Resultado: **todo ok** (humano, 2026-10-08), con el libro nuevo.
+
+## 2026-10-08 · Despliegue de F-045 (solo la api)
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo api` desde `dev`:
+`api:r20261008-1509`, revisión `ca-dedicacion-api--r20261008150925` en `Running`
+(comprobado por el líder con `az containerapp show`, solo lectura). Sin
+contrato nuevo ni variables. `azure-apps` actualizado en el mismo trabajo.
+Pendiente: Excel de producción y aviso a Administración (sin Resumen).

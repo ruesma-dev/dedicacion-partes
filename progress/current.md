@@ -47,7 +47,10 @@ es la **1.7.3**.
   (hecho en `f32e4d3`, con su mutante muerto y la suite del transfer sin
   caché); los `acceptance` a)-e) y la cabecera de este fichero,
   corregidos por el líder; O5 (doble registro concurrente) llevado a F-048; O6
-  aceptada. **Review 4 lanzada.** Después, la MANUAL.
+  aceptada. **Review 4: CAMBIOS PEDIDOS solo en el rastro** (quedaba «F-045
+  (en curso)» en «Lo siguiente»); corregido por el líder, que además ha traído
+  `dev` a la rama (O7: cierre y despliegue de F-045). **Review 5 lanzada.**
+  Después, la MANUAL.
 - **MANUAL (humano, en local, sin pulsar «Registrar»):** tres consolas. El
   **transfer con el código de esta copia**, arrancado desde la carpeta del
   transfer de la principal (su `.env` se lee de la carpeta de arranque); la api
@@ -108,6 +111,11 @@ pintarModalPreflight({obras: [{obra: {codigo: "0694", nombre: "Prueba F-049 c/e"
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-08: F-045**, solo la api (`r20261008-1509`, revisión
+  `Running` comprobada con `az containerapp show`): el Excel lleva Obras,
+  Postventa y Detalle (sin Resumen) y la columna Observaciones vacía.
+  **Pendiente del humano:** un Excel de producción y avisar a Juan y
+  Administración de que desaparece el Resumen.
 - **Desplegado el 2026-10-07 (noche): F-047**, solo el transfer
   (`r20261007-2029`): lecturas de hasta 200.000 filas, ya se registra en obras
   con más de 2.000 partidas. Comprobado por el líder (solo lectura): el
@@ -185,8 +193,13 @@ humano): **F-049** (los avisos del modal de registro rotulados por tipo, con su
 %; aprobada), **F-051** (pisar las líneas del parte al 0 % que ya existan),
 **F-050** (subfilas por obra con columna Partida y partida propuesta; absorbe
 F-043) y **F-021** redefinida (velar las etiquetas de las demás obras al
-filtrar). **F-044** (recursos vinculados) sube. Orden: F-045 (en curso), F-049,
-F-051, F-044, F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
+filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
+2026-10-08: **F-052** (una línea de mensajería por obra en curso y mes, con
+la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
+obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
+(KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
+Orden: F-049 (en curso, en `porcentajes-f041`), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+que ya hay en los partes de Sigrid; 2026-10-08), F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
