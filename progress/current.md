@@ -32,9 +32,10 @@ por la noche. El arnés es la **1.7.3**.
   de octubre de la MANUAL); corregidos por el líder. MANUAL T6 cumplida.
 - **Petición nueva del humano (2026-10-08):** «añade una columna de
   observaciones a la derecha de cada tabla». La app no guarda observaciones:
-  propuesto A (columna «Observaciones» vacía por línea en las tres hojas,
-  dentro de F-045) o B (guardarlas en la app, feature aparte). **Espera la
-  respuesta del humano**; la review 4 va después.
+  el humano elige **A** («a»): columna «Observaciones» vacía, por línea, sin
+  combinar, a la derecha de las tres hojas, ancha, con ajuste de texto y dentro
+  del autofiltro. **Estado:** spec-author lanzado para añadirla a la spec;
+  después implementer, review 4 y la MANUAL de la columna.
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
