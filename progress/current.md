@@ -37,8 +37,11 @@ por la noche. El arnés es la **1.7.3**.
   del autofiltro. Spec ampliada (D11, R20-R21, T12-T16; 9 tests anteriores
   cambian, design §7.2) y **D12 = A** decidida por el humano el 2026-10-08
   («la celda va en todas, vacía»: también en la agregada y en «SIN CARGA»).
-  **Estado:** implementer lanzado (T12-T16); después review 4 y la MANUAL M2
-  de la columna.
+  **Estado:** ampliación implementada (T12-T15, `b7e3616`..`ca221b5`,
+  `progress/impl_F-045.md` §9): columna I vacía en las tres hojas, 715 tests
+  de la api en verde, init.sh en verde; mutación 19/20 muertos y 1 falso
+  superviviente (muere a mano; §9.3). Pendiente: review 4 y la MANUAL M2
+  (§9.4: **reiniciar antes la api local**, arrancada en mitad de una campaña).
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
