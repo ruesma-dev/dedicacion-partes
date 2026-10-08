@@ -17,9 +17,31 @@ la **1.7.3**.
 - **Plan aprobado por el humano el 2026-10-08** («si»): solo front, `sdd:
   false`, rigor estándar. Texto por tipo y % de `nuevas`; mismas claves a
   ejecutar.
-- **Estado:** implementer terminado (T1-T3, `progress/impl_F-049.md`); falta la review y la MANUAL.
-- **MANUAL (humano, en local; transfer local en modo pruebas):** se concreta
-  con el comando exacto cuando termine el implementer.
+- **Estado:** implementada (`3ad478b`..`d6d8658`, `progress/impl_F-049.md`):
+  rotulado en una función pura con tests en node, campaña manual 33/33
+  mutantes muertos (`progress/mutacion_manual_F-049.md`), init.sh en verde.
+  **Review lanzada.** Después, la MANUAL del humano.
+- **MANUAL (humano, en local, sin pulsar «Registrar»):** transfer y api desde
+  la copia principal (tienen `.env`; transfer en modo pruebas), **front desde
+  esta copia** (la principal está en la rama de F-045).
+  1. Transfer: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-transfer`
+     y `.venv/Scripts/python main.py`; en otra consola
+     `Invoke-RestMethod http://localhost:8006/health`: `modo_pruebas` = True.
+  2. Api: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
+     y `.venv/Scripts/python main.py` (8090).
+  3. Front: parar cualquier otro en el 8080;
+     `cd C:/Users/pgris/PycharmProjects/porcentajes-f041/services/dedicacion-front`
+     y `.venv/Scripts/python main.py`.
+  4. `http://127.0.0.1:8080`, **Ctrl+F5**, septiembre 2026, «⇪ Sigrid» en la
+     fila de GONZALEZ PANIAGUA: ningún aviso dice «se borran y se escribe 0%»;
+     cada uno empieza por **Sin partida**, **Sobrecarga** o **Pisar**, con su %.
+     **Cancelar.** En modo pruebas el preflight mira los partes de la 0404,
+     así que la sobrecarga de la 0694 no sale en local.
+  5. Los tres tipos a la vista: en esa página, F12 → consola, pegar el
+     `pintarModalPreflight({...})` de `progress/impl_F-049.md` («MANUAL», paso
+     6). Salen tres casillas: «Sin partida» (5 %), «Sobrecarga» (ya tiene 95 %,
+     sumaría 105 %, un 5 % por encima) y «Pisar» (se borra la línea 8001 y se
+     escribe 60 %). **NO pulsar «Registrar»; Cancelar.**
   Resultado: _pendiente_.
 
 ## Producción, hoy
