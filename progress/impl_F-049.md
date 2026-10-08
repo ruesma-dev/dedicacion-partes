@@ -212,5 +212,5 @@ pintarModalPreflight({obras: [{obra: {codigo: "0694", nombre: "Prueba F-049"}, o
 | Suite del front (`init.sh`) | **118 passed**, 19 warnings previas, 19,97 s |
 | Suite raíz (`init.sh`) | 418 passed, 1 skipped, 97,65 s; api y transfer en verde (caché) |
 | Cobertura de líneas cambiadas | **N/A**: `PUERTA COBERTURA: N/A (F-049 no cambia líneas Python de producción frente a dev)`; el cambio es JS, que no se mide |
-| Mutantes | `harness.mutacion` no muta JS: campaña manual, **33 generados, 0 supervivientes** (`progress/mutacion_manual_F-049.md`) |
+| Mutantes | `harness.mutacion` no muta JS: campaña manual, **33 generados, 0 supervivientes** (`progress/mutacion_manual_F-049.md`); **campaña en serie, 1 worker**: 299 s en total sin `-x` (medida en la review 1; la pasada con `-x` no se cronometró) |
 | `bash harness/init.sh` (sin pipes, código 0) | **ENTORNO LISTO**; todo `[OK]` salvo el `[AVISO]` de `ruff` (237, deuda previa; el test de F-049 no añade ninguno); `PUERTA TAMAÑO: impl 216/220`. Mutación repetida tras el ajuste de `ruff` del test: 33/33 muertos |
