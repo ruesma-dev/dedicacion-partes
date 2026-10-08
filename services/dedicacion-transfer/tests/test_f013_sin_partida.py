@@ -388,17 +388,36 @@ API_REGISTRO = (RAIZ / "services" / "dedicacion-api" / "application" /
                 "registro_sigrid.py")
 
 
-@pytest.mark.parametrize("ruta", (FRONT_JS, API_REGISTRO),
-                         ids=lambda r: r.name)
+@pytest.mark.parametrize("ruta", (API_REGISTRO,), ids=lambda r: r.name)
 @pytest.mark.parametrize("motivo", ("pisado", "sobrecarga", "sin_partida"))
 def test_f013_r4_ni_la_api_ni_el_front_enumeran_los_motivos(ruta, motivo):
     """R4 · La degradación elegante no es una promesa: es que ninguno de los
     dos servicios ramifica por el motivo. Pintan el conflicto y persisten
     `omitidas` sin mirar de qué tipo son. El día que uno de los dos escriba
     un `if motivo === ...`, este test cae y obliga a decidir si el contrato
-    sigue siendo el de F-002."""
+    sigue siendo el de F-002.
+
+    Esa decisión se tomó para el FRONT en F-049 (plan aprobado por el humano
+    el 2026-10-08): `app.js` rotula cada aviso según su `motivo`, con el
+    MISMO contrato de F-002 (ningún campo nuevo, ver el test de arriba). La
+    api sigue sin ramificar; lo que se exige ahora al front está en
+    `test_f013_r4_el_front_rotula_por_motivo_y_degrada`."""
     assert ruta.is_file(), ruta
     assert motivo not in ruta.read_text(encoding="utf-8"), ruta.name
+
+
+def test_f013_r4_el_front_rotula_por_motivo_y_degrada():
+    """R4 tras F-049 · El front ramifica por `motivo` solo para rotular, y un
+    motivo que no conoce no se disfraza de otro: cae en el rótulo genérico
+    «Confirmar» (comprobado en node por `test_f049_avisos_registro.py`)."""
+    js = FRONT_JS.read_text(encoding="utf-8")
+    inicio = js.index("function rotuloConflicto(")
+    rotulo = js[inicio:js.index("\nfunction ", inicio + 1)]
+    for motivo in ("sobrecarga", "sin_partida", "pisado"):
+        assert f'motivo === "{motivo}"' in rotulo, motivo
+    assert 'titulo: "Confirmar"' in rotulo
+    # Fuera del rotulado, el front sigue sin mirar el motivo.
+    assert "sobrecarga" not in js.replace(rotulo, "")
 
 
 # --------- interacción con la SOBRECARGA (F-002, Regla B) ---------- #
