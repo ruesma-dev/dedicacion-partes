@@ -3,8 +3,9 @@
 
 **F-049 en curso en esta rama** (`feature/F-049-avisos-registro-por-tipo`,
 copia `PycharmProjects/porcentajes-f041`): los avisos del modal de registro,
-rotulados por tipo. En la copia principal, F-045 (Excel) en su rama. El arnés es
-la **1.7.3**.
+rotulados por tipo. La copia principal está en `dev`, sin feature en
+ejecución: F-045 se cerró y se desplegó el 2026-10-08 (solo la api). El arnés
+es la **1.7.3**.
 
 ## F-049 · Avisos del modal de registro por tipo (en curso)
 
@@ -41,7 +42,11 @@ la **1.7.3**.
   init.sh (las reviews 1 y 2 aprobaron sobre ese rojo); ajustado con
   justificación (informe, decisión 3); anotado en el encargo 1.7.12 de
   `arnes-base` (`7b6701a`). Lo que se salía era sobre todo el rótulo de la
-  casilla (decisión 2). **Review 3 lanzada.** Después, la MANUAL.
+  casilla (decisión 2). **Review 3: CAMBIOS PEDIDOS** (`progress/review_F-049.md`):
+  `test_f013_r4` debe prohibir los tres motivos fuera de `rotuloConflicto`
+  (implementer relanzado); los `acceptance` a)-e) y la cabecera de este fichero,
+  corregidos por el líder; O5 (doble registro concurrente) llevado a F-048; O6
+  aceptada. Después, review 4 y la MANUAL.
 - **MANUAL (humano, en local, sin pulsar «Registrar»):** tres consolas. El
   **transfer con el código de esta copia**, arrancado desde la carpeta del
   transfer de la principal (su `.env` se lee de la carpeta de arranque); la api

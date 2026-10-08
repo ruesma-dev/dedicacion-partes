@@ -800,7 +800,7 @@
     {
       "id": "F-048",
       "title": "Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas»)",
-      "description": "Pedida por el humano el 2026-10-07 («2 ok»), a raíz de F-047: cuando una obra falla al registrar (p. ej. «sigrid-api devolvio una respuesta truncada»), las demás sí se escriben (cada obra es una petición aparte al transfer, `services/dedicacion-api/application/registro_sigrid.py`), pero el aviso final del front (`static/js/app.js`, tras ejecutar) solo da cuentas, en rojo si `!r.ok`, sin nombrar la obra ni el error; el humano lo leyó como «no me registra nada». La api ya devuelve por obra `ok` y `error`: el front solo tiene que enseñarlo (sin lógica de negocio). DECISIONES PARA LA SPEC: dónde se enseña (aviso, modal que no se cierra, lista por obra), si se ofrece reintentar solo las fallidas y cómo se distingue «escritas 0 porque ya estaba todo registrado» de «0 por error». RECOGIDO de la review de F-049 (O4, 2026-10-08): el aviso final de `registroEjecutar` (app.js) sigue diciendo «(repite y marca pisar)» para cualquier aviso sin confirmar, aunque sea «sin partida» o «sobrecarga»: que diga lo que corresponde a cada tipo.",
+      "description": "Pedida por el humano el 2026-10-07 («2 ok»), a raíz de F-047: cuando una obra falla al registrar (p. ej. «sigrid-api devolvio una respuesta truncada»), las demás sí se escriben (cada obra es una petición aparte al transfer, `services/dedicacion-api/application/registro_sigrid.py`), pero el aviso final del front (`static/js/app.js`, tras ejecutar) solo da cuentas, en rojo si `!r.ok`, sin nombrar la obra ni el error; el humano lo leyó como «no me registra nada». La api ya devuelve por obra `ok` y `error`: el front solo tiene que enseñarlo (sin lógica de negocio). DECISIONES PARA LA SPEC: dónde se enseña (aviso, modal que no se cierra, lista por obra), si se ofrece reintentar solo las fallidas y cómo se distingue «escritas 0 porque ya estaba todo registrado» de «0 por error». RECOGIDO de la review de F-049 (O4, 2026-10-08): el aviso final de `registroEjecutar` (app.js) sigue diciendo «(repite y marca pisar)» para cualquier aviso sin confirmar, aunque sea «sin partida» o «sobrecarga»: que diga lo que corresponde a cada tipo. RECOGIDO de la review 3 de F-049 (O5, 2026-10-08): DOBLE REGISTRO CONCURRENTE. Mientras «Registrando…», cambiar una partida lanza el repreflight, que repinta el modal con «Registrar» activo; un segundo clic abre otro `ejecutar` en paralelo (ya era posible con Cancelar y reabrir). No hay cerrojo en api ni transfer y el synckey no cubre dos peticiones en vuelo. Propuesta del reviewer: ignorar repreflight y apertura mientras se ejecuta, o cerrojo por periodo en la api.",
       "acceptance": [
         "Tras registrar, el usuario ve qué obras se escribieron, cuáles fallaron y el error de cada una",
         "Un fallo en una obra no esconde lo escrito en las demás; «nada que escribir» no se confunde con un error",
@@ -823,6 +823,12 @@
         "El % que se escribiría sale de lo que manda el preflight (`nuevas`), no 0 %; la sobrecarga enseña lo existente, el total y el exceso",
         "Las casillas siguen mandando las mismas claves a ejecutar (sin cambio de comportamiento del registro)",
         "Test del front (lógica de rotulado en node, como F-041/F-042); probado por el humano en local con el caso de la captura (sin pulsar Registrar)",
+        "a) Al elegir una partida en el modal se repite el preflight con las partidas elegidas, conservando las casillas marcadas; mientras, «Registrar» no se puede pulsar",
+        "b) Abrir el registro desde un botón empieza sin partidas elegidas de antes; solo duran mientras el modal sigue abierto",
+        "c) La partida elegida se enseña en el desplegable aunque no esté en la lista; nunca «— sin partida —» cuando hay partida",
+        "d) El transfer publica `partidas_obra` siempre que haya líneas de obra normal, aunque todas lleven partida manual, sin cambiar lo que se escribe",
+        "e) El aviso amarillo y el rótulo de las casillas ajustan el texto dentro de su recuadro",
+        "Despliegue: transfer y front",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
       "status": "in_progress",
