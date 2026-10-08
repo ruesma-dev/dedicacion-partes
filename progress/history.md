@@ -2298,3 +2298,11 @@ Informes: `progress/impl_F-045.md`, `progress/review_F-045.md`,
   8. «Detalle», como el de F-040: título «DETALLE DE DEDICACIÓN · Octubre
      2026», la postventa intercalada con `Postv-`, sin «RESTO …» ni cursiva.
   Resultado: **todo ok** (humano, 2026-10-08), con el libro nuevo.
+
+## 2026-10-08 · Despliegue de F-045 (solo la api)
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo api` desde `dev`:
+`api:r20261008-1509`, revisión `ca-dedicacion-api--r20261008150925` en `Running`
+(comprobado por el líder con `az containerapp show`, solo lectura). Sin
+contrato nuevo ni variables. `azure-apps` actualizado en el mismo trabajo.
+Pendiente: Excel de producción y aviso a Administración (sin Resumen).

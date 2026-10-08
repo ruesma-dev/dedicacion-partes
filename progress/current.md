@@ -2,23 +2,17 @@
 # Trabajo en curso
 
 **Ninguna feature en ejecución en la copia principal.** F-045 (Excel con
-Obras, Postventa y Detalle, y la columna Observaciones) está cerrada en `dev` y
-**pendiente de desplegar** (solo la api, sección siguiente). F-049 sigue en su
+Obras, Postventa y Detalle, y la columna Observaciones) se desplegó el
+2026-10-08 (solo la api). F-049 sigue en su
 rama en la copia `porcentajes-f041`. El arnés es la **1.7.3**.
-
-## ⚠ Despliegue de F-045 (pendiente; lo lanza el humano)
-
-- Cambia **solo la api** (`.\redeploy_dedicacion.ps1 -Solo api`, desde `dev`,
-  con `00_vars_dedicacion.ps1`, `00_vars_dedicacion.local.ps1` y
-  `00_capps_vars_dedicacion.ps1` cargados). Sin DDL, sin sync, sin variables
-  nuevas.
-- **Comprobación:** «Exportar Excel» de un mes con postventa: hojas Obras,
-  Postventa y Detalle (sin Resumen) y la columna Observaciones vacía.
-- **Aviso a Administración:** desaparece la hoja «Resumen» que pidió Juan en
-  F-040 (decisión del humano del 2026-10-08).
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-08: F-045**, solo la api (`r20261008-1509`, revisión
+  `Running` comprobada con `az containerapp show`): el Excel lleva Obras,
+  Postventa y Detalle (sin Resumen) y la columna Observaciones vacía.
+  **Pendiente del humano:** un Excel de producción y avisar a Juan y
+  Administración de que desaparece el Resumen.
 - **Desplegado el 2026-10-07 (noche): F-047**, solo el transfer
   (`r20261007-2029`): lecturas de hasta 200.000 filas, ya se registra en obras
   con más de 2.000 partidas. Comprobado por el líder (solo lectura): el
@@ -100,7 +94,7 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 2026-10-08: **F-052** (una línea de mensajería por obra en curso y mes, con
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
-(KM no). Juan quiere registrar **octubre entero desde la app**. F-045 cerrada (pendiente de desplegar).
+(KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 Orden: F-049 (en curso, en `porcentajes-f041`), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
