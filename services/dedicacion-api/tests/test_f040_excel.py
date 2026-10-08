@@ -11,7 +11,9 @@ Dos niveles (specs/F-040-excel-modelo-juan/design.md §7):
     hoja, porque `load_workbook` limpia las celdas no ancla al leer (§5).
     Desde F-045 el libro lleva delante «Obras» y «Postventa» (se prueban en
     `test_f045_excel_pestanas.py`), «Detalle» es la tercera hoja
-    (`sheet3.xml`, `_HOJA_DETALLE`) y no hay Resumen.
+    (`sheet3.xml`, `_HOJA_DETALLE`) y no hay Resumen. Desde F-045 D11 las
+    tres hojas acaban en la columna I «Observaciones», vacía (ancho 50,
+    dentro del autofiltro).
 
 Todos los nombres son inventados. Sin red, sin BBDD y sin ficheros: el libro
 vive en memoria.
@@ -267,25 +269,25 @@ def test_f040_r2_titulo_en_fila_1_cabecera_en_2_datos_desde_3():
 
 def test_f040_r3_autofiltro_y_paneles():
     libro = _libro(_exportar())
-    assert libro["Detalle"].auto_filter.ref == "A2:H12"
+    assert libro["Detalle"].auto_filter.ref == "A2:I12"
     for hoja in libro.worksheets:
         assert hoja.freeze_panes == "A3"
     vacio = _libro(_exportar([]))
-    assert vacio["Detalle"].auto_filter.ref == "A2:H2"
+    assert vacio["Detalle"].auto_filter.ref == "A2:I2"
 
 
 def test_f040_r4_impresion_y_anchos():
     libro = _libro(_exportar())
-    anchos = {"Obras": (34, 22, 12, 44, 13, 15, 12, 16),
-              "Postventa": (34, 22, 12, 44, 13, 15, 12, 16),
-              "Detalle": (34, 22, 12, 44, 13, 15, 12, 16)}
+    anchos = {"Obras": (34, 22, 12, 44, 13, 15, 12, 16, 50),
+              "Postventa": (34, 22, 12, 44, 13, 15, 12, 16, 50),
+              "Detalle": (34, 22, 12, 44, 13, 15, 12, 16, 50)}
     for hoja in libro.worksheets:
         assert hoja.page_setup.orientation == "landscape"
         assert hoja.sheet_properties.pageSetUpPr.fitToPage is True
         assert hoja.page_setup.fitToWidth == 1
         assert hoja.page_setup.fitToHeight == 0
         assert hoja.print_title_rows == "$1:$2"
-        letras = "ABCDEFGH"[: len(anchos[hoja.title])]
+        letras = "ABCDEFGHI"[: len(anchos[hoja.title])]
         assert tuple(hoja.column_dimensions[c].width for c in letras) == (
             anchos[hoja.title])
 
@@ -303,7 +305,7 @@ def test_f040_r6_cabecera_del_detalle_sin_obra_codigo():
     det = _libro(_exportar())["Detalle"]
     assert [c.value for c in det[2]] == [
         "Empleado", "Categoría", "Código", "Obra", "% dedicación",
-        "Total empleado", "Desviación", "Estado"]
+        "Total empleado", "Desviación", "Estado", "Observaciones"]
 
 
 def test_f040_r7_r8_filas_del_detalle_en_orden_y_con_su_codigo():
@@ -320,7 +322,7 @@ def test_f040_r9_sin_carga_en_el_libro():
     det = _libro(_exportar())["Detalle"]
     fila = [c.value for c in det[11]]
     assert fila[0] == "DELTA PRUEBA CUATRO"
-    assert fila[2:] == [None, None, None, 0, None, "SIN CARGA"]
+    assert fila[2:] == [None, None, None, 0, None, "SIN CARGA", None]
 
 
 def test_f040_r10_valor_en_todas_las_filas_del_grupo():

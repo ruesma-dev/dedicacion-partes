@@ -1,8 +1,10 @@
 # tests/test_f045_excel_pestanas.py
 """Tests offline de F-045: el Excel desglosado en «Obras» y «Postventa».
 
-El libro lleva «Obras», «Postventa» y «Detalle» (la hoja de F-040, sin
-cambios, la tercera) y no lleva Resumen (D1 y D2 de la MANUAL T6).
+El libro lleva «Obras», «Postventa» y «Detalle» (la hoja de F-040, la
+tercera) y no lleva Resumen (D1 y D2 de la MANUAL T6). Desde D11 las tres
+acaban en la columna I «Observaciones», vacía, una celda por fila de datos
+para escribir en el Excel (R20, R21).
 
 Dos niveles (specs/F-045-excel-obras-postventa/design.md §7):
 
@@ -10,8 +12,9 @@ Dos niveles (specs/F-045-excel-obras-postventa/design.md §7):
     qué líneas lleva el grupo de cada trabajador en cada pestaña y la línea
     agregada con la otra parte (R4-R12, R18).
   - Libro (`infrastructure/excel/exporter.py`): hojas, formato, combinadas,
-    bandas y cursiva de la agregada, y «Detalle» igual que en F-040
-    (R1-R3, R13-R17).
+    bandas y cursiva de la agregada, «Detalle» como en F-040 más la
+    columna I, y la columna «Observaciones» de las tres hojas
+    (R1-R3, R13-R17, R20, R21).
 
 Los cinco trabajadores son los del prototipo (design §5), con nombres y
 obras inventados. Sin red, sin BBDD y sin ficheros: el libro vive en memoria.
@@ -244,7 +247,7 @@ def test_f045_r18_el_prefijo_sale_de_la_configuracion():
 _PERIODO = Periodo(anio=2026, mes=9)
 _BLANCO, _AZUL = "FFFFFFFF", "FFDDEBF7"
 _CABECERA = ["Empleado", "Categoría", "Código", "Obra", "% dedicación",
-             "Total empleado", "Desviación", "Estado"]
+             "Total empleado", "Desviación", "Estado", "Observaciones"]
 
 #: (primera, última) fila de cada grupo de `_muestra()`, por hoja.
 _GRUPOS = {
@@ -307,16 +310,16 @@ def test_f045_r3_cabecera_autofiltro_paneles_anchos_e_impresion(nombre):
         assert _rgb(celda.fill.fgColor.rgb) == "FF1F3864"
         assert celda.font.bold and _rgb(celda.font.color.rgb) == "FFFFFFFF"
     assert hoja.max_row == 11
-    assert hoja.auto_filter.ref == "A2:H11"
+    assert hoja.auto_filter.ref == "A2:I11"
     assert hoja.freeze_panes == "A3"
-    assert tuple(hoja.column_dimensions[c].width for c in "ABCDEFGH") == (
-        34, 22, 12, 44, 13, 15, 12, 16)
+    assert tuple(hoja.column_dimensions[c].width for c in "ABCDEFGHI") == (
+        34, 22, 12, 44, 13, 15, 12, 16, 50)
     assert hoja.page_setup.orientation == "landscape"
     assert hoja.sheet_properties.pageSetUpPr.fitToPage is True
     assert hoja.page_setup.fitToWidth == 1
     assert hoja.page_setup.fitToHeight == 0
     assert hoja.print_title_rows == "$1:$2"
-    assert _libro(_exportar([]))[nombre].auto_filter.ref == "A2:H2"
+    assert _libro(_exportar([]))[nombre].auto_filter.ref == "A2:I2"
 
 
 def test_f045_r4_r10_filas_de_la_pestana_obras():
@@ -335,7 +338,7 @@ def test_f045_r4_r10_filas_de_la_pestana_obras():
         "Varios partida 29", "RESTO POSTVENTA"]
     assert _columna(obras, 5) == [0.6, 0.25, 0.15, 0.5, 0.4, 1, None, 0.6, 0.5]
     assert [c.value for c in obras[9]][2:] == [None, None, None, 0, None,
-                                               "SIN CARGA"]
+                                               "SIN CARGA", None]
 
 
 def test_f045_r4_r10_filas_de_la_pestana_postventa():
@@ -354,7 +357,7 @@ def test_f045_r4_r10_filas_de_la_pestana_postventa():
         "Postv-Hotel Inventado", "Postv-Nave Inventada", "RESTO OBRAS"]
     assert _columna(postv, 5) == [0.15, 0.85, 0.9, 0.7, 0.3, None, 0.3, 0.2, 0.6]
     assert [c.value for c in postv[8]][2:] == [None, None, None, 0, None,
-                                               "SIN CARGA"]
+                                               "SIN CARGA", None]
 
 
 def test_f045_r11_total_desviacion_y_estado_iguales_en_las_tres_hojas():
@@ -474,7 +477,7 @@ def test_f045_r17_detalle_igual_que_en_f040():
     assert det["A1"].value == "DETALLE DE DEDICACIÓN · Septiembre 2026"
     assert [c.value for c in det[2]] == _CABECERA
     assert det.max_row == 13
-    assert det.auto_filter.ref == "A2:H13"
+    assert det.auto_filter.ref == "A2:I13"
     lineas = [ln for g in grupos for ln in g.lineas]
     assert len(lineas) == 11
     for r, ln in zip(range(3, 14), lineas, strict=True):
@@ -511,3 +514,53 @@ def test_f045_r18_el_prefijo_de_la_configuracion_llega_al_libro():
     assert (postv["C4"].value, postv["D4"].value) == ("OBRAS", "RESTO OBRAS")
     assert libro["Obras"]["C5"].value == "POSTVENTA"
     assert libro["Detalle"]["C5"].value == "PV_0702"
+
+
+# ----------------------------------------------------------------------
+# Columna Observaciones (D11, D12)
+# ----------------------------------------------------------------------
+def test_f045_r20_observaciones_a_la_derecha_en_las_tres_hojas():
+    libro = _libro(_exportar())
+    vacio = _libro(_exportar([]))
+    for hoja in libro.worksheets:
+        i2 = hoja["I2"]
+        assert i2.value == "Observaciones", hoja.title
+        assert _rgb(i2.fill.fgColor.rgb) == "FF1F3864"
+        assert i2.font.bold and _rgb(i2.font.color.rgb) == "FFFFFFFF"
+        assert hoja.column_dimensions["I"].width == 50
+        assert hoja.auto_filter.ref == f"A2:I{hoja.max_row}", hoja.title
+        assert hoja.max_column == 9
+        assert hoja.page_setup.fitToWidth == 1
+        assert vacio[hoja.title].auto_filter.ref == "A2:I2"
+        assert vacio[hoja.title]["I2"].value == "Observaciones"
+
+
+def test_f045_r21_celda_de_observaciones_vacia_por_linea():
+    contenido = _exportar()
+    libro = _libro(contenido)
+    grupos_por_hoja = {**_GRUPOS, "Detalle": _GRUPOS_DETALLE}
+    for nombre, grupos in grupos_por_hoja.items():
+        celdas, rangos = _xml_hoja(contenido, _N_HOJA[nombre])
+        hoja = libro[nombre]
+        assert not any(r.startswith("I") for r in rangos), nombre
+        assert grupos[-1][1] == hoja.max_row
+        for n, (ini, fin) in enumerate(grupos):
+            banda = (_BLANCO, _AZUL)[n % 2]
+            for r in range(ini, fin + 1):
+                # Existe en el XML (con estilo), pero sin valor ni fórmula,
+                # también en la agregada y en la «SIN CARGA» (D12 = A).
+                assert f"I{r}" in celdas, (nombre, r)
+                celda = celdas[f"I{r}"]
+                assert celda["v"] is None, (nombre, r)
+                assert celda["fill"] == banda, (nombre, r)
+                assert celda["bottom"] == (
+                    ("medium", "FF000000") if r == fin
+                    else ("thin", "FFBFBFBF")), (nombre, r)
+                i = hoja.cell(r, 9)
+                assert i.value is None and i.data_type != "f", (nombre, r)
+                assert i.alignment.wrap_text is True, (nombre, r)
+                assert i.alignment.vertical == "top", (nombre, r)
+                assert not i.font.italic, (nombre, r)
+                assert i.border.left.style == "thin", (nombre, r)
+                assert i.border.right.style == "thin", (nombre, r)
+                assert i.border.top.style == "thin", (nombre, r)
