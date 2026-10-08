@@ -12,7 +12,7 @@ por la noche. El arnés es la **1.7.3**.
   línea agregada de obras de cada trabajador, y una pestaña de obras con la
   línea agregada de postventa; en cada una, el detalle de lo suyo.
 - **Spec aprobada por el humano el 2026-10-08 con D1-D9 = A** («todo A»):
-  libro «Obras», «Postventa» y «Resumen» (Obras sustituye a Detalle); todos los
+  (libro cambiado después, ver abajo) todos los
   trabajadores en las dos; agregada «POSTVENTA / RESTO POSTVENTA» y «OBRAS /
   RESTO OBRAS» al final del grupo, en cursiva, solo si el trabajador tiene
   líneas de la otra parte; VAR en Obras;
@@ -31,13 +31,8 @@ por la noche. El arnés es la **1.7.3**.
 - **CAMBIO DEL HUMANO en la MANUAL T6 (2026-10-08):** Obras y Postventa «está
   bien», pero el libro pasa a ser **«Obras», «Postventa» y «Detalle»** (la hoja
   de F-040 sin cambios, al final) y **«Resumen» desaparece** («si», avisado de
-  que Juan pidió el Resumen en F-040). **Estado:** spec reescrita (D1, D2, R1,
-  R2, R11, R15, R17, R19; design §2-§8 con la lista cerrada de §7: 6 tests de
-  F-045, 17 de F-040 —13 adaptados, 4 borrados— y 1 de F-039; tareas T8-T11).
-  Ningún test de F-024 lee hojas. **Espera al humano:** aprobar la spec
-  reescrita y decidir **D10** (`LineaDetalle.nombre` sin consumidor: A
-  conservarlo, recomendada; B borrarlo). La MANUAL de abajo pasa a design §6
-  (Obras, Postventa y Detalle; sin Resumen) antes de lanzarla.
+  que Juan pidió el Resumen en F-040). **Estado:** spec revisada (`a135217`) y APROBADA por el humano el
+  2026-10-08 con D10 = A («si»). Implementer lanzado (T8-T11).
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
@@ -45,15 +40,17 @@ por la noche. El arnés es la **1.7.3**.
      y `start "$env:TEMP\f045.xlsx"`. Octubre es el mes de la base local con
      postventa (12 líneas, 1 de postventa, de un trabajador que también tiene
      una obra); septiembre no tiene ninguna.
-  3. Abre sin aviso de reparación, con las hojas Obras, Postventa y Resumen.
-  4. En las dos pestañas, filtrar un Empleado con obras y postventa: sale el
+  3. Abre sin aviso de reparación, con las hojas Obras, Postventa y Detalle, en
+     ese orden, y sin Resumen.
+  4. En las tres hojas, filtrar un Empleado con obras y postventa: sale el
      grupo entero y la Suma de la columna E (barra de estado) da lo mismo.
   5. En Obras, Código = POSTVENTA; en Postventa, Código = OBRAS: solo salen las
      líneas agregadas.
   6. Estado distinto de OK: en octubre todos los que tienen líneas están OK,
      así que solo salen los «SIN CARGA», de una fila cada uno.
   7. Aspecto: bandas, línea gruesa entre trabajadores y la agregada en cursiva.
-  8. El Resumen, como hasta ahora.
+  8. «Detalle», como el de F-040: título «DETALLE DE DEDICACIÓN · Octubre
+     2026», la postventa intercalada con `Postv-`, sin «RESTO …» ni cursiva.
   Resultado: _pendiente_.
 
 ## Producción, hoy

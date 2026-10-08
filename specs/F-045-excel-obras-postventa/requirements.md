@@ -21,7 +21,7 @@ ruta, puerto ni `config.yaml`.
   F-040 D6), y una entrada VAR no admite postventa.
 - «RESTO POSTVENTA» **no existe en el sistema**: es el rótulo del modelo de Juan (F-040 D6).
 
-## Decisiones (D1-D9 DECIDIDAS por el humano el 2026-10-08; D10 abierta)
+## Decisiones (D1-D10 DECIDIDAS por el humano el 2026-10-08)
 
 Los R marcan con `[Dn]` de cuál dependen. D3-D9 son la A aprobada («todo A»); D1 y D2, lo que
 el humano eligió en la MANUAL T6 al ver el libro, que sustituye a su A. D10 no cambia ningún R.
@@ -65,7 +65,7 @@ iguales en las dos pestañas y en «Detalle». La columna % del grupo suma ese T
 de la parte de la pestaña, sin Desviación ni Estado, que solo tienen sentido sobre el 100 %.
 *Tests:* R11 y R12.
 
-**D10 · `LineaDetalle.nombre` (ABIERTA, técnica).** Sin el Resumen nadie lo lee. **A
+**D10 · `LineaDetalle.nombre` (DECIDIDA por el humano el 2026-10-08: A, «si»).** Sin el Resumen nadie lo lee. **A
 (recomendada):** se conserva, sin más tests tocados. B: se borra, y cambian seis tests de
 contenido que lo comprueban (design §8).
 
