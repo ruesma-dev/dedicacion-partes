@@ -90,7 +90,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 18,
+      "priority": 20,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -105,7 +105,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 19,
+      "priority": 21,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -154,7 +154,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 20,
+      "priority": 22,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -169,7 +169,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 21,
+      "priority": 23,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     },
     {
@@ -206,7 +206,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 22,
+      "priority": 24,
       "branch": "feature/F-014-cabos-sigrid-administracion"
     },
     {
@@ -240,7 +240,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 23,
+      "priority": 25,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
     },
     {
@@ -259,7 +259,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 15,
+      "priority": 17,
       "branch": "feature/F-017-prueba-administracion"
     },
     {
@@ -280,7 +280,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 16,
+      "priority": 18,
       "branch": "feature/F-018-paso-a-escritura-real"
     },
     {
@@ -298,7 +298,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 17,
+      "priority": 19,
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
@@ -317,7 +317,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 6,
+      "priority": 8,
       "branch": "feature/F-021-filtro-obra-chip-unico"
     },
     {
@@ -445,7 +445,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 10,
+      "priority": 12,
       "branch": "feature/F-028-borrar-todo-filtrado"
     },
     {
@@ -481,7 +481,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 11,
+      "priority": 13,
       "branch": "feature/F-030-dias-bajas-incidencias"
     },
     {
@@ -499,7 +499,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 13,
+      "priority": 15,
       "branch": "feature/F-031-mcp-ia"
     },
     {
@@ -536,7 +536,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 14,
+      "priority": 16,
       "branch": "feature/F-033-deshacer-linea-real"
     },
     {
@@ -594,7 +594,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 12,
+      "priority": 14,
       "branch": "feature/F-036-baja-efectiva-recurso"
     },
     {
@@ -632,7 +632,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 9,
+      "priority": 11,
       "branch": "feature/F-038-pestana-analitica"
     },
     {
@@ -729,7 +729,7 @@
     {
       "id": "F-044",
       "title": "Aplicar los porcentajes también a los recursos vinculados al trabajador",
-      "description": "Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). 2026-10-08: el humano lo vuelve a pedir («que no genere solo el parte del recurso sino de los recursos vinculados en el mismo %: vehículo, viaje, teléfono, gasoil...»); sube de prioridad. Ejemplo real: GONZALEZ PANIAGUA tiene en PT26/00319 (0694, 2026-09) junto a su MADM 95 % las líneas OTEL y KM al 95 %, metidas a mano.",
+      "description": "Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). 2026-10-08: el humano lo vuelve a pedir («que no genere solo el parte del recurso sino de los recursos vinculados en el mismo %: vehículo, viaje, teléfono, gasoil...»); sube de prioridad. Ejemplo real: GONZALEZ PANIAGUA tiene en PT26/00319 (0694, 2026-09) junto a su MADM 95 % las líneas OTEL y KM al 95 %, metidas a mano. ALCANCE PRECISADO por Juan Romero el 2026-10-08 (hilo «RE: Porcentajes Septiembre 2026»): «solo los recursos persona, gasoil, vehículo y teléfono» van por porcentaje; gastos de caja, kilómetros y mensajería se siguen metiendo «de la manera habitual» (la mensajería pasa a F-052). Por tanto KM NO se reparte aunque esté vinculado. Desde octubre Juan quiere el volcado completo desde la app y ha pedido a Administración dejar los partes de octubre limpios salvo el personal operario con horas: F-044 hace falta para registrar octubre.",
       "acceptance": [
         "Exploración escrita: cómo se vincula en Sigrid un recurso a un trabajador, sus tipos de hora/importe y cómo se imputan hoy en los partes reales",
         "Al registrar un trabajador, sus recursos vinculados se registran en las mismas obras con los mismos porcentajes (decisiones de importe, partida y cuenta validadas por el humano/Administración)",
@@ -776,7 +776,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 8,
+      "priority": 10,
       "branch": "feature/F-046-permiso-cerrar-periodo"
     },
     {
@@ -811,7 +811,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 7,
+      "priority": 9,
       "branch": "feature/F-048-aviso-obra-fallida"
     },
     {
@@ -846,13 +846,13 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 5,
+      "priority": 7,
       "branch": "feature/F-050-subfilas-partida"
     },
     {
       "id": "F-051",
       "title": "Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso",
-      "description": "Pedida por el humano el 2026-10-08: «que al filtrar por obra (al buscar) te vele las etiquetas de las obras que no son la filtrada cuando el recurso tiene más de 1 obra. Que se vea en subfilas cada obra, no todas juntas, de forma que a la derecha de obra aparezca una columna partida, donde poder elegir la partida (quitamos la búsqueda de partida del modal de registrar, aunque mantengamos el que pueda cambiarse ahí). Al elegir partida, primero que proponga la del parte anterior por obra y empleado (o la del último en que se asignó ese recurso), y si no, con el sistema de casamiento de partes que funciona bien (nombre y categoría). Que también pise las líneas de parte a 0% que ya existan, ahora no lo hace. Que además no genere solo el parte del recurso sino de los recursos vinculados en el mismo % (vehículo, viaje, teléfono, gasoil...)». Esta feature recoge: «que también pise las líneas de parte a 0% que ya existan, ahora no lo hace». PRIMERO EXPLORAR (solo lectura en Sigrid): qué son esas líneas al 0 % (quién las crea —¿partes, una plantilla del parte?—, con qué hora y partida), por qué el criterio de choque de hoy (`criterio_choque`, ARCHITECTURE.md#regla-conflicto) no las ve, y qué significa «pisar» aquí (borrar y escribir, o actualizar la línea existente con el %). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte).",
+      "description": "Pedida por el humano el 2026-10-08: «que al filtrar por obra (al buscar) te vele las etiquetas de las obras que no son la filtrada cuando el recurso tiene más de 1 obra. Que se vea en subfilas cada obra, no todas juntas, de forma que a la derecha de obra aparezca una columna partida, donde poder elegir la partida (quitamos la búsqueda de partida del modal de registrar, aunque mantengamos el que pueda cambiarse ahí). Al elegir partida, primero que proponga la del parte anterior por obra y empleado (o la del último en que se asignó ese recurso), y si no, con el sistema de casamiento de partes que funciona bien (nombre y categoría). Que también pise las líneas de parte a 0% que ya existan, ahora no lo hace. Que además no genere solo el parte del recurso sino de los recursos vinculados en el mismo % (vehículo, viaje, teléfono, gasoil...)». Esta feature recoge: «que también pise las líneas de parte a 0% que ya existan, ahora no lo hace». PRIMERO EXPLORAR (solo lectura en Sigrid): qué son esas líneas al 0 % (quién las crea —¿partes, una plantilla del parte?—, con qué hora y partida), por qué el criterio de choque de hoy (`criterio_choque`, ARCHITECTURE.md#regla-conflicto) no las ve, y qué significa «pisar» aquí (borrar y escribir, o actualizar la línea existente con el %). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). CONTEXTO (Juan Romero, 2026-10-08): Administración debe dejar los partes de octubre limpios («no copiéis los recursos del mes anterior… las tenéis que borrar»), salvo el personal operario con horas; las líneas al 0 % que queden de copiar el mes anterior son justo las que esta feature tiene que pisar.",
       "acceptance": [
         "Exploración escrita con ejemplos reales de esas líneas al 0 % y su origen",
         "Al registrar, una línea al 0 % del mismo recurso que casa con la que se escribe se pisa (según lo decidido por el humano), sin tocar líneas de otros",
@@ -865,6 +865,40 @@
       "rigor": "critico",
       "priority": 3,
       "branch": "feature/F-051-pisar-lineas-cero"
+    },
+    {
+      "id": "F-052",
+      "title": "Mensajería: una línea mensual de «consumos de mensajería» por obra en curso",
+      "description": "Pedida por el humano el 2026-10-08 («lee el último correo de Juan sobre los recursos y porcentajes, donde explica mensajería y delegados; inclúyelo como feature»). Hilo «RE: Porcentajes Septiembre 2026» de Juan Romero (Dir. Admón y Control de Costes), 2026-10-08 (original no versionado; leído por el líder a petición del humano). Juan: «en todas las obras en curso metemos una línea de “consumos de mensajería” todos los meses. Lo podemos incorporar» y «Mensajería: una línea mensual por obra. Además, tienes que tomar en consideración la “fecha fin” que figure en SIGRID. Ya veremos luego si hay que pulir el criterio». No es un reparto por porcentaje de un trabajador: es una línea por obra y mes. PRIMERO EXPLORAR (solo lectura en Sigrid): qué recurso es «consumos de mensajería», con qué hora, cantidad/importe y partida se mete hoy en los partes reales, qué es «obra en curso» (estado) y qué «fecha fin» de Sigrid manda (de la obra: no se genera la línea en meses posteriores a su fin). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. DECISIONES PARA LA SPEC (con Juan): importe o cantidad, partida y cuenta, si sale en el cuadrante o va sola al registrar, idempotencia (synckey por obra y mes), qué pasa con las obras cerradas a mitad de mes. Juan quiere el volcado completo de octubre desde la app.",
+      "acceptance": [
+        "Exploración escrita: recurso, hora, importe/cantidad, partida y cuenta con que se mete hoy la mensajería, y qué es «obra en curso» y «fecha fin»",
+        "Spec aprobada por el humano (con lo que diga Administración)",
+        "Al registrar un mes, cada obra en curso cuya fecha fin no sea anterior al mes lleva una línea de mensajería, idempotente por obra y mes, nunca en un parte cerrado",
+        "Verificado en modo pruebas con Administración",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 5,
+      "branch": "feature/F-052-mensajeria-por-obra"
+    },
+    {
+      "id": "F-053",
+      "title": "Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP",
+      "description": "Pedida por el humano el 2026-10-08 (mismo encargo que F-052). Hilo «RE: Porcentajes Septiembre 2026» de Juan Romero (Dir. Admón y Control de Costes), 2026-10-08 (original no versionado; leído por el líder a petición del humano). Juan: «Delegados: son dos y tienen un tratamiento especial, a ver cómo lo enfocas» y «El parte es único y existe. Este parte es solo informativo del reparto, ya que este coste se está asumiendo en CP (luego te lo explico). La cuestión es que las líneas van registradas sobre ese parte y cada línea tiene que apuntar a la obra e imputarse al CP». Hoy el transfer escribe cada obra en el parte de ESA obra (F-037); para los delegados las líneas irían a UN parte ya existente, apuntando cada una a su obra y con la imputación al CP (proporcionales, árbol analítico de F-037). Hipótesis del líder, A CONFIRMAR: en el mismo hilo Miguel Ángel Gómez avisa de que «los de Eduardo Bernal y Mario Vicente no hay que meterlos. Lo hace Mario Redondo»: podrían ser los dos delegados. PRIMERO EXPLORAR (solo lectura en Sigrid): cuál es ese parte único, cómo son hoy sus líneas (obra, partida, cuenta CP, hora, cantidad) y cómo se identifica a un delegado (marca en el recurso, lista en configuración). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa; coordinar con `partes` (mismo parte). Juan lo explicará: la spec no se cierra sin él.",
+      "acceptance": [
+        "Exploración escrita: el parte único, sus líneas reales y cómo se identifica a un delegado",
+        "Spec aprobada por el humano tras la explicación de Juan (qué es el CP aquí, partida y cuenta de cada línea)",
+        "Al registrar a un delegado, sus líneas van al parte único, cada una apuntando a su obra e imputada al CP, idempotentes y nunca en un parte cerrado",
+        "Verificado en modo pruebas con Administración",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 6,
+      "branch": "feature/F-053-delegados-parte-unico"
     }
   ]
 }
