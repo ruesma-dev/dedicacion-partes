@@ -31,8 +31,13 @@ por la noche. El arnés es la **1.7.3**.
 - **CAMBIO DEL HUMANO en la MANUAL T6 (2026-10-08):** Obras y Postventa «está
   bien», pero el libro pasa a ser **«Obras», «Postventa» y «Detalle»** (la hoja
   de F-040 sin cambios, al final) y **«Resumen» desaparece** («si», avisado de
-  que Juan pidió el Resumen en F-040). **Estado:** spec-author lanzado para
-  reescribir D1/D2 y sus R; después implementer, review y otra vez la MANUAL.
+  que Juan pidió el Resumen en F-040). **Estado:** spec reescrita (D1, D2, R1,
+  R2, R11, R15, R17, R19; design §2-§8 con la lista cerrada de §7: 6 tests de
+  F-045, 17 de F-040 —13 adaptados, 4 borrados— y 1 de F-039; tareas T8-T11).
+  Ningún test de F-024 lee hojas. **Espera al humano:** aprobar la spec
+  reescrita y decidir **D10** (`LineaDetalle.nombre` sin consumidor: A
+  conservarlo, recomendada; B borrarlo). La MANUAL de abajo pasa a design §6
+  (Obras, Postventa y Detalle; sin Resumen) antes de lanzarla.
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
