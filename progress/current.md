@@ -44,9 +44,10 @@ es la **1.7.3**.
   `arnes-base` (`7b6701a`). Lo que se salía era sobre todo el rótulo de la
   casilla (decisión 2). **Review 3: CAMBIOS PEDIDOS** (`progress/review_F-049.md`):
   `test_f013_r4` debe prohibir los tres motivos fuera de `rotuloConflicto`
-  (implementer relanzado); los `acceptance` a)-e) y la cabecera de este fichero,
+  (hecho en `f32e4d3`, con su mutante muerto y la suite del transfer sin
+  caché); los `acceptance` a)-e) y la cabecera de este fichero,
   corregidos por el líder; O5 (doble registro concurrente) llevado a F-048; O6
-  aceptada. Después, review 4 y la MANUAL.
+  aceptada. **Review 4 lanzada.** Después, la MANUAL.
 - **MANUAL (humano, en local, sin pulsar «Registrar»):** tres consolas. El
   **transfer con el código de esta copia**, arrancado desde la carpeta del
   transfer de la principal (su `.env` se lee de la carpeta de arranque); la api
