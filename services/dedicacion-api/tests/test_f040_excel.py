@@ -9,6 +9,10 @@ Dos niveles (specs/F-040-excel-modelo-juan/design.md §7):
   - Libro (`infrastructure/excel/exporter.py`): se exporta y se relee con
     openpyxl o, para las celdas combinadas, con `zipfile` sobre el XML de la
     hoja, porque `load_workbook` limpia las celdas no ancla al leer (§5).
+    Desde F-045 (D1 = A) la hoja «Detalle» es «Obras» (`sheet1.xml`), con la
+    postventa de cada trabajador en una línea agregada, y el Resumen es la
+    tercera hoja (`sheet3.xml`). La pestaña «Postventa» se prueba en
+    `test_f045_excel_pestanas.py`.
 
 Todos los nombres son inventados. Sin red, sin BBDD y sin ficheros: el libro
 vive en memoria.
@@ -270,13 +274,13 @@ def _xml_hoja(contenido: bytes, n: int) -> tuple[dict, list[str]]:
 
 
 def test_f040_r1_dos_hojas_detalle_y_resumen():
-    assert _libro(_exportar()).sheetnames == ["Detalle", "Resumen"]
+    assert _libro(_exportar()).sheetnames == ["Obras", "Postventa", "Resumen"]
 
 
 def test_f040_r2_titulo_en_fila_1_cabecera_en_2_datos_desde_3():
     libro = _libro(_exportar())
-    det, res = libro["Detalle"], libro["Resumen"]
-    assert det["A1"].value == "DETALLE DE DEDICACIÓN · Septiembre 2026"
+    det, res = libro["Obras"], libro["Resumen"]
+    assert det["A1"].value == "OBRAS · Septiembre 2026"
     assert res["A1"].value == "RESUMEN · Septiembre 2026"
     for hoja in (det, res):
         assert hoja["A1"].font.bold and hoja["A1"].font.size == 13
@@ -284,24 +288,25 @@ def test_f040_r2_titulo_en_fila_1_cabecera_en_2_datos_desde_3():
         assert hoja["A3"].value == "ALFA PRUEBA UNO"
     assert det.max_row == 12 and res.max_row == 7
     enero = _libro(OpenpyxlExcelExporter().exportar(Periodo(2027, 1), []))
-    assert enero["Detalle"]["A1"].value == "DETALLE DE DEDICACIÓN · Enero 2027"
+    assert enero["Obras"]["A1"].value == "OBRAS · Enero 2027"
     assert enero["Resumen"]["A1"].value == "RESUMEN · Enero 2027"
 
 
 def test_f040_r3_autofiltro_y_paneles():
     libro = _libro(_exportar())
-    assert libro["Detalle"].auto_filter.ref == "A2:H12"
+    assert libro["Obras"].auto_filter.ref == "A2:H12"
     assert libro["Resumen"].auto_filter.ref == "A2:E7"
     for hoja in libro.worksheets:
         assert hoja.freeze_panes == "A3"
     vacio = _libro(_exportar([]))
-    assert vacio["Detalle"].auto_filter.ref == "A2:H2"
+    assert vacio["Obras"].auto_filter.ref == "A2:H2"
     assert vacio["Resumen"].auto_filter.ref == "A2:E2"
 
 
 def test_f040_r4_impresion_y_anchos():
     libro = _libro(_exportar())
-    anchos = {"Detalle": (34, 22, 12, 44, 13, 15, 12, 16),
+    anchos = {"Obras": (34, 22, 12, 44, 13, 15, 12, 16),
+              "Postventa": (34, 22, 12, 44, 13, 15, 12, 16),
               "Resumen": (34, 22, 90, 10, 16)}
     for hoja in libro.worksheets:
         assert hoja.page_setup.orientation == "landscape"
@@ -324,24 +329,24 @@ def test_f040_r5_cabecera_azul_con_texto_blanco_en_negrita():
 
 
 def test_f040_r6_cabecera_del_detalle_sin_obra_codigo():
-    det = _libro(_exportar())["Detalle"]
+    det = _libro(_exportar())["Obras"]
     assert [c.value for c in det[2]] == [
         "Empleado", "Categoría", "Código", "Obra", "% dedicación",
         "Total empleado", "Desviación", "Estado"]
 
 
 def test_f040_r7_r8_filas_del_detalle_en_orden_y_con_su_codigo():
-    det = _libro(_exportar())["Detalle"]
+    det = _libro(_exportar())["Obras"]
     assert [det.cell(r, 3).value for r in range(3, 13)] == [
-        "0101", "0102", "0103", "0104", "0101", "0102", "VAR-29", "Postv-0702",
+        "0101", "0102", "0103", "0104", "0101", "0102", "VAR-29", "POSTVENTA",
         None, "0105"]
-    assert det["D10"].value == "Postv-Hotel Inventado"
+    assert det["D10"].value == "RESTO POSTVENTA"
     assert det["D9"].value == "Varios partida 29"
     assert det["D12"].value == "Obra Ficticia Centro"
 
 
 def test_f040_r9_sin_carga_en_el_libro():
-    det = _libro(_exportar())["Detalle"]
+    det = _libro(_exportar())["Obras"]
     fila = [c.value for c in det[11]]
     assert fila[0] == "DELTA PRUEBA CUATRO"
     assert fila[2:] == [None, None, None, 0, None, "SIN CARGA"]
@@ -366,12 +371,12 @@ def test_f040_r11_combinadas_solo_en_grupos_de_varias_filas():
     esperados = {f"{c}{ini}:{c}{fin}" for ini, fin in _GRUPOS if fin > ini
                  for c in "ABFGH"}
     assert set(rangos) == esperados and len(rangos) == len(esperados)
-    det = _libro(contenido)["Detalle"]
+    det = _libro(contenido)["Obras"]
     for ini, fin in _GRUPOS:
         if fin > ini:
             for c in "ABFGH":
                 assert det[f"{c}{ini}"].alignment.vertical == "center"
-    assert _xml_hoja(contenido, 2)[1] == []
+    assert _xml_hoja(contenido, 3)[1] == []
 
 
 def test_f040_r12_bandas_alternas_y_linea_gruesa_bajo_cada_trabajador():
@@ -396,7 +401,7 @@ def test_f040_r13_resumen_una_fila_por_trabajador_sin_bandas():
     assert [res.cell(r, 1).value for r in range(3, 8)] == [
         "ALFA PRUEBA UNO", "BETA PRUEBA DOS", "GAMMA PRUEBA TRES",
         "DELTA PRUEBA CUATRO", "EPSILON PRUEBA CINCO"]
-    celdas, _ = _xml_hoja(contenido, 2)
+    celdas, _ = _xml_hoja(contenido, 3)
     for r in range(3, 8):
         for col in "ABCDE":
             assert celdas[f"{col}{r}"]["fill"] is None, (col, r)
@@ -427,7 +432,7 @@ def test_f040_r16_99996_sale_ok_y_desviacion_cero_en_el_libro():
     fila = _fila(7, "ZETA", _linea("0101", "A", "33.332"),
                  _linea("0102", "B", "33.332"), _linea("0103", "C", "33.332"))
     contenido = _exportar([fila])
-    det = _libro(contenido)["Detalle"]
+    det = _libro(contenido)["Obras"]
     assert det["H3"].value == "OK"
     assert det["G3"].value == 0
     # En el XML, «0» y no «-0»: vigila el `+ 0.0` de `_celda_pct`.
@@ -438,7 +443,7 @@ def test_f040_r16_99996_sale_ok_y_desviacion_cero_en_el_libro():
 
 def test_f040_r17_fraccion_y_formato_segun_sea_entero():
     libro = _libro(_exportar())
-    det, res = libro["Detalle"], libro["Resumen"]
+    det, res = libro["Obras"], libro["Resumen"]
     assert (det["E3"].value, det["E3"].number_format) == (0.55, "0%")
     assert (det["E7"].value, det["E7"].number_format) == (
         pytest.approx(0.3333), "0.00%")
@@ -449,7 +454,7 @@ def test_f040_r17_fraccion_y_formato_segun_sea_entero():
     assert det["E11"].value is None and det["G11"].value is None
     assert (res["D4"].value, res["D4"].number_format) == (0.9, "0%")
     medio = _exportar([_fila(6, "THETA", _linea("0101", "A", "50.5"))])
-    res2, det2 = _libro(medio)["Resumen"], _libro(medio)["Detalle"]
+    res2, det2 = _libro(medio)["Resumen"], _libro(medio)["Obras"]
     assert (res2["D3"].value, res2["D3"].number_format) == (0.505, "0.00%")
     assert (det2["G3"].value, det2["G3"].number_format) == (-0.495, "0.00%")
     assert (det2["E3"].value, det2["E3"].number_format) == (0.505, "0.00%")
