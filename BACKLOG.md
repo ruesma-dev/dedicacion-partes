@@ -3,13 +3,14 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **51 features**, 25 abiertas, 26 terminadas.
+Resumen: **52 features**, 26 abiertas, 26 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-049 | Los avisos del modal de registro se rotulan según su tipo (sin partida, sobrecarga, pisar) y con su % | 2 | pendiente | estandar | `feature/F-049-avisos-registro-por-tipo` |
+| F-049 | Los avisos del modal de registro se rotulan según su tipo (sin partida, sobrecarga, pisar) y con su % | 1 | pendiente | estandar | `feature/F-049-avisos-registro-por-tipo` |
+| F-055 | La previsualización del registro tarda demasiado (medir y acelerar) | 2 | pendiente | estandar | `feature/F-055-preflight-rapido` |
 | F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 3 | pendiente | critico | `feature/F-051-pisar-lineas-cero` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 4 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 5 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
@@ -70,9 +71,15 @@ Resumen: **51 features**, 25 abiertas, 26 terminadas.
 
 ### F-049 · Los avisos del modal de registro se rotulan según su tipo (sin partida, sobrecarga, pisar) y con su %
 
-estado **pendiente** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-049-avisos-registro-por-tipo`
+estado **pendiente** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-049-avisos-registro-por-tipo`
 
 Fallo comunicado por el humano el 2026-10-08 (captura: GONZALEZ PANIAGUA, septiembre, 0672 y 0694): «por qué me sale pisar 2 veces en 0694 y 1 en la 0672; en esta última no hay líneas de parte». CAUSA (líder, lectura del código y de Sigrid): el front pinta TODOS los conflictos del preflight con la plantilla «Pisar <hora> de <nombre>: se borran <líneas> y se escribe <%>» (services/dedicacion-front/static/js/app.js ~1739-1747) sin mirar `c.motivo` (`sin_partida`, `sobrecarga` o pisado), y el % sale de `c.nueva_can`, que el transfer ya no envía (publica `nuevas`), así que siempre dice 0 %. En la 0672 la casilla era el aviso «sin partida»; en la 0694, «sin partida» y una SOBRECARGA (ya tiene MADM 95 % metida a mano en PT26/00319, CI.1.5, sin synckey). PLAN APROBADO por el humano el 2026-10-08 («si»): solo front; texto por tipo (sin partida: escribir sin partida, elige una o confirma; sobrecarga: lo que ya tiene en el parte, el total resultante y el exceso, con `suma_existente`, `suma_total` y `exceso`; pisar: las líneas que se borran y el % nuevo de `nuevas`); sin cambiar qué se confirma ni las claves que viajan a ejecutar. El front no lleva lógica de negocio: usa lo que manda el preflight.
+
+### F-055 · La previsualización del registro tarda demasiado (medir y acelerar)
+
+estado **pendiente** · prioridad 2 · rigor `estandar` · SDD sí · rama `feature/F-055-preflight-rapido`
+
+Pedida por el humano el 2026-10-08 («añade una feature para revisar que tarde tanto»), al probar F-049: al elegir una partida en el modal, «Registrar» se queda un buen rato en «Analizando…». Causa vista por el líder (sin medir): cada preflight hace por OBRA unas 10-12 lecturas a Sigrid SEGUIDAS vía sigrid-api (obra, catálogo de postventa, horas de recursos, partidas, cuentas, partes del periodo, código PT, presupuesto entero de la obra —miles de filas en las grandes—, líneas por synckey y del parte; services/dedicacion-transfer/application/pipelines/registro_pipeline.py), y la api lo repite para TODAS las obras de la petición (con el botón general, todas las del mes); desde F-049 se repite al cambiar cada partida. PRIMERO MEDIR (tiempo por lectura y por obra, en local y en producción) y escribir dónde se va el tiempo. Propuesta del líder a decidir con el humano tras medir: 1) repetir solo la obra cuya partida cambia (front + api); 2) caché en memoria del transfer, con caducidad corta, del presupuesto de la obra y de los catálogos de postventa y VAR; 3) lecturas en paralelo o agrupadas. Nunca decidir con datos parciales ni viejos al EJECUTAR (ejecutar puede saltarse la caché).
 
 ### F-051 · Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso
 
