@@ -26,7 +26,16 @@ la **1.7.3**.
   pisar» para todo) llevado a F-048. Cambio 1 y O1 recogidos por el
   implementer (`81dbbd8`: nº de fallos de los 33 mutantes, iguales a los del
   reviewer; campaña en serie, 1 worker, 299 s). **Review 2 APROBADA**
-  (`progress/review_F-049.md`). **Espera la MANUAL del humano.**
+  (`progress/review_F-049.md`).
+- **Ampliación aprobada por el humano el 2026-10-08** («si»), tras su MANUAL:
+  a) al elegir partida se repite el preflight (conservando casillas); b) abrir
+  el registro empieza sin partidas elegidas de antes; c) la partida elegida se
+  enseña aunque no esté en la lista; d) transfer: `partidas_obra` siempre que
+  haya líneas de obra, aunque todas lleven partida manual (hoy sale vacío y el
+  desplegable dice «— sin partida —» mientras se escribiría la elegida antes);
+  e) el aviso amarillo no se sale del recuadro. Despliegue: transfer y front.
+  **Estado:** implementer lanzado para la ampliación; después review 3 y la
+  MANUAL (que se rehace con estos puntos).
 - **MANUAL (humano, en local, sin pulsar «Registrar»):** transfer y api desde
   la copia principal (tienen `.env`; transfer en modo pruebas), **front desde
   esta copia** (la principal está en la rama de F-045).
