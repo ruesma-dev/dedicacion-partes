@@ -1,138 +1,140 @@
 <!-- progress/review_F-045.md -->
-Revisión incremental desde a041301 (pasada 3) · la 1 fue completa (`dev...6959c91`), la 2 incremental desde 6959c91
+Revisión incremental desde e6ab33d (pasada 4) · la 1 fue completa (`dev...6959c91`); la 2, la 3 y esta, incrementales
 
 # F-045 · Review
 
-**Veredicto vigente: CHANGES_REQUESTED** (pasada 3, abajo). Código, tests,
-Detalle y campaña, bien; falla solo el rastro de la spec (D10 sigue «abierta»
-en `design.md`).
+**Veredicto vigente: APPROVED** (pasada 4, abajo). Tres cosas de rastro que el
+líder hace AL CERRAR, sin nueva review (ver «Al cerrar»).
 
-## Pasadas 1 y 2 (resumidas por el tope)
+## Pasadas 1 a 3 (resumidas por el tope)
 
-- **Pasada 1 · CHANGES_REQUESTED**, solo por `current.md`: la MANUAL apuntaba a
-  `2026/09`, sin postventa en la base local, y D4 decía «solo si no es 0».
-  Comprobado entonces: solo la api (`infrastructure/excel/`), lista cerrada de
-  12 tests sin aserciones relajadas, R11-R12 con `Decimal`, trampas de C3,
-  RED de T1 y T3, cobertura 100 % (30/30) y campaña reejecutada por mí:
-  14/14 muertos (`77e124b`).
-- **Pasada 2 · APPROVED**: los dos cambios resueltos; MANUAL seguida contra la
-  base local en solo lectura (octubre, ALVAREZ SEGUIDO 50 % + 50 %).
-- Encargos de automejora llevados a `arnes-base` (`5370838`, `d413189`).
+- **1 · CHANGES_REQUESTED** (MANUAL contra 2026/09) · **2 · APPROVED** ·
+  **3 · CHANGES_REQUESTED** (D10 «abierta» en `design.md`; recuento de octubre).
+  Detalle de HEAD idéntica celda a celda a la de `dev`, listas cerradas sin
+  aserciones relajadas y campañas 14/14 verificadas. Lo de la 3, corregido en
+  `e6ab33d`. Su automejora (grep de Dn abiertas en C5), pendiente del humano.
 
-## Pasada 3 · Revisión incremental desde a041301
+## Pasada 4 · Revisión incremental desde e6ab33d
 
-Delta: `77d9496`..`f6a92e0` (spec reescrita y aprobada, T8-T11, `current.md`).
-**Nivel de rigor: `estandar`** (declarado): fase RED, cobertura ≥ 80 % y
-mutación con supervivientes analizados.
+Delta: `628b9bb`..`fea1517` (ampliación D11/D12: spec `7f99e7b`, `a3578c0`;
+T12-T15 `b7e3616`..`33b9011`; `current.md` `3835c0c`; M2 cumplida `fea1517`,
+que entró mientras revisaba: solo cambia «Resultado» de M2 en `current.md`).
+**Nivel de rigor: `estandar`** (declarado en `features.json`): fase RED,
+cobertura ≥ 80 %, mutación muestreada con supervivientes analizados.
 
 ### Lo comprobado
 
 - `bash harness/init.sh` (tal cual, solo): **ENTORNO LISTO**, raíz 418 passed /
-  1 skipped, api/front/transfer en verde, cobertura 100 % (33/33), tamaño OK.
-- **Detalle = F-040, comprobado contra `dev`.** Extraje la api de `dev` y de
-  HEAD a mi scratchpad y pinté el mismo cuadrante (los 5 de la muestra + un
-  6.º con 33,33 / 66,67 %) con los dos exportadores: la hoja «Detalle» de `dev`
-  (hoja 1) y la de HEAD (hoja 3) son **idénticas** en las 120 celdas (valor,
-  formato numérico, fuente, relleno, bordes, alineación), combinadas,
-  autofiltro, paneles, anchos, impresión y `max_row`; con el periodo vacío,
-  hasta el XML es byte a byte igual. `_hoja_grupos` con `grupos_detalle` es el
-  `_hoja_detalle` de `dev` con el nombre y el título como parámetros.
-- **Lista cerrada de design §7.** `git diff dev..HEAD` de `test_f040_excel.py`
-  y `test_f039_registro_var.py`, y `a041301..HEAD` de `test_f045_…`: cambian
-  exactamente los de §7.1 (6), §7.2 (13 adaptados + 4 borrados) y §7.3 (1).
-  Solo salen aserciones que leían la hoja Resumen o `filas_resumen`. Ninguna
-  relajada: f040 r2 aplica el formato a las tres hojas; f045 r11 compara además
-  la columna G; r13 y r17 comprueban combinadas, bandas y línea gruesa del
-  Detalle; f039 r21 añade la comprobación de VAR en Obras (D5).
-- **Sin rastro del Resumen.** `grep` de `filas_resumen`, `FilaResumen`,
-  `_hoja_resumen` y `_RESUMEN` en `services/`: nada. «Resumen» solo queda en
-  frases que dicen que no existe y en el nombre conservado adrede de
-  `test_f040_r1_dos_hojas_detalle_y_resumen` (design §7). `ARCHITECTURE.md:79`
-  y `services/dedicacion-api/README.md:41` describen Obras, Postventa y Detalle
-  (R19). Los demás «resumen» son el `ResumenPeriodo` del cuadrante, ajeno.
-- **D10 = A**: `LineaDetalle.nombre` se conserva, comentario ajustado. Ruff de
-  los ficheros tocados, limpio desde la raíz.
-- **MANUAL de `current.md`, seguida en solo lectura** (`build_app` en proceso,
-  sin el DDL de `main.py`; xlsx en mi scratchpad): `GET …/2026/10/export.xlsx?
-  empresa=1` → 200, `dedicacion_202610_emp1.xlsx`, hojas Obras, Postventa y
-  Detalle (paso 3). Obras: 1 agregada (ALVAREZ SEGUIDO, 50 %), 3 cursivas.
-  Postventa: `Postv-0626` 50 % + 8 «OBRAS / RESTO OBRAS», 24 cursivas. Detalle:
-  título «DETALLE DE DEDICACIÓN · Octubre 2026», `Postv-0626` intercalada,
-  0 cursivas, ningún «RESTO» (paso 8). Estados: OK y SIN CARGA (paso 6).
-  Puerto 8090 (`settings.py:34`). Ver Cambios 2 sobre el recuento.
+  1 skipped, api/front/transfer en verde, cobertura 100 % (38/38), tamaño OK.
+- **Código = design §3.3**, punto por punto: solo `exporter.py` (9.º elemento
+  de cabecera, ancho 50, `_OBSERVACIONES`, `_AJUSTE`, bucle hasta
+  `len(_CABECERA_DETALLE)`, ajuste en I). Ningún valor en I; `_COMBINADAS` y la
+  cursiva `(3, 4, 5)` sin tocar. `contenido.py` y `test_f039_…` sin diff. Ruff
+  de los tres ficheros tocados, limpio. Docs R19: solo `ARCHITECTURE.md:79` y
+  `README.md:41`, con «Observaciones vacía».
+- **R20, R21 y D12 = A contra los tests.** r20: I2 «Observaciones» con relleno
+  y fuente de cabecera, ancho 50, autofiltro `A2:I<max_row>` y `A2:I2` vacío,
+  `max_column == 9`, `fitToWidth == 1`, en las tres hojas. r21: por XML, cada
+  fila de 3 a `max_row` de las tres hojas (los grupos de `_GRUPOS` y
+  `_GRUPOS_DETALLE` son contiguos y cubren las agregadas Obras 5/8/11,
+  Postventa 4/5/11 y las «SIN CARGA» Obras 9, Postventa 8, Detalle 10) tiene I
+  sin valor, banda del grupo, `medium`/`thin` abajo, fino a los lados y arriba;
+  por openpyxl, ajuste, arriba, sin cursiva ni fórmula; ningún rango `I…`. D12
+  queda fijada: con la B, r21 falla en las agregadas y la «SIN CARGA».
+- **Lista cerrada de design §7.2**: el diff de tests es exactamente
+  `_CABECERA` + f045 r3, r4_r10 ×2, r17 + f040 r3, r4, r6, r9, y los dos tests
+  nuevos de §7.3. Todo AÑADE (I en rangos, el 50, «Observaciones», `None` al
+  final de la fila «SIN CARGA», que ahora se compara entera): ninguna
+  aserción quitada ni relajada. Docstrings de los dos módulos actualizados.
+- **Ninguna Dn abierta**: `grep -i abierta` en `specs/F-045-…/`, vacío.
+- **RED de T12** pegado en impl §9.2: 11 failed contra el exportador de
+  `a3578c0` (r20 por I2 vacía, r21 por I3 ausente en el XML); tras T13, 715.
+- **M2 seguida en solo lectura** (`build_app` en proceso desde la copia
+  principal con `-B`, sin `main.py` ni DDL; xlsx en mi scratchpad):
+  `GET …/2026/10/export.xlsx?empresa=1` → 200; Obras/Postventa/Detalle con I2
+  «Observaciones», ancho 50, autofiltro `A2:I190`/`A2:I188`/`A2:I190`,
+  `max_column` 9, 0 valores en I, ajuste en todas, bandas blanca/azul, I sin
+  combinar, horizontal a 1 página de ancho. Comando bueno; cumplida por el
+  humano (`fea1517`). El `.pyc` de la copia principal es el del fuente actual
+  (comparado con un `compile` limpio): reiniciar la api carga el código bueno.
 
-### Mutación (C4 bis)
+### Mutación (C4 bis) · campaña REEJECUTADA en copia aislada
 
-- **Recálculo independiente**: `alcance_de_feature("F-045")` → 100 líneas
-  (`contenido.py` 68, `exporter.py` 32); `generar_mutantes` → 14 (8 + 6),
-  igual que el informe. Son los mismos 14 de la pasada 1.
-- **Campaña no reejecutada: 745,7 s según el informe** (> 60 s). Basta el
-  recálculo más RM1-RM6, y además hice **RM4** sobre la copia de HEAD del
-  scratchpad: `for col in (3, 4, 6)` lo mata r15 (1 failed) y `Decimal(1)` en
-  la agregada lo matan 12 tests. Base de esa copia, 67 passed. Árbol limpio.
-- Coste por mutante 745,7 × 1 ÷ 14 = 53,3 s (> 1 s) · sin «⚠ CAMPAÑA NO VÁLIDA»
-  · «Sin veredicto» 0 · sin supervivientes.
-- **RM1**: SHA medido `9d2e361…` (T10). `git diff 9d2e361..HEAD` solo toca
-  `progress/` y `tasks.md`: el alcance medido es el revisado.
-- **RM2**: base 62,8 s, media 53,3 s, 1 worker; 14 × 53,3 = 746 s = total.
-  Coherente. La base sube desde los 12,1 s de la pasada 1 («máquina cargada»,
-  impl §8); timeouts distintos (126 s), no se comparan entre campañas.
-- **RM3**: los 14 cambian comportamiento observable (revisados en la pasada 1;
-  las líneas de Detalle en `exportar` son llamada y literal, sin mutante).
-- **RM5** N/A: rigor `estandar` y sin equivalentes · **RM6** [x]: no se quitó
-  defensa (`or ""`, `or [_LINEA_VACIA]` siguen).
+- **Recálculo independiente**: `alcance_de_feature("F-045")` → 112 líneas
+  (`contenido.py` 68, `exporter.py` 44); `generar_mutantes` → 28 (8 + 20).
+  Igual que el informe. El superviviente declarado (`contenido.py:84`,
+  `!=` → `==`, `comparacion`) existe con ese texto exacto.
+- **Por qué reejecutar con 678 s (> 60 s)**: el implementer la declara
+  inestable (3, 1 y 1 supervivientes distintos en tres campañas) y el informe
+  lleva uno. Repetida con `git worktree add --detach` de `3835c0c` en mi
+  scratchpad, uniones a los dos `.venv`, `--workers 1`, misma semilla y
+  `--salida` en el scratchpad: **20 evaluados, 20 muertos, 0 supervivientes, 0
+  timeouts, 0 sin veredicto, 658,6 s**, base 43,4 s, media 32,9 s. Misma
+  muestra: incluye los cuatro «supervivientes» de las tres campañas
+  (`contenido.py:84`, `:116`, `:118`, `exporter.py:110` ×2) y todos mueren.
+  Worktree y uniones retirados; `git status` limpio; los `.venv` intactos.
+- **Juicio**: supervivientes falsos, de entorno, como decía el implementer
+  (los `.pyc` de la copia los compiló un proceso lanzado desde la RAÍZ, y el
+  arnés solo purga al escribir el fuente). Informe válido, superviviente
+  analizado; el número bueno es 20/20.
+- Coste 678,3 × 1 ÷ 20 = 33,9 s/mutante · sin «⚠ CAMPAÑA NO VÁLIDA» · 0 sin
+  veredicto. **RM1**: SHA medido `ca221b5` (T14). `git diff ca221b5..fea1517` solo toca
+  `progress/` y `tasks.md`: alcance medido = revisado (y mi campaña, sobre
+  `3835c0c`, lo confirma).
+- **RM2**: base 49,7 s, media 33,9 s, 1 worker, 19/20 muertos con `-x`:
+  coherente; 20 × 33,9 = 678 s = total.
+- **RM3**: ningún mutante equivalente entre los 28 (todos cambian algo
+  observable: `+ 2` en 110 pinta J y `max_column` pasa a 10; 51 de ancho;
+  `_OBSERVACIONES = 10` saca el ajuste de I…).
+- **RM4**: innecesaria (campaña entera repetida) · **RM5** N/A: rigor
+  `estandar` · **RM6** [x]: no se quitó defensa.
 
-### Checkpoints (pasada 3)
+### Checkpoints (pasada 4)
 
 - **C1** [x] init.sh exit 0 · [x] ficheros base.
-- **C2** [x] una `in_progress` · [x] rama `feature/F-045-…` · [x] `current.md`
-  centrado en F-045 (formato ya aceptado) · [x] F-045 no cierra nada.
-- **C3** [x] hexagonal (`contenido.py` solo importa `domain`) · [x] ruta en
-  primera línea · [x] sin `print`, secretos ni dependencias nuevas · [x]
-  trampas: escala solo en `_celda_pct` (sin cambio), postventa por
-  `es_postventa`, ninguna escritura.
-- **C3 bis** N/A: no toca `docs/referencia/`.
-- **C4** [x] R1-R18 con test trazable y en verde (tabla abajo); R19 por el
-  diff · [x] sin red ni BBDD · [x] MANUAL con comando exacto, que funciona.
-- **C4 bis** [x] rigor declarado · [x] RED real de T8 (19 failed, impl §8) ·
-  [x] cobertura `[OK]` 100 % · [x] mutación verificada (arriba) · [x]
-  «Evidencias» con los cuatro números y `--workers 1` · [x] ningún N/A sin
-  motivo.
-- **C4 ter** N/A: no existe `harness/rutas_sensibles.json`.
-- **C5** [x] T1-T5, T7-T11 `[x]` con commit `F-045 Tn:`; T6 MANUAL pendiente
-  por diseño · [x] árbol limpio · **[ ] la spec no refleja el estado real:
-  `design.md` sigue declarando D10 ABIERTA** (Cambios 1).
+- **C2** [x] una `in_progress` · [x] rama `feature/F-045-…` · [x]
+  `current.md` centrado en F-045 · [x] F-045 no cierra nada aún.
+- **C3** [x] hexagonal (solo `infrastructure/excel/`) · [x] ruta en primera
+  línea · [x] sin `print`, secretos ni dependencias nuevas · [x] trampas: no
+  escribe en Sigrid, no toca escala ni `es_postventa`.
+- **C3 bis** N/A: no toca `docs/referencia/` · **C4 ter** N/A: no existe
+  `harness/rutas_sensibles.json`.
+- **C4** [x] R1-R21 con test trazable y en verde (tabla abajo); R19 por el
+  diff · [x] sin red ni BBDD · [x] M2 en `current.md` con comando exacto
+  (cumplida).
+- **C4 bis** [x] rigor declarado · [x] RED real (impl §9.2) · [x] cobertura
+  `[OK]` 100 % · [x] mutación recalculada y REEJECUTADA (arriba) · [x]
+  superviviente analizado · [x] «Evidencias» con los cuatro números; workers
+  en §9.3 y en el informe (1) · [x] ningún N/A sin motivo.
+- **C5** [x] T12-T15 `[x]` con commit `F-045 Tn:` (`b7e3616`, `927d592`,
+  `ca221b5`, `33b9011`); T16 es MANUAL, cumplida en `fea1517`, falta marcarla
+  (Al cerrar 1) · [x] árbol limpio · [x] `features.json` coherente.
 
 ### Cobertura requisito → test (`test_f045_*` salvo indicación)
 
-R1 `r1_tres_hojas_obras_postventa_y_detalle` (+ f040 r1) · R2 `r2_titulos…`
-(+ f040 r2) · R3 `r3_cabecera_autofiltro…` ×2 · R4 `r4_mismos_trabajadores…`,
-`r4_r10_filas…` ×2 · R5 `r5_obras_lleva…`, `r5_d5_var_en_obras…` (+ f039 r21)
-· R6 `r6_postventa_lleva…` · R7 `r7_agregada_unica…`, `r7_suma_exacta…` · R8
-`r8_sin_la_otra_parte…` · R9 `r9_solo_la_otra…` · R10 `r10_sin_carga…` · R11
-`r11_total_desviacion…` y `r11_…_iguales_en_las_tres_hojas` · R12 `r12_…` ×4
-· R13 `r13_valor_en_todas…` · R14 `r14_bandas_por_hoja…` · R15
-`r15_cursiva_solo…` · R16 `r16_pct_de_la_agregada…` · R17
-`r17_detalle_igual_que_en_f040` + f040 r2-r12, r16-r19 sobre la hoja 3 · R18
-`r18_el_prefijo…` ×2 y F-024 sin tocar · R19 documental, por el diff.
+R1-R19 como en la pasada 3 (r1 … r18, f040 r1-r19, f039 r21), con r3, r4_r10
+×2 y r17 de F-045 y r3, r4, r6, r9 de F-040 ampliados a la columna I ·
+**R20** `r20_observaciones_a_la_derecha_en_las_tres_hojas` (+ f040 r3, r4, r6)
+· **R21** `r21_celda_de_observaciones_vacia_por_linea` (+ r13 y f040 r11:
+rangos combinados exactos; r15: sin cursiva en I) · M1 y M2: humano.
 
-### Cambios requeridos (pasada 3)
+### Al cerrar (no bloquean; los hace el líder en el commit de cierre)
 
-1. `specs/F-045-excel-obras-postventa/design.md:4`: «D10 está **abierta**
-   (§8)» → D10 decidida por el humano el 2026-10-08: A. Y `design.md:220`:
-   «**D10 (ABIERTA)**» → «**D10 (DECIDIDA: A)**», como ya dicen
-   `requirements.md:24,68`, `features.json` e impl §8. La aprobación
-   (`6d48597`) solo tocó `requirements.md`; el diseño contradice a la spec.
-2. `progress/current.md:37`: «12 líneas, 1 de postventa» es el recuento de la
-   base (periodo 13), pero el Excel de la empresa 1 enseña **11 líneas de 8
-   trabajadores**: la de MONTAÑO MECHAN (`0000`, 100 %) no está en el
-   cuadrante de la empresa 1. Que lo diga, para que el humano no busque una
-   línea que no va a salir.
+1. `specs/F-045-excel-obras-postventa/tasks.md`: T16 → `[x]` con «Cumplida
+   por el humano el 2026-10-08 («todo ok»)», como T6.
+2. `design.md:95`: «— pendiente (T13)» → «— hecho (T13)»; y `design.md:30`:
+   «lo pendiente es la ampliación D11, T12-T16» → T1-T16 hechas.
+3. `progress/current.md:45`: «**Review 4 lanzada.** Después, M2.» → review 4
+   APROBADA y M2 cumplida; y la mutación, con el resultado aislado (20/20).
 
-Ni código ni tests: la pasada 4 puede limitarse a ese diff, más init.sh.
+### Automejora (propuesta, no aplicada)
 
-**Automejora (propuesta, no aplicada):** en `CHECKPOINTS.md` C5, un punto
-«ninguna decisión `Dn` que conste como decidida en `requirements.md` figura
-como abierta en `design.md` o `tasks.md` (grep `ABIERTA`/`abierta` en la
-carpeta de la spec)». Cerrar una Dn en un fichero y no en los demás es fácil
-de repetir; vale para cualquier proyecto (`arnes-base`).
+- **arnes-base, `harness/mutacion.py`**: los falsos supervivientes de F-045
+  salen de un `.pyc` escrito por OTRO proceso (ruta relativa desde la raíz)
+  entre la purga y la ejecución. Propuesta: lanzar cada mutante con
+  `PYTHONPYCACHEPREFIX` apuntando a un directorio propio y vacío de la
+  campaña, de modo que el subproceso nunca lea `__pycache__` del árbol; o,
+  mínimo, que `init.sh` avise si hay una campaña en curso (el centinela ya
+  existe). Va al encargo de falsos supervivientes (`5370838`).
+- **`reviewer.md`**: campaña declarada inestable ⇒ el reviewer la repite en un
+  `git worktree` aislado aunque pase de 60 s (aquí, 11 min zanjaron la duda).
