@@ -90,7 +90,8 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. Orden: F-045
-(en curso), F-049, F-051, F-044, F-052, F-053, F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
+(en curso), F-049, F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+que ya hay en los partes de Sigrid; 2026-10-08), F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano

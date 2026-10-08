@@ -90,7 +90,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 20,
+      "priority": 21,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -105,7 +105,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 21,
+      "priority": 22,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -154,7 +154,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 22,
+      "priority": 23,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -169,7 +169,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 23,
+      "priority": 24,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     },
     {
@@ -206,7 +206,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 24,
+      "priority": 25,
       "branch": "feature/F-014-cabos-sigrid-administracion"
     },
     {
@@ -240,7 +240,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 25,
+      "priority": 26,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
     },
     {
@@ -259,7 +259,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 17,
+      "priority": 18,
       "branch": "feature/F-017-prueba-administracion"
     },
     {
@@ -280,7 +280,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 18,
+      "priority": 19,
       "branch": "feature/F-018-paso-a-escritura-real"
     },
     {
@@ -298,7 +298,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 19,
+      "priority": 20,
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
@@ -317,7 +317,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 8,
+      "priority": 9,
       "branch": "feature/F-021-filtro-obra-chip-unico"
     },
     {
@@ -445,7 +445,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 12,
+      "priority": 13,
       "branch": "feature/F-028-borrar-todo-filtrado"
     },
     {
@@ -481,7 +481,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 13,
+      "priority": 14,
       "branch": "feature/F-030-dias-bajas-incidencias"
     },
     {
@@ -499,7 +499,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 15,
+      "priority": 16,
       "branch": "feature/F-031-mcp-ia"
     },
     {
@@ -536,7 +536,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 16,
+      "priority": 17,
       "branch": "feature/F-033-deshacer-linea-real"
     },
     {
@@ -594,7 +594,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 14,
+      "priority": 15,
       "branch": "feature/F-036-baja-efectiva-recurso"
     },
     {
@@ -632,7 +632,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 11,
+      "priority": 12,
       "branch": "feature/F-038-pestana-analitica"
     },
     {
@@ -776,7 +776,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 10,
+      "priority": 11,
       "branch": "feature/F-046-permiso-cerrar-periodo"
     },
     {
@@ -811,7 +811,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 9,
+      "priority": 10,
       "branch": "feature/F-048-aviso-obra-fallida"
     },
     {
@@ -846,7 +846,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 7,
+      "priority": 8,
       "branch": "feature/F-050-subfilas-partida"
     },
     {
@@ -899,6 +899,23 @@
       "rigor": "critico",
       "priority": 6,
       "branch": "feature/F-053-delegados-parte-unico"
+    },
+    {
+      "id": "F-054",
+      "title": "Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid",
+      "description": "Pedida por el humano el 2026-10-08: «al sincronizar debería traer los % ya existentes en Sigrid». Hoy el sync solo trae maestros (recursos, obras, partidas); el cuadrante no sabe lo que Administración ya metió a mano en los partes (ejemplo real: GONZALEZ PANIAGUA tiene MADM 95 % en PT26/00319 de la 0694, 2026-09, sin synckey, y el cuadrante no lo enseñaba: salió como sobrecarga al registrar). Se trata de LEER (solo lectura, vía sigrid-api) las líneas mensuales (horas M*) de los partes de obra del periodo y cargarlas como asignaciones del trabajador en la base `dedicacion`. Lectura en Sigrid (transfer o api según el límite de servicio: el transfer ya tiene la lectura de líneas y el casado de postventa/VAR) y escritura solo en la base local de la app. DECISIONES PARA LA SPEC: qué periodo (el del cuadrante abierto, al pulsar sync o con botón aparte); qué líneas cuentan (horas mensuales M*, can = %; las nuestras con synckey vs las manuales); cómo se traduce la partida a la entrada del cuadrante (obra normal, `Postv-` por partida de POSTV2, `VAR-NN`); qué pasa si el cuadrante ya tiene algo para ese trabajador (no pisar lo editado, avisar, o Sigrid manda); si se marcan como «ya registradas» para no volver a escribirlas; partes cerrados; meses cerrados en la app; deshacer. Relación: F-051 (pisar líneas al 0 %), F-044 (vinculados), F-050 (partida por línea).",
+      "acceptance": [
+        "Spec aprobada por el humano (periodo, líneas que cuentan, traducción a obra/Postv-/VAR, conflicto con lo que ya hay en el cuadrante)",
+        "Tras sincronizar, el cuadrante del periodo enseña los % que ya existen en los partes de Sigrid, por trabajador y obra",
+        "No se pisa lo editado en la app sin la regla decidida; lo traído no se vuelve a escribir en Sigrid como duplicado",
+        "Solo lectura en Sigrid; probado por el humano en local con septiembre 2026",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 7,
+      "branch": "feature/F-054-sync-trae-porcentajes"
     }
   ]
 }
