@@ -221,16 +221,16 @@ def test_f049_r2_el_front_no_lee_nueva_can():
 def _modal(obras: list[dict]) -> str:
     """HTML que pinta el código REAL de `pintarModalPreflight`."""
     programa = "\n".join([
-        "const MESES = ['ene','feb','mar','abr','may','jun','jul','ago',"
-        "'sep','oct','nov','dic'];",
+        ("const MESES = ['ene','feb','mar','abr','may','jun','jul','ago',"
+         "'sep','oct','nov','dic'];"),
         "const state = {anio: 2026, mes: 9};",
-        "const registro = {overrides: {}, pisar: new Set(), "
-        "trabajadorIde: null};",
+        ("const registro = {overrides: {}, pisar: new Set(), "
+         "trabajadorIde: null};"),
         "let resultado = null;",
         "function abrirModal(html) { resultado = html; }",
-        "function escapeHtml(t) { return (t == null ? '' : String(t))"
-        ".replace(/&/g,'&amp;').replace(/</g,'&lt;')"
-        ".replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }",
+        ("function escapeHtml(t) { return (t == null ? '' : String(t))"
+         ".replace(/&/g,'&amp;').replace(/</g,'&lt;')"
+         ".replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }"),
         "const document = {querySelectorAll: () => []};",
         "const $ = () => ({addEventListener() {}});",
         "function registroEjecutar() {}",

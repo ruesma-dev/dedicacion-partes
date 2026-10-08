@@ -17,7 +17,7 @@ la **1.7.3**.
 - **Plan aprobado por el humano el 2026-10-08** («si»): solo front, `sdd:
   false`, rigor estándar. Texto por tipo y % de `nuevas`; mismas claves a
   ejecutar.
-- **Estado:** implementer lanzado.
+- **Estado:** implementer terminado (T1-T3, `progress/impl_F-049.md`); falta la review y la MANUAL.
 - **MANUAL (humano, en local; transfer local en modo pruebas):** se concreta
   con el comando exacto cuando termine el implementer.
   Resultado: _pendiente_.
