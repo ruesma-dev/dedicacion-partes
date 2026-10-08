@@ -27,7 +27,7 @@ Excel de F-040 (`specs/F-040-excel-modelo-juan/`): se reutiliza su pintado de gr
 
 **Crear**: ninguno. `tests/test_f045_excel_pestanas.py` ya existe y se amplía.
 
-**Modificar** (T1-T11 hechas; lo pendiente es la ampliación D11, T12-T16)
+**Modificar** (T1-T16 hechas, la ampliación D11 incluida)
 
 | Ruta | Qué cambia |
 |---|---|
@@ -92,7 +92,7 @@ class OpenpyxlExcelExporter:
 …»). `_hoja_grupos` con `grupos_detalle` **es** el `_hoja_detalle` de F-040; ninguna línea de
 `grupos_detalle` es `agregada`, así que el Detalle no lleva cursiva (R15, R17).
 
-### 3.3 Ampliación D11: columna I «Observaciones» en `exporter.py` — pendiente (T13)
+### 3.3 Ampliación D11: columna I «Observaciones» en `exporter.py` — hecho (T13)
 
 Todo en `exporter.py`; ni firmas nuevas ni cambios en `contenido.py`:
 

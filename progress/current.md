@@ -1,82 +1,21 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-045 en curso en esta rama** (`feature/F-045-excel-obras-postventa`, copia
-principal): Excel desglosado en pestaña de obras y pestaña de postventa. El 2026-10-07 se desplegaron F-037, F-039 y F-040 por
-la mañana, F-041 y F-042 (solo el front) por la tarde y F-047 (solo el transfer)
-por la noche. El arnés es la **1.7.3**.
+**Ninguna feature en ejecución en la copia principal.** F-045 (Excel con
+Obras, Postventa y Detalle, y la columna Observaciones) está cerrada en `dev` y
+**pendiente de desplegar** (solo la api, sección siguiente). F-049 sigue en su
+rama en la copia `porcentajes-f041`. El arnés es la **1.7.3**.
 
-## F-045 · Excel desglosado: obras y postventa (en curso)
+## ⚠ Despliegue de F-045 (pendiente; lo lanza el humano)
 
-- **Qué es** (humano, 2026-10-07): la postventa en una pestaña propia con la
-  línea agregada de obras de cada trabajador, y una pestaña de obras con la
-  línea agregada de postventa; en cada una, el detalle de lo suyo.
-- **Spec aprobada por el humano el 2026-10-08 con D1-D9 = A** («todo A»):
-  todos los trabajadores en las dos pestañas; agregada «POSTVENTA / RESTO
-  POSTVENTA» y «OBRAS / RESTO OBRAS» al final del grupo, en cursiva, solo si el
-  trabajador tiene líneas de la otra parte; VAR en Obras; Total, Desviación y
-  Estado del trabajador completo. Solo la api. Rigor estándar.
-- **Primera implementación** (T1-T5, T7; `2017b20`..`39aae1f`): review 1
-  CAMBIOS PEDIDOS solo por este fichero (MANUAL contra 2026/09 sin postventa),
-  review 2 APROBADA (`progress/review_F-045.md`).
-- **Cambio del humano en la MANUAL T6 (2026-10-08):** Obras y Postventa «está
-  bien», pero el libro pasa a **«Obras», «Postventa» y «Detalle»** (la hoja de
-  F-040 sin cambios, al final) y **«Resumen» desaparece** («si», avisado de que
-  Juan pidió el Resumen en F-040). Spec revisada (`a135217`) y aprobada con
-  D10 = A (se conserva `LineaDetalle.nombre`).
-- **Estado:** cambio implementado (T8-T11, `24b2dae`..`020e7cd`,
-  `progress/impl_F-045.md` §8): Detalle de F-040 tercera, Resumen fuera, 4
-  tests del Resumen borrados (lista cerrada de design §7), 713 tests de la api
-  en verde, mutación 14/14 muertos, init.sh en verde. **Review 3: CAMBIOS
-  PEDIDOS solo en el rastro** (D10 seguía «abierta» en design.md; el recuento
-  de octubre de la MANUAL); corregidos por el líder. MANUAL T6 cumplida.
-- **Petición nueva del humano (2026-10-08):** «añade una columna de
-  observaciones a la derecha de cada tabla». La app no guarda observaciones:
-  el humano elige **A** («a»): columna «Observaciones» vacía, por línea, sin
-  combinar, a la derecha de las tres hojas, ancha, con ajuste de texto y dentro
-  del autofiltro. Spec ampliada (D11, R20-R21, T12-T16; 9 tests anteriores
-  cambian, design §7.2) y **D12 = A** decidida por el humano el 2026-10-08
-  («la celda va en todas, vacía»: también en la agregada y en «SIN CARGA»).
-  **Estado:** ampliación implementada (T12-T15, `b7e3616`..`33b9011`,
-  `progress/impl_F-045.md` §9): columna I vacía en las tres hojas, 715 tests
-  de la api en verde, init.sh en verde, cobertura 38/38. Mutación inestable
-  (3, 1 y 1 supervivientes distintos en tres campañas; todos mueren a mano):
-  procesos ajenos importaban la copia durante la campaña; anotado en el
-  encargo de `arnes-base` (`7c5983d`). **Review 4 lanzada.** Después, M2.
-- **MANUAL M2 (humano, T16, en local, nada contra Azure):** la columna
-  Observaciones.
-  1. **Reiniciar la api local** (la arrancada a las 14:01 cargó un `exporter.py`
-     mutado): Ctrl+C y `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`,
-     `.venv/Scripts/python main.py` (8090).
-  2. `curl.exe -o "$env:TEMP\f045.xlsx" "http://127.0.0.1:8090/api/v1/periodos/2026/10/export.xlsx?empresa=1"`
-     y `start "$env:TEMP\f045.xlsx"`.
-  3. En las tres hojas, la última columna es «Observaciones», cabecera azul y ancha.
-  4. Texto largo en una celda de I de un grupo de varias filas: se ajusta, la
-     fila crece y la celda es de una sola fila.
-  5. Filtro de Observaciones → «(No vacías)»: solo esa fila. Quitar el filtro.
-  6. Vista previa de impresión: una página de ancho, con I dentro y legible.
-  Resultado: **todo ok** (humano, 2026-10-08).
-- **MANUAL T6 (humano, cumplida; libro Obras, Postventa y Detalle):**
-  1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
-     y `.venv/Scripts/python main.py` (8090).
-  2. En PowerShell: `curl.exe -o "$env:TEMP\f045.xlsx" "http://127.0.0.1:8090/api/v1/periodos/2026/10/export.xlsx?empresa=1"`
-     y `start "$env:TEMP\f045.xlsx"`. Octubre es el mes de la base local con
-     postventa: el Excel de la empresa 1 enseña 11 líneas de 8 trabajadores,
-     1 de postventa (`Postv-0626`, de un trabajador que también tiene una
-     obra). La base tiene 12, pero una es de otra empresa y no sale.
-     Septiembre no tiene ninguna de postventa.
-  3. Abre sin aviso de reparación, con las hojas Obras, Postventa y Detalle, en
-     ese orden, y sin Resumen.
-  4. En las tres hojas, filtrar un Empleado con obras y postventa: sale el
-     grupo entero y la Suma de la columna E (barra de estado) da lo mismo.
-  5. En Obras, Código = POSTVENTA; en Postventa, Código = OBRAS: solo salen las
-     líneas agregadas.
-  6. Estado distinto de OK: en octubre todos los que tienen líneas están OK,
-     así que solo salen los «SIN CARGA», de una fila cada uno.
-  7. Aspecto: bandas, línea gruesa entre trabajadores y la agregada en cursiva.
-  8. «Detalle», como el de F-040: título «DETALLE DE DEDICACIÓN · Octubre
-     2026», la postventa intercalada con `Postv-`, sin «RESTO …» ni cursiva.
-  Resultado: **todo ok** (humano, 2026-10-08), con el libro nuevo.
+- Cambia **solo la api** (`.\redeploy_dedicacion.ps1 -Solo api`, desde `dev`,
+  con `00_vars_dedicacion.ps1`, `00_vars_dedicacion.local.ps1` y
+  `00_capps_vars_dedicacion.ps1` cargados). Sin DDL, sin sync, sin variables
+  nuevas.
+- **Comprobación:** «Exportar Excel» de un mes con postventa: hojas Obras,
+  Postventa y Detalle (sin Resumen) y la columna Observaciones vacía.
+- **Aviso a Administración:** desaparece la hoja «Resumen» que pidió Juan en
+  F-040 (decisión del humano del 2026-10-08).
 
 ## Producción, hoy
 
@@ -161,8 +100,8 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 2026-10-08: **F-052** (una línea de mensajería por obra en curso y mes, con
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
-(KM no). Juan quiere registrar **octubre entero desde la app**. Orden: F-045
-(en curso), F-049, F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+(KM no). Juan quiere registrar **octubre entero desde la app**. F-045 cerrada (pendiente de desplegar).
+Orden: F-049 (en curso, en `porcentajes-f041`), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
