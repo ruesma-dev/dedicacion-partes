@@ -1,109 +1,69 @@
-Revisión completa (pasada 1) · HEAD `5d6b267` (`git diff dev...HEAD`, base `2ebc061`)
+Revisión incremental desde 5d6b267 (pasada 2) · HEAD `48ca3fa` — la pasada 1 (completa, `git diff dev...5d6b267`, base `2ebc061`) sigue debajo, resumida
 
 # F-049 · Review — Los avisos del modal de registro rotulados por tipo
 
-**Veredicto: CAMBIOS PEDIDOS** (CHANGES_REQUESTED). Un único `[ ]`, de papeleo:
-la tabla de la campaña manual sustitutiva no trae el **nº de fallos** por
-mutante (C4 bis). El código, los tests y la MANUAL están bien; la próxima
-pasada será incremental y solo mirará eso y las observaciones.
+**Veredicto vigente (pasada 2): APROBADO** (APPROVED). Pasada 1: CAMBIOS
+PEDIDOS por un único `[ ]` de papeleo (nº de fallos por mutante en la tabla
+manual), ya recogido. Detalle de la pasada 2 al final.
 
 **Nivel de rigor:** `estandar`, declarado en `harness/features.json`. Exige
 tests trazables, fase RED, cobertura (o N/A con motivo impreso) y campaña de
 mutación con supervivientes analizados. `sdd: false`: se valida contra los 5
 `acceptance` y el plan aprobado (descripción de la feature y `current.md`).
 
-## Lo que se ejecutó (resultado real)
+## Pasada 1 · lo que se ejecutó (resultado real)
 
-- `bash harness/init.sh`, tal cual, desde la copia aparte: «ENTORNO LISTO», sin
-  `[KO]`; raíz `418 passed, 1 skipped`; front `118 passed` (sin caché, `.venv`
-  enlazado al de la principal pero con el `app.js` de la copia); api y transfer
-  por caché (no se tocan); `PUERTA COBERTURA: N/A` con motivo impreso.
-- `harness.alcance.alcance_de_feature('F-049')`: alcance **vacío**; el diff sin
-  filtrar es `app.js` (52 líneas), el test nuevo y papeleo: cero por lenguaje.
-- **Campaña manual reejecutada entera**, con el script del informe, sobre una
-  copia en mi scratchpad (no se tocó el árbol) y **sin `-x`** para contar
-  fallos: 33/33 aplican (ningún `NO_APLICA`), **33 MUERTOS**, 3 min 29 s. Así
-  quedan reproducidas al pie de la letra todas las filas, no solo dos. Números
-  de fallos en «Cambios requeridos».
-- El `pintarModalPreflight({...})` de la MANUAL, extraído de `impl_F-049.md` y
-  ejecutado en node con las funciones REALES de `app.js`: salen las tres
-  casillas exactamente como dice `current.md` paso 5 (Sin partida 5 %;
-  Sobrecarga «ya tiene 95% (MADM 95%), se añade 10% y sumaría 105%, un 5%»;
-  Pisar «línea 8001 (MADM 40%, fec 20260930) y se escribe 60%»), con las
-  `value` = claves del snippet.
+- `bash harness/init.sh` desde la copia aparte: «ENTORNO LISTO», sin `[KO]`;
+  raíz `418 passed, 1 skipped`; front `118 passed` (sin caché);
+  `PUERTA COBERTURA: N/A` con motivo impreso.
+- `harness.alcance.alcance_de_feature('F-049')`: alcance **vacío**; el diff es
+  `app.js` (52 líneas), el test nuevo y papeleo: cero por lenguaje.
+- **Campaña manual reejecutada entera** con el script del informe, en una
+  copia en mi scratchpad y **sin `-x`**: 33/33 aplican, **33 MUERTOS**,
+  3 min 29 s. Todas las filas reproducidas, no solo dos.
+- El `pintarModalPreflight({...})` de la MANUAL, ejecutado en node con las
+  funciones reales de `app.js`: salen las tres casillas como dice `current.md`
+  paso 5, con las `value` = claves del snippet.
 
-## Lo que pidió el líder, contrastado con el código
+## Pasada 1 · lo que pidió el líder, contrastado con el código
 
-1. **Campos que usa el rotulado = los que manda el transfer.** `Conflicto`
-   (`dedicacion-transfer/domain/models/registro_models.py:193-237`) tiene
-   `motivo` (defecto `"pisado"`), `nuevas`, `lineas`, `contexto`,
-   `suma_existente`, `suma_total`, `exceso`; se publica con `asdict`
-   (`interface_adapters/api/app.py:151`), que **no** serializa la propiedad
-   `nueva_can` (causa del 0 % confirmada). `nuevas` sale de `_nueva()`
-   (`registro_pipeline.py:99-107`, `can` sobre 1); `lineas`/`contexto` son
-   `LineaSigrid` con `ide`, `hora_codigo`, `can`, `fecha_int`
-   (`registro_models.py:130-141`). Los tres sitios que construyen conflictos
-   (`registro_pipeline.py:454`, `:512`, `:546`) rellenan lo que el front lee
-   (sobrecarga: `contexto=cap.contadas` y las tres sumas redondeadas). La api
-   reenvía tal cual: `registro_sigrid.py:129-131` (`{"obra": …, **r}`) y la
-   ruta `routes.py:307-319` devuelve el dict sin `response_model`. Escala:
-   todo sobre 1 → `× 100` antes de `fmtPct`, correcto (trampa de C3 revisada).
-2. **Mismas claves a ejecutar.** La casilla sigue siendo
-   `class="chk-pisar" value="${escapeHtml(c.clave)}"` y `registroEjecutar`
-   (`app.js:1809-1831`) no cambia en el diff; lo fijan
-   `test_f049_r3_las_casillas_llevan_la_clave_de_cada_conflicto` y
-   `…_ejecutar_manda_las_mismas_claves` (mutantes M28, M32, M33).
-3. **Sin lógica de negocio en el front.** `pctNuevas` replica para mostrar la
-   suma que el transfer ya hace en `nueva_can`; no compara con la jornada, no
-   filtra ni decide qué se confirma (`test_f049_r3_el_rotulo_no_decide_nada`).
-   Dentro del plan aprobado («% nuevo de `nuevas`»). El texto del «sin partida»
-   casa con `AVISO_SIN_PARTIDA` del transfer (`reglas_porcentajes.py:313`).
-4. **Ningún test anterior modificado**: el diff de `tests/` es solo el fichero
-   nuevo `test_f049_avisos_registro.py` (290 líneas).
-5. **MANUAL seguible**: front de la copia aparte sin `.env` va a la api en
-   `127.0.0.1:8090` por defecto (`config/settings.py`); `app.js` se carga como
-   script clásico (`templates/index.html:104`), así que `pintarModalPreflight`,
-   `state`, `MESES` y `registro` son globales en la consola; el botón «⇪
-   Sigrid» de fila existe (`app.js:892`). Ver O2 y O3.
+1. **Campos = los que manda el transfer.** `Conflicto`
+   (`registro_models.py:193-237`) lleva `motivo` (defecto `"pisado"`),
+   `nuevas`, `lineas`, `contexto` y las tres sumas; `asdict` (`app.py:151`) no
+   serializa la propiedad `nueva_can` (causa del 0 % confirmada). Los tres
+   constructores (`registro_pipeline.py:454`, `:512`, `:546`) rellenan lo que
+   el front lee; la api reenvía tal cual (`registro_sigrid.py:129-131`,
+   `routes.py:307-319`). Escala sobre 1 → `× 100` antes de `fmtPct`: correcto.
+2. **Mismas claves a ejecutar.** La casilla sigue con `value=c.clave` y
+   `registroEjecutar` (`app.js:1809-1831`) no cambia; lo fijan dos tests r3
+   (mutantes M28, M32, M33).
+3. **Sin lógica de negocio en el front.** `pctNuevas` solo suma para mostrar;
+   no compara, no filtra, no decide (`test_f049_r3_el_rotulo_no_decide_nada`).
+   El texto «sin partida» casa con `AVISO_SIN_PARTIDA` (`reglas_porcentajes.py:313`).
+4. **Ningún test anterior modificado**: en `tests/` solo el fichero nuevo.
+5. **MANUAL seguible** (front sin `.env` → api `127.0.0.1:8090`; `app.js`
+   script clásico, funciones globales en consola). Ver O2 y O3.
 
-## Checkpoints
+## Pasada 1 · checkpoints
 
-**C1** [x] init.sh exit 0 · [x] ficheros base presentes.
-**C2** [x] una `in_progress` · [x] rama `feature/F-049-…` · [x] `current.md`
-abre con F-049, estado al día · [x] `done` con resumen en `history.md`.
-**C3** [x] hexagonal: solo front, sin lógica de negocio · [x] primera línea
-con ruta (`app.js`, test, informes) · [x] sin `console.log`/`print`/TODO,
-sin secretos, sin dependencias nuevas · [x] tres trampas: escala sobre 1 bien
-convertida; postventa y escritura en Sigrid no se tocan.
-**C3 bis** N/A: no toca `docs/referencia/`. **C4** [x] cada `acceptance` con test trazable y en verde (tabla abajo) ·
-[x] sin red ni BBDD (node local, sin `fetch`) · [x] MANUAL en `current.md`
-con comandos exactos, resultado _pendiente_.
-**C4 bis**
-- [x] `rigor: estandar` declarado.
-- [x] Fase RED: salida real del fallo (el modal viejo pinta tres «Pisar … 0%»)
-  y `16 failed, 1 passed` antes del código; el que pasaba fija lo invariante.
-- [x] Cobertura: `N/A` con motivo impreso por init.sh (cambio solo en JS).
-- N/A `mutacion_F-049.md` de la herramienta, regla de 60 s, coste por mutante,
-  cabecera «CAMPAÑA NO VÁLIDA», RM1, RM2: `harness.mutacion` solo muta Python
-  y el alcance recalculado es vacío; los sustituye la campaña manual,
-  reejecutada entera por mí (arriba).
-- RM3 revisado: ningún mutante equivalente salió muerto (M01: motivo vacío
-  pasa a «Confirmar», cambio observable; el resto alteran texto visible).
-- N/A RM5: rigor `estandar`. N/A RM6: no se quitó ninguna guarda.
-- [ ] **Campaña manual sustitutiva**: hay fila por mutante con `fichero:línea`
-  (comprobadas 17 líneas contra `app.js`, correctas) y el texto exacto
-  canónico en la lista `M` del script (reproducible: lo reproduje), pero **la
-  tabla no trae el nº de fallos** de cada mutante, que C4 bis exige
-  expresamente. Ya se pidió en F-047 (O1) y F-042 lo traía («Fallos (sin
-  `-x`)»). → Cambio 1.
-- [x] Supervivientes analizados: M19 de la primera pasada, hueco real, cerrado
-  con test en T2; ninguno `PENDIENTE`.
-- [x] «Evidencias» con tests, cobertura, mutantes/supervivientes y tiempo de
-  suite. Workers: no declarado, pero el script es un bucle en serie (W = 1
-  evidente en el código) → O1.
-**C4 ter** N/A: no hay `harness/rutas_sensibles.json`. **C5** N/A `tasks.md` (`sdd: false`); commits `F-049 Tn:` / `F-049:` ·
-[x] árbol limpio (`.coverage`/`coverage.json` ignorados) · [x] `features.json`
-en `in_progress`, coherente.
+**C1** [x] init.sh exit 0 · [x] ficheros base. **C2** [x] una `in_progress` ·
+[x] rama `feature/F-049-…` · [x] `current.md` abre con F-049 · [x] `done` con
+resumen en `history.md`. **C3** [x] solo front, sin lógica de negocio · [x]
+primera línea con ruta · [x] sin `console.log`/`print`/TODO, sin secretos ni
+dependencias · [x] trampas: escala sobre 1; postventa y Sigrid intactos.
+**C3 bis** N/A: no toca `docs/referencia/`. **C4** [x] cada `acceptance` con
+test en verde · [x] sin red ni BBDD · [x] MANUAL con comandos, _pendiente_.
+**C4 bis** [x] `rigor: estandar` declarado · [x] fase RED real (`16 failed,
+1 passed` antes del código) · [x] cobertura N/A con motivo impreso (solo JS) ·
+N/A `mutacion_F-049.md`, regla de 60 s, cabecera «NO VÁLIDA», RM1, RM2:
+`harness.mutacion` solo muta Python y el alcance es vacío; los sustituye la
+campaña manual, reejecutada por mí · RM3 revisado: ningún equivalente muerto ·
+N/A RM5 (rigor `estandar`), N/A RM6 (ninguna guarda quitada) · **[ ] campaña
+manual: sin nº de fallos por mutante** → Cambio 1 · [x] supervivientes: M19,
+cerrado con test en T2 · [x] «Evidencias» (workers no declarados → O1).
+**C4 ter** N/A: no hay `harness/rutas_sensibles.json`. **C5** N/A `tasks.md`
+(`sdd: false`); commits `F-049 Tn:`/`F-049:` · [x] árbol limpio · [x]
+`features.json` coherente.
 
 ## Cobertura acceptance → tests (`services/dedicacion-front/tests/test_f049_avisos_registro.py`)
 
@@ -115,25 +75,57 @@ en `in_progress`, coherente.
 | 4 · test en node + prueba humana | 18 tests en node v24 (0 skipped); MANUAL pendiente en `current.md` |
 | 5 · review + init.sh | este informe; init.sh en verde |
 
-## Cambios requeridos
+## Pasada 1 · cambios requeridos y observaciones
 
-1. `progress/mutacion_manual_F-049.md`, tabla de §2: añadir la columna
-   «Fallos (sin `-x`)» como en F-042. Valores de mi reejecución (script del
-   informe sin `-x`, 18 tests): M01 2, M02 2, M03 11, M04 4, M05 1, M06 1,
-   M07 1, M08 9, M09 9, M10 9, M11 1, M12 1, M13 4, M14 3, M15 3, M16 1,
-   M17 1, M18 2, M19 1, M20 2, M21–M25 1, M26 3, M27–M31 1, M32 3, M33 1.
-   Que el implementer los mida (script sin `-x`) y diga si coinciden; y que el
-   método aclare que «Mutación» resume y el texto exacto es el de la lista `M`.
+1. `mutacion_manual_F-049.md` §2: columna «Fallos (sin `-x`)» con mis valores
+   (M01 2, M02 2, M03 11, M04 4, M05–M07 1, M08–M10 9, M11–M12 1, M13 4,
+   M14–M15 3, M16–M17 1, M18 2, M19 1, M20 2, M21–M25 1, M26 3, M27–M31 1,
+   M32 3, M33 1), medidos por el implementer; y aclarar que «Mutación» resume.
+- **O1** `impl_F-049.md`: «campaña en serie, 1 worker» y su tiempo total.
+- **O2** MANUAL: (a) precondición del paso 4 (base local con septiembre 2026 y
+  GONZALEZ PANIAGUA); (b) paso 1: si `modo_pruebas` no es True, PARAR.
+- **O3** Paso 5: avisar del `allow pasting` de Chrome.
+- **O4** (fuera del plan) el toast de `registroEjecutar` dice «(repite y marca
+  pisar)» para todo aviso: a F-048 o aparte.
 
-## Observaciones (recoger en esta misma vuelta, no dejar en «anotado»)
+## Pasada 2 · revisión incremental `5d6b267..48ca3fa`
 
-- **O1** `impl_F-049.md` «Evidencias»: declarar «campaña en serie, 1 worker»
-  y su tiempo total (el C4 bis lo pide para el coste por mutante).
-- **O2** MANUAL de `current.md`: (a) precondición del paso 4 —la base local
-  `dedicacion` con septiembre 2026 y GONZALEZ PANIAGUA asignado—; si no está,
-  vale solo el paso 5; (b) en el paso 1, «si `modo_pruebas` no es True, PARAR
-  y no seguir».
-- **O3** Paso 5: Chrome bloquea el primer pegado en consola hasta teclear
-  `allow pasting`; avisarlo para que no parezca un fallo.
-- **O4** (líder/humano, fuera del plan) el toast de `registroEjecutar` sigue
-  diciendo «(repite y marca pisar)» para todo aviso: llevarlo a F-051 o aparte.
+**Alcance del delta** (`git diff 5d6b267 --stat`): `BACKLOG.md`,
+`harness/features.json`, `progress/current.md`, `progress/impl_F-049.md`,
+`progress/mutacion_manual_F-049.md` y este informe. **Cero cambios en código
+y tests** (ni `app.js` ni `tests/`): lo aprobado en la pasada 1 sigue en pie y
+la campaña manual sigue midiendo el mismo `app.js`. `CHECKPOINTS.md` no cambia.
+
+**Ejecutado:** `bash harness/init.sh`, tal cual y solo, desde la copia aparte:
+**«ENTORNO LISTO»**, sin `[KO]`; raíz `418 passed, 1 skipped` (99 s); api,
+front y transfer en verde por caché (árbol de servicios sin cambios desde el
+último verde, coherente con un delta solo de papeleo); `PUERTA COBERTURA: N/A`
+con motivo; `PUERTA TAMAÑO` dentro de topes. `git status` limpio.
+
+**Cambio 1 — recogido [x].** La tabla de §2 trae «Fallos (sin `-x`)» en los
+33 mutantes y los comparé fila a fila con mi reejecución de la pasada 1:
+**33/33 idénticos**. El método aclara que «Mutación» resume y que el texto
+exacto es el de la lista `M`. La medida del implementer es independiente de
+la mía: declara 299 s en serie sobre un `git archive` de `12627f7`, y la mía
+fueron 209 s; mismos fallos con tiempos distintos.
+
+**Observaciones:** **O1** [x] «Evidencias» declara «campaña en serie,
+1 worker», 299 s sin `-x`, y que la pasada con `-x` no se cronometró. **O2**
+[x] paso 1 «Si no es True, PARAR y no seguir»; paso 4 con la precondición de
+la base local y «si no, vale solo el paso 5». **O3** [x] paso 5 avisa del
+`allow pasting`. **O4** [x] recogido en la descripción de F-048
+(`features.json` y `BACKLOG.md` regenerado, `BACKLOG.md al día` en init.sh).
+
+**Checkpoints que cambian:** C4 bis «campaña manual sustitutiva» pasa a
+**[x]** (fila por mutante, `fichero:línea`, texto exacto en la lista `M`,
+resultado y nº de fallos; reproducidas las 33). C2 [x]: `current.md` sigue
+abriendo con F-049 y su estado dice «Review 2 lanzada», al día. El resto, sin
+cambios respecto de la pasada 1.
+
+**Nota menor (no bloquea, no vuelve como bloqueo):** en `impl_F-049.md` y en
+el método de `mutacion_manual_F-049.md`, «medido/medida en la review 1» puede
+leerse como medido por el reviewer. Si se toca el papeleo al cerrar, mejor
+«medido por el implementer en la vuelta de la review 1».
+
+**Pendiente para cerrar (no es de esta review):** la MANUAL del humano en
+`current.md` (resultado _pendiente_) y el paso a `done` con `history.md`.
