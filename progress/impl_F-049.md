@@ -60,9 +60,8 @@ Verde: 18 passed. Mutación manual: 33/33 muertos (`mutacion_manual` §1-2).
     está en la lista, añade una opción `selected` «`cod` · (no está en la
     lista)» (`partida <ide>` sin código). Con `sel` 0/nulo, como antes.
   - Test: `services/dedicacion-front/tests/test_f049_ampliacion_registro.py` (24).
-- **T6 · e) CSS** (`styles.css`): `.modal .aviso` y `.modal .conflicto
-  .check` con `white-space: normal; overflow-wrap: anywhere;` (la segunda,
-  además, `display: block`).
+- **T6 · e) CSS** (`styles.css`): `.modal .aviso` y `.modal .conflicto .check`
+  con `white-space: normal; overflow-wrap: anywhere;` (la 2.ª, `display: block`).
 
 ## Ampliación · decisiones y desviaciones (justificadas)
 
@@ -89,8 +88,10 @@ Verde: 18 passed. Mutación manual: 33/33 muertos (`mutacion_manual` §1-2).
      docstring pide «decidir si el contrato sigue siendo el de F-002»: lo
      sigue (ningún campo nuevo). Queda solo para la api, y
      `test_f013_r4_el_front_rotula_por_motivo_y_degrada` exige que el front
-     ramifique solo en `rotuloConflicto` y caiga en «Confirmar». **Para el
-     líder:** esa caché no ve tests que leen ficheros de otro servicio.
+     ramifique solo en `rotuloConflicto` y caiga en «Confirmar»; **review 3**:
+     fuera de ella, ni los tres motivos ni `motivo ===`/`!==` (§4 de
+     `mutacion_manual`, 5/5 muertos). **Para el líder:** esa caché no ve
+     tests que leen ficheros de otro servicio.
 4. **MANUAL: transfer con el código de esta copia** (d no está en la rama
    de F-045), arrancado **desde la carpeta del transfer de la principal**:
    su `.env` se lee de la carpeta de arranque (`env_file=".env"`). No se
@@ -211,9 +212,9 @@ La MANUAL de la parte 1 (rótulos por tipo) sigue en `progress/current.md`.
 | Evidencia | Valor real |
 |---|---|
 | Tests de la ampliación | transfer `test_f049_partidas_obra.py` **5 passed**; front `test_f049_ampliacion_registro.py` **24 passed** (node v24.14.1) |
-| Suites por servicio (`init.sh`, sin caché) | front **142 passed** (22,26 s; 19 warnings previas); transfer **658 passed** (17,98 s); api en verde (caché) |
-| `bash harness/init.sh` (tal cual, código 0) | **ENTORNO LISTO**; raíz 418 passed, 1 skipped (90,39 s); todo `[OK]` salvo el `[AVISO]` de `ruff` (237, deuda previa: los tests nuevos no añaden ninguno); `PUERTA TAMAÑO` impl 219/220 |
+| Suites por servicio (`init.sh`, sin caché) | front **142 passed** (22,26 s; 19 warnings previas); transfer **658 passed** (17,98 s; tras la review 3, `pytest tests -p no:cacheprovider` sin `__pycache__`: **658 passed**, 5,91 s); api en verde (caché) |
+| `bash harness/init.sh` (tal cual, código 0) | **ENTORNO LISTO**; raíz 418 passed, 1 skipped (90,39 s); todo `[OK]` salvo el `[AVISO]` de `ruff` (237, deuda previa: los tests nuevos no añaden ninguno); `PUERTA TAMAÑO` impl 219/220. Tras la review 3: ENTORNO LISTO, raíz 418 passed, 1 skipped (94,21 s), transfer ejecutado (no caché) **658 passed** (12,64 s), cobertura 2/2, impl 220/220 |
 | Cobertura de líneas cambiadas | `PUERTA COBERTURA: 100.0% de 2 líneas cambiadas cubiertas (2/2, umbral 80%)` (Python; el JS no se mide) |
 | Mutantes Python | **7 generados, 0 supervivientes**, 74,6 s, 1 worker |
-| Mutantes JS/CSS (manual) | **32 generados, 0 supervivientes**, 302 s en serie (325 s al repetirla tras `ruff`: idéntica) |
+| Mutantes JS/CSS (manual) | **32 generados, 0 supervivientes**, 302 s en serie (325 s al repetirla tras `ruff`: idéntica); review 3: **5/5** muertos para `test_f013_r4` (4 vivían con el test viejo) |
 | Captura del CSS (e) | Chrome headless, modal real: antes, rótulo cortado; después, dentro (decisión 2) |

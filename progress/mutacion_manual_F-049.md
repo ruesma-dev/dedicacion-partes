@@ -289,3 +289,36 @@ finally:
         f.write_bytes(b)
 print("total %.0f s" % (time.time() - t0))
 ```
+
+## 4 · Review 3, cambio 1: `test_f013_r4` endurecido (5 mutantes, 5 muertos)
+
+`test_f013_r4_el_front_rotula_por_motivo_y_degrada`
+(`services/dedicacion-transfer/tests/test_f013_sin_partida.py:409-425`): fuera
+de `rotuloConflicto` (`app.js:1757-1791`) ya no prohíbe solo `"sobrecarga"`,
+sino **los tres** motivos y cualquier comparación de un `motivo`
+(`motivo\s*[!=]==?`). `app.js` no cambia.
+
+- **Medida sobre** `4e54a8b` + el test endurecido, en un `git archive HEAD`
+  extraído en el scratchpad (más el test nuevo copiado encima): el árbol de
+  trabajo no se tocó (`git status`: solo el test). Script:
+  `mut_r4.py` del scratchpad de la sesión (no versionado; mismo patrón que §2:
+  texto exacto con una sola aparición, `-p no:cacheprovider`, sin `-x`).
+- Cada mutante se pasa con el test **viejo** (`HEAD`) y el **nuevo**, sobre
+  `test_f013_sin_partida.py` (42 tests) y sobre la suite entera del transfer
+  (sin caché). Control R0 (sin mutar): 42 passed y 654 passed + 4 skipped
+  (los 4 skipped son de la copia, que no tiene `.venv` ni `.env`).
+
+| Mutante | Sitio | Texto exacto original | Mutado | Test viejo | Test nuevo (fichero / suite) |
+|---|---|---|---|---|---|
+| R1 | `app.js:1819-1820` | ``       } else { ⏎         sel = `<span class="motivo">${escapeHtml(a.motivo \|\| "")}</span>`; `` | ``       } else if (a.motivo === "pisado") { ⏎         sel = ""; ⏎       } else { ⏎         sel = `<span class="motivo">…`; `` | VIVO (42 passed) | MUERTO: 1 / 1 fallo |
+| R2 | `app.js:1820` | `` escapeHtml(a.motivo \|\| "") `` | `` escapeHtml(a.motivo \|\| "pisado") `` | VIVO (42 passed) | MUERTO: 1 / 1 fallo |
+| R3 | `app.js:1820` | `` escapeHtml(a.motivo \|\| "") `` | `` escapeHtml(a.motivo \|\| "sin_partida") `` | VIVO (42 passed) | MUERTO: 1 / 1 fallo |
+| R4 | `app.js:1820` | `` escapeHtml(a.motivo \|\| "") `` | `` escapeHtml(a.motivo !== undefined ? a.motivo : "") `` | VIVO (42 passed) | MUERTO: 1 / 1 fallo |
+| R5 | `app.js:1820` | `` escapeHtml(a.motivo \|\| "") `` | `` escapeHtml(a.motivo \|\| "sobrecarga") `` | MUERTO (1) | MUERTO: 1 / 1 fallo |
+
+En todos, el único test en rojo es
+`test_f013_r4_el_front_rotula_por_motivo_y_degrada` (fichero: 1 failed, 41
+passed; suite: 1 failed, 653 passed, 4 skipped). R1 es el ejemplo de la
+review (`if (c.motivo === "pisado")` en otra función); R4 compara sin nombrar
+ningún motivo y lo caza solo la expresión regular. R5 es el control: el test
+viejo ya lo cazaba.

@@ -416,8 +416,12 @@ def test_f013_r4_el_front_rotula_por_motivo_y_degrada():
     for motivo in ("sobrecarga", "sin_partida", "pisado"):
         assert f'motivo === "{motivo}"' in rotulo, motivo
     assert 'titulo: "Confirmar"' in rotulo
-    # Fuera del rotulado, el front sigue sin mirar el motivo.
-    assert "sobrecarga" not in js.replace(rotulo, "")
+    # Fuera del rotulado, el front sigue sin mirar el motivo: ni nombra
+    # ninguno de los tres ni compara un `motivo` con nada (review 3 de F-049).
+    fuera = js.replace(rotulo, "")
+    for motivo in ("sobrecarga", "sin_partida", "pisado"):
+        assert motivo not in fuera, motivo
+    assert not re.search(r"motivo\s*[!=]==?", fuera), "compara un motivo"
 
 
 # --------- interacción con la SOBRECARGA (F-002, Regla B) ---------- #
