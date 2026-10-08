@@ -12,27 +12,23 @@ por la noche. El arnés es la **1.7.3**.
   línea agregada de obras de cada trabajador, y una pestaña de obras con la
   línea agregada de postventa; en cada una, el detalle de lo suyo.
 - **Spec aprobada por el humano el 2026-10-08 con D1-D9 = A** («todo A»):
-  (libro cambiado después, ver abajo) todos los
-  trabajadores en las dos; agregada «POSTVENTA / RESTO POSTVENTA» y «OBRAS /
-  RESTO OBRAS» al final del grupo, en cursiva, solo si el trabajador tiene
-  líneas de la otra parte; VAR en Obras;
-  Total, Desviación y Estado del trabajador completo. Solo la api. Cambian 12
-  tests anteriores (lista cerrada en design §7). Rigor estándar.
-- **Estado:** implementada (T1-T5 y T7, `2017b20`..`39aae1f`,
-  `progress/impl_F-045.md`); init.sh en verde, cobertura 30/30, mutación 14/14
-  muertos en la campaña repetida (la primera dio un falso superviviente que no
-  se reproduce: anotado en el encargo de `arnes-base` de falsos supervivientes,
-  `5370838`). **Review 1: CAMBIOS PEDIDOS solo por este fichero** (la MANUAL
-  apuntaba a 2026/09, sin postventa en la base local, y el resumen de D4 decía
-  «solo si no es 0»); corregidos por el líder. Código, tests y campaña sin
-  objeciones; el reviewer da la campaña por fiable. Se conserva adrede el
-  nombre de `test_f040_r1_dos_hojas_detalle_y_resumen` (trazabilidad, impl
-  §3). **Review 2 APROBADA** (`progress/review_F-045.md`).
-- **CAMBIO DEL HUMANO en la MANUAL T6 (2026-10-08):** Obras y Postventa «está
-  bien», pero el libro pasa a ser **«Obras», «Postventa» y «Detalle»** (la hoja
-  de F-040 sin cambios, al final) y **«Resumen» desaparece** («si», avisado de
-  que Juan pidió el Resumen en F-040). **Estado:** spec revisada (`a135217`) y APROBADA por el humano el
-  2026-10-08 con D10 = A («si»). T8-T11 implementadas (`24b2dae`..`9d2e361` + T11): Detalle de F-040 tercera, Resumen fuera, 713 api en verde, mutación 14/14 muertos, init.sh en verde; falta la MANUAL T6 y la review (`progress/impl_F-045.md` §8).
+  todos los trabajadores en las dos pestañas; agregada «POSTVENTA / RESTO
+  POSTVENTA» y «OBRAS / RESTO OBRAS» al final del grupo, en cursiva, solo si el
+  trabajador tiene líneas de la otra parte; VAR en Obras; Total, Desviación y
+  Estado del trabajador completo. Solo la api. Rigor estándar.
+- **Primera implementación** (T1-T5, T7; `2017b20`..`39aae1f`): review 1
+  CAMBIOS PEDIDOS solo por este fichero (MANUAL contra 2026/09 sin postventa),
+  review 2 APROBADA (`progress/review_F-045.md`).
+- **Cambio del humano en la MANUAL T6 (2026-10-08):** Obras y Postventa «está
+  bien», pero el libro pasa a **«Obras», «Postventa» y «Detalle»** (la hoja de
+  F-040 sin cambios, al final) y **«Resumen» desaparece** («si», avisado de que
+  Juan pidió el Resumen en F-040). Spec revisada (`a135217`) y aprobada con
+  D10 = A (se conserva `LineaDetalle.nombre`).
+- **Estado:** cambio implementado (T8-T11, `24b2dae`..`020e7cd`,
+  `progress/impl_F-045.md` §8): Detalle de F-040 tercera, Resumen fuera, 4
+  tests del Resumen borrados (lista cerrada de design §7), 713 tests de la api
+  en verde, mutación 14/14 muertos, init.sh en verde. **Review 3 lanzada.**
+  Después, la MANUAL T6 del humano.
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).
