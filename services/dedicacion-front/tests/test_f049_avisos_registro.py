@@ -136,6 +136,14 @@ def test_f049_r1_sobrecarga_ensena_existente_total_y_exceso():
                     "igualmente")}
 
 
+def test_f049_r1_sobrecarga_con_varias_lineas_contadas():
+    """Mutante M19 de la campaña manual: con una sola línea contada el
+    separador no se veía."""
+    [r] = _rotulos([SOBRECARGA | {"contexto": [
+        _linea(9001, 0.6), _linea(9002, 0.35, hora="MENC")]}])
+    assert "ya tiene 95% (MADM 60%, MENC 35%), se añade 50%" in r["detalle"]
+
+
 def test_f049_r1_pisado_ensena_lo_que_se_borra_y_el_nuevo():
     [r] = _rotulos([PISADO])
     assert r == {
