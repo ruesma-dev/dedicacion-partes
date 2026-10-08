@@ -1,13 +1,17 @@
 # tests/test_f045_excel_pestanas.py
 """Tests offline de F-045: el Excel desglosado en «Obras» y «Postventa».
 
+El libro lleva «Obras», «Postventa» y «Detalle» (la hoja de F-040, sin
+cambios, la tercera) y no lleva Resumen (D1 y D2 de la MANUAL T6).
+
 Dos niveles (specs/F-045-excel-obras-postventa/design.md §7):
 
   - Contenido (`grupos_pestana` de `infrastructure/excel/contenido.py`):
     qué líneas lleva el grupo de cada trabajador en cada pestaña y la línea
     agregada con la otra parte (R4-R12, R18).
   - Libro (`infrastructure/excel/exporter.py`): hojas, formato, combinadas,
-    bandas y cursiva de la agregada (R1-R3, R13-R17).
+    bandas y cursiva de la agregada, y «Detalle» igual que en F-040
+    (R1-R3, R13-R17).
 
 Los cinco trabajadores son los del prototipo (design §5), con nombres y
 obras inventados. Sin red, sin BBDD y sin ficheros: el libro vive en memoria.
@@ -22,7 +26,6 @@ from domain.models import CuadranteTrabajador, Periodo
 from infrastructure.excel.contenido import (
     AGREGADA_EN_OBRAS,
     AGREGADA_EN_POSTVENTA,
-    filas_resumen,
     grupos_detalle,
     grupos_pestana,
 )
@@ -251,7 +254,9 @@ _GRUPOS = {
 #: Filas de la línea agregada, por hoja.
 _AGREGADAS = {"Obras": {5, 8, 11}, "Postventa": {4, 5, 11}}
 #: Número de `sheet<n>.xml` de cada hoja.
-_N_HOJA = {"Obras": 1, "Postventa": 2, "Resumen": 3}
+_N_HOJA = {"Obras": 1, "Postventa": 2, "Detalle": 3}
+#: (primera, última) fila de cada grupo de `_muestra()` en «Detalle».
+_GRUPOS_DETALLE = [(3, 5), (6, 7), (8, 9), (10, 10), (11, 13)]
 
 
 def _exportar(filas=None, prefijo=_PREFIJO, periodo=_PERIODO) -> bytes:
@@ -273,16 +278,17 @@ def _empleados(contenido: bytes, nombre: str) -> list:
     return [celdas[f"A{r}"]["v"] for r in range(3, 12)]
 
 
-def test_f045_r1_tres_hojas_obras_postventa_y_resumen():
-    assert _libro(_exportar()).sheetnames == ["Obras", "Postventa", "Resumen"]
-    assert _libro(_exportar([])).sheetnames == ["Obras", "Postventa", "Resumen"]
+def test_f045_r1_tres_hojas_obras_postventa_y_detalle():
+    assert _libro(_exportar()).sheetnames == ["Obras", "Postventa", "Detalle"]
+    assert _libro(_exportar([])).sheetnames == ["Obras", "Postventa", "Detalle"]
 
 
 def test_f045_r2_titulos_cabecera_en_2_y_datos_desde_3():
     libro = _libro(_exportar())
     assert libro["Obras"]["A1"].value == "OBRAS · Septiembre 2026"
     assert libro["Postventa"]["A1"].value == "POSTVENTA · Septiembre 2026"
-    assert libro["Resumen"]["A1"].value == "RESUMEN · Septiembre 2026"
+    assert libro["Detalle"]["A1"].value == (
+        "DETALLE DE DEDICACIÓN · Septiembre 2026")
     for hoja in libro.worksheets:
         assert hoja["A1"].font.bold and hoja["A1"].font.size == 13
         assert hoja["A2"].value == "Empleado"
@@ -290,6 +296,7 @@ def test_f045_r2_titulos_cabecera_en_2_y_datos_desde_3():
     enero = _libro(_exportar([], periodo=Periodo(2027, 1)))
     assert enero["Obras"]["A1"].value == "OBRAS · Enero 2027"
     assert enero["Postventa"]["A1"].value == "POSTVENTA · Enero 2027"
+    assert enero["Detalle"]["A1"].value == "DETALLE DE DEDICACIÓN · Enero 2027"
 
 
 @pytest.mark.parametrize("nombre", ["Obras", "Postventa"])
@@ -352,13 +359,13 @@ def test_f045_r4_r10_filas_de_la_pestana_postventa():
 
 def test_f045_r11_total_desviacion_y_estado_iguales_en_las_tres_hojas():
     libro = _libro(_exportar())
-    res = libro["Resumen"]
+    det = libro["Detalle"]
     for nombre, grupos in _GRUPOS.items():
         hoja = libro[nombre]
-        for n, (ini, _fin) in enumerate(grupos):
-            assert hoja.cell(ini, 1).value == res.cell(n + 3, 1).value
-            assert hoja.cell(ini, 6).value == res.cell(n + 3, 4).value
-            assert hoja.cell(ini, 8).value == res.cell(n + 3, 5).value
+        for (ini, _fin), (ini_det, _) in zip(grupos, _GRUPOS_DETALLE, strict=True):
+            for col in (1, 6, 7, 8):
+                assert hoja.cell(ini, col).value == det.cell(ini_det, col).value, (
+                    nombre, ini, col)
         assert [hoja.cell(ini, 7).value for ini, _ in grupos] == [
             0, -0.1, 0, None, pytest.approx(0.1)], nombre
 
@@ -394,7 +401,12 @@ def test_f045_r13_valor_en_todas_las_filas_y_combinadas_con_la_agregada():
     # La agregada es una fila más del grupo: A3:A5 en Obras, A3:A4 en Postventa.
     assert "A3:A5" in _xml_hoja(contenido, 1)[1]
     assert "A3:A4" in _xml_hoja(contenido, 2)[1]
-    assert _xml_hoja(contenido, 3)[1] == []
+    # «Detalle», como en F-040: las combinadas de sus grupos, sin agregada.
+    _, rangos_det = _xml_hoja(contenido, _N_HOJA["Detalle"])
+    esperados_det = {f"{c}{ini}:{c}{fin}" for ini, fin in _GRUPOS_DETALLE
+                     if fin > ini for c in "ABFGH"}
+    assert set(rangos_det) == esperados_det
+    assert len(rangos_det) == len(esperados_det)
 
 
 def test_f045_r14_bandas_por_hoja_y_linea_gruesa_bajo_cada_trabajador():
@@ -455,30 +467,40 @@ def test_f045_r16_pct_de_la_agregada_fraccion_formato_y_sin_formulas():
                     assert not str(celda.value or "").startswith("=")
 
 
-def test_f045_r17_resumen_igual_que_en_f040():
+def test_f045_r17_detalle_igual_que_en_f040():
     contenido = _exportar()
-    res = _libro(contenido)["Resumen"]
-    esperado = filas_resumen(grupos_detalle(_muestra(), _PREFIJO))
-    assert [c.value for c in res[2]] == [
-        "Empleado", "Categoría", "Obras", "Total %", "Estado"]
-    assert res.max_row == 2 + len(esperado)
-    for r, fila in enumerate(esperado, start=3):
-        assert res.cell(r, 1).value == fila.empleado
-        assert (res.cell(r, 2).value or "") == fila.categoria
-        assert (res.cell(r, 3).value or "") == fila.obras
-        assert res.cell(r, 4).value == pytest.approx(float(fila.total) / 100)
-        assert res.cell(r, 5).value == fila.estado
-    assert res["C3"].value == (
-        "0101 Obra Ficticia Norte = 60% + 0102 Obra Ficticia Sur = 25% + "
-        "Postv-0702 Hotel Inventado = 15%")
-    assert res["C7"].value == (
-        "VAR-29 Varios partida 29 = 60% + Postv-0702 Hotel Inventado = 30% + "
-        "Postv-0705 Nave Inventada = 20%")
-    assert res.auto_filter.ref == "A2:E7"
-    celdas, _ = _xml_hoja(contenido, 3)
-    for r in range(3, 8):
-        for col in "ABCDE":
-            assert celdas[f"{col}{r}"]["fill"] is None, (col, r)
+    det = _libro(contenido)["Detalle"]
+    grupos = grupos_detalle(_muestra(), _PREFIJO)
+    assert det["A1"].value == "DETALLE DE DEDICACIÓN · Septiembre 2026"
+    assert [c.value for c in det[2]] == _CABECERA
+    assert det.max_row == 13
+    assert det.auto_filter.ref == "A2:H13"
+    lineas = [ln for g in grupos for ln in g.lineas]
+    assert len(lineas) == 11
+    for r, ln in zip(range(3, 14), lineas, strict=True):
+        assert (det.cell(r, 3).value or "") == ln.codigo, r
+        assert (det.cell(r, 4).value or "") == ln.obra, r
+        esperado = None if ln.porcentaje is None else float(ln.porcentaje) / 100
+        assert det.cell(r, 5).value == pytest.approx(esperado), r
+    # Postventa intercalada con su prefijo, y ninguna línea agregada.
+    assert [det.cell(r, 3).value for r in (3, 4, 5)] == [
+        "0101", "0102", "Postv-0702"]
+    assert det["D5"].value == "Postv-Hotel Inventado"
+    codigos = [det.cell(r, 3).value for r in range(3, 14)]
+    obras = [det.cell(r, 4).value or "" for r in range(3, 14)]
+    assert "POSTVENTA" not in codigos and "OBRAS" not in codigos
+    assert not any(o.startswith("RESTO") for o in obras)
+    celdas, _ = _xml_hoja(contenido, _N_HOJA["Detalle"])
+    for n, ((ini, fin), g) in enumerate(zip(_GRUPOS_DETALLE, grupos, strict=True)):
+        assert det.cell(ini, 1).value == g.empleado
+        assert det.cell(ini, 6).value == pytest.approx(float(g.total) / 100)
+        assert det.cell(ini, 8).value == g.estado
+        banda = (_BLANCO, _AZUL)[n % 2]
+        for r in range(ini, fin + 1):
+            for col in "ABCDEFGH":
+                assert celdas[f"{col}{r}"]["fill"] == banda, (col, r)
+        for col in "ABCDEFGH":
+            assert celdas[f"{col}{fin}"]["bottom"] == ("medium", "FF000000"), col
 
 
 def test_f045_r18_el_prefijo_de_la_configuracion_llega_al_libro():
@@ -488,4 +510,4 @@ def test_f045_r18_el_prefijo_de_la_configuracion_llega_al_libro():
         "PV_0702", "PV_Hotel Inventado")
     assert (postv["C4"].value, postv["D4"].value) == ("OBRAS", "RESTO OBRAS")
     assert libro["Obras"]["C5"].value == "POSTVENTA"
-    assert libro["Resumen"]["C3"].value.endswith("PV_0702 Hotel Inventado = 15%")
+    assert libro["Detalle"]["C5"].value == "PV_0702"

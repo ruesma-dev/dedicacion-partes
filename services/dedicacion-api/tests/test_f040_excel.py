@@ -9,10 +9,9 @@ Dos niveles (specs/F-040-excel-modelo-juan/design.md §7):
   - Libro (`infrastructure/excel/exporter.py`): se exporta y se relee con
     openpyxl o, para las celdas combinadas, con `zipfile` sobre el XML de la
     hoja, porque `load_workbook` limpia las celdas no ancla al leer (§5).
-    Desde F-045 (D1 = A) la hoja «Detalle» es «Obras» (`sheet1.xml`), con la
-    postventa de cada trabajador en una línea agregada, y el Resumen es la
-    tercera hoja (`sheet3.xml`). La pestaña «Postventa» se prueba en
-    `test_f045_excel_pestanas.py`.
+    Desde F-045 el libro lleva delante «Obras» y «Postventa» (se prueban en
+    `test_f045_excel_pestanas.py`), «Detalle» es la tercera hoja
+    (`sheet3.xml`, `_HOJA_DETALLE`) y no hay Resumen.
 
 Todos los nombres son inventados. Sin red, sin BBDD y sin ficheros: el libro
 vive en memoria.
@@ -213,6 +212,8 @@ _BLANCO, _AZUL = "FFFFFFFF", "FFDDEBF7"
 
 #: Filas del Detalle de `_cuadrante_muestra()`: (primera, última) por grupo.
 _GRUPOS = [(3, 6), (7, 8), (9, 10), (11, 11), (12, 12)]
+#: Número de `sheet<n>.xml` de «Detalle», detrás de Obras y Postventa (F-045).
+_HOJA_DETALLE = 3
 
 
 def _exportar(filas=None, prefijo=_PREFIJO) -> bytes:
@@ -274,40 +275,36 @@ def _xml_hoja(contenido: bytes, n: int) -> tuple[dict, list[str]]:
 
 
 def test_f040_r1_dos_hojas_detalle_y_resumen():
-    assert _libro(_exportar()).sheetnames == ["Obras", "Postventa", "Resumen"]
+    assert _libro(_exportar()).sheetnames == ["Obras", "Postventa", "Detalle"]
 
 
 def test_f040_r2_titulo_en_fila_1_cabecera_en_2_datos_desde_3():
     libro = _libro(_exportar())
-    det, res = libro["Obras"], libro["Resumen"]
-    assert det["A1"].value == "OBRAS · Septiembre 2026"
-    assert res["A1"].value == "RESUMEN · Septiembre 2026"
-    for hoja in (det, res):
+    det = libro["Detalle"]
+    assert det["A1"].value == "DETALLE DE DEDICACIÓN · Septiembre 2026"
+    for hoja in libro.worksheets:
         assert hoja["A1"].font.bold and hoja["A1"].font.size == 13
         assert hoja["A2"].value == "Empleado"
         assert hoja["A3"].value == "ALFA PRUEBA UNO"
-    assert det.max_row == 12 and res.max_row == 7
+    assert det.max_row == 12
     enero = _libro(OpenpyxlExcelExporter().exportar(Periodo(2027, 1), []))
-    assert enero["Obras"]["A1"].value == "OBRAS · Enero 2027"
-    assert enero["Resumen"]["A1"].value == "RESUMEN · Enero 2027"
+    assert enero["Detalle"]["A1"].value == "DETALLE DE DEDICACIÓN · Enero 2027"
 
 
 def test_f040_r3_autofiltro_y_paneles():
     libro = _libro(_exportar())
-    assert libro["Obras"].auto_filter.ref == "A2:H12"
-    assert libro["Resumen"].auto_filter.ref == "A2:E7"
+    assert libro["Detalle"].auto_filter.ref == "A2:H12"
     for hoja in libro.worksheets:
         assert hoja.freeze_panes == "A3"
     vacio = _libro(_exportar([]))
-    assert vacio["Obras"].auto_filter.ref == "A2:H2"
-    assert vacio["Resumen"].auto_filter.ref == "A2:E2"
+    assert vacio["Detalle"].auto_filter.ref == "A2:H2"
 
 
 def test_f040_r4_impresion_y_anchos():
     libro = _libro(_exportar())
     anchos = {"Obras": (34, 22, 12, 44, 13, 15, 12, 16),
               "Postventa": (34, 22, 12, 44, 13, 15, 12, 16),
-              "Resumen": (34, 22, 90, 10, 16)}
+              "Detalle": (34, 22, 12, 44, 13, 15, 12, 16)}
     for hoja in libro.worksheets:
         assert hoja.page_setup.orientation == "landscape"
         assert hoja.sheet_properties.pageSetUpPr.fitToPage is True
@@ -329,31 +326,31 @@ def test_f040_r5_cabecera_azul_con_texto_blanco_en_negrita():
 
 
 def test_f040_r6_cabecera_del_detalle_sin_obra_codigo():
-    det = _libro(_exportar())["Obras"]
+    det = _libro(_exportar())["Detalle"]
     assert [c.value for c in det[2]] == [
         "Empleado", "Categoría", "Código", "Obra", "% dedicación",
         "Total empleado", "Desviación", "Estado"]
 
 
 def test_f040_r7_r8_filas_del_detalle_en_orden_y_con_su_codigo():
-    det = _libro(_exportar())["Obras"]
+    det = _libro(_exportar())["Detalle"]
     assert [det.cell(r, 3).value for r in range(3, 13)] == [
-        "0101", "0102", "0103", "0104", "0101", "0102", "VAR-29", "POSTVENTA",
+        "0101", "0102", "0103", "0104", "0101", "0102", "VAR-29", "Postv-0702",
         None, "0105"]
-    assert det["D10"].value == "RESTO POSTVENTA"
+    assert det["D10"].value == "Postv-Hotel Inventado"
     assert det["D9"].value == "Varios partida 29"
     assert det["D12"].value == "Obra Ficticia Centro"
 
 
 def test_f040_r9_sin_carga_en_el_libro():
-    det = _libro(_exportar())["Obras"]
+    det = _libro(_exportar())["Detalle"]
     fila = [c.value for c in det[11]]
     assert fila[0] == "DELTA PRUEBA CUATRO"
     assert fila[2:] == [None, None, None, 0, None, "SIN CARGA"]
 
 
 def test_f040_r10_valor_en_todas_las_filas_del_grupo():
-    celdas, _ = _xml_hoja(_exportar(), 1)
+    celdas, _ = _xml_hoja(_exportar(), _HOJA_DETALLE)
     for ini, fin in _GRUPOS:
         for col in "ABFGH":
             valores = {celdas[f"{col}{r}"]["v"] for r in range(ini, fin + 1)}
@@ -367,20 +364,19 @@ def test_f040_r10_valor_en_todas_las_filas_del_grupo():
 
 def test_f040_r11_combinadas_solo_en_grupos_de_varias_filas():
     contenido = _exportar()
-    _, rangos = _xml_hoja(contenido, 1)
+    _, rangos = _xml_hoja(contenido, _HOJA_DETALLE)
     esperados = {f"{c}{ini}:{c}{fin}" for ini, fin in _GRUPOS if fin > ini
                  for c in "ABFGH"}
     assert set(rangos) == esperados and len(rangos) == len(esperados)
-    det = _libro(contenido)["Obras"]
+    det = _libro(contenido)["Detalle"]
     for ini, fin in _GRUPOS:
         if fin > ini:
             for c in "ABFGH":
                 assert det[f"{c}{ini}"].alignment.vertical == "center"
-    assert _xml_hoja(contenido, 3)[1] == []
 
 
 def test_f040_r12_bandas_alternas_y_linea_gruesa_bajo_cada_trabajador():
-    celdas, _ = _xml_hoja(_exportar(), 1)
+    celdas, _ = _xml_hoja(_exportar(), _HOJA_DETALLE)
     for n, (ini, fin) in enumerate(_GRUPOS):
         banda = (_BLANCO, _AZUL)[n % 2]
         for r in range(ini, fin + 1):
@@ -432,18 +428,18 @@ def test_f040_r16_99996_sale_ok_y_desviacion_cero_en_el_libro():
     fila = _fila(7, "ZETA", _linea("0101", "A", "33.332"),
                  _linea("0102", "B", "33.332"), _linea("0103", "C", "33.332"))
     contenido = _exportar([fila])
-    det = _libro(contenido)["Obras"]
+    det = _libro(contenido)["Detalle"]
     assert det["H3"].value == "OK"
     assert det["G3"].value == 0
     # En el XML, «0» y no «-0»: vigila el `+ 0.0` de `_celda_pct`.
-    assert _xml_hoja(contenido, 1)[0]["G3"]["v"] == "0"
+    assert _xml_hoja(contenido, _HOJA_DETALLE)[0]["G3"]["v"] == "0"
     assert det["F3"].value == pytest.approx(0.99996)
     assert det["F3"].number_format == "0.00%"
 
 
 def test_f040_r17_fraccion_y_formato_segun_sea_entero():
     libro = _libro(_exportar())
-    det, res = libro["Obras"], libro["Resumen"]
+    det = libro["Detalle"]
     assert (det["E3"].value, det["E3"].number_format) == (0.55, "0%")
     assert (det["E7"].value, det["E7"].number_format) == (
         pytest.approx(0.3333), "0.00%")
@@ -452,10 +448,8 @@ def test_f040_r17_fraccion_y_formato_segun_sea_entero():
     assert (det["G3"].value, det["G3"].number_format) == (0, "0%")
     assert (det["F11"].value, det["F11"].number_format) == (0, "0%")
     assert det["E11"].value is None and det["G11"].value is None
-    assert (res["D4"].value, res["D4"].number_format) == (0.9, "0%")
     medio = _exportar([_fila(6, "THETA", _linea("0101", "A", "50.5"))])
-    res2, det2 = _libro(medio)["Resumen"], _libro(medio)["Obras"]
-    assert (res2["D3"].value, res2["D3"].number_format) == (0.505, "0.00%")
+    det2 = _libro(medio)["Detalle"]
     assert (det2["G3"].value, det2["G3"].number_format) == (-0.495, "0.00%")
     assert (det2["E3"].value, det2["E3"].number_format) == (0.505, "0.00%")
 
@@ -464,5 +458,5 @@ def test_f040_r18_ningun_texto_en_notacion_cientifica():
     libro = _libro(_exportar())
     textos = [c.value for h in libro.worksheets for f in h.iter_rows(min_row=3)
               for c in f if isinstance(c.value, str)]
-    assert "0105 Obra Ficticia Centro = 100%" in textos
+    assert "EXCESO 10%" in textos
     assert all("E+" not in t for t in textos)
