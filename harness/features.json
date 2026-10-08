@@ -90,7 +90,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 16,
+      "priority": 18,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -105,7 +105,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 17,
+      "priority": 19,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -154,7 +154,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 18,
+      "priority": 20,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -169,7 +169,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 19,
+      "priority": 21,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     },
     {
@@ -206,7 +206,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 20,
+      "priority": 22,
       "branch": "feature/F-014-cabos-sigrid-administracion"
     },
     {
@@ -240,7 +240,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 21,
+      "priority": 23,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
     },
     {
@@ -259,7 +259,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 13,
+      "priority": 15,
       "branch": "feature/F-017-prueba-administracion"
     },
     {
@@ -280,7 +280,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 14,
+      "priority": 16,
       "branch": "feature/F-018-paso-a-escritura-real"
     },
     {
@@ -298,13 +298,13 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 15,
+      "priority": 17,
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
       "id": "F-021",
-      "title": "Filtro por obra: solo su chip y los recursos asignados en Sesame",
-      "description": "Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asignaciones pinta un chip por cada obra del trabajador (dedicacion-front/static/js/app.js, construirCelda ~530-545). El filtro 'Filtrar obra...' de esa columna (trabajadoresVisibles ~439) decide que FILAS se ven, pero cada fila sigue pintando TODOS sus chips: filtras por una obra y ves al trabajador con las otras cuatro al lado. Se pide que, con el filtro activo, cada fila muestre solo el chip que coincide. A DECIDIR EN LA SPEC: la columna total y el estado (OK/FALTA/EXCESO) seguirian refiriendose al 100 % de TODAS las obras, asi que la fila se contradice a simple vista; hay que decidir si se recalcula sobre lo filtrado -y entonces el estado deja de significar lo que significa- o si se avisa de que hay chips ocultos. Es presentacion pura: no toca dedicacion-api ni el transfer y no cambia nada de lo que se registra en Sigrid. AMPLIADA 2026-09-29 (revisión de negocio): el filtro por obra debe además SELECCIONAR los recursos asignados a esa obra en Sesame (el humano confirma que Sesame guarda la obra de cada persona). Eso deja de ser presentación pura: cruza la frontera del proyecto (sesame-api, ver azure-apps/partes.md 5.3 bis) y la consulta la hace la API, no el front. Pendiente en la spec: si sesame-api expone la obra asignada y si está desplegado; cómo se casa la persona (DNI) y la obra de Sesame con las de Sigrid. La selección que produce es la que usa F-029.",
+      "title": "Filtro por obra: velar las etiquetas de las demás obras del recurso",
+      "description": "Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asignaciones pinta un chip por cada obra del trabajador (dedicacion-front/static/js/app.js, construirCelda ~530-545). El filtro 'Filtrar obra...' de esa columna (trabajadoresVisibles ~439) decide que FILAS se ven, pero cada fila sigue pintando TODOS sus chips: filtras por una obra y ves al trabajador con las otras cuatro al lado. Se pide que, con el filtro activo, cada fila muestre solo el chip que coincide. A DECIDIR EN LA SPEC: la columna total y el estado (OK/FALTA/EXCESO) seguirian refiriendose al 100 % de TODAS las obras, asi que la fila se contradice a simple vista; hay que decidir si se recalcula sobre lo filtrado -y entonces el estado deja de significar lo que significa- o si se avisa de que hay chips ocultos. Es presentacion pura: no toca dedicacion-api ni el transfer y no cambia nada de lo que se registra en Sigrid. AMPLIADA 2026-09-29 (revisión de negocio): el filtro por obra debe además SELECCIONAR los recursos asignados a esa obra en Sesame (el humano confirma que Sesame guarda la obra de cada persona). Eso deja de ser presentación pura: cruza la frontera del proyecto (sesame-api, ver azure-apps/partes.md 5.3 bis) y la consulta la hace la API, no el front. Pendiente en la spec: si sesame-api expone la obra asignada y si está desplegado; cómo se casa la persona (DNI) y la obra de Sesame con las de Sigrid. La selección que produce es la que usa F-029. REDEFINIDA por el humano el 2026-10-08: «que al filtrar por obra (al buscar) te vele las etiquetas de las obras que no son la filtrada cuando el recurso tiene más de 1 obra»: las otras obras se ven VELADAS (atenuadas), no ocultas, así que el total y el estado siguen cuadrando a la vista. Si llega antes F-050 (subfilas), se veladan las subfilas de las otras obras.",
       "acceptance": [
         "Con el filtro de obra activo, cada fila visible muestra solo los chips que casan con el filtro",
         "Sin filtro, la tabla se ve exactamente como hoy",
@@ -317,7 +317,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 8,
+      "priority": 6,
       "branch": "feature/F-021-filtro-obra-chip-unico"
     },
     {
@@ -445,7 +445,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 7,
+      "priority": 10,
       "branch": "feature/F-028-borrar-todo-filtrado"
     },
     {
@@ -481,7 +481,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 9,
+      "priority": 11,
       "branch": "feature/F-030-dias-bajas-incidencias"
     },
     {
@@ -499,7 +499,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 11,
+      "priority": 13,
       "branch": "feature/F-031-mcp-ia"
     },
     {
@@ -536,7 +536,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 12,
+      "priority": 14,
       "branch": "feature/F-033-deshacer-linea-real"
     },
     {
@@ -594,7 +594,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 10,
+      "priority": 12,
       "branch": "feature/F-036-baja-efectiva-recurso"
     },
     {
@@ -632,7 +632,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 4,
+      "priority": 9,
       "branch": "feature/F-038-pestana-analitica"
     },
     {
@@ -711,7 +711,7 @@
     {
       "id": "F-043",
       "title": "Partida del modal de registro: buscador predictivo, ordenada y con selector CI/CD como en partes",
-      "description": "Pedida por el humano el 2026-10-07: «cuando registro y me sale el modal de registrar, quiero que el desplegable de partida no solo sea desplegable, sino que pueda escribir con predictivo. Además la lista debe estar ordenada y, como en partes, que tenga un selector CI CD para que filtre (en partes está muy bien eso)». Mirar cómo lo hace el front de `partes` (C:/Users/pgris/PycharmProjects/partes, sv4) y llevarlo aquí. Presentación: la lista de partidas viene del preflight; el front no decide qué partida se registra salvo lo que elija el usuario.",
+      "description": "Pedida por el humano el 2026-10-07: «cuando registro y me sale el modal de registrar, quiero que el desplegable de partida no solo sea desplegable, sino que pueda escribir con predictivo. Además la lista debe estar ordenada y, como en partes, que tenga un selector CI CD para que filtre (en partes está muy bien eso)». Mirar cómo lo hace el front de `partes` (C:/Users/pgris/PycharmProjects/partes, sv4) y llevarlo aquí. Presentación: la lista de partidas viene del preflight; el front no decide qué partida se registra salvo lo que elija el usuario. ABSORBIDA por F-050 el 2026-10-08 (decisión del humano: la partida se elige en una columna del cuadrante; el selector predictivo con CI/CD es el de esa columna). Se cierra sin implementación propia.",
       "acceptance": [
         "El campo de partida del modal de registro admite escribir y filtra en vivo (código y descripción, sin mayúsculas ni tildes)",
         "La lista sale ordenada por código",
@@ -720,7 +720,7 @@
         "Probado por el humano en local antes de desplegar",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "done",
       "sdd": true,
       "rigor": "estandar",
       "priority": 5,
@@ -729,7 +729,7 @@
     {
       "id": "F-044",
       "title": "Aplicar los porcentajes también a los recursos vinculados al trabajador",
-      "description": "Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte).",
+      "description": "Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). 2026-10-08: el humano lo vuelve a pedir («que no genere solo el parte del recurso sino de los recursos vinculados en el mismo %: vehículo, viaje, teléfono, gasoil...»); sube de prioridad. Ejemplo real: GONZALEZ PANIAGUA tiene en PT26/00319 (0694, 2026-09) junto a su MADM 95 % las líneas OTEL y KM al 95 %, metidas a mano.",
       "acceptance": [
         "Exploración escrita: cómo se vincula en Sigrid un recurso a un trabajador, sus tipos de hora/importe y cómo se imputan hoy en los partes reales",
         "Al registrar un trabajador, sus recursos vinculados se registran en las mismas obras con los mismos porcentajes (decisiones de importe, partida y cuenta validadas por el humano/Administración)",
@@ -741,7 +741,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 6,
+      "priority": 4,
       "branch": "feature/F-044-recursos-vinculados"
     },
     {
@@ -759,7 +759,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 2,
+      "priority": 1,
       "branch": "feature/F-045-excel-obras-postventa"
     },
     {
@@ -776,7 +776,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 3,
+      "priority": 8,
       "branch": "feature/F-046-permiso-cerrar-periodo"
     },
     {
@@ -811,8 +811,60 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 1,
+      "priority": 7,
       "branch": "feature/F-048-aviso-obra-fallida"
+    },
+    {
+      "id": "F-049",
+      "title": "Los avisos del modal de registro se rotulan según su tipo (sin partida, sobrecarga, pisar) y con su %",
+      "description": "Fallo comunicado por el humano el 2026-10-08 (captura: GONZALEZ PANIAGUA, septiembre, 0672 y 0694): «por qué me sale pisar 2 veces en 0694 y 1 en la 0672; en esta última no hay líneas de parte». CAUSA (líder, lectura del código y de Sigrid): el front pinta TODOS los conflictos del preflight con la plantilla «Pisar <hora> de <nombre>: se borran <líneas> y se escribe <%>» (services/dedicacion-front/static/js/app.js ~1739-1747) sin mirar `c.motivo` (`sin_partida`, `sobrecarga` o pisado), y el % sale de `c.nueva_can`, que el transfer ya no envía (publica `nuevas`), así que siempre dice 0 %. En la 0672 la casilla era el aviso «sin partida»; en la 0694, «sin partida» y una SOBRECARGA (ya tiene MADM 95 % metida a mano en PT26/00319, CI.1.5, sin synckey). PLAN APROBADO por el humano el 2026-10-08 («si»): solo front; texto por tipo (sin partida: escribir sin partida, elige una o confirma; sobrecarga: lo que ya tiene en el parte, el total resultante y el exceso, con `suma_existente`, `suma_total` y `exceso`; pisar: las líneas que se borran y el % nuevo de `nuevas`); sin cambiar qué se confirma ni las claves que viajan a ejecutar. El front no lleva lógica de negocio: usa lo que manda el preflight.",
+      "acceptance": [
+        "Cada aviso del modal se rotula según su `motivo`: sin partida, sobrecarga y pisado, cada uno con su texto",
+        "El % que se escribiría sale de lo que manda el preflight (`nuevas`), no 0 %; la sobrecarga enseña lo existente, el total y el exceso",
+        "Las casillas siguen mandando las mismas claves a ejecutar (sin cambio de comportamiento del registro)",
+        "Test del front (lógica de rotulado en node, como F-041/F-042); probado por el humano en local con el caso de la captura (sin pulsar Registrar)",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 2,
+      "branch": "feature/F-049-avisos-registro-por-tipo"
+    },
+    {
+      "id": "F-050",
+      "title": "Subfilas por obra en el cuadrante con columna Partida y partida propuesta (parte anterior, último, casamiento)",
+      "description": "Pedida por el humano el 2026-10-08: «que al filtrar por obra (al buscar) te vele las etiquetas de las obras que no son la filtrada cuando el recurso tiene más de 1 obra. Que se vea en subfilas cada obra, no todas juntas, de forma que a la derecha de obra aparezca una columna partida, donde poder elegir la partida (quitamos la búsqueda de partida del modal de registrar, aunque mantengamos el que pueda cambiarse ahí). Al elegir partida, primero que proponga la del parte anterior por obra y empleado (o la del último en que se asignó ese recurso), y si no, con el sistema de casamiento de partes que funciona bien (nombre y categoría). Que también pise las líneas de parte a 0% que ya existan, ahora no lo hace. Que además no genere solo el parte del recurso sino de los recursos vinculados en el mismo % (vehículo, viaje, teléfono, gasoil...)». Esta feature recoge: SUBFILAS (cada obra del trabajador en su subfila, no todas juntas en una celda), COLUMNA PARTIDA a la derecha de la obra para elegirla en el cuadrante (el modal de registro deja de ser donde se busca, aunque se pueda cambiar ahí) y PROPUESTA de partida: 1) la del parte anterior de esa obra y ese empleado; 2) si no, la del último parte en que se asignó ese recurso; 3) si no, el casamiento de partes (nombre y categoría, `partida_matcher`). ABSORBE F-043 (buscador predictivo, ordenado y con selector CI/CD como en partes): ese selector es el de la nueva columna. Toca los tres servicios: front (subfilas, columna), api (guardar la partida elegida por línea: esquema), transfer (catálogo y propuesta leyendo partes anteriores en Sigrid; respetar la partida elegida al registrar). La partida decide qué se escribe en Sigrid: rigor crítico. DECISIONES PARA LA SPEC: qué es «parte anterior» (mes anterior, último parte con línea de ese recurso en esa obra), qué pasa con postventa y VAR (partida fija), cuándo se calcula la propuesta (sync, al abrir el mes, al añadir la obra), si se guarda la propuesta o solo la elegida, y cómo se ve en el Excel.",
+      "acceptance": [
+        "Spec aprobada por el humano (subfilas, columna Partida, orden de la propuesta, postventa/VAR, dónde se guarda)",
+        "Cada obra del trabajador sale en su subfila con su partida al lado; se elige con buscador (código y descripción, CI/CD)",
+        "La partida propuesta sigue el orden: parte anterior obra+empleado, último parte del recurso, casamiento por nombre y categoría",
+        "Al registrar se escribe la partida elegida; el modal la enseña y deja cambiarla",
+        "Verificado en modo pruebas; probado por el humano en local",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 5,
+      "branch": "feature/F-050-subfilas-partida"
+    },
+    {
+      "id": "F-051",
+      "title": "Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso",
+      "description": "Pedida por el humano el 2026-10-08: «que al filtrar por obra (al buscar) te vele las etiquetas de las obras que no son la filtrada cuando el recurso tiene más de 1 obra. Que se vea en subfilas cada obra, no todas juntas, de forma que a la derecha de obra aparezca una columna partida, donde poder elegir la partida (quitamos la búsqueda de partida del modal de registrar, aunque mantengamos el que pueda cambiarse ahí). Al elegir partida, primero que proponga la del parte anterior por obra y empleado (o la del último en que se asignó ese recurso), y si no, con el sistema de casamiento de partes que funciona bien (nombre y categoría). Que también pise las líneas de parte a 0% que ya existan, ahora no lo hace. Que además no genere solo el parte del recurso sino de los recursos vinculados en el mismo % (vehículo, viaje, teléfono, gasoil...)». Esta feature recoge: «que también pise las líneas de parte a 0% que ya existan, ahora no lo hace». PRIMERO EXPLORAR (solo lectura en Sigrid): qué son esas líneas al 0 % (quién las crea —¿partes, una plantilla del parte?—, con qué hora y partida), por qué el criterio de choque de hoy (`criterio_choque`, ARCHITECTURE.md#regla-conflicto) no las ve, y qué significa «pisar» aquí (borrar y escribir, o actualizar la línea existente con el %). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte).",
+      "acceptance": [
+        "Exploración escrita con ejemplos reales de esas líneas al 0 % y su origen",
+        "Al registrar, una línea al 0 % del mismo recurso que casa con la que se escribe se pisa (según lo decidido por el humano), sin tocar líneas de otros",
+        "Idempotente por synckey; nunca en un parte cerrado",
+        "Verificado en modo pruebas con el humano",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 3,
+      "branch": "feature/F-051-pisar-lineas-cero"
     }
   ]
 }
