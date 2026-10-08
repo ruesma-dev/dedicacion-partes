@@ -3,9 +3,9 @@
 
 Dos niveles (specs/F-040-excel-modelo-juan/design.md §7):
 
-  - Contenido (`infrastructure/excel/contenido.py`): grupos del Detalle,
-    filas del Resumen y textos de porcentaje y de estado (R7-R9, R14-R16,
-    R18, R19).
+  - Contenido (`infrastructure/excel/contenido.py`): grupos del Detalle y
+    textos de porcentaje y de estado (R7-R9, R16, R18, R19). El Resumen
+    (R13-R15) desapareció en F-045 (D2).
   - Libro (`infrastructure/excel/exporter.py`): se exporta y se relee con
     openpyxl o, para las celdas combinadas, con `zipfile` sobre el XML de la
     hoja, porque `load_workbook` limpia las celdas no ancla al leer (§5).
@@ -34,7 +34,6 @@ from domain.models import (
 )
 from infrastructure.excel.contenido import (
     es_entero,
-    filas_resumen,
     grupos_detalle,
     texto_estado,
     texto_pct,
@@ -133,31 +132,6 @@ def test_f040_r9_trabajador_sin_lineas_una_fila_sin_carga():
     assert delta.total == Decimal(0)
     assert delta.desviacion is None
     assert delta.estado == "SIN CARGA"
-
-
-def test_f040_r14_obras_con_codigo_nombre_y_mas():
-    resumen = filas_resumen(grupos_detalle(_cuadrante_muestra(), _PREFIJO))
-    por_nombre = {f.empleado: f for f in resumen}
-    assert por_nombre["BETA PRUEBA DOS"].obras == (
-        "0101 Obra Ficticia Norte = 33,33% + 0102 Obra Ficticia Sur = 56,67%")
-    assert por_nombre["GAMMA PRUEBA TRES"].obras == (
-        "VAR-29 Varios partida 29 = 80% + Postv-0702 Hotel Inventado = 30%")
-    assert por_nombre["EPSILON PRUEBA CINCO"].obras == (
-        "0105 Obra Ficticia Centro = 100%")
-    assert por_nombre["DELTA PRUEBA CUATRO"].obras == ""
-
-
-def test_f040_r15_resumen_con_total_y_el_mismo_estado_que_el_detalle():
-    grupos = grupos_detalle(_cuadrante_muestra(), _PREFIJO)
-    resumen = filas_resumen(grupos)
-    assert [f.empleado for f in resumen] == [g.empleado for g in grupos]
-    assert [f.categoria for f in resumen] == [g.categoria for g in grupos]
-    assert [f.estado for f in resumen] == [g.estado for g in grupos]
-    assert [f.total for f in resumen] == [g.total for g in grupos]
-    assert [f.estado for f in resumen] == [
-        "OK", "FALTA 10%", "EXCESO 10%", "SIN CARGA", "OK"]
-    assert [f.total for f in resumen] == [
-        Decimal(100), Decimal(90), Decimal(110), Decimal(0), Decimal(100)]
 
 
 def test_f040_r16_las_cifras_son_las_de_la_regla_del_100():
@@ -387,33 +361,6 @@ def test_f040_r12_bandas_alternas_y_linea_gruesa_bajo_cada_trabajador():
         for r in range(ini, fin):
             for col in "CDE":
                 assert celdas[f"{col}{r}"]["bottom"] == ("thin", "FFBFBFBF")
-
-
-def test_f040_r13_resumen_una_fila_por_trabajador_sin_bandas():
-    contenido = _exportar()
-    res = _libro(contenido)["Resumen"]
-    assert [c.value for c in res[2]] == [
-        "Empleado", "Categoría", "Obras", "Total %", "Estado"]
-    assert [res.cell(r, 1).value for r in range(3, 8)] == [
-        "ALFA PRUEBA UNO", "BETA PRUEBA DOS", "GAMMA PRUEBA TRES",
-        "DELTA PRUEBA CUATRO", "EPSILON PRUEBA CINCO"]
-    celdas, _ = _xml_hoja(contenido, 3)
-    for r in range(3, 8):
-        for col in "ABCDE":
-            assert celdas[f"{col}{r}"]["fill"] is None, (col, r)
-
-
-def test_f040_r14_r15_obras_total_y_estado_en_el_resumen():
-    res = _libro(_exportar())["Resumen"]
-    assert res["C5"].value == (
-        "VAR-29 Varios partida 29 = 80% + Postv-0702 Hotel Inventado = 30%")
-    assert res["C7"].value == "0105 Obra Ficticia Centro = 100%"
-    assert res["C6"].value is None
-    assert res["C3"].alignment.wrap_text is True
-    assert res["C3"].alignment.vertical == "top"
-    assert [res.cell(r, 4).value for r in range(3, 8)] == [1, 0.9, 1.1, 0, 1]
-    assert [res.cell(r, 5).value for r in range(3, 8)] == [
-        "OK", "FALTA 10%", "EXCESO 10%", "SIN CARGA", "OK"]
 
 
 def test_f040_r16_sin_formulas():

@@ -5,11 +5,10 @@ Puro: no importa openpyxl. Convierte el cuadrante que entrega la API en lo
 que pinta `exporter.py`:
 
   - un `GrupoTrabajador` por trabajador con todas sus líneas
-    (`grupos_detalle`), del que sale el Resumen;
+    (`grupos_detalle`), para la hoja «Detalle»;
   - un `GrupoTrabajador` por trabajador para cada pestaña «Obras» y
     «Postventa» (`grupos_pestana`): sus líneas de esa parte y, al final, una
     línea agregada con la suma de la otra parte (F-045);
-  - una `FilaResumen` por trabajador para la hoja Resumen;
   - los textos de porcentaje y de estado.
 
 Las cifras (total, estado, desviación) son las de la regla del 100 %
@@ -33,7 +32,7 @@ _ESTADO_FIJO = {
 class LineaDetalle:
     codigo: str               # «0702», «Postv-0702», «VAR-29»; «» sin líneas
     obra: str                 # columna Obra del Detalle (con prefijo si postventa)
-    nombre: str               # descripción sin prefijo, para el Resumen
+    nombre: str               # descripción sin prefijo (F-045 D10: se conserva)
     porcentaje: Decimal | None
     agregada: bool = False    # la línea «RESTO …» de la otra parte (F-045)
 
@@ -45,15 +44,6 @@ class GrupoTrabajador:
     lineas: list[LineaDetalle]   # nunca vacía: sin líneas, una vacía (R9)
     total: Decimal
     desviacion: Decimal | None   # None si SIN CARGA (celda vacía)
-    estado: str
-
-
-@dataclass(frozen=True)
-class FilaResumen:
-    empleado: str
-    categoria: str
-    obras: str
-    total: Decimal
     estado: str
 
 
@@ -129,24 +119,6 @@ def _grupo(
                     else desviacion),
         estado=texto_estado(estado, desviacion),
     )
-
-
-def filas_resumen(grupos: list[GrupoTrabajador]) -> list[FilaResumen]:
-    """Una fila por grupo; «Obras» une «<código> <nombre> = <pct>%»."""
-    return [
-        FilaResumen(
-            empleado=g.empleado,
-            categoria=g.categoria,
-            obras=" + ".join(
-                f"{ln.codigo} {ln.nombre} = {texto_pct(ln.porcentaje)}%"
-                for ln in g.lineas
-                if ln.porcentaje is not None
-            ),
-            total=g.total,
-            estado=g.estado,
-        )
-        for g in grupos
-    ]
 
 
 def es_entero(valor: Decimal) -> bool:

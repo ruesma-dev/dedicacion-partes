@@ -9,7 +9,9 @@ Tres hojas:
     van en todas las filas del grupo y combinadas (con el valor en todas,
     para que el autofiltro saque el grupo entero). Bandas blanco / azul claro
     y línea gruesa bajo cada trabajador.
-  - "Resumen": una fila por trabajador con todas sus líneas, total y estado.
+  - "Detalle": la hoja de F-040, igual que antes: todas las líneas de cada
+    trabajador agrupadas, la postventa intercalada con su prefijo y sin
+    línea agregada. No hay hoja Resumen (F-045 D2).
 
 Lo que se escribe sale de `contenido.py`; aquí solo se pinta.
 """
@@ -25,10 +27,8 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.merge import MergedCellRange
 
 from infrastructure.excel.contenido import (
-    FilaResumen,
     GrupoTrabajador,
     es_entero,
-    filas_resumen,
     grupos_detalle,
     grupos_pestana,
 )
@@ -54,9 +54,7 @@ _CABECERA_DETALLE = [
     "Empleado", "Categoría", "Código", "Obra", "% dedicación",
     "Total empleado", "Desviación", "Estado",
 ]
-_CABECERA_RESUMEN = ["Empleado", "Categoría", "Obras", "Total %", "Estado"]
 _ANCHOS_DETALLE = (34, 22, 12, 44, 13, 15, 12, 16)
-_ANCHOS_RESUMEN = (34, 22, 90, 10, 16)
 #: Columnas del Detalle que se combinan por trabajador: A, B, F, G y H.
 _COMBINADAS = (1, 2, 6, 7, 8)
 
@@ -76,10 +74,9 @@ class OpenpyxlExcelExporter:
         self._hoja_grupos(libro.create_sheet(), "Postventa",
                           f"POSTVENTA · {_mes(periodo)}",
                           grupos_pestana(filas, p, postventa=True))
-        self._hoja_resumen(
-            libro.create_sheet("Resumen"), periodo,
-            filas_resumen(grupos_detalle(filas, p)),
-        )
+        self._hoja_grupos(libro.create_sheet(), "Detalle",
+                          f"DETALLE DE DEDICACIÓN · {_mes(periodo)}",
+                          grupos_detalle(filas, p))
         buffer = io.BytesIO()
         libro.save(buffer)
         return buffer.getvalue()
@@ -114,19 +111,6 @@ class OpenpyxlExcelExporter:
                     _combinar_con_valor(hoja, col, ini, fin)
             fila = fin + 1
         _rematar(hoja, _ANCHOS_DETALLE, fila - 1)
-
-    def _hoja_resumen(
-        self, hoja, periodo: Periodo, resumen: list[FilaResumen]
-    ) -> None:
-        _titulo_y_cabecera(hoja, f"RESUMEN · {_mes(periodo)}", _CABECERA_RESUMEN)
-        for r, fila in enumerate(resumen, start=3):
-            hoja.cell(r, 1, fila.empleado)
-            hoja.cell(r, 2, fila.categoria)
-            obras = hoja.cell(r, 3, fila.obras)
-            obras.alignment = Alignment(wrap_text=True, vertical="top")
-            _celda_pct(hoja.cell(r, 4), fila.total)
-            hoja.cell(r, 5, fila.estado)
-        _rematar(hoja, _ANCHOS_RESUMEN, len(resumen) + 2)
 
 
 def _mes(periodo: Periodo) -> str:
