@@ -1,8 +1,8 @@
 # F-045 · Diseño técnico
 
 D1-D9 decididas (`requirements.md`): D3-D9 = A; D1 y D2 las cambió el humano en la MANUAL T6
-del 2026-10-08 (libro «Obras», «Postventa» y «Detalle», sin «Resumen»). D10 está **abierta**
-(§8). Parte del Excel de F-040 (`specs/F-040-excel-modelo-juan/`): se reutiliza su pintado de
+del 2026-10-08 (libro «Obras», «Postventa» y «Detalle», sin «Resumen»). D10 la decidió el
+humano el 2026-10-08: A (§8). Parte del Excel de F-040 (`specs/F-040-excel-modelo-juan/`): se reutiliza su pintado de
 grupos; cambian **qué líneas** lleva cada grupo y **qué hojas** se pintan.
 
 ## 1. Encaje en la arquitectura y límite de servicio
@@ -217,7 +217,7 @@ En total: 6 tests de F-045, 17 de F-040 (13 adaptados y 4 borrados) y 1 de F-039
 - **Quien lea la hoja «Resumen»** (Juan la pidió en F-040) deja de tenerla; el humano lo decidió
   avisado (D2). Quien lea el libro **por posición** ve Obras en la primera; Detalle conserva su
   nombre. F-020 dejó escrito que la plantilla solo la lee negocio; M1 lo confirma.
-- **D10 (ABIERTA) · `LineaDetalle.nombre`.** Sin el Resumen, nadie lo lee. **A (recomendada):**
+- **D10 (DECIDIDA por el humano el 2026-10-08: A) · `LineaDetalle.nombre`.** Sin el Resumen, nadie lo lee. **A (recomendada):**
   se conserva (es la descripción sin prefijo, barata, y le servirá a F-038), con el comentario
   ajustado; ningún test más cambia. B: se borra; cambian además F-040 r8 y r9 y F-045 r5, r6,
   r7 y r10, que lo comprueban, sin cambio de comportamiento.
