@@ -267,6 +267,12 @@ def _columna(hoja, col: int) -> list:
     return [hoja.cell(r, col).value for r in range(3, hoja.max_row + 1)]
 
 
+def _empleados(contenido: bytes, nombre: str) -> list:
+    """Columna A desde el XML: `load_workbook` vacía las no ancla (F-040 §5)."""
+    celdas, _ = _xml_hoja(contenido, _N_HOJA[nombre])
+    return [celdas[f"A{r}"]["v"] for r in range(3, 12)]
+
+
 def test_f045_r1_tres_hojas_obras_postventa_y_resumen():
     assert _libro(_exportar()).sheetnames == ["Obras", "Postventa", "Resumen"]
     assert _libro(_exportar([])).sheetnames == ["Obras", "Postventa", "Resumen"]
@@ -307,8 +313,9 @@ def test_f045_r3_cabecera_autofiltro_paneles_anchos_e_impresion(nombre):
 
 
 def test_f045_r4_r10_filas_de_la_pestana_obras():
-    obras = _libro(_exportar())["Obras"]
-    assert _columna(obras, 1) == (
+    contenido = _exportar()
+    obras = _libro(contenido)["Obras"]
+    assert _empleados(contenido, "Obras") == (
         ["ALFA PRUEBA UNO"] * 3 + ["BETA PRUEBA DOS"] * 2
         + ["GAMMA PRUEBA TRES", "DELTA PRUEBA CUATRO"]
         + ["EPSILON PRUEBA CINCO"] * 2)
@@ -325,8 +332,9 @@ def test_f045_r4_r10_filas_de_la_pestana_obras():
 
 
 def test_f045_r4_r10_filas_de_la_pestana_postventa():
-    postv = _libro(_exportar())["Postventa"]
-    assert _columna(postv, 1) == (
+    contenido = _exportar()
+    postv = _libro(contenido)["Postventa"]
+    assert _empleados(contenido, "Postventa") == (
         ["ALFA PRUEBA UNO"] * 2 + ["BETA PRUEBA DOS"]
         + ["GAMMA PRUEBA TRES"] * 2 + ["DELTA PRUEBA CUATRO"]
         + ["EPSILON PRUEBA CINCO"] * 3)
