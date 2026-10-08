@@ -49,8 +49,8 @@ es la **1.7.3**.
   corregidos por el líder; O5 (doble registro concurrente) llevado a F-048; O6
   aceptada. **Review 4: CAMBIOS PEDIDOS solo en el rastro** (quedaba «F-045
   (en curso)» en «Lo siguiente»); corregido por el líder, que además ha traído
-  `dev` a la rama (O7: cierre y despliegue de F-045). **Review 5 lanzada.**
-  Después, la MANUAL.
+  `dev` a la rama (O7: cierre y despliegue de F-045). **Review 5 APROBADA**
+  (`progress/review_F-049.md`). **Espera la MANUAL del humano.**
 - **MANUAL (humano, en local, sin pulsar «Registrar»):** tres consolas. El
   **transfer con el código de esta copia**, arrancado desde la carpeta del
   transfer de la principal (su `.env` se lee de la carpeta de arranque); la api
