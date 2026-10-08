@@ -13,6 +13,11 @@ Tres hojas:
     trabajador agrupadas, la postventa intercalada con su prefijo y sin
     línea agregada. No hay hoja Resumen (F-045 D2).
 
+Las tres acaban en la columna I «Observaciones» (F-045 D11): vacía, una
+celda por fila de datos (también la agregada y la «SIN CARGA», D12), sin
+combinar, con ajuste de texto y dentro del autofiltro, para escribir en el
+Excel. La app no guarda observaciones: lo escrito vive solo en el fichero.
+
 Lo que se escribe sale de `contenido.py`; aquí solo se pinta.
 """
 from __future__ import annotations
@@ -49,12 +54,15 @@ _BORDE_ULTIMA = Border(left=_FINO, right=_FINO, top=_FINO, bottom=_GRUESO)
 _CENTRADA = Alignment(vertical="center")
 #: Código, Obra y % de la línea agregada (F-045 R15).
 _CURSIVA = Font(italic=True)
+#: Columna I «Observaciones»: vacía, para escribir en el Excel (F-045 R21).
+_OBSERVACIONES = 9
+_AJUSTE = Alignment(wrap_text=True, vertical="top")
 
 _CABECERA_DETALLE = [
     "Empleado", "Categoría", "Código", "Obra", "% dedicación",
-    "Total empleado", "Desviación", "Estado",
+    "Total empleado", "Desviación", "Estado", "Observaciones",
 ]
-_ANCHOS_DETALLE = (34, 22, 12, 44, 13, 15, 12, 16)
+_ANCHOS_DETALLE = (34, 22, 12, 44, 13, 15, 12, 16, 50)
 #: Columnas del Detalle que se combinan por trabajador: A, B, F, G y H.
 _COMBINADAS = (1, 2, 6, 7, 8)
 
@@ -99,10 +107,11 @@ class OpenpyxlExcelExporter:
                 _celda_pct(hoja.cell(r, 6), grupo.total)
                 _celda_pct(hoja.cell(r, 7), grupo.desviacion)
                 hoja.cell(r, 8, grupo.estado)
-                for col in range(1, 9):
+                for col in range(1, len(_CABECERA_DETALLE) + 1):
                     celda = hoja.cell(r, col)
                     celda.fill = _BANDAS[n % 2]
                     celda.border = _BORDE_ULTIMA if r == fin else _BORDE
+                hoja.cell(r, _OBSERVACIONES).alignment = _AJUSTE
                 if linea.agregada:
                     for col in (3, 4, 5):
                         hoja.cell(r, col).font = _CURSIVA
