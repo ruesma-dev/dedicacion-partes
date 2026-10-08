@@ -76,7 +76,7 @@ Hexagonal estricto:
   del esquema + `esquema.py`, que deriva de él el DDL del arranque, +
   repositorios),
   `sigrid/` (cliente de `sigrid-api`), `excel/` (export con el modelo de negocio:
-  Obras y Postventa agrupadas por trabajador, cada una con la otra parte en una línea, y Resumen), `transfer/` (cliente HTTP del transfer).
+  Obras y Postventa agrupadas por trabajador, cada una con la otra parte en una línea, y Detalle con todas las líneas), `transfer/` (cliente HTTP del transfer).
 - `interface_adapters/api/` — FastAPI: `routes.py`, `schemas.py`, `deps.py`
   (contenedor de dependencias), `app.py`.
 
