@@ -1,12 +1,22 @@
 # infrastructure/excel/exporter.py
-"""Exportación a Excel del periodo, con el modelo de negocio (F-040).
+"""Exportación a Excel del periodo, con el modelo de negocio (F-040, F-045).
 
-Dos hojas:
-  - "Detalle": una fila por línea, agrupadas por trabajador. Empleado,
-    Categoría, Total, Desviación y Estado van en todas las filas del grupo y
-    combinadas (con el valor en todas, para que el autofiltro saque el grupo
-    entero). Bandas blanco / azul claro y línea gruesa bajo cada trabajador.
-  - "Resumen": una fila por trabajador con sus obras, total y estado.
+Tres hojas:
+  - "Obras" y "Postventa": una fila por línea de esa parte, agrupadas por
+    trabajador, y al final del grupo UNA línea agregada («RESTO POSTVENTA» o
+    «RESTO OBRAS», en cursiva) con la suma de la otra parte. Empleado,
+    Categoría, Total, Desviación y Estado son los del trabajador completo y
+    van en todas las filas del grupo y combinadas (con el valor en todas,
+    para que el autofiltro saque el grupo entero). Bandas blanco / azul claro
+    y línea gruesa bajo cada trabajador.
+  - "Detalle": la hoja de F-040, igual que antes: todas las líneas de cada
+    trabajador agrupadas, la postventa intercalada con su prefijo y sin
+    línea agregada. No hay hoja Resumen (F-045 D2).
+
+Las tres acaban en la columna I «Observaciones» (F-045 D11): vacía, una
+celda por fila de datos (también la agregada y la «SIN CARGA», D12), sin
+combinar, con ajuste de texto y dentro del autofiltro, para escribir en el
+Excel. La app no guarda observaciones: lo escrito vive solo en el fichero.
 
 Lo que se escribe sale de `contenido.py`; aquí solo se pinta.
 """
@@ -22,11 +32,10 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.merge import MergedCellRange
 
 from infrastructure.excel.contenido import (
-    FilaResumen,
     GrupoTrabajador,
     es_entero,
-    filas_resumen,
     grupos_detalle,
+    grupos_pestana,
 )
 
 _MESES = [
@@ -43,14 +52,17 @@ _GRUESO = Side(style="medium", color="000000")
 _BORDE = Border(left=_FINO, right=_FINO, top=_FINO, bottom=_FINO)
 _BORDE_ULTIMA = Border(left=_FINO, right=_FINO, top=_FINO, bottom=_GRUESO)
 _CENTRADA = Alignment(vertical="center")
+#: Código, Obra y % de la línea agregada (F-045 R15).
+_CURSIVA = Font(italic=True)
+#: Columna I «Observaciones»: vacía, para escribir en el Excel (F-045 R21).
+_OBSERVACIONES = 9
+_AJUSTE = Alignment(wrap_text=True, vertical="top")
 
 _CABECERA_DETALLE = [
     "Empleado", "Categoría", "Código", "Obra", "% dedicación",
-    "Total empleado", "Desviación", "Estado",
+    "Total empleado", "Desviación", "Estado", "Observaciones",
 ]
-_CABECERA_RESUMEN = ["Empleado", "Categoría", "Obras", "Total %", "Estado"]
-_ANCHOS_DETALLE = (34, 22, 12, 44, 13, 15, 12, 16)
-_ANCHOS_RESUMEN = (34, 22, 90, 10, 16)
+_ANCHOS_DETALLE = (34, 22, 12, 44, 13, 15, 12, 16, 50)
 #: Columnas del Detalle que se combinan por trabajador: A, B, F, G y H.
 _COMBINADAS = (1, 2, 6, 7, 8)
 
@@ -63,24 +75,26 @@ class OpenpyxlExcelExporter:
     def exportar(
         self, periodo: Periodo, filas: list[CuadranteTrabajador]
     ) -> bytes:
-        grupos = grupos_detalle(filas, self._prefijo)
+        p = self._prefijo
         libro = Workbook()
-        self._hoja_detalle(libro.active, periodo, grupos)
-        self._hoja_resumen(
-            libro.create_sheet("Resumen"), periodo, filas_resumen(grupos)
-        )
+        self._hoja_grupos(libro.active, "Obras", f"OBRAS · {_mes(periodo)}",
+                          grupos_pestana(filas, p, postventa=False))
+        self._hoja_grupos(libro.create_sheet(), "Postventa",
+                          f"POSTVENTA · {_mes(periodo)}",
+                          grupos_pestana(filas, p, postventa=True))
+        self._hoja_grupos(libro.create_sheet(), "Detalle",
+                          f"DETALLE DE DEDICACIÓN · {_mes(periodo)}",
+                          grupos_detalle(filas, p))
         buffer = io.BytesIO()
         libro.save(buffer)
         return buffer.getvalue()
 
     # ------------------------------------------------------------------
-    def _hoja_detalle(
-        self, hoja, periodo: Periodo, grupos: list[GrupoTrabajador]
+    def _hoja_grupos(
+        self, hoja, nombre: str, titulo: str, grupos: list[GrupoTrabajador]
     ) -> None:
-        hoja.title = "Detalle"
-        _titulo_y_cabecera(
-            hoja, f"DETALLE DE DEDICACIÓN · {_mes(periodo)}", _CABECERA_DETALLE
-        )
+        hoja.title = nombre
+        _titulo_y_cabecera(hoja, titulo, _CABECERA_DETALLE)
         fila = 3
         for n, grupo in enumerate(grupos):
             ini, fin = fila, fila + len(grupo.lineas) - 1
@@ -93,28 +107,19 @@ class OpenpyxlExcelExporter:
                 _celda_pct(hoja.cell(r, 6), grupo.total)
                 _celda_pct(hoja.cell(r, 7), grupo.desviacion)
                 hoja.cell(r, 8, grupo.estado)
-                for col in range(1, 9):
+                for col in range(1, len(_CABECERA_DETALLE) + 1):
                     celda = hoja.cell(r, col)
                     celda.fill = _BANDAS[n % 2]
                     celda.border = _BORDE_ULTIMA if r == fin else _BORDE
+                hoja.cell(r, _OBSERVACIONES).alignment = _AJUSTE
+                if linea.agregada:
+                    for col in (3, 4, 5):
+                        hoja.cell(r, col).font = _CURSIVA
             if fin > ini:
                 for col in _COMBINADAS:
                     _combinar_con_valor(hoja, col, ini, fin)
             fila = fin + 1
         _rematar(hoja, _ANCHOS_DETALLE, fila - 1)
-
-    def _hoja_resumen(
-        self, hoja, periodo: Periodo, resumen: list[FilaResumen]
-    ) -> None:
-        _titulo_y_cabecera(hoja, f"RESUMEN · {_mes(periodo)}", _CABECERA_RESUMEN)
-        for r, fila in enumerate(resumen, start=3):
-            hoja.cell(r, 1, fila.empleado)
-            hoja.cell(r, 2, fila.categoria)
-            obras = hoja.cell(r, 3, fila.obras)
-            obras.alignment = Alignment(wrap_text=True, vertical="top")
-            _celda_pct(hoja.cell(r, 4), fila.total)
-            hoja.cell(r, 5, fila.estado)
-        _rematar(hoja, _ANCHOS_RESUMEN, len(resumen) + 2)
 
 
 def _mes(periodo: Periodo) -> str:
