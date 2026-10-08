@@ -20,7 +20,7 @@ agregado (`infrastructure/excel/`); no cambian front, transfer, esquema, ruta, p
 - «RESTO POSTVENTA» **no existe en el sistema** (rótulo del modelo de Juan, F-040 D6), y la app
   **no guarda observaciones** (ni `Linea` ni el esquema tienen ese campo).
 
-## Decisiones (D1-D11 DECIDIDAS por el humano el 2026-10-08; D12 ABIERTA)
+## Decisiones (D1-D12 DECIDIDAS por el humano el 2026-10-08)
 
 Los R marcan con `[Dn]` de cuál dependen. D3-D9 son la A aprobada («todo A»); D1 y D2, lo que
 el humano eligió en la MANUAL T6 al ver el libro, que sustituye a su A. Las alternativas
@@ -51,7 +51,7 @@ elige **A** («a»): columna «Observaciones» **vacía**, para escribir en el E
 línea (sin combinar), a la derecha de las tres hojas, ancha, con ajuste de texto y dentro del
 autofiltro. Lo escrito vive solo en ese fichero: un export nuevo sale vacío (design §8). R20, R21.
 
-**D12 · Observaciones en la agregada y en «SIN CARGA».** ABIERTA. **A (recomendada):** en todas
+**D12 · Observaciones en la agregada y en «SIN CARGA».** DECIDIDA por el humano el 2026-10-08: A («la celda va en todas, vacía»). **A:** en todas
 las filas de datos, también la agregada y la «SIN CARGA» (sirve para anotar por qué no tiene
 carga), con la banda y los bordes de su grupo. B: solo en las líneas reales de obra o
 postventa; en las otras, I queda sin formato y corta la banda. R21.

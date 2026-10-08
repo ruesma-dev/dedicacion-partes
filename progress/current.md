@@ -34,8 +34,11 @@ por la noche. El arnés es la **1.7.3**.
   observaciones a la derecha de cada tabla». La app no guarda observaciones:
   el humano elige **A** («a»): columna «Observaciones» vacía, por línea, sin
   combinar, a la derecha de las tres hojas, ancha, con ajuste de texto y dentro
-  del autofiltro. **Estado:** spec ampliada (D11, R20-R21, T12-T16, M2; 9 tests anteriores cambian, design §7.2); **D12 ABIERTA** (recomendada A: la celda también en la agregada y en «SIN CARGA»; está en requirements D12 y su título, design l.5 y tasks l.7); falta que el humano la apruebe;
-  después implementer, review 4 y la MANUAL de la columna.
+  del autofiltro. Spec ampliada (D11, R20-R21, T12-T16; 9 tests anteriores
+  cambian, design §7.2) y **D12 = A** decidida por el humano el 2026-10-08
+  («la celda va en todas, vacía»: también en la agregada y en «SIN CARGA»).
+  **Estado:** implementer lanzado (T12-T16); después review 4 y la MANUAL M2
+  de la columna.
 - **MANUAL (humano, T6, en local, nada contra Azure):**
   1. Api local: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
      y `.venv/Scripts/python main.py` (8090).

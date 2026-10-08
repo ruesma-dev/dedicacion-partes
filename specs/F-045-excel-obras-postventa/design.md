@@ -2,8 +2,8 @@
 
 D1-D11 decididas (`requirements.md`): D3-D9 = A; D1 y D2 las cambió el humano en la MANUAL T6
 del 2026-10-08 (libro «Obras», «Postventa» y «Detalle», sin «Resumen»); D10 = A (§8); D11 = A,
-la columna «Observaciones» vacía (§3.3). **D12 ABIERTA** (recomendada A: la celda también en la
-agregada y en «SIN CARGA»); este diseño es el de la A, y la B se describe en §3.3. Parte del
+la columna «Observaciones» vacía (§3.3). **D12 = A**, decidida por el humano el 2026-10-08 (la celda
+también en la agregada y en «SIN CARGA», vacía); la B descartada queda en §3.3. Parte del
 Excel de F-040 (`specs/F-040-excel-modelo-juan/`): se reutiliza su pintado de grupos; cambian
 **qué líneas** lleva cada grupo, **qué hojas** se pintan y, desde D11, **una columna más**.
 
