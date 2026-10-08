@@ -13,7 +13,7 @@ como en F-041 y F-042.
   front y `-x`, y **restaura el original en un `finally`**. `git status`
   quedó sin `app.js` modificado después de cada pasada (comprobado).
 - «Test que lo mata» es el primero que falla (con `-x`).
-- «Fallos (sin `-x`)»: nº de tests en rojo de 18, medido en la review 1 con
+- «Fallos (sin `-x`)»: nº de tests en rojo de 18, medido por el implementer en la vuelta de la review 1 con
   el mismo script **sin `-x`** sobre un `git archive HEAD` (`12627f7`, mismo
   `app.js` que `3ad478b`) fuera del árbol: 33/33 MUERTOS, cifras idénticas a
   las del reviewer, 299 s en serie.
