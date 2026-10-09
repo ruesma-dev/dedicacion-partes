@@ -1947,10 +1947,12 @@ function moverSeleccion(delta) {
 document.addEventListener("DOMContentLoaded", init);
 
 // ------------------------------------------- Registro en Sigrid
-// F-049 (ampliación): `overrides` son las partidas elegidas en el modal
-// abierto; `pisar`, las claves de las casillas que se vuelven a marcar al
-// repintarlo; `seq`, la última petición de preflight (solo esa pinta).
-const registro = { overrides: {}, pisar: new Set(), trabajadorIde: null, seq: 0 };
+// `pisar`: las claves de las casillas que se vuelven a marcar al repintar el
+// modal (F-049); `seq`: la última petición de preflight (solo esa pinta);
+// `lineas`: por `registro_id`, el trabajador, la obra y el modo de cada
+// acción con selector de partida (F-050, R29). La partida elegida en el
+// modal se GUARDA en el cuadrante: no viaja en el cuerpo del registro.
+const registro = { pisar: new Set(), trabajadorIde: null, seq: 0, lineas: {} };
 
 function abrirModal(html) {
   const ov = $("#modal-registro");
@@ -1961,35 +1963,23 @@ function abrirModal(html) {
 }
 function cerrarModal() { $("#modal-registro").classList.add("oculto"); }
 
-// F-049 (ampliación c): la partida de la acción (`sel`, con su código
-// `cod`) se enseña elegida aunque no esté en la lista publicada: nunca
-// «— sin partida —» cuando la acción lleva partida.
-function opcionesPartida(partidas, sel, cod) {
-  const ops = ['<option value="0">— sin partida —</option>'];
-  if (sel && !(partidas || []).some((p) => p.ide === sel)) {
-    ops.push(`<option value="${sel}" selected>` +
-      `${escapeHtml(cod || `partida ${sel}`)} · (no está en la lista)</option>`);
-  }
-  (partidas || []).forEach((p) => {
-    ops.push(`<option value="${p.ide}" ${p.ide === sel ? "selected" : ""}>` +
-      `${escapeHtml(p.cod || "")} · ${escapeHtml(p.res || "")}</option>`);
-  });
-  return ops.join("");
+// La partida que se escribiría en una acción (F-050, R29): su código aunque
+// no esté en ningún catálogo, «partida N» sin código, «sin partida» sin
+// ella (F-049 c). Texto plano: quien lo pinta lo escapa.
+function textoPartidaAccion(a) {
+  if (!a.paride) return "sin partida";
+  return a.partida_cod || `partida ${a.paride}`;
 }
 
-// El preflight del periodo con las partidas elegidas y el trabajador de la
-// petición (todos o uno).
+// El preflight del periodo para el trabajador de la petición (todos o uno).
+// Las partidas son las guardadas en el cuadrante (F-050, R29).
 function pedirPreflight() {
   return api(
     `/periodos/${state.anio}/${state.mes}/registro/preflight`,
-    { method: "POST", body: JSON.stringify({ overrides: registro.overrides,
-        trabajador_ide: registro.trabajadorIde }) });
+    { method: "POST", body: JSON.stringify({ trabajador_ide: registro.trabajadorIde }) });
 }
 
 async function registroPreflight(trabajadorIde = null) {
-  // F-049 (ampliación b): abrir desde un botón empieza sin las partidas
-  // elegidas antes; solo duran mientras el modal sigue abierto.
-  registro.overrides = {};
   registro.trabajadorIde = trabajadorIde;
   const seq = ++registro.seq;
   const btn = $("#btn-registro");
@@ -2003,9 +1993,9 @@ async function registroPreflight(trabajadorIde = null) {
   finally { btn.disabled = false; btn.textContent = "Registrar en Sigrid"; }
 }
 
-// F-049 (ampliación a): al cambiar una partida se repite el preflight con
-// las elegidas y se repinta, para que los avisos digan lo que se va a
-// escribir. Las casillas marcadas se conservan por su clave. Mientras se
+// F-049 (ampliación a): al cambiar una partida (F-050: ya guardada con el
+// selector) se repite el preflight y se repinta, para que los avisos digan
+// lo que se va a escribir. Las casillas marcadas se conservan por su clave. Mientras se
 // analiza no se puede pulsar «Registrar»; solo pinta la última petición y
 // nunca reabre un modal ya cerrado.
 async function repreflightPartida() {
@@ -2076,6 +2066,7 @@ function rotuloConflicto(c) {
 }
 
 function pintarModalPreflight(pf) {
+  registro.lineas = {};
   let html = `<h2>Registrar en Sigrid · ${MESES[state.mes - 1]} ${state.anio}</h2>`;
   (pf.obras || []).forEach((o) => {
     html += `<h3>Obra ${escapeHtml(o.obra.codigo || "")} · ` +
@@ -2091,16 +2082,23 @@ function pintarModalPreflight(pf) {
         `${escapeHtml(p.cod || "")}</div>`;
     });
     const filas = (o.acciones || []).map((a) => {
-      const partidas = a.destino === "postventa" ? o.partidas_postventa
-        : o.partidas_obra;
       const aviso = a.aviso ? `<div class="aviso">${escapeHtml(a.aviso)}</div>` : "";
       let sel;
       if (a.accion === "escribir" && a.partida_metodo === "var") {
         // Partida VAR fija: la decide el transfer, no se edita (F-039).
         sel = `<span class="partida-fija">${escapeHtml(a.partida_cod || "")}</span>` + aviso;
       } else if (a.accion === "escribir") {
-        sel = `<select class="sel-partida" data-reg="${a.registro_id}">` +
-          `${opcionesPartida(partidas, a.paride, a.partida_cod)}</select>` + aviso;
+        // F-050 (R29): la partida a escribir y de dónde sale; el clic abre
+        // el MISMO selector que la columna Partida para esa línea.
+        registro.lineas[a.registro_id] = {
+          trabajador: a.recurso_ide, obra_ide: o.obra.ide,
+          es_postventa: a.es_postventa,
+        };
+        const origen = rotuloOrigen(a.partida_metodo, a.partida_origen);
+        sel = `<button type="button" class="sel-partida" data-reg="${a.registro_id}">` +
+          `${escapeHtml(textoPartidaAccion(a))}</button>` +
+          (origen ? `<div class="origen-partida">${escapeHtml(origen)}</div>` : "") +
+          aviso;
       } else {
         sel = `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
       }
@@ -2112,7 +2110,7 @@ function pintarModalPreflight(pf) {
     }).join("");
     html += `<table class="tabla-reg"><thead><tr><th>Trabajador</th>` +
       `<th>Destino</th><th>Acción</th><th>%</th><th>Cód. hora</th>` +
-      `<th>Partida de imputación (editable)</th></tr></thead>` +
+      `<th>Partida de imputación (clic para cambiarla)</th></tr></thead>` +
       `<tbody>${filas}</tbody></table>`;
     (o.conflictos || []).forEach((c) => {
       // F-049: rótulo por tipo; la casilla sigue llevando la misma `clave`.
@@ -2128,10 +2126,10 @@ function pintarModalPreflight(pf) {
     `<button class="btn secondary" onclick="cerrarModal()">Cancelar</button>` +
     `<button class="btn primary" id="btn-ejecutar-registro">Registrar</button></div>`;
   abrirModal(html);
-  document.querySelectorAll(".sel-partida").forEach((sel) => {
-    sel.addEventListener("change", () => {
-      registro.overrides[sel.dataset.reg] = parseInt(sel.value, 10) || 0;
-      repreflightPartida();
+  document.querySelectorAll(".sel-partida").forEach((boton) => {
+    boton.addEventListener("click", () => {
+      const l = registro.lineas[boton.dataset.reg];
+      abrirSelectorPartida(l.trabajador, l.obra_ide, l.es_postventa, boton, repreflightPartida);
     });
   });
   $("#btn-ejecutar-registro").addEventListener("click", registroEjecutar);
@@ -2146,8 +2144,7 @@ async function registroEjecutar() {
     const r = await api(
       `/periodos/${state.anio}/${state.mes}/registro/ejecutar`,
       { method: "POST", body: JSON.stringify({
-          pisar_claves: pisar, overrides: registro.overrides,
-          trabajador_ide: registro.trabajadorIde,
+          pisar_claves: pisar, trabajador_ide: registro.trabajadorIde,
           usuario: document.body.dataset.usuario || "local" }) });
     let esc = 0, omi = 0, pend = 0;
     (r.obras || []).forEach((o) => {

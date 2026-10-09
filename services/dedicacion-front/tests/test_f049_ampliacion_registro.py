@@ -120,14 +120,15 @@ def _flujo(escenario: str) -> dict:
 
 
 def test_f049_a_repreflight_manda_las_elegidas_y_el_trabajador():
+    """F-050 (R29): las partidas elegidas ya están guardadas en el
+    cuadrante; el cuerpo solo lleva el trabajador."""
     obs = _flujo("""
-      registro.overrides = {"3001": 80002}; registro.trabajadorIde = 42;
+      registro.trabajadorIde = 42;
       repreflightPartida(); await tick();
       obs.llamadas = llamadas.map((l) => [l.url, l.body]);
     """)
     assert obs["llamadas"] == [[
-        "/periodos/2026/9/registro/preflight",
-        {"overrides": {"3001": 80002}, "trabajador_ide": 42}]]
+        "/periodos/2026/9/registro/preflight", {"trabajador_ide": 42}]]
 
 
 def test_f049_a_registrar_bloqueado_mientras_se_analiza():
@@ -210,23 +211,22 @@ def test_f049_a_el_error_de_una_peticion_vieja_no_desbloquea():
 
 def test_f049_b_abrir_desde_un_boton_empieza_sin_partidas_elegidas():
     obs = _flujo("""
-      registro.overrides = {"3001": 80002};
       registro.pisar = new Set(["vieja"]);
       registroPreflight(42); await tick();
       obs.cuerpos = cuerpos();
       llamadas[0].res({obras: []}); await tick();
-      obs.pisar = pintados[0].pisar; obs.overrides = registro.overrides;
+      obs.pisar = pintados[0].pisar;
       obs.boton = boton("#btn-registro");
     """)
-    assert obs["cuerpos"] == [{"overrides": {}, "trabajador_ide": 42}]
-    assert obs["pisar"] == [] and obs["overrides"] == {}
+    assert obs["cuerpos"] == [{"trabajador_ide": 42}]
+    assert obs["pisar"] == []
     assert obs["boton"] == {"disabled": False,
                             "textContent": "Registrar en Sigrid"}
 
 
 def test_f049_b_abrir_de_nuevo_descarta_un_repreflight_en_vuelo():
     obs = _flujo("""
-      registro.trabajadorIde = 7; registro.overrides = {"1": 5};
+      registro.trabajadorIde = 7;
       repreflightPartida(); await tick();
       registroPreflight(null); await tick();
       llamadas[1].res({obras: ["abierto"]}); await tick();
@@ -235,8 +235,8 @@ def test_f049_b_abrir_de_nuevo_descarta_un_repreflight_en_vuelo():
       obs.cuerpos = cuerpos();
     """)
     assert obs["pintados"] == [{"obras": ["abierto"]}]
-    assert obs["cuerpos"] == [{"overrides": {"1": 5}, "trabajador_ide": 7},
-                              {"overrides": {}, "trabajador_ide": None}]
+    assert obs["cuerpos"] == [{"trabajador_ide": 7},
+                              {"trabajador_ide": None}]
 
 
 def test_f049_b_una_apertura_vieja_no_pinta_encima_de_otra():
@@ -252,13 +252,15 @@ def test_f049_b_una_apertura_vieja_no_pinta_encima_de_otra():
 # ============ a) y c): lo que pinta el modal (código real) =============== #
 #: Funciones que `pintarModalPreflight` necesita de verdad.
 FUNCIONES_MODAL = ("fmtPct", "pctNuevas", "rotuloConflicto",
-                   "opcionesPartida", "pintarModalPreflight")
+                   "textoPartidaAccion", "rotuloOrigen",
+                   "pintarModalPreflight")
 
 
 def _modal(obras: list[dict], escenario: str = "",
            pisar: list[str] | None = None) -> dict:
     """Pinta con el código REAL y devuelve el HTML y lo que haya apuntado
-    el escenario (con el `change` del desplegable a mano)."""
+    el escenario (con el `click` del botón de partida a mano y el selector
+    de F-050 de mentira: apunta con qué se abre y guarda su `despues`)."""
     programa = "\n".join([
         MESES_JS,
         "const state = {anio: 2026, mes: 9};",
@@ -266,19 +268,22 @@ def _modal(obras: list[dict], escenario: str = "",
         "registro.pisar = new Set(" + json.dumps(pisar or []) + ");",
         "let html = null; function abrirModal(h) { html = h; }",
         ESCAPE,
-        "const sels = []; let repreflights = 0;",
+        "const sels = []; let repreflights = 0; const aperturas = [];",
+        "let despues = null;",
         "function repreflightPartida() { repreflights += 1; }",
+        ("function abrirSelectorPartida(t, o, pv, ancla, d) {"
+         " aperturas.push([t, o, pv, ancla.dataset.reg]); despues = d; }"),
         "function registroEjecutar() {}",
         "const document = {querySelectorAll: (s) => s === '.sel-partida' ? sels : []};",
         "const $ = () => ({addEventListener() {}});",
         *(_funcion(f) for f in FUNCIONES_MODAL),
-        # Un `select` de mentira por cada `.sel-partida` pintado.
+        # Un botón de mentira por cada `.sel-partida` pintado.
         "const _pintar = pintarModalPreflight;",
         "function pinta(pf) {",
         "  sels.length = 0;",
         "  const regs = [...JSON.stringify(pf).matchAll(/\"registro_id\":(\\d+)/g)];",
-        "  regs.forEach((m) => sels.push({dataset: {reg: m[1]}, value: '0',",
-        "    _h: null, addEventListener(ev, fn) { if (ev === 'change') this._h = fn; }}));",
+        "  regs.forEach((m) => sels.push({dataset: {reg: m[1]},",
+        "    _h: null, addEventListener(ev, fn) { if (ev === 'click') this._h = fn; }}));",
         "  _pintar(pf);",
         "}",
         "pinta(" + json.dumps({"obras": obras}, ensure_ascii=False) + ");",
@@ -316,48 +321,80 @@ def _conflicto(clave: str, motivo: str = "pisado") -> dict:
 
 
 def test_f049_a_cambiar_la_partida_la_apunta_y_repite_el_preflight():
-    obs = _modal([_obra([_accion(registro_id=3001),
-                         _accion(registro_id=3002)], PARTIDAS)], """
-      sels[1].value = "80002"; sels[1]._h();
-      obs.tras_uno = {...registro.overrides}; obs.n1 = repreflights;
-      sels[0].value = "0"; sels[0]._h();
-      obs.overrides = registro.overrides; obs.n2 = repreflights;
+    """F-050 (R29): el clic abre el selector de esa línea (trabajador, obra
+    del grupo y modo); el preflight se repite DESPUÉS de elegir, no al
+    abrir."""
+    obra = _obra([_accion(registro_id=3001, recurso_ide=77,
+                          es_postventa=False),
+                  _accion(registro_id=3002, recurso_ide=78,
+                          es_postventa=False)], PARTIDAS)
+    obra["obra"]["ide"] = 694
+    obs = _modal([obra], """
+      sels[1]._h();
+      obs.n0 = repreflights; despues();
+      obs.n1 = repreflights; sels[0]._h(); despues();
+      obs.aperturas = aperturas; obs.n2 = repreflights;
     """)
-    assert obs["tras_uno"] == {"3002": 80002} and obs["n1"] == 1
-    assert obs["overrides"] == {"3002": 80002, "3001": 0}
-    assert obs["n2"] == 2
+    assert obs["n0"] == 0 and obs["n1"] == 1 and obs["n2"] == 2
+    assert obs["aperturas"] == [[78, 694, False, "3002"],
+                                [77, 694, False, "3001"]]
 
 
 def test_f049_a_el_preflight_repetido_lleva_la_partida_recien_elegida():
-    """De punta a punta con el código real (modal, `change`, repreflight y
-    petición): lo que viaja es la partida que se acaba de elegir. Mutante
-    A27 de la campaña manual: con el orden al revés (repreflight antes de
-    apuntar la partida) solo lo cazaba la comprobación estática."""
+    """De punta a punta con el código real (modal, clic, selector, PUT,
+    repreflight y petición): primero se guarda la partida elegida y DESPUÉS
+    se repite el análisis, que ya la lee del cuadrante. Mutante A27 de la
+    campaña manual de F-049 (repreflight antes de apuntar la partida)."""
+    from tests.test_f050_modal_registro import DOM_SELECTOR
     programa = "\n".join([
         MESES_JS,
-        "const state = {anio: 2026, mes: 9};",
-        _registro(), ESCAPE,
+        "const state = {anio: 2026, mes: 9, empresa: 1, editandoIde: null};",
+        _registro(), DOM_SELECTOR, ESCAPE,
+        "const selector = { cache: new Map(), cerrar: null };",
         "const llamadas = [];",
-        ("function api(url, o) { llamadas.push(JSON.parse(o.body));"
+        ("function api(url, o) { llamadas.push([url, o && o.method || 'GET',"
+         " o && o.body ? JSON.parse(o.body) : null]);"
+         " if (url.includes('/partidas?')) return Promise.resolve({"
+         "partidas: " + json.dumps([dict(p, mayor="CI") for p in PARTIDAS])
+         + ", partidas_postventa: [], ambito: null, propuesta: null});"
+         " if (o && o.method === 'PUT') return Promise.resolve({"
+         "trabajador: {ide: 77}, resumen: {}});"
          " return new Promise(() => {}); }"),
         "function toast() {} function registroEjecutar() {}",
-        "function abrirModal(h) {}",
-        ("const sel = {dataset: {reg: '3001'}, value: '0', _h: null,"
-         " addEventListener(ev, fn) { this._h = fn; }};"),
-        ("const document = {querySelectorAll: (s) =>"
-         " s === '.sel-partida' ? [sel] : []};"),
+        "function abrirModal(h) {} function aplicarFila() {}",
+        "async function guardarAhora() {}",
+        "const sel = nodo('button'); sel.dataset.reg = '3001';",
+        "document.querySelectorAll = (s) => s === '.sel-partida' ? [sel] : [];",
         ("const $ = (s) => s === '#modal-registro'"
          " ? {classList: {contains: () => false}}"
          " : {addEventListener() {}, disabled: false, textContent: ''};"),
-        *(_funcion(f) for f in (*FUNCIONES_MODAL, "pedirPreflight",
-                                 "repreflightPartida")),
-        "registro.trabajadorIde = 42;",
-        "pintarModalPreflight(" + json.dumps(
-            {"obras": [_obra([_accion()], PARTIDAS)]}) + ");",
-        "sel.value = '80002'; sel._h();",
-        "process.stdout.write(JSON.stringify(llamadas));"])
-    assert _node(programa) == [{"overrides": {"3001": 80002},
-                                "trabajador_ide": 42}]
+        *(_funcion(f) for f in (
+            *FUNCIONES_MODAL, "pedirPreflight", "repreflightPartida",
+            "normalizar", "filtrarPartidas", "listaSelector",
+            "posicionSugerencias", "clavePartidas", "cerrarSelectorPartida",
+            "abrirSelectorPartida", "montarSelectorPartida")),
+        "registro.trabajadorIde = 77;",
+        "(async () => {",
+        "  pintarModalPreflight(" + json.dumps({"obras": [dict(
+            _obra([_accion(recurso_ide=77, es_postventa=False)], PARTIDAS),
+            obra={"ide": 694, "codigo": "0694", "nombre": "Obra 0694"})]})
+        + ");",
+        "  sel._h.click(); await new Promise((r) => setTimeout(r, 0));",
+        "  const input = paneles[0]._input; input.value = 'jefe';",
+        "  input._h.input();",
+        "  input._h.keydown({key: 'Enter', preventDefault() {},"
+        " stopPropagation() {}});",
+        "  await new Promise((r) => setTimeout(r, 0));",
+        "  process.stdout.write(JSON.stringify(llamadas));",
+        "})();"])
+    assert _node(programa) == [
+        ["/periodos/2026/9/trabajadores/77/partidas?obra_ide=694"
+         "&es_postventa=false", "GET", None],
+        ["/periodos/2026/9/trabajadores/77/partida", "PUT",
+         {"obra_ide": 694, "es_postventa": False,
+          "partida": {"ide": 80002, "cod": "CI.1.20", "res": "JEFE DE OBRA"}}],
+        ["/periodos/2026/9/registro/preflight", "POST",
+         {"trabajador_ide": 77}]]
 
 
 def test_f049_a_las_casillas_de_registro_pisar_salen_marcadas():
@@ -372,76 +409,26 @@ def test_f049_a_las_casillas_de_registro_pisar_salen_marcadas():
 
 
 def test_f049_a_solo_el_desplegable_repite_el_preflight():
-    """`repreflightPartida` se llama en un único sitio: el `change` del
-    desplegable de partida (abrir desde un botón sigue siendo
-    `registroPreflight`, que empieza de cero)."""
-    assert len(re.findall(r"(?<!function )\brepreflightPartida\(\)", JS)) == 1
+    """`repreflightPartida` se usa en un único sitio: el `despues` del
+    selector que abre el botón de partida del modal (F-050, R29; abrir
+    desde un botón sigue siendo `registroPreflight`, que empieza de cero)."""
+    assert len(re.findall(r"(?<!function )\brepreflightPartida\b", JS)) == 1
     modal = " ".join(_funcion("pintarModalPreflight").split())
-    assert ("registro.overrides[sel.dataset.reg] = parseInt(sel.value, 10) "
-            "|| 0; repreflightPartida();") in modal
+    assert ("abrirSelectorPartida(l.trabajador, l.obra_ide, l.es_postventa, "
+            "boton, repreflightPartida);") in modal
     assert len(re.findall(r"\bregistroPreflight\(", JS)) == 4  # def + 3 botones
 
 
 # ================ c) la partida se enseña aunque no esté ================ #
-def _opciones(partidas: list[dict], sel, cod=None) -> str:
-    programa = "\n".join([
-        ESCAPE, _funcion("opcionesPartida"),
-        "process.stdout.write(JSON.stringify(opcionesPartida(" +
-        ", ".join(json.dumps(x, ensure_ascii=False)
-                  for x in (partidas, sel, cod)) + ")));"])
-    return _node(programa)
-
-
-def _elegida(html: str) -> list[tuple[str, str]]:
-    return re.findall(r'<option value="([^"]*)" selected>([^<]*)</option>',
-                      html)
-
-
-def test_f049_c_partida_de_la_lista_se_marca_sin_opcion_extra():
-    html = _opciones(PARTIDAS, 80002, "CI.1.20")
-    assert _elegida(html) == [("80002", "CI.1.20 · JEFE DE OBRA")]
-    assert html.count("<option") == 3
-
-
-def test_f049_c_partida_fuera_de_la_lista_se_ensena_igual():
-    """El caso del humano: la partida elegida antes no estaba en
-    `partidas_obra` (que salía vacío) y el desplegable decía «— sin
-    partida —» mientras se iba a escribir otra cosa."""
-    html = _opciones([], 80002, "CI.1.20")
-    assert _elegida(html) == [("80002", "CI.1.20 · (no está en la lista)")]
-    assert html.startswith('<option value="0">— sin partida —</option>')
-    assert html.count(" selected") == 1
-
-
-def test_f049_c_fuera_de_la_lista_y_con_otras_partidas():
-    html = _opciones(PARTIDAS, 99999, "CI.9.99")
-    assert _elegida(html) == [("99999", "CI.9.99 · (no está en la lista)")]
-    assert html.count("<option") == 4 and html.count(" selected") == 1
-
-
-def test_f049_c_fuera_de_la_lista_sin_codigo():
-    html = _opciones([], 80002, None)
-    assert _elegida(html) == [("80002", "partida 80002 · (no está en la lista)")]
-
-
-@pytest.mark.parametrize("sel", [0, None])
-def test_f049_c_sin_partida_no_inventa_ninguna(sel):
-    html = _opciones(PARTIDAS, sel, "CI.1.20")
-    assert " selected" not in html and html.count("<option") == 3
-
-
-def test_f049_c_el_codigo_se_escapa():
-    html = _opciones([], 5, "A<b>&C")
-    assert "A&lt;b&gt;&amp;C · (no está en la lista)" in html
-    assert "A<b>" not in html
-
-
+# F-050 (R29): sin `<select>`, la intención de los `c_*` de F-049 (se ve la
+# partida de la acción aunque no esté en el catálogo, «partida N» sin
+# código, «sin partida», escapada) vive en `test_f050_modal_registro.py`.
 def test_f049_c_el_modal_pinta_la_partida_de_la_accion():
     obs = _modal([_obra([_accion(paride=80002, partida_cod="CI.1.20",
                                  partida_metodo="manual")])])
-    select = re.search(r'<select class="sel-partida" data-reg="3001">(.*?)'
-                       r"</select>", obs["html"]).group(1)
-    assert _elegida(select) == [("80002", "CI.1.20 · (no está en la lista)")]
+    boton = re.search(r'<button type="button" class="sel-partida" '
+                      r'data-reg="3001">([^<]*)</button>', obs["html"])
+    assert boton and boton.group(1) == "CI.1.20"
 
 
 # ====================== e) el texto cabe en su recuadro ================== #

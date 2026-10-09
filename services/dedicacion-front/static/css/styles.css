@@ -544,9 +544,12 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
   border-bottom: 1px solid var(--line-strong); }
 .modal .tabla-reg td { padding: 6px 8px; border-bottom: 1px solid var(--line);
   vertical-align: middle; }
-.modal select.sel-partida { max-width: 340px; width: 100%; padding: 4px 6px;
+.modal button.sel-partida { max-width: 340px; width: 100%; padding: 4px 6px;
   border: 1px solid var(--line-strong); border-radius: 6px; font: inherit;
-  font-size: .8rem; background: var(--paper); }
+  font-size: .8rem; background: var(--paper); text-align: left;
+  cursor: pointer; }
+.modal button.sel-partida:hover { border-color: var(--brand); color: var(--brand); }
+.modal .origen-partida { color: var(--ok); font-size: .74rem; margin-top: 2px; }
 /* F-049 (ampliación e): los avisos se ajustan a su recuadro. `.check` es
    `nowrap` en toda la página; dentro de un conflicto, el rótulo largo
    saldría por la derecha de su caja. */
