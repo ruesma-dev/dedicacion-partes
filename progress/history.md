@@ -2306,3 +2306,126 @@ Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo api` desde `dev`:
 (comprobado por el líder con `az containerapp show`, solo lectura). Sin
 contrato nuevo ni variables. `azure-apps` actualizado en el mismo trabajo.
 Pendiente: Excel de producción y aviso a Administración (sin Resumen).
+
+## 2026-10-09 · F-049 · Avisos del modal de registro por tipo, repreflight y catálogo siempre
+
+Rama `feature/F-049-avisos-registro-por-tipo` (copia `porcentajes-f041`) ·
+`sdd: false` · rigor `estandar` · **APROBADO** en la pasada 5. Parte 1: cada
+aviso se rotula por su `motivo` (sin partida, sobrecarga, pisado) con el % de
+`nuevas` (antes todos «Pisar … 0 %»). Ampliación aprobada tras la MANUAL: a)
+repetir el preflight al elegir partida; b) abrir empieza sin partidas de antes;
+c) la partida elegida se ve aunque no esté en la lista; d) el transfer publica
+`partidas_obra` aunque todas las líneas lleven partida (antes el desplegable
+decía «— sin partida —» y se escribía la elegida antes); e) textos dentro del
+recuadro. Hallazgo: `test_f013_r4` (transfer, lee `app.js`) estuvo en rojo
+desde el primer commit sin que init.sh lo viera por la caché: las reviews 1 y 2
+aprobaron sobre ese rojo (encargo 1.7.12 de `arnes-base`). Review 4 rechazada
+solo por el rastro del líder. O5 (doble registro concurrente) y O4 (aviso final)
+llevados a F-048; la espera del repreflight, a F-055. MANUAL cumplida por el
+humano («todo ok»).
+
+Informes: `progress/impl_F-049.md`, `progress/review_F-049.md`,
+`progress/mutacion_F-049.md`, `progress/mutacion_manual_F-049.md`. Sección
+retirada de `current.md`:
+
+### F-049 · Avisos del modal de registro por tipo (en curso)
+
+- **Causa** (líder, lectura del código y de Sigrid): `app.js` ~1739-1747 pinta
+  todos los conflictos como «Pisar … se borran … y se escribe <%>» sin mirar
+  `motivo`, y el % sale de `nueva_can`, que el transfer ya no manda (siempre
+  0 %). Caso del humano: GONZALEZ PANIAGUA, 2026-09: en la 0672 era «sin
+  partida»; en la 0694, «sin partida» y una sobrecarga (MADM 95 % a mano en
+  PT26/00319).
+- **Plan aprobado por el humano el 2026-10-08** («si»): solo front, `sdd:
+  false`, rigor estándar. Texto por tipo y % de `nuevas`; mismas claves a
+  ejecutar.
+- **Estado:** implementada (`3ad478b`..`d6d8658`, `progress/impl_F-049.md`):
+  rotulado en una función pura con tests en node, campaña manual 33/33
+  mutantes muertos (`progress/mutacion_manual_F-049.md`), init.sh en verde.
+  **Review 1: CAMBIOS PEDIDOS** (`progress/review_F-049.md`): falta el nº de
+  fallos por mutante en la tabla manual (implementer relanzado); O1 al
+  informe; O2 y O3 ya en la MANUAL; O4 (el aviso final dice «repite y marca
+  pisar» para todo) llevado a F-048. Cambio 1 y O1 recogidos por el
+  implementer (`81dbbd8`: nº de fallos de los 33 mutantes, iguales a los del
+  reviewer; campaña en serie, 1 worker, 299 s). **Review 2 APROBADA**
+  (`progress/review_F-049.md`).
+- **Ampliación aprobada por el humano el 2026-10-08** («si»), tras su MANUAL:
+  a) al elegir partida se repite el preflight (conservando casillas); b) abrir
+  el registro empieza sin partidas elegidas de antes; c) la partida elegida se
+  enseña aunque no esté en la lista; d) transfer: `partidas_obra` siempre que
+  haya líneas de obra, aunque todas lleven partida manual (hoy sale vacío y el
+  desplegable dice «— sin partida —» mientras se escribiría la elegida antes);
+  e) el aviso amarillo no se sale del recuadro. Despliegue: transfer y front.
+  **Estado:** ampliación implementada (T4-T7, `24bef2f`..`ae7d467`,
+  `progress/impl_F-049.md`): RED→verde en transfer y front, mutación 7/7
+  (Python) y 32/32 (manual JS/CSS), init.sh en verde. `test_f013_r4` del
+  transfer (lee `app.js`) llevaba en rojo desde T1, oculto por la caché de
+  init.sh (las reviews 1 y 2 aprobaron sobre ese rojo); ajustado con
+  justificación (informe, decisión 3); anotado en el encargo 1.7.12 de
+  `arnes-base` (`7b6701a`). Lo que se salía era sobre todo el rótulo de la
+  casilla (decisión 2). **Review 3: CAMBIOS PEDIDOS** (`progress/review_F-049.md`):
+  `test_f013_r4` debe prohibir los tres motivos fuera de `rotuloConflicto`
+  (hecho en `f32e4d3`, con su mutante muerto y la suite del transfer sin
+  caché); los `acceptance` a)-e) y la cabecera de este fichero,
+  corregidos por el líder; O5 (doble registro concurrente) llevado a F-048; O6
+  aceptada. **Review 4: CAMBIOS PEDIDOS solo en el rastro** (quedaba «F-045
+  (en curso)» en «Lo siguiente»); corregido por el líder, que además ha traído
+  `dev` a la rama (O7: cierre y despliegue de F-045). **Review 5 APROBADA**
+  (`progress/review_F-049.md`). **Espera la MANUAL del humano.**
+- **MANUAL (humano, en local, sin pulsar «Registrar»):** tres consolas. El
+  **transfer con el código de esta copia**, arrancado desde la carpeta del
+  transfer de la principal (su `.env` se lee de la carpeta de arranque); la api
+  desde la principal; el front desde esta copia.
+  1. Transfer: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-transfer`
+     y `.venv/Scripts/python C:/Users/pgris/PycharmProjects/porcentajes-f041/services/dedicacion-transfer/main.py`;
+     en otra consola `Invoke-RestMethod http://localhost:8006/health`:
+     `modo_pruebas` = True. **Si no es True, PARAR y no seguir.**
+  2. Api: `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-api`
+     y `.venv/Scripts/python main.py` (8090).
+  3. Front: parar cualquier otro en el 8080;
+     `cd C:/Users/pgris/PycharmProjects/porcentajes-f041/services/dedicacion-front`
+     y `.venv/Scripts/python main.py`.
+  4. (Necesita la base local con septiembre 2026 y GONZALEZ PANIAGUA asignada;
+     si no, solo los pasos 8 y 9.) `http://127.0.0.1:8080`, **Ctrl+F5**,
+     septiembre 2026, «⇪ Sigrid» en su fila: cada aviso empieza por **Sin
+     partida**, **Sobrecarga** o **Pisar**, con su %, ninguno «se escribe 0%».
+     En modo pruebas mira la 0404: la sobrecarga de la 0694 no sale en local.
+     Marca una casilla que no sea la «Sin partida» de la línea del paso 5.
+  5. **a)** En una línea con aviso amarillo «partida no localizada…», elige
+     una partida: «Registrar» pasa a «Analizando…» y el modal se repinta sin
+     ese aviso ni su casilla «Sin partida»; la partida sigue elegida y la
+     casilla del paso 4, marcada.
+  6. **d)** Con todas las líneas de esa obra con partida elegida, el desplegable
+     enseña la partida con su descripción y la lista entera; F12 → Red → último
+     `preflight` → Respuesta: `partidas_obra` de esa obra no está vacío.
+  7. **b)** **Cancelar** y abrir otra vez con «⇪ Sigrid» y con «Registrar en
+     Sigrid»: vuelve la propuesta automática con su aviso, no la partida del
+     paso 5. **Cancelar.**
+  8. Los tres tipos: F12 → consola (Chrome pide `allow pasting` antes del
+     primer pegado), pegar:
+
+```js
+pintarModalPreflight({obras: [{obra: {codigo: "0694", nombre: "Prueba F-049"}, ok: true, partes: [], acciones: [], conflictos: [
+ {clave: "sin_partida:1", motivo: "sin_partida", nombre: "GONZALEZ PANIAGUA", recurso_ide: 1, hora_codigo: "MADM", parte_cod: "PT26/00319", nuevas: [{can: 0.05}], lineas: [], contexto: []},
+ {clave: "sobrecarga:1|2026-09", motivo: "sobrecarga", nombre: "GONZALEZ PANIAGUA", recurso_ide: 1, hora_codigo: "MADM", parte_cod: "PT26/00319", nuevas: [{can: 0.1}], lineas: [], contexto: [{hora_codigo: "MADM", can: 0.95}], suma_existente: 0.95, suma_total: 1.05, exceso: 0.05},
+ {clave: "1|2026|9|5|0", motivo: "pisado", nombre: "GONZALEZ PANIAGUA", recurso_ide: 1, hora_codigo: "MADM", parte_cod: "PT26/00319", nuevas: [{can: 0.6}], lineas: [{ide: 8001, hora_codigo: "MADM", can: 0.4, fecha_int: 20260930}], contexto: []}]}]})
+```
+
+     Salen «Sin partida» (5 %), «Sobrecarga» (ya tiene 95 %, sumaría 105 %, un
+     5 % por encima) y «Pisar» (se borra la línea 8001, se escribe 60 %).
+     **NO tocar «Registrar»; Cancelar.**
+  9. **c) y e)** En la consola, pegar:
+
+```js
+pintarModalPreflight({obras: [{obra: {codigo: "0694", nombre: "Prueba F-049 c/e"}, ok: true, partes: [], partidas_obra: [], partidas_postventa: [], acciones: [
+ {registro_id: 999999, nombre: "PRUEBA", destino: "obra", accion: "escribir", can: 0.5, hora_codigo: "MADM", paride: 99999, partida_cod: "CI.9.99",
+  aviso: "partida no localizada para la categoría/nombre: no se escribe sin confirmarlo — elige una partida o marca la confirmación · palabra_larga_sin_espacios_para_ver_que_el_texto_no_se_sale_del_recuadro_xxxxxxxxxxxxxxxxxxxx"}],
+ conflictos: [{clave: "x", motivo: "sin_partida", nombre: "GONZALEZ PANIAGUA, MILAGROS", recurso_ide: 1, hora_codigo: "MADM", parte_cod: "PT26/00319", nuevas: [{can: 0.5}], lineas: [], contexto: []}]}]})
+```
+
+     El desplegable enseña «CI.9.99 · (no está en la lista)» elegida, no «—
+     sin partida —»; el aviso amarillo y la casilla «Sin partida» se parten en
+     varias líneas dentro de su recuadro. **No tocar el desplegable ni
+     «Registrar»** (lanzaría el registro del periodo contra la 0404).
+     **Cancelar.**
+  Resultado: **todo ok** (humano, 2026-10-09).
