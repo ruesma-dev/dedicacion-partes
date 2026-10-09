@@ -30,11 +30,18 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   `test_f037_r3_…` (una línea de datos, R20) y `test_f003_r8_…` (el conjunto
   de columnas suma las tres `partida_*`, R12). Hecho: T1-T5 (`686d00a`..
   `3aed309`; transfer 742 passed). **Implementer TERMINADO (2026-10-09):**
-  T1-T15 (`1f0a425`..`e182915`, `progress/impl_F-050.md`): mutación Python
+  T1-T15 (`686d00a`..`e182915`, `progress/impl_F-050.md`): mutación Python
   158/158 y JS 56/56 muertos (en copias aisladas), cobertura 341/341, `init.sh`
   en verde sin caché (api 768, front 184, transfer 750). T14 hecha por el
   líder: `azure-apps/dedicacion.md` con los endpoints, la variable y el orden
-  transfer → api → front (`edaa2b7`, «sin desplegar»). **Review lanzada.**
+  transfer → api → front (`edaa2b7`, «sin desplegar»). **Review 1: CAMBIOS
+  PEDIDOS** (`progress/review_F-050.md`): textos de 7 mutantes JS cortados con
+  «…» (implementer relanzado); T19 sin marcar, F-050 duplicada en «Lo
+  siguiente» y el rango de commits (corregidos por el líder). Observaciones:
+  (g) en M2 para el tiempo del mes entero; una línea omitida por R20 no tiene
+  botón de partida en el modal (se consulta al humano); postventa en R9 casa
+  con `origen.codigo` en `proponer` y con `obra.codigo` en el preflight (hoy
+  coinciden; anotado en «Hechos que no conviene volver a descubrir»).
 - **MANUAL (humano, en local; transfer en modo pruebas):**
   - **M1 (T16, solo lectura):** en Git Bash,
     `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-transfer`
@@ -49,7 +56,9 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
     columnas `partida_*`. Puntos (a)-(f) de `specs/F-050-subfilas-partida/tasks.md`
     T17: subfilas y columna Partida; selector con buscador, Todas · CD · CI · CP,
     propuesta primera; postventa y VAR; regresión del teclado; el mismo
-    selector en el modal (**Cancelar, sin Registrar**); tiempo en la 0696.
+    selector en el modal (**Cancelar, sin Registrar**); tiempo en la 0696;
+    **(g)** cronometrar «Registrar en Sigrid» de todo el mes hasta que sale el
+    modal (dato para F-055, observación de la review 1).
   - **M3 (T18):** registro en modo pruebas, **solo con autorización del humano
     en ese momento**.
   Resultado: _pendiente_.
@@ -153,7 +162,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. Orden: F-050 (en curso, esta rama), **F-055** (medir y acelerar la
 previsualización del registro; 2026-10-08), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
-que ya hay en los partes de Sigrid; 2026-10-08), F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
+que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
@@ -221,6 +230,10 @@ F-033 y, detrás, F-017, F-018…
 
 ## Hechos que no conviene volver a descubrir
 
+- **F-050, postventa en la propuesta (R9):** `proponer` casa la postventa con
+  `origen.codigo` (leído en Sigrid) y el preflight con `obra.codigo` (el que
+  manda la api). Hoy coinciden; si alguna vez divergen, la propuesta del
+  selector y la automática del registro diferirían en postventa.
 - El api expone su salud en **`/api/v1/health`**, no en `/health`. El front,
   con Easy Auth, responde **401** a un `curl` anónimo, y el Portal **302**:
   no son caídas.
