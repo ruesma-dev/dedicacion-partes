@@ -25,12 +25,13 @@ copia cerrada de `partes`.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, Optional
 
 from application.services import text_match as tm
 from application.services.partida_catalog import (
-    PartidaNodo, clasifica_categoria,
+    PartidaNodo,
+    clasifica_categoria,
 )
 from application.services.partida_matcher import ambito_categoria
 from application.services.partida_resolver import resolver_normal
@@ -50,26 +51,26 @@ class LineaHistorial:
     """Una línea `M*` con partida de un parte de trabajo (`hmores`)."""
     reside: int
     obride: int
-    obra_cod: Optional[str]
-    parte_cod: Optional[str]
+    obra_cod: str | None
+    parte_cod: str | None
     ano: int
     mes: int
     can: float
     paride: int
-    par_cod: Optional[str]
-    par_res: Optional[str]
+    par_cod: str | None
+    par_res: str | None
 
 
 @dataclass(frozen=True)
 class Propuesta:
     paride: int
-    cod: Optional[str]
-    res: Optional[str]
+    cod: str | None
+    res: str | None
     metodo: str            # parte_anterior | ultimo_parte | auto_* | postventa
-    origen: Optional[str] = None
+    origen: str | None = None
 
 
-def clave_orden_codigo(cod: Optional[str]) -> tuple:
+def clave_orden_codigo(cod: str | None) -> tuple:
     """Orden natural de un código: los grupos de dígitos como enteros y el
     resto en mayúsculas (`CI.1.9` antes que `CI.1.10`)."""
     return tuple((0, int(t), "") if t.isascii() and t.isdigit()
@@ -104,9 +105,9 @@ def _origen(lineas: list[LineaHistorial]) -> str:
     return f"parte {partes} · {l.mes:02d}/{l.ano} · obra {obras}"
 
 
-def previa_en_obra(historial: Iterable[LineaHistorial], recurso: Optional[int],
+def previa_en_obra(historial: Iterable[LineaHistorial], recurso: int | None,
                    obra_ide: int,
-                   hojas: dict[int, PartidaNodo]) -> Optional[Propuesta]:
+                   hojas: dict[int, PartidaNodo]) -> Propuesta | None:
     """Paso 1 (parte anterior): el recurso en esta obra."""
     propias = [l for l in historial
                if l.reside == recurso and l.obride == obra_ide and l.paride]
@@ -124,13 +125,13 @@ def previa_en_obra(historial: Iterable[LineaHistorial], recurso: Optional[int],
                      _origen([l for l in del_mes if l.paride == ganadora]))
 
 
-def _clave_traslado(cod: Optional[str], res: Optional[str]) -> tuple:
+def _clave_traslado(cod: str | None, res: str | None) -> tuple:
     return tm.normalize_code(cod), tm.normalize(res)
 
 
 def ultima_de_recurso(historial: Iterable[LineaHistorial],
-                      recurso: Optional[int], obra_ide: int,
-                      hojas: dict[int, PartidaNodo]) -> Optional[Propuesta]:
+                      recurso: int | None, obra_ide: int,
+                      hojas: dict[int, PartidaNodo]) -> Propuesta | None:
     """Paso 2 (último parte): el recurso en otra obra, trasladado a esta por
     código y descripción iguales."""
     ajenas = [l for l in historial
@@ -161,9 +162,9 @@ def _hojas_activas(nodos: dict[int, PartidaNodo]) -> dict[int, PartidaNodo]:
 
 def proponer_partida(nodos: dict[int, PartidaNodo],
                      historial: Iterable[LineaHistorial],
-                     recurso: Optional[int], obra_ide: int,
-                     categoria: Optional[str],
-                     nombre: Optional[str]) -> Optional[Propuesta]:
+                     recurso: int | None, obra_ide: int,
+                     categoria: str | None,
+                     nombre: str | None) -> Propuesta | None:
     """La propuesta de la línea: paso 1, paso 2 o casamiento; o None."""
     historial = list(historial)
     hojas = _hojas_activas(nodos)
@@ -204,9 +205,9 @@ def catalogo(nodos: dict[int, PartidaNodo]) -> list[dict]:
             for n in hojas]
 
 
-def mayor_inicial(propuesta: Optional[Propuesta],
+def mayor_inicial(propuesta: Propuesta | None,
                   nodos: dict[int, PartidaNodo],
-                  categoria: Optional[str]) -> Optional[str]:
+                  categoria: str | None) -> str | None:
     """Botón del selector que sale elegido: el mayor de la propuesta; sin
     ella, CI si la categoría es de mando (`ambito_categoria` solo CI); si
     no, None (= Todas)."""

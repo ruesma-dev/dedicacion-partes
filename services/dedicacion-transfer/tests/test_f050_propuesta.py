@@ -16,7 +16,6 @@ from __future__ import annotations
 import random
 
 import pytest
-
 from application.services.partida_resolver import construir_catalogo
 from application.services.propuesta_partida import (
     LineaHistorial,
@@ -30,6 +29,7 @@ from application.services.propuesta_partida import (
     ultima_de_recurso,
     ventana,
 )
+
 from tests.conftest import _fila
 
 OBRA = 694          # obra de la línea (origen)
