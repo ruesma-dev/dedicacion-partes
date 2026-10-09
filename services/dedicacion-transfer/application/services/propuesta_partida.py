@@ -72,9 +72,11 @@ class Propuesta:
 
 def clave_orden_codigo(cod: str | None) -> tuple:
     """Orden natural de un código: los grupos de dígitos como enteros y el
-    resto en mayúsculas (`CI.1.9` antes que `CI.1.10`)."""
-    return tuple((0, int(t), "") if t.isascii() and t.isdigit()
-                 else (1, 0, t.upper())
+    resto en mayúsculas (`CI.1.9` antes que `CI.1.10`). Cada trozo lleva
+    delante si es texto (`True`) o número (`False`): así nunca se compara un
+    número con un texto, y los números van antes."""
+    return tuple((False, int(t)) if t.isascii() and t.isdigit()
+                 else (True, t.upper())
                  for t in _TROZOS.findall((cod or "").strip()))
 
 

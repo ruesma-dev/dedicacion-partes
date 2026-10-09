@@ -83,8 +83,8 @@ MODAL = ("fmtPct", "pctNuevas", "rotuloConflicto", "textoPartidaAccion",
 
 def _modal(obras: list[dict], escenario: str = "") -> dict:
     programa = "\n".join([
-        "const MESES = ['ene','feb','mar','abr','may','jun','jul','ago',"
-        "'sep','oct','nov','dic'];",
+        ("const MESES = ['ene','feb','mar','abr','may','jun','jul','ago',"
+         "'sep','oct','nov','dic'];"),
         "const state = {anio: 2026, mes: 9};", _registro(), ESCAPE,
         "let html = null; function abrirModal(h) { html = h; }",
         "function registroEjecutar() {} function repreflightPartida() {}",
@@ -98,8 +98,8 @@ def _modal(obras: list[dict], escenario: str = "") -> dict:
         *(_funcion(f) for f in MODAL),
         "function pinta(pf) {",
         "  botones.length = 0;",
-        "  [...JSON.stringify(pf).matchAll(/\"registro_id\":(\\d+)/g)]"
-        ".forEach((m) => botones.push({dataset: {reg: m[1]}, _h: {},",
+        ("  [...JSON.stringify(pf).matchAll(/\"registro_id\":(\\d+)/g)]"
+         ".forEach((m) => botones.push({dataset: {reg: m[1]}, _h: {},"),
         "    addEventListener(ev, fn) { this._h[ev] = fn; }}));",
         "  pintarModalPreflight(pf);",
         "}",
@@ -279,16 +279,16 @@ def test_f050_r27_r29_elegir_en_el_modal_guarda_y_repite_el_preflight():
         "  const boton = nodo('button');",
         "  await abrirSelectorPartida(77, 694, false, boton, repreflightPartida);",
         "  const input = paneles[0]._input;",
-        "  input._h.keydown({key: 'Enter', preventDefault() {},"
-        " stopPropagation() {}});",
+        ("  input._h.keydown({key: 'Enter', preventDefault() {},"
+         " stopPropagation() {}});"),
         "  await new Promise((r) => setTimeout(r, 0));",
-        "  process.stdout.write(JSON.stringify({llamadas, filas,"
-        " cache: [...selector.cache.keys()]}));",
+        ("  process.stdout.write(JSON.stringify({llamadas, filas,"
+         " cache: [...selector.cache.keys()]}));"),
         "})();"])
     obs = _node(programa)
     assert obs["llamadas"] == [
-        ["/periodos/2026/9/trabajadores/77/partidas?obra_ide=694"
-         "&es_postventa=false", "GET", None],
+        [("/periodos/2026/9/trabajadores/77/partidas?obra_ide=694"
+          "&es_postventa=false"), "GET", None],
         ["/periodos/2026/9/trabajadores/77/partida", "PUT",
          {"obra_ide": 694, "es_postventa": False,
           "partida": {"ide": 80002, "cod": "CI.1.20", "res": "JEFE"}}],
@@ -296,3 +296,54 @@ def test_f050_r27_r29_elegir_en_el_modal_guarda_y_repite_el_preflight():
          {"trabajador_ide": 77}]]
     assert obs["filas"] == [77]
     assert obs["cache"] == []
+
+
+# ============ T15 · casos que la campaña manual dejó vivos ============ #
+def test_f050_r29_repintar_el_modal_olvida_las_lineas_de_antes():
+    obs = _modal([_obra([_accion()])], """
+      pinta({obras: [{obra: {ide: 1, codigo: "VAR", nombre: "V"}, ok: true,
+        partes: [], conflictos: [], acciones: [{registro_id: 9,
+        accion: "escribir", partida_metodo: "var", partida_cod: "29"}]}]});
+    """)
+    assert obs["lineas"] == {}
+
+
+def _selector_de(es_postventa: bool) -> dict:
+    programa = "\n".join([
+        "const state = {anio: 2026, mes: 9, empresa: 1, editandoIde: null};",
+        DOM_SELECTOR, ESCAPE,
+        "const selector = { cache: new Map(), cerrar: null };",
+        "const llamadas = [];",
+        ("function api(url, o) { llamadas.push([url, o && o.body ?"
+         " JSON.parse(o.body) : null]);"
+         " if (url.includes('/partidas?')) return Promise.resolve({"
+         "partidas: [{ide: 1, cod: 'CI.1', res: 'OBRA', mayor: 'CI'}],"
+         " partidas_postventa: [{ide: 70001, cod: '0678', res: 'PV',"
+         " mayor: 'CD'}], ambito: null, propuesta: null});"
+         " return Promise.resolve({trabajador: {ide: 77}, resumen: {}}); }"),
+        "function toast() {} function aplicarFila() {}",
+        "async function guardarAhora() {}",
+        *(_funcion(f) for f in (
+            "normalizar", "filtrarPartidas", "listaSelector", "rotuloOrigen",
+            "posicionSugerencias", "clavePartidas", "cerrarSelectorPartida",
+            "abrirSelectorPartida", "montarSelectorPartida")),
+        "(async () => {",
+        "  await abrirSelectorPartida(77, 678, " + json.dumps(es_postventa)
+        + ", nodo('td'));",
+        "  const lista = paneles[0]._lista;",
+        "  const html = lista.hijos.map((h) => h.innerHTML);",
+        ("  paneles[0]._input._h.keydown({key: 'Enter', preventDefault() {},"
+         " stopPropagation() {}});"),
+        "  await new Promise((r) => setTimeout(r, 0));",
+        "  process.stdout.write(JSON.stringify({html, llamadas}));",
+        "})();"])
+    return _node(programa)
+
+
+@pytest.mark.parametrize("pv, ide, cod", [(False, 1, "CI.1"),
+                                          (True, 70001, "0678")])
+def test_f050_r26_r29_cada_modo_con_su_catalogo(pv, ide, cod):
+    obs = _selector_de(pv)
+    assert obs["html"][0].startswith(f'<span class="cod">{cod}</span>')
+    assert obs["llamadas"][1][1]["partida"]["ide"] == ide
+    assert obs["llamadas"][1][1]["es_postventa"] is pv

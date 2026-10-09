@@ -239,3 +239,8 @@ def test_f050_r28_el_filtro_de_partida_va_en_linea():
     visibles = _plano(_funcion("trabajadoresVisibles"))
     assert "textoPartida" not in visibles
     assert 'if (clave === "partida") {' in visibles
+
+
+# ============ T15 · casos que la campaña manual dejó vivos ============ #
+def test_f050_r28_la_partida_fija_casa_por_su_descripcion():
+    assert _visibles({"fija": "obra var-29"}) == {"fija": ["Carla"]}

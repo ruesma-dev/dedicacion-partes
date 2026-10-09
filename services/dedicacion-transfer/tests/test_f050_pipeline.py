@@ -234,3 +234,17 @@ def test_f050_r10_partidas_postventa_en_orden_natural():
         "11.01", "0656", "656", "0664", "664", "0678", "0713", "0998",
         "0999"]
     assert EMPRESA == 1 and "mayor" not in pf.partidas_postventa[0]
+
+
+# ============ T15 · casos que la campaña de mutación dejó vivos ============ #
+def test_f050_r7_el_historial_solo_lleva_los_recursos_automaticos():
+    """Ni el de una línea de postventa, ni el de una manual, ni el de una
+    omitida: solo los que van a llevar propuesta."""
+    cli = ClienteHistorial([])
+    _pl(cli).preflight(obra=OBRA, lineas=[
+        linea(registro_id=1),
+        linea(registro_id=2, recurso_ide=400, es_postventa=True),
+        linea(registro_id=3, recurso_ide=400, paride=80001,
+              partida_cod="CI.1.10"),
+        linea(registro_id=4, recurso_ide=100)])
+    assert cli.lecturas == [([200], 202407, 202607)]

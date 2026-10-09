@@ -269,3 +269,23 @@ def test_f050_script_propuesta_exige_obra_y_recurso(monkeypatch, capsys):
     with pytest.raises(SystemExit):
         _script(monkeypatch, cli, "--obra", OBRA_ORIGEN)
     assert "--recurso" in capsys.readouterr().err
+
+
+# ============ T15 · casos que la campaña de mutación dejó vivos ============ #
+def test_f050_r8_una_linea_sin_modo_es_de_obra_normal(api):
+    cli = ClienteSoloLectura([_h()])
+    linea = _l("a")
+    del linea["es_postventa"]
+    cuerpo = api(cli).post(RUTA, json=_peticion(linea)).json()
+    assert cuerpo["propuestas"]["a"]["metodo"] == "parte_anterior"
+    assert cuerpo["partidas_postventa"] == []
+
+
+def test_f050_script_propuesta_linea_completa_y_tiempos(monkeypatch, capsys):
+    cli = ClienteSoloLectura([_h()])
+    _script(monkeypatch, cli, "--obra", OBRA_ORIGEN, "--recurso", "200")
+    salida = capsys.readouterr().out
+    assert "  CI   CI.1.9           ADMINISTRATIVO" in salida.splitlines()
+    segundos = [float(x.split(": ")[1].split()[0]) for x in
+                salida.splitlines() if x.startswith("  lectura ")]
+    assert len(segundos) == 3 and all(0 <= s < 60 for s in segundos)

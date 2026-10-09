@@ -382,14 +382,14 @@ def test_f049_a_el_preflight_repetido_lleva_la_partida_recien_elegida():
         "  sel._h.click(); await new Promise((r) => setTimeout(r, 0));",
         "  const input = paneles[0]._input; input.value = 'jefe';",
         "  input._h.input();",
-        "  input._h.keydown({key: 'Enter', preventDefault() {},"
-        " stopPropagation() {}});",
+        ("  input._h.keydown({key: 'Enter', preventDefault() {},"
+         " stopPropagation() {}});"),
         "  await new Promise((r) => setTimeout(r, 0));",
         "  process.stdout.write(JSON.stringify(llamadas));",
         "})();"])
     assert _node(programa) == [
-        ["/periodos/2026/9/trabajadores/77/partidas?obra_ide=694"
-         "&es_postventa=false", "GET", None],
+        [("/periodos/2026/9/trabajadores/77/partidas?obra_ide=694"
+          "&es_postventa=false"), "GET", None],
         ["/periodos/2026/9/trabajadores/77/partida", "PUT",
          {"obra_ide": 694, "es_postventa": False,
           "partida": {"ide": 80002, "cod": "CI.1.20", "res": "JEFE DE OBRA"}}],

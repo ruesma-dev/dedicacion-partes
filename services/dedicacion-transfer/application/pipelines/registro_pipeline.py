@@ -671,8 +671,11 @@ class RegistroPipeline:
         partida_pv = None
         if len(normales) < len(lineas):
             # Postventa (R11): su propuesta es el casado de `#regla-p5`.
-            _, partida_pv, _, nodos_pv = self._destino_postventa(
-                origen, False, origen, empresa)
+            catalogo_pv = cargar_catalogo_postventa(self._cli, self._st,
+                                                    empresa)
+            partida_pv, _ = casar_postventa(catalogo_pv, origen.codigo,
+                                            origen.nombre)
+            nodos_pv = catalogo_pv.nodos
         propuestas: dict = {}
         mayores: dict = {}
         for l in lineas:

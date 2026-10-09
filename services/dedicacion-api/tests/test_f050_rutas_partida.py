@@ -367,3 +367,31 @@ def test_f050_r17_elegida_de_mayor_otro_sale_en_todas(monkeypatch):
     cliente, _ = _cliente_r17({14: [_lp(100, "100", **P)]}, monkeypatch,
                               transfer)
     assert _get(cliente).json()["ambito"] is None
+
+
+# ============ T15 · casos que la campaña de mutación dejó vivos ============ #
+def test_f050_r17_sin_modo_en_la_consulta_es_la_linea_normal(monkeypatch):
+    transfer = _TransferFalso()
+    cliente, _ = _cliente_r17({14: [_lp(100, "100"), _lp(100, "50", pv=True)]},
+                              monkeypatch, transfer)
+    r = cliente.get(f"{BASE}/trabajadores/14/partidas",
+                    params={"obra_ide": 100})
+    assert r.status_code == 200, r.text
+    assert transfer.payloads[0]["lineas"][0]["es_postventa"] is False
+
+
+def test_f050_r13_sin_modo_en_el_cuerpo_es_la_linea_normal(monkeypatch):
+    cliente, uow = _cliente({14: [_lp(100, "50"), _lp(100, "50", pv=True)]},
+                            monkeypatch)
+    r = cliente.put(f"{BASE}/trabajadores/14/partida",
+                    json={"obra_ide": 100, "partida": PARTIDA})
+    assert r.status_code == 200, r.text
+    assert [(ln.es_postventa, ln.partida_ide)
+            for ln in uow.lineas[P_ACT][14]] == [(False, 80003), (True, None)]
+
+
+def test_f050_r13_la_partida_1_es_valida(monkeypatch):
+    cliente, uow = _cliente({14: [_lp(100, "100")]}, monkeypatch)
+    r = _put(cliente, partida={"ide": 1, "cod": "1", "res": "UNO"})
+    assert r.status_code == 200, r.text
+    assert uow.lineas[P_ACT][14][0].partida_ide == 1

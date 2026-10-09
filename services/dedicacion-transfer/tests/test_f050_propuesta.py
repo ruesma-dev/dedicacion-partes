@@ -455,3 +455,34 @@ def test_f050_r1_historial_ajuste_de_meses_atras(monkeypatch):
     assert Settings(_env_file=None).propuesta_meses_atras == 24
     monkeypatch.setenv("PROPUESTA_MESES_ATRAS", "6")
     assert Settings(_env_file=None).propuesta_meses_atras == 6
+
+
+# ============ T15 · casos que la campaña de mutación dejó vivos ============ #
+def test_f050_r5_las_propuestas_y_el_historial_son_inmutables():
+    from dataclasses import FrozenInstanceError
+    with pytest.raises(FrozenInstanceError):
+        _h().can = 9.0
+    with pytest.raises(FrozenInstanceError):
+        Propuesta(1, "X", "Y", "manual").paride = 2
+
+
+def test_f050_r2_diferencias_por_debajo_de_la_millonesima_son_empate():
+    """`can` viaja con 4 decimales: lo que difiere menos de 1e-6 es ruido de
+    coma flotante y empata; 1e-6 o más, no."""
+    empate = [_h(can=0.3000004), _h(can=0.3, paride=2108, cod="CI.1.8")]
+    assert previa_en_obra(empate, RECURSO, OBRA, _hojas(_nodos())) is None
+    gana = [_h(can=0.300002), _h(can=0.3, paride=2108, cod="CI.1.8")]
+    assert previa_en_obra(gana, RECURSO, OBRA, _hojas(_nodos())).paride \
+        == 2105
+
+
+def test_f050_r2_una_linea_sin_can_suma_cero():
+    hojas = _hojas(_nodos())
+    assert previa_en_obra([_h(can=None), _h(can=0.5, paride=2108,
+                                            cod="CI.1.8")],
+                          RECURSO, OBRA, hojas).paride == 2108
+    otra = [_h(obra=OTRA, can=None, paride=1, cod="CI.1.5",
+               res="JEFE DE OBRA"),
+            _h(obra=OTRA, can=0.5, paride=2, cod="CI.1.9",
+               res="ADMINISTRATIVO")]
+    assert ultima_de_recurso(otra, RECURSO, OBRA, hojas).paride == 2109
