@@ -141,6 +141,9 @@ class GuardarAsignaciones:
 
         antes = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
         _rechazar_nuevas_no_ofrecibles(uow, lineas, antes)
+        # F-050 (R14): guardar la fila no cambia la partida de ninguna línea
+        # que ya existía; la nueva entra automática.
+        lineas = _conservar_partidas(lineas, antes)
         if _snapshot(antes) != _snapshot(lineas):
             uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas, usuario)
             uow.eventos.registrar(
@@ -706,6 +709,10 @@ def _validar_lineas(
                 obra_ide=obra_ide,
                 es_postventa=es_postventa,
                 porcentaje=porcentaje,
+                # F-050 (R15): un snapshot con partida la devuelve al deshacer.
+                partida_ide=bruto.get("partida_ide"),
+                partida_cod=bruto.get("partida_cod"),
+                partida_res=bruto.get("partida_res"),
             )
         )
     ides = {ln.obra_ide for ln in lineas}
@@ -766,12 +773,39 @@ def _resumen_periodo(
     return resumir(_filas_de_empresa(uow, periodo_id, filtro))
 
 
+def _conservar_partidas(lineas: list[Linea], antes: list[Linea]) -> list[Linea]:
+    """Cada línea cuya clave (obra, postventa) estaba en `antes` recibe la
+    partida que tenía; las demás quedan como vienen (F-050, R14)."""
+    previas = {ln.clave(): ln for ln in antes}
+    return [
+        dataclasses.replace(
+            ln,
+            partida_ide=previas[ln.clave()].partida_ide,
+            partida_cod=previas[ln.clave()].partida_cod,
+            partida_res=previas[ln.clave()].partida_res,
+        )
+        if ln.clave() in previas else ln
+        for ln in lineas
+    ]
+
+
 def _snapshot(lineas: list[Linea]) -> list[dict[str, Any]]:
+    """Lo que guarda un evento. La partida, solo si la línea la tiene: los
+    eventos sin partida no cambian de forma (F-050, R15)."""
     return [
         {
             "obra_ide": ln.obra_ide,
             "es_postventa": ln.es_postventa,
             "porcentaje": str(ln.porcentaje),
+            **(
+                {
+                    "partida_ide": ln.partida_ide,
+                    "partida_cod": ln.partida_cod,
+                    "partida_res": ln.partida_res,
+                }
+                if ln.partida_ide is not None
+                else {}
+            ),
         }
         for ln in sorted(lineas, key=lambda x: (x.obra_ide, x.es_postventa))
     ]

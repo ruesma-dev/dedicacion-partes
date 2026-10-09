@@ -376,7 +376,8 @@ class PgAsignacionRepository:
             )
             .order_by(ObraORM.cod, AsignacionORM.es_postventa)
         )
-        return [_a_linea(a, o) for a, o in self._s.execute(stmt).all()]
+        return [_a_linea_con_partida(a, o)
+                for a, o in self._s.execute(stmt).all()]
 
     def lineas_del_periodo(self, periodo_id: int) -> dict[int, list[Linea]]:
         stmt = (
@@ -390,7 +391,7 @@ class PgAsignacionRepository:
         resultado: dict[int, list[Linea]] = {}
         for asignacion, obra in self._s.execute(stmt).all():
             resultado.setdefault(asignacion.trabajador_ide, []).append(
-                _a_linea(asignacion, obra)
+                _a_linea_con_partida(asignacion, obra)
             )
         return resultado
 
@@ -416,6 +417,9 @@ class PgAsignacionRepository:
                     es_postventa=linea.es_postventa,
                     porcentaje=linea.porcentaje,
                     actualizado_por=usuario,
+                    partida_ide=linea.partida_ide,
+                    partida_cod=linea.partida_cod,
+                    partida_res=linea.partida_res,
                 )
             )
         self._s.flush()
@@ -588,4 +592,16 @@ def _a_linea(a: AsignacionORM, o: ObraORM) -> Linea:
         obra_activa=o.activa,
         obra_empresa=o.empresa,
         obra_admite_postventa=o.admite_postventa,
+    )
+
+
+def _a_linea_con_partida(a: AsignacionORM, o: ObraORM) -> Linea:
+    """`_a_linea` más la partida elegida de la asignación y si es fija (la
+    obra es una entrada VAR, `registro_paride` no nulo) (F-050, R12, R18)."""
+    return dataclasses.replace(
+        _a_linea(a, o),
+        partida_ide=a.partida_ide,
+        partida_cod=a.partida_cod,
+        partida_res=a.partida_res,
+        partida_fija=o.registro_paride is not None,
     )
