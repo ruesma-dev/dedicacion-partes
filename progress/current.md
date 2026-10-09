@@ -37,7 +37,19 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   y T2 (`f2c54f8`); T3 a medias en `git stash` («F-050 T3 en curso…»; con
   él, transfer 724 passed y solo falla ese test). **El humano lo APRUEBA el
   2026-10-09 («si»)**: test añadido a la lista cerrada, solo con esa línea de
-  datos. **Implementer reanudado** (T3 desde el stash).
+  datos. **Reanudada y BLOQUEADA de nuevo en T6 (implementer, 2026-10-09):**
+  T3-T5 hechas (`ca9443b`, `948613b`, `3aed309`; transfer 742 passed).
+  Las tres columnas `partida_*` de `AsignacionORM` (R12, D4) rompen
+  `services/dedicacion-api/tests/test_f003_esquema.py::test_f003_r8_la_tabla_queda_con_las_previas_mas_las_seis`,
+  que NO está en la lista cerrada (design §6 daba `test_f003` por intacto,
+  pero r8 compara el conjunto ENTERO de columnas de `asignacion`). Probado en
+  local: es el ÚNICO test de la api fuera de la lista que cambia (con ORM,
+  `Linea` y `LineaOut` ya ampliados solo fallan además los de
+  `test_f034_rutas`, que sí están). Propuesta: añadirlo a la lista con UN
+  cambio de datos, `assert presentes == set(COLUMNAS_PREVIAS) |
+  set(COLUMNAS_TRAZA) | {"partida_ide", "partida_cod", "partida_res"}`; el
+  resto de `test_f003` (DDL derivado de las `sigrid_*`) no cambia. Falta
+  decisión del humano.
 
 ## Producción, hoy
 
