@@ -53,6 +53,7 @@ from __future__ import annotations
 
 import logging
 import unicodedata
+from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -64,7 +65,8 @@ from application.services.estado_parte import (
 )
 from application.services.partida_resolver import construir_catalogo
 from application.services.propuesta_partida import (
-    MOTIVO_PARTIDA_NO_HOJA, catalogo, proponer_partida, ventana,
+    MOTIVO_PARTIDA_NO_HOJA, Propuesta, catalogo, mayor_inicial,
+    proponer_partida, ventana,
 )
 from application.services.reglas_porcentajes import (
     AVISO_SIN_PARTIDA, MOTIVO_EMPRESA_OBRA, MOTIVO_PARTIDA_PV_NO_HOJA,
@@ -641,6 +643,54 @@ class RegistroPipeline:
         setattr(pf, "partidas_obra", _cat(nodos_origen))
         setattr(pf, "partidas_postventa", _cat(nodos_pv))
         return pf
+
+    # ------------------------------------------------------------- #
+    def proponer(self, *, empresa: int, obra: ObraEntrada, ano: int,
+                 mes: int, lineas: list[dict]) -> dict:
+        """F-050 (R8, R11): catálogo y propuesta de cada línea, SOLO
+        LECTURA, con la misma `proponer_partida` que el preflight (R9).
+
+        `lineas`: `{clave, recurso_ide, nombre, categoria, es_postventa}`.
+        La obra de otra empresa devuelve `ok` falso con el motivo (422 en
+        la API); un fallo de lectura sube tal cual (502)."""
+        origen = self._obra_origen(obra, empresa)
+        if origen.empresa != empresa:
+            return {"ok": False, "error": MOTIVO_EMPRESA_OBRA.format(
+                cod=origen.codigo, emp_obra=origen.empresa,
+                emp_linea=empresa)}
+        nodos = construir_catalogo(
+            self._cli.capitulos_de_obra(int(origen.ide)))
+        normales = [l for l in lineas if not l["es_postventa"]]
+        historial = []
+        if normales:
+            desde, hasta = ventana(ano, mes, self._st.propuesta_meses_atras)
+            historial = self._cli.historial_partidas(
+                sorted({l["recurso_ide"] for l in normales
+                        if l["recurso_ide"]}), desde, hasta)
+        nodos_pv: dict = {}
+        partida_pv = None
+        if len(normales) < len(lineas):
+            # Postventa (R11): su propuesta es el casado de `#regla-p5`.
+            _, partida_pv, _, nodos_pv = self._destino_postventa(
+                origen, False, origen, empresa)
+        propuestas: dict = {}
+        mayores: dict = {}
+        for l in lineas:
+            if l["es_postventa"]:
+                p = (Propuesta(partida_pv["ide"], partida_pv["cod"],
+                               partida_pv["res"], "postventa")
+                     if partida_pv else None)
+                de = nodos_pv
+            else:
+                p = proponer_partida(nodos, historial, l["recurso_ide"],
+                                     int(origen.ide), l["categoria"],
+                                     l["nombre"])
+                de = nodos
+            propuestas[l["clave"]] = asdict(p) if p else None
+            mayores[l["clave"]] = mayor_inicial(p, de, l["categoria"])
+        return {"ok": True, "partidas_obra": catalogo(nodos),
+                "partidas_postventa": catalogo(nodos_pv),
+                "propuestas": propuestas, "mayor_inicial": mayores}
 
     # ------------------------------------------------------------- #
     def ejecutar(self, *, obra: ObraEntrada, lineas: list[LineaEntrada],

@@ -7,6 +7,9 @@
                                    (ARCHITECTURE.md#regla-p5; solo lee)
   POST /api/var/universo        -> obra VAR de una empresa y sus partidas VAR
                                    (ARCHITECTURE.md#regla-var; solo lee)
+  POST /api/partidas/propuesta  -> catálogo con su mayor y partida propuesta
+                                   de cada línea (ARCHITECTURE.md
+                                   #regla-partida; solo lee)
   GET  /health
 """
 from __future__ import annotations
@@ -86,6 +89,27 @@ class UniversoVarIn(BaseModel):
     mismo que en `UniversoIn`: sin ella, 422 con motivo."""
 
     empresa: int | None = None
+
+
+class LineaPropuestaIn(BaseModel):
+    """Una línea del cuadrante cuya partida se propone (F-050, R8)."""
+
+    clave: str
+    recurso_ide: int | None = None
+    nombre: str | None = None
+    categoria: str | None = None
+    es_postventa: bool = False
+
+
+class PropuestaIn(BaseModel):
+    """Petición de `POST /api/partidas/propuesta` (F-050, R8). `empresa`
+    opcional por lo mismo que en `UniversoIn`: sin ella, 422 con motivo."""
+
+    empresa: int | None = None
+    obra: ObraIn
+    ano: int
+    mes: int
+    lineas: list[LineaPropuestaIn] = Field(default_factory=list)
 
 
 def _empresas_mezcladas(exc: EmpresasMezcladas) -> JSONResponse:
@@ -203,6 +227,31 @@ def build_app(settings) -> FastAPI:
             logger.exception("universo de postventa fallo")
             return JSONResponse(status_code=502,
                                 content={"ok": False, "error": str(exc)})
+
+    @app.post("/api/partidas/propuesta")
+    async def propuesta_de_partidas(p: PropuestaIn):
+        """F-050 (R8): solo lee. Empresa no válida u obra de otra empresa,
+        422 con motivo; una lectura que falla, 502."""
+        if not empresa_valida(p.empresa):
+            logger.warning("propuesta rechazada: empresa %r", p.empresa)
+            return JSONResponse(status_code=422, content={
+                "ok": False,
+                "error": f"empresa no válida: {p.empresa!r}"})
+        try:
+            r = pipeline.proponer(
+                empresa=p.empresa,
+                obra=ObraEntrada(ide=p.obra.ide, codigo=p.obra.codigo,
+                                 nombre=p.obra.nombre),
+                ano=p.ano, mes=p.mes,
+                lineas=[l.model_dump() for l in p.lineas])
+        except Exception as exc:
+            logger.exception("propuesta de partidas fallo")
+            return JSONResponse(status_code=502,
+                                content={"ok": False, "error": str(exc)})
+        if not r["ok"]:
+            logger.warning("propuesta rechazada: %s", r["error"])
+            return JSONResponse(status_code=422, content=r)
+        return r
 
     @app.post("/api/var/universo")
     async def universo_de_var(p: UniversoVarIn):
