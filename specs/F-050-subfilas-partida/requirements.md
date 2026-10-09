@@ -140,7 +140,8 @@ raíz del presupuesto de la que cuelga la partida (design §5.1).
 - Front (R29 quita `<select>`, `opcionesPartida` y `overrides`): los de
   `test_f039_partida_fija`, `test_f049_avisos_registro` y `test_f049_
   ampliacion_registro` que nombra `tasks.md` T12 (parte de esta lista).
-
+- `test_f037_r3_una_linea_sin_partida_no_hereda_la_de_otra` (humano, 2026-10-09):
+  una línea de datos (partida 1 en `cli.partidas_origen`, R20), sin tocar aserciones.
 Cualquier otro test que cambie: **PARA** y se pregunta al humano.
 
 ## 7. Verificación MANUAL (humano)

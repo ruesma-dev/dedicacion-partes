@@ -25,7 +25,7 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   mayor se toma de la **raíz** del presupuesto (leído en Sigrid: `categoria`
   de `partida_catalog` clasifica mal dos hojas bajo CD; la copia de
   `partes` tiene el mismo fallo: avisado al humano el 2026-10-09, design §5.1).
-  `dev` traído a la rama. **BLOQUEADA en T3 (implementer, 2026-10-09):**
+  `dev` traído a la rama. **Estuvo bloqueada en T3 (implementer, 2026-10-09):**
   R20 (D9, omitir la elegida que no es hoja activa del presupuesto de
   origen) rompe `test_f037_pipeline.py::test_f037_r3_una_linea_sin_partida_no_hereda_la_de_otra`,
   que NO está en la lista cerrada (requirements §6): su línea manual lleva
@@ -35,7 +35,9 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   PRESUPUESTO_ORIGEN + [_fila(1, 80000, 9, "CI.9", "VARIOS")]` (la partida 1
   pasa a ser hoja activa), sin tocar sus aserciones. Hecho: T1 (`686d00a`)
   y T2 (`f2c54f8`); T3 a medias en `git stash` («F-050 T3 en curso…»; con
-  él, transfer 724 passed y solo falla ese test). Falta decisión del humano.
+  él, transfer 724 passed y solo falla ese test). **El humano lo APRUEBA el
+  2026-10-09 («si»)**: test añadido a la lista cerrada, solo con esa línea de
+  datos. **Implementer reanudado** (T3 desde el stash).
 
 ## Producción, hoy
 
