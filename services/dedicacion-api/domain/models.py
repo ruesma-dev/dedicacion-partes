@@ -28,6 +28,7 @@ class TipoEvento(str, Enum):
     GUARDAR = "GUARDAR"
     COPIA = "COPIA"
     COMPLETAR = "COMPLETAR"  # lote «completar al 100 %» (F-029)
+    PARTIDA = "PARTIDA"  # cambio de la partida elegida de una línea (F-050)
 
 
 class ResultadoCompletado(str, Enum):

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Body, Depends, Query, Response
 
 from application.use_cases import (
     CambiarEstadoPeriodo,
+    CambiarPartida,
     CompletarHasta100,
     CopiarPeriodoAnterior,
     CopiarTrabajadorAnterior,
@@ -36,6 +37,7 @@ from interface_adapters.api.schemas import (
     EmpresaOut,
     EmpresasOut,
     FilaOut,
+    PartidaIn,
     PeriodoCreadoOut,
     PeriodoIn,
     PeriodoOut,
@@ -203,6 +205,36 @@ def guardar_asignaciones(
         fila, resumen = GuardarAsignaciones().ejecutar(
             uow, anio, mes, trabajador_ide, lineas_a_dicts(payload), usuario,
             filtro=filtro,
+        )
+    return FilaOut(
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras),
+        resumen=a_resumen_out(resumen),
+    )
+
+
+@router.put(
+    "/periodos/{anio}/{mes}/trabajadores/{trabajador_ide}/partida",
+    response_model=FilaOut,
+    tags=["cuadrante"],
+)
+def cambiar_partida(
+    anio: int,
+    mes: int,
+    trabajador_ide: int,
+    payload: PartidaIn,
+    contenedor: Cont,
+    usuario: Usuario,
+    empresa: EmpresaQ = None,
+) -> FilaOut:
+    """Cambia la partida elegida de UNA línea y deja un evento `PARTIDA`
+    (F-050, R13). `partida` nula = automática."""
+    filtro = _filtro(contenedor, empresa)
+    with contenedor.uow() as uow:
+        fila, resumen = CambiarPartida().ejecutar(
+            uow, anio, mes, trabajador_ide, payload.obra_ide,
+            payload.es_postventa,
+            payload.partida.model_dump() if payload.partida else None,
+            usuario, filtro=filtro,
         )
     return FilaOut(
         trabajador=a_trabajador_out(fila, filtro.empresa_obras),

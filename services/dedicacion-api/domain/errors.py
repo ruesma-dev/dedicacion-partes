@@ -23,6 +23,11 @@ class ObraNoValida(ErrorDominio):
     pass
 
 
+class LineaNoEncontrada(ErrorDominio):
+    """El trabajador no tiene línea con esa obra y ese modo en el periodo
+    (F-050, R13): 404."""
+
+
 class LineasInvalidas(ErrorDominio):
     pass
 

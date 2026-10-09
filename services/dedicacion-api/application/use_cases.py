@@ -19,6 +19,7 @@ from domain.deshacer import deshacer_permitido
 from domain.empresas import visible_en_empresa
 from domain.errors import (
     DeshacerAjeno,
+    LineaNoEncontrada,
     LineasInvalidas,
     NadaQueDeshacer,
     ObraNoValida,
@@ -153,6 +154,69 @@ class GuardarAsignaciones:
                 usuario,
                 _snapshot(antes),
                 _snapshot(lineas),
+            )
+        uow.commit()
+        return ObtenerFilaTrabajador().ejecutar(
+            uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
+        )
+
+
+class CambiarPartida:
+    """Cambia SOLO la partida elegida de una línea (obra + modo) del
+    trabajador y deja un evento `PARTIDA`, deshacible como cualquier otro
+    (F-050, R13, docs/ARCHITECTURE.md#regla-partida). `partida` es
+    `{ide, cod, res}` o None (automática). Una línea VAR tiene la partida
+    fija: `ObraNoValida`. Si no cambia nada, ni escribe ni deja evento."""
+
+    def ejecutar(
+        self,
+        uow: UnitOfWork,
+        anio: int,
+        mes: int,
+        trabajador_ide: int,
+        obra_ide: int,
+        es_postventa: bool,
+        partida: dict[str, Any] | None,
+        usuario: str,
+        *,
+        filtro: FiltroEmpresa,
+    ) -> tuple[CuadranteTrabajador, ResumenPeriodo]:
+        periodo_id, _ = _periodo_abierto_o_error(uow, anio, mes)
+        _trabajador_o_error(uow, trabajador_ide)
+        antes = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
+        clave = (obra_ide, es_postventa)
+        linea = next((ln for ln in antes if ln.clave() == clave), None)
+        if linea is None:
+            raise LineaNoEncontrada(
+                f"El trabajador {trabajador_ide} no tiene la obra {obra_ide} "
+                f"(postventa={es_postventa}) en el periodo"
+            )
+        if linea.partida_fija:
+            raise ObraNoValida(
+                f"La línea de la obra {obra_ide} es una entrada VAR: su "
+                "partida es fija"
+            )
+        elegida = partida or {}
+        despues = [
+            dataclasses.replace(
+                ln,
+                partida_ide=elegida.get("ide"),
+                partida_cod=elegida.get("cod"),
+                partida_res=elegida.get("res"),
+            )
+            if ln is linea else ln
+            for ln in antes
+        ]
+        if _snapshot(antes) != _snapshot(despues):
+            uow.asignaciones.reemplazar(periodo_id, trabajador_ide, despues,
+                                        usuario)
+            uow.eventos.registrar(
+                periodo_id,
+                trabajador_ide,
+                TipoEvento.PARTIDA,
+                usuario,
+                _snapshot(antes),
+                _snapshot(despues),
             )
         uow.commit()
         return ObtenerFilaTrabajador().ejecutar(

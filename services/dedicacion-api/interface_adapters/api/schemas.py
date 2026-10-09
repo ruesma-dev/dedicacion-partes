@@ -40,6 +40,23 @@ class PeriodoIn(_Base):
     mes: int = Field(ge=1, le=12)
 
 
+class PartidaElegidaIn(_Base):
+    """Partida elegida en el selector (F-050, R13): la de Sigrid."""
+
+    ide: int = Field(gt=0)
+    cod: str | None = None
+    res: str | None = None
+
+
+class PartidaIn(_Base):
+    """`PUT …/partida` (F-050, R13): la línea (obra + modo) y su partida;
+    `partida` nula = automática."""
+
+    obra_ide: int
+    es_postventa: bool = False
+    partida: PartidaElegidaIn | None
+
+
 class CompletarIn(_Base):
     """Lote «completar al 100 %» (F-029, R14). Sin porcentajes: lo que
     falta lo calcula la API (R12)."""
@@ -63,6 +80,12 @@ class LineaOut(_Base):
     # (`Linea.ofrecible`). El front no lo calcula: lo pinta.
     obra_admite_postventa: bool
     ofrecible: bool
+    # F-050 (R18): la partida elegida (las tres nulas = automática) y si es
+    # fija (entrada VAR, sin selector).
+    partida_ide: int | None
+    partida_cod: str | None
+    partida_res: str | None
+    partida_fija: bool
 
 
 class TrabajadorOut(_Base):
@@ -218,6 +241,10 @@ def a_trabajador_out(fila: CuadranteTrabajador,
                                                    empresa_obras),
                 obra_admite_postventa=ln.obra_admite_postventa,
                 ofrecible=ln.ofrecible,
+                partida_ide=ln.partida_ide,
+                partida_cod=ln.partida_cod,
+                partida_res=ln.partida_res,
+                partida_fija=ln.partida_fija,
             )
             for ln in fila.lineas
         ],
