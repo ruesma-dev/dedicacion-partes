@@ -800,7 +800,7 @@
     {
       "id": "F-048",
       "title": "Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas»)",
-      "description": "Pedida por el humano el 2026-10-07 («2 ok»), a raíz de F-047: cuando una obra falla al registrar (p. ej. «sigrid-api devolvio una respuesta truncada»), las demás sí se escriben (cada obra es una petición aparte al transfer, `services/dedicacion-api/application/registro_sigrid.py`), pero el aviso final del front (`static/js/app.js`, tras ejecutar) solo da cuentas, en rojo si `!r.ok`, sin nombrar la obra ni el error; el humano lo leyó como «no me registra nada». La api ya devuelve por obra `ok` y `error`: el front solo tiene que enseñarlo (sin lógica de negocio). DECISIONES PARA LA SPEC: dónde se enseña (aviso, modal que no se cierra, lista por obra), si se ofrece reintentar solo las fallidas y cómo se distingue «escritas 0 porque ya estaba todo registrado» de «0 por error».",
+      "description": "Pedida por el humano el 2026-10-07 («2 ok»), a raíz de F-047: cuando una obra falla al registrar (p. ej. «sigrid-api devolvio una respuesta truncada»), las demás sí se escriben (cada obra es una petición aparte al transfer, `services/dedicacion-api/application/registro_sigrid.py`), pero el aviso final del front (`static/js/app.js`, tras ejecutar) solo da cuentas, en rojo si `!r.ok`, sin nombrar la obra ni el error; el humano lo leyó como «no me registra nada». La api ya devuelve por obra `ok` y `error`: el front solo tiene que enseñarlo (sin lógica de negocio). DECISIONES PARA LA SPEC: dónde se enseña (aviso, modal que no se cierra, lista por obra), si se ofrece reintentar solo las fallidas y cómo se distingue «escritas 0 porque ya estaba todo registrado» de «0 por error». RECOGIDO de la review de F-049 (O4, 2026-10-08): el aviso final de `registroEjecutar` (app.js) sigue diciendo «(repite y marca pisar)» para cualquier aviso sin confirmar, aunque sea «sin partida» o «sobrecarga»: que diga lo que corresponde a cada tipo. RECOGIDO de la review 3 de F-049 (O5, 2026-10-08): DOBLE REGISTRO CONCURRENTE. Mientras «Registrando…», cambiar una partida lanza el repreflight, que repinta el modal con «Registrar» activo; un segundo clic abre otro `ejecutar` en paralelo (ya era posible con Cancelar y reabrir). No hay cerrojo en api ni transfer y el synckey no cubre dos peticiones en vuelo. Propuesta del reviewer: ignorar repreflight y apertura mientras se ejecuta, o cerrojo por periodo en la api.",
       "acceptance": [
         "Tras registrar, el usuario ve qué obras se escribieron, cuáles fallaron y el error de cada una",
         "Un fallo en una obra no esconde lo escrito en las demás; «nada que escribir» no se confunde con un error",
@@ -817,18 +817,24 @@
     {
       "id": "F-049",
       "title": "Los avisos del modal de registro se rotulan según su tipo (sin partida, sobrecarga, pisar) y con su %",
-      "description": "Fallo comunicado por el humano el 2026-10-08 (captura: GONZALEZ PANIAGUA, septiembre, 0672 y 0694): «por qué me sale pisar 2 veces en 0694 y 1 en la 0672; en esta última no hay líneas de parte». CAUSA (líder, lectura del código y de Sigrid): el front pinta TODOS los conflictos del preflight con la plantilla «Pisar <hora> de <nombre>: se borran <líneas> y se escribe <%>» (services/dedicacion-front/static/js/app.js ~1739-1747) sin mirar `c.motivo` (`sin_partida`, `sobrecarga` o pisado), y el % sale de `c.nueva_can`, que el transfer ya no envía (publica `nuevas`), así que siempre dice 0 %. En la 0672 la casilla era el aviso «sin partida»; en la 0694, «sin partida» y una SOBRECARGA (ya tiene MADM 95 % metida a mano en PT26/00319, CI.1.5, sin synckey). PLAN APROBADO por el humano el 2026-10-08 («si»): solo front; texto por tipo (sin partida: escribir sin partida, elige una o confirma; sobrecarga: lo que ya tiene en el parte, el total resultante y el exceso, con `suma_existente`, `suma_total` y `exceso`; pisar: las líneas que se borran y el % nuevo de `nuevas`); sin cambiar qué se confirma ni las claves que viajan a ejecutar. El front no lleva lógica de negocio: usa lo que manda el preflight.",
+      "description": "Fallo comunicado por el humano el 2026-10-08 (captura: GONZALEZ PANIAGUA, septiembre, 0672 y 0694): «por qué me sale pisar 2 veces en 0694 y 1 en la 0672; en esta última no hay líneas de parte». CAUSA (líder, lectura del código y de Sigrid): el front pinta TODOS los conflictos del preflight con la plantilla «Pisar <hora> de <nombre>: se borran <líneas> y se escribe <%>» (services/dedicacion-front/static/js/app.js ~1739-1747) sin mirar `c.motivo` (`sin_partida`, `sobrecarga` o pisado), y el % sale de `c.nueva_can`, que el transfer ya no envía (publica `nuevas`), así que siempre dice 0 %. En la 0672 la casilla era el aviso «sin partida»; en la 0694, «sin partida» y una SOBRECARGA (ya tiene MADM 95 % metida a mano en PT26/00319, CI.1.5, sin synckey). PLAN APROBADO por el humano el 2026-10-08 («si»): solo front; texto por tipo (sin partida: escribir sin partida, elige una o confirma; sobrecarga: lo que ya tiene en el parte, el total resultante y el exceso, con `suma_existente`, `suma_total` y `exceso`; pisar: las líneas que se borran y el % nuevo de `nuevas`); sin cambiar qué se confirma ni las claves que viajan a ejecutar. El front no lleva lógica de negocio: usa lo que manda el preflight. 2026-10-08: review 2 APROBADA. En la MANUAL el humano encuentra: (1) al elegir partida no desaparece el aviso (el modal no se vuelve a pedir; al ejecutar sí se manda la partida, `registro_sigrid.py:113`); (2) el texto amarillo se sale de su recuadro; (3) al volver a previsualizar, el desplegable sale vacío y sin aviso: las partidas elegidas se quedan en `registro.overrides` y se reenvían en cada preflight, y si todas las líneas de la obra llevan partida manual el transfer no lee el presupuesto (`registro_pipeline.py:376-380`) y publica `partidas_obra` vacío: el desplegable enseña «— sin partida —» y se escribiría la partida elegida antes (le pasó también en real). AMPLIACIÓN APROBADA por el humano el 2026-10-08 («si»): a) front: al cambiar una partida se repite el preflight con las partidas elegidas, conservando las casillas marcadas; b) front: abrir el registro desde un botón empieza sin partidas elegidas de antes (solo duran mientras el modal sigue abierto); c) front: si la partida elegida no está en la lista, se enseña igual, nunca «— sin partida —»; d) transfer: `partidas_obra` se publica siempre que haya líneas de obra normal, aunque todas lleven partida manual (solo una lectura más, no cambia lo que se escribe); e) CSS del aviso amarillo. Despliegue: transfer y front. El humano también comprobó que en local no avisa de los % que Milagros ya tiene en la 0694: es por el modo pruebas (mira la 0404); en real sí avisaba (sobrecarga); lo de traerlos al cuadrante es F-054. CERRADA (done) el 2026-10-09: review pasada 5 APROBADA; MANUAL cumplida por el humano en local («todo ok»; el aviso amarillo, «está bien así»). La espera al repetir el preflight pasa a F-055. PENDIENTE DE DESPLEGAR (transfer y front).",
       "acceptance": [
         "Cada aviso del modal se rotula según su `motivo`: sin partida, sobrecarga y pisado, cada uno con su texto",
         "El % que se escribiría sale de lo que manda el preflight (`nuevas`), no 0 %; la sobrecarga enseña lo existente, el total y el exceso",
         "Las casillas siguen mandando las mismas claves a ejecutar (sin cambio de comportamiento del registro)",
         "Test del front (lógica de rotulado en node, como F-041/F-042); probado por el humano en local con el caso de la captura (sin pulsar Registrar)",
+        "a) Al elegir una partida en el modal se repite el preflight con las partidas elegidas, conservando las casillas marcadas; mientras, «Registrar» no se puede pulsar",
+        "b) Abrir el registro desde un botón empieza sin partidas elegidas de antes; solo duran mientras el modal sigue abierto",
+        "c) La partida elegida se enseña en el desplegable aunque no esté en la lista; nunca «— sin partida —» cuando hay partida",
+        "d) El transfer publica `partidas_obra` siempre que haya líneas de obra normal, aunque todas lleven partida manual, sin cambiar lo que se escribe",
+        "e) El aviso amarillo y el rótulo de las casillas ajustan el texto dentro de su recuadro",
+        "Despliegue: transfer y front",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "done",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 2,
+      "priority": 1,
       "branch": "feature/F-049-avisos-registro-por-tipo"
     },
     {
@@ -916,6 +922,23 @@
       "rigor": "critico",
       "priority": 7,
       "branch": "feature/F-054-sync-trae-porcentajes"
+    },
+    {
+      "id": "F-055",
+      "title": "La previsualización del registro tarda demasiado (medir y acelerar)",
+      "description": "Pedida por el humano el 2026-10-08 («añade una feature para revisar que tarde tanto»), al probar F-049: al elegir una partida en el modal, «Registrar» se queda un buen rato en «Analizando…». Causa vista por el líder (sin medir): cada preflight hace por OBRA unas 10-12 lecturas a Sigrid SEGUIDAS vía sigrid-api (obra, catálogo de postventa, horas de recursos, partidas, cuentas, partes del periodo, código PT, presupuesto entero de la obra —miles de filas en las grandes—, líneas por synckey y del parte; services/dedicacion-transfer/application/pipelines/registro_pipeline.py), y la api lo repite para TODAS las obras de la petición (con el botón general, todas las del mes); desde F-049 se repite al cambiar cada partida. PRIMERO MEDIR (tiempo por lectura y por obra, en local y en producción) y escribir dónde se va el tiempo. Propuesta del líder a decidir con el humano tras medir: 1) repetir solo la obra cuya partida cambia (front + api); 2) caché en memoria del transfer, con caducidad corta, del presupuesto de la obra y de los catálogos de postventa y VAR; 3) lecturas en paralelo o agrupadas. Nunca decidir con datos parciales ni viejos al EJECUTAR (ejecutar puede saltarse la caché).",
+      "acceptance": [
+        "Medición escrita: tiempo de cada lectura y por obra de un preflight real (local y producción), y dónde se va",
+        "Plan aprobado por el humano con lo medido",
+        "El preflight tras cambiar una partida, y el de un trabajador con dos obras, bajan de forma medible (antes/después)",
+        "Ejecutar sigue decidiendo con datos frescos; ninguna regla de registro cambia",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 2,
+      "branch": "feature/F-055-preflight-rapido"
     }
   ]
 }

@@ -1,10 +1,21 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución en la copia principal.** F-045 (Excel con
-Obras, Postventa y Detalle, y la columna Observaciones) se desplegó el
-2026-10-08 (solo la api). F-049 sigue en su
-rama en la copia `porcentajes-f041`. El arnés es la **1.7.3**.
+**Ninguna feature en ejecución.** F-049 (avisos del modal de registro por tipo,
+repreflight al elegir partida, catálogo siempre) está cerrada en `dev` y
+**pendiente de desplegar** (transfer y front, sección siguiente). El arnés es la
+**1.7.3**.
+
+## ⚠ Despliegue de F-049 (pendiente; lo lanza el humano)
+
+- Cambian **transfer y front**, en ese orden (`.\redeploy_dedicacion.ps1 -Solo
+  transfer,front`, desde `dev`, con `00_vars_dedicacion.ps1`,
+  `00_vars_dedicacion.local.ps1` y `00_capps_vars_dedicacion.ps1` cargados). Sin
+  DDL, sin sync, sin variables nuevas. El transfer conserva el modo real.
+- **Comprobación (sin pulsar «Registrar»):** Ctrl+F5, septiembre 2026, «⇪
+  Sigrid» en GONZALEZ PANIAGUA: en la 0694 salen «Sin partida» y «Sobrecarga»
+  (ya tiene MADM 95 %), rotulados, con su %; elegir una partida quita su aviso.
+  **Cancelar.**
 
 ## Producción, hoy
 
@@ -95,7 +106,8 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-Orden: F-049 (en curso, en `porcentajes-f041`), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+F-049 cerrada (pendiente de desplegar). Orden: **F-055** (medir y acelerar la
+previsualización del registro; 2026-10-08), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 

@@ -1662,7 +1662,10 @@ function moverSeleccion(delta) {
 document.addEventListener("DOMContentLoaded", init);
 
 // ------------------------------------------- Registro en Sigrid
-const registro = { overrides: {}, pisar: new Set(), trabajadorIde: null };
+// F-049 (ampliación): `overrides` son las partidas elegidas en el modal
+// abierto; `pisar`, las claves de las casillas que se vuelven a marcar al
+// repintarlo; `seq`, la última petición de preflight (solo esa pinta).
+const registro = { overrides: {}, pisar: new Set(), trabajadorIde: null, seq: 0 };
 
 function abrirModal(html) {
   const ov = $("#modal-registro");
@@ -1673,8 +1676,15 @@ function abrirModal(html) {
 }
 function cerrarModal() { $("#modal-registro").classList.add("oculto"); }
 
-function opcionesPartida(partidas, sel) {
+// F-049 (ampliación c): la partida de la acción (`sel`, con su código
+// `cod`) se enseña elegida aunque no esté en la lista publicada: nunca
+// «— sin partida —» cuando la acción lleva partida.
+function opcionesPartida(partidas, sel, cod) {
   const ops = ['<option value="0">— sin partida —</option>'];
+  if (sel && !(partidas || []).some((p) => p.ide === sel)) {
+    ops.push(`<option value="${sel}" selected>` +
+      `${escapeHtml(cod || `partida ${sel}`)} · (no está en la lista)</option>`);
+  }
   (partidas || []).forEach((p) => {
     ops.push(`<option value="${p.ide}" ${p.ide === sel ? "selected" : ""}>` +
       `${escapeHtml(p.cod || "")} · ${escapeHtml(p.res || "")}</option>`);
@@ -1682,19 +1692,102 @@ function opcionesPartida(partidas, sel) {
   return ops.join("");
 }
 
+// El preflight del periodo con las partidas elegidas y el trabajador de la
+// petición (todos o uno).
+function pedirPreflight() {
+  return api(
+    `/periodos/${state.anio}/${state.mes}/registro/preflight`,
+    { method: "POST", body: JSON.stringify({ overrides: registro.overrides,
+        trabajador_ide: registro.trabajadorIde }) });
+}
+
 async function registroPreflight(trabajadorIde = null) {
+  // F-049 (ampliación b): abrir desde un botón empieza sin las partidas
+  // elegidas antes; solo duran mientras el modal sigue abierto.
+  registro.overrides = {};
   registro.trabajadorIde = trabajadorIde;
+  const seq = ++registro.seq;
   const btn = $("#btn-registro");
   btn.disabled = true; btn.textContent = "Analizando…";
   try {
-    const pf = await api(
-      `/periodos/${state.anio}/${state.mes}/registro/preflight`,
-      { method: "POST", body: JSON.stringify({ overrides: registro.overrides,
-          trabajador_ide: registro.trabajadorIde }) });
+    const pf = await pedirPreflight();
+    if (seq !== registro.seq) return;
     registro.pisar = new Set();
     pintarModalPreflight(pf);
   } catch (err) { toast(err.message, true); }
   finally { btn.disabled = false; btn.textContent = "Registrar en Sigrid"; }
+}
+
+// F-049 (ampliación a): al cambiar una partida se repite el preflight con
+// las elegidas y se repinta, para que los avisos digan lo que se va a
+// escribir. Las casillas marcadas se conservan por su clave. Mientras se
+// analiza no se puede pulsar «Registrar»; solo pinta la última petición y
+// nunca reabre un modal ya cerrado.
+async function repreflightPartida() {
+  const seq = ++registro.seq;
+  const btn = $("#btn-ejecutar-registro");
+  if (btn) { btn.disabled = true; btn.textContent = "Analizando…"; }
+  try {
+    const pf = await pedirPreflight();
+    if (seq !== registro.seq) return;
+    if ($("#modal-registro").classList.contains("oculto")) return;
+    registro.pisar = new Set([...document.querySelectorAll(".chk-pisar:checked")]
+      .map((c) => c.value));
+    pintarModalPreflight(pf);
+  } catch (err) {
+    if (seq !== registro.seq) return;
+    toast(err.message, true);
+    if (btn) { btn.disabled = false; btn.textContent = "Registrar"; }
+  }
+}
+
+// F-049: los avisos del preflight se rotulan según su `motivo`. Funciones
+// puras (sin DOM): devuelven texto plano y quien lo pinta lo escapa. Solo
+// formatean lo que manda el transfer (`Conflicto` serializado con `asdict`):
+// no deciden qué se confirma ni qué se escribe. `can`, `suma_*` y `exceso`
+// llegan en la escala 0-1 de Sigrid.
+
+// % de lo que se escribiría: la suma de `nuevas`, como la propiedad
+// `nueva_can` del `Conflicto` del transfer (que `asdict` no publica).
+function pctNuevas(c) {
+  const suma = (c.nuevas || []).reduce((s, n) => s + (Number(n.can) || 0), 0);
+  return fmtPct(suma * 100);
+}
+
+function rotuloConflicto(c) {
+  const quien = c.nombre || String(c.recurso_ide);
+  const hora = c.hora_codigo || "";
+  const enParte = c.parte_cod ? ` en el parte ${c.parte_cod}` : "";
+  const nuevo = pctNuevas(c);
+  const motivo = c.motivo || "pisado";
+  if (motivo === "sin_partida") {
+    return { tipo: motivo, titulo: "Sin partida",
+      detalle: `${quien}, ${hora} ${nuevo}${enParte}: se escribiría sin ` +
+        `partida de imputación. Elige una partida en la tabla o marca la ` +
+        `casilla para escribirlo sin partida` };
+  }
+  if (motivo === "sobrecarga") {
+    const ya = (c.contexto || []).map((l) =>
+      `${l.hora_codigo || ""} ${fmtPct((Number(l.can) || 0) * 100)}`).join(", ");
+    return { tipo: motivo, titulo: "Sobrecarga",
+      detalle: `${quien}${enParte}: ya tiene ` +
+        `${fmtPct(c.suma_existente * 100)}${ya ? ` (${ya})` : ""}, ` +
+        `se añade ${nuevo} y sumaría ${fmtPct(c.suma_total * 100)}, un ` +
+        `${fmtPct(c.exceso * 100)} por encima de la jornada. Marca la ` +
+        `casilla para escribirlo igualmente` };
+  }
+  if (motivo === "pisado") {
+    const viejas = (c.lineas || []).map((l) =>
+      `línea ${l.ide} (${l.hora_codigo || ""} ` +
+      `${fmtPct((Number(l.can) || 0) * 100)}, fec ${l.fecha_int})`).join(", ");
+    return { tipo: motivo, titulo: "Pisar",
+      detalle: `${hora} de ${quien}${enParte}: se borran ${viejas} y se ` +
+        `escribe ${nuevo}` };
+  }
+  // Un motivo que este front aún no conoce no se disfraza de «Pisar»: se
+  // enseña tal cual, con lo que se escribiría.
+  return { tipo: motivo, titulo: "Confirmar",
+    detalle: `${quien}, ${hora} ${nuevo}${enParte}: ${motivo}` };
 }
 
 function pintarModalPreflight(pf) {
@@ -1722,7 +1815,7 @@ function pintarModalPreflight(pf) {
         sel = `<span class="partida-fija">${escapeHtml(a.partida_cod || "")}</span>` + aviso;
       } else if (a.accion === "escribir") {
         sel = `<select class="sel-partida" data-reg="${a.registro_id}">` +
-          `${opcionesPartida(partidas, a.paride)}</select>` + aviso;
+          `${opcionesPartida(partidas, a.paride, a.partida_cod)}</select>` + aviso;
       } else {
         sel = `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
       }
@@ -1737,13 +1830,12 @@ function pintarModalPreflight(pf) {
       `<th>Partida de imputación (editable)</th></tr></thead>` +
       `<tbody>${filas}</tbody></table>`;
     (o.conflictos || []).forEach((c) => {
-      const viejas = (c.lineas || []).map((l) =>
-        `línea ${l.ide} (fec ${l.fecha_int}, can ${l.can})`).join(", ");
+      // F-049: rótulo por tipo; la casilla sigue llevando la misma `clave`.
+      const r = rotuloConflicto(c);
       html += `<div class="conflicto"><label class="check">` +
-        `<input type="checkbox" class="chk-pisar" value="${escapeHtml(c.clave)}"> ` +
-        `Pisar ${escapeHtml(c.hora_codigo || "")} de ` +
-        `${escapeHtml(c.nombre || String(c.recurso_ide))}: se borran ${viejas} ` +
-        `y se escribe ${fmtPct(c.nueva_can != null ? c.nueva_can * 100 : 0)}` +
+        `<input type="checkbox" class="chk-pisar" value="${escapeHtml(c.clave)}"` +
+        `${registro.pisar.has(c.clave) ? " checked" : ""}> ` +
+        `<strong>${escapeHtml(r.titulo)}</strong> · ${escapeHtml(r.detalle)}` +
         `</label></div>`;
     });
   });
@@ -1754,6 +1846,7 @@ function pintarModalPreflight(pf) {
   document.querySelectorAll(".sel-partida").forEach((sel) => {
     sel.addEventListener("change", () => {
       registro.overrides[sel.dataset.reg] = parseInt(sel.value, 10) || 0;
+      repreflightPartida();
     });
   });
   $("#btn-ejecutar-registro").addEventListener("click", registroEjecutar);

@@ -46,7 +46,10 @@ def test_f039_r22_el_resto_de_acciones_sigue_igual():
     modal = _plano(_funcion("pintarModalPreflight"))
     assert ('<select class="sel-partida" data-reg="${a.registro_id}">'
             in modal)
-    assert "${opcionesPartida(partidas, a.paride)}</select>" in modal
+    # F-049 (ampliación c): el desplegable recibe también el código de la
+    # partida, para enseñarla aunque no esté en la lista publicada.
+    assert ("${opcionesPartida(partidas, a.paride, a.partida_cod)}</select>"
+            in modal)
     assert '<span class="motivo">${escapeHtml(a.motivo || "")}</span>' \
         in modal
     assert modal.count('<div class="aviso">${escapeHtml(a.aviso)}</div>') == 1

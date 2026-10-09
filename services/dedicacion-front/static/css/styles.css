@@ -503,7 +503,13 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
 .modal select.sel-partida { max-width: 340px; width: 100%; padding: 4px 6px;
   border: 1px solid var(--line-strong); border-radius: 6px; font: inherit;
   font-size: .8rem; background: var(--paper); }
-.modal .aviso { color: var(--warn); font-size: .76rem; }
+/* F-049 (ampliación e): los avisos se ajustan a su recuadro. `.check` es
+   `nowrap` en toda la página; dentro de un conflicto, el rótulo largo
+   saldría por la derecha de su caja. */
+.modal .aviso { color: var(--warn); font-size: .76rem;
+  white-space: normal; overflow-wrap: anywhere; }
+.modal .conflicto .check { display: block; white-space: normal;
+  overflow-wrap: anywhere; }
 .modal .motivo { color: var(--steel); font-size: .78rem; }
 .modal .conflicto { background: var(--danger-soft);
   border: 1px solid var(--danger-border); border-radius: 8px;
