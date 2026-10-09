@@ -363,3 +363,95 @@ def test_f050_r8_mayor_inicial_propuesta_fuera_del_presupuesto():
     prop = Propuesta(55, "X", "X", "postventa", None)
     assert mayor_inicial(prop, _nodos(), "Encargado") == "CI"
     assert mayor_inicial(prop, _nodos(), "Peón") is None
+
+
+# ================== T2 · historial_partidas (R4, R7) ===================== #
+class _ReadFalso:
+    """`_read` del cliente: anota (sql, parámetros) y devuelve `filas`."""
+
+    def __init__(self, filas=None) -> None:
+        self.filas = list(filas or [])
+        self.llamadas: list[tuple[str, list]] = []
+
+    def __call__(self, sql, params):
+        self.llamadas.append((" ".join(sql.split()), list(params)))
+        return list(self.filas)
+
+
+def _cliente_historial(filas=None, **kw):
+    from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
+    cli = SigridWriteClient(base_url="http://sigrid.invalid",
+                            function_key="sin-clave", database="ruesma", **kw)
+    falso = _ReadFalso(filas)
+    cli._read = falso
+    return cli, falso
+
+
+FILA_SIGRID = {"reside": 4321, "obride": 694, "obra_cod": "0694 ",
+               "parte_cod": "PT26/00319", "ano": 2026, "mes": 9, "can": 0.4,
+               "paride": 2105, "par_cod": " CI.1.5 ", "par_res": "JEFE DE OBRA"}
+
+
+def test_f050_r4_historial_sql_con_los_filtros_de_la_regla():
+    cli, falso = _cliente_historial(tip_parte=35)
+    cli.historial_partidas([4321, 17, 4321], 202409, 202609)
+    [(sql, params)] = falso.llamadas
+    for trozo in ("FROM hmores h JOIN hmo m ON m.ide = h.hmoide",
+                  "JOIN con c ON c.ide = m.ide",
+                  "JOIN con co ON co.ide = m.obride",
+                  "JOIN auxhor a ON a.ide = h.horide",
+                  "JOIN obrparpar p ON p.ide = h.paride",
+                  "h.reside IN (?,?)", "c.tip = ?", "a.cod LIKE 'M%'",
+                  "p.obride = m.obride",
+                  "(m.ano * 100 + m.mes) BETWEEN ? AND ?"):
+        assert trozo in sql, trozo
+    assert params == [17, 4321, 35, 202409, 202609]
+
+
+def test_f050_r4_historial_tipo_de_parte_del_ajuste():
+    cli, falso = _cliente_historial(tip_parte=99)
+    cli.historial_partidas([1], 202401, 202402)
+    assert falso.llamadas[0][1] == [1, 99, 202401, 202402]
+
+
+def test_f050_r7_historial_lotes_de_500_recursos():
+    cli, falso = _cliente_historial()
+    cli.historial_partidas(range(1, 1201), 202409, 202609)
+    assert [len(p) - 3 for _, p in falso.llamadas] == [500, 500, 200]
+    assert falso.llamadas[1][1][:2] == [501, 502]
+
+
+def test_f050_r7_historial_sin_recursos_no_lee():
+    cli, falso = _cliente_historial()
+    assert cli.historial_partidas([None, 0], 202409, 202609) == []
+    assert falso.llamadas == []
+
+
+def test_f050_r4_historial_mapea_las_filas():
+    vacia = dict(FILA_SIGRID, obra_cod=None, parte_cod=None, can=None,
+                 par_cod=None, par_res=None)
+    cli, _ = _cliente_historial([FILA_SIGRID, vacia])
+    assert cli.historial_partidas([4321], 202409, 202609) == [
+        LineaHistorial(reside=4321, obride=694, obra_cod="0694",
+                       parte_cod="PT26/00319", ano=2026, mes=9, can=0.4,
+                       paride=2105, par_cod="CI.1.5", par_res="JEFE DE OBRA"),
+        LineaHistorial(reside=4321, obride=694, obra_cod=None,
+                       parte_cod=None, ano=2026, mes=9, can=0.0,
+                       paride=2105, par_cod=None, par_res=None)]
+
+
+def test_f050_r7_historial_truncado_es_error(monkeypatch):
+    from tests.test_f047_tope_filas import _cliente, _emulada
+    _emulada(monkeypatch, [dict(FILA_SIGRID), dict(FILA_SIGRID)])
+    with pytest.raises(RuntimeError, match="truncada"):
+        _cliente(max_rows=1).historial_partidas([4321], 202409, 202609)
+
+
+def test_f050_r1_historial_ajuste_de_meses_atras(monkeypatch):
+    from config.settings import Settings
+    monkeypatch.setenv("SIGRID_API_BASE_URL", "http://sigrid.invalid")
+    monkeypatch.setenv("SIGRID_API_FUNCTION_KEY", "sin-clave")
+    monkeypatch.delenv("PROPUESTA_MESES_ATRAS", raising=False)
+    assert Settings(_env_file=None).propuesta_meses_atras == 24
+    monkeypatch.setenv("PROPUESTA_MESES_ATRAS", "6")
+    assert Settings(_env_file=None).propuesta_meses_atras == 6
