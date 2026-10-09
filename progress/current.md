@@ -15,9 +15,12 @@ front, sección siguiente). El arnés es la **1.7.3**.
   se asignó ese recurso, 3) el casamiento de `partes` (nombre y categoría).
   Absorbe F-043 (buscador predictivo, ordenado y con selector CI/CD). Toca los
   tres servicios; rigor crítico.
-- **Estado:** `spec_ready` (2026-10-09): spec en
-  `specs/F-050-subfilas-partida/`; D1-D10 ABIERTAS, las decide el humano
-  (design §11; recomendada A en todas).
+- **Spec aprobada por el humano el 2026-10-09** con D1-D10 = A («si») y dos
+  precisiones: el modal de registro usa **el mismo selector** que la columna
+  Partida (desplegable con buscador, como en `partes`), y el selector lleva
+  botones **CD · CI · CP** (y «Todas») para filtrar por mayor (se añade CP).
+- **Estado:** spec-author relanzado para reflejar las dos precisiones en la
+  spec (R8, R17, R26, R29 y design); después, implementer.
 
 ## ⚠ Despliegue de F-049 (pendiente; lo lanza el humano)
 
