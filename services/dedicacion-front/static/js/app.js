@@ -32,6 +32,13 @@ const COLUMNAS = {
     ordenable: false,
     placeholder: "Filtrar obra…",
   },
+  // F-050 (R23): la partida de cada línea, a la derecha de su obra.
+  partida: {
+    titulo: "Partida",
+    ancho: 320,
+    ordenable: false,
+    placeholder: "Filtrar partida…",
+  },
   total: {
     titulo: "Total",
     ancho: 190,
@@ -40,7 +47,10 @@ const COLUMNAS = {
     placeholder: "ok / falta / sobra…",
   },
 };
-const ORDEN_COLUMNAS_DEFECTO = ["nombre", "categoria", "asignaciones", "total"];
+const ORDEN_COLUMNAS_DEFECTO = ["nombre", "categoria", "asignaciones", "partida", "total"];
+// F-050 (R22): columnas con una celda por línea (subfila); las demás son
+// del trabajador y ocupan todas sus subfilas (`rowSpan`).
+const COLUMNAS_POR_LINEA = ["asignaciones", "partida"];
 const CLAVE_TABLA = "dedicacion:tabla:v1";
 
 const state = {
@@ -100,6 +110,15 @@ function lineaCasa(l, q) {
   return normalizar(textoObra(l.cod, l.descripcion, l.es_postventa)).includes(q);
 }
 
+// Texto de una partida elegida (F-050, R24): «código · descripción», o
+// «partida N» si no trae ninguno de los dos; sin elegida, vacío. `p` lleva
+// `partida_ide`, `partida_cod` y `partida_res` (una línea del cuadrante).
+function textoPartida(p) {
+  if (!p || p.partida_ide == null) return "";
+  return [p.partida_cod, p.partida_res].filter(Boolean).join(" · ") ||
+    `partida ${p.partida_ide}`;
+}
+
 function fmtPct(valor) {
   const n = Math.round(valor * 100) / 100;
   const texto = Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0+$/, "");
@@ -149,7 +168,12 @@ function cargarPrefsTabla() {
     if (Array.isArray(datos.orden)) {
       const validas = datos.orden.filter((c) => COLUMNAS[c]);
       ORDEN_COLUMNAS_DEFECTO.forEach((c) => {
-        if (!validas.includes(c)) validas.push(c);
+        if (validas.includes(c)) return;
+        // F-050 (R23): la columna Partida entra justo a la derecha de la de
+        // obras en unas preferencias guardadas sin ella.
+        const tras = c === "partida" ? validas.indexOf("asignaciones") : -1;
+        if (tras >= 0) validas.splice(tras + 1, 0, c);
+        else validas.push(c);
       });
       state.columnas = validas;
     }
@@ -512,6 +536,17 @@ function trabajadoresVisibles() {
     for (const clave of state.columnas) {
       const filtro = normalizar(state.filtrosCol[clave] || "");
       if (!filtro) continue;
+      // Partida (F-050, R28): alguna línea cuyo texto de partida case, el
+      // que enseña su celda (en línea: el arnés node de F-041 no lo carga).
+      if (clave === "partida") {
+        const casaPartida = t.lineas.some((l) => normalizar(
+          l.partida_fija ? l.descripcion
+            : l.partida_ide != null
+              ? `${l.partida_cod || ""} ${l.partida_res || ""}`
+              : "automática").includes(filtro));
+        if (!casaPartida) return false;
+        continue;
+      }
       // Obras: alguna línea cuyo texto visible case, no todas juntas (D2).
       const casa = clave === "asignaciones"
         ? t.lineas.some((l) => lineaCasa(l, filtro))
@@ -523,7 +558,8 @@ function trabajadoresVisibles() {
     // texto visible, con su `Postv-` (F-041, R9).
     const pajar = normalizar(
       t.nombre + " " + (t.categoria || "") + " " +
-      t.lineas.map((l) => textoObra(l.cod, l.descripcion, l.es_postventa)).join(" ")
+      t.lineas.map((l) => textoObra(l.cod, l.descripcion, l.es_postventa)).join(" ") +
+      " " + t.lineas.map((l) => `${l.partida_cod || ""} ${l.partida_res || ""}`).join(" ")
     );
     return pajar.includes(q);
   });
@@ -578,36 +614,52 @@ function renderTabla() {
   });
 }
 
+// Las filas de un trabajador (F-050, R22): una subfila por línea (al menos
+// una, la de «sin carga»), todas con su `data-ide` y su `data-linea`. Las
+// columnas del trabajador van en la primera y ocupan todas (`rowSpan`); obra
+// y partida, una celda por subfila. Cursor, selección y clic, por trabajador.
 function construirFila(t) {
-  const tr = document.createElement("tr");
-  tr.className = "fila";
-  tr.dataset.ide = t.ide;
-  if (!t.activo) tr.classList.add("inactivo");
-  if (t.ide === state.seleccionIde) tr.classList.add("seleccionada");
-  if (state.seleccion.has(t.ide)) tr.classList.add("multi");
-  if (t.ide === state.editandoIde) tr.classList.add("editando");
+  const frag = document.createDocumentFragment();
+  const n = Math.max(1, t.lineas.length);
+  for (let idx = 0; idx < n; idx++) {
+    const tr = document.createElement("tr");
+    tr.className = idx ? "fila subfila" : "fila";
+    tr.dataset.ide = t.ide;
+    tr.dataset.linea = idx;
+    if (!t.activo) tr.classList.add("inactivo");
+    if (t.ide === state.seleccionIde) tr.classList.add("seleccionada");
+    if (state.seleccion.has(t.ide)) tr.classList.add("multi");
+    if (t.ide === state.editandoIde) tr.classList.add("editando");
 
-  state.columnas.forEach((clave) => {
-    tr.appendChild(construirCelda(t, clave));
-  });
+    state.columnas.forEach((clave) => {
+      if (COLUMNAS_POR_LINEA.includes(clave)) {
+        tr.appendChild(construirCelda(t, clave, idx));
+      } else if (!idx) {
+        const td = construirCelda(t, clave, idx);
+        td.rowSpan = n;
+        tr.appendChild(td);
+      }
+    });
 
-  // Shift+clic no debe seleccionar el texto de la tabla (F-029, R2).
-  tr.addEventListener("mousedown", (ev) => {
-    if (ev.shiftKey) ev.preventDefault();
-  });
-  // Ctrl/Cmd+clic alterna, Shift+clic hace un rango: sin editor (F-029).
-  tr.addEventListener("click", (ev) => {
-    if (ev.ctrlKey || ev.metaKey || ev.shiftKey) {
-      marcarSeleccion(t.ide, ev.shiftKey);
-      return;
-    }
-    state.seleccionIde = t.ide;
-    state.ancla = t.ide;
-    fijarSeleccion([]);
-    if (state.periodoEstado === "ABIERTO") abrirEditor(t.ide);
-    else renderTabla();
-  });
-  return tr;
+    // Shift+clic no debe seleccionar el texto de la tabla (F-029, R2).
+    tr.addEventListener("mousedown", (ev) => {
+      if (ev.shiftKey) ev.preventDefault();
+    });
+    // Ctrl/Cmd+clic alterna, Shift+clic hace un rango: sin editor (F-029).
+    tr.addEventListener("click", (ev) => {
+      if (ev.ctrlKey || ev.metaKey || ev.shiftKey) {
+        marcarSeleccion(t.ide, ev.shiftKey);
+        return;
+      }
+      state.seleccionIde = t.ide;
+      state.ancla = t.ide;
+      fijarSeleccion([]);
+      if (state.periodoEstado === "ABIERTO") abrirEditor(t.ide);
+      else renderTabla();
+    });
+    frag.appendChild(tr);
+  }
+  return frag;
 }
 
 // ------------------------------------------- selección múltiple (F-029)
@@ -846,7 +898,7 @@ function pintarResultadoCompletar(entrada, resultados) {
   cerrar.focus();
 }
 
-function construirCelda(t, clave) {
+function construirCelda(t, clave, idx) {
   const td = document.createElement("td");
   if (clave === "nombre") {
     td.className = "celda-nombre";
@@ -861,28 +913,49 @@ function construirCelda(t, clave) {
     td.className = "celda-categoria";
     td.textContent = t.categoria || "—";
   } else if (clave === "asignaciones") {
+    // F-050 (R22): solo la línea de esta subfila.
     const chips = document.createElement("div");
     chips.className = "celda-chips";
-    if (!t.lineas.length) {
+    const l = t.lineas[idx];
+    if (!l) {
       chips.innerHTML = '<span class="sin-carga-texto">sin carga</span>';
     } else {
-      t.lineas.forEach((l) => {
-        const chip = document.createElement("span");
-        chip.className = "chip-linea" + (l.es_postventa ? " pv" : "") +
-          (l.ofrecible ? "" : " obra-baja") +
-          (l.otra_empresa ? " chip-otra-empresa" : "");
-        chip.title = l.descripcion +
-          (l.ofrecible ? "" : " (la obra ya no se ofrece en este modo)") +
-          (l.otra_empresa
-            ? " · la obra no es de la empresa de las obras: no se registrará"
-            : "");
-        chip.innerHTML =
-          `<span class="cod">${escapeHtml(etiquetaObra(l.cod, l.es_postventa))}</span>` +
-          `<span class="pct">${fmtPct(l.porcentaje)}</span>`;
-        chips.appendChild(chip);
-      });
+      const chip = document.createElement("span");
+      chip.className = "chip-linea" + (l.es_postventa ? " pv" : "") +
+        (l.ofrecible ? "" : " obra-baja") +
+        (l.otra_empresa ? " chip-otra-empresa" : "");
+      chip.title = l.descripcion +
+        (l.ofrecible ? "" : " (la obra ya no se ofrece en este modo)") +
+        (l.otra_empresa
+          ? " · la obra no es de la empresa de las obras: no se registrará"
+          : "");
+      chip.innerHTML =
+        `<span class="cod">${escapeHtml(etiquetaObra(l.cod, l.es_postventa))}</span>` +
+        `<span class="pct">${fmtPct(l.porcentaje)}</span>`;
+      chips.appendChild(chip);
     }
     td.appendChild(chips);
+  } else if (clave === "partida") {
+    // F-050 (R24, R25): la elegida, la fija de una entrada o «automática»;
+    // con el periodo abierto, el clic abre el selector (no el editor).
+    td.className = "celda-partida";
+    const l = t.lineas[idx];
+    if (!l) return td;
+    if (l.partida_fija) {
+      td.classList.add("fija");
+      td.innerHTML = `<span class="partida-fija" title="Partida fija de la entrada">${escapeHtml(l.descripcion)}</span>`;
+    } else if (l.partida_ide != null) {
+      td.innerHTML = `<span class="partida-elegida">${escapeHtml(textoPartida(l))}</span>`;
+    } else {
+      td.innerHTML = '<span class="partida-auto">automática</span>';
+    }
+    if (state.periodoEstado === "ABIERTO" && !l.partida_fija) {
+      td.classList.add("editable");
+      td.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        abrirSelectorPartida(t.ide, l.obra_ide, l.es_postventa, td);
+      });
+    }
   } else if (clave === "total") {
     td.className = "celda-total num";
     td.appendChild(badgeTotal(t.total, t.estado));
@@ -1374,11 +1447,14 @@ function aplicarFila(datos) {
 
 // Repinta las celdas de una fila SIN tocar el editor abierto (así los
 // chips, el total y el botón de Sigrid reflejan lo ya guardado).
+// F-050 (R22): rehace TODAS las subfilas del trabajador (pueden ser más o
+// menos que antes); el editor, que va detrás, no se toca.
 function refrescarCeldasFila(t) {
-  const tr = $(`#cuerpo tr.fila[data-ide="${t.ide}"]`);
-  if (!tr) return;
-  tr.innerHTML = "";
-  state.columnas.forEach((clave) => tr.appendChild(construirCelda(t, clave)));
+  const viejas = document.querySelectorAll(
+    `#cuerpo tr.fila[data-ide="${t.ide}"]`);
+  if (!viejas.length) return;
+  viejas[0].before(construirFila(t));
+  viejas.forEach((tr) => tr.remove());
 }
 
 // ---------------------------------------------------------------- acciones

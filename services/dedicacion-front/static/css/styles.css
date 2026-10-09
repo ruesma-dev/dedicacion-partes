@@ -261,6 +261,15 @@ tr.fila.multi.seleccionada td:first-child {
   box-shadow: inset 3px 0 0 var(--brand), inset 6px 0 0 var(--pv);
 }
 tr.fila.inactivo td { opacity: 0.55; }
+/* F-050 (R22): subfilas por obra; las celdas del trabajador ocupan todas. */
+tr.fila.subfila td { border-top: 1px dashed var(--line); }
+#cuerpo td[rowspan] { vertical-align: top; }
+.celda-partida { font-size: 0.84rem; }
+.celda-partida.editable { cursor: pointer; }
+.celda-partida.editable:hover { color: var(--brand); text-decoration: underline; }
+.partida-elegida { font-weight: 600; }
+.partida-auto { font-style: italic; color: var(--steel); }
+.partida-fija { color: var(--ink-soft); }
 
 .celda-nombre .nombre { font-weight: 600; }
 .celda-nombre .tag-baja {
