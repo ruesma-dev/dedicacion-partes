@@ -271,6 +271,41 @@ tr.fila.subfila td { border-top: 1px dashed var(--line); }
 .partida-auto { font-style: italic; color: var(--steel); }
 .partida-fija { color: var(--ink-soft); }
 
+/* F-050 (R26): selector de partida. Cuelga de <body> y es fijo, como el
+   panel de F-042, y va POR ENCIMA del modal de registro (60). */
+.panel-partida {
+  position: fixed; z-index: 70; display: flex; flex-direction: column;
+  background: var(--paper); border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm); overflow: hidden;
+  box-shadow: 0 18px 38px -18px rgba(29, 32, 36, 0.45);
+}
+.panel-partida .buscar-partida {
+  margin: 8px; padding: 6px 8px; font: inherit; font-size: 0.86rem;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+}
+.panel-partida .mayores { display: flex; gap: 6px; padding: 0 8px 8px; }
+.panel-partida .mayores button {
+  font: inherit; font-size: 0.78rem; font-weight: 700; padding: 3px 10px;
+  border: 1px solid var(--line-strong); border-radius: 999px;
+  background: var(--paper); color: var(--ink-soft); cursor: pointer;
+}
+.panel-partida .mayores button.on {
+  background: var(--brand); border-color: var(--brand); color: #fff;
+}
+.panel-partida .lista-partidas { overflow-y: auto; min-height: 0; }
+.panel-partida .opcion {
+  display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 6px 10px;
+  border-top: 1px solid var(--line); cursor: pointer; font-size: 0.84rem;
+}
+.panel-partida .opcion .cod { font-weight: 700; color: var(--brand-strong); min-width: 84px; }
+.panel-partida .opcion .desc { color: var(--ink-soft); }
+.panel-partida .opcion .origen { flex-basis: 100%; font-size: 0.74rem; color: var(--ok); }
+.panel-partida .opcion.propuesta { background: var(--ok-soft); }
+.panel-partida .opcion.automatica .desc { font-style: italic; }
+.panel-partida .opcion.activa,
+.panel-partida .opcion:hover { background: var(--brand-soft); }
+.panel-partida .vacio { padding: 8px 10px; color: var(--steel); font-size: 0.84rem; }
+
 .celda-nombre .nombre { font-weight: 600; }
 .celda-nombre .tag-baja {
   margin-left: 8px; padding: 1px 6px; border-radius: 6px;

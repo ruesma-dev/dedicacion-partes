@@ -82,6 +82,11 @@ const state = {
   empresas: [],                // [{empresa, nombre, de_baja}] que sirve la API
 };
 
+// Selector de partida (F-050): respuestas de `GET …/partidas` por trabajador,
+// obra y modo (se vacía al cargar el cuadrante y su clave tras cada PUT) y
+// cómo cerrar el panel abierto.
+const selector = { cache: new Map(), cerrar: null };
+
 // ---------------------------------------------------------------- utilidades
 const $ = (sel) => document.querySelector(sel);
 
@@ -117,6 +122,47 @@ function textoPartida(p) {
   if (!p || p.partida_ide == null) return "";
   return [p.partida_cod, p.partida_res].filter(Boolean).join(" · ") ||
     `partida ${p.partida_ide}`;
+}
+
+// Partidas del catálogo que casan con el texto (TODAS sus palabras, en
+// código y descripción, sin mayúsculas ni tildes) y con el mayor del botón
+// (`null` = Todas). El mayor lo manda el transfer; aquí no se clasifica nada.
+function filtrarPartidas(partidas, texto, mayor) {
+  const palabras = normalizar(texto).split(/\s+/).filter(Boolean);
+  return (partidas || []).filter((p) => {
+    if (mayor && p.mayor !== mayor) return false;
+    const pajar = normalizar(`${p.cod || ""} ${p.res || ""}`);
+    return palabras.every((w) => pajar.includes(w));
+  });
+}
+
+// Lista del selector: las filtradas, en el orden de la API, con la
+// propuesta PRIMERA si pasa los filtros y sin repetirla (R26).
+// `resp` = {partidas, propuesta}.
+function listaSelector(resp, texto, mayor) {
+  const lista = filtrarPartidas(resp.partidas, texto, mayor);
+  const prop = resp.propuesta;
+  const primera = prop ? lista.find((p) => p.ide === prop.paride) : undefined;
+  return (primera ? [primera] : [])
+    .concat(lista.filter((p) => p !== primera))
+    .map((p) => ({ ...p, propuesta: p === primera }));
+}
+
+// De dónde sale una partida (`partida_metodo` y `partida_origen` del
+// transfer, R6): solo lo rotula.
+function rotuloOrigen(metodo, origen) {
+  const textos = {
+    parte_anterior: "parte anterior",
+    ultimo_parte: "último parte",
+    auto_nombre: "casada por nombre",
+    auto_categoria: "casada por categoría",
+    postventa: "obra de postventa",
+    var: "partida fija",
+    manual: "elegida",
+  };
+  if (!metodo) return "";
+  const texto = textos[metodo] || metodo;
+  return origen ? `${texto}: ${origen}` : texto;
 }
 
 function fmtPct(valor) {
@@ -260,6 +306,7 @@ async function cargarPeriodo(anio, mes) {
 }
 
 function aplicarCuadrante(datos) {
+  selector.cache.clear();          // F-050: otro mes, empresa o recarga
   state.periodoEstado = datos.periodo.estado;
   state.trabajadores = datos.trabajadores;
   state.obras = datos.obras;
@@ -1391,6 +1438,168 @@ function refrescarTotalVivo(editor) {
   const nuevo = badgeTotal(suma, estado);
   nuevo.classList.add("total-vivo");
   badge.replaceWith(nuevo);
+}
+
+// ------------------------------------------- selector de partida (F-050)
+// Desplegable con buscador y botones Todas · CD · CI · CP (R25-R27). Lo usan
+// la columna Partida y el modal de registro (R29). El front no decide nada:
+// pinta lo que sirve la API (catálogo, mayor, propuesta, botón inicial) y
+// guarda lo que se elige con `PUT …/partida`.
+function clavePartidas(trabajadorIde, obraIde, esPostventa) {
+  return [state.anio, state.mes, state.empresa, trabajadorIde, obraIde,
+    esPostventa].join("|");
+}
+
+function cerrarSelectorPartida() {
+  if (selector.cerrar) selector.cerrar();
+  selector.cerrar = null;
+}
+
+// `ancla`: el elemento junto al que sale el panel; `despues`: lo que se hace
+// tras guardar (el modal repite su análisis).
+async function abrirSelectorPartida(trabajadorIde, obraIde, esPostventa, ancla, despues) {
+  const rect = ancla.getBoundingClientRect();
+  if (state.editandoIde === trabajadorIde) await guardarAhora();
+  cerrarSelectorPartida();
+  const clave = clavePartidas(trabajadorIde, obraIde, esPostventa);
+  let resp = selector.cache.get(clave);
+  if (!resp) {
+    try {
+      resp = await api(`/periodos/${state.anio}/${state.mes}/trabajadores/${trabajadorIde}/partidas?obra_ide=${obraIde}&es_postventa=${esPostventa}`);
+    } catch (err) {
+      toast(err.message, true);
+      return;
+    }
+    selector.cache.set(clave, resp);
+  }
+  montarSelectorPartida(resp, {
+    trabajadorIde, obraIde, esPostventa, ancla, rect, despues, clave,
+  });
+}
+
+function montarSelectorPartida(resp, ctx) {
+  cerrarSelectorPartida();
+  const panel = document.createElement("div");
+  panel.className = "panel-partida";
+  panel.innerHTML =
+    '<input class="buscar-partida" autocomplete="off" ' +
+    'placeholder="Buscar partida (código o descripción)…">' +
+    `<div class="mayores">${["", "CD", "CI", "CP"].map((m) =>
+      `<button type="button" data-mayor="${m}">${m || "Todas"}</button>`).join("")}</div>` +
+    '<div class="lista-partidas"></div>';
+  document.body.appendChild(panel);
+  const input = panel.querySelector(".buscar-partida");
+  const lista = panel.querySelector(".lista-partidas");
+  const base = {
+    partidas: ctx.esPostventa ? resp.partidas_postventa : resp.partidas,
+    propuesta: resp.propuesta,
+  };
+  let mayor = resp.ambito || null;
+  let opciones = [];
+  let activa = 0;
+
+  // Junto a su ancla, como el panel de F-042; si el ancla se ha rehecho
+  // (guardado del editor), donde estaba al abrir.
+  const recolocar = () => {
+    const pos = posicionSugerencias(
+      ctx.ancla.isConnected ? ctx.ancla.getBoundingClientRect() : ctx.rect,
+      panel.offsetHeight, {
+        alto: document.documentElement.clientHeight,
+        ancho: document.documentElement.clientWidth,
+      });
+    panel.style.top = `${pos.top}px`;
+    panel.style.left = `${pos.left}px`;
+    panel.style.width = `${pos.ancho}px`;
+    panel.style.maxHeight = `${pos.altoMax}px`;
+  };
+  const elegir = async (op) => {
+    if (!op) return;
+    const partida = op.automatica ? null : { ide: op.ide, cod: op.cod, res: op.res };
+    cerrarSelectorPartida();
+    try {
+      const datos = await api(
+        `/periodos/${state.anio}/${state.mes}/trabajadores/${ctx.trabajadorIde}/partida`,
+        { method: "PUT", body: JSON.stringify({ obra_ide: ctx.obraIde,
+          es_postventa: ctx.esPostventa, partida }) });
+      selector.cache.delete(ctx.clave);
+      aplicarFila(datos);
+      if (ctx.despues) ctx.despues();
+    } catch (err) {
+      toast(err.message, true);
+    }
+  };
+  const pintar = () => {
+    panel.querySelectorAll(".mayores button").forEach((b) =>
+      b.classList.toggle("on", (b.dataset.mayor || null) === mayor));
+    opciones = listaSelector(base, input.value, mayor).concat([{ automatica: true }]);
+    activa = Math.min(activa, opciones.length - 1);
+    lista.innerHTML = opciones.length === 1
+      ? '<div class="vacio">Sin partidas con ese filtro</div>' : "";
+    opciones.forEach((op, i) => {
+      const fila = document.createElement("div");
+      fila.className = "opcion" + (i === activa ? " activa" : "") +
+        (op.propuesta ? " propuesta" : "") + (op.automatica ? " automatica" : "");
+      fila.innerHTML = op.automatica
+        ? '<span class="desc">automática (la propone el registro)</span>'
+        : `<span class="cod">${escapeHtml(op.cod || "")}</span>` +
+          `<span class="desc">${escapeHtml(op.res || "")}</span>` +
+          (op.propuesta
+            ? `<span class="origen">propuesta · ${escapeHtml(rotuloOrigen(resp.propuesta.metodo, resp.propuesta.origen))}</span>`
+            : "");
+      fila.addEventListener("mousedown", (ev) => {
+        ev.preventDefault();
+        elegir(op);
+      });
+      lista.appendChild(fila);
+    });
+    const viva = lista.querySelector(".opcion.activa");
+    if (viva) viva.scrollIntoView({ block: "nearest" });
+    recolocar();
+  };
+
+  const fuera = (ev) => {
+    if (!panel.contains(ev.target)) cerrarSelectorPartida();
+  };
+  document.addEventListener("mousedown", fuera, true);
+  window.addEventListener("scroll", recolocar, true);
+  window.addEventListener("resize", recolocar);
+  selector.cerrar = () => {
+    document.removeEventListener("mousedown", fuera, true);
+    window.removeEventListener("scroll", recolocar, true);
+    window.removeEventListener("resize", recolocar);
+    panel.remove();
+  };
+
+  panel.querySelectorAll(".mayores button").forEach((b) => {
+    b.addEventListener("mousedown", (ev) => {
+      ev.preventDefault();
+      mayor = b.dataset.mayor || null;
+      activa = 0;
+      pintar();
+    });
+  });
+  input.addEventListener("input", () => { activa = 0; pintar(); });
+  // Sus teclas no llegan a `teclas` ni al modal: Esc cierra solo el panel.
+  input.addEventListener("keydown", (ev) => {
+    ev.stopPropagation();
+    if (ev.key === "ArrowDown") {
+      ev.preventDefault();
+      activa = Math.min(activa + 1, opciones.length - 1);
+      pintar();
+    } else if (ev.key === "ArrowUp") {
+      ev.preventDefault();
+      activa = Math.max(activa - 1, 0);
+      pintar();
+    } else if (ev.key === "Enter") {
+      ev.preventDefault();
+      elegir(opciones[activa]);
+    } else if (ev.key === "Escape") {
+      ev.preventDefault();
+      cerrarSelectorPartida();
+    }
+  });
+  pintar();
+  input.focus();
 }
 
 // ---------------------------------------------------------------- guardado
