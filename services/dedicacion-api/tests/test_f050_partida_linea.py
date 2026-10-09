@@ -245,3 +245,54 @@ def test_f050_r16_completar_conserva_y_la_nueva_automatica(destino,
     CompletarHasta100().ejecutar(uow, ANIO, MES, [14], destino, False, "u",
                                  filtro=FILTRO)
     assert _partidas(uow.lineas[P_ACT][14]) == esperado
+
+
+# ================================ R19 ==================================== #
+def _registro(filas, overrides=None, fase="preflight"):
+    from application.registro_sigrid import RegistroSigrid
+
+    from tests.test_f022_empresa_en_linea import _Sesion, _Transfer
+    transfer = _Transfer()
+    registro = RegistroSigrid(lambda: _Sesion(filas), transfer, 1)
+    if fase == "preflight":
+        registro.preflight(2026, 8, overrides=overrides)
+    else:
+        registro.ejecutar(2026, 8, pisar_claves=[], overrides=overrides)
+    return [ln for p in transfer.payloads for ln in p["lineas"]]
+
+
+def _fila_r19(asig_id, obra, partida_ide=None, partida_cod=None):
+    asignacion = SimpleNamespace(id=asig_id, porcentaje=40, es_postventa=False,
+                                 partida_ide=partida_ide,
+                                 partida_cod=partida_cod)
+    trabajador = SimpleNamespace(ide=10, dni=None, nombre="T10",
+                                 categoria="Encargado", empresa=1,
+                                 activo=True, fecha_baja=None)
+    return asignacion, trabajador, obra
+
+
+@pytest.mark.parametrize("fase", ["preflight", "ejecutar"])
+def test_f050_r19_la_elegida_viaja_como_paride(fase):
+    from tests.test_f039_registro_var import O678
+    [ln] = _registro([_fila_r19(1, O678, 80003, "CI.1.9")], fase=fase)
+    assert (ln["paride"], ln["partida_cod"]) == (80003, "CI.1.9")
+
+
+def test_f050_r19_sin_elegida_sin_paride():
+    from tests.test_f039_registro_var import O678
+    [ln] = _registro([_fila_r19(1, O678)])
+    assert "paride" not in ln and "partida_cod" not in ln
+
+
+def test_f050_r19_el_override_manda_sobre_la_elegida():
+    from tests.test_f039_registro_var import O678
+    [ln] = _registro([_fila_r19(1, O678, 80003, "CI.1.9")],
+                     overrides={1: 80002})
+    assert ln["paride"] == 80002 and "partida_cod" not in ln
+
+
+def test_f050_r19_var_igual_aunque_tenga_elegida():
+    from tests.test_f039_registro_var import VAR_29
+    [ln] = _registro([_fila_r19(1, VAR_29, 80003, "CI.1.9")])
+    assert ln["var_paride"] == 417055
+    assert "paride" not in ln and "partida_cod" not in ln
