@@ -8,7 +8,11 @@ from typing import Any
 import httpx
 
 from config.settings import Settings
-from domain.errors import UniversoPostventaNoDisponible, UniversoVarNoDisponible
+from domain.errors import (
+    PropuestaNoDisponible,
+    UniversoPostventaNoDisponible,
+    UniversoVarNoDisponible,
+)
 from domain.models import PartidaVar, ResultadoUniverso, ResultadoUniversoVar
 
 
@@ -37,6 +41,17 @@ class TransferClient:
 
     def ejecutar(self, payload: dict) -> dict[str, Any]:
         return self._post("/api/registro/ejecutar", payload)
+
+    def propuesta_partidas(self, payload: dict) -> dict[str, Any]:
+        """Catálogo y partida propuesta de unas líneas (F-050, R17). Sin
+        `ok: true` o sin `propuestas`: `PropuestaNoDisponible`."""
+        r = self._post("/api/partidas/propuesta", payload)
+        if r.get("ok") is not True or "propuestas" not in r:
+            causa = (r.get("error")
+                     or "la respuesta del transfer no trae propuestas")
+            raise PropuestaNoDisponible(
+                f"propuesta de partidas no disponible: {causa}")
+        return r
 
     def universo_postventa(
         self, empresa: int, obras: list[dict[str, Any]]

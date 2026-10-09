@@ -17,6 +17,7 @@ from domain.errors import (
     ObraNoValida,
     PeriodoCerrado,
     PeriodoNoEncontrado,
+    PropuestaNoDisponible,
     SigridError,
     SigridNoConfigurado,
     TrabajadorNoEncontrado,
@@ -42,6 +43,7 @@ _HTTP_POR_ERROR: list[tuple[type[ErrorDominio], int]] = [
     (SigridError, 502),
     (UniversoPostventaNoDisponible, 502),
     (UniversoVarNoDisponible, 502),
+    (PropuestaNoDisponible, 502),   # F-050 (R17)
 ]
 
 

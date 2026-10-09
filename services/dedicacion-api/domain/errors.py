@@ -55,6 +55,12 @@ class UniversoPostventaNoDisponible(ErrorDominio):
     `true` o sin `obras`): el sync falla entero (F-025, R15, D3)."""
 
 
+class PropuestaNoDisponible(ErrorDominio):
+    """El transfer no ha dado la propuesta de partidas (caído, `ok` que no
+    es `true` o sin `propuestas`): el selector no se abre; el cuadrante sigue
+    funcionando (F-050, R17)."""
+
+
 class UniversoVarNoDisponible(ErrorDominio):
     """El transfer no ha dado el universo VAR (caído, `ok` que no es `true` o
     sin `partidas`): el sync y el preview fallan enteros (F-039, R16)."""

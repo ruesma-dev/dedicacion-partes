@@ -212,6 +212,30 @@ def guardar_asignaciones(
     )
 
 
+@router.get(
+    "/periodos/{anio}/{mes}/trabajadores/{trabajador_ide}/partidas",
+    tags=["cuadrante"],
+)
+def partidas_de_linea(
+    anio: int,
+    mes: int,
+    trabajador_ide: int,
+    obra_ide: int,
+    contenedor: Cont,
+    es_postventa: bool = False,
+    empresa: EmpresaQ = None,
+) -> dict[str, Any]:
+    """Catálogo con el mayor de cada partida, propuesta, elegida y botón
+    preelegido (`ambito`) de UNA línea (F-050, R17). Lo calcula el
+    transfer; si no responde, 502 y el cuadrante sigue igual."""
+    filtro = _filtro(contenedor, empresa)
+    with contenedor.uow() as uow:
+        return contenedor.partidas_linea.ejecutar(
+            uow, anio, mes, trabajador_ide, obra_ide, es_postventa,
+            empresa_obras=filtro.empresa_obras,
+        )
+
+
 @router.put(
     "/periodos/{anio}/{mes}/trabajadores/{trabajador_ide}/partida",
     response_model=FilaOut,

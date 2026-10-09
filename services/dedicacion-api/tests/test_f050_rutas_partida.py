@@ -181,3 +181,189 @@ def test_f050_r18_cada_linea_publica_su_partida(monkeypatch):
     assert [(ln["partida_ide"], ln["partida_cod"], ln["partida_res"],
              ln["partida_fija"]) for ln in eva["lineas"]] == [
         (80003, "CI.1.9", "ADMINISTRATIVO", False), (None, None, None, True)]
+
+
+# ================================ R17 ==================================== #
+CATALOGO = [
+    {"ide": 80003, "cod": "CI.1.9", "res": "ADMINISTRATIVO",
+     "categoria": "CI", "mayor": "CI"},
+    {"ide": 1001, "cod": "01.19.03.20", "res": "PROPORCIONAL",
+     "categoria": "CP", "mayor": "CD"}]
+PV = [{"ide": 70001, "cod": "0678", "res": "15 VIVIENDAS",
+       "categoria": "CD", "mayor": "CP"}]
+PROPUESTA = {"paride": 80003, "cod": "CI.1.9", "res": "ADMINISTRATIVO",
+             "metodo": "parte_anterior", "origen": "parte PT26/1"}
+
+
+class _TransferFalso:
+    def __init__(self, respuesta=None, fallo=None) -> None:
+        self.respuesta = respuesta or {
+            "ok": True, "partidas_obra": CATALOGO, "partidas_postventa": PV,
+            "propuestas": {"linea": PROPUESTA},
+            "mayor_inicial": {"linea": "CI"}}
+        self.fallo = fallo
+        self.payloads: list[dict] = []
+
+    def propuesta_partidas(self, payload):
+        self.payloads.append(payload)
+        if self.fallo is not None:
+            raise self.fallo
+        return self.respuesta
+
+
+def _cliente_r17(lineas, monkeypatch, transfer):
+    from application.partidas_linea import PartidasDeLinea
+    return _cliente(lineas, monkeypatch,
+                    partidas_linea=PartidasDeLinea(transfer))
+
+
+def _get(cliente, ide=14, obra=100, pv=False):
+    return cliente.get(f"{BASE}/trabajadores/{ide}/partidas",
+                       params={"obra_ide": obra,
+                               "es_postventa": "true" if pv else "false"})
+
+
+def test_f050_r17_catalogo_propuesta_y_payload(monkeypatch):
+    transfer = _TransferFalso()
+    cliente, _ = _cliente_r17({14: [_lp(100, "100")]}, monkeypatch, transfer)
+    r = _get(cliente)
+    assert r.status_code == 200, r.text
+    assert r.json() == {"partidas": CATALOGO, "partidas_postventa": PV,
+                        "ambito": "CI", "propuesta": PROPUESTA,
+                        "elegida": None, "fija": None}
+    assert transfer.payloads == [{
+        "empresa": 1, "ano": ANIO, "mes": MES,
+        "obra": {"ide": 100, "codigo": "0100", "nombre": "OBRA 100"},
+        "lineas": [{"clave": "linea", "recurso_ide": 14, "nombre": "Eva",
+                    "categoria": "Encargado", "es_postventa": False}]}]
+
+
+def test_f050_r17_ambito_el_mayor_de_la_elegida(monkeypatch):
+    elegida = {"partida_ide": 1001, "partida_cod": "01.19.03.20",
+               "partida_res": "PROPORCIONAL"}
+    cliente, _ = _cliente_r17({14: [_lp(100, "100", **elegida)]},
+                              monkeypatch, _TransferFalso())
+    cuerpo = _get(cliente).json()
+    assert cuerpo["ambito"] == "CD"
+    assert cuerpo["elegida"] == {"ide": 1001, "cod": "01.19.03.20",
+                                 "res": "PROPORCIONAL"}
+
+
+def test_f050_r17_elegida_fuera_del_catalogo_usa_mayor_inicial(monkeypatch):
+    cliente, _ = _cliente_r17({14: [_lp(100, "100", partida_ide=5,
+                                        partida_cod="X", partida_res="Y")]},
+                              monkeypatch, _TransferFalso())
+    assert _get(cliente).json()["ambito"] == "CI"
+    sin = _TransferFalso()
+    sin.respuesta = dict(sin.respuesta, mayor_inicial={"linea": None})
+    cliente, _ = _cliente_r17({14: [_lp(100, "100")]}, monkeypatch, sin)
+    assert _get(cliente).json()["ambito"] is None
+
+
+def test_f050_r17_postventa_busca_en_su_catalogo(monkeypatch):
+    transfer = _TransferFalso()
+    cliente, _ = _cliente_r17(
+        {14: [_lp(100, "100", pv=True, partida_ide=70001, partida_cod="0678",
+                  partida_res="15 VIVIENDAS")]}, monkeypatch, transfer)
+    assert _get(cliente, pv=True).json()["ambito"] == "CP"
+    assert transfer.payloads[0]["lineas"][0]["es_postventa"] is True
+
+
+def test_f050_r17_var_partida_fija_sin_transfer(monkeypatch):
+    transfer = _TransferFalso()
+    cliente, _ = _cliente_r17({14: [_lp(100, "100", partida_fija=True)]},
+                              monkeypatch, transfer)
+    assert _get(cliente).json() == {
+        "partidas": [], "partidas_postventa": [], "ambito": None,
+        "propuesta": None, "elegida": None,
+        "fija": {"ide": -100, "cod": "0100", "res": "OBRA 100"}}
+    assert transfer.payloads == []
+
+
+def test_f050_r17_linea_inexistente_404(monkeypatch):
+    transfer = _TransferFalso()
+    cliente, _ = _cliente_r17({14: [_lp(100, "100")]}, monkeypatch, transfer)
+    assert _get(cliente, obra=101).status_code == 404
+    assert _get(cliente, ide=999).status_code == 404
+    assert transfer.payloads == []
+
+
+def test_f050_r17_transfer_caido_502_y_el_cuadrante_igual(monkeypatch):
+    from domain.errors import PropuestaNoDisponible
+    transfer = _TransferFalso(fallo=PropuestaNoDisponible(
+        "propuesta de partidas no disponible: transfer inaccesible"))
+    cliente, _ = _cliente_r17({14: [_lp(100, "100")]}, monkeypatch, transfer)
+    r = _get(cliente)
+    assert r.status_code == 502
+    assert r.json() == {"error": "propuesta de partidas no disponible: "
+                                 "transfer inaccesible"}
+    assert cliente.get(f"{BASE}/cuadrante").status_code == 200
+
+
+# ---------------------- TransferClient (R17) ---------------------------- #
+class _Resp:
+    def __init__(self, status, cuerpo):
+        self.status_code = status
+        self._cuerpo = cuerpo
+        self.text = str(cuerpo)
+
+    def json(self):
+        return self._cuerpo
+
+
+def _transfer_real(monkeypatch, respuesta):
+    from infrastructure.transfer import transfer_client as mod
+    llamadas = []
+
+    def post(url, json, timeout):
+        llamadas.append((url, json, timeout))
+        if isinstance(respuesta, Exception):
+            raise respuesta
+        return respuesta
+
+    monkeypatch.setattr(mod.httpx, "post", post)
+    ajustes = SimpleNamespace(transfer_base_url="http://transfer.invalid/",
+                              transfer_timeout_s=7.0)
+    return mod.TransferClient(ajustes), llamadas
+
+
+def test_f050_r17_cliente_del_transfer_ok(monkeypatch):
+    cuerpo = {"ok": True, "propuestas": {"linea": None}}
+    cli, llamadas = _transfer_real(monkeypatch, _Resp(200, cuerpo))
+    assert cli.propuesta_partidas({"x": 1}) == cuerpo
+    assert llamadas == [("http://transfer.invalid/api/partidas/propuesta",
+                         {"x": 1}, 7.0)]
+
+
+@pytest.mark.parametrize("respuesta, motivo", [
+    (_Resp(422, {"ok": False, "error": "empresa no válida: None"}),
+     "empresa no válida: None"),
+    (_Resp(200, {"ok": True}),
+     "la respuesta del transfer no trae propuestas"),
+    (_Resp(200, {"ok": "si", "propuestas": {}}),
+     "la respuesta del transfer no trae propuestas"),
+])
+def test_f050_r17_cliente_del_transfer_sin_propuesta(monkeypatch, respuesta,
+                                                     motivo):
+    from domain.errors import PropuestaNoDisponible
+    cli, _ = _transfer_real(monkeypatch, respuesta)
+    with pytest.raises(PropuestaNoDisponible) as exc:
+        cli.propuesta_partidas({})
+    assert str(exc.value) == f"propuesta de partidas no disponible: {motivo}"
+
+
+def test_f050_r17_cliente_del_transfer_caido(monkeypatch):
+    import httpx
+    from domain.errors import PropuestaNoDisponible
+    cli, _ = _transfer_real(monkeypatch, httpx.ConnectError("sin red"))
+    with pytest.raises(PropuestaNoDisponible, match="transfer inaccesible"):
+        cli.propuesta_partidas({})
+
+
+def test_f050_r17_elegida_de_mayor_otro_sale_en_todas(monkeypatch):
+    transfer = _TransferFalso()
+    transfer.respuesta = dict(transfer.respuesta, partidas_obra=[
+        dict(CATALOGO[0], mayor="OTRO")])
+    cliente, _ = _cliente_r17({14: [_lp(100, "100", **P)]}, monkeypatch,
+                              transfer)
+    assert _get(cliente).json()["ambito"] is None
