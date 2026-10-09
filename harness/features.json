@@ -834,7 +834,7 @@
       "status": "in_progress",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 2,
+      "priority": 1,
       "branch": "feature/F-049-avisos-registro-por-tipo"
     },
     {
@@ -922,6 +922,23 @@
       "rigor": "critico",
       "priority": 7,
       "branch": "feature/F-054-sync-trae-porcentajes"
+    },
+    {
+      "id": "F-055",
+      "title": "La previsualización del registro tarda demasiado (medir y acelerar)",
+      "description": "Pedida por el humano el 2026-10-08 («añade una feature para revisar que tarde tanto»), al probar F-049: al elegir una partida en el modal, «Registrar» se queda un buen rato en «Analizando…». Causa vista por el líder (sin medir): cada preflight hace por OBRA unas 10-12 lecturas a Sigrid SEGUIDAS vía sigrid-api (obra, catálogo de postventa, horas de recursos, partidas, cuentas, partes del periodo, código PT, presupuesto entero de la obra —miles de filas en las grandes—, líneas por synckey y del parte; services/dedicacion-transfer/application/pipelines/registro_pipeline.py), y la api lo repite para TODAS las obras de la petición (con el botón general, todas las del mes); desde F-049 se repite al cambiar cada partida. PRIMERO MEDIR (tiempo por lectura y por obra, en local y en producción) y escribir dónde se va el tiempo. Propuesta del líder a decidir con el humano tras medir: 1) repetir solo la obra cuya partida cambia (front + api); 2) caché en memoria del transfer, con caducidad corta, del presupuesto de la obra y de los catálogos de postventa y VAR; 3) lecturas en paralelo o agrupadas. Nunca decidir con datos parciales ni viejos al EJECUTAR (ejecutar puede saltarse la caché).",
+      "acceptance": [
+        "Medición escrita: tiempo de cada lectura y por obra de un preflight real (local y producción), y dónde se va",
+        "Plan aprobado por el humano con lo medido",
+        "El preflight tras cambiar una partida, y el de un trabajador con dos obras, bajan de forma medible (antes/después)",
+        "Ejecutar sigue decidiendo con datos frescos; ninguna regla de registro cambia",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 2,
+      "branch": "feature/F-055-preflight-rapido"
     }
   ]
 }
