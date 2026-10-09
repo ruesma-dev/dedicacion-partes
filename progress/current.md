@@ -30,12 +30,29 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   `test_f037_r3_…` (una línea de datos, R20) y `test_f003_r8_…` (el conjunto
   de columnas suma las tres `partida_*`, R12). Hecho: T1-T5 (`686d00a`..
   `3aed309`; transfer 742 passed). **Implementer TERMINADO (2026-10-09):**
-  T1-T15 hechas (informe `progress/impl_F-050.md`; mutación Python 158/158 y
-  JS 56/56 muertos; `init.sh` en verde). **Pendiente:** review; **T14 (líder):**
-  copiar a `azure-apps/dedicacion.md` lo nuevo de `docs/INTEGRACION.md` §5,
-  §3 y §7 (`POST /api/partidas/propuesta`, `GET …/partidas`, `PUT …/partida`,
-  `PROPUESTA_MESES_ATRAS`, orden transfer → api → front); **T16-T18 MANUAL
-  (humano)**, comandos exactos en el informe.
+  T1-T15 (`1f0a425`..`e182915`, `progress/impl_F-050.md`): mutación Python
+  158/158 y JS 56/56 muertos (en copias aisladas), cobertura 341/341, `init.sh`
+  en verde sin caché (api 768, front 184, transfer 750). T14 hecha por el
+  líder: `azure-apps/dedicacion.md` con los endpoints, la variable y el orden
+  transfer → api → front (`edaa2b7`, «sin desplegar»). **Review lanzada.**
+- **MANUAL (humano, en local; transfer en modo pruebas):**
+  - **M1 (T16, solo lectura):** en Git Bash,
+    `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-transfer`
+    y `.venv/Scripts/python prueba_escritura_porcentajes.py propuesta --ano 2026 --mes 9 --obra 0694 --recurso 1705036`
+    (1705036 = GONZALEZ PANIAGUA, leído en Sigrid); lo mismo con `--obra 0696`.
+    Esperado en la 0694: «Propuesta: CI.1.5», método `parte_anterior`, origen
+    PT26/00319 · 09/2026; «Por mayor: CD … · CI … · CP …» con `CP.1`-`CP.12`
+    en CP; botón preelegido CI; cada lectura < 30 s.
+  - **M2 (T17, navegador):** transfer, api y front desde la copia principal
+    (`.venv/Scripts/python main.py` en cada servicio); `curl -s http://localhost:8006/health`
+    con `"modo_pruebas": true` (si no, PARAR). La api añade al arrancar las
+    columnas `partida_*`. Puntos (a)-(f) de `specs/F-050-subfilas-partida/tasks.md`
+    T17: subfilas y columna Partida; selector con buscador, Todas · CD · CI · CP,
+    propuesta primera; postventa y VAR; regresión del teclado; el mismo
+    selector en el modal (**Cancelar, sin Registrar**); tiempo en la 0696.
+  - **M3 (T18):** registro en modo pruebas, **solo con autorización del humano
+    en ese momento**.
+  Resultado: _pendiente_.
 
 ## Producción, hoy
 
