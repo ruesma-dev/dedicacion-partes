@@ -200,3 +200,72 @@ def test_f050_r8_r7_lectura_que_falla_es_502(api):
     assert r.status_code == 502
     assert r.json() == {"ok": False, "error": (
         "sigrid-api devolvio una respuesta truncada")}
+
+
+# ================= T5 · fase `propuesta` del script manual ================ #
+def _script(monkeypatch, cli, *argv):
+    import prueba_escritura_porcentajes as script
+
+    def prohibido(*a, **kw):
+        raise AssertionError("la fase propuesta no registra nada")
+
+    monkeypatch.setattr(script, "get_settings",
+                        lambda: SimpleNamespace(**AJUSTES))
+    monkeypatch.setattr(script, "_cliente", lambda st: cli)
+    monkeypatch.setattr(RegistroPipeline, "ejecutar", prohibido)
+    monkeypatch.setattr("sys.argv", ["prueba_escritura_porcentajes.py",
+                                     "propuesta", *argv])
+    script.main()
+
+
+def test_f050_script_propuesta_solo_lee_y_ensena_todo(monkeypatch, capsys):
+    cli = ClienteSoloLectura([_h()])
+    _script(monkeypatch, cli, "--obra", OBRA_ORIGEN, "--recurso", "200",
+            "--ano", "2026", "--mes", "7")
+    salida = capsys.readouterr().out
+    assert cli.escritos == []
+    assert cli.lecturas == [([200], 202407, 202607)]
+    for texto in ("CI   CI.1.9", "CI   CI.1.10", "CI   CI.1.20",
+                  "Catálogo de 0678: 3 partidas hoja activas",
+                  "Por mayor: CD 0 · CI 3 · CP 0 · OTRO 0",
+                  "Propuesta: CI.1.9 · ADMINISTRATIVO (paride 80003)",
+                  ("método parte_anterior · origen parte PT26/00100 · "
+                   "07/2026 · obra 0678"),
+                  "Botón preelegido (mayor_inicial): CI"):
+        assert texto in salida, texto
+    lecturas = [x for x in salida.splitlines() if x.startswith("  lectura ")]
+    assert [x.split()[1].rstrip(":") for x in lecturas] == [
+        "obra_por_codigo", "capitulos_de_obra", "historial_partidas"]
+    assert all(x.endswith(" s") for x in lecturas)
+    assert salida.index("CI.1.9") < salida.index("CI.1.10")
+
+
+def test_f050_script_propuesta_sin_propuesta_y_con_casamiento(monkeypatch,
+                                                              capsys):
+    cli = ClienteSoloLectura([])
+    _script(monkeypatch, cli, "--obra", OBRA_ORIGEN, "--recurso", "200",
+            "--ano", "2026", "--mes", "7", "--categoria", "Gruista")
+    salida = capsys.readouterr().out
+    assert "Propuesta: ninguna" in salida
+    assert "Botón preelegido (mayor_inicial): CI" in salida
+    _script(monkeypatch, cli, "--obra", OBRA_ORIGEN, "--recurso", "200",
+            "--ano", "2026", "--mes", "7", "--categoria", "Encargado",
+            "--nombre", "Acuna Mera, Antonio")
+    salida = capsys.readouterr().out
+    assert "método auto_nombre · origen —" in salida
+
+
+def test_f050_script_propuesta_obra_de_otra_empresa(monkeypatch, capsys):
+    cli = ClienteSoloLectura([])
+    cli.obra_origen.empresa = 28
+    _script(monkeypatch, cli, "--obra", OBRA_ORIGEN, "--recurso", "200")
+    salida = capsys.readouterr().out
+    assert "NO se propone: la obra 0678 es de la empresa 28" in salida
+    assert cli.lecturas == []
+
+
+def test_f050_script_propuesta_exige_obra_y_recurso(monkeypatch, capsys):
+    cli = ClienteSoloLectura([])
+    with pytest.raises(SystemExit):
+        _script(monkeypatch, cli, "--obra", OBRA_ORIGEN)
+    assert "--recurso" in capsys.readouterr().err

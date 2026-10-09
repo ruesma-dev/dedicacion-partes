@@ -18,6 +18,11 @@ Fases:
       Relee por synckey lo escrito por este script.
   python prueba_escritura_porcentajes.py limpiar --confirmar
       Borra SOLO las líneas con la marca de pruebas de este hilo.
+  python prueba_escritura_porcentajes.py propuesta --obra 0694 --recurso N
+      [--ano A --mes M --categoria C --nombre "N"]
+      SOLO LECTURA (F-050): catálogo de la obra con su mayor, partida
+      propuesta del recurso (método, origen, botón preelegido) y los
+      segundos de cada lectura. No llama a escribir ni a ejecutar.
 
 Sin --confirmar, las fases de escritura solo muestran lo que harían.
 """
@@ -26,6 +31,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
+from collections import Counter
 from datetime import date
 
 from config.settings import get_settings
@@ -206,16 +213,77 @@ def fase_limpiar(cli: SigridWriteClient, st, confirmar: bool) -> None:
     print("Borradas.")
 
 
+def _cronometrar(cli, tiempos: list) -> None:
+    """Envuelve las lecturas de la propuesta para medir cada una."""
+    def medir(nombre: str, lectura):
+        def medida(*a, **kw):
+            t0 = time.perf_counter()
+            try:
+                return lectura(*a, **kw)
+            finally:
+                tiempos.append((nombre, time.perf_counter() - t0))
+        return medida
+
+    for nombre in ("obra_por_codigo", "capitulos_de_obra",
+                   "historial_partidas"):
+        setattr(cli, nombre, medir(nombre, getattr(cli, nombre)))
+
+
+def fase_propuesta(cli, pipeline: RegistroPipeline, obra_cod: str,
+                   recurso: int, ano: int, mes: int,
+                   categoria: str | None = None,
+                   nombre: str | None = None) -> dict:
+    """F-050 (T16, M1): la propuesta de UN recurso en UNA obra, solo
+    lectura: la misma `RegistroPipeline.proponer` que el endpoint."""
+    tiempos: list[tuple[str, float]] = []
+    _cronometrar(cli, tiempos)
+    r = pipeline.proponer(
+        empresa=EMPRESA_PRUEBA, obra=ObraEntrada(codigo=obra_cod), ano=ano,
+        mes=mes, lineas=[{"clave": "linea", "recurso_ide": recurso,
+                          "nombre": nombre, "categoria": categoria,
+                          "es_postventa": False}])
+    if not r["ok"]:
+        print(f"NO se propone: {r['error']}")
+        return r
+    cat = r["partidas_obra"]
+    for p in cat:
+        print(f"  {p['mayor']:4s} {p['cod'] or '':<16} {p['res'] or ''}")
+    por_mayor = Counter(p["mayor"] for p in cat)
+    print(f"Catálogo de {obra_cod}: {len(cat)} partidas hoja activas")
+    print("Por mayor: " + " · ".join(
+        f"{m} {por_mayor[m]}" for m in ("CD", "CI", "CP", "OTRO")))
+    prop = r["propuestas"]["linea"]
+    if prop is None:
+        print("Propuesta: ninguna (sin partida)")
+    else:
+        print(f"Propuesta: {prop['cod']} · {prop['res']} "
+              f"(paride {prop['paride']})")
+        print(f"  método {prop['metodo']} · origen {prop['origen'] or '—'}")
+    print(f"Botón preelegido (mayor_inicial): "
+          f"{r['mayor_inicial']['linea'] or 'Todas'}")
+    for n, s in tiempos:
+        print(f"  lectura {n}: {s:.2f} s")
+    return r
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("fase", choices=["inspeccionar", "capitulos",
                                          "estado", "preflight", "ejecutar",
-                                         "verificar", "limpiar"])
+                                         "verificar", "limpiar",
+                                         "propuesta"])
     parser.add_argument("--confirmar", action="store_true")
     parser.add_argument("--ano", type=int, default=date.today().year)
     parser.add_argument("--mes", type=int, default=date.today().month)
     parser.add_argument("--pisar", nargs="*", default=[])
+    # F-050, fase `propuesta` (solo lectura).
+    parser.add_argument("--obra")
+    parser.add_argument("--recurso", type=int)
+    parser.add_argument("--categoria")
+    parser.add_argument("--nombre")
     args = parser.parse_args()
+    if args.fase == "propuesta" and (not args.obra or not args.recurso):
+        parser.error("la fase propuesta exige --obra y --recurso")
 
     st = get_settings()
     cli = _cliente(st)
@@ -236,6 +304,9 @@ def main() -> None:
         fase_verificar(cli)
     elif args.fase == "limpiar":
         fase_limpiar(cli, st, args.confirmar)
+    elif args.fase == "propuesta":
+        fase_propuesta(cli, pipeline, args.obra, args.recurso, args.ano,
+                       args.mes, args.categoria, args.nombre)
 
 
 if __name__ == "__main__":
