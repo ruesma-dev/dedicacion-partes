@@ -391,6 +391,17 @@ class RegistroPipeline:
             else:
                 a.paride, a.partida_cod, a.partida_metodo = m
 
+        # F-049 (ampliación d): el front pinta el desplegable de partidas
+        # con `partidas_obra`. Si todas las líneas de obra normal llegan con
+        # partida manual, el bucle no ha leído el presupuesto de origen y el
+        # desplegable salía vacío. Se lee aquí, una sola vez por petición
+        # como arriba; no cambia ninguna partida ni lo que se escribe.
+        if nodos_origen is None and any(
+                a.accion == "escribir" and a.destino != "postventa"
+                and a.partida_metodo != "var" for a in acciones):
+            nodos_origen = construir_catalogo(
+                self._cli.capitulos_de_obra(int(origen.ide)))
+
         escribir = [a for a in acciones if a.accion == "escribir"]
 
         def obra_de(a: AccionLinea) -> ObraEntrada:
