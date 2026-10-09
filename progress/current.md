@@ -29,7 +29,13 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   APROBADOS por el humano el 2026-10-09 y añadidos a requirements §6:
   `test_f037_r3_…` (una línea de datos, R20) y `test_f003_r8_…` (el conjunto
   de columnas suma las tres `partida_*`, R12). Hecho: T1-T5 (`686d00a`..
-  `3aed309`; transfer 742 passed). **Implementer reanudado desde T6.**
+  `3aed309`; transfer 742 passed). **Implementer TERMINADO (2026-10-09):**
+  T1-T15 hechas (informe `progress/impl_F-050.md`; mutación Python 158/158 y
+  JS 56/56 muertos; `init.sh` en verde). **Pendiente:** review; **T14 (líder):**
+  copiar a `azure-apps/dedicacion.md` lo nuevo de `docs/INTEGRACION.md` §5,
+  §3 y §7 (`POST /api/partidas/propuesta`, `GET …/partidas`, `PUT …/partida`,
+  `PROPUESTA_MESES_ATRAS`, orden transfer → api → front); **T16-T18 MANUAL
+  (humano)**, comandos exactos en el informe.
 
 ## Producción, hoy
 

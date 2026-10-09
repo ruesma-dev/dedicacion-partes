@@ -296,3 +296,29 @@ def test_f050_r19_var_igual_aunque_tenga_elegida():
     [ln] = _registro([_fila_r19(1, VAR_29, 80003, "CI.1.9")])
     assert ln["var_paride"] == 417055
     assert "paride" not in ln and "partida_cod" not in ln
+
+
+class _Filas:
+    def __init__(self, filas) -> None:
+        self._filas = filas
+
+    def all(self):
+        return list(self._filas)
+
+
+class _SesionLectura:
+    def __init__(self, filas) -> None:
+        self.filas = filas
+
+    def execute(self, stmt):
+        return _Filas(self.filas)
+
+
+def test_f050_r12_r18_las_lineas_del_trabajador_llevan_su_partida():
+    a = SimpleNamespace(obra_ide=7, es_postventa=False, trabajador_ide=14,
+                        porcentaje=Decimal("40.00"), **P)
+    repo = PgAsignacionRepository(_SesionLectura([(a, _orm_obra())]))  # type: ignore[arg-type]
+    [ln] = repo.lineas_de_trabajador(2, 14)
+    assert (ln.partida_ide, ln.partida_cod, ln.partida_fija) == (
+        80003, "CI.1.9", False)
+    assert repo.lineas_del_periodo(2)[14][0].partida_res == "ADMINISTRATIVO"
