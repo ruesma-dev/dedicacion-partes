@@ -1,27 +1,29 @@
 <!-- specs/F-050-subfilas-partida/design.md -->
 # F-050 · Diseño
 
-Escrito con las recomendadas de §11 (D1-D10 **abiertas**). Rigor `critico`.
+D1-D10 **DECIDIDAS (A) por el humano el 2026-10-09** (§11) con sus dos
+precisiones (mismo selector en el modal, R29; CD · CI · CP, R26). `critico`.
 
 ## 1. Límite de servicio
 
 - **La propuesta vive en el transfer**: lee `hmores` y `obrparpar` y usa
   `partida_matcher` (copia cerrada de `partes`), que ya están allí, y el
   preflight la necesita igual (R9). En la api habría que copiar el matcher
-  (prohibido) o tener dos verdades. Solo **lecturas**.
+  (prohibido) o tener dos verdades. Solo **lecturas**. El **mayor** de cada
+  partida también lo calcula el transfer (§5.1): el front solo filtra.
 - **La elegida vive en la api** (base `dedicacion`): es dato del cuadrante,
   se deshace con sus eventos y viaja al registro como hoy `paride`.
-- **El front** pinta y filtra lo que le sirven (orden y ámbito los manda el
-  transfer); no calcula propuesta ni decide qué se escribe.
+- **El front** pinta y filtra lo que le sirven (orden, mayor y ámbito los
+  manda el transfer); no calcula propuesta ni decide qué se escribe.
 - Nada es de otro microservicio; `partes` no se toca. Su selector (sv4,
-  `buildPartidaPicker`) es la referencia de F-043, mejorada (tildes,
-  palabras, teclado), sin copiar código.
+  `buildPartidaPicker`: Todas/CD/CI sobre `PartidaNodo.categoria`) es la
+  referencia, mejorada (CP, mayor por la raíz, tildes, teclado), sin copiarlo.
 
 ## 2. Encaje
 
 Front → api `GET …/partidas` → transfer `POST /api/partidas/propuesta`;
-front → api `PUT …/partida` (asignación + evento `PARTIDA`); registro como
-hoy, con `paride` = elegida y, sin elegida, `proponer_partida` (R9).
+front (columna o modal) → api `PUT …/partida` (asignación + evento); registro
+como hoy, con `paride` = elegida y, sin elegida, `proponer_partida` (R9).
 
 ## 3. Ficheros a crear
 
@@ -67,20 +69,37 @@ hoy, con `paride` = elegida y, sin elegida, `proponer_partida` (R9).
   código y esa descripción; si no, None.
 - `proponer_partida(nodos, historial, recurso, obra_ide, categoria, nombre)
   -> Propuesta | None`: pasos 1 y 2 y `resolver_normal` (método `auto_*`).
+- `mayor_de(nodos, nodo) -> "CD"|"CI"|"CP"|"OTRO"`: sube por `padide` hasta
+  la raíz (sin padre en `nodos`; corta ciclos) y aplica
+  `clasifica_categoria(raiz.cod, raiz.res)`; si da OTRO, `nodo.categoria`.
+- `catalogo(nodos)`: hojas activas `{ide, cod, res, categoria, mayor}`, orden natural.
+- `mayor_inicial(propuesta, nodos, categoria)`: mayor de la propuesta; sin
+  ella, `"CI"` si `ambito_categoria(categoria) == {"CI"}`; si no, None.
+
+**Por qué por la raíz** (Sigrid, 2026-10-09, solo lectura con el cliente
+del transfer; 0694, 0696, 0678 y 0404 de la empresa 1): raíces `CD` «COSTES
+DIRECTOS», `CI`/`CI0` «COSTES INDIRECTOS…» y `CP` «COSTES PROPORCIONALES»
+(hojas `CP.1`-`CP.12`, 10-14 por obra); `tipdes` es 0 siempre (la baja, no
+el tipo). `categoria` mira antes la descripción de la propia hoja y falla
+bajo `CD`: `01.19.03.20` «…PROPORCI…» (0694) sale CP, `1.4.1.8` «…COSTES
+INDIRECTOS…» (0404) sale CI. `mayor_de` no toca la copia cerrada; el
+casamiento sigue con `categoria`. La copia de `partes` filtra con ese
+`categoria`: **avisar al humano** (regla de las copias).
 
 Pipeline (`preflight`): si hay líneas normales sin `paride` ni
 `var_paride`, **una** `historial_partidas(resides, *ventana)`. La rama
 `manual` exige hoja activa de `nodos_origen` o omite con
 `MOTIVO_PARTIDA_NO_HOJA` (R20); la automática llama a `proponer_partida` y
 pone `a.partida_origen`. Avisos, capacidad, cuenta analítica y modo pruebas
-no cambian: el `paride` resultante sigue su camino de siempre.
+no cambian. `partidas_obra`/`_postventa` del preflight, como en F-049 pero
+ordenados y sin `mayor`: el front deja de leerlos.
 
 Endpoint: `PropuestaIn` (R8) → `RegistroPipeline.proponer(...)`, que
 reutiliza `_obra_origen`, `_destino_postventa` y las mismas lecturas →
-`{ok, partidas_obra, partidas_postventa, propuestas: {clave: {paride, cod,
-res, metodo, origen} | null}, ambitos: {clave: ["CI"] | ["CI","CD"]}}`.
-`empresa_valida` → 422; obra de otra empresa → 422 con
-`MOTIVO_EMPRESA_OBRA`; excepción → 502. No escribe nada.
+`{ok, partidas_obra, partidas_postventa` (de `catalogo`), `propuestas:
+{clave: {paride, cod, res, metodo, origen} | null}, mayor_inicial: {clave:
+"CD"|"CI"|"CP"|null}}`. `empresa_valida` → 422; obra de otra empresa → 422
+con `MOTIVO_EMPRESA_OBRA`; excepción → 502. No escribe nada.
 
 ### 5.2 Api
 
@@ -100,13 +119,17 @@ res, metodo, origen} | null}, ambitos: {clave: ["CI"] | ["CI","CD"]}}`.
 - `PartidasDeLinea` (`partidas_linea.py`): VAR → fija sin transfer; si no,
   una línea `clave="linea"` (obra, empresa de las obras, `recurso_ide` =
   `ide` del trabajador, nombre, categoría) a `propuesta_partidas`; fallo →
-  `PropuestaNoDisponible` (502, como `UniversoVarNoDisponible`).
+  `PropuestaNoDisponible` (502, como `UniversoVarNoDisponible`). `ambito` =
+  `mayor` de la elegida si su `ide` está en el catálogo servido; si no,
+  `mayor_inicial["linea"]` (R17). Solo busca en la lista: no clasifica.
 - Rutas: `GET .../trabajadores/{ide}/partidas?obra_ide=&es_postventa=` →
-  `PartidasOut {partidas, partidas_postventa, ambito, propuesta, elegida,
-  fija}`; `PUT .../trabajadores/{ide}/partida` con `PartidaIn {obra_ide,
-  es_postventa, partida: {ide > 0, cod, res} | null}` → `FilaOut`.
-- `registro_sigrid._payloads`: VAR igual; `overrides.get(a.id)` como hoy;
-  si no, `a.partida_ide` → `paride` y `partida_cod`.
+  `PartidasOut {partidas, partidas_postventa, ambito: "CD"|"CI"|"CP"|None,
+  propuesta, elegida, fija}`; `PUT .../trabajadores/{ide}/partida` con
+  `PartidaIn {obra_ide, es_postventa, partida: {ide > 0, cod, res} | null}`
+  → `FilaOut`.
+- `registro_sigrid._payloads`: VAR igual; `overrides.get(a.id)` como hoy (lo
+  sigue aceptando aunque el front ya no lo mande); si no, `a.partida_ide` →
+  `paride` y `partida_cod`.
 
 ### 5.3 Front (`app.js`)
 
@@ -121,26 +144,31 @@ res, metodo, origen} | null}, ambitos: {clave: ["CI"] | ["CI","CD"]}}`.
 - `construirCelda(t, clave, idx)`: `asignaciones` pinta el chip de la línea
   `idx` (mismas clases y avisos de F-024/F-034); `partida` pinta R24 y, si
   ABIERTO y no fija, su clic (`stopPropagation`) llama a
-  `abrirSelectorPartida(t, idx, td)`. `refrescarCeldasFila(t)` rehace
-  todas las `tr` del trabajador.
+  `abrirSelectorPartida(t.ide, linea.obra_ide, linea.es_postventa, td)`.
+  `refrescarCeldasFila(t)` rehace todas las `tr` del trabajador.
 - `trabajadoresVisibles`: rama de filtro `partida` y texto de partida en el
   pajar, **en línea** (el arnés node de F-041 no cambia) y sin tocar el
   literal `textoObra(...)` del pajar.
-- Puras (node): `textoPartida(p)`, `filtrarPartidas(partidas, texto,
-  ambito)` (`normalizar`; todas las palabras en `cod + " " + res`; ámbito
-  por `categoria`), `listaSelector(resp)` (propuesta primera, sin repetir,
-  resto en el orden servido) y `rotuloOrigen(metodo, origen)`.
-- `abrirSelectorPartida`: `await guardarAhora()` si es el trabajador en
-  edición; `GET …/partidas` (caché por trabajador, obra y modo; se vacía al
-  cambiar mes o empresa); panel con `posicionSugerencias` y
-  `colocarSugerencias` de F-042; sus teclas no llegan a `teclas`;
-  Enter o clic → `PUT …/partida` → `aplicarFila`.
-- Modal: `<select class="sel-partida" data-reg=…>` **literal igual**
-  (F-039 r22); mapa `registro_id → {trabajador, obra_ide, es_postventa}`
-  hecho en `pintarModalPreflight` con `recurso_ide` y la obra del grupo;
-  `change` → `PUT …/partida` → `repreflightPartida()`. Desaparece
-  `registro.overrides`; `pedirPreflight` manda solo `trabajador_ide`. Junto
-  al desplegable, `rotuloOrigen`.
+- Puras (node): `textoPartida(p)`, `textoPartidaAccion(a)` (`partida_cod`,
+  «partida N» sin código, «sin partida» con `paride` 0), `filtrarPartidas(
+  partidas, texto, mayor)` (`normalizar`, todas las palabras en `cod + " "
+  + res`; `mayor` null = Todas), `listaSelector(resp, texto, mayor)`
+  (propuesta primera si pasa, sin repetir) y `rotuloOrigen(metodo, origen)`.
+- `abrirSelectorPartida(trabajadorIde, obraIde, esPostventa, ancla,
+  despues)`: `await guardarAhora()` si es el trabajador en edición; `GET
+  …/partidas` (caché por trabajador, obra y modo; se vacía al cambiar mes o
+  empresa, y su clave tras cada PUT); panel `.panel-partida` en `<body>`
+  (F-042, `z-index` sobre `#modal-registro`): campo, botones Todas · CD ·
+  CI · CP (`mousedown` + `preventDefault`, uno `.on`, empieza en
+  `resp.ambito`), lista y «automática»; sus teclas no llegan a `teclas`;
+  Enter o clic → `PUT …/partida` → `aplicarFila` → `despues?.()`.
+- Modal (R29): en `escribir` no VAR, `<button type="button"
+  class="sel-partida" data-reg="${a.registro_id}">` con
+  `textoPartidaAccion(a)`, `rotuloOrigen` y aviso; VAR igual (F-039 r22).
+  `registro.lineas[registro_id] = {trabajador: a.recurso_ide, obra_ide del
+  grupo, es_postventa}`; `click` → `abrirSelectorPartida(…, boton,
+  repreflightPartida)`. Fuera `registro.overrides` y `opcionesPartida`:
+  `pedirPreflight` y `registroEjecutar` mandan `trabajador_ide` (y `pisar_claves`).
 
 ## 6. SQL
 
@@ -162,23 +190,28 @@ WHERE h.reside IN (?…) AND c.tip = ? AND a.cod LIKE 'M%'
   AND p.obride = m.obride AND (m.ano * 100 + m.mes) BETWEEN ? AND ?
 ```
 
-`truncated` → excepción (R7), como el resto del cliente.
+`truncated` → excepción (R7). El mayor sale del `obrparpar` que ya se lee.
 
 ## 7. Tests y dobles
 
 - Transfer: `propuesta_partida` en memoria (R1-R6, R10, empates, hoja de
-  baja, filas barajadas); pipeline con el `ClienteFalso` de `conftest.py`
-  + `historial_partidas` (R9, R20, R21, pruebas); endpoint con `TestClient`.
+  baja, filas barajadas; `mayor_de` con los dos casos reales de §5.1, raíz
+  `CI0`, OTRO y ciclo; `mayor_inicial`); pipeline con el `ClienteFalso` de
+  `conftest.py` + `historial_partidas` (R9, R20, R21); endpoint con
+  `TestClient`.
 - Api: `_Uow` de F-024 ampliado **dentro** de `test_f050_*` (R12-R16, R18,
   R19); rutas con la fixture `api` de F-024 y transfer falso (R13, R17).
-- Front: estáticos y lógica en node (`filtrarPartidas`, `listaSelector`,
-  `rotuloOrigen`, columnas y preferencias), como F-041 y F-049.
+- Front: estáticos y lógica en node (`filtrarPartidas` con los cuatro
+  botones, `listaSelector`, `textoPartidaAccion`, `rotuloOrigen`, columnas
+  y preferencias), como F-041 y F-049.
+- **Front, lista cerrada** (requirements §6): test a test en `tasks.md` T12
+  (seis `c_*` borrados; su intención pasa a `test_f050_*`, `textoPartidaAccion`).
 
 ## 8. Documentación (R30)
 
-`ARCHITECTURE.md`: punto 19 `#regla-partida` (R1-R4, R20) con su ancla,
-`asignacion` con partida y endpoints. `INTEGRACION.md`: los tres endpoints
-y el 502 de R17. READMEs de api y transfer: una fila por ruta.
+`ARCHITECTURE.md`: punto 19 `#regla-partida` (R1-R4, R20, mayor por la
+raíz) con su ancla, `asignacion` con partida y endpoints. `INTEGRACION.md`:
+los tres endpoints y el 502 de R17. READMEs de api y transfer: una fila/ruta.
 
 ## 9. Ficheros que NO se tocan
 
@@ -194,57 +227,23 @@ Las copias cerradas de `partes` (`partida_matcher`, `partida_catalog`,
 - **Catálogo por clic** (`BD`: 26.812 partidas): caché en el front; M2.
 - **Cambia lo que se escribe** en las automáticas: mutación completa y M3.
   R20 retiene overrides que hoy se escribían (D9). `rowSpan`: M2.
+- **Selector sobre el modal** (foco, overlay, Esc cierra solo el selector)
+  y **mayor preelegido** que esconde lo tecleado («Todas» a un clic): M2.
 
-## 11. Decisiones ABIERTAS (las decide el humano)
+## 11. Decisiones DECIDIDAS por el humano el 2026-10-09 (todas A)
 
-**D1 · «Parte anterior» (paso 1).** Abierta. **A (recomendada):** R1-R2:
-esa obra, periodo **incluido**, 24 meses, la de más `can`. Con el periodo
-incluido, si Administración ya metió la línea (0694, CI.1.5), se propone
-esa y el registro es un pisado, no una sobrecarga. B: solo el mes
-anterior. C: A sin el propio periodo. Tests: B/C, 2-3 casos de ventana.
+| D | Decidida (A) | Descartadas |
+|---|---|---|
+| D1 · Parte anterior | R1-R2: esa obra, periodo **incluido**, 24 meses, más `can` (0694 CI.1.5 de Administración ⇒ pisado, no sobrecarga) | B solo el mes anterior; C sin el propio periodo |
+| D2 · Último parte | Otra obra, trasladada con código **y** descripción iguales | B solo código; C solo descripción; D sin paso entre obras |
+| D3 · Cuándo y qué se guarda | Al abrir el selector y en el preflight; se guarda **solo la elegida** | B botón que guarda la propuesta; C al añadir la obra |
+| D4 · Dónde | Columnas de `asignacion` (§6, R12-R16); F7 no copia | B tabla aparte |
+| D5 · Postventa y VAR | R11: VAR fija; postventa con selector de `partidas_postventa` | B postventa fija |
+| D6 · Subfilas | `tr` con `rowSpan`, cursor y selección por trabajador, sin atajo nuevo ni velar | B líneas apiladas; A2 tecla P |
+| D7 · Modal | Se **guarda** (R13) y repite el preflight, con **el mismo selector** que la columna (precisión del humano), sin `overrides` | B solo para ese registro |
+| D8 · Excel | Sin cambios | B columna en tres hojas; C solo Detalle |
+| D9 · Elegida que ya no vale | R20: se omite y se elige otra | B automática con aviso; C escribirla |
+| D10 · F-054 y F-021 | Fuera; `partida_*` y `data-*` de subfila quedan listos | B velar ya aquí |
 
-**D2 · «Último parte del recurso» (paso 2).** Abierta. **A
-(recomendada):** otra obra, trasladada con código **y** descripción
-iguales: un `CI.*` no es el mismo rol en todas las obras. B: solo código.
-C: solo descripción. D: sin paso entre obras (paso 2 = esa obra más atrás;
-D1 pasa a B). Tests: casos del traslado en `test_f050_propuesta`.
-
-**D3 · Cuándo se calcula y qué se guarda.** Abierta. **A (recomendada):**
-al abrir el selector y, para las automáticas, en el preflight; se guarda
-**solo la elegida**. B: botón «Proponer partidas del mes» que guarda la
-propuesta marcada (`partida_origen`): más lecturas, y la base guarda lo
-que nadie eligió. C: al añadir la obra (guardar dependería de Sigrid).
-Tests: B añade ruta y lote; C cambia los de guardar.
-
-**D4 · Dónde se guarda.** Abierta. **A (recomendada):** columnas de
-`asignacion` (§6, R12-R16); F7 no copia (la partida suele ser de la
-persona: «JEFE DE OBRA (NOMBRE)»). B: tabla aparte: sobrevive sola a
-`reemplazar`, pero dos verdades y otro join. Tests: B, más dobles.
-
-**D5 · Postventa y VAR.** Abierta. **A (recomendada):** R11: VAR fija;
-postventa con selector de `partidas_postventa`, validada como hoy. B:
-postventa fija como VAR. Tests: B quita casos del selector.
-
-**D6 · Subfilas e interacción.** Abierta. **A (recomendada):** `tr` reales
-con `rowSpan` (§5.3), cursor y selección por trabajador, sin atajo nuevo,
-sin velar (F-021). B: una `tr` por trabajador con las líneas apiladas en
-las celdas (menos cambio, alineación frágil). A2: A + tecla P (selector de
-la primera automática). Tests: B no toca `construirFila`; A2 cambia
-`test_f029_r5`.
-
-**D7 · El modal.** Abierta. **A (recomendada):** R29: el cambio se
-**guarda** y se repite el preflight; sin `overrides` en el front. B: vale
-solo para ese registro (`overrides` de F-049). Tests: A, los cinco de
-requirements §6; B, ninguno de F-049.
-
-**D8 · Excel (F-045).** Abierta. **A (recomendada):** sin cambios. B:
-columna «Partida» tras «Obra» en las tres hojas. C: solo en Detalle.
-Tests: B/C, índices de `test_f040_excel` y `test_f045_excel_pestanas`.
-
-**D9 · Elegida que ya no vale.** Abierta. **A (recomendada):** R20, se
-omite y se elige otra en el modal. B: propuesta automática con aviso. C:
-se escribe igual (hoy). Tests: C quita R20.
-
-**D10 · F-054 y F-021.** Abierta. **A (recomendada):** fuera; `partida_*`
-y los `data-*` de subfila quedan listos para que F-054 guarde la partida
-de Sigrid y F-021 vele subfilas. B: velar ya aquí. Tests: B, los de velado.
+**Precisión 2 del humano (botones):** Todas · CD · CI · CP por **mayor**
+(§5.1), uno activo; preelegido el de R17. `partes` tenía Todas/CD/CI.

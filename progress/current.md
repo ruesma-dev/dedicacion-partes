@@ -19,8 +19,13 @@ front, sección siguiente). El arnés es la **1.7.3**.
   precisiones: el modal de registro usa **el mismo selector** que la columna
   Partida (desplegable con buscador, como en `partes`), y el selector lleva
   botones **CD · CI · CP** (y «Todas») para filtrar por mayor (se añade CP).
-- **Estado:** spec-author relanzado para reflejar las dos precisiones en la
-  spec (R8, R17, R26, R29 y design); después, implementer.
+- **Estado:** spec ajustada a las dos precisiones (2026-10-09): R8, R17,
+  R26, R29, design §5 y §11 (D1-D10 DECIDIDAS, A) y MANUAL T16-T17; lista
+  cerrada del front recalculada (T12, seis `c_*` de F-049 se borran). El
+  mayor se toma de la **raíz** del presupuesto (leído en Sigrid: `categoria`
+  de `partida_catalog` clasifica mal dos hojas bajo CD; la copia de
+  `partes` tiene el mismo fallo: avisar al humano, design §5.1). Siguiente:
+  implementer.
 
 ## ⚠ Despliegue de F-049 (pendiente; lo lanza el humano)
 
