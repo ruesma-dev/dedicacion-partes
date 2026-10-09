@@ -53,6 +53,8 @@
 > Esa noche, solo el transfer con F-047 (`dedicacion-transfer:r20261007-2029`; `SIGRID_MAX_ROWS` con su defecto, 200.000).
 > El **2026-10-08**, solo la api con F-045 (`dedicacion-api:r20261008-1509`; el Excel pasa a Obras, Postventa y Detalle, sin Resumen, con
 > la columna Observaciones; sin cambios de contrato).
+> El **2026-10-09**, transfer y front con F-049 (`dedicacion-transfer:r20261009-1045` y `dedicacion-front:r20261009-1046`; el preflight publica
+> `partidas_obra` aunque todas las líneas lleven partida manual; sin cambios de contrato).
 >
 > **Desde el 2026-10-01 el transfer desplegado escribe DE VERDAD**
 > (`OBRA_PRUEBAS_FORZAR=false`), por decisión expresa del humano, tomada a
