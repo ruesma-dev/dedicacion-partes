@@ -184,8 +184,8 @@ lectura ni escritura contra Sigrid ni Azure en esta implementación.
 
 **T16 · M1, solo lectura** (Git Bash, desde la raíz del repo):
 ```
-cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py propuesta --ano 2026 --mes 9 --obra 0694 --recurso <res.ide de GONZALEZ PANIAGUA>
-cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py propuesta --ano 2026 --mes 9 --obra 0696 --recurso <res.ide de GONZALEZ PANIAGUA>
+cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py propuesta --ano 2026 --mes 9 --obra 0694 --recurso 1705036
+cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py propuesta --ano 2026 --mes 9 --obra 0696 --recurso 1705036
 ```
 Esperado (0694): «Propuesta: CI.1.5 …», `método parte_anterior · origen parte
 PT26/00319 · 09/2026 · obra 0694`; «Por mayor: CD 727 · CI 95 · CP 13 · OTRO
