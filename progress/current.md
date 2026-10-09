@@ -1,10 +1,22 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución.** F-049 (avisos del modal de registro por tipo,
-repreflight al elegir partida, catálogo siempre) está cerrada en `dev` y
-**pendiente de desplegar** (transfer y front, sección siguiente). El arnés es la
-**1.7.3**.
+**F-050 en spec en esta rama** (`feature/F-050-subfilas-partida`, copia
+principal): subfilas por obra en el cuadrante con columna Partida y partida
+propuesta. F-049 está cerrada en `dev` y **pendiente de desplegar** (transfer y
+front, sección siguiente). El arnés es la **1.7.3**.
+
+## F-050 · Subfilas por obra con columna Partida (en spec)
+
+- **Qué es** (humano, 2026-10-08): cada obra del trabajador en su subfila, con
+  una columna Partida a la derecha para elegirla en el cuadrante (el modal de
+  registro deja de ser donde se busca, aunque se pueda cambiar ahí); propuesta:
+  1) la del parte anterior por obra y empleado, 2) la del último parte en que
+  se asignó ese recurso, 3) el casamiento de `partes` (nombre y categoría).
+  Absorbe F-043 (buscador predictivo, ordenado y con selector CI/CD). Toca los
+  tres servicios; rigor crítico.
+- **Estado:** el humano dice «vamos con la f50» (2026-10-09). Spec-author
+  lanzado; la spec vuelve con decisiones abiertas para el humano.
 
 ## ⚠ Despliegue de F-049 (pendiente; lo lanza el humano)
 
