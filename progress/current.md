@@ -15,8 +15,9 @@ front, sección siguiente). El arnés es la **1.7.3**.
   se asignó ese recurso, 3) el casamiento de `partes` (nombre y categoría).
   Absorbe F-043 (buscador predictivo, ordenado y con selector CI/CD). Toca los
   tres servicios; rigor crítico.
-- **Estado:** el humano dice «vamos con la f50» (2026-10-09). Spec-author
-  lanzado; la spec vuelve con decisiones abiertas para el humano.
+- **Estado:** `spec_ready` (2026-10-09): spec en
+  `specs/F-050-subfilas-partida/`; D1-D10 ABIERTAS, las decide el humano
+  (design §11; recomendada A en todas).
 
 ## ⚠ Despliegue de F-049 (pendiente; lo lanza el humano)
 
