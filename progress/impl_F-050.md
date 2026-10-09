@@ -9,22 +9,14 @@ y recogidas en requirements §6: `test_f037_r3_…` (T3) y `test_f003_r8_…` (T
 
 ## Qué cambió
 
-**Transfer** (propone la partida, calcula el mayor, solo lee):
-- `application/services/propuesta_partida.py` (nuevo, puro): `proponer_partida`
-  (parte anterior → último parte → casamiento), `previa_en_obra`,
-  `ultima_de_recurso`, `mayor_de` (por la raíz), `catalogo`,
-  `mayor_inicial`, `clave_orden_codigo` (orden natural), `ventana`,
-  `MOTIVO_PARTIDA_NO_HOJA`.
-- `sigrid_write_client.historial_partidas` (SQL de design §6, lotes de 500,
-  `truncated` = error); ajuste `PROPUESTA_MESES_ATRAS` (24) y `.env.example`.
-- `registro_pipeline`: una lectura del historial por petición con los
-  recursos de las líneas automáticas; la propuesta sustituye a
-  `resolver_normal`; R20 (elegida que no es hoja activa → omitida con
-  motivo); `AccionLinea.partida_origen`; `_cat` en orden natural;
-  `RegistroPipeline.proponer` y `POST /api/partidas/propuesta` (422/502).
-- `prueba_escritura_porcentajes.py propuesta --obra --recurso [--ano --mes
-  --categoria --nombre]`: solo lectura, catálogo con su mayor, recuento por
-  CD/CI/CP/OTRO, propuesta con método, origen y botón, segundos por lectura.
+**Transfer** (solo lee): `propuesta_partida.py` nuevo y puro (pasos 1-3,
+`mayor_de` por la raíz, `catalogo` y `clave_orden_codigo` en orden natural,
+`mayor_inicial`, `ventana`); `historial_partidas` (SQL de design §6, lotes de
+500, `truncated` = error) y `PROPUESTA_MESES_ATRAS` (24); pipeline con UNA
+lectura del historial, la propuesta en vez de `resolver_normal`, R20,
+`partida_origen` y `_cat` ordenado; `proponer` + `POST /api/partidas/propuesta`
+(422/502); fase `propuesta` del script (`--obra --recurso [--ano --mes
+--categoria --nombre]`, catálogo con mayor, recuento, propuesta y segundos).
 
 **Api** (guarda la elegida): `AsignacionORM.partida_ide/cod/res`
 (nulables, DDL derivado al arrancar); `Linea.partida_*` y `partida_fija`;
@@ -36,17 +28,12 @@ solo si hay), `_validar_lineas`, `_conservar_partidas` en
 (502 `PropuestaNoDisponible`); `TransferClient.propuesta_partidas`;
 `LineaOut` con los cuatro campos de R18; registro con `paride` = elegida.
 
-**Front**: columna `partida` (tras obras, también en preferencias viejas),
-subfilas (`DocumentFragment`, `rowSpan`, `data-linea`), celda Partida
-(elegida / «automática» / fija), filtro «Partida» línea a línea y buscador
-con la partida; selector (`abrirSelectorPartida` / `montarSelectorPartida`,
-buscador sin tildes ni mayúsculas, Todas · CD · CI · CP, propuesta primera
-con su origen, «automática», ↑ ↓ Enter Esc, caché, PUT y repintado); modal:
-botón `.sel-partida` con `textoPartidaAccion` y `rotuloOrigen` que abre el
-mismo selector y repite el preflight; fuera `overrides` y `opcionesPartida`.
-
-**Docs**: `#regla-partida` (punto 19) en `ARCHITECTURE.md`, endpoints y
-tabla; `INTEGRACION.md` §3, §5, §7; READMEs de api y transfer; `ANCLAS`.
+**Front**: columna `partida` (también en preferencias viejas), subfilas
+(`rowSpan`, `data-linea`), celda elegida / «automática» / fija, filtro y
+buscador con la partida; selector (buscador, Todas · CD · CI · CP, propuesta
+primera con su origen, «automática», teclas, caché, PUT); en el modal, botón
+`.sel-partida` que abre ese selector y repite el preflight; sin `overrides`.
+**Docs**: `#regla-partida` (punto 19), `INTEGRACION.md` §3 §5 §7, READMEs.
 
 ## Decisiones y desviaciones (justificadas)
 
@@ -205,18 +192,10 @@ PT26/00319 · 09/2026 · obra 0694`; «Por mayor: CD 727 · CI 95 · CP 13 · OT
 …»; `01.19.03.20` sale con `CD`, `CP.1`-`CP.12` con `CP`; botón preelegido
 CI; cada «lectura …» < 30 s (si no, PARAR: design §10).
 
-**T17 · M2, navegador en modo pruebas**: en tres consolas de Git Bash, en
-este orden, `cd services/dedicacion-transfer && .venv/Scripts/python main.py`,
-`cd services/dedicacion-api && .venv/Scripts/python main.py`, `cd
-services/dedicacion-front && .venv/Scripts/python main.py`; `curl -s
-http://localhost:8006/health` debe decir `"modo_pruebas": true`. En
-`http://localhost:8080`, septiembre 2026, los puntos (a)-(f) de `tasks.md`
-T17 (subfilas y columna; selector en la 0694 con CI preelegido, «jefe» y
-«JÉFE», CD · CI · CP · Todas, «Sin partidas con ese filtro», ↑ ↓ Enter,
-Ctrl+Z; `Postv-` y `VAR-NN`; regresión de teclas y filtros; modal con
-«MODO PRUEBAS», botón de partida que abre el mismo selector y Esc que lo
-cierra sin cerrar el modal; **Cancelar, sin Registrar**; tiempo en la 0696).
-La api añade al arrancar las tres columnas `partida_*` a la base local.
+**T17 · M2, navegador en modo pruebas**: comandos exactos y puntos (a)-(f)
+en `tasks.md` T17 (tres consolas: transfer, api, front; `curl -s
+http://localhost:8006/health` con `"modo_pruebas": true`; **Cancelar, sin
+Registrar**). La api añade al arrancar las columnas `partida_*` a la base.
 
 **T18 · M3, registro en pruebas** (solo con autorización del humano en ese
 momento): con T17 arrancado, «⇪ Sigrid» → Registrar en un trabajador con
@@ -229,10 +208,10 @@ en la 0404 con `PRUEBA-PORC` y su `paride` el elegido; anotar en
 
 | Evidencia | Valor real |
 |---|---|
-| `bash harness/init.sh` (tal cual, sin `.arnes_cache/suite_*.ok`) | VER_INIT |
-| Tests por servicio (ejecutados, no caché) | VER_SUITES |
+| `bash harness/init.sh` (tal cual, sin `.arnes_cache/suite_*.ok`) | código 0, **ENTORNO LISTO**; todo `[OK]` salvo el `[AVISO]` de `ruff` (237, deuda previa); `PUERTA TAMAÑO` impl 217/220 |
+| Tests por servicio (ejecutados, no caché) | raíz **418 passed, 1 skipped** (92,39 s); api **768 passed** (77,71 s); front **184 passed** (33,46 s; node v24.14.1); transfer **750 passed** (17,23 s) |
 | Tests nuevos de F-050 | transfer `test_f050_propuesta` 47, `test_f050_pipeline` 24, `test_f050_endpoint_propuesta` 19; api `test_f050_partida_linea` 23, `test_f050_rutas_partida` 30; front `test_f050_subfilas` 16, `test_f050_selector_partida` 19, `test_f050_modal_registro` 14 |
-| Cobertura de las líneas cambiadas | VER_COBERTURA |
+| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 341 líneas cambiadas cubiertas (341/341, umbral 80%, nivel critico)` (Python; el JS no se mide: lo cubre la campaña manual) |
 | Mutantes Python | **158 generados, 0 supervivientes** (final; la primera, 160/16), 1236,8 s, 1 worker, sin muestreo |
 | Mutantes JS (manual) | **56 generados, 0 supervivientes** (final; la primera, 56/4), 785,5 s en serie |
 | ruff | 237 avisos, los mismos de antes (los ficheros de F-050 no añaden ninguno) |
