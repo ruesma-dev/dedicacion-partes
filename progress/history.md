@@ -2429,3 +2429,11 @@ pintarModalPreflight({obras: [{obra: {codigo: "0694", nombre: "Prueba F-049 c/e"
      «Registrar»** (lanzaría el registro del periodo contra la 0404).
      **Cancelar.**
   Resultado: **todo ok** (humano, 2026-10-09).
+
+## 2026-10-09 · Despliegue de F-049 (transfer y front)
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1 -Solo transfer,front`
+desde `dev`: `transfer:r20261009-1045` y `front:r20261009-1046`, revisiones
+`…--r20261009104454` en `Running`; el transfer sigue en modo real
+(`OBRA_PRUEBAS_FORZAR=false`), comprobado por el líder (solo lectura). Sin
+contrato nuevo. `azure-apps` actualizado en el mismo trabajo.

@@ -1,12 +1,12 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-050 en spec en esta rama** (`feature/F-050-subfilas-partida`, copia
+**F-050 en curso en esta rama** (`feature/F-050-subfilas-partida`, copia
 principal): subfilas por obra en el cuadrante con columna Partida y partida
-propuesta. F-049 está cerrada en `dev` y **pendiente de desplegar** (transfer y
-front, sección siguiente). El arnés es la **1.7.3**.
+propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
+**1.7.3**.
 
-## F-050 · Subfilas por obra con columna Partida (en spec)
+## F-050 · Subfilas por obra con columna Partida (en curso)
 
 - **Qué es** (humano, 2026-10-08): cada obra del trabajador en su subfila, con
   una columna Partida a la derecha para elegirla en el cuadrante (el modal de
@@ -24,22 +24,19 @@ front, sección siguiente). El arnés es la **1.7.3**.
   cerrada del front recalculada (T12, seis `c_*` de F-049 se borran). El
   mayor se toma de la **raíz** del presupuesto (leído en Sigrid: `categoria`
   de `partida_catalog` clasifica mal dos hojas bajo CD; la copia de
-  `partes` tiene el mismo fallo: avisar al humano, design §5.1). Siguiente:
-  implementer.
-
-## ⚠ Despliegue de F-049 (pendiente; lo lanza el humano)
-
-- Cambian **transfer y front**, en ese orden (`.\redeploy_dedicacion.ps1 -Solo
-  transfer,front`, desde `dev`, con `00_vars_dedicacion.ps1`,
-  `00_vars_dedicacion.local.ps1` y `00_capps_vars_dedicacion.ps1` cargados). Sin
-  DDL, sin sync, sin variables nuevas. El transfer conserva el modo real.
-- **Comprobación (sin pulsar «Registrar»):** Ctrl+F5, septiembre 2026, «⇪
-  Sigrid» en GONZALEZ PANIAGUA: en la 0694 salen «Sin partida» y «Sobrecarga»
-  (ya tiene MADM 95 %), rotulados, con su %; elegir una partida quita su aviso.
-  **Cancelar.**
+  `partes` tiene el mismo fallo: avisado al humano el 2026-10-09, design §5.1).
+  `dev` traído a la rama. **Implementer lanzado.**
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-09: F-049**, transfer `r20261009-1045` y front
+  `r20261009-1046` (ambos `Running`; el transfer sigue en **modo real**,
+  comprobado con `az containerapp show`): avisos del modal rotulados por tipo,
+  repreflight al elegir partida y catálogo de partidas siempre. **Pendiente
+  del humano:** la comprobación en producción (GONZALEZ PANIAGUA, 0694: «Sin
+  partida» y «Sobrecarga»; **no confirmar la sobrecarga**, el 95 % ya está a
+  mano). El texto de `redeploy_dedicacion.ps1` que dice «SIGUE en modo
+  pruebas» está caducado.
 - **Desplegado el 2026-10-08: F-045**, solo la api (`r20261008-1509`, revisión
   `Running` comprobada con `az containerapp show`): el Excel lleva Obras,
   Postventa y Detalle (sin Resumen) y la columna Observaciones vacía.
@@ -127,7 +124,7 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-F-049 cerrada (pendiente de desplegar). Orden: **F-055** (medir y acelerar la
+F-049 desplegada. Orden: F-050 (en curso, esta rama), **F-055** (medir y acelerar la
 previsualización del registro; 2026-10-08), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
