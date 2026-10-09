@@ -85,8 +85,11 @@ Endpoints bajo `/api/v1`: `health`, `sync` y `sync/preview`, CRUD de
 atómica de asignaciones por trabajador, `deshacer` (solo lo propio,
 [`#regla-deshacer`](#regla-deshacer)), `completar` (lote «completar al
 100 %» en una obra, [`#regla-completar`](#regla-completar)), `export.xlsx`,
-`registro/preflight` + `registro/ejecutar` y `empresas` (las del selector,
-con su nombre de Sigrid y si están de baja).
+`registro/preflight` + `registro/ejecutar`, `empresas` (las del selector,
+con su nombre de Sigrid y si están de baja) y, por línea, `trabajadores/{ide}/
+partidas` (catálogo, propuesta y botón preelegido del selector, que calcula
+el transfer) y `trabajadores/{ide}/partida` (cambiar la partida elegida),
+[`#regla-partida`](#regla-partida), F-050.
 
 Tablas de PostgreSQL: `trabajador`, `obra` (copias sincronizadas de Sigrid,
 PK = el `ide` de Sigrid: en `trabajador`, el `res.ide` de su **recurso**,
@@ -99,8 +102,10 @@ ninguna obra con 6 o más dígitos seguidos en el código,
 [`#regla-seis-digitos`](#regla-seis-digitos), F-039), `empresa` (catálogo `auxemp` de Sigrid, PK =
 `numemp`, que es el `con.emp` de las fichas; F-032), `periodo` (año+mes único, `ABIERTO`/`CERRADO`),
 `asignacion` (periodo × trabajador × obra × `es_postventa`, `porcentaje` en
-0-100) y `evento` (auditoría con `snapshot_antes` / `snapshot_despues` en
-JSONB, que es lo que permite deshacer multinivel).
+0-100 y la partida ELEGIDA, `partida_ide` / `partida_cod` / `partida_res`,
+nulas = automática, [`#regla-partida`](#regla-partida)) y `evento`
+(auditoría con `snapshot_antes` / `snapshot_despues` en JSONB, que es lo
+que permite deshacer multinivel).
 
 ### `dedicacion-front` — captura, nada más
 
@@ -123,6 +128,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 - `POST /api/registro/ejecutar` — pasos 9-10: crear los partes que falten
   (`con` + `hmo` con alta protegida, releyendo el periodo) y borrar las
   pisadas confirmadas + insertar las líneas nuevas, por lotes.
+- `POST /api/partidas/propuesta` — solo lectura: catálogo de la obra con el
+  mayor de cada partida y la partida propuesta de cada línea, con la misma
+  función que el preflight ([`#regla-partida`](#regla-partida), F-050).
 
 `application/services/reglas_porcentajes.py` concentra las reglas P1-P5;
 `application/pipelines/registro_pipeline.py` las orquesta;
@@ -136,7 +144,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad`,
 > `#regla-sin-partida`, `#regla-pruebas`, `#regla-empresa`,
 > `#regla-recurso`, `#regla-deshacer`, `#regla-completar`,
-> `#regla-analitica`, `#regla-var` y `#regla-seis-digitos`; no vuelven a
+> `#regla-analitica`, `#regla-var`, `#regla-seis-digitos` y
+> `#regla-partida`; no vuelven a
 > enunciar la regla con palabras propias. Lo vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
@@ -643,13 +652,62 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     *Decidido por Pablo Gris el 2026-10-06 (D4: «si tienen 6 números
     seguidos también ignóralas»; D5 = A) · F-039,
     `specs/F-039-obras-var-y-seis-digitos/requirements.md`.*
+19. <a id="regla-partida"></a>**La partida de cada línea: la elegida o la
+    propuesta.** Cada línea del cuadrante (obra + modo) puede llevar una
+    partida **elegida** en el cuadrante o en el modal de registro; si no la
+    lleva, es **automática** y se registra con la **propuesta**.
+
+    - **La propuesta, solo en el transfer** (una línea de obra normal sin
+      elegida), la del primer paso que dé una: (1) **parte anterior**: el mes
+      más reciente con líneas `M*` del recurso en un parte de trabajo de
+      **esa obra**, del periodo del cuadrante (incluido) hacia atrás hasta
+      `PROPUESTA_MESES_ATRAS` meses; (2) **último parte**: el mes más
+      reciente del recurso en **otra** obra, trasladado a esta por código
+      **y** descripción iguales; (3) el **casamiento** por nombre y
+      categoría de `partes` (`resolver_normal`). En (1) y (2) gana la
+      partida (o el par código-descripción) con más `can` sumado en ese
+      mes; un empate, o un traslado a cero o a varias hojas, hace que ese
+      paso no proponga, nunca «la primera». El orden de las filas no cambia
+      nada.
+    - **Qué líneas cuentan:** las de partes de trabajo (`con.tip` del
+      ajuste) con hora `M*`, `paride` ≠ 0 y partida del presupuesto de la
+      obra de su parte (no cuentan las escritas en la obra de pruebas). Toda
+      propuesta es **hoja activa** del presupuesto de la obra de origen,
+      también en modo pruebas. El historial se lee en **una** lectura por
+      petición; si falla o viene `truncated`, la petición falla sin proponer
+      ni escribir.
+    - **La misma función** propone en el selector
+      (`POST /api/partidas/propuesta`) y en el preflight: lo que se ve es lo
+      que se registra. En postventa la propuesta es el casado de
+      [`#regla-p5`](#regla-p5); una entrada VAR tiene su partida fija
+      ([`#regla-var`](#regla-var)).
+    - **La elegida** se guarda en la asignación (api). Guardar la fila
+      conserva la de cada línea que ya existía; la nueva entra automática.
+      Cambiarla deja un evento `PARTIDA`, que se deshace como cualquier otro
+      ([`#regla-deshacer`](#regla-deshacer)); las copias del mes anterior la
+      copian. Al registrar viaja como `paride`.
+    - **La elegida que ya no vale no se escribe:** si no es hoja activa del
+      presupuesto de la obra de origen, la línea se omite con un motivo que
+      nombra la partida, sin aviso de «sin partida»; se elige otra.
+    - **El mayor** (CD, CI, CP u OTRO) de una partida es el de la **raíz**
+      del presupuesto de la que cuelga (`CD`, `CI`/`CI0`, `CP`), no el de su
+      propia descripción; si la raíz no lo dice, el de la categoría de la
+      hoja. Lo calcula el transfer; el selector solo filtra por él (botones
+      Todas · CD · CI · CP) y sale con el de la elegida o, sin ella, el de
+      la propuesta (o CI para las categorías de mando).
+    - Los catálogos de partidas salen en **orden natural** del código
+      (`CI.1.9` antes que `CI.1.10`).
+
+    *Decidido por Pablo Gris el 2026-10-09 (D1-D10 = A, el mismo selector
+    en el modal y los botones CD · CI · CP) · F-050,
+    `specs/F-050-subfilas-partida/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 
 | Sistema | Quién | Modo | Notas |
 |---|---|---|---|
 | `sigrid-api` (Function App) | api | **solo lectura** (`POST /api/sql/read`) | maestros de empleados y obras y catálogo de empresas (`auxemp`, F-032); consultas parametrizadas en `config/config.yaml` |
-| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura). Lee además partes del periodo con su estado, cuentas analíticas del centro y cuentas de partida ([`#regla-analitica`](#regla-analitica)); un `truncated` es error |
+| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura). Lee además partes del periodo con su estado, cuentas analíticas del centro y cuentas de partida ([`#regla-analitica`](#regla-analitica)) y el historial de partidas de los recursos ([`#regla-partida`](#regla-partida)); un `truncated` es error |
 | PostgreSQL `dedicacion` | api | lectura y escritura | en local, `localhost`. Desplegado, **base propia dentro del servidor compartido `psql-albaranes-rs9k2`** (decisión del humano, 2026-08-20), esquema `public`, rol de aplicación propio y `PG_SSLMODE=require` |
 | `dedicacion-transfer` | api | HTTP interno | `TRANSFER_BASE_URL`, timeout 180 s |
 
