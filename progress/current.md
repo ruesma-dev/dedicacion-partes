@@ -25,31 +25,11 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   mayor se toma de la **raíz** del presupuesto (leído en Sigrid: `categoria`
   de `partida_catalog` clasifica mal dos hojas bajo CD; la copia de
   `partes` tiene el mismo fallo: avisado al humano el 2026-10-09, design §5.1).
-  `dev` traído a la rama. **Estuvo bloqueada en T3 (implementer, 2026-10-09):**
-  R20 (D9, omitir la elegida que no es hoja activa del presupuesto de
-  origen) rompe `test_f037_pipeline.py::test_f037_r3_una_linea_sin_partida_no_hereda_la_de_otra`,
-  que NO está en la lista cerrada (requirements §6): su línea manual lleva
-  `paride=1`, que no existe en el presupuesto de origen del doble, y ahora
-  se omite. Propuesta (probada en local, pasa): añadir a la lista cerrada ese
-  test con UNA línea nueva dentro de él, `cli.partidas_origen =
-  PRESUPUESTO_ORIGEN + [_fila(1, 80000, 9, "CI.9", "VARIOS")]` (la partida 1
-  pasa a ser hoja activa), sin tocar sus aserciones. Hecho: T1 (`686d00a`)
-  y T2 (`f2c54f8`); T3 a medias en `git stash` («F-050 T3 en curso…»; con
-  él, transfer 724 passed y solo falla ese test). **El humano lo APRUEBA el
-  2026-10-09 («si»)**: test añadido a la lista cerrada, solo con esa línea de
-  datos. **Reanudada y BLOQUEADA de nuevo en T6 (implementer, 2026-10-09):**
-  T3-T5 hechas (`ca9443b`, `948613b`, `3aed309`; transfer 742 passed).
-  Las tres columnas `partida_*` de `AsignacionORM` (R12, D4) rompen
-  `services/dedicacion-api/tests/test_f003_esquema.py::test_f003_r8_la_tabla_queda_con_las_previas_mas_las_seis`,
-  que NO está en la lista cerrada (design §6 daba `test_f003` por intacto,
-  pero r8 compara el conjunto ENTERO de columnas de `asignacion`). Probado en
-  local: es el ÚNICO test de la api fuera de la lista que cambia (con ORM,
-  `Linea` y `LineaOut` ya ampliados solo fallan además los de
-  `test_f034_rutas`, que sí están). Propuesta: añadirlo a la lista con UN
-  cambio de datos, `assert presentes == set(COLUMNAS_PREVIAS) |
-  set(COLUMNAS_TRAZA) | {"partida_ide", "partida_cod", "partida_res"}`; el
-  resto de `test_f003` (DDL derivado de las `sigrid_*`) no cambia. Falta
-  decisión del humano.
+  `dev` traído a la rama. Dos bloqueos por tests fuera de la lista cerrada, los dos
+  APROBADOS por el humano el 2026-10-09 y añadidos a requirements §6:
+  `test_f037_r3_…` (una línea de datos, R20) y `test_f003_r8_…` (el conjunto
+  de columnas suma las tres `partida_*`, R12). Hecho: T1-T5 (`686d00a`..
+  `3aed309`; transfer 742 passed). **Implementer reanudado desde T6.**
 
 ## Producción, hoy
 

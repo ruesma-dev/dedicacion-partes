@@ -4,9 +4,8 @@
 Rigor **`critico`** (la partida decide qué se escribe en Sigrid); toca los
 **tres servicios** (design §1); **absorbe F-043**. Pedida el 2026-10-08.
 **D1-D10: DECIDIDAS por el humano el 2026-10-09, todas A** (design §11; R
-marcados `[Dn]`), con dos precisiones suyas: el modal usa **el mismo
-selector** que la columna (R29) y el selector filtra por mayor **CD · CI ·
-CP** (R26).
+marcados `[Dn]`); precisiones suyas: el modal usa el mismo selector que la
+columna (R29), con filtro por mayor **CD · CI · CP** (R26).
 
 Fuera de alcance: F-051 (pisar al 0 %), F-044 (vinculados), F-054, F-021,
 el Excel (D8) y dos partidas para una misma línea. Glosario: **elegida** =
@@ -140,9 +139,10 @@ raíz del presupuesto de la que cuelga la partida (design §5.1).
 - Front (R29 quita `<select>`, `opcionesPartida` y `overrides`): los de
   `test_f039_partida_fija`, `test_f049_avisos_registro` y `test_f049_
   ampliacion_registro` que nombra `tasks.md` T12 (parte de esta lista).
-- `test_f037_r3_una_linea_sin_partida_no_hereda_la_de_otra` (humano, 2026-10-09):
-  una línea de datos (partida 1 en `cli.partidas_origen`, R20), sin tocar aserciones.
-Cualquier otro test que cambie: **PARA** y se pregunta al humano.
+- Añadidos por el humano el 2026-10-09: `test_f037_r3_una_linea_sin_partida_no_
+  hereda_la_de_otra` (partida 1 en `cli.partidas_origen`, R20) y `test_f003_r8_…`
+  (el conjunto esperado suma las tres `partida_*`, R12); sin otras aserciones.
+  Cualquier otro test que cambie: **PARA** y se pregunta al humano.
 
 ## 7. Verificación MANUAL (humano)
 
