@@ -2008,7 +2008,11 @@ document.addEventListener("DOMContentLoaded", init);
 // modal se GUARDA en el cuadrante: no viaja en el cuerpo del registro.
 const registro = { pisar: new Set(), trabajadorIde: null, seq: 0, lineas: {} };
 
+// Abrir o repintar el modal cierra el selector de partida que hubiera,
+// también uno que aún cargaba (F-050, M2 punto 4): no puede quedar colgando
+// del cuadrante de detrás ni de una línea que el repintado ya ha quitado.
 function abrirModal(html) {
+  cerrarSelectorPartida();
   const ov = $("#modal-registro");
   ov.innerHTML = `<div class="modal">${html}</div>`;
   ov.classList.remove("oculto");

@@ -301,9 +301,9 @@ SELECTOR = ("normalizar", "filtrarPartidas", "listaSelector", "rotuloOrigen",
             "abrirSelectorPartida", "montarSelectorPartida")
 
 
-def _escenario(cuerpo: str, extra=()) -> dict:
+def _escenario(cuerpo: str, extra=(), prefijo: str = "") -> dict:
     return _node("\n".join([
-        DOM, ESCAPE, _const("selector"),
+        DOM, prefijo, ESCAPE, _const("selector"),
         *(_funcion(f) for f in (*SELECTOR, *extra)),
         "(async () => { const obs = {};", cuerpo,
         "process.stdout.write(JSON.stringify(obs)); })();"]))
@@ -397,3 +397,50 @@ def test_f050_m2_3_un_error_cierra_el_panel_y_uno_viejo_calla():
     paneles, toasts = obs["viejo"]
     assert len(paneles) == 1 and CARGANDO in paneles[0]
     assert toasts == ["transfer caído"]
+
+
+# ============== 4 · en el modal, encima y anclado a su línea ============== #
+MODAL = r"""
+const ov = nodo("div");
+ov.classList = {remove() { ov.visible = true; }, add() {}, contains: () => false};
+const $ = (s) => s === "#modal-registro" ? ov : null;
+"""
+
+
+def test_f050_m2_4_abrir_el_modal_cierra_el_selector_aunque_cargue():
+    """El de la columna Partida que aún cargaba no aparece luego encima del
+    modal colgado del cuadrante de detrás."""
+    obs = _escenario("""
+      const celda = nodo("td");
+      abrirSelectorPartida(77, 694, false, celda);
+      abrirModal("<h2>Registrar</h2>");
+      obs.tras_abrir = [paneles().length, escuchas.length, ov.visible];
+      llamadas[0].res(resp("CI.1.5")); await tick();
+      obs.tras_respuesta = paneles().length;
+      abrirSelectorPartida(77, 694, false, celda); await tick();
+      abrirModal("<h2>otra vez</h2>");
+      obs.cargado_y_abrir = paneles().length;
+    """, extra=("abrirModal",), prefijo=MODAL)
+    assert obs["tras_abrir"] == [0, 0, True]
+    assert obs["tras_respuesta"] == 0
+    assert obs["cargado_y_abrir"] == 0
+
+
+def test_f050_m2_4_sale_junto_al_boton_del_modal_desde_el_primer_momento():
+    obs = _escenario("""
+      const boton = nodo("button"); ov.appendChild(boton);
+      boton.rect = {top: 400, bottom: 424, left: 300};
+      abrirSelectorPartida(77, 694, false, boton, () => {});
+      const p = paneles()[0];
+      obs.cargando = [p.padre === body, p.style.top, p.style.left];
+      llamadas[0].res(resp("CI.1.5")); await tick();
+      obs.cargado = [paneles()[0] === p, p.style.top, p.style.left];
+    """, prefijo=MODAL)
+    assert obs["cargando"] == [True, "428px", "300px"]
+    assert obs["cargado"] == [True, "428px", "300px"]
+
+
+def test_f050_m2_4_el_panel_va_por_encima_del_modal():
+    def z(selector):
+        return int(re.search(r"z-index:\s*(\d+)", _regla(selector)).group(1))
+    assert z(".panel-partida") > z(".modal-overlay")
