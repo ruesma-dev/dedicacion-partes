@@ -201,8 +201,9 @@ def test_f050_r29_el_front_ya_no_manda_overrides_ni_lee_catalogos():
 
 def test_f050_r29_pedir_y_ejecutar_mandan_el_trabajador():
     pedir = " ".join(_funcion("pedirPreflight").split())
-    assert "JSON.stringify({ trabajador_ide: registro.trabajadorIde })" \
-        in pedir
+    # T15c (M2, punto 5): con la obra cuando se repite el de una línea.
+    assert ("JSON.stringify({ trabajador_ide: registro.trabajadorIde, "
+            "obra_ide: obraIde })") in pedir
     ejecutar = " ".join(_funcion("registroEjecutar").split())
     assert ("pisar_claves: pisar, trabajador_ide: registro.trabajadorIde,"
             in ejecutar)
@@ -294,7 +295,7 @@ def test_f050_r27_r29_elegir_en_el_modal_guarda_y_repite_el_preflight():
          {"obra_ide": 694, "es_postventa": False,
           "partida": {"ide": 80002, "cod": "CI.1.20", "res": "JEFE"}}],
         ["/periodos/2026/9/registro/preflight", "POST",
-         {"trabajador_ide": 77}]]
+         {"trabajador_ide": 77, "obra_ide": 694}]]      # T15c, punto 5
     assert obs["filas"] == [77]
     assert obs["cache"] == []
 

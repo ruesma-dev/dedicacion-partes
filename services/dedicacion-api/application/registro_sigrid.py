@@ -127,11 +127,17 @@ class RegistroSigrid:
     def preflight(self, anio: int, mes: int,
                   overrides: Optional[dict[int, int]] = None,
                   trabajador_ide: Optional[int] = None,
-                  empresa: int | None = None) -> dict:
+                  empresa: int | None = None,
+                  obra_ide: Optional[int] = None) -> dict:
+        """`obra_ide` (F-050, M2 punto 5): solo la petición de esa obra, la
+        del grupo (la de registro en las entradas VAR). Es lo que repite el
+        modal al cambiar una partida, en vez del mes entero."""
         with self._sf() as s:
             payloads, no_vigentes = self._payloads(
                 s, anio, mes, overrides or {}, trabajador_ide,
                 self._filtro(empresa))
+        if obra_ide is not None:
+            payloads = [p for p in payloads if p["obra"]["ide"] == obra_ide]
         resultados = []
         for p in payloads:
             r = self._transfer.preflight({**p, "pisar_claves": []})

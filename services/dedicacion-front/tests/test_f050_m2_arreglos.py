@@ -108,9 +108,9 @@ def test_f050_m2_1_una_preferencia_bajo_el_minimo_se_respeta():
 def test_f050_m2_1_cada_columna_tiene_su_minimo():
     assert _node("\n".join([
         _const("COLUMNAS"), _const("MINIMO_COLUMNA"),
-        "process.stdout.write(JSON.stringify([Object.keys(COLUMNAS), "
-        "Object.keys(MINIMO_COLUMNA), Object.keys(COLUMNAS).map((c) => "
-        "MINIMO_COLUMNA[c] <= COLUMNAS[c].ancho)]));"])) == [
+        ("process.stdout.write(JSON.stringify([Object.keys(COLUMNAS), "
+         "Object.keys(MINIMO_COLUMNA), Object.keys(COLUMNAS).map((c) => "
+         "MINIMO_COLUMNA[c] <= COLUMNAS[c].ancho)]));")])) == [
         ["nombre", "categoria", "asignaciones", "partida", "total"],
         ["nombre", "categoria", "asignaciones", "partida", "total"],
         [True] * 5]
@@ -444,3 +444,202 @@ def test_f050_m2_4_el_panel_va_por_encima_del_modal():
     def z(selector):
         return int(re.search(r"z-index:\s*(\d+)", _regla(selector)).group(1))
     assert z(".panel-partida") > z(".modal-overlay")
+
+
+# ========= 5 · el modal repite el preflight solo de la obra cambiada ======== #
+def _registro() -> str:
+    m = re.search(r"^const registro = \{.*?\};$", JS, re.MULTILINE)
+    assert m, "no está `const registro = {...};` en app.js"
+    return m.group(0)
+
+
+def _o(ide: int, marca: str) -> dict:
+    return {"obra": {"ide": ide, "codigo": f"0{ide}"}, "ok": True,
+            "marca": marca}
+
+
+def _unir(previo, nuevo, obra) -> object:
+    return _node("\n".join([
+        _funcion("unirPreflight"),
+        "process.stdout.write(JSON.stringify(unirPreflight(" +
+        ", ".join(json.dumps(x) for x in (previo, nuevo, obra)) + ")));"]))
+
+
+def test_f050_m2_5_unir_sustituye_esa_obra_en_su_sitio():
+    previo = {"ok": True, "no_vigentes": [5],
+              "obras": [_o(1, "a"), _o(694, "vieja"), _o(2, "b")]}
+    assert _unir(previo, {"ok": False, "obras": [_o(694, "nueva")],
+                          "no_vigentes": []}, 694) == {
+        "ok": True, "no_vigentes": [5],
+        "obras": [_o(1, "a"), _o(694, "nueva"), _o(2, "b")]}
+
+
+def test_f050_m2_5_unir_quita_la_obra_que_ya_no_viene_y_anade_la_nueva():
+    previo = {"obras": [_o(1, "a"), _o(694, "vieja"), _o(2, "b")]}
+    assert _unir(previo, {"obras": []}, 694) == {
+        "obras": [_o(1, "a"), _o(2, "b")]}
+    assert _unir({"obras": [_o(1, "a")]}, {"obras": [_o(694, "n")]},
+                 694) == {"obras": [_o(1, "a"), _o(694, "n")]}
+
+
+def test_f050_m2_5_unir_sin_pintado_previo_el_nuevo():
+    assert _unir(None, {"obras": [_o(694, "n")]}, 694) == {
+        "obras": [_o(694, "n")]}
+
+
+#: Peticiones pendientes como en F-049 (`llamadas`, se resuelven a mano);
+#: `pintarModalPreflight` de mentira apunta lo pintado y, como el de verdad,
+#: deja un botón «Registrar» nuevo y activo.
+FLUJO = r"""
+const state = {anio: 2026, mes: 9};
+const llamadas = [];
+function api(url, opts) {
+  return new Promise((res, rej) => llamadas.push(
+    {url, body: JSON.parse(opts.body), res, rej}));
+}
+const toasts = []; function toast(m) { toasts.push(m); }
+const botones = {};
+function boton(id) {
+  return botones[id] || (botones[id] = {disabled: false, textContent: ""}); }
+const dom = {oculto: false};
+function $(sel) {
+  if (sel === "#modal-registro")
+    return {classList: {contains: (c) => c === "oculto" && dom.oculto}};
+  return boton(sel);
+}
+const document = {querySelectorAll: () => []};
+const pintados = [];
+function pintarModalPreflight(pf) {
+  pintados.push(pf.obras.map((o) => [o.obra.ide, o.marca]));
+  botones["#btn-ejecutar-registro"] = {disabled: false, textContent: "Registrar"};
+}
+const tick = () => new Promise((r) => setTimeout(r, 0));
+const o = (ide, marca) => ({obra: {ide}, marca});
+const registrar = () => ({...boton("#btn-ejecutar-registro")});
+"""
+
+
+def _flujo(escenario: str) -> dict:
+    return _node("\n".join([
+        _registro(), FLUJO,
+        *(_funcion(f) for f in ("pedirPreflight", "registroPreflight",
+                                 "repreflightPartida", "unirPreflight")),
+        "(async () => { const obs = {};", escenario,
+        "process.stdout.write(JSON.stringify(obs)); })();"]))
+
+
+ABRIR = """
+  registroPreflight(77); await tick();
+  llamadas[0].res({obras: [o(694, "v1"), o(700, "v1")]}); await tick();
+"""
+
+
+def test_f050_m2_5_repite_solo_esa_obra_y_la_cambia_en_el_modal():
+    obs = _flujo(ABRIR + """
+      repreflightPartida(694); await tick();
+      obs.cuerpo = llamadas[1].body; obs.durante = registrar();
+      llamadas[1].res({obras: [o(694, "v2")]}); await tick();
+      obs.pintados = pintados; obs.despues = registrar();
+    """)
+    assert obs["cuerpo"] == {"trabajador_ide": 77, "obra_ide": 694}
+    assert obs["durante"] == {"disabled": True, "textContent": "Analizando…"}
+    assert obs["pintados"] == [[[694, "v1"], [700, "v1"]],
+                               [[694, "v2"], [700, "v1"]]]
+    assert obs["despues"] == {"disabled": False, "textContent": "Registrar"}
+
+
+def test_f050_m2_5_en_el_modal_del_mes_entero_va_sin_trabajador():
+    obs = _flujo("""
+      registroPreflight(null); await tick();
+      llamadas[0].res({obras: [o(694, "v1")]}); await tick();
+      repreflightPartida(694); await tick();
+      obs.cuerpos = llamadas.map((l) => l.body);
+    """)
+    assert obs["cuerpos"] == [{"trabajador_ide": None},
+                              {"trabajador_ide": None, "obra_ide": 694}]
+
+
+def test_f050_m2_5_dos_obras_a_la_vez_cuentan_las_dos():
+    """Cambiar la partida en la 694 y, antes de que vuelva, en la 700: las
+    dos respuestas se pintan, en el orden que lleguen, y «Registrar» sigue
+    bloqueado hasta la última."""
+    obs = _flujo(ABRIR + """
+      repreflightPartida(694); repreflightPartida(700); await tick();
+      llamadas[2].res({obras: [o(700, "v2")]}); await tick();
+      obs.primera = [pintados[1], registrar()];
+      llamadas[1].res({obras: [o(694, "v2")]}); await tick();
+      obs.segunda = [pintados[2], registrar()];
+    """)
+    assert obs["primera"] == [[[694, "v1"], [700, "v2"]],
+                              {"disabled": True,
+                               "textContent": "Analizando…"}]
+    assert obs["segunda"] == [[[694, "v2"], [700, "v2"]],
+                              {"disabled": False, "textContent": "Registrar"}]
+
+
+def test_f050_m2_5_de_la_misma_obra_solo_el_ultimo():
+    obs = _flujo(ABRIR + """
+      repreflightPartida(694); repreflightPartida(694); await tick();
+      llamadas[2].res({obras: [o(694, "v3")]}); await tick();
+      llamadas[1].res({obras: [o(694, "v2")]}); await tick();
+      obs.pintados = pintados.slice(1);
+    """)
+    assert obs["pintados"] == [[[694, "v3"], [700, "v1"]]]
+
+
+def test_f050_m2_5_error_de_una_obra_con_otra_en_vuelo():
+    obs = _flujo(ABRIR + """
+      repreflightPartida(694); repreflightPartida(700); await tick();
+      llamadas[1].rej(new Error("transfer caído")); await tick();
+      obs.error = [toasts.slice(), registrar(), pintados.length];
+      llamadas[2].res({obras: [o(700, "v2")]}); await tick();
+      obs.fin = [pintados[1], registrar()];
+    """)
+    assert obs["error"] == [["transfer caído"],
+                            {"disabled": True, "textContent": "Analizando…"},
+                            1]
+    assert obs["fin"] == [[[694, "v1"], [700, "v2"]],
+                          {"disabled": False, "textContent": "Registrar"}]
+
+
+def test_f050_m2_5_abrir_otra_vez_anula_los_que_estaban_en_vuelo():
+    obs = _flujo(ABRIR + """
+      repreflightPartida(694); repreflightPartida(700); await tick();
+      registroPreflight(77); await tick();
+      llamadas[3].res({obras: [o(694, "nuevo"), o(700, "nuevo")]}); await tick();
+      llamadas[1].res({obras: [o(694, "viejo")]}); await tick();
+      llamadas[2].rej(new Error("x")); await tick();
+      obs.pintados = pintados.slice(1); obs.toasts = toasts;
+    """)
+    assert obs["pintados"] == [[[694, "nuevo"], [700, "nuevo"]]]
+    assert obs["toasts"] == []
+
+
+def test_f050_m2_5_el_selector_del_modal_pasa_su_obra():
+    """De punta a punta: elegir en el selector del modal → PUT → preflight
+    de la obra de la línea (código real del selector y del repreflight)."""
+    obs = _escenario("""
+      registro.trabajadorIde = 77;
+      const boton = nodo("button");
+      abrirSelectorPartida(77, 694, false, boton, repreflightPartida);
+      llamadas[0].res(resp("CI.1.5")); await tick();
+      paneles()[0]._input._h.keydown({key: "Enter", preventDefault() {},
+                                      stopPropagation() {}});
+      await tick();
+      llamadas[1].res({trabajador: {ide: 77}, resumen: {}}); await tick();
+      obs.llamadas = llamadas.map((l) => [l.url, l.o && l.o.body
+                                          ? JSON.parse(l.o.body) : null]);
+    """, extra=("pedirPreflight", "repreflightPartida", "unirPreflight"),
+        prefijo=_registro() + """
+      const $ = (s) => s === "#modal-registro"
+        ? {classList: {contains: () => false}}
+        : {disabled: false, textContent: ""};
+    """)
+    assert obs["llamadas"] == [
+        [("/periodos/2026/9/trabajadores/77/partidas?obra_ide=694"
+          "&es_postventa=false"), None],
+        ["/periodos/2026/9/trabajadores/77/partida",
+         {"obra_ide": 694, "es_postventa": False,
+          "partida": {"ide": 1, "cod": "CI.1.5", "res": "R"}}],
+        ["/periodos/2026/9/registro/preflight",
+         {"trabajador_ide": 77, "obra_ide": 694}]]

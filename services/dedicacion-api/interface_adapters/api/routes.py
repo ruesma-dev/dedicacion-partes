@@ -365,15 +365,17 @@ def registro_preflight(anio: int, mes: int, contenedor: Cont,
                        payload: dict = Body(default={}),
                        empresa: EmpresaQ = None) -> dict[str, Any]:
     """Analiza qué se registraría (no escribe). Admite `trabajador_ide`
-    para el registro de una sola línea y `overrides` de partida. La empresa
-    llega por query, como en el resto de rutas del periodo (F-024)."""
+    para el registro de una sola línea, `obra_ide` para analizar solo esa
+    obra (F-050: el modal tras cambiar una partida) y `overrides` de
+    partida. La empresa llega por query, como en el resto de rutas del
+    periodo (F-024)."""
     filtro = _filtro(contenedor, empresa)
     overrides = {int(k): int(v) for k, v in
                  (payload.get("overrides") or {}).items()}
     return contenedor.registro_sigrid.preflight(
         anio, mes, overrides,
         trabajador_ide=payload.get("trabajador_ide"),
-        empresa=filtro.empresa)
+        empresa=filtro.empresa, obra_ide=payload.get("obra_ide"))
 
 
 @router.post("/periodos/{anio}/{mes}/registro/ejecutar", tags=["sigrid"])

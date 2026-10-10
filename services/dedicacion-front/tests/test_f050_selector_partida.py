@@ -229,7 +229,7 @@ def test_f050_r27_elegir_guarda_y_repinta_con_la_respuesta():
             " es_postventa: ctx.esPostventa, partida }) }") in elegir
     assert elegir.index("selector.cache.delete(ctx.clave);") < \
         elegir.index("aplicarFila(datos);") < elegir.index(
-            "if (ctx.despues) ctx.despues();")
+            "if (ctx.despues) ctx.despues(ctx.obraIde);")   # T15c, punto 5
 
 
 def test_f050_r27_el_front_no_decide_la_partida():

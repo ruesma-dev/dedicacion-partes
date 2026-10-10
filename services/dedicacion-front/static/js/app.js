@@ -1586,7 +1586,7 @@ function montarSelectorPartida(ctx) {
             es_postventa: ctx.esPostventa, partida }) });
         selector.cache.delete(ctx.clave);
         aplicarFila(datos);
-        if (ctx.despues) ctx.despues();
+        if (ctx.despues) ctx.despues(ctx.obraIde);
       } catch (err) {
         toast(err.message, true);
       }
@@ -2006,7 +2006,9 @@ document.addEventListener("DOMContentLoaded", init);
 // `lineas`: por `registro_id`, el trabajador, la obra y el modo de cada
 // acción con selector de partida (F-050, R29). La partida elegida en el
 // modal se GUARDA en el cuadrante: no viaja en el cuerpo del registro.
-const registro = { pisar: new Set(), trabajadorIde: null, seq: 0, lineas: {} };
+// `pf`: lo pintado en el modal; `analizando`: por obra, el `seq` del último
+// preflight repetido aún en vuelo (F-050, M2 punto 5).
+const registro = { pisar: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map() };
 
 // Abrir o repintar el modal cierra el selector de partida que hubiera,
 // también uno que aún cargaba (F-050, M2 punto 4): no puede quedar colgando
@@ -2030,47 +2032,76 @@ function textoPartidaAccion(a) {
 }
 
 // El preflight del periodo para el trabajador de la petición (todos o uno).
-// Las partidas son las guardadas en el cuadrante (F-050, R29).
-function pedirPreflight() {
+// Las partidas son las guardadas en el cuadrante (F-050, R29). Con `obraIde`,
+// solo esa obra (M2, punto 5); sin ella no viaja (JSON omite `undefined`).
+function pedirPreflight(obraIde) {
   return api(
     `/periodos/${state.anio}/${state.mes}/registro/preflight`,
-    { method: "POST", body: JSON.stringify({ trabajador_ide: registro.trabajadorIde }) });
+    { method: "POST", body: JSON.stringify({ trabajador_ide: registro.trabajadorIde, obra_ide: obraIde }) });
 }
 
 async function registroPreflight(trabajadorIde = null) {
   registro.trabajadorIde = trabajadorIde;
   const seq = ++registro.seq;
+  registro.analizando.clear();     // lo que se repetía era del modal de antes
   const btn = $("#btn-registro");
   btn.disabled = true; btn.textContent = "Analizando…";
   try {
     const pf = await pedirPreflight();
     if (seq !== registro.seq) return;
     registro.pisar = new Set();
+    registro.pf = pf;
     pintarModalPreflight(pf);
   } catch (err) { toast(err.message, true); }
   finally { btn.disabled = false; btn.textContent = "Registrar en Sigrid"; }
 }
 
+// F-050 (M2, punto 5): el preflight de UNA obra sustituye a esa obra, en su
+// sitio, en el último pintado; las demás se quedan como estaban. Si la obra
+// ya no viene (sin líneas), sale del modal; si no estaba, se añade al final.
+// Sin pintado previo, el nuevo tal cual.
+function unirPreflight(previo, nuevo, obraIde) {
+  if (!previo) return nuevo;
+  const sitio = previo.obras.findIndex((o) => o.obra.ide === obraIde);
+  const obras = previo.obras.filter((o) => o.obra.ide !== obraIde);
+  obras.splice(sitio < 0 ? obras.length : sitio, 0, ...nuevo.obras);
+  return { ...previo, obras };
+}
+
 // F-049 (ampliación a): al cambiar una partida (F-050: ya guardada con el
 // selector) se repite el preflight y se repinta, para que los avisos digan
-// lo que se va a escribir. Las casillas marcadas se conservan por su clave. Mientras se
-// analiza no se puede pulsar «Registrar»; solo pinta la última petición y
-// nunca reabre un modal ya cerrado.
-async function repreflightPartida() {
+// lo que se va a escribir. Las casillas marcadas se conservan por su clave.
+// F-050 (M2, punto 5): solo de `obraIde`, la obra de la línea, y esa obra se
+// sustituye en lo pintado (sin obra, la petición entera, como antes). De
+// cada obra pinta solo su último pedido, y ninguno de un modal anterior;
+// nunca reabre un modal ya cerrado. Mientras alguna obra se analiza no se
+// puede pulsar «Registrar».
+async function repreflightPartida(obraIde) {
   const seq = ++registro.seq;
+  registro.analizando.set(obraIde, seq);
   const btn = $("#btn-ejecutar-registro");
   if (btn) { btn.disabled = true; btn.textContent = "Analizando…"; }
+  const vigente = () => registro.analizando.get(obraIde) === seq;
   try {
-    const pf = await pedirPreflight();
-    if (seq !== registro.seq) return;
+    const pf = await pedirPreflight(obraIde);
+    if (!vigente()) return;
+    registro.analizando.delete(obraIde);
     if ($("#modal-registro").classList.contains("oculto")) return;
     registro.pisar = new Set([...document.querySelectorAll(".chk-pisar:checked")]
       .map((c) => c.value));
-    pintarModalPreflight(pf);
+    registro.pf = obraIde ? unirPreflight(registro.pf, pf, obraIde) : pf;
+    pintarModalPreflight(registro.pf);
+    const nuevo = $("#btn-ejecutar-registro");
+    if (registro.analizando.size && nuevo) {
+      nuevo.disabled = true; nuevo.textContent = "Analizando…";
+    }
   } catch (err) {
-    if (seq !== registro.seq) return;
+    if (!vigente()) return;
+    registro.analizando.delete(obraIde);
     toast(err.message, true);
-    if (btn) { btn.disabled = false; btn.textContent = "Registrar"; }
+    if (btn && !registro.analizando.size) {
+      btn.disabled = false; btn.textContent = "Registrar";
+    }
   }
 }
 
