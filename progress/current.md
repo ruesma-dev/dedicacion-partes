@@ -69,7 +69,13 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
     modal (dato para F-055, observación de la review 1).
   - **M3 (T18):** registro en modo pruebas, **solo con autorización del humano
     en ese momento**.
-  **Espera las MANUAL M1 y M2 del humano.**
+- **M2 del humano (2026-10-11): fallos; arreglos APROBADOS («ok»):** 1) tabla
+  adaptable con scroll horizontal (se cortaba la derecha); 2) fila seleccionada
+  igual con subfilas; 3) selector con «Cargando partidas…», sin abrirse dos veces;
+  4) en el modal, selector encima del modal; 5) cambiar una partida en el modal
+  repite el preflight solo de esa obra (los 502 eran el proxy del front cortando a
+  los 120 s preflights del mes entero). Lentitud de fondo → F-055 rediseñada (spec
+  en paralelo en `porcentajes-f041`). **Estado:** implementer lanzado (T15c).
   Resultado: _pendiente_.
 
 ## Producción, hoy
