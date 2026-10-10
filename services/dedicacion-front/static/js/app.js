@@ -701,14 +701,20 @@ function construirFila(t) {
     if (state.seleccion.has(t.ide)) tr.classList.add("multi");
     if (t.ide === state.editandoIde) tr.classList.add("editando");
 
-    state.columnas.forEach((clave) => {
+    state.columnas.forEach((clave, c) => {
+      let td = null;
       if (COLUMNAS_POR_LINEA.includes(clave)) {
-        tr.appendChild(construirCelda(t, clave, idx));
+        td = construirCelda(t, clave, idx);
+        tr.appendChild(td);
       } else if (!idx) {
-        const td = construirCelda(t, clave, idx);
+        td = construirCelda(t, clave, idx);
         td.rowSpan = n;
         tr.appendChild(td);
       }
+      // M2, punto 2: las celdas de los bordes de la tabla llevan la barra
+      // del cursor; así el bloque se marca igual en todas sus subfilas.
+      if (td && c === 0) td.classList.add("col-primera");
+      if (td && c === state.columnas.length - 1) td.classList.add("col-ultima");
     });
 
     // Shift+clic no debe seleccionar el texto de la tabla (F-029, R2).

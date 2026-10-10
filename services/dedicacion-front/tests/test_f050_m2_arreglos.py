@@ -160,3 +160,80 @@ def test_f050_m2_1_se_reajusta_cuando_cambia_el_panel():
     enlazar = _plano(_funcion("enlazarEventos"))
     assert ("new ResizeObserver(() => sincronizarAnchoTabla())"
             '.observe($("#tabla").parentElement);') in enlazar
+
+
+# ============== 2 · el cursor se marca igual en las subfilas ============== #
+#: `construirFila` REAL con `construirCelda` de mentira (una celda que solo
+#: sabe su columna) y un DOM mínimo: lo que se mira son las clases.
+FILA = r"""
+function clases() { const s = new Set();
+  return {add: (c) => s.add(c), contains: (c) => s.has(c), lista: () => [...s]}; }
+function construirCelda(t, clave, idx) {
+  return {clave, idx, rowSpan: 1, classList: clases()}; }
+const document = {createDocumentFragment: () => ({trs: [],
+  appendChild(tr) { this.trs.push(tr); }}),
+  createElement: () => ({dataset: {}, tds: [], set className(c) {
+    c.split(" ").forEach((x) => this.classList.add(x)); },
+    classList: clases(), appendChild(td) { this.tds.push(td); },
+    addEventListener() {}})};
+"""
+
+
+def _fila(columnas: list[str], n_lineas: int) -> list:
+    return _node("\n".join([
+        _const("COLUMNAS_POR_LINEA"), FILA, _funcion("construirFila"),
+        "const state = {columnas: " + json.dumps(columnas) + ", seleccionIde:"
+        " 7, seleccion: new Set(), editandoIde: null};",
+        "const t = {ide: 7, activo: true, lineas: " +
+        json.dumps([{"obra_ide": i} for i in range(n_lineas)]) + "};",
+        ("const frag = construirFila(t);"
+         "process.stdout.write(JSON.stringify(frag.trs.map((tr) => ["
+         "tr.classList.contains('seleccionada'), tr.tds.map((td) => "
+         "[td.clave, td.rowSpan, td.classList.lista().sort().join(' ')])])));"),
+    ]))
+
+
+ORDEN = ["nombre", "categoria", "asignaciones", "partida", "total"]
+
+
+def test_f050_m2_2_una_barra_a_cada_lado_del_bloque():
+    """Con tres obras: la primera columna y la última, una sola vez cada una
+    y ocupando las tres subfilas; las tres subfilas, seleccionadas."""
+    assert _fila(ORDEN, 3) == [
+        [True, [["nombre", 3, "col-primera"], ["categoria", 3, ""],
+                ["asignaciones", 1, ""], ["partida", 1, ""],
+                ["total", 3, "col-ultima"]]],
+        [True, [["asignaciones", 1, ""], ["partida", 1, ""]]],
+        [True, [["asignaciones", 1, ""], ["partida", 1, ""]]]]
+
+
+def test_f050_m2_2_columnas_por_linea_en_los_bordes():
+    """Si el usuario pone Obras primera y Partida última, la barra va en la
+    celda de cada subfila."""
+    filas = _fila(["asignaciones", "nombre", "categoria", "total", "partida"],
+                  2)
+    assert [[c for c in tds if c[2]] for _, tds in filas] == [
+        [["asignaciones", 1, "col-primera"], ["partida", 1, "col-ultima"]],
+        [["asignaciones", 1, "col-primera"], ["partida", 1, "col-ultima"]]]
+
+
+def test_f050_m2_2_sin_carga_una_fila_con_sus_dos_bordes():
+    assert _fila(ORDEN, 0) == [[True, [
+        ["nombre", 1, "col-primera"], ["categoria", 1, ""],
+        ["asignaciones", 1, ""], ["partida", 1, ""],
+        ["total", 1, "col-ultima"]]]]
+
+
+def test_f050_m2_2_css_fondo_en_todas_y_barras_solo_en_los_bordes():
+    assert _regla("tr.fila.seleccionada td") == \
+        "background: var(--brand-soft);"
+    assert _regla("tr.fila.seleccionada td.col-primera") == \
+        "box-shadow: inset 3px 0 0 var(--brand);"
+    assert _regla("tr.fila.seleccionada td.col-ultima") == \
+        "box-shadow: inset -3px 0 0 var(--brand);"
+    assert _regla("tr.fila.multi td.col-primera") == \
+        "box-shadow: inset 3px 0 0 var(--pv);"
+    assert _regla("tr.fila.multi.seleccionada td.col-primera") == \
+        "box-shadow: inset 3px 0 0 var(--brand), inset 6px 0 0 var(--pv);"
+    assert "td:first-child" not in CSS.split("Selección múltiple")[1].split(
+        "tr.fila.inactivo")[0]
