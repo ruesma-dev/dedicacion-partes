@@ -1,10 +1,11 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-050 en curso en esta rama** (`feature/F-050-subfilas-partida`, copia
-principal): subfilas por obra en el cuadrante con columna Partida y partida
-propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
-**1.7.3**.
+**F-055 en spec en esta rama** (`feature/F-055-preflight-rapido`, copia
+`PycharmProjects/porcentajes-f041`, sacada de F-050 en `6de25e4` porque se apoya
+en su partida por línea): registro sin búsquedas de partidas (rediseño pedido por
+el humano el 2026-10-11). En la copia principal, F-050 sigue en curso (T15c).
+El arnés es la **1.7.3**.
 
 ## F-050 · Subfilas por obra con columna Partida (en curso)
 
