@@ -40,7 +40,9 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   siguiente» y el rango de commits (corregidos por el líder). Observaciones:
   (g) en M2 para el tiempo del mes entero; una línea omitida por R20 no tiene
   botón de partida en el modal (**el humano aprueba el 2026-10-10 añadirlo:
-  R29 bis; T15b hecha por el implementer en `6320474`**; **review 2 lanzada**); postventa en R9 casa
+  R29 bis; T15b hecha por el implementer en `6320474`**; **review 2 APROBADA**,
+  sus observaciones recogidas: (g) en T17 y el motivo por texto llevado a
+  F-048); postventa en R9 casa
   con `origen.codigo` en `proponer` y con `obra.codigo` en el preflight (hoy
   coinciden; anotado en «Hechos que no conviene volver a descubrir»).
 - **MANUAL (humano, en local; transfer en modo pruebas):**
@@ -62,6 +64,7 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
     modal (dato para F-055, observación de la review 1).
   - **M3 (T18):** registro en modo pruebas, **solo con autorización del humano
     en ese momento**.
+  **Espera las MANUAL M1 y M2 del humano.**
   Resultado: _pendiente_.
 
 ## Producción, hoy

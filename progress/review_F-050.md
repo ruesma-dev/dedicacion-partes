@@ -1,140 +1,140 @@
 <!-- progress/review_F-050.md -->
-Revisión completa (pasada 1) · `dev...HEAD` = `82bf8d6..5f66b9d`
+Revisión incremental desde 5f66b9d (pasada 2) · `5f66b9d..d53a162`
 
 # F-050 · Review
 
-**Veredicto: CHANGES_REQUESTED** (CAMBIOS PEDIDOS): código sin fallos
-bloqueantes; dos `[ ]` de papeleo (C4 bis campaña manual; C5 T19).
+**Veredicto (pasada 2): APPROVED** (APROBADO): lo pedido en la pasada 1,
+resuelto; T15b cumple R29 sin que el front decida qué partida vale.
 
 **Rigor:** `critico`, declarado: RED, cobertura ≥ 80 %, mutación con cero
 supervivientes sin justificación aceptada y MANUAL con comando exacto.
 
-## Lo ejecutado por el reviewer
+## Pasada 1 (resumen; revisión completa `82bf8d6..5f66b9d`)
 
-- Sin `.arnes_cache/suite_*.ok`, `bash harness/init.sh` tal cual: código 0,
-  **ENTORNO LISTO**. Raíz **418 passed, 1 skipped** (94,9 s), api **768**
-  (74,0 s), front **184** (30,0 s), transfer **750** (14,8 s).
-  `PUERTA COBERTURA` **100,0 % (341/341)**. `ruff` `[AVISO]` 237: mismos
-  avisos en `dev` y en HEAD por fichero modificado; los nuevos, ninguno.
-- Mutación Python, recálculo puro (`harness.alcance` +
-  `generar_mutantes`): **19 ficheros, 854 líneas, 158 mutantes**, igual que
-  el informe. **Campaña no reejecutada: 1236,8 s según el informe** (> 60 s).
-- JS manual: **J04, J47 y J56** reproducidos al pie de la letra en un
-  worktree del scratchpad (retirado): fallos **6, 2 y 1**, los del informe.
-- **Una lectura en Sigrid** (solo lectura, `sigrid-api` vía el cliente del
-  transfer local): `con.ide = 1705036` → «GONZALEZ PANIAGUA, MARIA DE LOS
-  MILAGROS», empresa 1: el recurso de M1 es el correcto.
+CAMBIOS PEDIDOS, solo papeleo; código sin fallos bloqueantes. init.sh en
+verde (raíz 418+1 skip, api 768, front 184, transfer 750; cobertura 341/341);
+Python recalculado 19 ficheros / 854 líneas / 158 mutantes (campaña no
+reejecutada: 1236,8 s); J04, J47 y J56 reproducidos; `con.ide = 1705036`
+leído en Sigrid (solo lectura). Revisado a fondo y dado por bueno: límite de
+servicio, R7, R20, R9, PUT `…/partida`, R14/F7, sin `overrides`, tests
+anteriores solo de la lista cerrada, desviaciones 1-10, `azure-apps`
+`edaa2b7`, MANUAL. Pedido: (1) texto exacto de J08, J28, J34, J37, J41, J43
+y J51; (2) T19 `[x]`; (3) `current.md`: F-050 duplicada en «Lo siguiente» y
+rango de commits. Observaciones: (g) en T17; omitida por R20 sin botón;
+postventa en R9; `<res.ide …>` en T16. Texto íntegro:
+`git show 493bf35:progress/review_F-050.md`.
 
-## Lo que pediste comprobar (todo [x])
+## Pasada 2 · lo ejecutado por el reviewer
 
-- **Límite de servicio.** Propuesta, `mayor_de` y `mayor_inicial`, en el
-  transfer (puro). La api solo busca el mayor de la elegida en la lista; el
-  front filtra por el `mayor` recibido y no lee `categoria`.
-- **R7.** Una llamada por petición (lotes de 500), sin `try`; `_read` lanza
-  con `truncated`; `ejecutar` con lectura fallida no escribe; endpoint, 502.
-- **R20.** Solo la rama manual de obra normal: si no es hoja activa de
-  `nodos_origen`, la línea se omite con `MOTIVO_PARTIDA_NO_HOJA`, sin aviso ni
-  conflicto, en los dos modos. VAR, postventa, capacidad, cuenta y partes no
-  cambian. La lectura extra del presupuesto ya la hacía el bloque F-049.
-- **R9.** Preflight y `proponer` llaman a `proponer_partida` con lo mismo;
-  la api manda igual obra, empresa y trabajador en los dos caminos (con test).
-- **PUT `…/partida`.** 404 (periodo, trabajador, línea u otro modo), 409,
-  422 (VAR, `ide` ≤ 0); en error ni `reemplazados` ni eventos; `PARTIDA`
-  solo si cambia; Ctrl+Z la devuelve.
-- **R14 y F7.** `_conservar_partidas` va antes de comparar snapshots.
-  `LineaIn` es `extra="forbid"`: ningún guardado trae partida para una línea
-  nueva. F7 (`app.js:1725`) manda obra, modo y %. Copiar el mes copia la
-  partida; Completar la conserva.
-- **Sin `overrides`.** `grep overrides|partidas_obra|opcionesPartida`: vacío.
-- **Tests anteriores.** El diff de `*/tests/*` sin `test_f050_*` toca solo
-  la lista cerrada y los dos añadidos del humano; los de T12 coinciden uno a
-  uno. No hay aserciones relajadas: lo retirado es lo que R29 elimina y su
-  intención pasa a `test_f050_modal_registro.py`.
-- **Desviaciones 1-10.** Razonadas y dentro de la spec (la 3 y la 5,
-  comprobadas en el código).
-- **`azure-apps` `edaa2b7`.** Copia literal de §3, §5 y §7 de
-  `INTEGRACION.md`; «sin desplegar»; árbol limpio.
-- **MANUAL en `current.md`.** M1 con `cd` absoluto y `--recurso 1705036`;
-  M2 con comandos y T17 (a)-(f); M3 solo con autorización. Seguible.
+- Sin `.arnes_cache/suite_*.ok`, `bash harness/init.sh` tal cual y solo:
+  código 0, **ENTORNO LISTO**, ningún `[KO]`. Raíz **418 passed, 1 skipped**
+  (40,4 s), api **768** (43,5 s), front **187** (16,5 s), transfer **750**
+  (7,3 s). `PUERTA COBERTURA` **100,0 % (341/341)**. `ruff` 237, igual.
+- Python, recálculo puro en HEAD: **19 ficheros, 854 líneas, 158 mutantes**,
+  idéntico; desde `f4cdb11` ningún `.py` de producción cambia.
+- **RED de T15b reproducida**: los tests de HEAD contra el `app.js` de
+  `1c78608`, en una copia del scratchpad: **2 failed, 1 passed** (el que pasa
+  es el control «las demás omitidas siguen sin selector»), como el informe.
+- **Mutantes JS reproducidos al pie de la letra** (copia aislada del front +
+  las dos constantes del transfer; suite entera, 187 en verde sin mutar;
+  `app.js` restaurado y comprobado): **K01 1, K04 2, K05 3, K09 5** fallos,
+  los del informe. De las filas corregidas: **J08 1** (igual) y **J51 4** en
+  `f4cdb11`, igual; en HEAD da 5, por el test nuevo de T15b que también abre
+  el selector con el callback: coherente.
+- `git status` limpio al acabar. Nada contra Azure ni Sigrid.
 
-## Checkpoints
+## Lo pedido en la pasada 1
 
-- **C1** [x] init.sh código 0 · [x] ficheros base.
-- **C2** [x] una sola `in_progress` · [x] la rama es la de F-050 · [x]
-  `current.md` refleja la sesión (dos erratas, cambio 3) · [x] `history.md`
-  (F-050 aún no está en `done`).
-- **C3** [x] hexagonal (el cliente Sigrid importa `LineaHistorial` de
-  `application`, hacia dentro, como `cuenta_analitica`) · [x] primera línea
-  con la ruta · [x] los `print` son la salida del script; sin secretos ni
-  dependencias nuevas · [x] escala 0-100/0-1 intacta, postventa por su
-  clave, ninguna escritura nueva en Sigrid.
-- **C3 bis** N/A: el diff no toca `docs/referencia/`. **C4 ter** N/A: no
+1. [x] **Textos exactos**: J08, J37, J41, J51 enteros en la celda; J26, J28,
+   J34, J43 con enlace al texto literal de varias líneas. J51 dice ya qué
+   cambia (`repreflightPartida` → `null`). 2. [x] **T19** `[x]`.
+3. [x] **`current.md`**: F-050 una sola vez en «Lo siguiente»; rango bien.
+- Observaciones: (g) en la M2 de `current.md` (abajo, 1); postventa en R9 en
+  «Hechos…»; T16 con `--recurso 1705036`.
+
+## T15b (ampliación del 2026-10-10, R29 última frase)
+
+- **Solo front** (`pintarModalPreflight`): `botonPartida(texto)` comparte
+  botón, alta en `registro.lineas` (`a.registro_id`, `o.obra.ide`) y callback
+  de re-preflight entre la acción a escribir y la omitida. La api reenvía el
+  `motivo` del preflight sin tocarlo.
+- **El front no decide qué vale.** Solo pinta el botón si el `motivo` que
+  manda el transfer empieza por el texto de `MOTIVO_PARTIDA_NO_HOJA`
+  (anclado con `^`), y la partida que enseña es la que nombra ese motivo
+  (`linea.partida_cod or paride`, `registro_pipeline.py:401`). La validez la
+  sigue decidiendo R20 en el transfer al repetir el preflight.
+- **Contrato.** Los tests leen `MOTIVO_PARTIDA_NO_HOJA` y
+  `MOTIVO_PARTIDA_PV_NO_HOJA` del propio transfer con `ast`: si el texto
+  cambia allí, fallan aquí. Cubren: botón con la rechazada, su línea y la
+  apertura del selector con callback; `paride` sin código y escapado HTML;
+  postventa (otro motivo), sin motivo y motivo no inicial, sin botón.
+- **Tests anteriores:** ninguno cambia; el diff de `*/tests/*` es solo
+  `test_f050_modal_registro.py` (+3).
+- **MANUAL:** T17 (e) añade el caso R20 (PUT desde la consola, **solo base
+  local**; `app.js` no es módulo) y «Cancelar, sin Registrar».
+
+## Checkpoints (lo que toca el delta)
+
+- **C1** [x] init.sh código 0, sin caché · [x] ficheros base.
+- **C2** [x] una `in_progress` · [x] rama de F-050 · [x] `current.md` al día
+  · [x] `history.md` (F-050 aún no está en `done`).
+- **C3** [x] el front no lleva lógica de negocio (arriba) · [x] primera línea
+  con la ruta · [x] sin `console.log` ni secretos ni dependencias.
+- **C3 bis** N/A: el delta no toca `docs/referencia/`. **C4 ter** N/A: no
   existe `harness/rutas_sensibles.json`.
-- **C4** [x] cada R con test (tabla) y en verde · [x] sin red ni BBDD · [x]
-  MANUAL con comando en `current.md`.
+- **C4** [x] la ampliación de R29 tiene tres tests y están en verde · [x] sin
+  red ni BBDD (node local) · [x] MANUAL con comando exacto (T17 e).
 - **C4 bis**
-  - [x] `rigor` declarado · [x] RED con trazas reales de T1-T13 · [x]
-    cobertura `[OK]` 100 % · [x] informe de la herramienta, recalculado.
-  - [x] Muertos: > 60 s, vale el recálculo puro · [x] coste 7,8 s/mutante.
+  - [x] `rigor` declarado · [x] RED real de T15b, reproducida · [x]
+    cobertura `[OK]` 100 % (341/341).
+  - [x] Python: recalculado; campaña no reejecutada (1236,8 s según el
+    informe) · [x] RM1: `f4cdb11`, sin `.py` de producción cambiado después.
+  - [x] RM2: Python, igual que en la pasada 1. JS T15b: 11 en 122,9 s ≈
+    11 s/mutante frente a ~15 s por mutante en mi reproducción: coherente.
   - [x] Sin «⚠ CAMPAÑA NO VÁLIDA»; «Sin veredicto (base rota)» = 0.
-  - [x] RM1: medido en `f4cdb11`; después solo cambian `progress/`,
-    `tasks.md` y un test, así que el alcance es el mismo.
-  - [x] RM2: media 7,8 s × 1 frente a bases de 19,5 y 5,1 s;
-    158 × 7,8 ≈ 1232 s.
-  - [x] RM5: N/A justificado, no queda ningún equivalente; los 3 de la
-    primera pasada se quitaron sin cambiar la conducta (`7f5f115..f4cdb11`).
-  - [x] RM6: no se quitó ninguna guarda.
-  - **[ ] Campaña MANUAL (JS): 7 de 56 filas sin texto exacto** (cambio 1).
-  - [x] Cero supervivientes, sin `PENDIENTE` · [x] Evidencias completas
-    (workers 1) · [x] ningún N/A sin motivo.
-- **C5** **[ ] T19 («`bash harness/init.sh` en verde») sigue `[ ]`**
-  (cambio 2). T1-T13 y T15 llevan su commit `F-050 Tn:`; T14 la hizo el
-  líder (`5f66b9d`); T16-T18 son MANUAL, que en `critico` puede quedar
-  pendiente, como en F-039 · [x] sin artefactos · [x] `features.json` en
-  `in_progress`.
+  - [x] RM5: N/A, ningún equivalente declarado · [x] RM6: no quita guardas.
+  - [x] **Campaña MANUAL**: J01-J56 y K01-K11 con fichero:línea, texto
+    exacto y nº de fallos; seis filas reproducidas (J08, J51, K01, K04, K05,
+    K09).
+  - [x] Cero supervivientes, sin `PENDIENTE` · [x] Evidencias con los cuatro
+    números (T15b incluido) · [x] ningún N/A sin motivo.
+- **C5** [x] T1-T15, T15b y T19 `[x]`; T15b con su commit `F-050 T15b:`
+  (`6320474`); T16-T18 son MANUAL y en `critico` pueden quedar pendientes
+  (como en F-039) · [x] sin artefactos · [x] `features.json` `in_progress`
+  con la ampliación anotada.
 
 ## Cobertura requisito → test (`test_f050_*`)
 
 | R | Test |
 |---|---|
-| R1-R5, R10 | `propuesta`: `r1_paso1_*`, `r1_paso2_*`, `r2_*empate*`, `r3_paso1_hoja_de_baja…`, `r4_historial_sql…`, `r5_filas_barajadas…`, `r10_orden_natural…` |
-| R6-R9, R11, R21 | `pipeline`: `r7_*`, `r9_*`, `r21_*`; `endpoint`: `r8_*`, `r9_misma_propuesta…`, `r11_*`; `propuesta`: `r7_historial_truncado…` |
-| R12-R19 | `partida_linea`: `r12_*`, `r14_*`, `r15_*`, `r16_*`, `r19_*`; `rutas_partida`: `r13_*`, `r17_*`, `r18_*` |
+| R1-R5, R10 | `propuesta`: `r1_*`, `r2_*`, `r3_*`, `r4_*`, `r5_*`, `r10_*` |
+| R6-R9, R11, R21 | `pipeline` `r7_*` `r9_*` `r21_*`; `endpoint_propuesta` `r8_*` `r9_*` `r11_*` |
+| R12-R19 | `partida_linea`: `r12_*`-`r19_*`; `rutas_partida`: `r13_*`, `r17_*`, `r18_*` |
 | R20 | `pipeline`: `r20_manual_que_no_es_hoja_activa_se_omite` (×6), `r20_ejecutar_no_escribe…` |
-| R22-R29 | `subfilas`: `r22_*`-`r25_*`, `r28_*`; `selector`: `r26_*`, `r27_*`; `modal_registro`: `r29_*` |
+| R22-R28 | `subfilas`: `r22_*`-`r25_*`, `r28_*`; `selector`: `r26_*`, `r27_*` |
+| R29 | `modal_registro`: `r29_*` (14) |
+| R29 (amp.) | `modal_registro`: `r29_omitida_por_r20_lleva_el_selector…`, `…_sin_codigo_y_escapada`, `r29_las_demas_omitidas_siguen_sin_selector` |
 | R30 | `test_f002_fuente_unica` (`regla-partida`), `test_f004_readme` |
 
 ## Cambios requeridos
 
-1. **`progress/mutacion_manual_F-050.md`**: en **J08, J28, J34, J37, J41,
-   J43 y J51** el texto original o el mutado está cortado con «…», así que
-   la fila no se puede reproducir y C4 bis no se marca. En **J51** lo
-   visible del original y del mutado es idéntico: no se sabe qué cambió.
-   Hay que poner el texto entero, en la celda o en una lista de mutantes
-   versionada en `progress/` y enlazada. Si `js_mut.py` ya no existe, se
-   rehacen esos 7 en una copia aislada (unos 15 s cada uno), con sus fallos.
-2. **`specs/F-050-subfilas-partida/tasks.md` T19**: marcarla `[x]`. El
-   init.sh en verde ya consta en las Evidencias y yo lo he repetido arriba.
-3. **`progress/current.md`**: en «Lo siguiente», la lista de orden nombra
-   **F-050 dos veces** (quitar la segunda, tras F-054). Y «T1-T15
-   (`1f0a425`..`e182915`)» arranca en el commit de T6: el rango real es
-   `686d00a`..`e182915`.
+Ninguno.
 
-## Observaciones (no bloquean; que el líder las lleve al humano)
+## Observaciones (no bloquean; que el líder las recoja, no «anotado»)
 
-- **Tiempo del preflight de todo el periodo.** Cada petición al transfer
-  (una por obra) añade una lectura del historial. M1 mide una sola lectura,
-  y el registro general hace una por obra en la misma petición del front.
-  Propongo añadir a T17 un punto (g) que cronometre «Registrar en Sigrid» de
-  todo el mes, o que el humano decida por escrito dejarlo para F-055.
-- Una omitida por R20 no tiene botón en el modal (R29 solo lo pide en las
-  que se escriben) aunque su motivo dice «elige otra»: verlo en M2 (e).
-- Postventa en R9: `proponer` casa con `origen.codigo` (Sigrid) y el
-  preflight con `obra.codigo` (api). Hoy coinciden; si divergen, difieren.
-- `impl_F-050.md`/`tasks.md` T16 aún dicen `<res.ide de GONZALEZ PANIAGUA>`.
+1. **(g) solo vive en `current.md`.** `tasks.md` T17 sigue diciendo
+   «(a)-(f)» y su verificación «(a)-(f) en `impl_F-050.md`»: al cerrar,
+   añadir (g) a T17 o el resultado de (g) se quedará sin sitio.
+2. **El front reconoce la omitida por el TEXTO del motivo.** Hoy está
+   blindado por el test de contrato (lee la constante del transfer), pero es
+   texto para personas. Si otra omisión necesita botón, mejor un campo
+   estructurado en la acción (p. ej. `motivo_codigo`) en el transfer, en una
+   feature propia.
+3. La tabla J se midió en `f4cdb11` (184 tests); en HEAD alguno sube
+   (J51: 4 → 5) por los tests de T15b. Reproducir contra `f4cdb11`.
 
-## Automejora (propuesta, no aplicada)
+## Automejora (propuesta, no aplicada; sigue en pie)
 
 En la casilla de campaña MANUAL (`CHECKPOINTS.md`, `reviewer.md`): «el texto
-exacto no se trunca con “…”; si no cabe, los pares original → mutado se
-versionan en `progress/` y la tabla los enlaza».
+exacto no se trunca con “…”; si no cabe, va en una sección o fichero
+enlazado; y la tabla dice contra qué SHA se contaron los fallos».
