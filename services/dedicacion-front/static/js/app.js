@@ -52,6 +52,10 @@ const ORDEN_COLUMNAS_DEFECTO = ["nombre", "categoria", "asignaciones", "partida"
 // del trabajador y ocupan todas sus subfilas (`rowSpan`).
 const COLUMNAS_POR_LINEA = ["asignaciones", "partida"];
 const CLAVE_TABLA = "dedicacion:tabla:v1";
+// F-050 (M2, punto 1): hasta dónde encoge cada columna para que la tabla
+// quepa en la ventana (Total no encoge: su contenido no se parte). Por debajo
+// de esto, scroll horizontal. Las preferencias del usuario no se tocan.
+const MINIMO_COLUMNA = { nombre: 160, categoria: 100, asignaciones: 150, partida: 150, total: 190 };
 
 const state = {
   anio: 0,
@@ -470,15 +474,34 @@ function pintarIndicadoresOrden() {
   });
 }
 
+// F-050 (M2, punto 1): los anchos que caben en `disponible`. Si los
+// preferidos caben, ellos; si no, cada columna cede en proporción lo que
+// tiene por encima de su mínimo (una preferencia más estrecha que el mínimo
+// se queda como está). Si ni con los mínimos cabe, esos: scroll horizontal.
+function anchosAjustados(preferidos, minimos, disponible) {
+  const total = preferidos.reduce((s, w) => s + w, 0);
+  if (total <= disponible) return preferidos;
+  const suelos = preferidos.map((w, i) => Math.min(w, minimos[i]));
+  const suelo = suelos.reduce((s, w) => s + w, 0);
+  const f = Math.max(0, (disponible - suelo) / (total - suelo));
+  return preferidos.map((w, i) => Math.floor(suelos[i] + (w - suelos[i]) * f));
+}
+
+// La tabla cabe en su panel (M2, punto 1): se pinta con los anchos
+// ajustados; `state.anchos` (lo guardado) no cambia, así que con más sitio
+// vuelven los del usuario.
 function sincronizarAnchoTabla() {
   const tabla = $("#tabla");
   tabla.style.tableLayout = "fixed";
-  let total = 0;
+  const anchos = anchosAjustados(
+    state.columnas.map((c) => state.anchos[c] || COLUMNAS[c].ancho),
+    state.columnas.map((c) => MINIMO_COLUMNA[c]),
+    tabla.parentElement.clientWidth);
   document
     .querySelectorAll("#cabecera-tabla tr:first-child th")
-    .forEach((th) => { total += parseInt(th.style.width, 10) || 0; });
+    .forEach((th, i) => { th.style.width = anchos[i] + "px"; });
   tabla.style.minWidth = "100%";
-  tabla.style.width = total + "px";
+  tabla.style.width = anchos.reduce((s, w) => s + w, 0) + "px";
 }
 
 function montarManijaAncho(th, clave) {
@@ -1856,6 +1879,9 @@ function enlazarEventos() {
   });
 
   document.addEventListener("keydown", teclas);
+  // F-050 (M2, punto 1): la tabla se reajusta si cambia el sitio de su panel
+  // (ventana, barra de scroll vertical que aparece al cargar el mes).
+  new ResizeObserver(() => sincronizarAnchoTabla()).observe($("#tabla").parentElement);
   window.addEventListener("beforeunload", () => {
     if (state.guardadoPendiente) guardarAhora();
   });
