@@ -13,6 +13,7 @@ F-049). Sin `node` se saltan con su motivo; el reviewer los exige `passed`.
 """
 from __future__ import annotations
 
+import ast
 import json
 import re
 import shutil
@@ -347,3 +348,66 @@ def test_f050_r26_r29_cada_modo_con_su_catalogo(pv, ide, cod):
     assert obs["html"][0].startswith(f'<span class="cod">{cod}</span>')
     assert obs["llamadas"][1][1]["partida"]["ide"] == ide
     assert obs["llamadas"][1][1]["es_postventa"] is pv
+
+
+# ===== T15b · ampliación del 2026-10-10: la omitida por R20 también ===== #
+# R29 (última frase): una acción omitida por R20 (su partida elegida ya no
+# es hoja activa del presupuesto de origen) lleva el mismo botón que abre el
+# selector, con la partida rechazada. El front la reconoce por el `motivo`
+# que manda el transfer, sin decidir nada: el texto se lee del PROPIO
+# transfer (contrato; si cambia allí, falla aquí).
+TRANSFER = RAIZ.parent / "dedicacion-transfer" / "application" / "services"
+
+
+def _constante(fichero: str, nombre: str) -> str:
+    arbol = ast.parse((TRANSFER / fichero).read_text(encoding="utf-8"))
+    for n in arbol.body:
+        if isinstance(n, ast.Assign) and any(
+                getattr(t, "id", None) == nombre for t in n.targets):
+            return ast.literal_eval(n.value)
+    raise AssertionError(f"no está {nombre} en {fichero}")
+
+
+MOTIVO_R20 = _constante("propuesta_partida.py", "MOTIVO_PARTIDA_NO_HOJA")
+MOTIVO_PV = _constante("reglas_porcentajes.py", "MOTIVO_PARTIDA_PV_NO_HOJA")
+
+
+def _omitida_r20(cod, **cambios) -> dict:
+    """Como la deja el pipeline tras R20: `omitir`, sin partida y con el
+    motivo que la nombra (`partida_cod` elegida o, sin él, su `paride`)."""
+    return _accion(accion="omitir", paride=0, partida_cod=None,
+                   partida_metodo=None, partida_origen=None,
+                   motivo=MOTIVO_R20.format(cod=cod, obra="0694")) | cambios
+
+
+def test_f050_r29_omitida_por_r20_lleva_el_selector_con_la_rechazada():
+    obs = _modal([_obra([_omitida_r20("CI.1.20")])], """
+      botones[0]._h.click(); obs.aperturas = aperturas;
+    """)
+    assert _boton(obs["html"], 3001) == "CI.1.20"
+    motivo = MOTIVO_R20.format(cod="CI.1.20", obra="0694")
+    assert f'<span class="motivo">{motivo}</span>' in obs["html"]
+    assert obs["lineas"] == {
+        "3001": {"trabajador": 77, "obra_ide": 694, "es_postventa": False}}
+    assert obs["aperturas"] == [[77, 694, False, "3001", True]]
+
+
+def test_f050_r29_omitida_por_r20_sin_codigo_y_escapada():
+    obs = _modal([_obra([_omitida_r20(80002),
+                         _omitida_r20("A<b>&C", registro_id=3002)])])
+    assert _boton(obs["html"], 3001) == "80002"
+    assert _boton(obs["html"], 3002) == "A&lt;b&gt;&amp;C"
+    assert sorted(obs["lineas"]) == ["3001", "3002"]
+
+
+def test_f050_r29_las_demas_omitidas_siguen_sin_selector():
+    """La de postventa (otro motivo), una sin motivo y una que solo lo
+    contiene sin empezar por él: sin botón y sin línea."""
+    obs = _modal([_obra([
+        _omitida_r20("X", motivo=MOTIVO_PV.format(paride=80002)),
+        _omitida_r20("X", registro_id=3002, motivo=None),
+        _omitida_r20("X", registro_id=3003,
+                     motivo="ya: " + MOTIVO_R20.format(cod="CI.1",
+                                                       obra="0694"))])])
+    assert "sel-partida" not in obs["html"] and obs["lineas"] == {}
+    assert obs["html"].count('<span class="motivo">') == 3

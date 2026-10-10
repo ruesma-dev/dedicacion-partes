@@ -2,7 +2,7 @@
 # F-050 · Subfilas por obra con columna Partida y partida propuesta · informe del implementer
 
 Rama `feature/F-050-subfilas-partida`, rigor **crítico**, spec aprobada el
-2026-10-09 (D1-D10 = A). Tareas T1-T15 hechas, una por commit
+2026-10-09 (D1-D10 = A). Tareas T1-T15 y T15b hechas, una por commit
 (`686d00a`..`f4cdb11` y el cierre). T16-T18 son MANUAL del humano. Dos
 paradas por tests fuera de la lista cerrada, las dos aprobadas por el humano
 y recogidas en requirements §6: `test_f037_r3_…` (T3) y `test_f003_r8_…` (T6).
@@ -38,8 +38,7 @@ primera con su origen, «automática», teclas, caché, PUT); en el modal, botó
 ## Decisiones y desviaciones (justificadas)
 
 1. **Ventana:** `desde` = periodo − 24 meses, `hasta` = periodo (incluido).
-2. **Empate** con tolerancia de 1e-6 en las sumas de `can` (ruido de coma
-   flotante; `can` viaja con 4 decimales).
+2. **Empate** con tolerancia de 1e-6 en las sumas de `can` (coma flotante).
 3. **`_a_linea_con_partida`** envuelve `_a_linea` en vez de cambiarlo:
    `test_f024_r11` y `test_f025_r18` llaman a `_a_linea` con dobles sin
    `partida_*` y NO están en la lista cerrada.
@@ -51,16 +50,14 @@ primera con su origen, «automática», teclas, caché, PUT); en el modal, botó
    `casar_postventa` (las funciones que envuelve `_destino_postventa`), con
    la obra de origen ya resuelta: el flag de pruebas de `_destino_postventa`
    no se usaba y dejaba un mutante equivalente.
-6. **`ambito`:** si el mayor de la elegida es OTRO, `null` (Todas): OTRO no
-   tiene botón.
+6. **`ambito`:** si el mayor de la elegida es OTRO, `null` (Todas, sin botón).
 7. **Selector:** «automática» es la última opción (Enter al abrir elige la
    propuesta); si el ancla se rehace al guardar el editor, el panel se
    coloca donde estaba al abrir; la caché se vacía en cada carga del
    cuadrante (cubre cambio de mes y de empresa) y su clave tras cada PUT.
 8. **`MOTIVO_PARTIDA_NO_HOJA`** vive en `propuesta_partida.py`:
    `reglas_porcentajes.py` no se toca (design §9).
-9. **Fase `propuesta`:** `--categoria` y `--nombre` opcionales para ver el
-   casamiento; la empresa es la del script (`EMPRESA_PRUEBA` = 1).
+9. **Fase `propuesta`:** `--categoria`/`--nombre` opcionales; empresa 1.
 10. **`test_f037_r3`:** la línea aprobada necesita importar
     `PRESUPUESTO_ORIGEN` y `_fila` de `conftest` (dos líneas de import, sin
     tocar aserciones). **`test_f049_ampliacion`:** dos concatenaciones
@@ -143,35 +140,41 @@ FAILED …test_f002_r1_fuente_unica_el_ancla_no_esta_repetida[regla-partida]
 2 failed, 70 passed in 0.25s
 ```
 
-Los que pasaban en RED eran controles de lo que no cambia (sin líneas
-automáticas no se lee historial, la manual válida se escribe, VAR fija…).
-Tras cada tarea: verde de su verificación y de la suite del servicio.
+Los que pasaban en RED eran controles de lo que no cambia (sin automáticas
+no se lee historial, VAR fija…). Tras cada tarea, verde la suite del servicio.
 
 ## Mutación (T15)
 
 - **Python** (`python -m harness.mutacion --feature F-050 --workers 1` en un
-  `git worktree add --detach` del scratchpad con uniones a los `.venv`,
-  retirado después): primera pasada sobre `7f5f115`, **160 generados, 16
-  supervivientes**, 914,8 s. Ninguno se dejó como equivalente sin más:
-  - 13 huecos reales → tests nuevos (`f4cdb11`): modo por defecto `False` en
-    `GET …/partidas`, `PartidaIn` y `LineaPropuestaIn`; `PartidaElegidaIn.ide
-    = 1` válido; los recursos del historial (solo automáticos: sin
-    postventa, manual ni omitida); dataclasses inmutables; empate < 1e-6;
-    `can` nulo suma 0 (pasos 1 y 2); la línea completa del catálogo y los
-    segundos (≥ 0, < 60) de la fase `propuesta`.
-  - 3 equivalentes que se ELIMINAN cambiando el código sin cambiar la
-    conducta: las constantes `(1, 0, …)` de `clave_orden_codigo` (ahora
-    `(False, n)` / `(True, texto)`) y el flag de pruebas de
-    `_destino_postventa` en `proponer` (decisión 5).
-  - **Segunda pasada, la final** (`f4cdb11`): **158 generados, 158 muertos,
-    0 supervivientes**, 0 timeouts, 1236,8 s → `progress/mutacion_F-050.md`
-    (SHA, workers 1, sin muestreo).
-- **JS manual** (`progress/mutacion_manual_F-050.md`, fichero:línea, texto
-  exacto y nº de fallos por mutante, en otra copia aislada): primera pasada
-  56 mutantes, 4 vivos (J19 filtro de la fija, J36 catálogo de postventa en
-  el selector, J46 código pintado en la opción, J56 `registro.lineas` sin
-  vaciar), los cuatro huecos reales con test nuevo; **segunda pasada 56/56
-  muertos**, 785,5 s.
+  `git worktree add --detach` con uniones a los `.venv`, retirado después):
+  primera pasada (`7f5f115`) 160 generados, 16 supervivientes, 914,8 s: 13
+  huecos reales con test nuevo (`f4cdb11`: modo por defecto `False`, `ide = 1`
+  válido, recursos del historial, inmutables, empate, `can` nulo, fase
+  `propuesta`) y 3 equivalentes eliminados cambiando el código sin cambiar la
+  conducta (`clave_orden_codigo`; flag de pruebas en `proponer`, decisión 5).
+  **Final (`f4cdb11`): 158 generados, 158 muertos, 0 supervivientes**, 0
+  timeouts, 1236,8 s, sin muestreo → `progress/mutacion_F-050.md`.
+- **JS manual** (`progress/mutacion_manual_F-050.md`, copia aislada): primera
+  pasada 56, 4 vivos (J19, J36, J46, J56), huecos reales con test nuevo;
+  **segunda 56/56 muertos**, 785,5 s. T15b, en la sección siguiente.
+
+## T15b · omitida por R20 con selector (ampliación del 2026-10-10)
+
+Solo `app.js` (`pintarModalPreflight`): ayudante `botonPartida(texto)` (lo
+usan la acción a escribir y la omitida) y, en las omitidas, si el `motivo`
+empieza como `MOTIVO_PARTIDA_NO_HOJA`, el botón con la partida que nombra y
+debajo el motivo. El motivo es el único dato: R20 sale del bucle antes de
+poner `partida_cod`, y el transfer no se toca. Los tests leen esa constante
+(y la de postventa) del transfer con `ast`: si cambia el texto, fallan. Sin
+función nueva, para no tocar las listas de los `_modal` de F-049. Tres tests
+nuevos en `test_f050_modal_registro.py`; ningún test anterior cambia. RED
+(`.venv/Scripts/python.exe -m pytest tests/test_f050_modal_registro.py -q -k "r20 or demas_omitidas" --tb=line`):
+```
+subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '-']' returned non-zero exit status 1.   [node: TypeError: Cannot read properties of undefined (reading 'trabajador')]
+E   AssertionError: <h2>Registrar en Sigrid · sep 2026</h2>…<td><span class="motivo">la partida 80002 elegida no es una partida hoja activa del presupuesto de la obra 0694: no se escribe; elige otra partida</span></td>…
+2 failed, 1 passed, 14 deselected in 0.41s
+```
+Verde: `tests` del front, 187 passed. Mutación JS K01-K11: 11/11 muertos.
 
 ## Fuera del alcance
 
@@ -208,10 +211,10 @@ en la 0404 con `PRUEBA-PORC` y su `paride` el elegido; anotar en
 
 | Evidencia | Valor real |
 |---|---|
-| `bash harness/init.sh` (tal cual, sin `.arnes_cache/suite_*.ok`) | código 0, **ENTORNO LISTO**; todo `[OK]` salvo el `[AVISO]` de `ruff` (237, deuda previa); `PUERTA TAMAÑO` impl 217/220 |
-| Tests por servicio (ejecutados, no caché) | raíz **418 passed, 1 skipped** (92,39 s); api **768 passed** (77,71 s); front **184 passed** (33,46 s; node v24.14.1); transfer **750 passed** (17,23 s) |
-| Tests nuevos de F-050 | transfer `test_f050_propuesta` 47, `test_f050_pipeline` 24, `test_f050_endpoint_propuesta` 19; api `test_f050_partida_linea` 23, `test_f050_rutas_partida` 30; front `test_f050_subfilas` 16, `test_f050_selector_partida` 19, `test_f050_modal_registro` 14 |
+| `bash harness/init.sh` (tal cual, sin `.arnes_cache/suite_*.ok`) | código 0, **ENTORNO LISTO**; todo `[OK]` salvo el `[AVISO]` de `ruff` (237, deuda previa); `PUERTA TAMAÑO` impl 220/220 (T15b, 2026-10-10) |
+| Tests por servicio (ejecutados, no caché) | T15b: raíz **418 passed, 1 skipped** (52,49 s); api **768 passed** (45,42 s); front **187 passed** (15,27 s; node v24.14.1); transfer **750 passed** (7,39 s) |
+| Tests nuevos de F-050 | transfer `test_f050_propuesta` 47, `test_f050_pipeline` 24, `test_f050_endpoint_propuesta` 19; api `test_f050_partida_linea` 23, `test_f050_rutas_partida` 30; front `test_f050_subfilas` 16, `test_f050_selector_partida` 19, `test_f050_modal_registro` 17 (14 + 3 de T15b) |
 | Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 341 líneas cambiadas cubiertas (341/341, umbral 80%, nivel critico)` (Python; el JS no se mide: lo cubre la campaña manual) |
 | Mutantes Python | **158 generados, 0 supervivientes** (final; la primera, 160/16), 1236,8 s, 1 worker, sin muestreo |
-| Mutantes JS (manual) | **56 generados, 0 supervivientes** (final; la primera, 56/4), 785,5 s en serie |
+| Mutantes JS (manual) | **56 generados, 0 supervivientes** (final; la primera, 56/4), 785,5 s en serie; T15b: **11 generados, 0 supervivientes**, 122,9 s |
 | ruff | 237 avisos, los mismos de antes (los ficheros de F-050 no añaden ninguno) |

@@ -140,3 +140,79 @@ Mutado:
       ev.preventDefault();
       activa = Math.min(activa + 1, opciones.length - 1);
 ```
+
+## T15b · omitida por R20 con selector (ampliación del 2026-10-10)
+
+Mismo método, en otra COPIA AISLADA (`services/dedicacion-front` sin `.venv`
+ni `.env`, más `propuesta_partida.py` y `reglas_porcentajes.py` del transfer,
+que leen los tests nuevos, copiados en el scratchpad), con el script
+`mut_t15b.py` del scratchpad: un texto exacto de `app.js` por mutante (cada
+original aparece una sola vez en él; se comprueba antes de mutar), suite
+ENTERA del front (`pytest tests -q -p no:cacheprovider`, 187 tests en verde
+sin mutar) y restauración tras cada uno (`cmp` con la copia de trabajo al
+final: idénticos). Sobre el `app.js` de T15b (HEAD `1c78608` + el cambio).
+
+**11 generados, 11 muertos, 0 supervivientes**, 122,9 s en serie. Los de
+una línea van en la tabla; los de varias (K08, K09, K10), debajo.
+
+| Id | app.js:línea | Texto original → mutado (exacto) | Fallos |
+|---|---|---|---|
+| K01 | 2112 | `/^la partida (.+) elegida no es una partida hoja activa del presupuesto de la obra /` → `/la partida (.+) elegida no es una partida hoja activa del presupuesto de la obra /` | 1 |
+| K02 | 2113 | `.exec(a.motivo);` → `.exec(a.aviso);` | 2 |
+| K03 | 2114 | `sel = (r20 ? botonPartida(r20[1]) : "") +` → `sel = "" +` | 2 |
+| K04 | 2114 | `botonPartida(r20[1])` → `botonPartida(r20[0])` | 2 |
+| K05 | 2112 | `/^la partida (.+) elegida no es una partida hoja activa del presupuesto de la obra /` → `/^la partida (.+) /` | 3 |
+| K06 | 2094 | `` `${escapeHtml(texto)}</button>`; `` → `` `${texto}</button>`; `` | 2 |
+| K07 | 2090 | `trabajador: a.recurso_ide, obra_ide: o.obra.ide,` → `trabajador: a.recurso_ide, obra_ide: o.obra.codigo,` | 4 |
+| K08 | 2091 | [exacto](#textos-exactos-de-k08-k09-y-k10) | 1 |
+| K09 | 2089 | [exacto](#textos-exactos-de-k08-k09-y-k10) | 5 |
+| K10 | 2114 | [exacto](#textos-exactos-de-k08-k09-y-k10) | 1 |
+| K11 | 2103 | `sel = botonPartida(textoPartidaAccion(a)) +` → `sel = botonPartida(a.partida_cod) +` | 1 |
+
+### Textos exactos de K08, K09 y K10
+
+**K08** (app.js:2091, 1 fallo). Original:
+
+```js
+          es_postventa: a.es_postventa,
+        };
+        return
+```
+
+Mutado:
+
+```js
+          es_postventa: false,
+        };
+        return
+```
+
+**K09** (app.js:2089, 5 fallos). Original:
+
+```js
+        registro.lineas[a.registro_id] = {
+          trabajador: a.recurso_ide, obra_ide: o.obra.ide,
+          es_postventa: a.es_postventa,
+        };
+        return
+```
+
+Mutado:
+
+```js
+        return
+```
+
+**K10** (app.js:2114, 1 fallo). Original:
+
+```js
+sel = (r20 ? botonPartida(r20[1]) : "") +
+          `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
+```
+
+Mutado:
+
+```js
+sel = r20 ? botonPartida(r20[1]) :
+          `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
+```

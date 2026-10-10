@@ -2083,24 +2083,36 @@ function pintarModalPreflight(pf) {
     });
     const filas = (o.acciones || []).map((a) => {
       const aviso = a.aviso ? `<div class="aviso">${escapeHtml(a.aviso)}</div>` : "";
+      // F-050 (R29): el botón con la partida de la línea; su clic abre el
+      // MISMO selector que la columna Partida para esa línea.
+      const botonPartida = (texto) => {
+        registro.lineas[a.registro_id] = {
+          trabajador: a.recurso_ide, obra_ide: o.obra.ide,
+          es_postventa: a.es_postventa,
+        };
+        return `<button type="button" class="sel-partida" data-reg="${a.registro_id}">` +
+          `${escapeHtml(texto)}</button>`;
+      };
       let sel;
       if (a.accion === "escribir" && a.partida_metodo === "var") {
         // Partida VAR fija: la decide el transfer, no se edita (F-039).
         sel = `<span class="partida-fija">${escapeHtml(a.partida_cod || "")}</span>` + aviso;
       } else if (a.accion === "escribir") {
-        // F-050 (R29): la partida a escribir y de dónde sale; el clic abre
-        // el MISMO selector que la columna Partida para esa línea.
-        registro.lineas[a.registro_id] = {
-          trabajador: a.recurso_ide, obra_ide: o.obra.ide,
-          es_postventa: a.es_postventa,
-        };
+        // La partida a escribir y de dónde sale.
         const origen = rotuloOrigen(a.partida_metodo, a.partida_origen);
-        sel = `<button type="button" class="sel-partida" data-reg="${a.registro_id}">` +
-          `${escapeHtml(textoPartidaAccion(a))}</button>` +
+        sel = botonPartida(textoPartidaAccion(a)) +
           (origen ? `<div class="origen-partida">${escapeHtml(origen)}</div>` : "") +
           aviso;
       } else {
-        sel = `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
+        // R29 (ampliación del 2026-10-10): la omitida por R20 (su elegida ya
+        // no es hoja activa) también lleva el botón, con la partida que
+        // nombra el motivo del transfer (MOTIVO_PARTIDA_NO_HOJA de
+        // propuesta_partida.py). Solo se lee ese texto: el front no decide
+        // qué partida vale. Sin motivo, exec(undefined) no casa.
+        const r20 = /^la partida (.+) elegida no es una partida hoja activa del presupuesto de la obra /
+          .exec(a.motivo);
+        sel = (r20 ? botonPartida(r20[1]) : "") +
+          `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
       }
       return `<tr><td>${escapeHtml(a.nombre || "")}</td>` +
         `<td>${a.destino === "postventa" ? "Postventa" : "Obra"}</td>` +
