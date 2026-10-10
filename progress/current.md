@@ -39,7 +39,8 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   «…» (implementer relanzado); T19 sin marcar, F-050 duplicada en «Lo
   siguiente» y el rango de commits (corregidos por el líder). Observaciones:
   (g) en M2 para el tiempo del mes entero; una línea omitida por R20 no tiene
-  botón de partida en el modal (se consulta al humano); postventa en R9 casa
+  botón de partida en el modal (**el humano aprueba el 2026-10-10 añadirlo:
+  R29 bis; implementer lanzado**, después review 2); postventa en R9 casa
   con `origen.codigo` en `proponer` y con `obra.codigo` en el preflight (hoy
   coinciden; anotado en «Hechos que no conviene volver a descubrir»).
 - **MANUAL (humano, en local; transfer en modo pruebas):**

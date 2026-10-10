@@ -118,7 +118,7 @@ raíz del presupuesto de la que cuelga la partida (design §5.1).
   sistema debe abrir **el mismo selector de R25-R27** para esa línea (sin
   `<select>`); lo elegido se guarda (R13), repinta la fila y repite el
   preflight (F-049). VAR, fija. El front deja de mandar `overrides` y de
-  leer `partidas_obra`/`partidas_postventa` del preflight.
+  leer `partidas_obra`/`partidas_postventa` del preflight. Una omitida por R20 también lleva el selector (humano, 2026-10-10).
 
 ## 5. Documentación
 
