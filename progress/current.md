@@ -53,6 +53,11 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
     Esperado en la 0694: «Propuesta: CI.1.5», método `parte_anterior`, origen
     PT26/00319 · 09/2026; «Por mayor: CD … · CI … · CP …» con `CP.1`-`CP.12`
     en CP; botón preelegido CI; cada lectura < 30 s.
+    **Resultado M1 (humano, 2026-10-11): OK.** 0694: propuesta CI.1.5
+    (`parte_anterior`, PT26/00319 · 09/2026), 835 hojas (CD 727 · CI 95 · CP 13 ·
+    OTRO 0), botón CI; lecturas 6,39 s / 5,26 s / 5,74 s. 0696: CI.1.5 por
+    `ultimo_parte` (PT26/00319 y PT26/00350, obras 0694 y 0672), 2.636 hojas
+    (CD 2562 · CI 62 · CP 12), botón CI; lecturas 4,30 s / 3,25 s / 0,80 s.
   - **M2 (T17, navegador):** transfer, api y front desde la copia principal
     (`.venv/Scripts/python main.py` en cada servicio); `curl -s http://localhost:8006/health`
     con `"modo_pruebas": true` (si no, PARAR). La api añade al arrancar las
