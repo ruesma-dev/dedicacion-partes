@@ -344,7 +344,7 @@ def test_f050_m2_3_un_segundo_clic_mientras_carga_no_abre_otro():
     """)
     assert obs["cargando"] == [1, 1]
     assert obs["cargado"] == [1, 1]
-    assert obs["otra_vez"] == [1, 1]          # de la caché, sin otro panel
+    assert obs["otra_vez"] == [1, 1]          # ya lleno: tampoco abre otro
 
 
 @pytest.mark.parametrize("orden", ["vieja_despues", "vieja_antes"])

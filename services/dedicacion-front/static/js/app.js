@@ -87,9 +87,9 @@ const state = {
 };
 
 // Selector de partida (F-050): respuestas de `GET …/partidas` por trabajador,
-// obra y modo (se vacía al cargar el cuadrante y su clave tras cada PUT) y
-// cómo cerrar el panel abierto.
-const selector = { cache: new Map(), cerrar: null, cargando: null };
+// obra y modo (se vacía al cargar el cuadrante y su clave tras cada PUT),
+// cómo cerrar el panel abierto y su clave (cargando o ya lleno).
+const selector = { cache: new Map(), cerrar: null, abierto: null };
 
 // ---------------------------------------------------------------- utilidades
 const $ = (sel) => document.querySelector(sel);
@@ -1482,24 +1482,24 @@ function clavePartidas(trabajadorIde, obraIde, esPostventa) {
 function cerrarSelectorPartida() {
   if (selector.cerrar) selector.cerrar();
   selector.cerrar = null;
-  selector.cargando = null;
+  selector.abierto = null;
 }
 
 // `ancla`: el elemento junto al que sale el panel; `despues`: lo que se hace
 // tras guardar (el modal repite su análisis de la obra de la línea).
-// M2, punto 3: el panel sale AL INSTANTE con «Cargando partidas…»; un
-// segundo clic en la misma línea mientras carga no abre otro, y solo pinta
-// la respuesta del último pedido (la de un panel ya cerrado o sustituido se
-// descarta, también su error).
+// M2, punto 3: el panel sale AL INSTANTE con «Cargando partidas…»; otro
+// clic en la misma línea con su panel abierto (cargando o no) no abre otro,
+// y solo pinta la respuesta del último pedido (la de un panel ya cerrado o
+// sustituido se descarta, también su error).
 async function abrirSelectorPartida(trabajadorIde, obraIde, esPostventa, ancla, despues) {
   const clave = clavePartidas(trabajadorIde, obraIde, esPostventa);
-  if (selector.cargando === clave) return;
+  if (selector.abierto === clave) return;
   const rect = ancla.getBoundingClientRect();
   const llenar = montarSelectorPartida({
     trabajadorIde, obraIde, esPostventa, ancla, rect, despues, clave,
   });
   const vivo = selector.cerrar;
-  selector.cargando = clave;
+  selector.abierto = clave;
   if (state.editandoIde === trabajadorIde) await guardarAhora();
   let resp = selector.cache.get(clave);
   if (!resp) {
@@ -1514,7 +1514,6 @@ async function abrirSelectorPartida(trabajadorIde, obraIde, esPostventa, ancla, 
     selector.cache.set(clave, resp);
   }
   if (selector.cerrar !== vivo) return;
-  selector.cargando = null;
   llenar(resp);
 }
 
