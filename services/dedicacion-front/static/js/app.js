@@ -89,7 +89,7 @@ const state = {
 // Selector de partida (F-050): respuestas de `GET …/partidas` por trabajador,
 // obra y modo (se vacía al cargar el cuadrante y su clave tras cada PUT) y
 // cómo cerrar el panel abierto.
-const selector = { cache: new Map(), cerrar: null };
+const selector = { cache: new Map(), cerrar: null, cargando: null };
 
 // ---------------------------------------------------------------- utilidades
 const $ = (sel) => document.querySelector(sel);
@@ -1482,50 +1482,50 @@ function clavePartidas(trabajadorIde, obraIde, esPostventa) {
 function cerrarSelectorPartida() {
   if (selector.cerrar) selector.cerrar();
   selector.cerrar = null;
+  selector.cargando = null;
 }
 
 // `ancla`: el elemento junto al que sale el panel; `despues`: lo que se hace
-// tras guardar (el modal repite su análisis).
+// tras guardar (el modal repite su análisis de la obra de la línea).
+// M2, punto 3: el panel sale AL INSTANTE con «Cargando partidas…»; un
+// segundo clic en la misma línea mientras carga no abre otro, y solo pinta
+// la respuesta del último pedido (la de un panel ya cerrado o sustituido se
+// descarta, también su error).
 async function abrirSelectorPartida(trabajadorIde, obraIde, esPostventa, ancla, despues) {
-  const rect = ancla.getBoundingClientRect();
-  if (state.editandoIde === trabajadorIde) await guardarAhora();
-  cerrarSelectorPartida();
   const clave = clavePartidas(trabajadorIde, obraIde, esPostventa);
+  if (selector.cargando === clave) return;
+  const rect = ancla.getBoundingClientRect();
+  const llenar = montarSelectorPartida({
+    trabajadorIde, obraIde, esPostventa, ancla, rect, despues, clave,
+  });
+  const vivo = selector.cerrar;
+  selector.cargando = clave;
+  if (state.editandoIde === trabajadorIde) await guardarAhora();
   let resp = selector.cache.get(clave);
   if (!resp) {
     try {
       resp = await api(`/periodos/${state.anio}/${state.mes}/trabajadores/${trabajadorIde}/partidas?obra_ide=${obraIde}&es_postventa=${esPostventa}`);
     } catch (err) {
+      if (selector.cerrar !== vivo) return;
+      cerrarSelectorPartida();
       toast(err.message, true);
       return;
     }
     selector.cache.set(clave, resp);
   }
-  montarSelectorPartida(resp, {
-    trabajadorIde, obraIde, esPostventa, ancla, rect, despues, clave,
-  });
+  if (selector.cerrar !== vivo) return;
+  selector.cargando = null;
+  llenar(resp);
 }
 
-function montarSelectorPartida(resp, ctx) {
+// Monta el panel vacío («Cargando partidas…») junto a su ancla y devuelve
+// `llenar(resp)`, que pone en ESE panel el buscador, los botones y la lista.
+function montarSelectorPartida(ctx) {
   cerrarSelectorPartida();
   const panel = document.createElement("div");
   panel.className = "panel-partida";
-  panel.innerHTML =
-    '<input class="buscar-partida" autocomplete="off" ' +
-    'placeholder="Buscar partida (código o descripción)…">' +
-    `<div class="mayores">${["", "CD", "CI", "CP"].map((m) =>
-      `<button type="button" data-mayor="${m}">${m || "Todas"}</button>`).join("")}</div>` +
-    '<div class="lista-partidas"></div>';
+  panel.innerHTML = '<div class="vacio">Cargando partidas…</div>';
   document.body.appendChild(panel);
-  const input = panel.querySelector(".buscar-partida");
-  const lista = panel.querySelector(".lista-partidas");
-  const base = {
-    partidas: ctx.esPostventa ? resp.partidas_postventa : resp.partidas,
-    propuesta: resp.propuesta,
-  };
-  let mayor = resp.ambito || null;
-  let opciones = [];
-  let activa = 0;
 
   // Junto a su ancla, como el panel de F-042; si el ancla se ha rehecho
   // (guardado del editor), donde estaba al abrir.
@@ -1541,53 +1541,9 @@ function montarSelectorPartida(resp, ctx) {
     panel.style.width = `${pos.ancho}px`;
     panel.style.maxHeight = `${pos.altoMax}px`;
   };
-  const elegir = async (op) => {
-    if (!op) return;
-    const partida = op.automatica ? null : { ide: op.ide, cod: op.cod, res: op.res };
-    cerrarSelectorPartida();
-    try {
-      const datos = await api(
-        `/periodos/${state.anio}/${state.mes}/trabajadores/${ctx.trabajadorIde}/partida`,
-        { method: "PUT", body: JSON.stringify({ obra_ide: ctx.obraIde,
-          es_postventa: ctx.esPostventa, partida }) });
-      selector.cache.delete(ctx.clave);
-      aplicarFila(datos);
-      if (ctx.despues) ctx.despues();
-    } catch (err) {
-      toast(err.message, true);
-    }
-  };
-  const pintar = () => {
-    panel.querySelectorAll(".mayores button").forEach((b) =>
-      b.classList.toggle("on", (b.dataset.mayor || null) === mayor));
-    opciones = listaSelector(base, input.value, mayor).concat([{ automatica: true }]);
-    activa = Math.min(activa, opciones.length - 1);
-    lista.innerHTML = opciones.length === 1
-      ? '<div class="vacio">Sin partidas con ese filtro</div>' : "";
-    opciones.forEach((op, i) => {
-      const fila = document.createElement("div");
-      fila.className = "opcion" + (i === activa ? " activa" : "") +
-        (op.propuesta ? " propuesta" : "") + (op.automatica ? " automatica" : "");
-      fila.innerHTML = op.automatica
-        ? '<span class="desc">automática (la propone el registro)</span>'
-        : `<span class="cod">${escapeHtml(op.cod || "")}</span>` +
-          `<span class="desc">${escapeHtml(op.res || "")}</span>` +
-          (op.propuesta
-            ? `<span class="origen">propuesta · ${escapeHtml(rotuloOrigen(resp.propuesta.metodo, resp.propuesta.origen))}</span>`
-            : "");
-      fila.addEventListener("mousedown", (ev) => {
-        ev.preventDefault();
-        elegir(op);
-      });
-      lista.appendChild(fila);
-    });
-    const viva = lista.querySelector(".opcion.activa");
-    if (viva) viva.scrollIntoView({ block: "nearest" });
-    recolocar();
-  };
-
+  // El clic en su propia ancla no lo cierra (es el segundo clic, punto 3).
   const fuera = (ev) => {
-    if (!panel.contains(ev.target)) cerrarSelectorPartida();
+    if (!panel.contains(ev.target) && !ctx.ancla.contains(ev.target)) cerrarSelectorPartida();
   };
   document.addEventListener("mousedown", fuera, true);
   window.addEventListener("scroll", recolocar, true);
@@ -1598,37 +1554,103 @@ function montarSelectorPartida(resp, ctx) {
     window.removeEventListener("resize", recolocar);
     panel.remove();
   };
+  recolocar();
 
-  panel.querySelectorAll(".mayores button").forEach((b) => {
-    b.addEventListener("mousedown", (ev) => {
-      ev.preventDefault();
-      mayor = b.dataset.mayor || null;
-      activa = 0;
-      pintar();
-    });
-  });
-  input.addEventListener("input", () => { activa = 0; pintar(); });
-  // Sus teclas no llegan a `teclas` ni al modal: Esc cierra solo el panel.
-  input.addEventListener("keydown", (ev) => {
-    ev.stopPropagation();
-    if (ev.key === "ArrowDown") {
-      ev.preventDefault();
-      activa = Math.min(activa + 1, opciones.length - 1);
-      pintar();
-    } else if (ev.key === "ArrowUp") {
-      ev.preventDefault();
-      activa = Math.max(activa - 1, 0);
-      pintar();
-    } else if (ev.key === "Enter") {
-      ev.preventDefault();
-      elegir(opciones[activa]);
-    } else if (ev.key === "Escape") {
-      ev.preventDefault();
+  // Con la respuesta de la API: el buscador, los botones y la lista, en
+  // ESE panel.
+  return (resp) => {
+    panel.innerHTML =
+      '<input class="buscar-partida" autocomplete="off" ' +
+      'placeholder="Buscar partida (código o descripción)…">' +
+      `<div class="mayores">${["", "CD", "CI", "CP"].map((m) =>
+        `<button type="button" data-mayor="${m}">${m || "Todas"}</button>`).join("")}</div>` +
+      '<div class="lista-partidas"></div>';
+    const input = panel.querySelector(".buscar-partida");
+    const lista = panel.querySelector(".lista-partidas");
+    const base = {
+      partidas: ctx.esPostventa ? resp.partidas_postventa : resp.partidas,
+      propuesta: resp.propuesta,
+    };
+    let mayor = resp.ambito || null;
+    let opciones = [];
+    let activa = 0;
+
+    const elegir = async (op) => {
+      if (!op) return;
+      const partida = op.automatica ? null : { ide: op.ide, cod: op.cod, res: op.res };
       cerrarSelectorPartida();
-    }
-  });
-  pintar();
-  input.focus();
+      try {
+        const datos = await api(
+          `/periodos/${state.anio}/${state.mes}/trabajadores/${ctx.trabajadorIde}/partida`,
+          { method: "PUT", body: JSON.stringify({ obra_ide: ctx.obraIde,
+            es_postventa: ctx.esPostventa, partida }) });
+        selector.cache.delete(ctx.clave);
+        aplicarFila(datos);
+        if (ctx.despues) ctx.despues();
+      } catch (err) {
+        toast(err.message, true);
+      }
+    };
+    const pintar = () => {
+      panel.querySelectorAll(".mayores button").forEach((b) =>
+        b.classList.toggle("on", (b.dataset.mayor || null) === mayor));
+      opciones = listaSelector(base, input.value, mayor).concat([{ automatica: true }]);
+      activa = Math.min(activa, opciones.length - 1);
+      lista.innerHTML = opciones.length === 1
+        ? '<div class="vacio">Sin partidas con ese filtro</div>' : "";
+      opciones.forEach((op, i) => {
+        const fila = document.createElement("div");
+        fila.className = "opcion" + (i === activa ? " activa" : "") +
+          (op.propuesta ? " propuesta" : "") + (op.automatica ? " automatica" : "");
+        fila.innerHTML = op.automatica
+          ? '<span class="desc">automática (la propone el registro)</span>'
+          : `<span class="cod">${escapeHtml(op.cod || "")}</span>` +
+            `<span class="desc">${escapeHtml(op.res || "")}</span>` +
+            (op.propuesta
+              ? `<span class="origen">propuesta · ${escapeHtml(rotuloOrigen(resp.propuesta.metodo, resp.propuesta.origen))}</span>`
+              : "");
+        fila.addEventListener("mousedown", (ev) => {
+          ev.preventDefault();
+          elegir(op);
+        });
+        lista.appendChild(fila);
+      });
+      const viva = lista.querySelector(".opcion.activa");
+      if (viva) viva.scrollIntoView({ block: "nearest" });
+      recolocar();
+    };
+
+    panel.querySelectorAll(".mayores button").forEach((b) => {
+      b.addEventListener("mousedown", (ev) => {
+        ev.preventDefault();
+        mayor = b.dataset.mayor || null;
+        activa = 0;
+        pintar();
+      });
+    });
+    input.addEventListener("input", () => { activa = 0; pintar(); });
+    // Sus teclas no llegan a `teclas` ni al modal: Esc cierra solo el panel.
+    input.addEventListener("keydown", (ev) => {
+      ev.stopPropagation();
+      if (ev.key === "ArrowDown") {
+        ev.preventDefault();
+        activa = Math.min(activa + 1, opciones.length - 1);
+        pintar();
+      } else if (ev.key === "ArrowUp") {
+        ev.preventDefault();
+        activa = Math.max(activa - 1, 0);
+        pintar();
+      } else if (ev.key === "Enter") {
+        ev.preventDefault();
+        elegir(opciones[activa]);
+      } else if (ev.key === "Escape") {
+        ev.preventDefault();
+        cerrarSelectorPartida();
+      }
+    });
+    pintar();
+    input.focus();
+  };
 }
 
 // ---------------------------------------------------------------- guardado

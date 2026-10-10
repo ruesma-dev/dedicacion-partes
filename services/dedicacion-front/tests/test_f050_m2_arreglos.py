@@ -237,3 +237,163 @@ def test_f050_m2_2_css_fondo_en_todas_y_barras_solo_en_los_bordes():
         "box-shadow: inset 3px 0 0 var(--brand), inset 6px 0 0 var(--pv);"
     assert "td:first-child" not in CSS.split("Selección múltiple")[1].split(
         "tr.fila.inactivo")[0]
+
+
+# ======== 3 · el selector: al instante, uno solo y el último pedido ======== #
+ESCAPE = ("function escapeHtml(t) { return (t == null ? '' : String(t))"
+          ".replace(/&/g,'&amp;').replace(/</g,'&lt;')"
+          ".replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }")
+
+#: DOM de mentira con árbol de verdad (`contains` sube por `padre`, `remove`
+#: lo quita de su padre) y escuchas de `document` que el escenario dispara
+#: con `pulsar(nodo)`; `api` deja cada petición pendiente en `llamadas`.
+DOM = r"""
+const escuchas = [];
+function nodo(tag) {
+  const n = {tag, className: "", _html: "", style: {}, dataset: {}, hijos: [],
+    _h: {}, padre: null, classList: {toggle() {}, add() {}, contains: () => false},
+    get innerHTML() { return this._html; },
+    set innerHTML(v) { this._html = v; this.hijos = []; },
+    addEventListener(ev, fn) { this._h[ev] = fn; },
+    appendChild(h) { this.hijos.push(h); h.padre = this; return h; },
+    querySelector(s) {
+      if (s === ".buscar-partida") return this._input || (this._input = nodo("input"));
+      if (s === ".lista-partidas") return this._lista || (this._lista = nodo("div"));
+      return null; },
+    querySelectorAll() { return []; },
+    contains(x) { for (let y = x; y; y = y.padre) if (y === this) return true;
+      return false; },
+    remove() { if (this.padre) {
+      this.padre.hijos = this.padre.hijos.filter((h) => h !== this);
+      this.padre = null; } },
+    focus() {}, scrollIntoView() {}, offsetHeight: 100, value: "",
+    isConnected: true,
+    getBoundingClientRect() { return this.rect || {top: 10, bottom: 30, left: 10}; }};
+  return n;
+}
+const body = nodo("body");
+const document = {createElement: nodo, body,
+  addEventListener(t, fn) { escuchas.push([t, fn]); },
+  removeEventListener(t, fn) {
+    const i = escuchas.findIndex((e) => e[0] === t && e[1] === fn);
+    if (i >= 0) escuchas.splice(i, 1); },
+  documentElement: {clientHeight: 800, clientWidth: 1200},
+  querySelectorAll: () => []};
+const window = {addEventListener() {}, removeEventListener() {}};
+const pulsar = (target) => escuchas.filter((e) => e[0] === "mousedown")
+  .forEach((e) => e[1]({target}));
+const paneles = () => body.hijos.filter((h) => h.className === "panel-partida");
+const texto = (p) => p.innerHTML +
+  (p._lista ? p._lista.hijos.map((h) => h.innerHTML).join("") : "");
+const llamadas = [];
+function api(url, o) {
+  return new Promise((res, rej) => llamadas.push({url, o, res, rej})); }
+const toasts = []; function toast(m) { toasts.push(m); }
+function aplicarFila() {} async function guardarAhora() {}
+const tick = () => new Promise((r) => setTimeout(r, 0));
+const resp = (cod) => ({partidas: [{ide: 1, cod, res: "R", mayor: "CI"}],
+  partidas_postventa: [], ambito: null, propuesta: null});
+const state = {anio: 2026, mes: 9, empresa: 1, editandoIde: null};
+"""
+
+SELECTOR = ("normalizar", "filtrarPartidas", "listaSelector", "rotuloOrigen",
+            "posicionSugerencias", "clavePartidas", "cerrarSelectorPartida",
+            "abrirSelectorPartida", "montarSelectorPartida")
+
+
+def _escenario(cuerpo: str, extra=()) -> dict:
+    return _node("\n".join([
+        DOM, ESCAPE, _const("selector"),
+        *(_funcion(f) for f in (*SELECTOR, *extra)),
+        "(async () => { const obs = {};", cuerpo,
+        "process.stdout.write(JSON.stringify(obs)); })();"]))
+
+
+CARGANDO = "Cargando partidas…"
+
+
+def test_f050_m2_3_se_abre_al_instante_con_cargando():
+    """Sin esperar a la API: el panel ya está, con «Cargando partidas…»; al
+    llegar la respuesta, ESE panel se llena (no sale otro)."""
+    obs = _escenario("""
+      const a = nodo("td");
+      abrirSelectorPartida(77, 694, false, a);
+      obs.al_instante = paneles().map(texto);
+      const panel = paneles()[0];
+      llamadas[0].res(resp("CI.1.5")); await tick();
+      obs.despues = paneles().length; obs.mismo = paneles()[0] === panel;
+      obs.lleno = texto(paneles()[0]);
+    """)
+    assert len(obs["al_instante"]) == 1
+    assert CARGANDO in obs["al_instante"][0]
+    assert obs["despues"] == 1 and obs["mismo"] is True
+    assert "buscar-partida" in obs["lleno"] and "CI.1.5" in obs["lleno"]
+    assert CARGANDO not in obs["lleno"]
+
+
+def test_f050_m2_3_un_segundo_clic_mientras_carga_no_abre_otro():
+    obs = _escenario("""
+      const a = nodo("td");
+      abrirSelectorPartida(77, 694, false, a);
+      pulsar(a); abrirSelectorPartida(77, 694, false, a);
+      obs.cargando = [paneles().length, llamadas.length];
+      llamadas[0].res(resp("CI.1.5")); await tick();
+      obs.cargado = [paneles().length, llamadas.length];
+      pulsar(a); await abrirSelectorPartida(77, 694, false, a);
+      obs.otra_vez = [paneles().length, llamadas.length];
+    """)
+    assert obs["cargando"] == [1, 1]
+    assert obs["cargado"] == [1, 1]
+    assert obs["otra_vez"] == [1, 1]          # de la caché, sin otro panel
+
+
+@pytest.mark.parametrize("orden", ["vieja_despues", "vieja_antes"])
+def test_f050_m2_3_solo_pinta_el_ultimo_pedido(orden):
+    obs = _escenario("""
+      const a = nodo("td"), b = nodo("td");
+      abrirSelectorPartida(77, 694, false, a);
+      pulsar(b); abrirSelectorPartida(78, 700, false, b);
+      const [vieja, nueva] = llamadas;
+      if (%s) { vieja.res(resp("VIEJA")); await tick();
+                obs.entre = paneles().map(texto); }
+      nueva.res(resp("NUEVA")); await tick();
+      vieja.res(resp("VIEJA")); await tick();
+      obs.fin = paneles().map(texto);
+    """ % ("true" if orden == "vieja_antes" else "false"))
+    assert len(obs["fin"]) == 1
+    assert "NUEVA" in obs["fin"][0] and "VIEJA" not in obs["fin"][0]
+    if orden == "vieja_antes":
+        assert len(obs["entre"]) == 1 and CARGANDO in obs["entre"][0]
+
+
+def test_f050_m2_3_cerrado_mientras_carga_no_se_reabre():
+    obs = _escenario("""
+      const a = nodo("td"), fuera = nodo("div");
+      abrirSelectorPartida(77, 694, false, a);
+      pulsar(fuera);
+      obs.cerrado = [paneles().length, escuchas.length];
+      llamadas[0].res(resp("CI.1.5")); await tick();
+      obs.tras_respuesta = paneles().length;
+      abrirSelectorPartida(77, 694, false, a);
+      obs.se_puede_abrir = paneles().map(texto);
+    """)
+    assert obs["cerrado"] == [0, 0]
+    assert obs["tras_respuesta"] == 0
+    assert len(obs["se_puede_abrir"]) == 1
+
+
+def test_f050_m2_3_un_error_cierra_el_panel_y_uno_viejo_calla():
+    obs = _escenario("""
+      const a = nodo("td"), b = nodo("td");
+      abrirSelectorPartida(77, 694, false, a);
+      llamadas[0].rej(new Error("transfer caído")); await tick();
+      obs.error = [paneles().length, toasts.slice()];
+      abrirSelectorPartida(77, 694, false, a);
+      pulsar(b); abrirSelectorPartida(78, 700, false, b);
+      llamadas[1].rej(new Error("viejo")); await tick();
+      obs.viejo = [paneles().map(texto), toasts.slice()];
+    """)
+    assert obs["error"] == [0, ["transfer caído"]]
+    paneles, toasts = obs["viejo"]
+    assert len(paneles) == 1 and CARGANDO in paneles[0]
+    assert toasts == ["transfer caído"]
