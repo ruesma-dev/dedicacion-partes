@@ -352,33 +352,39 @@ def test_f050_m2_3_solo_pinta_el_ultimo_pedido(orden):
     obs = _escenario("""
       const a = nodo("td"), b = nodo("td");
       abrirSelectorPartida(77, 694, false, a);
+      const pa = paneles()[0];
       pulsar(b); abrirSelectorPartida(78, 700, false, b);
       const [vieja, nueva] = llamadas;
       if (%s) { vieja.res(resp("VIEJA")); await tick();
                 obs.entre = paneles().map(texto); }
       nueva.res(resp("NUEVA")); await tick();
       vieja.res(resp("VIEJA")); await tick();
-      obs.fin = paneles().map(texto);
+      obs.fin = paneles().map(texto); obs.panel_viejo = texto(pa);
     """ % ("true" if orden == "vieja_antes" else "false"))
     assert len(obs["fin"]) == 1
     assert "NUEVA" in obs["fin"][0] and "VIEJA" not in obs["fin"][0]
     if orden == "vieja_antes":
         assert len(obs["entre"]) == 1 and CARGANDO in obs["entre"][0]
+    # Ni siquiera se pinta en el panel ya quitado (trabajo y foco perdidos;
+    # mutante T20 de la campaña manual).
+    assert obs["panel_viejo"] == '<div class="vacio">Cargando partidas…</div>'
 
 
 def test_f050_m2_3_cerrado_mientras_carga_no_se_reabre():
     obs = _escenario("""
       const a = nodo("td"), fuera = nodo("div");
       abrirSelectorPartida(77, 694, false, a);
+      const pa = paneles()[0];
       pulsar(fuera);
       obs.cerrado = [paneles().length, escuchas.length];
       llamadas[0].res(resp("CI.1.5")); await tick();
-      obs.tras_respuesta = paneles().length;
+      obs.tras_respuesta = [paneles().length, texto(pa)];
       abrirSelectorPartida(77, 694, false, a);
       obs.se_puede_abrir = paneles().map(texto);
     """)
     assert obs["cerrado"] == [0, 0]
-    assert obs["tras_respuesta"] == 0
+    assert obs["tras_respuesta"] == [
+        0, '<div class="vacio">Cargando partidas…</div>']
     assert len(obs["se_puede_abrir"]) == 1
 
 
