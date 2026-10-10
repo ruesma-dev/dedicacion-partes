@@ -128,7 +128,7 @@ class RegistroSigrid:
                   overrides: Optional[dict[int, int]] = None,
                   trabajador_ide: Optional[int] = None,
                   empresa: int | None = None,
-                  obra_ide: Optional[int] = None) -> dict:
+                  obra_ide: int | None = None) -> dict:
         """`obra_ide` (F-050, M2 punto 5): solo la petición de esa obra, la
         del grupo (la de registro en las entradas VAR). Es lo que repite el
         modal al cambiar una partida, en vez del mes entero."""

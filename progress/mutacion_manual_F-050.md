@@ -216,3 +216,237 @@ Mutado:
 sel = r20 ? botonPartida(r20[1]) :
           `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
 ```
+
+## T15c · arreglos de la M2 (2026-10-11): `app.js` y `styles.css`
+
+Mismo método, con `js_mut_t15c.py` (scratchpad de la sesión) en una COPIA
+AISLADA (`git worktree add --detach` en el scratchpad, unión al `.venv` del
+front, retirada después). Cada mutante cambia UN texto exacto (que aparece
+una sola vez en el fichero) de lo que añade T15c, corre la suite ENTERA del
+front (`pytest tests -q`, 218 tests) y anota cuántos fallan; después se
+restaura. La línea es la de inicio del texto en `app.js` de `d46b012`.
+
+- **Primera pasada** (HEAD `d46b012`): **46 generados, 45 muertos, 1 vivo
+  (T20)**, 1185,4 s en serie. T20 quita la guarda `if (selector.cerrar !==
+  vivo) return;` antes de `llenar(resp)`: la respuesta tardía se pintaba en el
+  panel YA QUITADO (fuera de `<body>`), sin efecto visible, por eso ningún
+  test lo cazaba. No es equivalente del todo (pinta y pide el foco en un
+  nodo suelto, trabajo perdido): **hueco real**, cerrado con aserciones
+  nuevas en `test_f050_m2_3_solo_pinta_el_ultimo_pedido` y
+  `test_f050_m2_3_cerrado_mientras_carga_no_se_reabre` (el panel quitado
+  sigue con «Cargando partidas…»), commit `5d75623`.
+- **Segunda pasada** (HEAD `5d75623`, `app.js` igual que en `d46b012`): T20
+  **muerto con 3 fallos** (48,5 s). Los otros 45 no se repiten: solo se han
+  añadido aserciones, que no pueden revivir un mutante muerto.
+- **Final: 46 generados, 46 muertos, 0 supervivientes.**
+
+| Id | Fichero:línea | Texto original → mutado (exacto) | Fallos | Estado |
+|---|---|---|---|---|
+| T01 | app.js:483 | `if (total <= disponible) return preferidos;` → `if (total >= disponible) return preferidos;` | 6 | muerto |
+| T02 | app.js:484 | `preferidos.map((w, i) => Math.min(w, minimos[i]));` → `preferidos.map((w, i) => minimos[i]);` | 1 | muerto |
+| T03 | app.js:486 | `const f = Math.max(0, (disponible - suelo) / (total - suelo));` → `const f = (disponible - suelo) / (total - suelo);` | 2 | muerto |
+| T04 | app.js:487 | `Math.floor(suelos[i] + (w - suelos[i]) * f)` → `Math.round(suelos[i] + (w - suelos[i]) * f)` | 3 | muerto |
+| T05 | app.js:499 | `tabla.parentElement.clientWidth);` → `1e9);` | 2 | muerto |
+| T06 | app.js:497 | `state.columnas.map((c) => state.anchos[c] \|\| COLUMNAS[c].ancho),` → `state.columnas.map((c) => COLUMNAS[c].ancho),` | 1 | muerto |
+| T07 | app.js:502 | `.forEach((th, i) => { th.style.width = anchos[i] + "px"; });` → `.forEach((th, i) => { });` | 2 | muerto |
+| T08 | app.js:504 | `tabla.style.width = anchos.reduce((s, w) => s + w, 0) + "px";` → `tabla.style.width = "100%";` | 1 | muerto |
+| T09 | app.js:1911 | `new ResizeObserver(() => sincronizarAnchoTabla()).observe($("#tabla").parentElement);` → (borrado) | 1 | muerto |
+| T10 | app.js:58 | `partida: 150, total: 190 };` → `partida: 150, total: 100 };` | 1 | muerto |
+| T11 | app.js:716 | `if (td && c === 0) td.classList.add("col-primera");` → (borrado) | 3 | muerto |
+| T12 | app.js:717 | `if (td && c === state.columnas.length - 1) td.classList.add("col-ultima");` → `if (td && c === state.columnas.length) td.classList.add("col-ultima");` | 3 | muerto |
+| T13 | app.js:716 | `if (td && c === 0) td.classList.add("col-primera");` → `if (c === 0) td.classList.add("col-primera");` | 1 | muerto |
+| T14 | styles.css:255 | `tr.fila.seleccionada td { background: var(--brand-soft); }` → `tr.fila.seleccionada td { background: var(--brand-soft); box-shadow: inset 3px 0 0 var(--brand); }` | 1 | muerto |
+| T15 | styles.css:257 | `tr.fila.seleccionada td.col-ultima { box-shadow: inset -3px 0 0 var(--brand); }` → `tr.fila.seleccionada td.col-ultima { box-shadow: inset 3px 0 0 var(--brand); }` | 1 | muerto |
+| T16 | styles.css:261 | `tr.fila.multi td.col-primera { box-shadow: inset 3px 0 0 var(--pv); }` → `tr.fila.multi td:first-child { box-shadow: inset 3px 0 0 var(--pv); }` | 1 | muerto |
+| T17 | app.js:1496 | `if (selector.abierto === clave) return;` → (borrado) | 1 | muerto |
+| T18 | app.js:1502 | `selector.abierto = clave;` → (borrado) | 1 | muerto |
+| T19 | app.js:1484 | [exacto](#textos-exactos-t15c) | 2 | muerto |
+| T20 | app.js:1516 | [exacto](#textos-exactos-t15c) | 0 → 3 | VIVO → muerto (segunda pasada) |
+| T21 | app.js:1509 | [exacto](#textos-exactos-t15c) | 1 | muerto |
+| T22 | app.js:1509 | [exacto](#textos-exactos-t15c) | 1 | muerto |
+| T23 | app.js:1501 | `const vivo = selector.cerrar;` → `const vivo = null;` | 9 | muerto |
+| T24 | app.js:1545 | `if (!panel.contains(ev.target) && !ctx.ancla.contains(ev.target)) cerrarSelectorPartida();` → `if (!panel.contains(ev.target)) cerrarSelectorPartida();` | 1 | muerto |
+| T25 | app.js:1526 | `panel.innerHTML = '<div class="vacio">Cargando partidas…</div>';` → `panel.innerHTML = '';` | 3 | muerto |
+| T26 | app.js:1554 | [exacto](#textos-exactos-t15c) | 1 | muerto |
+| T27 | app.js:1516 | [exacto](#textos-exactos-t15c) | 8 | muerto |
+| T28 | app.js:2015 | [exacto](#textos-exactos-t15c) | 1 | muerto |
+| T29 | app.js:2063 | `if (!previo) return nuevo;` → (borrado) | 1 | muerto |
+| T30 | app.js:2066 | `obras.splice(sitio < 0 ? obras.length : sitio, 0, ...nuevo.obras);` → `obras.splice(sitio, 0, ...nuevo.obras);` | 1 | muerto |
+| T31 | app.js:2066 | `obras.splice(sitio < 0 ? obras.length : sitio, 0, ...nuevo.obras);` → `obras.push(...nuevo.obras);` | 4 | muerto |
+| T32 | app.js:2067 | `return { ...previo, obras };` → `return { obras };` | 1 | muerto |
+| T33 | app.js:2065 | `const obras = previo.obras.filter((o) => o.obra.ide !== obraIde);` → `const obras = previo.obras.slice();` | 6 | muerto |
+| T34 | app.js:2039 | `trabajador_ide: registro.trabajadorIde, obra_ide: obraIde })` → `trabajador_ide: registro.trabajadorIde })` | 6 | muerto |
+| T35 | app.js:2045 | `registro.analizando.clear();     // lo que se repetía era del modal de antes` → (borrado) | 2 | muerto |
+| T36 | app.js:2051 | [exacto](#textos-exactos-t15c) | 4 | muerto |
+| T37 | app.js:2080 | `registro.analizando.set(obraIde, seq);` → (borrado) | 8 | muerto |
+| T38 | app.js:2085 | [exacto](#textos-exactos-t15c) | 4 | muerto |
+| T39 | app.js:2086 | [exacto](#textos-exactos-t15c) | 3 | muerto |
+| T40 | app.js:2091 | `registro.pf = obraIde ? unirPreflight(registro.pf, pf, obraIde) : pf;` → `registro.pf = pf;` | 4 | muerto |
+| T41 | app.js:2094 | `if (registro.analizando.size && nuevo) {` → `if (false && nuevo) {` | 1 | muerto |
+| T42 | app.js:2097 | [exacto](#textos-exactos-t15c) | 2 | muerto |
+| T43 | app.js:2099 | [exacto](#textos-exactos-t15c) | 2 | muerto |
+| T44 | app.js:2101 | `if (btn && !registro.analizando.size) {` → `if (btn) {` | 1 | muerto |
+| T45 | app.js:1588 | `if (ctx.despues) ctx.despues(ctx.obraIde);` → `if (ctx.despues) ctx.despues();` | 4 | muerto |
+| T46 | app.js:2083 | `const vigente = () => registro.analizando.get(obraIde) === seq;` → `const vigente = () => true;` | 5 | muerto |
+
+### Textos exactos T15c
+
+**T19** (static/js/app.js:1484, 2 fallos). Original:
+
+```
+  selector.cerrar = null;
+  selector.abierto = null;
+```
+
+Mutado:
+
+```
+  selector.cerrar = null;
+```
+
+**T20** (static/js/app.js:1516, 0 fallos). Original:
+
+```
+  if (selector.cerrar !== vivo) return;
+  llenar(resp);
+```
+
+Mutado:
+
+```
+  llenar(resp);
+```
+
+**T21** (static/js/app.js:1509, 1 fallos). Original:
+
+```
+      if (selector.cerrar !== vivo) return;
+      cerrarSelectorPartida();
+```
+
+Mutado:
+
+```
+      cerrarSelectorPartida();
+```
+
+**T22** (static/js/app.js:1509, 1 fallos). Original:
+
+```
+      if (selector.cerrar !== vivo) return;
+      cerrarSelectorPartida();
+```
+
+Mutado:
+
+```
+      if (selector.cerrar !== vivo) return;
+```
+
+**T26** (static/js/app.js:1554, 1 fallos). Original:
+
+```
+    panel.remove();
+  };
+  recolocar();
+```
+
+Mutado:
+
+```
+    panel.remove();
+  };
+```
+
+**T27** (static/js/app.js:1516, 8 fallos). Original:
+
+```
+  if (selector.cerrar !== vivo) return;
+  llenar(resp);
+```
+
+Mutado:
+
+```
+  if (selector.cerrar !== vivo) return;
+```
+
+**T28** (static/js/app.js:2015, 1 fallos). Original:
+
+```
+function abrirModal(html) {
+  cerrarSelectorPartida();
+```
+
+Mutado:
+
+```
+function abrirModal(html) {
+```
+
+**T36** (static/js/app.js:2051, 4 fallos). Original:
+
+```
+    registro.pisar = new Set();
+    registro.pf = pf;
+```
+
+Mutado:
+
+```
+    registro.pisar = new Set();
+```
+
+**T38** (static/js/app.js:2085, 4 fallos). Original:
+
+```
+    const pf = await pedirPreflight(obraIde);
+    if (!vigente()) return;
+```
+
+Mutado:
+
+```
+    const pf = await pedirPreflight(obraIde);
+```
+
+**T39** (static/js/app.js:2086, 3 fallos). Original:
+
+```
+    if (!vigente()) return;
+    registro.analizando.delete(obraIde);
+    if ($(
+```
+
+Mutado:
+
+```
+    if (!vigente()) return;
+    if ($(
+```
+
+**T42** (static/js/app.js:2097, 2 fallos). Original:
+
+```
+  } catch (err) {
+    if (!vigente()) return;
+```
+
+Mutado:
+
+```
+  } catch (err) {
+```
+
+**T43** (static/js/app.js:2099, 2 fallos). Original:
+
+```
+    registro.analizando.delete(obraIde);
+    toast(err.message, true);
+```
+
+Mutado:
+
+```
+    toast(err.message, true);
+```

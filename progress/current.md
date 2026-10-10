@@ -75,7 +75,9 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   4) en el modal, selector encima del modal; 5) cambiar una partida en el modal
   repite el preflight solo de esa obra (los 502 eran el proxy del front cortando a
   los 120 s preflights del mes entero). Lentitud de fondo → F-055 rediseñada (spec
-  en paralelo en `porcentajes-f041`). **Estado:** implementer lanzado (T15c).
+  en paralelo en `porcentajes-f041`). **Estado:** T15c TERMINADA por el implementer (`85d263f`..`5d75623`,
+  `progress/impl_F-050.md`; api acepta `obra_ide` en el preflight, transfer
+  sin tocar); falta review y repetir la M2 con T17 (h).
   Resultado: _pendiente_.
 
 ## Producción, hoy

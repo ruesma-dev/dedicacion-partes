@@ -2,83 +2,49 @@
 # F-050 · Subfilas por obra con columna Partida y partida propuesta · informe del implementer
 
 Rama `feature/F-050-subfilas-partida`, rigor **crítico**, spec aprobada el
-2026-10-09 (D1-D10 = A). Tareas T1-T15 y T15b hechas, una por commit
-(`686d00a`..`f4cdb11` y el cierre). T16-T18 son MANUAL del humano. Dos
-paradas por tests fuera de la lista cerrada, las dos aprobadas por el humano
-y recogidas en requirements §6: `test_f037_r3_…` (T3) y `test_f003_r8_…` (T6).
+2026-10-09 (D1-D10 = A). T1-T15 (`686d00a`..`f4cdb11`), T15b (`6320474`) y
+T15c (`85d263f`..`5d75623`, arreglos de la M2 del 2026-10-11). T16 (M1) hecha
+por el humano; T17-T18, MANUAL. Dos paradas por tests fuera de la lista
+cerrada, aprobadas y recogidas en requirements §6 (`test_f037_r3_…`, T3;
+`test_f003_r8_…`, T6).
 
-## Qué cambió
+## Qué cambió (T1-T15b; T15c en su sección)
 
-**Transfer** (solo lee): `propuesta_partida.py` nuevo y puro (pasos 1-3,
-`mayor_de` por la raíz, `catalogo` y `clave_orden_codigo` en orden natural,
-`mayor_inicial`, `ventana`); `historial_partidas` (SQL de design §6, lotes de
-500, `truncated` = error) y `PROPUESTA_MESES_ATRAS` (24); pipeline con UNA
-lectura del historial, la propuesta en vez de `resolver_normal`, R20,
-`partida_origen` y `_cat` ordenado; `proponer` + `POST /api/partidas/propuesta`
-(422/502); fase `propuesta` del script (`--obra --recurso [--ano --mes
---categoria --nombre]`, catálogo con mayor, recuento, propuesta y segundos).
-
-**Api** (guarda la elegida): `AsignacionORM.partida_ide/cod/res`
-(nulables, DDL derivado al arrancar); `Linea.partida_*` y `partida_fija`;
-repositorio (`_a_linea_con_partida`, `reemplazar`); `_snapshot` (partida
-solo si hay), `_validar_lineas`, `_conservar_partidas` en
-`GuardarAsignaciones`; `CambiarPartida` + `PUT …/trabajadores/{ide}/partida`
-(evento `PARTIDA`; 404 `LineaNoEncontrada`, 409, 422 VAR / `ide` ≤ 0);
-`PartidasDeLinea` (`application/partidas_linea.py`) + `GET …/partidas`
-(502 `PropuestaNoDisponible`); `TransferClient.propuesta_partidas`;
-`LineaOut` con los cuatro campos de R18; registro con `paride` = elegida.
-
-**Front**: columna `partida` (también en preferencias viejas), subfilas
-(`rowSpan`, `data-linea`), celda elegida / «automática» / fija, filtro y
-buscador con la partida; selector (buscador, Todas · CD · CI · CP, propuesta
-primera con su origen, «automática», teclas, caché, PUT); en el modal, botón
-`.sel-partida` que abre ese selector y repite el preflight; sin `overrides`.
-**Docs**: `#regla-partida` (punto 19), `INTEGRACION.md` §3 §5 §7, READMEs.
+**Transfer** (solo lee): `propuesta_partida.py` puro (pasos 1-3, `mayor_de`
+por la raíz, orden natural, `mayor_inicial`, `ventana`); `historial_partidas`
+(lotes de 500, `truncated` = error); pipeline con UNA lectura, R20 y
+`partida_origen`; `POST /api/partidas/propuesta`; fase `propuesta` del script.
+**Api**: `AsignacionORM.partida_*` (DDL derivado); `Linea.partida_*`,
+`partida_fija`; `_conservar_partidas`; `PUT …/partida` (evento `PARTIDA`) y
+`GET …/partidas` (502); `LineaOut` con R18; registro con `paride` = elegida.
+**Front**: columna `partida`, subfilas (`rowSpan`), filtro y buscador; el
+selector (Todas · CD · CI · CP, propuesta primera, «automática», teclas,
+caché, PUT), también en el modal (y en las omitidas por R20, T15b).
+**Docs**: `#regla-partida`, `INTEGRACION.md`, READMEs.
 
 ## Decisiones y desviaciones (justificadas)
 
-1. **Ventana:** `desde` = periodo − 24 meses, `hasta` = periodo (incluido).
-2. **Empate** con tolerancia de 1e-6 en las sumas de `can` (coma flotante).
-3. **`_a_linea_con_partida`** envuelve `_a_linea` en vez de cambiarlo:
-   `test_f024_r11` y `test_f025_r18` llaman a `_a_linea` con dobles sin
-   `partida_*` y NO están en la lista cerrada.
-4. **VAR:** la asignación no guarda partida (`partida_*` nulas,
-   `partida_fija` = `obra.registro_paride` no nulo). La celda enseña la
-   descripción de la entrada; `GET …/partidas` devuelve `fija` = `{ide:
-   −obra_ide, cod, res}` (`domain.obras.ide_entrada`), sin llamar al transfer.
-5. **`proponer`** casa la postventa con `cargar_catalogo_postventa` +
-   `casar_postventa` (las funciones que envuelve `_destino_postventa`), con
-   la obra de origen ya resuelta: el flag de pruebas de `_destino_postventa`
-   no se usaba y dejaba un mutante equivalente.
-6. **`ambito`:** si el mayor de la elegida es OTRO, `null` (Todas, sin botón).
-7. **Selector:** «automática» es la última opción (Enter al abrir elige la
-   propuesta); si el ancla se rehace al guardar el editor, el panel se
-   coloca donde estaba al abrir; la caché se vacía en cada carga del
-   cuadrante (cubre cambio de mes y de empresa) y su clave tras cada PUT.
-8. **`MOTIVO_PARTIDA_NO_HOJA`** vive en `propuesta_partida.py`:
-   `reglas_porcentajes.py` no se toca (design §9).
-9. **Fase `propuesta`:** `--categoria`/`--nombre` opcionales; empresa 1.
-10. **`test_f037_r3`:** la línea aprobada necesita importar
-    `PRESUPUESTO_ORIGEN` y `_fila` de `conftest` (dos líneas de import, sin
-    tocar aserciones). **`test_f049_ampliacion`:** dos concatenaciones
-    implícitas de los tests reescritos van entre paréntesis (ruff ISC004).
-
-**Aviso para `partes`** (regla de las copias): su copia de
-`partida_catalog.categoria` clasifica mal las hojas bajo `CD` (design §5.1);
-ya avisado al humano el 2026-10-09. Aquí no se toca la copia.
+1. Ventana: periodo − 24 meses .. periodo; empate con tolerancia 1e-6.
+2. `_a_linea_con_partida` envuelve `_a_linea` (`test_f024_r11` y
+   `test_f025_r18`, fuera de la lista). 3. VAR sin partida guardada; `GET
+   …/partidas` da `fija` sin llamar al transfer. 4. `proponer` casa la
+   postventa con `cargar_catalogo_postventa` + `casar_postventa`. 5. `ambito`
+   null si el mayor de la elegida es OTRO. 6. «automática», la última; caché
+   vaciada al cargar el cuadrante y su clave tras cada PUT. 7.
+   `MOTIVO_PARTIDA_NO_HOJA` en `propuesta_partida.py`. 8. `test_f037_r3`
+   importa `PRESUPUESTO_ORIGEN` y `_fila`. **Aviso para `partes`**: su
+   `partida_catalog.categoria` clasifica mal hojas bajo `CD` (design §5.1;
+   avisado al humano el 2026-10-09).
 
 ## Tests anteriores que cambian (todos de la lista cerrada)
 
-Transfer: `conftest.py` (`historial_partidas` vacío, `propuesta_meses_atras`)
-y `test_pipeline_offline.py` (lo mismo); `test_f022`, `test_f047` y
-`test_f049_partidas_obra` no necesitaron cambio (heredan del doble);
-`test_f002_fuente_unica` (`ANCLAS`); `test_f037_r3` (aprobado). Api: `_fila`
-de `test_f022_empresa_en_linea`, `test_f024_registro_empresa`,
-`test_f026_registro_recurso`, `test_f039_registro_var`; `CAMPOS_LINEA` de
-`test_f034_rutas`; `test_f003_r8` (aprobado). Front: los de T12 (`test_f039_r22_
-el_resto…`, `_modal` y ejecutar de `test_f049_avisos`, los nombrados de
-`test_f049_ampliacion` y los seis `c_*` + `_opciones` / `_elegida` borrados;
-su intención vive en `test_f050_modal_registro.py`).
+Transfer: `conftest.py`, `test_pipeline_offline.py`, `test_f002_fuente_unica`,
+`test_f037_r3`. Api: `_fila` de `test_f022`, `test_f024_registro`, `test_f026`,
+`test_f039_registro_var`; `CAMPOS_LINEA` de `test_f034_rutas`; `test_f003_r8`.
+Front: los de T12 (`test_f039_r22_el_resto…`, `test_f049_avisos`, los
+nombrados de `test_f049_ampliacion`, seis `c_*` borrados). **T15c**: solo
+`test_f049_a_el_preflight_repetido_lleva_la_partida_recien_elegida` (nombrado
+en T12; el cuerpo esperado gana `obra_ide: 694`).
 
 ## Fase RED (trazas reales, comando exacto)
 
@@ -143,78 +109,112 @@ FAILED …test_f002_r1_fuente_unica_el_ancla_no_esta_repetida[regla-partida]
 Los que pasaban en RED eran controles de lo que no cambia (sin automáticas
 no se lee historial, VAR fija…). Tras cada tarea, verde la suite del servicio.
 
-## Mutación (T15)
-
-- **Python** (`python -m harness.mutacion --feature F-050 --workers 1` en un
-  `git worktree add --detach` con uniones a los `.venv`, retirado después):
-  primera pasada (`7f5f115`) 160 generados, 16 supervivientes, 914,8 s: 13
-  huecos reales con test nuevo (`f4cdb11`: modo por defecto `False`, `ide = 1`
-  válido, recursos del historial, inmutables, empate, `can` nulo, fase
-  `propuesta`) y 3 equivalentes eliminados cambiando el código sin cambiar la
-  conducta (`clave_orden_codigo`; flag de pruebas en `proponer`, decisión 5).
-  **Final (`f4cdb11`): 158 generados, 158 muertos, 0 supervivientes**, 0
-  timeouts, 1236,8 s, sin muestreo → `progress/mutacion_F-050.md`.
-- **JS manual** (`progress/mutacion_manual_F-050.md`, copia aislada): primera
-  pasada 56, 4 vivos (J19, J36, J46, J56), huecos reales con test nuevo;
-  **segunda 56/56 muertos**, 785,5 s. T15b, en la sección siguiente.
-
 ## T15b · omitida por R20 con selector (ampliación del 2026-10-10)
 
-Solo `app.js` (`pintarModalPreflight`): ayudante `botonPartida(texto)` (lo
-usan la acción a escribir y la omitida) y, en las omitidas, si el `motivo`
-empieza como `MOTIVO_PARTIDA_NO_HOJA`, el botón con la partida que nombra y
-debajo el motivo. El motivo es el único dato: R20 sale del bucle antes de
-poner `partida_cod`, y el transfer no se toca. Los tests leen esa constante
-(y la de postventa) del transfer con `ast`: si cambia el texto, fallan. Sin
-función nueva, para no tocar las listas de los `_modal` de F-049. Tres tests
-nuevos en `test_f050_modal_registro.py`; ningún test anterior cambia. RED
+`pintarModalPreflight`: `botonPartida(texto)` y, si el `motivo` empieza como
+`MOTIVO_PARTIDA_NO_HOJA` (leído del transfer con `ast` en los tests), el botón
+con la partida que nombra. Tres tests nuevos; ninguno anterior cambia. RED
 (`.venv/Scripts/python.exe -m pytest tests/test_f050_modal_registro.py -q -k "r20 or demas_omitidas" --tb=line`):
 ```
 subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '-']' returned non-zero exit status 1.   [node: TypeError: Cannot read properties of undefined (reading 'trabajador')]
 E   AssertionError: <h2>Registrar en Sigrid · sep 2026</h2>…<td><span class="motivo">la partida 80002 elegida no es una partida hoja activa del presupuesto de la obra 0694: no se escribe; elige otra partida</span></td>…
 2 failed, 1 passed, 14 deselected in 0.41s
 ```
-Verde: `tests` del front, 187 passed. Mutación JS K01-K11: 11/11 muertos.
+Verde: front 187 passed. Mutación JS K01-K11: 11/11 muertos.
 
-## Fuera del alcance
+## Mutación (T15; repetida en T15c)
 
-F-051 (pisar al 0 %), F-044 (vinculados), F-054 (velar etiquetas), F-021,
-el Excel (D8) y dos partidas para una misma línea. `azure-apps/dedicacion.md`
-lo pone al día el líder (T14, anotado en `progress/current.md`). Ninguna
-lectura ni escritura contra Sigrid ni Azure en esta implementación.
+Python (`--workers 1`, en un `git worktree add --detach` con uniones a los
+`.venv`, retirado después): T15 160/16 → 13 huecos con test y 3 equivalentes
+quitados, final 158/158; **T15c: 160/160 muertos** (`progress/mutacion_F-050.md`).
+JS manual (`mutacion_manual_F-050.md`, copia aislada): 56/56, 11/11, 46/46.
 
-## MANUAL pendiente (humano)
+## T15c · arreglos de la M2 del humano (2026-10-11)
 
-**T16 · M1, solo lectura** (Git Bash, desde la raíz del repo):
+Un commit por punto (`85d263f`, `35078fa`, `1560620`+`d46b012`, `708d53c`,
+`948ed7d`) y el test de un mutante (`5d75623`). Tests nuevos: front
+`test_f050_m2_arreglos.py` (31), api `test_f050_preflight_obra.py` (6).
+
+1. **Tabla que cabe**: `anchosAjustados` (pura): si no caben, cada columna
+   cede en proporción lo que tiene sobre su `MINIMO_COLUMNA` (Total no
+   encoge); por debajo, el scroll horizontal de `.panel-tabla`. Se pinta
+   **sin tocar `state.anchos`**; un `ResizeObserver` del panel reajusta. El
+   panel de F-042 cuelga de `<body>`: no le afecta.
+2. **Cursor**: `construirFila` marca `col-primera`/`col-ultima` en las celdas
+   de los bordes; fondo en todas las subfilas y barra solo ahí (antes, una
+   barra por celda pintaba rayas por dentro). La de F-029, igual.
+3. **Selector**: `montarSelectorPartida(ctx)` monta el panel con «Cargando
+   partidas…» y devuelve `llenar(resp)`, que llena ESE panel;
+   `selector.abierto` evita otro panel en la misma línea (el clic en su ancla
+   no lo cierra); la respuesta (y su error) solo cuenta si su panel sigue vivo.
+4. **Modal**: el panel ya iba a `<body>` con `z-index` 70 (> 60); lo que
+   salía «en el cuadrante» era una respuesta tardía de la columna, imposible
+   tras el punto 3. Además `abrirModal` cierra cualquier selector.
+5. **Repreflight de una obra**: la api admite `obra_ide` en `POST
+   …/registro/preflight` (la obra del grupo; en VAR, la de registro);
+   `ejecutar` no se acota; **el transfer no se toca**. El front manda la obra
+   de la línea, `unirPreflight` la sustituye en su sitio y
+   `registro.analizando` guarda por obra el último pedido (dos obras a la vez
+   cuentan; «Registrar» bloqueado mientras quede alguna). `INTEGRACION.md` §5
+   al día; **para el líder**: `azure-apps/dedicacion.md` gana el `obra_ide`.
+
+Tests propios de F-050 que cambian: `test_f050_r22_una_subfila…`,
+`test_f050_r27_elegir…`, `test_f050_r29_pedir_y_ejecutar…`, `…_r27_r29_elegir_en_el_modal…`.
+
+**RED** (antes del código; front `.venv/Scripts/python.exe -m pytest
+tests/test_f050_m2_arreglos.py -q -p no:cacheprovider --tb=line -k m2_N`,
+api `… tests/test_f050_preflight_obra.py …`):
 ```
-cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py propuesta --ano 2026 --mes 9 --obra 0694 --recurso 1705036
-cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py propuesta --ano 2026 --mes 9 --obra 0696 --recurso 1705036
+1 E   AssertionError: no existe la función anchosAjustados en app.js   (×4)
+  E   AssertionError: no existe `const MINIMO_COLUMNA` en app.js   (×3)
+  E   assert 'new ResizeObserver(() => sincronizarAnchoTabla()).observe($("#tabla").parentElement);' in 'function enlazarEventos() { $("#btn-mes-prev").addEventListener("click", () => moverMes(-1)); $("#btn-mes-next").addE..."keydown", teclas); window.addEventListener("beforeunload", () => { if (state.guardadoPendiente) guardarAhora(); }); }'
+  8 failed in 0.09s
+2 E   AssertionError: assert [[True, [['no...da', 1, '']]]] == [[True, [['no...da', 1, '']]]]
+  E   AssertionError: assert [[], []] == [[['asignacio...col-ultima']]]
+  E   AssertionError: assert [[True, [['no...al', 1, '']]]] == [[True, [['no...ol-ultima']]]]
+  E   AssertionError: assert 'background: ...var(--brand);' == 'background: ...-brand-soft);'
+  4 failed, 8 deselected in 0.49s
+3 E   assert 0 == 1
+  E   assert [0, 2] == [1, 1]
+  E   assert ('NUEVA' in '<input class="buscar-partida" autocomplete="off" placeholder="Buscar partida (código o descripción)…"><div class="may...<span class="cod">VIEJA</span><span class="desc">R</span><span class="desc">automática (la propone el registro)</span>')
+  E   assert (1 == 1 and 'Cargando partidas…' in '<input class="buscar-partida" autocomplete="off" placeholder="Buscar partida (código o descripción)…"><div class="may...<span class="cod">VIEJA</span><span class="desc">R</span><span class="desc">automática (la propone el registro)</span>')
+  E   assert 1 == 0
+  E   assert (0 == 1)
+  6 failed, 12 deselected in 1.43s
+4 E   assert [1, 1, True] == [0, 0, True]
+  1 failed, 2 passed, 18 deselected in 0.44s        (los 2 que pasan: z-index y ancla, guardas)
+5 api E   TypeError: RegistroSigrid.preflight() got an unexpected keyword argument 'obra_ide'   (×4)
+  E   KeyError: 'obra_ide'
+  5 failed, 1 passed, 1 warning in 3.72s
+5 front (con `unirPreflight` ya escrita y sus 3 tests en verde; antes, 10 × «no existe la función unirPreflight»)
+  E   AssertionError: assert {'trabajador_ide': 77} == {'trabajador_...bra_ide': 694}
+  E   AssertionError: assert [{'trabajador...r_ide': None}] == [{'trabajador...ra_ide': 694}]
+  E   AssertionError: assert [[[700, 'v2']... 'Registrar'}] == [[[694, 'v1']...Analizando…'}]
+  E   AssertionError: assert [[[694, 'v3']]] == [[[694, 'v3'], [700, 'v1']]]
+  E   AssertionError: assert [[], {'disabl...lizando…'}, 1] == [['transfer c...lizando…'}, 1]
+  E   AssertionError: assert [['/periodos/...or_ide': 77}]] == [['/periodos/...a_ide': 694}]]
+  6 failed, 4 passed, 21 deselected in 1.92s
 ```
-Esperado (0694): «Propuesta: CI.1.5 …», `método parte_anterior · origen parte
-PT26/00319 · 09/2026 · obra 0694`; «Por mayor: CD 727 · CI 95 · CP 13 · OTRO
-…»; `01.19.03.20` sale con `CD`, `CP.1`-`CP.12` con `CP`; botón preelegido
-CI; cada «lectura …» < 30 s (si no, PARAR: design §10).
+**Mutación JS manual T15c**: 46; primera pasada 1 vivo (T20: la respuesta
+tardía se pintaba en el panel ya quitado), hueco real cerrado (`5d75623`);
+**final 46/46 muertos**, 1185,4 s + 48,5 s. Textos enteros en el informe.
 
-**T17 · M2, navegador en modo pruebas**: comandos exactos y puntos (a)-(f)
-en `tasks.md` T17 (tres consolas: transfer, api, front; `curl -s
-http://localhost:8006/health` con `"modo_pruebas": true`; **Cancelar, sin
-Registrar**). La api añade al arrancar las columnas `partida_*` a la base.
+## Fuera del alcance y MANUAL pendiente
 
-**T18 · M3, registro en pruebas** (solo con autorización del humano en ese
-momento): con T17 arrancado, «⇪ Sigrid» → Registrar en un trabajador con
-partida elegida; luego `cd services/dedicacion-transfer && .venv/Scripts/
-python prueba_escritura_porcentajes.py estado --ano 2026 --mes 9` → la línea
-en la 0404 con `PRUEBA-PORC` y su `paride` el elegido; anotar en
-`progress/current.md` las líneas que quedan en la 0404 para borrarlas.
+Fuera: F-051, F-044, F-054, F-021, el Excel (D8) y la lentitud de fondo del
+preflight (F-055). Nada contra Sigrid ni Azure en esta implementación.
+**T16 · M1**: hecha por el humano el 2026-10-11, OK. **T17 · M2** (navegador,
+modo pruebas): `tasks.md` T17, puntos (a)-(g) y **(h)** con cómo comprobar
+los cinco arreglos; **Cancelar, sin Registrar**. **T18 · M3**: solo con
+autorización del humano en ese momento (`tasks.md` T18).
 
 ## Evidencias
 
 | Evidencia | Valor real |
 |---|---|
-| `bash harness/init.sh` (tal cual, sin `.arnes_cache/suite_*.ok`) | código 0, **ENTORNO LISTO**; todo `[OK]` salvo el `[AVISO]` de `ruff` (237, deuda previa); `PUERTA TAMAÑO` impl 220/220 (T15b, 2026-10-10) |
-| Tests por servicio (ejecutados, no caché) | T15b: raíz **418 passed, 1 skipped** (52,49 s); api **768 passed** (45,42 s); front **187 passed** (15,27 s; node v24.14.1); transfer **750 passed** (7,39 s) |
-| Tests nuevos de F-050 | transfer `test_f050_propuesta` 47, `test_f050_pipeline` 24, `test_f050_endpoint_propuesta` 19; api `test_f050_partida_linea` 23, `test_f050_rutas_partida` 30; front `test_f050_subfilas` 16, `test_f050_selector_partida` 19, `test_f050_modal_registro` 17 (14 + 3 de T15b) |
-| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 341 líneas cambiadas cubiertas (341/341, umbral 80%, nivel critico)` (Python; el JS no se mide: lo cubre la campaña manual) |
-| Mutantes Python | **158 generados, 0 supervivientes** (final; la primera, 160/16), 1236,8 s, 1 worker, sin muestreo |
-| Mutantes JS (manual) | **56 generados, 0 supervivientes** (final; la primera, 56/4), 785,5 s en serie; T15b: **11 generados, 0 supervivientes**, 122,9 s |
-| ruff | 237 avisos, los mismos de antes (los ficheros de F-050 no añaden ninguno) |
+| `bash harness/init.sh` (tal cual, sin `.arnes_cache/suite_*.ok`, T15c) | código 0, **ENTORNO LISTO**; todo `[OK]` salvo el `[AVISO]` de `ruff` (237, la deuda de antes); `PUERTA TAMAÑO` impl ≤ 220 |
+| Tests por servicio (ejecutados, no caché) | raíz **418 passed, 1 skipped** (45,78 s); api **774 passed** (45,11 s); front **218 passed** (22,27 s; node v24.14.1); transfer **750 passed** (8,51 s) |
+| Tests nuevos de F-050 | transfer 47 + 24 + 19; api 23 + 30 + **6** (T15c); front 16 + 19 + 17 + **31** (T15c) |
+| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 343 líneas cambiadas cubiertas (343/343, umbral 80%, nivel critico)` (Python; el JS lo cubre la campaña manual) |
+| Mutantes Python | **160 generados, 0 supervivientes** (T15c, `948ed7d`), 1807,9 s, 1 worker, sin muestreo; después solo cambia una anotación de tipo (`obra_ide: int \| None`, ruff UP045) |
+| Mutantes JS (manual) | T15 **56/0**, T15b **11/0**, T15c **46 generados, 0 supervivientes** (1 vivo en la primera pasada, con test) |
