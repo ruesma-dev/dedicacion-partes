@@ -2098,8 +2098,10 @@ async function repreflightPartida(obraIde) {
     if (!vigente()) return;
     registro.analizando.delete(obraIde);
     toast(err.message, true);
-    if (btn && !registro.analizando.size) {
-      btn.disabled = false; btn.textContent = "Registrar";
+    // El de ahora: otra obra que volvió bien ha podido repintar el modal.
+    const actual = $("#btn-ejecutar-registro");
+    if (actual && !registro.analizando.size) {
+      actual.disabled = false; actual.textContent = "Registrar";
     }
   }
 }

@@ -608,6 +608,29 @@ def test_f050_m2_5_error_de_una_obra_con_otra_en_vuelo():
                           {"disabled": False, "textContent": "Registrar"}]
 
 
+@pytest.mark.parametrize("bien, mal, pintado", [
+    (2, 1, [[694, "v1"], [700, "v2"]]),     # vuelve la 700, falla la 694
+    (1, 2, [[694, "v2"], [700, "v1"]]),     # vuelve la 694, falla la 700
+])
+def test_f050_m2_5_error_despues_de_que_la_otra_vuelva_bien(bien, mal,
+                                                           pintado):
+    """Review 3, cambio 1: la respuesta buena repinta el modal (botón nuevo,
+    bloqueado porque queda la otra en vuelo); el error de la otra, después,
+    tiene que reactivar ESE botón, no el de antes del repintado."""
+    obs = _flujo(ABRIR + f"""
+      repreflightPartida(694); repreflightPartida(700); await tick();
+      llamadas[{bien}].res({{obras: [o(llamadas[{bien}].body.obra_ide,
+                                      "v2")]}}); await tick();
+      obs.entre = registrar();
+      llamadas[{mal}].rej(new Error("transfer caído")); await tick();
+      obs.fin = [toasts, registrar(), pintados.slice(1)];
+    """)
+    assert obs["entre"] == {"disabled": True, "textContent": "Analizando…"}
+    assert obs["fin"] == [["transfer caído"],
+                          {"disabled": False, "textContent": "Registrar"},
+                          [pintado]]
+
+
 def test_f050_m2_5_abrir_otra_vez_anula_los_que_estaban_en_vuelo():
     obs = _flujo(ABRIR + """
       repreflightPartida(694); repreflightPartida(700); await tick();
