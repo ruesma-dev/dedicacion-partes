@@ -2058,13 +2058,14 @@ async function registroPreflight(trabajadorIde = null) {
 // F-050 (M2, punto 5): el preflight de UNA obra sustituye a esa obra, en su
 // sitio, en el último pintado; las demás se quedan como estaban. Si la obra
 // ya no viene (sin líneas), sale del modal; si no estaba, se añade al final.
-// Sin pintado previo, el nuevo tal cual.
+// Sin pintado previo, el nuevo tal cual. El `ok` de arriba se recalcula con
+// todas las obras, como la api (sin obras, `true`).
 function unirPreflight(previo, nuevo, obraIde) {
   if (!previo) return nuevo;
   const sitio = previo.obras.findIndex((o) => o.obra.ide === obraIde);
   const obras = previo.obras.filter((o) => o.obra.ide !== obraIde);
   obras.splice(sitio < 0 ? obras.length : sitio, 0, ...nuevo.obras);
-  return { ...previo, obras };
+  return { ...previo, obras, ok: obras.every((o) => o.ok) };
 }
 
 // F-049 (ampliación a): al cambiar una partida (F-050: ya guardada con el

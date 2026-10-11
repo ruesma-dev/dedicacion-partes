@@ -483,9 +483,23 @@ def test_f050_m2_5_unir_sustituye_esa_obra_en_su_sitio():
 def test_f050_m2_5_unir_quita_la_obra_que_ya_no_viene_y_anade_la_nueva():
     previo = {"obras": [_o(1, "a"), _o(694, "vieja"), _o(2, "b")]}
     assert _unir(previo, {"obras": []}, 694) == {
-        "obras": [_o(1, "a"), _o(2, "b")]}
+        "obras": [_o(1, "a"), _o(2, "b")], "ok": True}
     assert _unir({"obras": [_o(1, "a")]}, {"obras": [_o(694, "n")]},
-                 694) == {"obras": [_o(1, "a"), _o(694, "n")]}
+                 694) == {"obras": [_o(1, "a"), _o(694, "n")], "ok": True}
+
+
+def test_f050_m2_5_unir_recalcula_el_ok_con_todas_las_obras():
+    """Review 3, observación 3: el `ok` de arriba es el de TODAS las obras
+    tras unir (como lo calcula la api), no el del primer análisis."""
+    ko = {**_o(694, "vieja"), "ok": False}
+    assert _unir({"ok": True, "obras": [_o(1, "a"), _o(694, "vieja")]},
+                 {"ok": False, "obras": [ko]}, 694)["ok"] is False
+    assert _unir({"ok": False, "obras": [_o(1, "a"), ko]},
+                 {"ok": True, "obras": [_o(694, "nueva")]}, 694)["ok"] is True
+    assert _unir({"ok": False, "obras": [{**_o(1, "a"), "ok": False}, ko]},
+                 {"ok": True, "obras": [_o(694, "n")]}, 694)["ok"] is False
+    assert _unir({"ok": False, "obras": [ko]}, {"ok": True, "obras": []},
+                 694)["ok"] is True       # sin obras, como la api
 
 
 def test_f050_m2_5_unir_sin_pintado_previo_el_nuevo():
