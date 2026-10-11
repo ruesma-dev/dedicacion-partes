@@ -81,7 +81,7 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   en verde sin caché: api 774, front 218, transfer 750). `azure-apps` con
   `obra_ide` (`1037904`). **Review 3: CAMBIOS PEDIDOS:** «Registrar» se queda
   en «Analizando…» si de dos repreflights en vuelo falla el primero tras volver el
-  segundo (implementer relanzado, con `obra_ide` como `int` en la ruta y el `ok`
+  segundo (hecho por el implementer en `2078505..2b44319`, con `obra_ide` como `int` en la ruta y el `ok`
   recalculado en `unirPreflight`, observaciones 2 y 3); T17 dice ya «(a)-(h)»
   (líder). Observación 1 (la manija de ancho con la tabla encogida) se mira en la
   M2 (h) 1. Después, review 4 y repetir la M2 con T17 (h). F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
