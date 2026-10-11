@@ -450,3 +450,24 @@ Mutado:
 ```
     toast(err.message, true);
 ```
+
+## Review 3 · cambio 1 y observación 3 (2026-10-11): `app.js`
+
+Mismo método, con `js_mut_r3.py` (scratchpad) en una COPIA AISLADA
+(`git worktree add --detach` de `ee4c70d` en el scratchpad, uniones a los
+`.venv`, retirada después; `git status` de la copia limpio al acabar). Suite
+ENTERA del front (`pytest tests -q`, **221 en verde sin mutar**). Línea: la
+de inicio del texto en `app.js` de `ee4c70d`. **7 generados, 7 muertos, 0
+supervivientes**, 204,5 s en serie. T47 es el fallo de la review (el `catch`
+reactiva el botón de antes del repintado): lo cazan los dos casos de
+`test_f050_m2_5_error_despues_de_que_la_otra_vuelva_bien`.
+
+| Id | Fichero:línea | Texto original → mutado (exacto) | Fallos | Estado |
+|---|---|---|---|---|
+| T47 | app.js:2103 | `    const actual = $("#btn-ejecutar-registro");` → `    const actual = btn;` | 2 | muerto |
+| T48 | app.js:2104 | `    if (actual && !registro.analizando.size) {` → `    if (actual) {` | 1 | muerto |
+| T49 | app.js:2105 | `      actual.disabled = false; actual.textContent = "Registrar";` → `      actual.textContent = "Registrar";` | 3 | muerto |
+| T50 | app.js:2068 | `ok: obras.every((o) => o.ok) };` → `ok: previo.ok };` | 2 | muerto |
+| T51 | app.js:2068 | `ok: obras.every((o) => o.ok) };` → `ok: obras.some((o) => o.ok) };` | 1 | muerto |
+| T52 | app.js:2068 | `ok: obras.every((o) => o.ok) };` → `ok: nuevo.obras.every((o) => o.ok) };` | 1 | muerto |
+| T53 | app.js:2068 | `  return { ...previo, obras, ok: obras.every((o) => o.ok) };` → `  return { ...previo, obras };` | 2 | muerto |
