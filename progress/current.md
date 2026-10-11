@@ -86,8 +86,11 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   (líder). Observación 1 (la manija de ancho con la tabla encogida) se mira en la
   M2 (h) 1. Hecho hasta `91fdb7a` (api 780, front 221, transfer 750 sin caché;
   mutación Python 164/164 y JS 7/7 en copias aisladas); el 422 de `obra_ide` ya
-  en INTEGRACION y `azure-apps` (`36c894a`). **Review 4 lanzada.** Después,
-  repetir la M2 con T17 (h). F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
+  en INTEGRACION y `azure-apps` (`36c894a`). **Review 4 APROBADA**; sus
+  observaciones: `trabajador_ide` crudo (un 0 quitaría el filtro de `ejecutar`) →
+  **F-056** nueva; «tras un error, el bloque de esa obra enseña el análisis
+  anterior» y la manija de ancho, a mirar en la M2 (h) 5 y (h) 1. **Espera que el
+  humano repita la M2 con T17 (a)-(h).** F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
   Resultado: _pendiente_.
 
 ## Producción, hoy

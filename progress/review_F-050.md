@@ -1,11 +1,12 @@
 <!-- progress/review_F-050.md -->
-Revisión incremental desde d53a162 (pasada 3) · `d53a162..8e9e8de`
+Revisión incremental desde c5d07c9 (pasada 4) · `c5d07c9..49a9003`
 
 # F-050 · Review
 
-**Veredicto (pasada 3): CHANGES_REQUESTED** (CAMBIOS PEDIDOS): un fallo real
-en el repreflight por obra (punto 5), reproducido en node, y la verificación
-de T17 sin el punto (h). El resto de T15c, bien.
+**Veredicto (pasada 4): APPROVED** (APROBADO). El cambio 1 de la pasada 3
+está arreglado y probado con el orden exacto que lo rompía (y el contrario);
+las observaciones 2 y 3, recogidas; T17 dice «(a)-(h)». Quedan pendientes
+T17-T18, que son MANUAL (el humano), como en las pasadas anteriores.
 
 **Rigor:** `critico`, declarado: RED, cobertura ≥ 80 %, mutación con cero
 supervivientes sin justificación aceptada y MANUAL con comando exacto.
@@ -14,79 +15,91 @@ supervivientes sin justificación aceptada y MANUAL con comando exacto.
 
 - **Pasada 1** (`82bf8d6..5f66b9d`, completa): CAMBIOS PEDIDOS, papeleo.
   Íntegra: `git show 493bf35:progress/review_F-050.md`.
-- **Pasada 2** (`5f66b9d..d53a162`): APROBADA. Lo pedido, resuelto; T15b
-  (selector en la omitida por R20) sin que el front decida qué partida vale;
-  RED de T15b y K01/K04/K05/K09/J08/J51 reproducidos. Observaciones (g) en
-  T17 y `motivo_codigo` → F-048: ambas recogidas (`6782567`, `features.json`).
-  Texto íntegro: `git show 8e9e8de:progress/review_F-050.md`.
+- **Pasada 2** (`5f66b9d..d53a162`): APROBADA (T15b, RED reproducidos).
+  Íntegra: `git show 8e9e8de:progress/review_F-050.md`.
+- **Pasada 3** (`d53a162..8e9e8de`, T15c): CAMBIOS PEDIDOS: 1) «Registrar» se
+  quedaba en «Analizando…» si, con dos repreflights en vuelo, volvía bien la
+  700 y después fallaba la 694 (el `catch` reactivaba el botón viejo, ya fuera
+  del DOM); 2) T17 decía «(a)-(g)». Observaciones 1-3 (manija, `obra_ide`
+  crudo, `ok` de `unirPreflight`). Íntegra: `git show 49a9003:progress/review_F-050.md`.
 
-## Pasada 3 · lo ejecutado por el reviewer
+## Pasada 4 · lo ejecutado por el reviewer
 
 - Sin `.arnes_cache/suite_*.ok`, `bash harness/init.sh` tal cual y solo:
-  código 0, **ENTORNO LISTO**, ningún `[KO]` (`ruff` 237, el aviso de
-  siempre). Raíz **418 passed, 1 skipped** (38,0 s), api **774** (30,4 s),
-  front **218** (15,6 s), transfer **750** (5,0 s). `PUERTA COBERTURA`
-  **100,0 % (343/343)**; `PUERTA TAMAÑO` en verde.
-- **Python, recálculo puro en HEAD** (`harness.alcance` + `generar_mutantes`):
-  **19 ficheros, 866 líneas, 160 mutantes**, idéntico al informe. Campaña no
-  reejecutada: 1807,9 s según el informe. Los 2 mutantes nuevos
-  (`registro_sigrid.py:139` `is not None`→`is None`, `:140` `==`→`!=`)
-  ejecutados en copia aislada contra `test_f050_preflight_obra.py`: **4 y 3
-  fallos**, muertos.
-- **JS T15c, tres filas reproducidas al pie de la letra** (worktree aislado
-  en el scratchpad, suite entera del front, 218 en verde sin mutar): **T44 1,
-  T24 1, T31 4** fallos, los del informe. Worktree retirado; `git status`
-  limpio. Nada contra Azure ni Sigrid.
-- Escenario propio en node (harness `_flujo`, en el scratchpad): cambio 1.
+  **ENTORNO LISTO**, ningún `[KO]` (`ruff` 237, el aviso de siempre). Raíz
+  **418 passed, 1 skipped** (42,9 s), api **780** (42,9 s), front **221**
+  (22,5 s), transfer **750** (7,7 s). `PUERTA COBERTURA` **100,0 %
+  (353/353)**; `PUERTA TAMAÑO` en verde.
+- **Python, recálculo puro en HEAD** (`alcance_de_feature` +
+  `generar_mutantes`): **19 ficheros, 882 líneas, 164 mutantes**, idéntico al
+  informe; los 4 nuevos son de `_obra_ide` (`routes.py:79, 82, 83, 83`).
+  Campaña no reejecutada: 1796,6 s según el informe.
+- **Copia aislada** (`git worktree add --detach` de HEAD en el scratchpad,
+  suites con los `.venv` del repo; front 221 y `test_f050_preflight_obra` 12
+  en verde sin mutar). Reproducidas al pie de la letra **T47 → 2 fallos, T50
+  → 2, T51 → 1**, los del informe manual; y dos de Python: `routes.py:83`
+  `and not`→`or not` **3 fallos**, `:82` `or`→`and` **3 fallos**. Copia
+  retirada; `git status` del repo limpio. Nada contra Azure ni Sigrid.
 
-## Lo que pedía el líder
+## Lo pedido en la pasada 3
 
-- **`obra_ide` acota sin cambiar qué se escribe ni la forma.** Filtra los
-  payloads ya construidos por `p["obra"]["ide"]` (la obra del grupo, la misma
-  que el front guarda en `registro.lineas` desde `o.obra.ide`); la respuesta
-  sigue siendo `{ok, obras, no_vigentes}`. `ejecutar` no recibe `obra_ide`
-  (test de la ruta). El transfer no cambia. Una obra que no está:
-  `{"ok": true, "obras": [], "no_vigentes": []}`, sin llamadas (test `999`).
-- **Selector.** `selector.abierto` evita el segundo panel en la misma línea;
-  `vivo` descarta la respuesta y el error de un panel cerrado o sustituido;
-  el clic en su ancla no lo cierra. Correcto.
-- **Modal.** Panel en `<body>` con `z-index` 70 > 60 (desde T11); `abrirModal`
-  cierra cualquier selector, también uno cargando (test y T28).
-- **CSS.** `.panel-tabla` ya tenía `overflow-x: auto`; los anchos ajustados
-  no tocan `state.anchos` (test); F-042 cuelga de `<body>` y sigue en verde.
-- **Tests anteriores que cambian:** solo
-  `test_f049_a_el_preflight_repetido…` (lista cerrada, T12) y los cuatro de
-  F-050 citados. Ninguno se relaja: los cinco **endurecen** lo esperado
-  (cuerpo con `obra_ide: 694`, `despues(ctx.obraIde)`, `td` en la celda).
-- **MANUAL M2 (h)** se puede seguir: cinco pasos con qué mirar en cada uno
-  y «Cancelar, sin Registrar».
+1. **Cambio 1, resuelto.** El `catch` de `repreflightPartida` busca el botón
+   de ahora (`$("#btn-ejecutar-registro")`, `app.js:2103`) en vez del `btn`
+   del principio, y solo lo reactiva sin obras en vuelo. El test nuevo
+   `…_error_despues_de_que_la_otra_vuelva_bien` lleva el **orden exacto** de la
+   pasada 3 (`repreflightPartida(694); repreflightPartida(700)` → resuelve la
+   700 → rechaza la 694) y además el contrario; comprueba el botón bloqueado
+   entre medias, el toast, «Registrar» activo al final y el pintado. RED real
+   en el informe (`{'disabled': True, 'textContent': 'Analizando…'} != …`, ×2).
+2. **T17 «(a)-(h)»**: hecho (`c5d07c9`); comprobado en `tasks.md`.
+
+## Observaciones de la pasada 3
+
+- **Obs. 2, recogida.** `_obra_ide` (`routes.py:75`): `None` pasa; `"694"` y
+  `694.0` → `694`; texto, decimal, booleano, lista, `Infinity` → `ObraNoValida`
+  (422, ya mapeada en `app.py:40`) **sin analizar** (test: `llamadas == []`).
+  `0` sigue filtrando (`is not None` en `registro_sigrid.py:139`). Documentado
+  en `docs/INTEGRACION.md` y en `azure-apps/dedicacion.md` (`36c894a`).
+- **Obs. 3, recogida.** `unirPreflight` recalcula `ok` con `every` sobre todas
+  las obras; coincide con la api (`all(...) if resultados else True`,
+  `registro_sigrid.py:145`). Test con los cuatro casos (incluido sin obras).
+- **Obs. 1** (manija con la tabla encogida): sigue para la M2 (h) 1.
+
+## Test propio cambiado
+
+`test_f050_m2_5_unir_quita_la_obra_que_ya_no_viene_y_anade_la_nueva` (T15c)
+compara el dict entero; sus dos esperados ganan `"ok": True`. **Se endurece**:
+antes no miraba `ok`; ahora exige el valor recalculado. No relaja nada. Es de
+F-050; ningún test de otra feature cambia en el delta.
 
 ## Checkpoints (lo que toca el delta)
 
-- **C1** [x] init.sh código 0, sin caché · [x] ficheros base.
-- **C2** [x] una `in_progress` · [x] rama · [x] `current.md` al día (T15c,
-  `azure-apps` `1037904`) · `history.md` N/A: F-050 aún no está `done`.
+- **C1** [x] init.sh sin caché, ENTORNO LISTO · [x] ficheros base.
+- **C2** [x] una `in_progress` · [x] rama · [x] `current.md` al día («Review 4
+  lanzada», `azure-apps` `36c894a`) · `history.md` N/A: F-050 no está `done`.
 - **C3** [x] límite de servicio: api y front; transfer intacto · [x] el front
-  no decide qué se escribe (`unirPreflight` solo compone lo que devuelve la
-  api) · [x] primera línea con ruta · [x] sin `console.log` ni secretos.
+  no decide qué se escribe (`ok` solo agrega lo que devuelve la api; nadie lo
+  lee) · [x] la validación de entrada vive en la ruta (capa de interfaz) ·
+  [x] primera línea con ruta · [x] sin `console.log`/`print` ni secretos.
 - **C3 bis** N/A: el delta no toca `docs/referencia/`. **C4 ter** N/A: no
   existe `harness/rutas_sensibles.json`.
-- **C4** [x] tests sin red ni BBDD (node local, dobles) · [ ] **un camino de
-  error del punto 5 sin cubrir y roto** (cambio 1) · [ ] MANUAL: T17 dice
-  «(a)-(g)» en su verificación (cambio 2).
+- **C4** [x] tests sin red ni BBDD (node local y dobles) · [x] el camino de
+  error del punto 5, en los dos órdenes · [x] MANUAL T17 con (a)-(h).
 - **C4 bis**
-  - [x] `rigor` · [x] RED real por punto (impl 164-197) · [x] cobertura 100 %.
-  - [x] Python recalculado (160) · [x] RM1: medido en `948ed7d`; después solo
-    cambia una anotación de tipo en `registro_sigrid.py` (sin mutantes).
-  - [x] RM2: 160 × 11,3 s ≈ 1808 s; media < base (26,2 s api) con 160/160
-    muertos y `-x`: coherente.
+  - [x] `rigor` · [x] RED real de los tres arreglos (impl 184-199).
+  - [x] cobertura 100 % · [x] Python recalculado (164 = 164).
+  - [x] RM1: medido en `ee4c70d`; después solo cambian `progress/` y
+    `docs/INTEGRACION.md` (sin código del alcance).
+  - [x] RM2: 164 × 11,0 s ≈ 1804 s frente a 1796,6 s; media < base (38,9 s
+    api) con 164/164 muertos y `-x`: coherente.
   - [x] Sin «⚠ CAMPAÑA NO VÁLIDA»; «Sin veredicto (base rota)» = 0.
-  - [x] RM5 N/A: ningún equivalente · [x] RM6: no quita guardas.
-  - [x] Campaña MANUAL T15c: 46 filas con texto exacto, SHA (`d46b012`/
-    `5d75623`) y fallos; T20 vivo → test → muerto; tres filas reproducidas.
-  - [x] Cero supervivientes · [x] Evidencias con los cuatro números.
-- **C5** [x] T15c `[x]` con ocho commits `F-050 T15c:` · [x] T16 hecha;
-  T17-T18 MANUAL pendientes (como en F-039) · [x] sin artefactos.
+  - [x] RM3: ningún equivalente muerto (los 4 de `_obra_ide` cambian el
+    resultado observable) · [x] RM5 N/A: ningún equivalente declarado ·
+    [x] RM6: no se quita ninguna guarda; se añade una.
+  - [x] MANUAL JS T47-T53: 7 filas con texto exacto, SHA `ee4c70d` y fallos;
+    tres reproducidas · [x] cero supervivientes · [x] Evidencias, 4 números.
+- **C5** [x] commits `F-050 T15c: review 3 …` · [x] T16 hecha; T17-T18
+  MANUAL pendientes (humano) · [x] sin artefactos (copia retirada).
 
 ## Cobertura requisito → test (`test_f050_*`)
 
@@ -95,46 +108,33 @@ supervivientes sin justificación aceptada y MANUAL con comando exacto.
 | R1-R21 | sin cambios desde la pasada 2 (`propuesta`, `pipeline`, `partida_linea`, `rutas_partida`, `endpoint_propuesta`) |
 | R22-R28 | `subfilas` `r22_*`-`r25_*`, `r28_*`; `selector` `r26_*`, `r27_*` |
 | R29 (+ amp.) | `modal_registro` `r29_*` |
-| T15c 1-5 | `m2_arreglos` `m2_1_*`…`m2_5_*`; api `preflight_obra` `m2_5_*` (6) |
+| T15c 1-5 | `m2_arreglos` `m2_1_*`…`m2_5_*`; api `preflight_obra` `m2_5_*` |
+| Rev. 3 | `m2_5_error_despues_de_que_la_otra_vuelva_bien` (×2), `m2_5_unir_recalcula_el_ok_*`; api `m2_5_la_ruta_convierte_*`, `m2_5_obra_que_no_es_entero_422_*` (×5) |
 | R30 | `test_f002_fuente_unica`, `test_f004_readme` |
 
 ## Cambios requeridos
 
-1. **«Registrar» se queda en «Analizando…» para siempre** si, con dos obras
-   en vuelo, la segunda vuelve bien y la primera falla.
-   `services/dedicacion-front/static/js/app.js:2081` guarda `btn` al empezar;
-   la respuesta buena de la otra obra repinta el modal (botón nuevo, que se
-   deja bloqueado porque queda una en vuelo) y el `catch` (`app.js:2101`)
-   reactiva el botón **viejo**, ya fuera del DOM. Reproducido con el propio
-   harness: `repreflightPartida(694); repreflightPartida(700);` → resolver la
-   700 → rechazar la 694 → `{disabled: true, textContent: "Analizando…"}`
-   (se esperaba «Registrar» activo). Es el caso de los 502 del punto 5; la
-   única salida es Cancelar y reabrir (el mes entero). Arreglo: en el `catch`, buscar el botón de nuevo
-   (`$("#btn-ejecutar-registro")`), como ya hace la rama buena. Test nuevo en
-   `test_f050_m2_arreglos.py` con ese orden (RED con la salida real) y su
-   mutante en `mutacion_manual_F-050.md`.
-2. **`tasks.md` T17, verificación:** dice «(a)-(g) en
-   `progress/impl_F-050.md`»; el texto ya tiene (h). Poner «(a)-(h)» (es la
-   misma observación de la pasada 2 con (g); que no se repita al añadir
-   puntos).
+Ninguno.
 
 ## Observaciones (no bloquean; que el líder las recoja, no «anotado»)
 
-1. **La manija de ancho con la tabla encogida** guarda como preferencia el
-   ancho AJUSTADO más el arrastre (`montarManijaAncho`: `inicioW =
-   th.offsetWidth`), y durante el arrastre la columna crece menos que el
-   ratón porque se reparte. Funciona; si molesta, partir de
-   `state.anchos[clave]` en vez de `offsetWidth`. Comprobarlo en la M2 (h) 1.
-2. **`obra_ide` no se valida en la ruta** (`routes.py:378`, viene crudo del
-   cuerpo): un `"694"` de texto no casa con el `int` y devuelve `obras: []`,
-   y el front quitaría esa obra del modal. Hoy el front manda un número;
-   `int(...)` como con `overrides` lo blindaría.
-3. `unirPreflight` deja el `ok` de arriba del primer análisis; hoy nadie lo
-   lee. Si se llega a leer, recalcularlo.
+1. **`trabajador_ide` crudo** (`routes.py:393` preflight y `:409` ejecutar).
+   No es inyección (va como parámetro ligado) y el front manda un número o
+   `null`. Dos riesgos, ninguno de F-050 (la ruta de `ejecutar` no se tocó):
+   a) `registro_sigrid.py:81` filtra con `if trabajador_ide`, así que un
+   valor falso (`0`, `""`, `false`) **quita el filtro** y `ejecutar` registra
+   el mes entero en vez de una línea; b) un `"abc"` llega a PostgreSQL y
+   sale 500, no 422. Propuesta: una feature pequeña (rigor `critico`, toca la
+   escritura) que lo valide como `_obra_ide` en las dos rutas y cambie el
+   filtro a `is not None`.
+2. **Tras un error, el bloque de esa obra enseña el análisis anterior** y
+   «Registrar» vuelve activo; `ejecutar` recalcula desde la base, con la
+   partida nueva. Viene de F-049 (el `catch` ya reactivaba el botón) y el
+   toast lo avisa. Si molesta, marcar el bloque «sin analizar» o mantener
+   «Registrar» bloqueado hasta un análisis bueno. Mirarlo en la M2 (h) 5.
+3. La manija de ancho (obs. 1 de la pasada 3): en la M2 (h) 1.
 
 ## Automejora (propuesta, no aplicada; sigue en pie)
 
-Casilla MANUAL: texto exacto sin truncar y SHA de la tabla (pasada 2, en
-pie). Nueva: con peticiones concurrentes en el front, un test por **orden de
-llegada** (A antes que B y al revés, con éxito y con error); el cambio 1 se
-escapó por probar solo un orden del error.
+Casilla MANUAL con texto exacto y SHA (pasada 2); test por **orden de
+llegada** en peticiones concurrentes del front (pasada 3), a `CHECKPOINTS.md`.
