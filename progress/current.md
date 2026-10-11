@@ -84,7 +84,10 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   segundo (hecho por el implementer en `2078505..2b44319`, con `obra_ide` como `int` en la ruta y el `ok`
   recalculado en `unirPreflight`, observaciones 2 y 3); T17 dice ya «(a)-(h)»
   (líder). Observación 1 (la manija de ancho con la tabla encogida) se mira en la
-  M2 (h) 1. Después, review 4 y repetir la M2 con T17 (h). F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
+  M2 (h) 1. Hecho hasta `91fdb7a` (api 780, front 221, transfer 750 sin caché;
+  mutación Python 164/164 y JS 7/7 en copias aisladas); el 422 de `obra_ide` ya
+  en INTEGRACION y `azure-apps` (`36c894a`). **Review 4 lanzada.** Después,
+  repetir la M2 con T17 (h). F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
   Resultado: _pendiente_.
 
 ## Producción, hoy
