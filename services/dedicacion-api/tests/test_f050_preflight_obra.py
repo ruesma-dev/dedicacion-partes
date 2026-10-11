@@ -16,6 +16,7 @@ Sesión y transfer falsos de `test_f022_empresa_en_linea.py`, obras de
 """
 from __future__ import annotations
 
+import pytest
 from application.registro_sigrid import RegistroSigrid
 
 from tests.test_f022_empresa_en_linea import _Sesion, _Transfer
@@ -84,3 +85,29 @@ def test_f050_m2_5_registrar_no_se_acota_por_obra(api):  # noqa: F811
     assert r.status_code == 200, r.text
     [(fase, kw)] = contenedor.registro_sigrid.llamadas
     assert fase == "ejecutar" and "obra_ide" not in kw
+
+
+def test_f050_m2_5_la_ruta_convierte_la_obra_a_entero(api):  # noqa: F811
+    """Review 3, observación 2: un `"694"` de texto llega como `694` (si no,
+    no casa con la obra del grupo y el front quitaría la obra del modal)."""
+    cliente, contenedor = api
+    for valor in ("694", 694.0):
+        contenedor.registro_sigrid.llamadas.clear()
+        r = cliente.post(f"{BASE}/registro/preflight",
+                         json={"obra_ide": valor})
+        assert r.status_code == 200, r.text
+        [(_, kw)] = contenedor.registro_sigrid.llamadas
+        assert kw["obra_ide"] == 694 and type(kw["obra_ide"]) is int
+
+
+@pytest.mark.parametrize("crudo", [
+    b'{"obra_ide": "abc"}', b'{"obra_ide": 694.5}', b'{"obra_ide": true}',
+    b'{"obra_ide": [694]}', b'{"obra_ide": Infinity}'])
+def test_f050_m2_5_obra_que_no_es_entero_422_sin_analizar(api, crudo):  # noqa: F811
+    cliente, contenedor = api
+    contenedor.registro_sigrid.llamadas.clear()
+    r = cliente.post(f"{BASE}/registro/preflight", content=crudo,
+                     headers={"Content-Type": "application/json"})
+    assert r.status_code == 422, r.text
+    assert "obra_ide" in r.json()["error"]
+    assert contenedor.registro_sigrid.llamadas == []
