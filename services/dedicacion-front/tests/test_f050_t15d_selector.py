@@ -15,6 +15,11 @@ cuadrante y en el modal (el mismo `montarSelectorPartida`). `posicionSugerencias
 (F-042) gana un cuarto argumento, `minimo`, que por defecto es 0: sin él,
 lo de F-042 no cambia (sus tests, intactos).
 
+T15e (review 5): medir sin `max-height` ponía a 0 el `scrollTop` de la
+lista (↓ más allá de lo visible y la rueda la devolvían arriba). Ahora
+`recolocar` lo guarda y lo repone, y no recoloca por el `scroll` de la propia
+lista; el DOM de mentira modela ese recorte del navegador.
+
 El código REAL de `app.js` en `node` con un DOM mínimo de mentira (patrón de
 F-042 y T15c). Sin `node` se saltan con su motivo; el reviewer los exige
 `passed`. Sin red.
@@ -152,30 +157,55 @@ ESCAPE = ("function escapeHtml(t) { return (t == null ? '' : String(t))"
 #: DOM de mentira cuyo `offsetHeight` es el de un navegador: el alto natural
 #: (34 px con «Cargando partidas…»; `natural` cuando ya tiene su lista)
 #: TOPADO por el `max-height` que lleve puesto, como en el navegador.
+#: T15e (review 5): también el desplazamiento de `.lista-partidas`, como lo
+#: hace Chrome: su vista es el alto del panel menos la cabecera (buscador y
+#: botones, `CABECERA`), cada opción mide `FILA`, `scrollTop` se recorta a lo
+#: que desborda, `scrollIntoView` («nearest») la mueve lo justo y, SIN
+#: `max-height`, leer `offsetHeight` deja la lista sin desbordar: su
+#: `scrollTop` vuelve a 0 (medido en Chrome por el reviewer, pasada 5).
 DOM = r"""
 const escuchas = [];
+const CABECERA = 78, FILA = 30;
 function nodo(tag) {
   const n = {tag, className: "", _html: "", style: {}, dataset: {}, hijos: [],
-    _h: {}, padre: null, natural: 600,
+    _h: {}, padre: null, natural: 600, panel: null, _st: 0,
     classList: {toggle() {}, add() {}, contains: () => false},
     get innerHTML() { return this._html; },
     set innerHTML(v) { this._html = v; this.hijos = []; },
     get offsetHeight() {
+      if (!this.style.maxHeight && this._lista) this._lista._st = 0;
       const nat = this._html.includes("lista-partidas") ? this.natural : 34;
       return Math.min(nat, parseFloat(this.style.maxHeight) || Infinity); },
+    vista() { const p = this.panel;
+      return Math.min(p.natural, parseFloat(p.style.maxHeight) || Infinity) - CABECERA; },
+    get scrollTop() { return this._st; },
+    set scrollTop(v) { this._st = this.panel ? Math.max(0, Math.min(v,
+      this.hijos.length * FILA - this.vista())) : 0; },
     addEventListener(ev, fn) { this._h[ev] = fn; },
     appendChild(h) { this.hijos.push(h); h.padre = this; return h; },
     querySelector(s) {
       if (s === ".buscar-partida") return this._input || (this._input = nodo("input"));
-      if (s === ".lista-partidas") return this._lista || (this._lista = nodo("div"));
+      if (s === ".lista-partidas") {
+        if (!this._lista) { this._lista = nodo("div");
+          this._lista.panel = this; this._lista.padre = this; }
+        return this._lista; }
+      if (s === ".opcion.activa")
+        return this.hijos.find((h) => / activa/.test(h.className)) || null;
       return null; },
     querySelectorAll() { return []; },
-    contains(x) { for (let y = x; y; y = y.padre) if (y === this) return true;
+    contains(x) { if (x === window) throw new TypeError(
+        "parameter 1 is not of type 'Node'");     // como el navegador
+      for (let y = x; y; y = y.padre) if (y === this) return true;
       return false; },
     remove() { if (this.padre) {
       this.padre.hijos = this.padre.hijos.filter((h) => h !== this);
       this.padre = null; } },
-    focus() {}, scrollIntoView() {}, value: "", isConnected: true,
+    scrollIntoView() { const l = this.padre;
+      if (!l || !l.panel) return;
+      const arriba = l.hijos.indexOf(this) * FILA, v = l.vista();
+      if (arriba < l.scrollTop) l.scrollTop = arriba;
+      else if (arriba + FILA > l.scrollTop + v) l.scrollTop = arriba + FILA - v; },
+    focus() {}, value: "", isConnected: true,
     getBoundingClientRect() { return this.rect || {top: 10, bottom: 30, left: 10}; }};
   return n;
 }
@@ -187,7 +217,8 @@ const document = {createElement: nodo, body,
     if (i >= 0) escuchas.splice(i, 1); },
   documentElement: {clientHeight: 800, clientWidth: 1200},
   querySelectorAll: () => []};
-const window = {addEventListener() {}, removeEventListener() {}};
+const window = {_h: {}, addEventListener(t, fn) { this._h[t] = fn; },
+  removeEventListener() {}};
 const paneles = () => body.hijos.filter((h) => h.className === "panel-partida");
 const llamadas = [];
 function api(url, o) {
@@ -276,3 +307,72 @@ def test_f050_t15d_2_el_alto_util_del_selector():
     assert montar.index('panel.style.maxHeight = "";') < montar.index(
         "panel.offsetHeight")
     assert "}, ALTO_UTIL);" in montar
+
+
+# ====== T15e (review 5): la lista del selector conserva su desplazamiento ====== #
+#: 40 partidas CI y «automática»: 41 opciones de 30 px (1230) en una vista de
+#: 658 - 78 = 580 px (ancla a 130 px del techo, ventana de 800): desborda 650.
+LARGA = """
+  resp.partidas = Array.from({length: 40}, (_, i) => ({ide: i + 1,
+    cod: "CI." + (i + 1), res: "R", mayor: "CI"}));
+  ancla.rect = {top: 100, bottom: 130, left: 50};
+  abrirSelectorPartida(77, 694, false, ancla);
+  const p = paneles()[0]; p.natural = CABECERA + 41 * FILA;
+  llamadas[0].res(resp); await tick();
+  const lista = p._lista, input = p._input;
+  const tecla = (key) => input._h.keydown({key, preventDefault() {},
+    stopPropagation() {}});
+  const activa = () => lista.hijos.findIndex((h) => / activa/.test(h.className));
+  const visible = () => { const a = activa() * FILA;
+    return a >= lista.scrollTop && a + FILA <= lista.scrollTop + lista.vista(); };
+"""
+
+
+@pytest.mark.parametrize("donde", ["cuadrante", "modal"])
+def test_f050_t15e_1_flecha_abajo_mas_alla_de_lo_visible_baja_la_lista(donde):
+    """↓ ×25 (la vista enseña unas 19): la lista baja lo justo y la fila
+    activa se ve (antes, `recolocar` la devolvía arriba: `scrollTop` 0). Con
+    ↑ la activa sigue dentro de la vista: la lista no se mueve."""
+    obs = _escenario(ANCLA[donde] + LARGA + """
+      for (let i = 0; i < 25; i++) tecla("ArrowDown");
+      obs.abajo = [activa(), lista.scrollTop, visible(), p.style.maxHeight];
+      tecla("ArrowUp");
+      obs.arriba = [activa(), lista.scrollTop, visible()];
+    """)
+    assert obs["abajo"] == [25, 25 * 30 + 30 - 580, True, "658px"]
+    assert obs["arriba"] == [24, 200, True]
+
+
+@pytest.mark.parametrize("donde", ["cuadrante", "modal"])
+def test_f050_t15e_1_la_rueda_en_la_lista_no_la_devuelve_arriba(donde):
+    """La rueda desplaza la lista y su `scroll` llega a la escucha de captura
+    de `window`: no recoloca el panel (aunque el ancla se hubiera movido) y
+    la lista se queda donde la dejó la rueda."""
+    obs = _escenario(ANCLA[donde] + LARGA + """
+      lista.scrollTop = 650;
+      ancla.rect = {top: 300, bottom: 330, left: 50};
+      window._h.scroll({type: "scroll", target: lista});
+      obs.rueda = [lista.scrollTop, p.style.top, p.style.maxHeight];
+      tecla("ArrowDown");
+      obs.tecla = [activa(), visible()];
+    """)
+    assert obs["rueda"] == [650, "134px", "658px"]
+    assert obs["tecla"] == [1, True]
+
+
+@pytest.mark.parametrize("donde", ["cuadrante", "modal"])
+def test_f050_t15e_1_recolocar_por_scroll_o_resize_conserva_la_lista(donde):
+    """Un `scroll` de fuera del panel (la página, el modal) o un `resize`
+    SÍ recolocan el panel junto a su ancla, y la lista conserva su
+    desplazamiento (se guarda antes de medir y se repone después)."""
+    obs = _escenario(ANCLA[donde] + LARGA + """
+      lista.scrollTop = 400;
+      ancla.rect = {top: 200, bottom: 230, left: 50};
+      window._h.scroll({type: "scroll", target: document});
+      obs.pagina = [lista.scrollTop, p.style.top, p.style.maxHeight];
+      ancla.rect = {top: 100, bottom: 130, left: 50};
+      window._h.resize({type: "resize", target: window});
+      obs.ventana = [lista.scrollTop, p.style.top, p.style.maxHeight];
+    """)
+    assert obs["pagina"] == [400, "234px", "558px"]
+    assert obs["ventana"] == [400, "134px", "658px"]

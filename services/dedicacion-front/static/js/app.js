@@ -1552,7 +1552,14 @@ function montarSelectorPartida(ctx) {
   // con el de «Cargando…» se quedaba en 34 px) y nunca menos de ALTO_UTIL
   // (buscador, botones Todas · CD · CI · CP y unas cinco filas).
   const ALTO_UTIL = 240;
-  const recolocar = () => {
+  // T15e (review 5): sin `max-height` la lista no desborda y el navegador
+  // pone su `scrollTop` a 0 al medir: se guarda antes y se repone después
+  // (si no, ↓ más allá de lo visible y la rueda la devolvían arriba). Y el
+  // `scroll` de la propia lista (la rueda) no mueve el panel.
+  const recolocar = (ev) => {
+    if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;
+    const lista = panel.querySelector(".lista-partidas");
+    const desplazada = lista ? lista.scrollTop : 0;
     panel.style.maxHeight = "";
     const pos = posicionSugerencias(
       ctx.ancla.isConnected ? ctx.ancla.getBoundingClientRect() : ctx.rect,
@@ -1564,6 +1571,7 @@ function montarSelectorPartida(ctx) {
     panel.style.left = `${pos.left}px`;
     panel.style.width = `${pos.ancho}px`;
     panel.style.maxHeight = `${pos.altoMax}px`;
+    if (lista) lista.scrollTop = desplazada;
   };
   // El clic en su propia ancla no lo cierra (es el segundo clic, punto 3).
   const fuera = (ev) => {
