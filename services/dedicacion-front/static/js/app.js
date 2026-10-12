@@ -79,6 +79,9 @@ const state = {
   seleccion: new Set(),
   ancla: null,                 // fila desde la que Shift+clic hace el rango
   editandoIde: null,
+  // Bloque bajo el ratón (T15e): su trabajador y sus `<tr>` sombreadas.
+  ratonIde: null,
+  resaltadas: [],
   edicion: [],
   timerGuardado: null,
   guardadoPendiente: false,
@@ -720,11 +723,18 @@ function construirFila(t) {
 
     // T15d, punto 1: con el ratón encima de cualquier subfila se sombrea
     // el bloque entero (con `:hover`, solo la `<tr>` bajo el ratón).
+    // T15e: se apunta en `state`; al entrar se apaga el que hubiera (un
+    // bloque repintado bajo el ratón puede no recibir nunca su `mouseleave`).
     tr.addEventListener("mouseenter", () => {
+      (state.resaltadas || []).forEach((x) => x.classList.remove("resaltada"));
+      state.ratonIde = t.ide;
+      state.resaltadas = trs;
       trs.forEach((x) => x.classList.add("resaltada"));
     });
     tr.addEventListener("mouseleave", () => {
-      trs.forEach((x) => x.classList.remove("resaltada"));
+      (state.resaltadas || []).forEach((x) => x.classList.remove("resaltada"));
+      state.ratonIde = null;
+      state.resaltadas = [];
     });
     trs.push(tr);
 
@@ -745,6 +755,12 @@ function construirFila(t) {
       else renderTabla();
     });
     frag.appendChild(tr);
+  }
+  // T15e (obs. 1 de la review 5): repintado con el ratón quieto encima, sale
+  // ya sombreado (el navegador no le manda `mouseenter` hasta que se mueve).
+  if (t.ide === state.ratonIde) {
+    trs.forEach((x) => x.classList.add("resaltada"));
+    state.resaltadas = trs;
   }
   return frag;
 }
@@ -1939,6 +1955,13 @@ function enlazarEventos() {
   });
 
   document.addEventListener("keydown", teclas);
+  // F-050 T15e: al salir de la tabla no queda ningún bloque sombreado (el
+  // repintado bajo el ratón quizá no reciba nunca su `mouseleave`).
+  $("#cuerpo").addEventListener("mouseleave", () => {
+    state.resaltadas.forEach((x) => x.classList.remove("resaltada"));
+    state.ratonIde = null;
+    state.resaltadas = [];
+  });
   // F-050 (M2, punto 1): la tabla se reajusta si cambia el sitio de su panel
   // (ventana, barra de scroll vertical que aparece al cargar el mes).
   new ResizeObserver(() => sincronizarAnchoTabla()).observe($("#tabla").parentElement);
