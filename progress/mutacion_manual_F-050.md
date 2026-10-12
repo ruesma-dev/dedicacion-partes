@@ -603,3 +603,220 @@ Mutado:
     panel.style.maxHeight = "34px";
     const pos = posicionSugerencias(
 ```
+
+## T15e · review 5 (2026-10-12): `app.js`
+
+Mismo método, con `js_mut_t15e.py` (scratchpad, `t15e/`) en una COPIA AISLADA (`git worktree add --detach` de
+`7ecc6e3` en el scratchpad, con el `.venv` del front de la copia principal; `git status` de la copia limpio al acabar
+y retirada con `git worktree remove`). Suite ENTERA del front (`pytest tests -q`, **253 en verde sin mutar**). Línea:
+la de inicio del texto en `app.js` de `7ecc6e3`. **23 generados, 23 muertos, 0 supervivientes**, 398,8 s en serie,
+una sola pasada. V01 es el mutante pedido por la review (quitar la reposición del `scrollTop`). V07 (guardar el
+`scrollTop` DESPUÉS de quitar el `max-height`) es el motivo de `7ecc6e3`: el DOM de mentira recorta el `scrollTop`
+también al leerlo sin `max-height`, como Chrome; antes de la campaña, no al ejecutarla. Sin mutar, a propósito: el
+`|| []` de `(state.resaltadas || [])` (robustez ante un `state` sin el campo; el de la app siempre lo trae).
+
+| Id | Fichero:línea | Texto original → mutado (exacto) | Fallos |
+|---|---|---|---|
+| V01 | app.js:1590 | `    if (lista) lista.scrollTop = desplazada;` → (borrada) | 4 |
+| V02 | app.js:1576 | `    if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;` → (borrada) | 2 |
+| V03 | app.js:1576 | `if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;` → `if (ev && panel.contains(ev.target)) return;` | 2 |
+| V04 | app.js:1576 | `if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;` → `if (ev && ev.type === "scroll" && !panel.contains(ev.target)) return;` | 4 |
+| V05 | app.js:1578 | `    const desplazada = lista ? lista.scrollTop : 0;` → `    const desplazada = 0;` | 4 |
+| V06 | app.js:1577 | (varias líneas, abajo) | 4 |
+| V07 | app.js:1578 | (varias líneas, abajo) | 4 |
+| V08 | app.js:1590 | `    if (lista) lista.scrollTop = desplazada;` → `    if (lista) lista.scrollTop = 0;` | 4 |
+| W01 | app.js:761 | `  if (t.ide === state.ratonIde) {` → `  if (false) {` | 1 |
+| W02 | app.js:763 | (varias líneas, abajo) | 3 |
+| W03 | app.js:729 | (varias líneas, abajo) | 1 |
+| W04 | app.js:730 | `      state.ratonIde = t.ide;` → (borrada) | 2 |
+| W05 | app.js:731 | (varias líneas, abajo) | 4 |
+| W06 | app.js:734 | (varias líneas, abajo) | 1 |
+| W07 | app.js:736 | (varias líneas, abajo) | 2 |
+| W08 | app.js:736 | (varias líneas, abajo) | 2 |
+| W09 | app.js:1960 | (varias líneas, abajo) | 1 |
+| W10 | app.js:1960 | `$("#cuerpo").addEventListener("mouseleave",` → `$("#cuerpo").addEventListener("mouseout",` | 1 |
+| W11 | app.js:1961 | (varias líneas, abajo) | 1 |
+| W12 | app.js:1961 | (varias líneas, abajo) | 1 |
+| W13 | app.js:1961 | (varias líneas, abajo) | 1 |
+| W14 | app.js:83 | `  ratonIde: null,` → `  ratonIde: 7,` | 1 |
+| W15 | app.js:84 | `  resaltadas: [],` → `  resaltadas: null,` | 1 |
+
+**V06** (static/js/app.js:1577, 4 fallos). Original:
+
+```
+    const lista = panel.querySelector(".lista-partidas");
+    const desplazada
+```
+
+Mutado:
+
+```
+    const lista = null;
+    const desplazada
+```
+
+**V07** (static/js/app.js:1578, 4 fallos). Original:
+
+```
+    const desplazada = lista ? lista.scrollTop : 0;
+    panel.style.maxHeight = "";
+```
+
+Mutado:
+
+```
+    panel.style.maxHeight = "";
+    const desplazada = lista ? lista.scrollTop : 0;
+```
+
+**W02** (static/js/app.js:763, 3 fallos). Original:
+
+```
+    state.resaltadas = trs;
+  }
+  return frag;
+```
+
+Mutado:
+
+```
+  }
+  return frag;
+```
+
+**W03** (static/js/app.js:729, 1 fallo). Original:
+
+```
+      (state.resaltadas || []).forEach((x) => x.classList.remove("resaltada"));
+      state.ratonIde = t.ide;
+```
+
+Mutado:
+
+```
+      state.ratonIde = t.ide;
+```
+
+**W05** (static/js/app.js:731, 4 fallos). Original:
+
+```
+      state.resaltadas = trs;
+      trs.forEach
+```
+
+Mutado:
+
+```
+      trs.forEach
+```
+
+**W06** (static/js/app.js:734, 1 fallo). Original:
+
+```
+tr.addEventListener("mouseleave", () => {
+      (state.resaltadas || []).forEach((x) => x.classList.remove("resaltada"));
+```
+
+Mutado:
+
+```
+tr.addEventListener("mouseleave", () => {
+      trs.forEach((x) => x.classList.remove("resaltada"));
+```
+
+**W07** (static/js/app.js:736, 2 fallos). Original:
+
+```
+      state.ratonIde = null;
+      state.resaltadas = [];
+    });
+    trs.push(tr);
+```
+
+Mutado:
+
+```
+      state.resaltadas = [];
+    });
+    trs.push(tr);
+```
+
+**W08** (static/js/app.js:736, 2 fallos). Original:
+
+```
+      state.ratonIde = null;
+      state.resaltadas = [];
+    });
+    trs.push(tr);
+```
+
+Mutado:
+
+```
+      state.ratonIde = null;
+    });
+    trs.push(tr);
+```
+
+**W09** (static/js/app.js:1960, 1 fallo). Original:
+
+```
+  $("#cuerpo").addEventListener("mouseleave", () => {
+    state.resaltadas.forEach((x) => x.classList.remove("resaltada"));
+    state.ratonIde = null;
+    state.resaltadas = [];
+  });
+```
+
+Mutado (vacío: se borra).
+
+**W11** (static/js/app.js:1961, 1 fallo). Original:
+
+```
+    state.resaltadas.forEach((x) => x.classList.remove("resaltada"));
+    state.ratonIde = null;
+    state.resaltadas = [];
+  });
+```
+
+Mutado:
+
+```
+    state.ratonIde = null;
+    state.resaltadas = [];
+  });
+```
+
+**W12** (static/js/app.js:1961, 1 fallo). Original:
+
+```
+    state.resaltadas.forEach((x) => x.classList.remove("resaltada"));
+    state.ratonIde = null;
+    state.resaltadas = [];
+  });
+```
+
+Mutado:
+
+```
+    state.resaltadas.forEach((x) => x.classList.remove("resaltada"));
+    state.resaltadas = [];
+  });
+```
+
+**W13** (static/js/app.js:1961, 1 fallo). Original:
+
+```
+    state.resaltadas.forEach((x) => x.classList.remove("resaltada"));
+    state.ratonIde = null;
+    state.resaltadas = [];
+  });
+```
+
+Mutado:
+
+```
+    state.resaltadas.forEach((x) => x.classList.remove("resaltada"));
+    state.ratonIde = null;
+  });
+```

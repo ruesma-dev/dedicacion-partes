@@ -101,7 +101,7 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   **Review 5: CAMBIOS PEDIDOS:** la lista del selector no se puede desplazar
   (al recolocar, medir el alto natural sin `max-height` pone el `scrollTop` a 0;
   y un `scroll` dentro del panel recoloca); test que lo cace en un DOM que recorte
-  el desplazamiento; M2 (h) 3 ampliada. Implementer relanzado (T15e), también con
+  el desplazamiento; M2 (h) 3 ampliada. T15e hecha por el implementer (`a738252..8788c94`), también con
   la observación 1 (el bloque repintado bajo el ratón quieto no sale sombreado).
   Observación 2: confirmar en la M2 que con `ALTO_UTIL` se ven cinco filas.
   Resultado: _pendiente_.
