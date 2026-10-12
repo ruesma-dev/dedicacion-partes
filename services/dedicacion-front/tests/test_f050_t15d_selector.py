@@ -161,8 +161,9 @@ ESCAPE = ("function escapeHtml(t) { return (t == null ? '' : String(t))"
 #: hace Chrome: su vista es el alto del panel menos la cabecera (buscador y
 #: botones, `CABECERA`), cada opción mide `FILA`, `scrollTop` se recorta a lo
 #: que desborda, `scrollIntoView` («nearest») la mueve lo justo y, SIN
-#: `max-height`, leer `offsetHeight` deja la lista sin desbordar: su
-#: `scrollTop` vuelve a 0 (medido en Chrome por el reviewer, pasada 5).
+#: `max-height`, leer `offsetHeight` (o el propio `scrollTop`) deja la lista
+#: sin desbordar: su `scrollTop` vuelve a 0 (medido en Chrome por el
+#: reviewer, pasada 5).
 DOM = r"""
 const escuchas = [];
 const CABECERA = 78, FILA = 30;
@@ -178,7 +179,9 @@ function nodo(tag) {
       return Math.min(nat, parseFloat(this.style.maxHeight) || Infinity); },
     vista() { const p = this.panel;
       return Math.min(p.natural, parseFloat(p.style.maxHeight) || Infinity) - CABECERA; },
-    get scrollTop() { return this._st; },
+    get scrollTop() {
+      if (this.panel && !this.panel.style.maxHeight) this._st = 0;
+      return this._st; },
     set scrollTop(v) { this._st = this.panel ? Math.max(0, Math.min(v,
       this.hijos.length * FILA - this.vista())) : 0; },
     addEventListener(ev, fn) { this._h[ev] = fn; },
