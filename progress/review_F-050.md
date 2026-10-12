@@ -1,13 +1,12 @@
 <!-- progress/review_F-050.md -->
-Revisión incremental desde c496af2 (pasada 5) · `c496af2..728c3f0` (T15d)
+Revisión incremental desde a663a0a (pasada 6) · `a663a0a..c986c29` (T15e)
 
 # F-050 · Review
 
-**Veredicto (pasada 5): CHANGES_REQUESTED** (CAMBIOS PEDIDOS). El punto 1
-(sombreado del bloque) está bien. El punto 2 arregla el panel minúsculo, pero
-**introduce una regresión**: la lista del selector ya no se puede desplazar.
-Con ↓ más allá de las filas visibles la fila activa desaparece, y con la rueda
-la lista vuelve arriba. Reproducido en Chrome (abajo).
+**Veredicto (pasada 6): APPROVED** (APROBADO). Los tres cambios de la pasada 5
+están hechos y la observación 1 recogida. El arreglo funciona en Chrome real
+(abajo), el DOM de mentira reproduce lo que hace Chrome y los tests caen si se
+quita la reposición. Sin regresiones en T15d ni en F-042.
 
 **Rigor:** `critico`, declarado: RED, cobertura ≥ 80 %, mutación con cero
 supervivientes sin justificación aceptada y MANUAL con comando exacto.
@@ -18,123 +17,124 @@ supervivientes sin justificación aceptada y MANUAL con comando exacto.
 CAMBIOS PEDIDOS, papeleo (`493bf35`). **2**: APROBADA, T15b (`8e9e8de`).
 **3**: CAMBIOS PEDIDOS, T15c («Registrar» atascado; T17 «(a)-(g)»; `49a9003`).
 **4**: APROBADA; obs.: `trabajador_ide` crudo (→ F-056), análisis anterior
-tras un error (M2 (h) 5), manija (M2 (h) 1) (`c496af2`).
+tras un error (M2 (h) 5), manija (M2 (h) 1) (`c496af2`). **5**: CAMBIOS
+PEDIDOS (`a663a0a`): el sombreado de T15d bien, pero `recolocar` quitaba el
+`max-height` para medir y Chrome ponía a 0 el `scrollTop` de la lista (↓ más
+allá de lo visible y la rueda la devolvían arriba); pidió reponerlo, no
+recolocar por el `scroll` de la propia lista, test RED con un DOM que lo
+modele y la M2 (h) 3 ampliada.
 
-## Pasada 5 · lo ejecutado por el reviewer
+## Pasada 6 · lo ejecutado por el reviewer
 
 - Borrados `.arnes_cache/suite_*.ok`; `bash harness/init.sh` tal cual y solo:
   **ENTORNO LISTO**, ningún `[KO]` (`ruff` 237, el aviso de siempre). Raíz
-  **418 passed, 1 skipped** (43,9 s), api **780** (34,4 s), front **241**
-  (23,5 s, con node, 0 skipped), transfer **750** (8,0 s). `PUERTA COBERTURA`
-  **100,0 % (353/353)**; `PUERTA TAMAÑO` en verde.
-- **Copia aislada** en el scratchpad (front + transfer, sin `.venv`, con el
-  `.venv` del front del repo): base **241 passed**. Reproducidas al pie de la
-  letra cuatro filas de la campaña manual: **S04 → 1 fallo, S07 → 4, C01 → 2,
-  U04 → 3**, las del informe.
-- **Chrome headless** (`chrome.exe --headless=new --dump-dom`, página local en
-  el scratchpad con el `styles.css` real, el `posicionSugerencias` de HEAD
-  extraído de `app.js`, el `recolocar` de HEAD y el de `c496af2`, y 95 filas
-  como la CI de la 0694). Resultado:
+  **418 passed, 1 skipped** (31,5 s), api **780** (22,0 s), front **253**
+  (18,1 s, con node, 0 skipped), transfer **750** (3,9 s). `PUERTA COBERTURA`
+  **100,0 % (353/353)**; `PUERTA TAMAÑO` en verde. `ruff` limpio en los dos
+  tests tocados. `git status` limpio al acabar.
+- **Chrome headless** (scratchpad `rev6/gen.py`: `posicionSugerencias` y el
+  `recolocar` REAL de HEAD extraídos de `app.js`, `styles.css` real, 95 filas;
+  variantes «sin reposición» y «sin guarda» por sustitución de texto):
 
-  | Acción | `recolocar` de HEAD | `recolocar` de `c496af2` |
-  |---|---|---|
-  | ↓ hasta la fila 40 (`scrollIntoView` y luego `recolocar`, como `pintar`) | `scrollTop` 790 → **0** | 790 → 790 |
-  | Rueda: `scrollTop = 300` y evento `scroll` de la lista (llega a la escucha de captura de `window`) | 300 → **0** | 300 → 300 |
+  | Acción | HEAD | sin reposición (V01) | sin guarda (V02) |
+  |---|---|---|---|
+  | `scrollIntoView` fila 40 y `recolocar` (como `pintar`) | 790 → **790**, fila visible | 790 → 0, no visible | 790 → 790 |
+  | `max-height = ""` y leer solo `scrollTop` | 0 (recorta) | 0 | 0 |
+  | Rueda: `scrollTop = 600` + `scroll` de la lista | 600, panel quieto | 600 (sale por la guarda) | 600 (repuesto) |
+  | `scroll` de `document` con el ancla movida 100 px | 400, top 134 → 234 | **0** | 400 |
 
-  Causa: `panel.style.maxHeight = ""` (`app.js:1556`) y la lectura de
-  `offsetHeight` fuerzan un *layout* en el que `.lista-partidas` ya no
-  desborda (el panel no tiene `max-height` en el CSS, a diferencia de
-  `.sugerencias` de F-042), y el navegador recorta su `scrollTop` a 0. Pasa
-  en cada `pintar` (`app.js:1643-1644`) y en cada `scroll` de la propia lista
-  (`window.addEventListener("scroll", recolocar, true)`, `app.js:1573`).
-  Afecta al cuadrante y al modal (mismo código), y rompe la M2 (b) «↑ ↓
-  Enter» en cuanto la lista pasa de lo visible (95 CI, 727 CD en la 0694).
-  Los tests de node no lo ven: su DOM de mentira no modela `scrollTop`.
+  Conclusión: el recorte a 0 lo hace Chrome al medir **y también al leer
+  `scrollTop`** sin `max-height` (lo que modela `7ecc6e3`); el DOM de mentira
+  predice lo mismo en cada caso. La guarda no hace falta para la lista (la
+  reposición la cubre) pero sí para que la rueda no mueva el panel: es lo que
+  comprueba `…la_rueda…` (`top` sigue en 134 aunque el ancla cambie).
+- **RED reproducido** (copia aislada `rev6/copia`, `git archive` de HEAD, con
+  el `app.js` de `a663a0a`): `t15d_selector` + `t15e_sombreado` → **12 failed,
+  14 passed**, las mismas 12 líneas `E` del informe (`[25, 0, False, '658px']`,
+  `[0, '334px', '458px']`, `[0, '234px', '558px']`…). Los 14 que pasan, los de
+  T15d sin cambios.
+- **Mutantes reproducidos** al pie de la letra (suite entera del front, base
+  253 en verde): **V01 → 4 fallos, V07 → 4, V02 → 2, W01 → 1, W10 → 1**, los
+  del informe y en los tests que tocan (↓ ×25 y scroll/resize para V01/V07; la
+  rueda para V02; repintado y `#cuerpo` para W01/W10).
 
 ## Lo pedido por el líder
 
-- **Captura 1 (RAFAEL), cubierta.** El *hover* pone `resaltada` en todas las
-  `<tr>` del bloque (`mouseenter`/`mouseleave`, que no se disparan al pasar de
-  celda en celda; la salida va antes que la entrada al cambiar de subfila). Las
-  celdas con `rowSpan` cuelgan de la primera `<tr>`: también se sombrean.
-  `tr.fila:hover` desaparece. `.resaltada` tiene la misma especificidad que
-  `.seleccionada`, `.editando` y `.multi` y va antes: cursor (con sus barras de
-  T15c), editor y selección múltiple siguen mandando. El cursor y la selección
-  ya iban por bloque desde T15c (`construirFila` marca todas las subfilas). La
-  fila del editor (`tr.fila-editor`) no lleva `fila`: no cambia.
-- **Alto mínimo, cubierto en la geometría.** Revisado `posicionSugerencias` a
-  mano: el panel queda ≥ `min(240, alto − 16)`, arriba si debajo no cabe y
-  arriba hay más, o dentro de la ventana tapando el ancla; cuadrante y modal
-  usan el mismo `montarSelectorPartida`. Pero ver el cambio 1.
-- **F-042 intacto.** Con `minimo = 0`, `suelo = 0`: `quiere = alto`,
-  `altoMax` y `top` dan lo mismo que antes (`min(alto, altoMax) = altoMax`) y
-  no entra la rama nueva. `colocarSugerencias` no cambia; `test_f042_*` sin
-  tocar y en verde; el test de control compara con y sin el 4.º argumento.
-- **Tests previos:** el delta solo **añade** dos ficheros; ninguno cambia.
-- **M2 (h) 2 y 3:** se pueden seguir (trabajadores con nombre, alturas de
-  ventana y modal). Les falta desplazar la lista (cambio 2).
+- **Desplazamiento de la lista (cambio 1), cubierto.** `recolocar(ev)` guarda
+  el `scrollTop` antes de `maxHeight = ""` y lo repone tras fijar el nuevo
+  (`app.js:1576-1590`); un `scroll` nacido dentro del panel no recoloca; el
+  `resize` no llega a `contains` (con `window` lanzaría `TypeError`, también
+  modelado). En `pintar` (`app.js:1667-1668`) la activa sigue visible tras
+  `recolocar` (test ↓ ×25 y Chrome). La reposición dispara un `scroll` de la
+  lista que la guarda corta: sin bucle.
+- **DOM de mentira (cambio 2), fiel.** Vista = alto del panel − cabecera,
+  `scrollTop` recortado a lo que desborda, `scrollIntoView` «nearest», recorte
+  a 0 sin `max-height` al leer `offsetHeight` o `scrollTop`. Contrastado arriba
+  con Chrome: mismos resultados en las cuatro acciones.
+- **T15d intacto.** Los 14 tests de T15d sin tocar sus asserts (el diff de
+  `test_f050_t15d_selector.py` solo amplía el DOM y añade 6 tests al final) y
+  en verde; `posicionSugerencias` y `ALTO_UTIL` sin cambios. **F-042 intacto**:
+  `colocarSugerencias` y `test_f042_*` sin tocar, en verde.
+- **Sombreado bajo el ratón quieto (obs. 1), cubierto.** `state.ratonIde` y
+  `resaltadas`; `construirFila` sombrea el bloque repintado de ese trabajador;
+  `mouseenter` apaga el que hubiera; `mouseleave` de la fila o de `#cuerpo`
+  apaga el que haya. `moverSeleccion` → `renderTabla`: ↑ ↓ repinta de verdad,
+  así que la M2 lo prueba. Límite declarado en el informe (tabla desplazada
+  bajo el ratón quieto): ver observación 1.
+- **Tests anteriores:** ninguno de otra feature; de F-050, solo el DOM de `t15d_selector`.
+- **M2 (h) 2 y 3 en `tasks.md`:** (h) 2 añade «ratón quieto, ↑ ↓: sigue
+  sombreado; al sacarlo de la tabla, ninguno»; (h) 3 añade «CI de la 0694,
+  rueda hasta abajo y ↓ más allá de lo visible: la lista baja y la activa se
+  ve, en el cuadrante y en el modal». Lo pedido, ejecutable por el humano.
 
 ## Checkpoints (lo que toca el delta)
 
 - **C1** [x] init.sh sin caché, ENTORNO LISTO · [x] ficheros base. **C2** [x]
   una `in_progress` · [x] rama · [x] `current.md` al día · `history.md` N/A: no `done`.
 - **C3** [x] límite de servicio: solo front · [x] el front no decide nada de
-  negocio (colocación y sombreado) · [x] primera línea con ruta en los dos
-  tests · [x] sin `console.log` ni secretos.
+  negocio (colocación, desplazamiento y sombreado) · [x] primera línea con
+  ruta en el test nuevo · [x] sin `console.log` ni secretos.
 - **C3 bis** N/A: no toca `docs/referencia/`. **C4 ter** N/A: sin `rutas_sensibles.json`.
-- **C4** [ ] **sin regresiones de comportamiento: la lista del selector no se
-  desplaza** (cambio 1) · [x] tests sin red ni BBDD (node local) · [ ] MANUAL
-  (h) 3 no comprueba el desplazamiento de la lista (cambio 2).
+- **C4** [x] sin regresiones (Chrome y suite) · [x] tests sin red ni BBDD
+  (node local) · [x] MANUAL (h) 2 y 3 con lo de T15e.
 - **C4 bis**
-  - [x] `rigor` · [x] RED real (impl §T15d: 6 y 11 fallos con su salida; los 2
-    que pasan, controles) · [x] cobertura 100 % · [x] Python sin cambios (164/164).
-  - [x] MANUAL JS/CSS T15d: 26 filas con texto exacto, línea y nº de fallos;
-    1.ª pasada 23/25 con S02 y S04 vivos, cerrados con test; cuatro filas
-    reproducidas · [x] cero supervivientes.
-  - [x] RM1: medido en `5bbda9e`; `728c3f0` solo toca `progress/` y `tasks.md`.
-  - [x] RM2: 26 × ~22 s ≈ 570 s frente a 526,7 s (suite entera, sin `-x`): coherente.
-  - [x] RM3: ningún equivalente muerto (S16 `240`→`200` cambia la geometría;
-    C03, la cascada) · RM5 N/A: ninguno declarado · RM6 N/A: no se quita
-    ninguna guarda · [x] Evidencias, 4 números.
-- **C5** [x] commits `F-050 T15d: …` (`975bd67`, del líder, solo docs) · [x]
-  T15d `[x]`; T17-T18 MANUAL pendientes · [x] sin artefactos (todo en el scratchpad).
+  - [x] `rigor` · [x] RED real (impl §T15e: 12 fallos, reproducidos) · [x]
+    cobertura 100 % · [x] Python sin cambios (164/164 de `ee4c70d`).
+  - [x] MANUAL JS T15e: 23 filas con texto exacto, línea y nº de fallos;
+    cinco reproducidas · [x] cero supervivientes. El `|| []` sin mutar,
+    justificado (defensa redundante; el `state` siempre trae el campo).
+  - [x] RM1: medido en `7ecc6e3`; después solo `check=False` en un test
+    (sin efecto) y documentos.
+  - [x] RM2: 23 × ~17 s ≈ 398,8 s con la suite del front en 16-18 s: coherente.
+  - [x] RM3: ningún equivalente muerto (V03 sin `ev.type` lanza `TypeError`
+    en el `resize` en el navegador; W15 `null` rompe la salida de `#cuerpo`)
+    · RM5 N/A: ninguno declarado · RM6 N/A: no se quita ninguna guarda.
+  - [x] Evidencias, 4 números.
+- **C5** [x] commits `F-050 T15e: …` · [x] T15e `[x]`; T16-T18 MANUAL `[ ]`
+  (M1 OK según el informe) · [x] sin artefactos (todo en el scratchpad).
 
 ## Cobertura requisito → test (`test_f050_*`)
 
 | R | Test |
 |---|---|
-| R1-R29, T15c, rev. 3 | sin cambios desde la pasada 4 |
-| T15d 1 | `t15d_sombreado` (6): bloque, cambio de subfila, otro trabajador, sin carga, CSS y orden de la cascada |
-| T15d 2 | `t15d_selector` (14): geometría (borde, poco sitio, lleno, debajo, ventana 300 y 200, F-042) y panel real en cuadrante y modal |
+| R1-R29, T15c, rev. 3, T15d | sin cambios desde la pasada 5 |
+| T15e 1-2 | `t15d_selector` (+6): ↓ ×25 baja la lista y la activa se ve; la rueda no la devuelve arriba ni mueve el panel; scroll de fuera y `resize` recolocan conservándola (cuadrante y modal) |
+| T15e obs. 1 | `t15e_sombreado` (6): estado inicial, repintado sombreado, otro bloque lo apaga, salida de la fila vieja, T15d igual, salida de `#cuerpo` |
 
 ## Cambios requeridos
 
-1. **La lista del selector debe poder desplazarse** (`app.js:1555-1566`,
-   `recolocar`). Medir el alto natural sin perder el `scrollTop` de
-   `.lista-partidas`: p. ej., guardarlo antes de `maxHeight = ""` y
-   reponerlo tras fijar el nuevo `maxHeight`; y no recolocar por los `scroll`
-   que nacen dentro del propio panel (`ev.target` dentro de `panel`,
-   `app.js:1573`). Comprobar que en `pintar` la fila activa sigue visible tras
-   `recolocar` (`app.js:1643-1644`).
-2. **Test RED que lo cace**: el DOM de mentira de `t15d_selector` debe
-   modelar lo que hace el navegador (sin `max-height`, leer `offsetHeight`
-   recorta el `scrollTop` de la lista a 0) y comprobar que tras ↓ ×N y tras un
-   `scroll` de la lista el `scrollTop` se conserva. RED real en el informe y
-   su mutante en la campaña manual (quitar la reposición).
-3. **M2 (h) 3 en `tasks.md`**: añadir «con la lista abierta (CI de la 0694),
-   rueda del ratón hasta abajo y ↓ más allá de lo visible: la lista baja y la
-   fila activa se ve», en el cuadrante y en el modal.
+Ninguno.
 
 ## Observaciones (no bloquean; que el líder las recoja)
 
-1. Con el ratón quieto sobre un bloque que se repinta, el nuevo no sale
-   sombreado hasta moverlo (el `:hover` se recalculaba solo). M2 (h) 2.
-2. `ALTO_UTIL = 240` es estimado: confirmar en la M2 que se ven cinco filas.
+1. En la M2 (h) 2, mirar también ↓ junto al borde inferior (la tabla se
+   desplaza bajo el ratón quieto): el informe declara que el sombreado sigue
+   al trabajador hasta mover el ratón. Aceptable si el humano lo ve así.
+2. Sigue abierta la obs. 2 de la pasada 5: confirmar en la M2 que con
+   `ALTO_UTIL = 240` se ven cinco filas.
 
 ## Automejora (propuesta, no aplicada)
 
-Casilla MANUAL con texto exacto y SHA (pasada 2); test por orden de llegada en
-peticiones concurrentes (pasada 3); y **en C4, para el front: un cambio de
-medición o de `max-height` de un panel con lista exige comprobar en navegador
-real (o en un DOM que lo modele) que su `scrollTop` sobrevive**: los dobles
-de node no recortan el desplazamiento y aquí dieron 26/26 sin verlo.
+Las de pasadas anteriores, más: **cuando un test modele en un DOM de mentira
+un comportamiento del navegador, el reviewer contrasta ese modelo con Chrome
+headless en el mismo escenario** (aquí, `rev6/gen.py`): uno infiel esconde la regresión (T15d).
