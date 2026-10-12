@@ -1296,16 +1296,25 @@ let desmontarSugerencias = null;
 // panel (con el tope de 280 px del CSS) y `ventana` {alto, ancho}. Debajo
 // del campo; si ahí no cabe y encima hay más sitio, encima. Nunca se sale de
 // la ventana: el ancho y el alto se limitan al sitio que hay.
-function posicionSugerencias(campo, alto, ventana) {
+// F-050, T15d: `minimo` (0 en F-042, que no cambia) es el alto útil que el
+// panel tiene que poder enseñar aunque ahora mida menos («Cargando…»): con
+// él se decide arriba o abajo y es el tope mínimo; si no cabe en ningún
+// lado, el panel se mete en la ventana aunque tape su campo.
+function posicionSugerencias(campo, alto, ventana, minimo = 0) {
   const HUECO = 4;     // entre el campo y el panel
   const MARGEN = 8;    // con el borde de la ventana
   const ancho = Math.min(430, ventana.ancho - 2 * MARGEN);
   const left = Math.max(MARGEN, Math.min(campo.left, ventana.ancho - MARGEN - ancho));
   const abajo = ventana.alto - campo.bottom - HUECO - MARGEN;
   const arriba = campo.top - HUECO - MARGEN;
-  const haciaArriba = alto > abajo && arriba > abajo;
-  const altoMax = Math.max(0, Math.min(alto, haciaArriba ? arriba : abajo));
-  const top = haciaArriba ? campo.top - HUECO - altoMax : campo.bottom + HUECO;
+  const suelo = Math.max(0, Math.min(minimo, ventana.alto - 2 * MARGEN));
+  const quiere = Math.max(alto, suelo);
+  const haciaArriba = quiere > abajo && arriba > abajo;
+  const altoMax = Math.max(0, Math.min(quiere, Math.max(haciaArriba ? arriba : abajo, suelo)));
+  let top = haciaArriba ? campo.top - HUECO - Math.min(alto, altoMax) : campo.bottom + HUECO;
+  if (suelo) {
+    top = Math.max(MARGEN, haciaArriba ? top : Math.min(top, ventana.alto - MARGEN - altoMax));
+  }
   return { top, left, ancho, altoMax, haciaArriba };
 }
 
@@ -1539,13 +1548,18 @@ function montarSelectorPartida(ctx) {
 
   // Junto a su ancla, como el panel de F-042; si el ancla se ha rehecho
   // (guardado del editor), donde estaba al abrir.
+  // T15d, punto 2: se mide el alto NATURAL (sin el tope de la vez anterior:
+  // con el de «Cargando…» se quedaba en 34 px) y nunca menos de ALTO_UTIL
+  // (buscador, botones Todas · CD · CI · CP y unas cinco filas).
+  const ALTO_UTIL = 240;
   const recolocar = () => {
+    panel.style.maxHeight = "";
     const pos = posicionSugerencias(
       ctx.ancla.isConnected ? ctx.ancla.getBoundingClientRect() : ctx.rect,
       panel.offsetHeight, {
         alto: document.documentElement.clientHeight,
         ancho: document.documentElement.clientWidth,
-      });
+      }, ALTO_UTIL);
     panel.style.top = `${pos.top}px`;
     panel.style.left = `${pos.left}px`;
     panel.style.width = `${pos.ancho}px`;
