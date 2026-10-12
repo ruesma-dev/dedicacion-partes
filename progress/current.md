@@ -89,8 +89,15 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   en INTEGRACION y `azure-apps` (`36c894a`). **Review 4 APROBADA**; sus
   observaciones: `trabajador_ide` crudo (un 0 quitaría el filtro de `ejecutar`) →
   **F-056** nueva; «tras un error, el bloque de esa obra enseña el análisis
-  anterior» y la manija de ancho, a mirar en la M2 (h) 5 y (h) 1. **Espera que el
-  humano repita la M2 con T17 (a)-(h).** F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
+  anterior» y la manija de ancho, a mirar en la M2 (h) 5 y (h) 1.
+- **M2 repetida por el humano (2026-10-12): dos fallos** (capturas en el Word
+  `Doc1.docx` de Descargas, no versionado): (h)2 la fila seleccionada con
+  subfilas sigue mal: la PRIMERA subfila sombrea todas las columnas y las demás
+  solo su celda; el humano quiere el comportamiento de la primera en todas (todo
+  el bloque del trabajador sombreado); (h)3 el selector se abre minúsculo (solo
+  se ve el buscador; ni lista ni botones CD/CI/CP) en una fila cerca del borde
+  inferior. Son defectos de T15c (dentro del plan aprobado). **Estado:**
+  implementer relanzado (T15d). F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
   Resultado: _pendiente_.
 
 ## Producción, hoy
