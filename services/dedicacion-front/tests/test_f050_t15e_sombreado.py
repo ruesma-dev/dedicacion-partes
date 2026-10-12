@@ -54,7 +54,8 @@ def _node(programa: str) -> object:
         pytest.skip("node no está instalado: los tests de lógica de F-050 "
                     "no se ejecutan")
     salida = subprocess.run([node, "-"], input=programa, capture_output=True,
-                            text=True, encoding="utf-8", timeout=30)
+                            text=True, encoding="utf-8", timeout=30,
+                            check=False)
     assert salida.returncode == 0, next(
         (ln for ln in salida.stderr.splitlines() if "Error" in ln), salida.stderr)
     return json.loads(salida.stdout)
