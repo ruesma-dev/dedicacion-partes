@@ -98,6 +98,12 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   se ve el buscador; ni lista ni botones CD/CI/CP) en una fila cerca del borde
   inferior. Son defectos de T15c (dentro del plan aprobado). **Estado:**
   T15d TERMINADA por el implementer (`552fbfb`..`5bbda9e`, `progress/impl_F-050.md`; (h)2 era el *hover*, no el cursor; (h)3 pasaba en cualquier fila; solo front; mutación JS/CSS 26/26 en copia aislada; M2 (h) 2 y 3 ampliadas en T17). F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
+  **Review 5: CAMBIOS PEDIDOS:** la lista del selector no se puede desplazar
+  (al recolocar, medir el alto natural sin `max-height` pone el `scrollTop` a 0;
+  y un `scroll` dentro del panel recoloca); test que lo cace en un DOM que recorte
+  el desplazamiento; M2 (h) 3 ampliada. Implementer relanzado (T15e), también con
+  la observación 1 (el bloque repintado bajo el ratón quieto no sale sombreado).
+  Observación 2: confirmar en la M2 que con `ALTO_UTIL` se ven cinco filas.
   Resultado: _pendiente_.
 
 ## Producción, hoy

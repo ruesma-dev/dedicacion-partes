@@ -1,140 +1,140 @@
 <!-- progress/review_F-050.md -->
-Revisión incremental desde c5d07c9 (pasada 4) · `c5d07c9..49a9003`
+Revisión incremental desde c496af2 (pasada 5) · `c496af2..728c3f0` (T15d)
 
 # F-050 · Review
 
-**Veredicto (pasada 4): APPROVED** (APROBADO). El cambio 1 de la pasada 3
-está arreglado y probado con el orden exacto que lo rompía (y el contrario);
-las observaciones 2 y 3, recogidas; T17 dice «(a)-(h)». Quedan pendientes
-T17-T18, que son MANUAL (el humano), como en las pasadas anteriores.
+**Veredicto (pasada 5): CHANGES_REQUESTED** (CAMBIOS PEDIDOS). El punto 1
+(sombreado del bloque) está bien. El punto 2 arregla el panel minúsculo, pero
+**introduce una regresión**: la lista del selector ya no se puede desplazar.
+Con ↓ más allá de las filas visibles la fila activa desaparece, y con la rueda
+la lista vuelve arriba. Reproducido en Chrome (abajo).
 
 **Rigor:** `critico`, declarado: RED, cobertura ≥ 80 %, mutación con cero
 supervivientes sin justificación aceptada y MANUAL con comando exacto.
 
 ## Pasadas anteriores (resumen)
 
-- **Pasada 1** (`82bf8d6..5f66b9d`, completa): CAMBIOS PEDIDOS, papeleo.
-  Íntegra: `git show 493bf35:progress/review_F-050.md`.
-- **Pasada 2** (`5f66b9d..d53a162`): APROBADA (T15b, RED reproducidos).
-  Íntegra: `git show 8e9e8de:progress/review_F-050.md`.
-- **Pasada 3** (`d53a162..8e9e8de`, T15c): CAMBIOS PEDIDOS: 1) «Registrar» se
-  quedaba en «Analizando…» si, con dos repreflights en vuelo, volvía bien la
-  700 y después fallaba la 694 (el `catch` reactivaba el botón viejo, ya fuera
-  del DOM); 2) T17 decía «(a)-(g)». Observaciones 1-3 (manija, `obra_ide`
-  crudo, `ok` de `unirPreflight`). Íntegra: `git show 49a9003:progress/review_F-050.md`.
+Íntegras con `git show <commit>:progress/review_F-050.md`. **1** (completa):
+CAMBIOS PEDIDOS, papeleo (`493bf35`). **2**: APROBADA, T15b (`8e9e8de`).
+**3**: CAMBIOS PEDIDOS, T15c («Registrar» atascado; T17 «(a)-(g)»; `49a9003`).
+**4**: APROBADA; obs.: `trabajador_ide` crudo (→ F-056), análisis anterior
+tras un error (M2 (h) 5), manija (M2 (h) 1) (`c496af2`).
 
-## Pasada 4 · lo ejecutado por el reviewer
+## Pasada 5 · lo ejecutado por el reviewer
 
-- Sin `.arnes_cache/suite_*.ok`, `bash harness/init.sh` tal cual y solo:
+- Borrados `.arnes_cache/suite_*.ok`; `bash harness/init.sh` tal cual y solo:
   **ENTORNO LISTO**, ningún `[KO]` (`ruff` 237, el aviso de siempre). Raíz
-  **418 passed, 1 skipped** (42,9 s), api **780** (42,9 s), front **221**
-  (22,5 s), transfer **750** (7,7 s). `PUERTA COBERTURA` **100,0 %
-  (353/353)**; `PUERTA TAMAÑO` en verde.
-- **Python, recálculo puro en HEAD** (`alcance_de_feature` +
-  `generar_mutantes`): **19 ficheros, 882 líneas, 164 mutantes**, idéntico al
-  informe; los 4 nuevos son de `_obra_ide` (`routes.py:79, 82, 83, 83`).
-  Campaña no reejecutada: 1796,6 s según el informe.
-- **Copia aislada** (`git worktree add --detach` de HEAD en el scratchpad,
-  suites con los `.venv` del repo; front 221 y `test_f050_preflight_obra` 12
-  en verde sin mutar). Reproducidas al pie de la letra **T47 → 2 fallos, T50
-  → 2, T51 → 1**, los del informe manual; y dos de Python: `routes.py:83`
-  `and not`→`or not` **3 fallos**, `:82` `or`→`and` **3 fallos**. Copia
-  retirada; `git status` del repo limpio. Nada contra Azure ni Sigrid.
+  **418 passed, 1 skipped** (43,9 s), api **780** (34,4 s), front **241**
+  (23,5 s, con node, 0 skipped), transfer **750** (8,0 s). `PUERTA COBERTURA`
+  **100,0 % (353/353)**; `PUERTA TAMAÑO` en verde.
+- **Copia aislada** en el scratchpad (front + transfer, sin `.venv`, con el
+  `.venv` del front del repo): base **241 passed**. Reproducidas al pie de la
+  letra cuatro filas de la campaña manual: **S04 → 1 fallo, S07 → 4, C01 → 2,
+  U04 → 3**, las del informe.
+- **Chrome headless** (`chrome.exe --headless=new --dump-dom`, página local en
+  el scratchpad con el `styles.css` real, el `posicionSugerencias` de HEAD
+  extraído de `app.js`, el `recolocar` de HEAD y el de `c496af2`, y 95 filas
+  como la CI de la 0694). Resultado:
 
-## Lo pedido en la pasada 3
+  | Acción | `recolocar` de HEAD | `recolocar` de `c496af2` |
+  |---|---|---|
+  | ↓ hasta la fila 40 (`scrollIntoView` y luego `recolocar`, como `pintar`) | `scrollTop` 790 → **0** | 790 → 790 |
+  | Rueda: `scrollTop = 300` y evento `scroll` de la lista (llega a la escucha de captura de `window`) | 300 → **0** | 300 → 300 |
 
-1. **Cambio 1, resuelto.** El `catch` de `repreflightPartida` busca el botón
-   de ahora (`$("#btn-ejecutar-registro")`, `app.js:2103`) en vez del `btn`
-   del principio, y solo lo reactiva sin obras en vuelo. El test nuevo
-   `…_error_despues_de_que_la_otra_vuelva_bien` lleva el **orden exacto** de la
-   pasada 3 (`repreflightPartida(694); repreflightPartida(700)` → resuelve la
-   700 → rechaza la 694) y además el contrario; comprueba el botón bloqueado
-   entre medias, el toast, «Registrar» activo al final y el pintado. RED real
-   en el informe (`{'disabled': True, 'textContent': 'Analizando…'} != …`, ×2).
-2. **T17 «(a)-(h)»**: hecho (`c5d07c9`); comprobado en `tasks.md`.
+  Causa: `panel.style.maxHeight = ""` (`app.js:1556`) y la lectura de
+  `offsetHeight` fuerzan un *layout* en el que `.lista-partidas` ya no
+  desborda (el panel no tiene `max-height` en el CSS, a diferencia de
+  `.sugerencias` de F-042), y el navegador recorta su `scrollTop` a 0. Pasa
+  en cada `pintar` (`app.js:1643-1644`) y en cada `scroll` de la propia lista
+  (`window.addEventListener("scroll", recolocar, true)`, `app.js:1573`).
+  Afecta al cuadrante y al modal (mismo código), y rompe la M2 (b) «↑ ↓
+  Enter» en cuanto la lista pasa de lo visible (95 CI, 727 CD en la 0694).
+  Los tests de node no lo ven: su DOM de mentira no modela `scrollTop`.
 
-## Observaciones de la pasada 3
+## Lo pedido por el líder
 
-- **Obs. 2, recogida.** `_obra_ide` (`routes.py:75`): `None` pasa; `"694"` y
-  `694.0` → `694`; texto, decimal, booleano, lista, `Infinity` → `ObraNoValida`
-  (422, ya mapeada en `app.py:40`) **sin analizar** (test: `llamadas == []`).
-  `0` sigue filtrando (`is not None` en `registro_sigrid.py:139`). Documentado
-  en `docs/INTEGRACION.md` y en `azure-apps/dedicacion.md` (`36c894a`).
-- **Obs. 3, recogida.** `unirPreflight` recalcula `ok` con `every` sobre todas
-  las obras; coincide con la api (`all(...) if resultados else True`,
-  `registro_sigrid.py:145`). Test con los cuatro casos (incluido sin obras).
-- **Obs. 1** (manija con la tabla encogida): sigue para la M2 (h) 1.
-
-## Test propio cambiado
-
-`test_f050_m2_5_unir_quita_la_obra_que_ya_no_viene_y_anade_la_nueva` (T15c)
-compara el dict entero; sus dos esperados ganan `"ok": True`. **Se endurece**:
-antes no miraba `ok`; ahora exige el valor recalculado. No relaja nada. Es de
-F-050; ningún test de otra feature cambia en el delta.
+- **Captura 1 (RAFAEL), cubierta.** El *hover* pone `resaltada` en todas las
+  `<tr>` del bloque (`mouseenter`/`mouseleave`, que no se disparan al pasar de
+  celda en celda; la salida va antes que la entrada al cambiar de subfila). Las
+  celdas con `rowSpan` cuelgan de la primera `<tr>`: también se sombrean.
+  `tr.fila:hover` desaparece. `.resaltada` tiene la misma especificidad que
+  `.seleccionada`, `.editando` y `.multi` y va antes: cursor (con sus barras de
+  T15c), editor y selección múltiple siguen mandando. El cursor y la selección
+  ya iban por bloque desde T15c (`construirFila` marca todas las subfilas). La
+  fila del editor (`tr.fila-editor`) no lleva `fila`: no cambia.
+- **Alto mínimo, cubierto en la geometría.** Revisado `posicionSugerencias` a
+  mano: el panel queda ≥ `min(240, alto − 16)`, arriba si debajo no cabe y
+  arriba hay más, o dentro de la ventana tapando el ancla; cuadrante y modal
+  usan el mismo `montarSelectorPartida`. Pero ver el cambio 1.
+- **F-042 intacto.** Con `minimo = 0`, `suelo = 0`: `quiere = alto`,
+  `altoMax` y `top` dan lo mismo que antes (`min(alto, altoMax) = altoMax`) y
+  no entra la rama nueva. `colocarSugerencias` no cambia; `test_f042_*` sin
+  tocar y en verde; el test de control compara con y sin el 4.º argumento.
+- **Tests previos:** el delta solo **añade** dos ficheros; ninguno cambia.
+- **M2 (h) 2 y 3:** se pueden seguir (trabajadores con nombre, alturas de
+  ventana y modal). Les falta desplazar la lista (cambio 2).
 
 ## Checkpoints (lo que toca el delta)
 
-- **C1** [x] init.sh sin caché, ENTORNO LISTO · [x] ficheros base.
-- **C2** [x] una `in_progress` · [x] rama · [x] `current.md` al día («Review 4
-  lanzada», `azure-apps` `36c894a`) · `history.md` N/A: F-050 no está `done`.
-- **C3** [x] límite de servicio: api y front; transfer intacto · [x] el front
-  no decide qué se escribe (`ok` solo agrega lo que devuelve la api; nadie lo
-  lee) · [x] la validación de entrada vive en la ruta (capa de interfaz) ·
-  [x] primera línea con ruta · [x] sin `console.log`/`print` ni secretos.
-- **C3 bis** N/A: el delta no toca `docs/referencia/`. **C4 ter** N/A: no
-  existe `harness/rutas_sensibles.json`.
-- **C4** [x] tests sin red ni BBDD (node local y dobles) · [x] el camino de
-  error del punto 5, en los dos órdenes · [x] MANUAL T17 con (a)-(h).
+- **C1** [x] init.sh sin caché, ENTORNO LISTO · [x] ficheros base. **C2** [x]
+  una `in_progress` · [x] rama · [x] `current.md` al día · `history.md` N/A: no `done`.
+- **C3** [x] límite de servicio: solo front · [x] el front no decide nada de
+  negocio (colocación y sombreado) · [x] primera línea con ruta en los dos
+  tests · [x] sin `console.log` ni secretos.
+- **C3 bis** N/A: no toca `docs/referencia/`. **C4 ter** N/A: sin `rutas_sensibles.json`.
+- **C4** [ ] **sin regresiones de comportamiento: la lista del selector no se
+  desplaza** (cambio 1) · [x] tests sin red ni BBDD (node local) · [ ] MANUAL
+  (h) 3 no comprueba el desplazamiento de la lista (cambio 2).
 - **C4 bis**
-  - [x] `rigor` · [x] RED real de los tres arreglos (impl 184-199).
-  - [x] cobertura 100 % · [x] Python recalculado (164 = 164).
-  - [x] RM1: medido en `ee4c70d`; después solo cambian `progress/` y
-    `docs/INTEGRACION.md` (sin código del alcance).
-  - [x] RM2: 164 × 11,0 s ≈ 1804 s frente a 1796,6 s; media < base (38,9 s
-    api) con 164/164 muertos y `-x`: coherente.
-  - [x] Sin «⚠ CAMPAÑA NO VÁLIDA»; «Sin veredicto (base rota)» = 0.
-  - [x] RM3: ningún equivalente muerto (los 4 de `_obra_ide` cambian el
-    resultado observable) · [x] RM5 N/A: ningún equivalente declarado ·
-    [x] RM6: no se quita ninguna guarda; se añade una.
-  - [x] MANUAL JS T47-T53: 7 filas con texto exacto, SHA `ee4c70d` y fallos;
-    tres reproducidas · [x] cero supervivientes · [x] Evidencias, 4 números.
-- **C5** [x] commits `F-050 T15c: review 3 …` · [x] T16 hecha; T17-T18
-  MANUAL pendientes (humano) · [x] sin artefactos (copia retirada).
+  - [x] `rigor` · [x] RED real (impl §T15d: 6 y 11 fallos con su salida; los 2
+    que pasan, controles) · [x] cobertura 100 % · [x] Python sin cambios (164/164).
+  - [x] MANUAL JS/CSS T15d: 26 filas con texto exacto, línea y nº de fallos;
+    1.ª pasada 23/25 con S02 y S04 vivos, cerrados con test; cuatro filas
+    reproducidas · [x] cero supervivientes.
+  - [x] RM1: medido en `5bbda9e`; `728c3f0` solo toca `progress/` y `tasks.md`.
+  - [x] RM2: 26 × ~22 s ≈ 570 s frente a 526,7 s (suite entera, sin `-x`): coherente.
+  - [x] RM3: ningún equivalente muerto (S16 `240`→`200` cambia la geometría;
+    C03, la cascada) · RM5 N/A: ninguno declarado · RM6 N/A: no se quita
+    ninguna guarda · [x] Evidencias, 4 números.
+- **C5** [x] commits `F-050 T15d: …` (`975bd67`, del líder, solo docs) · [x]
+  T15d `[x]`; T17-T18 MANUAL pendientes · [x] sin artefactos (todo en el scratchpad).
 
 ## Cobertura requisito → test (`test_f050_*`)
 
 | R | Test |
 |---|---|
-| R1-R21 | sin cambios desde la pasada 2 (`propuesta`, `pipeline`, `partida_linea`, `rutas_partida`, `endpoint_propuesta`) |
-| R22-R28 | `subfilas` `r22_*`-`r25_*`, `r28_*`; `selector` `r26_*`, `r27_*` |
-| R29 (+ amp.) | `modal_registro` `r29_*` |
-| T15c 1-5 | `m2_arreglos` `m2_1_*`…`m2_5_*`; api `preflight_obra` `m2_5_*` |
-| Rev. 3 | `m2_5_error_despues_de_que_la_otra_vuelva_bien` (×2), `m2_5_unir_recalcula_el_ok_*`; api `m2_5_la_ruta_convierte_*`, `m2_5_obra_que_no_es_entero_422_*` (×5) |
-| R30 | `test_f002_fuente_unica`, `test_f004_readme` |
+| R1-R29, T15c, rev. 3 | sin cambios desde la pasada 4 |
+| T15d 1 | `t15d_sombreado` (6): bloque, cambio de subfila, otro trabajador, sin carga, CSS y orden de la cascada |
+| T15d 2 | `t15d_selector` (14): geometría (borde, poco sitio, lleno, debajo, ventana 300 y 200, F-042) y panel real en cuadrante y modal |
 
 ## Cambios requeridos
 
-Ninguno.
+1. **La lista del selector debe poder desplazarse** (`app.js:1555-1566`,
+   `recolocar`). Medir el alto natural sin perder el `scrollTop` de
+   `.lista-partidas`: p. ej., guardarlo antes de `maxHeight = ""` y
+   reponerlo tras fijar el nuevo `maxHeight`; y no recolocar por los `scroll`
+   que nacen dentro del propio panel (`ev.target` dentro de `panel`,
+   `app.js:1573`). Comprobar que en `pintar` la fila activa sigue visible tras
+   `recolocar` (`app.js:1643-1644`).
+2. **Test RED que lo cace**: el DOM de mentira de `t15d_selector` debe
+   modelar lo que hace el navegador (sin `max-height`, leer `offsetHeight`
+   recorta el `scrollTop` de la lista a 0) y comprobar que tras ↓ ×N y tras un
+   `scroll` de la lista el `scrollTop` se conserva. RED real en el informe y
+   su mutante en la campaña manual (quitar la reposición).
+3. **M2 (h) 3 en `tasks.md`**: añadir «con la lista abierta (CI de la 0694),
+   rueda del ratón hasta abajo y ↓ más allá de lo visible: la lista baja y la
+   fila activa se ve», en el cuadrante y en el modal.
 
-## Observaciones (no bloquean; que el líder las recoja, no «anotado»)
+## Observaciones (no bloquean; que el líder las recoja)
 
-1. **`trabajador_ide` crudo** (`routes.py:393` preflight y `:409` ejecutar).
-   No es inyección (va como parámetro ligado) y el front manda un número o
-   `null`. Dos riesgos, ninguno de F-050 (la ruta de `ejecutar` no se tocó):
-   a) `registro_sigrid.py:81` filtra con `if trabajador_ide`, así que un
-   valor falso (`0`, `""`, `false`) **quita el filtro** y `ejecutar` registra
-   el mes entero en vez de una línea; b) un `"abc"` llega a PostgreSQL y
-   sale 500, no 422. Propuesta: una feature pequeña (rigor `critico`, toca la
-   escritura) que lo valide como `_obra_ide` en las dos rutas y cambie el
-   filtro a `is not None`.
-2. **Tras un error, el bloque de esa obra enseña el análisis anterior** y
-   «Registrar» vuelve activo; `ejecutar` recalcula desde la base, con la
-   partida nueva. Viene de F-049 (el `catch` ya reactivaba el botón) y el
-   toast lo avisa. Si molesta, marcar el bloque «sin analizar» o mantener
-   «Registrar» bloqueado hasta un análisis bueno. Mirarlo en la M2 (h) 5.
-3. La manija de ancho (obs. 1 de la pasada 3): en la M2 (h) 1.
+1. Con el ratón quieto sobre un bloque que se repinta, el nuevo no sale
+   sombreado hasta moverlo (el `:hover` se recalculaba solo). M2 (h) 2.
+2. `ALTO_UTIL = 240` es estimado: confirmar en la M2 que se ven cinco filas.
 
-## Automejora (propuesta, no aplicada; sigue en pie)
+## Automejora (propuesta, no aplicada)
 
-Casilla MANUAL con texto exacto y SHA (pasada 2); test por **orden de
-llegada** en peticiones concurrentes del front (pasada 3), a `CHECKPOINTS.md`.
+Casilla MANUAL con texto exacto y SHA (pasada 2); test por orden de llegada en
+peticiones concurrentes (pasada 3); y **en C4, para el front: un cambio de
+medición o de `max-height` de un panel con lista exige comprobar en navegador
+real (o en un DOM que lo modele) que su `scrollTop` sobrevive**: los dobles
+de node no recortan el desplazamiento y aquí dieron 26/26 sin verlo.
