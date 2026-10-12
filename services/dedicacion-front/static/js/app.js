@@ -691,6 +691,7 @@ function renderTabla() {
 function construirFila(t) {
   const frag = document.createDocumentFragment();
   const n = Math.max(1, t.lineas.length);
+  const trs = [];
   for (let idx = 0; idx < n; idx++) {
     const tr = document.createElement("tr");
     tr.className = idx ? "fila subfila" : "fila";
@@ -716,6 +717,16 @@ function construirFila(t) {
       if (td && c === 0) td.classList.add("col-primera");
       if (td && c === state.columnas.length - 1) td.classList.add("col-ultima");
     });
+
+    // T15d, punto 1: con el ratón encima de cualquier subfila se sombrea
+    // el bloque entero (con `:hover`, solo la `<tr>` bajo el ratón).
+    tr.addEventListener("mouseenter", () => {
+      trs.forEach((x) => x.classList.add("resaltada"));
+    });
+    tr.addEventListener("mouseleave", () => {
+      trs.forEach((x) => x.classList.remove("resaltada"));
+    });
+    trs.push(tr);
 
     // Shift+clic no debe seleccionar el texto de la tabla (F-029, R2).
     tr.addEventListener("mousedown", (ev) => {

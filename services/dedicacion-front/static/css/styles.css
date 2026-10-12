@@ -248,7 +248,10 @@ h1 {
 
 
 tr.fila { cursor: pointer; transition: background 0.15s var(--ease); }
-tr.fila:hover td { background: #f8f4f5; }
+/* Con el ratón encima, el bloque entero del trabajador (F-050, T15d: la
+   clase la ponen todas sus subfilas a la vez; va antes que el cursor, el
+   editor y la selección múltiple, que siguen mandando). */
+tr.fila.resaltada td { background: #f8f4f5; }
 /* El cursor: fondo en todas sus subfilas y una barra a cada lado del bloque,
    solo en las celdas de los bordes (F-050, M2 punto 2: con `rowSpan`, la
    barra en cada celda pintaba rayas por dentro). */
