@@ -2,35 +2,29 @@
 # F-050 · Subfilas por obra con columna Partida y partida propuesta · informe del implementer
 
 Rama `feature/F-050-subfilas-partida`, rigor **crítico**, spec aprobada el
-2026-10-09 (D1-D10 = A). T1-T15 (`686d00a`..`f4cdb11`), T15b (`6320474`), T15c
-(`85d263f`..`5d75623`, M2 del 2026-10-11) y la review 3 (`2078505`..`bfc404a`).
-T16 (M1) hecha por el humano; T17-T18, MANUAL. Dos paradas por tests fuera de
-la lista cerrada, aprobadas en requirements §6 (`test_f037_r3_…`, `test_f003_r8_…`).
+2026-10-09 (D1-D10 = A). T1-T15 (`686d00a`..`f4cdb11`), T15b (`6320474`), T15c (`85d263f`..`5d75623`),
+review 3 (`2078505`..`bfc404a`), T15d (`552fbfb`..`5bbda9e`). M1 hecha; T17-T18, MANUAL. Dos
+paradas por tests fuera de la lista cerrada, aprobadas en requirements §6 (`test_f037_r3_…`, `test_f003_r8_…`).
 
-## Qué cambió (T1-T15b; T15c en su sección)
+## Qué cambió (T1-T15b; T15c, review 3 y T15d en su sección)
 
-**Transfer** (solo lee): `propuesta_partida.py` puro (pasos 1-3, `mayor_de`
-por la raíz, orden natural, `mayor_inicial`, `ventana`); `historial_partidas`
-(lotes de 500, `truncated` = error); pipeline con UNA lectura, R20 y
-`partida_origen`; `POST /api/partidas/propuesta`; fase `propuesta` del script.
-**Api**: `AsignacionORM.partida_*` (DDL derivado); `Linea.partida_*`,
-`partida_fija`; `_conservar_partidas`; `PUT …/partida` (evento `PARTIDA`) y
-`GET …/partidas` (502); `LineaOut` con R18; registro con `paride` = elegida.
-**Front**: columna `partida`, subfilas (`rowSpan`), filtro y buscador; el
-selector (Todas · CD · CI · CP, propuesta primera, «automática», teclas,
-caché, PUT), también en el modal (y en las omitidas por R20, T15b).
-**Docs**: `#regla-partida`, `INTEGRACION.md`, READMEs.
+**Transfer** (solo lee): `propuesta_partida.py` puro (pasos 1-3, `mayor_de` por
+la raíz, `ventana`); `historial_partidas` (lotes de 500); pipeline con UNA lectura,
+R20 y `partida_origen`; `POST /api/partidas/propuesta`; fase `propuesta` del script.
+**Api**: `partida_*` en `AsignacionORM`/`Linea`/`LineaOut` (R18); `PUT …/partida`
+(evento `PARTIDA`), `GET …/partidas` (502); registro con `paride` = elegida.
+**Front**: columna `partida`, subfilas (`rowSpan`), filtro; el selector (Todas ·
+CD · CI · CP, propuesta primera, «automática», teclas, caché), también en el
+modal (T15b, omitidas por R20). **Docs**: `#regla-partida`, `INTEGRACION.md`, READMEs.
 
 ## Decisiones y desviaciones (justificadas)
 
-1. Ventana: periodo − 24 meses .. periodo; empate con tolerancia 1e-6. 2.
-`_a_linea_con_partida` envuelve `_a_linea` (`test_f024_r11`, `test_f025_r18`).
-3. VAR sin partida guardada; `GET …/partidas` da `fija` sin transfer. 4.
-`proponer` casa la postventa con `casar_postventa`. 5. `ambito` null si el mayor
-es OTRO. 6. «automática», la última; caché vaciada al cargar y su clave tras
-cada PUT. 7. `MOTIVO_PARTIDA_NO_HOJA` en `propuesta_partida.py`. 8.
-`test_f037_r3` importa `PRESUPUESTO_ORIGEN` y `_fila`. **Aviso `partes`**:
-`partida_catalog.categoria` clasifica mal hojas bajo `CD` (design §5.1, avisado).
+1. Ventana −24 meses; empate 1e-6. 2. `_a_linea_con_partida` envuelve `_a_linea`.
+3. VAR sin partida guardada (`fija` sin transfer). 4. Postventa con `casar_postventa`.
+5. `ambito` null si OTRO. 6. «automática», la última; caché por clave. 7.
+`MOTIVO_PARTIDA_NO_HOJA` en `propuesta_partida.py`. 8. `test_f037_r3` importa
+`PRESUPUESTO_ORIGEN`. **Aviso `partes`**: `partida_catalog.categoria` clasifica
+mal hojas bajo `CD` (design §5.1, avisado).
 
 ## Tests anteriores que cambian (todos de la lista cerrada)
 
@@ -38,13 +32,12 @@ Transfer: `conftest.py`, `test_pipeline_offline`, `test_f002_fuente_unica`,
 `test_f037_r3`. Api: `_fila` de `test_f022`/`f024_registro`/`f026`/`f039_registro_var`;
 `CAMPOS_LINEA` de `test_f034_rutas`; `test_f003_r8`. Front: los de T12 (seis `c_*`
 borrados). **T15c**: solo `test_f049_a_el_preflight_repetido…` (T12; gana
-`obra_ide: 694`). **Review 3**: ninguno de otra feature.
+`obra_ide: 694`). **Review 3** y **T15d**: ninguno de otra feature.
 
 ## Fase RED (trazas reales, comando exacto)
 
 Cada tarea de código, antes de escribir el código (desde la carpeta del
 servicio, `.venv/Scripts/python.exe -m pytest … -q -p no:cacheprovider`):
-
 ```
 T1 $ … tests/test_f050_propuesta.py
 E   ModuleNotFoundError: No module named 'application.services.propuesta_partida'
@@ -99,14 +92,12 @@ FAILED …test_f002_r1_fuente_unica_tiene_ancla_por_regla[regla-partida]
 FAILED …test_f002_r1_fuente_unica_el_ancla_no_esta_repetida[regla-partida]
 2 failed, 70 passed in 0.25s
 ```
-
 Los que pasaban en RED eran controles (VAR fija…); tras cada tarea, verde.
 
 ## T15b · omitida por R20 con selector (ampliación del 2026-10-10)
 
-`pintarModalPreflight`: `botonPartida(texto)` y, si el `motivo` empieza como
-`MOTIVO_PARTIDA_NO_HOJA`, el botón con la partida que nombra. RED
-(`.venv/Scripts/python.exe -m pytest tests/test_f050_modal_registro.py -q -k "r20 or demas_omitidas" --tb=line`):
+`pintarModalPreflight`: `botonPartida(texto)` y, si el `motivo` empieza como `MOTIVO_PARTIDA_NO_HOJA`,
+el botón con la partida que nombra. RED (`.venv/Scripts/python.exe -m pytest tests/test_f050_modal_registro.py -q -k "r20 or demas_omitidas" --tb=line`):
 ```
 subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '-']' returned non-zero exit status 1.   [node: TypeError: Cannot read properties of undefined (reading 'trabajador')]
 E   AssertionError: <h2>Registrar en Sigrid · sep 2026</h2>…<td><span class="motivo">la partida 80002 elegida no es una partida hoja activa del presupuesto de la obra 0694: no se escribe; elige otra partida</span></td>…
@@ -116,24 +107,15 @@ Verde: front 187 passed. Mutación JS K01-K11: 11/11 muertos.
 
 ## T15c · arreglos de la M2 del humano (2026-10-11)
 
-Commits `85d263f`, `35078fa`, `1560620`+`d46b012`, `708d53c`, `948ed7d`,
-`5d75623`. Tests nuevos: front `test_f050_m2_arreglos.py`, api
-`test_f050_preflight_obra.py`. 1) `anchosAjustados` encoge hasta
-`MINIMO_COLUMNA` (luego scroll), sin tocar `state.anchos`. 2) `col-primera`/
-`col-ultima`: barra solo en los bordes. 3) Selector con «Cargando partidas…»,
-uno por línea, solo cuenta su panel vivo. 4) `z-index` 70 y `abrirModal` cierra
-el selector. 5) `obra_ide` en el preflight (transfer intacto), `unirPreflight`
-y `registro.analizando` por obra. `INTEGRACION.md` §5.
+Commits `85d263f`..`5d75623`; tests `test_f050_m2_arreglos.py` (front), `test_f050_preflight_obra.py`
+(api). 1) `anchosAjustados`. 2) `col-primera`/`col-ultima`. 3) «Cargando partidas…», un panel por
+línea. 4) `z-index` 70; `abrirModal` cierra el selector. 5) `obra_ide` en el preflight,
+`unirPreflight`, `registro.analizando` por obra. Tests propios que cambian:
+`…_r22_una_subfila…`, `…_r27_elegir…`, `…_r29_pedir_y_ejecutar…`, `…_r27_r29_elegir_en_el_modal…`.
 
-Tests propios de F-050 que cambian: `test_f050_r22_una_subfila…`,
-`test_f050_r27_elegir…`, `test_f050_r29_pedir_y_ejecutar…`, `…_r27_r29_elegir_en_el_modal…`.
-
-**RED** (antes del código; front `.venv/Scripts/python.exe -m pytest
-tests/test_f050_m2_arreglos.py -q -p no:cacheprovider --tb=line -k m2_N`,
-api `… tests/test_f050_preflight_obra.py …`):
+**RED** (front `.venv/Scripts/python.exe -m pytest tests/test_f050_m2_arreglos.py -q -p no:cacheprovider --tb=line -k m2_N`, api `… tests/test_f050_preflight_obra.py …`):
 ```
-1 E   AssertionError: no existe la función anchosAjustados en app.js   (×4)
-  E   AssertionError: no existe `const MINIMO_COLUMNA` en app.js   (×3)
+1 E   AssertionError: no existe la función anchosAjustados en app.js   (×4) · E   AssertionError: no existe `const MINIMO_COLUMNA` en app.js   (×3)
   E   assert 'new ResizeObserver(() => sincronizarAnchoTabla()).observe($("#tabla").parentElement);' in 'function enlazarEventos() { $("#btn-mes-prev").addEventListener("click", () => moverMes(-1)); $("#btn-mes-next").addE..."keydown", teclas); window.addEventListener("beforeunload", () => { if (state.guardadoPendiente) guardarAhora(); }); }'
   8 failed in 0.09s
 2 E   AssertionError: assert [[True, [['no...da', 1, '']]]] == [[True, [['no...da', 1, '']]]]
@@ -168,18 +150,9 @@ real cerrado (`5d75623`); **final 46/46**. Textos en `mutacion_manual_F-050.md`.
 ## Review 3 · cambio 1 y observaciones 2 y 3 (2026-10-11)
 
 Commits `2078505` (1), `6ef5c64` (2), `ee4c70d` (3), `bfc404a` (mutación JS).
-1. **Cambio 1** (`repreflightPartida`): el `catch` reactiva el botón de AHORA
-   (`$("#btn-ejecutar-registro")`, como la rama buena) si no queda obra en
-   vuelo; antes, el `btn` del principio, fuera del DOM tras el repintado de la
-   otra. Test `…_error_despues_de_que_la_otra_vuelva_bien`, los dos órdenes.
-2. **Obs. 2** (`routes.py`, `_obra_ide`): `"694"`/`694.0` → `694`; texto,
-   decimal, booleano, lista o `Infinity` → `ObraNoValida` (422) sin analizar.
-   `trabajador_ide` sigue crudo. **Para el líder**: el 422 en `azure-apps`.
-3. **Obs. 3** (`unirPreflight`): `ok` = todas las obras `ok` (sin obras, `true`,
-   como la api). Test `…_unir_recalcula_el_ok_con_todas_las_obras`. **Cambia
-   un test propio (T15c)**: `…_unir_quita_la_obra_que_ya_no_viene_y_anade_la_
-   nueva` compara el dict entero y sus dos esperados ganan `"ok": True` (se
-   endurece; no se relaja nada).
+1) el `catch` de `repreflightPartida` reactiva el botón de AHORA; 2) `_obra_ide`:
+`"694"`/`694.0` → `694`, lo demás 422; 3) `unirPreflight`: `ok` = todas las obras
+`ok` (`…_unir_quita_la_obra…`, test propio, gana `"ok": True`: se endurece).
 
 **RED** (antes del código, mismos comandos que T15c):
 ```
@@ -187,8 +160,7 @@ Commits `2078505` (1), `6ef5c64` (2), `ee4c70d` (3), `bfc404a` (mutación JS).
   E         At index 1 diff: {'disabled': True, 'textContent': 'Analizando…'} != {'disabled': False, 'textContent': 'Registrar'}   (×2)
   2 failed, 31 deselected in 0.60s
 2 $ (api) … tests/test_f050_preflight_obra.py -q -p no:cacheprovider
-  E       AssertionError: {"ok":true,"obras":[]}
-  E       assert 200 == 422      (×5, uno por caso)
+  E       AssertionError: {"ok":true,"obras":[]} · E       assert 200 == 422      (×5, uno por caso)
   6 failed, 6 passed, 1 warning in 5.86s
   $ (api) … tests/test_f050_preflight_obra.py -q -p no:cacheprovider -k convierte
   E           AssertionError: assert ('694' == 694)
@@ -200,21 +172,48 @@ Commits `2078505` (1), `6ef5c64` (2), `ee4c70d` (3), `bfc404a` (mutación JS).
 Verde tras cada uno (front 221, api 780). **Mutación**: JS manual T47-T53
 **7/7** (T47 = el fallo de la review); Python **164/164** (4 nuevos de `_obra_ide`).
 
+## T15d · dos fallos de la M2 repetida (2026-10-12)
+
+Commits `552fbfb` (1), `a6d7cf3` (2), `5bbda9e` (S02/S04); tests (front)
+`test_f050_t15d_sombreado.py` (6) y `test_f050_t15d_selector.py` (14). 1) La captura
+es el *hover* (píxel `#f8f4f5`; el cursor, `#f7eaee`, ya cubría el bloque): cada
+subfila pone/quita `resaltada` en TODAS las del bloque (`mouseenter`/`mouseleave`), y
+cursor, editor y `multi` siguen mandando. 2) `recolocar` medía con el `max-height` de
+«Cargando…» (34 px) puesto, en cualquier fila; ahora mide el alto natural y
+`posicionSugerencias` gana `minimo` (`ALTO_UTIL = 240`; 0 en F-042, intacto): arriba si
+no cabe debajo, o dentro de la ventana. Mismo código en cuadrante y modal.
+
+**RED** (front, `.venv/Scripts/python.exe -m pytest tests/<fichero> -q -p no:cacheprovider --tb=line`):
+```
+1 $ … test_f050_t15d_sombreado.py
+  E   AssertionError: assert {'dentro': [F...False, False]} == {'dentro': [T...False, False]}   (×2: bloque y sin carga)
+  E   AssertionError: assert {'segunda': [...False, False]} == {'segunda': [..., True, True]} · E   AssertionError: assert {'a': [False,...False, False]} == {'a': [False,...False, False]}
+  E   AssertionError: no está la regla `tr.fila.resaltada td` en styles.css · E   ValueError: substring not found
+  6 failed in 0.57s
+2 $ … test_f050_t15d_selector.py
+  E   AssertionError: assert {'top': 702, ...Max': 34, ...} == {'top': 702, ...ax': 240, ...} · E   AssertionError: assert {'top': 552, ...Max': 34, ...} == {'top': 552, ...ax': 240, ...}
+  E   assert (140, 152, False) == (52, 240, False) · assert (8, 188, True) == (8, 240, True) · assert (120, 72) == (8, 184)
+  E   AssertionError: assert ['134px', '34px', 34] == ['134px', '240px', 34] · E   AssertionError: assert ['702px', '34px', 34] == ['702px', '240px', 34]   (cada uno ×2: cuadrante y modal)
+  E   AssertionError: assert ['471px', '34px', 34] == ['8px', '409px', 409]   (la captura: 34 px junto al borde)
+  E   assert 'const ALTO_UTIL = 240;' in 'function montarSelectorPartida(ctx) { cerrarSelectorPartida(); …'
+  11 failed, 2 passed in 3.16s        (los 2 que pasan: controles, F-042 sin mínimo y lista que ya llena el sitio)
+```
+Verde: front 227 tras 1 y 240 tras 2 (241 con `5bbda9e`). **Mutación JS/CSS manual** (copia aislada): 1.ª pasada 23/25 (S02, S04 vivos: huecos reales, cerrados en `5bbda9e`); **final 26/26 muertos**. Textos en `mutacion_manual_F-050.md`.
+
 ## Fuera del alcance y MANUAL pendiente
 
-Fuera: F-051, F-044, F-054, F-021, el Excel (D8), la lentitud del preflight
-(F-055) y la observación 1 de la review 3 (manija de ancho, se mira en la M2
-(h) 1). Nada contra Sigrid ni Azure. **T16 · M1**: OK (humano, 2026-10-11).
-**T17 · M2** (navegador, modo pruebas): `tasks.md` T17 (a)-(h); **Cancelar, sin
-Registrar**. **T18 · M3**: solo con autorización del humano en ese momento.
+Fuera: F-051, F-044, F-054, F-021, el Excel (D8), F-055 y la manija de ancho
+(obs. 1 de la review 3, M2 (h) 1). Nada contra Sigrid ni Azure. **M1**: OK
+(2026-10-11). **T17 · M2**: `tasks.md` T17 (a)-(h), con lo de T15d en (h) 2 y 3;
+**Cancelar, sin Registrar**. **T18 · M3**: solo con autorización del humano.
 
 ## Evidencias
 
 | Evidencia | Valor real |
 |---|---|
-| `bash harness/init.sh` (tal cual, sin `.arnes_cache/suite_*.ok`, review 3) | código 0, **ENTORNO LISTO**; todo `[OK]` salvo el `[AVISO]` de `ruff` (237, la deuda de antes); `PUERTA TAMAÑO` en verde |
-| Tests por servicio (ejecutados, no caché) | raíz **418 passed, 1 skipped**; api **780 passed**; front **221 passed** (node); transfer **750 passed** (41,41 s · 39,67 s · 21,35 s · 7,26 s) |
-| Tests nuevos de F-050 | transfer 47 + 24 + 19; api 23 + 30 + 6 + **6** (rev. 3); front 16 + 19 + 17 + 31 + **3** (rev. 3) |
+| `bash harness/init.sh` (tal cual, sin `.arnes_cache/suite_*.ok`, T15d) | código 0, **ENTORNO LISTO**; todo `[OK]` salvo el `[AVISO]` de `ruff` (237, la deuda de antes); `PUERTA TAMAÑO` en verde (impl 219/220) |
+| Tests por servicio (ejecutados, no caché) | raíz **418 passed, 1 skipped**; api **780 passed**; front **241 passed** (node); transfer **750 passed** (51,45 s · 37,14 s · 22,62 s · 6,83 s) |
+| Tests nuevos de F-050 | transfer 47 + 24 + 19; api 23 + 30 + 6 + 6 (rev. 3); front 16 + 19 + 17 + 31 + 3 (rev. 3) + **6 + 14** (T15d) |
 | Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 353 líneas cambiadas cubiertas (353/353, umbral 80%, nivel critico)` (Python; el JS, la campaña manual) |
-| Mutantes Python | **164 generados, 0 supervivientes** (`ee4c70d`, igual código que HEAD), 1796,6 s, 1 worker, sin muestreo, copia aislada; base api 38,9 s (medida con la campaña JS en paralelo) |
-| Mutantes JS (manual) | T15 **56/0**, T15b **11/0**, T15c **46/0** (1 vivo en la primera pasada, con test), review 3 **7/0** |
+| Mutantes Python | **164 generados, 0 supervivientes** (`ee4c70d`; T15d no toca Python), 1796,6 s, 1 worker, sin muestreo, copia aislada; base api 38,9 s (medida con la campaña JS en paralelo) |
+| Mutantes JS (manual) | T15 **56/0**, T15b **11/0**, T15c **46/0** (1 vivo en la primera pasada, con test), review 3 **7/0**, T15d **26/0** (JS y CSS; 2 vivos en la primera pasada, con test) |

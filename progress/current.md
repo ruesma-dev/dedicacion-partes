@@ -97,7 +97,7 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   el bloque del trabajador sombreado); (h)3 el selector se abre minúsculo (solo
   se ve el buscador; ni lista ni botones CD/CI/CP) en una fila cerca del borde
   inferior. Son defectos de T15c (dentro del plan aprobado). **Estado:**
-  implementer relanzado (T15d). F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
+  T15d TERMINADA por el implementer (`552fbfb`..`5bbda9e`, `progress/impl_F-050.md`; (h)2 era el *hover*, no el cursor; (h)3 pasaba en cualquier fila; solo front; mutación JS/CSS 26/26 en copia aislada; M2 (h) 2 y 3 ampliadas en T17). F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
   Resultado: _pendiente_.
 
 ## Producción, hoy

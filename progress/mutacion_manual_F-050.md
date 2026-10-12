@@ -471,3 +471,135 @@ reactiva el botón de antes del repintado): lo cazan los dos casos de
 | T51 | app.js:2068 | `ok: obras.every((o) => o.ok) };` → `ok: obras.some((o) => o.ok) };` | 1 | muerto |
 | T52 | app.js:2068 | `ok: obras.every((o) => o.ok) };` → `ok: nuevo.obras.every((o) => o.ok) };` | 1 | muerto |
 | T53 | app.js:2068 | `  return { ...previo, obras, ok: obras.every((o) => o.ok) };` → `  return { ...previo, obras };` | 2 | muerto |
+
+## T15d · M2 repetida (2026-10-12): `app.js` y `styles.css`
+
+Mismo método, con `js_mut_t15d.py` (scratchpad) en una COPIA AISLADA (`git worktree add
+--detach` en el scratchpad, con el `.venv` del front de la copia principal; retirada
+después, `git status` de la copia limpio). Suite ENTERA del front (`pytest tests -q`).
+Línea: la de inicio del texto en el fichero de la pasada 2.
+
+- **Primera pasada** (`a6d7cf3`, base 240 en verde): 26 definidos; C03 no aplicó (su texto suponía la regla
+  pegada a `.seleccionada`, y entre medias hay un comentario); de 25, **23 muertos y 2 vivos**:
+  S02 y S04, huecos reales (no equivalentes), cerrados en `5bbda9e` con
+  `test_f050_t15d_2_poco_sitio_debajo_ya_cargando_se_abre_arriba` (S04: con 100 px debajo, «Cargando…»
+  se abría debajo y saltaba arriba al llenarse) y una aserción en `…_sin_minimo_es_lo_de_f042` (S02: en
+  una ventana de menos de 16 px, F-042 se recolocaba). 617.2 s.
+- **Segunda pasada** (`5bbda9e`, base 241 en verde, la final): **26 generados, 26 muertos, 0
+  supervivientes**, 526.7 s en serie. Columna «1.ª» = fallos en la primera pasada.
+
+| Id | Fichero:línea | Texto original → mutado (exacto) | Fallos | 1.ª |
+|---|---|---|---|---|
+| U01 | app.js:724 | `      trs.forEach((x) => x.classList.add("resaltada"));` → `      tr.classList.add("resaltada");` | 3 | 3 |
+| U02 | app.js:727 | `      trs.forEach((x) => x.classList.remove("resaltada"));` → `      tr.classList.remove("resaltada");` | 2 | 2 |
+| U03 | app.js:729 | (varias líneas, abajo) | 4 | 4 |
+| U04 | app.js:726 | `    tr.addEventListener("mouseleave", () => {` → `    tr.addEventListener("mouseout", () => {` | 3 | 3 |
+| U05 | app.js:724 | `      trs.forEach((x) => x.classList.add("resaltada"));` → `      trs.forEach((x) => x.classList.add("seleccionada"));` | 4 | 4 |
+| U06 | app.js:727 | `      trs.forEach((x) => x.classList.remove("resaltada"));` → `      trs.forEach((x) => x.classList.toggle("resaltada"));` | 4 | 4 |
+| C01 | styles.css:254 | `tr.fila.resaltada td { background: #f8f4f5; }` → `tr.fila:hover td { background: #f8f4f5; }` | 2 | 2 |
+| C02 | styles.css:254 | (varias líneas, abajo) | 2 | 2 |
+| C03 | styles.css:254 | (varias líneas, abajo) | 1 | no aplicó (texto no encontrado) |
+| S01 | app.js:1310 | `  const suelo = Math.max(0, Math.min(minimo, ventana.alto - 2 * MARGEN));` → `  const suelo = minimo;` | 1 | 1 |
+| S02 | app.js:1310 | `  const suelo = Math.max(0, Math.min(minimo, ventana.alto - 2 * MARGEN));` → `  const suelo = Math.min(minimo, ventana.alto - 2 * MARGEN);` | 1 | 0 |
+| S03 | app.js:1311 | `  const quiere = Math.max(alto, suelo);` → `  const quiere = alto;` | 7 | 6 |
+| S04 | app.js:1312 | `  const haciaArriba = quiere > abajo && arriba > abajo;` → `  const haciaArriba = alto > abajo && arriba > abajo;` | 1 | 0 |
+| S05 | app.js:1313 | `  const altoMax = Math.max(0, Math.min(quiere, Math.max(haciaArriba ? arriba : abajo, suelo)));` → `  const altoMax = Math.max(0, Math.min(quiere, haciaArriba ? arriba : abajo));` | 3 | 3 |
+| S06 | app.js:1313 | `  const altoMax = Math.max(0, Math.min(quiere, Math.max(haciaArriba ? arriba : abajo, suelo)));` → `  const altoMax = Math.max(0, Math.min(alto, Math.max(haciaArriba ? arriba : abajo, suelo)));` | 7 | 6 |
+| S07 | app.js:1314 | `  let top = haciaArriba ? campo.top - HUECO - Math.min(alto, altoMax) : campo.bottom + HUECO;` → `  let top = haciaArriba ? campo.top - HUECO - altoMax : campo.bottom + HUECO;` | 4 | 3 |
+| S08 | app.js:1315 | (varias líneas, abajo) | 1 | 1 |
+| S09 | app.js:1316 | `    top = Math.max(MARGEN, haciaArriba ? top : Math.min(top, ventana.alto - MARGEN - altoMax));` → `    top = haciaArriba ? top : Math.min(top, ventana.alto - MARGEN - altoMax);` | 1 | 1 |
+| S10 | app.js:1316 | `    top = Math.max(MARGEN, haciaArriba ? top : Math.min(top, ventana.alto - MARGEN - altoMax));` → `    top = Math.max(MARGEN, Math.min(top, ventana.alto - MARGEN - altoMax));` | 4 | 3 |
+| S11 | app.js:1316 | `    top = Math.max(MARGEN, haciaArriba ? top : Math.min(top, ventana.alto - MARGEN - altoMax));` → `    top = Math.max(MARGEN, top);` | 2 | 2 |
+| S12 | app.js:1303 | `function posicionSugerencias(campo, alto, ventana, minimo = 0) {` → `function posicionSugerencias(campo, alto, ventana, minimo = 240) {` | 5 | 5 |
+| S13 | app.js:1556 | (varias líneas, abajo) | 6 | 6 |
+| S14 | app.js:1554 | `  const ALTO_UTIL = 240;` → `  const ALTO_UTIL = 0;` | 5 | 5 |
+| S15 | app.js:1562 | `      }, ALTO_UTIL);` → `      });` | 5 | 5 |
+| S16 | app.js:1554 | `  const ALTO_UTIL = 240;` → `  const ALTO_UTIL = 200;` | 5 | 5 |
+| S17 | app.js:1556 | (varias líneas, abajo) | 6 | 6 |
+
+**U03** (static/js/app.js:729, 4 fallos). Original:
+
+```
+    trs.push(tr);
+```
+
+Mutado (vacío: se borra):
+
+**C02** (static/css/styles.css:254, 2 fallos). Original:
+
+```
+tr.fila.resaltada td { background: #f8f4f5; }
+```
+
+Mutado (vacío: se borra):
+
+**C03** (static/css/styles.css:254, 1 fallo). Original:
+
+```
+tr.fila.resaltada td { background: #f8f4f5; }
+/* El cursor: fondo en todas sus subfilas y una barra a cada lado del bloque,
+   solo en las celdas de los bordes (F-050, M2 punto 2: con `rowSpan`, la
+   barra en cada celda pintaba rayas por dentro). */
+tr.fila.seleccionada td { background: var(--brand-soft); }
+tr.fila.seleccionada td.col-primera { box-shadow: inset 3px 0 0 var(--brand); }
+tr.fila.seleccionada td.col-ultima { box-shadow: inset -3px 0 0 var(--brand); }
+tr.fila.editando td { background: var(--brand-soft); }
+/* Selección múltiple (F-029): distinta del cursor (`.seleccionada`). */
+tr.fila.multi td { background: var(--pv-soft); }
+```
+
+Mutado:
+
+```
+/* El cursor: fondo en todas sus subfilas y una barra a cada lado del bloque,
+   solo en las celdas de los bordes (F-050, M2 punto 2: con `rowSpan`, la
+   barra en cada celda pintaba rayas por dentro). */
+tr.fila.seleccionada td { background: var(--brand-soft); }
+tr.fila.seleccionada td.col-primera { box-shadow: inset 3px 0 0 var(--brand); }
+tr.fila.seleccionada td.col-ultima { box-shadow: inset -3px 0 0 var(--brand); }
+tr.fila.editando td { background: var(--brand-soft); }
+/* Selección múltiple (F-029): distinta del cursor (`.seleccionada`). */
+tr.fila.multi td { background: var(--pv-soft); }
+tr.fila.resaltada td { background: #f8f4f5; }
+```
+
+**S08** (static/js/app.js:1315, 1 fallo). Original:
+
+```
+  if (suelo) {
+    top = Math.max(MARGEN,
+```
+
+Mutado:
+
+```
+  if (true) {
+    top = Math.max(MARGEN,
+```
+
+**S13** (static/js/app.js:1556, 6 fallos). Original:
+
+```
+    panel.style.maxHeight = "";
+    const pos = posicionSugerencias(
+```
+
+Mutado:
+
+```
+    const pos = posicionSugerencias(
+```
+
+**S17** (static/js/app.js:1556, 6 fallos). Original:
+
+```
+    panel.style.maxHeight = "";
+    const pos = posicionSugerencias(
+```
+
+Mutado:
+
+```
+    panel.style.maxHeight = "34px";
+    const pos = posicionSugerencias(
+```
