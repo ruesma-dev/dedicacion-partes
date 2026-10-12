@@ -78,6 +78,15 @@ def test_f050_t15d_2_cerca_del_borde_inferior_se_abre_arriba():
                               "altoMax": 240, "haciaArriba": True}
 
 
+def test_f050_t15d_2_poco_sitio_debajo_ya_cargando_se_abre_arriba():
+    """Debajo quedan 100 px (800 - 688 - 4 - 8): caben los 34 de «Cargando…»
+    pero no el mínimo útil. Se decide con el mínimo: arriba desde el primer
+    momento, sin saltar de abajo a arriba al llenarse (mutante S04)."""
+    assert _posicion({"top": 680, "bottom": 688, "left": 100}, 34, VENTANA,
+                     240) == {"top": 642, "left": 100, "ancho": 430,
+                              "altoMax": 240, "haciaArriba": True}
+
+
 def test_f050_t15d_2_lleno_y_arriba_crece_hasta_el_sitio_que_hay():
     """Ya con la lista (natural 2000 px): arriba caben 728; ese es su tope."""
     assert _posicion({"top": 740, "bottom": 776, "left": 100}, 2000, VENTANA,
@@ -129,6 +138,10 @@ def test_f050_t15d_2_sin_minimo_es_lo_de_f042():
             campo, alto, ventana, 0)
     assert _posicion({"top": -100, "bottom": -64, "left": 0}, 280,
                      VENTANA)["top"] == -60
+    # Ventana más baja que los dos márgenes (10 px): F-042 no recoloca
+    # (mutante S02: un mínimo negativo no puede activar la recolocación).
+    assert _posicion({"top": 0, "bottom": 36, "left": 0}, 280,
+                     {"alto": 10, "ancho": 1200})["top"] == -4
 
 
 # ============ el panel de verdad: montarSelectorPartida en node ============ #
