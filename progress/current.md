@@ -13,8 +13,11 @@ El arnés es la **1.7.3**.
   D1 = A, **D2 = A + C** (además de guardar al volver de un preflight y al abrir el
   selector, se calculan en lote las propuestas de todo el mes al abrirlo o al
   sincronizar, para que salgan preseleccionadas en el cuadrante), D3-D8 = A; el
-  paso 2 de la propuesta se mantiene. **Estado:** spec-author relanzado para
-  reescribir D2 y sus R; se implementa tras fusionar F-050.
+  paso 2 de la propuesta se mantiene. **Estado:** `spec_ready`; spec ajustada a
+  D2 = A + C el 2026-10-13 (R29-R36: propuestas del mes en segundo plano al
+  abrir un periodo abierto o tras un sync, `POST /api/partidas/propuesta-lote`,
+  `GET …/propuestas`; tareas T1-T20; D1-D8 DECIDIDAS en los tres ficheros);
+  se implementa tras fusionar F-050.
 
 ## F-050 · Subfilas por obra con columna Partida (en curso)
 

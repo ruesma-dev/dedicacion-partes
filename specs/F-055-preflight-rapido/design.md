@@ -1,64 +1,62 @@
 <!-- specs/F-055-preflight-rapido/design.md -->
 # F-055 · Diseño
 
-**D1-D8: ABIERTAS** (§11, recomendada A en todas). Rigor `critico`. Se
-implementa sobre `dev` con F-050 fusionada (incluida T15c: repreflight de la
-obra de la línea), rebasando esta rama.
+**D1-D8: DECIDIDAS por el humano el 2026-10-13** (§11: A en todas salvo
+**D2 = A + C**). Rigor `critico`. Se implementa sobre `dev` con F-050
+fusionada (incluida T15c), rebasando esta rama.
 
 ## 1. Límite de servicio
 
-- **Transfer** (lee Sigrid y decide): validación por `ide`, propuesta (como
-  hoy, F-050 §1), lote agrupado y paralelo. Ninguna escritura nueva.
+- **Transfer** (lee Sigrid y decide): validación por `ide`, propuesta (la de
+  F-050, mismos pasos), lotes agrupados y en paralelo. Sin escrituras nuevas.
 - **Api** (dueña del cuadrante): guarda la propuesta en `asignacion` (dato
-  del cuadrante, como la elegida), la manda al registrar y pide el preflight
-  en lote. No propone ni valida.
-- **Front**: pinta la propuesta guardada (R27). Nada más.
+  del cuadrante, como la elegida), la manda al registrar, pide el preflight
+  en lote y **lanza y guarda** el cálculo del mes en segundo plano (R29-R33).
+  No propone ni valida: decide solo **qué líneas** pide y si la guarda.
+- **Front**: pinta la propuesta (R27) y consulta R35 (R36). No decide.
 - Nada es de otro microservicio. `sigrid-api` recibe **menos** peticiones
-  pero hasta 4 a la vez (D5): `azure-apps/sigrid_api.md` §3.4 no documenta
-  un tope de concurrencia (Flex Consumption, SQL on-premise compartido);
-  por eso es ajustable y 1 vuelve al serie de hoy.
+  pero hasta 4 a la vez (D5; `azure-apps/sigrid_api.md` §3.4 no documenta
+  tope de concurrencia): ajustable, y 1 vuelve al serie de hoy.
 
-## 2. Lecturas de hoy por obra (`registro_pipeline.py`) y qué pasa con ellas
+## 2. Lecturas del preflight por obra (`registro_pipeline.py`)
 
-| Lectura (método) | Cuándo, hoy | ¿Imprescindible al registrar? | Tras F-055 |
-|---|---|---|---|
-| `obra_por_ide`/`_por_codigo` | siempre | sí: empresa, centro, destino | agrupada (`obras_por_ide`) |
-| `obra_por_codigo(0404)` | modo pruebas | sí: destino | 1 por lote |
-| `obra_por_codigo(POSTV2)` + su presupuesto | hay postventa | sí: casado P5 | 1 por lote |
-| `obra_por_codigo(VAR)` + su presupuesto | hay VAR | sí: `#regla-var` | 1 por lote |
-| `horas_de_recursos` | siempre | sí: P1, hora, subcuenta | agrupada |
-| `capitulos_de_obra(origen)` | manual (R20), automática y F-049 d | **solo** automáticas sin propuesta | sale: `validar_partidas` |
-| `historial_partidas` | automáticas | **solo** automáticas sin propuesta | 1 por lote, si hace falta |
-| `partidas_de_lineas` | recurso sin subcuenta | sí: cuenta F-037 | agrupada |
-| `cuentas_de_centro` | por centro destino | sí: cuenta F-037 | por centro, en paralelo |
-| `partes_del_periodo` | por destino y mes | sí: parte, estado, cerrados | agrupada |
-| `siguiente_cod_pt` | parte nuevo | sí (código del preview) | 1 por lote |
-| `lineas_por_synckey` | siempre | sí: idempotencia | agrupada |
-| `lineas_del_parte` | por parte del periodo | sí: pisado, sobrecarga, cerrado | agrupada |
+| Lectura (método) | Hoy | Tras F-055 |
+|---|---|---|
+| `obra_por_ide`/`_por_codigo` | siempre | agrupada (`obras_por_ide`) |
+| `obra_por_codigo` de 0404 / POSTV2 / VAR (+ presupuesto) | modo pruebas / postventa / VAR | 1 por lote |
+| `horas_de_recursos` | siempre | agrupada |
+| `capitulos_de_obra(origen)` | manual (R20), automática, F-049 d | **solo** pendientes; el resto, `validar_partidas` |
+| `historial_partidas` | automáticas | 1 por lote, solo si hay pendientes |
+| `partidas_de_lineas` | recurso sin subcuenta | agrupada |
+| `cuentas_de_centro` | por centro destino | por centro, en paralelo |
+| `partes_del_periodo` | por destino y mes | agrupada |
+| `siguiente_cod_pt` | parte nuevo | 1 por lote |
+| `lineas_por_synckey` / `lineas_del_parte` | siempre / por parte | agrupadas |
 
-Una obra con partidas elegidas hace hoy **8-9 lecturas en serie** (10 en
-pruebas con parte nuevo); con 4-6 s cada una (M1 de F-050), 35-50 s por obra
-y la api las encadena obra a obra. La latencia por llamada pesa más que el
-volumen: lo que más rinde es **no leer** (presupuesto, historial) y
-**agrupar** (N obras → 1 lectura por tipo) con **rondas en paralelo**:
+Hoy, 8-9 lecturas en serie por obra a 4-6 s (M1 de F-050): 35-50 s por
+obra, encadenadas. Pesa la latencia, no el volumen: **no leer**, **agrupar**
+y **rondas en paralelo**. A: obras (por `ide` y por código), horas,
+`synckey`, `validar_partidas`, `partidas_de_lineas` e historial si hay
+pendientes. B: `partes_de_periodos` y presupuestos de postventa, VAR y obras
+con pendientes. C: `lineas_de_partes`. Luego decisiones por obra en
+paralelo; `cuentas_de_centro` (su filtro por subcuenta usa la collation de
+SQL Server) y `siguiente_cod_pt` van a `sigrid-api` con un solo vuelo.
 
-- Ronda A (en paralelo): `obras_por_ide`, obras por código (pruebas,
-  postventa, VAR), `horas_de_recursos`, `lineas_por_synckey`,
-  `validar_partidas`, `partidas_de_lineas` y, si hay automáticas sin
-  propuesta, `historial_partidas`.
-- Ronda B: `partes_de_periodos` de todos los destinos y presupuestos de
-  postventa, VAR y obras con automáticas sin propuesta.
-- Ronda C: `lineas_de_partes` de todos los partes leídos.
-- Decisiones por obra en paralelo; lo no precargado (`cuentas_de_centro`,
-  `siguiente_cod_pt`) va a `sigrid-api` con memoria de un solo vuelo.
+### 2.1 Propuestas del mes (R34) y coste esperado
 
-`cuentas_de_centro` no se agrupa: su filtro por subcuenta lo hace SQL Server
-con su collation y repetirlo en memoria no es exacto (§10).
+A: `obras_por_ide` e `historial_partidas` de **todos** los recursos (misma
+ventana). B: `capitulos_de_obra` de cada obra, hasta el límite a la vez.
+Luego `proponer` por obra con la memoria. Con lo medido (obra 4-6 s,
+historial 0,8-5,7 s, presupuesto 3,3-5,3 s), un trozo de 10 obras: A ≈ 6 s
++ B 3 rondas ≈ 16 s ≈ **22 s** (lejos de los 180 s de `TRANSFER_TIMEOUT_S`).
+Un mes con 40 obras pendientes, ≈ 90 s en segundo plano, de 10 en 10 (C8);
+después, solo las líneas nuevas (0-1 trozos). Hoy, selector a selector.
 
 ## 3. Ficheros a crear
 
-- transfer `application/services/lecturas_lote.py`
-- transfer `application/pipelines/registro_lote.py`
+- transfer `application/services/lecturas_lote.py`,
+  `application/pipelines/registro_lote.py`
+- api `application/propuestas_mes.py`
 - Tests `test_f055_*.py` en `tests/` de transfer, api y front (§7).
 
 ## 4. Ficheros a modificar
@@ -68,19 +66,20 @@ con su collation y repetirlo en memoria no es exacto (§10).
 | transfer `infrastructure/sigrid/sigrid_write_client.py` | tiempo y log en `_read` (R1); `validar_partidas`, `obras_por_ide`, `partes_de_periodos`, `lineas_de_partes`; `horas_de_recursos` en trozos de 500 |
 | transfer `domain/models/registro_models.py` | `LineaEntrada.propuesta_*` (5), `AccionLinea.partida_res` |
 | transfer `application/pipelines/registro_pipeline.py` | rama manual con `validar_partidas`; rama de propuesta guardada; `partida_res`; sin la lectura forzada de F-049 d; log de resumen |
-| transfer `interface_adapters/api/app.py` | `LineaIn.propuesta_*`, `LoteIn`, `def preflight_lote` |
+| transfer `interface_adapters/api/app.py` | `LineaIn.propuesta_*`, `LoteIn`, `PropuestaLoteIn`, `def preflight_lote`, `def propuesta_lote` |
 | transfer `config/settings.py` | `sigrid_lecturas_paralelas` (`SIGRID_LECTURAS_PARALELAS`, 4, 1-8) |
 | transfer `prueba_escritura_porcentajes.py` | fase `medir` (R2) |
 | api `infrastructure/db/orm_models.py` | `AsignacionORM.propuesta_*` (R13) |
 | api `domain/models.py` | `Linea.propuesta_ide/cod/res/metodo/origen` (None, al final) |
-| api `infrastructure/db/repositories.py` | `_a_linea`/`reemplazar` con propuesta; `guardar_propuesta` |
-| api `domain/ports.py` | `AsignacionRepository.guardar_propuesta` |
+| api `infrastructure/db/repositories.py`, `domain/ports.py` | `_a_linea`/`reemplazar` con propuesta; `guardar_propuesta(…, solo_si_vacia=False)` |
 | api `application/use_cases.py` | `_conservar_partidas` conserva también la propuesta (R17) |
 | api `application/registro_sigrid.py` | payload con propuesta (R16); preflight por lote (R26); `_guardar_propuestas` (R14) |
 | api `application/partidas_linea.py` | guarda la propuesta devuelta (R15) |
-| api `infrastructure/transfer/transfer_client.py` | `preflight_lote(peticiones)` |
-| api `interface_adapters/api/schemas.py` | `LineaOut.propuesta_cod/res/metodo` (R27) |
-| front `static/js/app.js`, `static/css/styles.css` | celda Partida con la propuesta (R27) |
+| api `infrastructure/transfer/transfer_client.py` | `preflight_lote(peticiones)`, `propuesta_lote(peticiones)` |
+| api `interface_adapters/api/deps.py` | `Contenedor.propuestas_mes` con `ThreadPoolExecutor(max_workers=1)` |
+| api `interface_adapters/api/routes.py` | cuadrante y `/sync` lanzan (R29); `GET …/propuestas` (R35) |
+| api `interface_adapters/api/schemas.py` | `LineaOut.propuesta_cod/res/metodo` (R27), `CuadranteOut.propuestas_en_curso` (R30), `PropuestasOut` |
+| front `static/js/app.js`, `static/css/styles.css` | celda Partida con la propuesta (R27), «buscando partida…» y consulta (R36) |
 | `docs/ARCHITECTURE.md`, `docs/INTEGRACION.md`, READMEs de api y transfer | §8 |
 
 ## 5. Clases y funciones
@@ -89,73 +88,92 @@ con su collation y repetirlo en memoria no es exacto (§10).
 
 - `validar_partidas(parides) -> dict[int, PartidaValida]`
   (`PartidaValida(ide, obride, cod, res, es_hoja, activa)`), SQL §6.
-- `obras_por_ide(ides) -> dict[int, ObraEntrada | None]`: agrupa por `ide`
-  y aplica el mismo `_obra` a las filas de cada uno.
-- `partes_de_periodos(obrides, periodos) -> dict[(obride, ano, mes),
-  list[ParteSigrid]]`: mismo SQL que `partes_del_periodo` con `IN`, mismo
-  orden (`ide` descendente) por clave.
-- `lineas_de_partes(hmoides, resides) -> dict[hmoide, list[LineaSigrid]]`:
-  mismo SQL que `lineas_del_parte` con `IN`, por `pos` dentro de cada parte.
+- `obras_por_ide(ides)`, `partes_de_periodos(obrides, periodos)` (clave
+  `(obride, ano, mes)`) y `lineas_de_partes(hmoides, resides)`: el SQL suelto
+  con `IN`, mismo `_obra` y mismo orden por clave.
 - `_read(sql, params, nombre=…)`: mide y loguea (R1); el contrato no cambia.
 
 ### 5.2 Transfer · `lecturas_lote.py` (application)
 
-- `LecturasDelLote(cliente, limite)`: implementa los métodos de lectura que
-  usa el pipeline. Cada uno responde de lo precargado **solo si la consulta
-  está entera dentro** (p. ej. `horas_de_recursos(ides)` con `ides` ⊆
-  precargados: el subconjunto, en el orden del SQL); si no, llama al
-  cliente real y apunta un `fallo_de_memoria` (log + contador para tests).
-  Memoria de un solo vuelo por clave (`threading.Lock` + `Future`): dos
-  hilos que piden lo mismo esperan la misma lectura (y la misma excepción).
-  `escribir` lanza `RuntimeError`: un lote nunca escribe.
-- `precargar(peticiones)`: rondas A, B y C de §2 con
-  `ThreadPoolExecutor(max_workers=limite)`; la primera excepción de una
-  ronda sube (R24).
-- Vive solo dentro de una petición HTTP (R22, D4 = A): no hay estado global.
+- `LecturasDelLote(cliente, limite)`: los métodos de lectura del pipeline.
+  Responde de lo precargado **solo si la consulta está entera dentro**
+  (`horas_de_recursos` o `historial_partidas` de un subconjunto, misma
+  ventana: filtrado por recurso; la propuesta no depende del orden de
+  filas, `#regla-partida`); si no, llama al cliente real y apunta un
+  `fallo_de_memoria` (log + contador). Un solo vuelo por clave (`Lock` +
+  `Future`): dos hilos esperan la misma lectura (y la misma excepción).
+  `escribir` lanza `RuntimeError`.
+- `precargar` (rondas de §2) y `precargar_propuestas` (§2.1) con
+  `ThreadPoolExecutor(limite)`; la primera excepción de una ronda sube
+  (R24). Vive solo en una petición HTTP (R22, D4).
 
-### 5.3 Transfer · pipeline y lote
+### 5.3 Transfer · pipeline y lotes
 
-- `RegistroPipeline.preflight` (rama `paride` de obra normal):
-  `self._validas(lineas)` lee una vez `validar_partidas` de todos los
-  `paride` y `propuesta_paride` de la petición; vale si `obride ==
-  origen.ide and es_hoja and activa` (R4); si no, R5 tal cual.
-- Rama nueva antes de la automática: con `propuesta_paride` válida, `paride`,
-  `partida_cod`, `partida_res`, `partida_metodo`, `partida_origen` de la
-  línea (R8); si no vale, cae a la automática (R6).
-- El presupuesto de origen se lee **solo** en la automática sin propuesta;
-  `partidas_obra` es su catálogo o `[]` (R10). Postventa y VAR, sin cambios.
-- `RegistroLote(cliente, settings).preflight(peticiones) -> list[Preflight |
-  Exception]`: `precargar`, luego un `RegistroPipeline(cliente=memoria,
-  settings)` por obra en el pool. El pipeline no tiene estado entre llamadas
-  (F-025 R9): compartirlo entre hilos es seguro; un test lo fija.
-- `ejecutar` no cambia de forma: preflight con el cliente real y escritura;
-  gana R3-R9 por ser el mismo `preflight`.
-- Endpoint `def preflight_lote(p: LoteIn)` (R25): cada entrada, la forma de
-  `preflight` (función común `_respuesta_preflight(pf)` extraída de la ruta
-  de hoy, sin cambiar su salida) o `{ok: false, error}`; la excepción de una
-  ronda compartida → 502 del lote entero.
+- `RegistroPipeline.preflight` (`paride` de obra normal): `self._validas`
+  lee una vez `validar_partidas` de todos los `paride` y `propuesta_paride`;
+  vale si `obride == origen.ide and es_hoja and activa` (R4); si no, R5.
+- Rama nueva antes de la automática: con `propuesta_paride` válida, sus
+  `partida_*` (R8); si no vale, cae a la pendiente (R6). El presupuesto de
+  origen se lee **solo** para pendientes; `partidas_obra`, su catálogo o
+  `[]` (R10). Postventa y VAR, sin cambios.
+- `RegistroLote(cliente, settings)`: `preflight(peticiones)` y
+  `proponer(peticiones)` → `list[resultado | Exception]`: precarga y luego
+  un `RegistroPipeline(cliente=memoria)` por obra en el pool (sin estado
+  entre llamadas, F-025 R9; un test lo fija). `proponer` devuelve de cada
+  obra solo `propuestas` de `RegistroPipeline.proponer` (R21).
+- `ejecutar` no cambia de forma (cliente real); gana R3-R9.
+- `def preflight_lote(p: LoteIn)` y `def propuesta_lote(p: PropuestaLoteIn)`
+  (R25): por entrada, la forma suelta (`_respuesta_preflight(pf)`, extraída
+  de la ruta de hoy sin cambiar su salida) o `{ok: false, error}` (empresa
+  no válida, otra empresa, no encontrada); `ano`/`mes` distintos → 422;
+  fallo de una ronda compartida → 502 entero.
 
-### 5.4 Api
+### 5.4 Api · registro y selector
 
-- `_payloads`: tras `paride`/elegida, si no hay elegida y
-  `a.propuesta_ide`, añade los cinco `propuesta_*` (R16).
-- `preflight`: una llamada `transfer.preflight_lote([{**p, "pisar_claves":
-  []} …])`; `resultados` se arma igual que hoy (obra + respuesta). Después
-  `_guardar_propuestas(resultados)`: por acción con método de propuesta y
-  `registro_id`, `UPDATE asignacion SET propuesta_* … WHERE id = :rid AND
+- `_payloads`: sin elegida y con `a.propuesta_ide`, añade los cinco
+  `propuesta_*` (R16). `preflight`: una llamada `transfer.preflight_lote`;
+  `resultados` como hoy; luego `_guardar_propuestas`: por acción con método
+  de propuesta, `UPDATE asignacion SET propuesta_* WHERE id = :rid AND
   partida_ide IS NULL` (ORM, como `_trazar`) (R14).
-- `PartidasDeLinea.ejecutar`: si `r["propuestas"]["linea"]`, llama a
-  `uow.asignaciones.guardar_propuesta(periodo_id, trabajador_ide, clave,
-  propuesta)` y `uow.commit()` (R15). La ruta sigue siendo `GET`: el efecto
-  es una caché del cuadrante, sin evento (D2).
-- `_conservar_partidas` copia también `propuesta_*` de la línea de antes;
-  `_snapshot` y `_validar_lineas` **no** las llevan (R17).
+- `PartidasDeLinea.ejecutar`: con propuesta, `guardar_propuesta(periodo_id,
+  trabajador_ide, clave, propuesta)` y `commit` (R15): caché del cuadrante.
+- `_conservar_partidas` copia `propuesta_*`; `_snapshot` y
+  `_validar_lineas` **no** (R17).
 
-### 5.5 Front
+### 5.5 Api · `PropuestasDelMes` (`application/propuestas_mes.py`)
 
-- `textoPartida`/`construirCelda` (`partida`): sin elegida y con
-  `linea.propuesta_cod`, `<em>` con «código · descripción» y el rótulo de
-  `rotuloOrigen(propuesta_metodo)`; si no, «automática» (R27).
+- `__init__(uow_factory, transfer, ejecutor, obras_por_llamada=10)`;
+  estado en memoria bajo un `threading.Lock`: `_en_curso: set[periodo_id]`
+  y `_sin_propuesta: set[(periodo_id, trabajador_ide, obra_ide)]` (R32).
+  La api tiene **una réplica** (ARCHITECTURE «Topología»).
+- `lanzar(anio, mes) -> bool`: UoW propia; periodo inexistente o no
+  ABIERTO → False; en `_en_curso` → True; pendientes (R29) de
+  `lineas_del_periodo` y `trabajadores.obtener`, menos `_sin_propuesta`;
+  ninguna → False; si no, entra en `_en_curso`, `ejecutor.submit(
+  self._calcular, …)` y True. **Nunca lanza**: excepción → log y False.
+- `_calcular`: obras por código, trozos de `obras_por_llamada`; por obra
+  `{empresa: obra_empresa, obra, ano, mes, lineas: [{clave:
+  str(trabajador_ide), recurso_ide, nombre, categoria, es_postventa:
+  False}]}`; `transfer.propuesta_lote`; UoW por trozo: propuesta →
+  `guardar_propuesta(…, solo_si_vacia=True)` (`WHERE partida_ide IS NULL
+  AND propuesta_ide IS NULL`), `None` u obra `{ok: false}` → `_sin_
+  propuesta`; `commit`. `PropuestaNoDisponible` u otra → log y fin (R33).
+  `finally`: sale de `_en_curso`.
+- `olvidar()` (vacía `_sin_propuesta`); `estado(uow, anio, mes)` (R35).
+- Rutas: `obtener_cuadrante` llama a `lanzar` **fuera** de su UoW y pone
+  `propuestas_en_curso`; `sincronizar`, tras el éxito, `olvidar()` y
+  `lanzar` de cada ABIERTO; `GET /periodos/{a}/{m}/propuestas` → `estado`. El
+  `sync_pipeline` no se toca.
+
+### 5.6 Front
+
+- `construirCelda` (`partida`): sin elegida y con `propuesta_cod`, `<em>`
+  «código · descripción» y `rotuloOrigen(propuesta_metodo)` (R27); sin ella,
+  «buscando partida…» si `state.propuestasEnCurso`, si no «automática».
+- `seguirPropuestas()`: con `propuestas_en_curso`, `setTimeout` de 5 s a
+  `GET …/propuestas`; copia `propuesta_*` a las líneas aún sin elegida y
+  repinta solo sus celdas Partida (no la fila en edición); para con
+  `en_curso` falso o si cambia la generación (mes o empresa) (R36).
 
 ## 6. SQL
 
@@ -173,70 +191,59 @@ SELECT p.ide, p.obride, p.cod, p.res, ISNULL(p.tipdes,0) AS tipdes,
 FROM obrparpar p WHERE p.ide IN (?…)
 ```
 
-`obras_por_ide`, `partes_de_periodos` y `lineas_de_partes`: el SQL de su
-método suelto con `= ?` → `IN (?…)` y el `obride`/`hmoide` en la salida.
-Equivalencia de `hoja`: `build_arbol_partidas` marca capítulo al nodo con un
-hijo **de la misma obra** (`padide` en `nodos`); el `EXISTS` filtra por
-`obride` igual. `activa` = `tipdes = 0`, como allí.
+Los agrupados: el SQL suelto con `= ?` → `IN (?…)` y la clave en la salida.
+`hoja`: como `build_arbol_partidas`, capítulo es el nodo con un hijo de la
+misma obra; `activa` = `tipdes = 0`, como allí.
 
 ## 7. Tests y dobles
 
-- Transfer: `validar_partidas` con `_read` falso (SQL, trozos) y su
-  **equivalencia** con `construir_catalogo` en hoja activa, capítulo, baja,
-  otra obra e inexistente (R4); pipeline con `ClienteFalso` (R3, R5-R10);
-  `LecturasDelLote`: subconjuntos, fallo de memoria al cliente real, un solo
-  vuelo con dos hilos, `escribir` prohibido, R24; **equivalencia del lote**:
-  cada escenario de `test_f037_pipeline`, `test_f050_pipeline`,
-  `test_f002_pipeline` y `test_f039_preflight_var`, suelto y en lote, da el
-  mismo `asdict(Preflight)` (R21); conteo de lecturas C1-C2 con un
-  `ClienteFalso` que cuenta; límite 1 = serie; ajuste fuera de 1-8 (R23);
-  endpoint con `TestClient` (R19, R24, R25); fase `medir` sin escrituras.
-- Api: `_Uow` de F-024/F-050 ampliado dentro de `test_f055_*` (R13-R18,
-  R26); rutas con transfer falso (R15, R27).
-- Front: node sobre la celda (R27) como `test_f050_*`.
-- Lista cerrada de tests anteriores: requirements §7.
+Sin red ni BBDD. Transfer: `validar_partidas` ≡ `construir_catalogo` (R4);
+pipeline con `ClienteFalso` (R3-R10); `LecturasDelLote` (subconjuntos, un
+solo vuelo, `escribir` prohibido, R24); **equivalencia** suelto/lote de los
+escenarios de `test_f037_pipeline`, `test_f050_pipeline`,
+`test_f002_pipeline`, `test_f039_preflight_var` y de la propuesta de F-050
+(R21); conteos C1, C2, C7; R23; rutas con `TestClient`. Api: `_Uow` falsa
+(R13-R18, R26); `PropuestasDelMes` con ejecutor **síncrono**, transfer y UoW
+falsos (R29-R33); rutas (R15, R27, R30, R35). Front: node con temporizador
+falso (R27, R36). Lista cerrada de tests anteriores: cabecera de `tasks.md`.
 
 ## 8. Documentación (R28)
 
-`ARCHITECTURE.md`: `#regla-partida` (propuesta guardada, validación por
-`ide`, cuándo se recalcula), «Acceso a datos» (lote y paralelo), «Timeouts
-encadenados» (nota). `INTEGRACION.md`: R19, `SIGRID_LECTURAS_PARALELAS`,
-columnas `propuesta_*`, orden de despliegue **transfer → api → front**.
+`ARCHITECTURE.md`: `#regla-partida`, «Acceso a datos», «Timeouts
+encadenados». `INTEGRACION.md`: R19, R34, R35, la variable,
+`propuestas_en_curso`, `propuesta_*` y el orden **transfer → api → front**.
 
 ## 9. Ficheros que NO se tocan
 
-Copias cerradas de `partes` (`partida_matcher`, `partida_catalog`,
-`text_match`, `cuenta_analitica`, `estado_parte`), `reglas_porcentajes`,
-`propuesta_partida`, `universo_*`, `excel/*`, `sync_pipeline`, `.env`,
-`infra/`, el `ejecutar` de la api.
+Copias cerradas de `partes`, `reglas_porcentajes`, `propuesta_partida`,
+`universo_*`, `excel/*`, `sync_pipeline`, `.env`, `infra/`, el `ejecutar` de
+la api.
 
 ## 10. Riesgos
 
-- **Equivalencia del lote**: un dato servido de memoria distinto del real
-  cambiaría lo que se escribe. Mitigación: solo se sirve una consulta
-  contenida en la precargada, con el mismo SQL y orden; el resto va a
-  Sigrid; test de equivalencia sobre todos los escenarios; mutación completa.
+- **Equivalencia de los lotes**: memoria solo para consultas contenidas en
+  la precargada, mismo SQL; el resto, a Sigrid; tests y mutación completa.
 - **Propuesta guardada vieja** (D8): se escribe lo que el cuadrante enseña
   (R27); un parte nuevo en Sigrid no la cambia hasta abrir el selector.
-- **Concurrencia en `sigrid-api` y el SQL compartido** (D5): tope 4,
-  ajustable; T16 mide.
-- **`ejecutar` del mes entero** sigue en serie por obra (D6): ya sin
-  presupuesto ni historial, pero con N obras puede pasar de 120 s en local.
-  T16 lo mide; si pasa, se propone feature aparte (no se cambia aquí).
-- **Despliegue**: la api nueva sin el transfer nuevo da 404 en el lote →
-  orden transfer → api → front.
-- Una automática sin propuesta posible (sin partida) se recalcula en cada
-  preflight: es la excepción, no el caso.
+- **Concurrencia en `sigrid-api`** (D5): tope 4, ajustable; T18 mide. El
+  cálculo del mes va en **un** hilo: nunca dos lotes a la vez.
+- **Cálculo en memoria de la api**: un reinicio lo pierde (el próximo `GET`
+  lo relanza) y vacía R32; con dos réplicas se duplicaría (hoy `max 1`).
+- **Carrera con el usuario**: el `UPDATE` condicional no pisa una elegida ni
+  una propuesta del selector puestas mientras tanto; un `reemplazar` en medio
+  conserva lo guardado (R17) o deja la línea pendiente para el próximo `GET`.
+- **`ejecutar` del mes** sigue en serie (D6): si T18 pasa de 120 s, feature
+  aparte. **Despliegue**: transfer → api → front (si no, 404 en los lotes).
 
-## 11. Decisiones ABIERTAS (las decide el humano)
+## 11. Decisiones (DECIDIDAS por el humano el 2026-10-13)
 
-| D | Recomendada (A) | Alternativas | Efecto en tests |
+| D | Decidida | Descartadas | Efecto en tests |
 |---|---|---|---|
-| D1 · Automática sin propuesta guardada al registrar | Camino de hoy solo para ella (presupuesto + historial, una vez por lote) y la api la guarda | B la api pide antes las propuestas al transfer y luego preflight ligero; C omitir «elige partida» (cambia una regla) | A: los `test_f050_r9_*` no cambian; C: cambian `test_f050_r9_*` y `test_f013_*` |
-| D2 · Dónde y cuándo se guarda la propuesta | `asignacion.propuesta_*`; al volver de un preflight y al abrir el selector. **Cambia D3 de F-050** (se guardaba solo la elegida) | B A + en segundo plano al guardar la fila (al añadir la obra); C en el sync o al abrir el mes, en lote | A: `test_f003_r8`, `_Uow` de `test_f050_rutas_partida`; B suma tests de tarea en segundo plano |
-| D3 · Validar la partida al registrar | Por `ide` (`validar_partidas`): elegida que no vale → omitir (R20 F-050); propuesta que no vale → recalcular | B no validar (confiar en el cuadrante); C presupuesto entero (hoy) | A: R20 de F-050 sin cambiar aserciones (el doble gana el método) |
-| D4 · Caché del transfer entre peticiones | No: memoria solo de la petición | B TTL 120 s de presupuestos y catálogos de postventa/VAR en preflight y selector, `ejecutar` sin ella; C solo en el selector | A: ninguno; B: tests de caducidad y de que `ejecutar` la salta |
-| D5 · Agrupar y paralelizar | Agrupar por tipo + 4 a la vez (`SIGRID_LECTURAS_PARALELAS`, 1-8) | B solo paralelo por obra (N veces más peticiones); C solo agrupar, en serie | C1 vale en A y C; en B cambia el conteo |
-| D6 · Qué servicio hace qué | Lote en el transfer (R19), la api lo llama una vez; `ejecutar` por obra y en serie (el alta de partes usa el correlativo `PT` de la empresa) | B la api lanza en paralelo los preflight por obra (sin ruta nueva); C también `ejecutar` en lote | A: dobles de transfer de la api ganan `preflight_lote` |
-| D7 · La celda enseña la propuesta guardada | Sí, en cursiva con su método | B no («automática» como hoy) | A: `CAMPOS_LINEA` de `test_f034_rutas` |
-| D8 · Caducidad de la propuesta guardada | No caduca; se reescribe al abrir el selector y si deja de valer | B se recalcula si se guardó otro día; C botón «Recalcular propuestas» del mes | A: ninguno; B: test de fecha (`propuesta_at_utc`) |
+| D1 · Pendiente al registrar | **A**: camino de hoy solo para ella (presupuesto + historial, una vez por lote) y la api la guarda | B propuestas antes y preflight ligero; C omitir «elige partida» | `test_f050_r9_*` no cambian |
+| D2 · Dónde y cuándo se guarda la propuesta | **A + C**: `asignacion.propuesta_*`; al volver de un preflight y al abrir el selector (A) **y** en lote, en segundo plano, de todas las pendientes al abrir un mes abierto o tras un sync (C, R29-R36), para que salga preseleccionada. **Cambia D3 de F-050** | B en segundo plano al guardar la fila | `test_f003_r8`, `_Uow`/`_cliente` de `test_f050_rutas_partida`, fixture `api` de `test_f024_rutas_empresa`, `CAMPOS_CUADRANTE` |
+| D3 · Validar la partida al registrar | **A**: por `ide`; elegida que no vale → omitir; propuesta que no vale → recalcular | B no validar; C presupuesto entero | R20 de F-050 sin cambiar aserciones |
+| D4 · Caché del transfer entre peticiones | **A**: no, memoria solo de la petición | B TTL 120 s; C solo en el selector | ninguno |
+| D5 · Agrupar y paralelizar | **A**: por tipo + 4 a la vez (1-8) | B solo paralelo; C solo agrupar | C1 y C7 |
+| D6 · Qué servicio hace qué | **A**: lotes en el transfer (R19, R34), la api los llama; `ejecutar` por obra y en serie | B la api paraleliza; C `ejecutar` en lote | transfer falsos con `preflight_lote` |
+| D7 · La celda enseña la propuesta | **A**: sí, en cursiva con su método | B «automática» como hoy | `CAMPOS_LINEA` |
+| D8 · Caducidad de la propuesta | **A**: no caduca; se reescribe al abrir el selector y si deja de valer | B por fecha; C botón «Recalcular» | ninguno |
