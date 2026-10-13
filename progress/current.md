@@ -7,24 +7,14 @@ en su partida por línea): registro sin búsquedas de partidas (rediseño pedido
 el humano el 2026-10-11). En la copia principal, F-050 sigue en curso (T15c).
 El arnés es la **1.7.3**.
 
-## F-055 · El registro sin búsquedas de partidas (en spec)
+## F-055 · Registro sin búsquedas de partidas (en spec)
 
-- **Estado: `spec_ready`** (2026-10-11): `specs/F-055-preflight-rapido/`
-  escrita por el spec-author, **pendiente de aprobación del humano**. Rigor
-  subido a **crítico**; toca transfer, api y front.
-- **Qué propone:** el registro no lee presupuesto ni historial cuando la línea
-  trae partida (la valida por `ide` con una lectura ligera); la propuesta de
-  las automáticas se guarda en la asignación (cambia D3 de F-050); el preflight
-  de todas las obras va al transfer en **un lote** con lecturas agrupadas por
-  tipo y hasta 4 en paralelo. Medición antes (T2) y después (T16) con números
-  (C1-C6, requirements §6).
-- **Decisiones ABIERTAS para el humano:** D1-D8 (design §11, recomendada A):
-  automática sin propuesta guardada, dónde/cuándo se guarda la propuesta,
-  validación al registrar, caché entre peticiones, paralelismo, reparto entre
-  servicios (`ejecutar` sigue por obra), la celda con la propuesta y su
-  caducidad.
-- **Depende de F-050:** se implementa tras fusionarla (con T15c), rebasando
-  esta rama. Ninguna lectura a Sigrid hecha al escribir la spec.
+- **Spec aprobada por el humano el 2026-10-13** («acepto tu propuesta de F-55»):
+  D1 = A, **D2 = A + C** (además de guardar al volver de un preflight y al abrir el
+  selector, se calculan en lote las propuestas de todo el mes al abrirlo o al
+  sincronizar, para que salgan preseleccionadas en el cuadrante), D3-D8 = A; el
+  paso 2 de la propuesta se mantiene. **Estado:** spec-author relanzado para
+  reescribir D2 y sus R; se implementa tras fusionar F-050.
 
 ## F-050 · Subfilas por obra con columna Partida (en curso)
 
