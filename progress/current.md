@@ -25,6 +25,16 @@ despliegue lo lanzó el humano el 2026-10-14 (sección siguiente). El arnés es 
   Desviación de T1 (design §5.1): la medición va en `_lectura(nombre, …)` y
   `_read` conserva su firma, para no tocar los dobles de `_read` de 35 tests
   anteriores fuera de la lista cerrada (detalle en el informe).
+- **Ampliación APROBADA por el humano el 2026-10-14** («sí, pero en reglas hay
+  que cambiar el orden, a c b»), tras ver en producción que una línea nueva sigue
+  en «automática» hasta registrar: 1) el cálculo en segundo plano se lanza
+  también tras guardar la fila, Completar, Copiar mes, F7 y F8 (solo las
+  pendientes de ese trabajador; hoy R29 lo excluye al guardar), la celda dice
+  «buscando partida…» y se llena sola (C8 nuevo: ≤ 30 s sin recargar); 2) el
+  orden de la propuesta pasa a **parte anterior en esa obra → casamiento por
+  nombre y categoría → último parte en otra obra** (cambia R1 de F-050 y
+  `#regla-partida`). **Spec-author lanzado** para ajustar la spec; T2 (medición,
+  humano) sigue pendiente y no le afecta.
 
 ## ⚠ Despliegue de F-050 (pendiente; lo lanza el humano)
 
