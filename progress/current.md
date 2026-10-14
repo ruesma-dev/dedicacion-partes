@@ -61,8 +61,8 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   - **M2 (T17, navegador):** transfer, api y front desde la copia principal
     (`.venv/Scripts/python main.py` en cada servicio); `curl -s http://localhost:8006/health`
     con `"modo_pruebas": true` (si no, PARAR). La api añade al arrancar las
-    columnas `partida_*`. Puntos (a)-(f) de `specs/F-050-subfilas-partida/tasks.md`
-    T17: subfilas y columna Partida; selector con buscador, Todas · CD · CI · CP,
+    columnas `partida_*`. Puntos (a)-(i) de `specs/F-050-subfilas-partida/tasks.md`
+    T17 (lo de (h) e (i), en sus apartados más abajo): subfilas y columna Partida; selector con buscador, Todas · CD · CI · CP,
     propuesta primera; postventa y VAR; regresión del teclado; el mismo
     selector en el modal (**Cancelar, sin Registrar**); tiempo en la 0696;
     **(g)** cronometrar «Registrar en Sigrid» de todo el mes hasta que sale el
@@ -82,7 +82,7 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   `obra_ide` (`1037904`). **Review 3: CAMBIOS PEDIDOS:** «Registrar» se queda
   en «Analizando…» si de dos repreflights en vuelo falla el primero tras volver el
   segundo (hecho por el implementer en `2078505..2b44319`, con `obra_ide` como `int` en la ruta y el `ok`
-  recalculado en `unirPreflight`, observaciones 2 y 3); T17 dice ya «(a)-(h)»
+  recalculado en `unirPreflight`, observaciones 2 y 3); T17 dice ya «(a)-(h)» (hoy «(a)-(i)», T15f)
   (líder). Observación 1 (la manija de ancho con la tabla encogida) se mira en la
   M2 (h) 1. Hecho hasta `91fdb7a` (api 780, front 221, transfer 750 sin caché;
   mutación Python 164/164 y JS 7/7 en copias aisladas); el 422 de `obra_ide` ya
@@ -215,7 +215,7 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
 
 `BACKLOG.md` tiene el orden completo. Nuevas el 2026-10-08 (pedidas por el
 humano): **F-049** (los avisos del modal de registro rotulados por tipo, con su
-%; aprobada), **F-051** (pisar las líneas del parte al 0 % que ya existan),
+%; desplegada), **F-051** (pisar las líneas del parte al 0 % que ya existan),
 **F-050** (subfilas por obra con columna Partida y partida propuesta; absorbe
 F-043) y **F-021** redefinida (velar las etiquetas de las demás obras al
 filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
