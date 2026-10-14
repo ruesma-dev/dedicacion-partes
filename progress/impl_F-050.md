@@ -202,7 +202,8 @@ Verde: front **269**. **Mutación JS manual** (copia aislada, `a23a373`): **34/3
 
 Fuera: F-051, F-044, F-054, F-021, el Excel (D8), F-055 y la manija de ancho (obs. 1 de la review 3, M2 (h) 1). Nada
 contra Sigrid ni Azure. **M1**: OK (2026-10-11). **T17 · M2**: `tasks.md` T17 (a)-(i): lo de T15d y T15e en (h) 2 y 3;
-T15f en (i) (y (d), (h) 1); **Cancelar, sin Registrar**. **T18 · M3**: solo con autorización del humano.
+T15f en (i) (y (d), (h) 1); **Cancelar, sin Registrar**. **T18 · M3**: OK (humano, autorizada,
+2026-10-14; leído por el líder en Sigrid y en la base local): noviembre 2026, GONZALEZ PANIAGUA (1705036), 0694 al 100 %, partida elegida a mano CI.1.5 (`ide` 384155, evento `PARTIDA`) → línea `hmores` 410599 en la 0404, parte PT26/00371, `paride` 384155 (CI.1.5 · ADMINISTRATIVO DE OBRA), `synckey` `porcentajes:180`.
 
 ## Evidencias
 

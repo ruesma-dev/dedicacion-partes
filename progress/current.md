@@ -1,135 +1,25 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-050 en curso en esta rama** (`feature/F-050-subfilas-partida`, copia
-principal; M2 cumplida, falta decidir la M3): subfilas por obra en el cuadrante con columna Partida y partida
-propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
-**1.7.3**.
+**Ninguna feature en ejecución en `dev`.** F-050 (subfilas por obra con
+columna Partida y partida propuesta) está cerrada en `dev` y `main` y
+**pendiente de desplegar** (sección siguiente). F-055 tiene la spec aprobada en
+su rama (`porcentajes-f041`) y va ahora. El arnés es la **1.7.3**.
 
-## F-050 · Subfilas por obra con columna Partida (en curso)
+## ⚠ Despliegue de F-050 (pendiente; lo lanza el humano)
 
-- **Qué es** (humano, 2026-10-08): cada obra del trabajador en su subfila, con
-  una columna Partida a la derecha para elegirla en el cuadrante (el modal de
-  registro deja de ser donde se busca, aunque se pueda cambiar ahí); propuesta:
-  1) la del parte anterior por obra y empleado, 2) la del último parte en que
-  se asignó ese recurso, 3) el casamiento de `partes` (nombre y categoría).
-  Absorbe F-043 (buscador predictivo, ordenado y con selector CI/CD). Toca los
-  tres servicios; rigor crítico.
-- **Spec aprobada por el humano el 2026-10-09** con D1-D10 = A («si») y dos
-  precisiones: el modal de registro usa **el mismo selector** que la columna
-  Partida (desplegable con buscador, como en `partes`), y el selector lleva
-  botones **CD · CI · CP** (y «Todas») para filtrar por mayor (se añade CP).
-- **Estado:** spec ajustada a las dos precisiones (2026-10-09): R8, R17,
-  R26, R29, design §5 y §11 (D1-D10 DECIDIDAS, A) y MANUAL T16-T17; lista
-  cerrada del front recalculada (T12, seis `c_*` de F-049 se borran). El
-  mayor se toma de la **raíz** del presupuesto (leído en Sigrid: `categoria`
-  de `partida_catalog` clasifica mal dos hojas bajo CD; la copia de
-  `partes` tiene el mismo fallo: avisado al humano el 2026-10-09, design §5.1).
-  `dev` traído a la rama. Dos bloqueos por tests fuera de la lista cerrada, los dos
-  APROBADOS por el humano el 2026-10-09 y añadidos a requirements §6:
-  `test_f037_r3_…` (una línea de datos, R20) y `test_f003_r8_…` (el conjunto
-  de columnas suma las tres `partida_*`, R12). Hecho: T1-T5 (`686d00a`..
-  `3aed309`; transfer 742 passed). **Implementer TERMINADO (2026-10-09):**
-  T1-T15 (`686d00a`..`e182915`, `progress/impl_F-050.md`): mutación Python
-  158/158 y JS 56/56 muertos (en copias aisladas), cobertura 341/341, `init.sh`
-  en verde sin caché (api 768, front 184, transfer 750). T14 hecha por el
-  líder: `azure-apps/dedicacion.md` con los endpoints, la variable y el orden
-  transfer → api → front (`edaa2b7`, «sin desplegar»). **Review 1: CAMBIOS
-  PEDIDOS** (`progress/review_F-050.md`): textos de 7 mutantes JS cortados con
-  «…» (implementer relanzado); T19 sin marcar, F-050 duplicada en «Lo
-  siguiente» y el rango de commits (corregidos por el líder). Observaciones:
-  (g) en M2 para el tiempo del mes entero; una línea omitida por R20 no tiene
-  botón de partida en el modal (**el humano aprueba el 2026-10-10 añadirlo:
-  R29 bis; T15b hecha por el implementer en `6320474`**; **review 2 APROBADA**,
-  sus observaciones recogidas: (g) en T17 y el motivo por texto llevado a
-  F-048); postventa en R9 casa
-  con `origen.codigo` en `proponer` y con `obra.codigo` en el preflight (hoy
-  coinciden; anotado en «Hechos que no conviene volver a descubrir»).
-- **MANUAL (humano, en local; transfer en modo pruebas):**
-  - **M1 (T16, solo lectura):** en Git Bash,
-    `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-transfer`
-    y `.venv/Scripts/python prueba_escritura_porcentajes.py propuesta --ano 2026 --mes 9 --obra 0694 --recurso 1705036`
-    (1705036 = GONZALEZ PANIAGUA, leído en Sigrid); lo mismo con `--obra 0696`.
-    Esperado en la 0694: «Propuesta: CI.1.5», método `parte_anterior`, origen
-    PT26/00319 · 09/2026; «Por mayor: CD … · CI … · CP …» con `CP.1`-`CP.12`
-    en CP; botón preelegido CI; cada lectura < 30 s.
-    **Resultado M1 (humano, 2026-10-11): OK.** 0694: propuesta CI.1.5
-    (`parte_anterior`, PT26/00319 · 09/2026), 835 hojas (CD 727 · CI 95 · CP 13 ·
-    OTRO 0), botón CI; lecturas 6,39 s / 5,26 s / 5,74 s. 0696: CI.1.5 por
-    `ultimo_parte` (PT26/00319 y PT26/00350, obras 0694 y 0672), 2.636 hojas
-    (CD 2562 · CI 62 · CP 12), botón CI; lecturas 4,30 s / 3,25 s / 0,80 s.
-  - **M2 (T17, navegador):** transfer, api y front desde la copia principal
-    (`.venv/Scripts/python main.py` en cada servicio); `curl -s http://localhost:8006/health`
-    con `"modo_pruebas": true` (si no, PARAR). La api añade al arrancar las
-    columnas `partida_*`. Puntos (a)-(i) de `specs/F-050-subfilas-partida/tasks.md`
-    T17 (lo de (h) e (i), en sus apartados más abajo): subfilas y columna Partida; selector con buscador, Todas · CD · CI · CP,
-    propuesta primera; postventa y VAR; regresión del teclado; el mismo
-    selector en el modal (**Cancelar, sin Registrar**); tiempo en la 0696;
-    **(g)** cronometrar «Registrar en Sigrid» de todo el mes hasta que sale el
-    modal (dato para F-055, observación de la review 1).
-  - **M3 (T18):** registro en modo pruebas, **solo con autorización del humano
-    en ese momento**.
-- **M2 del humano (2026-10-11): fallos; arreglos APROBADOS («ok»):** 1) tabla
-  adaptable con scroll horizontal (se cortaba la derecha); 2) fila seleccionada
-  igual con subfilas; 3) selector con «Cargando partidas…», sin abrirse dos veces;
-  4) en el modal, selector encima del modal; 5) cambiar una partida en el modal
-  repite el preflight solo de esa obra (los 502 eran el proxy del front cortando a
-  los 120 s preflights del mes entero). Lentitud de fondo → F-055 rediseñada (spec
-  en paralelo en `porcentajes-f041`). **Estado:** T15c TERMINADA por el implementer (`85d263f`..`5d75623`,
-  `progress/impl_F-050.md`; api acepta `obra_ide` en el preflight, transfer
-  sin tocar; mutación Python 160/160 y JS 46/46 en copias aisladas; init.sh
-  en verde sin caché: api 774, front 218, transfer 750). `azure-apps` con
-  `obra_ide` (`1037904`). **Review 3: CAMBIOS PEDIDOS:** «Registrar» se queda
-  en «Analizando…» si de dos repreflights en vuelo falla el primero tras volver el
-  segundo (hecho por el implementer en `2078505..2b44319`, con `obra_ide` como `int` en la ruta y el `ok`
-  recalculado en `unirPreflight`, observaciones 2 y 3); T17 dice ya «(a)-(h)» (hoy «(a)-(i)», T15f)
-  (líder). Observación 1 (la manija de ancho con la tabla encogida) se mira en la
-  M2 (h) 1. Hecho hasta `91fdb7a` (api 780, front 221, transfer 750 sin caché;
-  mutación Python 164/164 y JS 7/7 en copias aisladas); el 422 de `obra_ide` ya
-  en INTEGRACION y `azure-apps` (`36c894a`). **Review 4 APROBADA**; sus
-  observaciones: `trabajador_ide` crudo (un 0 quitaría el filtro de `ejecutar`) →
-  **F-056** nueva; «tras un error, el bloque de esa obra enseña el análisis
-  anterior» y la manija de ancho, a mirar en la M2 (h) 5 y (h) 1.
-- **M2 repetida por el humano (2026-10-12): dos fallos** (capturas en el Word
-  `Doc1.docx` de Descargas, no versionado): (h)2 la fila seleccionada con
-  subfilas sigue mal: la PRIMERA subfila sombrea todas las columnas y las demás
-  solo su celda; el humano quiere el comportamiento de la primera en todas (todo
-  el bloque del trabajador sombreado); (h)3 el selector se abre minúsculo (solo
-  se ve el buscador; ni lista ni botones CD/CI/CP) en una fila cerca del borde
-  inferior. Son defectos de T15c (dentro del plan aprobado). **Estado:**
-  T15d TERMINADA por el implementer (`552fbfb`..`5bbda9e`, `progress/impl_F-050.md`; (h)2 era el *hover*, no el cursor; (h)3 pasaba en cualquier fila; solo front; mutación JS/CSS 26/26 en copia aislada; M2 (h) 2 y 3 ampliadas en T17). F-055: spec escrita en `porcentajes-f041` (D1-D8), espera al humano.
-  **Review 5: CAMBIOS PEDIDOS:** la lista del selector no se puede desplazar
-  (al recolocar, medir el alto natural sin `max-height` pone el `scrollTop` a 0;
-  y un `scroll` dentro del panel recoloca); test que lo cace en un DOM que recorte
-  el desplazamiento; M2 (h) 3 ampliada. T15e hecha por el implementer (`a738252..8fa91d1`; **review 6 APROBADA**; en la M2 mirar también ↓ junto al
-  borde inferior con el ratón quieto y que con `ALTO_UTIL` se ven cinco filas; **espera
-  que el humano repita la M2 (h) 2 y 3**), también con
-  la observación 1 (el bloque repintado bajo el ratón quieto no sale sombreado).
-  Observación 2: confirmar en la M2 que con `ALTO_UTIL` se ven cinco filas.
-- **M2 repetida por el humano (2026-10-14):** «lo demás ok» salvo dos fallos de
-  pantalla (captura `Captura de pantalla 2026-10-14 113142.png`, no versionada):
-  1) el desplegable de obras corta en 14 (`.slice(0, 14)`, viene de F-042); 2) la
-  columna Total se corta en la fila con «falta 50 %» (VINDEL DURO): T15c la deja
-  en su ancho guardado aunque el contenido no quepa. **T15f APROBADA por el
-  humano («ok») y lanzada al implementer.** Lo demás que pidió (propuesta en
-  segundo plano en la columna con su origen, registrar sin buscar partidas) es
-  F-055 (R3-R8, R27, R29-R36), ya aprobada. Tras T15f: review 7 y el humano
-  repite M2 (d), (h) 1 e (i).
-  **Bloqueo** (test fuera de la lista cerrada: `test_f042_r3_…` fija
-  `.slice(0, 14)`) **resuelto por el humano el mismo día** («ok a todo»:
-  requirements §6 gana `test_f042_r3_…` y `test_f050_m2_1_…`, este con la opción
-  A, encogen antes Asignaciones y Partida; «Completar al 100 %» sin «arriba»).
-  **T15f TERMINADA por el implementer** (`61ede15`..`2b40678`,
-  `progress/impl_F-050.md` § T15f; solo front; RED→verde con 8 + 8 tests nuevos,
-  mutación JS manual 34/34 en copia aislada, `init.sh` en verde sin caché, front
-  269). Desviación anotada: en el editor la activa se hace visible con
-  `offsetTop` (el DOM de F-042 no tiene `scrollIntoView`). **Review 7 APROBADA**
-  (`progress/review_F-050.md`); sus tres observaciones, en T17 (i) 3: Total entero
-  en el primer pintado tras Ctrl+F5 (si no, `document.fonts.ready`), ↑ ↓ fluidos
-  con el mes entero, y las dos de la review 6 (↓ junto al borde con el ratón
-  quieto; cinco filas con `ALTO_UTIL`). **M2 (T17) CUMPLIDA: el humano la repitió el
-  2026-10-14, (d), (h) 1 e (i): «todo ok».** Queda T18 (M3, registro en modo
-  pruebas en la 0404): se le pregunta al humano si la autoriza ahora.
+- Cambian **los tres servicios**, en el orden fijo transfer → api → front
+  (`.\redeploy_dedicacion.ps1` desde `dev`, con `00_vars_dedicacion.ps1`,
+  `00_vars_dedicacion.local.ps1` y `00_capps_vars_dedicacion.ps1` cargados).
+  La api añade al arrancar, en su base, las columnas nulables `partida_ide`,
+  `partida_cod` y `partida_res` de `asignacion` (`ADD COLUMN IF NOT EXISTS`). Sin
+  sync ni variables nuevas (`PROPUESTA_MESES_ATRAS` tiene defecto 24). El
+  transfer conserva el modo real.
+- **Comprobación (sin pulsar «Registrar»):** Ctrl+F5, septiembre 2026: subfilas
+  y columna Partida; clic en la Partida de GONZALEZ PANIAGUA en la 0694: el
+  selector con CI preelegido y la propuesta primera; «⇪ Sigrid»: cada línea con
+  su partida y su origen. **Cancelar.** Después, el líder anota las imágenes en
+  `infra/imagenes.json`, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
 
 ## Producción, hoy
 
@@ -228,13 +118,17 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-F-049 desplegada. Orden: F-050 (en curso, esta rama), **F-055** (medir y acelerar la
+F-049 desplegada. F-050 cerrada (pendiente de desplegar). Orden: **F-055** (medir y acelerar la
 previsualización del registro; 2026-10-08), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
+- **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
+  `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
+  `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`
+  410599, GONZALEZ PANIAGUA, `porcentajes:180`).
 - **Cargar también la copia local de variables al desplegar.** El orden es
   `. .\00_vars_dedicacion.ps1`, `. .\00_vars_dedicacion.local.ps1` y
   `. .\00_capps_vars_dedicacion.ps1`. Si falta la local, `redeploy` sigue con
