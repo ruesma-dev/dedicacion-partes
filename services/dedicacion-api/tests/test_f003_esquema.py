@@ -187,7 +187,7 @@ def test_f003_r5_la_columna_es_nulable_y_sin_default(nombre: str) -> None:
 def test_f003_r8_la_tabla_queda_con_las_previas_mas_las_seis() -> None:
     """Las de antes siguen ahí: F-003 añade, no reordena ni quita."""
     presentes = {columna.name for columna in AsignacionORM.__table__.columns}
-    assert presentes == set(COLUMNAS_PREVIAS) | set(COLUMNAS_TRAZA)
+    assert presentes == set(COLUMNAS_PREVIAS) | set(COLUMNAS_TRAZA) | {"partida_ide", "partida_cod", "partida_res"}
 
 
 def test_f003_r6_la_marca_de_tiempo_lleva_zona_horaria() -> None:

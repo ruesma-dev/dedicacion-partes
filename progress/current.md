@@ -1,9 +1,25 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en ejecución en `dev`.** F-049 se desplegó el 2026-10-09
-(transfer y front). F-050 está en spec en su rama (copia principal). El arnés es la
-**1.7.3**.
+**Ninguna feature en ejecución en `dev`.** F-050 (subfilas por obra con
+columna Partida y partida propuesta) está cerrada en `dev` y `main` y
+**pendiente de desplegar** (sección siguiente). F-055 tiene la spec aprobada en
+su rama (`porcentajes-f041`) y va ahora. El arnés es la **1.7.3**.
+
+## ⚠ Despliegue de F-050 (pendiente; lo lanza el humano)
+
+- Cambian **los tres servicios**, en el orden fijo transfer → api → front
+  (`.\redeploy_dedicacion.ps1` desde `dev`, con `00_vars_dedicacion.ps1`,
+  `00_vars_dedicacion.local.ps1` y `00_capps_vars_dedicacion.ps1` cargados).
+  La api añade al arrancar, en su base, las columnas nulables `partida_ide`,
+  `partida_cod` y `partida_res` de `asignacion` (`ADD COLUMN IF NOT EXISTS`). Sin
+  sync ni variables nuevas (`PROPUESTA_MESES_ATRAS` tiene defecto 24). El
+  transfer conserva el modo real.
+- **Comprobación (sin pulsar «Registrar»):** Ctrl+F5, septiembre 2026: subfilas
+  y columna Partida; clic en la Partida de GONZALEZ PANIAGUA en la 0694: el
+  selector con CI preelegido y la propuesta primera; «⇪ Sigrid»: cada línea con
+  su partida y su origen. **Cancelar.** Después, el líder anota las imágenes en
+  `infra/imagenes.json`, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
 
 ## Producción, hoy
 
@@ -94,7 +110,7 @@
 
 `BACKLOG.md` tiene el orden completo. Nuevas el 2026-10-08 (pedidas por el
 humano): **F-049** (los avisos del modal de registro rotulados por tipo, con su
-%; aprobada), **F-051** (pisar las líneas del parte al 0 % que ya existan),
+%; desplegada), **F-051** (pisar las líneas del parte al 0 % que ya existan),
 **F-050** (subfilas por obra con columna Partida y partida propuesta; absorbe
 F-043) y **F-021** redefinida (velar las etiquetas de las demás obras al
 filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
@@ -102,13 +118,17 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-F-049 desplegada. F-050 en spec. Orden: **F-055** (medir y acelerar la
+F-049 desplegada. F-050 cerrada (pendiente de desplegar). Orden: **F-055** (medir y acelerar la
 previsualización del registro; 2026-10-08), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
-que ya hay en los partes de Sigrid; 2026-10-08), F-050, F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
+que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
+- **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
+  `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
+  `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`
+  410599, GONZALEZ PANIAGUA, `porcentajes:180`).
 - **Cargar también la copia local de variables al desplegar.** El orden es
   `. .\00_vars_dedicacion.ps1`, `. .\00_vars_dedicacion.local.ps1` y
   `. .\00_capps_vars_dedicacion.ps1`. Si falta la local, `redeploy` sigue con
@@ -172,6 +192,10 @@ F-033 y, detrás, F-017, F-018…
 
 ## Hechos que no conviene volver a descubrir
 
+- **F-050, postventa en la propuesta (R9):** `proponer` casa la postventa con
+  `origen.codigo` (leído en Sigrid) y el preflight con `obra.codigo` (el que
+  manda la api). Hoy coinciden; si alguna vez divergen, la propuesta del
+  selector y la automática del registro diferirían en postventa.
 - El api expone su salud en **`/api/v1/health`**, no en `/health`. El front,
   con Easy Auth, responde **401** a un `curl` anónimo, y el Portal **302**:
   no son caídas.

@@ -78,7 +78,8 @@ def _fila(asig_id: int, trab: tuple[int, int | None],
     """(asignación, trabajador, obra) como las devuelve la consulta;
     `trab` y `obra` son (ide, empresa)."""
     asignacion = SimpleNamespace(id=asig_id, porcentaje=50,
-                                 es_postventa=False)
+                                 es_postventa=False,
+                                 partida_ide=None, partida_cod=None)
     # `activo` y `fecha_baja` (F-026, C3): vigente en cualquier mes.
     trabajador = SimpleNamespace(ide=trab[0], dni=None, nombre=f"T{trab[0]}",
                                  categoria="Encargado", empresa=trab[1],

@@ -17,6 +17,7 @@ from application.sync_pipeline import (
     UpsertObrasStep,
     UpsertTrabajadoresStep,
 )
+from application.partidas_linea import PartidasDeLinea
 from application.use_cases import PreviewSync
 from config.settings import Settings, cargar_config
 from infrastructure.db.repositories import SqlAlchemyUnitOfWork
@@ -35,6 +36,7 @@ class Contenedor:
     preview_sync: PreviewSync
     exporter: OpenpyxlExcelExporter
     registro_sigrid: RegistroSigrid
+    partidas_linea: PartidasDeLinea   # selector de partida (F-050, R17)
 
     def uow(self) -> SqlAlchemyUnitOfWork:
         return SqlAlchemyUnitOfWork(self.session_factory)
@@ -119,6 +121,7 @@ def construir_contenedor(
         exporter=exporter,
         registro_sigrid=RegistroSigrid(session_factory, transfer,
                                        settings.empresa_imputacion),
+        partidas_linea=PartidasDeLinea(transfer),
     )
 
 

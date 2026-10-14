@@ -26,10 +26,12 @@ from domain.models.registro_models import (
 from infrastructure.sigrid.sigrid_write_client import synckey_de
 from tests.conftest import (
     OBRA_ORIGEN,
+    PRESUPUESTO_ORIGEN,
     ClienteFalso,
     SettingsFalso,
     linea,
     linea_previa,
+    _fila,
 )
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
@@ -620,6 +622,7 @@ def test_f037_r3_una_linea_sin_partida_no_hereda_la_de_otra():
     """`paride = 0` no es una partida: nunca toma la cuenta de otra línea,
     aunque esa otra sea la partida de `ide` 1."""
     cli = ClienteF037(partidas={1: PartidaCuenta(1, "CI.9", "0678.CIMO04")})
+    cli.partidas_origen = PRESUPUESTO_ORIGEN + [_fila(1, 80000, 9, "CI.9", "VARIOS")]
     pf = _pl(cli).preflight(obra=OBRA, lineas=[
         linea(registro_id=1, recurso_ide=SIN_CUENTA, paride=1,
               partida_cod="CI.9"),

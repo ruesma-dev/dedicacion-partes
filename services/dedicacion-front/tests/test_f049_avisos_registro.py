@@ -234,8 +234,7 @@ def _modal(obras: list[dict]) -> str:
         "const document = {querySelectorAll: () => []};",
         "const $ = () => ({addEventListener() {}});",
         "function registroEjecutar() {}",
-        *(_funcion(f) for f in (*FUNCIONES_ROTULO, "opcionesPartida",
-                                 "pintarModalPreflight")),
+        *(_funcion(f) for f in (*FUNCIONES_ROTULO, "pintarModalPreflight")),
         "pintarModalPreflight(" + json.dumps({"obras": obras},
                                              ensure_ascii=False) + ");",
         "process.stdout.write(JSON.stringify(resultado));"])
@@ -280,7 +279,7 @@ def test_f049_r3_ejecutar_manda_las_mismas_claves():
     ejecutar = _plano(_funcion("registroEjecutar"))
     assert ('const pisar = [...document.querySelectorAll(".chk-pisar:checked")]'
             " .map((c) => c.value);") in ejecutar
-    assert "pisar_claves: pisar, overrides: registro.overrides," in ejecutar
+    assert "pisar_claves: pisar," in ejecutar
 
 
 def test_f049_r3_el_rotulo_no_decide_nada():

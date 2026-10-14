@@ -19,7 +19,10 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
   4. Aplicar las REGLAS de la línea (ARCHITECTURE.md#regla-p1 … #regla-p3,
      #regla-p5). La línea que trae `var_paride` (una entrada VAR del
      cuadrante) va a esa partida o se omite, antes del override manual
-     (ARCHITECTURE.md#regla-var).
+     (ARCHITECTURE.md#regla-var). La partida elegida de una línea de obra
+     tiene que ser hoja activa del presupuesto de origen o se omite; la que
+     no trae partida lleva la PROPUESTA, con una sola lectura del historial
+     por petición (ARCHITECTURE.md#regla-partida, F-050).
   4 bis. CUENTA ANALÍTICA de cada acción `escribir` en el centro de su obra
      destino (ARCHITECTURE.md#regla-analitica): la del recurso y, si no da,
      la de la partida de coste. Una lectura de partidas por petición y una
@@ -50,6 +53,7 @@ from __future__ import annotations
 
 import logging
 import unicodedata
+from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -59,8 +63,10 @@ from application.services.cuenta_analitica import (
 from application.services.estado_parte import (
     aviso_de_parte, elegir_parte, motivo_choque, nombre_estado,
 )
-from application.services.partida_resolver import (
-    construir_catalogo, resolver_normal,
+from application.services.partida_resolver import construir_catalogo
+from application.services.propuesta_partida import (
+    MOTIVO_PARTIDA_NO_HOJA, Propuesta, catalogo, mayor_inicial,
+    proponer_partida, ventana,
 )
 from application.services.reglas_porcentajes import (
     AVISO_SIN_PARTIDA, MOTIVO_EMPRESA_OBRA, MOTIVO_PARTIDA_PV_NO_HOJA,
@@ -194,6 +200,16 @@ class RegistroPipeline:
         return bool(nodo and nodo.es_hoja and nodo.activa)
 
     # ------------------------------------------------------------- #
+    def _historial(self, lineas: list[LineaEntrada]) -> list:
+        """F-050 (R7): UNA lectura del historial de partidas de los recursos
+        de las líneas automáticas, en la ventana que acaba en su periodo.
+        Sin `try`: si falla, la petición falla sin proponer ni escribir."""
+        ano, mes = max((l.ano, l.mes) for l in lineas)
+        desde, hasta = ventana(ano, mes, self._st.propuesta_meses_atras)
+        return self._cli.historial_partidas(
+            sorted({l.recurso_ide for l in lineas}), desde, hasta)
+
+    # ------------------------------------------------------------- #
     def _horas_de_lineas(self, lineas: list[LineaEntrada]) -> dict:
         """Pasos 2-3: horas de los recursos que traen las líneas, sin tocar
         las líneas ni leer `res` (F-026 R19)."""
@@ -323,14 +339,21 @@ class RegistroPipeline:
             partida_postventa=partida_pv, motivo_postventa=motivo_pv)
         acciones: list[AccionLinea] = [reglas.decidir(l) for l in lineas]
 
-        # Partida de imputación por línea: el override manual del front
-        # manda; si no, la NORMAL se casa con la partida del recurso en el
-        # presupuesto de la obra ORIGEN (patrón de partes: rol/categoría y
-        # nombre), y la POSTVENTA ya trae el suyo de la obra de postventa
+        # Partida de imputación por línea: la elegida (override) manda si es
+        # hoja activa del presupuesto de la obra ORIGEN; si no viene, la
+        # NORMAL lleva la PROPUESTA (ARCHITECTURE.md#regla-partida: parte
+        # anterior, último parte o casamiento por rol y nombre) y la
+        # POSTVENTA ya trae la suya de la obra de postventa
         # (`POSTVENTA_OBRA_COD`).
         nodos_origen = None
         catalogo_var = None
+        historial = None
         por_id = {l.registro_id: l for l in lineas}
+        automaticas = [
+            l for a in acciones
+            if a.accion == "escribir" and a.destino != "postventa"
+            for l in [por_id[a.registro_id]]
+            if l.var_paride is None and not l.paride]
         for a in acciones:
             if a.accion != "escribir":
                 continue
@@ -366,6 +389,19 @@ class RegistroPipeline:
                     a.motivo = MOTIVO_PARTIDA_PV_NO_HOJA.format(
                         paride=int(linea.paride))
                     continue
+                if a.destino != "postventa":
+                    if nodos_origen is None:
+                        nodos_origen = construir_catalogo(
+                            self._cli.capitulos_de_obra(int(origen.ide)))
+                    nodo = nodos_origen.get(int(linea.paride))
+                    if not (nodo and nodo.es_hoja and nodo.activa):
+                        # R20 de F-050 (D9): una elegida que ya no vale no
+                        # se escribe: se omite y se elige otra.
+                        a.accion = "omitir"
+                        a.motivo = MOTIVO_PARTIDA_NO_HOJA.format(
+                            cod=linea.partida_cod or int(linea.paride),
+                            obra=origen.codigo)
+                        continue
                 a.paride = int(linea.paride)
                 a.partida_cod = linea.partida_cod
                 a.partida_metodo = "manual"
@@ -378,18 +414,20 @@ class RegistroPipeline:
                 # vuelve a buscar (R14 de F-022).
                 nodos_origen = construir_catalogo(
                     self._cli.capitulos_de_obra(int(origen.ide)))
-            m = resolver_normal(
-                nodos_origen,
-                linea.categoria if linea else None,
-                linea.nombre if linea else a.nombre)
-            if m is None:
+            if historial is None:
+                historial = self._historial(automaticas)
+            p = proponer_partida(nodos_origen, historial, a.recurso_ide,
+                                 int(origen.ide), linea.categoria,
+                                 linea.nombre)
+            if p is None:
                 # Hasta F-013 esto se escribía igual, con un aviso que nadie
                 # tenía que atender. Ahora el paso 6 bis lo convierte en un
                 # conflicto: ver ARCHITECTURE.md#regla-sin-partida.
                 a.paride = 0
                 a.aviso = AVISO_SIN_PARTIDA
             else:
-                a.paride, a.partida_cod, a.partida_metodo = m
+                a.paride, a.partida_cod = p.paride, p.cod
+                a.partida_metodo, a.partida_origen = p.metodo, p.origen
 
         # F-049 (ampliación d): el front pinta el desplegable de partidas
         # con `partidas_obra`. Si todas las líneas de obra normal llegan con
@@ -597,15 +635,65 @@ class RegistroPipeline:
         setattr(pf, "capitulo_postventa", partida_pv)
 
         def _cat(nodos):
-            if not nodos:
-                return []
-            return [{"ide": n.ide, "cod": n.cod, "res": n.res,
-                     "categoria": n.categoria}
-                    for n in nodos.values() if n.es_hoja and n.activa]
+            # F-050 (R10): en orden natural del código; sin `mayor`, que solo
+            # publica `/api/partidas/propuesta` (el front ya no lee estos).
+            return [{k: p[k] for k in ("ide", "cod", "res", "categoria")}
+                    for p in catalogo(nodos or {})]
 
         setattr(pf, "partidas_obra", _cat(nodos_origen))
         setattr(pf, "partidas_postventa", _cat(nodos_pv))
         return pf
+
+    # ------------------------------------------------------------- #
+    def proponer(self, *, empresa: int, obra: ObraEntrada, ano: int,
+                 mes: int, lineas: list[dict]) -> dict:
+        """F-050 (R8, R11): catálogo y propuesta de cada línea, SOLO
+        LECTURA, con la misma `proponer_partida` que el preflight (R9).
+
+        `lineas`: `{clave, recurso_ide, nombre, categoria, es_postventa}`.
+        La obra de otra empresa devuelve `ok` falso con el motivo (422 en
+        la API); un fallo de lectura sube tal cual (502)."""
+        origen = self._obra_origen(obra, empresa)
+        if origen.empresa != empresa:
+            return {"ok": False, "error": MOTIVO_EMPRESA_OBRA.format(
+                cod=origen.codigo, emp_obra=origen.empresa,
+                emp_linea=empresa)}
+        nodos = construir_catalogo(
+            self._cli.capitulos_de_obra(int(origen.ide)))
+        normales = [l for l in lineas if not l["es_postventa"]]
+        historial = []
+        if normales:
+            desde, hasta = ventana(ano, mes, self._st.propuesta_meses_atras)
+            historial = self._cli.historial_partidas(
+                sorted({l["recurso_ide"] for l in normales
+                        if l["recurso_ide"]}), desde, hasta)
+        nodos_pv: dict = {}
+        partida_pv = None
+        if len(normales) < len(lineas):
+            # Postventa (R11): su propuesta es el casado de `#regla-p5`.
+            catalogo_pv = cargar_catalogo_postventa(self._cli, self._st,
+                                                    empresa)
+            partida_pv, _ = casar_postventa(catalogo_pv, origen.codigo,
+                                            origen.nombre)
+            nodos_pv = catalogo_pv.nodos
+        propuestas: dict = {}
+        mayores: dict = {}
+        for l in lineas:
+            if l["es_postventa"]:
+                p = (Propuesta(partida_pv["ide"], partida_pv["cod"],
+                               partida_pv["res"], "postventa")
+                     if partida_pv else None)
+                de = nodos_pv
+            else:
+                p = proponer_partida(nodos, historial, l["recurso_ide"],
+                                     int(origen.ide), l["categoria"],
+                                     l["nombre"])
+                de = nodos
+            propuestas[l["clave"]] = asdict(p) if p else None
+            mayores[l["clave"]] = mayor_inicial(p, de, l["categoria"])
+        return {"ok": True, "partidas_obra": catalogo(nodos),
+                "partidas_postventa": catalogo(nodos_pv),
+                "propuestas": propuestas, "mayor_inicial": mayores}
 
     # ------------------------------------------------------------- #
     def ejecutar(self, *, obra: ObraEntrada, lineas: list[LineaEntrada],

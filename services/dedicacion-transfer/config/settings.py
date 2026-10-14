@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     # obras propias. Vacío = sin obra VAR (ni universo ni líneas VAR).
     var_obra_cod: str = Field("VAR", alias="VAR_OBRA_COD")
     var_partida_desde: int = Field(29, alias="VAR_PARTIDA_DESDE")
+    # F-050 (ARCHITECTURE.md#regla-partida): meses hacia atrás, desde el del
+    # cuadrante (incluido), en los que se busca la partida del parte anterior
+    # y del último parte del recurso.
+    propuesta_meses_atras: int = Field(24, alias="PROPUESTA_MESES_ATRAS")
 
     # --- Constantes del modelo Sigrid (confirmadas con datos reales) --- #
     tip_parte_trabajo: int = Field(35, alias="TIP_PARTE_TRABAJO")
