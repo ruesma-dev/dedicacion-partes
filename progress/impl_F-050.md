@@ -209,7 +209,7 @@ T15f en (i) (y (d), (h) 1); **Cancelar, sin Registrar**. **T18 · M3**: solo con
 | Evidencia | Valor real |
 |---|---|
 | `bash harness/init.sh` (tal cual, sin `.arnes_cache/suite_*.ok`, T15f) | código 0, **ENTORNO LISTO**; todo `[OK]` salvo el `[AVISO]` de `ruff` (237, la deuda de antes; los ficheros de T15f, limpios); `PUERTA TAMAÑO` en verde (impl 218/220) |
-| Tests por servicio (ejecutados, no caché) | raíz **418 passed, 1 skipped**; api **780 passed**; front **269 passed** (node); transfer **750 passed** (60,84 s · 65,56 s · 43,94 s · 12,33 s) |
+| Tests por servicio (ejecutados, no caché) | raíz **418 passed, 1 skipped**; api **780 passed**; front **269 passed** (node); transfer **750 passed** (131,14 s · 102,57 s · 62,65 s · 16,87 s; última ejecución, tras `69f266b`) |
 | Tests nuevos de F-050 | transfer 47 + 24 + 19; api 23 + 30 + 6 + 6 (rev. 3); front 16 + 19 + 17 + 31 + 3 (rev. 3) + 6 + 14 (T15d) + 6 + 6 (T15e) + **8 + 8** (T15f) |
 | Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 353 líneas cambiadas cubiertas (353/353, umbral 80%, nivel critico)` (Python; T15f es JS: su cobertura, la campaña manual) |
 | Mutantes Python | **164 generados, 0 supervivientes** (`ee4c70d`; T15d-T15f no tocan Python), 1796,6 s, 1 worker, sin muestreo, copia aislada; base api 38,9 s (medida con la campaña JS en paralelo) |
