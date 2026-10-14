@@ -106,7 +106,15 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   que el humano repita la M2 (h) 2 y 3**), también con
   la observación 1 (el bloque repintado bajo el ratón quieto no sale sombreado).
   Observación 2: confirmar en la M2 que con `ALTO_UTIL` se ven cinco filas.
-  Resultado: _pendiente_.
+- **M2 repetida por el humano (2026-10-14):** «lo demás ok» salvo dos fallos de
+  pantalla (captura `Captura de pantalla 2026-10-14 113142.png`, no versionada):
+  1) el desplegable de obras corta en 14 (`.slice(0, 14)`, viene de F-042); 2) la
+  columna Total se corta en la fila con «falta 50 %» (VINDEL DURO): T15c la deja
+  en su ancho guardado aunque el contenido no quepa. **T15f APROBADA por el
+  humano («ok») y lanzada al implementer.** Lo demás que pidió (propuesta en
+  segundo plano en la columna con su origen, registrar sin buscar partidas) es
+  F-055 (R3-R8, R27, R29-R36), ya aprobada. Tras T15f: review 7 y el humano
+  repite M2 (d), (h) 1 e (i).
 
 ## Producción, hoy
 
