@@ -23,6 +23,12 @@ Fases:
       SOLO LECTURA (F-050): catálogo de la obra con su mayor, partida
       propuesta del recurso (método, origen, botón preelegido) y los
       segundos de cada lectura. No llama a escribir ni a ejecutar.
+  python prueba_escritura_porcentajes.py medir --ano A --mes M --obra 0694
+      --obra 0696 --recurso N [--recurso N2] [--partida OBRA:PARIDE] [--lote]
+      SOLO LECTURA (F-055): el preflight de cada obra con esos recursos (y
+      la partida elegida de --partida), con los segundos de cada lectura,
+      de cada obra y del total. No llama a escribir ni a ejecutar. --lote
+      aún no tiene efecto (llega con el preflight en lote).
 
 Sin --confirmar, las fases de escritura solo muestran lo que harían.
 """
@@ -39,7 +45,7 @@ from config.settings import get_settings
 from application.pipelines.registro_pipeline import RegistroPipeline
 from domain.models.registro_models import LineaEntrada, ObraEntrada
 from infrastructure.sigrid.sigrid_write_client import (
-    PREFIJO_SYNCKEY, SigridWriteClient,
+    PREFIJO_SYNCKEY, SigridWriteClient, medir_lecturas,
 )
 
 # --- Líneas de ejemplo (EDITAR con RECURSOS reales con código M*) --- #
@@ -61,6 +67,10 @@ LINEAS_PRUEBA = [
      "nombre": "EDITAR: postventa del mismo encargado",
      "porcentaje": 0.10, "es_postventa": True, "empresa": EMPRESA_PRUEBA},
 ]
+
+#: F-055 (R2): primer `registro_id` de las líneas de la fase `medir`, tan
+#: arbitrario como los de arriba (synckey 'porcentajes:9900xx').
+REGISTRO_MEDIR = 990000
 
 # La obra "original" de estas líneas de prueba: su capítulo debe existir
 # en la obra de postventa (fase capitulos para verlos).
@@ -266,24 +276,85 @@ def fase_propuesta(cli, pipeline: RegistroPipeline, obra_cod: str,
     return r
 
 
+def _partidas_por_obra(parser, valores: list[str],
+                       obras: list[str]) -> dict[str, int]:
+    """`--partida OBRA:PARIDE` -> {obra: paride}; la obra, de las --obra."""
+    out: dict[str, int] = {}
+    for v in valores:
+        obra, sep, paride = v.partition(":")
+        if not sep or not paride.isdigit() or obra not in obras:
+            parser.error(f"--partida {v}: se espera OBRA:PARIDE, con OBRA "
+                         f"entre las --obra")
+        out[obra] = int(paride)
+    return out
+
+
+def fase_medir(pipeline: RegistroPipeline, ano: int, mes: int,
+               obras: list[str], recursos: list[int],
+               partidas: dict[str, int], lote: bool) -> None:
+    """F-055 (R2, T2 y T18): SOLO LECTURA. El preflight de cada obra con
+    esos recursos (y su partida elegida, si se da), en serie, midiendo cada
+    lectura: segundos por lectura, por obra y en total. El mismo
+    `RegistroPipeline.preflight` que el endpoint; nunca `ejecutar`."""
+    if lote:
+        print("--lote: aún sin efecto (llega con el preflight en lote); "
+              "se mide obra a obra")
+    porcentaje = round(1 / len(obras), 4)
+    t0 = time.perf_counter()
+    with medir_lecturas() as total:
+        for i, cod in enumerate(obras):
+            print(f"== Obra {cod} ==")
+            lineas = [LineaEntrada(
+                registro_id=REGISTRO_MEDIR + 100 * i + j, ano=ano, mes=mes,
+                porcentaje=porcentaje, recurso_ide=r, empresa=EMPRESA_PRUEBA,
+                paride=partidas.get(cod)) for j, r in enumerate(recursos)]
+            t_obra = time.perf_counter()
+            pf = None
+            with medir_lecturas() as m:
+                try:
+                    pf = pipeline.preflight(obra=ObraEntrada(codigo=cod),
+                                            lineas=lineas)
+                except Exception as exc:        # noqa: BLE001
+                    print(f"NO se pudo: {exc}")
+            segundos = time.perf_counter() - t_obra
+            for x in m.lecturas:
+                filas = "error" if x.filas is None else f"{x.filas} filas"
+                print(f"  lectura {x.nombre}: {filas} · {x.segundos:.2f} s")
+            for a in (pf.acciones if pf is not None else []):
+                print(f"  [{a.accion}] recurso={a.recurso_ide} "
+                      f"paride={a.paride} {a.partida_metodo or '—'}")
+            print(f"Obra {cod}: {m.n} lecturas · {m.segundos:.2f} s leyendo "
+                  f"· {segundos:.2f} s en total")
+    print(f"TOTAL: {len(obras)} obras · {total.n} lecturas · "
+          f"{total.segundos:.2f} s leyendo · "
+          f"{time.perf_counter() - t0:.2f} s en total")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("fase", choices=["inspeccionar", "capitulos",
                                          "estado", "preflight", "ejecutar",
                                          "verificar", "limpiar",
-                                         "propuesta"])
+                                         "propuesta", "medir"])
     parser.add_argument("--confirmar", action="store_true")
     parser.add_argument("--ano", type=int, default=date.today().year)
     parser.add_argument("--mes", type=int, default=date.today().month)
     parser.add_argument("--pisar", nargs="*", default=[])
-    # F-050, fase `propuesta` (solo lectura).
-    parser.add_argument("--obra")
-    parser.add_argument("--recurso", type=int)
+    # F-050, fase `propuesta` (solo lectura); F-055, fase `medir` (solo
+    # lectura), con --obra y --recurso repetibles.
+    parser.add_argument("--obra", action="append", default=[])
+    parser.add_argument("--recurso", type=int, action="append", default=[])
     parser.add_argument("--categoria")
     parser.add_argument("--nombre")
+    parser.add_argument("--partida", action="append", default=[])
+    parser.add_argument("--lote", action="store_true")
     args = parser.parse_args()
-    if args.fase == "propuesta" and (not args.obra or not args.recurso):
-        parser.error("la fase propuesta exige --obra y --recurso")
+    if args.fase == "propuesta" and (len(args.obra) != 1
+                                     or len(args.recurso) != 1):
+        parser.error("la fase propuesta exige un --obra y un --recurso")
+    if args.fase == "medir" and (not args.obra or not args.recurso):
+        parser.error("la fase medir exige --obra y --recurso")
+    partidas = _partidas_por_obra(parser, args.partida, args.obra)
 
     st = get_settings()
     cli = _cliente(st)
@@ -305,8 +376,11 @@ def main() -> None:
     elif args.fase == "limpiar":
         fase_limpiar(cli, st, args.confirmar)
     elif args.fase == "propuesta":
-        fase_propuesta(cli, pipeline, args.obra, args.recurso, args.ano,
-                       args.mes, args.categoria, args.nombre)
+        fase_propuesta(cli, pipeline, args.obra[0], args.recurso[0],
+                       args.ano, args.mes, args.categoria, args.nombre)
+    elif args.fase == "medir":
+        fase_medir(pipeline, args.ano, args.mes, args.obra, args.recurso,
+                   partidas, args.lote)
 
 
 if __name__ == "__main__":

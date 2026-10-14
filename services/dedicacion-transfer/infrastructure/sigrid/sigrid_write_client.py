@@ -35,12 +35,22 @@ no relaja la regla: un `truncated` sigue siendo un error.
 F-050 (ARCHITECTURE.md#regla-partida): `historial_partidas` lee las líneas
 `M*` con partida de los partes de trabajo de unos recursos en una ventana de
 meses, para proponer la partida. Solo lectura; un `truncated` es error.
+
+F-055 (R1): cada lectura (una llamada a `sigrid-api`) deja un log con el
+nombre del método del cliente, sus filas y sus segundos, sin SQL ni
+parámetros, y se apunta en las mediciones abiertas con `medir_lecturas`
+(el resumen de cada preflight y la fase `medir` del script).
 """
 from __future__ import annotations
 
 import calendar
 import logging
-from typing import Any, Iterable
+import threading
+import time
+from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import dataclass
+from typing import Any, Iterable, Iterator
 
 import httpx
 
@@ -67,6 +77,70 @@ def synckey_de(registro_id: int) -> str:
     return f"{PREFIJO_SYNCKEY}{int(registro_id)}"
 
 
+# ------------------------ medición (F-055 R1) ------------------------ #
+
+#: Reloj de la medición (aparte para poder fijarlo en los tests).
+_ahora = time.perf_counter
+
+
+@dataclass(frozen=True)
+class Lectura:
+    """Una lectura medida: método del cliente, filas (None si falló) y
+    segundos."""
+    nombre: str
+    filas: int | None
+    segundos: float
+
+
+class MedicionLecturas:
+    """Las lecturas hechas mientras está abierta (`medir_lecturas`)."""
+
+    def __init__(self) -> None:
+        self.lecturas: list[Lectura] = []
+        self._lock = threading.Lock()
+
+    def apuntar(self, lectura: Lectura) -> None:
+        with self._lock:
+            self.lecturas.append(lectura)
+
+    @property
+    def n(self) -> int:
+        return len(self.lecturas)
+
+    @property
+    def segundos(self) -> float:
+        return sum(l.segundos for l in self.lecturas)
+
+
+#: Mediciones abiertas en este contexto, de fuera a dentro.
+_MEDICIONES: ContextVar[tuple[MedicionLecturas, ...]] = ContextVar(
+    "mediciones_sigrid", default=())
+
+
+@contextmanager
+def medir_lecturas() -> Iterator[MedicionLecturas]:
+    """Abre una medición: apunta las lecturas hechas dentro del bloque. Se
+    pueden anidar; cada lectura se apunta en todas las abiertas."""
+    m = MedicionLecturas()
+    token = _MEDICIONES.set(_MEDICIONES.get() + (m,))
+    try:
+        yield m
+    finally:
+        _MEDICIONES.reset(token)
+
+
+def apuntar_lectura(nombre: str, filas: int | None,
+                    segundos: float) -> None:
+    """Log de UNA lectura (R1: nombre, filas y segundos; nunca SQL ni
+    parámetros) y apunte en todas las mediciones abiertas. `filas` es None
+    si la lectura falló."""
+    logger.info("[sigrid-read] %s filas=%s segundos=%.2f", nombre,
+                "error" if filas is None else filas, segundos)
+    lectura = Lectura(nombre, filas, segundos)
+    for m in _MEDICIONES.get():
+        m.apuntar(lectura)
+
+
 class SigridWriteClient:
     def __init__(
         self,
@@ -91,6 +165,20 @@ class SigridWriteClient:
         self._max_rows = int(max_rows)
 
     # ----------------------------- HTTP ----------------------------- #
+
+    def _lectura(self, nombre: str, sql: str, params: list) -> list[dict]:
+        """Una lectura medida (F-055 R1): `_read` con el log y el apunte de
+        `apuntar_lectura`. `nombre` es el del método del cliente que la
+        pide. `_read` no cambia de firma: los dobles de los tests lo
+        sustituyen con `(sql, params)`."""
+        t0 = _ahora()
+        filas: list[dict] | None = None
+        try:
+            filas = self._read(sql, params)
+            return filas
+        finally:
+            apuntar_lectura(nombre, None if filas is None else len(filas),
+                            _ahora() - t0)
 
     def _read(self, sql: str, params: list) -> list[dict]:
         r = httpx.post(f"{self._base}/api/sql/read", headers=self._headers,
@@ -140,7 +228,8 @@ class SigridWriteClient:
     def obra_por_codigo(self, cod: str, empresa: int) -> ObraEntrada | None:
         """Obra por código DENTRO de su empresa: el código solo es único
         ahí (ARCHITECTURE.md#regla-empresa). La empresa es obligatoria."""
-        filas = self._read(
+        filas = self._lectura(
+            "obra_por_codigo",
             "SELECT obr.ide AS ide, con.cod AS cod, con.res AS res, "
             "obr.cenide AS cenide, con.emp AS emp FROM obr "
             "JOIN con ON con.ide = obr.ide "
@@ -150,7 +239,8 @@ class SigridWriteClient:
     def obra_por_ide(self, ide: int) -> ObraEntrada | None:
         """Obra por `ide`, que es único: no se filtra por empresa, pero se
         lee para poder comprobarla."""
-        filas = self._read(
+        filas = self._lectura(
+            "obra_por_ide",
             "SELECT obr.ide AS ide, con.cod AS cod, con.res AS res, "
             "obr.cenide AS cenide, con.emp AS emp FROM obr "
             "JOIN con ON con.ide = obr.ide "
@@ -185,7 +275,8 @@ class SigridWriteClient:
         """Partidas/capítulos activos del presupuesto de una obra
         (obrparpar): para localizar el capítulo de la obra original dentro
         de la obra de postventa."""
-        return self._read(
+        return self._lectura(
+            "capitulos_de_obra",
             "SELECT ide, padide, pos, tip, cod, res, "
             "CAST(tex AS NVARCHAR(400)) AS tex, ISNULL(tipdes,0) AS tipdes, "
             "cosindide, unimed FROM obrparpar WHERE obride = ? "
@@ -201,7 +292,8 @@ class SigridWriteClient:
         # F-037 (R2, la de `partes` F-021): en la MISMA consulta, el código
         # de la cuenta de la ficha (`reshor.caaide`, 0 = ninguna) y si es el
         # tipo por defecto del recurso (`res.horide`).
-        filas = self._read(
+        filas = self._lectura(
+            "horas_de_recursos",
             "SELECT reshor.reside AS reside, reshor.horide AS horide, "
             "auxhor.cod AS cod, auxhor.res AS res, reshor.pre AS pre, "
             "cc.cod AS caacod, "
@@ -235,7 +327,8 @@ class SigridWriteClient:
         if not subs:
             return {}
         marcas = ",".join("?" for _ in subs)
-        filas = self._read(
+        filas = self._lectura(
+            "cuentas_de_centro",
             "SELECT a.ide AS caaide, c.cod AS cod FROM caa a "
             "JOIN con c ON c.ide = a.ide WHERE a.cenide = ? AND c.emp = ? "
             "AND LTRIM(RTRIM(SUBSTRING(c.cod, CHARINDEX('.', c.cod) + 1, "
@@ -252,7 +345,8 @@ class SigridWriteClient:
         if not ides:
             return {}
         marcas = ",".join("?" for _ in ides)
-        filas = self._read(
+        filas = self._lectura(
+            "partidas_de_lineas",
             "SELECT p.ide AS ide, p.cod AS cod, pc.cod AS caacod "
             "FROM obrparpar p LEFT JOIN con pc ON pc.ide = p.caaide "
             "AND ISNULL(p.caaide, 0) <> 0 "
@@ -278,7 +372,8 @@ class SigridWriteClient:
         for i in range(0, len(ides), LOTE_RECURSOS_HISTORIAL):
             lote = ides[i:i + LOTE_RECURSOS_HISTORIAL]
             marcas = ",".join("?" for _ in lote)
-            filas = self._read(
+            filas = self._lectura(
+                "historial_partidas",
                 "SELECT h.reside AS reside, m.obride AS obride, "
                 "co.cod AS obra_cod, c.cod AS parte_cod, m.ano AS ano, "
                 "m.mes AS mes, h.can AS can, h.paride AS paride, "
@@ -307,7 +402,8 @@ class SigridWriteClient:
         """F-037 (R9): TODOS los partes de obra (sin recurso) y mes, con su
         estado, por `ide` descendente. UNA lectura; un `truncated` sube como
         excepción (R16)."""
-        filas = self._read(
+        filas = self._lectura(
+            "partes_del_periodo",
             "SELECT hmo.ide AS ide, con.cod AS cod, con.est AS est FROM hmo "
             "JOIN con ON con.ide = hmo.ide "
             "WHERE hmo.obride = ? AND hmo.ano = ? AND hmo.mes = ? "
@@ -328,7 +424,8 @@ class SigridWriteClient:
         script manual `prueba_escritura_porcentajes.py`."""
         out: dict[tuple[int, int], ParteDestino] = {}
         for ano, mes in sorted(set(periodos)):
-            filas = self._read(
+            filas = self._lectura(
+                "partes_existentes",
                 "SELECT hmo.ide AS ide, con.cod AS cod FROM hmo "
                 "JOIN con ON con.ide = hmo.ide "
                 "WHERE hmo.obride = ? AND hmo.ano = ? AND hmo.mes = ? "
@@ -348,7 +445,8 @@ class SigridWriteClient:
         `partes`): el correlativo es por empresa y los números se repiten
         entre ellas. Antes de F-037 salía del mayor de TODAS."""
         yy = str(int(ano))[-2:]
-        filas = self._read(
+        filas = self._lectura(
+            "siguiente_cod_pt",
             "SELECT MAX(cod) AS maxcod FROM con WHERE cod LIKE ? AND emp = ?",
             [f"PT{yy}/%", int(empresa)])
         maxcod = (filas[0]["maxcod"] or "") if filas else ""
@@ -359,8 +457,9 @@ class SigridWriteClient:
         return f"PT{yy}/{n:05d}"
 
     def max_pos(self, hmoide: int) -> int:
-        filas = self._read("SELECT ISNULL(MAX(pos),0) AS m FROM hmores "
-                           "WHERE hmoide = ?", [int(hmoide)])
+        filas = self._lectura("max_pos",
+                              "SELECT ISNULL(MAX(pos),0) AS m FROM hmores "
+                              "WHERE hmoide = ?", [int(hmoide)])
         return int((filas[0]["m"] if filas else 0) or 0)
 
     def lineas_del_parte(
@@ -375,7 +474,8 @@ class SigridWriteClient:
         if not res:
             return []
         m_r = ",".join("?" for _ in res)
-        filas = self._read(
+        filas = self._lectura(
+            "lineas_del_parte",
             "SELECT hmores.ide AS ide, hmores.reside AS reside, "
             "hmores.fec AS fec, hmores.horide AS horide, "
             "hmores.paride AS paride, auxhor.cod AS hora, hmores.can AS can, "
@@ -406,7 +506,8 @@ class SigridWriteClient:
         for i in range(0, len(ks), 200):
             trozo = ks[i:i + 200]
             marcas = ",".join("?" for _ in trozo)
-            filas = self._read(
+            filas = self._lectura(
+                "lineas_por_synckey",
                 "SELECT hmores.ide AS ide, hmores.hmoide AS hmoide, "
                 "hmores.reside AS reside, hmores.fec AS fec, "
                 "hmores.horide AS horide, "
@@ -518,7 +619,8 @@ class SigridWriteClient:
 
     def inspeccionar_mensuales(self, limite: int = 20) -> list[dict[str, Any]]:
         """Últimas líneas M* reales: para fijar el mapeo antes de escribir."""
-        filas = self._read(
+        filas = self._lectura(
+            "inspeccionar_mensuales",
             f"SELECT TOP {int(limite)} hmores.ide AS ide, hmores.hmoide AS "
             "hmoide, hmores.reside AS reside, hmores.fec AS fec, "
             "auxhor.cod AS hora, hmores.can AS can, hmores.canres AS canres, "

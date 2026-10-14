@@ -19,8 +19,12 @@ despliegue lo lanzó el humano el 2026-10-14 (sección siguiente). El arnés es 
   feature: que en la columna Partida salga la propuesta con su origen (R27) en vez
   de «automática», buscada en segundo plano (R29-R36), y que «Registrar» no tarde
   (R3-R8).
-- **Estado:** `dev` traído a la rama el 2026-10-14 (F-050 cerrada);
-  **implementer lanzado** (T1 en adelante; T2 y T18-T19 son MANUAL del humano).
+- **Estado:** `dev` traído a la rama el 2026-10-14 (F-050 cerrada).
+  **T1 hecha; espera T2 del humano** (MANUAL «antes», solo lectura, antes de
+  T3): comando exacto y qué copiar en `progress/impl_F-055.md` § T2.
+  Desviación de T1 (design §5.1): la medición va en `_lectura(nombre, …)` y
+  `_read` conserva su firma, para no tocar los dobles de `_read` de 35 tests
+  anteriores fuera de la lista cerrada (detalle en el informe).
 
 ## ⚠ Despliegue de F-050 (pendiente; lo lanza el humano)
 

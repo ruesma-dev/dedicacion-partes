@@ -52,6 +52,7 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
 from __future__ import annotations
 
 import logging
+import time
 import unicodedata
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -84,9 +85,14 @@ from domain.models.registro_models import (
     AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
     Preflight, ResultadoRegistro,
 )
-from infrastructure.sigrid.sigrid_write_client import synckey_de
+from infrastructure.sigrid.sigrid_write_client import (
+    medir_lecturas, synckey_de,
+)
 
 logger = logging.getLogger(__name__)
+
+#: Reloj del resumen del preflight (aparte para poder fijarlo en los tests).
+_ahora = time.perf_counter
 
 
 def _norm(texto: Optional[str]) -> str:
@@ -307,6 +313,22 @@ class RegistroPipeline:
     # ------------------------------------------------------------- #
     def preflight(self, *, obra: ObraEntrada,
                   lineas: list[LineaEntrada]) -> Preflight:
+        """Pasos 0-8, con el resumen de sus lecturas en el log (F-055 R1:
+        obra, lecturas, segundos leyendo y totales), también si falla."""
+        t0 = _ahora()
+        with medir_lecturas() as m:
+            try:
+                return self._preflight(obra=obra, lineas=lineas)
+            finally:
+                logger.info(
+                    "[registro] lecturas preflight obra=%s lecturas=%s "
+                    "segundos_leyendo=%.2f segundos_totales=%.2f",
+                    obra.codigo or obra.ide, m.n, m.segundos,
+                    _ahora() - t0)
+
+    # ------------------------------------------------------------- #
+    def _preflight(self, *, obra: ObraEntrada,
+                   lineas: list[LineaEntrada]) -> Preflight:
         # Paso 0: empresa y obra de origen (ARCHITECTURE.md#regla-empresa).
         empresa = empresa_de_peticion(lineas)
         if empresa is None:
