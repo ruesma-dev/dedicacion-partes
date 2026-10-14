@@ -248,19 +248,68 @@ h1 {
 
 
 tr.fila { cursor: pointer; transition: background 0.15s var(--ease); }
-tr.fila:hover td { background: #f8f4f5; }
-tr.fila.seleccionada td {
-  background: var(--brand-soft);
-  box-shadow: inset 3px 0 0 var(--brand);
-}
+/* Con el ratón encima, el bloque entero del trabajador (F-050, T15d: la
+   clase la ponen todas sus subfilas a la vez; va antes que el cursor, el
+   editor y la selección múltiple, que siguen mandando). */
+tr.fila.resaltada td { background: #f8f4f5; }
+/* El cursor: fondo en todas sus subfilas y una barra a cada lado del bloque,
+   solo en las celdas de los bordes (F-050, M2 punto 2: con `rowSpan`, la
+   barra en cada celda pintaba rayas por dentro). */
+tr.fila.seleccionada td { background: var(--brand-soft); }
+tr.fila.seleccionada td.col-primera { box-shadow: inset 3px 0 0 var(--brand); }
+tr.fila.seleccionada td.col-ultima { box-shadow: inset -3px 0 0 var(--brand); }
 tr.fila.editando td { background: var(--brand-soft); }
 /* Selección múltiple (F-029): distinta del cursor (`.seleccionada`). */
 tr.fila.multi td { background: var(--pv-soft); }
-tr.fila.multi td:first-child { box-shadow: inset 3px 0 0 var(--pv); }
-tr.fila.multi.seleccionada td:first-child {
+tr.fila.multi td.col-primera { box-shadow: inset 3px 0 0 var(--pv); }
+tr.fila.multi.seleccionada td.col-primera {
   box-shadow: inset 3px 0 0 var(--brand), inset 6px 0 0 var(--pv);
 }
 tr.fila.inactivo td { opacity: 0.55; }
+/* F-050 (R22): subfilas por obra; las celdas del trabajador ocupan todas. */
+tr.fila.subfila td { border-top: 1px dashed var(--line); }
+#cuerpo td[rowspan] { vertical-align: top; }
+.celda-partida { font-size: 0.84rem; }
+.celda-partida.editable { cursor: pointer; }
+.celda-partida.editable:hover { color: var(--brand); text-decoration: underline; }
+.partida-elegida { font-weight: 600; }
+.partida-auto { font-style: italic; color: var(--steel); }
+.partida-fija { color: var(--ink-soft); }
+
+/* F-050 (R26): selector de partida. Cuelga de <body> y es fijo, como el
+   panel de F-042, y va POR ENCIMA del modal de registro (60). */
+.panel-partida {
+  position: fixed; z-index: 70; display: flex; flex-direction: column;
+  background: var(--paper); border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm); overflow: hidden;
+  box-shadow: 0 18px 38px -18px rgba(29, 32, 36, 0.45);
+}
+.panel-partida .buscar-partida {
+  margin: 8px; padding: 6px 8px; font: inherit; font-size: 0.86rem;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+}
+.panel-partida .mayores { display: flex; gap: 6px; padding: 0 8px 8px; }
+.panel-partida .mayores button {
+  font: inherit; font-size: 0.78rem; font-weight: 700; padding: 3px 10px;
+  border: 1px solid var(--line-strong); border-radius: 999px;
+  background: var(--paper); color: var(--ink-soft); cursor: pointer;
+}
+.panel-partida .mayores button.on {
+  background: var(--brand); border-color: var(--brand); color: #fff;
+}
+.panel-partida .lista-partidas { overflow-y: auto; min-height: 0; }
+.panel-partida .opcion {
+  display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 6px 10px;
+  border-top: 1px solid var(--line); cursor: pointer; font-size: 0.84rem;
+}
+.panel-partida .opcion .cod { font-weight: 700; color: var(--brand-strong); min-width: 84px; }
+.panel-partida .opcion .desc { color: var(--ink-soft); }
+.panel-partida .opcion .origen { flex-basis: 100%; font-size: 0.74rem; color: var(--ok); }
+.panel-partida .opcion.propuesta { background: var(--ok-soft); }
+.panel-partida .opcion.automatica .desc { font-style: italic; }
+.panel-partida .opcion.activa,
+.panel-partida .opcion:hover { background: var(--brand-soft); }
+.panel-partida .vacio { padding: 8px 10px; color: var(--steel); font-size: 0.84rem; }
 
 .celda-nombre .nombre { font-weight: 600; }
 .celda-nombre .tag-baja {
@@ -500,9 +549,12 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
   border-bottom: 1px solid var(--line-strong); }
 .modal .tabla-reg td { padding: 6px 8px; border-bottom: 1px solid var(--line);
   vertical-align: middle; }
-.modal select.sel-partida { max-width: 340px; width: 100%; padding: 4px 6px;
+.modal button.sel-partida { max-width: 340px; width: 100%; padding: 4px 6px;
   border: 1px solid var(--line-strong); border-radius: 6px; font: inherit;
-  font-size: .8rem; background: var(--paper); }
+  font-size: .8rem; background: var(--paper); text-align: left;
+  cursor: pointer; }
+.modal button.sel-partida:hover { border-color: var(--brand); color: var(--brand); }
+.modal .origen-partida { color: var(--ok); font-size: .74rem; margin-top: 2px; }
 /* F-049 (ampliación e): los avisos se ajustan a su recuadro. `.check` es
    `nowrap` en toda la página; dentro de un conflicto, el rótulo largo
    saldría por la derecha de su caja. */

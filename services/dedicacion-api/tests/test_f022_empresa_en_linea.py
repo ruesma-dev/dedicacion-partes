@@ -63,7 +63,8 @@ class _Transfer:
 def _fila(asig_id: int, trab_ide: int, obra_ide: int) -> tuple:
     """(asignación, trabajador, obra) como las devuelve la consulta."""
     asignacion = SimpleNamespace(id=asig_id, porcentaje=40,
-                                 es_postventa=False)
+                                 es_postventa=False,
+                                 partida_ide=None, partida_cod=None)
     # `empresa=None` en los dos (F-024, design §7): sin empresa y sin obras
     # con empresa, el trabajador se ve en la por defecto, que es la que usan
     # estos tests; ningún assert cambia.

@@ -19,6 +19,7 @@ from domain.deshacer import deshacer_permitido
 from domain.empresas import visible_en_empresa
 from domain.errors import (
     DeshacerAjeno,
+    LineaNoEncontrada,
     LineasInvalidas,
     NadaQueDeshacer,
     ObraNoValida,
@@ -141,6 +142,9 @@ class GuardarAsignaciones:
 
         antes = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
         _rechazar_nuevas_no_ofrecibles(uow, lineas, antes)
+        # F-050 (R14): guardar la fila no cambia la partida de ninguna línea
+        # que ya existía; la nueva entra automática.
+        lineas = _conservar_partidas(lineas, antes)
         if _snapshot(antes) != _snapshot(lineas):
             uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas, usuario)
             uow.eventos.registrar(
@@ -150,6 +154,69 @@ class GuardarAsignaciones:
                 usuario,
                 _snapshot(antes),
                 _snapshot(lineas),
+            )
+        uow.commit()
+        return ObtenerFilaTrabajador().ejecutar(
+            uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
+        )
+
+
+class CambiarPartida:
+    """Cambia SOLO la partida elegida de una línea (obra + modo) del
+    trabajador y deja un evento `PARTIDA`, deshacible como cualquier otro
+    (F-050, R13, docs/ARCHITECTURE.md#regla-partida). `partida` es
+    `{ide, cod, res}` o None (automática). Una línea VAR tiene la partida
+    fija: `ObraNoValida`. Si no cambia nada, ni escribe ni deja evento."""
+
+    def ejecutar(
+        self,
+        uow: UnitOfWork,
+        anio: int,
+        mes: int,
+        trabajador_ide: int,
+        obra_ide: int,
+        es_postventa: bool,
+        partida: dict[str, Any] | None,
+        usuario: str,
+        *,
+        filtro: FiltroEmpresa,
+    ) -> tuple[CuadranteTrabajador, ResumenPeriodo]:
+        periodo_id, _ = _periodo_abierto_o_error(uow, anio, mes)
+        _trabajador_o_error(uow, trabajador_ide)
+        antes = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
+        clave = (obra_ide, es_postventa)
+        linea = next((ln for ln in antes if ln.clave() == clave), None)
+        if linea is None:
+            raise LineaNoEncontrada(
+                f"El trabajador {trabajador_ide} no tiene la obra {obra_ide} "
+                f"(postventa={es_postventa}) en el periodo"
+            )
+        if linea.partida_fija:
+            raise ObraNoValida(
+                f"La línea de la obra {obra_ide} es una entrada VAR: su "
+                "partida es fija"
+            )
+        elegida = partida or {}
+        despues = [
+            dataclasses.replace(
+                ln,
+                partida_ide=elegida.get("ide"),
+                partida_cod=elegida.get("cod"),
+                partida_res=elegida.get("res"),
+            )
+            if ln is linea else ln
+            for ln in antes
+        ]
+        if _snapshot(antes) != _snapshot(despues):
+            uow.asignaciones.reemplazar(periodo_id, trabajador_ide, despues,
+                                        usuario)
+            uow.eventos.registrar(
+                periodo_id,
+                trabajador_ide,
+                TipoEvento.PARTIDA,
+                usuario,
+                _snapshot(antes),
+                _snapshot(despues),
             )
         uow.commit()
         return ObtenerFilaTrabajador().ejecutar(
@@ -706,6 +773,10 @@ def _validar_lineas(
                 obra_ide=obra_ide,
                 es_postventa=es_postventa,
                 porcentaje=porcentaje,
+                # F-050 (R15): un snapshot con partida la devuelve al deshacer.
+                partida_ide=bruto.get("partida_ide"),
+                partida_cod=bruto.get("partida_cod"),
+                partida_res=bruto.get("partida_res"),
             )
         )
     ides = {ln.obra_ide for ln in lineas}
@@ -766,12 +837,39 @@ def _resumen_periodo(
     return resumir(_filas_de_empresa(uow, periodo_id, filtro))
 
 
+def _conservar_partidas(lineas: list[Linea], antes: list[Linea]) -> list[Linea]:
+    """Cada línea cuya clave (obra, postventa) estaba en `antes` recibe la
+    partida que tenía; las demás quedan como vienen (F-050, R14)."""
+    previas = {ln.clave(): ln for ln in antes}
+    return [
+        dataclasses.replace(
+            ln,
+            partida_ide=previas[ln.clave()].partida_ide,
+            partida_cod=previas[ln.clave()].partida_cod,
+            partida_res=previas[ln.clave()].partida_res,
+        )
+        if ln.clave() in previas else ln
+        for ln in lineas
+    ]
+
+
 def _snapshot(lineas: list[Linea]) -> list[dict[str, Any]]:
+    """Lo que guarda un evento. La partida, solo si la línea la tiene: los
+    eventos sin partida no cambian de forma (F-050, R15)."""
     return [
         {
             "obra_ide": ln.obra_ide,
             "es_postventa": ln.es_postventa,
             "porcentaje": str(ln.porcentaje),
+            **(
+                {
+                    "partida_ide": ln.partida_ide,
+                    "partida_cod": ln.partida_cod,
+                    "partida_res": ln.partida_res,
+                }
+                if ln.partida_ide is not None
+                else {}
+            ),
         }
         for ln in sorted(lineas, key=lambda x: (x.obra_ide, x.es_postventa))
     ]

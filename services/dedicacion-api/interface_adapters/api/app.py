@@ -11,11 +11,13 @@ from config.settings import Settings, get_settings
 from domain.errors import (
     DeshacerAjeno,
     ErrorDominio,
+    LineaNoEncontrada,
     LineasInvalidas,
     NadaQueDeshacer,
     ObraNoValida,
     PeriodoCerrado,
     PeriodoNoEncontrado,
+    PropuestaNoDisponible,
     SigridError,
     SigridNoConfigurado,
     TrabajadorNoEncontrado,
@@ -31,6 +33,7 @@ logger = logging.getLogger(__name__)
 _HTTP_POR_ERROR: list[tuple[type[ErrorDominio], int]] = [
     (PeriodoNoEncontrado, 404),
     (TrabajadorNoEncontrado, 404),
+    (LineaNoEncontrada, 404),   # F-050 (R13)
     (PeriodoCerrado, 409),
     (NadaQueDeshacer, 409),
     (DeshacerAjeno, 409),     # F-027: mismo trato que «nada que deshacer»
@@ -40,6 +43,7 @@ _HTTP_POR_ERROR: list[tuple[type[ErrorDominio], int]] = [
     (SigridError, 502),
     (UniversoPostventaNoDisponible, 502),
     (UniversoVarNoDisponible, 502),
+    (PropuestaNoDisponible, 502),   # F-050 (R17)
 ]
 
 

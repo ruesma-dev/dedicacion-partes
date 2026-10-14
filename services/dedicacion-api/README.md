@@ -37,6 +37,8 @@ cambio de esquema es una migración que escribe una persona.
 | PUT  | /periodos/{a}/{m}/trabajadores/{ide}/asignaciones | Sustitución atómica de las líneas |
 | POST | /periodos/{a}/{m}/trabajadores/{ide}/deshacer | Deshacer (multi-nivel, con auditoría) |
 | POST | /periodos/{a}/{m}/trabajadores/{ide}/copiar-anterior | Repetir mes anterior de un trabajador |
+| GET  | /periodos/{a}/{m}/trabajadores/{ide}/partidas?obra_ide=&es_postventa= | Selector de partida de una línea: catálogo con su mayor, propuesta, elegida y botón preelegido, que calcula el transfer (`docs/ARCHITECTURE.md#regla-partida`); 502 si no responde |
+| PUT  | /periodos/{a}/{m}/trabajadores/{ide}/partida | Cambiar la partida elegida de una línea (`null` = automática), con evento deshacible |
 | POST | /periodos/{a}/{m}/completar | Completar al 100 % en una obra a un lote de trabajadores (`docs/ARCHITECTURE.md#regla-completar`); no toca Sigrid |
 | GET  | /periodos/{a}/{m}/export.xlsx | Excel con el modelo de negocio: Obras y Postventa agrupadas por trabajador (combinadas, bandas y línea gruesa), cada una con la otra parte en una línea agregada en cursiva («RESTO POSTVENTA» / «RESTO OBRAS»), y Detalle con todas las líneas de cada trabajador, la postventa intercalada; columna Observaciones vacía en las tres hojas; convenio Postv- |
 

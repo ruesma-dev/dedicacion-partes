@@ -31,6 +31,10 @@ configurable (`SIGRID_MAX_ROWS`, 200.000 por defecto). Hasta el 2026-10-07
 era 2.000 fijo y `capitulos_de_obra`, que lee el presupuesto entero, se
 truncaba en las obras con más partidas (la 0696 tiene 3.024). Subir el tope
 no relaja la regla: un `truncated` sigue siendo un error.
+
+F-050 (ARCHITECTURE.md#regla-partida): `historial_partidas` lee las líneas
+`M*` con partida de los partes de trabajo de unos recursos en una ventana de
+meses, para proponer la partida. Solo lectura; un `truncated` es error.
 """
 from __future__ import annotations
 
@@ -41,6 +45,7 @@ from typing import Any, Iterable
 import httpx
 
 from application.services.cuenta_analitica import indexar_cuentas
+from application.services.propuesta_partida import LineaHistorial
 from domain.errores import ObraAmbigua
 from domain.models.registro_models import (
     HoraRecurso, LineaSigrid, ObraEntrada, ParteDestino, ParteSigrid,
@@ -54,6 +59,8 @@ PREFIJO_SYNCKEY = "porcentajes:"
 #: cosa. Debe caber en su `MAX_ALLOWED_ROWS` (500.000 en la instancia
 #: desplegada, `azure-apps/sigrid_api.md` §4.1).
 MAX_ROWS_POR_DEFECTO = 200_000
+#: F-050: recursos por lectura del historial (el `IN` de `historial_partidas`).
+LOTE_RECURSOS_HISTORIAL = 500
 
 
 def synckey_de(registro_id: int) -> str:
@@ -256,6 +263,43 @@ class SigridWriteClient:
             out[ide] = PartidaCuenta(
                 ide=ide, cod=(f["cod"] or "").strip() or None,
                 caa_cod=(f["caacod"] or "").strip() or None)
+        return out
+
+    def historial_partidas(
+        self, resides: Iterable[int | None], desde: int, hasta: int
+    ) -> list[LineaHistorial]:
+        """F-050 (R4, R7): líneas `M*` con partida de esos recursos en partes
+        de trabajo (`con.tip` del ajuste) con el mes entre `desde` y `hasta`
+        (AAAAMM, incluidos), solo si la partida es del presupuesto de la
+        obra del parte. En lotes de 500 recursos; sin recursos no se lee.
+        Un fallo o un `truncated` sube como excepción."""
+        ides = sorted({int(i) for i in resides if i})
+        out: list[LineaHistorial] = []
+        for i in range(0, len(ides), LOTE_RECURSOS_HISTORIAL):
+            lote = ides[i:i + LOTE_RECURSOS_HISTORIAL]
+            marcas = ",".join("?" for _ in lote)
+            filas = self._read(
+                "SELECT h.reside AS reside, m.obride AS obride, "
+                "co.cod AS obra_cod, c.cod AS parte_cod, m.ano AS ano, "
+                "m.mes AS mes, h.can AS can, h.paride AS paride, "
+                "p.cod AS par_cod, p.res AS par_res "
+                "FROM hmores h JOIN hmo m ON m.ide = h.hmoide "
+                "JOIN con c ON c.ide = m.ide JOIN con co ON co.ide = m.obride "
+                "JOIN auxhor a ON a.ide = h.horide "
+                "JOIN obrparpar p ON p.ide = h.paride "
+                f"WHERE h.reside IN ({marcas}) AND c.tip = ? "
+                "AND a.cod LIKE 'M%' AND p.obride = m.obride "
+                "AND (m.ano * 100 + m.mes) BETWEEN ? AND ?",
+                lote + [self._tip, int(desde), int(hasta)])
+            out.extend(LineaHistorial(
+                reside=int(f["reside"]), obride=int(f["obride"]),
+                obra_cod=(f["obra_cod"] or "").strip() or None,
+                parte_cod=(f["parte_cod"] or "").strip() or None,
+                ano=int(f["ano"]), mes=int(f["mes"]),
+                can=float(f["can"] or 0.0), paride=int(f["paride"]),
+                par_cod=(f["par_cod"] or "").strip() or None,
+                par_res=(f["par_res"] or "").strip() or None)
+                for f in filas)
         return out
 
     def partes_del_periodo(self, obra_ide: int, ano: int,

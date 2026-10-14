@@ -196,6 +196,7 @@ despliegue no tenga que aprender dos vocabularios.
 | `SIGRID_MAX_ROWS` | Filas por lectura (`max_rows`) que el transfer pide a `sigrid-api`. **200.000 por defecto en el código** (F-047): no hace falta declararla al desplegar. Tiene que caber en el `MAX_ALLOWED_ROWS` de `sigrid-api` (500.000 en la instancia desplegada). Hasta F-047 era 2.000 fijo y las obras con más partidas no se podían registrar (la 0696 tiene 3.024). Una respuesta `truncated` sigue siendo un error: nunca se decide con filas parciales |
 | `OBRA_PRUEBAS_FORZAR`, `OBRA_PRUEBAS_COD`, `MARCA_PRUEBAS` | Modo pruebas (§8) |
 | `VAR_OBRA_COD`, `VAR_PARTIDA_DESDE` | Obra de obras varias y número inicial desde el que sus partidas se ofrecen como obras propias (F-039, `docs/ARCHITECTURE.md#regla-var`). Con defecto en el código (`VAR`, `29`): no hace falta declararlas al desplegar. `VAR_OBRA_COD` vacío = sin entradas VAR |
+| `PROPUESTA_MESES_ATRAS` | Meses hacia atrás, desde el del cuadrante incluido, en los que se busca la partida propuesta (F-050, `docs/ARCHITECTURE.md#regla-partida`). Con defecto en el código (`24`): no hace falta declararla al desplegar |
 | `LOG_DIR` | `/tmp/logs` en el contenedor: `/app` no tiene por qué ser escribible |
 
 Secretos en el Key Vault propio, por su clave: `PG-PASSWORD`,
@@ -283,6 +284,31 @@ opcional, `var_paride`. En el mismo sync la api descarta las obras cuyo
 código contiene 6 o más dígitos seguidos (`sync.obras.digitos_seguidos_excluidos`
 de `config.yaml`). Las reglas están en `docs/ARCHITECTURE.md#regla-var` y
 `#regla-seis-digitos`.
+
+Desde F-050 el transfer expone además, **solo para la api**, `POST
+/api/partidas/propuesta` (`{empresa, obra: {ide, codigo, nombre}, ano, mes,
+lineas: [{clave, recurso_ide, nombre, categoria, es_postventa}]}` → el
+catálogo de la obra, y el de postventa si hay líneas de postventa, cada
+partida con su `mayor` (CD, CI, CP u OTRO) y en orden natural, y por `clave`
+la partida propuesta `{paride, cod, res, metodo, origen}` o nula y el
+`mayor_inicial`; 422 sin empresa válida o con la obra en otra empresa, 502
+si falla una lectura; nunca escribe). Lee el presupuesto de la obra y, si
+hay líneas de obra normal, el historial de partidas de sus recursos en
+**una** lectura (más el de postventa si hace falta). La api sirve a su vez,
+**solo para el front**, `GET /api/v1/periodos/{anio}/{mes}/trabajadores/
+{ide}/partidas?obra_ide=&es_postventa=` (catálogos, propuesta, elegida,
+`ambito` = botón preelegido y `fija` para una entrada VAR, que no llama al
+transfer; **502** con motivo si el transfer no responde, y el cuadrante
+sigue funcionando) y `PUT /api/v1/periodos/{anio}/{mes}/trabajadores/{ide}/
+partida` (`{obra_ide, es_postventa, partida: {ide, cod, res} | null}` →
+cambia solo la partida elegida de esa línea, con evento `PARTIDA`
+deshacible; 404 / 409 / 422). Cada línea del cuadrante publica
+`partida_ide`, `partida_cod`, `partida_res` y `partida_fija`, y al registrar
+la elegida viaja como `paride`. El preflight ya no recibe `overrides` del
+front y admite `obra_ide` en el cuerpo (entero; 422 si no lo es): analiza solo la petición de esa
+obra (la del grupo; en las entradas VAR, la de registro). Es lo que repite
+el modal al cambiar una partida, en vez del mes entero (F-050 T15c);
+`ejecutar` no se acota. La regla está en `docs/ARCHITECTURE.md#regla-partida`.
 
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 
@@ -434,6 +460,9 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Publicar la api de F-039 antes que el transfer | La api nueva llama a `POST /api/var/universo`, que el transfer viejo no tiene: el sync queda en 502 hasta publicar el transfer. **Orden de despliegue: transfer → api → front** (F-039) |
 | Cambiar `VAR_OBRA_COD` o `VAR_PARTIDA_DESDE` del transfer | Cambia qué entradas `VAR-NN` se ofrecen en el **siguiente** sync; las que salen quedan inactivas y sus líneas ya guardadas, no ofrecibles. El preflight manda: una línea en una partida que ya no está en el universo se omite con motivo (F-039) |
 | Cambiar `sync.obras.digitos_seguidos_excluidos` de `config.yaml` | Cambia qué obras se ignoran por su código en el siguiente sync; con `0`, vuelven todas (F-039) |
+| Parar el transfer, o que no responda a `POST /api/partidas/propuesta` | El selector de partida no se abre (502 con el motivo); el cuadrante, guardar y registrar siguen funcionando (F-050) |
+| Publicar la api de F-050 antes que el transfer | El selector de partida da 502 hasta publicar el transfer: el transfer viejo no tiene `POST /api/partidas/propuesta`. **Orden de despliegue: transfer → api → front** (F-050); la api pone al día la tabla `asignacion` al arrancar (`partida_*`, nulables) |
+| Cambiar `PROPUESTA_MESES_ATRAS` del transfer | Cambia hasta dónde se mira atrás para proponer la partida del parte anterior y del último parte; cuantos más meses, más filas lee el historial (F-050) |
 | Cambiar en el transfer la elección del parte o la regla de la cuenta (`estado_parte.py`, `cuenta_analitica.py`) sin cambiarla en `partes` | Los dos servicios dejan de caer en el mismo parte o de poner la misma cuenta: dos complementarios en un mes, o un asiento analítico (`ANA`) con cuentas distintas para la misma persona. Las copias se vigilan con `tests/test_f037_copias_partes.py` (F-037) |
 
 ### Si tocan algo de otros

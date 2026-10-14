@@ -165,7 +165,11 @@ class AccionLinea:
     partida_cod: Optional[str] = None
     partida_metodo: Optional[str] = None  # manual | auto_nombre |
                                           # auto_categoria | postventa |
-                                          # var (F-039, fija)
+                                          # var (F-039, fija) |
+                                          # parte_anterior | ultimo_parte
+    # F-050 (R6, R21): de dónde sale la partida propuesta («parte P · MM/AAAA
+    # · obra O»); None si es elegida, casada, de postventa o VAR.
+    partida_origen: str | None = None
     # Aviso informativo que acompaña a la acción en la tabla del preflight.
     # Que haya aviso NO implica que la línea se vaya a escribir: si es el de
     # «sin partida», además viaja un Conflicto que la retiene hasta que

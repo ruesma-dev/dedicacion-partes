@@ -26,6 +26,8 @@ class Settings:
     est_parte_activo = 1
     est_parte_cerrado = 3
     est_parte_imputado = 10
+    # F-050: ventana del historial de partidas.
+    propuesta_meses_atras = 24
 
 
 class ClienteFalso:
@@ -133,6 +135,10 @@ class ClienteFalso:
 
     def partidas_de_lineas(self, parides):
         return {}
+
+    # F-050: sin historial de partidas (la propuesta es el casamiento).
+    def historial_partidas(self, resides, desde, hasta):
+        return []
 
     def siguiente_cod_pt(self, ano, empresa=None):
         return "PT26/09999"

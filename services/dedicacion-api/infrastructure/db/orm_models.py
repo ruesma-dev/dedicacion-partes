@@ -164,6 +164,13 @@ class AsignacionORM(Base):
         DateTime(timezone=True)
     )
     sigrid_registrado_by: Mapped[str | None] = mapped_column(String(64))
+    # Partida ELEGIDA de la línea (F-050, R12, D4,
+    # docs/ARCHITECTURE.md#regla-partida): las tres nulas = automática (se
+    # registra con la propuesta del transfer). Nulables y sin default: el
+    # ADD COLUMN lo deriva `esquema.alters_faltantes`, sin migración.
+    partida_ide: Mapped[int | None] = mapped_column(BigInteger)
+    partida_cod: Mapped[str | None] = mapped_column(Text)
+    partida_res: Mapped[str | None] = mapped_column(Text)
 
     __table_args__ = (
         UniqueConstraint(

@@ -28,6 +28,7 @@ class TipoEvento(str, Enum):
     GUARDAR = "GUARDAR"
     COPIA = "COPIA"
     COMPLETAR = "COMPLETAR"  # lote «completar al 100 %» (F-029)
+    PARTIDA = "PARTIDA"  # cambio de la partida elegida de una línea (F-050)
 
 
 class ResultadoCompletado(str, Enum):
@@ -92,6 +93,13 @@ class Linea:
     obra_activa: bool = True
     obra_empresa: int | None = None  # empresa de la obra (F-024, R11)
     obra_admite_postventa: bool = False  # F-025
+    # Partida ELEGIDA (F-050, R12): las tres None = automática. No entra en
+    # `clave()`. `partida_fija`: la línea es de una entrada VAR, cuya partida
+    # es la de la entrada y no se elige (docs/ARCHITECTURE.md#regla-var).
+    partida_ide: int | None = None
+    partida_cod: str | None = None
+    partida_res: str | None = None
+    partida_fija: bool = False
 
     def clave(self) -> tuple[int, bool]:
         return (self.obra_ide, self.es_postventa)

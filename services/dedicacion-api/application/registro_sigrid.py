@@ -14,6 +14,11 @@ es el `res.ide` de Sigrid): el transfer no lo elige (F-026 R18-R19). Las
 líneas de un trabajador no vigente en el mes no se mandan ni se trazan; sus
 `registro_id` vuelven en `no_vigentes` (F-026 R16,
 docs/ARCHITECTURE.md#regla-recurso).
+
+La partida ELEGIDA de la asignación (F-050, R19,
+docs/ARCHITECTURE.md#regla-partida) viaja como `paride` y `partida_cod`; un
+`overrides` del cuerpo manda sobre ella; sin elegida no viaja partida y el
+transfer pone la propuesta.
 """
 from __future__ import annotations
 
@@ -112,6 +117,9 @@ class RegistroSigrid:
                 linea["var_paride"] = int(o.registro_paride)
             elif overrides.get(a.id):
                 linea["paride"] = int(overrides[a.id])
+            elif a.partida_ide:
+                linea["paride"] = int(a.partida_ide)
+                linea["partida_cod"] = a.partida_cod
             grupo["lineas"].append(linea)
         return list(por_obra.values()), sorted(no_vigentes)
 
@@ -119,11 +127,17 @@ class RegistroSigrid:
     def preflight(self, anio: int, mes: int,
                   overrides: Optional[dict[int, int]] = None,
                   trabajador_ide: Optional[int] = None,
-                  empresa: int | None = None) -> dict:
+                  empresa: int | None = None,
+                  obra_ide: int | None = None) -> dict:
+        """`obra_ide` (F-050, M2 punto 5): solo la petición de esa obra, la
+        del grupo (la de registro en las entradas VAR). Es lo que repite el
+        modal al cambiar una partida, en vez del mes entero."""
         with self._sf() as s:
             payloads, no_vigentes = self._payloads(
                 s, anio, mes, overrides or {}, trabajador_ide,
                 self._filtro(empresa))
+        if obra_ide is not None:
+            payloads = [p for p in payloads if p["obra"]["ide"] == obra_ide]
         resultados = []
         for p in payloads:
             r = self._transfer.preflight({**p, "pisar_claves": []})

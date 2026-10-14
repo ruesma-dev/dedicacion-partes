@@ -35,7 +35,7 @@ MODELOS = (RAIZ / "services" / "dedicacion-transfer" / "domain" / "models" /
 ANCLAS = ("regla-p1", "regla-p2", "regla-p3", "regla-p4", "regla-p5",
           "regla-conflicto", "regla-capacidad", "regla-pruebas",
           "regla-empresa", "regla-recurso", "regla-analitica",
-          "regla-var", "regla-seis-digitos")
+          "regla-var", "regla-seis-digitos", "regla-partida")
 
 #: Ficheros de producción donde vive el código de la obra de postventa como
 #: literal. Fuera de aquí se cita el ajuste, no el valor (R5).

@@ -22,6 +22,7 @@ trabajo de Sigrid**. Réplica del patrón validado en `partes-transfer`:
 | — | modo pruebas | [`#regla-pruebas`](../../docs/ARCHITECTURE.md#regla-pruebas) |
 | — | a qué empresa se imputa y cómo se busca la obra | [`#regla-empresa`](../../docs/ARCHITECTURE.md#regla-empresa) |
 | — | las partidas de obras varias como obras propias | [`#regla-var`](../../docs/ARCHITECTURE.md#regla-var) |
+| — | la partida elegida o propuesta de cada línea y el mayor | [`#regla-partida`](../../docs/ARCHITECTURE.md#regla-partida) |
 
 Dónde se implementan: la identidad, la capacidad y el «sin partida», en
 `application/services/reglas_porcentajes.py` (funciones puras, sin I/O); la
@@ -57,6 +58,8 @@ Lo que sí es de este servicio, y por eso se cuenta aquí:
     POST /api/registro/ejecutar    {obra, lineas[], pisar_claves[], usuario}
     POST /api/postventa/universo   {empresa, obras[]}   (solo lee; F-025)
     POST /api/var/universo         {empresa}            (solo lee; F-039)
+    POST /api/partidas/propuesta   {empresa, obra, ano, mes, lineas[]}
+                                                        (solo lee; F-050)
 
 `/api/postventa/universo` devuelve las obras que admiten postventa en esa
 empresa, con su partida, calculadas con las mismas funciones que el
@@ -64,6 +67,11 @@ preflight ([`#regla-p5`](../../docs/ARCHITECTURE.md#regla-p5)).
 `/api/var/universo` devuelve la obra VAR de esa empresa y sus partidas VAR,
 con las mismas funciones que validan `var_paride` en el preflight
 ([`#regla-var`](../../docs/ARCHITECTURE.md#regla-var)).
+`/api/partidas/propuesta` devuelve el catálogo de la obra con el mayor de
+cada partida y la partida propuesta de cada línea, con la misma función que
+el preflight ([`#regla-partida`](../../docs/ARCHITECTURE.md#regla-partida)).
+La fase `propuesta` de `prueba_escritura_porcentajes.py` (`--obra`,
+`--recurso`) la enseña sin escribir nada.
 
 Línea: `{registro_id, ano, mes, porcentaje (sobre 1), recurso_ide, dni?,
 nombre?, es_postventa, empresa, var_paride?}`. `empresa` es la `con.emp` a la que se

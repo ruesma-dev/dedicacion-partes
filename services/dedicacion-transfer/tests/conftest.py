@@ -64,6 +64,7 @@ class SettingsFalso:
         postventa_obra_cod: str = OBRA_POSTVENTA,
         marca_pruebas: str = "PRUEBA-PORC",
         paso_pos: int = 64,
+        propuesta_meses_atras: int = 24,
     ) -> None:
         self.obra_pruebas_forzar = obra_pruebas_forzar
         self.obra_pruebas_cod = OBRA_PRUEBAS
@@ -77,6 +78,8 @@ class SettingsFalso:
         self.est_parte_activo = 1
         self.est_parte_cerrado = 3
         self.est_parte_imputado = 10
+        # F-050: ventana del historial de partidas, como en `settings.py`.
+        self.propuesta_meses_atras = propuesta_meses_atras
 
 
 def _fila(ide: int, padide: int, pos: int, cod: str, res: str,
@@ -271,6 +274,10 @@ class ClienteFalso:
     def partidas_de_lineas(self, parides):
         """F-037: las partidas del doble no tienen cuenta."""
         return {}
+
+    def historial_partidas(self, resides, desde, hasta):
+        """F-050: sin historial; la propuesta es el casamiento de siempre."""
+        return []
 
     def siguiente_cod_pt(self, ano, empresa=None):
         return "PT26/09999"

@@ -44,12 +44,9 @@ def test_f039_r22_el_resto_de_acciones_sigue_igual():
     """R22 · Las demás `escribir` siguen con el desplegable y su aviso; las
     otras acciones, con su motivo."""
     modal = _plano(_funcion("pintarModalPreflight"))
-    assert ('<select class="sel-partida" data-reg="${a.registro_id}">'
-            in modal)
-    # F-049 (ampliación c): el desplegable recibe también el código de la
-    # partida, para enseñarla aunque no esté en la lista publicada.
-    assert ("${opcionesPartida(partidas, a.paride, a.partida_cod)}</select>"
-            in modal)
+    # F-050 (R29): el `<select>` pasa a ser el botón que abre el selector.
+    assert ('<button type="button" class="sel-partida" '
+            'data-reg="${a.registro_id}">' in modal)
     assert '<span class="motivo">${escapeHtml(a.motivo || "")}</span>' \
         in modal
     assert modal.count('<div class="aviso">${escapeHtml(a.aviso)}</div>') == 1
