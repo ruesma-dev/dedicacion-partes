@@ -33,8 +33,18 @@ despliegue lo lanzó el humano el 2026-10-14 (sección siguiente). El arnés es 
   «buscando partida…» y se llena sola (C8 nuevo: ≤ 30 s sin recargar); 2) el
   orden de la propuesta pasa a **parte anterior en esa obra → casamiento por
   nombre y categoría → último parte en otra obra** (cambia R1 de F-050 y
-  `#regla-partida`). **Spec-author lanzado** para ajustar la spec; T2 (medición,
-  humano) sigue pendiente y no le afecta.
+  `#regla-partida`). **Spec ajustada el 2026-10-14** (spec-author): D9 y D10 en
+  design §11; R29, R30, R33, R36 cambiadas y R37-R38 nuevas; C8 ampliado; tareas
+  nuevas T2b (orden, tras T2), T2c (`#regla-partida`), T12b (api) y T13b (front),
+  sin renumerar; T12 pasa a una cola por línea. Lista cerrada: + `test_f050_r1_
+  sin_paso1_va_al_paso2` (D10) y + `test_f029_r25_ruta_200_con_resultados_y_
+  resumen` (D9). **A validar por el humano** (decidido por el spec-author dentro
+  de D9, sin abrir decisión): Deshacer y quitar o cambiar la partida (`PUT
+  …/partida`) también encolan; la cola es por orden de llegada, así que una
+  línea guardada mientras corre el mes entero espera su turno (≈ 90 s, solo la
+  primera vez que se abre un mes). Consecuencia de D10 escrita en design §5.7:
+  el casamiento casi siempre da algo, así que el último parte solo actuará
+  cuando no case nada. T2 (medición, humano) sigue pendiente y va antes de T2b.
 
 ## ⚠ Despliegue de F-050 (pendiente; lo lanza el humano)
 
