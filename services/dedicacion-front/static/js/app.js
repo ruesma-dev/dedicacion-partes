@@ -1335,8 +1335,12 @@ function posicionSugerencias(campo, alto, ventana, minimo = 0) {
 }
 
 // Coloca el panel junto al campo (si está abierto).
+// F-050, T15f: sin el tope de 14 la lista se desplaza; medirla sin el
+// `max-height` de la vez anterior recorta su `scrollTop` (lección de T15e):
+// se guarda antes y se repone después.
 function colocarSugerencias(input, panel) {
   if (panel.classList.contains("oculto")) return;
+  const desplazada = panel.scrollTop;
   panel.style.maxHeight = "";       // alto natural, con el tope del CSS
   const pos = posicionSugerencias(input.getBoundingClientRect(), panel.offsetHeight, {
     alto: document.documentElement.clientHeight,
@@ -1346,6 +1350,7 @@ function colocarSugerencias(input, panel) {
   panel.style.left = `${pos.left}px`;
   panel.style.width = `${pos.ancho}px`;
   panel.style.maxHeight = `${pos.altoMax}px`;
+  panel.scrollTop = desplazada;
 }
 
 // Quita el panel vivo y sus escuchas. La llaman renderTabla (cerrar el
@@ -1362,7 +1367,11 @@ function montarAutocompletado(input, panel, editor) {
 
   retirarSugerencias();
   document.body.appendChild(panel);
-  const recolocar = () => colocarSugerencias(input, panel);
+  // T15f: el `scroll` de la propia lista (la rueda) no lo recoloca.
+  const recolocar = (ev) => {
+    if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;
+    colocarSugerencias(input, panel);
+  };
   // En captura: el scroll de `.panel-tabla` no burbujea hasta window.
   window.addEventListener("scroll", recolocar, true);
   window.addEventListener("resize", recolocar);
@@ -1375,8 +1384,7 @@ function montarAutocompletado(input, panel, editor) {
   const refrescar = () => {
     const q = normalizar(input.value);
     candidatas = state.catalogoObras
-      .filter((e) => !q || e.clave.includes(q))
-      .slice(0, 14);
+      .filter((e) => !q || e.clave.includes(q));
     activa = candidatas.length ? 0 : -1;
     panel.innerHTML = "";
     candidatas.forEach((e, i) => {
@@ -1396,9 +1404,17 @@ function montarAutocompletado(input, panel, editor) {
     colocarSugerencias(input, panel);
   };
 
+  // T15f: la activa, siempre a la vista dentro del panel (como
+  // `scrollIntoView` «nearest», sin mover la página).
   const marcarActiva = () => {
     panel.querySelectorAll(".sugerencia").forEach((el, i) => {
       el.classList.toggle("activa", i === activa);
+      if (i !== activa) return;
+      if (el.offsetTop < panel.scrollTop) {
+        panel.scrollTop = el.offsetTop;
+      } else if (el.offsetTop + el.offsetHeight > panel.scrollTop + panel.clientHeight) {
+        panel.scrollTop = el.offsetTop + el.offsetHeight - panel.clientHeight;
+      }
     });
   };
 

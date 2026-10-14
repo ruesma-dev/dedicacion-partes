@@ -426,7 +426,7 @@ TECLADO_ANTES = (
 BUSQUEDA_ANTES = (
     "const refrescar = () => { const q = normalizar(input.value); "
     "candidatas = state.catalogoObras .filter((e) => !q || "
-    "e.clave.includes(q)) .slice(0, 14); "
+    "e.clave.includes(q)); "
     "activa = candidatas.length ? 0 : -1; panel.innerHTML = \"\"; "
     "candidatas.forEach((e, i) => { const fila = "
     'document.createElement("div"); fila.className = "sugerencia" + '
