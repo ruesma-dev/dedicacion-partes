@@ -137,9 +137,9 @@ def _sincronizar(anchos: dict, disponible: int, columnas=None) -> dict:
 
 def test_f050_m2_1_la_tabla_se_ajusta_a_su_panel():
     obs = _sincronizar({}, 1046)
-    assert obs["ths"] == ["203px", "140px", "299px", "212px", "190px"]
+    assert obs["ths"] == ["280px", "210px", "196px", "169px", "190px"]
     assert obs["tabla"] == {"tableLayout": "fixed", "minWidth": "100%",
-                            "width": "1044px"}
+                            "width": "1045px"}
 
 
 def test_f050_m2_1_las_preferencias_no_se_tocan():

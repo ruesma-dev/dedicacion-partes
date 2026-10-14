@@ -493,13 +493,41 @@ function anchosAjustados(preferidos, minimos, disponible) {
 // La tabla cabe en su panel (M2, punto 1): se pinta con los anchos
 // ajustados; `state.anchos` (lo guardado) no cambia, así que con más sitio
 // vuelven los del usuario.
+// T15f, punto 2: Total nunca baja de lo que mide su contenido más ancho
+// (badge, «falta/sobra X %», «⇪ Sigrid», «↩»; un `Range` mide el contenido,
+// no la celda, y se le suma el relleno). Al estrechar encogen primero
+// Asignaciones y Partida; Trabajador y Categoría, solo cuando ellas llegan a
+// su mínimo. Si ni así cabe, scroll horizontal del panel.
 function sincronizarAnchoTabla() {
   const tabla = $("#tabla");
   tabla.style.tableLayout = "fixed";
+  const celdas = document.querySelectorAll("#cuerpo td.celda-total");
+  let contenido = 0;
+  if (celdas.length) {
+    const estilo = getComputedStyle(celdas[0]);
+    const rango = document.createRange();
+    celdas.forEach((td) => {
+      rango.selectNodeContents(td);
+      contenido = Math.max(contenido, rango.getBoundingClientRect().width);
+    });
+    // +2: los bordes de la celda y el redondeo de los píxeles.
+    contenido = Math.ceil(contenido + parseFloat(estilo.paddingLeft) +
+      parseFloat(estilo.paddingRight)) + 2;
+  }
+  const suelo = (c) => (c === "total" ? contenido : 0);
+  const preferidos = state.columnas.map(
+    (c) => Math.max(state.anchos[c] || COLUMNAS[c].ancho, suelo(c)));
+  const minimos = state.columnas.map((c) => Math.max(MINIMO_COLUMNA[c], suelo(c)));
+  const disponible = tabla.parentElement.clientWidth;
+  const primero = state.columnas.map((c) => c === "asignaciones" || c === "partida");
+  const fijas = preferidos.reduce((s, w, i) => s + (primero[i] ? 0 : w), 0);
+  const encogidas = anchosAjustados(
+    preferidos.filter((w, i) => primero[i]),
+    minimos.filter((w, i) => primero[i]),
+    disponible - fijas);
   const anchos = anchosAjustados(
-    state.columnas.map((c) => state.anchos[c] || COLUMNAS[c].ancho),
-    state.columnas.map((c) => MINIMO_COLUMNA[c]),
-    tabla.parentElement.clientWidth);
+    preferidos.map((w, i) => (primero[i] ? encogidas.shift() : w)),
+    minimos, disponible);
   document
     .querySelectorAll("#cabecera-tabla tr:first-child th")
     .forEach((th, i) => { th.style.width = anchos[i] + "px"; });
@@ -685,6 +713,8 @@ function renderTabla() {
     cuerpo.appendChild(construirFila(t));
     if (t.ide === state.editandoIde) cuerpo.appendChild(construirFilaEditor());
   });
+  // T15f, punto 2: Total se mide con las filas ya pintadas (la del cursor).
+  sincronizarAnchoTabla();
 }
 
 // Las filas de un trabajador (F-050, R22): una subfila por línea (al menos
@@ -1787,6 +1817,7 @@ function refrescarCeldasFila(t) {
   if (!viejas.length) return;
   viejas[0].before(construirFila(t));
   viejas.forEach((tr) => tr.remove());
+  sincronizarAnchoTabla();          // T15f: su Total puede medir otra cosa
 }
 
 // ---------------------------------------------------------------- acciones
