@@ -1,8 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-050 en curso en esta rama** (`feature/F-050-subfilas-partida`, copia
-principal): subfilas por obra en el cuadrante con columna Partida y partida
+**F-050 BLOQUEADA en T15f en esta rama** (`feature/F-050-subfilas-partida`,
+copia principal; motivo en «Bloqueo de T15f» más abajo): subfilas por obra en el cuadrante con columna Partida y partida
 propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
 **1.7.3**.
 
@@ -115,6 +115,43 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   segundo plano en la columna con su origen, registrar sin buscar partidas) es
   F-055 (R3-R8, R27, R29-R36), ya aprobada. Tras T15f: review 7 y el humano
   repite M2 (d), (h) 1 e (i).
+- **Bloqueo de T15f (implementer, 2026-10-14): PARA por un test fuera de la
+  lista cerrada.** No se ha escrito código de T15f (HEAD sin cambios de código).
+  - **Qué rompe:** quitar el tope de 14 del desplegable de obras del editor
+    rompe `services/dedicacion-front/tests/test_f042_sugerencias.py::test_f042_r3_busqueda_identica_y_luego_se_coloca`
+    (F-042, NO está en requirements §6): su `BUSQUEDA_ANTES` fija literal
+    `.filter((e) => !q || e.clave.includes(q)) .slice(0, 14);` («texto literal
+    anterior a F-042»). Medido en una copia aislada (scratchpad, sin tocar el
+    repo) quitando solo los dos `.slice(0, 14)`: suite del front **1 failed,
+    241 passed**, y el único fallo es ese. No hay forma honrada de quitar el
+    tope sin cambiar ese texto.
+  - **Propuesta para el humano:** añadir a requirements §6 ese test, con un
+    único cambio: `BUSQUEDA_ANTES` pierde `.slice(0, 14)` (el resto del
+    literal, el teclado `TECLADO_ANTES` y los demás tests de F-042, sin tocar;
+    las flechas siguen igual y la fila activa se hace visible dentro de
+    `marcarActiva`, que ese test no fija). El de «Completar al 100 %» no lo
+    fija ningún test (F-029 solo pide `candidatasDestino(input.value)`).
+  - **Dos dudas más, para resolver en la misma consulta:**
+    a) **Orden de encogido (punto 2).** «El sitio que falte sale primero de
+    Asignaciones y Partida»: si vale para TODO estrechamiento (como dice la M2
+    (i) 2, «encogen antes Asignaciones y Partida»), cambia el reparto
+    proporcional de T15c y con él un test propio de F-050,
+    `test_f050_m2_1_la_tabla_se_ajusta_a_su_panel` (a 1046 px pasa de
+    `[203, 140, 299, 212, 190]` a `[280, 210, 196, 169, 190]`: Trabajador y
+    Categoría ya no encogen hasta que Asignaciones y Partida lleguen a su
+    mínimo). Si solo vale para lo que Total crece, ese test no cambia.
+    Recomendado: lo primero (es lo que aprobó el humano en (i) 2), con el test
+    propio actualizado y anotado.
+    b) **«Completar al 100 %».** Su lista no es un panel flotante: va dentro
+    del modal (`.completar-candidatas`, `max-height: 220px` y scroll propio).
+    Sin tope y con la activa siempre visible, sí; «se abre arriba si no cabe
+    debajo» no aplica (el modal ya cabe en la ventana). Recomendado: dejarlo
+    así y decirlo en la M2 (i) 1.
+  - **Ojo al tamaño:** requirements está en 150/150 e `impl_F-050.md` en
+    220/220 (PUERTA TAMAÑO): añadir el test a §6 y la sección de T15f exige
+    recortar antes otras líneas. `bash harness/init.sh` (sin
+    `.arnes_cache/suite_*.ok`) en verde tras el bloqueo: raíz 418 + 1 skipped,
+    api 780, front 253, transfer 750; avisa de F-050 `blocked`.
 
 ## Producción, hoy
 
