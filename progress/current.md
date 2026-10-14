@@ -1,8 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-050 BLOQUEADA en T15f en esta rama** (`feature/F-050-subfilas-partida`,
-copia principal; motivo en «Bloqueo de T15f» más abajo): subfilas por obra en el cuadrante con columna Partida y partida
+**F-050 en curso (T15f) en esta rama** (`feature/F-050-subfilas-partida`,
+copia principal; T15f desbloqueada por el humano el 2026-10-14): subfilas por obra en el cuadrante con columna Partida y partida
 propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
 **1.7.3**.
 
@@ -115,8 +115,9 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   segundo plano en la columna con su origen, registrar sin buscar partidas) es
   F-055 (R3-R8, R27, R29-R36), ya aprobada. Tras T15f: review 7 y el humano
   repite M2 (d), (h) 1 e (i).
-- **Bloqueo de T15f (implementer, 2026-10-14): PARA por un test fuera de la
-  lista cerrada.** No se ha escrito código de T15f (HEAD sin cambios de código).
+- **Bloqueo de T15f (implementer, 2026-10-14), RESUELTO por el humano el mismo
+  día («ok a todo»: 1 sí, 2 A, 3 como se propone; requirements §6 gana los dos
+  tests y tasks.md T15f lo recoge). Implementer relanzado.** Lo que se consultó: No se ha escrito código de T15f (HEAD sin cambios de código).
   - **Qué rompe:** quitar el tope de 14 del desplegable de obras del editor
     rompe `services/dedicacion-front/tests/test_f042_sugerencias.py::test_f042_r3_busqueda_identica_y_luego_se_coloca`
     (F-042, NO está en requirements §6): su `BUSQUEDA_ANTES` fija literal

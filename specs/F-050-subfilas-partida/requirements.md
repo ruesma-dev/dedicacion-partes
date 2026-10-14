@@ -134,17 +134,17 @@ raíz del presupuesto de la que cuelga la partida (design §5.1).
 - `test_f002_fuente_unica`: `ANCLAS` gana `regla-partida`.
 - Api: `_fila` de `test_f022_empresa_en_linea`, `test_f024_registro_empresa`,
   `test_f026_registro_recurso` y `test_f039_registro_var` ganan
-  `partida_ide=None, partida_cod=None`; `CAMPOS_LINEA` de `test_f034_rutas`
-  gana los cuatro campos de R18.
+  `partida_ide=None, partida_cod=None`; `CAMPOS_LINEA` de `test_f034_rutas`, los 4 de R18.
 - Front (R29 quita `<select>`, `opcionesPartida` y `overrides`): los de
   `test_f039_partida_fija`, `test_f049_avisos_registro` y `test_f049_
   ampliacion_registro` que nombra `tasks.md` T12 (parte de esta lista).
-- Añadidos por el humano el 2026-10-09: `test_f037_r3_una_linea_sin_partida_no_
+- Añadidos por el humano: el 2026-10-09, `test_f037_r3_una_linea_sin_partida_no_
   hereda_la_de_otra` (partida 1 en `cli.partidas_origen`, R20) y `test_f003_r8_…`
-  (el conjunto esperado suma las tres `partida_*`, R12); sin otras aserciones.
-  Cualquier otro test que cambie: **PARA** y se pregunta al humano.
+  (el conjunto esperado suma las tres `partida_*`, R12); el 2026-10-14 (T15f),
+  `test_f042_r3_busqueda_identica_y_luego_se_coloca` (`BUSQUEDA_ANTES` pierde
+  `.slice(0, 14)`) y `test_f050_m2_1_la_tabla_se_ajusta_a_su_panel` (encogen antes
+  Asignaciones y Partida); sin otras aserciones. Otro test: **PARA** y se pregunta.
 
 ## 7. Verificación MANUAL (humano)
 
-M1 (solo lectura), M2 (navegador, **modo pruebas**: selector en columna y
-modal, CD · CI · CP) y M3 (registro en pruebas, 0404): `tasks.md` T16-T18.
+M1 (lectura), M2 (navegador, **modo pruebas**) y M3 (0404): `tasks.md` T16-T18.
