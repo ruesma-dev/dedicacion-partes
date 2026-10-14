@@ -820,3 +820,303 @@ Mutado:
     state.ratonIde = null;
   });
 ```
+
+## T15f · M2 del 2026-10-14: `app.js`
+
+Mismo método, con `js_mut_t15f.py` y `mutantes.py` (scratchpad, `t15f/`) en una COPIA AISLADA (`git worktree add
+--detach` de `a23a373` en el scratchpad, con el `.venv` del front de la copia principal; `git status` de la copia limpio
+al acabar y retirada con `git worktree remove`). Suite ENTERA del front (`pytest tests -q`, **269 en verde sin mutar**).
+Línea: la de inicio del texto en `app.js` de `a23a373`. **34 generados, 34 muertos, 0 supervivientes**, 1275,5 s en serie.
+
+| Id | Fichero:línea | Texto original → mutado (exacto) | Fallos |
+|---|---|---|---|
+| X01 | app.js:1390 | (varias líneas, abajo) | 1 |
+| X02 | app.js:1381 | `  const desplazada = panel.scrollTop;` → `  const desplazada = 0;` | 1 |
+| X03 | app.js:1381 | (varias líneas, abajo) | 1 |
+| X04 | app.js:1410 | (varias líneas, abajo) | 1 |
+| X05 | app.js:1410 | (varias líneas, abajo) | 2 |
+| X06 | app.js:1410 | (varias líneas, abajo) | 2 |
+| X07 | app.js:1425 | (varias líneas, abajo) | 6 |
+| X08 | app.js:1450 | (varias líneas, abajo) | 2 |
+| X09 | app.js:1452 | (varias líneas, abajo) | 1 |
+| X10 | app.js:1454 | `        panel.scrollTop = el.offsetTop + el.offsetHeight - panel.clientHeight;` → `        panel.scrollTop = el.offsetTop;` | 1 |
+| X11 | app.js:1453 | `      } else if (el.offsetTop + el.offsetHeight > panel.scrollTop + panel.clientHeight) {` → `      } else if (el.offsetTop > panel.scrollTop + panel.clientHeight) {` | 1 |
+| X12 | app.js:1451 | `      if (el.offsetTop < panel.scrollTop) {` → `      if (el.offsetTop > panel.scrollTop) {` | 1 |
+| C01 | app.js:944 | `    candidatas = candidatasDestino(input.value);` → `    candidatas = candidatasDestino(input.value).slice(0, 14);` | 3 |
+| C02 | app.js:931 | (varias líneas, abajo) | 2 |
+| C03 | app.js:913 | (varias líneas, abajo) | 2 |
+| C04 | app.js:931 | (varias líneas, abajo) | 2 |
+| C05 | app.js:931 | (varias líneas, abajo) | 3 |
+| C06 | app.js:929 | `      if (i === activa) viva = fila;` → `      if (i === 0) viva = fila;` | 2 |
+| C07 | app.js:913 | (varias líneas, abajo) | 2 |
+| T01 | app.js:511 | `      contenido = Math.max(contenido, rango.getBoundingClientRect().width);` → `      contenido = rango.getBoundingClientRect().width;` | 1 |
+| T02 | app.js:514 | `    contenido = Math.ceil(contenido + parseFloat(estilo.paddingLeft) +` → `    contenido = Math.ceil(contenido +` | 3 |
+| T03 | app.js:515 | `      parseFloat(estilo.paddingRight)) + 2;` → `      parseFloat(estilo.paddingRight));` | 3 |
+| T04 | app.js:517 | `  const suelo = (c) => (c === "total" ? contenido : 0);` → `  const suelo = (c) => 0;` | 3 |
+| T05 | app.js:519 | (varias líneas, abajo) | 3 |
+| T06 | app.js:520 | `  const minimos = state.columnas.map((c) => Math.max(MINIMO_COLUMNA[c], suelo(c)));` → `  const minimos = state.columnas.map((c) => MINIMO_COLUMNA[c]);` | 1 |
+| T07 | app.js:522 | (varias líneas, abajo) | 5 |
+| T08 | app.js:522 | (varias líneas, abajo) | 5 |
+| T09 | app.js:527 | `    disponible - fijas);` → `    disponible);` | 5 |
+| T10 | app.js:529 | `    preferidos.map((w, i) => (primero[i] ? encogidas.shift() : w)),` → `    preferidos,` | 5 |
+| T11 | app.js:716 | (varias líneas, abajo) | 1 |
+| T12 | app.js:1819 | (varias líneas, abajo) | 1 |
+| T13 | app.js:506 | (varias líneas, abajo) | 3 |
+| T14 | app.js:510 | `      rango.selectNodeContents(td);` → (borrada) | 3 |
+| T15 | app.js:523 | `  const fijas = preferidos.reduce((s, w, i) => s + (primero[i] ? 0 : w), 0);` → `  const fijas = preferidos.reduce((s, w, i) => s + w, 0);` | 4 |
+
+**X01** (static/js/app.js:1390, 1 fallos). Original:
+
+```
+  panel.style.maxHeight = `${pos.altoMax}px`;
+  panel.scrollTop = desplazada;
+}
+```
+
+Mutado:
+
+```
+  panel.style.maxHeight = `${pos.altoMax}px`;
+}
+```
+
+**X03** (static/js/app.js:1381, 1 fallos). Original:
+
+```
+  const desplazada = panel.scrollTop;
+  panel.style.maxHeight = "";       // alto natural, con el tope del CSS
+```
+
+Mutado:
+
+```
+  panel.style.maxHeight = "";       // alto natural, con el tope del CSS
+  const desplazada = panel.scrollTop;
+```
+
+**X04** (static/js/app.js:1410, 1 fallos). Original:
+
+```
+    if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;
+    colocarSugerencias(input, panel);
+```
+
+Mutado:
+
+```
+    colocarSugerencias(input, panel);
+```
+
+**X05** (static/js/app.js:1410, 2 fallos). Original:
+
+```
+    if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;
+    colocarSugerencias(input, panel);
+```
+
+Mutado:
+
+```
+    if (ev && ev.type === "scroll" && !panel.contains(ev.target)) return;
+    colocarSugerencias(input, panel);
+```
+
+**X06** (static/js/app.js:1410, 2 fallos). Original:
+
+```
+    if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;
+    colocarSugerencias(input, panel);
+```
+
+Mutado:
+
+```
+    if (ev && panel.contains(ev.target)) return;
+    colocarSugerencias(input, panel);
+```
+
+**X07** (static/js/app.js:1425, 6 fallos). Original:
+
+```
+      .filter((e) => !q || e.clave.includes(q));
+```
+
+Mutado:
+
+```
+      .filter((e) => !q || e.clave.includes(q))
+      .slice(0, 14);
+```
+
+**X08** (static/js/app.js:1450, 2 fallos). Original:
+
+```
+      if (i !== activa) return;
+      if (el.offsetTop < panel.scrollTop) {
+```
+
+Mutado:
+
+```
+      if (el.offsetTop < panel.scrollTop) {
+```
+
+**X09** (static/js/app.js:1452, 1 fallos). Original:
+
+```
+        panel.scrollTop = el.offsetTop;
+      } else if
+```
+
+Mutado:
+
+```
+      } else if
+```
+
+**C02** (static/js/app.js:931, 2 fallos). Original:
+
+```
+    lista.scrollTop = desplazada;
+    if (viva)
+```
+
+Mutado:
+
+```
+    if (viva)
+```
+
+**C03** (static/js/app.js:913, 2 fallos). Original:
+
+```
+    const desplazada = lista.scrollTop;
+    let viva = null;
+```
+
+Mutado:
+
+```
+    const desplazada = 0;
+    let viva = null;
+```
+
+**C04** (static/js/app.js:931, 2 fallos). Original:
+
+```
+    lista.scrollTop = desplazada;
+    if (viva) viva.scrollIntoView({ block: "nearest" });
+```
+
+Mutado:
+
+```
+    lista.scrollTop = desplazada;
+```
+
+**C05** (static/js/app.js:931, 3 fallos). Original:
+
+```
+    lista.scrollTop = desplazada;
+    if (viva) viva.scrollIntoView({ block: "nearest" });
+```
+
+Mutado:
+
+```
+    lista.scrollTop = desplazada;
+    if (viva) viva.scrollIntoView({ block: "start" });
+```
+
+**C07** (static/js/app.js:913, 2 fallos). Original:
+
+```
+    const desplazada = lista.scrollTop;
+    let viva = null;
+    lista.innerHTML = "";
+```
+
+Mutado:
+
+```
+    let viva = null;
+    lista.innerHTML = "";
+    const desplazada = lista.scrollTop;
+```
+
+**T05** (static/js/app.js:519, 3 fallos). Original:
+
+```
+    (c) => Math.max(state.anchos[c] || COLUMNAS[c].ancho, suelo(c)));
+```
+
+Mutado:
+
+```
+    (c) => state.anchos[c] || COLUMNAS[c].ancho);
+```
+
+**T07** (static/js/app.js:522, 5 fallos). Original:
+
+```
+  const primero = state.columnas.map((c) => c === "asignaciones" || c === "partida");
+```
+
+Mutado:
+
+```
+  const primero = state.columnas.map((c) => c === "asignaciones");
+```
+
+**T08** (static/js/app.js:522, 5 fallos). Original:
+
+```
+  const primero = state.columnas.map((c) => c === "asignaciones" || c === "partida");
+```
+
+Mutado:
+
+```
+  const primero = state.columnas.map((c) => false);
+```
+
+**T11** (static/js/app.js:716, 1 fallos). Original:
+
+```
+  // T15f, punto 2: Total se mide con las filas ya pintadas (la del cursor).
+  sincronizarAnchoTabla();
+}
+```
+
+Mutado:
+
+```
+}
+```
+
+**T12** (static/js/app.js:1819, 1 fallos). Original:
+
+```
+  viejas.forEach((tr) => tr.remove());
+  sincronizarAnchoTabla();          // T15f: su Total puede medir otra cosa
+```
+
+Mutado:
+
+```
+  viejas.forEach((tr) => tr.remove());
+```
+
+**T13** (static/js/app.js:506, 3 fallos). Original:
+
+```
+  if (celdas.length) {
+    const estilo
+```
+
+Mutado:
+
+```
+  if (false) {
+    const estilo
+```

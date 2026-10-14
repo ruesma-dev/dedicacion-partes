@@ -115,6 +115,12 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   segundo plano en la columna con su origen, registrar sin buscar partidas) es
   F-055 (R3-R8, R27, R29-R36), ya aprobada. Tras T15f: review 7 y el humano
   repite M2 (d), (h) 1 e (i).
+  **T15f TERMINADA por el implementer (2026-10-14)**: `61ede15`..(este commit),
+  `progress/impl_F-050.md` § T15f; solo front; RED→verde (8 + 8 tests nuevos),
+  Chrome headless antes/después, mutación JS manual 34/34 en copia aislada,
+  `init.sh` en verde sin caché (front 269). Desviación anotada: en el editor la
+  activa se hace visible con `offsetTop` (no `scrollIntoView`, que el DOM de
+  F-042 de la lista cerrada no tiene); «Completar» sin «arriba» (aprobado).
 - **Bloqueo de T15f (implementer, 2026-10-14), RESUELTO por el humano el mismo
   día («ok a todo»: 1 sí, 2 A, 3 como se propone; requirements §6 gana los dos
   tests y tasks.md T15f lo recoge). Implementer relanzado.** Lo que se consultó: No se ha escrito código de T15f (HEAD sin cambios de código).

@@ -81,8 +81,8 @@ def _sincronizar(anchos: dict, disponible: int, contenidos: list,
         str(disponible) + "}};",
         "const $ = (s) => s === '#tabla' ? tabla : null;",
         "let estilos = 0;",
-        "function getComputedStyle(td) { estilos += 1; "
-        "return {paddingLeft: '14px', paddingRight: '14px'}; }",
+        ("function getComputedStyle(td) { estilos += 1; "
+         "return {paddingLeft: '14px', paddingRight: '14px'}; }"),
         ("const document = {querySelectorAll: (s) => s === "
          "'#cabecera-tabla tr:first-child th' ? ths : "
          "(s === '#cuerpo td.celda-total' ? celdas : []), "
