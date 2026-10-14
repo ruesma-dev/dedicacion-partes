@@ -2,7 +2,7 @@
 # Trabajo en curso
 
 **F-050 en curso en esta rama** (`feature/F-050-subfilas-partida`, copia
-principal; T15f terminada, en review 7): subfilas por obra en el cuadrante con columna Partida y partida
+principal; review 7 aprobada, espera la M2 (d), (h) 1 e (i)): subfilas por obra en el cuadrante con columna Partida y partida
 propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
 **1.7.3**.
 
@@ -123,8 +123,12 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   `progress/impl_F-050.md` § T15f; solo front; RED→verde con 8 + 8 tests nuevos,
   mutación JS manual 34/34 en copia aislada, `init.sh` en verde sin caché, front
   269). Desviación anotada: en el editor la activa se hace visible con
-  `offsetTop` (el DOM de F-042 no tiene `scrollIntoView`). **Review 7 lanzada.**
-  Después, el humano repite la M2 (d), (h) 1 e (i) (`tasks.md` T17).
+  `offsetTop` (el DOM de F-042 no tiene `scrollIntoView`). **Review 7 APROBADA**
+  (`progress/review_F-050.md`); sus tres observaciones, en T17 (i) 3: Total entero
+  en el primer pintado tras Ctrl+F5 (si no, `document.fonts.ready`), ↑ ↓ fluidos
+  con el mes entero, y las dos de la review 6 (↓ junto al borde con el ratón
+  quieto; cinco filas con `ALTO_UTIL`). **Espera que el humano repita la M2 (d),
+  (h) 1 e (i)** (`tasks.md` T17).
 
 ## Producción, hoy
 
