@@ -100,9 +100,10 @@ def test_f050_r22_una_subfila_por_linea_con_rowspan():
     assert "const n = Math.max(1, t.lineas.length);" in fila
     assert 'tr.className = idx ? "fila subfila" : "fila";' in fila
     assert "tr.dataset.linea = idx;" in fila
+    # T15c (M2, punto 2): la celda queda en `td` para marcar los bordes.
     assert ("if (COLUMNAS_POR_LINEA.includes(clave)) { "
-            "tr.appendChild(construirCelda(t, clave, idx)); }") in fila
-    assert ("else if (!idx) { const td = construirCelda(t, clave, idx); "
+            "td = construirCelda(t, clave, idx); tr.appendChild(td); }") in fila
+    assert ("else if (!idx) { td = construirCelda(t, clave, idx); "
             "td.rowSpan = n; tr.appendChild(td); }") in fila
     assert "return frag;" in fila
     assert _plano(_const("COLUMNAS_POR_LINEA")) == (

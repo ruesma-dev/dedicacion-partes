@@ -305,7 +305,10 @@ cambia solo la partida elegida de esa línea, con evento `PARTIDA`
 deshacible; 404 / 409 / 422). Cada línea del cuadrante publica
 `partida_ide`, `partida_cod`, `partida_res` y `partida_fija`, y al registrar
 la elegida viaja como `paride`. El preflight ya no recibe `overrides` del
-front. La regla está en `docs/ARCHITECTURE.md#regla-partida`.
+front y admite `obra_ide` en el cuerpo (entero; 422 si no lo es): analiza solo la petición de esa
+obra (la del grupo; en las entradas VAR, la de registro). Es lo que repite
+el modal al cambiar una partida, en vez del mes entero (F-050 T15c);
+`ejecutar` no se acota. La regla está en `docs/ARCHITECTURE.md#regla-partida`.
 
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 

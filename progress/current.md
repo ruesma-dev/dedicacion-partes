@@ -1,95 +1,41 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-055 en spec en esta rama** (`feature/F-055-preflight-rapido`, copia
-`PycharmProjects/porcentajes-f041`, sacada de F-050 en `6de25e4` porque se apoya
-en su partida por línea): registro sin búsquedas de partidas (rediseño pedido por
-el humano el 2026-10-11). En la copia principal, F-050 sigue en curso (T15c).
-El arnés es la **1.7.3**.
+**F-055 en curso en esta rama** (`feature/F-055-preflight-rapido`, copia
+`PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas y
+propuesta del mes en segundo plano. F-050 está cerrada en `dev` y `main`; su
+despliegue lo lanzó el humano el 2026-10-14 (sección siguiente). El arnés es la
+**1.7.3**.
 
-## F-055 · Registro sin búsquedas de partidas (en spec)
+## F-055 · Registro sin búsquedas de partidas (en curso)
 
 - **Spec aprobada por el humano el 2026-10-13** («acepto tu propuesta de F-55»):
   D1 = A, **D2 = A + C** (además de guardar al volver de un preflight y al abrir el
   selector, se calculan en lote las propuestas de todo el mes al abrirlo o al
   sincronizar, para que salgan preseleccionadas en el cuadrante), D3-D8 = A; el
-  paso 2 de la propuesta se mantiene. **Estado:** `spec_ready`; spec ajustada a
-  D2 = A + C el 2026-10-13 (R29-R36: propuestas del mes en segundo plano al
-  abrir un periodo abierto o tras un sync, `POST /api/partidas/propuesta-lote`,
-  `GET …/propuestas`; tareas T1-T20; D1-D8 DECIDIDAS en los tres ficheros);
-  se implementa tras fusionar F-050.
+  paso 2 de la propuesta se mantiene. Spec ajustada el 2026-10-13 (R29-R36,
+  `POST /api/partidas/propuesta-lote`, `GET …/propuestas`; T1-T20).
+- **En la M2 de F-050 (2026-10-14) el humano volvió a pedir** lo que cubre esta
+  feature: que en la columna Partida salga la propuesta con su origen (R27) en vez
+  de «automática», buscada en segundo plano (R29-R36), y que «Registrar» no tarde
+  (R3-R8).
+- **Estado:** `dev` traído a la rama el 2026-10-14 (F-050 cerrada);
+  **implementer lanzado** (T1 en adelante; T2 y T18-T19 son MANUAL del humano).
 
-## F-050 · Subfilas por obra con columna Partida (en curso)
+## ⚠ Despliegue de F-050 (pendiente; lo lanza el humano)
 
-- **Qué es** (humano, 2026-10-08): cada obra del trabajador en su subfila, con
-  una columna Partida a la derecha para elegirla en el cuadrante (el modal de
-  registro deja de ser donde se busca, aunque se pueda cambiar ahí); propuesta:
-  1) la del parte anterior por obra y empleado, 2) la del último parte en que
-  se asignó ese recurso, 3) el casamiento de `partes` (nombre y categoría).
-  Absorbe F-043 (buscador predictivo, ordenado y con selector CI/CD). Toca los
-  tres servicios; rigor crítico.
-- **Spec aprobada por el humano el 2026-10-09** con D1-D10 = A («si») y dos
-  precisiones: el modal de registro usa **el mismo selector** que la columna
-  Partida (desplegable con buscador, como en `partes`), y el selector lleva
-  botones **CD · CI · CP** (y «Todas») para filtrar por mayor (se añade CP).
-- **Estado:** spec ajustada a las dos precisiones (2026-10-09): R8, R17,
-  R26, R29, design §5 y §11 (D1-D10 DECIDIDAS, A) y MANUAL T16-T17; lista
-  cerrada del front recalculada (T12, seis `c_*` de F-049 se borran). El
-  mayor se toma de la **raíz** del presupuesto (leído en Sigrid: `categoria`
-  de `partida_catalog` clasifica mal dos hojas bajo CD; la copia de
-  `partes` tiene el mismo fallo: avisado al humano el 2026-10-09, design §5.1).
-  `dev` traído a la rama. Dos bloqueos por tests fuera de la lista cerrada, los dos
-  APROBADOS por el humano el 2026-10-09 y añadidos a requirements §6:
-  `test_f037_r3_…` (una línea de datos, R20) y `test_f003_r8_…` (el conjunto
-  de columnas suma las tres `partida_*`, R12). Hecho: T1-T5 (`686d00a`..
-  `3aed309`; transfer 742 passed). **Implementer TERMINADO (2026-10-09):**
-  T1-T15 (`686d00a`..`e182915`, `progress/impl_F-050.md`): mutación Python
-  158/158 y JS 56/56 muertos (en copias aisladas), cobertura 341/341, `init.sh`
-  en verde sin caché (api 768, front 184, transfer 750). T14 hecha por el
-  líder: `azure-apps/dedicacion.md` con los endpoints, la variable y el orden
-  transfer → api → front (`edaa2b7`, «sin desplegar»). **Review 1: CAMBIOS
-  PEDIDOS** (`progress/review_F-050.md`): textos de 7 mutantes JS cortados con
-  «…» (implementer relanzado); T19 sin marcar, F-050 duplicada en «Lo
-  siguiente» y el rango de commits (corregidos por el líder). Observaciones:
-  (g) en M2 para el tiempo del mes entero; una línea omitida por R20 no tiene
-  botón de partida en el modal (**el humano aprueba el 2026-10-10 añadirlo:
-  R29 bis; T15b hecha por el implementer en `6320474`**; **review 2 APROBADA**,
-  sus observaciones recogidas: (g) en T17 y el motivo por texto llevado a
-  F-048); postventa en R9 casa
-  con `origen.codigo` en `proponer` y con `obra.codigo` en el preflight (hoy
-  coinciden; anotado en «Hechos que no conviene volver a descubrir»).
-- **MANUAL (humano, en local; transfer en modo pruebas):**
-  - **M1 (T16, solo lectura):** en Git Bash,
-    `cd C:/Users/pgris/PycharmProjects/porcentajes/services/dedicacion-transfer`
-    y `.venv/Scripts/python prueba_escritura_porcentajes.py propuesta --ano 2026 --mes 9 --obra 0694 --recurso 1705036`
-    (1705036 = GONZALEZ PANIAGUA, leído en Sigrid); lo mismo con `--obra 0696`.
-    Esperado en la 0694: «Propuesta: CI.1.5», método `parte_anterior`, origen
-    PT26/00319 · 09/2026; «Por mayor: CD … · CI … · CP …» con `CP.1`-`CP.12`
-    en CP; botón preelegido CI; cada lectura < 30 s.
-    **Resultado M1 (humano, 2026-10-11): OK.** 0694: propuesta CI.1.5
-    (`parte_anterior`, PT26/00319 · 09/2026), 835 hojas (CD 727 · CI 95 · CP 13 ·
-    OTRO 0), botón CI; lecturas 6,39 s / 5,26 s / 5,74 s. 0696: CI.1.5 por
-    `ultimo_parte` (PT26/00319 y PT26/00350, obras 0694 y 0672), 2.636 hojas
-    (CD 2562 · CI 62 · CP 12), botón CI; lecturas 4,30 s / 3,25 s / 0,80 s.
-  - **M2 (T17, navegador):** transfer, api y front desde la copia principal
-    (`.venv/Scripts/python main.py` en cada servicio); `curl -s http://localhost:8006/health`
-    con `"modo_pruebas": true` (si no, PARAR). La api añade al arrancar las
-    columnas `partida_*`. Puntos (a)-(f) de `specs/F-050-subfilas-partida/tasks.md`
-    T17: subfilas y columna Partida; selector con buscador, Todas · CD · CI · CP,
-    propuesta primera; postventa y VAR; regresión del teclado; el mismo
-    selector en el modal (**Cancelar, sin Registrar**); tiempo en la 0696;
-    **(g)** cronometrar «Registrar en Sigrid» de todo el mes hasta que sale el
-    modal (dato para F-055, observación de la review 1).
-  - **M3 (T18):** registro en modo pruebas, **solo con autorización del humano
-    en ese momento**.
-- **M2 del humano (2026-10-11): fallos; arreglos APROBADOS («ok»):** 1) tabla
-  adaptable con scroll horizontal (se cortaba la derecha); 2) fila seleccionada
-  igual con subfilas; 3) selector con «Cargando partidas…», sin abrirse dos veces;
-  4) en el modal, selector encima del modal; 5) cambiar una partida en el modal
-  repite el preflight solo de esa obra (los 502 eran el proxy del front cortando a
-  los 120 s preflights del mes entero). Lentitud de fondo → F-055 rediseñada (spec
-  en paralelo en `porcentajes-f041`). **Estado:** implementer lanzado (T15c).
-  Resultado: _pendiente_.
+- Cambian **los tres servicios**, en el orden fijo transfer → api → front
+  (`.\redeploy_dedicacion.ps1` desde `dev`, con `00_vars_dedicacion.ps1`,
+  `00_vars_dedicacion.local.ps1` y `00_capps_vars_dedicacion.ps1` cargados).
+  La api añade al arrancar, en su base, las columnas nulables `partida_ide`,
+  `partida_cod` y `partida_res` de `asignacion` (`ADD COLUMN IF NOT EXISTS`). Sin
+  sync ni variables nuevas (`PROPUESTA_MESES_ATRAS` tiene defecto 24). El
+  transfer conserva el modo real.
+- **Comprobación (sin pulsar «Registrar»):** Ctrl+F5, septiembre 2026: subfilas
+  y columna Partida; clic en la Partida de GONZALEZ PANIAGUA en la 0694: el
+  selector con CI preelegido y la propuesta primera; «⇪ Sigrid»: cada línea con
+  su partida y su origen. **Cancelar.** Después, el líder anota las imágenes en
+  `infra/imagenes.json`, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
 
 ## Producción, hoy
 
@@ -180,7 +126,7 @@ El arnés es la **1.7.3**.
 
 `BACKLOG.md` tiene el orden completo. Nuevas el 2026-10-08 (pedidas por el
 humano): **F-049** (los avisos del modal de registro rotulados por tipo, con su
-%; aprobada), **F-051** (pisar las líneas del parte al 0 % que ya existan),
+%; desplegada), **F-051** (pisar las líneas del parte al 0 % que ya existan),
 **F-050** (subfilas por obra con columna Partida y partida propuesta; absorbe
 F-043) y **F-021** redefinida (velar las etiquetas de las demás obras al
 filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
@@ -188,13 +134,17 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-F-049 desplegada. Orden: F-050 (en curso, esta rama), **F-055** (medir y acelerar la
+F-049 desplegada. F-050 cerrada (desplegada por el humano el 2026-10-14). Orden: **F-055** (en curso, `porcentajes-f041`) (medir y acelerar la
 previsualización del registro; 2026-10-08), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
+- **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
+  `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
+  `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`
+  410599, GONZALEZ PANIAGUA, `porcentajes:180`).
 - **Cargar también la copia local de variables al desplegar.** El orden es
   `. .\00_vars_dedicacion.ps1`, `. .\00_vars_dedicacion.local.ps1` y
   `. .\00_capps_vars_dedicacion.ps1`. Si falta la local, `redeploy` sigue con

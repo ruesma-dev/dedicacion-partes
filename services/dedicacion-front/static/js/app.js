@@ -52,6 +52,10 @@ const ORDEN_COLUMNAS_DEFECTO = ["nombre", "categoria", "asignaciones", "partida"
 // del trabajador y ocupan todas sus subfilas (`rowSpan`).
 const COLUMNAS_POR_LINEA = ["asignaciones", "partida"];
 const CLAVE_TABLA = "dedicacion:tabla:v1";
+// F-050 (M2, punto 1): hasta dónde encoge cada columna para que la tabla
+// quepa en la ventana (Total no encoge: su contenido no se parte). Por debajo
+// de esto, scroll horizontal. Las preferencias del usuario no se tocan.
+const MINIMO_COLUMNA = { nombre: 160, categoria: 100, asignaciones: 150, partida: 150, total: 190 };
 
 const state = {
   anio: 0,
@@ -75,6 +79,9 @@ const state = {
   seleccion: new Set(),
   ancla: null,                 // fila desde la que Shift+clic hace el rango
   editandoIde: null,
+  // Bloque bajo el ratón (T15e): su trabajador y sus `<tr>` sombreadas.
+  ratonIde: null,
+  resaltadas: [],
   edicion: [],
   timerGuardado: null,
   guardadoPendiente: false,
@@ -83,9 +90,9 @@ const state = {
 };
 
 // Selector de partida (F-050): respuestas de `GET …/partidas` por trabajador,
-// obra y modo (se vacía al cargar el cuadrante y su clave tras cada PUT) y
-// cómo cerrar el panel abierto.
-const selector = { cache: new Map(), cerrar: null };
+// obra y modo (se vacía al cargar el cuadrante y su clave tras cada PUT),
+// cómo cerrar el panel abierto y su clave (cargando o ya lleno).
+const selector = { cache: new Map(), cerrar: null, abierto: null };
 
 // ---------------------------------------------------------------- utilidades
 const $ = (sel) => document.querySelector(sel);
@@ -470,15 +477,62 @@ function pintarIndicadoresOrden() {
   });
 }
 
+// F-050 (M2, punto 1): los anchos que caben en `disponible`. Si los
+// preferidos caben, ellos; si no, cada columna cede en proporción lo que
+// tiene por encima de su mínimo (una preferencia más estrecha que el mínimo
+// se queda como está). Si ni con los mínimos cabe, esos: scroll horizontal.
+function anchosAjustados(preferidos, minimos, disponible) {
+  const total = preferidos.reduce((s, w) => s + w, 0);
+  if (total <= disponible) return preferidos;
+  const suelos = preferidos.map((w, i) => Math.min(w, minimos[i]));
+  const suelo = suelos.reduce((s, w) => s + w, 0);
+  const f = Math.max(0, (disponible - suelo) / (total - suelo));
+  return preferidos.map((w, i) => Math.floor(suelos[i] + (w - suelos[i]) * f));
+}
+
+// La tabla cabe en su panel (M2, punto 1): se pinta con los anchos
+// ajustados; `state.anchos` (lo guardado) no cambia, así que con más sitio
+// vuelven los del usuario.
+// T15f, punto 2: Total nunca baja de lo que mide su contenido más ancho
+// (badge, «falta/sobra X %», «⇪ Sigrid», «↩»; un `Range` mide el contenido,
+// no la celda, y se le suma el relleno). Al estrechar encogen primero
+// Asignaciones y Partida; Trabajador y Categoría, solo cuando ellas llegan a
+// su mínimo. Si ni así cabe, scroll horizontal del panel.
 function sincronizarAnchoTabla() {
   const tabla = $("#tabla");
   tabla.style.tableLayout = "fixed";
-  let total = 0;
+  const celdas = document.querySelectorAll("#cuerpo td.celda-total");
+  let contenido = 0;
+  if (celdas.length) {
+    const estilo = getComputedStyle(celdas[0]);
+    const rango = document.createRange();
+    celdas.forEach((td) => {
+      rango.selectNodeContents(td);
+      contenido = Math.max(contenido, rango.getBoundingClientRect().width);
+    });
+    // +2: los bordes de la celda y el redondeo de los píxeles.
+    contenido = Math.ceil(contenido + parseFloat(estilo.paddingLeft) +
+      parseFloat(estilo.paddingRight)) + 2;
+  }
+  const suelo = (c) => (c === "total" ? contenido : 0);
+  const preferidos = state.columnas.map(
+    (c) => Math.max(state.anchos[c] || COLUMNAS[c].ancho, suelo(c)));
+  const minimos = state.columnas.map((c) => Math.max(MINIMO_COLUMNA[c], suelo(c)));
+  const disponible = tabla.parentElement.clientWidth;
+  const primero = state.columnas.map((c) => c === "asignaciones" || c === "partida");
+  const fijas = preferidos.reduce((s, w, i) => s + (primero[i] ? 0 : w), 0);
+  const encogidas = anchosAjustados(
+    preferidos.filter((w, i) => primero[i]),
+    minimos.filter((w, i) => primero[i]),
+    disponible - fijas);
+  const anchos = anchosAjustados(
+    preferidos.map((w, i) => (primero[i] ? encogidas.shift() : w)),
+    minimos, disponible);
   document
     .querySelectorAll("#cabecera-tabla tr:first-child th")
-    .forEach((th) => { total += parseInt(th.style.width, 10) || 0; });
+    .forEach((th, i) => { th.style.width = anchos[i] + "px"; });
   tabla.style.minWidth = "100%";
-  tabla.style.width = total + "px";
+  tabla.style.width = anchos.reduce((s, w) => s + w, 0) + "px";
 }
 
 function montarManijaAncho(th, clave) {
@@ -659,6 +713,8 @@ function renderTabla() {
     cuerpo.appendChild(construirFila(t));
     if (t.ide === state.editandoIde) cuerpo.appendChild(construirFilaEditor());
   });
+  // T15f, punto 2: Total se mide con las filas ya pintadas (la del cursor).
+  sincronizarAnchoTabla();
 }
 
 // Las filas de un trabajador (F-050, R22): una subfila por línea (al menos
@@ -668,6 +724,7 @@ function renderTabla() {
 function construirFila(t) {
   const frag = document.createDocumentFragment();
   const n = Math.max(1, t.lineas.length);
+  const trs = [];
   for (let idx = 0; idx < n; idx++) {
     const tr = document.createElement("tr");
     tr.className = idx ? "fila subfila" : "fila";
@@ -678,15 +735,38 @@ function construirFila(t) {
     if (state.seleccion.has(t.ide)) tr.classList.add("multi");
     if (t.ide === state.editandoIde) tr.classList.add("editando");
 
-    state.columnas.forEach((clave) => {
+    state.columnas.forEach((clave, c) => {
+      let td = null;
       if (COLUMNAS_POR_LINEA.includes(clave)) {
-        tr.appendChild(construirCelda(t, clave, idx));
+        td = construirCelda(t, clave, idx);
+        tr.appendChild(td);
       } else if (!idx) {
-        const td = construirCelda(t, clave, idx);
+        td = construirCelda(t, clave, idx);
         td.rowSpan = n;
         tr.appendChild(td);
       }
+      // M2, punto 2: las celdas de los bordes de la tabla llevan la barra
+      // del cursor; así el bloque se marca igual en todas sus subfilas.
+      if (td && c === 0) td.classList.add("col-primera");
+      if (td && c === state.columnas.length - 1) td.classList.add("col-ultima");
     });
+
+    // T15d, punto 1: con el ratón encima de cualquier subfila se sombrea
+    // el bloque entero (con `:hover`, solo la `<tr>` bajo el ratón).
+    // T15e: se apunta en `state`; al entrar se apaga el que hubiera (un
+    // bloque repintado bajo el ratón puede no recibir nunca su `mouseleave`).
+    tr.addEventListener("mouseenter", () => {
+      (state.resaltadas || []).forEach((x) => x.classList.remove("resaltada"));
+      state.ratonIde = t.ide;
+      state.resaltadas = trs;
+      trs.forEach((x) => x.classList.add("resaltada"));
+    });
+    tr.addEventListener("mouseleave", () => {
+      (state.resaltadas || []).forEach((x) => x.classList.remove("resaltada"));
+      state.ratonIde = null;
+      state.resaltadas = [];
+    });
+    trs.push(tr);
 
     // Shift+clic no debe seleccionar el texto de la tabla (F-029, R2).
     tr.addEventListener("mousedown", (ev) => {
@@ -705,6 +785,12 @@ function construirFila(t) {
       else renderTabla();
     });
     frag.appendChild(tr);
+  }
+  // T15e (obs. 1 de la review 5): repintado con el ratón quieto encima, sale
+  // ya sombreado (el navegador no le manda `mouseenter` hasta que se mueve).
+  if (t.ide === state.ratonIde) {
+    trs.forEach((x) => x.classList.add("resaltada"));
+    state.resaltadas = trs;
   }
   return frag;
 }
@@ -820,7 +906,12 @@ function montarDialogoCompletar(filas) {
   let activa = -1;
   let enviando = false;
 
+  // F-050, T15f: sin tope, la lista (dentro del modal) se desplaza; al
+  // repintar conserva su desplazamiento (vaciarla lo pone a 0) y la activa
+  // queda a la vista.
   const pintar = () => {
+    const desplazada = lista.scrollTop;
+    let viva = null;
     lista.innerHTML = "";
     candidatas.forEach((e, i) => {
       const fila = document.createElement("div");
@@ -835,7 +926,10 @@ function montarDialogoCompletar(filas) {
         pintar();
       });
       lista.appendChild(fila);
+      if (i === activa) viva = fila;
     });
+    lista.scrollTop = desplazada;
+    if (viva) viva.scrollIntoView({ block: "nearest" });
     const elegida = candidatas[activa];
     $("#completar-elegida").innerHTML = elegida
       ? `Destino: <strong>${escapeHtml(elegida.cod)}</strong> · ` +
@@ -847,7 +941,7 @@ function montarDialogoCompletar(filas) {
     if (boton) boton.disabled = !elegida || enviando;
   };
   const refrescar = () => {
-    candidatas = candidatasDestino(input.value).slice(0, 14);
+    candidatas = candidatasDestino(input.value);
     activa = candidatas.length ? 0 : -1;
     pintar();
   };
@@ -1256,22 +1350,35 @@ let desmontarSugerencias = null;
 // panel (con el tope de 280 px del CSS) y `ventana` {alto, ancho}. Debajo
 // del campo; si ahí no cabe y encima hay más sitio, encima. Nunca se sale de
 // la ventana: el ancho y el alto se limitan al sitio que hay.
-function posicionSugerencias(campo, alto, ventana) {
+// F-050, T15d: `minimo` (0 en F-042, que no cambia) es el alto útil que el
+// panel tiene que poder enseñar aunque ahora mida menos («Cargando…»): con
+// él se decide arriba o abajo y es el tope mínimo; si no cabe en ningún
+// lado, el panel se mete en la ventana aunque tape su campo.
+function posicionSugerencias(campo, alto, ventana, minimo = 0) {
   const HUECO = 4;     // entre el campo y el panel
   const MARGEN = 8;    // con el borde de la ventana
   const ancho = Math.min(430, ventana.ancho - 2 * MARGEN);
   const left = Math.max(MARGEN, Math.min(campo.left, ventana.ancho - MARGEN - ancho));
   const abajo = ventana.alto - campo.bottom - HUECO - MARGEN;
   const arriba = campo.top - HUECO - MARGEN;
-  const haciaArriba = alto > abajo && arriba > abajo;
-  const altoMax = Math.max(0, Math.min(alto, haciaArriba ? arriba : abajo));
-  const top = haciaArriba ? campo.top - HUECO - altoMax : campo.bottom + HUECO;
+  const suelo = Math.max(0, Math.min(minimo, ventana.alto - 2 * MARGEN));
+  const quiere = Math.max(alto, suelo);
+  const haciaArriba = quiere > abajo && arriba > abajo;
+  const altoMax = Math.max(0, Math.min(quiere, Math.max(haciaArriba ? arriba : abajo, suelo)));
+  let top = haciaArriba ? campo.top - HUECO - Math.min(alto, altoMax) : campo.bottom + HUECO;
+  if (suelo) {
+    top = Math.max(MARGEN, haciaArriba ? top : Math.min(top, ventana.alto - MARGEN - altoMax));
+  }
   return { top, left, ancho, altoMax, haciaArriba };
 }
 
 // Coloca el panel junto al campo (si está abierto).
+// F-050, T15f: sin el tope de 14 la lista se desplaza; medirla sin el
+// `max-height` de la vez anterior recorta su `scrollTop` (lección de T15e):
+// se guarda antes y se repone después.
 function colocarSugerencias(input, panel) {
   if (panel.classList.contains("oculto")) return;
+  const desplazada = panel.scrollTop;
   panel.style.maxHeight = "";       // alto natural, con el tope del CSS
   const pos = posicionSugerencias(input.getBoundingClientRect(), panel.offsetHeight, {
     alto: document.documentElement.clientHeight,
@@ -1281,6 +1388,7 @@ function colocarSugerencias(input, panel) {
   panel.style.left = `${pos.left}px`;
   panel.style.width = `${pos.ancho}px`;
   panel.style.maxHeight = `${pos.altoMax}px`;
+  panel.scrollTop = desplazada;
 }
 
 // Quita el panel vivo y sus escuchas. La llaman renderTabla (cerrar el
@@ -1297,7 +1405,11 @@ function montarAutocompletado(input, panel, editor) {
 
   retirarSugerencias();
   document.body.appendChild(panel);
-  const recolocar = () => colocarSugerencias(input, panel);
+  // T15f: el `scroll` de la propia lista (la rueda) no lo recoloca.
+  const recolocar = (ev) => {
+    if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;
+    colocarSugerencias(input, panel);
+  };
   // En captura: el scroll de `.panel-tabla` no burbujea hasta window.
   window.addEventListener("scroll", recolocar, true);
   window.addEventListener("resize", recolocar);
@@ -1310,8 +1422,7 @@ function montarAutocompletado(input, panel, editor) {
   const refrescar = () => {
     const q = normalizar(input.value);
     candidatas = state.catalogoObras
-      .filter((e) => !q || e.clave.includes(q))
-      .slice(0, 14);
+      .filter((e) => !q || e.clave.includes(q));
     activa = candidatas.length ? 0 : -1;
     panel.innerHTML = "";
     candidatas.forEach((e, i) => {
@@ -1331,9 +1442,17 @@ function montarAutocompletado(input, panel, editor) {
     colocarSugerencias(input, panel);
   };
 
+  // T15f: la activa, siempre a la vista dentro del panel (como
+  // `scrollIntoView` «nearest», sin mover la página).
   const marcarActiva = () => {
     panel.querySelectorAll(".sugerencia").forEach((el, i) => {
       el.classList.toggle("activa", i === activa);
+      if (i !== activa) return;
+      if (el.offsetTop < panel.scrollTop) {
+        panel.scrollTop = el.offsetTop;
+      } else if (el.offsetTop + el.offsetHeight > panel.scrollTop + panel.clientHeight) {
+        panel.scrollTop = el.offsetTop + el.offsetHeight - panel.clientHeight;
+      }
     });
   };
 
@@ -1453,112 +1572,80 @@ function clavePartidas(trabajadorIde, obraIde, esPostventa) {
 function cerrarSelectorPartida() {
   if (selector.cerrar) selector.cerrar();
   selector.cerrar = null;
+  selector.abierto = null;
 }
 
 // `ancla`: el elemento junto al que sale el panel; `despues`: lo que se hace
-// tras guardar (el modal repite su análisis).
+// tras guardar (el modal repite su análisis de la obra de la línea).
+// M2, punto 3: el panel sale AL INSTANTE con «Cargando partidas…»; otro
+// clic en la misma línea con su panel abierto (cargando o no) no abre otro,
+// y solo pinta la respuesta del último pedido (la de un panel ya cerrado o
+// sustituido se descarta, también su error).
 async function abrirSelectorPartida(trabajadorIde, obraIde, esPostventa, ancla, despues) {
-  const rect = ancla.getBoundingClientRect();
-  if (state.editandoIde === trabajadorIde) await guardarAhora();
-  cerrarSelectorPartida();
   const clave = clavePartidas(trabajadorIde, obraIde, esPostventa);
+  if (selector.abierto === clave) return;
+  const rect = ancla.getBoundingClientRect();
+  const llenar = montarSelectorPartida({
+    trabajadorIde, obraIde, esPostventa, ancla, rect, despues, clave,
+  });
+  const vivo = selector.cerrar;
+  selector.abierto = clave;
+  if (state.editandoIde === trabajadorIde) await guardarAhora();
   let resp = selector.cache.get(clave);
   if (!resp) {
     try {
       resp = await api(`/periodos/${state.anio}/${state.mes}/trabajadores/${trabajadorIde}/partidas?obra_ide=${obraIde}&es_postventa=${esPostventa}`);
     } catch (err) {
+      if (selector.cerrar !== vivo) return;
+      cerrarSelectorPartida();
       toast(err.message, true);
       return;
     }
     selector.cache.set(clave, resp);
   }
-  montarSelectorPartida(resp, {
-    trabajadorIde, obraIde, esPostventa, ancla, rect, despues, clave,
-  });
+  if (selector.cerrar !== vivo) return;
+  llenar(resp);
 }
 
-function montarSelectorPartida(resp, ctx) {
+// Monta el panel vacío («Cargando partidas…») junto a su ancla y devuelve
+// `llenar(resp)`, que pone en ESE panel el buscador, los botones y la lista.
+function montarSelectorPartida(ctx) {
   cerrarSelectorPartida();
   const panel = document.createElement("div");
   panel.className = "panel-partida";
-  panel.innerHTML =
-    '<input class="buscar-partida" autocomplete="off" ' +
-    'placeholder="Buscar partida (código o descripción)…">' +
-    `<div class="mayores">${["", "CD", "CI", "CP"].map((m) =>
-      `<button type="button" data-mayor="${m}">${m || "Todas"}</button>`).join("")}</div>` +
-    '<div class="lista-partidas"></div>';
+  panel.innerHTML = '<div class="vacio">Cargando partidas…</div>';
   document.body.appendChild(panel);
-  const input = panel.querySelector(".buscar-partida");
-  const lista = panel.querySelector(".lista-partidas");
-  const base = {
-    partidas: ctx.esPostventa ? resp.partidas_postventa : resp.partidas,
-    propuesta: resp.propuesta,
-  };
-  let mayor = resp.ambito || null;
-  let opciones = [];
-  let activa = 0;
 
   // Junto a su ancla, como el panel de F-042; si el ancla se ha rehecho
   // (guardado del editor), donde estaba al abrir.
-  const recolocar = () => {
+  // T15d, punto 2: se mide el alto NATURAL (sin el tope de la vez anterior:
+  // con el de «Cargando…» se quedaba en 34 px) y nunca menos de ALTO_UTIL
+  // (buscador, botones Todas · CD · CI · CP y unas cinco filas).
+  const ALTO_UTIL = 240;
+  // T15e (review 5): sin `max-height` la lista no desborda y el navegador
+  // pone su `scrollTop` a 0 al medir: se guarda antes y se repone después
+  // (si no, ↓ más allá de lo visible y la rueda la devolvían arriba). Y el
+  // `scroll` de la propia lista (la rueda) no mueve el panel.
+  const recolocar = (ev) => {
+    if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;
+    const lista = panel.querySelector(".lista-partidas");
+    const desplazada = lista ? lista.scrollTop : 0;
+    panel.style.maxHeight = "";
     const pos = posicionSugerencias(
       ctx.ancla.isConnected ? ctx.ancla.getBoundingClientRect() : ctx.rect,
       panel.offsetHeight, {
         alto: document.documentElement.clientHeight,
         ancho: document.documentElement.clientWidth,
-      });
+      }, ALTO_UTIL);
     panel.style.top = `${pos.top}px`;
     panel.style.left = `${pos.left}px`;
     panel.style.width = `${pos.ancho}px`;
     panel.style.maxHeight = `${pos.altoMax}px`;
+    if (lista) lista.scrollTop = desplazada;
   };
-  const elegir = async (op) => {
-    if (!op) return;
-    const partida = op.automatica ? null : { ide: op.ide, cod: op.cod, res: op.res };
-    cerrarSelectorPartida();
-    try {
-      const datos = await api(
-        `/periodos/${state.anio}/${state.mes}/trabajadores/${ctx.trabajadorIde}/partida`,
-        { method: "PUT", body: JSON.stringify({ obra_ide: ctx.obraIde,
-          es_postventa: ctx.esPostventa, partida }) });
-      selector.cache.delete(ctx.clave);
-      aplicarFila(datos);
-      if (ctx.despues) ctx.despues();
-    } catch (err) {
-      toast(err.message, true);
-    }
-  };
-  const pintar = () => {
-    panel.querySelectorAll(".mayores button").forEach((b) =>
-      b.classList.toggle("on", (b.dataset.mayor || null) === mayor));
-    opciones = listaSelector(base, input.value, mayor).concat([{ automatica: true }]);
-    activa = Math.min(activa, opciones.length - 1);
-    lista.innerHTML = opciones.length === 1
-      ? '<div class="vacio">Sin partidas con ese filtro</div>' : "";
-    opciones.forEach((op, i) => {
-      const fila = document.createElement("div");
-      fila.className = "opcion" + (i === activa ? " activa" : "") +
-        (op.propuesta ? " propuesta" : "") + (op.automatica ? " automatica" : "");
-      fila.innerHTML = op.automatica
-        ? '<span class="desc">automática (la propone el registro)</span>'
-        : `<span class="cod">${escapeHtml(op.cod || "")}</span>` +
-          `<span class="desc">${escapeHtml(op.res || "")}</span>` +
-          (op.propuesta
-            ? `<span class="origen">propuesta · ${escapeHtml(rotuloOrigen(resp.propuesta.metodo, resp.propuesta.origen))}</span>`
-            : "");
-      fila.addEventListener("mousedown", (ev) => {
-        ev.preventDefault();
-        elegir(op);
-      });
-      lista.appendChild(fila);
-    });
-    const viva = lista.querySelector(".opcion.activa");
-    if (viva) viva.scrollIntoView({ block: "nearest" });
-    recolocar();
-  };
-
+  // El clic en su propia ancla no lo cierra (es el segundo clic, punto 3).
   const fuera = (ev) => {
-    if (!panel.contains(ev.target)) cerrarSelectorPartida();
+    if (!panel.contains(ev.target) && !ctx.ancla.contains(ev.target)) cerrarSelectorPartida();
   };
   document.addEventListener("mousedown", fuera, true);
   window.addEventListener("scroll", recolocar, true);
@@ -1569,37 +1656,103 @@ function montarSelectorPartida(resp, ctx) {
     window.removeEventListener("resize", recolocar);
     panel.remove();
   };
+  recolocar();
 
-  panel.querySelectorAll(".mayores button").forEach((b) => {
-    b.addEventListener("mousedown", (ev) => {
-      ev.preventDefault();
-      mayor = b.dataset.mayor || null;
-      activa = 0;
-      pintar();
-    });
-  });
-  input.addEventListener("input", () => { activa = 0; pintar(); });
-  // Sus teclas no llegan a `teclas` ni al modal: Esc cierra solo el panel.
-  input.addEventListener("keydown", (ev) => {
-    ev.stopPropagation();
-    if (ev.key === "ArrowDown") {
-      ev.preventDefault();
-      activa = Math.min(activa + 1, opciones.length - 1);
-      pintar();
-    } else if (ev.key === "ArrowUp") {
-      ev.preventDefault();
-      activa = Math.max(activa - 1, 0);
-      pintar();
-    } else if (ev.key === "Enter") {
-      ev.preventDefault();
-      elegir(opciones[activa]);
-    } else if (ev.key === "Escape") {
-      ev.preventDefault();
+  // Con la respuesta de la API: el buscador, los botones y la lista, en
+  // ESE panel.
+  return (resp) => {
+    panel.innerHTML =
+      '<input class="buscar-partida" autocomplete="off" ' +
+      'placeholder="Buscar partida (código o descripción)…">' +
+      `<div class="mayores">${["", "CD", "CI", "CP"].map((m) =>
+        `<button type="button" data-mayor="${m}">${m || "Todas"}</button>`).join("")}</div>` +
+      '<div class="lista-partidas"></div>';
+    const input = panel.querySelector(".buscar-partida");
+    const lista = panel.querySelector(".lista-partidas");
+    const base = {
+      partidas: ctx.esPostventa ? resp.partidas_postventa : resp.partidas,
+      propuesta: resp.propuesta,
+    };
+    let mayor = resp.ambito || null;
+    let opciones = [];
+    let activa = 0;
+
+    const elegir = async (op) => {
+      if (!op) return;
+      const partida = op.automatica ? null : { ide: op.ide, cod: op.cod, res: op.res };
       cerrarSelectorPartida();
-    }
-  });
-  pintar();
-  input.focus();
+      try {
+        const datos = await api(
+          `/periodos/${state.anio}/${state.mes}/trabajadores/${ctx.trabajadorIde}/partida`,
+          { method: "PUT", body: JSON.stringify({ obra_ide: ctx.obraIde,
+            es_postventa: ctx.esPostventa, partida }) });
+        selector.cache.delete(ctx.clave);
+        aplicarFila(datos);
+        if (ctx.despues) ctx.despues(ctx.obraIde);
+      } catch (err) {
+        toast(err.message, true);
+      }
+    };
+    const pintar = () => {
+      panel.querySelectorAll(".mayores button").forEach((b) =>
+        b.classList.toggle("on", (b.dataset.mayor || null) === mayor));
+      opciones = listaSelector(base, input.value, mayor).concat([{ automatica: true }]);
+      activa = Math.min(activa, opciones.length - 1);
+      lista.innerHTML = opciones.length === 1
+        ? '<div class="vacio">Sin partidas con ese filtro</div>' : "";
+      opciones.forEach((op, i) => {
+        const fila = document.createElement("div");
+        fila.className = "opcion" + (i === activa ? " activa" : "") +
+          (op.propuesta ? " propuesta" : "") + (op.automatica ? " automatica" : "");
+        fila.innerHTML = op.automatica
+          ? '<span class="desc">automática (la propone el registro)</span>'
+          : `<span class="cod">${escapeHtml(op.cod || "")}</span>` +
+            `<span class="desc">${escapeHtml(op.res || "")}</span>` +
+            (op.propuesta
+              ? `<span class="origen">propuesta · ${escapeHtml(rotuloOrigen(resp.propuesta.metodo, resp.propuesta.origen))}</span>`
+              : "");
+        fila.addEventListener("mousedown", (ev) => {
+          ev.preventDefault();
+          elegir(op);
+        });
+        lista.appendChild(fila);
+      });
+      const viva = lista.querySelector(".opcion.activa");
+      if (viva) viva.scrollIntoView({ block: "nearest" });
+      recolocar();
+    };
+
+    panel.querySelectorAll(".mayores button").forEach((b) => {
+      b.addEventListener("mousedown", (ev) => {
+        ev.preventDefault();
+        mayor = b.dataset.mayor || null;
+        activa = 0;
+        pintar();
+      });
+    });
+    input.addEventListener("input", () => { activa = 0; pintar(); });
+    // Sus teclas no llegan a `teclas` ni al modal: Esc cierra solo el panel.
+    input.addEventListener("keydown", (ev) => {
+      ev.stopPropagation();
+      if (ev.key === "ArrowDown") {
+        ev.preventDefault();
+        activa = Math.min(activa + 1, opciones.length - 1);
+        pintar();
+      } else if (ev.key === "ArrowUp") {
+        ev.preventDefault();
+        activa = Math.max(activa - 1, 0);
+        pintar();
+      } else if (ev.key === "Enter") {
+        ev.preventDefault();
+        elegir(opciones[activa]);
+      } else if (ev.key === "Escape") {
+        ev.preventDefault();
+        cerrarSelectorPartida();
+      }
+    });
+    pintar();
+    input.focus();
+  };
 }
 
 // ---------------------------------------------------------------- guardado
@@ -1664,6 +1817,7 @@ function refrescarCeldasFila(t) {
   if (!viejas.length) return;
   viejas[0].before(construirFila(t));
   viejas.forEach((tr) => tr.remove());
+  sincronizarAnchoTabla();          // T15f: su Total puede medir otra cosa
 }
 
 // ---------------------------------------------------------------- acciones
@@ -1856,6 +2010,16 @@ function enlazarEventos() {
   });
 
   document.addEventListener("keydown", teclas);
+  // F-050 T15e: al salir de la tabla no queda ningún bloque sombreado (el
+  // repintado bajo el ratón quizá no reciba nunca su `mouseleave`).
+  $("#cuerpo").addEventListener("mouseleave", () => {
+    state.resaltadas.forEach((x) => x.classList.remove("resaltada"));
+    state.ratonIde = null;
+    state.resaltadas = [];
+  });
+  // F-050 (M2, punto 1): la tabla se reajusta si cambia el sitio de su panel
+  // (ventana, barra de scroll vertical que aparece al cargar el mes).
+  new ResizeObserver(() => sincronizarAnchoTabla()).observe($("#tabla").parentElement);
   window.addEventListener("beforeunload", () => {
     if (state.guardadoPendiente) guardarAhora();
   });
@@ -1952,9 +2116,15 @@ document.addEventListener("DOMContentLoaded", init);
 // `lineas`: por `registro_id`, el trabajador, la obra y el modo de cada
 // acción con selector de partida (F-050, R29). La partida elegida en el
 // modal se GUARDA en el cuadrante: no viaja en el cuerpo del registro.
-const registro = { pisar: new Set(), trabajadorIde: null, seq: 0, lineas: {} };
+// `pf`: lo pintado en el modal; `analizando`: por obra, el `seq` del último
+// preflight repetido aún en vuelo (F-050, M2 punto 5).
+const registro = { pisar: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map() };
 
+// Abrir o repintar el modal cierra el selector de partida que hubiera,
+// también uno que aún cargaba (F-050, M2 punto 4): no puede quedar colgando
+// del cuadrante de detrás ni de una línea que el repintado ya ha quitado.
 function abrirModal(html) {
+  cerrarSelectorPartida();
   const ov = $("#modal-registro");
   ov.innerHTML = `<div class="modal">${html}</div>`;
   ov.classList.remove("oculto");
@@ -1972,47 +2142,79 @@ function textoPartidaAccion(a) {
 }
 
 // El preflight del periodo para el trabajador de la petición (todos o uno).
-// Las partidas son las guardadas en el cuadrante (F-050, R29).
-function pedirPreflight() {
+// Las partidas son las guardadas en el cuadrante (F-050, R29). Con `obraIde`,
+// solo esa obra (M2, punto 5); sin ella no viaja (JSON omite `undefined`).
+function pedirPreflight(obraIde) {
   return api(
     `/periodos/${state.anio}/${state.mes}/registro/preflight`,
-    { method: "POST", body: JSON.stringify({ trabajador_ide: registro.trabajadorIde }) });
+    { method: "POST", body: JSON.stringify({ trabajador_ide: registro.trabajadorIde, obra_ide: obraIde }) });
 }
 
 async function registroPreflight(trabajadorIde = null) {
   registro.trabajadorIde = trabajadorIde;
   const seq = ++registro.seq;
+  registro.analizando.clear();     // lo que se repetía era del modal de antes
   const btn = $("#btn-registro");
   btn.disabled = true; btn.textContent = "Analizando…";
   try {
     const pf = await pedirPreflight();
     if (seq !== registro.seq) return;
     registro.pisar = new Set();
+    registro.pf = pf;
     pintarModalPreflight(pf);
   } catch (err) { toast(err.message, true); }
   finally { btn.disabled = false; btn.textContent = "Registrar en Sigrid"; }
 }
 
+// F-050 (M2, punto 5): el preflight de UNA obra sustituye a esa obra, en su
+// sitio, en el último pintado; las demás se quedan como estaban. Si la obra
+// ya no viene (sin líneas), sale del modal; si no estaba, se añade al final.
+// Sin pintado previo, el nuevo tal cual. El `ok` de arriba se recalcula con
+// todas las obras, como la api (sin obras, `true`).
+function unirPreflight(previo, nuevo, obraIde) {
+  if (!previo) return nuevo;
+  const sitio = previo.obras.findIndex((o) => o.obra.ide === obraIde);
+  const obras = previo.obras.filter((o) => o.obra.ide !== obraIde);
+  obras.splice(sitio < 0 ? obras.length : sitio, 0, ...nuevo.obras);
+  return { ...previo, obras, ok: obras.every((o) => o.ok) };
+}
+
 // F-049 (ampliación a): al cambiar una partida (F-050: ya guardada con el
 // selector) se repite el preflight y se repinta, para que los avisos digan
-// lo que se va a escribir. Las casillas marcadas se conservan por su clave. Mientras se
-// analiza no se puede pulsar «Registrar»; solo pinta la última petición y
-// nunca reabre un modal ya cerrado.
-async function repreflightPartida() {
+// lo que se va a escribir. Las casillas marcadas se conservan por su clave.
+// F-050 (M2, punto 5): solo de `obraIde`, la obra de la línea, y esa obra se
+// sustituye en lo pintado (sin obra, la petición entera, como antes). De
+// cada obra pinta solo su último pedido, y ninguno de un modal anterior;
+// nunca reabre un modal ya cerrado. Mientras alguna obra se analiza no se
+// puede pulsar «Registrar».
+async function repreflightPartida(obraIde) {
   const seq = ++registro.seq;
+  registro.analizando.set(obraIde, seq);
   const btn = $("#btn-ejecutar-registro");
   if (btn) { btn.disabled = true; btn.textContent = "Analizando…"; }
+  const vigente = () => registro.analizando.get(obraIde) === seq;
   try {
-    const pf = await pedirPreflight();
-    if (seq !== registro.seq) return;
+    const pf = await pedirPreflight(obraIde);
+    if (!vigente()) return;
+    registro.analizando.delete(obraIde);
     if ($("#modal-registro").classList.contains("oculto")) return;
     registro.pisar = new Set([...document.querySelectorAll(".chk-pisar:checked")]
       .map((c) => c.value));
-    pintarModalPreflight(pf);
+    registro.pf = obraIde ? unirPreflight(registro.pf, pf, obraIde) : pf;
+    pintarModalPreflight(registro.pf);
+    const nuevo = $("#btn-ejecutar-registro");
+    if (registro.analizando.size && nuevo) {
+      nuevo.disabled = true; nuevo.textContent = "Analizando…";
+    }
   } catch (err) {
-    if (seq !== registro.seq) return;
+    if (!vigente()) return;
+    registro.analizando.delete(obraIde);
     toast(err.message, true);
-    if (btn) { btn.disabled = false; btn.textContent = "Registrar"; }
+    // El de ahora: otra obra que volvió bien ha podido repintar el modal.
+    const actual = $("#btn-ejecutar-registro");
+    if (actual && !registro.analizando.size) {
+      actual.disabled = false; actual.textContent = "Registrar";
+    }
   }
 }
 

@@ -21,6 +21,7 @@ from application.use_cases import (
     ObtenerFilaTrabajador,
 )
 from config.settings import cargar_config
+from domain.errors import ObraNoValida
 from domain.models import EstadoPeriodo, FiltroEmpresa
 from interface_adapters.api.deps import (
     Contenedor,
@@ -69,6 +70,21 @@ def _filtro(contenedor: Contenedor, empresa: int | None) -> FiltroEmpresa:
     return FiltroEmpresa(empresa=empresa or empresa_imputacion,
                          por_defecto=empresa_imputacion,
                          empresa_obras=empresa_imputacion)
+
+
+def _obra_ide(valor: Any) -> int | None:
+    """`obra_ide` del cuerpo del preflight como entero (F-050, review 3): un
+    `"694"` de texto casa con la obra del grupo. Lo que no es un entero
+    (texto, decimales, booleano, lista, infinito) es 422 sin analizar."""
+    if valor is None:
+        return None
+    try:
+        if isinstance(valor, bool) or (isinstance(valor, float)
+                                       and not valor.is_integer()):
+            raise ValueError
+        return int(valor)
+    except (TypeError, ValueError):
+        raise ObraNoValida(f"obra_ide no es un entero: {valor!r}") from None
 
 
 # --------------------------- Salud ------------------------------------
@@ -365,15 +381,17 @@ def registro_preflight(anio: int, mes: int, contenedor: Cont,
                        payload: dict = Body(default={}),
                        empresa: EmpresaQ = None) -> dict[str, Any]:
     """Analiza qué se registraría (no escribe). Admite `trabajador_ide`
-    para el registro de una sola línea y `overrides` de partida. La empresa
-    llega por query, como en el resto de rutas del periodo (F-024)."""
+    para el registro de una sola línea, `obra_ide` para analizar solo esa
+    obra (F-050: el modal tras cambiar una partida) y `overrides` de
+    partida. La empresa llega por query, como en el resto de rutas del
+    periodo (F-024)."""
     filtro = _filtro(contenedor, empresa)
     overrides = {int(k): int(v) for k, v in
                  (payload.get("overrides") or {}).items()}
     return contenedor.registro_sigrid.preflight(
         anio, mes, overrides,
         trabajador_ide=payload.get("trabajador_ide"),
-        empresa=filtro.empresa)
+        empresa=filtro.empresa, obra_ide=_obra_ide(payload.get("obra_ide")))
 
 
 @router.post("/periodos/{anio}/{mes}/registro/ejecutar", tags=["sigrid"])

@@ -393,8 +393,10 @@ def test_f049_a_el_preflight_repetido_lleva_la_partida_recien_elegida():
         ["/periodos/2026/9/trabajadores/77/partida", "PUT",
          {"obra_ide": 694, "es_postventa": False,
           "partida": {"ide": 80002, "cod": "CI.1.20", "res": "JEFE DE OBRA"}}],
+        # F-050 T15c (M2, punto 5): el análisis repetido es solo de la obra
+        # de la línea.
         ["/periodos/2026/9/registro/preflight", "POST",
-         {"trabajador_ide": 77}]]
+         {"trabajador_ide": 77, "obra_ide": 694}]]
 
 
 def test_f049_a_las_casillas_de_registro_pisar_salen_marcadas():

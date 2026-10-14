@@ -1,140 +1,140 @@
 <!-- progress/review_F-050.md -->
-Revisión incremental desde 5f66b9d (pasada 2) · `5f66b9d..d53a162`
+Revisión incremental desde 2e2ae97 (pasada 7) · `2e2ae97..be48d1a` (T15f y rastro del líder)
 
 # F-050 · Review
 
-**Veredicto (pasada 2): APPROVED** (APROBADO): lo pedido en la pasada 1,
-resuelto; T15b cumple R29 sin que el front decida qué partida vale.
+**Veredicto (pasada 7): APPROVED** (APROBADO). T15f hace lo aprobado el
+2026-10-14 y nada más; los dos tests de la lista cerrada cambian exactamente lo
+aprobado; RED reproducido, Chrome lo confirma, cero supervivientes.
 
 **Rigor:** `critico`, declarado: RED, cobertura ≥ 80 %, mutación con cero
 supervivientes sin justificación aceptada y MANUAL con comando exacto.
 
-## Pasada 1 (resumen; revisión completa `82bf8d6..5f66b9d`)
+## Pasadas anteriores (resumen)
 
-CAMBIOS PEDIDOS, solo papeleo; código sin fallos bloqueantes. init.sh en
-verde (raíz 418+1 skip, api 768, front 184, transfer 750; cobertura 341/341);
-Python recalculado 19 ficheros / 854 líneas / 158 mutantes (campaña no
-reejecutada: 1236,8 s); J04, J47 y J56 reproducidos; `con.ide = 1705036`
-leído en Sigrid (solo lectura). Revisado a fondo y dado por bueno: límite de
-servicio, R7, R20, R9, PUT `…/partida`, R14/F7, sin `overrides`, tests
-anteriores solo de la lista cerrada, desviaciones 1-10, `azure-apps`
-`edaa2b7`, MANUAL. Pedido: (1) texto exacto de J08, J28, J34, J37, J41, J43
-y J51; (2) T19 `[x]`; (3) `current.md`: F-050 duplicada en «Lo siguiente» y
-rango de commits. Observaciones: (g) en T17; omitida por R20 sin botón;
-postventa en R9; `<res.ide …>` en T16. Texto íntegro:
-`git show 493bf35:progress/review_F-050.md`.
+Íntegras con `git show <commit>:progress/review_F-050.md`. **1** (completa):
+CAMBIOS PEDIDOS, papeleo (`493bf35`). **2**: APROBADA, T15b (`8e9e8de`).
+**3**: CAMBIOS PEDIDOS, T15c («Registrar» atascado; `49a9003`). **4**:
+APROBADA (`c496af2`). **5**: CAMBIOS PEDIDOS (`a663a0a`, `scrollTop` a 0).
+**6**: APROBADA (`2e2ae97`), T15e; dos observaciones para la M2.
 
-## Pasada 2 · lo ejecutado por el reviewer
+## Pasada 7 · lo ejecutado por el reviewer
 
-- Sin `.arnes_cache/suite_*.ok`, `bash harness/init.sh` tal cual y solo:
-  código 0, **ENTORNO LISTO**, ningún `[KO]`. Raíz **418 passed, 1 skipped**
-  (40,4 s), api **768** (43,5 s), front **187** (16,5 s), transfer **750**
-  (7,3 s). `PUERTA COBERTURA` **100,0 % (341/341)**. `ruff` 237, igual.
-- Python, recálculo puro en HEAD: **19 ficheros, 854 líneas, 158 mutantes**,
-  idéntico; desde `f4cdb11` ningún `.py` de producción cambia.
-- **RED de T15b reproducida**: los tests de HEAD contra el `app.js` de
-  `1c78608`, en una copia del scratchpad: **2 failed, 1 passed** (el que pasa
-  es el control «las demás omitidas siguen sin selector»), como el informe.
-- **Mutantes JS reproducidos al pie de la letra** (copia aislada del front +
-  las dos constantes del transfer; suite entera, 187 en verde sin mutar;
-  `app.js` restaurado y comprobado): **K01 1, K04 2, K05 3, K09 5** fallos,
-  los del informe. De las filas corregidas: **J08 1** (igual) y **J51 4** en
-  `f4cdb11`, igual; en HEAD da 5, por el test nuevo de T15b que también abre
-  el selector con el callback: coherente.
-- `git status` limpio al acabar. Nada contra Azure ni Sigrid.
+- Borrados `.arnes_cache/suite_*.ok`; `bash harness/init.sh` tal cual y solo:
+  **ENTORNO LISTO**, código 0, **cero `[KO]`** (`ruff` 237, el aviso de
+  siempre). Raíz **418 passed, 1 skipped** (50,5 s), api **780** (66,0 s),
+  front **269** (46,5 s, con node, 0 skipped), transfer **750** (21,5 s).
+  `PUERTA COBERTURA` **100,0 % (353/353)**; `PUERTA TAMAÑO` en verde
+  (requirements 150/150, impl 218/220). `ruff` limpio en los 4 tests tocados.
+  `git status` limpio al acabar.
+- **Tests ajenos:** `git diff 2e2ae97..be48d1a` toca solo dos tests previos:
+  `test_f042_sugerencias.py` (UNA línea: `BUSQUEDA_ANTES` pierde
+  `.slice(0, 14)`) y `test_f050_m2_arreglos.py` (solo los valores esperados de
+  `…_m2_1_la_tabla_se_ajusta_a_su_panel`: `[280, 210, 196, 169, 190]` y
+  `1045px`, la opción A). Lo que dice requirements §6; ninguno más.
+- **RED reproducido** (copia aislada en el scratchpad, `git archive` de HEAD
+  con el `app.js` de `68e80b4`): los 16 tests nuevos + `m2_1` + `f042_r3` →
+  **18 failed**, con las mismas aserciones del informe (`'203px' != '280px'`,
+  `BUSQUEDA_ANTES` con `.slice`…).
+- **Chrome headless** (scratchpad `rev7chrome/gen.py`: `sincronizarAnchoTabla`,
+  `anchosAjustados` y `badgeTotal` REALES, `styles.css` real, tres filas: la
+  de VINDEL con falta 50 %, «⇪ Sigrid» y «↩», una OK y una que sobra):
 
-## Lo pedido en la pasada 1
+  | Panel | HEAD (ths) | Total entero | Scroll | Antes (`68e80b4`) |
+  |---|---|---|---|---|
+  | 1600 | 280 · 210 · 537 · 310 · **260** | sí ×3 | no | Total 195, cortado ×2 |
+  | 1100 | 280 · 210 · **183 · 164** · 260 | sí ×3 | no | 190, cortado |
+  | 900 | **200 · 137** · 150 · 150 · 260 | sí ×3 | no | 190, cortado |
+  | 600 | 160 · 100 · 150 · 150 · 260 | sí ×3 | **sí** | 190, cortado |
+  | 1600, `anchos.total = 150` | Total 260, `state.anchos` intacto | sí | no | 158, cortado |
+  | 1600, sin filas | sin error | — | no | igual |
 
-1. [x] **Textos exactos**: J08, J37, J41, J51 enteros en la celda; J26, J28,
-   J34, J43 con enlace al texto literal de varias líneas. J51 dice ya qué
-   cambia (`repreflightPartida` → `null`). 2. [x] **T19** `[x]`.
-3. [x] **`current.md`**: F-050 una sola vez en «Lo siguiente»; rango bien.
-- Observaciones: (g) en la M2 de `current.md` (abajo, 1); postventa en R9 en
-  «Hechos…»; T16 con `--recurso 1705036`.
+  Lo pedido, en el navegador real: Asignaciones y Partida ceden primero;
+  Trabajador y Categoría solo con ellas en 150; Total nunca baja; lo guardado
+  no se toca. El DOM de mentira de `t15f_total` (el `Range` devuelve lo que
+  mide el contenido) se comporta como Chrome: `white-space: nowrap` en
+  `.celda-total` hace que el `Range` mida el contenido entero aunque desborde.
+- **Mutantes** (misma copia, suite ENTERA del front, base **269 en verde**):
+  - Del informe, al pie de la letra: **X02 → 1 fallo, C06 → 2, T01 → 1,
+    T15 → 4**; los del informe, en los tests que tocan.
+  - Míos, fuera de la campaña: `if (celdas.length)` → `if (true)` **muerto**
+    (2); sin `if (viva)` en «Completar» **muerto** (3); `Math.ceil` →
+    `Math.round` **muerto** (3); `minimos` sin filtrar en la primera pasada
+    **muerto** (6); segunda pasada sin el suelo de Total **muerto** (1).
+  - Dos vivos, **equivalentes** (no bloquean): quitar `ev &&` en `recolocar`
+    del editor (solo se usa como escucha: siempre llega un evento); y `>` →
+    `>=` en `marcarActiva` (en la igualdad repone el mismo `scrollTop`).
 
-## T15b (ampliación del 2026-10-10, R29 última frase)
+## Lo pedido por el líder
 
-- **Solo front** (`pintarModalPreflight`): `botonPartida(texto)` comparte
-  botón, alta en `registro.lineas` (`a.registro_id`, `o.obra.ide`) y callback
-  de re-preflight entre la acción a escribir y la omitida. La api reenvía el
-  `motivo` del preflight sin tocarlo.
-- **El front no decide qué vale.** Solo pinta el botón si el `motivo` que
-  manda el transfer empieza por el texto de `MOTIVO_PARTIDA_NO_HOJA`
-  (anclado con `^`), y la partida que enseña es la que nombra ese motivo
-  (`linea.partida_cod or paride`, `registro_pipeline.py:401`). La validez la
-  sigue decidiendo R20 en el transfer al repetir el preflight.
-- **Contrato.** Los tests leen `MOTIVO_PARTIDA_NO_HOJA` y
-  `MOTIVO_PARTIDA_PV_NO_HOJA` del propio transfer con `ast`: si el texto
-  cambia allí, fallan aquí. Cubren: botón con la rechazada, su línea y la
-  apertura del selector con callback; `paride` sin código y escapado HTML;
-  postventa (otro motivo), sin motivo y motivo no inicial, sin botón.
-- **Tests anteriores:** ninguno cambia; el diff de `*/tests/*` es solo
-  `test_f050_modal_registro.py` (+3).
-- **MANUAL:** T17 (e) añade el caso R20 (PUT desde la consola, **solo base
-  local**; `app.js` no es módulo) y «Cancelar, sin Registrar».
+- **Punto 1, editor** (`app.js:1402-1458`): sin `.slice`; `marcarActiva` hace
+  el «nearest» a mano (el DOM de F-042 no tiene `scrollIntoView`; desviación
+  anotada); `colocarSugerencias` guarda y repone el `scrollTop` (lección de
+  T15e); el `scroll` de la propia lista no recoloca. Arriba si no cabe: lo de
+  F-042, intacto. **«Completar»** (`app.js:906-946`): sin tope, conserva el
+  desplazamiento al repintar y la activa a la vista, sin «arriba».
+- **Punto 2, medición de Total** (`app.js:496-536`): `Range` sobre cada
+  `td.celda-total`, el mayor, + relleno + 2 px. Se vuelve a medir al final de
+  `renderTabla` (↑ ↓ y el cursor repintan entera la tabla) y en
+  `refrescarCeldasFila` (guardar en el editor). Las filas solo se construyen en
+  esos dos sitios (`construirFila`, `app.js:713` y `1818`).
+- **T15c-T15e intactos:** `state.anchos`, la manija (`app.js:545-570`, que
+  sigue llamando a `sincronizarAnchoTabla`) y mover columnas, sin cambios; el
+  selector de partidas y su `recolocar` de T15e, sin tocar; sus tests en verde.
 
 ## Checkpoints (lo que toca el delta)
 
-- **C1** [x] init.sh código 0, sin caché · [x] ficheros base.
-- **C2** [x] una `in_progress` · [x] rama de F-050 · [x] `current.md` al día
-  · [x] `history.md` (F-050 aún no está en `done`).
-- **C3** [x] el front no lleva lógica de negocio (arriba) · [x] primera línea
-  con la ruta · [x] sin `console.log` ni secretos ni dependencias.
-- **C3 bis** N/A: el delta no toca `docs/referencia/`. **C4 ter** N/A: no
-  existe `harness/rutas_sensibles.json`.
-- **C4** [x] la ampliación de R29 tiene tres tests y están en verde · [x] sin
-  red ni BBDD (node local) · [x] MANUAL con comando exacto (T17 e).
+- **C1** [x] init.sh sin caché, ENTORNO LISTO · [x] ficheros base. **C2** [x]
+  una `in_progress` · [x] rama · [x] `current.md` al día (cabecera «T15f
+  terminada, en review 7», M2 (a)-(i)) · `history.md` N/A: no `done`.
+- **C3** [x] límite de servicio: solo front · [x] el front no decide nada de
+  negocio (anchos y desplazamiento) · [x] primera línea con ruta en los tests
+  nuevos · [x] sin `console.log` ni secretos.
+- **C3 bis** N/A: no toca `docs/referencia/`. **C4 ter** N/A: sin `rutas_sensibles.json`.
+- **C4** [x] sin regresiones (suite y Chrome) · [x] tests sin red ni BBDD
+  (node local) · [x] MANUAL: T17 (i) 1 y 2 con comando y lo que hay que ver.
 - **C4 bis**
-  - [x] `rigor` declarado · [x] RED real de T15b, reproducida · [x]
-    cobertura `[OK]` 100 % (341/341).
-  - [x] Python: recalculado; campaña no reejecutada (1236,8 s según el
-    informe) · [x] RM1: `f4cdb11`, sin `.py` de producción cambiado después.
-  - [x] RM2: Python, igual que en la pasada 1. JS T15b: 11 en 122,9 s ≈
-    11 s/mutante frente a ~15 s por mutante en mi reproducción: coherente.
-  - [x] Sin «⚠ CAMPAÑA NO VÁLIDA»; «Sin veredicto (base rota)» = 0.
-  - [x] RM5: N/A, ningún equivalente declarado · [x] RM6: no quita guardas.
-  - [x] **Campaña MANUAL**: J01-J56 y K01-K11 con fichero:línea, texto
-    exacto y nº de fallos; seis filas reproducidas (J08, J51, K01, K04, K05,
-    K09).
-  - [x] Cero supervivientes, sin `PENDIENTE` · [x] Evidencias con los cuatro
-    números (T15b incluido) · [x] ningún N/A sin motivo.
-- **C5** [x] T1-T15, T15b y T19 `[x]`; T15b con su commit `F-050 T15b:`
-  (`6320474`); T16-T18 son MANUAL y en `critico` pueden quedar pendientes
-  (como en F-039) · [x] sin artefactos · [x] `features.json` `in_progress`
-  con la ampliación anotada.
+  - [x] `rigor` · [x] RED real (impl §T15f; reproducido: 18 failed) · [x]
+    cobertura 100 % · [x] Python sin cambios (164/164 de `ee4c70d`).
+  - [x] MANUAL JS T15f: 34 filas con texto exacto, línea y nº de fallos;
+    cuatro reproducidas · [x] cero supervivientes.
+  - [x] RM1: medido en `a23a373`; después solo un `ruff ISC` en un test (sin
+    efecto, comprobado) y documentos; `app.js` sin cambios desde entonces.
+  - [x] RM2: 34 × 37,5 s = 1275,5 s con la suite del front en 30-87 s según la
+    carga (mis mutantes: 30-64 s): coherente.
+  - [x] RM3: ningún equivalente muerto (los dos equivalentes que encontré,
+    vivos) · RM5 N/A: ninguno declarado · RM6 N/A: no se quita ninguna guarda.
+  - [x] Evidencias, 4 números.
+- **C5** [x] commits `F-050 T15f …` · [x] T15f `[x]`; T16-T18 MANUAL `[ ]`
+  · [x] sin artefactos (todo en el scratchpad).
 
 ## Cobertura requisito → test (`test_f050_*`)
 
 | R | Test |
 |---|---|
-| R1-R5, R10 | `propuesta`: `r1_*`, `r2_*`, `r3_*`, `r4_*`, `r5_*`, `r10_*` |
-| R6-R9, R11, R21 | `pipeline` `r7_*` `r9_*` `r21_*`; `endpoint_propuesta` `r8_*` `r9_*` `r11_*` |
-| R12-R19 | `partida_linea`: `r12_*`-`r19_*`; `rutas_partida`: `r13_*`, `r17_*`, `r18_*` |
-| R20 | `pipeline`: `r20_manual_que_no_es_hoja_activa_se_omite` (×6), `r20_ejecutar_no_escribe…` |
-| R22-R28 | `subfilas`: `r22_*`-`r25_*`, `r28_*`; `selector`: `r26_*`, `r27_*` |
-| R29 | `modal_registro`: `r29_*` (14) |
-| R29 (amp.) | `modal_registro`: `r29_omitida_por_r20_lleva_el_selector…`, `…_sin_codigo_y_escapada`, `r29_las_demas_omitidas_siguen_sin_selector` |
-| R30 | `test_f002_fuente_unica` (`regla-partida`), `test_f004_readme` |
+| R1-R29, T15c-T15e | sin cambios desde la pasada 6 |
+| T15f 1 (editor) | `t15f_obras` (5): todas las que casan; ↑ ↓ con la activa visible; la rueda no recoloca; scroll/resize conservan el sitio; arriba si no cabe |
+| T15f 1 («Completar») | `t15f_obras` (3): todas; ↑ ↓ visible; clic conserva el desplazamiento |
+| T15f 2 (Total) | `t15f_total` (8): orden de encogido, por columna, contenido más ancho, scroll, lo guardado, repintado y `refrescarCeldasFila`; `m2_1` |
 
 ## Cambios requeridos
 
 Ninguno.
 
-## Observaciones (no bloquean; que el líder las recoja, no «anotado»)
+## Observaciones (no bloquean; que el líder las recoja)
 
-1. **(g) solo vive en `current.md`.** `tasks.md` T17 sigue diciendo
-   «(a)-(f)» y su verificación «(a)-(f) en `impl_F-050.md`»: al cerrar,
-   añadir (g) a T17 o el resultado de (g) se quedará sin sitio.
-2. **El front reconoce la omitida por el TEXTO del motivo.** Hoy está
-   blindado por el test de contrato (lee la constante del transfer), pero es
-   texto para personas. Si otra omisión necesita botón, mejor un campo
-   estructurado en la acción (p. ej. `motivo_codigo`) en el transfer, en una
-   feature propia.
-3. La tabla J se midió en `f4cdb11` (184 tests); en HEAD alguno sube
-   (J51: 4 → 5) por los tests de T15b. Reproducir contra `f4cdb11`.
+1. Fuentes web: Total se mide con la fuente que haya al pintar (`Archivo`
+   llega con `display=swap`); si llega después, el ancho se corrige en el
+   siguiente repintado (↑ ↓). Mirarlo en la M2 (i) 2 con Ctrl+F5; si se ve,
+   `document.fonts.ready.then(sincronizarAnchoTabla)`.
+2. `renderTabla` añade una medición por repintado (cada ↑ ↓): en la M2 (d),
+   con el mes entero, ver que ↑ ↓ siguen fluidos.
+3. Las dos observaciones de la pasada 6 (↓ junto al borde con el ratón quieto;
+   cinco filas con `ALTO_UTIL`) están en `current.md` pero no en T17: que el
+   humano las vea al repetir la M2.
 
-## Automejora (propuesta, no aplicada; sigue en pie)
+## Automejora (propuesta, no aplicada)
 
-En la casilla de campaña MANUAL (`CHECKPOINTS.md`, `reviewer.md`): «el texto
-exacto no se trunca con “…”; si no cabe, va en una sección o fichero
-enlazado; y la tabla dice contra qué SHA se contaron los fallos».
+Las anteriores, más: **el reviewer suma a la muestra mutantes propios sobre
+las guardas nuevas** (aquí `if (celdas.length)`, `if (viva)`): son los que
+omite una campaña escrita por quien implementa.
