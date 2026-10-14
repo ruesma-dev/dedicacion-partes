@@ -127,10 +127,18 @@ _(pendiente del humano)_
 
 ## Evidencias
 
+Medido con `bash harness/init.sh` tras el commit de T1 (`b2fde31`), con
+`.arnes_cache/suite_*.ok` borrados antes (las cuatro suites corren enteras):
+
 | Evidencia | Valor |
 |---|---|
-| Tests ejecutados (transfer) | 785 passed, 0 failed (16.55 s) |
+| Tests transfer | **785 passed**, 0 failed (20.42 s) |
+| Tests api / front / raíz | 780 passed (94.67 s) / 269 passed (104.78 s) / 418 passed, 1 skipped (125.18 s) |
 | Tests de T1 | 35 passed (4.27 s) |
-| Cobertura de las líneas cambiadas | ver salida de `bash harness/init.sh` abajo |
-| Mutantes | no aplica todavía: la campaña completa es T16, al final |
-| `bash harness/init.sh` | ver abajo |
+| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 113 líneas cambiadas cubiertas (113/113, umbral 80%, nivel critico)` |
+| Mutantes | aún no: la campaña completa sobre todas las líneas de F-055 es T16 |
+| `bash harness/init.sh` | **ENTORNO LISTO** (exit 0); `ruff`: 237 avisos de deuda previa, ninguno nuevo en los ficheros de T1 |
+
+Nota: la primera ejecución de `init.sh` (antes de escribir código) salió en
+rojo solo por `test_f055_medicion.py`, recién escrito (la RED de arriba); el
+resto de suites, en verde.
