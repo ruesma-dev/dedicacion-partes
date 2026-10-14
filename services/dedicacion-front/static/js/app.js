@@ -876,7 +876,12 @@ function montarDialogoCompletar(filas) {
   let activa = -1;
   let enviando = false;
 
+  // F-050, T15f: sin tope, la lista (dentro del modal) se desplaza; al
+  // repintar conserva su desplazamiento (vaciarla lo pone a 0) y la activa
+  // queda a la vista.
   const pintar = () => {
+    const desplazada = lista.scrollTop;
+    let viva = null;
     lista.innerHTML = "";
     candidatas.forEach((e, i) => {
       const fila = document.createElement("div");
@@ -891,7 +896,10 @@ function montarDialogoCompletar(filas) {
         pintar();
       });
       lista.appendChild(fila);
+      if (i === activa) viva = fila;
     });
+    lista.scrollTop = desplazada;
+    if (viva) viva.scrollIntoView({ block: "nearest" });
     const elegida = candidatas[activa];
     $("#completar-elegida").innerHTML = elegida
       ? `Destino: <strong>${escapeHtml(elegida.cod)}</strong> · ` +
@@ -903,7 +911,7 @@ function montarDialogoCompletar(filas) {
     if (boton) boton.disabled = !elegida || enviando;
   };
   const refrescar = () => {
-    candidatas = candidatasDestino(input.value).slice(0, 14);
+    candidatas = candidatasDestino(input.value);
     activa = candidatas.length ? 0 : -1;
     pintar();
   };
