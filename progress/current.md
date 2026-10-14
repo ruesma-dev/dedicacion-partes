@@ -2,7 +2,7 @@
 # Trabajo en curso
 
 **F-050 en curso en esta rama** (`feature/F-050-subfilas-partida`, copia
-principal; review 7 aprobada, espera la M2 (d), (h) 1 e (i)): subfilas por obra en el cuadrante con columna Partida y partida
+principal; M2 cumplida, falta decidir la M3): subfilas por obra en el cuadrante con columna Partida y partida
 propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
 **1.7.3**.
 
@@ -127,8 +127,9 @@ propuesta. F-049 se desplegó el 2026-10-09 (transfer y front). El arnés es la
   (`progress/review_F-050.md`); sus tres observaciones, en T17 (i) 3: Total entero
   en el primer pintado tras Ctrl+F5 (si no, `document.fonts.ready`), ↑ ↓ fluidos
   con el mes entero, y las dos de la review 6 (↓ junto al borde con el ratón
-  quieto; cinco filas con `ALTO_UTIL`). **Espera que el humano repita la M2 (d),
-  (h) 1 e (i)** (`tasks.md` T17).
+  quieto; cinco filas con `ALTO_UTIL`). **M2 (T17) CUMPLIDA: el humano la repitió el
+  2026-10-14, (d), (h) 1 e (i): «todo ok».** Queda T18 (M3, registro en modo
+  pruebas en la 0404): se le pregunta al humano si la autoriza ahora.
 
 ## Producción, hoy
 
