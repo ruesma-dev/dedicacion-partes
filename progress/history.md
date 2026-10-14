@@ -2581,3 +2581,12 @@ retirada de `current.md`:
   quieto; cinco filas con `ALTO_UTIL`). **M2 (T17) CUMPLIDA: el humano la repitió el
   2026-10-14, (d), (h) 1 e (i): «todo ok».** Queda T18 (M3, registro en modo
   pruebas en la 0404): se le pregunta al humano si la autoriza ahora.
+
+## 2026-10-14 · Despliegue de F-050 (transfer, api y front)
+
+Lanzado por el humano con `infra/redeploy_dedicacion.ps1` desde `dev`:
+`transfer:r20261014-1740`, `api:r20261014-1743` y `front:r20261014-1746`,
+revisiones `…--r20261014173903` en `Running`; el transfer sigue en modo real
+(`OBRA_PRUEBAS_FORZAR=false`), comprobado por el líder (solo lectura). La api
+añade al arrancar las columnas `partida_*` de `asignacion`. `azure-apps`
+actualizado en el mismo trabajo.
