@@ -658,17 +658,22 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     lleva, es **automática** y se registra con la **propuesta**.
 
     - **La propuesta, solo en el transfer** (una línea de obra normal sin
-      elegida), la del primer paso que dé una: (1) **parte anterior**: el mes
-      más reciente con líneas `M*` del recurso en un parte de trabajo de
-      **esa obra**, del periodo del cuadrante (incluido) hacia atrás hasta
-      `PROPUESTA_MESES_ATRAS` meses; (2) **último parte**: el mes más
-      reciente del recurso en **otra** obra, trasladado a esta por código
-      **y** descripción iguales; (3) el **casamiento** por nombre y
-      categoría de `partes` (`resolver_normal`). En (1) y (2) gana la
-      partida (o el par código-descripción) con más `can` sumado en ese
-      mes; un empate, o un traslado a cero o a varias hojas, hace que ese
-      paso no proponga, nunca «la primera». El orden de las filas no cambia
-      nada.
+      elegida), la del primer paso que dé una, en este orden: (1) **parte
+      anterior**: el mes más reciente con líneas `M*` del recurso en un
+      parte de trabajo de **esa obra**, del periodo del cuadrante (incluido)
+      hacia atrás hasta `PROPUESTA_MESES_ATRAS` meses; (2) el
+      **casamiento** por nombre y categoría de `partes` (`resolver_normal`);
+      (3) **último parte**: el mes más reciente del recurso en **otra**
+      obra, trasladado a esta por código **y** descripción iguales. En (1)
+      y (3) gana la partida (o el par código-descripción) con más `can`
+      sumado en ese mes; un empate, o un traslado a cero o a varias hojas,
+      hace que ese paso no proponga, nunca «la primera». El orden de las
+      filas no cambia nada.
+    - **El orden (1) parte anterior → (2) casamiento → (3) último parte**
+      es de F-055 (D10, 2026-10-14); en F-050 el último parte iba antes que
+      el casamiento. El casamiento da algo casi siempre que haya categoría
+      (basta un token de la categoría parecido al rol de alguna hoja), así
+      que el último parte **solo actúa cuando el casamiento no da nada**.
     - **Qué líneas cuentan:** las de partes de trabajo (`con.tip` del
       ajuste) con hora `M*`, `paride` ≠ 0 y partida del presupuesto de la
       obra de su parte (no cuentan las escritas en la obra de pruebas). Toda
@@ -700,7 +705,10 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
     *Decidido por Pablo Gris el 2026-10-09 (D1-D10 = A, el mismo selector
     en el modal y los botones CD · CI · CP) · F-050,
-    `specs/F-050-subfilas-partida/requirements.md`.*
+    `specs/F-050-subfilas-partida/requirements.md`. Orden cambiado por
+    Pablo Gris el 2026-10-14 (D10: «si pero en reglas hay que cambiar el
+    orden, a c b») · F-055, `specs/F-055-preflight-rapido/requirements.md`
+    R38.*
 
 ## Acceso a datos y sistemas externos
 
