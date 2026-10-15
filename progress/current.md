@@ -3,8 +3,8 @@
 
 **F-055 en curso en esta rama** (`feature/F-055-preflight-rapido`, copia
 `PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas y
-propuesta del mes en segundo plano. F-050 está cerrada en `dev` y `main`; su
-despliegue lo lanzó el humano el 2026-10-14 (sección siguiente). El arnés es la
+propuesta del mes en segundo plano. F-050 está cerrada en `dev` y `main`; se
+desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arnés es la
 **1.7.3**.
 
 ## F-055 · Registro sin búsquedas de partidas (en curso)
@@ -38,31 +38,26 @@ despliegue lo lanzó el humano el 2026-10-14 (sección siguiente). El arnés es 
   nuevas T2b (orden, tras T2), T2c (`#regla-partida`), T12b (api) y T13b (front),
   sin renumerar; T12 pasa a una cola por línea. Lista cerrada: + `test_f050_r1_
   sin_paso1_va_al_paso2` (D10) y + `test_f029_r25_ruta_200_con_resultados_y_
-  resumen` (D9). **A validar por el humano** (decidido por el spec-author dentro
-  de D9, sin abrir decisión): Deshacer y quitar o cambiar la partida (`PUT
+  resumen` (D9). **Validado por el humano el 2026-10-15** («d9, solo se recalcula si
+  cambias algo de ese trabajador, si es de otro no. ok a todo»; ya lo dice R29):
+  Deshacer y quitar o cambiar la partida (`PUT
   …/partida`) también encolan; la cola es por orden de llegada, así que una
   línea guardada mientras corre el mes entero espera su turno (≈ 90 s, solo la
   primera vez que se abre un mes). Consecuencia de D10 escrita en design §5.7:
   el casamiento casi siempre da algo, así que el último parte solo actuará
   cuando no case nada. T2 (medición, humano) sigue pendiente y va antes de T2b.
 
-## ⚠ Despliegue de F-050 (pendiente; lo lanza el humano)
-
-- Cambian **los tres servicios**, en el orden fijo transfer → api → front
-  (`.\redeploy_dedicacion.ps1` desde `dev`, con `00_vars_dedicacion.ps1`,
-  `00_vars_dedicacion.local.ps1` y `00_capps_vars_dedicacion.ps1` cargados).
-  La api añade al arrancar, en su base, las columnas nulables `partida_ide`,
-  `partida_cod` y `partida_res` de `asignacion` (`ADD COLUMN IF NOT EXISTS`). Sin
-  sync ni variables nuevas (`PROPUESTA_MESES_ATRAS` tiene defecto 24). El
-  transfer conserva el modo real.
-- **Comprobación (sin pulsar «Registrar»):** Ctrl+F5, septiembre 2026: subfilas
-  y columna Partida; clic en la Partida de GONZALEZ PANIAGUA en la 0694: el
-  selector con CI preelegido y la propuesta primera; «⇪ Sigrid»: cada línea con
-  su partida y su origen. **Cancelar.** Después, el líder anota las imágenes en
-  `infra/imagenes.json`, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
-
 ## Producción, hoy
 
+- **Desplegado el 2026-10-14: F-050**, los tres servicios: transfer
+  `r20261014-1740`, api `r20261014-1743` y front `r20261014-1746` (revisiones
+  `…--r20261014173903`, las tres `Running`; el transfer sigue en **modo real**,
+  comprobado con `az containerapp show`): subfilas por obra con columna Partida,
+  selector con Todas · CD · CI · CP y partida propuesta. **Pendiente del humano:**
+  la comprobación en producción (Ctrl+F5, septiembre 2026; Partida de GONZALEZ
+  PANIAGUA en la 0694: selector con CI preelegido; «⇪ Sigrid»: partida y origen
+  en cada línea; **Cancelar**). Los `digest` de `infra/imagenes.json` siguen sin
+  actualizarse al publicar (punto 2 de «Lo que espera al humano»).
 - **Desplegado el 2026-10-09: F-049**, transfer `r20261009-1045` y front
   `r20261009-1046` (ambos `Running`; el transfer sigue en **modo real**,
   comprobado con `az containerapp show`): avisos del modal rotulados por tipo,
@@ -158,7 +153,7 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-F-049 desplegada. F-050 cerrada (desplegada por el humano el 2026-10-14). Orden: **F-055** (en curso, `porcentajes-f041`) (medir y acelerar la
+F-049 desplegada. F-050 desplegada. Orden: **F-055** (en curso, `porcentajes-f041`) (medir y acelerar la
 previsualización del registro; 2026-10-08), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
