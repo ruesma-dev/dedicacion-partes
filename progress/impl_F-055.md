@@ -123,7 +123,37 @@ cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcent
 
 ### Cifras de T2
 
-_(pendiente del humano)_
+**Script, 2026-10-15** (humano, PowerShell, `.env` local del transfer, modo
+pruebas; `medir --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036
+--partida 0694:384155`; solo lectura):
+
+| Lectura | 0694 (elegida 384155) | 0696 (automática) |
+|---|---|---|
+| `obra_por_codigo` (obra) | 1 fila · 4.94 s | 1 fila · 5.13 s |
+| `obra_por_codigo` (0404, modo pruebas) | 1 fila · 4.23 s | 1 fila · 1.84 s |
+| `horas_de_recursos` | 9 filas · **7.99 s** | 9 filas · 4.77 s |
+| `capitulos_de_obra` | 983 filas · 1.75 s | 3027 filas · 1.63 s |
+| `historial_partidas` | — | 42 filas · 2.44 s |
+| `cuentas_de_centro` | 1 fila · 1.25 s | 1 fila · 1.60 s |
+| `partes_del_periodo` | 1 fila · 5.57 s | 1 fila · 2.10 s |
+| `lineas_por_synckey` | 0 filas · 5.16 s | 0 filas · 1.24 s |
+| `lineas_del_parte` | 0 filas · 1.35 s | 0 filas · 1.16 s |
+| **Por obra** | 8 lecturas · 32.24 s leyendo · 32.38 s | 9 lecturas · 21.92 s leyendo · 22.89 s |
+
+`TOTAL: 2 obras · 17 lecturas · 54.15 s leyendo · 55.28 s en total`.
+Propuestas: 0694 `paride=384155 manual`; 0696 `paride=376829 ultimo_parte`
+(orden de hoy, a → b → c; con D10 se espera casamiento, design §5.7).
+
+**Criterio de parada (líder, 2026-10-15): se cumple el diseño, no se para.**
+El coste no depende de las filas (3027 filas en 1.63 s; 1 fila en 5.57 s): es
+latencia por ida y vuelta a `sigrid-api` (1.2-8 s), multiplicada por 8-9
+lecturas **en serie** por obra. La que más pesa (`horas_de_recursos`, 7.99 s)
+y las siguientes (`partes_del_periodo`, `lineas_por_synckey`,
+`obra_por_codigo`) son lecturas por obra que el design §2 agrupa por lote. El
+presupuesto pesa poco (1.6-1.75 s): quitarlo (R10) es la ganancia menor; la
+mayor es agrupar y paralelizar (R20-R23).
+
+**Navegador:** _(pendiente del humano)_
 
 ## Evidencias
 
