@@ -273,6 +273,24 @@ class ClienteFalso:
                                                n.es_hoja, n.activa)
         return out
 
+    # F-055 (T5): las lecturas agrupadas, derivadas de las sueltas del doble
+    # (y de las que redefinan sus subclases), con la forma del cliente real.
+    def obras_por_ide(self, ides):
+        return {int(i): o for i in sorted({int(i) for i in ides if i})
+                for o in [self.obra_por_ide(int(i))] if o is not None}
+
+    def partes_de_periodos(self, obrides, periodos):
+        return {(int(o), int(a), int(m)): self.partes_del_periodo(
+                    int(o), int(a), int(m))
+                for o in sorted(set(obrides)) for a, m in sorted(set(periodos))}
+
+    def lineas_de_partes(self, hmoides, resides):
+        res = sorted({int(r) for r in resides if r})
+        if not res:
+            return {}
+        return {int(h): self.lineas_del_parte(int(h), res)
+                for h in sorted(set(hmoides)) if h}
+
     def partes_existentes(self, obra_ide, periodos):
         return {(p[0], p[1]): self.parte for p in periodos}
 

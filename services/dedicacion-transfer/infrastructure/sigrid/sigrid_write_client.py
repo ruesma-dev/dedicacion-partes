@@ -80,6 +80,12 @@ def synckey_de(registro_id: int) -> str:
     return f"{PREFIJO_SYNCKEY}{int(registro_id)}"
 
 
+def _trozos(valores: list, n: int = LOTE_PARAMETROS) -> Iterator[list]:
+    """`valores` en trozos de como mucho `n` (F-055 R20)."""
+    for i in range(0, len(valores), n):
+        yield valores[i:i + n]
+
+
 # ------------------------ medición (F-055 R1) ------------------------ #
 
 #: Reloj de la medición (aparte para poder fijarlo en los tests).
@@ -250,6 +256,24 @@ class SigridWriteClient:
             "WHERE obr.ide = ?", [int(ide)])
         return self._obra(filas)
 
+    def obras_por_ide(self, ides: Iterable[int | None]
+                      ) -> dict[int, ObraEntrada]:
+        """F-055 (R20): `obra_por_ide` de varias obras, agrupada: el mismo
+        SQL con `IN`, trozos de `LOTE_PARAMETROS` y `_obra` por `ide`. La
+        que no existe no sale."""
+        ides_ = sorted({int(i) for i in ides if i})
+        por_ide: dict[int, list[dict]] = {}
+        for trozo in _trozos(ides_):
+            marcas = ",".join("?" for _ in trozo)
+            for f in self._lectura(
+                    "obras_por_ide",
+                    "SELECT obr.ide AS ide, con.cod AS cod, con.res AS res, "
+                    "obr.cenide AS cenide, con.emp AS emp FROM obr "
+                    "JOIN con ON con.ide = obr.ide "
+                    f"WHERE obr.ide IN ({marcas})", trozo):
+                por_ide.setdefault(int(f["ide"]), []).append(f)
+        return {ide: self._obra(filas) for ide, filas in por_ide.items()}
+
     @staticmethod
     def _obra(filas: list[dict], empresa: int | None = None,
               cod: str | None = None) -> ObraEntrada | None:
@@ -289,25 +313,27 @@ class SigridWriteClient:
         self, resides: Iterable[int]
     ) -> dict[int, list[HoraRecurso]]:
         ides = sorted({int(i) for i in resides if i})
-        if not ides:
-            return {}
-        marcas = ",".join("?" for _ in ides)
-        # F-037 (R2, la de `partes` F-021): en la MISMA consulta, el código
-        # de la cuenta de la ficha (`reshor.caaide`, 0 = ninguna) y si es el
-        # tipo por defecto del recurso (`res.horide`).
-        filas = self._lectura(
-            "horas_de_recursos",
-            "SELECT reshor.reside AS reside, reshor.horide AS horide, "
-            "auxhor.cod AS cod, auxhor.res AS res, reshor.pre AS pre, "
-            "cc.cod AS caacod, "
-            "CASE WHEN reshor.horide = res.horide THEN 1 ELSE 0 END "
-            "AS defecto "
-            "FROM reshor JOIN auxhor ON auxhor.ide = reshor.horide "
-            "LEFT JOIN res ON res.ide = reshor.reside "
-            "LEFT JOIN con cc ON cc.ide = reshor.caaide "
-            "AND ISNULL(reshor.caaide, 0) <> 0 "
-            f"WHERE reshor.reside IN ({marcas}) "
-            "ORDER BY reshor.reside, auxhor.cod", ides)
+        filas: list[dict] = []
+        # F-055 (R20): en trozos de `LOTE_PARAMETROS` recursos (un lote de
+        # obras junta los de todas).
+        for trozo in _trozos(ides):
+            marcas = ",".join("?" for _ in trozo)
+            # F-037 (R2, la de `partes` F-021): en la MISMA consulta, el
+            # código de la cuenta de la ficha (`reshor.caaide`, 0 = ninguna)
+            # y si es el tipo por defecto del recurso (`res.horide`).
+            filas += self._lectura(
+                "horas_de_recursos",
+                "SELECT reshor.reside AS reside, reshor.horide AS horide, "
+                "auxhor.cod AS cod, auxhor.res AS res, reshor.pre AS pre, "
+                "cc.cod AS caacod, "
+                "CASE WHEN reshor.horide = res.horide THEN 1 ELSE 0 END "
+                "AS defecto "
+                "FROM reshor JOIN auxhor ON auxhor.ide = reshor.horide "
+                "LEFT JOIN res ON res.ide = reshor.reside "
+                "LEFT JOIN con cc ON cc.ide = reshor.caaide "
+                "AND ISNULL(reshor.caaide, 0) <> 0 "
+                f"WHERE reshor.reside IN ({marcas}) "
+                "ORDER BY reshor.reside, auxhor.cod", trozo)
         out: dict[int, list[HoraRecurso]] = {}
         for f in filas:
             out.setdefault(int(f["reside"]), []).append(HoraRecurso(
@@ -445,6 +471,38 @@ class SigridWriteClient:
                             est=None if f["est"] is None else int(f["est"]))
                 for f in filas]
 
+    def partes_de_periodos(
+        self, obrides: Iterable[int], periodos: Iterable[tuple[int, int]]
+    ) -> dict[tuple[int, int, int], list[ParteSigrid]]:
+        """F-055 (R20): `partes_del_periodo` de varias obras y periodos,
+        agrupada: el mismo SQL con `IN` y la clave `(obride, ano, mes)`;
+        cada clave pedida sale, vacía si no hay partes, con el orden de la
+        suelta (`ide` descendente). Trozos de `LOTE_PARAMETROS` obras."""
+        obras = sorted({int(o) for o in obrides})
+        pers = sorted({int(a) * 100 + int(m) for a, m in periodos})
+        if not obras or not pers:
+            return {}
+        out: dict[tuple[int, int, int], list[ParteSigrid]] = {
+            (o, p // 100, p % 100): [] for o in obras for p in pers}
+        m_p = ",".join("?" for _ in pers)
+        for trozo in _trozos(obras):
+            m_o = ",".join("?" for _ in trozo)
+            for f in self._lectura(
+                    "partes_de_periodos",
+                    "SELECT hmo.ide AS ide, con.cod AS cod, con.est AS est, "
+                    "hmo.obride AS obride, hmo.ano AS ano, hmo.mes AS mes "
+                    "FROM hmo JOIN con ON con.ide = hmo.ide "
+                    f"WHERE hmo.obride IN ({m_o}) AND (hmo.ano * 100 + "
+                    f"hmo.mes) IN ({m_p}) AND ISNULL(hmo.reside, 0) = 0 "
+                    "AND con.tip = ? ORDER BY hmo.ide DESC",
+                    trozo + pers + [self._tip]):
+                clave = (int(f["obride"]), int(f["ano"]), int(f["mes"]))
+                if clave in out:
+                    out[clave].append(ParteSigrid(
+                        ide=int(f["ide"]), cod=f["cod"],
+                        est=None if f["est"] is None else int(f["est"])))
+        return out
+
     def partes_existentes(
         self, obra_ide: int, periodos: Iterable[tuple[int, int]]
     ) -> dict[tuple[int, int], ParteDestino]:
@@ -514,17 +572,51 @@ class SigridWriteClient:
             "LEFT JOIN auxhor ON auxhor.ide = hmores.horide "
             f"WHERE hmores.hmoide = ? AND hmores.reside IN ({m_r}) "
             "ORDER BY hmores.pos", [int(hmoide)] + res)
-        out: list[LineaSigrid] = []
-        for f in filas:
-            sk = (f["synckey"] or "").strip() or None
-            out.append(LineaSigrid(
-                ide=int(f["ide"]), reside=int(f["reside"] or 0),
-                fecha_int=int(f["fec"] or 0),
-                horide=int(f["horide"] or 0) or None,
-                hora_codigo=f["hora"], can=f["can"], tot=f["tot"],
-                synckey=sk,
-                nuestra=bool(sk and sk.startswith(PREFIJO_SYNCKEY)),
-                paride=int(f["paride"] or 0)))
+        return [self._linea_del_parte(f) for f in filas]
+
+    @staticmethod
+    def _linea_del_parte(f: dict) -> LineaSigrid:
+        sk = (f["synckey"] or "").strip() or None
+        return LineaSigrid(
+            ide=int(f["ide"]), reside=int(f["reside"] or 0),
+            fecha_int=int(f["fec"] or 0),
+            horide=int(f["horide"] or 0) or None,
+            hora_codigo=f["hora"], can=f["can"], tot=f["tot"],
+            synckey=sk,
+            nuestra=bool(sk and sk.startswith(PREFIJO_SYNCKEY)),
+            paride=int(f["paride"] or 0))
+
+    def lineas_de_partes(
+        self, hmoides: Iterable[int], resides: Iterable[int | None]
+    ) -> dict[int, list[LineaSigrid]]:
+        """F-055 (R20): `lineas_del_parte` de varios partes, agrupada: el
+        mismo SQL con `IN`, la clave `hmoide` y, dentro de cada parte, el
+        orden de la suelta (`pos`). Cada parte pedido sale, vacío si no
+        tiene líneas. Trozos de `LOTE_PARAMETROS` partes y recursos."""
+        partes = sorted({int(h) for h in hmoides if h})
+        res = sorted({int(i) for i in resides if i})
+        if not partes or not res:
+            return {}
+        out: dict[int, list[LineaSigrid]] = {h: [] for h in partes}
+        for t_h in _trozos(partes):
+            for t_r in _trozos(res):
+                m_h = ",".join("?" for _ in t_h)
+                m_r = ",".join("?" for _ in t_r)
+                filas = self._lectura(
+                    "lineas_de_partes",
+                    "SELECT hmores.hmoide AS hmoide, hmores.ide AS ide, "
+                    "hmores.reside AS reside, "
+                    "hmores.fec AS fec, hmores.horide AS horide, "
+                    "hmores.paride AS paride, auxhor.cod AS hora, "
+                    "hmores.can AS can, "
+                    "hmores.tot AS tot, hmores.synckey AS synckey "
+                    "FROM hmores "
+                    "LEFT JOIN auxhor ON auxhor.ide = hmores.horide "
+                    f"WHERE hmores.hmoide IN ({m_h}) "
+                    f"AND hmores.reside IN ({m_r}) "
+                    "ORDER BY hmores.hmoide, hmores.pos", t_h + t_r)
+                for f in filas:
+                    out[int(f["hmoide"])].append(self._linea_del_parte(f))
         return out
 
     def lineas_por_synckey(
