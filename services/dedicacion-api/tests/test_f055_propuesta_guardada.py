@@ -351,3 +351,43 @@ def test_f055_r27_linea_out_publica_la_propuesta():
         ("CI.1.20", "JEFE DE OBRA", "parte_anterior"), (None, None, None)]
     assert "propuesta_ide" not in out["lineas"][0]
     assert "propuesta_origen" not in out["lineas"][0]
+
+
+# =========== T16 · huecos que dejó la campaña de mutación (api) ========== #
+def test_f055_r13_guardar_propuesta_por_defecto_pisa_la_guardada():
+    """Superviviente `solo_si_vacia: bool = True`: por defecto (preflight y
+    selector, R14 y R15) se reescribe la propuesta; solo el segundo plano
+    pide `solo_si_vacia`. Lo mismo en el puerto."""
+    import inspect
+
+    from domain.ports import AsignacionRepository
+    s = _Sesion()
+    PgAsignacionRepository(s).guardar_propuesta(  # type: ignore[arg-type]
+        3, 10, (100, False), DEL_TRANSFER)
+    assert "propuesta_ide IS NULL" not in _sql(s.ejecutadas[0])
+    firma = inspect.signature(AsignacionRepository.guardar_propuesta)
+    assert firma.parameters["solo_si_vacia"].default is False
+
+
+def test_f055_r37_las_salidas_sin_cola_por_defecto():
+    """Supervivientes `propuestas_en_curso: bool = True` en los esquemas: sin
+    decirlo, ninguna salida dice que haya propuestas en curso."""
+    from domain.models import Periodo, ResultadoCopia, ResumenPeriodo
+    from interface_adapters.api.schemas import (
+        CuadranteOut,
+        FilaOut,
+        a_completar_out,
+        a_copia_periodo_out,
+        a_periodo_out,
+        a_resumen_out,
+    )
+    resumen = a_resumen_out(ResumenPeriodo(0, 0, 0, 0, 0))
+    assert a_copia_periodo_out(ResultadoCopia(None)).propuestas_en_curso \
+        is False
+    assert a_completar_out([], ResumenPeriodo(0, 0, 0, 0, 0)) \
+        .propuestas_en_curso is False
+    assert CuadranteOut(periodo=a_periodo_out(Periodo(2026, 9)), empresa=1,
+                        obras=[], trabajadores=[], resumen=resumen) \
+        .propuestas_en_curso is False
+    assert "propuestas_en_curso" in FilaOut.model_fields
+    assert FilaOut.model_fields["propuestas_en_curso"].default is False

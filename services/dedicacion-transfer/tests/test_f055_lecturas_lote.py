@@ -428,3 +428,87 @@ def test_f055_r24_peticion_con_empresas_mezcladas_no_rompe_la_precarga():
                                   linea(registro_id=2, empresa=2)],
                                  [linea(registro_id=3, **ELEGIDA)]))
     assert "horas_de_recursos" in cli.nombres()
+
+
+# ========== T16 · huecos que dejó la campaña de mutación (transfer) ======= #
+def test_f055_r20_real_sin_obra_de_postventa_la_precarga_sigue():
+    """Superviviente `pv is not None or …`: en real, con líneas de
+    postventa y sin obra de postventa en la empresa, la precarga no la usa
+    como destino (y no revienta); su línea se omite como en suelto."""
+    cli = ClienteQueAnota(obra_postventa_existe=False)
+    m = _precargado(cli, _peticiones([linea(), linea(registro_id=2,
+                                                     es_postventa=True)]),
+                    obra_pruebas_forzar=False)
+    [partes] = [c for c in cli.llamadas if c[0] == "partes_de_periodos"]
+    assert partes[1] == [555001]
+    assert m.obra_por_codigo(OBRA_POSTVENTA, 1) is None
+
+
+def test_f055_r20_validacion_solo_de_obra_normal_sin_var():
+    """Superviviente `not es_postventa or var is None`: la elegida de una
+    línea de postventa no se valida por `ide` (va contra su catálogo)."""
+    cli = ClienteQueAnota()
+    _precargado(cli, _peticiones([
+        linea(**ELEGIDA),
+        linea(registro_id=2, es_postventa=True, paride=70002)]))
+    assert ("validar_partidas", [80002]) in cli.llamadas
+
+
+def test_f055_r20_la_obra_var_se_busca_en_la_precarga():
+    """Supervivientes `var_obra_cod and ""` y `empresas[i] != emp`: con
+    líneas VAR de la empresa, la obra VAR se busca en la ronda A."""
+    from tests.test_f039_universo_var import ajustes_var
+    cli = ClienteQueAnota()
+    m = LecturasDelLote(cli, 4)
+    m.precargar(_peticiones([linea(var_paride=417055)]), ajustes_var())
+    assert ("obra_por_codigo", "VAR", 1) in cli.llamadas
+
+
+def test_f055_r20_cuentas_de_partida_de_guardadas_y_var():
+    """Superviviente `propuesta_paride and var_paride`: sin subcuenta se
+    precargan las cuentas de la propuesta guardada y de la VAR."""
+    from tests.test_f039_universo_var import ajustes_var
+    cli = ClienteQueAnota()
+    for h in cli.horas[200]:
+        h.caa_cod = None
+    m = LecturasDelLote(cli, 4)
+    m.precargar(_peticiones([linea(propuesta_paride=80001),
+                             linea(registro_id=2, var_paride=417055)]),
+                ajustes_var())
+    assert ("partidas_de_lineas", [80001, 417055]) in cli.llamadas
+
+
+def test_f055_r20_sin_partes_no_se_leen_lineas():
+    """Superviviente `hmoides or resides`: sin partes del periodo no hay
+    líneas que leer."""
+    cli = ClienteQueAnota(parte_existe=False)
+    _precargado(cli, _peticiones([linea(**ELEGIDA)]))
+    assert "lineas_de_partes" not in cli.nombres()
+
+
+def test_f055_r20_linea_sin_recurso_no_rompe_ni_pide_cuentas():
+    """Supervivientes de `_sin_subcuenta` (`and` y `return True`): una línea
+    sin recurso (se omitirá) no hace leer cuentas de partida ni revienta."""
+    cli = ClienteQueAnota()
+    _precargado(cli, _peticiones([linea(**ELEGIDA),
+                                  linea(registro_id=2, recurso_ide=None,
+                                        paride=80001)]))
+    assert "partidas_de_lineas" not in cli.nombres()
+
+
+def test_f055_r34_propuestas_obra_por_codigo_solo_si_no_hay_ide():
+    """Supervivientes `not o.ide or o.codigo` y `o.ide and o.codigo`: sin
+    `ide`, la obra se busca por código en la ronda A (y su presupuesto va en
+    B); con `ide`, no se busca por código."""
+    cli = ClienteQueAnota()
+    m = LecturasDelLote(cli, 4)
+    lineas = [{"clave": "a", "recurso_ide": 200, "nombre": "X",
+               "categoria": "Encargado", "es_postventa": False}]
+    m.precargar_propuestas([
+        {"empresa": 1, "obra": ObraEntrada(codigo=OBRA_ORIGEN), "ano": 2026,
+         "mes": 7, "lineas": lineas},
+        {"empresa": 1, "obra": ObraEntrada(ide=555001, codigo="NO-BUSCAR"),
+         "ano": 2026, "mes": 7, "lineas": lineas}], SettingsFalso())
+    assert ("obra_por_codigo", OBRA_ORIGEN, 1) in cli.llamadas
+    assert ("obra_por_codigo", "NO-BUSCAR", 1) not in cli.llamadas
+    assert ("capitulos_de_obra", 555001) in cli.llamadas

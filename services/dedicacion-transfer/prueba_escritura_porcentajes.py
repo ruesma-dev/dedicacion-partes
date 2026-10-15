@@ -27,8 +27,8 @@ Fases:
       --obra 0696 --recurso N [--recurso N2] [--partida OBRA:PARIDE] [--lote]
       SOLO LECTURA (F-055): el preflight de cada obra con esos recursos (y
       la partida elegida de --partida), con los segundos de cada lectura,
-      de cada obra y del total. No llama a escribir ni a ejecutar. --lote
-      aún no tiene efecto (llega con el preflight en lote).
+      de cada obra y del total. No llama a escribir ni a ejecutar. Con
+      --lote, todas las obras a la vez, como el preflight en lote (T18).
 
 Sin --confirmar, las fases de escritura solo muestran lo que harían.
 """
@@ -42,6 +42,7 @@ from collections import Counter
 from datetime import date
 
 from config.settings import get_settings
+from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
 from domain.models.registro_models import LineaEntrada, ObraEntrada
 from infrastructure.sigrid.sigrid_write_client import (
@@ -289,42 +290,69 @@ def _partidas_por_obra(parser, valores: list[str],
     return out
 
 
+def _imprimir_lecturas(m) -> None:
+    for x in m.lecturas:
+        filas = "error" if x.filas is None else f"{x.filas} filas"
+        print(f"  lectura {x.nombre}: {filas} · {x.segundos:.2f} s")
+
+
+def _imprimir_acciones(pf) -> None:
+    for a in (pf.acciones if pf is not None else []):
+        print(f"  [{a.accion}] recurso={a.recurso_ide} "
+              f"paride={a.paride} {a.partida_metodo or '—'}")
+
+
 def fase_medir(pipeline: RegistroPipeline, ano: int, mes: int,
                obras: list[str], recursos: list[int],
-               partidas: dict[str, int], lote: bool) -> None:
+               partidas: dict[str, int], lote=None) -> None:
     """F-055 (R2, T2 y T18): SOLO LECTURA. El preflight de cada obra con
-    esos recursos (y su partida elegida, si se da), en serie, midiendo cada
-    lectura: segundos por lectura, por obra y en total. El mismo
-    `RegistroPipeline.preflight` que el endpoint; nunca `ejecutar`."""
-    if lote:
-        print("--lote: aún sin efecto (llega con el preflight en lote); "
-              "se mide obra a obra")
+    esos recursos (y su partida elegida, si se da), midiendo cada lectura:
+    segundos por lectura, por obra y en total. Sin `lote`, obra a obra con el
+    mismo `RegistroPipeline.preflight` que el endpoint suelto; con `lote` (un
+    `RegistroLote`), todas a la vez como `POST /api/registro/preflight-lote`
+    (T18). Nunca `ejecutar`."""
     porcentaje = round(1 / len(obras), 4)
+
+    def lineas_de(i: int, cod: str) -> list[LineaEntrada]:
+        return [LineaEntrada(
+            registro_id=REGISTRO_MEDIR + 100 * i + j, ano=ano, mes=mes,
+            porcentaje=porcentaje, recurso_ide=r, empresa=EMPRESA_PRUEBA,
+            paride=partidas.get(cod)) for j, r in enumerate(recursos)]
+
     t0 = time.perf_counter()
-    with medir_lecturas() as total:
-        for i, cod in enumerate(obras):
-            print(f"== Obra {cod} ==")
-            lineas = [LineaEntrada(
-                registro_id=REGISTRO_MEDIR + 100 * i + j, ano=ano, mes=mes,
-                porcentaje=porcentaje, recurso_ide=r, empresa=EMPRESA_PRUEBA,
-                paride=partidas.get(cod)) for j, r in enumerate(recursos)]
-            t_obra = time.perf_counter()
-            pf = None
-            with medir_lecturas() as m:
-                try:
-                    pf = pipeline.preflight(obra=ObraEntrada(codigo=cod),
-                                            lineas=lineas)
-                except Exception as exc:        # noqa: BLE001
-                    print(f"NO se pudo: {exc}")
-            segundos = time.perf_counter() - t_obra
-            for x in m.lecturas:
-                filas = "error" if x.filas is None else f"{x.filas} filas"
-                print(f"  lectura {x.nombre}: {filas} · {x.segundos:.2f} s")
-            for a in (pf.acciones if pf is not None else []):
-                print(f"  [{a.accion}] recurso={a.recurso_ide} "
-                      f"paride={a.paride} {a.partida_metodo or '—'}")
-            print(f"Obra {cod}: {m.n} lecturas · {m.segundos:.2f} s leyendo "
-                  f"· {segundos:.2f} s en total")
+    if lote is not None:
+        print(f"== Lote de {len(obras)} obras ==")
+        resultados: list = []
+        with medir_lecturas() as total:
+            try:
+                resultados = lote.preflight(
+                    [(ObraEntrada(codigo=cod), lineas_de(i, cod))
+                     for i, cod in enumerate(obras)])
+            except Exception as exc:            # noqa: BLE001
+                print(f"NO se pudo: {exc}")
+        _imprimir_lecturas(total)
+        for cod, pf in zip(obras, resultados):
+            print(f"  Obra {cod}:" + (f" NO se pudo: {pf}"
+                                      if isinstance(pf, Exception) else ""))
+            if not isinstance(pf, Exception):
+                _imprimir_acciones(pf)
+    else:
+        with medir_lecturas() as total:
+            for i, cod in enumerate(obras):
+                print(f"== Obra {cod} ==")
+                t_obra = time.perf_counter()
+                pf = None
+                with medir_lecturas() as m:
+                    try:
+                        pf = pipeline.preflight(obra=ObraEntrada(codigo=cod),
+                                                lineas=lineas_de(i, cod))
+                    except Exception as exc:    # noqa: BLE001
+                        print(f"NO se pudo: {exc}")
+                segundos = time.perf_counter() - t_obra
+                _imprimir_lecturas(m)
+                _imprimir_acciones(pf)
+                print(f"Obra {cod}: {m.n} lecturas · {m.segundos:.2f} s "
+                      f"leyendo · {segundos:.2f} s en total")
     print(f"TOTAL: {len(obras)} obras · {total.n} lecturas · "
           f"{total.segundos:.2f} s leyendo · "
           f"{time.perf_counter() - t0:.2f} s en total")
@@ -380,7 +408,8 @@ def main() -> None:
                        args.ano, args.mes, args.categoria, args.nombre)
     elif args.fase == "medir":
         fase_medir(pipeline, args.ano, args.mes, args.obra, args.recurso,
-                   partidas, args.lote)
+                   partidas, RegistroLote(cliente=cli, settings=st)
+                   if args.lote else None)
 
 
 if __name__ == "__main__":

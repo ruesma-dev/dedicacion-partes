@@ -375,12 +375,79 @@ def test_f055_r2_medir_con_partida_elegida_por_obra(monkeypatch, capsys):
     assert "manual" not in "\n".join(bloques[OBRA_SIN_PARTIDA_PV])
 
 
-def test_f055_r2_medir_con_lote_aun_mide_obra_a_obra(monkeypatch, capsys):
-    _medir(monkeypatch, ClienteQueCuenta(), "--obra", OBRA_ORIGEN,
-           "--recurso", "200", "--lote")
+def test_f055_r2_medir_con_lote_mide_el_lote_entero(monkeypatch, capsys):
+    """T18: `--lote` mide el preflight en lote de todas las obras a la vez
+    (antes de T7 solo lo avisaba)."""
+    import prueba_escritura_porcentajes as script
+    pedidas = []
+    original = script.RegistroLote.preflight
+
+    def preflight(self, peticiones):
+        pedidas.append([(o.codigo, [l.registro_id for l in ls])
+                        for o, ls in peticiones])
+        return original(self, peticiones)
+
+    monkeypatch.setattr(script.RegistroLote, "preflight", preflight)
+    ajustes = SettingsFalso()
+    ajustes.sigrid_lecturas_paralelas = 4
+    monkeypatch.setattr(script, "get_settings", lambda: ajustes)
+    monkeypatch.setattr(script, "_cliente", lambda st: ClienteQueCuenta())
+    monkeypatch.setattr("sys.argv", ["prueba_escritura_porcentajes.py",
+                                     "medir", "--ano", "2026", "--mes", "7",
+                                     "--obra", OBRA_ORIGEN, "--obra", "9999",
+                                     "--recurso", "200", "--lote"])
+    script.main()
     salida = capsys.readouterr().out
-    assert "--lote: aún sin efecto" in salida
-    assert list(_bloques(salida)) == [OBRA_ORIGEN]
+    assert pedidas == [[(OBRA_ORIGEN, [990000]), ("9999", [990100])]]
+    assert "== Lote de 2 obras ==" in salida
+    assert f"  Obra {OBRA_ORIGEN}:\n  [escribir] recurso=200" in salida
+    assert "  Obra 9999: NO se pudo: obra no encontrada" in salida
+    assert re.search(r"TOTAL: 2 obras · \d+ lecturas", salida)
+
+
+def test_f055_r2_medir_lote_que_falla_entero(monkeypatch, capsys):
+    import prueba_escritura_porcentajes as script
+
+    class _Roto:
+        def preflight(self, peticiones):
+            raise RuntimeError("sigrid-api caída")
+
+    script.fase_medir(None, 2026, 7, [OBRA_ORIGEN], [200], {}, _Roto())
+    salida = capsys.readouterr().out
+    assert "NO se pudo: sigrid-api caída" in salida
+    assert "TOTAL: 1 obras · 0 lecturas" in salida
+
+
+def test_f055_r2_medir_lineas_porcentaje_tiempos_y_errores(monkeypatch,
+                                                           capsys):
+    """T16 (supervivientes de `fase_medir`): los `registro_id` y el
+    porcentaje de las líneas, la lectura que falla («error») y los segundos
+    por obra y en total, con un reloj fijo."""
+    import prueba_escritura_porcentajes as script
+    pedidas = []
+
+    class _Pipeline:
+        def preflight(self, *, obra, lineas):
+            pedidas.append((obra.codigo, [(l.registro_id, l.porcentaje)
+                                          for l in lineas]))
+            apuntar_lectura("falla", None, 0.1)
+            apuntar_lectura("va", 3, 0.2)
+
+    reloj = iter([10.0, 11.0, 13.5, 14.0, 14.25, 15.0, 16.0, 17.0])
+    monkeypatch.setattr(script.time, "perf_counter", lambda: next(reloj))
+    script.fase_medir(_Pipeline(), 2026, 7, ["A", "B", "C"], [7, 8], {},
+                      None)
+    salida = capsys.readouterr().out
+    assert pedidas == [
+        ("A", [(990000, 0.3333), (990001, 0.3333)]),
+        ("B", [(990100, 0.3333), (990101, 0.3333)]),
+        ("C", [(990200, 0.3333), (990201, 0.3333)])]
+    assert "  lectura falla: error · 0.10 s\n  lectura va: 3 filas · 0.20 s" \
+        in salida
+    assert "Obra A: 2 lecturas · 0.30 s leyendo · 2.50 s en total" in salida
+    assert "Obra B: 2 lecturas · 0.30 s leyendo · 0.25 s en total" in salida
+    assert "TOTAL: 3 obras · 6 lecturas · 0.90 s leyendo · 7.00 s en total" \
+        in salida
 
 
 def test_f055_r2_medir_sigue_si_una_obra_falla(monkeypatch, capsys):

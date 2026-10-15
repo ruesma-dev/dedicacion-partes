@@ -93,8 +93,9 @@ def test_f055_r37_si_encolar_falla_responde_igual(
     r = _llamar(cliente, metodo, ruta, cuerpo)
     assert r.status_code == 200, r.text
     assert r.json()["propuestas_en_curso"] is False
-    assert any("no se pudieron encolar" in x.getMessage()
-               for x in caplog.records)
+    [aviso] = [x for x in caplog.records
+               if "no se pudieron encolar" in x.getMessage()]
+    assert aviso.exc_info and aviso.exc_info[0] is not None   # traza (T16)
 
 
 def test_f055_r30_el_cuadrante_tambien_resiste_una_cola_rota(api):

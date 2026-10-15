@@ -214,3 +214,34 @@ def test_f055_r20_el_doble_deriva_de_sus_lecturas_sueltas():
     assert cli.lineas_de_partes([777], [200]) == {
         777: cli.lineas_del_parte(777, [200])}
     assert cli.obras_por_ide([]) == {}
+
+
+# ========== T16 · huecos que dejó la campaña de mutación (cliente) ======== #
+def test_f055_r20_linea_del_parte_mapea_nulos_y_valores():
+    """Supervivientes de `_linea_del_parte` (`or 1`, `and 0`, `and None`):
+    la fila de Sigrid con nulos sale con ceros y `horide` None; con valores,
+    tal cual."""
+    from domain.models.registro_models import LineaSigrid
+    from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
+    vacia = {"ide": 1, "reside": None, "fec": None, "horide": None,
+             "paride": None, "hora": None, "can": None, "tot": None,
+             "synckey": None}
+    llena = {"ide": 2, "reside": 200, "fec": 20260930, "horide": 5,
+             "paride": 80001, "hora": "MENC", "can": 0.5, "tot": 10.0,
+             "synckey": " porcentajes:7 "}
+    assert SigridWriteClient._linea_del_parte(vacia) == LineaSigrid(
+        ide=1, reside=0, fecha_int=0, horide=None, hora_codigo=None,
+        can=None, tot=None, synckey=None, nuestra=False, paride=0)
+    assert SigridWriteClient._linea_del_parte(llena) == LineaSigrid(
+        ide=2, reside=200, fecha_int=20260930, horide=5, hora_codigo="MENC",
+        can=0.5, tot=10.0, synckey="porcentajes:7", nuestra=True,
+        paride=80001)
+
+
+def test_f055_r1_la_lectura_medida_es_inmutable():
+    """Superviviente `@dataclass(frozen=False)` en `Lectura`."""
+    from dataclasses import FrozenInstanceError
+
+    from infrastructure.sigrid.sigrid_write_client import Lectura
+    with pytest.raises(FrozenInstanceError):
+        Lectura("x", 1, 0.5).filas = 2

@@ -307,3 +307,11 @@ def test_f055_r25_la_ruta_es_sincrona():
     [ruta] = [r for r in app.routes
               if getattr(r, "path", "") == "/api/registro/preflight-lote"]
     assert not inspect.iscoroutinefunction(ruta.endpoint)
+
+
+# ========== T16 · huecos que dejó la campaña de mutación (rutas) ========= #
+def test_f055_r19_la_respuesta_del_preflight_dice_ok():
+    """Superviviente `"ok": False` en `_respuesta_preflight`: la suelta y
+    cada obra del lote dicen `ok: true`."""
+    [pf] = _lote(ClienteObras(1), [(_obra(1), [_con_partida(1)])])
+    assert _respuesta_preflight(pf)["ok"] is True

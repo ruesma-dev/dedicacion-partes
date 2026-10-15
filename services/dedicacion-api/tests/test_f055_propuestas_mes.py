@@ -223,7 +223,9 @@ def test_f055_r33_transfer_caido_nada_guardado_y_se_relanza(caplog):
     pm = _pm(uow, t, ej)
     assert pm.lanzar(ANIO, MES) is False
     assert _prop(uow, 14, 100) is None and pm.en_curso(P_ACT) is False
-    assert any("propuestas del mes" in r.getMessage() for r in caplog.records)
+    [aviso] = [r for r in caplog.records
+             if "propuestas del mes" in r.getMessage()]
+    assert aviso.exc_info and aviso.exc_info[0] is not None   # traza (T16)
     t.caido = False
     pm.lanzar(ANIO, MES)                    # la memoria no se tocó
     assert _prop(uow, 14, 100) == 80002 and ej.tareas == 2
@@ -320,8 +322,10 @@ def test_f055_r34_cliente_propuesta_lote(monkeypatch):
 def test_f055_r33_cliente_propuesta_lote_sin_obras_lanza(monkeypatch,
                                                          respuesta):
     cli, _ = _cliente_http(monkeypatch, respuesta)
-    with pytest.raises(PropuestaNoDisponible):
+    with pytest.raises(PropuestaNoDisponible) as e:
         cli.propuesta_lote([])
+    assert str(e.value) == "propuesta de partidas no disponible: " + (
+        respuesta.get("error") or "la respuesta del transfer no trae obras")
 
 
 # ================================ rutas ================================== #
