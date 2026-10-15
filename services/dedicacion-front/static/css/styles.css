@@ -274,6 +274,11 @@ tr.fila.subfila td { border-top: 1px dashed var(--line); }
 .celda-partida.editable:hover { color: var(--brand); text-decoration: underline; }
 .partida-elegida { font-weight: 600; }
 .partida-auto { font-style: italic; color: var(--steel); }
+/* F-055 (R27, R36): la propuesta guardada, en cursiva con su método; y la
+   pendiente mientras la API la busca. */
+.partida-propuesta { font-style: italic; }
+.partida-propuesta .partida-metodo { color: var(--steel); font-size: 0.9em; }
+.partida-auto.buscando { opacity: 0.8; }
 .partida-fija { color: var(--ink-soft); }
 
 /* F-050 (R26): selector de partida. Cuelga de <body> y es fijo, como el
