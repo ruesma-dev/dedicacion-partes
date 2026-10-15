@@ -3,12 +3,24 @@
 
 **F-055 en curso en esta rama** (`feature/F-055-preflight-rapido`,
 copia `PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas
-y propuesta del mes en segundo plano. T1-T8 hechas; implementer en marcha
-desde T9. F-050 está cerrada en `dev` y `main`; se
+y propuesta del mes en segundo plano. T1-T14 hechas por el implementer
+(T15: azure-apps, pendiente del líder; T16-T17 en marcha). F-050 está cerrada en `dev` y `main`; se
 desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arnés es la
 **1.7.3**.
 
 ## F-055 · Registro sin búsquedas de partidas (en curso)
+
+- **T15 · azure-apps (PENDIENTE DEL LÍDER):** copiar a
+  `azure-apps/dedicacion.md` lo nuevo de `docs/INTEGRACION.md` de F-055 (el
+  bloque «Desde F-055» de §5, la variable `SIGRID_LECTURAS_PARALELAS` de §3,
+  la fila de timeouts y las dos filas nuevas de §7: orden de despliegue
+  transfer → api → front y `SIGRID_LECTURAS_PARALELAS`), revisar el `diff` y
+  hacer commit en `azure-apps`. Contratos nuevos: `POST
+  /api/registro/preflight-lote`, `POST /api/partidas/propuesta-lote` (transfer,
+  solo para la api), `GET /api/v1/periodos/{a}/{m}/propuestas`,
+  `propuestas_en_curso` en el cuadrante y en las seis escrituras, columnas
+  `asignacion.propuesta_*` (api) y campos `propuesta_*` de la línea del
+  registro.
 
 - **Decisiones del humano durante la implementación (2026-10-15)**, recogidas
   en `tasks.md` (lista cerrada):
