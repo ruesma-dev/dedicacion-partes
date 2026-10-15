@@ -55,6 +55,10 @@ class _Transfer:
         self.payloads.append(payload)
         return {"ok": True}
 
+    def preflight_lote(self, peticiones: list[dict]) -> dict:
+        """F-055 (R26; lista cerrada): el lote delega en `preflight`."""
+        return {"ok": True, "obras": [self.preflight(p) for p in peticiones]}
+
     def ejecutar(self, payload: dict) -> dict:
         self.payloads.append(payload)
         return {"ok": False}                # sin traza: no toca la sesión
@@ -62,9 +66,13 @@ class _Transfer:
 
 def _fila(asig_id: int, trab_ide: int, obra_ide: int) -> tuple:
     """(asignación, trabajador, obra) como las devuelve la consulta."""
+    # F-055 (R16; lista cerrada): sin propuesta guardada.
     asignacion = SimpleNamespace(id=asig_id, porcentaje=40,
                                  es_postventa=False,
-                                 partida_ide=None, partida_cod=None)
+                                 partida_ide=None, partida_cod=None,
+                                 propuesta_ide=None, propuesta_cod=None,
+                                 propuesta_res=None, propuesta_metodo=None,
+                                 propuesta_origen=None)
     # `empresa=None` en los dos (F-024, design §7): sin empresa y sin obras
     # con empresa, el trabajador se ve en la por defecto, que es la que usan
     # estos tests; ningún assert cambia.

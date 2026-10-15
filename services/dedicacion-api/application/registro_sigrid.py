@@ -19,6 +19,12 @@ La partida ELEGIDA de la asignación (F-050, R19,
 docs/ARCHITECTURE.md#regla-partida) viaja como `paride` y `partida_cod`; un
 `overrides` del cuerpo manda sobre ella; sin elegida no viaja partida y el
 transfer pone la propuesta.
+
+F-055 (R14, R16, R26): una automática con propuesta GUARDADA viaja con sus
+`propuesta_*` (el transfer la valida y, si vale, la escribe); el preflight
+del periodo es UNA llamada al lote del transfer y, al volver, cada acción
+con método de propuesta guarda su partida en la asignación si sigue sin
+elegida (sin evento ni traza). `ejecutar` sigue por obra y en serie.
 """
 from __future__ import annotations
 
@@ -44,6 +50,13 @@ logger = logging.getLogger(__name__)
 #: traza de un registro que en Sigrid YA se hizo.
 _MAX_MOTIVO = 300
 _MAX_USUARIO = 64
+
+
+def es_metodo_de_propuesta(metodo: str | None) -> bool:
+    """¿El método es de una PROPUESTA del transfer (parte anterior, último
+    parte o casamiento `auto_*`)? Solo esas se guardan (F-055, R14, R15)."""
+    return metodo in ("parte_anterior", "ultimo_parte") or \
+        (metodo or "").startswith("auto_")
 
 
 class RegistroSigrid:
@@ -120,6 +133,13 @@ class RegistroSigrid:
             elif a.partida_ide:
                 linea["paride"] = int(a.partida_ide)
                 linea["partida_cod"] = a.partida_cod
+            elif a.propuesta_ide:
+                # F-055 (R16): la propuesta guardada; el transfer la valida.
+                linea.update(propuesta_paride=int(a.propuesta_ide),
+                             propuesta_cod=a.propuesta_cod,
+                             propuesta_res=a.propuesta_res,
+                             propuesta_metodo=a.propuesta_metodo,
+                             propuesta_origen=a.propuesta_origen)
             grupo["lineas"].append(linea)
         return list(por_obra.values()), sorted(no_vigentes)
 
@@ -138,12 +158,49 @@ class RegistroSigrid:
                 self._filtro(empresa))
         if obra_ide is not None:
             payloads = [p for p in payloads if p["obra"]["ide"] == obra_ide]
-        resultados = []
-        for p in payloads:
-            r = self._transfer.preflight({**p, "pisar_claves": []})
-            resultados.append({"obra": p["obra"], **r})
+        resultados = [{"obra": p["obra"], **r} for p, r in zip(
+            payloads, self._preflight_lote(payloads))]
+        self._guardar_propuestas(resultados)
         return {"ok": all(r.get("ok") for r in resultados) if resultados
                 else True, "obras": resultados, "no_vigentes": no_vigentes}
+
+    def _preflight_lote(self, payloads: list[dict]) -> list[dict]:
+        """F-055 (R26): UNA llamada al lote del transfer; por obra, la
+        respuesta del preflight de hoy. Si el lote falla o no trae una
+        entrada por obra, cada obra lleva el error."""
+        if not payloads:
+            return []
+        r = self._transfer.preflight_lote(
+            [{**p, "pisar_claves": []} for p in payloads])
+        obras = r.get("obras")
+        if r.get("ok") is True and isinstance(obras, list) \
+                and len(obras) == len(payloads):
+            return obras
+        error = r.get("error") or "el transfer no devolvió todas las obras"
+        return [{"ok": False, "error": error} for _ in payloads]
+
+    def _guardar_propuestas(self, resultados: list[dict]) -> None:
+        """F-055 (R14): la partida de cada acción con método de propuesta,
+        en su asignación, SOLO si sigue sin elegida. Con el ORM, como
+        `_trazar`; sin evento y sin tocar `sigrid_*` ni la respuesta."""
+        propuestas = [a for r in resultados if r.get("ok")
+                      for a in r.get("acciones", [])
+                      if a.get("paride")
+                      and es_metodo_de_propuesta(a.get("partida_metodo"))]
+        if not propuestas:
+            return
+        with self._sf() as s:
+            for a in propuestas:
+                s.execute(
+                    update(AsignacionORM)
+                    .where(AsignacionORM.id == a["registro_id"],
+                           AsignacionORM.partida_ide.is_(None))
+                    .values(propuesta_ide=a["paride"],
+                            propuesta_cod=a.get("partida_cod"),
+                            propuesta_res=a.get("partida_res"),
+                            propuesta_metodo=a.get("partida_metodo"),
+                            propuesta_origen=a.get("partida_origen")))
+            s.commit()
 
     # ------------------------------------------------------------- #
     def ejecutar(self, anio: int, mes: int, *, pisar_claves: list[str],

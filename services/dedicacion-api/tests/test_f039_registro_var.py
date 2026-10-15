@@ -42,8 +42,12 @@ O678 = _obra(678, "0678", "15 VIVIENDAS")
 
 def _fila(asig_id: int, trab_ide: int, obra: SimpleNamespace,
           pv: bool = False) -> tuple:
+    # F-055 (R16; lista cerrada): sin propuesta guardada.
     asignacion = SimpleNamespace(id=asig_id, porcentaje=40, es_postventa=pv,
-                                 partida_ide=None, partida_cod=None)
+                                 partida_ide=None, partida_cod=None,
+                                 propuesta_ide=None, propuesta_cod=None,
+                                 propuesta_res=None, propuesta_metodo=None,
+                                 propuesta_origen=None)
     trabajador = SimpleNamespace(ide=trab_ide, dni=None, nombre=f"T{trab_ide}",
                                  categoria="Encargado", empresa=1,
                                  activo=True, fecha_baja=None)

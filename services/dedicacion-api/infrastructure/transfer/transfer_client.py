@@ -39,6 +39,12 @@ class TransferClient:
     def preflight(self, payload: dict) -> dict[str, Any]:
         return self._post("/api/registro/preflight", payload)
 
+    def preflight_lote(self, peticiones: list[dict]) -> dict[str, Any]:
+        """F-055 (R26): el preflight de varias obras en una llamada
+        (`POST /api/registro/preflight-lote`): `{ok, obras}`."""
+        return self._post("/api/registro/preflight-lote",
+                          {"peticiones": peticiones})
+
     def ejecutar(self, payload: dict) -> dict[str, Any]:
         return self._post("/api/registro/ejecutar", payload)
 
