@@ -136,6 +136,26 @@ class CuadranteOut(_Base):
     obras: list[ObraOut]
     trabajadores: list[TrabajadorOut]
     resumen: ResumenOut
+    # F-055 (R30): alguna línea del periodo en la cola de propuestas.
+    propuestas_en_curso: bool = False
+
+
+class PropuestaLineaOut(_Base):
+    """Una automática con propuesta guardada (F-055, R35)."""
+
+    trabajador_ide: int
+    obra_ide: int
+    es_postventa: bool
+    propuesta_cod: str | None
+    propuesta_res: str | None
+    propuesta_metodo: str | None
+
+
+class PropuestasOut(_Base):
+    """`GET …/propuestas` (F-055, R35)."""
+
+    en_curso: bool
+    lineas: list[PropuestaLineaOut]
 
 
 class EmpresaOut(_Base):

@@ -66,7 +66,10 @@ def _cliente(lineas, monkeypatch, **extra):
     uow.asignaciones = _AsignacionesR15(uow)
     uow.propuestas_guardadas = []
     uow.eventos = _EventosConTipo()
-    contenedor = SimpleNamespace(settings=settings, uow=lambda: uow, **extra)
+    # F-055 (R29-R37; lista cerrada): las propuestas del mes, falsas.
+    from tests.test_f024_rutas_empresa import _PropuestasFalsas
+    contenedor = SimpleNamespace(settings=settings, uow=lambda: uow,
+                                 propuestas_mes=_PropuestasFalsas(), **extra)
     app = build_app(settings)
     app.dependency_overrides[obtener_contenedor] = lambda: contenedor
     return TestClient(app), uow

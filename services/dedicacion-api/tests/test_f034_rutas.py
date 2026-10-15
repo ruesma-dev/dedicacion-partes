@@ -17,7 +17,8 @@ from tests.test_f024_rutas_empresa import BASE, api  # noqa: F401 (fixture)
 
 #: Campos de la respuesta del cuadrante y de cada línea: F-034 no añade ni
 #: quita ninguno (design §4.3).
-CAMPOS_CUADRANTE = {"periodo", "empresa", "obras", "trabajadores", "resumen"}
+CAMPOS_CUADRANTE = {"periodo", "empresa", "obras", "trabajadores", "resumen",
+                    "propuestas_en_curso"}            # + F-055 (R30)
 CAMPOS_LINEA = {"obra_ide", "cod", "descripcion", "es_postventa",
                 "porcentaje", "obra_activa", "obra_empresa", "otra_empresa",
                 "obra_admite_postventa", "ofrecible",   # + F-025 (R18)

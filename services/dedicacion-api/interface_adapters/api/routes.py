@@ -42,6 +42,7 @@ from interface_adapters.api.schemas import (
     PeriodoCreadoOut,
     PeriodoIn,
     PeriodoOut,
+    PropuestasOut,
     SyncOut,
     a_completar_out,
     a_copia_periodo_out,
@@ -103,6 +104,9 @@ def health(contenedor: Cont) -> dict[str, Any]:
 def sincronizar(contenedor: Cont) -> SyncOut:
     with contenedor.uow() as uow:
         resultado = contenedor.sync_pipeline.ejecutar(uow)
+    # F-055 (R29, R32): tras el éxito, olvida «sin propuesta» y lanza las
+    # propuestas de cada periodo ABIERTO (no se espera).
+    contenedor.propuestas_mes.tras_sync()
     return a_sync_out(resultado)
 
 
@@ -186,12 +190,16 @@ def obtener_cuadrante(
     anio: int, mes: int, contenedor: Cont, usuario: Usuario,
     empresa: EmpresaQ = None,
 ) -> CuadranteOut:
-    """`puede_deshacer` de cada fila es el del usuario que pregunta (F-027)."""
+    """`puede_deshacer` de cada fila es el del usuario que pregunta (F-027).
+    Un periodo ABIERTO encola sus propuestas pendientes (F-055, R29) y
+    publica `propuestas_en_curso`; no las espera (R30)."""
     filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
         cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes, filtro,
                                                 usuario=usuario)
+    en_curso = contenedor.propuestas_mes.lanzar(anio, mes)
     return CuadranteOut(
+        propuestas_en_curso=en_curso,
         periodo=a_periodo_out(cuadrante.periodo),
         empresa=cuadrante.empresa,
         obras=[a_obra_out(o) for o in cuadrante.obras],
@@ -200,6 +208,17 @@ def obtener_cuadrante(
         ],
         resumen=a_resumen_out(cuadrante.resumen),
     )
+
+
+@router.get("/periodos/{anio}/{mes}/propuestas", response_model=PropuestasOut,
+            tags=["cuadrante"])
+def propuestas_del_mes(anio: int, mes: int,
+                       contenedor: Cont) -> PropuestasOut:
+    """F-055 (R35): si hay propuestas en curso y las automáticas con
+    propuesta guardada del periodo. Solo lee."""
+    with contenedor.uow() as uow:
+        return PropuestasOut(**contenedor.propuestas_mes.estado(uow, anio,
+                                                                mes))
 
 
 @router.put(

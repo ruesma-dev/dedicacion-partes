@@ -68,6 +68,31 @@ class _Contenedor(SimpleNamespace):
     pass
 
 
+class _PropuestasFalsas:
+    """F-055 (R29-R37; lista cerrada): las propuestas del mes, falsas. Anota
+    lo que encolan las rutas y devuelve el `en_curso` fijado."""
+
+    def __init__(self, en_curso: bool = False, falla: bool = False) -> None:
+        self.lanzadas: list = []
+        self.en_curso = en_curso
+        self.falla = falla
+
+    def lanzar(self, anio, mes, trabajadores=None) -> bool:
+        self.lanzadas.append((anio, mes, trabajadores))
+        return self.en_curso
+
+    def tras_sync(self) -> None:
+        if self.falla:
+            raise AssertionError("tras un sync que falla no se lanza")
+        self.lanzadas.append("tras_sync")
+
+    def estado(self, uow, anio, mes) -> dict:
+        return {"en_curso": self.en_curso, "lineas": [
+            {"trabajador_ide": 14, "obra_ide": 100, "es_postventa": False,
+             "propuesta_cod": "CI.1.20", "propuesta_res": "JEFE",
+             "propuesta_metodo": "auto_nombre"}]}
+
+
 @pytest.fixture
 def api(monkeypatch):
     """(cliente, contenedor falso) con EMPRESA_IMPUTACION = 1."""
@@ -88,7 +113,7 @@ def api(monkeypatch):
 
     contenedor = _Contenedor(settings=settings, uow=nueva_uow,
                              exporter=_Exportador(), registro_sigrid=_Registro(),
-                             uows=uows)
+                             uows=uows, propuestas_mes=_PropuestasFalsas())
     app = build_app(settings)
     app.dependency_overrides[obtener_contenedor] = lambda: contenedor
     return TestClient(app), contenedor
