@@ -2,30 +2,13 @@
 
 Rama `feature/F-055-preflight-rapido` (copia `porcentajes-f041`). Rigor
 `critico`. Spec aprobada por el humano el 2026-10-13 (D9-D10 el 2026-10-14).
-Hechas: **T1, T2b, T2c, T3-T8** (transfer entero). **T9 implementada pero
-BLOQUEADA** (abajo). T2 (MANUAL) sigue sin marcar: el humano tomará aparte
-las cifras de navegador.
+Hechas: **T1, T2b, T2c, T3-T9** y siguientes (por tareas, abajo). T2
+(MANUAL) sigue sin marcar: el humano tomará aparte las cifras de navegador.
 
-## BLOQUEO en T9 (2026-10-15)
-
-```
-$ cd services/dedicacion-api && .venv/Scripts/python -m pytest -q
-FAILED tests/test_f050_partida_linea.py::test_f050_r12_r18_el_repositorio_mapea_la_partida
-FAILED tests/test_f050_partida_linea.py::test_f050_r12_r18_las_lineas_del_trabajador_llevan_su_partida
-E   AttributeError: 'types.SimpleNamespace' object has no attribute 'propuesta_ide'
-2 failed, 798 passed, 1 warning in 72.46s
-```
-
-Fuera de la lista cerrada: sus filas de `asignacion` son `SimpleNamespace` a
-mano sin las columnas `propuesta_*`, que el repositorio ya lee (R13). En T10
-caerá igual su `_fila_r19` (`_payloads` leerá `propuesta_ide`, R16). No falla
-ninguna aserción. **Propuesta:** lista cerrada para esas filas falsas
-(`propuesta_*=None` en los tres `SimpleNamespace` de asignación), sin tocar
-aserciones; alternativa no recomendada, `getattr(…, None)` en el código solo
-para esos dobles. Barrido T10-T12b: los transfer falsos, `_fila`, `_Uow`,
-fixtures `api`/`_cliente` y `CAMPOS_*` ya están en la lista; las rutas de
-sync que fallan con 502 no tocan `propuestas_mes`; las respuestas exactas de
-rutas que he visto (selector, registro) no cambian. Lo confirmo al implementar.
+**Bloqueo de T9 resuelto (2026-10-15, «si a todo»):** lista cerrada para
+las filas falsas de `test_f050_partida_linea.py`, permiso general para añadir
+a un doble campos nulos o métodos derivados (ver «Dobles ampliados») y C2
+contado como C1.
 
 **Bloqueo de T4 resuelto (2026-10-15):** el humano añadió
 `test_pipeline_offline.py` a la lista cerrada («añade test_pipeline_offline.py
@@ -192,7 +175,7 @@ vez. `tests/test_f055_propuesta_lote.py` (15). RED: `15 failed`
 (`'RegistroLote' object has no attribute 'proponer'`, rutas 404); verde 15;
 suite del transfer **917 passed** (72.5 s).
 
-## T9 · La propuesta guardada en la api (R13, R17) — implementada, bloqueada
+## T9 · La propuesta guardada en la api (R13, R17)
 
 ORM `AsignacionORM.propuesta_ide` (BigInteger) y `_cod/_res/_metodo/_origen`
 (Text), nulables; `Linea.propuesta_*` al final; `_a_linea_con_partida` y
@@ -204,15 +187,22 @@ del ORM con `partida_ide IS NULL` y, si se pide, `propuesta_ide IS NULL`);
 cerrada: `test_f003_r8_…` (+5 columnas). `tests/test_f055_propuesta_guardada.py`
 (20, R13 y R17). RED: `20 failed` (`Linea.__init__() got an unexpected
 keyword argument 'propuesta_ide'`, `KeyError: 'propuesta_cod'`, `no attribute
-'guardar_propuesta'`); verde 20 + `test_f003_esquema` (83 en total).
+'guardar_propuesta'`); verde 20 + `test_f003_esquema` (83); suite api 800.
+
+## Dobles ampliados (para el reviewer)
+
+Campos nulos o métodos derivados de sus datos, sin tocar aserciones:
+`conftest.py` (`validar_partidas`, `obras_por_ide`, `partes_de_periodos`,
+`lineas_de_partes`); `test_pipeline_offline.py` (`validar_partidas`);
+`test_f050_partida_linea.py` (`SIN_PROPUESTA` en sus filas de asignación).
 
 ## Evidencias
 
 | Evidencia | Valor |
 |---|---|
 | Tests transfer (tras T8) | **917 passed** (72.52 s) |
-| Tests api (con T9) | **798 passed, 2 failed** (el bloqueo de T9), 72.46 s |
+| Tests api (tras T9) | **800 passed** (68.74 s) |
 | Tests de F-055 | transfer **167** (`test_f055_*`, más el plugin de equivalencia); api 20 |
 | Cobertura de las líneas cambiadas | última medida: 100 % de 184 (tras T4); se repite al desbloquear |
 | Mutantes | campaña completa en T16 (no empezada) |
-| `bash harness/init.sh` | no se ha repetido tras T4 (con la api en rojo no vale) |
+| `bash harness/init.sh` | al final (T17) |
