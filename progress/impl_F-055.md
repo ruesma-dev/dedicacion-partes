@@ -159,6 +159,6 @@ Verde: `23 passed`; suite del transfer **834 passed, 1 failed** (el bloqueo).
 |---|---|
 | Tests transfer (tras T4) | **834 passed, 1 failed** (`test_pipeline_offline::test_override_manual`, el bloqueo), 7.79 s |
 | Tests de F-055 hasta aquí | medición 36, orden 8, validar 18, pipeline 23: **85 passed** |
-| Cobertura de las líneas cambiadas | se medirá con `bash harness/init.sh` al desbloquear (con la suite en rojo la puerta no vale) |
+| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 184 líneas cambiadas cubiertas (184/184, umbral 80%, nivel critico)` (provisional: la suite del transfer está en rojo) |
 | Mutantes | campaña completa en T16 (no empezada) |
-| `bash harness/init.sh` | ver la línea final de este informe (tras el commit del bloqueo) |
+| `bash harness/init.sh` (tras `4a94c3c`, cachés borradas) | **exit 1**: `[KO] servicio transfer: pytest en rojo` (`1 failed, 834 passed`, 17.90 s, el bloqueo); raíz `418 passed, 1 skipped` (93.95 s); api `780 passed` (81.73 s); front `269 passed` (60.87 s); `PUERTA TAMAÑO` en verde (impl 164/220) |
