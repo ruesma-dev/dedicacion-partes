@@ -2,42 +2,12 @@
 
 Rama `feature/F-055-preflight-rapido` (copia `porcentajes-f041`). Rigor
 `critico`. Spec aprobada por el humano el 2026-10-13 (D9-D10 el 2026-10-14).
-Hechas: **T1, T2b, T2c, T3**. **T4 implementada pero BLOQUEADA** (abajo).
+Hechas: **T1, T2b, T2c, T3, T4** y siguientes (por tareas, abajo).
 T2 (MANUAL) sigue sin marcar: el humano tomará aparte las cifras de navegador.
 
-## BLOQUEO en T4 (2026-10-15)
-
-Con T4 la suite del transfer da **834 passed, 1 failed**, y el que falla está
-**fuera de la lista cerrada** de `tasks.md`:
-
-```
-$ cd services/dedicacion-transfer && .venv/Scripts/python -m pytest -q --tb=line
-FAILED tests/test_pipeline_offline.py::test_override_manual - AttributeError:...
-E   AttributeError: 'ClienteFalso' object has no attribute 'validar_partidas'
-1 failed, 834 passed, 1 warning in 7.79s
-```
-
-`test_pipeline_offline.py` tiene su **propio** `ClienteFalso` (no el de
-`conftest.py`), y `test_override_manual` manda una línea con partida elegida
-(80002). R3 obliga a validarla con `validar_partidas` (una lectura por `ide`);
-ese doble no tiene el método. **No falla ninguna aserción.**
-
-- **Propuesta:** añadir `test_pipeline_offline.py` a la lista cerrada **solo
-  para su doble**: un `validar_partidas` derivado de sus dos presupuestos
-  (`capitulos`, `partidas_origen`), como el de `conftest.py` (T3). Ninguna
-  aserción cambia.
-- Alternativa (no recomendada): que el pipeline lea el presupuesto si el
-  cliente no tiene `validar_partidas`: una rama que solo existiría para ese
-  doble y que la mutación dejaría sin test.
-- Barrido hacia delante (para no volver a parar por lo mismo): en el transfer
-  no hay otro doble propio que reciba líneas con partida (`test_f022` hereda
-  de `conftest` y no manda elegidas; `test_f047` tampoco). En la api, los
-  transfer falsos están en `test_f022_empresa_en_linea` y
-  `test_f024_registro_empresa` (en la lista), y los demás los importan de
-  ahí; no lo puedo asegurar del todo hasta implementar T10-T12b.
-
-Estado del árbol: T4 en el commit «F-055: T4 a medias, bloqueada», sin marcar
-en `tasks.md`; `features.json` en `blocked`; motivo en `progress/current.md`.
+**Bloqueo de T4 resuelto (2026-10-15):** el humano añadió
+`test_pipeline_offline.py` a la lista cerrada («añade test_pipeline_offline.py
+a la lista cerrada»): solo su `ClienteFalso` gana `validar_partidas`.
 
 ## T1 · Medición (R1, R2, C2 «antes») — resumen
 
@@ -122,7 +92,7 @@ E   ImportError: cannot import name 'PartidaValida' from 'domain.models.registro
 ```
 Verde: `18 passed`; suite del transfer `812 passed`.
 
-## T4 · Pipeline sin búsquedas de partidas (R3-R12) — implementada, bloqueada
+## T4 · Pipeline sin búsquedas de partidas (R3-R12)
 
 - Modelos: `LineaEntrada.propuesta_paride/_cod/_res/_metodo/_origen`,
   `LineaIn` igual (contrato HTTP), `AccionLinea.partida_res`.
@@ -151,7 +121,8 @@ E   KeyError: 'partida_res'      (respuesta HTTP del preflight)
 21 failed, 2 passed in 3.90s
 ```
 (los 2 que pasaban: «sin partidas no valida» y la VAR, que no cambian).
-Verde: `23 passed`; suite del transfer **834 passed, 1 failed** (el bloqueo).
+Verde: `23 passed`; con el doble de `test_pipeline_offline.py` (lista
+cerrada, decisión del humano) la suite del transfer da **835 passed**.
 
 ## Evidencias
 
