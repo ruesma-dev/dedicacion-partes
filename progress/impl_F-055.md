@@ -1,174 +1,164 @@
 # F-055 · Informe del implementer
 
 Rama `feature/F-055-preflight-rapido` (copia `porcentajes-f041`). Rigor
-`critico`. Spec aprobada por el humano el 2026-10-13. Este informe crece por
-tareas; hoy solo **T1**. T2 es MANUAL del humano y va antes de T3.
+`critico`. Spec aprobada por el humano el 2026-10-13 (D9-D10 el 2026-10-14).
+Hechas: **T1, T2b, T2c, T3**. **T4 implementada pero BLOQUEADA** (abajo).
+T2 (MANUAL) sigue sin marcar: el humano tomará aparte las cifras de navegador.
 
-## T1 · Medición (R1, R2, C2 «antes»)
+## BLOQUEO en T4 (2026-10-15)
 
-### Qué cambió
+Con T4 la suite del transfer da **834 passed, 1 failed**, y el que falla está
+**fuera de la lista cerrada** de `tasks.md`:
 
-| Fichero | Cambio |
+```
+$ cd services/dedicacion-transfer && .venv/Scripts/python -m pytest -q --tb=line
+FAILED tests/test_pipeline_offline.py::test_override_manual - AttributeError:...
+E   AttributeError: 'ClienteFalso' object has no attribute 'validar_partidas'
+1 failed, 834 passed, 1 warning in 7.79s
+```
+
+`test_pipeline_offline.py` tiene su **propio** `ClienteFalso` (no el de
+`conftest.py`), y `test_override_manual` manda una línea con partida elegida
+(80002). R3 obliga a validarla con `validar_partidas` (una lectura por `ide`);
+ese doble no tiene el método. **No falla ninguna aserción.**
+
+- **Propuesta:** añadir `test_pipeline_offline.py` a la lista cerrada **solo
+  para su doble**: un `validar_partidas` derivado de sus dos presupuestos
+  (`capitulos`, `partidas_origen`), como el de `conftest.py` (T3). Ninguna
+  aserción cambia.
+- Alternativa (no recomendada): que el pipeline lea el presupuesto si el
+  cliente no tiene `validar_partidas`: una rama que solo existiría para ese
+  doble y que la mutación dejaría sin test.
+- Barrido hacia delante (para no volver a parar por lo mismo): en el transfer
+  no hay otro doble propio que reciba líneas con partida (`test_f022` hereda
+  de `conftest` y no manda elegidas; `test_f047` tampoco). En la api, los
+  transfer falsos están en `test_f022_empresa_en_linea` y
+  `test_f024_registro_empresa` (en la lista), y los demás los importan de
+  ahí; no lo puedo asegurar del todo hasta implementar T10-T12b.
+
+Estado del árbol: T4 en el commit «F-055: T4 a medias, bloqueada», sin marcar
+en `tasks.md`; `features.json` en `blocked`; motivo en `progress/current.md`.
+
+## T1 · Medición (R1, R2, C2 «antes») — resumen
+
+| Fichero (transfer) | Cambio |
 |---|---|
-| transfer `infrastructure/sigrid/sigrid_write_client.py` | `Lectura`, `MedicionLecturas`, `medir_lecturas()` (contextvar, anidable, con `Lock`) y `apuntar_lectura(nombre, filas, segundos)`: log `[sigrid-read] <método> filas=<n\|error> segundos=<s>`, sin SQL ni parámetros. `_lectura(nombre, sql, params)` mide y llama a `_read`; los 14 métodos de lectura pasan por ella con su nombre. |
-| transfer `application/pipelines/registro_pipeline.py` | `preflight` abre una medición y, también si falla (`finally`), loguea `[registro] lecturas preflight obra=<cod o ide> lecturas=<n> segundos_leyendo=<s> segundos_totales=<s>`. El cuerpo de antes pasa, sin cambios, a `_preflight`. |
-| transfer `prueba_escritura_porcentajes.py` | Fase `medir` (R2): `--obra` y `--recurso` repetibles, `--partida OBRA:PARIDE` (repetible, la obra tiene que estar entre las `--obra`), `--lote` (aceptado, aún sin efecto: lo avisa). La fase `propuesta` exige ahora un solo `--obra` y un solo `--recurso` (antes ganaba el último). |
-| transfer `tests/test_f055_medicion.py` | Nuevo: 35 tests (R1, R2, C2). |
+| `infrastructure/sigrid/sigrid_write_client.py` | `medir_lecturas()` (contextvar anidable con `Lock`), `apuntar_lectura` (log `[sigrid-read] <método> filas=<n\|error> segundos=<s>`, sin SQL ni parámetros) y `_lectura(nombre, sql, params)`, por la que pasan todos los métodos de lectura |
+| `application/pipelines/registro_pipeline.py` | `preflight` mide y loguea `[registro] lecturas preflight obra=… lecturas=… segundos_leyendo=… segundos_totales=…`, también si falla |
+| `prueba_escritura_porcentajes.py` | fase `medir` (R2): `--obra`/`--recurso` repetibles, `--partida OBRA:PARIDE`, `--lote` (aún sin efecto) |
+| `tests/test_f055_medicion.py` | 35 tests (R1, R2, C2) |
 
-Ningún test anterior cambia (lista cerrada intacta: `conftest.py` sin tocar).
+**Desviación de design §5.1:** `_read` conserva su firma `(sql, params)`; la
+medición va en `_lectura`. Con `nombre` en `_read` se rompían 35 tests
+anteriores (F-022, F-024, F-037, F-050) que sustituyen `_read` por dobles de
+dos argumentos. Lo fija `test_f055_r1_read_conserva_su_contrato_y_sus_dobles`.
+C2 «antes»: 8 lecturas en serie con elegidas (9 sin subcuenta).
 
-### Decisiones y desviación de la spec
+RED de T1 (`pytest tests/test_f055_medicion.py -q --tb=line`): primero
+`ImportError: cannot import name 'apuntar_lectura'`; con el esqueleto,
+`30 failed, 5 passed` (`assert [] == ['[sigrid-rea...egundos=1.50']`,
+`invalid choice: 'medir'`, `assert 0 == 9`…); verde `35 passed`.
 
-- **Desviación de design §5.1** («`_read(sql, params, nombre=…)`»): con ese
-  `nombre` en `_read` se rompían **35 tests anteriores** de F-022, F-024,
-  F-037 y F-050, que sustituyen `_read` por dobles de dos argumentos
-  (`(sql, params)`), y ninguno está en la lista cerrada. Se cumple R1 sin
-  tocarlos: `_read` conserva su firma exacta y la medición va en un envoltorio,
-  `_lectura(nombre, sql, params)`. Mismo efecto (cada lectura de un método
-  sale con su nombre); lo fija
-  `test_f055_r1_read_conserva_su_contrato_y_sus_dobles`.
-- Las llamadas directas a `cli._read(...)` de las fases `inspeccionar`,
-  `estado` y `limpiar` del script no se miden: no son lecturas del servicio.
-- La medición es un `ContextVar` con las mediciones abiertas, de fuera a
-  dentro: cada lectura se apunta en todas. Así la fase `medir` (fuera) y el
-  resumen del preflight (dentro) cuentan lo mismo sin pisarse. Para el pool de
-  hilos de T6 hará falta propagar el contexto (`contextvars.copy_context`);
-  `MedicionLecturas.apuntar` ya lleva `Lock`.
-- El reloj es `_ahora = time.perf_counter` en cada módulo, para poder fijarlo
-  en los tests y comprobar las cifras exactas del log.
-- `segundos_totales` = el preflight entero, lecturas incluidas.
-- **C2 «antes»** lo fijan dos tests con un `ClienteFalso` que cuenta
-  (subclase en el propio test, sin tocar `conftest.py`): una obra con las dos
-  partidas elegidas hace **8 lecturas en serie** (`obra_por_codigo` ×2,
-  `horas_de_recursos`, `capitulos_de_obra`, `cuentas_de_centro`,
-  `partes_del_periodo`, `lineas_por_synckey`, `lineas_del_parte`), y **9** si
-  un recurso no tiene subcuenta (+`partidas_de_lineas`). **T4 cambiará a
-  propósito** `test_f055_c2_antes_*` (`capitulos_de_obra` pasa a
-  `validar_partidas`): son tests de F-055, no de la lista cerrada.
+## T2 · Cifras «antes» (script del humano, 2026-10-15)
 
-### Fase RED (tests antes que el código)
+`medir --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036
+--partida 0694:384155` (modo pruebas, solo lectura): 0694, **8 lecturas ·
+32.24 s leyendo**; 0696, **9 lecturas · 21.92 s**; `TOTAL: 2 obras · 17
+lecturas · 54.15 s leyendo · 55.28 s en total`. La que más pesa,
+`horas_de_recursos` (7.99 s); el presupuesto pesa poco (1.6-1.75 s). Es
+latencia por lectura en serie: el diseño agrupa y paraleliza (R20-R23). El
+líder decidió no parar. **Navegador:** pendiente del humano (no bloquea).
 
-1. Con solo el fichero de tests escrito:
+## T2b · Orden a → c → b (R38, D10)
 
+- `propuesta_partida.py`: `proponer_partida` llama a `previa_en_obra` (a),
+  luego `resolver_normal` (c) y, solo si no casa, `ultima_de_recurso` (b);
+  docstring del módulo con el orden y la fecha. Nada más del módulo cambia.
+- Lista cerrada: `test_f050_r1_sin_paso1_va_al_paso2` pasa a esperar
+  `(2108, "auto_nombre")` (con docstring que remite al test nuevo).
+- `tests/test_f055_orden_propuesta.py` (8 tests): a gana a c; c gana a b;
+  sin c, b con su `origen`; sin nada, None; (a) gana aunque no case; (a) que
+  empata pasa a (c), no a (b); selector y preflight dan lo mismo (2 casos).
+
+RED (`pytest tests/test_f055_orden_propuesta.py -q --tb=line`):
 ```
-$ cd services/dedicacion-transfer && .venv/Scripts/python -m pytest tests/test_f055_medicion.py -q --tb=line
-tests\test_f055_medicion.py:27: in <module>
-    from infrastructure.sigrid.sigrid_write_client import (
-E   ImportError: cannot import name 'apuntar_lectura' from 'infrastructure.sigrid.sigrid_write_client'
-ERROR tests/test_f055_medicion.py
-1 error in 2.61s
+E   AssertionError: assert Propuesta(par... · obra 0696') == Propuesta(par..., origen=None)
+E   AssertionError: assert (2110, 'ultimo_parte') == (2108, 'auto_nombre')
+E   AssertionError: assert (80003, 'ulti... · obra 0678') == (80001, 'auto_nombre', None)
+3 failed, 5 passed in 3.04s
 ```
+(los 5 que pasaban describen casos que el orden no cambia). Verde: `8 passed`;
+suite del transfer `793 passed`.
 
-2. Con el esqueleto de la medición (`medir_lecturas` y un `apuntar_lectura`
-   vacío), sin cablear `_read`, el resumen ni la fase `medir` (mismo comando):
+## T2c · `#regla-partida` con el orden nuevo
 
+`docs/ARCHITECTURE.md` (fuente única): (1) parte anterior → (2) casamiento →
+(3) último parte, viñeta nueva con D10 y la nota de que el último parte solo
+actúa si el casamiento no da nada, y la línea de decisión con fecha y cita.
+`pytest tests/test_f002_fuente_unica.py`: **72 passed**; `grep -n casamiento
+docs/ARCHITECTURE.md` → líneas 665, 672, 674, 676 con el orden nuevo.
+
+## T3 · `validar_partidas` y `PartidaValida` (R3, R4)
+
+- `domain/models/registro_models.py`: `PartidaValida(ide, obride, cod, res,
+  es_hoja, activa)` inmutable, con `vale_en(obra_ide)` (obra, hoja y alta).
+- Cliente: `validar_partidas(parides)`, SQL de design §6 con alias, trozos de
+  `LOTE_PARAMETROS = 500`, sin partidas no lee, medida como
+  `validar_partidas`; `truncated` → `RuntimeError`.
+- `conftest.py` (lista cerrada): `ClienteFalso.validar_partidas` derivado de
+  sus dos presupuestos sin contar como lectura de presupuesto; anota cada
+  llamada en `validadas`.
+- `tests/test_f055_validar_partidas.py` (18 tests): SQL, trozos, mapeo,
+  medición, truncado, inmutable y **R4** con una Sigrid emulada sobre dos
+  obras: hoja activa, baja, capítulo, capítulo de baja, hoja bajo capítulo de
+  baja, raíz con hija de otra obra, otra obra e inexistente dan el mismo
+  veredicto que `construir_catalogo`; el doble ≡ `construir_catalogo`.
+  `test_f055_medicion` gana `validar_partidas` en su lista de métodos.
+
+RED (`pytest tests/test_f055_validar_partidas.py -q --tb=line`):
 ```
-E   AssertionError: assert [] == ['[sigrid-rea...egundos=1.50']        (test_f055_medicion.py:97)
-E   AssertionError: assert '[sigrid-read]' in ''                        (:110)
-E   AssertionError: assert [] == [('obra_por_codigo', 0)]               (:136, y así los 14 métodos)
-E   AssertionError: assert [] == [('capitulos_..., None, 0.25)]         (:159, lectura que falla, x3)
-E   AssertionError: assert [] == ['a', 'b', 'c']                        (:173, mediciones anidadas)
-E   AttributeError: <module 'application.pipelines.registro_pipeline'> has no attribute '_ahora'   (resumen del preflight, x2)
-E   ValueError: not enough values to unpack (expected 1, got 0)        (:245, resumen por ide)
-E   AssertionError: assert [] == ['obra_por_co...periodo', ...]         (:259, C2 8 lecturas)
-E   assert 0 == 9                                                       (:280, C2 9 lecturas)
-E   argparse.ArgumentError: argument fase: invalid choice: 'medir' (choose from 'inspeccionar', ..., 'propuesta')   (R2, x4)
-30 failed, 5 passed in 7.96s
+E   ImportError: cannot import name 'PartidaValida' from 'domain.models.registro_models'
+1 error in 0.66s
 ```
+Verde: `18 passed`; suite del transfer `812 passed`.
 
-Los dos de C2 fallaban solo porque `apuntar_lectura` estaba vacío: describen
-el comportamiento de hoy (son la cifra «antes»), no un cambio. Los 5 que
-pasaban: los argumentos incompletos de `medir` (argparse ya los rechazaba).
+## T4 · Pipeline sin búsquedas de partidas (R3-R12) — implementada, bloqueada
 
-3. Verde (mismo comando): `35 passed in 4.27s`.
+- Modelos: `LineaEntrada.propuesta_paride/_cod/_res/_metodo/_origen`,
+  `LineaIn` igual (contrato HTTP), `AccionLinea.partida_res`.
+- `registro_pipeline.py`: `_validas` lee UNA vez `validar_partidas` con la
+  elegida de cada línea de obra normal o, sin ella, su propuesta guardada
+  (postventa y VAR fuera); elegida que no vale → omitir con
+  `MOTIVO_PARTIDA_NO_HOJA` (R5); propuesta guardada que vale → sus
+  `partida_cod/_res/_metodo/_origen` tal como llegan (R8, «se escribe lo que
+  enseña el cuadrante», design §10); si no, pendiente (R6/R7): presupuesto e
+  historial solo de las pendientes. `partida_res` en manual (de la
+  validación), guardada, propuesta, postventa (casada o manual) y VAR (R9).
+  Sale la lectura forzada de F-049 d: `partidas_obra` `[]` sin pendientes
+  (R10).
+- Tests: `tests/test_f055_pipeline_partidas.py` (23 tests, R3-R12 y el
+  contrato HTTP); lista cerrada: los dos `test_f049_d_*` esperan
+  `partidas_obra == []` y ninguna lectura; propios de F-055:
+  `test_f055_c2_antes_*` y el resumen del preflight cuentan `validar_partidas`
+  en lugar de `capitulos_de_obra` (previsto en T1).
 
-### Verificación de T1
-
-- `pytest services/dedicacion-transfer/tests/test_f055_medicion.py`:
-  **35 passed**. Sin SQL ni parámetros en el log
-  (`test_f055_r1_el_log_no_lleva_sql_ni_parametros`: ni el parámetro, ni
-  `SELECT`/`FROM`/`WHERE`/`?`); `medir` no llama a `escribir` ni a `ejecutar`
-  (los dos lanzan `AssertionError` en los tests de R2 y `escritos == []`).
-- Suite entera del transfer: **785 passed in 16.55 s**.
-- `ruff` sobre los cuatro ficheros: 21 avisos, **los mismos 21 que había antes**
-  en los tres de producción (deuda previa); ninguno nuevo.
-- `bash harness/init.sh`: ver «Evidencias».
-
-## T2 · Lo que tiene que hacer el humano (MANUAL, solo lectura, antes de T3)
-
-1. **Script** (Git Bash, con el `.env` local del transfer):
-
+RED (`pytest tests/test_f055_pipeline_partidas.py -q --tb=line`):
 ```
-cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py medir --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036
+E   assert ([555001] == []        (la elegida aún leía el presupuesto)
+E   TypeError: LineaEntrada.__init__() got an unexpected keyword argument 'propuesta_paride'
+E   AttributeError: 'AccionLinea' object has no attribute 'partida_res'.
+E   KeyError: 'partida_res'      (respuesta HTTP del preflight)
+21 failed, 2 passed in 3.90s
 ```
-
-   Opcional, con la partida elegida (el caso de C2/C3; 384155 = CI.1.5 de la
-   0694, la de la M3 de F-050): añadir `--partida 0694:384155`.
-
-   **Qué copiar** a este informe: de cada bloque `== Obra X ==`, las líneas
-   `  lectura <método>: <n> filas · <s> s`, la línea
-   `Obra X: N lecturas · S s leyendo · T s en total` y la final `TOTAL: …`.
-   Solo lee: no llama a `escribir` ni a `ejecutar`.
-
-2. **Navegador** (local, modo pruebas; **Cancelar, nunca Registrar**):
-   cronometrar «⇪ Sigrid» → modal de GONZALEZ PANIAGUA; el mes entero; un
-   cambio de partida en el modal (repreflight); la apertura de un selector de
-   partida. En **producción**, lo mismo solo hasta el modal y Cancelar.
-   Si hay acceso al log del transfer local, copiar también las líneas
-   `[registro] lecturas preflight …` de cada preflight.
-
-3. **Criterio de parada**: si la lectura que más pesa **no** es una de las que
-   este diseño quita o agrupa (presupuesto, historial, lecturas por obra en
-   serie), **PARA** y se repropone (tasks.md, T2).
-
-### Cifras de T2
-
-**Script, 2026-10-15** (humano, PowerShell, `.env` local del transfer, modo
-pruebas; `medir --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036
---partida 0694:384155`; solo lectura):
-
-| Lectura | 0694 (elegida 384155) | 0696 (automática) |
-|---|---|---|
-| `obra_por_codigo` (obra) | 1 fila · 4.94 s | 1 fila · 5.13 s |
-| `obra_por_codigo` (0404, modo pruebas) | 1 fila · 4.23 s | 1 fila · 1.84 s |
-| `horas_de_recursos` | 9 filas · **7.99 s** | 9 filas · 4.77 s |
-| `capitulos_de_obra` | 983 filas · 1.75 s | 3027 filas · 1.63 s |
-| `historial_partidas` | — | 42 filas · 2.44 s |
-| `cuentas_de_centro` | 1 fila · 1.25 s | 1 fila · 1.60 s |
-| `partes_del_periodo` | 1 fila · 5.57 s | 1 fila · 2.10 s |
-| `lineas_por_synckey` | 0 filas · 5.16 s | 0 filas · 1.24 s |
-| `lineas_del_parte` | 0 filas · 1.35 s | 0 filas · 1.16 s |
-| **Por obra** | 8 lecturas · 32.24 s leyendo · 32.38 s | 9 lecturas · 21.92 s leyendo · 22.89 s |
-
-`TOTAL: 2 obras · 17 lecturas · 54.15 s leyendo · 55.28 s en total`.
-Propuestas: 0694 `paride=384155 manual`; 0696 `paride=376829 ultimo_parte`
-(orden de hoy, a → b → c; con D10 se espera casamiento, design §5.7).
-
-**Criterio de parada (líder, 2026-10-15): se cumple el diseño, no se para.**
-El coste no depende de las filas (3027 filas en 1.63 s; 1 fila en 5.57 s): es
-latencia por ida y vuelta a `sigrid-api` (1.2-8 s), multiplicada por 8-9
-lecturas **en serie** por obra. La que más pesa (`horas_de_recursos`, 7.99 s)
-y las siguientes (`partes_del_periodo`, `lineas_por_synckey`,
-`obra_por_codigo`) son lecturas por obra que el design §2 agrupa por lote. El
-presupuesto pesa poco (1.6-1.75 s): quitarlo (R10) es la ganancia menor; la
-mayor es agrupar y paralelizar (R20-R23).
-
-**Navegador:** _(pendiente del humano)_
+(los 2 que pasaban: «sin partidas no valida» y la VAR, que no cambian).
+Verde: `23 passed`; suite del transfer **834 passed, 1 failed** (el bloqueo).
 
 ## Evidencias
 
-Medido con `bash harness/init.sh` tras el commit de T1 (`b2fde31`), con
-`.arnes_cache/suite_*.ok` borrados antes (las cuatro suites corren enteras):
-
 | Evidencia | Valor |
 |---|---|
-| Tests transfer | **785 passed**, 0 failed (20.42 s) |
-| Tests api / front / raíz | 780 passed (94.67 s) / 269 passed (104.78 s) / 418 passed, 1 skipped (125.18 s) |
-| Tests de T1 | 35 passed (4.27 s) |
-| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 113 líneas cambiadas cubiertas (113/113, umbral 80%, nivel critico)` |
-| Mutantes | aún no: la campaña completa sobre todas las líneas de F-055 es T16 |
-| `bash harness/init.sh` | **ENTORNO LISTO** (exit 0); `ruff`: 237 avisos de deuda previa, ninguno nuevo en los ficheros de T1 |
-
-Nota: la primera ejecución de `init.sh` (antes de escribir código) salió en
-rojo solo por `test_f055_medicion.py`, recién escrito (la RED de arriba); el
-resto de suites, en verde.
+| Tests transfer (tras T4) | **834 passed, 1 failed** (`test_pipeline_offline::test_override_manual`, el bloqueo), 7.79 s |
+| Tests de F-055 hasta aquí | medición 36, orden 8, validar 18, pipeline 23: **85 passed** |
+| Cobertura de las líneas cambiadas | se medirá con `bash harness/init.sh` al desbloquear (con la suite en rojo la puerta no vale) |
+| Mutantes | campaña completa en T16 (no empezada) |
+| `bash harness/init.sh` | ver la línea final de este informe (tras el commit del bloqueo) |

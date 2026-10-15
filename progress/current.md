@@ -1,13 +1,36 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-055 en curso en esta rama** (`feature/F-055-preflight-rapido`, copia
-`PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas y
-propuesta del mes en segundo plano. F-050 está cerrada en `dev` y `main`; se
+**F-055 BLOQUEADA en T4 en esta rama** (`feature/F-055-preflight-rapido`,
+copia `PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas
+y propuesta del mes en segundo plano. Motivo y propuesta, en «Bloqueo de T4»
+abajo. F-050 está cerrada en `dev` y `main`; se
 desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arnés es la
 **1.7.3**.
 
-## F-055 · Registro sin búsquedas de partidas (en curso)
+## F-055 · Registro sin búsquedas de partidas (bloqueada en T4)
+
+- **Bloqueo de T4 (implementer, 2026-10-15).** T2b, T2c y T3 hechas y con
+  commit (`b49e447`, `e84b954`, `86af711`). T4 está implementada y en el
+  commit «F-055: T4 a medias, bloqueada» (sin marcar en `tasks.md`): con ella
+  la suite del transfer da **834 passed y 1 failed**, y el que falla está
+  **fuera de la lista cerrada**:
+  `tests/test_pipeline_offline.py::test_override_manual` →
+  `AttributeError: 'ClienteFalso' object has no attribute 'validar_partidas'`.
+  Ese fichero tiene su **propio** `ClienteFalso` (no el de `conftest.py`, que
+  sí está en la lista y ya lo tiene), y su `test_override_manual` manda una
+  línea con partida elegida (80002): R3 obliga a validarla con
+  `validar_partidas` y su doble no tiene el método. Ninguna aserción falla.
+  **Propuesta:** añadir a la lista cerrada `test_pipeline_offline.py`, solo
+  su `ClienteFalso`: un método `validar_partidas` derivado de sus dos
+  presupuestos (`capitulos` y `partidas_origen`), igual que el de
+  `conftest.py`; sin tocar ninguna aserción. Alternativa sin cambiar el test
+  (no recomendada): que el pipeline siga leyendo el presupuesto cuando el
+  cliente no tenga `validar_partidas`, una rama que solo existiría para ese
+  doble. El resto de la suite queda como dice la lista cerrada (los dos
+  `test_f049_d_*`, ya ajustados) y los tests propios de F-055
+  (`test_f055_medicion`, C2: `validar_partidas` sustituye a
+  `capitulos_de_obra`, previsto en el informe de T1). Pendiente del humano.
 
 - **Spec aprobada por el humano el 2026-10-13** («acepto tu propuesta de F-55»):
   D1 = A, **D2 = A + C** (además de guardar al volver de un preflight y al abrir el
@@ -19,7 +42,7 @@ desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arné
   feature: que en la columna Partida salga la propuesta con su origen (R27) en vez
   de «automática», buscada en segundo plano (R29-R36), y que «Registrar» no tarde
   (R3-R8).
-- **Estado:** `dev` traído a la rama el 2026-10-15 (despliegue de F-050).
+- **Estado (antes del bloqueo):** `dev` traído a la rama el 2026-10-15 (despliegue de F-050).
   **T1 hecha. T2, script hecho el 2026-10-15** (cifras y criterio en
   `progress/impl_F-055.md` § «Cifras de T2»: pesa la latencia de 8-9 lecturas
   en serie, la mayor `horas_de_recursos`, 7.99 s; no se para). **Implementer

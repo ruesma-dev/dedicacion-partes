@@ -65,6 +65,12 @@ class LineaIn(BaseModel):
     empresa: Optional[int] = None
     # Partida VAR de una entrada `VAR-NN` (ARCHITECTURE.md#regla-var).
     var_paride: Optional[int] = None
+    # F-055 (R16): propuesta guardada de una línea automática.
+    propuesta_paride: Optional[int] = None
+    propuesta_cod: Optional[str] = None
+    propuesta_res: Optional[str] = None
+    propuesta_metodo: Optional[str] = None
+    propuesta_origen: Optional[str] = None
 
 
 class PeticionIn(BaseModel):

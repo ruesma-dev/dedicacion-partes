@@ -46,6 +46,7 @@ LECTURAS_PIPELINE = (
     "obra_por_codigo", "obra_por_ide", "capitulos_de_obra",
     "horas_de_recursos", "cuentas_de_centro", "partidas_de_lineas",
     "historial_partidas", "partes_del_periodo", "siguiente_cod_pt",
+    "validar_partidas",
     "max_pos", "lineas_del_parte", "lineas_por_synckey",
 )
 
@@ -267,10 +268,10 @@ def test_f055_r1_preflight_por_ide_resume_con_el_ide(monkeypatch, caplog):
 # ========================= C2 · «antes» (hoy) ========================= #
 
 def test_f055_c2_antes_una_obra_con_elegidas_hace_8_lecturas_en_serie():
-    """Hoy: 8 lecturas en serie, una tras otra, para una obra con todas sus
-    partidas elegidas (modo pruebas, parte existente, recursos con
-    subcuenta). La de presupuesto (`capitulos_de_obra`) es la que F-055
-    sustituye por `validar_partidas` (T4)."""
+    """«Antes» de agrupar (T7): 8 lecturas en serie, una tras otra, para una
+    obra con todas sus partidas elegidas (modo pruebas, parte existente,
+    recursos con subcuenta). Hasta T4 la cuarta era el presupuesto entero
+    (`capitulos_de_obra`); desde T4 es `validar_partidas` (R3)."""
     with medir_lecturas() as m:
         pf = _preflight(ClienteQueCuenta(), _elegidas())
     assert [a.partida_metodo for a in pf.acciones] == ["manual", "manual"]
@@ -278,7 +279,8 @@ def test_f055_c2_antes_una_obra_con_elegidas_hace_8_lecturas_en_serie():
         "obra_por_codigo",          # obra de origen
         "obra_por_codigo",          # obra de pruebas (0404)
         "horas_de_recursos",
-        "capitulos_de_obra",        # presupuesto de origen (R20 de F-050)
+        "validar_partidas",         # elegidas por `ide` (R3; hasta T4,
+                                    # el presupuesto de origen)
         "cuentas_de_centro",
         "partes_del_periodo",
         "lineas_por_synckey",
@@ -297,7 +299,7 @@ def test_f055_c2_antes_recurso_sin_subcuenta_hace_9_lecturas():
     nombres = [l.nombre for l in m.lecturas]
     assert len(nombres) == 9
     assert nombres.index("partidas_de_lineas") \
-        == nombres.index("capitulos_de_obra") + 1
+        == nombres.index("validar_partidas") + 1
 
 
 # ======================= R2 · la fase `medir` ======================= #
