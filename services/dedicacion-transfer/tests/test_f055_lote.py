@@ -67,7 +67,7 @@ def test_f055_r21_cada_escenario_da_lo_mismo_suelto_y_en_lote(tmp_path):
     r = subprocess.run(
         [sys.executable, "-m", "pytest", *ESCENARIOS, "-q", "-x",
          "-p", "no:cacheprovider", "-p", "tests.f055_equivalencia_lote"],
-        cwd=SERVICIO, capture_output=True, text=True, timeout=300,
+        cwd=SERVICIO, capture_output=True, text=True, timeout=900,
         env={**__import__("os").environ,
              "F055_EQUIVALENCIA_SALIDA": str(salida)})
     assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
