@@ -401,3 +401,19 @@ def test_f055_r29_el_contenedor_tiene_su_cola_de_un_hilo():
     assert ThreadPoolExecutor
 
 
+
+
+# ========== T16 · huecos que dejó la campaña de mutación (api) =========== #
+def test_f055_r31_por_defecto_trozos_de_10_obras():
+    """Superviviente `obras_por_llamada: int = 11`: el valor por defecto es
+    el de R31, 10 obras por llamada."""
+    import dataclasses
+    once = [_lp(100, "100")]
+    lineas = {14: [dataclasses.replace(once[0], obra_ide=1000 + i,
+                                       cod=f"{1000 + i}")
+                   for i in range(11)]}
+    uow = _uow_cm(lineas)
+    t = _Transfer()
+    PropuestasDelMes(lambda: uow, t, _Sincrono(),
+                     empresa_obras=1).lanzar(ANIO, MES)
+    assert [len(ll) for ll in t.llamadas] == [10, 1]

@@ -269,3 +269,32 @@ def test_f055_r36_constantes():
     assert "propuestasEnCurso: false," in _plano(_const("state"))
     assert "buscando" in CSS
     assert JS.count("function seguirPropuestas(") == 1
+
+
+# ============ T16 · huecos que dejó la campaña de mutación del JS ========== #
+def test_f055_r36_la_propuesta_va_a_su_modo_y_con_sus_tres_campos():
+    """J07, J10, J35: la propuesta de la línea normal no va a la de
+    postventa de la misma obra, y se copian código, descripción y método."""
+    estado = dict(ESTADO, trabajadores=[_trab(14, _l(100, es_postventa=True),
+                                              _l(100))])
+    r = _node("""
+      aplicarPropuestas(%s);
+      resultado = state.trabajadores[0].lineas;
+    """ % json.dumps(LINEAS[:1]), estado)
+    [pv, normal] = r
+    assert pv["propuesta_cod"] is None
+    assert (normal["propuesta_cod"], normal["propuesta_res"],
+            normal["propuesta_metodo"]) == ("CI.1.20", "JEFE DE OBRA",
+                                            "parte_anterior")
+
+
+def test_f055_r36_tras_reiniciar_se_puede_volver_a_consultar():
+    """J15: al cambiar de mes el temporizador queda libre y el cuadrante
+    nuevo arranca el suyo."""
+    r = _node("""
+      marcarPropuestas(true);
+      reiniciarPropuestas();
+      marcarPropuestas(true);
+      resultado = {vivos: vivos(), timer: propuestas.timer !== null};
+    """, ESTADO)
+    assert r == {"vivos": 1, "timer": True}
