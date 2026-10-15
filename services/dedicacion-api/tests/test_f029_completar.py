@@ -492,6 +492,8 @@ def test_f029_r25_ruta_200_con_resultados_y_resumen(api):
         ],
         "resumen": {"total": 5, "ok": 3, "falta": 2, "exceso": 0,
                     "sin_carga": 0},
+        # F-055 (R37, D9; lista cerrada): la respuesta publica la cola.
+        "propuestas_en_curso": False,
     }
     [uow] = contenedor.uows
     assert uow.reemplazados == [14]

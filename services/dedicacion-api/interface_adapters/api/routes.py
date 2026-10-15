@@ -2,6 +2,8 @@
 """Endpoints REST del servicio dedicacion-api."""
 from __future__ import annotations
 
+import logging
+from collections.abc import Iterable
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Query, Response
@@ -55,6 +57,7 @@ from interface_adapters.api.schemas import (
 )
 
 router = APIRouter(prefix="/api/v1")
+logger = logging.getLogger(__name__)
 
 Cont = Annotated[Contenedor, Depends(obtener_contenedor)]
 Usuario = Annotated[str, Depends(obtener_usuario)]
@@ -71,6 +74,21 @@ def _filtro(contenedor: Contenedor, empresa: int | None) -> FiltroEmpresa:
     return FiltroEmpresa(empresa=empresa or empresa_imputacion,
                          por_defecto=empresa_imputacion,
                          empresa_obras=empresa_imputacion)
+
+
+def _encolar(contenedor: Contenedor, anio: int, mes: int,
+             trabajadores: Iterable[int] | None = None) -> bool:
+    """F-055 (R29, R30, R37): encola las propuestas pendientes del periodo
+    (o de `trabajadores`) y devuelve `propuestas_en_curso`. Siempre tras
+    cerrar la UoW de la ruta; si encolar falla, `False` y un log: la
+    respuesta no cambia por ello."""
+    try:
+        return contenedor.propuestas_mes.lanzar(
+            anio, mes, None if trabajadores is None else list(trabajadores))
+    except Exception:                               # noqa: BLE001
+        logger.warning("[propuestas] no se pudieron encolar las de %02d/%s",
+                       mes, anio, exc_info=True)
+        return False
 
 
 def _obra_ide(valor: Any) -> int | None:
@@ -180,7 +198,8 @@ def copiar_periodo_anterior(
         resultado = CopiarPeriodoAnterior().ejecutar(
             uow, anio, mes, usuario, filtro=filtro
         )
-    return a_copia_periodo_out(resultado)
+    return a_copia_periodo_out(resultado).model_copy(
+        update={"propuestas_en_curso": _encolar(contenedor, anio, mes)})
 
 
 # --------------------------- Cuadrante --------------------------------
@@ -197,7 +216,7 @@ def obtener_cuadrante(
     with contenedor.uow() as uow:
         cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes, filtro,
                                                 usuario=usuario)
-    en_curso = contenedor.propuestas_mes.lanzar(anio, mes)
+    en_curso = _encolar(contenedor, anio, mes)
     return CuadranteOut(
         propuestas_en_curso=en_curso,
         periodo=a_periodo_out(cuadrante.periodo),
@@ -244,6 +263,7 @@ def guardar_asignaciones(
     return FilaOut(
         trabajador=a_trabajador_out(fila, filtro.empresa_obras),
         resumen=a_resumen_out(resumen),
+        propuestas_en_curso=_encolar(contenedor, anio, mes, [trabajador_ide]),
     )
 
 
@@ -298,6 +318,7 @@ def cambiar_partida(
     return FilaOut(
         trabajador=a_trabajador_out(fila, filtro.empresa_obras),
         resumen=a_resumen_out(resumen),
+        propuestas_en_curso=_encolar(contenedor, anio, mes, [trabajador_ide]),
     )
 
 
@@ -318,6 +339,7 @@ def deshacer(
     return FilaOut(
         trabajador=a_trabajador_out(fila, filtro.empresa_obras),
         resumen=a_resumen_out(resumen),
+        propuestas_en_curso=_encolar(contenedor, anio, mes, [trabajador_ide]),
     )
 
 
@@ -340,6 +362,7 @@ def copiar_trabajador_anterior(
         resumen=a_resumen_out(resumen),
         periodo_origen=a_periodo_out(origen) if origen else None,
         lineas_omitidas_obra_inactiva=omitidas,
+        propuestas_en_curso=_encolar(contenedor, anio, mes, [trabajador_ide]),
     )
 
 
@@ -365,7 +388,9 @@ def completar_lote(
             uow, anio, mes, payload.trabajadores, payload.obra_ide,
             payload.es_postventa, usuario, filtro=filtro,
         )
-    return a_completar_out(resultados, resumen)
+    return a_completar_out(resultados, resumen).model_copy(update={
+        "propuestas_en_curso": _encolar(contenedor, anio, mes,
+                                        payload.trabajadores)})
 
 
 # --------------------------- Export -----------------------------------
