@@ -1,46 +1,32 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-055 BLOQUEADA en T9 en esta rama** (`feature/F-055-preflight-rapido`,
+**F-055 en curso en esta rama** (`feature/F-055-preflight-rapido`,
 copia `PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas
-y propuesta del mes en segundo plano. T1-T8 hechas; motivo del bloqueo y
-propuesta en «Bloqueo de T9» abajo. F-050 está cerrada en `dev` y `main`; se
+y propuesta del mes en segundo plano. T1-T8 hechas; implementer en marcha
+desde T9. F-050 está cerrada en `dev` y `main`; se
 desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arnés es la
 **1.7.3**.
 
-## F-055 · Registro sin búsquedas de partidas (bloqueada en T9)
+## F-055 · Registro sin búsquedas de partidas (en curso)
 
-- **Bloqueo de T9 (implementer, 2026-10-15).** T4-T8 hechas y con commit
-  (transfer completo: validación por `ide`, lecturas agrupadas, lotes de
-  preflight y de propuestas). T9 (api, columnas `propuesta_*`) está
-  implementada en el commit «F-055: T9 a medias, bloqueada», sin marcar: con
-  ella la suite de la api da **798 passed y 2 failed**, los dos de
-  `tests/test_f050_partida_linea.py`, **fuera de la lista cerrada**:
-  `test_f050_r12_r18_el_repositorio_mapea_la_partida` y
-  `test_f050_r12_r18_las_lineas_del_trabajador_llevan_su_partida`
-  (`AttributeError: 'types.SimpleNamespace' object has no attribute
-  'propuesta_ide'`). Sus filas de `asignacion` son `SimpleNamespace` hechas a
-  mano sin las columnas nuevas, y el repositorio ya las lee (R13). En T10 caerá
-  por lo mismo su `_fila_r19` (las filas de `RegistroSigrid._payloads`, que
-  leerá `propuesta_ide` para R16). Ninguna aserción falla.
-  **Propuesta:** añadir `test_f050_partida_linea.py` a la lista cerrada **solo
-  para sus filas falsas**: `propuesta_ide=None, propuesta_cod=None,
-  propuesta_res=None, propuesta_metodo=None, propuesta_origen=None` en los tres
-  `SimpleNamespace` de asignación (`a` y `sin` del primero, `a` del segundo y
-  el de `_fila_r19`); sin tocar aserciones. Alternativa (no recomendada): que
-  el repositorio y `_payloads` lean con `getattr(…, None)`, una tolerancia que
-  solo existiría para esos dobles. Barrido hacia delante (T10-T12b) en el
-  informe: no he visto otro test fuera de la lista que vaya a caer, pero las
-  respuestas HTTP de T11-T12b solo se confirman al implementarlas.
-  Pendiente del humano.
-
-- **Bloqueo de T4 resuelto por el humano el 2026-10-15** («añade
-  test_pipeline_offline.py a la lista cerrada»): T2b, T2c y T3 hechas
-  (`b49e447`, `e84b954`, `86af711`); T4 rompía
-  `test_pipeline_offline.py::test_override_manual` (su `ClienteFalso` propio no
-  tiene `validar_partidas`, R3). Ese fichero entra en la lista cerrada **solo
-  para su doble** (un `validar_partidas` derivado de sus presupuestos, como el
-  de `conftest.py`), sin tocar aserciones. Implementer relanzado desde T4.
+- **Decisiones del humano durante la implementación (2026-10-15)**, recogidas
+  en `tasks.md` (lista cerrada):
+  1. Bloqueo de T4 («añade test_pipeline_offline.py a la lista cerrada»):
+     solo su `ClienteFalso` gana `validar_partidas` (`66717f7`).
+  2. Bloqueo de T9 («si a todo»): `test_f050_partida_linea.py`, solo sus filas
+     falsas de `asignacion` (con `_fila_r19`) llevan `propuesta_*=None`.
+  3. Permiso general («si a todo»): el implementer puede añadir a un doble de
+     test (fila falsa, cliente falso) campos nulos o métodos derivados de sus
+     datos **sin parar**, si no cambia ninguna aserción; lo lista en el
+     informe para el reviewer. Cambiar una aserción fuera de la lista sigue
+     siendo PARA.
+  4. C2 («si a todo»): «≤ 6» cuenta como C1, sin `cuentas_de_centro` (una por
+     centro) ni la obra de pruebas (una por lote): 7 lecturas en real y 8 en
+     pruebas, en ≤ 4 rondas.
+  T1-T8 hechas (transfer completo: validación por `ide`, lecturas agrupadas,
+  lotes de preflight y de propuestas; 917 passed); T9 implementada; implementer
+  relanzado desde T9.
 
 - **Spec aprobada por el humano el 2026-10-13** («acepto tu propuesta de F-55»):
   D1 = A, **D2 = A + C** (además de guardar al volver de un preflight y al abrir el
