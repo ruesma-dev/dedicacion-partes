@@ -19,9 +19,15 @@ desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arné
   feature: que en la columna Partida salga la propuesta con su origen (R27) en vez
   de «automática», buscada en segundo plano (R29-R36), y que «Registrar» no tarde
   (R3-R8).
-- **Estado:** `dev` traído a la rama el 2026-10-14 (F-050 cerrada).
-  **T1 hecha; espera T2 del humano** (MANUAL «antes», solo lectura, antes de
-  T3): comando exacto y qué copiar en `progress/impl_F-055.md` § T2.
+- **Estado:** `dev` traído a la rama el 2026-10-15 (despliegue de F-050).
+  **T1 hecha. T2, script hecho el 2026-10-15** (cifras y criterio en
+  `progress/impl_F-055.md` § «Cifras de T2»: pesa la latencia de 8-9 lecturas
+  en serie, la mayor `horas_de_recursos`, 7.99 s; no se para). **Implementer
+  lanzado el 2026-10-15 desde T2b** con el «ok» del humano a que las cifras de
+  navegador de T2 (a modal, b mes, c repreflight, d selector) **no bloqueen**:
+  las toma el humano cuando pueda desde la copia principal (`porcentajes`,
+  `dev`, mismo código que producción, sin F-055) o en producción (solo a y b,
+  Cancelar); T2 sigue sin marcar hasta tenerlas.
   Desviación de T1 (design §5.1): la medición va en `_lectura(nombre, …)` y
   `_read` conserva su firma, para no tocar los dobles de `_read` de 35 tests
   anteriores fuera de la lista cerrada (detalle en el informe).
