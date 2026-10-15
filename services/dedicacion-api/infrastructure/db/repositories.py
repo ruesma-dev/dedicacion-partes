@@ -420,9 +420,49 @@ class PgAsignacionRepository:
                     partida_ide=linea.partida_ide,
                     partida_cod=linea.partida_cod,
                     partida_res=linea.partida_res,
+                    propuesta_ide=linea.propuesta_ide,
+                    propuesta_cod=linea.propuesta_cod,
+                    propuesta_res=linea.propuesta_res,
+                    propuesta_metodo=linea.propuesta_metodo,
+                    propuesta_origen=linea.propuesta_origen,
                 )
             )
         self._s.flush()
+
+    def guardar_propuesta(
+        self,
+        periodo_id: int,
+        trabajador_ide: int,
+        clave: tuple[int, bool],
+        propuesta: dict[str, Any],
+        *,
+        solo_si_vacia: bool = False,
+    ) -> bool:
+        """F-055 (R14, R15, R31): guarda la propuesta del transfer
+        (`{paride, cod, res, metodo, origen}`) en la línea `clave` (obra,
+        postventa) SOLO si sigue sin elegida y, con `solo_si_vacia`, sin
+        propuesta. Un `UPDATE` condicional del ORM: no pisa lo que otro haya
+        puesto entre medias. Devuelve si la guardó. Sin evento."""
+        obra_ide, es_postventa = clave
+        condiciones = [
+            AsignacionORM.periodo_id == periodo_id,
+            AsignacionORM.trabajador_ide == trabajador_ide,
+            AsignacionORM.obra_ide == obra_ide,
+            AsignacionORM.es_postventa == bool(es_postventa),
+            AsignacionORM.partida_ide.is_(None),
+        ]
+        if solo_si_vacia:
+            condiciones.append(AsignacionORM.propuesta_ide.is_(None))
+        r = self._s.execute(
+            update(AsignacionORM).where(*condiciones).values(
+                propuesta_ide=propuesta["paride"],
+                propuesta_cod=propuesta["cod"],
+                propuesta_res=propuesta["res"],
+                propuesta_metodo=propuesta["metodo"],
+                propuesta_origen=propuesta["origen"],
+            )
+        )
+        return bool(r.rowcount)
 
 
 # ----------------------------------------------------------------------
@@ -604,4 +644,9 @@ def _a_linea_con_partida(a: AsignacionORM, o: ObraORM) -> Linea:
         partida_cod=a.partida_cod,
         partida_res=a.partida_res,
         partida_fija=o.registro_paride is not None,
+        propuesta_ide=a.propuesta_ide,
+        propuesta_cod=a.propuesta_cod,
+        propuesta_res=a.propuesta_res,
+        propuesta_metodo=a.propuesta_metodo,
+        propuesta_origen=a.propuesta_origen,
     )

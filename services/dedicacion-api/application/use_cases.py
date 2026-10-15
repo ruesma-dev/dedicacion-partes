@@ -304,7 +304,8 @@ class CopiarPeriodoAnterior:
             if not previas:
                 sin_datos += 1
                 continue
-            utilizables = [ln for ln in previas if ln.ofrecible]
+            utilizables = _sin_propuesta(
+                [ln for ln in previas if ln.ofrecible])
             omitidas += len(previas) - len(utilizables)
             if not utilizables:
                 sin_datos += 1
@@ -354,7 +355,7 @@ class CopiarTrabajadorAnterior:
             return fila, resumen, None, 0
         origen_id, periodo_origen = origen
         previas = uow.asignaciones.lineas_de_trabajador(origen_id, trabajador_ide)
-        utilizables = [ln for ln in previas if ln.ofrecible]
+        utilizables = _sin_propuesta([ln for ln in previas if ln.ofrecible])
         omitidas = len(previas) - len(utilizables)
         antes = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
         if _snapshot(antes) != _snapshot(utilizables):
@@ -837,9 +838,15 @@ def _resumen_periodo(
     return resumir(_filas_de_empresa(uow, periodo_id, filtro))
 
 
+#: Campos de la propuesta guardada de una línea (F-055, R13).
+_CAMPOS_PROPUESTA = ("propuesta_ide", "propuesta_cod", "propuesta_res",
+                     "propuesta_metodo", "propuesta_origen")
+
+
 def _conservar_partidas(lineas: list[Linea], antes: list[Linea]) -> list[Linea]:
     """Cada línea cuya clave (obra, postventa) estaba en `antes` recibe la
-    partida que tenía; las demás quedan como vienen (F-050, R14)."""
+    partida que tenía (F-050, R14) y su propuesta guardada (F-055, R17); las
+    demás quedan como vienen."""
     previas = {ln.clave(): ln for ln in antes}
     return [
         dataclasses.replace(
@@ -847,10 +854,19 @@ def _conservar_partidas(lineas: list[Linea], antes: list[Linea]) -> list[Linea]:
             partida_ide=previas[ln.clave()].partida_ide,
             partida_cod=previas[ln.clave()].partida_cod,
             partida_res=previas[ln.clave()].partida_res,
+            **{c: getattr(previas[ln.clave()], c) for c in _CAMPOS_PROPUESTA},
         )
         if ln.clave() in previas else ln
         for ln in lineas
     ]
+
+
+def _sin_propuesta(lineas: list[Linea]) -> list[Linea]:
+    """Las líneas copiadas de otro periodo, sin su propuesta guardada
+    (F-055, R17: copiar el mes y F8 no la copian; la partida elegida sí,
+    F-050 R16)."""
+    return [dataclasses.replace(ln, **dict.fromkeys(_CAMPOS_PROPUESTA))
+            for ln in lineas]
 
 
 def _snapshot(lineas: list[Linea]) -> list[dict[str, Any]]:

@@ -131,6 +131,20 @@ class AsignacionRepository(Protocol):
         """Sustituye en bloque las líneas del trabajador (transaccional)."""
         ...
 
+    def guardar_propuesta(
+        self,
+        periodo_id: int,
+        trabajador_ide: int,
+        clave: tuple[int, bool],
+        propuesta: dict[str, Any],
+        *,
+        solo_si_vacia: bool = False,
+    ) -> bool:
+        """F-055 (R14, R15, R31): la propuesta del transfer en la línea,
+        solo si sigue sin elegida (y sin propuesta con `solo_si_vacia`).
+        Devuelve si la guardó."""
+        ...
+
 
 class EventoRepository(Protocol):
     def registrar(

@@ -100,6 +100,14 @@ class Linea:
     partida_cod: str | None = None
     partida_res: str | None = None
     partida_fija: bool = False
+    # Propuesta GUARDADA (F-055, R13): la del transfer para una línea sin
+    # elegida; todas None = sin propuesta. No entra en `clave()` ni en los
+    # eventos (R17).
+    propuesta_ide: int | None = None
+    propuesta_cod: str | None = None
+    propuesta_res: str | None = None
+    propuesta_metodo: str | None = None
+    propuesta_origen: str | None = None
 
     def clave(self) -> tuple[int, bool]:
         return (self.obra_ide, self.es_postventa)
