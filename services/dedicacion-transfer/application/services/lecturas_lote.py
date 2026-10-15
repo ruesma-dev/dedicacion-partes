@@ -231,6 +231,44 @@ class LecturasDelLote:
         if hmoides and resides:
             self._ronda([lambda: self._cargar_lineas(hmoides, resides)])
 
+    def precargar_propuestas(self, peticiones: list[dict], settings) -> None:
+        """Design §2.1 (R34): A) obras e historial de TODOS los recursos de
+        las líneas de obra normal (misma ventana: el lote es de un periodo)
+        y B) el presupuesto de cada obra, hasta `limite` a la vez. Cada
+        petición: `{empresa, obra, ano, mes, lineas}`, como
+        `RegistroPipeline.proponer`."""
+        tareas: list[Callable] = []
+        ides = _ides(p["obra"].ide for p in peticiones)
+        if ides:
+            tareas.append(lambda: self._cargar_obras(ides))
+        for p in peticiones:
+            o = p["obra"]
+            if not o.ide and o.codigo:
+                tareas.append(self._codigo(o.codigo, p["empresa"]))
+        por_ventana: dict[tuple[int, int], set[int]] = {}
+        for p in peticiones:
+            recursos = _ides(l["recurso_ide"] for l in p["lineas"]
+                             if not l["es_postventa"])
+            if recursos:
+                clave = ventana(p["ano"], p["mes"],
+                                settings.propuesta_meses_atras)
+                por_ventana.setdefault(clave, set()).update(recursos)
+        for (desde, hasta), recursos in por_ventana.items():
+            tareas.append(self._historial_de(desde, hasta, recursos))
+        self._ronda(tareas)
+        origenes = set()
+        for p in peticiones:
+            o = p["obra"]
+            obra = (self._obras.get(int(o.ide)) if o.ide else
+                    self._ya(("obra_por_codigo", o.codigo,
+                              int(p["empresa"]))))
+            if obra is not None:
+                origenes.add(int(obra.ide))
+        self._ronda([self._tolerante(
+            ("capitulos_de_obra", obride),
+            lambda o=obride: self._cli.capitulos_de_obra(o))
+            for obride in sorted(origenes)])
+
     def _codigo(self, cod: str, empresa: int) -> Callable:
         return self._tolerante(
             ("obra_por_codigo", cod, int(empresa)),

@@ -46,6 +46,24 @@ class RegistroLote:
                                    protegida, t) for t in tareas]
         return [f.result() for f in futuros]
 
+    def proponer(self, peticiones: list[dict]) -> list[dict | Exception]:
+        """R34: las propuestas de cada petición (`{empresa, obra, ano, mes,
+        lineas}`, como `RegistroPipeline.proponer`), en su orden:
+        `{ok: true, propuestas}` (las mismas que la suelta, R21) o `{ok:
+        false, error}` (obra de otra empresa); un fallo propio de una obra,
+        su excepción. Una lectura compartida que falla sube (R24)."""
+        memoria = LecturasDelLote(self._cli, self._limite)
+        memoria.precargar_propuestas(peticiones, self._st)
+
+        def una(p: dict) -> dict:
+            r = RegistroPipeline(cliente=memoria,
+                                 settings=self._st).proponer(**p)
+            if not r["ok"]:
+                return r
+            return {"ok": True, "propuestas": r["propuestas"]}
+        return self._por_obra(memoria, [(lambda p=p: una(p))
+                                        for p in peticiones])
+
     def preflight(self, peticiones: list[tuple[ObraEntrada,
                                                list[LineaEntrada]]]
                   ) -> list[Preflight | Exception]:

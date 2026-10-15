@@ -12,6 +12,9 @@
   POST /api/partidas/propuesta  -> catálogo con su mayor y partida propuesta
                                    de cada línea (ARCHITECTURE.md
                                    #regla-partida; solo lee)
+  POST /api/partidas/propuesta-lote -> las propuestas de varias obras de un
+                                   periodo, con las lecturas agrupadas
+                                   (F-055 R34; solo lee)
   GET  /health
 """
 from __future__ import annotations
@@ -126,6 +129,13 @@ class PropuestaIn(BaseModel):
     ano: int
     mes: int
     lineas: list[LineaPropuestaIn] = Field(default_factory=list)
+
+
+class PropuestaLoteIn(BaseModel):
+    """`POST /api/partidas/propuesta-lote` (F-055 R34): varias peticiones
+    de propuesta, todas del mismo `ano` y `mes` (si no, 422)."""
+
+    peticiones: list[PropuestaIn] = Field(default_factory=list)
 
 
 def _empresas_mezcladas(exc: EmpresasMezcladas) -> JSONResponse:
@@ -295,6 +305,47 @@ def build_app(settings) -> FastAPI:
             logger.warning("propuesta rechazada: %s", r["error"])
             return JSONResponse(status_code=422, content=r)
         return r
+
+    @app.post("/api/partidas/propuesta-lote")
+    def propuesta_lote(p: PropuestaLoteIn):
+        """F-055 (R34, R24, R25): síncrona, en el threadpool. Mismo periodo
+        o 422; por petición `{ok: true, propuestas}` o `{ok: false,
+        error}` (empresa no válida, obra de otra empresa o no encontrada);
+        una lectura compartida que falla, 502."""
+        if len({(x.ano, x.mes) for x in p.peticiones}) > 1:
+            logger.warning("propuesta en lote rechazada: varios periodos")
+            return JSONResponse(status_code=422, content={
+                "ok": False,
+                "error": "todas las peticiones tienen que ser del mismo "
+                         "año y mes"})
+        validas = [x for x in p.peticiones if empresa_valida(x.empresa)]
+        try:
+            resultados = iter(RegistroLote(
+                cliente=cliente, settings=settings).proponer([
+                    {"empresa": x.empresa,
+                     "obra": ObraEntrada(ide=x.obra.ide, codigo=x.obra.codigo,
+                                         nombre=x.obra.nombre),
+                     "ano": x.ano, "mes": x.mes,
+                     "lineas": [l.model_dump() for l in x.lineas]}
+                    for x in validas]))
+        except Exception as exc:                # noqa: BLE001
+            logger.exception("propuesta en lote fallo")
+            return JSONResponse(status_code=502,
+                                content={"ok": False, "error": str(exc)})
+        obras = []
+        for x in p.peticiones:
+            if not empresa_valida(x.empresa):
+                obras.append({"ok": False,
+                              "error": f"empresa no válida: {x.empresa!r}"})
+                continue
+            r = next(resultados)
+            if isinstance(r, Exception):
+                r = {"ok": False, "error": str(r)}
+            if not r["ok"]:
+                logger.warning("propuesta en lote: una obra falla: %s",
+                               r["error"])
+            obras.append(r)
+        return {"ok": True, "obras": obras}
 
     @app.post("/api/var/universo")
     async def universo_de_var(p: UniversoVarIn):
