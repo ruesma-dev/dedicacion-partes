@@ -364,7 +364,7 @@ class RegistroPipeline:
         # Partida de imputación por línea: la elegida (override) manda si es
         # hoja activa del presupuesto de la obra ORIGEN; si no viene, la
         # NORMAL lleva la PROPUESTA (ARCHITECTURE.md#regla-partida: parte
-        # anterior, último parte o casamiento por rol y nombre) y la
+        # anterior, casamiento por rol y nombre o último parte, R38) y la
         # POSTVENTA ya trae la suya de la obra de postventa
         # (`POSTVENTA_OBRA_COD`).
         nodos_origen = None

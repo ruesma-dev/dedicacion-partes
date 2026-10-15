@@ -300,10 +300,13 @@ def test_f050_r1_paso1_manda_sobre_paso2_y_casamiento():
 
 
 def test_f050_r1_sin_paso1_va_al_paso2():
+    """F-055 R38 (D10, lista cerrada): el orden pasa a a → c → b, así que
+    con categoría y nombre que casan gana el casamiento al último parte. El
+    caso «sin casamiento, último parte» está en `test_f055_orden_propuesta`."""
     hist = [_h(obra=OTRA, paride=88001, cod="CI.1.9", res="ADMINISTRATIVO")]
     p = proponer_partida(_nodos(), hist, RECURSO, OBRA, "Encargado",
                          "Acuna Mera, Antonio")
-    assert (p.paride, p.metodo) == (2109, "ultimo_parte")
+    assert (p.paride, p.metodo) == (2108, "auto_nombre")
 
 
 def test_f050_r1_r3_sin_pasos_1_y_2_casamiento_de_hoy():
