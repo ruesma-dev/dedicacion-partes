@@ -33,13 +33,8 @@ from interface_adapters.api import app as modulo_app
 from tests.conftest import _fila
 from tests.test_f050_endpoint_propuesta import AJUSTES
 from tests.test_f050_pipeline import _h
-from tests.test_f055_lote import (
-    SERVICIO,
-    ClienteCronometrado,
-    ClienteObras,
-    _ajustes,
-    _rondas,
-)
+from tests.test_f055_lecturas_lote import contar_tandas
+from tests.test_f055_lote import SERVICIO, ClienteObras, _ajustes
 
 RUTA = "/api/partidas/propuesta-lote"
 ESCENARIOS = ["tests/test_f050_endpoint_propuesta.py",
@@ -62,10 +57,6 @@ class ClientePresupuestos(ClienteObras):
                 _fila(700000 + i, 690000 + i, 1, "CI.1.9", "ADMINISTRATIVO"),
                 _fila(710000 + i, 690000 + i, 2, "CI.1.10",
                       "ENCARGADO (ACUNA)")]
-
-
-class ClienteCronoPresupuestos(ClienteCronometrado, ClientePresupuestos):
-    pass
 
 
 def _linea(clave="a", recurso=200, categoria="Encargado",
@@ -170,14 +161,19 @@ def test_f055_r24_fallo_del_historial_hace_fallar_el_lote():
 
 
 # ================================== C7 =================================== #
-def test_f055_c7_diez_obras_1_obras_1_historial_10_presupuestos():
-    cli = ClienteCronoPresupuestos()
+def test_f055_c7_diez_obras_1_obras_1_historial_10_presupuestos(
+        monkeypatch):
+    """Rondas por estructura: A (obras e historial) una tanda; B (10
+    presupuestos con límite 4) tres; ninguna lectura después."""
+    tandas = contar_tandas(monkeypatch)
+    cli = ClientePresupuestos(espera=0.01)
     r = _proponer(cli, [_peticion(i) for i in range(1, 11)], limite=4)
     assert all(x["ok"] for x in r)
     n = cli.nombres()
     assert (n.count("obras_por_ide"), n.count("historial_partidas"),
             n.count("capitulos_de_obra"), len(n)) == (1, 1, 10, 12)
-    assert _rondas(cli) <= 4
+    assert tandas == [(2, 1), (10, 3)]
+    assert sum(t for _, t in tandas) <= 4
     assert cli.max_a_la_vez <= 4
 
 

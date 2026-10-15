@@ -212,47 +212,17 @@ def test_f055_c1_mismas_lecturas_con_1_2_y_10_obras(forzar):
                        else {1: 1, 2: 2, 10: 10})
 
 
-def _rondas(cli) -> int:
-    """Rondas de lecturas: una nueva cuando una lectura empieza después de
-    que terminen todas las anteriores."""
-    rondas, frontera = 0, float("-inf")
-    for inicio, fin in sorted(cli.tiempos):
-        if inicio >= frontera:
-            rondas += 1
-            frontera = fin
-        else:
-            frontera = max(frontera, fin)
-    return rondas
-
-
-class ClienteCronometrado(ClienteQueAnota):
-    def __init__(self, **kw) -> None:
-        self.tiempos: list[tuple[float, float]] = []
-        super().__init__(espera=0.05, **kw)
-
-    def _anotada(self, nombre, lectura):
-        import time
-        medida = super()._anotada(nombre, lectura)
-
-        def cronometrada(*a):
-            if getattr(self._hilo, "dentro", False):
-                return lectura(*a)
-            t0 = time.perf_counter()
-            try:
-                return medida(*a)
-            finally:
-                self.tiempos.append((t0, time.perf_counter()))
-        return cronometrada
-
-
 @pytest.mark.parametrize("forzar", [True, False], ids=["pruebas", "real"])
-def test_f055_c2_despues_una_obra_con_elegidas(forzar):
+def test_f055_c2_despues_una_obra_con_elegidas(forzar, monkeypatch):
     """El caso de C2 «antes» (8 lecturas en serie en pruebas, 7 en real):
     en lote, ≤ 6 lecturas contadas como en C1 (sin `cuentas_de_centro`, una
-    por centro, ni la obra de pruebas, una por lote) y ≤ 4 rondas. La lista
-    completa queda fijada aquí (ver el informe de T7)."""
+    por centro, ni la obra de pruebas, una por lote; decisión del humano del
+    2026-10-15) y ≤ 4 rondas: las tandas de la precarga (por estructura, no
+    por reloj) más la de `cuentas_de_centro`, la única lectura de la obra."""
+    from tests.test_f055_lecturas_lote import contar_tandas
     from tests.test_f055_medicion import _elegidas
-    cli = ClienteCronometrado()
+    tandas = contar_tandas(monkeypatch)
+    cli = ClienteQueAnota()
     [pf] = _lote(cli, [(ObraEntrada(codigo=OBRA_ORIGEN), _elegidas())],
                  obra_pruebas_forzar=forzar)
     assert [a.partida_metodo for a in pf.acciones] == ["manual", "manual"]
@@ -266,7 +236,9 @@ def test_f055_c2_despues_una_obra_con_elegidas(forzar):
     propias = [c for c in cli.llamadas if c[0] != "cuentas_de_centro"
                and c[:2] != ("obra_por_codigo", "0404")]
     assert len(propias) == 6
-    assert _rondas(cli) <= 4
+    precargadas = sum(n for n, _ in tandas)
+    assert cli.nombres()[precargadas:] == ["cuentas_de_centro"]
+    assert sum(t for _, t in tandas) + 1 <= 4
 
 
 # ================================ HTTP ==================================== #

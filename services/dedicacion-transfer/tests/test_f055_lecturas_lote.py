@@ -141,10 +141,40 @@ def test_f055_r20_las_rondas_van_en_orden():
     cli = ClienteQueAnota()
     _precargado(cli, _peticiones([linea(**ELEGIDA)]), limite=1)
     n = cli.nombres()
-    assert n.index("partes_de_periodos") > max(
-        n.index(x) for x in ("obras_por_ide", "obra_por_codigo",
-                             "horas_de_recursos", "validar_partidas"))
-    assert n.index("lineas_de_partes") > n.index("partes_de_periodos")
+    ronda_a = ("obras_por_ide", "obra_por_codigo", "horas_de_recursos",
+               "lineas_por_synckey")
+    ronda_b = ("partes_de_periodos", "validar_partidas")
+    assert min(n.index(x) for x in ronda_b) > max(n.index(x)
+                                                  for x in ronda_a)
+    assert n.index("lineas_de_partes") > max(n.index(x) for x in ronda_b)
+
+
+def test_f055_c2_cada_ronda_de_una_obra_con_elegidas_cabe_en_4(monkeypatch):
+    """Rondas medidas por estructura, no por reloj: cada `_ronda` son
+    ceil(tareas / límite) tandas; con elegidas en modo pruebas, A (origen,
+    pruebas, horas, `synckey`), B (partes, validación) y C (líneas), una
+    tanda cada una."""
+    tandas = contar_tandas(monkeypatch)
+    _precargado(ClienteQueAnota(), _peticiones([linea(**ELEGIDA)],
+                                               codigo=True), limite=4)
+    assert tandas == [(4, 1), (2, 1), (1, 1)]
+
+
+def contar_tandas(monkeypatch) -> list[tuple[int, int]]:
+    """Parchea `LecturasDelLote._ronda` y apunta (tareas, tandas) de cada
+    ronda no vacía."""
+    import math
+    tandas: list[tuple[int, int]] = []
+    original = LecturasDelLote._ronda
+
+    def ronda(self, tareas):
+        if tareas:
+            tandas.append((len(tareas), math.ceil(len(tareas)
+                                                  / self._limite)))
+        return original(self, tareas)
+
+    monkeypatch.setattr(LecturasDelLote, "_ronda", ronda)
+    return tandas
 
 
 def test_f055_r20_pendientes_historial_y_presupuesto_una_vez():
@@ -333,7 +363,7 @@ def test_f055_r23_limite_1_en_serie():
 
 
 def test_f055_r23_limite_4_en_paralelo():
-    cli = ClienteQueAnota(espera=0.05)
+    cli = ClienteQueAnota(espera=0.3)
     _precargado(cli, _diez(cli), limite=4)
     assert 1 < cli.max_a_la_vez <= 4
 

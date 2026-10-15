@@ -9,8 +9,10 @@ métodos de lectura, así que el pipeline de registro no cambia: un
 - `precargar` lee AGRUPADO lo que van a pedir las obras del lote, en rondas
   de lecturas independientes en paralelo (hasta `limite` a la vez):
   A) obras por `ide`, obras por código (origen, pruebas, postventa, VAR),
-  horas, `synckey`, validación de partidas e historial; B) partes de los
-  periodos, presupuestos y cuentas de partida; C) líneas de esos partes.
+  horas y `synckey`; B) partes de los periodos, validación de partidas,
+  historial, presupuestos y cuentas de partida; C) líneas de esos partes.
+  Validación e historial no dependen de A: van en B para que una obra con
+  elegidas quepa en una tanda de `limite` (4) por ronda (C2).
 - Una lectura del pipeline se responde de lo precargado SOLO si la consulta
   está entera dentro (los mismos `ide`, un subconjunto de recursos, la
   misma ventana…); si no, va al cliente real y se apunta un fallo de
@@ -127,7 +129,8 @@ class LecturasDelLote:
     def precargar(self, peticiones: list[tuple[ObraEntrada,
                                                list[LineaEntrada]]],
                   settings) -> None:
-        """Rondas A-C de design §2 para las peticiones del lote."""
+        """Rondas A-C (design §2, con validación e historial en B) para
+        las peticiones del lote."""
         empresas: dict[int, int | None] = {}
         for i, (_, lineas) in enumerate(peticiones):
             try:
@@ -167,14 +170,6 @@ class LecturasDelLote:
         claves = {synckey_de(l.registro_id) for l in todas}
         if claves:
             tareas.append(lambda: self._cargar_synckeys(claves))
-        normales = [l for l in todas
-                    if not l.es_postventa and l.var_paride is None]
-        parides = _ides(l.paride or l.propuesta_paride for l in normales)
-        if parides:
-            tareas.append(lambda: self._cargar_validas(parides))
-        for (desde, hasta), recursos in self._ventanas(
-                peticiones, settings).items():
-            tareas.append(self._historial_de(desde, hasta, recursos))
         self._ronda(tareas)
 
         # --- Ronda B ---
@@ -219,6 +214,14 @@ class LecturasDelLote:
             tareas.append(self._tolerante(
                 ("capitulos_de_obra", obride),
                 lambda o=obride: self._cli.capitulos_de_obra(o)))
+        normales = [l for l in todas
+                    if not l.es_postventa and l.var_paride is None]
+        parides = _ides(l.paride or l.propuesta_paride for l in normales)
+        if parides:
+            tareas.append(lambda: self._cargar_validas(parides))
+        for (desde, hasta), recursos in self._ventanas(
+                peticiones, settings).items():
+            tareas.append(self._historial_de(desde, hasta, recursos))
         sin_sub = _ides(
             l.paride or l.propuesta_paride or l.var_paride for l in todas
             if self._sin_subcuenta(l.recurso_ide))
