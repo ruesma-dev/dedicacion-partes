@@ -7,6 +7,9 @@
 - R17 (T9): guardar la fila conserva la propuesta de cada línea que ya
   existía; la nueva entra sin ella; copiar el mes, F8 y completar no la
   copian; deshacer no la restaura; cambiar la elegida no la borra.
+- R15/R18 (T11): abrir el selector guarda (y reescribe) la propuesta que
+  devuelve el transfer si la línea sigue sin elegida, sin evento.
+- R27 (T11): `LineaOut` publica `propuesta_cod`, `_res` y `_metodo`.
 
 Casos de uso con la UnitOfWork en memoria de F-024/F-050, ampliada AQUÍ
 para que `reemplazar` guarde también la propuesta. Sin red ni BBDD.
@@ -274,3 +277,77 @@ def test_f055_r17_cambiar_la_elegida_no_borra_la_propuesta():
                               filtro=FILTRO)
     [ln] = uow.lineas[P_ACT][14]
     assert (ln.partida_ide, ln.propuesta_ide) == (None, 80002)
+
+
+# ============================ R15 · R18 (T11) ============================ #
+class _TransferSelector:
+    def __init__(self, propuesta) -> None:
+        self.propuesta = propuesta
+        self.llamadas = 0
+
+    def propuesta_partidas(self, payload):
+        self.llamadas += 1
+        return {"ok": True, "partidas_obra": [], "partidas_postventa": [],
+                "propuestas": {"linea": self.propuesta},
+                "mayor_inicial": {"linea": None}}
+
+
+def _selector(uow, propuesta, obra=100, pv=False):
+    from application.partidas_linea import PartidasDeLinea
+    commits = []
+    uow.commit = lambda: commits.append(True)
+    r = PartidasDeLinea(_TransferSelector(propuesta)).ejecutar(
+        uow, ANIO, MES, 14, obra, pv, empresa_obras=1)
+    return r, commits
+
+
+def test_f055_r15_el_selector_guarda_la_propuesta():
+    uow = _uow(actual={14: [_lp(100, "100")]})
+    r, commits = _selector(uow, DEL_TRANSFER)
+    [ln] = uow.lineas[P_ACT][14]
+    assert {c: getattr(ln, c) for c in CAMPOS} == PR
+    assert commits == [True] and uow.eventos.eventos == []
+    assert r["propuesta"] == DEL_TRANSFER and r["elegida"] is None
+
+
+def test_f055_r18_el_selector_reescribe_la_guardada():
+    uow = _uow(actual={14: [_lp(100, "100", **dict(
+        PR, propuesta_ide=1, propuesta_metodo="auto_nombre"))]})
+    _selector(uow, DEL_TRANSFER)
+    [ln] = uow.lineas[P_ACT][14]
+    assert (ln.propuesta_ide, ln.propuesta_metodo) == (80002,
+                                                      "parte_anterior")
+
+
+@pytest.mark.parametrize("linea, propuesta", [
+    (_lp(100, "100", **P), DEL_TRANSFER),                   # con elegida
+    (_lp(100, "100"), None),                                # sin propuesta
+    (_lp(100, "100", pv=True), dict(DEL_TRANSFER, metodo="postventa")),
+], ids=["elegida", "sin_propuesta", "postventa"])
+def test_f055_r15_no_guarda(linea, propuesta):
+    uow = _uow(actual={14: [linea]})
+    _selector(uow, propuesta, pv=linea.es_postventa)
+    assert uow.propuestas == []
+    assert uow.lineas[P_ACT][14][0].propuesta_ide is None
+
+
+def test_f055_r15_la_var_ni_llama_ni_guarda():
+    uow = _uow(actual={14: [_lp(100, "100", partida_fija=True)]})
+    r, commits = _selector(uow, DEL_TRANSFER)
+    assert r["fija"] is not None and commits == [] and uow.propuestas == []
+
+
+# =============================== R27 (T11) =============================== #
+def test_f055_r27_linea_out_publica_la_propuesta():
+    from domain.models import CuadranteTrabajador
+    from interface_adapters.api.schemas import a_trabajador_out
+
+    from tests.test_f024_cuadrante_empresa import TRABAJADORES
+    fila = CuadranteTrabajador(trabajador=TRABAJADORES[14],
+                               lineas=[_lp(100, "60", **PR), _lp(101, "40")])
+    out = a_trabajador_out(fila, 1).model_dump()
+    assert [(ln["propuesta_cod"], ln["propuesta_res"],
+             ln["propuesta_metodo"]) for ln in out["lineas"]] == [
+        ("CI.1.20", "JEFE DE OBRA", "parte_anterior"), (None, None, None)]
+    assert "propuesta_ide" not in out["lineas"][0]
+    assert "propuesta_origen" not in out["lineas"][0]

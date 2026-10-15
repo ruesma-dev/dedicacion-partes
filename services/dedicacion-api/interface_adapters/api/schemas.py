@@ -86,6 +86,11 @@ class LineaOut(_Base):
     partida_cod: str | None
     partida_res: str | None
     partida_fija: bool
+    # F-055 (R27): la propuesta guardada (la celda Partida la enseña en
+    # cursiva con su método); las tres nulas = sin propuesta.
+    propuesta_cod: str | None = None
+    propuesta_res: str | None = None
+    propuesta_metodo: str | None = None
 
 
 class TrabajadorOut(_Base):
@@ -245,6 +250,9 @@ def a_trabajador_out(fila: CuadranteTrabajador,
                 partida_cod=ln.partida_cod,
                 partida_res=ln.partida_res,
                 partida_fija=ln.partida_fija,
+                propuesta_cod=ln.propuesta_cod,
+                propuesta_res=ln.propuesta_res,
+                propuesta_metodo=ln.propuesta_metodo,
             )
             for ln in fila.lineas
         ],
