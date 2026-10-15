@@ -106,6 +106,24 @@ class PartidaCuenta:
     caa_cod: Optional[str]
 
 
+@dataclass(frozen=True)
+class PartidaValida:
+    """F-055 (R3, R4): una partida (`obrparpar`) leída por `ide`, con su
+    obra, si es hoja (sin hijas de su misma obra, como
+    `build_arbol_partidas`) y si está de alta (`tipdes = 0`)."""
+    ide: int
+    obride: int
+    cod: Optional[str]
+    res: Optional[str]
+    es_hoja: bool
+    activa: bool
+
+    def vale_en(self, obra_ide: int) -> bool:
+        """¿Es hoja activa del presupuesto de `obra_ide`? El mismo veredicto
+        que `construir_catalogo` sobre el presupuesto entero (R4)."""
+        return self.obride == int(obra_ide) and self.es_hoja and self.activa
+
+
 @dataclass
 class ParteDestino:
     """Parte de trabajo (hmo) de una obra y mes."""

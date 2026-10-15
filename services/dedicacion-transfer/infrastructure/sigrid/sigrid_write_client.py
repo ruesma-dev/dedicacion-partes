@@ -59,7 +59,7 @@ from application.services.propuesta_partida import LineaHistorial
 from domain.errores import ObraAmbigua
 from domain.models.registro_models import (
     HoraRecurso, LineaSigrid, ObraEntrada, ParteDestino, ParteSigrid,
-    PartidaCuenta,
+    PartidaCuenta, PartidaValida,
 )
 
 logger = logging.getLogger(__name__)
@@ -71,6 +71,9 @@ PREFIJO_SYNCKEY = "porcentajes:"
 MAX_ROWS_POR_DEFECTO = 200_000
 #: F-050: recursos por lectura del historial (el `IN` de `historial_partidas`).
 LOTE_RECURSOS_HISTORIAL = 500
+#: F-055 (R20): parámetros por lectura de las consultas con `IN (?…)`
+#: agrupadas (`validar_partidas` y las de T5).
+LOTE_PARAMETROS = 500
 
 
 def synckey_de(registro_id: int) -> str:
@@ -357,6 +360,34 @@ class SigridWriteClient:
             out[ide] = PartidaCuenta(
                 ide=ide, cod=(f["cod"] or "").strip() or None,
                 caa_cod=(f["caacod"] or "").strip() or None)
+        return out
+
+    def validar_partidas(
+        self, parides: Iterable[int | None]
+    ) -> dict[int, PartidaValida]:
+        """F-055 (R3, R4; design §6): las partidas por `ide`, con su obra,
+        si son hoja (sin hijas de su MISMA obra, como `build_arbol_partidas`)
+        y si están de alta (`tipdes = 0`). UNA lectura por trozo de
+        `LOTE_PARAMETROS`; sin partidas no se lee. La que no existe no sale.
+        Un fallo o un `truncated` sube como excepción."""
+        ides = sorted({int(i) for i in parides if i})
+        out: dict[int, PartidaValida] = {}
+        for i in range(0, len(ides), LOTE_PARAMETROS):
+            trozo = ides[i:i + LOTE_PARAMETROS]
+            marcas = ",".join("?" for _ in trozo)
+            filas = self._lectura(
+                "validar_partidas",
+                "SELECT p.ide AS ide, p.obride AS obride, p.cod AS cod, "
+                "p.res AS res, ISNULL(p.tipdes,0) AS tipdes, "
+                "CASE WHEN EXISTS (SELECT 1 FROM obrparpar h WHERE "
+                "h.padide = p.ide AND h.obride = p.obride) THEN 0 ELSE 1 END "
+                f"AS hoja FROM obrparpar p WHERE p.ide IN ({marcas})", trozo)
+            for f in filas:
+                ide = int(f["ide"])
+                out[ide] = PartidaValida(
+                    ide=ide, obride=int(f["obride"]), cod=f["cod"],
+                    res=f["res"], es_hoja=bool(f["hoja"]),
+                    activa=int(f["tipdes"] or 0) == 0)
         return out
 
     def historial_partidas(

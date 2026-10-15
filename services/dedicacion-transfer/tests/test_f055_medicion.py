@@ -125,6 +125,7 @@ def test_f055_r1_el_log_no_lleva_sql_ni_parametros(monkeypatch, caplog):
     ("horas_de_recursos", ([1],)),
     ("cuentas_de_centro", (1, 1, ["CIMO03"])),
     ("partidas_de_lineas", ([1],)),
+    ("validar_partidas", ([1],)),
     ("historial_partidas", ([1], 202410, 202609)),
     ("partes_del_periodo", (1, 2026, 9)),
     ("partes_existentes", (1, [(2026, 9)])),
