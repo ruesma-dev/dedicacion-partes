@@ -198,21 +198,18 @@ f024 rutas). Ninguna otra aserción anterior cambia salvo la lista cerrada.
 
 ## Evidencias
 
-Medidas con `bash harness/init.sh` sobre `807dd32`, con
-`.arnes_cache/suite_*.ok` borrados antes (las cuatro suites enteras):
-**ENTORNO LISTO**, exit 0, **ningún `[KO]`**.
+`bash harness/init.sh` tras T17b, con `.arnes_cache/suite_*.ok` borrados:
+**ENTORNO LISTO**, exit 0, **ningún `[KO]`** (ver la última línea abajo).
 
 | Evidencia | Valor |
 |---|---|
-| Tests transfer | **930 passed** (48.88 s) |
-| Tests api | **871 passed** (101.63 s) |
-| Tests front | **291 passed** (62.22 s) |
-| Tests raíz | **418 passed, 1 skipped** (105.61 s) |
+| Tests transfer / api | **931 passed** (28.15 s) / **873 passed** (95.57 s) |
+| Tests front / raíz | **291 passed** (52.05 s) / **418 passed, 1 skipped** (82.39 s) |
 | Tests de F-055 | transfer `test_f055_*` + el plugin de equivalencia (que repite ≥ 100 preflights y ≥ 11 propuestas en lote); api 4 ficheros; front 22 |
-| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 795 líneas cambiadas cubiertas (795/795, umbral 80%, nivel critico)` |
-| Mutantes (arnés) | **284 generados, 284 muertos, 0 supervivientes** (pasada final, `progress/mutacion_F-055.md`); primera pasada 39 vivos con test cada uno (`…_pasada1.md`) |
+| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 804 líneas cambiadas cubiertas (804/804, umbral 80%, nivel critico)` |
+| Mutantes (arnés) | **284/284 muertos, 0 supervivientes** (pasada final, `progress/mutacion_F-055.md`; la primera, 39 vivos con test cada uno); T17b, manual: 9/9 |
 | Mutantes (JS, manual) | **36/36 muertos** en la segunda pasada (`progress/mutacion_manual_F-055.md`) |
-| `ruff` | aviso no bloqueante: 287 (237 antes de F-055); lo nuevo sigue el estilo de cada fichero (`Optional`, `noqa: BLE001`, imports) |
+| `ruff` | aviso no bloqueante: 258 (237 antes de F-055) |
 
 **Verificaciones MANUAL pendientes (no mías):** T2 (cifras de navegador),
 T18 (`medir --lote`, C3-C5, C8 en local), T19 (registro en modo pruebas) y
