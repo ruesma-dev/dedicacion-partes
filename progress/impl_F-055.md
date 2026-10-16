@@ -152,17 +152,21 @@ calcula, validación por `ide`), «Acceso a datos», «Timeouts encadenados»,
 columnas, variable, orden de despliegue) y READMEs. `test_f002_fuente_unica`
 72 y `tests/test_f004_readme.py` 11 passed.
 
-**T17b · Observaciones de la review 1.** **O3:** `lineas_de_partes`
-lee `hmores.pos` y, al juntar trozos de recursos, ordena cada parte por
-`pos` (estable). **O5:** `PropuestasDelMes.cerrar()`
-(`shutdown(wait=False, cancel_futures=True)`) en el `lifespan` de la api.
-**O7:** continuación rota del plugin y avisos ruff de los `test_f055_*`
-(ISC004, RUF059, PLW1510, UP031, C408, I001, F811 con `noqa` como el resto
-del repo). **O8/O9:** línea en `mutacion_F-055_pasada1.md` y cabecera aquí.
-RED (`pytest … -k "varios_trozos or cerrar_corta or cierra_la_cola"`):
+**T17b · Observaciones de la review 1 (y correcciones de la review 2).**
+**O3:** `lineas_de_partes` lee `hmores.pos` y, al juntar trozos de
+recursos, ordena cada parte por `pos` (estable; `pos` nulo = 0, primero, como
+SQL Server). **O5:** `cerrar()` en el `lifespan` de la api levanta una marca
+de parada y hace `shutdown(wait=False, cancel_futures=True)`: lo encolado se
+cancela; la tarea en marcha acaba su trozo (Python la espera al salir) y no
+empieza el siguiente (`_calcular` mira la marca entre trozos). **O7:**
+continuación rota del plugin y avisos ruff de los `test_f055_*`. **O8/O9:**
+línea en `mutacion_F-055_pasada1.md` y cabecera aquí. RED (`pytest … -k
+"varios_trozos or cerrar_corta or cierra_la_cola or deja_acabar"`):
 `assert [1, 3, 2, 4] == [2, 1, 4, 3]`, `'PropuestasDelMes' object has no
-attribute 'cerrar'`, `assert [] == [True]`. Mutación manual de las líneas
-nuevas (9 mutantes: orden, `pos`, `shutdown`, `lifespan`): **9/9 muertos**.
+attribute 'cerrar'`, `assert [] == [True]`, `assert 2 == 1`. El test del
+`pos` nulo (review 2) ya pasaba: mata el mutante `or 1`. Mutación:
+**`progress/mutacion_T17b_F-055.md`**, generador del arnés sobre las líneas
+de T17b más 4 manuales, **9 mutantes, 9 muertos**, con el texto exacto.
 
 ## Dobles ampliados (para el reviewer)
 
@@ -207,12 +211,9 @@ f024 rutas). Ninguna otra aserción anterior cambia salvo la lista cerrada.
 | Tests front / raíz | **291 passed** (58.92 s) / **418 passed, 1 skipped** (63.48 s) |
 | Tests de F-055 | transfer `test_f055_*` + el plugin de equivalencia (que repite ≥ 100 preflights y ≥ 11 propuestas en lote); api 4 ficheros; front 22 |
 | Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 804 líneas cambiadas cubiertas (804/804, umbral 80%, nivel critico)` |
-| Mutantes (arnés) | **284/284 muertos, 0 supervivientes** (pasada final, `progress/mutacion_F-055.md`; la primera, 39 vivos con test cada uno); T17b, manual: 9/9 |
+| Mutantes (arnés) | **284/284 muertos, 0 supervivientes** (pasada final, `progress/mutacion_F-055.md`; la primera, 39 vivos con test cada uno); T17b: 9/9 (`mutacion_T17b_F-055.md`) |
 | Mutantes (JS, manual) | **36/36 muertos** en la segunda pasada (`progress/mutacion_manual_F-055.md`) |
 | `ruff` | aviso no bloqueante: 258 (237 antes de F-055) |
 
-**Verificaciones MANUAL pendientes (no mías):** T2 (cifras de navegador),
-T18 (`medir --lote`, C3-C5, C8 en local), T19 (registro en modo pruebas) y
-T20; T15: copiar lo nuevo de `docs/INTEGRACION.md` a `azure-apps`
-(líder). Fuera de alcance, como dice la spec: `ejecutar` en lote, F-048,
-F-051, F-044.
+**MANUAL pendientes (no mías):** T2 (navegador), T18-T20; T15, copiar
+`docs/INTEGRACION.md` a `azure-apps` (líder). Fuera: `ejecutar` en lote, F-048, F-051, F-044.
