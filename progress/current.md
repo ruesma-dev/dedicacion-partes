@@ -21,7 +21,8 @@ desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arné
   init.sh en verde sin cachés; **review 2 RECHAZADA** (`6867360`): mutante
   vivo en `sigrid_write_client.py:623` (`or 0` → `or 1`, `pos` NULL), tabla
   de la mutación manual sin texto exacto y docstring falso de `cerrar()`;
-  implementer corrigiendo dentro de T17b); O4 al copiar a azure-apps (T15); O2 lo juzga el humano en T18 (si
+  corregidos en `c997385`-`86f8438` (marca de parada entre trozos, test del
+  `pos` nulo, `progress/mutacion_T17b_F-055.md` 9/9); **en review 3**); O4 al copiar a azure-apps (T15); O2 lo juzga el humano en T18 (si
   molesta, la api publica qué línea está pendiente); O1 y la automejora de
   `CHECKPOINTS.md` C4 (trazar un R «como hoy» o documental), trabajo aparte
   del arnés tras F-055, portado a `arnes-base`. **Desviaciones de diseño
