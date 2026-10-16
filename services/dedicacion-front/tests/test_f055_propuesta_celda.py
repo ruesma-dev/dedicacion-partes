@@ -83,23 +83,22 @@ PROP = {"propuesta_cod": "CI.1.20", "propuesta_res": "JEFE DE OBRA",
 
 
 # ============================ R27 · la celda ============================= #
+PROPUESTA_HTML = (
+    '<em class="partida-propuesta" title="Propuesta: parte anterior">'
+    'CI.1.20 · JEFE DE OBRA<span class="partida-metodo"> · parte anterior'
+    '</span></em>')
+
+
 @pytest.mark.parametrize("linea, en_curso, esperado", [
-    (_l(1, **PROP), False,
-     '<em class="partida-propuesta" title="Propuesta: parte anterior">'
-     'CI.1.20 · JEFE DE OBRA<span class="partida-metodo"> · parte anterior'
-     '</span></em>'),
-    (_l(1, **PROP), True,
-     '<em class="partida-propuesta" title="Propuesta: parte anterior">'
-     'CI.1.20 · JEFE DE OBRA<span class="partida-metodo"> · parte anterior'
-     '</span></em>'),
-    (_l(1), True, '<span class="partida-auto buscando">buscando partida…'
-                  '</span>'),
+    (_l(1, **PROP), False, PROPUESTA_HTML),
+    (_l(1, **PROP), True, PROPUESTA_HTML),
+    (_l(1), True, '<span class="partida-auto buscando">buscando partida…</span>'),
     (_l(1), False, '<span class="partida-auto">automática</span>'),
     (_l(1, partida_ide=7, partida_cod="CI.1.9", partida_res="ADM", **PROP),
      True, '<span class="partida-elegida">CI.1.9 · ADM</span>'),
     (_l(1, propuesta_cod="X<1", propuesta_metodo="auto_nombre"), False,
-     '<em class="partida-propuesta" title="Propuesta: casada por nombre">'
-     'X&lt;1<span class="partida-metodo"> · casada por nombre</span></em>'),
+     ('<em class="partida-propuesta" title="Propuesta: casada por nombre">'
+      'X&lt;1<span class="partida-metodo"> · casada por nombre</span></em>')),
 ], ids=["propuesta", "propuesta_en_curso", "buscando", "automatica",
         "elegida_manda", "escapa"])
 def test_f055_r27_html_de_la_celda(linea, en_curso, esperado):
@@ -138,12 +137,12 @@ def test_f055_r36_consulta_a_los_5_s_copia_y_repinta():
     r = _node("""
       marcarPropuestas(true);
       const antes = rutas.length;
-      respuestas.push({en_curso: true, lineas: %s});
+      respuestas.push({en_curso: true, lineas: __DATOS__});
       await disparar();
       resultado = {ms: temporizadores[0].ms, antes, rutas, repintadas,
                    vivos: vivos(), en_curso: state.propuestasEnCurso,
                    lineas: state.trabajadores.map((t) => t.lineas)};
-    """ % json.dumps(LINEAS), ESTADO)
+    """.replace("__DATOS__", json.dumps(LINEAS)), ESTADO)
     assert r["ms"] == 5000 and r["antes"] == 0
     assert r["rutas"] == ["/periodos/2026/9/propuestas"]
     assert r["repintadas"] == 1 and r["vivos"] == 1 and r["en_curso"]
@@ -196,12 +195,12 @@ def test_f055_r36_cambiar_de_mes_o_empresa_corta_la_consulta():
       const t = temporizadores[0];
       reiniciarPropuestas();
       const tras = vivos();
-      respuestas.push({en_curso: true, lineas: %s});
+      respuestas.push({en_curso: true, lineas: __DATOS__});
       t.fn();                                // uno que ya iba a dispararse
       for (let i = 0; i < 20; i++) await Promise.resolve();
       resultado = {tras, vivos: vivos(), repintadas,
                    cod: state.trabajadores[0].lineas[0].propuesta_cod};
-    """ % json.dumps(LINEAS), ESTADO)
+    """.replace("__DATOS__", json.dumps(LINEAS)), ESTADO)
     assert r == {"tras": 0, "vivos": 0, "repintadas": 0, "cod": None}
 
 
@@ -210,9 +209,9 @@ def test_f055_r36_la_fila_en_edicion_tambien_guarda_pero_no_se_repinta():
     la fila en edición: lo fija la comprobación estática de abajo."""
     estado = dict(ESTADO, editandoIde=14)
     r = _node("""
-      aplicarPropuestas(%s);
+      aplicarPropuestas(__DATOS__);
       resultado = state.trabajadores[0].lineas[0].propuesta_cod;
-    """ % json.dumps(LINEAS), estado)
+    """.replace("__DATOS__", json.dumps(LINEAS)), estado)
     assert r == "CI.1.20"
     repintar = _plano(_funcion("repintarCeldasPartida"))
     assert "state.editandoIde" in repintar
@@ -253,13 +252,13 @@ def test_f055_r36_guardar_con_en_curso_consulta_a_los_5_s_y_pinta():
       marcarPropuestas(true);                // guardar la fila
       marcarPropuestas(true);                // F7 enseguida
       const dos = vivos();
-      respuestas.push({en_curso: false, lineas: %s});
+      respuestas.push({en_curso: false, lineas: __DATOS__});
       await disparar();
       const cod = state.trabajadores[1].lineas[0].propuesta_cod;
       marcarPropuestas(false);               // otra escritura sin cola
       resultado = {dos, cod, rutas: rutas.length, vivos: vivos()};
-    """ % json.dumps([{"trabajador_ide": 10, "obra_ide": 100,
-                       "es_postventa": False, **PROP}]), ESTADO)
+    """.replace("__DATOS__", json.dumps([{"trabajador_ide": 10, "obra_ide": 100,
+                       "es_postventa": False, **PROP}])), ESTADO)
     assert r == {"dos": 1, "cod": "CI.1.20", "rutas": 1, "vivos": 0}
 
 
@@ -278,9 +277,9 @@ def test_f055_r36_la_propuesta_va_a_su_modo_y_con_sus_tres_campos():
     estado = dict(ESTADO, trabajadores=[_trab(14, _l(100, es_postventa=True),
                                               _l(100))])
     r = _node("""
-      aplicarPropuestas(%s);
+      aplicarPropuestas(__DATOS__);
       resultado = state.trabajadores[0].lineas;
-    """ % json.dumps(LINEAS[:1]), estado)
+    """.replace("__DATOS__", json.dumps(LINEAS[:1])), estado)
     [pv, normal] = r
     assert pv["propuesta_cod"] is None
     assert (normal["propuesta_cod"], normal["propuesta_res"],

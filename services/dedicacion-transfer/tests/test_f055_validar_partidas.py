@@ -86,11 +86,11 @@ def test_f055_r3_sql_de_la_validacion_por_ide():
     cli.validar_partidas([80002, 80001, 80002, None, 0])
     [(sql, params)] = falso.llamadas
     for trozo in (
-            "SELECT p.ide AS ide, p.obride AS obride, p.cod AS cod, "
-            "p.res AS res, ISNULL(p.tipdes,0) AS tipdes",
-            "CASE WHEN EXISTS (SELECT 1 FROM obrparpar h WHERE "
-            "h.padide = p.ide AND h.obride = p.obride) THEN 0 ELSE 1 END "
-            "AS hoja",
+            ("SELECT p.ide AS ide, p.obride AS obride, p.cod AS cod, "
+             "p.res AS res, ISNULL(p.tipdes,0) AS tipdes"),
+            ("CASE WHEN EXISTS (SELECT 1 FROM obrparpar h WHERE "
+             "h.padide = p.ide AND h.obride = p.obride) THEN 0 ELSE 1 END "
+             "AS hoja"),
             "FROM obrparpar p WHERE p.ide IN (?,?)"):
         assert trozo in sql, trozo
     assert params == [80001, 80002]

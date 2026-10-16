@@ -87,7 +87,8 @@ def _comparado(self, *, obra, lineas):
 def _propuesta_en_lote(cli, settings, peticion):
     logging.disable(logging.CRITICAL)
     try:
-        return RegistroLote(cliente=cli, settings=settings, limite=4)             .proponer([peticion])[0]
+        lote = RegistroLote(cliente=cli, settings=settings, limite=4)
+        return lote.proponer([peticion])[0]
     except Exception as exc:                        # noqa: BLE001
         return exc
     finally:

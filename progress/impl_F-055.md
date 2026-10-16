@@ -1,3 +1,4 @@
+<!-- progress/impl_F-055.md -->
 # F-055 · Informe del implementer
 
 Rama `feature/F-055-preflight-rapido` (copia `porcentajes-f041`). Rigor
@@ -5,10 +6,12 @@ Rama `feature/F-055-preflight-rapido` (copia `porcentajes-f041`). Rigor
 implementer: **T1, T2b, T2c, T3-T17**. T2 (cifras de navegador), T18-T20,
 MANUAL o del líder: no son mías. T15 = solo la anotación en `current.md`.
 
-Decisiones del humano durante la implementación (2026-10-15, en `tasks.md`):
-bloqueo de T4 → `test_pipeline_offline.py` a la lista cerrada (solo su doble);
-bloqueo de T9 («si a todo») → filas falsas de `test_f050_partida_linea.py`,
-permiso general para ampliar dobles sin tocar aserciones y C2 contado como C1.
+Decisiones del humano (en `tasks.md`): bloqueo de T4 →
+`test_pipeline_offline.py` a la lista cerrada (solo su doble); bloqueo de T9
+(«si a todo») → filas falsas de `test_f050_partida_linea.py`, permiso para
+ampliar dobles sin tocar aserciones y C2 contado como C1. **Review 1
+APROBADA**; el humano aprobó el 2026-10-16 («si») las dos desviaciones
+(T6 ronda B; T12 `EMPRESA_IMPUTACION`) y recoger O3, O5, O7-O9 en T17b.
 
 ## Por tareas (qué cambió, RED y verde)
 
@@ -20,9 +23,8 @@ su firma (con `nombre` caían 35 tests anteriores con dobles de dos
 argumentos). RED: `ImportError: cannot import name 'apuntar_lectura'`, luego
 `30 failed, 5 passed`; verde 35.
 
-**T2 · Cifras «antes» (script del humano).** 0694 **8 lecturas · 32.24 s**;
-0696 **9 · 21.92 s**; `TOTAL: 2 obras · 17 lecturas · 54.15 s leyendo`; la
-mayor, `horas_de_recursos` (7.99 s). Navegador: pendiente del humano.
+**T2 (humano).** 0694 8 lecturas · 32.24 s; 0696 9 · 21.92 s; la mayor,
+`horas_de_recursos` (7.99 s). Navegador: pendiente.
 
 **T2b · Orden a → c → b (R38).** `proponer_partida`: `previa_en_obra` →
 `resolver_normal` → `ultima_de_recurso`. Lista cerrada:
@@ -33,8 +35,7 @@ E   AssertionError: assert (2110, 'ultimo_parte') == (2108, 'auto_nombre')
 E   AssertionError: assert (80003, 'ulti... · obra 0678') == (80001, 'auto_nombre', None)
 3 failed, 5 passed in 3.04s
 ```
-**T2c.** `#regla-partida` con el orden nuevo y D10; `test_f002_fuente_unica`
-72 passed.
+**T2c.** `#regla-partida` con el orden nuevo (D10); fuente única 72 passed.
 
 **T3 · `validar_partidas` (R3, R4).** `PartidaValida(…).vale_en(obra)`, SQL
 de design §6, trozos de 500, `truncated` → error; doble de `conftest.py`.
@@ -151,6 +152,18 @@ calcula, validación por `ide`), «Acceso a datos», «Timeouts encadenados»,
 columnas, variable, orden de despliegue) y READMEs. `test_f002_fuente_unica`
 72 y `tests/test_f004_readme.py` 11 passed.
 
+**T17b · Observaciones de la review 1.** **O3:** `lineas_de_partes`
+lee `hmores.pos` y, al juntar trozos de recursos, ordena cada parte por
+`pos` (estable). **O5:** `PropuestasDelMes.cerrar()`
+(`shutdown(wait=False, cancel_futures=True)`) en el `lifespan` de la api.
+**O7:** continuación rota del plugin y avisos ruff de los `test_f055_*`
+(ISC004, RUF059, PLW1510, UP031, C408, I001, F811 con `noqa` como el resto
+del repo). **O8/O9:** línea en `mutacion_F-055_pasada1.md` y cabecera aquí.
+RED (`pytest … -k "varios_trozos or cerrar_corta or cierra_la_cola"`):
+`assert [1, 3, 2, 4] == [2, 1, 4, 3]`, `'PropuestasDelMes' object has no
+attribute 'cerrar'`, `assert [] == [True]`. Mutación manual de las líneas
+nuevas (9 mutantes: orden, `pos`, `shutdown`, `lifespan`): **9/9 muertos**.
+
 ## Dobles ampliados (para el reviewer)
 
 Campos nulos o métodos derivados de sus datos, sin tocar aserciones:
@@ -169,8 +182,7 @@ f024 rutas). Ninguna otra aserción anterior cambia salvo la lista cerrada.
   el resultado, el mapeo de nulos de `_linea_del_parte`, `"ok"` de
   `_respuesta_preflight`, `Lectura` inmutable y la fase `medir`). `9d9ebb1`
   añade un test para cada uno, comprobado re-aplicando los 39 uno a uno
-  contra los `test_f055_*` del servicio (todos mueren). Un intento anterior
-  se cortó a medias con la sesión (se restauró con `--restaurar`).
+  contra los `test_f055_*` del servicio (todos mueren).
 - **Arnés, pasada final** (HEAD `9d9ebb1`): **284 generados, 284 muertos,
   0 supervivientes**, 0 timeouts, 3666 s con 4 workers
   (`progress/mutacion_F-055.md`).
@@ -200,7 +212,6 @@ Medidas con `bash harness/init.sh` sobre `807dd32`, con
 | Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 795 líneas cambiadas cubiertas (795/795, umbral 80%, nivel critico)` |
 | Mutantes (arnés) | **284 generados, 284 muertos, 0 supervivientes** (pasada final, `progress/mutacion_F-055.md`); primera pasada 39 vivos con test cada uno (`…_pasada1.md`) |
 | Mutantes (JS, manual) | **36/36 muertos** en la segunda pasada (`progress/mutacion_manual_F-055.md`) |
-| Tamaño | `PUERTA TAMAÑO`: impl dentro del tope |
 | `ruff` | aviso no bloqueante: 287 (237 antes de F-055); lo nuevo sigue el estilo de cada fichero (`Optional`, `noqa: BLE001`, imports) |
 
 **Verificaciones MANUAL pendientes (no mías):** T2 (cifras de navegador),

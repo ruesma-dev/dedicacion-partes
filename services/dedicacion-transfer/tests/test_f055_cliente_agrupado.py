@@ -133,7 +133,8 @@ def test_f055_r20_lineas_de_partes_mismo_sql_con_in():
     sql, params = falso.llamadas[0]
     assert sql == suelta.replace(
         "SELECT hmores.ide AS ide,",
-        "SELECT hmores.hmoide AS hmoide, hmores.ide AS ide,").replace(
+        "SELECT hmores.hmoide AS hmoide, hmores.pos AS pos, "
+        "hmores.ide AS ide,").replace(
         "WHERE hmores.hmoide = ? AND hmores.reside IN (?)",
         "WHERE hmores.hmoide IN (?,?) AND hmores.reside IN (?,?)").replace(
         "ORDER BY hmores.pos", "ORDER BY hmores.hmoide, hmores.pos")
@@ -245,3 +246,22 @@ def test_f055_r1_la_lectura_medida_es_inmutable():
     from infrastructure.sigrid.sigrid_write_client import Lectura
     with pytest.raises(FrozenInstanceError):
         Lectura("x", 1, 0.5).filas = 2
+
+
+# ================= T17b · O3 de la review: orden por `pos` ================= #
+def test_f055_r20_lineas_de_partes_en_varios_trozos_en_orden_pos():
+    """Con más de 500 recursos la lectura va en varios trozos de recursos;
+    cada parte sale en su orden `pos` global, como la suelta (el pipeline
+    usa ese orden), no trozo a trozo."""
+    trozo1 = [dict(_ls(1, 10, 1, 128), pos=128),
+              dict(_ls(3, 10, 2, 320), pos=320)]
+    trozo2 = [dict(_ls(2, 10, 600, 64), pos=64),
+              dict(_ls(4, 10, 601, 256), pos=256)]
+    respuestas = iter([trozo1, trozo2])
+    cli, falso = _cliente_historial()
+    cli._read = lambda sql, params: falso(sql, params) and [] or \
+        next(respuestas)
+    lineas = cli.lineas_de_partes([10], range(1, 602))
+    assert len(falso.llamadas) == 2
+    assert [l.ide for l in lineas[10]] == [2, 1, 4, 3]
+    assert "hmores.pos AS pos" in falso.llamadas[0][0]

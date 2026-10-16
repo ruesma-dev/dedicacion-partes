@@ -93,8 +93,8 @@ HIST_OTRA = [_h_pipeline(obra=696, paride=88003)]
     (*NO_CASA, (80003, "ultimo_parte",
                 "parte PT26/00100 · 07/2026 · obra 0678")),
 ], ids=["c_gana_a_b", "sin_c_sale_b"])
-def test_f055_r38_selector_y_preflight_dan_lo_mismo(api, categoria, nombre,
-                                                     esperado):
+def test_f055_r38_selector_y_preflight_dan_lo_mismo(
+        api, categoria, nombre, esperado):  # noqa: F811
     cuerpo = api(ClienteSoloLectura(HIST_OTRA)).post(RUTA, json=_peticion(
         _l("1", categoria=categoria, nombre=nombre))).json()
     pf = RegistroPipeline(cliente=ClienteHistorial(HIST_OTRA),

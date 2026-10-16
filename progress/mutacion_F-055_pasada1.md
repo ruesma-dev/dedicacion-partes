@@ -1,6 +1,8 @@
 <!-- progress/mutacion_F-055_pasada1.md (primera pasada; la final es mutacion_F-055.md) -->
 # F-055 · Campaña de mutación
 
+> **Resueltos en `9d9ebb1`:** los 39 supervivientes de esta primera pasada tienen cada uno un test que los mata; ver `progress/impl_F-055.md` §T16 y la pasada final, `progress/mutacion_F-055.md` (284/284). Las secciones «PENDIENTE» de abajo son históricas.
+
 Generado por `python -m harness.mutacion --feature F-055` el 2026-10-16 01:33.
 
 ## Alcance

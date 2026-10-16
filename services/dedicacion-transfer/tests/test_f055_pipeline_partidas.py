@@ -32,10 +32,10 @@ from tests.conftest import (
 from tests.test_f050_pipeline import OBRA, ClienteHistorial, _h
 
 #: Lo que el cuadrante guardó como propuesta de la línea (80002, CI.1.20).
-GUARDADA = dict(propuesta_paride=80002, propuesta_cod="CI.1.20",
-                propuesta_res="JEFE DE OBRA (guardada)",
-                propuesta_metodo="parte_anterior",
-                propuesta_origen="parte PT26/00050 · 05/2026 · obra 0678")
+GUARDADA = {"propuesta_paride": 80002, "propuesta_cod": "CI.1.20",
+            "propuesta_res": "JEFE DE OBRA (guardada)",
+            "propuesta_metodo": "parte_anterior",
+            "propuesta_origen": "parte PT26/00050 · 05/2026 · obra 0678"}
 
 
 class Cliente(ClienteHistorial):
@@ -186,7 +186,8 @@ def test_f055_r9_toda_accion_con_partida_publica_su_descripcion():
 
 
 def test_f055_r9_la_var_publica_su_descripcion():
-    from tests.test_f039_preflight_var import P29, _pf as pf_var
+    from tests.test_f039_preflight_var import P29
+    from tests.test_f039_preflight_var import _pf as pf_var
     a = pf_var().acciones[0]
     assert (a.paride, a.partida_metodo) == (P29, "var")
     assert a.partida_res

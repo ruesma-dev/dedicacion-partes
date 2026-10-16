@@ -20,11 +20,12 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
-from application.registro_sigrid import es_metodo_de_propuesta, RegistroSigrid
+from application.registro_sigrid import RegistroSigrid, es_metodo_de_propuesta
 from sqlalchemy.dialects import postgresql
 
 from tests.test_f024_registro_empresa import _Sesion, _Transfer
-from tests.test_f039_registro_var import VAR_29, _fila as _fila_var
+from tests.test_f039_registro_var import VAR_29
+from tests.test_f039_registro_var import _fila as _fila_var
 
 PR = {"propuesta_ide": 80002, "propuesta_cod": "CI.1.20",
       "propuesta_res": "JEFE DE OBRA", "propuesta_metodo": "parte_anterior",
@@ -182,7 +183,7 @@ def test_f055_r26_cliente_http_del_lote(monkeypatch):
     assert cli.preflight_lote([{"obra": {"ide": 1}}]) == {"ok": True,
                                                          "obras": []}
     assert llamadas == [("http://transfer.invalid/api/registro/"
-                         "preflight-lote",
+                         + "preflight-lote",
                          {"peticiones": [{"obra": {"ide": 1}}]}, 7.0)]
 
 

@@ -44,7 +44,7 @@ def _llamar(cliente, metodo, ruta, cuerpo):
 @pytest.mark.parametrize("metodo, ruta, cuerpo, trabajadores", ESCRITURAS,
                          ids=IDS)
 def test_f055_r37_cada_escritura_encola_los_suyos_y_publica(
-        api, metodo, ruta, cuerpo, trabajadores, en_curso):
+        api, metodo, ruta, cuerpo, trabajadores, en_curso):  # noqa: F811
     cliente, contenedor = api
     if ruta.endswith("/partida"):
         _llamar(cliente, "put", "/trabajadores/14/asignaciones",
@@ -56,7 +56,7 @@ def test_f055_r37_cada_escritura_encola_los_suyos_y_publica(
     assert contenedor.propuestas_mes.lanzadas == [(ANIO, MES, trabajadores)]
 
 
-def test_f055_r37_deshacer_encola_al_trabajador(api):
+def test_f055_r37_deshacer_encola_al_trabajador(api):  # noqa: F811
     cliente, contenedor = api
     _llamar(cliente, "put", "/trabajadores/14/asignaciones",
             {"lineas": [{"obra_ide": 101, "porcentaje": 100}]})
@@ -67,8 +67,8 @@ def test_f055_r37_deshacer_encola_al_trabajador(api):
     assert contenedor.propuestas_mes.lanzadas == [(ANIO, MES, [14])]
 
 
-def test_f055_r37_el_resto_del_cuerpo_no_cambia(api):
-    cliente, contenedor = api
+def test_f055_r37_el_resto_del_cuerpo_no_cambia(api):  # noqa: F811
+    cliente, _ = api
     r = _llamar(cliente, "put", "/trabajadores/14/asignaciones",
                 {"lineas": [{"obra_ide": 101, "porcentaje": 100}]})
     cuerpo = r.json()
@@ -83,7 +83,7 @@ class _Rota(_PropuestasFalsas):
 @pytest.mark.parametrize("metodo, ruta, cuerpo, trabajadores", ESCRITURAS,
                          ids=IDS)
 def test_f055_r37_si_encolar_falla_responde_igual(
-        api, caplog, metodo, ruta, cuerpo, trabajadores):
+        api, caplog, metodo, ruta, cuerpo, trabajadores):  # noqa: F811
     caplog.set_level(logging.WARNING)
     cliente, contenedor = api
     if ruta.endswith("/partida"):
@@ -98,14 +98,14 @@ def test_f055_r37_si_encolar_falla_responde_igual(
     assert aviso.exc_info and aviso.exc_info[0] is not None   # traza (T16)
 
 
-def test_f055_r30_el_cuadrante_tambien_resiste_una_cola_rota(api):
+def test_f055_r30_el_cuadrante_tambien_resiste_una_cola_rota(api):  # noqa: F811
     cliente, contenedor = api
     contenedor.propuestas_mes = _Rota()
     r = cliente.get(f"{BASE}/cuadrante")
     assert r.status_code == 200 and r.json()["propuestas_en_curso"] is False
 
 
-def test_f055_r37_periodo_cerrado_no_encola(api):
+def test_f055_r37_periodo_cerrado_no_encola(api):  # noqa: F811
     from tests.test_f050_rutas_partida import _PeriodoCerrado
     cliente, contenedor = api
     contenedor.uow().periodos = _PeriodoCerrado()

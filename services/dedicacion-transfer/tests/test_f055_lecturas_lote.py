@@ -115,7 +115,7 @@ def _precargado(cli, peticiones, limite=4, **ajustes):
     return m
 
 
-ELEGIDA = dict(paride=80002, partida_cod="CI.1.20")
+ELEGIDA = {"paride": 80002, "partida_cod": "CI.1.20"}
 
 
 # ========================= R20 · las rondas A-C ========================== #

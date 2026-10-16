@@ -59,6 +59,12 @@ class PropuestasDelMes:
         with self._lock:
             return any(c[0] == periodo_id for c in self._en_cola)
 
+    def cerrar(self) -> None:
+        """Parada de la api (T17b, O5 de la review): cancela lo encolado y
+        no espera al trozo en marcha; lo cortado se relanza con el próximo
+        cuadrante o escritura, como un transfer caído (R33)."""
+        self._ejecutor.shutdown(wait=False, cancel_futures=True)
+
     def olvidar(self) -> None:
         """Vacía la memoria de «sin propuesta» (R32: tras un sync)."""
         with self._lock:

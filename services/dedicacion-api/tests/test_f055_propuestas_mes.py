@@ -21,13 +21,13 @@ from tests.test_f024_rutas_empresa import (  # noqa: F401  (fixture `api`)
     _PropuestasFalsas,
     api,
 )
+from tests.test_f050_partida_linea import P
 from tests.test_f055_propuesta_guardada import (
     DEL_TRANSFER,
     PR,
     _lp,
     _uow,
 )
-from tests.test_f050_partida_linea import P
 
 
 class _PeriodosR29(_Periodos):
@@ -333,7 +333,7 @@ PropuestasFalsas = _PropuestasFalsas
 
 
 @pytest.mark.parametrize("en_curso", [True, False])
-def test_f055_r30_el_cuadrante_lanza_y_publica_en_curso(api, en_curso):
+def test_f055_r30_el_cuadrante_lanza_y_publica_en_curso(api, en_curso):  # noqa: F811
     cliente, contenedor = api
     contenedor.propuestas_mes.en_curso = en_curso
     r = cliente.get(f"/api/v1/periodos/{ANIO}/{MES}/cuadrante")
@@ -342,7 +342,7 @@ def test_f055_r30_el_cuadrante_lanza_y_publica_en_curso(api, en_curso):
     assert contenedor.propuestas_mes.lanzadas == [(ANIO, MES, None)]
 
 
-def test_f055_r35_get_propuestas(api):
+def test_f055_r35_get_propuestas(api):  # noqa: F811
     cliente, contenedor = api
     contenedor.propuestas_mes.en_curso = True
     r = cliente.get(f"/api/v1/periodos/{ANIO}/{MES}/propuestas")
@@ -421,3 +421,31 @@ def test_f055_r31_por_defecto_trozos_de_10_obras():
     PropuestasDelMes(lambda: uow, t, _Sincrono(),
                      empresa_obras=1).lanzar(ANIO, MES)
     assert [len(ll) for ll in t.llamadas] == [10, 1]
+
+
+# ================ T17b · O5 de la review: parada de la api =============== #
+def test_f055_r30_cerrar_corta_la_cola_sin_esperar():
+    class _Ejecutor:
+        def __init__(self) -> None:
+            self.cerrado = None
+
+        def shutdown(self, **kw):
+            self.cerrado = kw
+
+    ej = _Ejecutor()
+    PropuestasDelMes(lambda: None, _Transfer(), ej, empresa_obras=1).cerrar()
+    assert ej.cerrado == {"wait": False, "cancel_futures": True}
+
+
+def test_f055_r30_la_api_cierra_la_cola_al_pararse():
+    from config.settings import Settings
+    from fastapi.testclient import TestClient
+    from interface_adapters.api.app import build_app
+
+    app = build_app(Settings(_env_file=None))
+    cerradas = []
+    app.state.contenedor.propuestas_mes = SimpleNamespace(
+        cerrar=lambda: cerradas.append(True))
+    with TestClient(app):
+        assert cerradas == []
+    assert cerradas == [True]

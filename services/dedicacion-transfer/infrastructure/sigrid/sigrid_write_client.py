@@ -591,20 +591,23 @@ class SigridWriteClient:
     ) -> dict[int, list[LineaSigrid]]:
         """F-055 (R20): `lineas_del_parte` de varios partes, agrupada: el
         mismo SQL con `IN`, la clave `hmoide` y, dentro de cada parte, el
-        orden de la suelta (`pos`). Cada parte pedido sale, vacío si no
-        tiene líneas. Trozos de `LOTE_PARAMETROS` partes y recursos."""
+        orden de la suelta (`pos`), también cuando los recursos van en
+        varios trozos (se ordena al juntar). Cada parte pedido sale, vacío si
+        no tiene líneas. Trozos de `LOTE_PARAMETROS` partes y recursos."""
         partes = sorted({int(h) for h in hmoides if h})
         res = sorted({int(i) for i in resides if i})
         if not partes or not res:
             return {}
-        out: dict[int, list[LineaSigrid]] = {h: [] for h in partes}
+        por_pos: dict[int, list[tuple[int, LineaSigrid]]] = {
+            h: [] for h in partes}
         for t_h in _trozos(partes):
             for t_r in _trozos(res):
                 m_h = ",".join("?" for _ in t_h)
                 m_r = ",".join("?" for _ in t_r)
                 filas = self._lectura(
                     "lineas_de_partes",
-                    "SELECT hmores.hmoide AS hmoide, hmores.ide AS ide, "
+                    "SELECT hmores.hmoide AS hmoide, hmores.pos AS pos, "
+                    "hmores.ide AS ide, "
                     "hmores.reside AS reside, "
                     "hmores.fec AS fec, hmores.horide AS horide, "
                     "hmores.paride AS paride, auxhor.cod AS hora, "
@@ -616,8 +619,11 @@ class SigridWriteClient:
                     f"AND hmores.reside IN ({m_r}) "
                     "ORDER BY hmores.hmoide, hmores.pos", t_h + t_r)
                 for f in filas:
-                    out[int(f["hmoide"])].append(self._linea_del_parte(f))
-        return out
+                    por_pos[int(f["hmoide"])].append(
+                        (int(f["pos"] or 0), self._linea_del_parte(f)))
+        # `sorted` es estable: dentro de un trozo, el orden de Sigrid.
+        return {h: [ls for _, ls in sorted(v, key=lambda x: x[0])]
+                for h, v in por_pos.items()}
 
     def lineas_por_synckey(
         self, claves: Iterable[str]
