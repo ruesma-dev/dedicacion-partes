@@ -5,7 +5,7 @@
 copia `PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas
 y propuesta del mes en segundo plano. **Review 3 APROBADA; esperan las MANUAL del humano.** Implementer: T1-T17b hechas
 (`init.sh` en verde, mutación 284/284 y JS 36/36; informe en
-`progress/impl_F-055.md`). Falta: review, copiar a azure-apps (T15, líder) y
+`progress/impl_F-055.md`). Falta: copiar a azure-apps (T15, líder) y
 las MANUAL T2 (navegador), T18-T20. F-050 está cerrada en `dev` y `main`; se
 desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arnés es la
 **1.7.3**.
