@@ -265,3 +265,17 @@ def test_f055_r20_lineas_de_partes_en_varios_trozos_en_orden_pos():
     assert len(falso.llamadas) == 2
     assert [l.ide for l in lineas[10]] == [2, 1, 4, 3]
     assert "hmores.pos AS pos" in falso.llamadas[0][0]
+
+
+def test_f055_r20_lineas_de_partes_pos_nulo_primero_como_sql_server():
+    """Review 2 (T17b): `ORDER BY hmores.pos` de SQL Server pone los `NULL`
+    primero; al juntar trozos, una línea con `pos` nulo del segundo trozo va
+    antes que la de `pos = 1` del primero (y empata con nadie)."""
+    trozo1 = [dict(_ls(1, 10, 1, 1), pos=1)]
+    trozo2 = [dict(_ls(2, 10, 600, 0), pos=None)]
+    respuestas = iter([trozo1, trozo2])
+    cli, falso = _cliente_historial()
+    cli._read = lambda sql, params: falso(sql, params) and [] or \
+        next(respuestas)
+    lineas = cli.lineas_de_partes([10], range(1, 602))
+    assert [l.ide for l in lineas[10]] == [2, 1]

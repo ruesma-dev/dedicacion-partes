@@ -52,6 +52,8 @@ class PropuestasDelMes:
         self._lock = threading.Lock()
         self._en_cola: set[Clave] = set()
         self._sin_propuesta: set[Clave] = set()
+        # Marca de parada de la api (T17b): `_calcular` la mira entre trozos.
+        self._parada = threading.Event()
 
     # ------------------------------------------------------------- #
     def en_curso(self, periodo_id: int) -> bool:
@@ -60,9 +62,13 @@ class PropuestasDelMes:
             return any(c[0] == periodo_id for c in self._en_cola)
 
     def cerrar(self) -> None:
-        """Parada de la api (T17b, O5 de la review): cancela lo encolado y
-        no espera al trozo en marcha; lo cortado se relanza con el próximo
-        cuadrante o escritura, como un transfer caído (R33)."""
+        """Parada de la api (T17b, O5 de la review): levanta la marca de
+        parada y cancela las tareas encoladas. La tarea en marcha termina el
+        trozo que está calculando (Python la espera al salir del proceso:
+        como mucho un trozo, el timeout del transfer) y no empieza el
+        siguiente; lo que quede se relanza con el próximo cuadrante o
+        escritura, como un transfer caído (R33)."""
+        self._parada.set()
         self._ejecutor.shutdown(wait=False, cancel_futures=True)
 
     def olvidar(self) -> None:
@@ -147,6 +153,10 @@ class PropuestasDelMes:
                 por_obra.setdefault(p["obra"]["ide"], []).append(p)
             obras = sorted(por_obra.items())
             for i in range(0, len(obras), self._n):
+                if self._parada.is_set():
+                    logger.info("[propuestas] %02d/%s: la api se para; "
+                                "quedan trozos sin calcular", mes, anio)
+                    break
                 self._trozo(anio, mes, obras[i:i + self._n])
         except Exception:                           # noqa: BLE001
             logger.warning("[propuestas] propuestas del mes %02d/%s "

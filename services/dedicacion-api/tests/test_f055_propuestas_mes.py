@@ -449,3 +449,28 @@ def test_f055_r30_la_api_cierra_la_cola_al_pararse():
     with TestClient(app):
         assert cerradas == []
     assert cerradas == [True]
+
+
+def test_f055_r30_cerrar_deja_acabar_el_trozo_y_no_empieza_otro():
+    """Review 2 (T17b): con la api parándose a mitad de una tarea, el trozo
+    en marcha termina (se guarda) y el siguiente no empieza; las claves
+    salen de la cola (se relanzan con el próximo cuadrante, R33)."""
+    uow = _uow_cm({14: [_lp(100, "50"), _lp(101, "50")]})
+
+    class _Para(_Transfer):
+        def propuesta_lote(self, peticiones):
+            r = super().propuesta_lote(peticiones)
+            pm.cerrar()                     # la parada llega en el trozo 1
+            return r
+
+    class _Ejecutor(_Sincrono):
+        def shutdown(self, **kw):
+            pass
+
+    t = _Para({(14, 100): DEL_TRANSFER, (14, 101): DEL_TRANSFER})
+    pm = PropuestasDelMes(lambda: uow, t, _Ejecutor(), empresa_obras=1,
+                          obras_por_llamada=1)
+    pm.lanzar(ANIO, MES)
+    assert len(t.llamadas) == 1
+    assert (_prop(uow, 14, 100), _prop(uow, 14, 101)) == (80002, None)
+    assert pm.en_curso(P_ACT) is False
