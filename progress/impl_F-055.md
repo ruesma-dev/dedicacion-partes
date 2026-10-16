@@ -25,6 +25,7 @@ argumentos). RED: `ImportError: cannot import name 'apuntar_lectura'`, luego
 
 **T2.** Script: 0694 8 lecturas · 32.24 s; 0696 9 · 21.92 s (mayor `horas_de_recursos`, 7.99 s). «Antes» por HTTP (líder,
 2026-10-16; `dev` local, modo pruebas, front 8080, 09/2026, GONZALEZ PANIAGUA 0672 + 0694): a) 62.35 s y 27.50 s; b) mes, 6 obras, 79.46 s; c) 19.33 s; d) 7.55 s.
+**T18** (líder, 2026-10-17, F-055 local, pruebas): script lote 11 lecturas · 25.68 s (antes 54.15); a) 12.71 y 8.80 s (C3 OK: 20 % y 32 %); b) 16.17 s sin 502 (C4 OK); c) 10.47 s (C5 OK); d) 8.66 s; C8 mes 16.8 s (4/4, OK); obra nueva 0696 guardada: 59.1 s, **C8 KO** (≤ 30): `propuesta-lote` de 1 línea ≈ 40 s (≈ 12 s de lecturas + ≈ 24 s de CPU del transfer; sale `ultimo_parte`, no `auto_*`) → **PARA**, se repropone.
 
 **T2b · Orden a → c → b (R38).** `proponer_partida`: `previa_en_obra` →
 `resolver_normal` → `ultima_de_recurso`. Lista cerrada:
