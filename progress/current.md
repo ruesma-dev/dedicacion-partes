@@ -10,81 +10,61 @@ las MANUAL T2 (navegador), T18-T20. F-050 está cerrada en `dev` y `main`; se
 desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arnés es la
 **1.7.3**.
 
-## F-055 · Registro sin búsquedas de partidas (en curso)
+## F-055 · Registro sin búsquedas de partidas (en curso: review)
 
-- **T15 · azure-apps (PENDIENTE DEL LÍDER):** copiar a
-  `azure-apps/dedicacion.md` lo nuevo de `docs/INTEGRACION.md` de F-055 (el
-  bloque «Desde F-055» de §5, la variable `SIGRID_LECTURAS_PARALELAS` de §3,
-  la fila de timeouts y las dos filas nuevas de §7: orden de despliegue
-  transfer → api → front y `SIGRID_LECTURAS_PARALELAS`), revisar el `diff` y
-  hacer commit en `azure-apps`. Contratos nuevos: `POST
-  /api/registro/preflight-lote`, `POST /api/partidas/propuesta-lote` (transfer,
-  solo para la api), `GET /api/v1/periodos/{a}/{m}/propuestas`,
-  `propuestas_en_curso` en el cuadrante y en las seis escrituras, columnas
-  `asignacion.propuesta_*` (api) y campos `propuesta_*` de la línea del
-  registro.
-
-- **Decisiones del humano durante la implementación (2026-10-15)**, recogidas
-  en `tasks.md` (lista cerrada):
-  1. Bloqueo de T4 («añade test_pipeline_offline.py a la lista cerrada»):
-     solo su `ClienteFalso` gana `validar_partidas` (`66717f7`).
-  2. Bloqueo de T9 («si a todo»): `test_f050_partida_linea.py`, solo sus filas
-     falsas de `asignacion` (con `_fila_r19`) llevan `propuesta_*=None`.
-  3. Permiso general («si a todo»): el implementer puede añadir a un doble de
-     test (fila falsa, cliente falso) campos nulos o métodos derivados de sus
-     datos **sin parar**, si no cambia ninguna aserción; lo lista en el
-     informe para el reviewer. Cambiar una aserción fuera de la lista sigue
-     siendo PARA.
-  4. C2 («si a todo»): «≤ 6» cuenta como C1, sin `cuentas_de_centro` (una por
-     centro) ni la obra de pruebas (una por lote): 7 lecturas en real y 8 en
-     pruebas, en ≤ 4 rondas.
-  T1-T8 hechas (transfer completo: validación por `ide`, lecturas agrupadas,
-  lotes de preflight y de propuestas; 917 passed); T9 implementada; implementer
-  relanzado desde T9.
-
-- **Spec aprobada por el humano el 2026-10-13** («acepto tu propuesta de F-55»):
-  D1 = A, **D2 = A + C** (además de guardar al volver de un preflight y al abrir el
-  selector, se calculan en lote las propuestas de todo el mes al abrirlo o al
-  sincronizar, para que salgan preseleccionadas en el cuadrante), D3-D8 = A; el
-  paso 2 de la propuesta se mantiene. Spec ajustada el 2026-10-13 (R29-R36,
-  `POST /api/partidas/propuesta-lote`, `GET …/propuestas`; T1-T20).
-- **En la M2 de F-050 (2026-10-14) el humano volvió a pedir** lo que cubre esta
-  feature: que en la columna Partida salga la propuesta con su origen (R27) en vez
-  de «automática», buscada en segundo plano (R29-R36), y que «Registrar» no tarde
-  (R3-R8).
-- **Estado:** `dev` traído a la rama el 2026-10-15 (despliegue de F-050).
-  **T1 hecha. T2, script hecho el 2026-10-15** (cifras y criterio en
-  `progress/impl_F-055.md` § «Cifras de T2»: pesa la latencia de 8-9 lecturas
-  en serie, la mayor `horas_de_recursos`, 7.99 s; no se para). **Implementer
-  lanzado el 2026-10-15 desde T2b** con el «ok» del humano a que las cifras de
-  navegador de T2 (a modal, b mes, c repreflight, d selector) **no bloqueen**:
-  las toma el humano cuando pueda desde la copia principal (`porcentajes`,
-  `dev`, mismo código que producción, sin F-055) o en producción (solo a y b,
-  Cancelar); T2 sigue sin marcar hasta tenerlas.
+- **Estado (2026-10-16):** T1, T2b, T2c y T3-T17 hechas por el implementer
+  (`progress/impl_F-055.md`): `init.sh` en verde sin cachés sobre `807dd32`
+  (transfer 930, api 871, front 291, raíz 418 + 1 skipped), cobertura 100 % de
+  795 líneas cambiadas, mutación 284/284 muertos y JS 36/36. **En review.**
+- **Spec:** aprobada el 2026-10-13 («acepto tu propuesta de F-55»); ampliada
+  con D9 (propuesta también tras escribir, solo las pendientes de ese
+  trabajador) y D10 (orden parte anterior → casamiento → último parte),
+  aprobada el 2026-10-14 («sí, pero en reglas hay que cambiar el orden, a c
+  b») y validada el 2026-10-15 con Deshacer («d9, solo se recalcula si
+  cambias algo de ese trabajador, si es de otro no. ok a todo»).
+- **Decisiones del humano durante la implementación (2026-10-15)**, en la lista
+  cerrada de `tasks.md`: 1) `test_pipeline_offline.py`, solo su `ClienteFalso`
+  gana `validar_partidas` («añade test_pipeline_offline.py a la lista
+  cerrada»); 2) `test_f050_partida_linea.py`, solo sus filas falsas con
+  `propuesta_*=None`; 3) permiso general para ampliar dobles sin tocar
+  aserciones (listados en el informe, «Dobles ampliados»); 4) C2 contado como
+  C1: 7 lecturas en real y 8 en pruebas, en ≤ 4 rondas (2-4: «si a todo»).
   Desviación de T1 (design §5.1): la medición va en `_lectura(nombre, …)` y
-  `_read` conserva su firma, para no tocar los dobles de `_read` de 35 tests
-  anteriores fuera de la lista cerrada (detalle en el informe).
-- **Ampliación APROBADA por el humano el 2026-10-14** («sí, pero en reglas hay
-  que cambiar el orden, a c b»), tras ver en producción que una línea nueva sigue
-  en «automática» hasta registrar: 1) el cálculo en segundo plano se lanza
-  también tras guardar la fila, Completar, Copiar mes, F7 y F8 (solo las
-  pendientes de ese trabajador; hoy R29 lo excluye al guardar), la celda dice
-  «buscando partida…» y se llena sola (C8 nuevo: ≤ 30 s sin recargar); 2) el
-  orden de la propuesta pasa a **parte anterior en esa obra → casamiento por
-  nombre y categoría → último parte en otra obra** (cambia R1 de F-050 y
-  `#regla-partida`). **Spec ajustada el 2026-10-14** (spec-author): D9 y D10 en
-  design §11; R29, R30, R33, R36 cambiadas y R37-R38 nuevas; C8 ampliado; tareas
-  nuevas T2b (orden, tras T2), T2c (`#regla-partida`), T12b (api) y T13b (front),
-  sin renumerar; T12 pasa a una cola por línea. Lista cerrada: + `test_f050_r1_
-  sin_paso1_va_al_paso2` (D10) y + `test_f029_r25_ruta_200_con_resultados_y_
-  resumen` (D9). **Validado por el humano el 2026-10-15** («d9, solo se recalcula si
-  cambias algo de ese trabajador, si es de otro no. ok a todo»; ya lo dice R29):
-  Deshacer y quitar o cambiar la partida (`PUT
-  …/partida`) también encolan; la cola es por orden de llegada, así que una
-  línea guardada mientras corre el mes entero espera su turno (≈ 90 s, solo la
-  primera vez que se abre un mes). Consecuencia de D10 escrita en design §5.7:
-  el casamiento casi siempre da algo, así que el último parte solo actuará
-  cuando no case nada. T2 (medición, humano) sigue pendiente y va antes de T2b.
+  `_read` conserva su firma.
+- **T2 (MANUAL del humano, a medias):** script hecho el 2026-10-15 (17 lecturas,
+  54 s para 0694 + 0696; pesa la latencia en serie; cifras en el informe).
+  **Faltan las cifras de navegador** (el humano aceptó que no bloqueen): desde
+  la copia principal `porcentajes` (`dev`, sin F-055) en local y modo pruebas,
+  o en producción solo a y b con Cancelar: a) «⇪ Sigrid» de GONZALEZ PANIAGUA
+  → modal; b) mes entero; c) repreflight al cambiar una partida; d) abrir el
+  selector. Son el «antes» de C3 (≤ 40 % del antes).
+- **T18 (MANUAL del humano, tras la review, solo lectura, local en modo
+  pruebas; `curl -s http://localhost:8006/health` debe dar
+  `"modo_pruebas": true`):** en `porcentajes-f041/services/dedicacion-transfer`,
+  `.\.venv\Scripts\python prueba_escritura_porcentajes.py medir --lote --ano
+  2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036 --partida
+  0694:384155`; en el navegador C3 (≤ 30 s y ≤ 40 % del antes), C4 (mes ≤ 60
+  s, sin 502), C5 (≤ 20 s) y C8 (con las `propuesta_*` de 09/2026 vaciadas en
+  la `dedicacion` LOCAL con el `UPDATE` de `tasks.md` T18: Partida llena en ≤ 3
+  min; obra nueva guardada, su Partida en ≤ 30 s sin recargar). Las líneas
+  que en T2 salían por `ultimo_parte` (0696) saldrán por `auto_*` (D10).
+  **Cancelar, sin Registrar.**
+- **T19 (MANUAL, con autorización del humano en ese momento):** registro en
+  modo pruebas (0404, `PRUEBA-PORC`) de un trabajador con elegida y otro con
+  propuesta guardada, cronometrado; luego `prueba_escritura_porcentajes.py
+  estado --ano 2026 --mes 9`. C6 en producción tras desplegar (solo preflight
+  y Cancelar).
+- **T15 · azure-apps (PENDIENTE DEL LÍDER, al cerrar):** copiar a
+  `azure-apps/dedicacion.md` lo nuevo de `docs/INTEGRACION.md` (§5 «Desde
+  F-055», `SIGRID_LECTURAS_PARALELAS` de §3, timeouts y las dos filas nuevas
+  de §7). Contratos nuevos: `POST /api/registro/preflight-lote` y `POST
+  /api/partidas/propuesta-lote` (transfer, solo para la api), `GET
+  /api/v1/periodos/{a}/{m}/propuestas`, `propuestas_en_curso` en el cuadrante
+  y en las seis escrituras, columnas `asignacion.propuesta_*` y campos
+  `propuesta_*` de la línea del registro.
+- **Despliegue (tras cerrar):** transfer → api → front; la api añade al
+  arrancar las columnas nulables `propuesta_*`; variable nueva
+  `SIGRID_LECTURAS_PARALELAS` (defecto 4). El transfer conserva el modo real.
 
 ## Producción, hoy
 
