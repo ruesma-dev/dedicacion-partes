@@ -23,12 +23,8 @@ su firma (con `nombre` caían 35 tests anteriores con dobles de dos
 argumentos). RED: `ImportError: cannot import name 'apuntar_lectura'`, luego
 `30 failed, 5 passed`; verde 35.
 
-**T2 (humano).** 0694 8 lecturas · 32.24 s; 0696 9 · 21.92 s; la mayor,
-`horas_de_recursos` (7.99 s). **«Antes» por HTTP (líder, 2026-10-16**, sin
-extensión de Chrome; copia principal en `dev`, local, modo pruebas, vía el
-front 8080, `empresa=1`, 09/2026; GONZALEZ PANIAGUA = 0672 5 % + 0694 95 %,
-sin elegidas): a) 62.35 s y 27.50 s (2.ª); b) mes, 6 obras, 79.46 s, 200;
-c) solo 0694, 19.33 s; d) selector 0694, 7.55 s.
+**T2.** Script: 0694 8 lecturas · 32.24 s; 0696 9 · 21.92 s (mayor `horas_de_recursos`, 7.99 s). «Antes» por HTTP (líder,
+2026-10-16; `dev` local, modo pruebas, front 8080, 09/2026, GONZALEZ PANIAGUA 0672 + 0694): a) 62.35 s y 27.50 s; b) mes, 6 obras, 79.46 s; c) 19.33 s; d) 7.55 s.
 
 **T2b · Orden a → c → b (R38).** `proponer_partida`: `previa_en_obra` →
 `resolver_normal` → `ultima_de_recurso`. Lista cerrada:
