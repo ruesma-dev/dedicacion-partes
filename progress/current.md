@@ -3,7 +3,7 @@
 
 **F-055 en curso en esta rama** (`feature/F-055-preflight-rapido`,
 copia `PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas
-y propuesta del mes en segundo plano. Implementer: T1-T17 hechas
+y propuesta del mes en segundo plano. **Review 3 APROBADA; esperan las MANUAL del humano.** Implementer: T1-T17b hechas
 (`init.sh` en verde, mutación 284/284 y JS 36/36; informe en
 `progress/impl_F-055.md`). Falta: review, copiar a azure-apps (T15, líder) y
 las MANUAL T2 (navegador), T18-T20. F-050 está cerrada en `dev` y `main`; se
@@ -22,7 +22,11 @@ desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arné
   vivo en `sigrid_write_client.py:623` (`or 0` → `or 1`, `pos` NULL), tabla
   de la mutación manual sin texto exacto y docstring falso de `cerrar()`;
   corregidos en `c997385`-`86f8438` (marca de parada entre trozos, test del
-  `pos` nulo, `progress/mutacion_T17b_F-055.md` 9/9); **en review 3**); O4 al copiar a azure-apps (T15); O2 lo juzga el humano en T18 (si
+  `pos` nulo, `progress/mutacion_T17b_F-055.md` 9/9); **review 3 APROBADA**, `3a87726`).
+  **Espera al humano:** T2 (navegador) y T18; luego T19 con su autorización.
+  Automejora de la review 3, al trabajo del arnés junto a O1: una mutación
+  manual de Python también exige tabla con texto exacto, y el reviewer corre
+  los mutantes del generador sobre esas líneas; O4 al copiar a azure-apps (T15); O2 lo juzga el humano en T18 (si
   molesta, la api publica qué línea está pendiente); O1 y la automejora de
   `CHECKPOINTS.md` C4 (trazar un R «como hoy» o documental), trabajo aparte
   del arnés tras F-055, portado a `arnes-base`. **Desviaciones de diseño
