@@ -18,7 +18,10 @@ desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arné
   795 líneas cambiadas, mutación 284/284 muertos y JS 36/36. **Review 1
   APROBADA** (`progress/review_F-055.md`, `101f5d7`) con O1-O9, recogidas con
   el «si» del humano del 2026-10-16: **T17b** (O3, O5, O7-O9; hecha en `906e35b`,
-  init.sh en verde sin cachés; **en review 2**, solo T17b); O4 al copiar a azure-apps (T15); O2 lo juzga el humano en T18 (si
+  init.sh en verde sin cachés; **review 2 RECHAZADA** (`6867360`): mutante
+  vivo en `sigrid_write_client.py:623` (`or 0` → `or 1`, `pos` NULL), tabla
+  de la mutación manual sin texto exacto y docstring falso de `cerrar()`;
+  implementer corrigiendo dentro de T17b); O4 al copiar a azure-apps (T15); O2 lo juzga el humano en T18 (si
   molesta, la api publica qué línea está pendiente); O1 y la automejora de
   `CHECKPOINTS.md` C4 (trazar un R «como hoy» o documental), trabajo aparte
   del arnés tras F-055, portado a `arnes-base`. **Desviaciones de diseño
