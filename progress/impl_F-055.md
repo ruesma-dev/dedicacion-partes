@@ -199,12 +199,12 @@ f024 rutas). Ninguna otra aserción anterior cambia salvo la lista cerrada.
 ## Evidencias
 
 `bash harness/init.sh` tras T17b, con `.arnes_cache/suite_*.ok` borrados:
-**ENTORNO LISTO**, exit 0, **ningún `[KO]`** (ver la última línea abajo).
+**ENTORNO LISTO**, exit 0, **ningún `[KO]`**; `PUERTA TAMAÑO` impl 218/220.
 
 | Evidencia | Valor |
 |---|---|
-| Tests transfer / api | **931 passed** (28.15 s) / **873 passed** (95.57 s) |
-| Tests front / raíz | **291 passed** (52.05 s) / **418 passed, 1 skipped** (82.39 s) |
+| Tests transfer / api | **931 passed** (34.49 s) / **873 passed** (66.82 s) |
+| Tests front / raíz | **291 passed** (58.92 s) / **418 passed, 1 skipped** (63.48 s) |
 | Tests de F-055 | transfer `test_f055_*` + el plugin de equivalencia (que repite ≥ 100 preflights y ≥ 11 propuestas en lote); api 4 ficheros; front 22 |
 | Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 804 líneas cambiadas cubiertas (804/804, umbral 80%, nivel critico)` |
 | Mutantes (arnés) | **284/284 muertos, 0 supervivientes** (pasada final, `progress/mutacion_F-055.md`; la primera, 39 vivos con test cada uno); T17b, manual: 9/9 |
