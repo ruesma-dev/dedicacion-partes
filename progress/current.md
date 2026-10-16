@@ -3,8 +3,10 @@
 
 **F-055 en curso en esta rama** (`feature/F-055-preflight-rapido`,
 copia `PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas
-y propuesta del mes en segundo plano. T1-T14 hechas por el implementer
-(T15: azure-apps, pendiente del líder; T16-T17 en marcha). F-050 está cerrada en `dev` y `main`; se
+y propuesta del mes en segundo plano. Implementer: T1-T17 hechas
+(`init.sh` en verde, mutación 284/284 y JS 36/36; informe en
+`progress/impl_F-055.md`). Falta: review, copiar a azure-apps (T15, líder) y
+las MANUAL T2 (navegador), T18-T20. F-050 está cerrada en `dev` y `main`; se
 desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arnés es la
 **1.7.3**.
 

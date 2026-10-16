@@ -186,4 +186,25 @@ f024 rutas). Ninguna otra aserción anterior cambia salvo la lista cerrada.
 
 ## Evidencias
 
-PENDIENTE_EVIDENCIAS
+Medidas con `bash harness/init.sh` sobre `807dd32`, con
+`.arnes_cache/suite_*.ok` borrados antes (las cuatro suites enteras):
+**ENTORNO LISTO**, exit 0, **ningún `[KO]`**.
+
+| Evidencia | Valor |
+|---|---|
+| Tests transfer | **930 passed** (48.88 s) |
+| Tests api | **871 passed** (101.63 s) |
+| Tests front | **291 passed** (62.22 s) |
+| Tests raíz | **418 passed, 1 skipped** (105.61 s) |
+| Tests de F-055 | transfer `test_f055_*` + el plugin de equivalencia (que repite ≥ 100 preflights y ≥ 11 propuestas en lote); api 4 ficheros; front 22 |
+| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 795 líneas cambiadas cubiertas (795/795, umbral 80%, nivel critico)` |
+| Mutantes (arnés) | **284 generados, 284 muertos, 0 supervivientes** (pasada final, `progress/mutacion_F-055.md`); primera pasada 39 vivos con test cada uno (`…_pasada1.md`) |
+| Mutantes (JS, manual) | **36/36 muertos** en la segunda pasada (`progress/mutacion_manual_F-055.md`) |
+| Tamaño | `PUERTA TAMAÑO`: impl dentro del tope |
+| `ruff` | aviso no bloqueante: 287 (237 antes de F-055); lo nuevo sigue el estilo de cada fichero (`Optional`, `noqa: BLE001`, imports) |
+
+**Verificaciones MANUAL pendientes (no mías):** T2 (cifras de navegador),
+T18 (`medir --lote`, C3-C5, C8 en local), T19 (registro en modo pruebas) y
+T20; T15: copiar lo nuevo de `docs/INTEGRACION.md` a `azure-apps`
+(líder). Fuera de alcance, como dice la spec: `ejecutar` en lote, F-048,
+F-051, F-044.
