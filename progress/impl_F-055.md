@@ -203,14 +203,14 @@ f024 rutas). Ninguna otra aserción anterior cambia salvo la lista cerrada.
 ## Evidencias
 
 `bash harness/init.sh` tras T17b, con `.arnes_cache/suite_*.ok` borrados:
-**ENTORNO LISTO**, exit 0, **ningún `[KO]`**; `PUERTA TAMAÑO` impl 218/220.
+**ENTORNO LISTO**, exit 0, **ningún `[KO]`**; `PUERTA TAMAÑO` impl 219/220.
 
 | Evidencia | Valor |
 |---|---|
-| Tests transfer / api | **931 passed** (34.49 s) / **873 passed** (66.82 s) |
-| Tests front / raíz | **291 passed** (58.92 s) / **418 passed, 1 skipped** (63.48 s) |
+| Tests transfer / api | **932 passed** (124.60 s) / **874 passed** (105.68 s) |
+| Tests front / raíz | **291 passed** (148.66 s) / **418 passed, 1 skipped** (91.31 s) |
 | Tests de F-055 | transfer `test_f055_*` + el plugin de equivalencia (que repite ≥ 100 preflights y ≥ 11 propuestas en lote); api 4 ficheros; front 22 |
-| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 804 líneas cambiadas cubiertas (804/804, umbral 80%, nivel critico)` |
+| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 100.0% de 809 líneas cambiadas cubiertas (809/809, umbral 80%, nivel critico)` |
 | Mutantes (arnés) | **284/284 muertos, 0 supervivientes** (pasada final, `progress/mutacion_F-055.md`; la primera, 39 vivos con test cada uno); T17b: 9/9 (`mutacion_T17b_F-055.md`) |
 | Mutantes (JS, manual) | **36/36 muertos** en la segunda pasada (`progress/mutacion_manual_F-055.md`) |
 | `ruff` | aviso no bloqueante: 258 (237 antes de F-055) |
