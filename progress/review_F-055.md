@@ -1,7 +1,29 @@
 <!-- progress/review_F-055.md -->
-Revisión incremental desde b3e5373 (pasada 2) · `b3e5373..dd38610` (solo T17b: O3, O5, O7-O9 de la pasada 1)
+Revisión incremental desde 4c8d3f0 (pasada 3) · `4c8d3f0..9f5530f` (correcciones de la pasada 2 sobre T17b)
 
 # F-055 · Review
+
+## Pasada 3 — **Veredicto: APROBADO** (APPROVED)
+
+**init.sh** (cachés `suite_*.ok` borradas, ejecutado solo): `ENTORNO LISTO`, exit 0, ningún `[KO]`; raíz 418 + 1 s, api 874,
+front 291, transfer 932; `PUERTA COBERTURA` 100 % de 809 líneas; tamaño OK.
+**Lista cerrada:** solo cambian `test_f055_propuestas_mes.py` y `test_f055_cliente_agrupado.py` (un test nuevo cada uno, de
+F-055); ningún test anterior tocado. [x] `6867360..4c8d3f0` es solo `current.md` del líder.
+1. **Pos nulo** [x]: `test_f055_r20_lineas_de_partes_pos_nulo_primero_como_sql_server` (nulo del 2.º trozo antes que `pos = 1`
+   del 1.º). Mata `or 0` → `or 1` (1 fallo, reproducido); no es equivalente (RM3).
+2. **Campaña reproducible** [x]: `progress/mutacion_T17b_F-055.md`, 9 filas con texto exacto y fallos. Reproducidas en una
+   copia de `9f5530f` en el scratchpad **las 7** que puedo regenerar: los 5 del generador del arnés sobre
+   `b3e5373..9f5530f` (fallos 1, 1, 2, 1, 3, como la tabla) y las manuales `self._parada.set()` → `pass` y `break` → `pass`
+   (1 fallo cada una). Las del `lifespan` las cubre `test_f055_r30_la_api_cierra_la_cola_al_pararse`. 0 vivos. RM6: nada
+   defensivo quitado.
+3. **`cerrar()`** [x]: `threading.Event` que `_calcular` mira **entre trozos** (`break` dentro del `try`: las claves salen
+   de la cola en el `finally`, como R33); docstring e informe dicen ya lo que pasa (el trozo en marcha acaba y Python lo
+   espera al salir; el siguiente no empieza). Test `test_f055_r30_cerrar_deja_acabar_el_trozo_y_no_empieza_otro`
+   (1 llamada, guarda la 1.ª obra y no la 2.ª, `en_curso` falso).
+Rastro: `impl_F-055.md` §T17b y «Evidencias», `current.md` («en review 3») al día. Pendiente de cierre, como antes: T2
+(navegador), T18-T20 MANUAL y T15 (azure-apps, líder); O2 y O4 según lo decidido por el humano.
+
+---
 
 ## Pasada 2 · T17b — **Veredicto: RECHAZADO** (CHANGES_REQUESTED)
 
