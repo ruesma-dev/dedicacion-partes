@@ -15,7 +15,16 @@ desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arné
 - **Estado (2026-10-16):** T1, T2b, T2c y T3-T17 hechas por el implementer
   (`progress/impl_F-055.md`): `init.sh` en verde sin cachés sobre `807dd32`
   (transfer 930, api 871, front 291, raíz 418 + 1 skipped), cobertura 100 % de
-  795 líneas cambiadas, mutación 284/284 muertos y JS 36/36. **En review.**
+  795 líneas cambiadas, mutación 284/284 muertos y JS 36/36. **Review 1
+  APROBADA** (`progress/review_F-055.md`, `101f5d7`) con O1-O9, recogidas con
+  el «si» del humano del 2026-10-16: **T17b** (O3, O5, O7-O9; implementer en
+  marcha); O4 al copiar a azure-apps (T15); O2 lo juzga el humano en T18 (si
+  molesta, la api publica qué línea está pendiente); O1 y la automejora de
+  `CHECKPOINTS.md` C4 (trazar un R «como hoy» o documental), trabajo aparte
+  del arnés tras F-055, portado a `arnes-base`. **Desviaciones de diseño
+  aprobadas por el humano el 2026-10-16 («si»):** T6, validación e historial
+  en la ronda B (no A); T12, `empresa` = `EMPRESA_IMPUTACION` (no
+  `obra_empresa`), como el selector y el registro.
 - **Spec:** aprobada el 2026-10-13 («acepto tu propuesta de F-55»); ampliada
   con D9 (propuesta también tras escribir, solo las pendientes de ese
   trabajador) y D10 (orden parte anterior → casamiento → último parte),
@@ -62,6 +71,8 @@ desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arné
   /api/v1/periodos/{a}/{m}/propuestas`, `propuestas_en_curso` en el cuadrante
   y en las seis escrituras, columnas `asignacion.propuesta_*` y campos
   `propuesta_*` de la línea del registro.
+  **O4:** escribir que `SIGRID_LECTURAS_PARALELAS` acota **por lote**, no por
+  proceso (un preflight y las propuestas a la vez pueden llegar a 8).
 - **Despliegue (tras cerrar):** transfer → api → front; la api añade al
   arrancar las columnas nulables `propuesta_*`; variable nueva
   `SIGRID_LECTURAS_PARALELAS` (defecto 4). El transfer conserva el modo real.
