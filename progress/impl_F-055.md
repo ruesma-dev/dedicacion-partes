@@ -1,208 +1,189 @@
 # F-055 · Informe del implementer
 
 Rama `feature/F-055-preflight-rapido` (copia `porcentajes-f041`). Rigor
-`critico`. Spec aprobada por el humano el 2026-10-13 (D9-D10 el 2026-10-14).
-Hechas: **T1, T2b, T2c, T3-T9** y siguientes (por tareas, abajo). T2
-(MANUAL) sigue sin marcar: el humano tomará aparte las cifras de navegador.
+`critico`. Spec aprobada el 2026-10-13 (D9-D10 el 2026-10-14). Hechas por el
+implementer: **T1, T2b, T2c, T3-T17**. T2 (cifras de navegador), T18-T20,
+MANUAL o del líder: no son mías. T15 = solo la anotación en `current.md`.
 
-**Bloqueo de T9 resuelto (2026-10-15, «si a todo»):** lista cerrada para
-las filas falsas de `test_f050_partida_linea.py`, permiso general para añadir
-a un doble campos nulos o métodos derivados (ver «Dobles ampliados») y C2
-contado como C1.
+Decisiones del humano durante la implementación (2026-10-15, en `tasks.md`):
+bloqueo de T4 → `test_pipeline_offline.py` a la lista cerrada (solo su doble);
+bloqueo de T9 («si a todo») → filas falsas de `test_f050_partida_linea.py`,
+permiso general para ampliar dobles sin tocar aserciones y C2 contado como C1.
 
-**Bloqueo de T4 resuelto (2026-10-15):** el humano añadió
-`test_pipeline_offline.py` a la lista cerrada («añade test_pipeline_offline.py
-a la lista cerrada»): solo su `ClienteFalso` gana `validar_partidas`.
+## Por tareas (qué cambió, RED y verde)
 
-## T1 · Medición (R1, R2, C2 «antes») — resumen
-
-Cliente: `medir_lecturas()` (contextvar anidable), `apuntar_lectura` (log
+**T1 · Medición (R1, R2).** `medir_lecturas()`, `apuntar_lectura` (log
 `[sigrid-read] <método> filas=<n|error> segundos=<s>`, sin SQL ni
-parámetros) y `_lectura(nombre, sql, params)` en todas las lecturas;
-`preflight` loguea `[registro] lecturas preflight obra=… lecturas=…
-segundos_leyendo=… segundos_totales=…`; fase `medir` del script (R2).
-`tests/test_f055_medicion.py` (35). **Desviación de design §5.1:** `_read`
-conserva su firma y la medición va en `_lectura` (con `nombre` en `_read` se
-rompían 35 tests anteriores con dobles de dos argumentos). RED:
-`ImportError: cannot import name 'apuntar_lectura'`; con el esqueleto `30
-failed, 5 passed`; verde 35.
+parámetros), `_lectura(nombre, sql, params)`; resumen `[registro] lecturas
+preflight …`; fase `medir`. **Desviación de design §5.1:** `_read` conserva
+su firma (con `nombre` caían 35 tests anteriores con dobles de dos
+argumentos). RED: `ImportError: cannot import name 'apuntar_lectura'`, luego
+`30 failed, 5 passed`; verde 35.
 
-## T2 · Cifras «antes» (script del humano, 2026-10-15)
+**T2 · Cifras «antes» (script del humano).** 0694 **8 lecturas · 32.24 s**;
+0696 **9 · 21.92 s**; `TOTAL: 2 obras · 17 lecturas · 54.15 s leyendo`; la
+mayor, `horas_de_recursos` (7.99 s). Navegador: pendiente del humano.
 
-`medir … --obra 0694 --obra 0696 --recurso 1705036 --partida 0694:384155`
-(modo pruebas): 0694, **8 lecturas · 32.24 s**; 0696, **9 · 21.92 s**;
-`TOTAL: 2 obras · 17 lecturas · 54.15 s leyendo · 55.28 s en total`; la que
-más pesa, `horas_de_recursos` (7.99 s). Es latencia en serie: el diseño
-agrupa y paraleliza; el líder no paró. **Navegador:** pendiente del humano.
-
-## T2b · Orden a → c → b (R38, D10)
-
-`proponer_partida`: `previa_en_obra` (a) → `resolver_normal` (c) →
-`ultima_de_recurso` (b), docstring con el orden. Lista cerrada:
-`test_f050_r1_sin_paso1_va_al_paso2` espera `(2108, "auto_nombre")`.
-`tests/test_f055_orden_propuesta.py` (8): a > c, c > b, sin c sale b con su
-`origen`, sin nada None, (a) que empata pasa a (c), selector = preflight.
-RED (`pytest tests/test_f055_orden_propuesta.py -q --tb=line`):
+**T2b · Orden a → c → b (R38).** `proponer_partida`: `previa_en_obra` →
+`resolver_normal` → `ultima_de_recurso`. Lista cerrada:
+`test_f050_r1_sin_paso1_va_al_paso2` → `(2108, "auto_nombre")`.
+`test_f055_orden_propuesta.py` (8). RED:
 ```
-E   AssertionError: assert Propuesta(par... · obra 0696') == Propuesta(par..., origen=None)
 E   AssertionError: assert (2110, 'ultimo_parte') == (2108, 'auto_nombre')
 E   AssertionError: assert (80003, 'ulti... · obra 0678') == (80001, 'auto_nombre', None)
 3 failed, 5 passed in 3.04s
 ```
-Verde 8; suite 793.
+**T2c.** `#regla-partida` con el orden nuevo y D10; `test_f002_fuente_unica`
+72 passed.
 
-## T2c · `#regla-partida` con el orden nuevo
+**T3 · `validar_partidas` (R3, R4).** `PartidaValida(…).vale_en(obra)`, SQL
+de design §6, trozos de 500, `truncated` → error; doble de `conftest.py`.
+R4 con Sigrid emulada: mismo veredicto que `construir_catalogo` en 8 casos.
+RED: `ImportError: cannot import name 'PartidaValida'`; verde 18.
 
-`docs/ARCHITECTURE.md`: (1) parte anterior → (2) casamiento → (3) último
-parte, viñeta de D10 (el último parte solo actúa si no casa nada) y la línea
-de decisión. `test_f002_fuente_unica.py`: 72 passed; `grep -n casamiento`:
-líneas 665, 672, 674, 676.
-
-## T3 · `validar_partidas` y `PartidaValida` (R3, R4)
-
-`PartidaValida(ide, obride, cod, res, es_hoja, activa)` inmutable con
-`vale_en(obra)`; `validar_partidas` (SQL de design §6, trozos de
-`LOTE_PARAMETROS = 500`, `truncated` → error); el doble de `conftest.py`
-(lista cerrada) lo deriva de sus presupuestos sin contar lectura.
-`tests/test_f055_validar_partidas.py` (18): SQL, trozos, mapeo y **R4** con
-una Sigrid emulada (hoja activa, baja, capítulo, capítulo de baja, hija de
-otra obra, otra obra, inexistente: mismo veredicto que `construir_catalogo`).
-RED: `ImportError: cannot import name 'PartidaValida' from
-'domain.models.registro_models'`; verde 18; suite 812.
-
-## T4 · Pipeline sin búsquedas de partidas (R3-R12)
-
-- Modelos: `LineaEntrada.propuesta_paride/_cod/_res/_metodo/_origen`,
-  `LineaIn` igual (contrato HTTP), `AccionLinea.partida_res`.
-- `registro_pipeline.py`: `_validas` lee UNA vez `validar_partidas` con la
-  elegida de cada línea de obra normal o, sin ella, su propuesta guardada
-  (postventa y VAR fuera); elegida que no vale → omitir con
-  `MOTIVO_PARTIDA_NO_HOJA` (R5); propuesta guardada que vale → sus
-  `partida_cod/_res/_metodo/_origen` tal como llegan (R8, «se escribe lo que
-  enseña el cuadrante», design §10); si no, pendiente (R6/R7): presupuesto e
-  historial solo de las pendientes. `partida_res` en manual (de la
-  validación), guardada, propuesta, postventa (casada o manual) y VAR (R9).
-  Sale la lectura forzada de F-049 d: `partidas_obra` `[]` sin pendientes
-  (R10).
-- Tests: `tests/test_f055_pipeline_partidas.py` (23 tests, R3-R12 y el
-  contrato HTTP); lista cerrada: los dos `test_f049_d_*` esperan
-  `partidas_obra == []` y ninguna lectura; propios de F-055:
-  `test_f055_c2_antes_*` y el resumen del preflight cuentan `validar_partidas`
-  en lugar de `capitulos_de_obra` (previsto en T1).
-
-RED (`pytest tests/test_f055_pipeline_partidas.py -q --tb=line`):
+**T4 · Preflight sin búsquedas (R3-R12).** `LineaEntrada`/`LineaIn`
+`propuesta_*`, `AccionLinea.partida_res`; una lectura `validar_partidas` por
+petición; elegida que no vale → `MOTIVO_PARTIDA_NO_HOJA`; guardada que vale
+→ sus `partida_*` tal cual (design §10); si no, pendiente (presupuesto e
+historial solo de pendientes); `partidas_obra` `[]` sin pendientes (sale
+F-049 d). Lista cerrada: los dos `test_f049_d_*`. RED:
 ```
 E   assert ([555001] == []        (la elegida aún leía el presupuesto)
 E   TypeError: LineaEntrada.__init__() got an unexpected keyword argument 'propuesta_paride'
 E   AttributeError: 'AccionLinea' object has no attribute 'partida_res'.
-E   KeyError: 'partida_res'      (respuesta HTTP del preflight)
 21 failed, 2 passed in 3.90s
 ```
-(los 2 que pasaban: «sin partidas no valida» y la VAR, que no cambian).
-Verde: `23 passed`; con el doble de `test_pipeline_offline.py` (lista
-cerrada, decisión del humano) la suite del transfer da **835 passed**.
+verde 23.
 
-## T5 · Lecturas agrupadas del cliente (R20)
+**T5 · Lecturas agrupadas (R20).** `obras_por_ide`, `partes_de_periodos`,
+`lineas_de_partes` (SQL de la suelta con `IN`, clave en la salida, mismo
+orden, trozos de 500) y `horas_de_recursos` en trozos. RED: `17 failed`
+(`no attribute 'obras_por_ide'`…, `assert [1101] == [500, 500, 101]`); verde 17.
 
-`obras_por_ide`, `partes_de_periodos` (clave `(obride, ano, mes)`, cada
-clave pedida sale aunque esté vacía) y `lineas_de_partes` (por `hmoide`):
-el SQL de la suelta con `IN`, la clave en la salida, el mismo orden y
-`_trozos` de 500 (`lineas_de_partes` trocea partes y recursos);
-`horas_de_recursos` en trozos de 500. `conftest.py` (lista cerrada): las tres
-del doble se derivan de sus sueltas. `tests/test_f055_cliente_agrupado.py`
-(17): SQL = suelta con `IN`, misma salida por clave, trozos, truncado,
-medición y doble. RED: `17 failed` (`AttributeError: … no attribute
-'obras_por_ide'`/`'partes_de_periodos'`/`'lineas_de_partes'`, `assert [1101]
-== [500, 500, 101]`); verde 17; suite 852.
+**T6 · `LecturasDelLote` (R20, R22-R24).** Precarga en rondas A (obras por
+`ide` y por código —origen, pruebas, postventa, VAR—, horas, `synckey`), B
+(partes, `validar_partidas`, historial, presupuestos, `partidas_de_lineas`
+solo de recursos sin subcuenta) y C (`lineas_de_partes`). **Desviación de
+design §2:** validación e historial van en B, no en A, para que una obra con
+elegidas quepa en una tanda de 4 por ronda (C2); no dependen de A. Memoria
+solo si la consulta está dentro; si no, cliente real + `fallos_de_memoria` +
+log; un solo vuelo por clave; `escribir` lanza; `copy_context` por hilo;
+`SIGRID_LECTURAS_PARALELAS` (4, 1-8). **RED honesta:** el borrador se
+escribió antes que sus tests; la RED se tomó apartándolo
+(`ModuleNotFoundError: … 'application.services.lecturas_lote'`). Verde 35.
 
-## T6 · `LecturasDelLote` y `SIGRID_LECTURAS_PARALELAS` (R20, R22-R24)
-
-`application/services/lecturas_lote.py`: precarga en rondas A (obras por
-`ide` y por código —origen, pruebas, postventa, VAR—, horas, `synckey`,
-`validar_partidas`, historial de las peticiones con alguna pendiente segura),
-B (partes de los destinos × periodos, presupuestos de postventa/VAR/origen
-con pendientes, `partidas_de_lineas` solo de recursos con alguna hora sin
-subcuenta) y C (`lineas_de_partes`). Responde de memoria solo si la consulta
-está dentro (subconjunto, misma clave o ventana); si no, cliente real +
-`fallos_de_memoria` + log. Un solo vuelo por clave (`Lock` + `Future`) para
-obra por código, presupuesto, cuentas y siguiente PT; `escribir` lanza; la
-agrupada que falla tumba la precarga, la compartida vuelve a quien la pide;
-`contextvars.copy_context` en cada hilo. Ajuste
-`SIGRID_LECTURAS_PARALELAS` (4, `ge=1, le=8`) y `.env.example`.
-`tests/test_f055_lecturas_lote.py` (34). **RED honesta:** el borrador del
-módulo se escribió antes que sus tests; la fase RED se tomó apartándolo
-(`ModuleNotFoundError: No module named 'application.services.lecturas_lote'`)
-y luego fallaron 3 tests por el propio doble (contaba lecturas anidadas: el
-doble del test se arregló). Verde 34 (tres veces seguidas); suite 886.
-
-## T7 · Preflight en lote (R19, R21, R24, R25; C1, C2)
-
-`application/pipelines/registro_lote.py` (`RegistroLote.preflight`: precarga
-y luego el mismo `RegistroPipeline.preflight` por obra en el pool;
-excepción de una obra en su posición), `_respuesta_preflight` extraída en
-`app.py` (la suelta da lo mismo: sus tests siguen verdes), `LoteIn` y
-`def preflight_lote` (502 si falla la precarga). Tests
-`tests/test_f055_lote.py` (17) y el plugin `tests/f055_equivalencia_lote.py`,
-que en un pytest aparte repite **cada preflight** de `test_f037_pipeline`,
+**T7 · `POST /api/registro/preflight-lote` (R19, R21, R24, R25; C1, C2).**
+`RegistroLote.preflight`, `_respuesta_preflight` extraída, `def
+preflight_lote`. R21 con el plugin `tests/f055_equivalencia_lote.py`: un
+pytest aparte repite **cada preflight** de `test_f037_pipeline`,
 `test_f050_pipeline`, `test_f002_pipeline` y `test_f039_preflight_var` en un
-lote sobre una copia del doble y exige la misma respuesta HTTP (o la misma
-excepción): ≥ 100 iguales y ≥ 1 error igual.
-**Decisiones para el reviewer:** (1) el plugin no compara, con nombre, un
-escenario cuyo doble da un código distinto en cada `siguiente_cod_pt` (el
-lote lo lee una vez por año y empresa, design §2; en Sigrid es `MAX+1`): lo
-cubre `test_f055_r21_siguiente_cod_pt_una_vez_y_lo_mismo`; (2) **C2**: una
-obra con elegidas hace en lote 8 lecturas en pruebas (7 en real) en **≤ 4
-rondas**; contadas como C1 (sin `cuentas_de_centro`, una por centro, ni la
-obra de pruebas, una por lote) son **6**: así lo fija el test. Si C2 quería
-6 lecturas en total, no se puede con el diseño (cada tipo es una lectura).
-RED: `ModuleNotFoundError: … 'application.pipelines.registro_lote'`
-(borrador apartado) y `ImportError: cannot import name
-'_respuesta_preflight'`; verde 17; suite 902.
+lote sobre una copia del doble (≥ 100 iguales, errores iguales). No compara,
+con nombre, `test_f037_r17_…` (su doble da otro código en cada
+`siguiente_cod_pt`; el lote lo lee una vez: lo cubre
+`test_f055_r21_siguiente_cod_pt_una_vez_y_lo_mismo`). C2 (decisión del
+humano): 8 lecturas en pruebas, 7 en real; contadas como C1, **6**; rondas
+medidas **por estructura** (tandas `ceil(tareas/límite)` de cada `_ronda` +
+la de `cuentas_de_centro`), **4**. RED: `ModuleNotFoundError: …
+'application.pipelines.registro_lote'` (borrador apartado) e `ImportError:
+cannot import name '_respuesta_preflight'`; verde 17.
 
-## T8 · Propuestas en lote (R34, R21, R24, R25; C7)
+**T8 · `POST /api/partidas/propuesta-lote` (R34; C7).**
+`precargar_propuestas` (A obras + historial; B presupuestos), 
+`RegistroLote.proponer`, `def propuesta_lote` (periodos distintos 422;
+empresa no válida, otra empresa o no encontrada, solo su entrada; fallo
+compartido 502). El plugin compara cada `proponer` de
+`test_f050_endpoint_propuesta` y `test_f055_orden_propuesta`; no compara los
+`test_f050_script_propuesta_*` (el script envuelve el doble con cierres
+sobre el original). C7: 1 + 1 + 10 lecturas, tandas `[(2, 1), (10, 3)]`.
+RED: `15 failed` (`'RegistroLote' object has no attribute 'proponer'`, 404).
 
-`LecturasDelLote.precargar_propuestas` (A: obras e historial de todos los
-recursos por ventana; B: presupuesto de cada obra, en paralelo),
-`RegistroLote.proponer` (`{ok: true, propuestas}` o el `{ok: false, error}`
-de la suelta), `PropuestaLoteIn` y `def propuesta_lote` (periodos distintos
-422; empresa no válida u obra de otra empresa o no encontrada, solo su
-entrada; fallo compartido 502). El plugin compara también cada `proponer`
-de `test_f050_endpoint_propuesta` y `test_f055_orden_propuesta` (11 iguales,
-2 errores iguales); no compara, con nombre, los `test_f050_script_propuesta_*`
-(el script envuelve el doble con cierres sobre el original). C7: 10 obras →
-1 lectura de obras, 1 de historial, 10 de presupuesto, ≤ 4 rondas, ≤ 4 a la
-vez. `tests/test_f055_propuesta_lote.py` (15). RED: `15 failed`
-(`'RegistroLote' object has no attribute 'proponer'`, rutas 404); verde 15;
-suite del transfer **917 passed** (72.5 s).
+**T9 · Propuesta guardada en la api (R13, R17).** ORM y `Linea`
+`propuesta_*`; `guardar_propuesta(…, solo_si_vacia)` (`UPDATE` del ORM con
+`partida_ide IS NULL` y, si se pide, `propuesta_ide IS NULL`);
+`_conservar_partidas` la copia; copiar el mes y F8 la quitan; eventos sin
+ella. Lista cerrada: `test_f003_r8_…`. RED: `20 failed` (`unexpected keyword
+argument 'propuesta_ide'`, `KeyError: 'propuesta_cod'`).
 
-## T9 · La propuesta guardada en la api (R13, R17)
+**T10 · Registro (R14, R16, R26).** Payload con `propuesta_*` si no hay
+elegida ni override; preflight en **una** llamada a
+`TransferClient.preflight_lote` (si el lote falla o viene incompleto, cada
+obra lleva el error); `_guardar_propuestas` (`es_metodo_de_propuesta`, solo
+sin elegida, sin evento ni `sigrid_*`, sesión solo si hay algo). Lista
+cerrada: `_fila` y `_Transfer.preflight_lote` de f022/f024/f026/f039. RED:
+`ImportError: cannot import name 'es_metodo_de_propuesta'`; verde 17.
 
-ORM `AsignacionORM.propuesta_ide` (BigInteger) y `_cod/_res/_metodo/_origen`
-(Text), nulables; `Linea.propuesta_*` al final; `_a_linea_con_partida` y
-`reemplazar` con ellas; `guardar_propuesta(periodo, trabajador, clave,
-propuesta, *, solo_si_vacia=False) -> bool` (puerto y repositorio: `UPDATE`
-del ORM con `partida_ide IS NULL` y, si se pide, `propuesta_ide IS NULL`);
-`_conservar_partidas` copia la propuesta; copiar el mes y F8 la quitan
-(`_sin_propuesta`); `_snapshot` y `_validar_lineas` no la llevan. Lista
-cerrada: `test_f003_r8_…` (+5 columnas). `tests/test_f055_propuesta_guardada.py`
-(20, R13 y R17). RED: `20 failed` (`Linea.__init__() got an unexpected
-keyword argument 'propuesta_ide'`, `KeyError: 'propuesta_cod'`, `no attribute
-'guardar_propuesta'`); verde 20 + `test_f003_esquema` (83); suite api 800.
+**T11 · Selector y `LineaOut` (R15, R18, R27).** El selector guarda (y
+reescribe) la propuesta de una línea sin elegida; `LineaOut.propuesta_cod/
+res/metodo`. Lista cerrada: `_Uow` de `test_f050_rutas_partida`,
+`CAMPOS_LINEA`. RED: `3 failed` (`(1, 'auto_nombre') == (80002, …)`,
+`KeyError: 'propuesta_cod'`); verde 27.
+
+**T12 · `PropuestasDelMes` (R29-R33, R35).** Cola por línea `(periodo,
+trabajador, obra)`, `en_curso`, `lanzar` (nunca lanza), `_calcular` en
+trozos de 10, `olvidar`, `tras_sync`, `estado`; `propuesta_lote` del
+cliente; `Contenedor.propuestas_mes` con `ThreadPoolExecutor(max_workers=1)`;
+cuadrante, `/sync` y `GET …/propuestas`. **Desviación de design §5.5:** la
+`empresa` de cada petición es la de las obras (`EMPRESA_IMPUTACION`), como en
+el selector y el registro, no `obra_empresa` (una obra sin empresa no
+tendría nunca propuesta). Lista cerrada: fixture `api` (f024), `_cliente`
+(f050), `CAMPOS_CUADRANTE`. RED: `ModuleNotFoundError: …
+'application.propuestas_mes'`, luego `8 failed`; verde 24.
+
+**T12b · Tras escribir (D9; R37).** `_encolar` (nunca rompe la respuesta)
+en las seis escrituras; `propuestas_en_curso` en `FilaOut`,
+`CopiaPeriodoOut`, `CompletarOut` (y `CopiaTrabajadorOut`). Lista cerrada:
+`test_f029_r25_…`. RED: `19 failed` (`KeyError: 'propuestas_en_curso'`);
+verde 20.
+
+**T13 y T13b · Front (R27, R36).** `htmlPartida` (propuesta en cursiva con
+método, «buscando partida…», «automática»), `aplicarPropuestas`,
+`marcarPropuestas`, `reiniciarPropuestas`, `seguirPropuestas` (un solo
+temporizador, 5 s), `consultarPropuestas`, `repintarCeldasPartida` (solo
+celdas Partida, no la fila en edición); `aplicarFila`, Completar y Copiar mes
+lo arrancan. `construirCelda` conserva las ramas literales que fija
+`test_f050_r24_…` (no está en la lista). Un commit para las dos tareas
+(código entrelazado). RED: `20 failed` (`no existe const
+INTERVALO_PROPUESTAS`…); verde 22.
+
+**T14 · Documentación.** `#regla-partida` (propuesta guardada, cuándo se
+calcula, validación por `ide`), «Acceso a datos», «Timeouts encadenados»,
+`INTEGRACION.md` (lotes, `GET …/propuestas`, `propuestas_en_curso`,
+columnas, variable, orden de despliegue) y READMEs. `test_f002_fuente_unica`
+72 y `tests/test_f004_readme.py` 11 passed.
 
 ## Dobles ampliados (para el reviewer)
 
 Campos nulos o métodos derivados de sus datos, sin tocar aserciones:
 `conftest.py` (`validar_partidas`, `obras_por_ide`, `partes_de_periodos`,
 `lineas_de_partes`); `test_pipeline_offline.py` (`validar_partidas`);
-`test_f050_partida_linea.py` (`SIN_PROPUESTA` en sus filas de asignación).
+`test_f050_partida_linea.py` (`SIN_PROPUESTA`); `_fila`/`_Transfer` de
+f022/f024/f026/f039; `_AsignacionesR15` y `_PropuestasFalsas` (f050 rutas,
+f024 rutas). Ninguna otra aserción anterior cambia salvo la lista cerrada.
+
+## T16 · Mutación
+
+- **Arnés, primera pasada** (HEAD `68a5c6b`): 281 mutantes, 242 muertos,
+  **39 supervivientes** (`progress/mutacion_F-055_pasada1.md`). Ninguno
+  equivalente: todos eran huecos de test (valores por defecto de esquemas y
+  firmas, `exc_info`, la memoria que precarga de más o de menos sin cambiar
+  el resultado, el mapeo de nulos de `_linea_del_parte`, `"ok"` de
+  `_respuesta_preflight`, `Lectura` inmutable y la fase `medir`). `9d9ebb1`
+  añade un test para cada uno, comprobado re-aplicando los 39 uno a uno
+  contra los `test_f055_*` del servicio (todos mueren). Un intento anterior
+  se cortó a medias con la sesión (se restauró con `--restaurar`).
+- **Arnés, pasada final** (HEAD `9d9ebb1`): **284 generados, 284 muertos,
+  0 supervivientes**, 0 timeouts, 3666 s con 4 workers
+  (`progress/mutacion_F-055.md`).
+- **JS** (manual, `progress/mutacion_manual_F-055.md`): 36 mutantes de T13 y
+  T13b; primera pasada 4 vivos (huecos reales, tests en `68a5c6b`); segunda
+  pasada **36/36 muertos**.
+- Además: la fase `medir --lote` del script mide ya el preflight en lote (lo
+  pide T18; en T1 solo avisaba); `test_f055_r2_medir_con_lote_aun_mide_…`,
+  test propio de F-055, pasa a `…_mide_el_lote_entero`.
+- La campaña encontró en su primera línea base un test de C2 que medía
+  rondas **por reloj** y fallaba con 4 suites a la vez: rondas medidas ahora
+  por estructura (`3cbaba4`).
 
 ## Evidencias
 
-| Evidencia | Valor |
-|---|---|
-| Tests transfer (tras T8) | **917 passed** (72.52 s) |
-| Tests api (tras T9) | **800 passed** (68.74 s) |
-| Tests de F-055 | transfer **167** (`test_f055_*`, más el plugin de equivalencia); api 20 |
-| Cobertura de las líneas cambiadas | última medida: 100 % de 184 (tras T4); se repite al desbloquear |
-| Mutantes | campaña completa en T16 (no empezada) |
-| `bash harness/init.sh` | al final (T17) |
+PENDIENTE_EVIDENCIAS
