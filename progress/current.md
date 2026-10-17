@@ -3,22 +3,24 @@
 
 **Ninguna feature en curso.** F-055 (registro sin búsquedas de partidas y
 propuesta del mes en segundo plano) **cerrada (`done`) el 2026-10-17**, review
-de cierre APROBADA (pasada 5); resumen en `progress/history.md`. **Despliegue
-autorizado por el humano** («si», 2026-10-17), transfer → api → front; tras
-desplegar, el humano mide C6 en producción (ver «Producción, hoy»). El arnés
+de cierre APROBADA (pasada 5); resumen en `progress/history.md`. **Desplegada el
+2026-10-17** (transfer → api → front, autorizado por el humano); falta que el
+humano mida C6 en producción (ver «Producción, hoy»). El arnés
 es la **1.7.3**.
 
 ## Producción, hoy
 
-- **F-055: pendiente de desplegar** (autorizado, 2026-10-17), transfer → api →
-  front con `infra/redeploy_dedicacion.ps1` (cargando también
-  `00_vars_dedicacion.local.ps1`). La api añade al arrancar las columnas
-  nulables `asignacion.propuesta_*`; variable nueva `SIGRID_LECTURAS_PARALELAS`
-  (defecto 4, por lote). El transfer conserva el **modo real**. **Tras
-  desplegar, C6 del humano** (solo preflight y **Cancelar**; sin «antes» por su
-  renuncia): septiembre 2026, «⇪ Sigrid» de GONZALEZ PANIAGUA → modal ≤ 30 s y
-  el mes entero ≤ 60 s sin 502; también mira en pantalla «buscando partida…» y
-  O2. **El líder anota aquí el resultado** (y en `history.md`, entrada de F-055).
+- **Desplegado el 2026-10-17: F-055**, los tres servicios en orden: transfer
+  `r20261017-1306`, api `r20261017-1310` y front `r20261017-1314` (revisiones
+  `…--r20261017130616`, `…131025` y `…131348`, las tres `RunningAtMaxScale` con
+  el 100 % del tráfico; el transfer sigue en **modo real**,
+  `OBRA_PRUEBAS_FORZAR=false`, comprobado con `az containerapp show`). La api
+  aplicó al arrancar las 5 columnas `asignacion.propuesta_*` («5 sentencias DDL
+  aplicadas», sin errores). **Pendiente del humano, C6** (solo preflight y
+  **Cancelar**; sin «antes» por su renuncia): Ctrl+F5, septiembre 2026, «⇪
+  Sigrid» de GONZALEZ PANIAGUA → modal ≤ 30 s y el mes entero ≤ 60 s sin 502;
+  mirar también «buscando partida…» y O2. **El líder anota aquí el resultado**
+  (y en `history.md`, entrada de F-055).
 - **Desplegado el 2026-10-14: F-050**, los tres servicios: transfer
   `r20261014-1740`, api `r20261014-1743` y front `r20261014-1746` (revisiones
   `…--r20261014173903`, las tres `Running`; el transfer sigue en **modo real**,
@@ -123,13 +125,21 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-F-049 desplegada. F-050 desplegada. F-055 cerrada el 2026-10-17 (pendiente de desplegar). Orden: F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. Orden: F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
 - **C6 de F-055 tras desplegar** (ver «Producción, hoy») y juzgar O2 en pantalla.
+- **`Run-Az` de `infra/00_capps_vars_dedicacion.ps1` aborta tras un `update`
+  que sí se aplica** (2026-10-17, las tres veces: `az : ` vacío,
+  `NativeCommandError` en PS 5.1): el `containerapp update` crea la revisión y
+  PowerShell convierte lo que `az` escribe en stderr en error terminante, así que
+  `redeploy` para tras el primer servicio. Se desplegó relanzando `-Solo api,front`
+  y `-Solo front`, comprobando cada revisión. Propuesta a decidir: que `Run-Az`
+  rebaje `ErrorActionPreference` a `Continue` alrededor de la llamada y decida solo
+  por `$LASTEXITCODE`.
 - **Trabajo del arnés tras F-055** (líder, a proponer): O1 y dos automejoras de
   sus reviews —`CHECKPOINTS.md` C4: trazar un R «como hoy» o documental; una
   mutación manual de Python también exige tabla con texto exacto y el reviewer
