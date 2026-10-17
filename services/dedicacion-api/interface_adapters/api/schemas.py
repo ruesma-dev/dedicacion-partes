@@ -86,6 +86,11 @@ class LineaOut(_Base):
     partida_cod: str | None
     partida_res: str | None
     partida_fija: bool
+    # F-055 (R27): la propuesta guardada (la celda Partida la enseña en
+    # cursiva con su método); las tres nulas = sin propuesta.
+    propuesta_cod: str | None = None
+    propuesta_res: str | None = None
+    propuesta_metodo: str | None = None
 
 
 class TrabajadorOut(_Base):
@@ -131,6 +136,26 @@ class CuadranteOut(_Base):
     obras: list[ObraOut]
     trabajadores: list[TrabajadorOut]
     resumen: ResumenOut
+    # F-055 (R30): alguna línea del periodo en la cola de propuestas.
+    propuestas_en_curso: bool = False
+
+
+class PropuestaLineaOut(_Base):
+    """Una automática con propuesta guardada (F-055, R35)."""
+
+    trabajador_ide: int
+    obra_ide: int
+    es_postventa: bool
+    propuesta_cod: str | None
+    propuesta_res: str | None
+    propuesta_metodo: str | None
+
+
+class PropuestasOut(_Base):
+    """`GET …/propuestas` (F-055, R35)."""
+
+    en_curso: bool
+    lineas: list[PropuestaLineaOut]
 
 
 class EmpresaOut(_Base):
@@ -148,6 +173,8 @@ class EmpresasOut(_Base):
 class FilaOut(_Base):
     trabajador: TrabajadorOut
     resumen: ResumenOut
+    # F-055 (R37): alguna línea del periodo en la cola de propuestas.
+    propuestas_en_curso: bool = False
 
 
 class CopiaTrabajadorOut(FilaOut):
@@ -161,6 +188,7 @@ class CopiaPeriodoOut(_Base):
     con_carga_previa: int
     sin_datos_origen: int
     lineas_omitidas_obra_inactiva: int
+    propuestas_en_curso: bool = False       # F-055 (R37)
 
 
 class ResultadoCompletarOut(_Base):
@@ -175,6 +203,7 @@ class CompletarOut(_Base):
 
     resultados: list[ResultadoCompletarOut]
     resumen: ResumenOut
+    propuestas_en_curso: bool = False       # F-055 (R37)
 
 
 class SyncMaestroOut(_Base):
@@ -245,6 +274,9 @@ def a_trabajador_out(fila: CuadranteTrabajador,
                 partida_cod=ln.partida_cod,
                 partida_res=ln.partida_res,
                 partida_fija=ln.partida_fija,
+                propuesta_cod=ln.propuesta_cod,
+                propuesta_res=ln.propuesta_res,
+                propuesta_metodo=ln.propuesta_metodo,
             )
             for ln in fila.lineas
         ],

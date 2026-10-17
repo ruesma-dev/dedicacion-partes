@@ -5,14 +5,16 @@ Implementa `docs/ARCHITECTURE.md#regla-partida` (F-050); la regla se enuncia
 allí, no aquí. Módulo PURO: recibe el presupuesto de la obra (los nodos de
 `partida_catalog`) y el historial de líneas `M*` del recurso ya leídos.
 
-La propuesta es la del primer paso que dé una:
+La propuesta es la del primer paso que dé una, en el orden a → c → b
+(F-055 R38, D10 del 2026-10-14; en F-050 era a → b → c):
 
-  1. PARTE ANTERIOR (`parte_anterior`): el mes más reciente con líneas del
+  a. PARTE ANTERIOR (`parte_anterior`): el mes más reciente con líneas del
      recurso en ESTA obra; gana la partida con más `can` sumado.
-  2. ÚLTIMO PARTE (`ultimo_parte`): el mes más reciente con líneas del
+  c. CASAMIENTO por nombre y categoría (`resolver_normal`, `auto_*`).
+  b. ÚLTIMO PARTE (`ultimo_parte`): el mes más reciente con líneas del
      recurso en OTRA obra; gana el par (código, descripción) con más `can`,
-     trasladado a esta obra si casa con UNA sola hoja activa.
-  3. CASAMIENTO por nombre y categoría (`resolver_normal`, `auto_*`).
+     trasladado a esta obra si casa con UNA sola hoja activa. Como el
+     casamiento casi siempre da algo, (b) solo actúa cuando no casa nada.
 
 Un empate, o un traslado con cero o varias hojas, hace que ese paso no
 proponga: nunca «la primera». Toda propuesta es hoja activa del presupuesto.
@@ -110,7 +112,7 @@ def _origen(lineas: list[LineaHistorial]) -> str:
 def previa_en_obra(historial: Iterable[LineaHistorial], recurso: int | None,
                    obra_ide: int,
                    hojas: dict[int, PartidaNodo]) -> Propuesta | None:
-    """Paso 1 (parte anterior): el recurso en esta obra."""
+    """Paso (a), parte anterior: el recurso en esta obra."""
     propias = [l for l in historial
                if l.reside == recurso and l.obride == obra_ide and l.paride]
     if not propias:
@@ -134,8 +136,8 @@ def _clave_traslado(cod: str | None, res: str | None) -> tuple:
 def ultima_de_recurso(historial: Iterable[LineaHistorial],
                       recurso: int | None, obra_ide: int,
                       hojas: dict[int, PartidaNodo]) -> Propuesta | None:
-    """Paso 2 (último parte): el recurso en otra obra, trasladado a esta por
-    código y descripción iguales."""
+    """Paso (b), último parte: el recurso en otra obra, trasladado a esta
+    por código y descripción iguales. Va DESPUÉS del casamiento (R38)."""
     ajenas = [l for l in historial
               if l.reside == recurso and l.obride != obra_ide and l.paride]
     if not ajenas:
@@ -167,18 +169,18 @@ def proponer_partida(nodos: dict[int, PartidaNodo],
                      recurso: int | None, obra_ide: int,
                      categoria: str | None,
                      nombre: str | None) -> Propuesta | None:
-    """La propuesta de la línea: paso 1, paso 2 o casamiento; o None."""
+    """La propuesta de la línea: parte anterior (a), casamiento (c) o
+    último parte (b), en ese orden (F-055 R38); o None."""
     historial = list(historial)
     hojas = _hojas_activas(nodos)
-    for paso in (previa_en_obra, ultima_de_recurso):
-        p = paso(historial, recurso, obra_ide, hojas)
-        if p is not None:
-            return p
+    p = previa_en_obra(historial, recurso, obra_ide, hojas)
+    if p is not None:
+        return p
     m = resolver_normal(nodos, categoria, nombre)
-    if m is None:
-        return None
-    paride, cod, metodo = m
-    return Propuesta(paride, cod, nodos[paride].res, metodo)
+    if m is not None:
+        paride, cod, metodo = m
+        return Propuesta(paride, cod, nodos[paride].res, metodo)
+    return ultima_de_recurso(historial, recurso, obra_ide, hojas)
 
 
 def mayor_de(nodos: dict[int, PartidaNodo], nodo: PartidaNodo) -> str:

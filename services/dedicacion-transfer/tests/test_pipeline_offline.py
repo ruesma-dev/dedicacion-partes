@@ -121,6 +121,22 @@ class ClienteFalso:
     def horas_de_recursos(self, resides):
         return {r: self.horas.get(r, []) for r in resides}
 
+    # F-055 (R3; lista cerrada, decisión del humano del 2026-10-15): la
+    # elegida se valida por `ide`; derivada de los dos presupuestos del
+    # doble, como el de `conftest.py`.
+    def validar_partidas(self, parides):
+        from application.services.partida_resolver import construir_catalogo
+        from domain.models.registro_models import PartidaValida
+        ides = {int(i) for i in parides if i}
+        out = {}
+        for obride, filas in ((self.obra_pv.ide, self.capitulos),
+                              (self.obra_origen.ide, self.partidas_origen)):
+            for n in construir_catalogo(list(filas)).values():
+                if n.ide in ides:
+                    out[n.ide] = PartidaValida(n.ide, obride, n.cod, n.res,
+                                               n.es_hoja, n.activa)
+        return out
+
     def partes_existentes(self, obra_ide, periodos):
         return {(p[0], p[1]): self.parte for p in periodos}
 

@@ -60,6 +60,8 @@ Lo que sí es de este servicio, y por eso se cuenta aquí:
     POST /api/var/universo         {empresa}            (solo lee; F-039)
     POST /api/partidas/propuesta   {empresa, obra, ano, mes, lineas[]}
                                                         (solo lee; F-050)
+    POST /api/registro/preflight-lote  {peticiones[]}   (solo lee; F-055)
+    POST /api/partidas/propuesta-lote  {peticiones[]}   (solo lee; F-055)
 
 `/api/postventa/universo` devuelve las obras que admiten postventa en esa
 empresa, con su partida, calculadas con las mismas funciones que el
@@ -72,9 +74,18 @@ cada partida y la partida propuesta de cada línea, con la misma función que
 el preflight ([`#regla-partida`](../../docs/ARCHITECTURE.md#regla-partida)).
 La fase `propuesta` de `prueba_escritura_porcentajes.py` (`--obra`,
 `--recurso`) la enseña sin escribir nada.
+Los dos `…-lote` (F-055) hacen lo mismo que su versión suelta para varias
+obras a la vez, con las lecturas agrupadas y hasta
+`SIGRID_LECTURAS_PARALELAS` a la vez (`application/services/lecturas_lote.py`,
+`application/pipelines/registro_lote.py`); el resultado de cada obra es el
+de su petición suelta. La fase `medir` del script enseña las lecturas de
+cada preflight y sus segundos, sin escribir nada.
 
 Línea: `{registro_id, ano, mes, porcentaje (sobre 1), recurso_ide, dni?,
-nombre?, es_postventa, empresa, var_paride?}`. `empresa` es la `con.emp` a la que se
+nombre?, es_postventa, empresa, var_paride?, paride?, propuesta_paride?,
+propuesta_cod?, propuesta_res?, propuesta_metodo?, propuesta_origen?}`
+(la elegida y, sin ella, la propuesta guardada:
+[`#regla-partida`](../../docs/ARCHITECTURE.md#regla-partida)). `empresa` es la `con.emp` a la que se
 imputa: sin ella la línea se omite con motivo, y con líneas de dos empresas
 la petición se rechaza con 422
 ([`#regla-empresa`](../../docs/ARCHITECTURE.md#regla-empresa)).

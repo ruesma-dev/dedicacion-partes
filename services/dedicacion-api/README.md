@@ -33,13 +33,15 @@ cambio de esquema es una migración que escribe una persona.
 | GET/POST | /periodos | Listar / crear-obtener periodo (idempotente) |
 | POST | /periodos/{a}/{m}/cerrar · /reabrir | Estado del periodo |
 | POST | /periodos/{a}/{m}/copiar-anterior | Rellena SIN CARGA con el último periodo con datos |
-| GET  | /periodos/{a}/{m}/cuadrante | Trabajadores + líneas + estados + resumen |
+| GET  | /periodos/{a}/{m}/cuadrante | Trabajadores + líneas + estados + resumen; encola las propuestas pendientes de un periodo abierto y publica `propuestas_en_curso` (F-055) |
+| GET  | /periodos/{a}/{m}/propuestas | Propuestas guardadas de las líneas automáticas y si quedan en curso (F-055, `docs/ARCHITECTURE.md#regla-partida`); solo lee |
 | PUT  | /periodos/{a}/{m}/trabajadores/{ide}/asignaciones | Sustitución atómica de las líneas |
 | POST | /periodos/{a}/{m}/trabajadores/{ide}/deshacer | Deshacer (multi-nivel, con auditoría) |
 | POST | /periodos/{a}/{m}/trabajadores/{ide}/copiar-anterior | Repetir mes anterior de un trabajador |
 | GET  | /periodos/{a}/{m}/trabajadores/{ide}/partidas?obra_ide=&es_postventa= | Selector de partida de una línea: catálogo con su mayor, propuesta, elegida y botón preelegido, que calcula el transfer (`docs/ARCHITECTURE.md#regla-partida`); 502 si no responde |
 | PUT  | /periodos/{a}/{m}/trabajadores/{ide}/partida | Cambiar la partida elegida de una línea (`null` = automática), con evento deshacible |
 | POST | /periodos/{a}/{m}/completar | Completar al 100 % en una obra a un lote de trabajadores (`docs/ARCHITECTURE.md#regla-completar`); no toca Sigrid |
+| (las seis escrituras) | asignaciones, partida, deshacer, copiar-anterior ×2, completar | Encolan las propuestas pendientes de los trabajadores escritos y publican `propuestas_en_curso` (F-055) |
 | GET  | /periodos/{a}/{m}/export.xlsx | Excel con el modelo de negocio: Obras y Postventa agrupadas por trabajador (combinadas, bandas y línea gruesa), cada una con la otra parte en una línea agregada en cursiva («RESTO POSTVENTA» / «RESTO OBRAS»), y Detalle con todas las líneas de cada trabajador, la postventa intercalada; columna Observaciones vacía en las tres hojas; convenio Postv- |
 
 ## Pendiente de decidir con datos reales

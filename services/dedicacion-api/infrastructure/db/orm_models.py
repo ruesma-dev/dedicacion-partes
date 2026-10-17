@@ -171,6 +171,16 @@ class AsignacionORM(Base):
     partida_ide: Mapped[int | None] = mapped_column(BigInteger)
     partida_cod: Mapped[str | None] = mapped_column(Text)
     partida_res: Mapped[str | None] = mapped_column(Text)
+    # Propuesta GUARDADA de una línea automática (F-055, R13, D2,
+    # docs/ARCHITECTURE.md#regla-partida): la calcula el transfer y la guarda
+    # la api (preflight, selector y segundo plano); al registrar viaja como
+    # `propuesta_*` y, si sigue valiendo, se escribe con ella. Nulables y sin
+    # default: el ADD COLUMN lo deriva `esquema.alters_faltantes`.
+    propuesta_ide: Mapped[int | None] = mapped_column(BigInteger)
+    propuesta_cod: Mapped[str | None] = mapped_column(Text)
+    propuesta_res: Mapped[str | None] = mapped_column(Text)
+    propuesta_metodo: Mapped[str | None] = mapped_column(Text)
+    propuesta_origen: Mapped[str | None] = mapped_column(Text)
 
     __table_args__ = (
         UniqueConstraint(

@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     # caber en el `MAX_ALLOWED_ROWS` de sigrid-api (500.000 desplegado). Un
     # `truncated` sigue siendo error: nunca se decide con filas parciales.
     sigrid_max_rows: int = Field(200_000, alias="SIGRID_MAX_ROWS")
+    # F-055 (R23, D5): lecturas a la vez contra sigrid-api en un lote
+    # (`POST /api/registro/preflight-lote` y `/api/partidas/propuesta-lote`).
+    # 1 = en serie, como antes de F-055. Fuera de 1-8 el transfer no arranca.
+    sigrid_lecturas_paralelas: int = Field(4, alias="SIGRID_LECTURAS_PARALELAS",
+                                           ge=1, le=8)
 
     # --- Modo PRUEBAS: fuerza TODAS las escrituras a una obra --- #
     obra_pruebas_forzar: bool = Field(True, alias="OBRA_PRUEBAS_FORZAR")

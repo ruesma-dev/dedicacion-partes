@@ -2,6 +2,7 @@
 """Composición de dependencias (wiring) del servicio."""
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from fastapi import Request
@@ -18,6 +19,7 @@ from application.sync_pipeline import (
     UpsertTrabajadoresStep,
 )
 from application.partidas_linea import PartidasDeLinea
+from application.propuestas_mes import PropuestasDelMes
 from application.use_cases import PreviewSync
 from config.settings import Settings, cargar_config
 from infrastructure.db.repositories import SqlAlchemyUnitOfWork
@@ -37,6 +39,8 @@ class Contenedor:
     exporter: OpenpyxlExcelExporter
     registro_sigrid: RegistroSigrid
     partidas_linea: PartidasDeLinea   # selector de partida (F-050, R17)
+    # Propuestas del mes en segundo plano (F-055, R29-R33): un hilo.
+    propuestas_mes: PropuestasDelMes
 
     def uow(self) -> SqlAlchemyUnitOfWork:
         return SqlAlchemyUnitOfWork(self.session_factory)
@@ -122,6 +126,13 @@ def construir_contenedor(
         registro_sigrid=RegistroSigrid(session_factory, transfer,
                                        settings.empresa_imputacion),
         partidas_linea=PartidasDeLinea(transfer),
+        # F-055 (R30): UN hilo, cola por orden de llegada; estado de una
+        # réplica (ARCHITECTURE «Topología»).
+        propuestas_mes=PropuestasDelMes(
+            lambda: SqlAlchemyUnitOfWork(session_factory), transfer,
+            ThreadPoolExecutor(max_workers=1,
+                               thread_name_prefix="propuestas"),
+            empresa_obras=empresa_obras),
     )
 
 

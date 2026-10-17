@@ -68,6 +68,10 @@ class _Transfer:
         self.payloads.append(payload)
         return dict(self.respuesta)
 
+    def preflight_lote(self, peticiones: list[dict]) -> dict:
+        """F-055 (R26; lista cerrada): el lote delega en `preflight`."""
+        return {"ok": True, "obras": [self.preflight(p) for p in peticiones]}
+
     def ejecutar(self, payload: dict) -> dict:
         self.payloads.append(payload)
         return dict(self.respuesta)
@@ -77,9 +81,13 @@ def _fila(asig_id: int, trab: tuple[int, int | None],
           obra: tuple[int, int | None]) -> tuple:
     """(asignación, trabajador, obra) como las devuelve la consulta;
     `trab` y `obra` son (ide, empresa)."""
+    # F-055 (R16; lista cerrada): sin propuesta guardada.
     asignacion = SimpleNamespace(id=asig_id, porcentaje=50,
                                  es_postventa=False,
-                                 partida_ide=None, partida_cod=None)
+                                 partida_ide=None, partida_cod=None,
+                                 propuesta_ide=None, propuesta_cod=None,
+                                 propuesta_res=None, propuesta_metodo=None,
+                                 propuesta_origen=None)
     # `activo` y `fecha_baja` (F-026, C3): vigente en cualquier mes.
     trabajador = SimpleNamespace(ide=trab[0], dni=None, nombre=f"T{trab[0]}",
                                  categoria="Encargado", empresa=trab[1],

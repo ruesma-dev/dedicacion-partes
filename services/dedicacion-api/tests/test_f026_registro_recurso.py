@@ -28,8 +28,12 @@ def _fila(asig_id: int, trab_ide: int, obra_ide: int, *,
           activo: bool = True, fecha_baja: int | None = None,
           empresa: int | None = 1) -> tuple:
     """(asignación, trabajador, obra) como las devuelve la consulta."""
+    # F-055 (R16; lista cerrada): sin propuesta guardada.
     asignacion = SimpleNamespace(id=asig_id, porcentaje=50, es_postventa=False,
-                                 partida_ide=None, partida_cod=None)
+                                 partida_ide=None, partida_cod=None,
+                                 propuesta_ide=None, propuesta_cod=None,
+                                 propuesta_res=None, propuesta_metodo=None,
+                                 propuesta_origen=None)
     trabajador = SimpleNamespace(ide=trab_ide, dni=None, nombre=f"T{trab_ide}",
                                  categoria="Encargado", empresa=empresa,
                                  activo=activo, fecha_baja=fecha_baja)

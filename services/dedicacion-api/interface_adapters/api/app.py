@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -47,6 +49,14 @@ _HTTP_POR_ERROR: list[tuple[type[ErrorDominio], int]] = [
 ]
 
 
+@asynccontextmanager
+async def _ciclo_de_vida(app: FastAPI) -> AsyncIterator[None]:
+    """Al pararse la api, se cierra la cola de las propuestas del mes
+    (F-055, T17b: O5 de la review)."""
+    yield
+    app.state.contenedor.propuestas_mes.cerrar()
+
+
 def build_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     logging.basicConfig(
@@ -57,6 +67,7 @@ def build_app(settings: Settings | None = None) -> FastAPI:
         title=settings.service_name,
         version=settings.service_version,
         docs_url="/docs",
+        lifespan=_ciclo_de_vida,
     )
 
     engine = crear_engine(settings)

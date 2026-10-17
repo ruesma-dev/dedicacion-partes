@@ -7,6 +7,9 @@ La api no propone ni clasifica: pide al transfer (`POST
 propuesta, y solo busca en esa lista el mayor de la elegida para decidir el
 botón que sale preelegido (`ambito`). Una entrada VAR tiene la partida fija
 (docs/ARCHITECTURE.md#regla-var): no se llama al transfer.
+
+F-055 (R15, R18): la propuesta que devuelve el transfer para una línea sin
+elegida se GUARDA en su asignación (y reescribe la que hubiera), sin evento.
 """
 from __future__ import annotations
 
@@ -15,6 +18,7 @@ from typing import Any, Protocol
 from domain.errors import LineaNoEncontrada
 from domain.ports import UnitOfWork
 
+from application.registro_sigrid import es_metodo_de_propuesta
 from application.use_cases import _periodo_o_error, _trabajador_o_error
 
 #: Clave de la única línea que se manda al transfer.
@@ -84,6 +88,13 @@ class PartidasDeLinea:
              if elegida is not None and p["ide"] == elegida["ide"]),
             None,
         )
+        propuesta = r["propuestas"][CLAVE]
+        if elegida is None and propuesta is not None \
+                and es_metodo_de_propuesta(propuesta.get("metodo")):
+            uow.asignaciones.guardar_propuesta(
+                periodo_id, trabajador_ide, (obra_ide, es_postventa),
+                propuesta)
+            uow.commit()
         if mayor_elegida is None:
             ambito = r["mayor_inicial"][CLAVE]
         else:
@@ -93,7 +104,7 @@ class PartidasDeLinea:
             "partidas": r["partidas_obra"],
             "partidas_postventa": r["partidas_postventa"],
             "ambito": ambito,
-            "propuesta": r["propuestas"][CLAVE],
+            "propuesta": propuesta,
             "elegida": elegida,
             "fija": None,
         }

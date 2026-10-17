@@ -658,17 +658,22 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     lleva, es **automática** y se registra con la **propuesta**.
 
     - **La propuesta, solo en el transfer** (una línea de obra normal sin
-      elegida), la del primer paso que dé una: (1) **parte anterior**: el mes
-      más reciente con líneas `M*` del recurso en un parte de trabajo de
-      **esa obra**, del periodo del cuadrante (incluido) hacia atrás hasta
-      `PROPUESTA_MESES_ATRAS` meses; (2) **último parte**: el mes más
-      reciente del recurso en **otra** obra, trasladado a esta por código
-      **y** descripción iguales; (3) el **casamiento** por nombre y
-      categoría de `partes` (`resolver_normal`). En (1) y (2) gana la
-      partida (o el par código-descripción) con más `can` sumado en ese
-      mes; un empate, o un traslado a cero o a varias hojas, hace que ese
-      paso no proponga, nunca «la primera». El orden de las filas no cambia
-      nada.
+      elegida), la del primer paso que dé una, en este orden: (1) **parte
+      anterior**: el mes más reciente con líneas `M*` del recurso en un
+      parte de trabajo de **esa obra**, del periodo del cuadrante (incluido)
+      hacia atrás hasta `PROPUESTA_MESES_ATRAS` meses; (2) el
+      **casamiento** por nombre y categoría de `partes` (`resolver_normal`);
+      (3) **último parte**: el mes más reciente del recurso en **otra**
+      obra, trasladado a esta por código **y** descripción iguales. En (1)
+      y (3) gana la partida (o el par código-descripción) con más `can`
+      sumado en ese mes; un empate, o un traslado a cero o a varias hojas,
+      hace que ese paso no proponga, nunca «la primera». El orden de las
+      filas no cambia nada.
+    - **El orden (1) parte anterior → (2) casamiento → (3) último parte**
+      es de F-055 (D10, 2026-10-14); en F-050 el último parte iba antes que
+      el casamiento. El casamiento da algo casi siempre que haya categoría
+      (basta un token de la categoría parecido al rol de alguna hoja), así
+      que el último parte **solo actúa cuando el casamiento no da nada**.
     - **Qué líneas cuentan:** las de partes de trabajo (`con.tip` del
       ajuste) con hora `M*`, `paride` ≠ 0 y partida del presupuesto de la
       obra de su parte (no cuentan las escritas en la obra de pruebas). Toda
@@ -681,6 +686,28 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       que se registra. En postventa la propuesta es el casado de
       [`#regla-p5`](#regla-p5); una entrada VAR tiene su partida fija
       ([`#regla-var`](#regla-var)).
+    - **La propuesta guardada** (F-055): la api guarda en la asignación
+      (`propuesta_*`) la propuesta que le devuelve el transfer para una
+      línea de obra normal **sin elegida**, sin evento: al volver de un
+      preflight, al abrir el selector (que la reescribe) y **en segundo
+      plano**, que calcula las **pendientes** (obra normal, sin partida
+      fija, sin elegida ni propuesta) al pedir el cuadrante de un periodo
+      ABIERTO, tras un sync con éxito (todos los abiertos) y tras cada
+      escritura del cuadrante (guardar la fila, F7, F8, Completar, Copiar
+      mes, cambiar la partida y Deshacer; solo las de los trabajadores
+      escritos, o de todo el periodo en Copiar mes). El segundo plano nunca
+      pisa una elegida ni una propuesta ya guardada; una línea sin propuesta
+      posible no se reintenta hasta el próximo sync o un reinicio. La
+      propuesta **no caduca**. El cuadrante la enseña en cursiva con su
+      método y, mientras se busca, «buscando partida…». Guardar la fila la
+      conserva en cada línea que ya existía; copiar el mes, F8 y completar
+      no la copian; deshacer no la restaura; cambiar la elegida no la borra.
+    - **Al registrar**, la elegida viaja como `paride` y, sin ella, la
+      propuesta guardada como `propuesta_*`. El transfer valida las dos
+      **por `ide`** (una lectura por petición: obra de origen, hoja y alta),
+      sin leer el presupuesto ni el historial: la propuesta que vale se
+      escribe tal cual; la que no vale hace la línea **pendiente**, que se
+      propone como siempre (presupuesto e historial, una vez por petición).
     - **La elegida** se guarda en la asignación (api). Guardar la fila
       conserva la de cada línea que ya existía; la nueva entra automática.
       Cambiarla deja un evento `PARTIDA`, que se deshace como cualquier otro
@@ -700,7 +727,12 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
     *Decidido por Pablo Gris el 2026-10-09 (D1-D10 = A, el mismo selector
     en el modal y los botones CD · CI · CP) · F-050,
-    `specs/F-050-subfilas-partida/requirements.md`.*
+    `specs/F-050-subfilas-partida/requirements.md`. Propuesta guardada,
+    validación por `ide` y cálculo en segundo plano: decididos por Pablo
+    Gris el 2026-10-13 (D1-D8) y el 2026-10-14 (D9) · F-055. Orden cambiado por
+    Pablo Gris el 2026-10-14 (D10: «si pero en reglas hay que cambiar el
+    orden, a c b») · F-055, `specs/F-055-preflight-rapido/requirements.md`
+    R38.*
 
 ## Acceso a datos y sistemas externos
 
@@ -737,6 +769,15 @@ Reglas duras:
 - Documentación del sistema origen: `azure-apps/sigrid_api.md` (la pasarela)
   y `azure-apps/sigrid_tablas.md` (diccionario de tablas). No se duplican
   aquí, se enlazan.
+- **Lotes del transfer** (F-055): `POST /api/registro/preflight-lote` y
+  `POST /api/partidas/propuesta-lote` leen **agrupado** (una lectura por
+  tipo, `IN` en trozos de 500 parámetros) y en **paralelo** hasta
+  `SIGRID_LECTURAS_PARALELAS` lecturas a la vez contra `sigrid-api` (4 por
+  defecto, 1-8; 1 = en serie). Lo leído vale solo para esa petición (sin
+  caché entre peticiones); lo que no se precargó se lee de `sigrid-api`.
+  El resultado de cada obra en un lote es el de su petición suelta. La api
+  pide el preflight del periodo en **una** llamada al lote; `ejecutar`
+  sigue por obra y en serie.
 - Los tests unitarios no tocan ni Sigrid ni PostgreSQL
   (`services/dedicacion-transfer/tests/test_pipeline_offline.py` es el
   ejemplo a seguir).
@@ -804,6 +845,11 @@ balanceador de Azure:
 En local están al revés (el front se rinde antes que la api): el usuario
 vería un error de un registro que sí se estaba haciendo. Se corrige al
 desplegar, subiendo el front a 200 s.
+
+Desde F-055 el preflight del periodo es **una** llamada al lote del
+transfer (`TRANSFER_TIMEOUT_S` le cubre entero) y las propuestas del mes se
+calculan en un hilo de la api, por trozos de 10 obras, cada trozo con el
+mismo límite de 180 s: ni el cuadrante ni las escrituras los esperan.
 
 ### Imágenes y secretos
 

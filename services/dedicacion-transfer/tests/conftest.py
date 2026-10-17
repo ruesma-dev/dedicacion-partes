@@ -36,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from domain.models.registro_models import (
     HoraRecurso, LineaEntrada, LineaSigrid, ObraEntrada, ParteDestino,
-    ParteSigrid,
+    ParteSigrid, PartidaValida,
 )
 
 #: Código de la obra de pruebas y de la obra de postventa usados por el
@@ -222,6 +222,8 @@ class ClienteFalso:
         # universo las hace UNA vez por petición, no una por obra.
         self.n_obra_por_codigo = 0
         self.n_capitulos_de_obra = 0
+        # F-055 (T3): cada lectura de `validar_partidas`, con sus `ide`.
+        self.validadas: list[list[int]] = []
 
     # --- lecturas --- #
     def obra_por_codigo(self, cod, empresa):
@@ -252,6 +254,42 @@ class ClienteFalso:
 
     def horas_de_recursos(self, resides):
         return {r: self.horas.get(r, []) for r in resides}
+
+    def validar_partidas(self, parides):
+        """F-055 (T3): derivada de los presupuestos del doble (los mismos
+        datos que `capitulos_de_obra`, sin contar como lectura de
+        presupuesto): obra, hoja y alta como `construir_catalogo`."""
+        from application.services.partida_resolver import construir_catalogo
+        ides = sorted({int(i) for i in parides if i})
+        if not ides:
+            return {}
+        self.validadas.append(ides)
+        out = {}
+        for obride, filas in ((self.obra_pv.ide, self.capitulos),
+                              (self.obra_origen.ide, self.partidas_origen)):
+            for n in construir_catalogo(list(filas)).values():
+                if n.ide in ides:
+                    out[n.ide] = PartidaValida(n.ide, obride, n.cod, n.res,
+                                               n.es_hoja, n.activa)
+        return out
+
+    # F-055 (T5): las lecturas agrupadas, derivadas de las sueltas del doble
+    # (y de las que redefinan sus subclases), con la forma del cliente real.
+    def obras_por_ide(self, ides):
+        return {int(i): o for i in sorted({int(i) for i in ides if i})
+                for o in [self.obra_por_ide(int(i))] if o is not None}
+
+    def partes_de_periodos(self, obrides, periodos):
+        return {(int(o), int(a), int(m)): self.partes_del_periodo(
+                    int(o), int(a), int(m))
+                for o in sorted(set(obrides)) for a, m in sorted(set(periodos))}
+
+    def lineas_de_partes(self, hmoides, resides):
+        res = sorted({int(r) for r in resides if r})
+        if not res:
+            return {}
+        return {int(h): self.lineas_del_parte(int(h), res)
+                for h in sorted(set(hmoides)) if h}
 
     def partes_existentes(self, obra_ide, periodos):
         return {(p[0], p[1]): self.parte for p in periodos}

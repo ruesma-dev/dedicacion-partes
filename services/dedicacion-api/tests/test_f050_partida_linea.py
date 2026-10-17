@@ -48,6 +48,11 @@ from tests.test_f024_cuadrante_empresa import (
 FILTRO = FiltroEmpresa(empresa=DEF, por_defecto=DEF, empresa_obras=DEF)
 P = {"partida_ide": 80003, "partida_cod": "CI.1.9",
      "partida_res": "ADMINISTRATIVO"}
+#: F-055 (R13; lista cerrada, decisión del humano del 2026-10-15): las filas
+#: falsas de `asignacion` traen las columnas `propuesta_*`, nulas.
+SIN_PROPUESTA = dict.fromkeys(("propuesta_ide", "propuesta_cod",
+                               "propuesta_res", "propuesta_metodo",
+                               "propuesta_origen"))
 
 
 def _lp(obra_ide: int, pct: str, pv: bool = False, **partida) -> Linea:
@@ -103,14 +108,15 @@ def _orm_obra(registro_paride=None):
 
 def test_f050_r12_r18_el_repositorio_mapea_la_partida():
     a = SimpleNamespace(obra_ide=7, es_postventa=False,
-                        porcentaje=Decimal("40.00"), **P)
+                        porcentaje=Decimal("40.00"), **P, **SIN_PROPUESTA)
     ln = _a_linea_con_partida(a, _orm_obra())
     assert (ln.partida_ide, ln.partida_cod, ln.partida_res,
             ln.partida_fija) == (80003, "CI.1.9", "ADMINISTRATIVO", False)
     assert ln.obra_empresa == 1 and ln.cod == "0694"
     sin = SimpleNamespace(obra_ide=7, es_postventa=False,
                           porcentaje=Decimal("40.00"), partida_ide=None,
-                          partida_cod=None, partida_res=None)
+                          partida_cod=None, partida_res=None,
+                          **SIN_PROPUESTA)
     var = _a_linea_con_partida(sin, _orm_obra(registro_paride=91029))
     assert (var.partida_ide, var.partida_fija) == (None, True)
     assert _a_linea_con_partida(sin, _orm_obra(registro_paride=0)) \
@@ -264,7 +270,7 @@ def _registro(filas, overrides=None, fase="preflight"):
 def _fila_r19(asig_id, obra, partida_ide=None, partida_cod=None):
     asignacion = SimpleNamespace(id=asig_id, porcentaje=40, es_postventa=False,
                                  partida_ide=partida_ide,
-                                 partida_cod=partida_cod)
+                                 partida_cod=partida_cod, **SIN_PROPUESTA)
     trabajador = SimpleNamespace(ide=10, dni=None, nombre="T10",
                                  categoria="Encargado", empresa=1,
                                  activo=True, fecha_baja=None)
@@ -316,7 +322,7 @@ class _SesionLectura:
 
 def test_f050_r12_r18_las_lineas_del_trabajador_llevan_su_partida():
     a = SimpleNamespace(obra_ide=7, es_postventa=False, trabajador_ide=14,
-                        porcentaje=Decimal("40.00"), **P)
+                        porcentaje=Decimal("40.00"), **P, **SIN_PROPUESTA)
     repo = PgAsignacionRepository(_SesionLectura([(a, _orm_obra())]))  # type: ignore[arg-type]
     [ln] = repo.lineas_de_trabajador(2, 14)
     assert (ln.partida_ide, ln.partida_cod, ln.partida_fija) == (

@@ -36,6 +36,16 @@ class _EventosConTipo(_Eventos):
         super().registrar(periodo_id, ide, tipo, usuario, antes, despues)
 
 
+class _AsignacionesR15(_AsignacionesConPartida):
+    """F-055 (R15; lista cerrada): el selector guarda la propuesta; aquí
+    solo se anota."""
+
+    def guardar_propuesta(self, periodo_id, ide, clave, propuesta, *,
+                          solo_si_vacia=False):
+        self._uow.propuestas_guardadas.append((ide, clave, propuesta))
+        return True
+
+
 class _UowCM(_Uow):
     def __enter__(self) -> Self:
         return self
@@ -53,9 +63,13 @@ def _cliente(lineas, monkeypatch, **extra):
     monkeypatch.delenv("EMPRESA_IMPUTACION", raising=False)
     settings = Settings(_env_file=None)
     uow = _UowCM({P_ACT: lineas})
-    uow.asignaciones = _AsignacionesConPartida(uow)
+    uow.asignaciones = _AsignacionesR15(uow)
+    uow.propuestas_guardadas = []
     uow.eventos = _EventosConTipo()
-    contenedor = SimpleNamespace(settings=settings, uow=lambda: uow, **extra)
+    # F-055 (R29-R37; lista cerrada): las propuestas del mes, falsas.
+    from tests.test_f024_rutas_empresa import _PropuestasFalsas
+    contenedor = SimpleNamespace(settings=settings, uow=lambda: uow,
+                                 propuestas_mes=_PropuestasFalsas(), **extra)
     app = build_app(settings)
     app.dependency_overrides[obtener_contenedor] = lambda: contenedor
     return TestClient(app), uow

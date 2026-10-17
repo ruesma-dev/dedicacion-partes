@@ -49,6 +49,15 @@ class LineaEntrada:
     # partida es esa y solo esa, o la línea se omite: ver
     # ARCHITECTURE.md#regla-var.
     var_paride: Optional[int] = None
+    # F-055 (R8, R16): la propuesta guardada en el cuadrante de una línea
+    # automática (sin elegida). Si vale (hoja activa del presupuesto de la
+    # obra de origen), se escribe con ella; si no, la línea es pendiente y
+    # se propone como hoy (R6). Ver ARCHITECTURE.md#regla-partida.
+    propuesta_paride: Optional[int] = None
+    propuesta_cod: Optional[str] = None
+    propuesta_res: Optional[str] = None
+    propuesta_metodo: Optional[str] = None
+    propuesta_origen: Optional[str] = None
 
     @property
     def fecha_int(self) -> int:
@@ -104,6 +113,24 @@ class PartidaCuenta:
     ide: int
     cod: Optional[str]
     caa_cod: Optional[str]
+
+
+@dataclass(frozen=True)
+class PartidaValida:
+    """F-055 (R3, R4): una partida (`obrparpar`) leída por `ide`, con su
+    obra, si es hoja (sin hijas de su misma obra, como
+    `build_arbol_partidas`) y si está de alta (`tipdes = 0`)."""
+    ide: int
+    obride: int
+    cod: Optional[str]
+    res: Optional[str]
+    es_hoja: bool
+    activa: bool
+
+    def vale_en(self, obra_ide: int) -> bool:
+        """¿Es hoja activa del presupuesto de `obra_ide`? El mismo veredicto
+        que `construir_catalogo` sobre el presupuesto entero (R4)."""
+        return self.obride == int(obra_ide) and self.es_hoja and self.activa
 
 
 @dataclass
@@ -170,6 +197,8 @@ class AccionLinea:
     # F-050 (R6, R21): de dónde sale la partida propuesta («parte P · MM/AAAA
     # · obra O»); None si es elegida, casada, de postventa o VAR.
     partida_origen: str | None = None
+    # F-055 (R9): descripción de la partida de imputación; None sin partida.
+    partida_res: str | None = None
     # Aviso informativo que acompaña a la acción en la tabla del preflight.
     # Que haya aviso NO implica que la línea se vaya a escribir: si es el de
     # «sin partida», además viaja un Conflicto que la retiene hasta que

@@ -87,7 +87,16 @@ const state = {
   guardadoPendiente: false,
   empresa: null,               // empresa elegida en el selector (F-024)
   empresas: [],                // [{empresa, nombre, de_baja}] que sirve la API
+  // F-055 (R30, R36): la API calcula propuestas de partida del mes en
+  // segundo plano; mientras, las pendientes dicen «buscando partida…».
+  propuestasEnCurso: false,
 };
+
+// F-055 (R36): la consulta de `GET …/propuestas` mientras hay propuestas en
+// curso: UN solo temporizador vivo; `generacion` cambia con cada cuadrante
+// (mes, empresa o recarga) y deja sin efecto la consulta que ya iba.
+const INTERVALO_PROPUESTAS = 5000;
+const propuestas = { timer: null, generacion: 0 };
 
 // Selector de partida (F-050): respuestas de `GET …/partidas` por trabajador,
 // obra y modo (se vacía al cargar el cuadrante y su clave tras cada PUT),
@@ -153,6 +162,26 @@ function listaSelector(resp, texto, mayor) {
   return (primera ? [primera] : [])
     .concat(lista.filter((p) => p !== primera))
     .map((p) => ({ ...p, propuesta: p === primera }));
+}
+
+// Celda Partida de una línea que no es fija (F-050 R24, F-055 R27): la
+// elegida; sin ella, la propuesta guardada en cursiva con su método; sin
+// ninguna, «buscando partida…» si hay propuestas en curso o «automática».
+// Pinta lo que manda la API: no decide nada.
+function htmlPartida(l, enCurso) {
+  if (l.partida_ide != null) {
+    return `<span class="partida-elegida">${escapeHtml(textoPartida(l))}</span>`;
+  }
+  if (l.propuesta_cod) {
+    const metodo = rotuloOrigen(l.propuesta_metodo);
+    const texto = [l.propuesta_cod, l.propuesta_res].filter(Boolean).join(" · ");
+    return `<em class="partida-propuesta" title="Propuesta: ${escapeHtml(metodo)}">` +
+      `${escapeHtml(texto)}<span class="partida-metodo"> · ${escapeHtml(metodo)}` +
+      "</span></em>";
+  }
+  return enCurso
+    ? '<span class="partida-auto buscando">buscando partida…</span>'
+    : '<span class="partida-auto">automática</span>';
 }
 
 // De dónde sale una partida (`partida_metodo` y `partida_origen` del
@@ -320,9 +349,83 @@ function aplicarCuadrante(datos) {
   state.resumen = datos.resumen;
   state.editandoIde = null;
   state.edicion = [];
+  // F-055 (R36): otro mes, empresa o recarga: la consulta de antes se corta
+  // y empieza otra si este cuadrante trae propuestas en curso.
+  reiniciarPropuestas();
+  marcarPropuestas(datos.propuestas_en_curso);
   construirCatalogoObras();
   renderCabecera();
   renderTabla();
+}
+
+// ---------------------------------------------------------------- propuestas
+// F-055 (R36): copia las propuestas guardadas de `GET …/propuestas` a las
+// líneas que siguen sin elegida. Solo datos: el repintado va aparte.
+function aplicarPropuestas(lineas) {
+  lineas.forEach((p) => {
+    const t = state.trabajadores.find((x) => x.ide === p.trabajador_ide);
+    const l = t && t.lineas.find((x) => x.obra_ide === p.obra_ide &&
+      x.es_postventa === p.es_postventa && x.partida_ide == null);
+    if (!l) return;
+    l.propuesta_cod = p.propuesta_cod;
+    l.propuesta_res = p.propuesta_res;
+    l.propuesta_metodo = p.propuesta_metodo;
+  });
+}
+
+// Marca si hay propuestas en curso (lo dice la API en el cuadrante y en cada
+// escritura) y, si las hay, arranca la consulta (D9: también tras escribir).
+function marcarPropuestas(enCurso) {
+  state.propuestasEnCurso = !!enCurso;
+  if (state.propuestasEnCurso) seguirPropuestas();
+}
+
+// Corta la consulta en marcha (otro mes, empresa o recarga).
+function reiniciarPropuestas() {
+  propuestas.generacion += 1;
+  if (propuestas.timer !== null) clearTimeout(propuestas.timer);
+  propuestas.timer = null;
+}
+
+// Programa la siguiente consulta, salvo que ya haya un temporizador vivo.
+function seguirPropuestas() {
+  if (propuestas.timer !== null) return;
+  const generacion = propuestas.generacion;
+  const ruta = `/periodos/${state.anio}/${state.mes}/propuestas`;
+  propuestas.timer = setTimeout(() => {
+    propuestas.timer = null;
+    consultarPropuestas(generacion, ruta);
+  }, INTERVALO_PROPUESTAS);
+}
+
+// Una consulta: copia lo nuevo, repinta las celdas Partida y sigue mientras
+// la API diga `en_curso`. Si la API falla, para (el próximo cuadrante o
+// escritura la vuelve a arrancar).
+async function consultarPropuestas(generacion, ruta) {
+  let datos = null;
+  try {
+    datos = await api(ruta);
+  } catch (err) {
+    datos = null;
+  }
+  if (generacion !== propuestas.generacion) return;
+  if (datos) aplicarPropuestas(datos.lineas || []);
+  state.propuestasEnCurso = !!(datos && datos.en_curso);
+  repintarCeldasPartida();
+  if (state.propuestasEnCurso) seguirPropuestas();
+}
+
+// Repinta SOLO las celdas Partida de la tabla (no la fila en edición ni las
+// partidas fijas): lo que cambia al llegar propuestas o al acabar la cola.
+function repintarCeldasPartida() {
+  document.querySelectorAll("#cuerpo td.celda-partida").forEach((td) => {
+    const ide = Number(td.dataset.ide);
+    if (ide === state.editandoIde) return;
+    const t = state.trabajadores.find((x) => x.ide === ide);
+    const l = t && t.lineas[Number(td.dataset.linea)];
+    if (!l || l.partida_fija) return;
+    td.innerHTML = htmlPartida(l, state.propuestasEnCurso);
+  });
 }
 
 function construirCatalogoObras() {
@@ -997,6 +1100,7 @@ async function lanzarCompletar(entrada, filas) {
         }) });
     pintarResultadoCompletar(entrada, datos.resultados);
     fijarSeleccion([]);
+    marcarPropuestas(datos.propuestas_en_curso);    // F-055 (R36, D9)
     await cargarPeriodo(state.anio, state.mes);
   } catch (err) {
     toast(err.message, true);
@@ -1082,11 +1186,16 @@ function construirCelda(t, clave, idx) {
     td.className = "celda-partida";
     const l = t.lineas[idx];
     if (!l) return td;
+    td.dataset.ide = t.ide;         // F-055 (R36): para repintar solo esta
+    td.dataset.linea = idx;
     if (l.partida_fija) {
       td.classList.add("fija");
       td.innerHTML = `<span class="partida-fija" title="Partida fija de la entrada">${escapeHtml(l.descripcion)}</span>`;
     } else if (l.partida_ide != null) {
       td.innerHTML = `<span class="partida-elegida">${escapeHtml(textoPartida(l))}</span>`;
+    } else if (l.propuesta_cod || state.propuestasEnCurso) {
+      // F-055 (R27, R36): la propuesta guardada o «buscando partida…».
+      td.innerHTML = htmlPartida(l, state.propuestasEnCurso);
     } else {
       td.innerHTML = '<span class="partida-auto">automática</span>';
     }
@@ -1799,6 +1908,8 @@ function aplicarFila(datos) {
   );
   if (idx >= 0) state.trabajadores[idx] = datos.trabajador;
   state.resumen = datos.resumen;
+  // F-055 (R36, D9): la escritura encoló sus pendientes; sin recargar.
+  marcarPropuestas(datos.propuestas_en_curso);
   renderCabecera();
   if (state.editandoIde !== datos.trabajador.ide) {
     renderTabla();
@@ -1927,6 +2038,7 @@ async function copiarMesAnterior() {
       `${datos.con_carga_previa} ya tenían carga · ` +
       `${datos.sin_datos_origen} sin datos de origen`
     );
+    marcarPropuestas(datos.propuestas_en_curso);    // F-055 (R36, D9)
     await cargarPeriodo(state.anio, state.mes);
   } catch (err) {
     toast(err.message, true);

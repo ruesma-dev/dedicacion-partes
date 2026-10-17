@@ -39,6 +39,12 @@ class TransferClient:
     def preflight(self, payload: dict) -> dict[str, Any]:
         return self._post("/api/registro/preflight", payload)
 
+    def preflight_lote(self, peticiones: list[dict]) -> dict[str, Any]:
+        """F-055 (R26): el preflight de varias obras en una llamada
+        (`POST /api/registro/preflight-lote`): `{ok, obras}`."""
+        return self._post("/api/registro/preflight-lote",
+                          {"peticiones": peticiones})
+
     def ejecutar(self, payload: dict) -> dict[str, Any]:
         return self._post("/api/registro/ejecutar", payload)
 
@@ -49,6 +55,18 @@ class TransferClient:
         if r.get("ok") is not True or "propuestas" not in r:
             causa = (r.get("error")
                      or "la respuesta del transfer no trae propuestas")
+            raise PropuestaNoDisponible(
+                f"propuesta de partidas no disponible: {causa}")
+        return r
+
+    def propuesta_lote(self, peticiones: list[dict]) -> dict[str, Any]:
+        """F-055 (R31, R34): las propuestas de varias obras de un periodo
+        (`POST /api/partidas/propuesta-lote`): `{ok, obras}`. Sin `ok: true`
+        o sin `obras`: `PropuestaNoDisponible` (R33)."""
+        r = self._post("/api/partidas/propuesta-lote",
+                       {"peticiones": peticiones})
+        if r.get("ok") is not True or not isinstance(r.get("obras"), list):
+            causa = r.get("error") or "la respuesta del transfer no trae obras"
             raise PropuestaNoDisponible(
                 f"propuesta de partidas no disponible: {causa}")
         return r

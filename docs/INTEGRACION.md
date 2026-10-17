@@ -199,6 +199,7 @@ despliegue no tenga que aprender dos vocabularios.
 | `SIGRID_MAX_ROWS` | Filas por lectura (`max_rows`) que el transfer pide a `sigrid-api`. **200.000 por defecto en el código** (F-047): no hace falta declararla al desplegar. Tiene que caber en el `MAX_ALLOWED_ROWS` de `sigrid-api` (500.000 en la instancia desplegada). Hasta F-047 era 2.000 fijo y las obras con más partidas no se podían registrar (la 0696 tiene 3.024). Una respuesta `truncated` sigue siendo un error: nunca se decide con filas parciales |
 | `OBRA_PRUEBAS_FORZAR`, `OBRA_PRUEBAS_COD`, `MARCA_PRUEBAS` | Modo pruebas (§8) |
 | `VAR_OBRA_COD`, `VAR_PARTIDA_DESDE` | Obra de obras varias y número inicial desde el que sus partidas se ofrecen como obras propias (F-039, `docs/ARCHITECTURE.md#regla-var`). Con defecto en el código (`VAR`, `29`): no hace falta declararlas al desplegar. `VAR_OBRA_COD` vacío = sin entradas VAR |
+| `SIGRID_LECTURAS_PARALELAS` | Lecturas a la vez contra `sigrid-api` en un lote (F-055): **4 por defecto en el código**, de 1 a 8 (fuera de ese rango el transfer no arranca); 1 = en serie, como antes de F-055. El límite es **por lote** (por llamada a `…/preflight-lote` o `…/propuesta-lote`), **no por proceso**: dos lotes a la vez —p. ej. un preflight y las propuestas del mes en segundo plano— suman sus lecturas contra `sigrid-api` |
 | `PROPUESTA_MESES_ATRAS` | Meses hacia atrás, desde el del cuadrante incluido, en los que se busca la partida propuesta (F-050, `docs/ARCHITECTURE.md#regla-partida`). Con defecto en el código (`24`): no hace falta declararla al desplegar |
 | `LOG_DIR` | `/tmp/logs` en el contenedor: `/app` no tiene por qué ser escribible |
 
@@ -313,6 +314,37 @@ obra (la del grupo; en las entradas VAR, la de registro). Es lo que repite
 el modal al cambiar una partida, en vez del mes entero (F-050 T15c);
 `ejecutar` no se acota. La regla está en `docs/ARCHITECTURE.md#regla-partida`.
 
+Desde F-055 (registro sin búsquedas de partidas; orden de la propuesta
+parte anterior → casamiento → último parte):
+
+- El transfer expone, **solo para la api**, `POST
+  /api/registro/preflight-lote` (`{peticiones: [la petición de
+  /api/registro/preflight]}` → `{ok, obras}`: por petición y en su orden,
+  la respuesta del preflight de hoy o `{ok: false, error}`; 502 si falla una
+  lectura agrupada) y `POST /api/partidas/propuesta-lote` (`{peticiones:
+  [la de /api/partidas/propuesta]}`, todas del mismo `ano` y `mes` o 422 →
+  `{ok, obras}`: por petición `{ok: true, propuestas}` o `{ok: false,
+  error}`; 502 si falla una lectura compartida). Los dos solo leen, son
+  síncronos y leen agrupado y en paralelo (`SIGRID_LECTURAS_PARALELAS`).
+- Las líneas del registro ganan cinco campos opcionales, `propuesta_paride`,
+  `propuesta_cod`, `propuesta_res`, `propuesta_metodo` y
+  `propuesta_origen` (la propuesta guardada de una línea sin elegida), y
+  cada acción del preflight publica `partida_res`.
+- La api pide el preflight del periodo en **una** llamada al lote y guarda
+  en `asignacion.propuesta_*` (cinco columnas nulables nuevas, que pone al
+  día al arrancar) las propuestas que vuelven; el selector también la
+  guarda. Calcula las del mes en **segundo plano** (un hilo) con el lote de
+  propuestas, por trozos de 10 obras.
+- La api sirve **al front** `GET /api/v1/periodos/{anio}/{mes}/propuestas`
+  (`{en_curso, lineas: [{trabajador_ide, obra_ide, es_postventa,
+  propuesta_cod, propuesta_res, propuesta_metodo}]}`, solo lee). El
+  cuadrante y las seis escrituras (`PUT …/asignaciones`, `PUT …/partida`,
+  `POST …/deshacer`, `POST …/trabajadores/{ide}/copiar-anterior`, `POST
+  …/completar` y `POST …/copiar-anterior`) ganan `propuestas_en_curso`
+  (`bool`); cada línea del cuadrante, `propuesta_cod`, `propuesta_res` y
+  `propuesta_metodo`. El front consulta `…/propuestas` cada 5 s mientras
+  `propuestas_en_curso`.
+
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 
 El acceso lo decide la pertenencia al grupo de Entra
@@ -406,7 +438,7 @@ balanceador de Azure:
 |---|---|---|
 | navegador → front | (balanceador de Azure) | **230 s, no configurable** |
 | front → api | `API_TIMEOUT_S` | **200 s** |
-| api → transfer (registro y, desde F-025, universo de postventa en el sync) | `TRANSFER_TIMEOUT_S` | **180 s** |
+| api → transfer (registro —desde F-055 el preflight en una llamada al lote—, universo de postventa en el sync y, desde F-055, las propuestas del mes por trozos de 10 obras, en segundo plano) | `TRANSFER_TIMEOUT_S` | **180 s** |
 | transfer → `sigrid-api` | `SIGRID_API_TIMEOUT_S` | 60 s |
 
 Al revés, el de fuera se rinde antes y el usuario ve un error de una escritura
@@ -465,6 +497,8 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Cambiar `sync.obras.digitos_seguidos_excluidos` de `config.yaml` | Cambia qué obras se ignoran por su código en el siguiente sync; con `0`, vuelven todas (F-039) |
 | Parar el transfer, o que no responda a `POST /api/partidas/propuesta` | El selector de partida no se abre (502 con el motivo); el cuadrante, guardar y registrar siguen funcionando (F-050) |
 | Publicar la api de F-050 antes que el transfer | El selector de partida da 502 hasta publicar el transfer: el transfer viejo no tiene `POST /api/partidas/propuesta`. **Orden de despliegue: transfer → api → front** (F-050); la api pone al día la tabla `asignacion` al arrancar (`partida_*`, nulables) |
+| Publicar la api de F-055 antes que el transfer | El preflight del registro y las propuestas en segundo plano fallan (404 en `POST /api/registro/preflight-lote` y `/api/partidas/propuesta-lote`): el modal enseña el error en cada obra y las celdas Partida siguen en «automática». **Orden de despliegue: transfer → api → front** (F-055); la api pone al día la tabla `asignacion` al arrancar (`propuesta_*`, nulables) |
+| Subir `SIGRID_LECTURAS_PARALELAS` del transfer | Más lecturas a la vez contra `sigrid-api` (tope 8 **por lote**, no por proceso; dos lotes simultáneos suman las suyas); `sigrid-api` no documenta un tope de concurrencia (`azure-apps/sigrid_api.md` §3.4). 1 vuelve al serie de antes de F-055 |
 | Cambiar `PROPUESTA_MESES_ATRAS` del transfer | Cambia hasta dónde se mira atrás para proponer la partida del parte anterior y del último parte; cuantos más meses, más filas lee el historial (F-050) |
 | Cambiar en el transfer la elección del parte o la regla de la cuenta (`estado_parte.py`, `cuenta_analitica.py`) sin cambiarla en `partes` | Los dos servicios dejan de caer en el mismo parte o de poner la misma cuenta: dos complementarios en un mes, o un asiento analítico (`ANA`) con cuentas distintas para la misma persona. Las copias se vigilan con `tests/test_f037_copias_partes.py` (F-037) |
 

@@ -2,6 +2,8 @@
 """API HTTP de porcentajes-transfer.
 
   POST /api/registro/preflight  -> analiza y devuelve qué se haría
+  POST /api/registro/preflight-lote -> el preflight de varias obras con las
+                                   lecturas agrupadas (F-055 R19; solo lee)
   POST /api/registro/ejecutar   -> escribe en Sigrid (con pisar_claves)
   POST /api/postventa/universo  -> obras de una empresa que admiten postventa
                                    (ARCHITECTURE.md#regla-p5; solo lee)
@@ -10,6 +12,9 @@
   POST /api/partidas/propuesta  -> catálogo con su mayor y partida propuesta
                                    de cada línea (ARCHITECTURE.md
                                    #regla-partida; solo lee)
+  POST /api/partidas/propuesta-lote -> las propuestas de varias obras de un
+                                   periodo, con las lecturas agrupadas
+                                   (F-055 R34; solo lee)
   GET  /health
 """
 from __future__ import annotations
@@ -22,6 +27,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.reglas_porcentajes import (
     clave_conflicto, empresa_valida,
@@ -65,6 +71,12 @@ class LineaIn(BaseModel):
     empresa: Optional[int] = None
     # Partida VAR de una entrada `VAR-NN` (ARCHITECTURE.md#regla-var).
     var_paride: Optional[int] = None
+    # F-055 (R16): propuesta guardada de una línea automática.
+    propuesta_paride: Optional[int] = None
+    propuesta_cod: Optional[str] = None
+    propuesta_res: Optional[str] = None
+    propuesta_metodo: Optional[str] = None
+    propuesta_origen: Optional[str] = None
 
 
 class PeticionIn(BaseModel):
@@ -72,6 +84,13 @@ class PeticionIn(BaseModel):
     lineas: list[LineaIn] = Field(default_factory=list)
     pisar_claves: list[str] = Field(default_factory=list)
     usuario: Optional[str] = None
+
+
+class LoteIn(BaseModel):
+    """`POST /api/registro/preflight-lote` (F-055 R19): varias peticiones
+    de preflight, una por obra."""
+
+    peticiones: list[PeticionIn] = Field(default_factory=list)
 
 
 class UniversoIn(BaseModel):
@@ -112,12 +131,41 @@ class PropuestaIn(BaseModel):
     lineas: list[LineaPropuestaIn] = Field(default_factory=list)
 
 
+class PropuestaLoteIn(BaseModel):
+    """`POST /api/partidas/propuesta-lote` (F-055 R34): varias peticiones
+    de propuesta, todas del mismo `ano` y `mes` (si no, 422)."""
+
+    peticiones: list[PropuestaIn] = Field(default_factory=list)
+
+
 def _empresas_mezcladas(exc: EmpresasMezcladas) -> JSONResponse:
     """Una petición con líneas de varias empresas es un dato de entrada
     inválido (422), no un fallo de Sigrid (502): no se ha leído nada."""
     logger.warning("peticion rechazada: %s", exc)
     return JSONResponse(status_code=422,
                         content={"ok": False, "error": str(exc)})
+
+
+def _respuesta_preflight(pf) -> dict:
+    """La respuesta de `POST /api/registro/preflight` (y de cada obra de
+    `POST /api/registro/preflight-lote`) para un `Preflight`."""
+    obra_pv = getattr(pf, "obra_postventa", None)
+    return {
+        "ok": True,
+        "obra_destino": asdict(pf.obra_destino),
+        "obra_postventa": asdict(obra_pv) if obra_pv else None,
+        "capitulo_postventa": getattr(pf, "capitulo_postventa", None),
+        "partidas_obra": getattr(pf, "partidas_obra", []),
+        "partidas_postventa": getattr(pf, "partidas_postventa", []),
+        "forzada_pruebas": pf.forzada_pruebas,
+        "partes": [asdict(x) for x in pf.partes],
+        "acciones": [asdict(a) | {"clave": clave_conflicto(a)}
+                     for a in pf.acciones],
+        "conflictos": [asdict(c) for c in pf.conflictos],
+        "resumen": {"escribir": pf.n_escribir, "omitir": pf.n_omitir,
+                    "ya_registrado": pf.n_ya,
+                    "conflictos": len(pf.conflictos)},
+    }
 
 
 def build_app(settings) -> FastAPI:
@@ -159,30 +207,35 @@ def build_app(settings) -> FastAPI:
         try:
             obra, lineas = _dominio(p)
             pf = pipeline.preflight(obra=obra, lineas=lineas)
-            obra_pv = getattr(pf, "obra_postventa", None)
-            return {
-                "ok": True,
-                "obra_destino": asdict(pf.obra_destino),
-                "obra_postventa": asdict(obra_pv) if obra_pv else None,
-                "capitulo_postventa": getattr(pf, "capitulo_postventa",
-                                              None),
-                "partidas_obra": getattr(pf, "partidas_obra", []),
-                "partidas_postventa": getattr(pf, "partidas_postventa", []),
-                "forzada_pruebas": pf.forzada_pruebas,
-                "partes": [asdict(x) for x in pf.partes],
-                "acciones": [asdict(a) | {"clave": clave_conflicto(a)}
-                             for a in pf.acciones],
-                "conflictos": [asdict(c) for c in pf.conflictos],
-                "resumen": {"escribir": pf.n_escribir, "omitir": pf.n_omitir,
-                            "ya_registrado": pf.n_ya,
-                            "conflictos": len(pf.conflictos)},
-            }
+            return _respuesta_preflight(pf)
         except EmpresasMezcladas as exc:
             return _empresas_mezcladas(exc)
         except Exception as exc:                # noqa: BLE001
             logger.exception("preflight fallo")
             return JSONResponse(status_code=502,
                                 content={"ok": False, "error": str(exc)})
+
+    @app.post("/api/registro/preflight-lote")
+    def preflight_lote(p: LoteIn):
+        """F-055 (R19, R24, R25): síncrona, en el threadpool. Por petición,
+        la forma de `/api/registro/preflight` o `{ok: false, error}`; una
+        lectura agrupada que falla, 502."""
+        try:
+            resultados = RegistroLote(cliente=cliente,
+                                      settings=settings).preflight(
+                [_dominio(x) for x in p.peticiones])
+        except Exception as exc:                # noqa: BLE001
+            logger.exception("preflight en lote fallo")
+            return JSONResponse(status_code=502,
+                                content={"ok": False, "error": str(exc)})
+        obras = []
+        for r in resultados:
+            if isinstance(r, Exception):
+                logger.warning("preflight en lote: una obra falla: %s", r)
+                obras.append({"ok": False, "error": str(r)})
+            else:
+                obras.append(_respuesta_preflight(r))
+        return {"ok": True, "obras": obras}
 
     @app.post("/api/registro/ejecutar")
     async def ejecutar(p: PeticionIn):
@@ -252,6 +305,47 @@ def build_app(settings) -> FastAPI:
             logger.warning("propuesta rechazada: %s", r["error"])
             return JSONResponse(status_code=422, content=r)
         return r
+
+    @app.post("/api/partidas/propuesta-lote")
+    def propuesta_lote(p: PropuestaLoteIn):
+        """F-055 (R34, R24, R25): síncrona, en el threadpool. Mismo periodo
+        o 422; por petición `{ok: true, propuestas}` o `{ok: false,
+        error}` (empresa no válida, obra de otra empresa o no encontrada);
+        una lectura compartida que falla, 502."""
+        if len({(x.ano, x.mes) for x in p.peticiones}) > 1:
+            logger.warning("propuesta en lote rechazada: varios periodos")
+            return JSONResponse(status_code=422, content={
+                "ok": False,
+                "error": "todas las peticiones tienen que ser del mismo "
+                         "año y mes"})
+        validas = [x for x in p.peticiones if empresa_valida(x.empresa)]
+        try:
+            resultados = iter(RegistroLote(
+                cliente=cliente, settings=settings).proponer([
+                    {"empresa": x.empresa,
+                     "obra": ObraEntrada(ide=x.obra.ide, codigo=x.obra.codigo,
+                                         nombre=x.obra.nombre),
+                     "ano": x.ano, "mes": x.mes,
+                     "lineas": [l.model_dump() for l in x.lineas]}
+                    for x in validas]))
+        except Exception as exc:                # noqa: BLE001
+            logger.exception("propuesta en lote fallo")
+            return JSONResponse(status_code=502,
+                                content={"ok": False, "error": str(exc)})
+        obras = []
+        for x in p.peticiones:
+            if not empresa_valida(x.empresa):
+                obras.append({"ok": False,
+                              "error": f"empresa no válida: {x.empresa!r}"})
+                continue
+            r = next(resultados)
+            if isinstance(r, Exception):
+                r = {"ok": False, "error": str(r)}
+            if not r["ok"]:
+                logger.warning("propuesta en lote: una obra falla: %s",
+                               r["error"])
+            obras.append(r)
+        return {"ok": True, "obras": obras}
 
     @app.post("/api/var/universo")
     async def universo_de_var(p: UniversoVarIn):

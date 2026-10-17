@@ -2590,3 +2590,81 @@ revisiones `…--r20261014173903` en `Running`; el transfer sigue en modo real
 (`OBRA_PRUEBAS_FORZAR=false`), comprobado por el líder (solo lectura). La api
 añade al arrancar las columnas `partida_*` de `asignacion`. `azure-apps`
 actualizado en el mismo trabajo.
+
+## 2026-10-17 · F-055 · Registro sin búsquedas de partidas y propuesta del mes en segundo plano
+
+Rama `feature/F-055-preflight-rapido` (copia `porcentajes-f041`) · `sdd: true` ·
+rigor `critico` · **APROBADO** en la review de cierre (pasada 5, `1268e60`;
+reviews 1 y 3 aprobadas, 2 y 4 rechazadas). Toca los tres servicios: el
+registro ya no lee presupuestos ni historiales cuando la línea trae partida
+(validación por `ide`); el preflight va en lote, agrupado y en paralelo
+(`POST /api/registro/preflight-lote`, `SIGRID_LECTURAS_PARALELAS`, defecto 4
+por lote); la propuesta se guarda en `asignacion.propuesta_*` y se calcula en
+segundo plano para el mes (`POST /api/partidas/propuesta-lote`, `GET
+…/propuestas`, `propuestas_en_curso`) y tras cada escritura para las pendientes
+de ese trabajador (D9); orden de la propuesta a → c → b (D10). Cobertura
+809/809, mutación 284/284 + 9/9. MANUAL (líder, local, modo pruebas,
+09/2026): modal de GONZALEZ PANIAGUA 62,4/27,5 s → 12,7/8,8 s; mes 79,5 →
+16,2 s sin 502; repreflight 19,3 → 10,5 s; mes sin propuestas lleno en 16,8 s;
+obra nueva 59,1 s (≈ 24 s de CPU del transfer en la propuesta de una línea),
+con C8 subido a ≤ 60 s por el humano. T19 sustituida por la prueba del humano
+en producción; renuncia al «antes» de producción («lo desplegamos y despues
+mido»). Documentación en `azure-apps` `b6e35fa`.
+
+Informes: `progress/impl_F-055.md`, `progress/review_F-055.md`,
+`progress/mutacion_*F-055*.md`. Sección retirada de `current.md`:
+
+### F-055 · Registro sin búsquedas de partidas (en curso: review de cierre)
+
+- **Estado (2026-10-16):** T1, T2b, T2c y T3-T17 hechas por el implementer
+  (`progress/impl_F-055.md`): `init.sh` en verde sin cachés sobre `807dd32`
+  (transfer 930, api 871, front 291, raíz 418 + 1 skipped), cobertura 100 % de
+  795 líneas cambiadas, mutación 284/284 muertos y JS 36/36. **Review 1
+  APROBADA** (`progress/review_F-055.md`, `101f5d7`) con O1-O9, recogidas con
+  el «si» del humano del 2026-10-16: **T17b** (O3, O5, O7-O9; hecha en `906e35b`,
+  init.sh en verde sin cachés; **review 2 RECHAZADA** (`6867360`): mutante
+  vivo en `sigrid_write_client.py:623` (`or 0` → `or 1`, `pos` NULL), tabla
+  de la mutación manual sin texto exacto y docstring falso de `cerrar()`;
+  corregidos en `c997385`-`86f8438` (marca de parada entre trozos, test del
+  `pos` nulo, `progress/mutacion_T17b_F-055.md` 9/9); **review 3 APROBADA**, `3a87726`).
+  **T18 (líder, 2026-10-17):** C3, C4, C5 y C8 OK; la obra nueva tardó 59.1 s (≈ 24 s de CPU del
+  transfer en `propuesta-lote` de una línea) y el humano subió C8 a ≤ 60 s («3, sube el limite y lo
+  pruebo en real»); lo de pantalla y O2 los mira el humano en real. Cifras en `impl_F-055.md`.
+  Automejora de la review 3, al trabajo del arnés junto a O1: una mutación
+  manual de Python también exige tabla con texto exacto, y el reviewer corre
+  los mutantes del generador sobre esas líneas; O4 al copiar a azure-apps (T15); O2 lo juzga el humano en su prueba en real (si
+  molesta, la api publica qué línea está pendiente); O1 y la automejora de
+  `CHECKPOINTS.md` C4 (trazar un R «como hoy» o documental), trabajo aparte
+  del arnés tras F-055, portado a `arnes-base`. **Desviaciones de diseño
+  aprobadas por el humano el 2026-10-16 («si»):** T6, validación e historial
+  en la ronda B (no A); T12, `empresa` = `EMPRESA_IMPUTACION` (no
+  `obra_empresa`), como el selector y el registro.
+- **Spec:** aprobada el 2026-10-13 («acepto tu propuesta de F-55»); ampliada
+  con D9 (propuesta también tras escribir, solo las pendientes de ese
+  trabajador) y D10 (orden parte anterior → casamiento → último parte),
+  aprobada el 2026-10-14 («sí, pero en reglas hay que cambiar el orden, a c
+  b») y validada el 2026-10-15 con Deshacer («d9, solo se recalcula si
+  cambias algo de ese trabajador, si es de otro no. ok a todo»).
+- **Decisiones del humano durante la implementación (2026-10-15)**, en la lista
+  cerrada de `tasks.md`: 1) `test_pipeline_offline.py`, solo su `ClienteFalso`
+  gana `validar_partidas` («añade test_pipeline_offline.py a la lista
+  cerrada»); 2) `test_f050_partida_linea.py`, solo sus filas falsas con
+  `propuesta_*=None`; 3) permiso general para ampliar dobles sin tocar
+  aserciones (listados en el informe, «Dobles ampliados»); 4) C2 contado como
+  C1: 7 lecturas en real y 8 en pruebas, en ≤ 4 rondas (2-4: «si a todo»).
+  Desviación de T1 (design §5.1): la medición va en `_lectura(nombre, …)` y
+  `_read` conserva su firma.
+- **T2:** hecha en local (script el 2026-10-15; HTTP por el líder el 2026-10-16;
+  cifras en `impl_F-055.md`); sin «antes» de producción por renuncia del humano
+  (2026-10-17): C6 mide solo el «después» contra ≤ 30 s y mes ≤ 60 s sin 502.
+- **T18:** hecha (2026-10-17), ver arriba.
+- **T19:** sustituida por el humano el 2026-10-17 («eso es, probarlo en
+  produccion»): sin registro en local; C6 en producción tras desplegar
+  (preflight de GONZALEZ PANIAGUA y del mes, Cancelar; registrar lo decide él).
+- **T15:** hecha por el líder el 2026-10-17, `azure-apps` `b6e35fa`
+  (`dedicacion.md`: cabecera, §3 `SIGRID_LECTURAS_PARALELAS` por lote —O4—,
+  §5 contratos de F-055 y timeouts, §7 dos filas). Al desplegar, su cabecera
+  pasa de «pendiente de desplegar» a los tags publicados.
+- **Despliegue (tras cerrar):** transfer → api → front; la api añade al
+  arrancar las columnas nulables `propuesta_*`; variable nueva
+  `SIGRID_LECTURAS_PARALELAS` (defecto 4). El transfer conserva el modo real.

@@ -82,8 +82,10 @@ def test_f049_d_todas_manuales_publica_el_catalogo_de_origen():
     a = pf.acciones[0]
     assert (a.accion, a.paride, a.partida_metodo) == (
         "escribir", 80002, "manual"), a
-    assert pf.partidas_obra == CATALOGO_ORIGEN
-    assert leidas == [cli.obra_origen.ide]
+    # F-055 R10 (lista cerrada): sin pendientes no se lee el presupuesto y
+    # `partidas_obra` va vacío (el front no lo lee desde F-050 R29).
+    assert pf.partidas_obra == []
+    assert leidas == []
 
 
 def test_f049_d_varias_manuales_una_sola_lectura():
@@ -93,8 +95,9 @@ def test_f049_d_varias_manuales_una_sola_lectura():
                            partida_cod="CI.1.10")])
 
     assert [a.paride for a in pf.acciones] == [80002, 80001]
-    assert pf.partidas_obra == CATALOGO_ORIGEN
-    assert leidas == [cli.obra_origen.ide]
+    # F-055 R10 (lista cerrada): ninguna lectura del presupuesto.
+    assert pf.partidas_obra == []
+    assert leidas == []
 
 
 def test_f049_d_manual_y_automatica_una_sola_lectura_como_hoy():
