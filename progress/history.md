@@ -2609,7 +2609,9 @@ de ese trabajador (D9); orden de la propuesta a → c → b (D10). Cobertura
 obra nueva 59,1 s (≈ 24 s de CPU del transfer en la propuesta de una línea),
 con C8 subido a ≤ 60 s por el humano. T19 sustituida por la prueba del humano
 en producción; renuncia al «antes» de producción («lo desplegamos y despues
-mido»). Documentación en `azure-apps` `b6e35fa`.
+mido»). Documentación en `azure-apps` `b6e35fa`. **Desplegada el 2026-10-17**: transfer
+`r20261017-1306`, api `r20261017-1310`, front `r20261017-1314`; transfer en
+modo real. C6 (producción, «después») pendiente del humano.
 
 Informes: `progress/impl_F-055.md`, `progress/review_F-055.md`,
 `progress/mutacion_*F-055*.md`. Sección retirada de `current.md`:
