@@ -3,10 +3,10 @@
 
 **F-055 en curso en esta rama** (`feature/F-055-preflight-rapido`,
 copia `PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas
-y propuesta del mes en segundo plano. **T18 hecha (2026-10-17; C8 subido a ≤ 60 s por el humano); faltan T19, T20, T15 y el cierre.** Implementer: T1-T17b hechas
+y propuesta del mes en segundo plano. **T18 hecha (2026-10-17; C8 subido a ≤ 60 s por el humano); T19 sustituida por la prueba del humano en producción; T20 en verde (2026-10-17, sin cachés: raíz 418 + 1 skipped, api 874, front 291, transfer 932; cobertura 809/809); faltan T15, review de cierre, merge y despliegue (autorizado, «si», 2026-10-17).** Implementer: T1-T17b hechas
 (`init.sh` en verde, mutación 284/284 y JS 36/36; informe en
 `progress/impl_F-055.md`). Falta: copiar a azure-apps (T15, líder) y
-las MANUAL T19-T20. F-050 está cerrada en `dev` y `main`; se
+T20. F-050 está cerrada en `dev` y `main`; se
 desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arnés es la
 **1.7.3**.
 
@@ -58,11 +58,9 @@ desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arné
   → modal; b) mes entero; c) repreflight al cambiar una partida; d) abrir el
   selector. Son el «antes» de C3 (≤ 40 % del antes).
 - **T18:** hecha (2026-10-17), ver arriba.
-- **T19 (MANUAL, con autorización del humano en ese momento):** registro en
-  modo pruebas (0404, `PRUEBA-PORC`) de un trabajador con elegida y otro con
-  propuesta guardada, cronometrado; luego `prueba_escritura_porcentajes.py
-  estado --ano 2026 --mes 9`. C6 en producción tras desplegar (solo preflight
-  y Cancelar).
+- **T19:** sustituida por el humano el 2026-10-17 («eso es, probarlo en
+  produccion»): sin registro en local; C6 en producción tras desplegar
+  (preflight de GONZALEZ PANIAGUA y del mes, Cancelar; registrar lo decide él).
 - **T15 · azure-apps (PENDIENTE DEL LÍDER, al cerrar):** copiar a
   `azure-apps/dedicacion.md` lo nuevo de `docs/INTEGRACION.md` (§5 «Desde
   F-055», `SIGRID_LECTURAS_PARALELAS` de §3, timeouts y las dos filas nuevas
