@@ -1,136 +1,126 @@
 <!-- progress/review_F-055.md -->
-Revisión incremental desde 4c8d3f0 (pasada 3) · `4c8d3f0..9f5530f` (correcciones de la pasada 2 sobre T17b)
+Revisión incremental desde 3a87726 (pasada 4, cierre) · `3a87726..d9569d5`: solo `current.md`, `impl_F-055.md` y la spec
 
 # F-055 · Review
 
-## Pasada 3 — **Veredicto: APROBADO** (APPROVED)
+## Pasada 4 (cierre) — **Veredicto: RECHAZADO** (CHANGES_REQUESTED)
 
-**init.sh** (cachés `suite_*.ok` borradas, ejecutado solo): `ENTORNO LISTO`, exit 0, ningún `[KO]`; raíz 418 + 1 s, api 874,
-front 291, transfer 932; `PUERTA COBERTURA` 100 % de 809 líneas; tamaño OK.
-**Lista cerrada:** solo cambian `test_f055_propuestas_mes.py` y `test_f055_cliente_agrupado.py` (un test nuevo cada uno, de
-F-055); ningún test anterior tocado. [x] `6867360..4c8d3f0` es solo `current.md` del líder.
-1. **Pos nulo** [x]: `test_f055_r20_lineas_de_partes_pos_nulo_primero_como_sql_server` (nulo del 2.º trozo antes que `pos = 1`
-   del 1.º). Mata `or 0` → `or 1` (1 fallo, reproducido); no es equivalente (RM3).
-2. **Campaña reproducible** [x]: `progress/mutacion_T17b_F-055.md`, 9 filas con texto exacto y fallos. Reproducidas en una
-   copia de `9f5530f` en el scratchpad **las 7** que puedo regenerar: los 5 del generador del arnés sobre
-   `b3e5373..9f5530f` (fallos 1, 1, 2, 1, 3, como la tabla) y las manuales `self._parada.set()` → `pass` y `break` → `pass`
-   (1 fallo cada una). Las del `lifespan` las cubre `test_f055_r30_la_api_cierra_la_cola_al_pararse`. 0 vivos. RM6: nada
-   defensivo quitado.
-3. **`cerrar()`** [x]: `threading.Event` que `_calcular` mira **entre trozos** (`break` dentro del `try`: las claves salen
-   de la cola en el `finally`, como R33); docstring e informe dicen ya lo que pasa (el trozo en marcha acaba y Python lo
-   espera al salir; el siguiente no empieza). Test `test_f055_r30_cerrar_deja_acabar_el_trozo_y_no_empieza_otro`
-   (1 llamada, guarda la 1.ª obra y no la 2.ª, `en_curso` falso).
-Rastro: `impl_F-055.md` §T17b y «Evidencias», `current.md` («en review 3») al día. Pendiente de cierre, como antes: T2
-(navegador), T18-T20 MANUAL y T15 (azure-apps, líder); O2 y O4 según lo decidido por el humano.
+**Nivel de rigor:** `critico` (declarado en `features.json`): RED, cobertura, mutación con 0 vivos sin justificar y MANUAL
+listadas con su comando exacto y su resultado real. Lo aprobado hasta `3a87726` (código) queda dado por bueno:
+`git diff --stat 3a87726..HEAD` = 5 ficheros, ninguno de código.
 
----
+**init.sh** (cachés `suite_*.ok` borradas, ejecutado solo): `ENTORNO LISTO`, exit 0, **0 `[KO]`**; raíz 418 + 1 skipped,
+api 874, front 291, transfer 932; `PUERTA COBERTURA` 100 % de 809 líneas; `PUERTA TAMAÑO` requirements 149/150, design
+250/250, impl 220/220, review 136/140. Ruff 258 avisos (deuda previa, no bloquea).
 
-## Pasada 2 · T17b — **Veredicto: RECHAZADO** (CHANGES_REQUESTED)
+**Lo pedido por el líder:**
+1. **C8 a ≤ 60 s** [x]: `requirements.md:146` y `tasks.md:38` dicen ≤ 60 s con «humano, 2026-10-17; era 30»;
+   `design.md:48` deja la estimación (≤ 30 s) **anotada** con lo medido (59 s) y el límite nuevo. El grep de «30 s» en la
+   spec solo da C3 (≤ 30 s, que no cambia) y esa estimación anotada. Coherente.
+2. **T19 sustituida** [x]: `tasks.md:39` y `current.md:58-60` con cita («eso es, probarlo en produccion») y fecha.
+3. **T20** [x]: init.sh en verde, arriba.
+4. **T15, azure-apps `b6e35fa`** [x] (rama `master`): cabecera «Pendiente de desplegar», §3 `SIGRID_LECTURAS_PARALELAS`
+   **por lote, no por proceso** (O4 recogida), §5 contratos de `preflight-lote`, `propuesta-lote`, `…/propuestas`,
+   `propuestas_en_curso`, columnas `propuesta_*` y timeouts, §7 dos filas (orden de despliegue y la variable). Coincide con
+   `docs/INTEGRACION.md` y con el código (`settings.py:34`, defecto 4; trozos de 10). Ver cambio 4.
+5. **current.md**: cabecera al día y despliegue autorizado anotado (líneas 10-11, «si», 2026-10-17), **pero** ver 1-2.
+6. **Topes** [x]: los de arriba.
 
-Lo aprobado en la pasada 1 (hasta `101f5d7`; `101f5d7..b3e5373` solo es rastro del líder) queda dado por bueno. Rigor
-`critico`: cero supervivientes sin justificación aceptada por el humano y campaña manual reproducible.
+**Barrido de datos sensibles** (diff `3a87726..HEAD` + `b6e35fa`; patrones: correo, IPv4, GUID, `password|passwd|secret|
+token|apikey|api_key|AccountKey|sig=|Bearer`): 0 coincidencias (fuera del `Co-Authored-By`).
 
-**init.sh** (cachés `suite_*.ok` borradas, ejecutado solo): `ENTORNO LISTO`, exit 0, ningún `[KO]`: raíz 418 + 1 skipped,
-api 873, front 291, transfer 931; `PUERTA COBERTURA` 100 % de 804 líneas; tamaño OK; ruff 258 avisos (no bloquea).
-
-**Lista cerrada.** T17b solo toca tests de F-055 (`test_f055_*` y el plugin `f055_equivalencia_lote.py`); ninguna aserción
-cambia salvo los dos tests nuevos. Ningún test anterior fuera de la lista. [x]
-
-**Producción revisada.**
-- **O3** `sigrid_write_client.py:589-626`: lee `hmores.pos` y ordena cada parte por `pos` al juntar trozos (estable). Bien, con
-  test (`test_f055_r20_lineas_de_partes_en_varios_trozos_en_orden_pos`). Ver cambio 1: un mutante sobrevive.
-- **O5** `propuestas_mes.py:62-67` `cerrar()` = `shutdown(wait=False, cancel_futures=True)` y `app.py` `lifespan` que la llama;
-  dos tests. Cancela lo encolado, pero **el docstring dice «no espera al trozo en marcha» y no es cierto**: comprobado en el
-  scratchpad (Python 3.12) que el `atexit` de `concurrent.futures` hace `join` del hilo, y la tarea en marcha (`_calcular`)
-  sigue con **todos** sus trozos: proceso con una tarea de 3 × 1 s y otra encolada → el script acaba a 0,2 s, el proceso a
-  3,4 s (la encolada sí se cancela). Ver cambio 3.
-- **O7-O9**: continuación rota corregida, `noqa`/imports en tests nuevos, línea en `mutacion_F-055_pasada1.md`, cabecera
-  del informe. [x]
-
-**Mutación de T17b.** El informe dice «mutación manual … 9 mutantes: orden, `pos`, `shutdown`, `lifespan`: 9/9 muertos» sin
-tabla: ni fichero:línea, ni texto exacto original → mutado, ni nº de fallos. **No es reproducible** (C4 bis: «sin ese texto
-exacto el punto NO se marca»). Verificación propia (RM4, en una copia de `dd38610` en el scratchpad, nunca en el árbol):
-`generar_mutantes` del arnés sobre las líneas de producción de `b3e5373..dd38610` da **5 mutantes**; corridos contra
-`test_f055_propuestas_mes`, `…_tras_escribir` y `test_f024_rutas_empresa` (api) o `test_f055_cliente_agrupado`,
-`…_lecturas_lote` y `test_f055_lote` (transfer):
-
-| Fichero:línea | Original → mutado | Resultado |
-|---|---|---|
-| `propuestas_mes.py:66` | `shutdown(wait=False, …)` → `wait=True` | muerto (1 fallo) |
-| `propuestas_mes.py:66` | `cancel_futures=True` → `False` | muerto (1 fallo) |
-| `sigrid_write_client.py:623` | `int(f["pos"] or 0)` → `int(f["pos"] and 0)` | muerto (1 fallo) |
-| `sigrid_write_client.py:623` | `int(f["pos"] or 0)` → `int(f["pos"] or 1)` | **VIVO** (79 passed) |
-| `sigrid_write_client.py:625` | `key=lambda x: x[0]` → `x[1]` | muerto (2 fallos) |
-
-`app.py` (lifespan) no genera mutantes del arnés; lo cubre `test_f055_r30_la_api_cierra_la_cola_al_pararse`.
-**RM6:** T17b no quita ninguna guarda. **RM3:** el vivo **no** es equivalente: la suelta ordena en SQL Server, donde
-`ORDER BY hmores.pos` pone los `NULL` **primero**; con `or 0` un `pos` nulo va antes que `pos = 1`, con `or 1` empata con él
-y el orden depende del trozo. Hueco de test real en la línea que arregla O3.
+**Checkpoints:** C1 [x]; C2 [x]; C3 [x]; C3 bis N/A (no toca `docs/referencia/`); C4 **[ ]** (la MANUAL de producción C6
+no está descrita entera: falta su «antes», cambio 1); C4 bis [x] (sin cambios de código desde la pasada 3; RM1-RM6 como
+allí); C4 ter N/A (sin `harness/rutas_sensibles.json`); C5 **[ ]**: `tasks.md:17` **T2 sigue `[ ]`**.
 
 ### Cambios requeridos
 
-1. **`sigrid_write_client.py:623` (vivo `or 0` → `or 1`).** Test nuevo en `test_f055_cliente_agrupado.py`: una línea con
-   `pos = None` en el **segundo** trozo de recursos y otra con `pos = 1` en el primero, esperando la de `pos` nulo primero,
-   como la suelta (`NULL` primero en SQL Server). Si se prefiere, clave `(-1 if pos is None else pos)` o `(pos is not None,
-   pos or 0)` para que el criterio quede explícito; el test, en cualquier caso.
-2. **Campaña de T17b reproducible.** Sustituir el «9/9» por una tabla con una fila por mutante (fichero:línea, texto exacto
-   original → mutado, nº de fallos), que incluya **como mínimo los 5 del arnés de arriba** además de los manuales que se
-   quieran (`lifespan`…), o pasar `python -m harness.mutacion --feature F-055 --ficheros <los 2 .py de producción con mutantes>`
-   y enlazar su informe (fuera de `mutacion_F-055.md`, que es la pasada final de T16).
-3. **`propuestas_mes.py:62-65` y `impl_F-055.md` §T17b: no afirmar lo que no pasa.** O se corrige el docstring («cancela lo
-   encolado; la tarea en marcha termina sus trozos y Python la espera al salir del proceso») **o** se cumple de verdad: una
-   bandera que `cerrar()` levanta y `_calcular` mira entre trozos (deja de pedir más; sus claves salen de la cola en el
-   `finally`, como R33), con su test. La segunda opción acota la espera a un trozo (≤ 180 s); cualquiera de las dos vale.
+1. **T2 no está hecha: falta su parte de producción, que es el «antes» de C6.** `tasks.md:17` pide «en producción, lo
+   mismo solo hasta el modal y Cancelar», y `requirements.md:143` define C6 como «C3 y C4 **antes y después** de
+   desplegar». `impl_F-055.md` §T2 solo trae script y HTTP en local; ninguna cifra de producción. Es **irrecuperable tras
+   desplegar**, y el plan es desplegar justo después de esta review. Dos salidas, a elegir por el humano:
+   a) **Antes de desplegar**, medir en producción (F-050 desplegada): GONZALEZ PANIAGUA (0694 + 0696), 09/2026,
+      «⇪ Sigrid» → modal cronometrado y el mes entero, **Cancelar**; cifras en `impl_F-055.md` §T2 y `T2` a `[x]`; o
+   b) que el humano **renuncie** al «antes» de producción, con cita y fecha en `tasks.md:17` (y T2 a `[x]`) y en
+      `requirements.md` C6, que pasa a medir solo el «después» contra los umbrales absolutos (≤ 30 s; mes ≤ 60 s, sin 502).
+2. **`progress/current.md`**: línea 7 («T1-T20 hechas») y línea 55 («T2: hecha») no son ciertas mientras T2 esté `[ ]`.
+   La MANUAL pendiente (líneas 58-60) debe describir C6 entera: si se elige 1a, el «antes» **como paso previo al
+   despliegue** (líneas 10-11 y 65), y el «después» con sus umbrales (≤ 30 s y ≤ 40 % del antes; mes ≤ 60 s sin 502) y
+   dónde se anotan; ahí mismo, lo que T18 dejó a esa prueba (pantalla del modal frente a T2 y O2).
+3. **`impl_F-055.md:28`**: el párrafo T18 acaba en «→ **PARA**, se repropone» tras decir «OK»; quien lo lea después no
+   sabe si sigue parada. Reescribir en pasado («se paró y se repropuso; el humano subió C8 a ≤ 60 s»).
+4. **`docs/INTEGRACION.md:202` y `:501`**: no dicen «**por lote, no por proceso**» y `azure-apps/dedicacion.md` sí. La
+   fuente es INTEGRACION.md: añadir la misma frase para que las dos no diverjan (O4).
 
-Nada más: el resto de T17b es correcto. La pasada 3 mirará solo `dd38610..HEAD` (y repetirá init.sh entero).
+La pasada 5 mirará solo `d9569d5..HEAD` (y repetirá init.sh entero). Si el delta solo toca rastro, es corta.
 
 ---
 
+## Pasada 3 (`4c8d3f0..9f5530f`, correcciones de la pasada 2) — APROBADO
+
+init.sh en verde sin cachés (raíz 418 + 1 s, api 874, front 291, transfer 932; cobertura 100 % de 809). Lista cerrada: solo
+cambian `test_f055_propuestas_mes.py` y `test_f055_cliente_agrupado.py` (un test nuevo cada uno).
+1. **Pos nulo** [x]: `test_f055_r20_lineas_de_partes_pos_nulo_primero_como_sql_server` mata `or 0` → `or 1` (1 fallo,
+   reproducido); no es equivalente (RM3).
+2. **Campaña reproducible** [x]: `progress/mutacion_T17b_F-055.md`, 9 filas con texto exacto. Reproducidas en copia de
+   `9f5530f` en el scratchpad 7: los 5 del generador (fallos 1, 1, 2, 1, 3) y las manuales `self._parada.set()` → `pass` y
+   `break` → `pass` (1 fallo cada una). Las del `lifespan`, `test_f055_r30_la_api_cierra_la_cola_al_pararse`. RM6: nada
+   defensivo quitado.
+3. **`cerrar()`** [x]: `threading.Event` mirado **entre trozos** (claves fuera de la cola en el `finally`, R33); docstring
+   e informe ya dicen lo que pasa. Test `test_f055_r30_cerrar_deja_acabar_el_trozo_y_no_empieza_otro`.
+
+## Pasada 2 (T17b, `101f5d7..dd38610`) — RECHAZADO
+
+init.sh en verde (api 873, transfer 931; cobertura 100 % de 804). O3 (`sigrid_write_client.py:589-626`, orden `pos` al
+juntar trozos), O5 (`cerrar()` + `lifespan`) y O7-O9 correctos salvo:
+1. Vivo `sigrid_write_client.py:623` `int(f["pos"] or 0)` → `or 1` (79 passed): no equivalente, SQL Server pone `NULL`
+   primero. Generador del arnés sobre `b3e5373..dd38610`: 5 mutantes (`propuestas_mes.py:66` ×2, `:623` ×2, `:625`), 4
+   muertos.
+2. Campaña manual «9/9» sin tabla de texto exacto: irreproducible (C4 bis).
+3. Docstring de `cerrar()` falso: el `atexit` de `concurrent.futures` hace `join` y la tarea en marcha seguía con todos
+   sus trozos (comprobado en el scratchpad: script 0,2 s, proceso 3,4 s).
+Los tres, resueltos en la pasada 3.
+
 ## Pasada 1 · completa sobre `83c2d8d` (`git diff dev...HEAD`) — APROBADO, sin bloqueos
 
-**init.sh** en verde (raíz 418 + 1 s, api 871, front 291, transfer 930; cobertura 100 % de 795 líneas; tamaño OK).
+init.sh en verde (raíz 418 + 1 s, api 871, front 291, transfer 930; cobertura 100 % de 795 líneas).
 
-**Lista CERRADA:** leído el diff de los 15 tests anteriores que cambian. Aserciones cambiadas, todas listadas
+**Lista CERRADA:** leído el diff de los 15 tests anteriores que cambian; aserciones cambiadas todas listadas
 (`test_f003_r8_…`, `CAMPOS_LINEA`/`CAMPOS_CUADRANTE`, los dos `test_f049_d_*`, `test_f050_r1_sin_paso1_va_al_paso2`,
 `test_f029_r25_…`); el resto, solo dobles (`conftest.py`, `ClienteFalso` de `test_pipeline_offline.py`, `SIN_PROPUESTA` de
 `test_f050_partida_linea.py`, `_fila`/`_Transfer` de f022/f024/f026/f039, fixture `api` de f024, `_Uow`/`_cliente` de f050).
 
-**Puntos del líder, comprobados en el código:**
-- D9/R29/R37: `_encolar` tras cerrar la UoW en las seis escrituras; `[ide]`, `payload.trabajadores` o todo el periodo (Copiar
-  mes); `_lanzar` no encola a otros trabajadores. D10/R38: `previa_en_obra` → `resolver_normal` → `ultima_de_recurso`, mismo
-  módulo en selector, preflight y R34; `#regla-partida` al día.
-- R3-R12: una `validar_partidas` por petición; presupuesto e historial solo con pendientes; guardada válida se escribe tal cual
-  (R8), inválida → pendiente (R6); elegida inválida → `MOTIVO_PARTIDA_NO_HOJA` (R5); fuera la lectura forzada de F-049 d.
-- Concurrencia: un hilo en la api, cola por `(periodo, trabajador, obra)` bajo `Lock`; un solo vuelo (`Lock` + `Future`) y
-  `copy_context` en el transfer; R31 por `UPDATE … partida_ide IS NULL AND propuesta_ide IS NULL`.
-- Front: solo pinta; un `setTimeout` vivo, generación por mes/empresa, no repinta la fila en edición.
-- Desviación de T1 en design §5.1 (ampliación `c59bcd6`); `SIN_COMPARAR` del plugin y C2 por estructura, aceptados.
-- Rastro: `current.md`, `features.json` (`in_progress`, `critico`), `INTEGRACION.md`, README; T15 listada para el líder.
+**Comprobado en el código:** D9/R29/R37 (`_encolar` tras cerrar la UoW en las seis escrituras; no encola a otros
+trabajadores); D10/R38 (`previa_en_obra` → `resolver_normal` → `ultima_de_recurso`, mismo módulo en selector, preflight y
+R34); R3-R12 (una `validar_partidas` por petición; presupuesto e historial solo con pendientes; R5, R6, R8); concurrencia
+(un hilo en la api, cola por `(periodo, trabajador, obra)` bajo `Lock`; un solo vuelo y `copy_context` en el transfer; R31
+por `UPDATE … partida_ide IS NULL AND propuesta_ide IS NULL`); front solo pinta. Desviación de T1 en design §5.1, aceptada.
 
-**Checkpoints:** C1 [x]; C2 [x]; C3 [x] (ORM en `application` como `_trazar`, `medir_lecturas` desde `infrastructure` como el
-previo `synckey_de`); C3 bis N/A (no toca `docs/referencia/`); C4 [x]; C4 bis [x] (RM5 N/A: ningún equivalente; RM6 N/A en
-pasada 1); C4 ter N/A (sin `harness/rutas_sensibles.json`); C5 [x] (MANUAL T2, T18-T20 pendientes, no bloquean la review).
+**Checkpoints (pasada 1):** C1 [x]; C2 [x]; C3 [x] (ORM en `application` como `_trazar`); C3 bis N/A; C4 [x]; C4 bis [x]
+(RM5 N/A: ningún equivalente); C4 ter N/A; C5 [x] (MANUAL pendientes, no bloqueaban entonces).
 
 **Mutación T16, verificada:** recálculo puro 21 ficheros, 1604 líneas, **284 mutantes** = informe. Campaña no reejecutada
-(3666 s según el informe). RM1: medida en `9d9ebb1`, después solo cambian `progress/*` y `tasks.md`. RM2: 284 × 12,9 = total;
-media × 4 workers = 51,6 s frente a bases de 94,7-126,4 s, 100 % muertos con `-x`: coherente. RM3: los 39 vivos de la primera
-pasada no eran equivalentes. RM4: re-aplicados `lecturas_lote.py:197`, `sigrid_write_client.py:95` y
-`prueba_escritura_porcentajes.py:314`: mueren. JS manual: J24, J30 y J08 reproducidas al pie de la letra (1 fallo cada una).
+(3666 s según el informe). RM1: medida en `9d9ebb1`, después solo `progress/*` y `tasks.md`. RM2: 284 × 12,9 = total; media
+× 4 workers = 51,6 s frente a bases de 94,7-126,4 s, 100 % muertos con `-x`: coherente. RM3: los 39 vivos de la primera
+pasada no eran equivalentes. RM4: `lecturas_lote.py:197`, `sigrid_write_client.py:95`, `prueba_escritura_porcentajes.py:314`
+re-aplicados: mueren. JS manual: J24, J30 y J08 reproducidas al pie de la letra (1 fallo cada una).
 
 **Cobertura requisito → test:** R1-R2 `test_f055_medicion`; R3-R10, R12 `test_f055_pipeline_partidas`, `…_validar_partidas`;
 R11 sin número propio (`r9_*`, `r20_compartidas_…`, plugin sobre f039/f037); R13-R18, R27 `test_f055_propuesta_guardada`;
 R14, R16, R26 `test_f055_registro_lote`; R19-R25, C1, C2 `test_f055_lote`, `…_lecturas_lote`, `…_cliente_agrupado`; R21
 plugin; R34, C7 `test_f055_propuesta_lote`; R29-R33, R35 `test_f055_propuestas_mes`; R36 `test_f055_propuesta_celda`; R37
 `…_tras_escribir`; R38 `test_f055_orden_propuesta`; R28 `test_f002_fuente_unica`, `test_f004_readme` y lectura de los docs.
+C3-C5, C8: MANUAL (T18, `impl_F-055.md`); C6: producción (cambio 1 de la pasada 4).
 
-**Observaciones de la pasada 1** (aprobadas por el humano el 2026-10-16): O1 trazar R11/R28 por nombre (arnés, aparte); O2
-«buscando partida…» también en líneas que no se encolan (lo juzga el humano en T18); O3 orden `pos` en `lineas_de_partes`
-con > 500 recursos (T17b); O4 concurrencia por lote, no por proceso (al copiar a azure-apps, T15); O5 cerrar el ejecutor en el
-`shutdown` (T17b); O6 desviaciones T6 (ronda B) y T12 (`EMPRESA_IMPUTACION`), aprobadas; O7 estilo; O8 nota en
-`mutacion_F-055_pasada1.md`; O9 cabecera de `impl_F-055.md` (T17b).
+**Observaciones** (aprobadas por el humano el 2026-10-16): O1 trazar R11/R28 por nombre (arnés, aparte); O2 «buscando
+partida…» en líneas que no se encolan (lo juzga el humano en real); O3 y O5 (T17b, hechas); O4 por lote, no por proceso
+(azure-apps hecho; INTEGRACION.md, cambio 4); O6 desviaciones T6 y T12, aprobadas; O7-O9 (T17b, hechas).
 
 ## Automejora (propuesta, no aplicada)
 
 - `CHECKPOINTS.md` C4: aclarar cómo se traza un requisito «como hoy» (R11) o documental (R28) sin test con su número.
-- `reviewer.md`/C4 bis: una mutación **manual de código Python** (no solo JS) también exige la tabla de texto exacto, y si el
-  generador del arnés da mutantes en esas líneas, el reviewer los corre (aquí cazó un vivo que el «9/9» no tenía).
+- `reviewer.md`/C4 bis: una mutación **manual de código Python** también exige la tabla de texto exacto, y si el generador
+  del arnés da mutantes en esas líneas, el reviewer los corre (aquí cazó un vivo que el «9/9» no tenía).
+- `CHECKPOINTS.md` C5 (nuevo, pasada 4): antes del cierre, `grep -n "^- \[ \]" specs/F-XXX*/tasks.md` debe salir vacío y
+  toda MANUAL «antes/después de desplegar» debe tener su «antes» hecho **o** renunciado por escrito antes de la review de
+  cierre. Aquí T2 llegó a la pasada 4 en `[ ]` con `current.md` diciendo «T1-T20 hechas».
