@@ -4,8 +4,8 @@
 **Ninguna feature en curso.** F-055 (registro sin búsquedas de partidas y
 propuesta del mes en segundo plano) **cerrada (`done`) el 2026-10-17**, review
 de cierre APROBADA (pasada 5); resumen en `progress/history.md`. **Desplegada el
-2026-10-17** (transfer → api → front, autorizado por el humano); falta que el
-humano mida C6 en producción (ver «Producción, hoy»). El arnés
+2026-10-17** (transfer → api → front, autorizado por el humano); C6 en producción
+cumplida el 2026-10-18 (ver «Producción, hoy»). El arnés
 es la **1.7.3**.
 
 ## Producción, hoy
@@ -16,11 +16,15 @@ es la **1.7.3**.
   el 100 % del tráfico; el transfer sigue en **modo real**,
   `OBRA_PRUEBAS_FORZAR=false`, comprobado con `az containerapp show`). La api
   aplicó al arrancar las 5 columnas `asignacion.propuesta_*` («5 sentencias DDL
-  aplicadas», sin errores). **Pendiente del humano, C6** (solo preflight y
-  **Cancelar**; sin «antes» por su renuncia): Ctrl+F5, septiembre 2026, «⇪
-  Sigrid» de GONZALEZ PANIAGUA → modal ≤ 30 s y el mes entero ≤ 60 s sin 502;
-  mirar también «buscando partida…» y O2. **El líder anota aquí el resultado**
-  (y en `history.md`, entrada de F-055).
+  aplicadas», sin errores). **C6 CUMPLIDA** (líder en el navegador, a petición
+  del humano, «intenta hacerlo tu», 2026-10-18; septiembre 2026, solo preflight
+  y **Cancelar**): GONZALEZ PANIAGUA 1,05 y 0,80 s (≤ 30 s; 0672 y 0694 por
+  `parte_anterior`, mismas partidas que en local; el modal enseña la 0672 ya
+  registrada, línea 409559, y la 0694 omitida por parte PT26/00319 cerrado);
+  mes entero 8,37 s, 59 obras, 304 líneas, sin 502 ni obras con error (≤ 60 s);
+  repreflight de la 0694 0,81 s. Las propuestas del mes ya estaban calculadas
+  al abrirlo (`propuestas_en_curso: false`), así que no se vio «buscando
+  partida…»; O2 queda para cuando haya líneas pendientes.
 - **Desplegado el 2026-10-14: F-050**, los tres servicios: transfer
   `r20261014-1740`, api `r20261014-1743` y front `r20261014-1746` (revisiones
   `…--r20261014173903`, las tres `Running`; el transfer sigue en **modo real**,
@@ -131,7 +135,8 @@ F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
-- **C6 de F-055 tras desplegar** (ver «Producción, hoy») y juzgar O2 en pantalla.
+- **O2 de F-055**: juzgar en pantalla «buscando partida…» cuando haya líneas
+  pendientes (C6 cumplida el 2026-10-18, ver «Producción, hoy»).
 - **`Run-Az` de `infra/00_capps_vars_dedicacion.ps1` aborta tras un `update`
   que sí se aplica** (2026-10-17, las tres veces: `az : ` vacío,
   `NativeCommandError` en PS 5.1): el `containerapp update` crea la revisión y
