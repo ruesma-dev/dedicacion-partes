@@ -143,7 +143,7 @@ de registro, `ejecutar` en lote, F-048, F-051, F-044.
   una partida **≤ 20 s**. **C6** (producción, solo preflight y Cancelar): C3
   y C4 antes y después de desplegar. **C8** (MANUAL local): 09/2026 sin
   propuestas: el cuadrante sale como hoy y la Partida se llena **≤ 3 min**;
-  tras guardar una fila con una obra nueva, la suya **≤ 30 s** sin recargar.
+  tras guardar una fila con una obra nueva, la suya **≤ 60 s** sin recargar (humano, 2026-10-17; era 30).
 - SI C3-C5 o C8 no se cumplen, ENTONCES **PARA** y se repropone. Tests
   anteriores que cambian: **lista CERRADA** en la cabecera de `tasks.md`;
   otro, **PARA** y se pregunta. MANUAL: T2, T18-T19; nadie escribe en Sigrid.

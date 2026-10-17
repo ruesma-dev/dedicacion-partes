@@ -45,7 +45,7 @@ ventana). B: `capitulos_de_obra` por obra, hasta el límite a la vez. Luego
 `proponer` por obra. Con lo medido (obra 4-6 s, historial 0,8-5,7 s,
 presupuesto 3,3-5,3 s): 10 obras ≈ 6 s + 3 rondas ≈ **22 s** (timeout 180 s);
 un mes con 40 obras ≈ 90 s (C8). **Tras una escritura** (D9), la obra nueva
-del trabajador: ≈ 11 s + ≤ 5 s de la consulta del front ⇒ ≤ 30 s (C8).
+del trabajador: ≈ 11 s + ≤ 5 s de la consulta del front ⇒ ≤ 30 s (C8; medido 59 s, C8 a ≤ 60 s: humano, 2026-10-17).
 
 ## 3. Ficheros a crear
 

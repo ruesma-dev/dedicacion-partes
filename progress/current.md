@@ -3,10 +3,10 @@
 
 **F-055 en curso en esta rama** (`feature/F-055-preflight-rapido`,
 copia `PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas
-y propuesta del mes en segundo plano. **PARADA en T18 (2026-10-17): C8 KO, la obra nueva tarda 59 s (≤ 30); se repropone al humano.** Implementer: T1-T17b hechas
+y propuesta del mes en segundo plano. **T18 hecha (2026-10-17; C8 subido a ≤ 60 s por el humano); faltan T19, T20, T15 y el cierre.** Implementer: T1-T17b hechas
 (`init.sh` en verde, mutación 284/284 y JS 36/36; informe en
 `progress/impl_F-055.md`). Falta: copiar a azure-apps (T15, líder) y
-las MANUAL T2 (navegador), T18-T20. F-050 está cerrada en `dev` y `main`; se
+las MANUAL T19-T20. F-050 está cerrada en `dev` y `main`; se
 desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arnés es la
 **1.7.3**.
 
@@ -23,11 +23,12 @@ desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arné
   de la mutación manual sin texto exacto y docstring falso de `cerrar()`;
   corregidos en `c997385`-`86f8438` (marca de parada entre trozos, test del
   `pos` nulo, `progress/mutacion_T17b_F-055.md` 9/9); **review 3 APROBADA**, `3a87726`).
-  **PARADA en T18 (2026-10-17):** C3, C4, C5 y C8-mes OK; C8 obra nueva KO (59.1 s; ≈ 24 s de CPU
-  del transfer en `propuesta-lote` de una línea); cifras en `impl_F-055.md` (T18). Espera la repropuesta.
+  **T18 (líder, 2026-10-17):** C3, C4, C5 y C8 OK; la obra nueva tardó 59.1 s (≈ 24 s de CPU del
+  transfer en `propuesta-lote` de una línea) y el humano subió C8 a ≤ 60 s («3, sube el limite y lo
+  pruebo en real»); lo de pantalla y O2 los mira el humano en real. Cifras en `impl_F-055.md`.
   Automejora de la review 3, al trabajo del arnés junto a O1: una mutación
   manual de Python también exige tabla con texto exacto, y el reviewer corre
-  los mutantes del generador sobre esas líneas; O4 al copiar a azure-apps (T15); O2 lo juzga el humano en T18 (si
+  los mutantes del generador sobre esas líneas; O4 al copiar a azure-apps (T15); O2 lo juzga el humano en su prueba en real (si
   molesta, la api publica qué línea está pendiente); O1 y la automejora de
   `CHECKPOINTS.md` C4 (trazar un R «como hoy» o documental), trabajo aparte
   del arnés tras F-055, portado a `arnes-base`. **Desviaciones de diseño
@@ -56,17 +57,7 @@ desplegó el 2026-10-14 (los tres servicios; ver «Producción, hoy»). El arné
   o en producción solo a y b con Cancelar: a) «⇪ Sigrid» de GONZALEZ PANIAGUA
   → modal; b) mes entero; c) repreflight al cambiar una partida; d) abrir el
   selector. Son el «antes» de C3 (≤ 40 % del antes).
-- **T18 (MANUAL del humano, tras la review, solo lectura, local en modo
-  pruebas; `curl -s http://localhost:8006/health` debe dar
-  `"modo_pruebas": true`):** en `porcentajes-f041/services/dedicacion-transfer`,
-  `.\.venv\Scripts\python prueba_escritura_porcentajes.py medir --lote --ano
-  2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036 --partida
-  0694:384155`; en el navegador C3 (≤ 30 s y ≤ 40 % del antes), C4 (mes ≤ 60
-  s, sin 502), C5 (≤ 20 s) y C8 (con las `propuesta_*` de 09/2026 vaciadas en
-  la `dedicacion` LOCAL con el `UPDATE` de `tasks.md` T18: Partida llena en ≤ 3
-  min; obra nueva guardada, su Partida en ≤ 30 s sin recargar). Las líneas
-  que en T2 salían por `ultimo_parte` (0696) saldrán por `auto_*` (D10).
-  **Cancelar, sin Registrar.**
+- **T18:** hecha (2026-10-17), ver arriba.
 - **T19 (MANUAL, con autorización del humano en ese momento):** registro en
   modo pruebas (0404, `PRUEBA-PORC`) de un trabajador con elegida y otro con
   propuesta guardada, cronometrado; luego `prueba_escritura_porcentajes.py
