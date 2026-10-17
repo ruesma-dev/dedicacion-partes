@@ -4,7 +4,8 @@
 **F-055 en curso en esta rama** (`feature/F-055-preflight-rapido`,
 copia `PycharmProjects/porcentajes-f041`): registro sin búsquedas de partidas
 y propuesta del mes en segundo plano. **Review de cierre (2026-10-17).**
-T1-T20 hechas: T18 por el líder (C8 subido a ≤ 60 s por el humano), T19
+T1-T20 hechas (T2 sin su parte de producción: el humano renunció al «antes» de C6, «lo desplegamos
+y despues mido», 2026-10-17): T18 por el líder (C8 subido a ≤ 60 s por el humano), T19
 sustituida por la prueba del humano en producción, T20 en verde sin cachés
 (raíz 418 + 1 skipped, api 874, front 291, transfer 932; cobertura 809/809),
 T15 en `azure-apps` `b6e35fa`. Tras la review: `done`, merge a `dev` y `main`
@@ -52,8 +53,9 @@ es la **1.7.3**.
   C1: 7 lecturas en real y 8 en pruebas, en ≤ 4 rondas (2-4: «si a todo»).
   Desviación de T1 (design §5.1): la medición va en `_lectura(nombre, …)` y
   `_read` conserva su firma.
-- **T2:** hecha (script el 2026-10-15; HTTP por el líder el 2026-10-16;
-  cifras en `impl_F-055.md`).
+- **T2:** hecha en local (script el 2026-10-15; HTTP por el líder el 2026-10-16;
+  cifras en `impl_F-055.md`); sin «antes» de producción por renuncia del humano
+  (2026-10-17): C6 mide solo el «después» contra ≤ 30 s y mes ≤ 60 s sin 502.
 - **T18:** hecha (2026-10-17), ver arriba.
 - **T19:** sustituida por el humano el 2026-10-17 («eso es, probarlo en
   produccion»): sin registro en local; C6 en producción tras desplegar

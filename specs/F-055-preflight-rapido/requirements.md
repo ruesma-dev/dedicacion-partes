@@ -141,7 +141,7 @@ de registro, `ejecutar` en lote, F-048, F-051, F-044.
   09/2026, con partida: de «⇪ Sigrid» al modal **≤ 30 s y ≤ 40 % del antes**.
   **C4**: el mes entero **≤ 60 s y sin 502**. **C5**: repreflight al cambiar
   una partida **≤ 20 s**. **C6** (producción, solo preflight y Cancelar): C3
-  y C4 antes y después de desplegar. **C8** (MANUAL local): 09/2026 sin
+  y C4 después de desplegar, con sus umbrales absolutos (sin «antes»: humano, 2026-10-17). **C8** (MANUAL local): 09/2026 sin
   propuestas: el cuadrante sale como hoy y la Partida se llena **≤ 3 min**;
   tras guardar una fila con una obra nueva, la suya **≤ 60 s** sin recargar (humano, 2026-10-17; era 30).
 - SI C3-C5 o C8 no se cumplen, ENTONCES **PARA** y se repropone. Tests
