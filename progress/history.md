@@ -2672,3 +2672,35 @@ Informes: `progress/impl_F-055.md`, `progress/review_F-055.md`,
 - **Despliegue (tras cerrar):** transfer → api → front; la api añade al
   arrancar las columnas nulables `propuesta_*`; variable nueva
   `SIGRID_LECTURAS_PARALELAS` (defecto 4). El transfer conserva el modo real.
+
+---
+
+## 2026-10-19 · F-056 · Validar `trabajador_ide` en preflight y ejecutar
+
+Rama `feature/F-056-validar-trabajador-ide` · `sdd: false` · rigor `critico` ·
+**APROBADO** por el reviewer en la pasada 2 (la 1, RECHAZADA solo por
+papeleo: faltaba el nº de workers de la campaña en «Evidencias»).
+
+**El fallo.** `POST …/registro/preflight` y `…/registro/ejecutar` pasaban
+`trabajador_ide` crudo y `registro_sigrid.py` filtraba con `if
+trabajador_ide`: un `0`, `""` o `false` quitaba el filtro y `ejecutar`
+mandaba el mes entero al transfer (reproducido en la fase RED: con `0`, las
+dos obras del mes); un texto daba 500. El front nunca lo mandaba.
+
+**Qué cambió (solo api).** `TrabajadorNoValido` → 422; el `_obra_ide` de
+F-050 se generalizó en `_entero_opcional(valor, campo, error)` y las dos
+rutas validan `trabajador_ide` lo primero (422 sin analizar ni escribir);
+filtro `is not None`. Texto numérico y `11.0` se aceptan, como `obra_ide`;
+`0` y negativos son enteros válidos que no casan con nadie.
+`docs/INTEGRACION.md` documenta el contrato. Plan aprobado por el humano el
+2026-10-19 («si»).
+
+**Evidencias.** 50 tests nuevos; init.sh verde (api 924, front 291, transfer
+932, raíz 418 + 1 skipped); cobertura 100 % (10/10); mutación 2/2 muertos (2
+workers) y 6 manuales sobre el helper, 6 muertos, reproducidos por el
+reviewer junto con 3 suyos.
+
+**Observaciones recogidas.** Validar el resto del cuerpo del registro
+(`overrides` no enteros y enteros enormes dan 500; `pisar_claves` y `usuario`
+crudos) ⇒ decisión del humano en `current.md`. `azure-apps/dedicacion.md` al
+desplegar. Automejora del arnés (workers en C4 bis) ⇒ lista del arnés.

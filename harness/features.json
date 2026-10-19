@@ -950,7 +950,7 @@
         "Tests de las dos rutas con 0, \"\", false, texto, decimal y null",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "in_progress",
+      "status": "done",
       "sdd": false,
       "rigor": "critico",
       "priority": 2,

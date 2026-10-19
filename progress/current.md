@@ -1,46 +1,22 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-056** (validar `trabajador_ide` en preflight y ejecutar), rigor
-**crítico**, `sdd: false` (los `acceptance` hacen de mini-spec), rama
-`feature/F-056-validar-trabajador-ide`. **Implementer terminado el 2026-10-19**
-(`progress/impl_F-056.md`). Review pasada 1 **RECHAZADA** solo por papeleo
-(B1: nº de workers en «Evidencias»), corregido en `c61c351` junto con su O2
-(fichero:línea de los mutantes manuales); **pasada 2 lanzada el 2026-10-19**,
-incremental desde `8d30881` (`progress/review_F-056.md`). Plan aprobado por el humano el
-2026-10-19 («si»): ver «F-056, plan aprobado». La anterior, F-055, **cerrada
-el 2026-10-17** y desplegada ese día; C6 en producción cumplida el 2026-10-18.
-El arnés es la **1.7.3**.
+**Ninguna feature en curso.** F-056 (validar `trabajador_ide` en preflight y
+ejecutar) **cerrada (`done`) el 2026-10-19**, review APROBADA (pasada 2);
+resumen en `progress/history.md`. **Pendiente de desplegar** (solo la api):
+ver «F-056, pendiente de desplegar». La anterior, F-055, cerrada y desplegada
+el 2026-10-17; C6 en producción cumplida el 2026-10-18. El arnés es la
+**1.7.3**.
 
-## F-056, plan aprobado (2026-10-19)
+## F-056, pendiente de desplegar
 
-- Solo api; el front no cambia (ya manda número o `null`).
-- `domain/errors.py`: `TrabajadorNoValido` → **422** en `app.py`, como
-  `ObraNoValida`.
-- `routes.py`: el `_obra_ide` de F-050 se generaliza en un helper «entero
-  opcional» con el error de cada campo; preflight y ejecutar validan
-  `trabajador_ide` con él ANTES de llamar a nada: 422 sin analizar ni escribir.
-- `registro_sigrid.py` (~95): filtro `is not None` (como `obra_ide`, ~159).
-- Decisiones del líder aceptadas: texto numérico (`"123"`) se acepta, como
-  `obra_ide` (review 3 de F-050); `0` y negativos son enteros: no dan 422, y
-  con el filtro bien no casan con nadie ni se escribe nada.
-- Tests de las dos rutas con `0`, `""`, `false`, `"abc"`, `1.5`, `null` y un
-  entero válido (doble que prueba que con 422 no se analiza ni se escribe; que
-  `0` filtra y no coge el mes entero); los de `obra_ide` de F-050, en verde.
-- Fuera: `overrides` no enteros dan 500 (`int(k)`, `int(v)` en las mismas
-  rutas): observación, no se arregla aquí. Despliegue de la api: se propone
-  al cerrar.
-- Implementer (2026-10-19): T1-T3 hechas sin desviaciones (commits
-  `c0f6e30`, `09c61c8`, `42ddad8`, `48b63f2`, informe `6ec7144`/`ce5aff7`);
-  50 tests nuevos; init.sh en verde; cobertura 100 % (10/10); mutación del
-  arnés 2/2 muertos y 6 manuales sobre el helper, 6 muertos.
-- Observaciones del implementer, recogidas por el líder: **O1** (`overrides`
-  no enteros dan 500; `pisar_claves` y `usuario` llegan crudos a `ejecutar`)
-  ⇒ a «Lo que espera al humano» (¿feature propia?). **O2**
-  (`azure-apps/dedicacion.md` ~333 no menciona `trabajador_ide`) ⇒ se
-  actualiza al desplegar la api con F-056, en ese mismo trabajo.
-- MANUAL para cerrar: ninguna. Tras desplegar (opcional, solo lectura, en el
-  navegador con sesión de Easy Auth): `fetch('/api/v1/periodos/2026/9/registro/preflight?empresa=1',
+- Solo la **api** (`-Solo api`); el transfer y el front no cambian. Sin
+  variables ni DDL nuevos. Lo propone el líder y lo autoriza el humano.
+- En ese mismo trabajo: `azure-apps/dedicacion.md` (~333, párrafo del
+  preflight) gana `trabajador_ide` (entero o `null`, 422 en otro caso, `0`
+  filtra), O2 del implementer y O3 de la review.
+- Comprobación opcional tras desplegar (solo lectura, navegador con sesión de
+  Easy Auth): `fetch('/api/v1/periodos/2026/9/registro/preflight?empresa=1',
   {method:'POST', headers:{'Content-Type':'application/json'},
   body:'{"trabajador_ide": ""}'})` ⇒ 422 `trabajador_ide no es un entero: ''`.
   **Nunca con `ejecutar`**: el transfer desplegado está en modo real.
@@ -169,7 +145,9 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. Orden: F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada el
+2026-10-19 (pendiente de desplegar la api). Orden: **F-057** (O2 de F-055,
+prioridad alta del humano el 2026-10-19), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 

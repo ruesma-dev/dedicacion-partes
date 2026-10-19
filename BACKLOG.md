@@ -3,15 +3,12 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **54 features**, 25 abiertas, 29 terminadas.
-
-En curso: **F-056**.
+Resumen: **54 features**, 24 abiertas, 30 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-056 | Validar trabajador_ide en preflight y ejecutar (un valor falso registra el mes entero) | 2 | en curso | critico | `feature/F-056-validar-trabajador-ide` |
 | F-057 | «Buscando partida…» solo en las líneas cuya propuesta se está calculando | 3 | pendiente | estandar | `feature/F-057-buscando-solo-pendientes` |
 | F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | pendiente | critico | `feature/F-051-pisar-lineas-cero` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
@@ -58,6 +55,7 @@ En curso: **F-056**.
 | F-026 | Recursos sin ficha de empleado no salen: el caso Eusebio Vindel Duro | 2 | critico |
 | F-032 | Nombres de empresa sincronizados desde Sigrid | 2 | estandar |
 | F-055 | La previsualización del registro tarda demasiado (medir y acelerar) | 2 | critico |
+| F-056 | Validar trabajador_ide en preflight y ejecutar (un valor falso registra el mes entero) | 2 | critico |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | critico |
 | F-008 | Infraestructura y despliegue en Azure | 3 | critico |
 | F-029 | Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada | 3 | estandar |
@@ -72,12 +70,6 @@ En curso: **F-056**.
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
-
-### F-056 · Validar trabajador_ide en preflight y ejecutar (un valor falso registra el mes entero)
-
-estado **en curso** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-056-validar-trabajador-ide`
-
-Observación de la review 4 de F-050 (2026-10-11), recogida por el líder: en la api, `trabajador_ide` llega crudo del cuerpo de `POST …/registro/preflight` y `…/registro/ejecutar` (`routes.py` ~393 y ~409) y `registro_sigrid.py` (~81) filtra con `if trabajador_ide`: un valor falso (`0`, `""`, `false`) QUITA el filtro y `ejecutar` registraría el mes entero en vez de un trabajador; un texto llega a PostgreSQL y da 500 en vez de 422. Hoy el front manda un número o null, así que no ocurre, pero es la ruta que escribe en Sigrid. Arreglo: validarlo como `obra_ide` (F-050: entero, 422 si no lo es, sin analizar) en las dos rutas y filtrar con `is not None`. Solo api; rigor crítico.
 
 ### F-057 · «Buscando partida…» solo en las líneas cuya propuesta se está calculando
 
@@ -324,6 +316,12 @@ Pedida por el humano el 2026-10-01 al cerrar F-024: los nombres del selector de 
 estado **terminada** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-055-preflight-rapido`
 
 Pedida por el humano el 2026-10-08 («añade una feature para revisar que tarde tanto»), al probar F-049: al elegir una partida en el modal, «Registrar» se queda un buen rato en «Analizando…». Causa vista por el líder (sin medir): cada preflight hace por OBRA unas 10-12 lecturas a Sigrid SEGUIDAS vía sigrid-api (obra, catálogo de postventa, horas de recursos, partidas, cuentas, partes del periodo, código PT, presupuesto entero de la obra —miles de filas en las grandes—, líneas por synckey y del parte; services/dedicacion-transfer/application/pipelines/registro_pipeline.py), y la api lo repite para TODAS las obras de la petición (con el botón general, todas las del mes); desde F-049 se repite al cambiar cada partida. PRIMERO MEDIR (tiempo por lectura y por obra, en local y en producción) y escribir dónde se va el tiempo. Propuesta del líder a decidir con el humano tras medir: 1) repetir solo la obra cuya partida cambia (front + api); 2) caché en memoria del transfer, con caducidad corta, del presupuesto de la obra y de los catálogos de postventa y VAR; 3) lecturas en paralelo o agrupadas. Nunca decidir con datos parciales ni viejos al EJECUTAR (ejecutar puede saltarse la caché). DATO (M1 de F-050, 2026-10-11, desde local contra sigrid-api): una lectura trivial (`obra_por_codigo`) tarda 4-6 s; el presupuesto de la 0694 (835 hojas) 5,3 s y el de la 0696 (2.636 hojas) 3,3 s; el historial de partidas 0,8-5,7 s. La latencia por llamada pesa más que el volumen: agrupar o paralelizar lecturas apunta a ser lo que más rinde. REDISEÑO PEDIDO por el humano el 2026-10-11 («al darle a registrar hay que ver si hace falta que haga todas las búsquedas, realmente ya está la info, solo debería comprobar si los partes están o no, pero no las partidas»; «ok, lanza spec F-55»): tras F-050 la partida está en el cuadrante; el registro no debería leer presupuestos ni historiales, solo los partes (existencia, estado, líneas) y validar las partidas elegidas con una lectura ligera por id; la propuesta de las automáticas tendría que guardarse antes (cambia D3 de F-050); y agrupar/paralelizar lo que quede. Spec en paralelo con los arreglos de F-050. 2026-10-11: spec escrita (`specs/F-055-preflight-rapido/`) con D1-D8 ABIERTAS para el humano (design §11; recomendada A en todas): registro sin presupuesto ni historial cuando la línea trae partida (validación por ide), propuesta guardada en la asignación (cambia D3 de F-050), preflight en lote agrupado y en paralelo; rigor subido a critico; se implementa tras fusionar F-050. 2026-10-11/13: spec escrita (`specs/F-055-preflight-rapido/`, D1-D8). SPEC APROBADA por el humano el 2026-10-13 («acepto tu propuesta de F-55»): D1 = A; D2 = A + C (la propuesta se guarda al volver de un preflight y al abrir el selector Y ADEMÁS se calcula en lote para todas las líneas del mes al abrir el mes o al sincronizar, para que la partida salga ya preseleccionada en el cuadrante: «recuerda que la partida debe venir preseleccionada, la del último parte del trabajador en esa obra, o si no hay, eligiendo una en CI como hacemos en partes»); D3-D8 = A. Los pasos de la propuesta siguen los de F-050 (parte anterior en esa obra, último parte en otra obra, casamiento de partes por nombre y categoría): el paso 2 se mantiene (el humano no pidió quitarlo). D2 cambia D3 de F-050. 2026-10-14: F-050 cerrada y fusionada; dev traído a la rama; implementación lanzada. 2026-10-15: bloqueada en T4 (implementer): validar las elegidas con `validar_partidas` (R3) rompe test_pipeline_offline.py::test_override_manual, fuera de la lista cerrada (su `ClienteFalso` propio no tiene ese método); motivo y propuesta en progress/current.md. 2026-10-15: desbloqueada por el humano («añade test_pipeline_offline.py a la lista cerrada»), solo su ClienteFalso; implementer relanzado desde T4. 2026-10-15: bloqueada en T9 (implementer): las columnas propuesta_* rompen test_f050_partida_linea.py (fuera de la lista cerrada), cuyas filas falsas (SimpleNamespace) no las traen; motivo y propuesta en progress/current.md. 2026-10-15: desbloqueada por el humano («si a todo»): test_f050_partida_linea.py a la lista cerrada (solo filas falsas), permiso general para dobles sin cambiar aserciones y C2 contado como C1; implementer relanzado desde T9. 2026-10-17: T18 medida por el líder en local (modal 62,4/27,5 s → 12,7/8,8 s; mes 79,5 → 16,2 s; repreflight 19,3 → 10,5 s; mes sin propuestas lleno en 16,8 s); la obra nueva de C8 tardó 59,1 s (≈ 24 s de CPU del transfer) y el humano subió C8 a ≤ 60 s («3, sube el limite y lo pruebo en real»); T19 sustituida por la prueba del humano en producción («eso es, probarlo en produccion»); el humano RENUNCIA al «antes» de producción («lo desplegamos y despues mido»): la medición del acceptance 1 queda en local y C6 mide solo el «después». Review de cierre APROBADA (pasada 5, 1268e60). CERRADA (done) el 2026-10-17; despliegue autorizado por el humano.
+
+### F-056 · Validar trabajador_ide en preflight y ejecutar (un valor falso registra el mes entero)
+
+estado **terminada** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-056-validar-trabajador-ide`
+
+Observación de la review 4 de F-050 (2026-10-11), recogida por el líder: en la api, `trabajador_ide` llega crudo del cuerpo de `POST …/registro/preflight` y `…/registro/ejecutar` (`routes.py` ~393 y ~409) y `registro_sigrid.py` (~81) filtra con `if trabajador_ide`: un valor falso (`0`, `""`, `false`) QUITA el filtro y `ejecutar` registraría el mes entero en vez de un trabajador; un texto llega a PostgreSQL y da 500 en vez de 422. Hoy el front manda un número o null, así que no ocurre, pero es la ruta que escribe en Sigrid. Arreglo: validarlo como `obra_ide` (F-050: entero, 422 si no lo es, sin analizar) en las dos rutas y filtrar con `is not None`. Solo api; rigor crítico.
 
 ### F-003 · Las columnas sigrid_* de asignacion no están en el ORM
 
