@@ -27,6 +27,10 @@ El arnés es la **1.7.3**.
 - Fuera: `overrides` no enteros dan 500 (`int(k)`, `int(v)` en las mismas
   rutas): observación, no se arregla aquí. Despliegue de la api: se propone
   al cerrar.
+- Implementer (2026-10-19): T1-T3 hechas sin desviaciones (commits
+  `c0f6e30`, `09c61c8`, `42ddad8`, `48b63f2`); init.sh en verde, cobertura
+  100 %, mutación 0 vivos. Pendiente al desplegar: `azure-apps/dedicacion.md`
+  (O2 de `progress/impl_F-056.md`).
 
 ## Producción, hoy
 
