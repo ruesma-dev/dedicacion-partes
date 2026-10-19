@@ -699,7 +699,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       pisa una elegida ni una propuesta ya guardada; una línea sin propuesta
       posible no se reintenta hasta el próximo sync o un reinicio. La
       propuesta **no caduca**. El cuadrante la enseña en cursiva con su
-      método y, mientras se busca, «buscando partida…». Guardar la fila la
+      método y, mientras se busca, «buscando partida…»: solo en las líneas
+      que la api marca `propuesta_pendiente` (las que están en la cola,
+      F-057), nunca en las que no se encolan. Guardar la fila la
       conserva en cada línea que ya existía; copiar el mes, F8 y completar
       no la copian; deshacer no la restaura; cambiar la elegida no la borra.
     - **Al registrar**, la elegida viaja como `paride` y, sin ella, la
