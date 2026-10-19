@@ -292,7 +292,10 @@ def test_f055_r35_estado_en_curso_y_lineas_con_propuesta():
     assert pm.estado(uow, ANIO, MES) == {"en_curso": True, "lineas": [
         {"trabajador_ide": 14, "obra_ide": 100, "es_postventa": False,
          "propuesta_cod": "CI.1.20", "propuesta_res": "JEFE DE OBRA",
-         "propuesta_metodo": "parte_anterior"}]}
+         "propuesta_metodo": "parte_anterior"}],
+        # F-057: la 102 sigue en la cola (el ejecutor la retiene).
+        "pendientes": [{"trabajador_ide": 14, "obra_ide": 102,
+                        "es_postventa": False}]}
 
 
 # ============================ el cliente HTTP ============================ #

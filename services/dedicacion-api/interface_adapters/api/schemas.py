@@ -2,6 +2,7 @@
 """Schemas Pydantic v2 (contratos de entrada/salida de la API REST)."""
 from __future__ import annotations
 
+from collections.abc import Set as AbstractSet
 from decimal import Decimal
 from typing import Any
 
@@ -91,6 +92,9 @@ class LineaOut(_Base):
     propuesta_cod: str | None = None
     propuesta_res: str | None = None
     propuesta_metodo: str | None = None
+    # F-057: la línea está en la cola de las propuestas del mes (en cola o
+    # calculándose): el front dice «buscando partida…» solo en estas.
+    propuesta_pendiente: bool = False
 
 
 class TrabajadorOut(_Base):
@@ -151,11 +155,20 @@ class PropuestaLineaOut(_Base):
     propuesta_metodo: str | None
 
 
+class PendienteOut(_Base):
+    """Una línea en la cola de las propuestas del mes (F-057)."""
+
+    trabajador_ide: int
+    obra_ide: int
+    es_postventa: bool
+
+
 class PropuestasOut(_Base):
-    """`GET …/propuestas` (F-055, R35)."""
+    """`GET …/propuestas` (F-055, R35; F-057 `pendientes`)."""
 
     en_curso: bool
     lineas: list[PropuestaLineaOut]
+    pendientes: list[PendienteOut]
 
 
 class EmpresaOut(_Base):
@@ -244,10 +257,14 @@ def a_obra_out(obra: Obra) -> ObraOut:
     )
 
 
-def a_trabajador_out(fila: CuadranteTrabajador,
-                     empresa_obras: int) -> TrabajadorOut:
+def a_trabajador_out(
+    fila: CuadranteTrabajador, empresa_obras: int,
+    pendientes: AbstractSet[tuple[int, int, bool]] = frozenset(),
+) -> TrabajadorOut:
     """`empresa_obras` es la empresa de las obras (`EMPRESA_IMPUTACION`), no
-    la elegida: decide `otra_empresa` de cada línea (F-034, R5)."""
+    la elegida: decide `otra_empresa` de cada línea (F-034, R5).
+    `pendientes` son las líneas `(trabajador, obra, es_postventa)` en la cola
+    de propuestas (F-057): marcan `propuesta_pendiente` por identidad."""
     total = fila.total
     estado = calcular_estado(total, len(fila.lineas))
     desviacion = calcular_desviacion(total, len(fila.lineas))
@@ -277,6 +294,8 @@ def a_trabajador_out(fila: CuadranteTrabajador,
                 propuesta_cod=ln.propuesta_cod,
                 propuesta_res=ln.propuesta_res,
                 propuesta_metodo=ln.propuesta_metodo,
+                propuesta_pendiente=(fila.trabajador.ide, ln.obra_ide,
+                                     ln.es_postventa) in pendientes,
             )
             for ln in fila.lineas
         ],

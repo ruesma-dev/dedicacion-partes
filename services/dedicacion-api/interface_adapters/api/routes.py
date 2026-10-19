@@ -77,18 +77,20 @@ def _filtro(contenedor: Contenedor, empresa: int | None) -> FiltroEmpresa:
 
 
 def _encolar(contenedor: Contenedor, anio: int, mes: int,
-             trabajadores: Iterable[int] | None = None) -> bool:
+             trabajadores: Iterable[int] | None = None,
+             ) -> tuple[bool, frozenset[tuple[int, int, bool]]]:
     """F-055 (R29, R30, R37): encola las propuestas pendientes del periodo
-    (o de `trabajadores`) y devuelve `propuestas_en_curso`. Siempre tras
-    cerrar la UoW de la ruta; si encolar falla, `False` y un log: la
-    respuesta no cambia por ello."""
+    (o de `trabajadores`) y devuelve `propuestas_en_curso` y (F-057) las
+    líneas del periodo que siguen en la cola, leídas DESPUÉS de encolar.
+    Siempre tras cerrar la UoW de la ruta; si encolar falla, `(False, ∅)` y
+    un log: la respuesta no cambia por ello."""
     try:
-        return contenedor.propuestas_mes.lanzar(
+        return contenedor.propuestas_mes.encolar(
             anio, mes, None if trabajadores is None else list(trabajadores))
     except Exception:                               # noqa: BLE001
         logger.warning("[propuestas] no se pudieron encolar las de %02d/%s",
                        mes, anio, exc_info=True)
-        return False
+        return False, frozenset()
 
 
 def _entero_opcional(valor: Any, campo: str,
@@ -212,7 +214,7 @@ def copiar_periodo_anterior(
             uow, anio, mes, usuario, filtro=filtro
         )
     return a_copia_periodo_out(resultado).model_copy(
-        update={"propuestas_en_curso": _encolar(contenedor, anio, mes)})
+        update={"propuestas_en_curso": _encolar(contenedor, anio, mes)[0]})
 
 
 # --------------------------- Cuadrante --------------------------------
@@ -229,14 +231,15 @@ def obtener_cuadrante(
     with contenedor.uow() as uow:
         cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes, filtro,
                                                 usuario=usuario)
-    en_curso = _encolar(contenedor, anio, mes)
+    en_curso, pendientes = _encolar(contenedor, anio, mes)
     return CuadranteOut(
         propuestas_en_curso=en_curso,
         periodo=a_periodo_out(cuadrante.periodo),
         empresa=cuadrante.empresa,
         obras=[a_obra_out(o) for o in cuadrante.obras],
         trabajadores=[
-            a_trabajador_out(f, filtro.empresa_obras) for f in cuadrante.filas
+            a_trabajador_out(f, filtro.empresa_obras, pendientes)
+            for f in cuadrante.filas
         ],
         resumen=a_resumen_out(cuadrante.resumen),
     )
@@ -247,7 +250,8 @@ def obtener_cuadrante(
 def propuestas_del_mes(anio: int, mes: int,
                        contenedor: Cont) -> PropuestasOut:
     """F-055 (R35): si hay propuestas en curso y las automáticas con
-    propuesta guardada del periodo. Solo lee."""
+    propuesta guardada del periodo; F-057: las líneas que siguen en la cola
+    (`pendientes`). Solo lee."""
     with contenedor.uow() as uow:
         return PropuestasOut(**contenedor.propuestas_mes.estado(uow, anio,
                                                                 mes))
@@ -273,10 +277,11 @@ def guardar_asignaciones(
             uow, anio, mes, trabajador_ide, lineas_a_dicts(payload), usuario,
             filtro=filtro,
         )
+    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes),
         resumen=a_resumen_out(resumen),
-        propuestas_en_curso=_encolar(contenedor, anio, mes, [trabajador_ide]),
+        propuestas_en_curso=en_curso,
     )
 
 
@@ -328,10 +333,11 @@ def cambiar_partida(
             payload.partida.model_dump() if payload.partida else None,
             usuario, filtro=filtro,
         )
+    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes),
         resumen=a_resumen_out(resumen),
-        propuestas_en_curso=_encolar(contenedor, anio, mes, [trabajador_ide]),
+        propuestas_en_curso=en_curso,
     )
 
 
@@ -349,10 +355,11 @@ def deshacer(
         fila, resumen = DeshacerUltimaModificacion().ejecutar(
             uow, anio, mes, trabajador_ide, usuario, filtro=filtro
         )
+    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes),
         resumen=a_resumen_out(resumen),
-        propuestas_en_curso=_encolar(contenedor, anio, mes, [trabajador_ide]),
+        propuestas_en_curso=en_curso,
     )
 
 
@@ -370,12 +377,13 @@ def copiar_trabajador_anterior(
         fila, resumen, origen, omitidas = CopiarTrabajadorAnterior().ejecutar(
             uow, anio, mes, trabajador_ide, usuario, filtro=filtro
         )
+    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
     return CopiaTrabajadorOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes),
         resumen=a_resumen_out(resumen),
         periodo_origen=a_periodo_out(origen) if origen else None,
         lineas_omitidas_obra_inactiva=omitidas,
-        propuestas_en_curso=_encolar(contenedor, anio, mes, [trabajador_ide]),
+        propuestas_en_curso=en_curso,
     )
 
 
@@ -403,7 +411,7 @@ def completar_lote(
         )
     return a_completar_out(resultados, resumen).model_copy(update={
         "propuestas_en_curso": _encolar(contenedor, anio, mes,
-                                        payload.trabajadores)})
+                                        payload.trabajadores)[0]})
 
 
 # --------------------------- Export -----------------------------------
