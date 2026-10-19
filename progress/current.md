@@ -5,7 +5,8 @@
 se está calculando), `in_progress` desde el 2026-10-19, rama
 `feature/F-057-buscando-solo-pendientes`, sin spec (`sdd: false`, rigor
 estándar). Plan aprobado por el humano el 2026-10-19 («ok»); detalle en la
-sección «F-057 · plan aprobado». Implementer lanzado. Antes: F-056 cerrada y
+sección «F-057 · plan aprobado». Implementer terminado, **MANUAL CUMPLIDA**
+por el líder (abajo) y **review lanzada** (pasada 1). Antes: F-056 cerrada y
 **desplegada el 2026-10-19** (solo la api; ver «Producción, hoy»). El arnés es
 la **1.7.3**.
 
@@ -52,7 +53,27 @@ la **1.7.3**.
   obra no se confunde), y `encolar()` devuelve `(en_curso, pendientes)` de
   la misma foto de la cola (`lanzar()` queda como envoltorio que da el
   `bool`): las rutas no tienen el `periodo_id` y así no hay lectura extra ni
-  un `en_curso` falso con líneas marcadas.
+  un `en_curso` falso con líneas marcadas. El líder las da por buenas sin
+  volver a proponer: D1 corrige un hueco del plan (con pares, la postventa de
+  la misma obra saldría marcada) y D2 no cambia nada visible; se cuentan al
+  humano en el resumen.
+- **MANUAL CUMPLIDA (líder, 2026-10-19, BBDD LOCAL, transfer local con
+  `OBRA_PRUEBAS_FORZAR=true`, rama en `36b55a0`, copia
+  principal):** api, front y transfer locales arrancados; `PG_HOST=localhost`
+  y `PG_DB=dedicacion` comprobados por el script antes de cada `UPDATE`.
+  - **09/2026** (`UPDATE` de 6 filas): el cuadrante dio
+    `propuestas_en_curso: true`, 6 líneas, 4 con `propuesta_pendiente`; la de
+    postventa y la de partida elegida, no. En el navegador, a los 0,3 s de
+    abrir el mes las 4 decían «buscando partida…» y la de partida elegida y
+    la de postventa (Zaera, `Postv-0625`, con partida elegida) su partida; a
+    los 5,3 s, sin recargar, las 4 enseñaban su propuesta (`parte anterior`).
+  - **09/2026 no tiene ninguna postventa sin partida en local**, así que se
+    repitió en **10/2026** (`UPDATE` de 17 filas, también solo LOCAL): a los
+    0,2 s, postventa «buscando» 0 y «automática» 3 (`Postv-0561`,
+    `Postv-0672`, `Postv-0626`); normales «buscando» 10; las 3 con partida
+    fija o elegida (VAR-29 ×2, `CI.2.10`), su partida. A los 3,3 s, sin
+    recargar: «buscando» 0 y las 10 con su propuesta (`casada por
+    categoría`). Capturas en el equipo del líder (fuera del repo).
 
 ## Producción, hoy
 
@@ -218,6 +239,10 @@ F-033 y, detrás, F-017, F-018…
   Más la automejora de la review 1 de F-056: que C4 bis acepte el nº de
   workers de `mutacion_F-XXX.md` (la herramienta ya lo imprime) o que
   init.sh compruebe que «Evidencias» lo lleva (un rechazo de solo papeleo).
+  Más el aviso del implementer de F-057: `harness/mutacion_paralela.py` con 4
+  workers dio 4 supervivientes falsos (la 2.ª tanda de los workers; a mano y
+  en serie mueren), detalle en `progress/mutacion_F-057.md`. Si es defecto de
+  la herramienta, vale para cualquier proyecto ⇒ `arnes-base`.
 - **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
   `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
   `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`
