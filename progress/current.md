@@ -3,26 +3,21 @@
 
 **Ninguna feature en curso.** F-056 (validar `trabajador_ide` en preflight y
 ejecutar) **cerrada (`done`) el 2026-10-19**, review APROBADA (pasada 2);
-resumen en `progress/history.md`. **Pendiente de desplegar** (solo la api):
-ver «F-056, pendiente de desplegar». La anterior, F-055, cerrada y desplegada
-el 2026-10-17; C6 en producción cumplida el 2026-10-18. El arnés es la
-**1.7.3**.
-
-## F-056, pendiente de desplegar
-
-- Solo la **api** (`-Solo api`); el transfer y el front no cambian. Sin
-  variables ni DDL nuevos. Lo propone el líder y lo autoriza el humano.
-- En ese mismo trabajo: `azure-apps/dedicacion.md` (~333, párrafo del
-  preflight) gana `trabajador_ide` (entero o `null`, 422 en otro caso, `0`
-  filtra), O2 del implementer y O3 de la review.
-- Comprobación opcional tras desplegar (solo lectura, navegador con sesión de
-  Easy Auth): `fetch('/api/v1/periodos/2026/9/registro/preflight?empresa=1',
-  {method:'POST', headers:{'Content-Type':'application/json'},
-  body:'{"trabajador_ide": ""}'})` ⇒ 422 `trabajador_ide no es un entero: ''`.
-  **Nunca con `ejecutar`**: el transfer desplegado está en modo real.
+resumen en `progress/history.md`. **Desplegada el 2026-10-19** (solo la api,
+autorizado por el humano: «despliega, y sigue con f57»; ver «Producción,
+hoy»). Siguiente: **F-057**, plan propuesto al humano el 2026-10-19, sin
+respuesta todavía. El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-19: F-056**, solo la api: `r20261019-1020`
+  (revisión `ca-dedicacion-api--r20261019102033`, `RunningAtMaxScale`,
+  `Healthy`, 100 % del tráfico; transfer y front sin cambios). El script volvió
+  a cortarse tras el `containerapp update` (el `Run-Az` de «Lo que espera al
+  humano»); la revisión se comprobó con `az containerapp revision list`.
+  Comprobado por el líder en el navegador (solo preflight): `trabajador_ide`
+  `""`, `false` y `"abc"` ⇒ 422 `trabajador_ide no es un entero: …`; `/health`
+  200. `azure-apps/dedicacion.md` al día (`16dfece`).
 - **Desplegado el 2026-10-17: F-055**, los tres servicios en orden: transfer
   `r20261017-1306`, api `r20261017-1310` y front `r20261017-1314` (revisiones
   `…--r20261017130616`, `…131025` y `…131348`, las tres `RunningAtMaxScale` con
@@ -162,7 +157,8 @@ F-033 y, detrás, F-017, F-018…
   range`), no 422; no escribe nada.
 
 - **`Run-Az` de `infra/00_capps_vars_dedicacion.ps1` aborta tras un `update`
-  que sí se aplica** (2026-10-17, las tres veces: `az : ` vacío,
+  que sí se aplica** (2026-10-17 las tres veces y otra el 2026-10-19 con la
+  api de F-056: `az : ` vacío,
   `NativeCommandError` en PS 5.1): el `containerapp update` crea la revisión y
   PowerShell convierte lo que `az` escribe en stderr en error terminante, así que
   `redeploy` para tras el primer servicio. Se desplegó relanzando `-Solo api,front`
