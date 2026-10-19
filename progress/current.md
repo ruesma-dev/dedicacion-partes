@@ -1,79 +1,28 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-057** («buscando partida…» solo en las líneas cuya propuesta
-se está calculando), `in_progress` desde el 2026-10-19, rama
-`feature/F-057-buscando-solo-pendientes`, sin spec (`sdd: false`, rigor
-estándar). Plan aprobado por el humano el 2026-10-19 («ok»); detalle en la
-sección «F-057 · plan aprobado». Implementer terminado, **MANUAL CUMPLIDA**
-por el líder (abajo) y **review lanzada** (pasada 1). Antes: F-056 cerrada y
-**desplegada el 2026-10-19** (solo la api; ver «Producción, hoy»). El arnés es
-la **1.7.3**.
+**Ninguna feature en curso.** F-057 («buscando partida…» solo en las líneas
+cuya propuesta se está calculando) **cerrada (`done`) el 2026-10-19**, review
+APROBADA (pasada 1); resumen en `progress/history.md`. **Pendiente de
+desplegar** (api y front; ver la sección siguiente), sin autorización todavía.
+Antes: F-056 cerrada y **desplegada el 2026-10-19** (solo la api; ver
+«Producción, hoy»). El arnés es la **1.7.3**.
 
-## F-057 · plan aprobado (2026-10-19)
+## F-057 · pendiente de desplegar
 
-- **api, `application/propuestas_mes.py`:** `pendientes(periodo_id)` devuelve
-  los pares (trabajador, obra) de `_en_cola` de ese mes (en cola o
-  calculándose). Es la misma memoria que llena `lanzar()`, así que la regla
-  de «pendiente» es la de encolar y no se copia en ningún sitio.
-- **api, `routes.py` / `schemas.py`:** cada línea del cuadrante y de las
-  respuestas de escritura que ya llevan `propuestas_en_curso` lleva
-  `propuesta_pendiente: bool`, calculado **después** de `_encolar`;
-  `GET …/propuestas` añade la lista `pendientes`.
-- **front, `static/js/app.js` (solo pintar):** «buscando partida…» solo si
-  `l.propuesta_pendiente`; cada sondeo de 5 s actualiza las marcas con
-  `pendientes`. El sondeo sigue gobernado por `en_curso`.
-- **docs:** `docs/INTEGRACION.md` (contrato nuevo); `azure-apps/dedicacion.md`
-  al desplegar.
-- **Tests:** api con línea encolada, en cálculo, de postventa, «sin
-  propuesta», con partida elegida y con partida fija; front, el pintado.
-- **MANUAL (comando exacto, solo BBDD LOCAL):** desde
-  `services/dedicacion-api` de la copia de trabajo, con api, front y
-  transfer locales arrancados, vaciar las `propuesta_*` de 09/2026 como en el
-  T18 de F-055 (`UPDATE asignacion SET propuesta_ide = NULL, propuesta_cod =
-  NULL, propuesta_res = NULL, propuesta_metodo = NULL, propuesta_origen =
-  NULL WHERE periodo_id = (SELECT id FROM periodo WHERE anio = 2026 AND mes =
-  9)`, comprobando antes `PG_HOST=localhost` y `PG_DB=dedicacion`), abrir
-  septiembre 2026 en `http://localhost:8080` y mirar que las de postventa
-  dicen «automática» y las demás «buscando partida…» hasta llenarse.
-  **Nunca contra la BBDD desplegada.**
-- **Despliegue (más adelante, con permiso):** api antes que front.
-- **Fuera:** qué se encola y cuándo.
-- **azure-apps pendiente:** `dedicacion.md`, al desplegar (campo nuevo
-  `propuesta_pendiente` y lista `pendientes`, si el documento describe ese
-  contrato).
-- **Implementer (2026-10-19), terminado** (`87f7e9e` api, `3c32cc2`
-  front, `1258c98` docs; informe `progress/impl_F-057.md`, mutación
-  `progress/mutacion_F-057.md` y `progress/mutacion_manual_F-057.md`).
-  Pendiente: la MANUAL de arriba (líder) y la review. Aviso para el arnés: la
-  campaña de mutación con 4 workers dio 4 supervivientes falsos; vale la de
-  `--workers 1` (detalle en `mutacion_F-057.md`). Desviaciones
-  menores del plan, justificadas en `progress/impl_F-057.md`: `pendientes`
-  da `(trabajador, obra, es_postventa)` y no pares (la postventa de la misma
-  obra no se confunde), y `encolar()` devuelve `(en_curso, pendientes)` de
-  la misma foto de la cola (`lanzar()` queda como envoltorio que da el
-  `bool`): las rutas no tienen el `periodo_id` y así no hay lectura extra ni
-  un `en_curso` falso con líneas marcadas. El líder las da por buenas sin
-  volver a proponer: D1 corrige un hueco del plan (con pares, la postventa de
-  la misma obra saldría marcada) y D2 no cambia nada visible; se cuentan al
-  humano en el resumen.
-- **MANUAL CUMPLIDA (líder, 2026-10-19, BBDD LOCAL, transfer local con
-  `OBRA_PRUEBAS_FORZAR=true`, rama en `36b55a0`, copia
-  principal):** api, front y transfer locales arrancados; `PG_HOST=localhost`
-  y `PG_DB=dedicacion` comprobados por el script antes de cada `UPDATE`.
-  - **09/2026** (`UPDATE` de 6 filas): el cuadrante dio
-    `propuestas_en_curso: true`, 6 líneas, 4 con `propuesta_pendiente`; la de
-    postventa y la de partida elegida, no. En el navegador, a los 0,3 s de
-    abrir el mes las 4 decían «buscando partida…» y la de partida elegida y
-    la de postventa (Zaera, `Postv-0625`, con partida elegida) su partida; a
-    los 5,3 s, sin recargar, las 4 enseñaban su propuesta (`parte anterior`).
-  - **09/2026 no tiene ninguna postventa sin partida en local**, así que se
-    repitió en **10/2026** (`UPDATE` de 17 filas, también solo LOCAL): a los
-    0,2 s, postventa «buscando» 0 y «automática» 3 (`Postv-0561`,
-    `Postv-0672`, `Postv-0626`); normales «buscando» 10; las 3 con partida
-    fija o elegida (VAR-29 ×2, `CI.2.10`), su partida. A los 3,3 s, sin
-    recargar: «buscando» 0 y las 10 con su propuesta (`casada por
-    categoría`). Capturas en el equipo del líder (fuera del repo).
+- **Orden: api antes que front.** Un front nuevo contra una api vieja no
+  recibe `propuesta_pendiente` y diría «automática» en todo durante la
+  ventana; un front viejo contra la api nueva sigue como hoy (observación 2
+  de `progress/review_F-057.md`).
+- **`azure-apps/dedicacion.md` al desplegar:** añadir `propuesta_pendiente`
+  por línea y la lista `pendientes` (`trabajador_ide`, `obra_ide`,
+  `es_postventa`) de `GET …/propuestas` al párrafo del contrato de F-055
+  (observación 1 de la review).
+- **Comprobación tras desplegar (solo lectura):** abrir un mes con propuestas
+  en curso y ver que la postventa dice «automática»; si el mes ya está
+  calculado, `GET …/propuestas` debe traer `pendientes: []` y el cuadrante
+  `propuesta_pendiente` en cada línea. Nada de `UPDATE` contra la BBDD
+  desplegada.
 
 ## Producción, hoy
 
@@ -208,8 +157,8 @@ la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
-desplegada el 2026-10-19. Orden: **F-057** (O2 de F-055, prioridad alta del
-humano el 2026-10-19; en curso), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 (pendiente de
+desplegar api y front). Orden: F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
@@ -242,7 +191,13 @@ F-033 y, detrás, F-017, F-018…
   Más el aviso del implementer de F-057: `harness/mutacion_paralela.py` con 4
   workers dio 4 supervivientes falsos (la 2.ª tanda de los workers; a mano y
   en serie mueren), detalle en `progress/mutacion_F-057.md`. Si es defecto de
-  la herramienta, vale para cualquier proyecto ⇒ `arnes-base`.
+  la herramienta, vale para cualquier proyecto ⇒ `arnes-base`. Y la
+  automejora de la review de F-057: C4 dice «MANUAL … pendientes de que el
+  humano las ejecute», pero aquí el líder las cumple a menudo antes de la
+  review (F-055, F-056, F-057); propuesta: «listadas con su comando exacto y,
+  si ya se ejecutaron, con quién, cuándo y el resultado real» ⇒ `arnes-base`.
+- **¿Desplegar F-057?** (api y luego front; detalle en «F-057 · pendiente de
+  desplegar»).
 - **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
   `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
   `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`

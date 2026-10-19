@@ -2708,3 +2708,40 @@ desplegar. Automejora del arnés (workers en C4 bis) ⇒ lista del arnés.
 **Desplegada el 2026-10-19** (solo la api, `r20261019-1020`): preflight con
 `trabajador_ide` `""`, `false` y `"abc"` ⇒ 422 en producción;
 `azure-apps/dedicacion.md` `16dfece`.
+
+---
+
+## 2026-10-19 · F-057 · «Buscando partida…» solo en las líneas pendientes
+
+Rama `feature/F-057-buscando-solo-pendientes` · `sdd: false` · rigor
+`estandar` · **APROBADO** por el reviewer en la pasada 1.
+
+**El fallo** (O2 de F-055, comprobada por el líder en producción): con
+propuestas en curso, el front pintaba «buscando partida…» en toda línea sin
+partida, también en las que la api nunca encola (postventa y memoria «sin
+propuesta»; 62 de 302 en 09/2026), hasta que acababa el mes entero.
+
+**Qué cambió.** api: `PropuestasDelMes.pendientes(periodo_id)` lee la misma
+cola que llena `_lanzar` (la regla de «pendiente» es la de encolar, no se
+copia); `encolar()` da `(en_curso, pendientes)` de una sola foto y `lanzar()`
+queda como envoltorio. Cada línea del cuadrante y de las escrituras con fila
+(guardar, partida, deshacer, F8) lleva `propuesta_pendiente`, marcada después
+de encolar; `GET …/propuestas` añade `pendientes` (triples `trabajador_ide`,
+`obra_ide`, `es_postventa`, para no confundir la postventa de la misma obra).
+front: «buscando partida…» solo con la marca; cada sondeo la actualiza con
+`pendientes`. `docs/INTEGRACION.md` y `ARCHITECTURE.md` al día. No cambia qué
+se encola ni cuándo. Plan aprobado por el humano el 2026-10-19 («ok»); las
+dos desviaciones (triples, `encolar()`) las aceptó el líder.
+
+**Evidencias.** 19 tests de api y 14 de front nuevos; init.sh verde (api 943,
+front 305, transfer 932, raíz 418 + 1 skipped); cobertura 100 % (30/30);
+mutación en serie 11 mutantes, 10 muertos y 1 equivalente; 13 mutantes JS
+manuales, 13 muertos. MANUAL del líder en local: 09/2026 las 4 encoladas
+«buscando» y con propuesta a los 5,3 s sin recargar; 10/2026 las 3 de
+postventa «automática» desde el principio y las 10 normales «buscando» → con
+propuesta a los 3,3 s.
+
+**Observaciones recogidas.** `azure-apps/dedicacion.md` y orden api → front
+al desplegar ⇒ «Pendiente de desplegar» en `current.md`. Supervivientes
+falsos de `harness/mutacion_paralela.py` con 4 workers y la automejora de C4
+(MANUAL cumplida antes de la review) ⇒ lista del arnés.

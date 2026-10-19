@@ -967,7 +967,7 @@
         "MANUAL en el navegador local (modo pruebas, BBDD local): con las `propuesta_*` de un mes vacías, al abrirlo las líneas de postventa dicen «automática» y las demás «buscando partida…» hasta llenarse",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "in_progress",
+      "status": "done",
       "sdd": false,
       "rigor": "estandar",
       "priority": 3,
