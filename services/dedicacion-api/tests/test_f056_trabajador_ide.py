@@ -21,7 +21,7 @@ entero, como la base). Ni red ni BBDD.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self
 
 import pytest
 from application.registro_sigrid import RegistroSigrid
@@ -58,7 +58,7 @@ class _SesionQueFiltra:
         self._filas = filas
         self.filtros: list[Any] = []
 
-    def __enter__(self) -> _SesionQueFiltra:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc: object) -> None:
