@@ -1,7 +1,30 @@
 <!-- progress/review_F-056.md -->
-Revisión completa (pasada 1) · `git diff dev...HEAD` (`9ff3e54..8d30881`, 11 ficheros, 5 de código)
+Revisión incremental desde 8d30881 (pasada 2) · `8d30881..f99e39d`: solo `progress/` (3 ficheros, 0 de código)
 
 # F-056 · Review
+
+## Pasada 2 — **Veredicto: APROBADO** (APPROVED)
+
+**Nivel de rigor:** `critico` (declarado). Lo aprobado en la pasada 1 hasta `8d30881` queda dado por bueno: el delta
+(`191926f` esta review, `c61c351` informe, `f99e39d` `current.md`) no toca código, tests, firmas ni el alcance de la
+campaña (35 líneas, 2 mutantes, SHA medido `42ddad8`), así que la mutación y su verificación siguen valiendo.
+Rama `feature/F-056-validar-trabajador-ide` comprobada; árbol limpio antes y después.
+
+**init.sh** (cachés `suite_*.ok` borradas, solo, sin pipes): exit 0, `ENTORNO LISTO`, **0 `[KO]`**; raíz 418 + 1
+skipped, api 924, front 291, transfer 932; `PUERTA COBERTURA` 100 % (10/10); `PUERTA TAMAÑO` impl 197/220.
+
+1. **B1** [x] `impl_F-056.md` «Evidencias» lleva «Workers de la campaña | 2 … coste por mutante ≈ 161 s», igual que la
+   fila «Workers» de `mutacion_F-056.md`. C4 bis queda entero en [x] / N/A justificado.
+2. **O2** [x] la tabla de mutantes manuales lleva fichero y línea: `routes.py:100`, `:103`, `:104`, `:107`, `:445`/`:462`;
+   comprobadas contra el código (son las líneas exactas de cada texto).
+3. **O1** [x] sumada a la O1 del implementer en «Lo que espera al humano»; **O3** ya en el plan (`azure-apps` al
+   desplegar); la automejora, en la lista del trabajo del arnés. `current.md` describe la pasada 2 en curso.
+
+**Checkpoints:** C1 [x]; C2 [x]; C3 [x]; C3 bis N/A (no toca `docs/referencia/`); C4 [x]; C4 bis [x] (B1 cerrado);
+C4 ter N/A (sin `harness/rutas_sensibles.json`); C5 [x] (`tasks.md` N/A por `sdd: false`). Detalle en la pasada 1.
+
+---
+Pasada 1: revisión completa · `git diff dev...HEAD` (`9ff3e54..8d30881`, 11 ficheros, 5 de código)
 
 ## Pasada 1 — **Veredicto: RECHAZADO** (CHANGES_REQUESTED)
 
@@ -108,14 +131,9 @@ Cada ruta queda vigilada por separado (no basta con que una valide), y el filtro
 `docs/INTEGRACION.md` (contrato) documenta el 422, el `"11"`/`11.0` aceptados y que `0` filtra. Límite de servicio:
 solo `dedicacion-api`; el front ya manda número o `null` (`app.js:2262`, `:2473`) y no se toca.
 
-## Cambios requeridos
+## Cambios requeridos (pasada 1)
 
-1. `progress/impl_F-056.md`, «Evidencias»: añadir el nº de workers de la campaña (2) y, si se quiere, el coste por
-   mutante (161 s). Nada más; sin tocar código ni repetir la campaña.
+1. `progress/impl_F-056.md`, «Evidencias»: añadir el nº de workers de la campaña (2). Sin tocar código.
 
-## Automejora (propuesta, no aplicada)
-
-Desde el arnés 1.7.2 la propia herramienta imprime la fila «Workers» en `mutacion_F-XXX.md`, que es más fiable que la
-prosa del implementer. Propongo que el último punto de C4 bis acepte el nº de workers **de cualquiera de los dos
-informes**, o que `harness.tamano`/init.sh compruebe que «Evidencias» lo lleva, para que este rechazo de papeleo no
-cueste una pasada. Vale para cualquier proyecto: si el humano lo aprueba, se porta a `arnes-base`.
+**Automejora (propuesta, no aplicada):** que el último punto de C4 bis acepte el nº de workers de `mutacion_F-XXX.md`
+(la herramienta lo imprime desde la 1.7.2) o que init.sh compruebe que «Evidencias» lo lleva; portar a `arnes-base`.
