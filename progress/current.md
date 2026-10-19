@@ -24,7 +24,10 @@ es la **1.7.3**.
   mes entero 8,37 s, 59 obras, 304 líneas, sin 502 ni obras con error (≤ 60 s);
   repreflight de la 0694 0,81 s. Las propuestas del mes ya estaban calculadas
   al abrirlo (`propuestas_en_curso: false`), así que no se vio «buscando
-  partida…»; O2 queda para cuando haya líneas pendientes.
+  partida…». O2 comprobada después pintando el mes en curso en la pestaña del
+  líder (sin llamar a la api): 62 líneas dirían «buscando partida…» sin
+  encolarse nunca (53 de postventa y 9 de GG) ⇒ **F-057** (humano,
+  2026-10-19).
 - **Desplegado el 2026-10-14: F-050**, los tres servicios: transfer
   `r20261014-1740`, api `r20261014-1743` y front `r20261014-1746` (revisiones
   `…--r20261014173903`, las tres `Running`; el transfer sigue en **modo real**,
@@ -135,8 +138,6 @@ F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
-- **O2 de F-055**: juzgar en pantalla «buscando partida…» cuando haya líneas
-  pendientes (C6 cumplida el 2026-10-18, ver «Producción, hoy»).
 - **`Run-Az` de `infra/00_capps_vars_dedicacion.ps1` aborta tras un `update`
   que sí se aplica** (2026-10-17, las tres veces: `az : ` vacío,
   `NativeCommandError` en PS 5.1): el `containerapp update` crea la revisión y
