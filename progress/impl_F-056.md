@@ -143,14 +143,14 @@ aplicaron **a mano** seis mutantes sobre `routes.py`, cada uno contra
 `test_f056_trabajador_ide.py` + `test_f050_preflight_obra.py`, restaurando con
 `git checkout` tras cada uno (árbol limpio al acabar):
 
-| Mutante manual | Resultado |
+| Mutante manual (`interface_adapters/api/routes.py`) | Resultado |
 |---|---|
-| `if valor is None` → `is not None` | 47 failed: muerto |
-| `isinstance(valor, bool) or (…float…)` → `and` | 13 failed: muerto |
-| `and not valor.is_integer()` → `and valor.is_integer()` | 9 failed: muerto |
-| `isinstance(valor, bool) or` → `False or` | 7 failed: muerto |
-| `except (TypeError, ValueError)` → `except (TypeError,)` | 27 failed: muerto |
-| rutas sin `_trabajador_ide(...)` (valor crudo, como antes) | 30 failed: muerto |
+| `:100` `if valor is None` → `is not None` | 47 failed: muerto |
+| `:103` `isinstance(valor, bool) or (…float…)` → `and` | 13 failed: muerto |
+| `:104` `and not valor.is_integer()` → `and valor.is_integer()` | 9 failed: muerto |
+| `:103` `isinstance(valor, bool) or` → `False or` | 7 failed: muerto |
+| `:107` `except (TypeError, ValueError)` → `except (TypeError,)` | 27 failed: muerto |
+| `:445` y `:462` rutas sin `_trabajador_ide(...)` (valor crudo, como antes) | 30 failed: muerto |
 
 Cero vivos, ni en la campaña ni a mano.
 
@@ -191,6 +191,7 @@ Cero vivos, ni en la campaña ni a mano.
 | Suite api / front / transfer / raíz | 924 / 291 / 932 / 418 passed (+1 skipped en raíz) |
 | Cobertura de líneas cambiadas | **100.0 %** (10/10), umbral 80 %, `PUERTA COBERTURA` |
 | Mutantes (campaña del arnés) | 2 generados, 2 muertos, **0 supervivientes** |
+| Workers de la campaña | 2 (por defecto; fila «Workers» de `progress/mutacion_F-056.md`) → coste por mutante 161,3 s × 2 ÷ 2 ≈ 161 s |
 | Mutantes manuales sobre el helper | 6 aplicados, 6 muertos |
 | Tiempo de la suite | api 56.02 s, front 32.46 s, transfer 17.13 s, raíz 52.28 s (init.sh) |
 | `bash harness/init.sh` final (caché borrada, informe ya escrito) | **ENTORNO LISTO**, sin `[KO]`; ruff 258 avisos (= línea base de `dev`); `PUERTA TAMAÑO: impl 195/220` |
