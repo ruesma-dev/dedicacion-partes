@@ -2704,3 +2704,7 @@ reviewer junto con 3 suyos.
 (`overrides` no enteros y enteros enormes dan 500; `pisar_claves` y `usuario`
 crudos) ⇒ decisión del humano en `current.md`. `azure-apps/dedicacion.md` al
 desplegar. Automejora del arnés (workers en C4 bis) ⇒ lista del arnés.
+
+**Desplegada el 2026-10-19** (solo la api, `r20261019-1020`): preflight con
+`trabajador_ide` `""`, `false` y `"abc"` ⇒ 422 en producción;
+`azure-apps/dedicacion.md` `16dfece`.
