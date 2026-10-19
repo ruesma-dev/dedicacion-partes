@@ -23,6 +23,11 @@ class ObraNoValida(ErrorDominio):
     pass
 
 
+class TrabajadorNoValido(ErrorDominio):
+    """`trabajador_ide` del cuerpo del registro que no es un entero ni `null`
+    (F-056): 422 sin analizar ni escribir."""
+
+
 class LineaNoEncontrada(ErrorDominio):
     """El trabajador no tiene línea con esa obra y ese modo en el periodo
     (F-050, R13): 404."""

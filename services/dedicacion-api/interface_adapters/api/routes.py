@@ -23,7 +23,7 @@ from application.use_cases import (
     ObtenerFilaTrabajador,
 )
 from config.settings import cargar_config
-from domain.errors import ObraNoValida
+from domain.errors import ErrorDominio, ObraNoValida, TrabajadorNoValido
 from domain.models import EstadoPeriodo, FiltroEmpresa
 from interface_adapters.api.deps import (
     Contenedor,
@@ -91,10 +91,12 @@ def _encolar(contenedor: Contenedor, anio: int, mes: int,
         return False
 
 
-def _obra_ide(valor: Any) -> int | None:
-    """`obra_ide` del cuerpo del preflight como entero (F-050, review 3): un
-    `"694"` de texto casa con la obra del grupo. Lo que no es un entero
-    (texto, decimales, booleano, lista, infinito) es 422 sin analizar."""
+def _entero_opcional(valor: Any, campo: str,
+                     error: type[ErrorDominio]) -> int | None:
+    """Un campo opcional del cuerpo como entero (F-050, review 3; F-056): un
+    `"694"` de texto o un `694.0` valen como `694`, y `0` o un negativo son
+    enteros. Lo que no es un entero (texto, decimales, booleano, lista,
+    infinito) lanza `error`, que es 422 sin analizar ni escribir."""
     if valor is None:
         return None
     try:
@@ -103,7 +105,18 @@ def _obra_ide(valor: Any) -> int | None:
             raise ValueError
         return int(valor)
     except (TypeError, ValueError):
-        raise ObraNoValida(f"obra_ide no es un entero: {valor!r}") from None
+        raise error(f"{campo} no es un entero: {valor!r}") from None
+
+
+def _obra_ide(valor: Any) -> int | None:
+    """`obra_ide` del cuerpo del preflight (F-050, M2 punto 5)."""
+    return _entero_opcional(valor, "obra_ide", ObraNoValida)
+
+
+def _trabajador_ide(valor: Any) -> int | None:
+    """`trabajador_ide` del cuerpo del registro (F-056): sin validar, un `0`,
+    `""` o `false` quitaba el filtro y `ejecutar` registraba el mes entero."""
+    return _entero_opcional(valor, "trabajador_ide", TrabajadorNoValido)
 
 
 # --------------------------- Salud ------------------------------------
@@ -428,13 +441,14 @@ def registro_preflight(anio: int, mes: int, contenedor: Cont,
     para el registro de una sola línea, `obra_ide` para analizar solo esa
     obra (F-050: el modal tras cambiar una partida) y `overrides` de
     partida. La empresa llega por query, como en el resto de rutas del
-    periodo (F-024)."""
+    periodo (F-024). `trabajador_ide` se valida antes de nada (F-056)."""
+    trabajador_ide = _trabajador_ide(payload.get("trabajador_ide"))
     filtro = _filtro(contenedor, empresa)
     overrides = {int(k): int(v) for k, v in
                  (payload.get("overrides") or {}).items()}
     return contenedor.registro_sigrid.preflight(
         anio, mes, overrides,
-        trabajador_ide=payload.get("trabajador_ide"),
+        trabajador_ide=trabajador_ide,
         empresa=filtro.empresa, obra_ide=_obra_ide(payload.get("obra_ide")))
 
 
@@ -443,12 +457,14 @@ def registro_ejecutar(anio: int, mes: int, contenedor: Cont,
                       payload: dict = Body(default={}),
                       empresa: EmpresaQ = None) -> dict[str, Any]:
     """Escribe en Sigrid vía porcentajes-transfer y deja la traza, con la
-    empresa elegida (F-024)."""
+    empresa elegida (F-024). `trabajador_ide` se valida antes de nada
+    (F-056): un valor que no es entero es 422 y no se escribe."""
+    trabajador_ide = _trabajador_ide(payload.get("trabajador_ide"))
     filtro = _filtro(contenedor, empresa)
     overrides = {int(k): int(v) for k, v in
                  (payload.get("overrides") or {}).items()}
     return contenedor.registro_sigrid.ejecutar(
         anio, mes, pisar_claves=list(payload.get("pisar_claves") or []),
         overrides=overrides, usuario=str(payload.get("usuario") or "local"),
-        trabajador_ide=payload.get("trabajador_ide"),
+        trabajador_ide=trabajador_ide,
         empresa=filtro.empresa)

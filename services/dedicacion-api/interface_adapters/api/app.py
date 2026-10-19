@@ -23,6 +23,7 @@ from domain.errors import (
     SigridError,
     SigridNoConfigurado,
     TrabajadorNoEncontrado,
+    TrabajadorNoValido,
     UniversoPostventaNoDisponible,
     UniversoVarNoDisponible,
 )
@@ -40,6 +41,7 @@ _HTTP_POR_ERROR: list[tuple[type[ErrorDominio], int]] = [
     (NadaQueDeshacer, 409),
     (DeshacerAjeno, 409),     # F-027: mismo trato que «nada que deshacer»
     (ObraNoValida, 422),
+    (TrabajadorNoValido, 422),   # F-056
     (LineasInvalidas, 422),
     (SigridNoConfigurado, 503),
     (SigridError, 502),
