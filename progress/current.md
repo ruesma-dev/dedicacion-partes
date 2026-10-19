@@ -4,8 +4,10 @@
 **En curso: F-056** (validar `trabajador_ide` en preflight y ejecutar), rigor
 **crítico**, `sdd: false` (los `acceptance` hacen de mini-spec), rama
 `feature/F-056-validar-trabajador-ide`. **Implementer terminado el 2026-10-19**
-(`progress/impl_F-056.md`); **review lanzada el 2026-10-19**
-(`progress/review_F-056.md`). Plan aprobado por el humano el
+(`progress/impl_F-056.md`). Review pasada 1 **RECHAZADA** solo por papeleo
+(B1: nº de workers en «Evidencias»), corregido en `c61c351` junto con su O2
+(fichero:línea de los mutantes manuales); **pasada 2 lanzada el 2026-10-19**,
+incremental desde `8d30881` (`progress/review_F-056.md`). Plan aprobado por el humano el
 2026-10-19 («si»): ver «F-056, plan aprobado». La anterior, F-055, **cerrada
 el 2026-10-17** y desplegada ese día; C6 en producción cumplida el 2026-10-18.
 El arnés es la **1.7.3**.
@@ -176,7 +178,10 @@ F-033 y, detrás, F-017, F-018…
 - **O1 de F-056: ¿feature propia para validar el resto del cuerpo del
   registro?** `overrides` no enteros dan 500 (`int(k)`, `int(v)` en
   `routes.py`, preflight y ejecutar); `pisar_claves` y `usuario` llegan crudos
-  a `ejecutar` (`list()` de un texto lo trocea en caracteres).
+  a `ejecutar` (`list()` de un texto lo trocea en caracteres). Se le suma la
+  O1 de la review 1 de F-056: un entero enorme (`10**30`) en `trabajador_ide`
+  u `obra_ide` pasa la validación y PostgreSQL da 500 (`integer out of
+  range`), no 422; no escribe nada.
 
 - **`Run-Az` de `infra/00_capps_vars_dedicacion.ps1` aborta tras un `update`
   que sí se aplica** (2026-10-17, las tres veces: `az : ` vacío,
@@ -190,6 +195,9 @@ F-033 y, detrás, F-017, F-018…
   sus reviews —`CHECKPOINTS.md` C4: trazar un R «como hoy» o documental; una
   mutación manual de Python también exige tabla con texto exacto y el reviewer
   corre los mutantes del generador sobre esas líneas—, portadas a `arnes-base`.
+  Más la automejora de la review 1 de F-056: que C4 bis acepte el nº de
+  workers de `mutacion_F-XXX.md` (la herramienta ya lo imprime) o que
+  init.sh compruebe que «Evidencias» lo lleva (un rechazo de solo papeleo).
 - **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
   `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
   `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`
