@@ -3,13 +3,14 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **53 features**, 24 abiertas, 29 terminadas.
+Resumen: **54 features**, 25 abiertas, 29 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-056 | Validar trabajador_ide en preflight y ejecutar (un valor falso registra el mes entero) | 2 | pendiente | critico | `feature/F-056-validar-trabajador-ide` |
+| F-057 | «Buscando partida…» solo en las líneas cuya propuesta se está calculando | 3 | pendiente | estandar | `feature/F-057-buscando-solo-pendientes` |
 | F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | pendiente | critico | `feature/F-051-pisar-lineas-cero` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
@@ -75,6 +76,12 @@ Resumen: **53 features**, 24 abiertas, 29 terminadas.
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-056-validar-trabajador-ide`
 
 Observación de la review 4 de F-050 (2026-10-11), recogida por el líder: en la api, `trabajador_ide` llega crudo del cuerpo de `POST …/registro/preflight` y `…/registro/ejecutar` (`routes.py` ~393 y ~409) y `registro_sigrid.py` (~81) filtra con `if trabajador_ide`: un valor falso (`0`, `""`, `false`) QUITA el filtro y `ejecutar` registraría el mes entero en vez de un trabajador; un texto llega a PostgreSQL y da 500 en vez de 422. Hoy el front manda un número o null, así que no ocurre, pero es la ruta que escribe en Sigrid. Arreglo: validarlo como `obra_ide` (F-050: entero, 422 si no lo es, sin analizar) en las dos rutas y filtrar con `is not None`. Solo api; rigor crítico.
+
+### F-057 · «Buscando partida…» solo en las líneas cuya propuesta se está calculando
+
+estado **pendiente** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-057-buscando-solo-pendientes`
+
+O2 de la review de F-055, comprobada por el líder el 2026-10-18 en producción (septiembre 2026, pintando en su pestaña el cuadrante con `propuestas_en_curso` a true, sin llamar a la api): mientras hay propuestas en curso, el front pinta «buscando partida…» en TODA línea sin partida elegida ni propuesta guardada (`app.js`, `htmlPartida` y la celda Partida), también en las que la api nunca encola: las de postventa (53 de 302 en 09/2026) y las de la memoria «sin propuesta» de `propuestas_mes.py` (9, obra GG). Al acabar el cálculo vuelven a «automática»: es un fallo de pantalla, no cambia lo que se registra. Decisión del humano el 2026-10-19 («2, feature pequeña, ponle prioridad alta»): la api dice por línea si su propuesta está pendiente (en cola o calculándose), con la MISMA regla que encola, y el front pinta «buscando partida…» solo donde la api lo diga; el resto, «automática». El front no decide qué se encola. Servicios: api (cuadrante, `GET …/propuestas` y respuestas de escritura con `propuestas_en_curso`) y front (solo pintar). Si cambia el contrato que expone la api, se actualiza `docs/INTEGRACION.md` y, si lo describe, `azure-apps/dedicacion.md`.
 
 ### F-051 · Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso
 

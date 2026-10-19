@@ -955,6 +955,23 @@
       "rigor": "critico",
       "priority": 2,
       "branch": "feature/F-056-validar-trabajador-ide"
+    },
+    {
+      "id": "F-057",
+      "title": "«Buscando partida…» solo en las líneas cuya propuesta se está calculando",
+      "description": "O2 de la review de F-055, comprobada por el líder el 2026-10-18 en producción (septiembre 2026, pintando en su pestaña el cuadrante con `propuestas_en_curso` a true, sin llamar a la api): mientras hay propuestas en curso, el front pinta «buscando partida…» en TODA línea sin partida elegida ni propuesta guardada (`app.js`, `htmlPartida` y la celda Partida), también en las que la api nunca encola: las de postventa (53 de 302 en 09/2026) y las de la memoria «sin propuesta» de `propuestas_mes.py` (9, obra GG). Al acabar el cálculo vuelven a «automática»: es un fallo de pantalla, no cambia lo que se registra. Decisión del humano el 2026-10-19 («2, feature pequeña, ponle prioridad alta»): la api dice por línea si su propuesta está pendiente (en cola o calculándose), con la MISMA regla que encola, y el front pinta «buscando partida…» solo donde la api lo diga; el resto, «automática». El front no decide qué se encola. Servicios: api (cuadrante, `GET …/propuestas` y respuestas de escritura con `propuestas_en_curso`) y front (solo pintar). Si cambia el contrato que expone la api, se actualiza `docs/INTEGRACION.md` y, si lo describe, `azure-apps/dedicacion.md`.",
+      "acceptance": [
+        "Con propuestas en curso, una línea de postventa o en la memoria «sin propuesta» dice «automática», no «buscando partida…»; una línea encolada dice «buscando partida…» hasta que llega su propuesta y entonces la enseña sin recargar",
+        "Qué líneas están pendientes lo dice la api con la misma regla con la que encola (`propuestas_mes.py`); el front solo pinta lo que recibe",
+        "Tests de la api con línea encolada, en cálculo, de postventa, en la memoria «sin propuesta», con partida elegida y con partida fija",
+        "MANUAL en el navegador local (modo pruebas, BBDD local): con las `propuesta_*` de un mes vacías, al abrirlo las líneas de postventa dicen «automática» y las demás «buscando partida…» hasta llenarse",
+        "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 3,
+      "branch": "feature/F-057-buscando-solo-pendientes"
     }
   ]
 }
