@@ -17,6 +17,9 @@ evento). La api no propone: guarda lo que devuelve el transfer.
   guardar ese trozo ni tocar la memoria; el próximo cuadrante o escritura la
   relanza.
 - `lanzar` nunca lanza: si algo falla, log y `False`.
+- F-057: `pendientes` dice qué líneas siguen en la cola (en cola o
+  calculándose) y `encolar` lo devuelve junto con `en_curso`; con eso la
+  api marca `propuesta_pendiente` en cada línea y el front solo pinta.
 - Estado en memoria de UNA réplica (ARCHITECTURE «Topología»).
 """
 from __future__ import annotations
@@ -36,6 +39,8 @@ logger = logging.getLogger(__name__)
 
 #: (periodo_id, trabajador_ide, obra_ide): una línea de obra normal.
 Clave = tuple[int, int, int]
+#: (trabajador_ide, obra_ide, es_postventa): una línea en la cola (F-057).
+Pendiente = tuple[int, int, bool]
 
 
 class PropuestasDelMes:
@@ -56,10 +61,20 @@ class PropuestasDelMes:
         self._parada = threading.Event()
 
     # ------------------------------------------------------------- #
+    def pendientes(self, periodo_id: int) -> frozenset[Pendiente]:
+        """F-057: las líneas del periodo en cola o calculándose, como
+        `(trabajador_ide, obra_ide, es_postventa)`. Es la misma memoria que
+        llena `lanzar()`: «pendiente» es lo que se encoló, sin otra regla.
+        Solo se encolan líneas de obra normal, así que `es_postventa` es
+        siempre falso; va en la tupla para que quien la use case la línea
+        por su identidad completa y no confunda la de postventa."""
+        with self._lock:
+            return frozenset((c[1], c[2], False) for c in self._en_cola
+                             if c[0] == periodo_id)
+
     def en_curso(self, periodo_id: int) -> bool:
         """¿Alguna línea del periodo en cola o en marcha? (R30)."""
-        with self._lock:
-            return any(c[0] == periodo_id for c in self._en_cola)
+        return bool(self.pendientes(periodo_id))
 
     def cerrar(self) -> None:
         """Parada de la api (T17b, O5 de la review): levanta la marca de
@@ -95,19 +110,29 @@ class PropuestasDelMes:
                trabajadores: Iterable[int] | None = None) -> bool:
         """Encola las pendientes del periodo (o solo de `trabajadores`) y
         devuelve `en_curso`. Nunca lanza (R37)."""
+        return self.encolar(anio, mes, trabajadores)[0]
+
+    def encolar(self, anio: int, mes: int,
+                trabajadores: Iterable[int] | None = None,
+                ) -> tuple[bool, frozenset[Pendiente]]:
+        """Como `lanzar`, y además las pendientes de TODO el periodo tras
+        encolar (F-057), leídas a la vez que `en_curso`: las dos salen de la
+        misma foto de la cola. Periodo cerrado o inexistente, o un fallo:
+        `(False, frozenset())`. Nunca lanza (R37)."""
         try:
-            return self._lanzar(anio, mes, trabajadores)
+            pendientes = self._lanzar(anio, mes, trabajadores)
         except Exception:                           # noqa: BLE001
             logger.exception("[propuestas] no se pudo encolar %02d/%s",
                              mes, anio)
-            return False
+            return False, frozenset()
+        return bool(pendientes), pendientes
 
-    def _lanzar(self, anio, mes, trabajadores) -> bool:
+    def _lanzar(self, anio, mes, trabajadores) -> frozenset[Pendiente]:
         solo = None if trabajadores is None else set(trabajadores)
         with self._uow() as uow:
             r = uow.periodos.obtener(anio, mes)
             if r is None or r[1].estado is not EstadoPeriodo.ABIERTO:
-                return False
+                return frozenset()
             periodo_id = r[0]
             pendientes = []
             for ide, lineas in sorted(
@@ -141,7 +166,7 @@ class PropuestasDelMes:
                     self._en_cola.difference_update(p["clave"]
                                                     for p in nuevas)
                 raise
-        return self.en_curso(periodo_id)
+        return self.pendientes(periodo_id)
 
     # ------------------------------------------------------------- #
     def _calcular(self, anio: int, mes: int, pendientes: list[dict]) -> None:
@@ -194,9 +219,11 @@ class PropuestasDelMes:
 
     # ------------------------------------------------------------- #
     def estado(self, uow: UnitOfWork, anio: int, mes: int) -> dict[str, Any]:
-        """R35: `{en_curso, lineas}`: las automáticas con propuesta guardada
-        del periodo. Solo lee."""
+        """R35: `{en_curso, lineas, pendientes}`: las automáticas con
+        propuesta guardada del periodo y (F-057) las que siguen en la cola,
+        de la misma foto que `en_curso`. Solo lee."""
         periodo_id, _ = _periodo_o_error(uow, anio, mes)
+        pendientes = self.pendientes(periodo_id)
         lineas = [
             {"trabajador_ide": ide, "obra_ide": ln.obra_ide,
              "es_postventa": ln.es_postventa,
@@ -207,4 +234,7 @@ class PropuestasDelMes:
                 uow.asignaciones.lineas_del_periodo(periodo_id).items())
             for ln in lns
             if ln.propuesta_ide is not None and ln.partida_ide is None]
-        return {"en_curso": self.en_curso(periodo_id), "lineas": lineas}
+        return {"en_curso": bool(pendientes), "lineas": lineas,
+                "pendientes": [
+                    {"trabajador_ide": t, "obra_ide": o, "es_postventa": pv}
+                    for t, o, pv in sorted(pendientes)]}

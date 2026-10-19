@@ -3,13 +3,12 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **54 features**, 24 abiertas, 30 terminadas.
+Resumen: **54 features**, 23 abiertas, 31 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-057 | «Buscando partida…» solo en las líneas cuya propuesta se está calculando | 3 | pendiente | estandar | `feature/F-057-buscando-solo-pendientes` |
 | F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | pendiente | critico | `feature/F-051-pisar-lineas-cero` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
@@ -60,6 +59,7 @@ Resumen: **54 features**, 24 abiertas, 30 terminadas.
 | F-008 | Infraestructura y despliegue en Azure | 3 | critico |
 | F-029 | Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada | 3 | estandar |
 | F-041 | El filtro de obra casa con el texto tal como sale en la app (incluido Postv-) | 3 | estandar |
+| F-057 | «Buscando partida…» solo en las líneas cuya propuesta se está calculando | 3 | estandar |
 | F-004 | README del monorepo y arranque local en orden | 4 | documental |
 | F-013 | Una linea sin partida no se escribe en silencio | 4 | critico |
 | F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | documental |
@@ -70,12 +70,6 @@ Resumen: **54 features**, 24 abiertas, 30 terminadas.
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
-
-### F-057 · «Buscando partida…» solo en las líneas cuya propuesta se está calculando
-
-estado **pendiente** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-057-buscando-solo-pendientes`
-
-O2 de la review de F-055, comprobada por el líder el 2026-10-18 en producción (septiembre 2026, pintando en su pestaña el cuadrante con `propuestas_en_curso` a true, sin llamar a la api): mientras hay propuestas en curso, el front pinta «buscando partida…» en TODA línea sin partida elegida ni propuesta guardada (`app.js`, `htmlPartida` y la celda Partida), también en las que la api nunca encola: las de postventa (53 de 302 en 09/2026) y las de la memoria «sin propuesta» de `propuestas_mes.py` (9, obra GG). Al acabar el cálculo vuelven a «automática»: es un fallo de pantalla, no cambia lo que se registra. Decisión del humano el 2026-10-19 («2, feature pequeña, ponle prioridad alta»): la api dice por línea si su propuesta está pendiente (en cola o calculándose), con la MISMA regla que encola, y el front pinta «buscando partida…» solo donde la api lo diga; el resto, «automática». El front no decide qué se encola. Servicios: api (cuadrante, `GET …/propuestas` y respuestas de escritura con `propuestas_en_curso`) y front (solo pintar). Si cambia el contrato que expone la api, se actualiza `docs/INTEGRACION.md` y, si lo describe, `azure-apps/dedicacion.md`.
 
 ### F-051 · Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso
 
@@ -346,6 +340,12 @@ Salida de la revisión de negocio del 2026-09-29. Poder seleccionar varias filas
 estado **terminada** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-041-filtro-obra-postventa`
 
 Pedida por el humano el 2026-10-06: «al filtrar por obra no filtra bien postventa. Quiero filtrar todas las obras de postventa (es decir, empiezan por Postv-), y me gustaría que si pongo pos, y voy completando, filtre por texto incluido en el nombre de la obra tal cual sale en la app». Causa vista por el líder: el filtro de la columna de asignaciones (`trabajadoresVisibles` y `textoColumna` en services/dedicacion-front/static/js/app.js) compara con `l.cod` y `l.descripcion`, no con la etiqueta que pinta el chip (`Postv-0656 …`, y `VAR-29` cuando llegue F-039). Es presentación: solo front. 2026-10-06: el humano pide spec («lanza spec del filtro»): pasa a sdd. 2026-10-06: SPEC en specs/F-041-filtro-obra-postventa/ (spec_ready). Causa comprobada en node: la columna ya casaba con Postv-; el que no es el buscador global, y la columna casaba a caballo entre chips. 2026-10-06: spec APROBADA por el humano con D1-D4 = A (requirements.md §6). Tests anteriores que cambian: ninguno (prototipo). 2026-10-06: pasa a implementación en su copia (porcentajes-f041), en paralelo con las MANUAL de F-039 y F-040. CERRADA (done) el 2026-10-07: review pasada 2 APROBADA; T6 cumplida por el humano en local («perfecto»). PENDIENTE DE DESPLEGAR (solo front). DESPLEGADA el 2026-10-07 (front r20261007-1734).
+
+### F-057 · «Buscando partida…» solo en las líneas cuya propuesta se está calculando
+
+estado **terminada** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-057-buscando-solo-pendientes`
+
+O2 de la review de F-055, comprobada por el líder el 2026-10-18 en producción (septiembre 2026, pintando en su pestaña el cuadrante con `propuestas_en_curso` a true, sin llamar a la api): mientras hay propuestas en curso, el front pinta «buscando partida…» en TODA línea sin partida elegida ni propuesta guardada (`app.js`, `htmlPartida` y la celda Partida), también en las que la api nunca encola: las de postventa (53 de 302 en 09/2026) y las de la memoria «sin propuesta» de `propuestas_mes.py` (9, obra GG). Al acabar el cálculo vuelven a «automática»: es un fallo de pantalla, no cambia lo que se registra. Decisión del humano el 2026-10-19 («2, feature pequeña, ponle prioridad alta»): la api dice por línea si su propuesta está pendiente (en cola o calculándose), con la MISMA regla que encola, y el front pinta «buscando partida…» solo donde la api lo diga; el resto, «automática». El front no decide qué se encola. Servicios: api (cuadrante, `GET …/propuestas` y respuestas de escritura con `propuestas_en_curso`) y front (solo pintar). Si cambia el contrato que expone la api, se actualiza `docs/INTEGRACION.md` y, si lo describe, `azure-apps/dedicacion.md`.
 
 ### F-004 · README del monorepo y arranque local en orden
 

@@ -25,7 +25,8 @@ CAMPOS_LINEA = {"obra_ide", "cod", "descripcion", "es_postventa",
                 "partida_ide", "partida_cod", "partida_res",
                 "partida_fija",                         # + F-050 (R18)
                 "propuesta_cod", "propuesta_res",
-                "propuesta_metodo"}                     # + F-055 (R27)
+                "propuesta_metodo",                     # + F-055 (R27)
+                "propuesta_pendiente"}                  # + F-057
 
 
 def _marcas(trabajador: dict) -> list[tuple[int, int | None, bool]]:

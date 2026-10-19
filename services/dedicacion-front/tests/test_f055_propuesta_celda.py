@@ -4,7 +4,9 @@ consulta mientras se buscan (R27, R36; D7, D9).
 
 - R27: sin elegida y con `propuesta_cod`, la celda enseña «código ·
   descripción» en cursiva con su método; sin ella, «buscando partida…» si
-  hay propuestas en curso y, si no, «automática».
+  la línea está pendiente (desde F-057, la marca `propuesta_pendiente` que
+  pone la API; antes, el global de propuestas en curso) y, si no,
+  «automática».
 - R36: mientras `propuestas_en_curso`, UN solo temporizador consulta
   `GET …/propuestas` cada 5 s, copia la propuesta a las líneas aún sin
   elegida, repinta solo las celdas Partida y para con `en_curso` falso o al
@@ -28,7 +30,8 @@ from tests.test_f050_subfilas import CSS, JS, _const, _funcion, _plano
 
 FUNCIONES = ["textoPartida", "rotuloOrigen", "htmlPartida",
              "aplicarPropuestas", "marcarPropuestas", "reiniciarPropuestas",
-             "seguirPropuestas", "consultarPropuestas"]
+             "seguirPropuestas", "consultarPropuestas",
+             "aplicarPendientes"]                   # + F-057
 CONSTS = ("INTERVALO_PROPUESTAS", "propuestas")
 
 #: Dobles del entorno: temporizadores que se disparan a mano, `api` que
@@ -92,7 +95,9 @@ PROPUESTA_HTML = (
 @pytest.mark.parametrize("linea, en_curso, esperado", [
     (_l(1, **PROP), False, PROPUESTA_HTML),
     (_l(1, **PROP), True, PROPUESTA_HTML),
-    (_l(1), True, '<span class="partida-auto buscando">buscando partida…</span>'),
+    # F-057: «buscando» lo decide la marca de la línea, no el global.
+    (_l(1, propuesta_pendiente=True), True,
+     '<span class="partida-auto buscando">buscando partida…</span>'),
     (_l(1), False, '<span class="partida-auto">automática</span>'),
     (_l(1, partida_ide=7, partida_cod="CI.1.9", partida_res="ADM", **PROP),
      True, '<span class="partida-elegida">CI.1.9 · ADM</span>'),
@@ -102,16 +107,17 @@ PROPUESTA_HTML = (
 ], ids=["propuesta", "propuesta_en_curso", "buscando", "automatica",
         "elegida_manda", "escapa"])
 def test_f055_r27_html_de_la_celda(linea, en_curso, esperado):
-    assert _node(f"resultado = htmlPartida({json.dumps(linea)}, "
-                 f"{json.dumps(en_curso)});", {}) == esperado
+    assert _node(f"state.propuestasEnCurso = {json.dumps(en_curso)};"
+                 f"resultado = htmlPartida({json.dumps(linea)});",
+                 {}) == esperado
 
 
 def test_f055_r27_construir_celda_usa_html_partida():
     celda = _plano(_funcion("construirCelda"))
-    assert "td.innerHTML = htmlPartida(l, state.propuestasEnCurso);" in celda
+    assert "td.innerHTML = htmlPartida(l);" in celda        # F-057
     assert "td.dataset.ide = t.ide;" in celda
     assert "td.dataset.linea = idx;" in celda
-    assert "else if (l.propuesta_cod || state.propuestasEnCurso) {" in celda
+    assert "else if (l.propuesta_cod || l.propuesta_pendiente) {" in celda
     assert ".partida-propuesta {" in CSS and "font-style: italic" in \
         CSS.split(".partida-propuesta {")[1].split("}")[0]
 
@@ -216,7 +222,7 @@ def test_f055_r36_la_fila_en_edicion_tambien_guarda_pero_no_se_repinta():
     repintar = _plano(_funcion("repintarCeldasPartida"))
     assert "state.editandoIde" in repintar
     assert "td.celda-partida" in repintar
-    assert "htmlPartida(l, state.propuestasEnCurso)" in repintar
+    assert "htmlPartida(l)" in repintar                     # F-057
     assert "partida_fija" in repintar
 
 

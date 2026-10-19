@@ -72,14 +72,21 @@ class _PropuestasFalsas:
     """F-055 (R29-R37; lista cerrada): las propuestas del mes, falsas. Anota
     lo que encolan las rutas y devuelve el `en_curso` fijado."""
 
-    def __init__(self, en_curso: bool = False, falla: bool = False) -> None:
+    def __init__(self, en_curso: bool = False, falla: bool = False,
+                 pendientes=frozenset()) -> None:
         self.lanzadas: list = []
         self.en_curso = en_curso
         self.falla = falla
+        # F-057: las líneas (trabajador, obra, es_postventa) en la cola.
+        self.pendientes = frozenset(pendientes)
 
     def lanzar(self, anio, mes, trabajadores=None) -> bool:
         self.lanzadas.append((anio, mes, trabajadores))
         return self.en_curso
+
+    def encolar(self, anio, mes, trabajadores=None):
+        """F-057: como `lanzar`, con las pendientes de después."""
+        return self.lanzar(anio, mes, trabajadores), self.pendientes
 
     def tras_sync(self) -> None:
         if self.falla:
@@ -90,7 +97,10 @@ class _PropuestasFalsas:
         return {"en_curso": self.en_curso, "lineas": [
             {"trabajador_ide": 14, "obra_ide": 100, "es_postventa": False,
              "propuesta_cod": "CI.1.20", "propuesta_res": "JEFE",
-             "propuesta_metodo": "auto_nombre"}]}
+             "propuesta_metodo": "auto_nombre"}],
+            "pendientes": [
+                {"trabajador_ide": t, "obra_ide": o, "es_postventa": pv}
+                for t, o, pv in sorted(self.pendientes)]}
 
 
 @pytest.fixture

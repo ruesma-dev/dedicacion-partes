@@ -1,12 +1,28 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** F-056 (validar `trabajador_ide` en preflight y
-ejecutar) **cerrada (`done`) el 2026-10-19**, review APROBADA (pasada 2);
-resumen en `progress/history.md`. **Desplegada el 2026-10-19** (solo la api,
-autorizado por el humano: «despliega, y sigue con f57»; ver «Producción,
-hoy»). Siguiente: **F-057**, plan propuesto al humano el 2026-10-19, sin
-respuesta todavía. El arnés es la **1.7.3**.
+**Ninguna feature en curso.** F-057 («buscando partida…» solo en las líneas
+cuya propuesta se está calculando) **cerrada (`done`) el 2026-10-19**, review
+APROBADA (pasada 1); resumen en `progress/history.md`. **Pendiente de
+desplegar** (api y front; ver la sección siguiente), sin autorización todavía.
+Antes: F-056 cerrada y **desplegada el 2026-10-19** (solo la api; ver
+«Producción, hoy»). El arnés es la **1.7.3**.
+
+## F-057 · pendiente de desplegar
+
+- **Orden: api antes que front.** Un front nuevo contra una api vieja no
+  recibe `propuesta_pendiente` y diría «automática» en todo durante la
+  ventana; un front viejo contra la api nueva sigue como hoy (observación 2
+  de `progress/review_F-057.md`).
+- **`azure-apps/dedicacion.md` al desplegar:** añadir `propuesta_pendiente`
+  por línea y la lista `pendientes` (`trabajador_ide`, `obra_ide`,
+  `es_postventa`) de `GET …/propuestas` al párrafo del contrato de F-055
+  (observación 1 de la review).
+- **Comprobación tras desplegar (solo lectura):** abrir un mes con propuestas
+  en curso y ver que la postventa dice «automática»; si el mes ya está
+  calculado, `GET …/propuestas` debe traer `pendientes: []` y el cuadrante
+  `propuesta_pendiente` en cada línea. Nada de `UPDATE` contra la BBDD
+  desplegada.
 
 ## Producción, hoy
 
@@ -140,9 +156,9 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada el
-2026-10-19 (pendiente de desplegar la api). Orden: **F-057** (O2 de F-055,
-prioridad alta del humano el 2026-10-19), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
+desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 (pendiente de
+desplegar api y front). Orden: F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
@@ -172,6 +188,16 @@ F-033 y, detrás, F-017, F-018…
   Más la automejora de la review 1 de F-056: que C4 bis acepte el nº de
   workers de `mutacion_F-XXX.md` (la herramienta ya lo imprime) o que
   init.sh compruebe que «Evidencias» lo lleva (un rechazo de solo papeleo).
+  Más el aviso del implementer de F-057: `harness/mutacion_paralela.py` con 4
+  workers dio 4 supervivientes falsos (la 2.ª tanda de los workers; a mano y
+  en serie mueren), detalle en `progress/mutacion_F-057.md`. Si es defecto de
+  la herramienta, vale para cualquier proyecto ⇒ `arnes-base`. Y la
+  automejora de la review de F-057: C4 dice «MANUAL … pendientes de que el
+  humano las ejecute», pero aquí el líder las cumple a menudo antes de la
+  review (F-055, F-056, F-057); propuesta: «listadas con su comando exacto y,
+  si ya se ejecutaron, con quién, cuándo y el resultado real» ⇒ `arnes-base`.
+- **¿Desplegar F-057?** (api y luego front; detalle en «F-057 · pendiente de
+  desplegar»).
 - **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
   `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
   `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`

@@ -349,6 +349,19 @@ parte anterior → casamiento → último parte):
   (`bool`); cada línea del cuadrante, `propuesta_cod`, `propuesta_res` y
   `propuesta_metodo`. El front consulta `…/propuestas` cada 5 s mientras
   `propuestas_en_curso`.
+- Desde F-057, cada línea del cuadrante y de las escrituras que devuelven
+  la fila (`PUT …/asignaciones`, `PUT …/partida`, `POST …/deshacer` y `POST
+  …/trabajadores/{ide}/copiar-anterior`) lleva `propuesta_pendiente`
+  (`bool`): la línea está en la cola de las propuestas del mes (en cola o
+  calculándose), leída **después** de encolar. `GET …/propuestas` añade
+  `pendientes: [{trabajador_ide, obra_ide, es_postventa}]` (las de todo el
+  periodo que siguen en la cola, de la misma foto que `en_curso`). La regla
+  es la de encolar (`application/propuestas_mes.py`): una línea de
+  postventa, con partida fija o elegida, con propuesta guardada o en la
+  memoria «sin propuesta» nunca está pendiente. El front dice «buscando
+  partida…» solo en las marcadas y, en cada consulta, reemplaza las marcas
+  con `pendientes`; `propuestas_en_curso` / `en_curso` siguen gobernando
+  solo la consulta.
 
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 

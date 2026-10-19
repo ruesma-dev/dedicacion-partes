@@ -88,7 +88,8 @@ const state = {
   empresa: null,               // empresa elegida en el selector (F-024)
   empresas: [],                // [{empresa, nombre, de_baja}] que sirve la API
   // F-055 (R30, R36): la API calcula propuestas de partida del mes en
-  // segundo plano; mientras, las pendientes dicen «buscando partida…».
+  // segundo plano. Este `bool` solo gobierna la consulta de 5 s; qué línea
+  // dice «buscando partida…» lo marca la API en cada una (F-057).
   propuestasEnCurso: false,
 };
 
@@ -166,9 +167,10 @@ function listaSelector(resp, texto, mayor) {
 
 // Celda Partida de una línea que no es fija (F-050 R24, F-055 R27): la
 // elegida; sin ella, la propuesta guardada en cursiva con su método; sin
-// ninguna, «buscando partida…» si hay propuestas en curso o «automática».
+// ninguna, «buscando partida…» si la API la da por pendiente
+// (`propuesta_pendiente`, F-057) o «automática».
 // Pinta lo que manda la API: no decide nada.
-function htmlPartida(l, enCurso) {
+function htmlPartida(l) {
   if (l.partida_ide != null) {
     return `<span class="partida-elegida">${escapeHtml(textoPartida(l))}</span>`;
   }
@@ -179,7 +181,7 @@ function htmlPartida(l, enCurso) {
       `${escapeHtml(texto)}<span class="partida-metodo"> · ${escapeHtml(metodo)}` +
       "</span></em>";
   }
-  return enCurso
+  return l.propuesta_pendiente
     ? '<span class="partida-auto buscando">buscando partida…</span>'
     : '<span class="partida-auto">automática</span>';
 }
@@ -373,6 +375,20 @@ function aplicarPropuestas(lineas) {
   });
 }
 
+// F-057: copia la lista `pendientes` de `GET …/propuestas` (las líneas que
+// la API tiene en su cola) a la marca `propuesta_pendiente` de cada línea,
+// casándolas por trabajador, obra y modo. Solo datos: no decide qué está
+// pendiente, y lo que no viene en la lista deja de estarlo.
+function aplicarPendientes(pendientes) {
+  state.trabajadores.forEach((t) => {
+    t.lineas.forEach((l) => {
+      l.propuesta_pendiente = pendientes.some((p) =>
+        p.trabajador_ide === t.ide && p.obra_ide === l.obra_ide &&
+        p.es_postventa === l.es_postventa);
+    });
+  });
+}
+
 // Marca si hay propuestas en curso (lo dice la API en el cuadrante y en cada
 // escritura) y, si las hay, arranca la consulta (D9: también tras escribir).
 function marcarPropuestas(enCurso) {
@@ -398,8 +414,9 @@ function seguirPropuestas() {
   }, INTERVALO_PROPUESTAS);
 }
 
-// Una consulta: copia lo nuevo, repinta las celdas Partida y sigue mientras
-// la API diga `en_curso`. Si la API falla, para (el próximo cuadrante o
+// Una consulta: copia lo nuevo y las marcas de pendiente (F-057), repinta
+// las celdas Partida y sigue mientras la API diga `en_curso`. Si la API
+// falla, para y nada queda «buscando partida…» (el próximo cuadrante o
 // escritura la vuelve a arrancar).
 async function consultarPropuestas(generacion, ruta) {
   let datos = null;
@@ -410,6 +427,7 @@ async function consultarPropuestas(generacion, ruta) {
   }
   if (generacion !== propuestas.generacion) return;
   if (datos) aplicarPropuestas(datos.lineas || []);
+  aplicarPendientes((datos && datos.pendientes) || []);
   state.propuestasEnCurso = !!(datos && datos.en_curso);
   repintarCeldasPartida();
   if (state.propuestasEnCurso) seguirPropuestas();
@@ -424,7 +442,7 @@ function repintarCeldasPartida() {
     const t = state.trabajadores.find((x) => x.ide === ide);
     const l = t && t.lineas[Number(td.dataset.linea)];
     if (!l || l.partida_fija) return;
-    td.innerHTML = htmlPartida(l, state.propuestasEnCurso);
+    td.innerHTML = htmlPartida(l);
   });
 }
 
@@ -1193,9 +1211,10 @@ function construirCelda(t, clave, idx) {
       td.innerHTML = `<span class="partida-fija" title="Partida fija de la entrada">${escapeHtml(l.descripcion)}</span>`;
     } else if (l.partida_ide != null) {
       td.innerHTML = `<span class="partida-elegida">${escapeHtml(textoPartida(l))}</span>`;
-    } else if (l.propuesta_cod || state.propuestasEnCurso) {
-      // F-055 (R27, R36): la propuesta guardada o «buscando partida…».
-      td.innerHTML = htmlPartida(l, state.propuestasEnCurso);
+    } else if (l.propuesta_cod || l.propuesta_pendiente) {
+      // F-055 (R27) y F-057: la propuesta guardada, o «buscando partida…»
+      // si la API marca la línea como pendiente.
+      td.innerHTML = htmlPartida(l);
     } else {
       td.innerHTML = '<span class="partida-auto">automática</span>';
     }
