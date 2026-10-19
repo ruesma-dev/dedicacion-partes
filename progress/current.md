@@ -3,8 +3,9 @@
 
 **En curso: F-056** (validar `trabajador_ide` en preflight y ejecutar), rigor
 **crítico**, `sdd: false` (los `acceptance` hacen de mini-spec), rama
-`feature/F-056-validar-trabajador-ide`, **implementer lanzado el 2026-10-19**
-(informe en `progress/impl_F-056.md`). Plan aprobado por el humano el
+`feature/F-056-validar-trabajador-ide`. **Implementer terminado el 2026-10-19**
+(`progress/impl_F-056.md`); **review lanzada el 2026-10-19**
+(`progress/review_F-056.md`). Plan aprobado por el humano el
 2026-10-19 («si»): ver «F-056, plan aprobado». La anterior, F-055, **cerrada
 el 2026-10-17** y desplegada ese día; C6 en producción cumplida el 2026-10-18.
 El arnés es la **1.7.3**.
@@ -28,9 +29,19 @@ El arnés es la **1.7.3**.
   rutas): observación, no se arregla aquí. Despliegue de la api: se propone
   al cerrar.
 - Implementer (2026-10-19): T1-T3 hechas sin desviaciones (commits
-  `c0f6e30`, `09c61c8`, `42ddad8`, `48b63f2`); init.sh en verde, cobertura
-  100 %, mutación 0 vivos. Pendiente al desplegar: `azure-apps/dedicacion.md`
-  (O2 de `progress/impl_F-056.md`).
+  `c0f6e30`, `09c61c8`, `42ddad8`, `48b63f2`, informe `6ec7144`/`ce5aff7`);
+  50 tests nuevos; init.sh en verde; cobertura 100 % (10/10); mutación del
+  arnés 2/2 muertos y 6 manuales sobre el helper, 6 muertos.
+- Observaciones del implementer, recogidas por el líder: **O1** (`overrides`
+  no enteros dan 500; `pisar_claves` y `usuario` llegan crudos a `ejecutar`)
+  ⇒ a «Lo que espera al humano» (¿feature propia?). **O2**
+  (`azure-apps/dedicacion.md` ~333 no menciona `trabajador_ide`) ⇒ se
+  actualiza al desplegar la api con F-056, en ese mismo trabajo.
+- MANUAL para cerrar: ninguna. Tras desplegar (opcional, solo lectura, en el
+  navegador con sesión de Easy Auth): `fetch('/api/v1/periodos/2026/9/registro/preflight?empresa=1',
+  {method:'POST', headers:{'Content-Type':'application/json'},
+  body:'{"trabajador_ide": ""}'})` ⇒ 422 `trabajador_ide no es un entero: ''`.
+  **Nunca con `ejecutar`**: el transfer desplegado está en modo real.
 
 ## Producción, hoy
 
@@ -161,6 +172,11 @@ que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-0
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
+
+- **O1 de F-056: ¿feature propia para validar el resto del cuerpo del
+  registro?** `overrides` no enteros dan 500 (`int(k)`, `int(v)` en
+  `routes.py`, preflight y ejecutar); `pisar_claves` y `usuario` llegan crudos
+  a `ejecutar` (`list()` de un texto lo trocea en caracteres).
 
 - **`Run-Az` de `infra/00_capps_vars_dedicacion.ps1` aborta tras un `update`
   que sí se aplica** (2026-10-17, las tres veces: `az : ` vacío,
