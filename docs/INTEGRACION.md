@@ -313,6 +313,11 @@ front y admite `obra_ide` en el cuerpo (entero; 422 si no lo es): analiza solo l
 obra (la del grupo; en las entradas VAR, la de registro). Es lo que repite
 el modal al cambiar una partida, en vez del mes entero (F-050 T15c);
 `ejecutar` no se acota. La regla está en `docs/ARCHITECTURE.md#regla-partida`.
+Desde F-056, `trabajador_ide` en el cuerpo de `registro/preflight` y
+`registro/ejecutar` se valida igual: entero (también `"11"` o `11.0`) o
+`null`/ausente (el mes entero); cualquier otro valor (`""`, `false`, texto,
+decimal) es **422** sin analizar ni escribir. Un `0` o un negativo son
+enteros: filtran y no casan con nadie, nunca registran el mes entero.
 
 Desde F-055 (registro sin búsquedas de partidas; orden de la propuesta
 parte anterior → casamiento → último parte):

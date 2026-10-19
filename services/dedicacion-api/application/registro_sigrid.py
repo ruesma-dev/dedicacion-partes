@@ -91,8 +91,9 @@ class RegistroSigrid:
             .join(ObraORM, ObraORM.ide == AsignacionORM.obra_ide)
             .where(PeriodoORM.anio == anio, PeriodoORM.mes == mes,
                    AsignacionORM.porcentaje > 0,
+                   # `is not None` (F-056): un 0 filtra, no coge el mes.
                    *( [AsignacionORM.trabajador_ide == trabajador_ide]
-                      if trabajador_ide else [] ))
+                      if trabajador_ide is not None else [] ))
             .order_by(ObraORM.cod, TrabajadorORM.nombre)
         ).all()
         # Visibilidad por empresa: la misma regla que el cuadrante (F-034,

@@ -1,12 +1,25 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** F-055 (registro sin búsquedas de partidas y
-propuesta del mes en segundo plano) **cerrada (`done`) el 2026-10-17**, review
-de cierre APROBADA (pasada 5); resumen en `progress/history.md`. **Desplegada el
-2026-10-17** (transfer → api → front, autorizado por el humano); C6 en producción
-cumplida el 2026-10-18 (ver «Producción, hoy»). El arnés
-es la **1.7.3**.
+**Ninguna feature en curso.** F-056 (validar `trabajador_ide` en preflight y
+ejecutar) **cerrada (`done`) el 2026-10-19**, review APROBADA (pasada 2);
+resumen en `progress/history.md`. **Pendiente de desplegar** (solo la api):
+ver «F-056, pendiente de desplegar». La anterior, F-055, cerrada y desplegada
+el 2026-10-17; C6 en producción cumplida el 2026-10-18. El arnés es la
+**1.7.3**.
+
+## F-056, pendiente de desplegar
+
+- Solo la **api** (`-Solo api`); el transfer y el front no cambian. Sin
+  variables ni DDL nuevos. Lo propone el líder y lo autoriza el humano.
+- En ese mismo trabajo: `azure-apps/dedicacion.md` (~333, párrafo del
+  preflight) gana `trabajador_ide` (entero o `null`, 422 en otro caso, `0`
+  filtra), O2 del implementer y O3 de la review.
+- Comprobación opcional tras desplegar (solo lectura, navegador con sesión de
+  Easy Auth): `fetch('/api/v1/periodos/2026/9/registro/preflight?empresa=1',
+  {method:'POST', headers:{'Content-Type':'application/json'},
+  body:'{"trabajador_ide": ""}'})` ⇒ 422 `trabajador_ide no es un entero: ''`.
+  **Nunca con `ejecutar`**: el transfer desplegado está en modo real.
 
 ## Producción, hoy
 
@@ -132,11 +145,21 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. Orden: F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada el
+2026-10-19 (pendiente de desplegar la api). Orden: **F-057** (O2 de F-055,
+prioridad alta del humano el 2026-10-19), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
+
+- **O1 de F-056: ¿feature propia para validar el resto del cuerpo del
+  registro?** `overrides` no enteros dan 500 (`int(k)`, `int(v)` en
+  `routes.py`, preflight y ejecutar); `pisar_claves` y `usuario` llegan crudos
+  a `ejecutar` (`list()` de un texto lo trocea en caracteres). Se le suma la
+  O1 de la review 1 de F-056: un entero enorme (`10**30`) en `trabajador_ide`
+  u `obra_ide` pasa la validación y PostgreSQL da 500 (`integer out of
+  range`), no 422; no escribe nada.
 
 - **`Run-Az` de `infra/00_capps_vars_dedicacion.ps1` aborta tras un `update`
   que sí se aplica** (2026-10-17, las tres veces: `az : ` vacío,
@@ -150,6 +173,9 @@ F-033 y, detrás, F-017, F-018…
   sus reviews —`CHECKPOINTS.md` C4: trazar un R «como hoy» o documental; una
   mutación manual de Python también exige tabla con texto exacto y el reviewer
   corre los mutantes del generador sobre esas líneas—, portadas a `arnes-base`.
+  Más la automejora de la review 1 de F-056: que C4 bis acepte el nº de
+  workers de `mutacion_F-XXX.md` (la herramienta ya lo imprime) o que
+  init.sh compruebe que «Evidencias» lo lleva (un rechazo de solo papeleo).
 - **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
   `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
   `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`
