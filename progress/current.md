@@ -41,6 +41,18 @@ la **1.7.3**.
 - **azure-apps pendiente:** `dedicacion.md`, al desplegar (campo nuevo
   `propuesta_pendiente` y lista `pendientes`, si el documento describe ese
   contrato).
+- **Implementer (2026-10-19), terminado** (`87f7e9e` api, `3c32cc2`
+  front, `1258c98` docs; informe `progress/impl_F-057.md`, mutación
+  `progress/mutacion_F-057.md` y `progress/mutacion_manual_F-057.md`).
+  Pendiente: la MANUAL de arriba (líder) y la review. Aviso para el arnés: la
+  campaña de mutación con 4 workers dio 4 supervivientes falsos; vale la de
+  `--workers 1` (detalle en `mutacion_F-057.md`). Desviaciones
+  menores del plan, justificadas en `progress/impl_F-057.md`: `pendientes`
+  da `(trabajador, obra, es_postventa)` y no pares (la postventa de la misma
+  obra no se confunde), y `encolar()` devuelve `(en_curso, pendientes)` de
+  la misma foto de la cola (`lanzar()` queda como envoltorio que da el
+  `bool`): las rutas no tienen el `periodo_id` y así no hay lectura extra ni
+  un `en_curso` falso con líneas marcadas.
 
 ## Producción, hoy
 
