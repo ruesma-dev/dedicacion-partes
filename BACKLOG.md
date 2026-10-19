@@ -5,11 +5,13 @@
 
 Resumen: **54 features**, 25 abiertas, 29 terminadas.
 
+En curso: **F-056**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-056 | Validar trabajador_ide en preflight y ejecutar (un valor falso registra el mes entero) | 2 | pendiente | critico | `feature/F-056-validar-trabajador-ide` |
+| F-056 | Validar trabajador_ide en preflight y ejecutar (un valor falso registra el mes entero) | 2 | en curso | critico | `feature/F-056-validar-trabajador-ide` |
 | F-057 | «Buscando partida…» solo en las líneas cuya propuesta se está calculando | 3 | pendiente | estandar | `feature/F-057-buscando-solo-pendientes` |
 | F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | pendiente | critico | `feature/F-051-pisar-lineas-cero` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
@@ -73,7 +75,7 @@ Resumen: **54 features**, 25 abiertas, 29 terminadas.
 
 ### F-056 · Validar trabajador_ide en preflight y ejecutar (un valor falso registra el mes entero)
 
-estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-056-validar-trabajador-ide`
+estado **en curso** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-056-validar-trabajador-ide`
 
 Observación de la review 4 de F-050 (2026-10-11), recogida por el líder: en la api, `trabajador_ide` llega crudo del cuerpo de `POST …/registro/preflight` y `…/registro/ejecutar` (`routes.py` ~393 y ~409) y `registro_sigrid.py` (~81) filtra con `if trabajador_ide`: un valor falso (`0`, `""`, `false`) QUITA el filtro y `ejecutar` registraría el mes entero en vez de un trabajador; un texto llega a PostgreSQL y da 500 en vez de 422. Hoy el front manda un número o null, así que no ocurre, pero es la ruta que escribe en Sigrid. Arreglo: validarlo como `obra_ide` (F-050: entero, 422 si no lo es, sin analizar) en las dos rutas y filtrar con `is not None`. Solo api; rigor crítico.
 

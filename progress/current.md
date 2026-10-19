@@ -1,12 +1,32 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** F-055 (registro sin búsquedas de partidas y
-propuesta del mes en segundo plano) **cerrada (`done`) el 2026-10-17**, review
-de cierre APROBADA (pasada 5); resumen en `progress/history.md`. **Desplegada el
-2026-10-17** (transfer → api → front, autorizado por el humano); C6 en producción
-cumplida el 2026-10-18 (ver «Producción, hoy»). El arnés
-es la **1.7.3**.
+**En curso: F-056** (validar `trabajador_ide` en preflight y ejecutar), rigor
+**crítico**, `sdd: false` (los `acceptance` hacen de mini-spec), rama
+`feature/F-056-validar-trabajador-ide`, **implementer lanzado el 2026-10-19**
+(informe en `progress/impl_F-056.md`). Plan aprobado por el humano el
+2026-10-19 («si»): ver «F-056, plan aprobado». La anterior, F-055, **cerrada
+el 2026-10-17** y desplegada ese día; C6 en producción cumplida el 2026-10-18.
+El arnés es la **1.7.3**.
+
+## F-056, plan aprobado (2026-10-19)
+
+- Solo api; el front no cambia (ya manda número o `null`).
+- `domain/errors.py`: `TrabajadorNoValido` → **422** en `app.py`, como
+  `ObraNoValida`.
+- `routes.py`: el `_obra_ide` de F-050 se generaliza en un helper «entero
+  opcional» con el error de cada campo; preflight y ejecutar validan
+  `trabajador_ide` con él ANTES de llamar a nada: 422 sin analizar ni escribir.
+- `registro_sigrid.py` (~95): filtro `is not None` (como `obra_ide`, ~159).
+- Decisiones del líder aceptadas: texto numérico (`"123"`) se acepta, como
+  `obra_ide` (review 3 de F-050); `0` y negativos son enteros: no dan 422, y
+  con el filtro bien no casan con nadie ni se escribe nada.
+- Tests de las dos rutas con `0`, `""`, `false`, `"abc"`, `1.5`, `null` y un
+  entero válido (doble que prueba que con 422 no se analiza ni se escribe; que
+  `0` filtra y no coge el mes entero); los de `obra_ide` de F-050, en verde.
+- Fuera: `overrides` no enteros dan 500 (`int(k)`, `int(v)` en las mismas
+  rutas): observación, no se arregla aquí. Despliegue de la api: se propone
+  al cerrar.
 
 ## Producción, hoy
 
