@@ -193,3 +193,4 @@ Cero vivos, ni en la campaña ni a mano.
 | Mutantes (campaña del arnés) | 2 generados, 2 muertos, **0 supervivientes** |
 | Mutantes manuales sobre el helper | 6 aplicados, 6 muertos |
 | Tiempo de la suite | api 56.02 s, front 32.46 s, transfer 17.13 s, raíz 52.28 s (init.sh) |
+| `bash harness/init.sh` final (caché borrada, informe ya escrito) | **ENTORNO LISTO**, sin `[KO]`; ruff 258 avisos (= línea base de `dev`); `PUERTA TAMAÑO: impl 195/220` |
