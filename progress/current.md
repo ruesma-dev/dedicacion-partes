@@ -1,12 +1,46 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** F-056 (validar `trabajador_ide` en preflight y
-ejecutar) **cerrada (`done`) el 2026-10-19**, review APROBADA (pasada 2);
-resumen en `progress/history.md`. **Desplegada el 2026-10-19** (solo la api,
-autorizado por el humano: «despliega, y sigue con f57»; ver «Producción,
-hoy»). Siguiente: **F-057**, plan propuesto al humano el 2026-10-19, sin
-respuesta todavía. El arnés es la **1.7.3**.
+**En curso: F-057** («buscando partida…» solo en las líneas cuya propuesta
+se está calculando), `in_progress` desde el 2026-10-19, rama
+`feature/F-057-buscando-solo-pendientes`, sin spec (`sdd: false`, rigor
+estándar). Plan aprobado por el humano el 2026-10-19 («ok»); detalle en la
+sección «F-057 · plan aprobado». Implementer lanzado. Antes: F-056 cerrada y
+**desplegada el 2026-10-19** (solo la api; ver «Producción, hoy»). El arnés es
+la **1.7.3**.
+
+## F-057 · plan aprobado (2026-10-19)
+
+- **api, `application/propuestas_mes.py`:** `pendientes(periodo_id)` devuelve
+  los pares (trabajador, obra) de `_en_cola` de ese mes (en cola o
+  calculándose). Es la misma memoria que llena `lanzar()`, así que la regla
+  de «pendiente» es la de encolar y no se copia en ningún sitio.
+- **api, `routes.py` / `schemas.py`:** cada línea del cuadrante y de las
+  respuestas de escritura que ya llevan `propuestas_en_curso` lleva
+  `propuesta_pendiente: bool`, calculado **después** de `_encolar`;
+  `GET …/propuestas` añade la lista `pendientes`.
+- **front, `static/js/app.js` (solo pintar):** «buscando partida…» solo si
+  `l.propuesta_pendiente`; cada sondeo de 5 s actualiza las marcas con
+  `pendientes`. El sondeo sigue gobernado por `en_curso`.
+- **docs:** `docs/INTEGRACION.md` (contrato nuevo); `azure-apps/dedicacion.md`
+  al desplegar.
+- **Tests:** api con línea encolada, en cálculo, de postventa, «sin
+  propuesta», con partida elegida y con partida fija; front, el pintado.
+- **MANUAL (comando exacto, solo BBDD LOCAL):** desde
+  `services/dedicacion-api` de la copia de trabajo, con api, front y
+  transfer locales arrancados, vaciar las `propuesta_*` de 09/2026 como en el
+  T18 de F-055 (`UPDATE asignacion SET propuesta_ide = NULL, propuesta_cod =
+  NULL, propuesta_res = NULL, propuesta_metodo = NULL, propuesta_origen =
+  NULL WHERE periodo_id = (SELECT id FROM periodo WHERE anio = 2026 AND mes =
+  9)`, comprobando antes `PG_HOST=localhost` y `PG_DB=dedicacion`), abrir
+  septiembre 2026 en `http://localhost:8080` y mirar que las de postventa
+  dicen «automática» y las demás «buscando partida…» hasta llenarse.
+  **Nunca contra la BBDD desplegada.**
+- **Despliegue (más adelante, con permiso):** api antes que front.
+- **Fuera:** qué se encola y cuándo.
+- **azure-apps pendiente:** `dedicacion.md`, al desplegar (campo nuevo
+  `propuesta_pendiente` y lista `pendientes`, si el documento describe ese
+  contrato).
 
 ## Producción, hoy
 
@@ -140,9 +174,9 @@ filtrar). **F-044** (recursos vinculados) sube. Del correo de Juan del
 la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
-F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada el
-2026-10-19 (pendiente de desplegar la api). Orden: **F-057** (O2 de F-055,
-prioridad alta del humano el 2026-10-19), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
+desplegada el 2026-10-19. Orden: **F-057** (O2 de F-055, prioridad alta del
+humano el 2026-10-19; en curso), F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 

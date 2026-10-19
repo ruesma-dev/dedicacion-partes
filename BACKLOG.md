@@ -5,11 +5,13 @@
 
 Resumen: **54 features**, 24 abiertas, 30 terminadas.
 
+En curso: **F-057**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-057 | «Buscando partida…» solo en las líneas cuya propuesta se está calculando | 3 | pendiente | estandar | `feature/F-057-buscando-solo-pendientes` |
+| F-057 | «Buscando partida…» solo en las líneas cuya propuesta se está calculando | 3 | en curso | estandar | `feature/F-057-buscando-solo-pendientes` |
 | F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | pendiente | critico | `feature/F-051-pisar-lineas-cero` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
@@ -73,7 +75,7 @@ Resumen: **54 features**, 24 abiertas, 30 terminadas.
 
 ### F-057 · «Buscando partida…» solo en las líneas cuya propuesta se está calculando
 
-estado **pendiente** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-057-buscando-solo-pendientes`
+estado **en curso** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-057-buscando-solo-pendientes`
 
 O2 de la review de F-055, comprobada por el líder el 2026-10-18 en producción (septiembre 2026, pintando en su pestaña el cuadrante con `propuestas_en_curso` a true, sin llamar a la api): mientras hay propuestas en curso, el front pinta «buscando partida…» en TODA línea sin partida elegida ni propuesta guardada (`app.js`, `htmlPartida` y la celda Partida), también en las que la api nunca encola: las de postventa (53 de 302 en 09/2026) y las de la memoria «sin propuesta» de `propuestas_mes.py` (9, obra GG). Al acabar el cálculo vuelven a «automática»: es un fallo de pantalla, no cambia lo que se registra. Decisión del humano el 2026-10-19 («2, feature pequeña, ponle prioridad alta»): la api dice por línea si su propuesta está pendiente (en cola o calculándose), con la MISMA regla que encola, y el front pinta «buscando partida…» solo donde la api lo diga; el resto, «automática». El front no decide qué se encola. Servicios: api (cuadrante, `GET …/propuestas` y respuestas de escritura con `propuestas_en_curso`) y front (solo pintar). Si cambia el contrato que expone la api, se actualiza `docs/INTEGRACION.md` y, si lo describe, `azure-apps/dedicacion.md`.
 
