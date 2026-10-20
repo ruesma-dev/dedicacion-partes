@@ -9,8 +9,9 @@ métodos de lectura, así que el pipeline de registro no cambia: un
 - `precargar` lee AGRUPADO lo que van a pedir las obras del lote, en rondas
   de lecturas independientes en paralelo (hasta `limite` a la vez):
   A) obras por `ide`, obras por código (origen, pruebas, postventa, VAR),
-  horas y lo ya registrado (`synckey` y, F-051, `hmores.ide`); B) partes de los periodos, validación de partidas,
-  historial, presupuestos y cuentas de partida; C) líneas de esos partes.
+  horas y lo ya registrado (`synckey` y, F-051, `hmores.ide`); B) partes
+  de los periodos, validación de partidas, historial, presupuestos y
+  cuentas de partida; C) líneas de esos partes.
   Validación e historial no dependen de A: van en B para que una obra con
   elegidas quepa en una tanda de `limite` (4) por ronda (C2).
 - Una lectura del pipeline se responde de lo precargado SOLO si la consulta

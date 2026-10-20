@@ -565,7 +565,8 @@ class RegistroPipeline:
         for a in escribir:
             propia = synckey_de(a.registro_id)
             hit = por_ide.get(int(por_id[a.registro_id].hmores_ide or 0))
-            if hit is None or hit.reside != a.recurso_ide                     or es_nuestra_de_otra(hit.synckey, propia):
+            if (hit is None or hit.reside != a.recurso_ide
+                    or es_nuestra_de_otra(hit.synckey, propia)):
                 hit = por_sk.get(propia)
             if hit is not None:
                 a.accion = "ya_registrado"
