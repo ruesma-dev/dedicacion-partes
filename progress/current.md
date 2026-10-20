@@ -8,8 +8,11 @@ equivalente (`registro_pipeline.py:1095`) **no lo es** (con `can = 0` y una
 relectura de `1e-6` original y mutante difieren) ⇒ test que lo mate y nueva
 campaña hasta cero supervivientes; más dos arreglos menores (línea 568 de
 `registro_pipeline.py`, primera línea de `impl_F-051.md`). El rastro
-desfasado de este fichero lo ha podado el líder. **Implementer relanzado
-para las correcciones.** Spec aprobada por el humano el 2026-10-20 (D1-D15,
+desfasado de este fichero lo ha podado el líder. **Correcciones hechas por
+el implementer** (2026-10-21: test de la frontera de R13 `d807cce`, formato
+`7a5f801`, campaña en serie sobre `7a5f801` con **134 mutantes y 0
+supervivientes** `e51ba7b`, informe `d170afb`). **Review pasada 2 lanzada
+el 2026-10-21.** Spec aprobada por el humano el 2026-10-20 (D1-D15,
 en «decisiones» abajo); bloqueos de implementación resueltos por el humano:
 T3 opción A, T12 opción B. Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
