@@ -70,10 +70,12 @@ from application.services.propuesta_partida import (
     proponer_partida, ventana,
 )
 from application.services.reglas_porcentajes import (
-    AVISO_SIN_PARTIDA, MOTIVO_EMPRESA_OBRA, MOTIVO_PARTIDA_PV_NO_HOJA,
-    MOTIVO_SIN_PARTIDA, MOTIVO_SOBRECARGA, ReglasPorcentajes, clave_conflicto,
-    clave_sin_partida, clave_sobrecarga, criterio_choque, empresa_de_peticion,
-    es_linea_mensual, es_nuestra_de_otra, evaluar_capacidad, sin_partida,
+    AVISO_LINEA_CERO, AVISO_QUEDAN_A_CERO, AVISO_SIN_PARTIDA,
+    MOTIVO_EMPRESA_OBRA, MOTIVO_PARTIDA_PV_NO_HOJA, MOTIVO_SIN_PARTIDA,
+    MOTIVO_SOBRECARGA, ReglasPorcentajes, clave_conflicto, clave_sin_partida,
+    clave_sobrecarga, criterio_choque, emparejar_ceros, empresa_de_peticion,
+    es_linea_mensual, es_nuestra_de_otra, evaluar_capacidad,
+    pisables_al_cero, repartir_choques, sin_partida,
 )
 from application.services.universo_postventa import (
     cargar_catalogo_postventa, casar_postventa,
@@ -318,6 +320,34 @@ class RegistroPipeline:
         raise RuntimeError(
             f"no se pudo crear el parte {cod} de la obra {d.codigo} "
             f"{p.mes:02d}/{p.ano}: no hay ninguno En registro tras el alta")
+
+    # ------------------------------------------------------------- #
+    @staticmethod
+    def _emparejar_ceros(libres: list[AccionLinea], existentes: list,
+                         donde: dict, en_cerrado: set[int],
+                         mias: set[str]) -> None:
+        """Paso 7, F-051 (R2, R3): cada acción sin choque edita como mucho
+        una línea al 0 % de su recurso (`linea_cero`), con su aviso y el
+        de las que se quedan a 0. Sin confirmar (D2 = A)."""
+        pares, sobran = emparejar_ceros(libres, existentes,
+                                        en_cerrado=en_cerrado, mias=mias)
+        for a in libres:
+            ls = pares.get(a.registro_id)
+            if ls is None:
+                continue
+            ps = donde[ls.ide]
+            a.linea_cero = {
+                "ide": ls.ide, "hmoide": int(ps.ide), "parte_cod": ps.cod,
+                "horide": ls.horide, "hora_codigo": ls.hora_codigo,
+                "paride": ls.paride, "can": ls.can,
+                "fecha_int": ls.fecha_int, "synckey": ls.synckey}
+            partida = (a.partida_cod if ls.paride == a.paride
+                       else ls.paride)
+            n = sobran[int(a.recurso_ide)]
+            _sumar_aviso(a, AVISO_LINEA_CERO.format(
+                ide=ls.ide, parte=ps.cod, hora=ls.hora_codigo,
+                partida=partida),
+                AVISO_QUEDAN_A_CERO.format(n=n) if n else None)
 
     # ------------------------------------------------------------- #
     def preflight(self, *, obra: ObraEntrada,
@@ -575,11 +605,23 @@ class RegistroPipeline:
                     existentes.append(ls)
                     donde[ls.ide] = ps
             mias = {synckey_de(a.registro_id) for a in grupo}
+            # F-051 (R1, R3): las líneas al 0 % que se pueden editar, por
+            # recurso. No son choque, no salen en ningún contexto y no
+            # cuentan en la capacidad (ARCHITECTURE.md#regla-cero).
+            en_cerrado = {ls.ide for ls in existentes
+                          if donde[ls.ide].cod in parte.cerrados}
+            pisables: dict[int, set[int]] = {}
+            for a in grupo:
+                pisables.setdefault(int(a.recurso_ide), set()).update(
+                    ls.ide for ls in pisables_al_cero(
+                        existentes, a, en_cerrado=en_cerrado, mias=mias))
             por_clave: dict[str, Conflicto] = {}
             for a in grupo:
                 k = clave_conflicto(a)
+                suyas = pisables[int(a.recurso_ide)]
                 choques = [ls for ls in existentes
-                           if criterio_choque(ls, a, mias=mias)]
+                           if criterio_choque(ls, a, mias=mias)
+                           and ls.ide not in suyas]
                 if not choques:
                     continue        # nada previo con esa identidad
                 cerrado = next((donde[ls.ide] for ls in choques
@@ -598,7 +640,7 @@ class RegistroPipeline:
                     contexto = [
                         ls for ls in existentes
                         if ls.reside == a.recurso_ide and ls not in choques
-                        and es_linea_mensual(ls)
+                        and es_linea_mensual(ls) and ls.ide not in suyas
                     ]
                     c = Conflicto(
                         clave=k, recurso_ide=int(a.recurso_ide or 0),
@@ -610,7 +652,17 @@ class RegistroPipeline:
                     por_clave[k] = c
                 c.registros.append(a.registro_id)
                 c.nuevas.append(_nueva(a))
+            for c in por_clave.values():
+                # F-051 (R4, R5): confirmado, edita (por `registro_id`) los
+                # de menor `ide` y pone a 0 los que sobran; nunca borra.
+                edita, c.a_cero_ides = repartir_choques(c.registros, c.lineas)
+                c.edita_ide = min(edita.values())
             conflictos.extend(por_clave.values())
+            self._emparejar_ceros(
+                [a for a in grupo if a.accion == "escribir"
+                 and not any(a.registro_id in c.registros
+                             for c in por_clave.values())],
+                existentes, donde, en_cerrado, mias)
 
             # Paso 7 bis: capacidad (ver ARCHITECTURE `#regla-capacidad`).
             # Va DESPUÉS de los pisados del mismo parte, y no antes: su
@@ -622,6 +674,8 @@ class RegistroPipeline:
             for c in por_clave.values():
                 pisadas.setdefault(c.recurso_ide, set()).update(
                     ls.ide for ls in c.lineas)
+            for recurso, ides in pisables.items():
+                pisadas.setdefault(recurso, set()).update(ides)
             # Sin `or 0` a propósito: `grupo` solo tiene acciones «escribir»,
             # y P1 omite toda línea sin recurso, así que aquí `recurso_ide`
             # no puede ser nulo. Normalizarlo otra vez sería una guarda que
