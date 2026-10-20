@@ -255,3 +255,9 @@ linea? es unico y no se edita nunca», «d11 que ya localice»): no se cambia la
     (C) editar uno y dejar los demás (sumarían). **Recomiendo A.**
 15. **D15 · `limpiar`** (solo pruebas). (A) sigue borrando lo marcado;
     (B) deja a 0 y la 0404 acumula líneas. **Recomiendo A.**
+
+**`bash harness/init.sh` (worktree, 2026-10-20, tras los commits de la
+pasada 3):** pytest **418 passed, 1 skipped**; PUERTA TAMAÑO dentro
+(requirements 130/150, design 230/250); PUERTA COBERTURA N/A. Un único
+`[KO]`, el de entorno ya conocido (el worktree no tiene
+`services/dedicacion-api/.venv`).
