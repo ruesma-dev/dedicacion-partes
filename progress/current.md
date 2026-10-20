@@ -2,8 +2,8 @@
 # Trabajo en curso
 
 **F-051: spec reescrita (2026-10-20, pasada 2)** con D1 = C y D5 del humano;
-**D10-D13 abiertas** (abajo). Sigue en `pending` hasta que el líder la pase a
-`spec_ready` y PARADA otra vez. Copia
+**D10-D13 abiertas** (abajo). **`spec_ready` desde el 2026-10-20: PARADA**,
+espera la aprobación del humano y sus respuestas a D10-D13. Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero`. Ninguna feature `in_progress`. F-057
 cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
