@@ -3,8 +3,8 @@
 
 **En curso: F-051** (pisar las líneas del parte editándolas, nunca
 borrando), `in_progress`; **implementer terminado el 2026-10-20**: T1-T14 y
-T17 hechas y commiteadas, informe en `progress/impl_F-051.md`; toca la
-**review**. Bloqueos resueltos por el humano el 2026-10-20: T3 con la opción
+T17 hechas y commiteadas, informe en `progress/impl_F-051.md`; **review
+lanzada (pasada 1) el 2026-10-20**. Bloqueos resueltos por el humano el 2026-10-20: T3 con la opción
 A y T12 con la opción B. **Spec aprobada por el humano el 2026-10-20** («si
 me vale»: D14 = A y D15 = A; D1-D13 antes). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
