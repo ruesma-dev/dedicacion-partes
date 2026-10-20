@@ -73,7 +73,7 @@ from application.services.reglas_porcentajes import (
     AVISO_SIN_PARTIDA, MOTIVO_EMPRESA_OBRA, MOTIVO_PARTIDA_PV_NO_HOJA,
     MOTIVO_SIN_PARTIDA, MOTIVO_SOBRECARGA, ReglasPorcentajes, clave_conflicto,
     clave_sin_partida, clave_sobrecarga, criterio_choque, empresa_de_peticion,
-    es_linea_mensual, evaluar_capacidad, sin_partida,
+    es_linea_mensual, es_nuestra_de_otra, evaluar_capacidad, sin_partida,
 )
 from application.services.universo_postventa import (
     cargar_catalogo_postventa, casar_postventa,
@@ -502,12 +502,18 @@ class RegistroPipeline:
                 partes[clave] = p
             _sumar_aviso(a, partes[clave].aviso)
 
-        # Paso 6: idempotencia por synckey.
-        ya = self._cli.lineas_por_synckey(
-            [synckey_de(a.registro_id) for a in escribir])
-        for a in acciones:
-            hit = ya.get(synckey_de(a.registro_id))
-            if a.accion == "escribir" and hit is not None:
+        # Paso 6: idempotencia (F-051 R15): la fila de su `hmores_ide` si es
+        # de su recurso y no es nuestra de otra asignación; si no, la de su
+        # `synckey`, como siempre. Las dos en UNA lectura.
+        por_sk, por_ide = self._cli.lineas_registradas(
+            [synckey_de(a.registro_id) for a in escribir],
+            [por_id[a.registro_id].hmores_ide for a in escribir])
+        for a in escribir:
+            propia = synckey_de(a.registro_id)
+            hit = por_ide.get(int(por_id[a.registro_id].hmores_ide or 0))
+            if hit is None or hit.reside != a.recurso_ide                     or es_nuestra_de_otra(hit.synckey, propia):
+                hit = por_sk.get(propia)
+            if hit is not None:
                 a.accion = "ya_registrado"
                 a.hmores_ide = hit.ide
                 a.motivo = (f"ya registrada en Sigrid (línea {hit.ide}); "
@@ -752,6 +758,9 @@ class RegistroPipeline:
                       for a in pf.acciones if a.accion == "omitir"],
             ya_registradas=[a.registro_id for a in pf.acciones
                             if a.accion == "ya_registrado"],
+            ya_registradas_ide={a.registro_id: a.hmores_ide
+                                for a in pf.acciones
+                                if a.accion == "ya_registrado"},
         )
 
         bloqueadas: set[int] = set()
