@@ -2745,3 +2745,7 @@ propuesta a los 3,3 s.
 al desplegar ⇒ «Pendiente de desplegar» en `current.md`. Supervivientes
 falsos de `harness/mutacion_paralela.py` con 4 workers y la automejora de C4
 (MANUAL cumplida antes de la review) ⇒ lista del arnés.
+
+**Desplegada el 2026-10-20** (api `r20261020-1342` y front `r20261020-1351`,
+en ese orden, por el humano; revisiones `Healthy` al 100 %);
+`azure-apps/dedicacion.md` `a4c046c`. Comprobación en producción, del humano.

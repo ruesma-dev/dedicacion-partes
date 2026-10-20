@@ -2,71 +2,50 @@
 # Trabajo en curso
 
 **En curso: F-051** (pisar las líneas del parte editándolas, nunca
-borrando), `in_progress`; **implementer terminado el 2026-10-20**: T1-T14 y
-T17 hechas y commiteadas, informe en `progress/impl_F-051.md`; **review
-lanzada (pasada 1) el 2026-10-20**. Bloqueos resueltos por el humano el 2026-10-20: T3 con la opción
-A y T12 con la opción B. **Spec aprobada por el humano el 2026-10-20** («si
-me vale»: D14 = A y D15 = A; D1-D13 antes). Copia
+borrando), `in_progress`. **Review pasada 1: RECHAZADO** (2026-10-21,
+`progress/review_F-051.md`): el mutante que el implementer daba por
+equivalente (`registro_pipeline.py:1095`) **no lo es** (con `can = 0` y una
+relectura de `1e-6` original y mutante difieren) ⇒ test que lo mate y nueva
+campaña hasta cero supervivientes; más dos arreglos menores (línea 568 de
+`registro_pipeline.py`, primera línea de `impl_F-051.md`). El rastro
+desfasado de este fichero lo ha podado el líder. **Implementer relanzado
+para las correcciones.** Spec aprobada por el humano el 2026-10-20 (D1-D15,
+en «decisiones» abajo); bloqueos de implementación resueltos por el humano:
+T3 opción A, T12 opción B. Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
-`feature/F-051-pisar-lineas-cero`; sus `.venv` son uniones de directorio a
-los de la copia principal (creadas por el líder, no versionadas).
-**Pendiente del humano:** T15 (MANUAL en modo pruebas en la 0404, comando
-abajo) y aceptar el mutante equivalente de la campaña
-(`progress/mutacion_F-051.md`). **Pendiente del líder:** T16
-(`azure-apps/dedicacion.md` y aviso a `partes`, al desplegar). Ningún agente
+`feature/F-051-pisar-lineas-cero` (con `dev` fusionado el 2026-10-21: el
+despliegue de F-057); sus `.venv` son uniones de directorio a los de la
+copia principal (creadas por el líder, no versionadas). Ningún agente
 escribe en Sigrid. **F-030** aprobada y a la espera en la copia
 `porcentajes-f030` (va después de F-051). El arnés es la **1.7.3**.
 
-## F-051 · BLOQUEO en T12 (implementer, 2026-10-20) · RESUELTO
+**Pendiente del humano para cerrar F-051:** T15, MANUAL en modo pruebas en
+la 0404 (pasos y comando exacto abajo, en «implementación»). Ya **no** hace
+falta que acepte ningún mutante equivalente. **Pendiente del humano,
+decidir (observaciones de la review):** O2 (exigir además línea mensual al
+localizar por `hmores_ide`) y O4 (con un % menor de 0,00005 sale `can` 0,
+que editaría una línea al 0 % dejándola a 0 con nuestra `synckey`; hueco
+anterior a F-051). **Pendiente del líder:** T16 al desplegar (transfer → api
+→ front): `azure-apps/dedicacion.md` y aviso a `partes`.
 
-- **Resuelto por el humano el 2026-10-20 con la opción B** («La b»): el
-  detalle del pisado termina como hoy: «se edita la línea X (…)[; quedan a
-  0: …] y se escribe N%». Hecho en `24ba7aa` (T12); los dos `test_f049_r2_…`
-  no se han tocado y pasan. Motivo del bloqueo y opciones: `341e61e`.
+## F-051 · bloqueos de implementación (2026-10-20) · RESUELTOS
 
-## F-051 · BLOQUEO en T3 (implementer, 2026-10-20) · RESUELTO
+- **T3**: añadir `edita_ide` y `a_cero_ides` a `Conflicto` rompía
+  `test_f013_r4_no_hace_falta_ningun_campo_nuevo`, fuera de la lista cerrada.
+  Humano: **opción A** («a»): entra en la lista y su conjunto acepta los dos
+  campos (`c5bc6e9`).
+- **T12**: el texto nuevo del pisado rompía los dos `test_f049_r2_…`.
+  Humano: **opción B** («La b»): el detalle termina como hoy, «se edita la
+  línea X (…)[; quedan a 0: …] y se escribe N%»; esos tests no se tocan
+  (`d0c1ab7`, hecho en `24ba7aa`).
 
-- **Resuelto por el humano el 2026-10-20 con la opción A** («a»):
-  `test_f013_r4_no_hace_falta_ningun_campo_nuevo` entra en la lista cerrada
-  de `tasks.md` y su conjunto acepta `edita_ide` y `a_cero_ides`. F-051 vuelve
-  a `in_progress`; el implementer sigue desde T3.
+## F-051 · implementación (implementer, 2026-10-20)
 
-- **Qué pasa.** T3 añade a `Conflicto` (`registro_models.py`) los campos
-  `edita_ide` y `a_cero_ides` (design §1 y §3, R4-R5). Con solo eso, la suite
-  del transfer da **1 failed, 986 passed**:
-  `tests/test_f013_sin_partida.py::test_f013_r4_no_hace_falta_ningun_campo_nuevo`,
-  que fija el conjunto EXACTO de campos de `asdict(Conflicto)`
-  (`Extra items in the left set: 'edita_ide', 'a_cero_ides'`). Ese test **no
-  está en la lista cerrada** de `tasks.md`, y T3 dice «nada cambia aún». Es
-  un hueco de la spec: no se ha tocado el test ni se ha rodeado.
-- **Opciones** (recomiendo **A**):
-  - **A.** Añadir ese test a la lista cerrada: su conjunto gana `edita_ide` y
-    `a_cero_ides`, con una línea en su docstring (F-051 sí necesita campos
-    nuevos: el pisado ya no borra y el front tiene que saber qué edita).
-  - **B.** Que los dos campos vivan en una subclase `ConflictoPisado`, solo
-    para el pisado: el test de F-013 (que mira un «sin partida») no cambia,
-    pero `Conflicto` deja de ser un solo tipo y la spec cambia (§1, §3).
-  - **C.** No publicarlos como campos: `app.py` los añade al serializar.
-    Desaconsejado: el contrato dejaría de salir de `asdict`, como hasta hoy.
-- **Estado del trabajo.** T1-T2 hechas y commiteadas (`5f0e759`, 55 tests
-  nuevos, transfer 987 passed). T3 **revertida** (no hay nada a medias en el
-  árbol). Retomar en T3 con la opción elegida; lo de T3 es pequeño: los
-  campos de design §3 más `LineaSigrid.hmoide` y `parte_cod` (los rellena
-  `lineas_para_editar` para el log y `escritas`) y `LineaIn.hmores_ide`.
-- **Barrido de otros tests fuera de la lista** (estático, sin implementar
-  aún T4-T13): ningún otro compara el conjunto exacto de campos de
-  `Conflicto`, `AccionLinea`, `LineaSigrid` o `ResultadoRegistro`; los tests
-  de F-055 que nombran `lineas_por_synckey` seguirían igual con la decisión
-  de abajo; no se pueden descartar sorpresas en los tests que leen
-  `docs/ARCHITECTURE.md` hasta hacer T13.
-
-## F-051 · implementación (implementer, 2026-10-20) · TERMINADA
-
-- **Estado:** T1-T14 y T17 `[x]` en `specs/F-051-pisar-lineas-cero/tasks.md`;
-  informe en `progress/impl_F-051.md`; campaña de mutación en
-  `progress/mutacion_F-051.md` (134 mutantes, `--workers 1`, 133 muertos,
-  1 superviviente **equivalente justificado**, a falta de que el humano
-  acepte la justificación).
+- **Estado:** T1-T14 y T17 `[x]`; informe en `progress/impl_F-051.md`;
+  mutación en `progress/mutacion_F-051.md` (2.ª campaña, `--workers 1`: 134
+  mutantes, 133 muertos, 1 superviviente que la review demuestra NO
+  equivalente; se corrige en la pasada 2). `init.sh` en verde según la
+  review (sin cachés, cobertura 99,2 %).
 - **Decisiones del implementer** (detalle en el informe §2):
   `lineas_registradas(claves, ides)` sin `ides` delega en
   `lineas_por_synckey`; `repartir_choques` y `es_nuestra_de_otra` puras
@@ -76,13 +55,21 @@ escribe en Sigrid. **F-030** aprobada y a la espera en la copia
   `pos`, `paride` y `tex` (para T15); la api usa
   `getattr(a, "sigrid_hmores_ide", None)`; el paso 9 bis va antes del alta de
   partes y solo lo que inserta crea parte o lee `max_pos`.
-- **T15 (MANUAL, humano, modo pruebas).** Preparación y pasos completos en
-  `tasks.md` T15. Lectura, en Git Bash, desde la copia que se pruebe:
-  `cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`
-  (solo lectura). Transfer, api y front locales con
-  `OBRA_PRUEBAS_FORZAR=true`. Limpieza: `limpiar --confirmar` borra también
-  las líneas de Administración EDITADAS en la 0404 (quedan con
-  `PRUEBA-PORC` y nuestra `synckey`, D15 = A); la del segundo recurso, a mano.
+- **T15 (MANUAL, la ejecuta el humano, modo pruebas). Sin ejecutar a
+  2026-10-21.** Antes, el humano (o Administración) crea a mano en el parte
+  En registro de la 0404 de noviembre de 2026 (PT26/00371) dos líneas `M*`
+  con `can = 0` y sin `synckey`: una del recurso de prueba (el de F-050) y
+  otra de un segundo recurso. Transfer, api y front locales con
+  `OBRA_PRUEBAS_FORZAR=true`. Lectura, en Git Bash, desde la copia que se
+  pruebe (solo lectura; anotar `ide` y `pos`):
+  `cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`.
+  Esperado: el modal dice que edita la línea; tras **Registrar**, mismo `ide`
+  y `pos`, con el %, la partida, `PRUEBA-PORC` y `porcentajes:…`, sin línea
+  nueva y la otra a 0; tras cambiar el %, pisado «se edita …» y la misma
+  línea con el % nuevo; tercera vez, «ya registrada»; ningún `DELETE` en el
+  log del transfer. Limpieza: `limpiar --confirmar` borra la editada
+  (`PRUEBA-PORC` y nuestra `synckey`, D15 = A); la del segundo recurso, a
+  mano.
 - **`azure-apps` pendiente (T16, líder, al desplegar transfer → api →
   front):** `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` §1, §5 y
   §7: el transfer EDITA en su sitio líneas `M*` de partes compartidos
@@ -90,77 +77,42 @@ escribe en Sigrid. **F-030** aprobada y a la espera en la copia
   `ya_registradas_ide`, `editadas`, `a_cero` y `escritas[].editada` de
   vuelta; `borradas` siempre 0 en el registro. Avisar a `partes`.
 
-## F-051 · spec pasada 3, D14-D15 abiertas (2026-10-20)
+## F-051 · decisiones del humano sobre la spec (2026-10-20, todas cerradas)
 
-- **Decisiones del humano, pasada 3 (2026-10-20):** D10 = B (se edita todo
-  lo que insertaríamos) y D13 como recomendado («ok a lo demás»). **D11:**
-  tras explicarle el líder que `partes` (F-024) busca por su `synckey` y solo
-  usa `hmores.ide` como respaldo en líneas sin `synckey`, el humano: «y no
-  deberia encontrarla por el ide de sigrid una vez que se registra la linea?
-  es unico y no se edita nunca» y «d11 que ya localice»: F-051 **no cambia la
-  `synckey` de una línea de otro sistema** y localiza lo editado por
-  `hmores.ide`, también las líneas de `partes`. **D12:** «que pase a editar»:
-  el pisado confirmado de hoy (línea distinta de 0) **también pasa a `UPDATE`
-  dentro de F-051**; nunca se borra.
-- **Spec pasada 3** en `specs/F-051-pisar-lineas-cero/` (detalle en
-  `progress/spec_F-051.md` §7): el registro **no emite ningún `DELETE`**;
-  toca **los tres servicios** (transfer casi todo; la api manda `hmores_ide`
-  y guarda el de las ya registradas en la columna `sigrid_hmores_ide`, que ya
-  existe, sin DDL; el front cambia el texto «se borran» del pisado). Orden de
-  despliegue **transfer → api → front**. A una línea de Administración
-  (`synckey` vacía) se le pone la nuestra además de localizarla por `ide`
-  (decisión del spec-author, design §6.3, por si la api no llega a guardar
-  el `ide`).
-- **Preguntas para el humano** (design §9, con recomendación): **D14**
-  pisado con varios choques (en 2026, 63 grupos; PT26/00109 llega a 9 líneas
-  `MDEL`): recomendado editar el de menor `ide` y poner los demás a 0.
-  **D15** `limpiar` (script de pruebas): recomendado que siga borrando lo
-  marcado `PRUEBA-PORC`.
-- **MANUAL (T15, la ejecuta el humano, modo pruebas):** antes, crear a mano
-  en el parte En registro de la 0404 (p. ej. PT26/00371, noviembre de 2026)
-  dos líneas `M*` a 0 sin `synckey` (recurso de prueba y otro); después,
-  desde `services/dedicacion-transfer`:
-  `.venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`,
-  registrar en el front local, repetir `estado`, cambiar el %, confirmar el
-  pisado y repetir `estado` (detalle en tasks.md T15).
-- **`azure-apps` pendiente (T16, al desplegar):** refrescar
-  `azure-apps/dedicacion.md` (el transfer edita líneas ajenas; contrato
-  `hmores_ide`) y avisar a `partes`.
+- **Pasada 2:** «d1, nunca borramos lineas, editamos el valor. d5, cualquier
+  linea a 0% se puede pisar». **D1 = C** (`UPDATE` en su sitio, nunca
+  `DELETE`); **D5**: cualquier línea al 0 %, también con `synckey` de
+  `partes` o nuestra. D2-D4 y D6-D9, las recomendadas (D2 = A sin confirmar,
+  con aviso; D3 = A; D4 `can` 0 exacto o nulo; D6 = A; D7 = B; D8 fuera;
+  D9 = A).
+- **Pasada 3:** D10 = B (se edita todo lo que insertaríamos) y D13 como
+  recomendado («ok a lo demás»). **D11:** «y no deberia encontrarla por el
+  ide de sigrid una vez que se registra la linea? es unico y no se edita
+  nunca» y «d11 que ya localice»: F-051 **no cambia la `synckey` de una
+  línea de otro sistema** y localiza lo editado por `hmores.ide`; a una línea
+  de Administración (`synckey` vacía) se le pone la nuestra. **D12:** «que
+  pase a editar»: el pisado confirmado de hoy también pasa a `UPDATE`.
+- **D14 = A y D15 = A** («si me vale»): con varios choques se edita el de
+  menor `ide` y los demás a 0; `limpiar` (solo el script de pruebas) sigue
+  borrando lo marcado `PRUEBA-PORC`.
 - **Exploración (solo lectura, 10 `SELECT` por sigrid-api, base `ruesma`):**
   en octubre, parte PT26/00370 de la 0707 (En registro), cuatro personas con
-  su línea `M*` a 0 (`hmores` 410600, 410931, 410935, 410937) y sus vinculados
-  a 0: copia de septiembre (PT26/00332) por Administración, con partida,
-  cuenta y `pre`, sin `synckey`, hecha el 2026-10-14 o después.
-  `criterio_choque` solo las ve con la misma partida y hora, y entonces pide
-  confirmar.
-- **Decisiones del humano, pasada 2 (2026-10-20):** «d1, nunca borramos lineas,
-  editamos el valor. d5, cualquier linea a 0% se puede pisar». Es decir,
-  **D1 = C** (la línea al 0 % se actualiza en su sitio, `UPDATE`; nunca se
-  borra) y **D5: cualquier línea al 0 %**, también con `synckey` de `partes`
-  o nuestra. D2-D4 y D6-D9, las recomendadas (D2 = A sin confirmar, con
-  aviso; D3 = A; D4 `can` 0 exacto o nulo; D6 = A; D7 = B; D8 fuera; D9 = A).
-- **Entorno:** el worktree no tiene los `.venv` de los servicios (init.sh da
-  1 `[KO]` de entorno; la raíz, 418 passed). Antes de implementar, se crean
-  allí o se implementa en la copia principal.
-
-## F-057 · pendiente de desplegar
-
-- **Orden: api antes que front.** Un front nuevo contra una api vieja no
-  recibe `propuesta_pendiente` y diría «automática» en todo durante la
-  ventana; un front viejo contra la api nueva sigue como hoy (observación 2
-  de `progress/review_F-057.md`).
-- **`azure-apps/dedicacion.md` al desplegar:** añadir `propuesta_pendiente`
-  por línea y la lista `pendientes` (`trabajador_ide`, `obra_ide`,
-  `es_postventa`) de `GET …/propuestas` al párrafo del contrato de F-055
-  (observación 1 de la review).
-- **Comprobación tras desplegar (solo lectura):** abrir un mes con propuestas
-  en curso y ver que la postventa dice «automática»; si el mes ya está
-  calculado, `GET …/propuestas` debe traer `pendientes: []` y el cuadrante
-  `propuesta_pendiente` en cada línea. Nada de `UPDATE` contra la BBDD
-  desplegada.
+  su línea `M*` a 0 (`hmores` 410600, 410931, 410935, 410937): copia de
+  septiembre por Administración, sin `synckey`. En 2026, 63 grupos con
+  varios choques (PT26/00109 llega a 9 líneas `MDEL`).
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-20: F-057**, api y front, en ese orden, lanzado por
+  el humano con `redeploy_dedicacion.ps1 -Solo api` y `-Solo front` (esta vez
+  sin cortarse): api `r20261020-1342` (revisión
+  `ca-dedicacion-api--r20261020134227`) y front `r20261020-1351` (revisión
+  `ca-dedicacion-front--r20261020135103`), las dos `RunningAtMaxScale`,
+  `Healthy` y con el 100 % del tráfico (comprobado por el líder con `az
+  containerapp revision list`). Transfer sin cambios.
+  `azure-apps/dedicacion.md` al día (`a4c046c`). **Pendiente del humano:** la
+  comprobación en producción (Ctrl+F5; con propuestas en curso, la postventa
+  dice «automática» y solo las normales sin partida «buscando partida…»).
 - **Desplegado el 2026-10-19: F-056**, solo la api: `r20261019-1020`
   (revisión `ca-dedicacion-api--r20261019102033`, `RunningAtMaxScale`,
   `Healthy`, 100 % del tráfico; transfer y front sin cambios). El script volvió
@@ -292,9 +244,10 @@ la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
-desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 (pendiente de
-desplegar api y front). Orden: **F-051** (spec pasada 3, D14-D15 abiertas), F-044, F-052, F-053, **F-054** (el sync trae los %
-que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
+desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
+2026-10-20. Orden: **F-051** (en curso: correcciones de la review 1), **F-030**
+(spec aprobada, va detrás), F-044, F-052, F-053, **F-054** (el sync trae los %
+que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
@@ -309,7 +262,7 @@ F-033 y, detrás, F-017, F-018…
 
 - **`Run-Az` de `infra/00_capps_vars_dedicacion.ps1` aborta tras un `update`
   que sí se aplica** (2026-10-17 las tres veces y otra el 2026-10-19 con la
-  api de F-056: `az : ` vacío,
+  api de F-056; el 2026-10-20, api y front de F-057, NO se cortó: `az : ` vacío,
   `NativeCommandError` en PS 5.1): el `containerapp update` crea la revisión y
   PowerShell convierte lo que `az` escribe en stderr en error terminante, así que
   `redeploy` para tras el primer servicio. Se desplegó relanzando `-Solo api,front`
@@ -331,8 +284,6 @@ F-033 y, detrás, F-017, F-018…
   humano las ejecute», pero aquí el líder las cumple a menudo antes de la
   review (F-055, F-056, F-057); propuesta: «listadas con su comando exacto y,
   si ya se ejecutaron, con quién, cuándo y el resultado real» ⇒ `arnes-base`.
-- **¿Desplegar F-057?** (api y luego front; detalle en «F-057 · pendiente de
-  desplegar»).
 - **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
   `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
   `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`
