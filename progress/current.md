@@ -1,28 +1,38 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Spec de F-051 en redacción** (pisar las líneas del parte al 0 % que ya
-existan para ese recurso; `sdd: true`, rigor crítico): **spec-author lanzado
-el 2026-10-20** a petición del humano («lanza spec de f51»), en la copia
+**Spec de F-051 escrita, con D1-D9 abiertas** (pisar las líneas del parte al
+0 % que ya existan para ese recurso; `sdd: true`, rigor crítico): el
+spec-author la terminó el 2026-10-20 en la copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
-`feature/F-051-pisar-lineas-cero`. Sigue en `pending` hasta que la spec esté
-lista (entonces `spec_ready` y PARADA: aprobación del humano). Ninguna feature
+`feature/F-051-pisar-lineas-cero`. Sigue en `pending` hasta que el líder la
+pase a `spec_ready` (PARADA: decisiones y aprobación del humano). Ninguna feature
 `in_progress`. F-057 cerrada el 2026-10-19 y **pendiente de desplegar: lo
 despliega el humano** con los comandos que le dio el líder el 2026-10-20 (la
 copia principal queda en `dev` para eso), y hace él las pruebas en producción.
 El arnés es la **1.7.3**.
 
-## F-051 · spec en redacción (2026-10-20)
+## F-051 · spec escrita, D1-D9 abiertas (2026-10-20)
 
-- **Exploración en Sigrid, SOLO LECTURA** (`POST /api/sql/read` de sigrid-api,
-  base `ruesma`), con scripts en el scratchpad que leen la configuración desde
-  `services/dedicacion-transfer` de la copia principal. Ninguna escritura, ni
-  `registro/ejecutar`, ni `prueba_escritura_porcentajes.py ejecutar`.
-- Preguntas abiertas que la spec debe resolver o elevar al humano: qué son las
-  líneas al 0 % (origen, hora, partida), por qué `criterio_choque` no las ve,
-  y qué es «pisar» (borrar y escribir, o actualizar la existente). Coordinar
-  con `partes` (mismo parte).
-- Al terminar: `spec_ready` y PARADA.
+- **Spec en `specs/F-051-pisar-lineas-cero/`** (rama
+  `feature/F-051-pisar-lineas-cero`, copia `porcentajes-f051`); exploración y
+  preguntas en `progress/spec_F-051.md`. Solo toca el transfer; api y front
+  sin cambios.
+- **Exploración (solo lectura, 10 `SELECT` por sigrid-api, base `ruesma`):**
+  en octubre, parte PT26/00370 de la 0707 (En registro), cuatro personas con
+  su línea `M*` a 0 (`hmores` 410600, 410931, 410935, 410937) y sus vinculados
+  a 0: copia de septiembre (PT26/00332) por Administración, con partida,
+  cuenta y `pre`, sin `synckey`, hecha el 2026-10-14 o después.
+  `criterio_choque` solo las ve con la misma partida y hora, y entonces pide
+  confirmar.
+- **Decisiones que esperan al humano** (design §9, con recomendación): D1
+  pisar = borrar e insertar (A); D2 sin confirmación, con aviso (A); D3
+  cualquier `M*` al 0 % del recurso en la obra (A); D4 `can` exacto 0; D5 solo
+  sin `synckey`; D6 cerrados como hoy (A); D7 postventa solo misma partida
+  (B); D8 obras donde ya no está, fuera; D9 la línea al 0 % de la prueba, a
+  mano en la 0404 (A), y preguntar a Juan si la copia es de Sigrid o a mano.
+- Siguiente: el líder la pasa a `spec_ready` y PARADA para que el humano
+  decida D1-D9; si alguna no es la recomendada, se reescribe la spec.
 
 ## F-057 · pendiente de desplegar
 
