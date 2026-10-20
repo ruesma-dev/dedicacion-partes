@@ -1,3 +1,4 @@
+<!-- progress/impl_F-051.md -->
 # F-051 · Informe del implementer (2026-10-20) · TERMINADA
 
 Spec: `specs/F-051-pisar-lineas-cero/`. Copia `porcentajes-f051`, rama
@@ -21,15 +22,14 @@ Bloqueos resueltos por el humano: T3 opción A, T12 opción B (`current.md`).
 | T11 api: `hmores_ide` de ida y `ya_registradas_ide` de vuelta | `6788bfa` |
 | T12 front: «se edita la línea X (…)[; quedan a 0: …] y se escribe N%» | `24ba7aa` |
 | T13 documentación (`#regla-cero`, INTEGRACION §1, §5, §7) | `e74dbe7` |
-| T14 tests contra supervivientes + campaña de mutación | `4dea061`, `f8a79b7` |
+| T14 tests contra supervivientes + mutación (review 1: `d807cce`, `e51ba7b`) | `4dea061`, `f8a79b7` |
 | T17 `init.sh` en verde e informe | este commit |
 
 Ficheros de producción, por servicio:
 
-- **transfer**: `application/services/reglas_porcentajes.py`;
-  `domain/models/registro_models.py`; `interface_adapters/api/app.py`
-  (`LineaIn.hmores_ide`; `ejecutar` publica `editadas`, `a_cero`,
-  `ya_registradas_ide`); `infrastructure/sigrid/sigrid_write_client.py`
+- **transfer**: `reglas_porcentajes.py`; `registro_models.py`; `app.py`
+  (`LineaIn.hmores_ide`; `editadas`, `a_cero`, `ya_registradas_ide`);
+  `infrastructure/sigrid/sigrid_write_client.py`
   (`lineas_registradas`, `lineas_para_editar`, `_guarda`, `_ENLACES`,
   `stmt_editar_linea`, `stmt_poner_a_cero`; `stmt_borrar_linea` queda solo
   para `limpiar`); `application/services/lecturas_lote.py`
@@ -154,32 +154,32 @@ Tests de T14: cada uno contra su mutante a mano, **12 de 12 muertos**.
 
 ## 4. Mutación (T14, rigor crítico)
 
-Detalle y análisis en `progress/mutacion_F-051.md`.
+Detalle e historial en `progress/mutacion_F-051.md`. Todas en serie,
+`--workers 1`:
 
-- **1.ª campaña** (HEAD `e74dbe7`, `--workers 1`): 138 mutantes, 122
-  muertos, **16 supervivientes**, 3162,8 s. Doce se mataron con tests nuevos
-  (redondeos y `or 0` de la edición, `hmoide`/`hmores_ide` nulos, lote con
-  las claves justas, `enlazada` por defecto, igualdad del `ide` en la api);
-  tres dejaron de existir con dos simplificaciones (`despues` con
-  `a.can`/`a.tot`; `usadas` vacío). Tabla en el informe de mutación.
-- **2.ª campaña** (HEAD `4dea061`, `--workers 1`, completa): **134
-  mutantes, 133 muertos, 1 superviviente, 0 timeouts**, 1791,9 s.
-- **Superviviente**: `registro_pipeline.py:1095`, `>= 0.000001` → `>` en la
-  comprobación de R13. **Equivalente**: solo difiere si la diferencia vale
-  exactamente el `float` 1e-6, y con `can` redondeado a 4 decimales ninguna
-  entrada lo alcanza (búsqueda exhaustiva de los 9.999 valores ±40 ulp, sin
-  un solo caso). Sin test posible; **pide que el humano acepte la
-  justificación** (rigor crítico).
+- **1.ª** (`e74dbe7`): 138 mutantes, **16 supervivientes**: 12 muertos con
+  tests nuevos, 3 eliminados con dos simplificaciones (`despues` con
+  `a.can`/`a.tot`; `usadas` vacío) y 1 dado por equivalente.
+- **2.ª** (`4dea061`): 134 mutantes, 1 superviviente,
+  `registro_pipeline.py:1095` `>= 0.000001` → `>`. **No era equivalente**
+  (review 1, RM5): mi búsqueda empezaba en `k = 1` y `can` puede valer 0
+  (porcentaje < 0,00005); con relectura `1e-6` la diferencia es exactamente
+  1e-6. Test nuevo `test_f051_r13_editada_a_una_millonesima_de_lo_escrito_no_cuenta`
+  (`d807cce`); RED con el mutante aplicado a mano,
+  `pytest tests/test_f051_pipeline_cero.py -q -p no:cacheprovider -k millonesima`:
+  ```
+  E   Left contains one more item: {'registro_id': 1, 'hmoide': 777, 'parte_cod': 'PT26/00251', 'obra_cod': '0404', ...}
+  1 failed, 60 deselected in 3.64s        (con el original: 1 passed)
+  ```
+- **3.ª** (`7a5f801`, completa): **134 mutantes, 134 muertos, 0
+  supervivientes, 0 timeouts**, 1635,8 s.
 
-## 5. `bash harness/init.sh` (T17, worktree, HEAD `abb5638`)
+## 5. `bash harness/init.sh` (T17, worktree, HEAD tras la review 1)
 
-Sin ningún `[KO]` («ENTORNO LISTO. Puedes trabajar.»): raíz 418 passed, 1
-skipped; api 949; front 310; transfer 1075. **PUERTA COBERTURA 99,2 %** de
-255 líneas cambiadas (253/255, umbral 80 %, crítico); PUERTA TAMAÑO dentro.
-`abb5638` (tras la campaña) solo quita avisos de ruff propios (imports,
-paréntesis en la cadena de la guarda, sin cambio de SQL); ruff 277 avisos (258
-en `2c75a1c`): los 19 de más son `Optional[...]` como el resto de esos
-ficheros, `dict()` en tests y un `PYI034` en un doble.
+Sin ningún `[KO]` («ENTORNO LISTO»): raíz 418 passed, 1 skipped; api 949;
+front 310; transfer 1076. **PUERTA COBERTURA 99,2 %** (253/255, umbral 80 %);
+TAMAÑO dentro. Ruff: los avisos de más frente a `dev` son `Optional[...]`
+(estilo de esos ficheros), `dict()` en tests y un `PYI034` en un doble.
 
 ## 6. Verificaciones MANUAL pendientes
 
@@ -206,14 +206,14 @@ ficheros, `dict()` en tests y un `PYI034` en un doble.
   = 0); de ida, `lineas[].hmores_ide`; de vuelta, `ya_registradas_ide`,
   `editadas`, `a_cero` y `escritas[].editada`. Avisar a `partes` de que el
   transfer edita líneas `M*` de sus partes sin borrarlas.
-- Aceptación del humano del mutante equivalente (§4). Ningún agente ha
-  escrito en Sigrid; ningún `push`.
+- Ningún agente ha escrito en Sigrid; ningún `push`. O1-O5 de la review 1
+  sin cambios de comportamiento (O2 y O4, del humano).
 
 ## Evidencias
 
 | Evidencia | Valor |
 |---|---|
-| Tests ejecutados | 2.752 passed, 1 skipped, 0 failed: raíz 418 (+1 skipped), api 949, front 310, transfer 1075 |
+| Tests ejecutados | 2.753 passed, 1 skipped, 0 failed: raíz 418 (+1 skipped), api 949, front 310, transfer 1076 |
 | Cobertura de líneas cambiadas | 99,2 % (253/255), PUERTA COBERTURA de `init.sh` |
-| Mutación | 134 generados, 133 muertos, **1 superviviente equivalente justificado**, 0 timeouts; `--workers 1`; 1791,9 s (1.ª campaña: 138 / 16 supervivientes, resueltos) |
-| Tiempo de la suite | raíz 74,89 s; api 102,55 s; front 85,40 s; transfer 58,18 s (pytest, en `init.sh`) |
+| Mutación | 134 generados, 134 muertos, **0 supervivientes**, 0 timeouts; `--workers 1`; 1635,8 s (HEAD `7a5f801`) |
+| Tiempo de la suite | raíz 48,94 s; api 66,19 s; front 34,66 s; transfer 29,63 s (pytest, en `init.sh`) |
