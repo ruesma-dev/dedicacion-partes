@@ -839,14 +839,14 @@ class SigridWriteClient:
         En registro. SQL Server la evalúa sobre la fila ANTES del cambio."""
         sin_enlaces = " ".join(f"AND ISNULL({c}, 0) = 0" for c in _ENLACES)
         return (
-            "WHERE ide = ? AND reside = ? "
+            ("WHERE ide = ? AND reside = ? "
             "AND ABS(ISNULL(can, 0) - ?) < 0.000001 "
             "AND LTRIM(RTRIM(ISNULL(synckey, ''))) = ? "
             f"{sin_enlaces} "
             "AND EXISTS (SELECT 1 FROM auxhor a WHERE a.ide = hmores.horide "
             "AND a.cod LIKE 'M%') "
             "AND EXISTS (SELECT 1 FROM con c WHERE c.ide = hmores.hmoide "
-            "AND c.est = ?)",
+            "AND c.est = ?)"),
             [int(ide), int(reside), float(can_leido or 0.0),
              (synckey_leida or "").strip(), self._est])
 

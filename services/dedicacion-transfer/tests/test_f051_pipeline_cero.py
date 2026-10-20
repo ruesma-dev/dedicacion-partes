@@ -16,13 +16,17 @@ from dataclasses import asdict
 import pytest
 from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
-from domain.models.registro_models import ObraEntrada, ParteSigrid
+from domain.models.registro_models import ObraEntrada
 from infrastructure.sigrid.sigrid_write_client import (
-    medir_lecturas, synckey_de,
+    synckey_de,
 )
 
 from tests.conftest import (
-    OBRA_ORIGEN, ClienteFalso, SettingsFalso, linea, linea_previa,
+    OBRA_ORIGEN,
+    ClienteFalso,
+    SettingsFalso,
+    linea,
+    linea_previa,
 )
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
@@ -260,8 +264,8 @@ def test_f051_r7_el_cerrado_de_un_periodo_no_se_olvida_en_el_siguiente():
     """Las líneas al 0 % de un parte cerrado se buscan por periodo; los
     registros omitidos por un cerrado (que filtran el «sin partida») se
     acumulan entre periodos, como antes de F-051."""
-    from tests.test_f037_pipeline import PT_CER9, PT_REG7, ClienteF037
     from tests.test_f013_sin_partida import linea_que_no_casa
+    from tests.test_f037_pipeline import PT_CER9, PT_REG7, ClienteF037
     cli = ClienteF037(periodo=[PT_CER9, PT_REG7], lineas_por_parte={
         9: [linea_previa(ide=6001, reside=400, horide=6,
                          hora_codigo="MJEFO", paride=0)]})

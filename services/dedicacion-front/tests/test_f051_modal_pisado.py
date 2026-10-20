@@ -12,7 +12,13 @@ real de `app.js` en node (ayudantes de `test_f049_avisos_registro.py`); sin
 from __future__ import annotations
 
 from tests.test_f049_avisos_registro import (
-    JS, PISADO, SIN_PARTIDA, SOBRECARGA, _funcion, _linea, _rotulos,
+    JS,
+    PISADO,
+    SIN_PARTIDA,
+    SOBRECARGA,
+    _funcion,
+    _linea,
+    _rotulos,
 )
 
 TRES = PISADO | {"lineas": [_linea(8001, 0.4),

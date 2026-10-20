@@ -13,8 +13,12 @@ import random
 
 import pytest
 from application.services.reglas_porcentajes import (
-    emparejar_ceros, es_linea_al_cero, es_nuestra_de_otra, pisables_al_cero,
-    repartir_choques, synckey_tras_editar,
+    emparejar_ceros,
+    es_linea_al_cero,
+    es_nuestra_de_otra,
+    pisables_al_cero,
+    repartir_choques,
+    synckey_tras_editar,
 )
 from domain.models.registro_models import AccionLinea
 

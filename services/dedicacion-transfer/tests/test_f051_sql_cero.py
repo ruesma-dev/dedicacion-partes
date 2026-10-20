@@ -14,15 +14,21 @@ from __future__ import annotations
 
 import pytest
 from application.services.lecturas_lote import LecturasDelLote
+from domain.models.registro_models import LineaSigrid, ObraEntrada
 from infrastructure.sigrid import sigrid_write_client as mod
 from infrastructure.sigrid.sigrid_write_client import (
-    SigridWriteClient, medir_lecturas, synckey_de,
+    SigridWriteClient,
+    medir_lecturas,
+    synckey_de,
 )
 
 from tests.conftest import (
-    OBRA_ORIGEN, ClienteFalso, SettingsFalso, linea, linea_previa,
+    OBRA_ORIGEN,
+    ClienteFalso,
+    SettingsFalso,
+    linea,
+    linea_previa,
 )
-from domain.models.registro_models import LineaSigrid, ObraEntrada
 
 
 class LecturaFalsa:
