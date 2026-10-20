@@ -1,16 +1,15 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-051: spec reescrita (2026-10-20, pasada 2)** con D1 = C y D5 del humano;
-D10-D13 **decididas por el humano el 2026-10-20** (abajo): vuelve a
-`pending` y el spec-author la rehace (pasada 3); al terminar, `spec_ready` y
-PARADA otra vez. Copia
+**F-051: spec reescrita (2026-10-20, pasada 3)** con D10-D13 del humano;
+**D14 y D15 abiertas** (con recomendación): PARADA para el humano antes de
+`spec_ready`. Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero`. Ninguna feature `in_progress`. F-057
 cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
 `708236f`). El arnés es la **1.7.3**.
 
-## F-051 · spec reescrita, D10-D13 abiertas (2026-10-20)
+## F-051 · spec pasada 3, D14-D15 abiertas (2026-10-20)
 
 - **Decisiones del humano, pasada 3 (2026-10-20):** D10 = B (se edita todo
   lo que insertaríamos) y D13 como recomendado («ok a lo demás»). **D11:**
@@ -22,11 +21,30 @@ cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
   `hmores.ide`, también las líneas de `partes`. **D12:** «que pase a editar»:
   el pisado confirmado de hoy (línea distinta de 0) **también pasa a `UPDATE`
   dentro de F-051**; nunca se borra.
-
-- **Spec en `specs/F-051-pisar-lineas-cero/`** (rama
-  `feature/F-051-pisar-lineas-cero`, copia `porcentajes-f051`); exploración y
-  preguntas en `progress/spec_F-051.md`. Solo toca el transfer; api y front
-  sin cambios.
+- **Spec pasada 3** en `specs/F-051-pisar-lineas-cero/` (detalle en
+  `progress/spec_F-051.md` §7): el registro **no emite ningún `DELETE`**;
+  toca **los tres servicios** (transfer casi todo; la api manda `hmores_ide`
+  y guarda el de las ya registradas en la columna `sigrid_hmores_ide`, que ya
+  existe, sin DDL; el front cambia el texto «se borran» del pisado). Orden de
+  despliegue **transfer → api → front**. A una línea de Administración
+  (`synckey` vacía) se le pone la nuestra además de localizarla por `ide`
+  (decisión del spec-author, design §6.3, por si la api no llega a guardar
+  el `ide`).
+- **Preguntas para el humano** (design §9, con recomendación): **D14**
+  pisado con varios choques (en 2026, 63 grupos; PT26/00109 llega a 9 líneas
+  `MDEL`): recomendado editar el de menor `ide` y poner los demás a 0.
+  **D15** `limpiar` (script de pruebas): recomendado que siga borrando lo
+  marcado `PRUEBA-PORC`.
+- **MANUAL (T15, la ejecuta el humano, modo pruebas):** antes, crear a mano
+  en el parte En registro de la 0404 (p. ej. PT26/00371, noviembre de 2026)
+  dos líneas `M*` a 0 sin `synckey` (recurso de prueba y otro); después,
+  desde `services/dedicacion-transfer`:
+  `.venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`,
+  registrar en el front local, repetir `estado`, cambiar el %, confirmar el
+  pisado y repetir `estado` (detalle en tasks.md T15).
+- **`azure-apps` pendiente (T16, al desplegar):** refrescar
+  `azure-apps/dedicacion.md` (el transfer edita líneas ajenas; contrato
+  `hmores_ide`) y avisar a `partes`.
 - **Exploración (solo lectura, 10 `SELECT` por sigrid-api, base `ruesma`):**
   en octubre, parte PT26/00370 de la 0707 (En registro), cuatro personas con
   su línea `M*` a 0 (`hmores` 410600, 410931, 410935, 410937) y sus vinculados
@@ -34,33 +52,12 @@ cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
   cuenta y `pre`, sin `synckey`, hecha el 2026-10-14 o después.
   `criterio_choque` solo las ve con la misma partida y hora, y entonces pide
   confirmar.
-- **Decisiones que esperan al humano** (design §9, con recomendación): D1
-  pisar = borrar e insertar (A); D2 sin confirmación, con aviso (A); D3
-  cualquier `M*` al 0 % del recurso en la obra (A); D4 `can` exacto 0; D5 solo
-  sin `synckey`; D6 cerrados como hoy (A); D7 postventa solo misma partida
-  (B); D8 obras donde ya no está, fuera; D9 la línea al 0 % de la prueba, a
-  mano en la 0404 (A), y preguntar a Juan si la copia es de Sigrid o a mano.
-- **Decisiones del humano (2026-10-20):** «d1, nunca borramos lineas,
+- **Decisiones del humano, pasada 2 (2026-10-20):** «d1, nunca borramos lineas,
   editamos el valor. d5, cualquier linea a 0% se puede pisar». Es decir,
   **D1 = C** (la línea al 0 % se actualiza en su sitio, `UPDATE`; nunca se
   borra) y **D5: cualquier línea al 0 %**, también con `synckey` de `partes`
-  o nuestra. D2-D4 y D6-D9 no las discutió: se toman las recomendadas (el
-  líder lo dice al humano). Spec-author reanudado para reescribir y elevar
-  las preguntas nuevas que abren D1 = C y D5 (qué campos se editan; qué pasa
-  con el `synckey` de una línea de `partes`; si «nunca borramos» alcanza al
-  pisado confirmado de hoy; cómo se deshace un `UPDATE`).
-- **Pasada 2 del spec-author (2026-10-20):** pisar = `UPDATE` en su sitio con
-  guarda (mismo recurso, `M*`, al 0 %, la `synckey` leída, sin enlaces, En
-  registro), una línea por acción, las sobrantes se quedan a 0 y el aviso lo
-  dice; si la guarda no cambia la fila, la acción va a `omitidas`. Lectura
-  nueva: `partes` nunca ha escrito `M*` (0 de 358). **Preguntas nuevas**
-  (design §9, `progress/spec_F-051.md` §6): **D10** qué campos se editan
-  (recomendado: todos los que insertaríamos); **D11** `synckey` nuestra,
-  `tex` (marca en pruebas, el suyo en real) y líneas de `partes`
-  (recomendado: excluirlas, excepción a D5; hoy 0 casos); **D12** «nunca
-  borramos» frente al pisado confirmado y `limpiar` (recomendado: fuera, otra
-  feature); **D13** deshacer un `UPDATE` (recomendado: log y respuesta con
-  lo que tenía; F-033 la devuelve a 0 sin borrar).
+  o nuestra. D2-D4 y D6-D9, las recomendadas (D2 = A sin confirmar, con
+  aviso; D3 = A; D4 `can` 0 exacto o nulo; D6 = A; D7 = B; D8 fuera; D9 = A).
 - **Entorno:** el worktree no tiene los `.venv` de los servicios (init.sh da
   1 `[KO]` de entorno; la raíz, 418 passed). Antes de implementar, se crean
   allí o se implementa en la copia principal.
@@ -215,7 +212,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 (pendiente de
-desplegar api y front). Orden: **F-051** (spec en redacción), F-044, F-052, F-053, **F-054** (el sync trae los %
+desplegar api y front). Orden: **F-051** (spec pasada 3, D14-D15 abiertas), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 

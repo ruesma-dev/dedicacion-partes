@@ -191,3 +191,67 @@ recomendadas.
     `synckey`; `pre`, cuenta y `tex` no se leen hoy) y que F-033 la devuelva
     a 0 con un `UPDATE` guardado por nuestra `synckey`, sin borrar. Guardarlo
     en la api (columna nueva) sacaría la feature de «solo transfer».
+
+## 7. Pasada 3 (2026-10-20): D10-D13 decididas
+
+**Decisiones del humano** (vía líder): D10 = B; D13, la recomendada; D11
+(«y no deberia encontrarla por el ide de sigrid una vez que se registra la
+linea? es unico y no se edita nunca», «d11 que ya localice»): no se cambia la
+`synckey` de otro sistema y lo editado se localiza por `hmores.ide`; D12
+(«que pase a editar»): el pisado confirmado también edita, dentro de F-051.
+
+**Lecturas nuevas (solo lectura, 2 `SELECT`; código, solo lectura):**
+- Identidad repetida (mismo parte, recurso, hora `M*` y partida), partes de
+  obra: 48 grupos en 2024, 67 en 2025 y **63 en 2026**, ninguno con línea a
+  0. Ejemplo: PT26/00109 (En registro), `MDEL`/`MESVE` una línea por día,
+  hasta 9 por recurso, sin `synckey`. Un pisado confirmado puede tener varios
+  choques: abre **D14**.
+- La api **ya guarda** `asignacion.sigrid_hmores_ide` (ORM, tras cada
+  escritura, en `_trazar`) y no lo manda al transfer. `reemplazar` borra y
+  recrea las asignaciones al guardar la fila: el `ide` guardado se pierde con
+  cualquier edición del cuadrante (como la `synckey`, que es por
+  `registro_id`).
+- `partes` (`azure-apps/partes.md`): F-024 comprueba por `synckey` y usa el
+  `ide` solo para las que no la tienen; las que da por borradas conservan
+  `sigrid_hmores_ide`. F-046 edita solo con el `can` esperado y revierte si
+  la guarda falla.
+- El front dice hoy «se borran … y se escribe …» en el pisado
+  (`app.js`, línea 2392) y lo vigila `test_f049_avisos_registro.py`.
+- El pisado borra hoy en 5 ficheros de tests del transfer (lista cerrada en
+  tasks.md). `limpiar` borra lo marcado `PRUEBA-PORC` en `tex` con nuestra
+  `synckey`, sin mirar la obra.
+
+**Qué cambia en la spec** (requirements 130 líneas, design 230, 17 tareas):
+- **Toca los tres servicios.** Transfer: casi todo. Api: manda
+  `hmores_ide` y guarda el de las ya registradas, **sin columna nueva**
+  (`sigrid_hmores_ide` existe). Front: el texto del pisado. Orden de
+  despliegue: transfer → api → front (design §1).
+- **Ningún `DELETE` en el registro:** el pisado confirmado edita el choque de
+  menor `ide`; el resto, a 0 (D14). `stmt_borrar_linea` queda solo para
+  `limpiar` (D15).
+- **Idempotencia (R15):** ya registrada si la fila de su `hmores_ide` existe,
+  es del recurso y no lleva `synckey` nuestra de otra asignación; si no, por
+  `synckey`, como hoy. Una sola lectura (`synckey IN … OR ide IN …`), también
+  en el lote: el preflight no gana lecturas. Las registradas antes de F-051
+  se completan con `ya_registradas_ide`.
+- **`synckey` de una línea de Administración (vacía): se le pone la nuestra**
+  además de localizarla por `ide` (decisión del spec-author, design §6.3):
+  cubre el caso de que la api no llegue a guardar el `ide`, mantiene el
+  pisado de hoy al editar el cuadrante y deja a `limpiar`/F-033 localizarla.
+  Solo la `synckey` de otro sistema se conserva.
+- **Antes de escribir, una lectura** de las líneas a editar con todo lo que
+  tienen (`pre`, `caaide`, `tex`, estado del parte, enlaces): sirve a la
+  guarda, a la comprobación de que no han cambiado y al log de D13. Es una
+  lectura nueva solo en `ejecutar`; las de `lineas_del_parte`, compartidas con
+  el lote de F-055, **no** se amplían.
+- **Líneas de `partes`:** no son editables hoy (0 `M*`); si lo fueran,
+  conservan su `synckey`, su F-024 las vería presentes y su F-046 fallaría sin
+  pisarlas (design §8). Aviso a `partes` al desplegar.
+
+**Preguntas para el humano** (design §9, con recomendación):
+
+14. **D14 · Pisado con varios choques** (63 grupos en 2026). (A) editar el de
+    menor `ide` y poner los demás a 0; (B) no pisar y omitir con motivo;
+    (C) editar uno y dejar los demás (sumarían). **Recomiendo A.**
+15. **D15 · `limpiar`** (solo pruebas). (A) sigue borrando lo marcado;
+    (B) deja a 0 y la 0404 acumula líneas. **Recomiendo A.**
