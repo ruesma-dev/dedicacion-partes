@@ -2,10 +2,9 @@
 # Trabajo en curso
 
 **En curso: F-051** (pisar las líneas del parte editándolas, nunca
-borrando), **`blocked` en T12** desde el 2026-10-20 (sección «F-051 · BLOQUEO
-en T12» justo debajo: dos tests de F-049 fuera de la lista cerrada); T1-T11
-hechas y commiteadas. El bloqueo de T3 lo resolvió el humano con la opción
-A. **Spec aprobada por el humano
+borrando), `in_progress`; T1-T11 hechas y commiteadas. Bloqueos resueltos
+por el humano el 2026-10-20: T3 con la opción A y **T12 con la opción B**
+(sección justo debajo); implementer reanudado en T12. **Spec aprobada por el humano
 el 2026-10-20** («si me vale»: D14 = A y D15 = A; D1-D13 antes). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero`; sus `.venv` son uniones de directorio a
@@ -14,7 +13,14 @@ T15 (MANUAL en modo pruebas en la 0404) la hace el
 humano; ningún agente escribe en Sigrid. **F-030** aprobada y a la espera en la copia
 `porcentajes-f030` (va después de F-051). El arnés es la **1.7.3**.
 
-## F-051 · BLOQUEO en T12 (implementer, 2026-10-20)
+## F-051 · BLOQUEO en T12 (implementer, 2026-10-20) · RESUELTO
+
+- **Resuelto por el humano el 2026-10-20 con la opción B** («La b»): el
+  detalle del pisado termina como hoy, «… y se escribe N%» («se edita la
+  línea X (…)[; quedan a 0: …] y se escribe N%»); design §1 y T12 de
+  `tasks.md` corregidos por el líder; los dos `test_f049_r2_…` no se tocan.
+  F-051 vuelve a `in_progress`; el implementer sigue desde T12 (rehacer el
+  parche guardado con el texto nuevo).
 
 - **Qué pasa.** T12 cambia el texto del pisado en `rotuloConflicto`
   (`services/dedicacion-front/static/js/app.js`) al de design §1/§3: «se

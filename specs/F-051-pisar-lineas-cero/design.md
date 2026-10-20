@@ -49,7 +49,7 @@ Requisitos en `requirements.md`; exploración y pasadas en
 | transfer `interface_adapters/api/app.py` | `LineaIn.hmores_ide`; respuesta de `ejecutar` con los campos de §1 |
 | transfer `prueba_escritura_porcentajes.py` | imprime `linea_cero`, `edita_ide`, `editadas`, `a_cero` |
 | api `application/registro_sigrid.py` | `_payloads`: `hmores_ide`; `_trazar`: `sigrid_hmores_ide` de `ya_registradas_ide` |
-| front `static/js/app.js` | detalle del aviso «Pisar»: «se edita la línea X … y queda …; quedan a 0: …» |
+| front `static/js/app.js` | detalle del aviso «Pisar»: «se edita la línea X (…)[; quedan a 0: …] y se escribe N%» (opción B del humano, 2026-10-20: el detalle termina como hoy) |
 | `docs/ARCHITECTURE.md`, `docs/INTEGRACION.md` | R21, R22 |
 
 **Tests anteriores que cambian (lista cerrada, tasks.md):** los que esperan
