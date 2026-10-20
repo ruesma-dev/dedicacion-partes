@@ -1,10 +1,9 @@
 <!-- progress/spec_F-051.md -->
 # F-051 · Informe del spec-author (2026-10-20)
 
-Spec: `specs/F-051-pisar-lineas-cero/` (requirements 121 líneas, design 249,
-tasks 12 tareas). Rama `feature/F-051-pisar-lineas-cero`, copia
-`porcentajes-f051`. **Estado: spec lista, D1-D9 abiertas** (design §9): toca
-al humano decidir antes de pasar a `spec_ready`/implementar.
+Spec: `specs/F-051-pisar-lineas-cero/`. Rama `feature/F-051-pisar-lineas-cero`,
+copia `porcentajes-f051`. **Pasada 2 (abajo, §6) manda**: D1-D9 decididas,
+D10-D13 abiertas. Las §2 y §3 son de la pasada 1 y quedan como historia.
 
 ## 1. Exploración en Sigrid (solo lectura)
 
@@ -133,3 +132,62 @@ cambios. Regla nueva `#regla-cero` en ARCHITECTURE.
   existen en la copia principal. Hay que crearlos en el worktree antes de que
   el implementer trabaje aquí (decisión del líder; el spec-author no toca el
   entorno).
+
+## 6. Pasada 2 (2026-10-20): D1 = C y D5
+
+**Decisiones del humano** (vía líder): «d1, nunca borramos lineas, editamos
+el valor. d5, cualquier linea a 0% se puede pisar». D2-D4 y D6-D9, las
+recomendadas.
+
+**Lecturas nuevas (solo lectura, 2 `SELECT`):**
+- Líneas con `synckey` de `partes`: 358, todas `H*` (353) o `C*` (5); 9 a
+  0. **Ninguna `M*`, nunca.** Nuestras: 16, todas `M*` y distintas de 0.
+- Una línea nuestra (410599) y una de Administración al 0 % (410931) tienen
+  las mismas columnas rellenas; lo que cambiaría un `UPDATE` para dejarla
+  igual que una insertada es `can`, `pre`, `tot`, `horide`, `paride`,
+  `caaide`, `fec`, `synckey` (y `tex` en pruebas). `hmoide`, `pos`,
+  `cenide`, `obride`, `ano`, `mes`, `fac`, `ortide` no cambian.
+- `sigrid-api` admite `UPDATE` en `/api/sql/write` con `WHERE` obligatorio
+  (`azure-apps/sigrid_api.md`); `partes` F-046 ya edita `hmores` así.
+
+**Qué cambia en la spec** (requirements 123 líneas, design 239, 13 tareas):
+- Pisar = **`UPDATE` en su sitio** (mismo `ide`, `pos` y parte), con guarda
+  (mismo recurso, `M*`, al 0 %, la `synckey` leída, sin enlaces, parte En
+  registro); nunca `DELETE`.
+- Cada acción edita **como mucho una** línea al 0 % (emparejado
+  determinista: misma partida, misma hora, menor `ide`); las que sobran **se
+  quedan a 0** y el aviso lo dice.
+- Si la guarda no cambia la fila, la acción va a `omitidas` (se detecta con
+  la relectura por `synckey` que ya existe) y no se inserta nada en su lugar.
+- D5: una línea al 0 % con nuestra `synckey` de otra asignación es pisable;
+  las de esta ejecución (`mias`) no. Las de `partes`, según D11.
+- api y front siguen sin cambios; ninguna lectura nueva.
+
+**Preguntas nuevas para el humano** (design §9, con recomendación):
+
+10. **D10 · Qué campos se editan.** (A) solo `can`/`tot` con el `pre` de la
+    línea: la partida de Sigrid no sería la que enseñan cuadrante y modal,
+    la hora puede no ser la de P1, `tot` sale del `pre` copiado del mes
+    anterior y la api trazaría una partida que no es la de Sigrid. (B) todo
+    lo que insertaríamos: la línea queda como una nuestra salvo `ide` y
+    `pos`; se pierde la partida de Administración (copia del mes anterior;
+    el aviso la enseña para poder elegirla). **Recomiendo B.**
+11. **D11 · `synckey`, `tex` y líneas de `partes`.** La `synckey` pasa a ser
+    la nuestra (si no, se pierde la idempotencia). `tex`: marca en pruebas,
+    el que tenía en real. Una línea de `partes` editada con nuestra
+    `synckey`: su comprobación (F-024, por `synckey` y sin ella por `ide`)
+    la daría por `borrado_sigrid` y al reaprobar sv5 **la reinsertaría**
+    (doble imputación); conservando la suya, nosotros la volveríamos a ver
+    como pisado. Hoy 0 casos. **Recomiendo excluir las de `partes`** (es una
+    excepción a D5: que la confirme).
+12. **D12 · ¿«Nunca borramos» alcanza al pisado confirmado de hoy y a
+    `limpiar`?** **Recomiendo** fuera de F-051: feature aparte que convierta
+    el pisado confirmado en `UPDATE` con la misma sentencia; `limpiar` se
+    queda como herramienta de pruebas. Hasta entonces el pisado confirmado
+    sigue borrando, y `limpiar` borraría la línea editada de la prueba T11.
+13. **D13 · Cómo se deshace un `UPDATE`.** Borrar por `synckey` (F-033)
+    eliminaría una línea que era de Administración. **Recomiendo** que F-051
+    publique y registre en el log lo que tenía (hora, partida, `fec`,
+    `synckey`; `pre`, cuenta y `tex` no se leen hoy) y que F-033 la devuelva
+    a 0 con un `UPDATE` guardado por nuestra `synckey`, sin borrar. Guardarlo
+    en la api (columna nueva) sacaría la feature de «solo transfer».

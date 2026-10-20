@@ -1,15 +1,15 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-051: spec en reescritura (2026-10-20)** tras las decisiones del humano
-(abajo): vuelve a `pending` y el spec-author la rehace; al terminar,
+**F-051: spec reescrita (2026-10-20, pasada 2)** con D1 = C y D5 del humano;
+**D10-D13 abiertas** (abajo). Sigue en `pending` hasta que el líder la pase a
 `spec_ready` y PARADA otra vez. Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero`. Ninguna feature `in_progress`. F-057
 cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
 `708236f`). El arnés es la **1.7.3**.
 
-## F-051 · spec escrita, D1-D9 abiertas (2026-10-20)
+## F-051 · spec reescrita, D10-D13 abiertas (2026-10-20)
 
 - **Spec en `specs/F-051-pisar-lineas-cero/`** (rama
   `feature/F-051-pisar-lineas-cero`, copia `porcentajes-f051`); exploración y
@@ -37,6 +37,18 @@ cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
   las preguntas nuevas que abren D1 = C y D5 (qué campos se editan; qué pasa
   con el `synckey` de una línea de `partes`; si «nunca borramos» alcanza al
   pisado confirmado de hoy; cómo se deshace un `UPDATE`).
+- **Pasada 2 del spec-author (2026-10-20):** pisar = `UPDATE` en su sitio con
+  guarda (mismo recurso, `M*`, al 0 %, la `synckey` leída, sin enlaces, En
+  registro), una línea por acción, las sobrantes se quedan a 0 y el aviso lo
+  dice; si la guarda no cambia la fila, la acción va a `omitidas`. Lectura
+  nueva: `partes` nunca ha escrito `M*` (0 de 358). **Preguntas nuevas**
+  (design §9, `progress/spec_F-051.md` §6): **D10** qué campos se editan
+  (recomendado: todos los que insertaríamos); **D11** `synckey` nuestra,
+  `tex` (marca en pruebas, el suyo en real) y líneas de `partes`
+  (recomendado: excluirlas, excepción a D5; hoy 0 casos); **D12** «nunca
+  borramos» frente al pisado confirmado y `limpiar` (recomendado: fuera, otra
+  feature); **D13** deshacer un `UPDATE` (recomendado: log y respuesta con
+  lo que tenía; F-033 la devuelve a 0 sin borrar).
 - **Entorno:** el worktree no tiene los `.venv` de los servicios (init.sh da
   1 `[KO]` de entorno; la raíz, 418 passed). Antes de implementar, se crean
   allí o se implementa en la copia principal.
