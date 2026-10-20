@@ -1,12 +1,25 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** F-057 («buscando partida…» solo en las líneas
-cuya propuesta se está calculando) cerrada el 2026-10-19 y **desplegada el
-2026-10-20** por el humano (api y front; ver «Producción, hoy»); **las pruebas
-en producción las hace el humano**. Spec de **F-051** en redacción
-(spec-author, copia `porcentajes-f051`, rama `feature/F-051-pisar-lineas-cero`;
-su `current.md` lo cuenta). El arnés es la **1.7.3**.
+**Spec de F-030 en redacción** (incidencias en el cuadrante: texto en lugar
+del % con desplegable de las de partes; `sdd: true`, rigor crítico):
+**spec-author lanzado el 2026-10-20** a petición del humano, en la copia
+`C:\Users\pgris\PycharmProjects\porcentajes-f030`, rama
+`feature/F-030-dias-bajas-incidencias`; sigue en `pending` hasta `spec_ready`
+(PARADA). En paralelo, **spec de F-051 en la copia `porcentajes-f051`** (su
+rama lo cuenta). Ninguna feature `in_progress`. El arnés es la **1.7.3**.
+
+## F-030 · spec en redacción (2026-10-20)
+
+- **Petición del humano (2026-10-20)**, literal en `features.json`: en la
+  celda del %, si se escribe texto, desplegable con las incidencias de
+  `partes`; con número, todo igual que hoy. Sustituye a la «tecla especial
+  con subfila» del 2026-09-29. Título, descripción y `acceptance` de F-030
+  reescritos por el líder con esas palabras.
+- **Preguntas que la spec debe elevar:** fuente única de la lista de
+  incidencias; fechas o %; regla del 100 %; qué se escribe en Sigrid y cómo
+  convive con `partes`; si fechas y calendario entran ahora.
+- Sigrid, solo lectura durante la spec.
 
 ## Producción, hoy
 
@@ -17,9 +30,9 @@ su `current.md` lo cuenta). El arnés es la **1.7.3**.
   `ca-dedicacion-front--r20261020135103`), las dos `RunningAtMaxScale`,
   `Healthy` y con el 100 % del tráfico (comprobado por el líder con `az
   containerapp revision list`). Transfer sin cambios.
-  `azure-apps/dedicacion.md` al día (`a4c046c`). **Pendiente del humano:** la
-  comprobación en producción (Ctrl+F5; con propuestas en curso, la postventa
-  dice «automática» y solo las normales sin partida «buscando partida…»).
+  `azure-apps/dedicacion.md` al día (`a4c046c`). **Comprobado por el humano
+  en producción el 2026-10-20:** «he revisado en real y funciona todo
+  perfectamente».
 - **Desplegado el 2026-10-19: F-056**, solo la api: `r20261019-1020`
   (revisión `ca-dedicacion-api--r20261019102033`, `RunningAtMaxScale`,
   `Healthy`, 100 % del tráfico; transfer y front sin cambios). El script volvió
