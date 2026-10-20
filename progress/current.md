@@ -1,12 +1,28 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** F-057 («buscando partida…» solo en las líneas
-cuya propuesta se está calculando) **cerrada (`done`) el 2026-10-19**, review
-APROBADA (pasada 1); resumen en `progress/history.md`. **Pendiente de
-desplegar** (api y front; ver la sección siguiente), sin autorización todavía.
-Antes: F-056 cerrada y **desplegada el 2026-10-19** (solo la api; ver
-«Producción, hoy»). El arnés es la **1.7.3**.
+**Spec de F-051 en redacción** (pisar las líneas del parte al 0 % que ya
+existan para ese recurso; `sdd: true`, rigor crítico): **spec-author lanzado
+el 2026-10-20** a petición del humano («lanza spec de f51»), en la copia
+`C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
+`feature/F-051-pisar-lineas-cero`. Sigue en `pending` hasta que la spec esté
+lista (entonces `spec_ready` y PARADA: aprobación del humano). Ninguna feature
+`in_progress`. F-057 cerrada el 2026-10-19 y **pendiente de desplegar: lo
+despliega el humano** con los comandos que le dio el líder el 2026-10-20 (la
+copia principal queda en `dev` para eso), y hace él las pruebas en producción.
+El arnés es la **1.7.3**.
+
+## F-051 · spec en redacción (2026-10-20)
+
+- **Exploración en Sigrid, SOLO LECTURA** (`POST /api/sql/read` de sigrid-api,
+  base `ruesma`), con scripts en el scratchpad que leen la configuración desde
+  `services/dedicacion-transfer` de la copia principal. Ninguna escritura, ni
+  `registro/ejecutar`, ni `prueba_escritura_porcentajes.py ejecutar`.
+- Preguntas abiertas que la spec debe resolver o elevar al humano: qué son las
+  líneas al 0 % (origen, hora, partida), por qué `criterio_choque` no las ve,
+  y qué es «pisar» (borrar y escribir, o actualizar la existente). Coordinar
+  con `partes` (mismo parte).
+- Al terminar: `spec_ready` y PARADA.
 
 ## F-057 · pendiente de desplegar
 
@@ -158,7 +174,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 (pendiente de
-desplegar api y front). Orden: F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+desplegar api y front). Orden: **F-051** (spec en redacción), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
