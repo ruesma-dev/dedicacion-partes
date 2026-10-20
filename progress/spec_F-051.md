@@ -122,3 +122,14 @@ cambios. Regla nueva `#regla-cero` en ARCHITECTURE.
 - **F-044**: las líneas al 0 % de teléfono, gasoil, KM y vehículo siguen ahí
   tras F-051; F-044 debería reutilizar la función (design §8).
 - **`azure-apps/dedicacion.md`**: se refresca al desplegar (T11).
+
+## 5. `bash harness/init.sh` (worktree, 2026-10-20, tras los commits)
+
+- pytest **418 passed, 1 skipped**; PUERTA TAMAÑO de F-051 dentro (120/150,
+  249/250); PUERTA COBERTURA N/A (sin código de producción).
+- **1 `[KO]` de entorno, no de la spec:** «servicio 'api': el venv declarado
+  'services/dedicacion-api/.venv' no contiene intérprete». La copia
+  `porcentajes-f051` es un worktree y los `.venv` (ignorados por git) solo
+  existen en la copia principal. Hay que crearlos en el worktree antes de que
+  el implementer trabaje aquí (decisión del líder; el spec-author no toca el
+  entorno).
