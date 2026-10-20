@@ -38,6 +38,7 @@ from domain.errores import EmpresasMezcladas
 from domain.models.registro_models import (
     AccionLinea, HoraRecurso, LineaEntrada, LineaSigrid,
 )
+from infrastructure.sigrid.sigrid_write_client import PREFIJO_SYNCKEY
 
 logger = logging.getLogger(__name__)
 
@@ -349,6 +350,103 @@ def clave_sin_partida(accion: AccionLinea) -> str:
     return f"{PREFIJO_CLAVE_SIN_PARTIDA}{int(accion.registro_id)}"
 
 
+# ------------------------------------------------------------------ #
+#  Líneas al 0 %: se editan, nunca se borran (F-051)
+# ------------------------------------------------------------------ #
+# Ver ARCHITECTURE `#regla-cero`. Una línea `M*` al 0 % del recurso (la
+# copia del mes anterior de Administración) no es un choque: se edita en
+# su sitio con lo que habríamos insertado, sin confirmar y con aviso. Como
+# la identidad y la capacidad, son funciones puras.
+
+#: Aviso de la acción que edita una línea al 0 % (R3). Se formatea con
+#: ide / parte / hora / partida; el de las que sobran, con n.
+AVISO_LINEA_CERO = ("se edita la línea {ide} al 0 % del parte {parte} "
+                    "({hora}, partida {partida}) en vez de añadir otra")
+AVISO_QUEDAN_A_CERO = ("quedan {n} línea(s) al 0 % de este trabajador sin "
+                       "tocar")
+
+#: Motivo de omisión cuando la línea que se iba a editar ya no es la que se
+#: leyó (R12) o la guarda no la cambió (R13). Cabe en los 300 caracteres a
+#: los que dedicacion-api recorta `sigrid_motivo`.
+MOTIVO_LINEA_CAMBIADA = (
+    "la línea {ide} del parte ha cambiado en Sigrid desde el análisis: no se "
+    "ha escrito nada en su lugar; vuelve a registrar")
+
+
+def es_linea_al_cero(ls: LineaSigrid) -> bool:
+    """¿Es una línea `M*` al 0 % de un recurso? `can` 0 exacto o nulo (D4)."""
+    return (bool(_entero(ls.reside)) and es_linea_mensual(ls)
+            and _can(ls.can) == 0.0)
+
+
+def pisables_al_cero(existentes: Iterable[LineaSigrid], accion: AccionLinea,
+                     *, en_cerrado: set[int],
+                     mias: set[str]) -> tuple[LineaSigrid, ...]:
+    """R1: las líneas al 0 % que `accion` puede editar, por `ide`.
+
+    Del mismo recurso, fuera de los partes cerrados (`en_cerrado`, `ide` de
+    sus líneas) y de esta ejecución (`mias`, D5); en postventa, además, de
+    la partida de la acción (D7). Cualquier `M*` y partida en la obra
+    normal (D3)."""
+    recurso = _DE_ACCION["recurso"](accion)
+    return tuple(sorted(
+        (ls for ls in existentes
+         if es_linea_al_cero(ls) and _DE_LINEA["recurso"](ls) == recurso
+         and ls.ide not in en_cerrado and ls.synckey not in mias
+         and (accion.destino != "postventa"
+              or _DE_LINEA["paride"](ls) == _DE_ACCION["paride"](accion))),
+        key=lambda ls: ls.ide))
+
+
+def emparejar_ceros(
+    acciones: Iterable[AccionLinea], existentes: list[LineaSigrid], *,
+    en_cerrado: set[int], mias: set[str],
+) -> tuple[dict[int, LineaSigrid], dict[int, int]]:
+    """R2: `{registro_id: pisable}` y `{recurso: pisables que quedan a 0}`.
+
+    Cada acción (por `registro_id`) edita como mucho una pisable libre: la
+    de su partida, después la de su hora, después la de menor `ide`."""
+    pares: dict[int, LineaSigrid] = {}
+    tomadas: set[int] = set()
+    vistas: dict[int, set[int]] = {}
+    for a in sorted(acciones, key=lambda x: x.registro_id):
+        pisables = pisables_al_cero(existentes, a, en_cerrado=en_cerrado,
+                                    mias=mias)
+        vistas.setdefault(_DE_ACCION["recurso"](a), set()).update(
+            ls.ide for ls in pisables)
+        libres = [ls for ls in pisables if ls.ide not in tomadas]
+        if libres:
+            ls = min(libres, key=lambda x: (
+                _DE_LINEA["paride"](x) != _DE_ACCION["paride"](a),
+                _DE_LINEA["hora"](x) != _DE_ACCION["hora"](a), x.ide))
+            pares[a.registro_id] = ls
+            tomadas.add(ls.ide)
+    return pares, {r: len(ides - tomadas) for r, ides in vistas.items()}
+
+
+def repartir_choques(
+    registros: Iterable[int], choques: Iterable[LineaSigrid],
+) -> tuple[dict[int, int], list[int]]:
+    """R4-R5 (D14 = A): en un pisado, cada registro (por `registro_id`)
+    edita un choque (por `ide`); los que sobran se ponen a 0."""
+    ides = sorted(ls.ide for ls in choques)
+    regs = sorted(registros)
+    return dict(zip(regs, ides)), ides[len(regs):]
+
+
+def es_nuestra_de_otra(synckey: Optional[str], propia: str) -> bool:
+    """R15: ¿`synckey` es nuestra (`porcentajes:`) pero de otra asignación?"""
+    sk = (synckey or "").strip()
+    return sk.startswith(PREFIJO_SYNCKEY) and sk != propia
+
+
+def synckey_tras_editar(actual: Optional[str], nueva: str) -> str:
+    """R9 (D11): la `synckey` de otro sistema se conserva; una vacía
+    (Administración) o nuestra pasa a ser `nueva`."""
+    sk = (actual or "").strip()
+    return nueva if not sk or sk.startswith(PREFIJO_SYNCKEY) else sk
+
+
 class ReglasPorcentajes:
     """Decide, para cada línea, si se escribe y con qué código/importe.
 
@@ -441,3 +539,4 @@ class ReglasPorcentajes:
             can=can, pre=pre, tot=round(can * pre, 2), destino=destino,
             paride=paride, partida_cod=partida_cod, **base,
         )
+

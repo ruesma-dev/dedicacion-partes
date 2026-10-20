@@ -11,6 +11,18 @@ los de la copia principal (creadas por el líder, no versionadas).
 humano; ningún agente escribe en Sigrid. En paralelo, spec de **F-030** en la
 copia `porcentajes-f030`. El arnés es la **1.7.3**.
 
+## F-051 · implementación (implementer, 2026-10-20)
+
+- **Tarea en curso:** ver `[x]` en `specs/F-051-pisar-lineas-cero/tasks.md`.
+  Informe final en `progress/impl_F-051.md`.
+- **Decisiones del implementer** (detalle en el informe):
+  `lineas_registradas(claves, ides)` sin `ides` delega en
+  `lineas_por_synckey` (la consulta de hoy, misma lectura y mismo nombre
+  medido), así los tests de F-055 no cambian; `repartir_choques` y
+  `es_nuestra_de_otra` son funciones puras nuevas de `reglas_porcentajes.py`
+  (reparto de R4-R5 por `registro_id` y la condición de R15).
+- **Commits:** T1 y T2 en un solo commit (mismo fichero y mismos tests).
+
 ## F-051 · spec pasada 3, D14-D15 abiertas (2026-10-20)
 
 - **Decisiones del humano, pasada 3 (2026-10-20):** D10 = B (se edita todo
