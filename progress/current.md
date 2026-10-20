@@ -1,14 +1,15 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-051: spec reescrita (2026-10-20, pasada 3)** con D10-D13 del humano;
-**D14 y D15 abiertas** (con recomendación). **`spec_ready` desde el
-2026-10-20: PARADA**, espera al humano (D14, D15 y aprobación). En paralelo,
-spec de **F-030** en la copia `porcentajes-f030` (su rama lo cuenta). Copia
+**En curso: F-051** (pisar las líneas del parte editándolas, nunca
+borrando), `in_progress` desde el 2026-10-20. **Spec aprobada por el humano
+el 2026-10-20** («si me vale»: D14 = A y D15 = A; D1-D13 antes). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
-`feature/F-051-pisar-lineas-cero`. Ninguna feature `in_progress`. F-057
-cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
-`708236f`). El arnés es la **1.7.3**.
+`feature/F-051-pisar-lineas-cero`; sus `.venv` son uniones de directorio a
+los de la copia principal (creadas por el líder, no versionadas).
+**Implementer lanzado.** T15 (MANUAL en modo pruebas en la 0404) la hace el
+humano; ningún agente escribe en Sigrid. En paralelo, spec de **F-030** en la
+copia `porcentajes-f030`. El arnés es la **1.7.3**.
 
 ## F-051 · spec pasada 3, D14-D15 abiertas (2026-10-20)
 

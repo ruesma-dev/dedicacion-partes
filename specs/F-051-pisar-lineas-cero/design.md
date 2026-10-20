@@ -2,8 +2,8 @@
 # F-051 · Diseño
 
 Requisitos en `requirements.md`; exploración y pasadas en
-`progress/spec_F-051.md`. D1-D13 **decididas** (§9); **D14-D15 abiertas**:
-el diseño sigue la recomendación.
+`progress/spec_F-051.md`. D1-D15 **decididas** (§9; D14 = A y D15 = A por el humano el
+2026-10-20, «si me vale»); **spec aprobada**.
 
 ## 1. Servicios, límite y contrato
 
@@ -208,11 +208,14 @@ guarda lo que tenía; F-033 la devolverá con un `UPDATE`).
   (C) editar uno y dejar los demás como están (seguirían sumando: sobrecarga).
   **Recomiendo A**: el resultado en importes es el de hoy (solo queda nuestro
   %) sin borrar, y lo que queda a 0 lo dice el modal antes de confirmar.
+  **DECIDIDA: A** (humano, 2026-10-20).
 - **D15 · `limpiar`** (script de pruebas: borra lo marcado `PRUEBA-PORC`
   en `tex` con nuestra `synckey`). (A) sigue borrando: no es registro
   real, y tras F-051 también borraría las líneas al 0 % que el humano creó a
   mano para la prueba (es la limpieza que se quiere); (B) pasa a dejar a 0:
   la 0404 acumularía líneas a 0 de cada prueba. **Recomiendo A**.
+  **DECIDIDA: A** (humano, 2026-10-20; aclarado que no es el botón
+  «Limpiar» de la vista principal, que solo vacía los filtros).
 
 ## 10. Riesgos y alternativas descartadas
 

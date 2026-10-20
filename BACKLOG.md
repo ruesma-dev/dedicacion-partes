@@ -5,11 +5,13 @@
 
 Resumen: **54 features**, 23 abiertas, 31 terminadas.
 
+En curso: **F-051**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | spec lista | critico | `feature/F-051-pisar-lineas-cero` |
+| F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | en curso | critico | `feature/F-051-pisar-lineas-cero` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
 | F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | pendiente | critico | `feature/F-053-delegados-parte-unico` |
@@ -73,7 +75,7 @@ Resumen: **54 features**, 23 abiertas, 31 terminadas.
 
 ### F-051 · Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso
 
-estado **spec lista** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-051-pisar-lineas-cero`
+estado **en curso** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-051-pisar-lineas-cero`
 
 Pedida por el humano el 2026-10-08: «que al filtrar por obra (al buscar) te vele las etiquetas de las obras que no son la filtrada cuando el recurso tiene más de 1 obra. Que se vea en subfilas cada obra, no todas juntas, de forma que a la derecha de obra aparezca una columna partida, donde poder elegir la partida (quitamos la búsqueda de partida del modal de registrar, aunque mantengamos el que pueda cambiarse ahí). Al elegir partida, primero que proponga la del parte anterior por obra y empleado (o la del último en que se asignó ese recurso), y si no, con el sistema de casamiento de partes que funciona bien (nombre y categoría). Que también pise las líneas de parte a 0% que ya existan, ahora no lo hace. Que además no genere solo el parte del recurso sino de los recursos vinculados en el mismo % (vehículo, viaje, teléfono, gasoil...)». Esta feature recoge: «que también pise las líneas de parte a 0% que ya existan, ahora no lo hace». PRIMERO EXPLORAR (solo lectura en Sigrid): qué son esas líneas al 0 % (quién las crea —¿partes, una plantilla del parte?—, con qué hora y partida), por qué el criterio de choque de hoy (`criterio_choque`, ARCHITECTURE.md#regla-conflicto) no las ve, y qué significa «pisar» aquí (borrar y escribir, o actualizar la línea existente con el %). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). CONTEXTO (Juan Romero, 2026-10-08): Administración debe dejar los partes de octubre limpios («no copiéis los recursos del mes anterior… las tenéis que borrar»), salvo el personal operario con horas; las líneas al 0 % que queden de copiar el mes anterior son justo las que esta feature tiene que pisar.
 

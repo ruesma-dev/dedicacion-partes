@@ -9,7 +9,7 @@ líneas de parte a 0 % que ya existan»). **Decisiones del humano del
 cualquier línea al 0 % (D5), se editan todos los campos (D10), localizar lo
 editado por `hmores.ide` sin cambiar la `synckey` de otro sistema (D11) y
 guardar en el log lo que tenía la línea (D13); el resto, las recomendadas.
-**D14-D15 ABIERTAS**: los R marcados están escritos con la recomendación.
+**D14-D15 DECIDIDAS** (A y A, humano, 2026-10-20): los R marcados quedan como estaban.
 Fuera: recursos vinculados (F-044), obras donde el recurso ya no tiene línea
 (D8), el deshacer en sí (F-033) y `partes`.
 
