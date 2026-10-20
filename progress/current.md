@@ -2,30 +2,24 @@
 # Trabajo en curso
 
 **Ninguna feature en curso.** F-057 («buscando partida…» solo en las líneas
-cuya propuesta se está calculando) **cerrada (`done`) el 2026-10-19**, review
-APROBADA (pasada 1); resumen en `progress/history.md`. **Pendiente de
-desplegar** (api y front; ver la sección siguiente), sin autorización todavía.
-Antes: F-056 cerrada y **desplegada el 2026-10-19** (solo la api; ver
-«Producción, hoy»). El arnés es la **1.7.3**.
-
-## F-057 · pendiente de desplegar
-
-- **Orden: api antes que front.** Un front nuevo contra una api vieja no
-  recibe `propuesta_pendiente` y diría «automática» en todo durante la
-  ventana; un front viejo contra la api nueva sigue como hoy (observación 2
-  de `progress/review_F-057.md`).
-- **`azure-apps/dedicacion.md` al desplegar:** añadir `propuesta_pendiente`
-  por línea y la lista `pendientes` (`trabajador_ide`, `obra_ide`,
-  `es_postventa`) de `GET …/propuestas` al párrafo del contrato de F-055
-  (observación 1 de la review).
-- **Comprobación tras desplegar (solo lectura):** abrir un mes con propuestas
-  en curso y ver que la postventa dice «automática»; si el mes ya está
-  calculado, `GET …/propuestas` debe traer `pendientes: []` y el cuadrante
-  `propuesta_pendiente` en cada línea. Nada de `UPDATE` contra la BBDD
-  desplegada.
+cuya propuesta se está calculando) cerrada el 2026-10-19 y **desplegada el
+2026-10-20** por el humano (api y front; ver «Producción, hoy»); **las pruebas
+en producción las hace el humano**. Spec de **F-051** en redacción
+(spec-author, copia `porcentajes-f051`, rama `feature/F-051-pisar-lineas-cero`;
+su `current.md` lo cuenta). El arnés es la **1.7.3**.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-20: F-057**, api y front, en ese orden, lanzado por
+  el humano con `redeploy_dedicacion.ps1 -Solo api` y `-Solo front` (esta vez
+  sin cortarse): api `r20261020-1342` (revisión
+  `ca-dedicacion-api--r20261020134227`) y front `r20261020-1351` (revisión
+  `ca-dedicacion-front--r20261020135103`), las dos `RunningAtMaxScale`,
+  `Healthy` y con el 100 % del tráfico (comprobado por el líder con `az
+  containerapp revision list`). Transfer sin cambios.
+  `azure-apps/dedicacion.md` al día (`a4c046c`). **Pendiente del humano:** la
+  comprobación en producción (Ctrl+F5; con propuestas en curso, la postventa
+  dice «automática» y solo las normales sin partida «buscando partida…»).
 - **Desplegado el 2026-10-19: F-056**, solo la api: `r20261019-1020`
   (revisión `ca-dedicacion-api--r20261019102033`, `RunningAtMaxScale`,
   `Healthy`, 100 % del tráfico; transfer y front sin cambios). El script volvió
@@ -157,8 +151,8 @@ la fecha fin de Sigrid) y **F-053** (delegados: parte único, cada línea a su
 obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
-desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 (pendiente de
-desplegar api y front). Orden: F-051, F-044, F-052, F-053, **F-054** (el sync trae los %
+desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
+2026-10-20. Orden: **F-051** (spec en redacción), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
@@ -174,7 +168,7 @@ F-033 y, detrás, F-017, F-018…
 
 - **`Run-Az` de `infra/00_capps_vars_dedicacion.ps1` aborta tras un `update`
   que sí se aplica** (2026-10-17 las tres veces y otra el 2026-10-19 con la
-  api de F-056: `az : ` vacío,
+  api de F-056; el 2026-10-20, api y front de F-057, NO se cortó: `az : ` vacío,
   `NativeCommandError` en PS 5.1): el `containerapp update` crea la revisión y
   PowerShell convierte lo que `az` escribe en stderr en error terminante, así que
   `redeploy` para tras el primer servicio. Se desplegó relanzando `-Solo api,front`
@@ -196,8 +190,6 @@ F-033 y, detrás, F-017, F-018…
   humano las ejecute», pero aquí el líder las cumple a menudo antes de la
   review (F-055, F-056, F-057); propuesta: «listadas con su comando exacto y,
   si ya se ejecutaron, con quién, cuándo y el resultado real» ⇒ `arnes-base`.
-- **¿Desplegar F-057?** (api y luego front; detalle en «F-057 · pendiente de
-  desplegar»).
 - **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
   `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
   `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`
