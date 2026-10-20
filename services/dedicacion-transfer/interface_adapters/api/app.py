@@ -77,6 +77,9 @@ class LineaIn(BaseModel):
     propuesta_res: Optional[str] = None
     propuesta_metodo: Optional[str] = None
     propuesta_origen: Optional[str] = None
+    # F-051 (R14): `hmores.ide` de lo ya registrado (opcional: sin él, como
+    # hasta ahora, por `synckey`).
+    hmores_ide: Optional[int] = None
 
 
 class PeticionIn(BaseModel):

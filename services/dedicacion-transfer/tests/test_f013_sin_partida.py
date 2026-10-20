@@ -368,7 +368,9 @@ def test_f013_r4_el_conflicto_serializa_los_campos_de_siempre():
 def test_f013_r4_no_hace_falta_ningun_campo_nuevo():
     """R4 · F-013 no añade ni un campo al `Conflicto`: el tercer caso cabe
     entero en el contrato que dejó F-002. Si hiciera falta uno nuevo, habría
-    que revisar si el patrón encajaba de verdad."""
+    que revisar si el patrón encajaba de verdad. F-051 sí añade dos, solo
+    del pisado (`edita_ide`, `a_cero_ides`): ya no borra y el front tiene
+    que saber qué edita (opción A del humano, 2026-10-20)."""
     cli = ClienteFalso()
     c = _pipeline(cli).preflight(
         obra=OBRA, lineas=[linea_que_no_casa()]).conflictos[0]
@@ -377,7 +379,8 @@ def test_f013_r4_no_hace_falta_ningun_campo_nuevo():
     assert set(d) == {"clave", "recurso_ide", "nombre", "ano", "mes",
                       "parte_cod", "horide", "hora_codigo", "lineas",
                       "contexto", "nuevas", "registros", "motivo",
-                      "suma_existente", "suma_total", "exceso"}
+                      "suma_existente", "suma_total", "exceso",
+                      "edita_ide", "a_cero_ides"}
 
 
 #: Los dos ficheros que tendrían que cambiar si el contrato no aguantara el
