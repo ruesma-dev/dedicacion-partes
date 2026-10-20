@@ -949,8 +949,11 @@ class RegistroPipeline:
             synckey = synckey_tras_editar(ls.synckey,
                                           synckey_de(a.registro_id))
             despues = {
-                "can": round(float(a.can), 4), "pre": float(a.pre),
-                "tot": round(float(a.can) * float(a.pre), 2),
+                # `can` y `tot` ya vienen redondeados de las reglas, como
+                # los de una inserción (`stmt_editar_linea` los recalcula
+                # igual).
+                "can": float(a.can), "pre": float(a.pre),
+                "tot": float(a.tot),
                 "horide": int(a.hora_ide), "hora_codigo": a.hora_codigo,
                 "paride": int(a.paride or 0), "caaide": int(a.caa_ide or 0),
                 "fecha_int": a.fecha_int, "synckey": synckey,
@@ -1016,7 +1019,9 @@ class RegistroPipeline:
             ("edita", int(a.linea_cero["ide"]), a.registro_id, a, "cero",
              (a.registro_id,))
             for a in a_escribir if a.linea_cero]
-        usadas = {pz[1] for pz in piezas}
+        # Las líneas al 0 % nunca son choque (paso 7), así que solo los
+        # pisados pueden compartir línea: se reparte una vez.
+        usadas: set[int] = set()
         for c in pf.conflictos:
             regs = sorted(r for r in c.registros if r in escribibles)
             # R32 de hoy: un pisado confirmado solo toca algo si al menos

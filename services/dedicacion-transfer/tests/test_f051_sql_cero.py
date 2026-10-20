@@ -22,7 +22,7 @@ from infrastructure.sigrid.sigrid_write_client import (
 from tests.conftest import (
     OBRA_ORIGEN, ClienteFalso, SettingsFalso, linea, linea_previa,
 )
-from domain.models.registro_models import ObraEntrada
+from domain.models.registro_models import LineaSigrid, ObraEntrada
 
 
 class LecturaFalsa:
@@ -185,6 +185,10 @@ def test_f051_r15_lote_sigue_sirviendo_lineas_por_synckey():
     m.precargar(_peticiones(), SettingsFalso())
     assert m.lineas_por_synckey([synckey_de(1)]) == {
         synckey_de(1): cli.synckeys[synckey_de(1)]}
+    # Justo las precargadas (no un subconjunto propio): de memoria también.
+    todas = [synckey_de(1), synckey_de(2), synckey_de(3)]
+    assert m.lineas_por_synckey(todas) == {
+        synckey_de(1): cli.synckeys[synckey_de(1)]}
     assert m.fallos_de_memoria == {}
 
 
@@ -224,11 +228,19 @@ def test_f051_r8_editar_cada_campo_del_set_y_la_guarda():
 def test_f051_r8_redondeos_como_el_insert():
     cli, _ = _cliente()
     datos = dict(hmoide=777, obra=ObraEntrada(ide=1), reside=200, pos=64,
-                 fecha_int=20261031, horide=5, can=0.33333, pre=8123.45,
+                 fecha_int=20261031, horide=5, can=0.33333, pre=1.234,
                  ano=2026, mes=10, synckey=synckey_de(7), tex=None)
     ins = cli.stmt_insert_linea(**datos)["parameters"]
-    ed = cli.stmt_editar_linea(**EDICION | {"pre": 8123.45})["parameters"]
-    assert ed[:3] == [ins[8], ins[9], ins[10]] == [0.3333, 8123.45, 2707.79]
+    ed = cli.stmt_editar_linea(**EDICION | {"pre": 1.234})["parameters"]
+    # 0,3333 × 1,234 = 0,41129…: con dos decimales 0,41 (con tres, 0,411).
+    assert ed[:3] == [ins[8], ins[9], ins[10]] == [0.3333, 1.234, 0.41]
+
+
+def test_f051_r8_sin_partida_ni_cuenta_van_a_cero():
+    """Como el insert: una partida o una cuenta nula se escribe 0."""
+    cli, _ = _cliente()
+    ed = cli.stmt_editar_linea(**EDICION | {"paride": None, "caaide": None})
+    assert ed["parameters"][4:6] == [0, 0]
 
 
 def test_f051_r10_tex_solo_en_pruebas():
@@ -411,3 +423,22 @@ def test_f051_r18_el_script_ensena_lo_que_edita(monkeypatch, capsys):
     assert "EDITADA ide=410600 parte=PT26/00251 registro=1" in salida
     assert "A CERO ide=5009" in salida
     assert "antes={'can': 0.0" in salida
+
+
+# =================== campaña de mutación (T14) =================== #
+def test_f051_r15_fila_sin_parte_queda_con_hmoide_cero():
+    """`lineas_registradas` con un `hmoide` nulo: 0, no un parte inventado."""
+    cli, _ = _cliente([_fila(410600, hmoide=None)])
+    _, por_ide = cli.lineas_registradas([], [410600])
+    assert por_ide[410600].hmoide == 0
+
+
+def test_f051_r12_una_linea_leida_sin_enlaces_no_es_enlazada():
+    """Las líneas que no vienen de `lineas_para_editar` (preflight,
+    relectura) no saben de enlaces: por defecto no son enlazadas."""
+    cli, _ = _cliente([_fila(410600)])
+    _, por_ide = cli.lineas_registradas([], [410600])
+    assert por_ide[410600].enlazada is False
+    assert LineaSigrid(ide=1, reside=2, fecha_int=3, horide=4,
+                       hora_codigo="MENC", can=0.0, tot=0.0,
+                       synckey=None).enlazada is False

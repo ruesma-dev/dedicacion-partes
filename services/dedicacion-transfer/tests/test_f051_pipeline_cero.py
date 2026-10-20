@@ -689,3 +689,37 @@ def test_f051_r19_lote_igual_que_suelto_y_mismas_lecturas(previas):
     assert leidas_suelto == suelto([])[1]
     assert leidas_lote == en_lote([])[1]
     assert "lineas_para_editar" not in leidas_suelto + leidas_lote
+
+
+# =================== campaña de mutación (T14) =================== #
+def test_f051_r15_sin_ide_no_se_mira_la_fila_de_otro_ide():
+    """Una línea sin `hmores_ide` se busca solo por su `synckey`, aunque en
+    la misma lectura venga la fila de otra (aquí, la del `ide` 1)."""
+    cli = ClienteFalso(lineas_parte=[_nuestra(1, synckey=SK_PARTES)])
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[
+        linea(registro_id=1, hmores_ide=1), linea(registro_id=2, mes=8)])
+    assert [(a.registro_id, a.accion) for a in pf.acciones] == [
+        (1, "ya_registrado"), (2, "escribir")]
+
+
+def test_f051_r8_edita_sin_partida_confirmada_con_partida_cero():
+    from tests.test_f013_sin_partida import linea_que_no_casa
+    cli = ClienteFalso(lineas_parte=[_cero(410600, reside=400, horide=6,
+                                           hora_codigo="MJEFO")])
+    lineas = [linea_que_no_casa()]
+    claves = {c.clave for c in _pl(cli).preflight(
+        obra=OBRA, lineas=lineas).conflictos}
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=lineas, pisar_claves=claves)
+    (ed,) = cli.ediciones()
+    assert (ed["ide"], ed["paride"]) == (410600, 0)
+    assert res.editadas[0]["despues"]["paride"] == 0
+
+
+def test_f051_r8_edita_sin_cuenta_con_cuenta_cero():
+    from tests.test_f037_pipeline import SIN_CUENTA, ClienteF037
+    cli = ClienteF037(lineas_parte=[_cero(410600, reside=SIN_CUENTA,
+                                          horide=7, hora_codigo="MCAP")])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea(recurso_ide=SIN_CUENTA)])
+    (ed,) = cli.ediciones()
+    assert (ed["ide"], ed["caaide"]) == (410600, 0)
+    assert res.editadas[0]["despues"]["caaide"] == 0

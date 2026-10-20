@@ -108,6 +108,17 @@ def test_f051_r16_la_escrita_editada_guarda_su_ide_como_hoy():
         1, 410600, "PT26/00370")
 
 
+def test_f051_r16_el_ide_va_a_su_asignacion_y_a_ninguna_otra():
+    """El UPDATE del `ide` filtra por IGUALDAD con la asignación."""
+    sesion = _SesionQueAnota()
+    RegistroSigrid(lambda: sesion, _Transfer(), 1)._trazar(
+        {"escritas": [], "omitidas": [], "ya_registradas": [2],
+         "ya_registradas_ide": {"2": 9002}}, "yo")
+    [sql] = [str(st) for st in sesion.sentencias
+             if "sigrid_hmores_ide" in str(st)]
+    assert "WHERE asignacion.id = :id_1" in " ".join(sql.split())
+
+
 def test_f051_r16_respuesta_sin_ya_registradas_ide_como_hoy():
     sin = _trazar({"escritas": [], "omitidas": [], "ya_registradas": [2]})
     assert sin == [(2, {"sigrid_estado": "registrado"})]
