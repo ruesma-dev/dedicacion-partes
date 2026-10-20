@@ -656,6 +656,48 @@ class SigridWriteClient:
                 out[sk] = ls
         return out
 
+    def lineas_registradas(
+        self, claves: Iterable[str], ides: Iterable[int | None]
+    ) -> tuple[dict[str, LineaSigrid], dict[int, LineaSigrid]]:
+        """F-051 (R15): lo ya registrado por `synckey` **o** por
+        `hmores.ide`, en UNA lectura por trozo de `LOTE_PARAMETROS`
+        parámetros. Devuelve `({synckey: línea}, {ide: línea})`. Sin `ides`
+        es la consulta de hoy (`lineas_por_synckey`)."""
+        ks = sorted({k for k in claves if k})
+        ids = sorted({int(i) for i in ides if i})
+        if not ids:
+            return self.lineas_por_synckey(ks), {}
+        por_sk: dict[str, LineaSigrid] = {}
+        por_ide: dict[int, LineaSigrid] = {}
+        pedidas = [("k", k) for k in ks] + [("i", i) for i in ids]
+        for trozo in _trozos(pedidas, LOTE_PARAMETROS):
+            t_k = [v for t, v in trozo if t == "k"]
+            t_i = [v for t, v in trozo if t == "i"]
+            conds = []
+            if t_k:
+                conds.append("hmores.synckey IN ("
+                             + ",".join("?" for _ in t_k) + ")")
+            if t_i:
+                conds.append("hmores.ide IN ("
+                             + ",".join("?" for _ in t_i) + ")")
+            filas = self._lectura(
+                "lineas_registradas",
+                "SELECT hmores.ide AS ide, hmores.hmoide AS hmoide, "
+                "hmores.reside AS reside, hmores.fec AS fec, "
+                "hmores.horide AS horide, hmores.paride AS paride, "
+                "auxhor.cod AS hora, hmores.can AS can, hmores.tot AS tot, "
+                "hmores.synckey AS synckey FROM hmores "
+                "LEFT JOIN auxhor ON auxhor.ide = hmores.horide "
+                f"WHERE {' OR '.join(conds)}", t_k + t_i)
+            for f in filas:
+                ls = self._linea_del_parte(f)
+                ls.hmoide = int(f["hmoide"] or 0)
+                if ls.synckey in ks:
+                    por_sk[ls.synckey] = ls
+                if ls.ide in ids:
+                    por_ide[ls.ide] = ls
+        return por_sk, por_ide
+
     # -------------------------- sentencias -------------------------- #
 
     def stmts_crear_parte(

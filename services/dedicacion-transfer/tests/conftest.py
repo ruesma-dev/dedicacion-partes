@@ -18,6 +18,9 @@ todo lo que la feature necesita variar está **parametrizado**:
 - ``synckeys``: las líneas que ya escribimos nosotros (idempotencia).
 - ``obra_postventa_existe``: si la obra de postventa no está en Sigrid.
 
+F-051 le añade `EdicionesFalsas` (lectura previa, sentencias de edición
+que se aplican a las líneas del doble y relectura por `ide`).
+
 F-037 le añade, solo como doble y datos: el centro (`cenide`) de las cuatro
 obras, la cuenta de plantilla de MENC y MJEFO, una cuenta por subcuenta en
 cada centro (ninguna acción anterior gana aviso), partidas sin cuenta y los
@@ -28,6 +31,7 @@ Los `ide` son inventados y no coinciden con ningún dato real.
 from __future__ import annotations
 
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 # El servicio se ejecuta desde su propia carpeta; los tests importan
@@ -160,7 +164,93 @@ PRESUPUESTOS_PV = {
 }
 
 
-class ClienteFalso:
+class EdicionesFalsas:
+    """F-051: lo que el pipeline lee y escribe para EDITAR líneas, sobre las
+    líneas del propio doble (`lineas_parte` en el parte `parte` y, si el
+    doble las tiene, `lineas_por_parte` con los partes de `periodo`).
+
+    `escribir` aplica de verdad las sentencias de edición y de puesta a 0
+    a esas líneas, con la misma guarda que el SQL (recurso, `can` y
+    `synckey` leídos, parte En registro, sin enlaces), salvo para los `ide`
+    de `guarda_falla`: así la relectura posterior ve lo que vería en Sigrid.
+    """
+
+    #: `ide` de líneas cuya guarda no cambia la fila (R13).
+    guarda_falla: frozenset = frozenset()
+    #: `ide` de líneas con enlaces de Sigrid.
+    enlazadas: frozenset = frozenset()
+
+    def _partes_de_lineas(self) -> list[tuple]:
+        """(hmoide, código, `con.est`, lista de líneas) de cada parte."""
+        out = []
+        parte = getattr(self, "parte", None)
+        if parte is not None and parte.ide:
+            out.append((int(parte.ide), parte.cod, 1, self.lineas_parte))
+        periodo = {p.ide: p for p in (getattr(self, "periodo", None) or [])}
+        for h, lista in (getattr(self, "lineas_por_parte", None) or {}).items():
+            p = periodo.get(h)
+            out.append((h, p.cod if p else None, p.est if p else 1, lista))
+        return out
+
+    def lineas_registradas(self, claves, ides=()):
+        por_sk = self.lineas_por_synckey(list(claves))
+        pedidos = {int(i) for i in ides if i}
+        todas = [*self.synckeys.values(),
+                 *(ls for *_, lista in self._partes_de_lineas()
+                   for ls in lista)]
+        return por_sk, {ls.ide: ls for ls in todas if ls.ide in pedidos}
+
+    def lineas_para_editar(self, ides):
+        self.para_editar = getattr(self, "para_editar", []) + [sorted(ides)]
+        out = {}
+        for h, cod, est, lista in self._partes_de_lineas():
+            for ls in lista:
+                if ls.ide in set(ides):
+                    out[ls.ide] = replace(
+                        ls, hmoide=h, parte_cod=cod, parte_est=est,
+                        enlazada=ls.ide in self.enlazadas)
+        return out
+
+    def stmt_editar_linea(self, **kw):
+        return {"sql": "editar", "parameters": kw}
+
+    def stmt_poner_a_cero(self, **kw):
+        return {"sql": "a_cero", "parameters": kw}
+
+    def _aplicar_ediciones(self, statements) -> None:
+        for st in statements:
+            if st["sql"] not in ("editar", "a_cero"):
+                continue
+            kw = st["parameters"]
+            for _, _, est, lista in self._partes_de_lineas():
+                for i, ls in enumerate(lista):
+                    if (ls.ide != kw["ide"] or ls.ide in self.guarda_falla
+                            or ls.ide in self.enlazadas or est != 1
+                            or ls.reside != kw["reside"]
+                            or not (ls.hora_codigo or "").startswith("M")
+                            or abs(float(ls.can or 0) - kw["can_leido"])
+                            >= 0.000001
+                            or (ls.synckey or "") != kw["synckey_leida"]):
+                        continue
+                    if st["sql"] == "a_cero":
+                        lista[i] = replace(ls, can=0.0, tot=0.0)
+                    else:
+                        lista[i] = replace(
+                            ls, can=kw["can"],
+                            tot=round(kw["can"] * kw["pre"], 2),
+                            horide=kw["horide"], paride=kw["paride"],
+                            fecha_int=kw["fecha_int"], synckey=kw["synckey"],
+                            nuestra=kw["synckey"].startswith("porcentajes:"))
+
+    # --- ayudas de aserción --- #
+    def ediciones(self) -> list[dict]:
+        return [s["parameters"] for s in self.escritos if s["sql"] == "editar"]
+
+    def a_ceros(self) -> list[dict]:
+        return [s["parameters"] for s in self.escritos if s["sql"] == "a_cero"]
+
+
+class ClienteFalso(EdicionesFalsas):
     """Doble del cliente de escritura de Sigrid. No abre ningún socket.
 
     Registra en ``escritos`` las sentencias que el pipeline le habría
@@ -342,6 +432,7 @@ class ClienteFalso:
 
     def escribir(self, statements):
         self.escritos.extend(statements)
+        self._aplicar_ediciones(statements)
         return len(statements)
 
     # --- ayudas de aserción --- #

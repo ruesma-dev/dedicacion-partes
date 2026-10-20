@@ -14,6 +14,10 @@ from domain.models.registro_models import (
 )
 from infrastructure.sigrid.sigrid_write_client import synckey_de
 
+# F-051: los métodos de edición del doble (lectura previa, sentencias de
+# edición aplicadas a `lineas_parte` y relectura por `ide`).
+from tests.conftest import EdicionesFalsas
+
 
 class Settings:
     obra_pruebas_forzar = True
@@ -30,7 +34,7 @@ class Settings:
     propuesta_meses_atras = 24
 
 
-class ClienteFalso:
+class ClienteFalso(EdicionesFalsas):
     def __init__(self):
         self.obra = ObraEntrada(ide=828942, codigo="0404", nombre="PRUEBAS",
                                 empresa=1)
@@ -180,6 +184,7 @@ class ClienteFalso:
 
     def escribir(self, statements):
         self.escritos.extend(statements)
+        self._aplicar_ediciones(statements)
         return len(statements)
 
 
