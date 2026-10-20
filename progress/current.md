@@ -1,16 +1,13 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Spec de F-051 escrita, con D1-D9 abiertas** (pisar las líneas del parte al
-0 % que ya existan para ese recurso; `sdd: true`, rigor crítico): el
-spec-author la terminó el 2026-10-20 en la copia
-`C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
-`feature/F-051-pisar-lineas-cero`. Sigue en `pending` hasta que el líder la
-pase a `spec_ready` (PARADA: decisiones y aprobación del humano). Ninguna feature
-`in_progress`. F-057 cerrada el 2026-10-19 y **pendiente de desplegar: lo
-despliega el humano** con los comandos que le dio el líder el 2026-10-20 (la
-copia principal queda en `dev` para eso), y hace él las pruebas en producción.
-El arnés es la **1.7.3**.
+**F-051 en `spec_ready` (2026-10-20): PARADA, espera la aprobación del
+humano y sus respuestas a D1-D9** (pisar las líneas del parte al 0 % que ya
+existan para ese recurso; `sdd: true`, rigor crítico). Spec del spec-author en
+la copia `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
+`feature/F-051-pisar-lineas-cero`. Ninguna feature `in_progress`. F-057
+cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
+`708236f`). El arnés es la **1.7.3**.
 
 ## F-051 · spec escrita, D1-D9 abiertas (2026-10-20)
 
@@ -31,8 +28,11 @@ El arnés es la **1.7.3**.
   sin `synckey`; D6 cerrados como hoy (A); D7 postventa solo misma partida
   (B); D8 obras donde ya no está, fuera; D9 la línea al 0 % de la prueba, a
   mano en la 0404 (A), y preguntar a Juan si la copia es de Sigrid o a mano.
-- Siguiente: el líder la pasa a `spec_ready` y PARADA para que el humano
-  decida D1-D9; si alguna no es la recomendada, se reescribe la spec.
+- **`spec_ready` desde el 2026-10-20; PARADA** hasta que el humano decida
+  D1-D9 (si alguna no es la recomendada, se reescribe la spec) y la apruebe.
+- **Entorno:** el worktree no tiene los `.venv` de los servicios (init.sh da
+  1 `[KO]` de entorno; la raíz, 418 passed). Antes de implementar, se crean
+  allí o se implementa en la copia principal.
 
 ## F-057 · pendiente de desplegar
 
