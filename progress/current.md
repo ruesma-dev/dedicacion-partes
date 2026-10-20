@@ -1,10 +1,10 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-051 en `spec_ready` (2026-10-20): PARADA, espera la aprobación del
-humano y sus respuestas a D1-D9** (pisar las líneas del parte al 0 % que ya
-existan para ese recurso; `sdd: true`, rigor crítico). Spec del spec-author en
-la copia `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
+**F-051: spec en reescritura (2026-10-20)** tras las decisiones del humano
+(abajo): vuelve a `pending` y el spec-author la rehace; al terminar,
+`spec_ready` y PARADA otra vez. Copia
+`C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero`. Ninguna feature `in_progress`. F-057
 cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
 `708236f`). El arnés es la **1.7.3**.
@@ -28,8 +28,15 @@ cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
   sin `synckey`; D6 cerrados como hoy (A); D7 postventa solo misma partida
   (B); D8 obras donde ya no está, fuera; D9 la línea al 0 % de la prueba, a
   mano en la 0404 (A), y preguntar a Juan si la copia es de Sigrid o a mano.
-- **`spec_ready` desde el 2026-10-20; PARADA** hasta que el humano decida
-  D1-D9 (si alguna no es la recomendada, se reescribe la spec) y la apruebe.
+- **Decisiones del humano (2026-10-20):** «d1, nunca borramos lineas,
+  editamos el valor. d5, cualquier linea a 0% se puede pisar». Es decir,
+  **D1 = C** (la línea al 0 % se actualiza en su sitio, `UPDATE`; nunca se
+  borra) y **D5: cualquier línea al 0 %**, también con `synckey` de `partes`
+  o nuestra. D2-D4 y D6-D9 no las discutió: se toman las recomendadas (el
+  líder lo dice al humano). Spec-author reanudado para reescribir y elevar
+  las preguntas nuevas que abren D1 = C y D5 (qué campos se editan; qué pasa
+  con el `synckey` de una línea de `partes`; si «nunca borramos» alcanza al
+  pisado confirmado de hoy; cómo se deshace un `UPDATE`).
 - **Entorno:** el worktree no tiene los `.venv` de los servicios (init.sh da
   1 `[KO]` de entorno; la raíz, 418 passed). Antes de implementar, se crean
   allí o se implementa en la copia principal.
