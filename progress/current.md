@@ -1,8 +1,10 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-051** (pisar las líneas del parte editándolas, nunca
-borrando), `in_progress` desde el 2026-10-20. **Spec aprobada por el humano
+**F-051 BLOQUEADA (`blocked`, implementer, 2026-10-20)**: la spec pide un
+campo nuevo en `Conflicto` que rompe un test FUERA de la lista cerrada
+(sección «F-051 · BLOQUEO» justo debajo). Antes: pisar las líneas del parte
+editándolas, nunca borrando, `in_progress` desde el 2026-10-20. **Spec aprobada por el humano
 el 2026-10-20** («si me vale»: D14 = A y D15 = A; D1-D13 antes). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero`; sus `.venv` son uniones de directorio a
@@ -10,6 +12,37 @@ los de la copia principal (creadas por el líder, no versionadas).
 **Implementer lanzado.** T15 (MANUAL en modo pruebas en la 0404) la hace el
 humano; ningún agente escribe en Sigrid. En paralelo, spec de **F-030** en la
 copia `porcentajes-f030`. El arnés es la **1.7.3**.
+
+## F-051 · BLOQUEO en T3 (implementer, 2026-10-20) · decide el humano
+
+- **Qué pasa.** T3 añade a `Conflicto` (`registro_models.py`) los campos
+  `edita_ide` y `a_cero_ides` (design §1 y §3, R4-R5). Con solo eso, la suite
+  del transfer da **1 failed, 986 passed**:
+  `tests/test_f013_sin_partida.py::test_f013_r4_no_hace_falta_ningun_campo_nuevo`,
+  que fija el conjunto EXACTO de campos de `asdict(Conflicto)`
+  (`Extra items in the left set: 'edita_ide', 'a_cero_ides'`). Ese test **no
+  está en la lista cerrada** de `tasks.md`, y T3 dice «nada cambia aún». Es
+  un hueco de la spec: no se ha tocado el test ni se ha rodeado.
+- **Opciones** (recomiendo **A**):
+  - **A.** Añadir ese test a la lista cerrada: su conjunto gana `edita_ide` y
+    `a_cero_ides`, con una línea en su docstring (F-051 sí necesita campos
+    nuevos: el pisado ya no borra y el front tiene que saber qué edita).
+  - **B.** Que los dos campos vivan en una subclase `ConflictoPisado`, solo
+    para el pisado: el test de F-013 (que mira un «sin partida») no cambia,
+    pero `Conflicto` deja de ser un solo tipo y la spec cambia (§1, §3).
+  - **C.** No publicarlos como campos: `app.py` los añade al serializar.
+    Desaconsejado: el contrato dejaría de salir de `asdict`, como hasta hoy.
+- **Estado del trabajo.** T1-T2 hechas y commiteadas (`5f0e759`, 55 tests
+  nuevos, transfer 987 passed). T3 **revertida** (no hay nada a medias en el
+  árbol). Retomar en T3 con la opción elegida; lo de T3 es pequeño: los
+  campos de design §3 más `LineaSigrid.hmoide` y `parte_cod` (los rellena
+  `lineas_para_editar` para el log y `escritas`) y `LineaIn.hmores_ide`.
+- **Barrido de otros tests fuera de la lista** (estático, sin implementar
+  aún T4-T13): ningún otro compara el conjunto exacto de campos de
+  `Conflicto`, `AccionLinea`, `LineaSigrid` o `ResultadoRegistro`; los tests
+  de F-055 que nombran `lineas_por_synckey` seguirían igual con la decisión
+  de abajo; no se pueden descartar sorpresas en los tests que leen
+  `docs/ARCHITECTURE.md` hasta hacer T13.
 
 ## F-051 · implementación (implementer, 2026-10-20)
 
