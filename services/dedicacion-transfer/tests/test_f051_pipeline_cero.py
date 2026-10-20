@@ -254,3 +254,390 @@ def test_f051_r1_postventa_solo_la_de_su_partida():
     (a,) = pf.acciones
     assert a.destino == "postventa" and a.linea_cero["ide"] == 410700
     assert "quedan" not in a.aviso
+
+
+def test_f051_r7_el_cerrado_de_un_periodo_no_se_olvida_en_el_siguiente():
+    """Las líneas al 0 % de un parte cerrado se buscan por periodo; los
+    registros omitidos por un cerrado (que filtran el «sin partida») se
+    acumulan entre periodos, como antes de F-051."""
+    from tests.test_f037_pipeline import PT_CER9, PT_REG7, ClienteF037
+    from tests.test_f013_sin_partida import linea_que_no_casa
+    cli = ClienteF037(periodo=[PT_CER9, PT_REG7], lineas_por_parte={
+        9: [linea_previa(ide=6001, reside=400, horide=6,
+                         hora_codigo="MJEFO", paride=0)]})
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[
+        linea_que_no_casa(registro_id=1),
+        linea(registro_id=2, mes=8, recurso_ide=400)])
+    assert pf.acciones[0].accion == "omitir"
+    assert [c.motivo for c in pf.conflictos
+            if 1 in c.registros] == []
+
+
+# ============== R6, R8-R13, R18 · paso 10 (ejecutar) ============== #
+def _sin_delete(cli) -> None:
+    """R6: ninguna sentencia del registro borra."""
+    assert cli.borrados() == []
+    assert all("delete" not in s["sql"].lower() for s in cli.escritos)
+
+
+MOTIVO_1 = ("la línea 410600 del parte ha cambiado en Sigrid desde el "
+            "análisis: no se ha escrito nada en su lugar; vuelve a registrar")
+
+
+def test_f051_r8_edita_la_linea_al_cero_sin_insertar_ni_borrar():
+    cli = _caso_0707()
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    _sin_delete(cli)
+    assert cli.inserts() == [] and res.borradas == 0
+    (ed,) = cli.ediciones()
+    assert ed == {
+        "ide": 410600, "reside": 200, "can_leido": 0.0,
+        "synckey_leida": None, "horide": 5, "can": 0.4, "pre": 9000.0,
+        "paride": 80001, "caaide": ed["caaide"], "fecha_int": 20260731,
+        "synckey": synckey_de(1), "tex": "PRUEBA-PORC"}
+    assert ed["caaide"] == res.editadas[0]["despues"]["caaide"] != 0
+    (e,) = res.escritas
+    assert (e["registro_id"], e["editada"], e["hmores_ide"], e["hmoide"],
+            e["parte_cod"]) == (1, True, 410600, 777, "PT26/00251")
+    assert (e["can"], e["tot"], e["partida_cod"]) == (0.4, 3600.0, "CI.1.10")
+    # Lo que queda en el doble (la guarda dejó pasar la edición).
+    ls = cli.lineas_parte[0]
+    assert (ls.ide, ls.can, ls.synckey, ls.paride) == (
+        410600, 0.4, synckey_de(1), 80001)
+    # Las demás, intactas (R7).
+    assert [l.can for l in cli.lineas_parte[1:]] == [0.0, 0.0]
+
+
+def test_f051_r8_la_editada_no_consume_pos_la_insertada_si():
+    cli = ClienteFalso(lineas_parte=[_cero(410600)])
+    pos0 = cli.max_pos(777)
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[
+        linea(registro_id=1), linea(registro_id=2, recurso_ide=400)])
+    assert [i["pos"] for i in cli.inserts()] == [pos0 + 64]
+    assert [(e["registro_id"], e["editada"]) for e in res.escritas] == [
+        (1, True), (2, False)]
+
+
+def test_f051_r8_si_todas_editan_no_se_crea_parte_ni_se_lee_pos():
+    class Anota(ClienteFalso):
+        def max_pos(self, hmoide):
+            self.pos_leidas = getattr(self, "pos_leidas", 0) + 1
+            return super().max_pos(hmoide)
+
+    cli = Anota(lineas_parte=[_cero(410600)])
+    _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert getattr(cli, "pos_leidas", 0) == 0
+
+
+def test_f051_r10_en_real_no_toca_el_tex():
+    cli = _caso_0707()
+    res = _pl(cli, obra_pruebas_forzar=False).ejecutar(obra=OBRA,
+                                                       lineas=[linea()])
+    assert cli.ediciones()[0]["tex"] is None
+    assert res.editadas[0]["despues"]["tex"] is None
+
+
+def test_f051_r9_synckey_de_otro_sistema_intacta():
+    cli = ClienteFalso(lineas_parte=[_cero(410600, synckey=SK_PARTES)])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    (ed,) = cli.ediciones()
+    assert (ed["synckey_leida"], ed["synckey"]) == (SK_PARTES, SK_PARTES)
+    assert cli.lineas_parte[0].synckey == SK_PARTES
+    assert res.escritas[0]["hmores_ide"] == 410600
+
+
+def test_f051_r9_nuestra_de_otra_asignacion_pasa_a_esta():
+    cli = ClienteFalso(lineas_parte=[_cero(410600, synckey=synckey_de(77))])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert cli.ediciones()[0]["synckey"] == synckey_de(1)
+    assert res.escritas[0]["hmores_ide"] == 410600
+
+
+def test_f051_r18_editadas_con_antes_y_despues_y_el_log(caplog):
+    cli = ClienteFalso(lineas_parte=[_cero(
+        410600, paride=81234, horide=8, hora_codigo="MADM")])
+    cli.lineas_parte[0].pre = 8500.0
+    cli.lineas_parte[0].caaide = 90007
+    cli.lineas_parte[0].tex = "copia sept"
+    caplog.set_level(logging.INFO)
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    (ed,) = res.editadas
+    caa = ed["despues"]["caaide"]
+    assert ed == {
+        "registro_id": 1, "ide": 410600, "hmoide": 777,
+        "parte_cod": "PT26/00251",
+        "antes": {"can": 0.0, "pre": 8500.0, "tot": 0.0, "horide": 8,
+                  "hora_codigo": "MADM", "paride": 81234, "caaide": 90007,
+                  "fecha_int": 20260731, "synckey": None,
+                  "tex": "copia sept"},
+        "despues": {"can": 0.4, "pre": 9000.0, "tot": 3600.0, "horide": 5,
+                    "hora_codigo": "MENC", "paride": 80001, "caaide": caa,
+                    "fecha_int": 20260731, "synckey": synckey_de(1),
+                    "tex": "PRUEBA-PORC"}}
+    assert res.a_cero == []
+    logs = [r.getMessage() for r in caplog.records
+            if "[registro] edita" in r.getMessage()]
+    assert len(logs) == 1 and "ide=410600" in logs[0]
+    assert "parte=PT26/00251" in logs[0] and "registro=1" in logs[0]
+    assert "'tex': 'copia sept'" in logs[0] and "Acuna" not in logs[0]
+
+
+def test_f051_r4_pisado_confirmado_edita_el_mismo_ide():
+    cli = ClienteFalso(lineas_parte=[linea_previa(ide=5009, paride=80001,
+                                                  can=0.5, tot=4500.0)])
+    (c,) = _pl(cli).preflight(obra=OBRA, lineas=[linea()]).conflictos
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()],
+                            pisar_claves={c.clave})
+    _sin_delete(cli)
+    assert cli.inserts() == [] and res.pisadas == [c.clave]
+    (ed,) = cli.ediciones()
+    assert (ed["ide"], ed["can_leido"], ed["synckey"]) == (
+        5009, 0.5, synckey_de(1))
+    assert res.escritas[0]["hmores_ide"] == 5009
+    assert res.editadas[0]["antes"]["can"] == 0.5
+
+
+def test_f051_r4_pisado_sin_confirmar_no_escribe():
+    cli = ClienteFalso(lineas_parte=[linea_previa(ide=5009, paride=80001)])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert cli.escritos == [] and res.editadas == []
+    assert [c.edita_ide for c in res.pendientes_confirmacion] == [5009]
+
+
+def test_f051_r5_r18_tres_choques_uno_edita_y_dos_a_cero():
+    cli = ClienteFalso(lineas_parte=[
+        linea_previa(ide=5009, paride=80001, can=0.2, tot=1800.0,
+                     fecha_int=20260709),
+        linea_previa(ide=5003, paride=80001, can=0.3, tot=2700.0,
+                     synckey=synckey_de(55), fecha_int=20260703),
+        linea_previa(ide=5005, paride=80001, can=0.1, tot=900.0,
+                     fecha_int=20260705)])
+    (c,) = _pl(cli).preflight(obra=OBRA, lineas=[linea()]).conflictos
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()],
+                            pisar_claves={c.clave})
+    _sin_delete(cli)
+    assert [e["ide"] for e in cli.ediciones()] == [5003]
+    assert cli.a_ceros() == [
+        {"ide": 5005, "reside": 200, "can_leido": 0.1, "synckey_leida": None},
+        {"ide": 5009, "reside": 200, "can_leido": 0.2, "synckey_leida": None}]
+    assert [(z["registro_id"], z["ide"], z["antes"]["can"],
+             z["despues"]["can"], z["despues"]["tot"], z["despues"]["paride"])
+            for z in res.a_cero] == [(1, 5005, 0.1, 0.0, 0.0, 80001),
+                                     (1, 5009, 0.2, 0.0, 0.0, 80001)]
+    assert {ls.ide: ls.can for ls in cli.lineas_parte} == {
+        5009: 0.0, 5003: 0.4, 5005: 0.0}
+
+
+def test_f051_r5_dos_registros_dos_choques_cada_uno_edita_uno():
+    cli = ClienteFalso(lineas_parte=[
+        linea_previa(ide=5009, paride=80001, can=0.2),
+        linea_previa(ide=5003, paride=80001, can=0.3)])
+    lineas = [linea(registro_id=1, porcentaje=0.2),
+              linea(registro_id=2, porcentaje=0.2)]
+    (c,) = _pl(cli).preflight(obra=OBRA, lineas=lineas).conflictos
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=lineas,
+                            pisar_claves={c.clave})
+    assert [(e["ide"], e["synckey"]) for e in cli.ediciones()] == [
+        (5003, synckey_de(1)), (5009, synckey_de(2))]
+    assert cli.a_ceros() == [] and cli.inserts() == []
+    assert {e["registro_id"]: e["hmores_ide"] for e in res.escritas} == {
+        1: 5003, 2: 5009}
+
+
+def test_f051_r4_mas_registros_que_choques_el_que_sobra_inserta():
+    """Dos asignaciones con la misma identidad y un solo choque: la de menor
+    `registro_id` edita el choque y la otra se inserta."""
+    cli = ClienteFalso(lineas_parte=[linea_previa(ide=5009, paride=80001,
+                                                  can=0.5)])
+    lineas = [linea(registro_id=1, porcentaje=0.2),
+              linea(registro_id=2, porcentaje=0.2)]
+    (c,) = _pl(cli).preflight(obra=OBRA, lineas=lineas).conflictos
+    assert (c.edita_ide, c.a_cero_ides) == (5009, [])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=lineas,
+                            pisar_claves={c.clave})
+    _sin_delete(cli)
+    assert [(e["ide"], e["synckey"]) for e in cli.ediciones()] == [
+        (5009, synckey_de(1))]
+    assert [i["synckey"] for i in cli.inserts()] == [synckey_de(2)]
+    assert {e["registro_id"]: e["editada"] for e in res.escritas} == {
+        1: True, 2: False}
+
+
+def test_f051_r12_pisable_que_cambio_va_a_omitidas_sin_insertar():
+    """Entre el preflight y la escritura, Administración le pone un 30 %."""
+    class Cambia(ClienteFalso):
+        def lineas_para_editar(self, ides):
+            out = super().lineas_para_editar(ides)
+            out[410600].can = 0.3
+            return out
+
+    cli = Cambia(lineas_parte=_caso_0707().lineas_parte)
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert cli.escritos == [] and res.escritas == []
+    assert res.omitidas == [{"registro_id": 1, "motivo": MOTIVO_1}]
+
+
+@pytest.mark.parametrize("cambio", [
+    {"parte_est": 3}, {"enlazada": True}, {"reside": 400},
+    {"hora_codigo": "HEGR"}, None,
+], ids=["parte_cerrado", "enlazada", "otro_recurso", "hora_no_m",
+        "desaparecida"])
+def test_f051_r12_cada_condicion_de_la_pisable(cambio):
+    class Cambia(ClienteFalso):
+        def lineas_para_editar(self, ides):
+            out = super().lineas_para_editar(ides)
+            if cambio is None:
+                return {}
+            for k, v in cambio.items():
+                setattr(out[410600], k, v)
+            return out
+
+    cli = Cambia(lineas_parte=[_cero(410600)])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[
+        linea(registro_id=1), linea(registro_id=2, recurso_ide=400)])
+    assert res.omitidas == [{"registro_id": 1, "motivo": MOTIVO_1}]
+    assert [e["registro_id"] for e in res.escritas] == [2]
+    assert cli.ediciones() == [] and len(cli.inserts()) == 1
+
+
+@pytest.mark.parametrize("cambio", [
+    {"paride": 81234}, {"horide": 8}, {"parte_est": 3}, {"enlazada": True},
+    {"reside": 400}, {"hora_codigo": "HEGR"}, None,
+], ids=["otra_partida", "otra_hora", "parte_cerrado", "enlazada",
+        "otro_recurso", "hora_no_m", "desaparecida"])
+def test_f051_r12_choque_que_cambio_omite_el_pisado_entero(cambio):
+    def previas():
+        return [linea_previa(ide=5003, paride=80001, can=0.3),
+                linea_previa(ide=5009, paride=80001, can=0.2)]
+    (c,) = _pl(ClienteFalso(lineas_parte=previas())).preflight(
+        obra=OBRA, lineas=[linea()]).conflictos
+
+    class Cambia(ClienteFalso):
+        def lineas_para_editar(self, ides):
+            out = super().lineas_para_editar(ides)
+            if cambio is None:
+                del out[5009]
+                return out
+            for k, v in cambio.items():
+                setattr(out[5009], k, v)        # la que iba a 0
+            return out
+
+    cli = Cambia(lineas_parte=previas())
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()],
+                            pisar_claves={c.clave})
+    assert cli.escritos == [] and res.escritas == res.a_cero == []
+    assert res.omitidas == [{"registro_id": 1, "motivo": MOTIVO_1.replace(
+        "410600", "5009")}]
+
+
+def test_f051_r13_guarda_fallida_va_a_omitidas_nunca_inserta():
+    cli = ClienteFalso(lineas_parte=[_cero(410600)])
+    cli.guarda_falla = frozenset({410600})
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[
+        linea(registro_id=1), linea(registro_id=2, recurso_ide=400)])
+    assert len(cli.ediciones()) == 1 and len(cli.inserts()) == 1
+    assert [e["registro_id"] for e in res.escritas] == [2]
+    assert res.editadas == []
+    assert res.omitidas == [{"registro_id": 1, "motivo": MOTIVO_1}]
+
+
+def test_f051_r13_editada_con_otra_synckey_tras_escribir_no_cuenta():
+    """La guarda dejó pasar la fila pero otra escritura le puso otra
+    `synckey`: no es la nuestra."""
+    class Otra(ClienteFalso):
+        def _aplicar_ediciones(self, statements):
+            super()._aplicar_ediciones(statements)
+            self.lineas_parte[0].synckey = "partes:y"
+
+    cli = Otra(lineas_parte=[_cero(410600)])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert res.escritas == [] and res.editadas == []
+    assert res.omitidas == [{"registro_id": 1, "motivo": MOTIVO_1}]
+
+
+def test_f051_r13_editada_con_otro_can_tras_escribir_no_cuenta():
+    class Otra(ClienteFalso):
+        def _aplicar_ediciones(self, statements):
+            super()._aplicar_ediciones(statements)
+            self.lineas_parte[0].can = 0.9
+
+    cli = Otra(lineas_parte=[_cero(410600)])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert res.escritas == [] and res.omitidas[0]["registro_id"] == 1
+
+
+def test_f051_r13_a_cero_que_no_quedo_a_cero_al_log(caplog):
+    cli = ClienteFalso(lineas_parte=[
+        linea_previa(ide=5003, paride=80001, can=0.3),
+        linea_previa(ide=5009, paride=80001, can=0.2)])
+    (c,) = _pl(cli).preflight(obra=OBRA, lineas=[linea()]).conflictos
+    cli.guarda_falla = frozenset({5009})
+    caplog.set_level(logging.WARNING)
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()],
+                            pisar_claves={c.clave})
+    assert [e["registro_id"] for e in res.escritas] == [1]
+    assert res.a_cero == []
+    assert any("[registro] no quedo a 0 la linea 5009" in r.getMessage()
+               for r in caplog.records)
+
+
+def test_f051_r12_una_sola_lectura_previa_con_todas():
+    cli = ClienteFalso(lineas_parte=[
+        _cero(410600), linea_previa(ide=5003, reside=400, horide=6,
+                                    hora_codigo="MJEFO", paride=80002),
+        linea_previa(ide=5009, reside=400, horide=6, hora_codigo="MJEFO",
+                     paride=80002)])
+    lineas = [linea(registro_id=1),
+              linea(registro_id=2, recurso_ide=400, paride=80002,
+                    partida_cod="CI.1.20")]
+    claves = {c.clave for c in _pl(cli).preflight(
+        obra=OBRA, lineas=lineas).conflictos}
+    assert claves
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=lineas, pisar_claves=claves)
+    assert cli.para_editar == [[5003, 5009, 410600]]
+    assert sorted(e["registro_id"] for e in res.escritas) == [1, 2]
+
+
+def test_f051_r12_sin_nada_que_editar_no_se_lee():
+    cli = ClienteFalso()
+    _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert getattr(cli, "para_editar", []) == []
+
+
+def test_f051_r6_ningun_delete_en_ningun_escenario():
+    escenarios = [
+        (_caso_0707(), [linea()], False),
+        (ClienteFalso(lineas_parte=[linea_previa(ide=5009, paride=80001)]),
+         [linea()], True),
+        (ClienteFalso(lineas_parte=[linea_previa(ide=5009, paride=80001)]),
+         [linea()], False),
+        (ClienteFalso(), [linea(), linea(registro_id=2, recurso_ide=400)],
+         False),
+    ]
+    for cli, lineas, pisar in escenarios:
+        claves = ({c.clave for c in _pl(cli).preflight(
+            obra=OBRA, lineas=lineas).conflictos} if pisar else set())
+        res = _pl(cli).ejecutar(obra=OBRA, lineas=lineas,
+                                pisar_claves=claves)
+        _sin_delete(cli)
+        assert res.borradas == 0
+
+
+def test_f051_r13_reejecutar_ya_registrada():
+    cli = _caso_0707()
+    res1 = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    res2 = _pl(cli).ejecutar(obra=OBRA, lineas=[
+        linea(hmores_ide=res1.escritas[0]["hmores_ide"])])
+    assert res2.ya_registradas == [1]
+    assert res2.ya_registradas_ide == {1: 410600}
+    assert len(cli.ediciones()) == 1
+
+
+def test_f051_r13_reejecutar_sin_ide_por_la_synckey_puesta():
+    """La línea de Administración lleva ya nuestra `synckey` (design §6.3):
+    sin `hmores_ide` se reconoce igual."""
+    cli = _caso_0707()
+    _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    cli.synckeys = {synckey_de(1): cli.lineas_parte[0]}
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    assert res.ya_registradas == [1] and len(cli.ediciones()) == 1

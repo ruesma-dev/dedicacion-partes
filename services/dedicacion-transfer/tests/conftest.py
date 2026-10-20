@@ -228,9 +228,10 @@ class EdicionesFalsas:
                             or ls.ide in self.enlazadas or est != 1
                             or ls.reside != kw["reside"]
                             or not (ls.hora_codigo or "").startswith("M")
-                            or abs(float(ls.can or 0) - kw["can_leido"])
-                            >= 0.000001
-                            or (ls.synckey or "") != kw["synckey_leida"]):
+                            or abs(float(ls.can or 0)
+                                   - float(kw["can_leido"] or 0)) >= 0.000001
+                            or (ls.synckey or "").strip()
+                            != (kw["synckey_leida"] or "").strip()):
                         continue
                     if st["sql"] == "a_cero":
                         lista[i] = replace(ls, can=0.0, tot=0.0)
