@@ -570,6 +570,20 @@ def test_f051_r13_editada_con_otro_can_tras_escribir_no_cuenta():
     assert res.escritas == [] and res.omitidas[0]["registro_id"] == 1
 
 
+def test_f051_r13_editada_a_una_millonesima_de_lo_escrito_no_cuenta():
+    """Frontera de la tolerancia de R13 (review 1, RM5): un porcentaje menor
+    de 0,00005 se redondea a `can = 0`; si la relectura trae `can = 1e-6`, la
+    diferencia vale EXACTAMENTE 1e-6 y no es «la misma cifra»: se omite."""
+    class Otra(ClienteFalso):
+        def _aplicar_ediciones(self, statements):
+            super()._aplicar_ediciones(statements)
+            self.lineas_parte[0].can = 0.000001
+
+    cli = Otra(lineas_parte=[_cero(410600)])
+    res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea(porcentaje=0.00001)])
+    assert res.escritas == [] and res.omitidas[0]["registro_id"] == 1
+
+
 def test_f051_r13_a_cero_que_no_quedo_a_cero_al_log(caplog):
     cli = ClienteFalso(lineas_parte=[
         linea_previa(ide=5003, paride=80001, can=0.3),
