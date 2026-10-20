@@ -11,8 +11,9 @@ campaña hasta cero supervivientes; más dos arreglos menores (línea 568 de
 desfasado de este fichero lo ha podado el líder. **Correcciones hechas por
 el implementer** (2026-10-21: test de la frontera de R13 `d807cce`, formato
 `7a5f801`, campaña en serie sobre `7a5f801` con **134 mutantes y 0
-supervivientes** `e51ba7b`, informe `d170afb`). **Review pasada 2 lanzada
-el 2026-10-21.** Spec aprobada por el humano el 2026-10-20 (D1-D15,
+supervivientes** `e51ba7b`, informe `d170afb`). **Review pasada 2: APROBADO**
+(2026-10-21, `progress/review_F-051.md`). **Falta T15** (MANUAL del humano)
+para pasar a `done`. Spec aprobada por el humano el 2026-10-20 (D1-D15,
 en «decisiones» abajo); bloqueos de implementación resueltos por el humano:
 T3 opción A, T12 opción B. Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
@@ -251,7 +252,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. Orden: **F-051** (en curso: correcciones de la review 1), **F-030**
+2026-10-20. Orden: **F-051** (review APROBADA; falta T15, MANUAL del humano), **F-030**
 (spec aprobada, va detrás), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
