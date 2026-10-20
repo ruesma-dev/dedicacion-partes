@@ -2,9 +2,10 @@
 # Trabajo en curso
 
 **En curso: F-051** (pisar las líneas del parte editándolas, nunca
-borrando), `in_progress` desde el 2026-10-20; bloqueo de T3 **resuelto por el
-humano con la opción A** (sección «F-051 · BLOQUEO» justo debajo) e
-implementer reanudado en T3. **Spec aprobada por el humano
+borrando), **`blocked` en T12** desde el 2026-10-20 (sección «F-051 · BLOQUEO
+en T12» justo debajo: dos tests de F-049 fuera de la lista cerrada); T1-T11
+hechas y commiteadas. El bloqueo de T3 lo resolvió el humano con la opción
+A. **Spec aprobada por el humano
 el 2026-10-20** («si me vale»: D14 = A y D15 = A; D1-D13 antes). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero`; sus `.venv` son uniones de directorio a
@@ -12,6 +13,36 @@ los de la copia principal (creadas por el líder, no versionadas).
 T15 (MANUAL en modo pruebas en la 0404) la hace el
 humano; ningún agente escribe en Sigrid. **F-030** aprobada y a la espera en la copia
 `porcentajes-f030` (va después de F-051). El arnés es la **1.7.3**.
+
+## F-051 · BLOQUEO en T12 (implementer, 2026-10-20)
+
+- **Qué pasa.** T12 cambia el texto del pisado en `rotuloConflicto`
+  (`services/dedicacion-front/static/js/app.js`) al de design §1/§3: «se
+  edita la línea X (…) y queda N%; quedan a 0: …». Con ese cambio, la suite
+  del front da **2 failed** fuera de la lista cerrada de `tasks.md`:
+  `test_f049_avisos_registro.py::test_f049_r2_el_porcentaje_sale_de_nuevas_no_cero`
+  y `::test_f049_r2_decimales_y_sin_nuevas`. Los dos comprueban que el % sale
+  de `nuevas` (F-049 R2) mirando que el detalle del pisado **termine** en «se
+  escribe 60%» / «se escribe 43,3%»; con el texto nuevo termina en «y queda
+  60%». La lista cerrada solo tiene el `…r1_pisado_ensena_lo_que_se_borra…`.
+  No se han tocado ni rodeado.
+- **Opciones** (recomiendo **A**):
+  - **A.** Añadir esos dos tests a la lista cerrada: su `endswith("se
+    escribe N%")` pasa a `endswith("y queda N%")` (lo que prueban, que el %
+    sale de `nuevas` y no es 0, no cambia), con una línea en su docstring.
+  - **B.** Cambiar el texto de la spec para conservar el final de hoy: «se
+    edita la línea X (…)[; quedan a 0: …] y se escribe N%». Los dos tests
+    pasan sin tocarlos; el texto se aparta del aprobado («y queda»).
+- **Estado del trabajo.** T1-T11 hechas y commiteadas (HEAD `6788bfa`,
+  transfer 1067 passed, api 948 passed, front 305 passed; `init.sh` sin
+  `[KO]`, cobertura 99,2 % de 255 líneas cambiadas). **T12 no está en
+  el árbol**: el implementer la guardó como parche en su scratchpad
+  (`f051/t12_front.patch`: `app.js`, el test de F-049 de la lista y
+  `test_f051_modal_pisado.py` con 5 tests; `git apply --check` OK). Si se
+  pierde, rehacerla es pequeño: el texto está en el informe. Retomar en T12
+  con la opción elegida; después T13, T14 (mutación en serie) y T17.
+- **Nada más fuera de la lista se ha puesto rojo** en transfer ni api (las
+  suites enteras pasan tras T11).
 
 ## F-051 · BLOQUEO en T3 (implementer, 2026-10-20) · RESUELTO
 
@@ -59,7 +90,16 @@ humano; ningún agente escribe en Sigrid. **F-030** aprobada y a la espera en la
   medido), así los tests de F-055 no cambian; `repartir_choques` y
   `es_nuestra_de_otra` son funciones puras nuevas de `reglas_porcentajes.py`
   (reparto de R4-R5 por `registro_id` y la condición de R15).
-- **Commits:** T1 y T2 en un solo commit (mismo fichero y mismos tests).
+- **Commits:** T1 y T2 en un solo commit (mismo fichero y mismos tests);
+  T3-T11, uno por tarea (tabla en el informe).
+- **Desviaciones justificadas** (detalle en el informe §2): la fase `estado`
+  del script lee además `pos`, `paride` y `tex` (para T15); la api usa
+  `getattr(a, "sigrid_hmores_ide", None)` porque los dobles de sus tests
+  anteriores no traen la columna; el paso 9 bis (lectura previa) va antes
+  del alta de partes y solo lo que inserta crea parte o lee `max_pos`.
+- **Defecto propio corregido en T8**: en T6 se pisó la variable
+  `en_cerrado` (registros omitidos por un cerrado); renombrada la nueva a
+  `lineas_cerradas`, con test de regresión.
 
 ## F-051 · spec pasada 3, D14-D15 abiertas (2026-10-20)
 
