@@ -186,3 +186,134 @@ def test_f051_r15_lote_sigue_sirviendo_lineas_por_synckey():
     assert m.lineas_por_synckey([synckey_de(1)]) == {
         synckey_de(1): cli.synckeys[synckey_de(1)]}
     assert m.fallos_de_memoria == {}
+
+
+# ============================ R8, R10, R11 ============================ #
+GUARDA = (
+    "WHERE ide = ? AND reside = ? AND ABS(ISNULL(can, 0) - ?) < 0.000001 "
+    "AND LTRIM(RTRIM(ISNULL(synckey, ''))) = ? "
+    "AND ISNULL(dvaproide, 0) = 0 AND ISNULL(dvfproide, 0) = 0 "
+    "AND ISNULL(hdereside, 0) = 0 AND ISNULL(empdpreide, 0) = 0 "
+    "AND ISNULL(empabside, 0) = 0 AND ISNULL(emprccide, 0) = 0 "
+    "AND EXISTS (SELECT 1 FROM auxhor a WHERE a.ide = hmores.horide "
+    "AND a.cod LIKE 'M%') "
+    "AND EXISTS (SELECT 1 FROM con c WHERE c.ide = hmores.hmoide "
+    "AND c.est = ?)")
+
+EDICION = dict(ide=410600, reside=200, can_leido=0.0, synckey_leida=None,
+               horide=5, can=0.33333, pre=9000.0, paride=80001,
+               caaide=90001, fecha_int=20261031, synckey=synckey_de(7),
+               tex=None)
+
+
+def _plano(st: dict) -> str:
+    return " ".join(st["sql"].split())
+
+
+def test_f051_r8_editar_cada_campo_del_set_y_la_guarda():
+    cli, _ = _cliente()
+    st = cli.stmt_editar_linea(**EDICION)
+    assert _plano(st) == (
+        "UPDATE hmores SET can = ?, pre = ?, tot = ?, horide = ?, "
+        "paride = ?, caaide = ?, fec = ?, synckey = ? " + GUARDA)
+    assert st["parameters"] == [
+        0.3333, 9000.0, 2999.97, 5, 80001, 90001, 20261031, synckey_de(7),
+        410600, 200, 0.0, "", 1]
+
+
+def test_f051_r8_redondeos_como_el_insert():
+    cli, _ = _cliente()
+    datos = dict(hmoide=777, obra=ObraEntrada(ide=1), reside=200, pos=64,
+                 fecha_int=20261031, horide=5, can=0.33333, pre=8123.45,
+                 ano=2026, mes=10, synckey=synckey_de(7), tex=None)
+    ins = cli.stmt_insert_linea(**datos)["parameters"]
+    ed = cli.stmt_editar_linea(**EDICION | {"pre": 8123.45})["parameters"]
+    assert ed[:3] == [ins[8], ins[9], ins[10]] == [0.3333, 8123.45, 2707.79]
+
+
+def test_f051_r10_tex_solo_en_pruebas():
+    cli, _ = _cliente()
+    st = cli.stmt_editar_linea(**EDICION | {"tex": "PRUEBA-PORC"})
+    assert _plano(st).startswith(
+        "UPDATE hmores SET can = ?, pre = ?, tot = ?, horide = ?, "
+        "paride = ?, caaide = ?, fec = ?, synckey = ?, tex = ? WHERE ")
+    assert st["parameters"][7:10] == [synckey_de(7), "PRUEBA-PORC", 410600]
+
+
+def test_f051_r11_guarda_con_lo_leido():
+    cli, _ = _cliente()
+    st = cli.stmt_editar_linea(**EDICION | {
+        "can_leido": None, "synckey_leida": " partes:x ", "reside": 410})
+    assert st["parameters"][-5:] == [410600, 410, 0.0, "partes:x", 1]
+
+
+def test_f051_r11_la_guarda_usa_el_estado_en_registro_del_cliente():
+    cli = SigridWriteClient(base_url="http://x", function_key="k",
+                            database="ruesma", est_parte=7)
+    assert cli.stmt_editar_linea(**EDICION)["parameters"][-1] == 7
+    assert cli.stmt_poner_a_cero(ide=1, reside=2, can_leido=0.5,
+                                 synckey_leida="")["parameters"][-1] == 7
+
+
+def test_f051_r5_r11_poner_a_cero_solo_can_y_tot_con_la_misma_guarda():
+    cli, _ = _cliente()
+    st = cli.stmt_poner_a_cero(ide=5005, reside=200, can_leido=0.5,
+                               synckey_leida="porcentajes:3")
+    assert _plano(st) == "UPDATE hmores SET can = 0, tot = 0 " + GUARDA
+    assert st["parameters"] == [5005, 200, 0.5, "porcentajes:3", 1]
+
+
+def test_f051_r6_ninguna_sentencia_de_edicion_borra_ni_concatena():
+    cli, _ = _cliente()
+    for st in (cli.stmt_editar_linea(**EDICION | {"tex": "PRUEBA-PORC"}),
+               cli.stmt_poner_a_cero(ide=5005, reside=200, can_leido=0.5,
+                                     synckey_leida="porcentajes:3")):
+        sql = _plano(st)
+        assert "DELETE" not in sql.upper()
+        for valor in ("410600", "5005", "porcentajes", "PRUEBA", "80001"):
+            assert valor not in sql, valor
+
+
+def test_f051_r12_lineas_para_editar_una_lectura_con_todo():
+    cli, lectura = _cliente([
+        {"ide": 410600, "hmoide": 777, "reside": 200, "horide": 5,
+         "hora": "MENC", "paride": 80001, "can": 0, "pre": 8500.0,
+         "tot": 0, "caaide": 90001, "fec": 20261031, "synckey": " ",
+         "tex": "copia", "parte": "PT26/00370", "est": 1, "enlazada": 0},
+        {"ide": 5005, "hmoide": 778, "reside": 200, "horide": None,
+         "hora": None, "paride": None, "can": None, "pre": None,
+         "tot": None, "caaide": None, "fec": None, "synckey": "partes:x",
+         "tex": None, "parte": "PT26/00371", "est": None, "enlazada": 1}])
+    with medir_lecturas() as m:
+        out = cli.lineas_para_editar([5005, 410600, 5005, None])
+    [(sql, params)] = lectura.llamadas
+    assert params == [5005, 410600]
+    assert "WHERE hmores.ide IN (?,?)" in sql
+    for trozo in ("hmores.pre AS pre", "hmores.caaide AS caaide",
+                  "CAST(hmores.tex AS NVARCHAR(400)) AS tex",
+                  "con.cod AS parte", "con.est AS est",
+                  "JOIN con ON con.ide = hmores.hmoide",
+                  "ISNULL(hmores.dvaproide, 0) <> 0",
+                  "ISNULL(hmores.emprccide, 0) <> 0"):
+        assert trozo in sql, trozo
+    assert [l.nombre for l in m.lecturas] == ["lineas_para_editar"]
+    a, b = out[410600], out[5005]
+    assert (a.hmoide, a.parte_cod, a.parte_est, a.pre, a.caaide, a.tex,
+            a.enlazada, a.synckey, a.hora_codigo, a.paride, a.can) == (
+        777, "PT26/00370", 1, 8500.0, 90001, "copia", False, None, "MENC",
+        80001, 0)
+    assert (b.parte_est, b.pre, b.caaide, b.enlazada, b.horide,
+            b.synckey, b.nuestra) == (None, None, 0, True, None, "partes:x",
+                                      False)
+
+
+def test_f051_r12_lineas_para_editar_sin_ides_no_lee():
+    cli, lectura = _cliente()
+    assert cli.lineas_para_editar([]) == {} and lectura.llamadas == []
+
+
+def test_f051_r12_lineas_para_editar_en_trozos(monkeypatch):
+    monkeypatch.setattr(mod, "LOTE_PARAMETROS", 2)
+    cli, lectura = _cliente([])
+    cli.lineas_para_editar([1, 2, 3])
+    assert [p for _, p in lectura.llamadas] == [[1, 2], [3]]
