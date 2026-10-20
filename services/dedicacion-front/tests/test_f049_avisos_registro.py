@@ -145,12 +145,15 @@ def test_f049_r1_sobrecarga_con_varias_lineas_contadas():
 
 
 def test_f049_r1_pisado_ensena_lo_que_se_borra_y_el_nuevo():
-    [r] = _rotulos([PISADO])
+    """Desde F-051 (R6) no se borra nada: se edita una línea y las demás
+    quedan a 0 (el nombre del test es el de antes)."""
+    [r] = _rotulos([PISADO | {"edita_ide": 8001, "a_cero_ides": [8002]}])
     assert r == {
         "tipo": "pisado", "titulo": "Pisar",
         "detalle": ("MADM de GONZALEZ PANIAGUA en el parte PT26/00319: se "
-                    "borran línea 8001 (MADM 40%, fec 20260930), línea 8002 "
-                    "(MADM 25%, fec 20260915) y se escribe 60%")}
+                    "edita la línea 8001 (MADM 40%, fec 20260930); quedan a "
+                    "0: línea 8002 (MADM 25%, fec 20260915) y se escribe "
+                    "60%")}
 
 
 @pytest.mark.parametrize("motivo", ["", None])
