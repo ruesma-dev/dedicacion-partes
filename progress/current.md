@@ -5,10 +5,10 @@
 cuadrante: texto en lugar del % con desplegable de las de partes; `sdd:
 true`, rigor crítico): spec-author terminado el 2026-10-20 en la copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f030`, rama
-`feature/F-030-dias-bajas-incidencias`; sigue en `pending` hasta que el humano
-responda D1-D10 y el líder la pase a `spec_ready` (PARADA). En paralelo,
-**spec de F-051 en la copia `porcentajes-f051`** (su rama lo cuenta).
-Ninguna feature `in_progress`. El arnés es la **1.7.3**.
+`feature/F-030-dias-bajas-incidencias`; **`spec_ready` desde el 2026-10-20: PARADA**,
+espera las respuestas del humano a D1-D10 y su aprobación. En paralelo,
+**F-051 en curso (implementer) en la copia `porcentajes-f051`** (su rama lo
+cuenta). El arnés es la **1.7.3**.
 
 ## F-030 · spec escrita, D1-D10 pendientes del humano (2026-10-20)
 
