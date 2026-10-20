@@ -1,19 +1,24 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-051 BLOQUEADA (`blocked`, implementer, 2026-10-20)**: la spec pide un
-campo nuevo en `Conflicto` que rompe un test FUERA de la lista cerrada
-(sección «F-051 · BLOQUEO» justo debajo). Antes: pisar las líneas del parte
-editándolas, nunca borrando, `in_progress` desde el 2026-10-20. **Spec aprobada por el humano
+**En curso: F-051** (pisar las líneas del parte editándolas, nunca
+borrando), `in_progress` desde el 2026-10-20; bloqueo de T3 **resuelto por el
+humano con la opción A** (sección «F-051 · BLOQUEO» justo debajo) e
+implementer reanudado en T3. **Spec aprobada por el humano
 el 2026-10-20** («si me vale»: D14 = A y D15 = A; D1-D13 antes). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero`; sus `.venv` son uniones de directorio a
 los de la copia principal (creadas por el líder, no versionadas).
-**Implementer lanzado.** T15 (MANUAL en modo pruebas en la 0404) la hace el
-humano; ningún agente escribe en Sigrid. En paralelo, spec de **F-030** en la
-copia `porcentajes-f030`. El arnés es la **1.7.3**.
+T15 (MANUAL en modo pruebas en la 0404) la hace el
+humano; ningún agente escribe en Sigrid. **F-030** aprobada y a la espera en la copia
+`porcentajes-f030` (va después de F-051). El arnés es la **1.7.3**.
 
-## F-051 · BLOQUEO en T3 (implementer, 2026-10-20) · decide el humano
+## F-051 · BLOQUEO en T3 (implementer, 2026-10-20) · RESUELTO
+
+- **Resuelto por el humano el 2026-10-20 con la opción A** («a»):
+  `test_f013_r4_no_hace_falta_ningun_campo_nuevo` entra en la lista cerrada
+  de `tasks.md` y su conjunto acepta `edita_ide` y `a_cero_ides`. F-051 vuelve
+  a `in_progress`; el implementer sigue desde T3.
 
 - **Qué pasa.** T3 añade a `Conflicto` (`registro_models.py`) los campos
   `edita_ide` y `a_cero_ides` (design §1 y §3, R4-R5). Con solo eso, la suite
