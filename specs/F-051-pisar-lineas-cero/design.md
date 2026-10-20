@@ -208,8 +208,8 @@ guarda lo que tenía; F-033 la devolverá con un `UPDATE`).
   (C) editar uno y dejar los demás como están (seguirían sumando: sobrecarga).
   **Recomiendo A**: el resultado en importes es el de hoy (solo queda nuestro
   %) sin borrar, y lo que queda a 0 lo dice el modal antes de confirmar.
-- **D15 · `limpiar`** (script, solo la obra de pruebas y lo marcado
-  `PRUEBA-PORC` con nuestra `synckey`). (A) sigue borrando: no es registro
+- **D15 · `limpiar`** (script de pruebas: borra lo marcado `PRUEBA-PORC`
+  en `tex` con nuestra `synckey`). (A) sigue borrando: no es registro
   real, y tras F-051 también borraría las líneas al 0 % que el humano creó a
   mano para la prueba (es la limpieza que se quiere); (B) pasa a dejar a 0:
   la 0404 acumularía líneas a 0 de cada prueba. **Recomiendo A**.

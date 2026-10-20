@@ -106,8 +106,8 @@ Glosario: **línea al 0 %** = hora `M*` y `can` 0 o nulo; **pisable** = R1;
   analítica, elección y alta del parte, propuesta de partida, postventa, VAR,
   empresa y modo pruebas: como hoy. El preflight hace las mismas lecturas;
   `ejecutar`, una más (R12). `borradas` sigue en la respuesta, siempre 0.
-- **R20.** `limpiar` (script, solo obra de pruebas y lo marcado
-  `PRUEBA-PORC`) sigue borrando `[D15]`; nada del registro lo usa.
+- **R20.** `limpiar` (script de pruebas: solo lo marcado `PRUEBA-PORC` con
+  nuestra `synckey`) sigue borrando `[D15]`; nada del registro lo usa.
 
 ## 6. Documentación y despliegue
 
