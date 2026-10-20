@@ -1,7 +1,7 @@
 <!-- specs/F-030-dias-bajas-incidencias/tasks.md -->
 # F-030 · Tareas
 
-No se empieza sin D1-D10 respondidas (requirements §7). Bloque A (T1-T9):
+D1-D10 decididas (todas la recomendada) y spec aprobada por el humano el 2026-10-20 («si»); se empieza cuando F-051 se cierre (una sola `in_progress`). Bloque A (T1-T9):
 captura; bloque B (T10-T18): registro. Si D8 = B, F-030 acaba en T9 + T19-T21.
 
 - [ ] T1: Test que fija lo de hoy en la celda del % (R1): en node con el DOM mínimo de `test_f042_sugerencias.py`, `chipEditable` real con «40», «40,5», «» y el sugerido: % de la línea, total en vivo, guardado diferido, Enter al buscador y blur en blanco = lo que falta; verde ANTES de tocar `app.js`  |  Verificación: `pytest services/dedicacion-front/tests/test_f030_celda_pct.py -k hoy` (passed, no skipped)

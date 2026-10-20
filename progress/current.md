@@ -5,8 +5,13 @@
 cuadrante: texto en lugar del % con desplegable de las de partes; `sdd:
 true`, rigor crítico): spec-author terminado el 2026-10-20 en la copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f030`, rama
-`feature/F-030-dias-bajas-incidencias`; **`spec_ready` desde el 2026-10-20: PARADA**,
-espera las respuestas del humano a D1-D10 y su aprobación. En paralelo,
+`feature/F-030-dias-bajas-incidencias`; **`spec_ready` y APROBADA por el humano el
+2026-10-20** («si»: D1-D10 todas la recomendada). **Va después de F-051**
+(máximo una `in_progress`): cuando F-051 se cierre, el líder la pasa a
+`in_progress`, enlaza los `.venv` del worktree y lanza el implementer. Del D10
+salen dos features a proponer al humano: % por días con el calendario de
+convenio, y leer la bandeja de `partes` (su F-019; `MENSUALES_A_DEDICACION`
+sigue apagado). En paralelo,
 **F-051 en curso (implementer) en la copia `porcentajes-f051`** (su rama lo
 cuenta). El arnés es la **1.7.3**.
 

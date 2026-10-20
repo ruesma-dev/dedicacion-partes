@@ -2,8 +2,8 @@
 # F-030 · Incidencias en el cuadrante: texto en la celda del % con desplegable
 
 Rigor **`critico`**; front, api y transfer (design §1). Petición del humano
-del 2026-10-20 en `features.json`. **D1-D10 PENDIENTES** (§7): las R con
-`[Dn]` llevan la recomendación. Evidencia de Sigrid: design §10.
+del 2026-10-20 en `features.json`. **D1-D10 DECIDIDAS** (§7, todas la
+recomendada; humano, 2026-10-20, «si»). Evidencia de Sigrid: design §10.
 
 Glosario: **incidencia** = V, B, AT, FJ, F, H o M, con su `CI*` de `auxhor`;
 **línea de %** = la asignación de hoy. **Fuera** (D10): % por días, calendario

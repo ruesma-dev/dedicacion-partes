@@ -1,8 +1,8 @@
 <!-- specs/F-030-dias-bajas-incidencias/design.md -->
 # F-030 · Diseño técnico
 
-Escrito con las recomendaciones de D1-D10 (requirements §7). Si el humano
-elige otra, se ajustan las R marcadas `[Dn]` y las tareas que las citan.
+Escrito con las recomendaciones de D1-D10 (requirements §7), **todas
+aceptadas por el humano el 2026-10-20 («si»): spec aprobada**.
 
 ## 1. Servicios que toca y por qué (límite de servicio)
 
