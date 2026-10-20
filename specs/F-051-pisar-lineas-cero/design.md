@@ -2,248 +2,238 @@
 # F-051 · Diseño
 
 Requisitos en `requirements.md`; exploración en `progress/spec_F-051.md`.
-Las decisiones **D1-D9** (§9) están **abiertas**: este diseño implementa la
-recomendación de cada una.
+D1-D9 **decididas** el 2026-10-20 (D1 = C y D5 por el humano; el resto, las
+recomendadas). **D10-D13 abiertas** (§9): el diseño sigue la recomendación.
 
 ## 1. Servicios y límite
 
-- **Solo `dedicacion-transfer`**, que es la única pluma contra Sigrid
-  (`CLAUDE.md`, ARCHITECTURE «la única pluma»). Saber qué líneas de un parte
-  se pueden borrar exige leer el parte, y eso solo lo hace el transfer.
-- **api y front, sin cambios** (R16). El front ya pinta `a.aviso` en el
-  modal (`app.js`, F-049); la api reenvía `acciones` del transfer tal cual
-  (`registro_sigrid.preflight`) y del resultado de `ejecutar` solo lee
-  `escritas`, `omitidas` y `ya_registradas`: los campos nuevos le son
-  invisibles.
-- **`partes` no se toca** (otro repositorio). Comparte el parte (F-037):
-  ver §8. Ninguna responsabilidad nueva fuera del transfer: no hay que
-  proponer otro servicio.
+- **Solo `dedicacion-transfer`**, la única pluma contra Sigrid (`CLAUDE.md`).
+  Saber qué línea de un parte se puede editar exige leerlo, y eso solo lo
+  hace el transfer. Estrena una sentencia `UPDATE` sobre `hmores`; hasta hoy
+  solo hace `INSERT` y `DELETE`. `sigrid-api` la admite (`/api/sql/write`,
+  `WHERE` obligatorio; `partes` F-046 ya hace `UPDATE hmores`).
+- **api y front, sin cambios** (R18): el front pinta `a.aviso` (F-049); la
+  api reenvía `acciones` y de `ejecutar` lee `escritas`, `omitidas` y
+  `ya_registradas`. Una línea editada sale en `escritas` con su `hmoide` y,
+  tras la relectura, su `hmores_ide`: la api la traza como una insertada.
+- **`partes` no se toca** (otro repositorio); ver §8. Nada pide otro servicio.
 
 ## 2. Ficheros a crear
 
-- `services/dedicacion-transfer/tests/test_f051_reglas_cero.py` — la función
-  pura (R1, R2, R5-R9).
+- `services/dedicacion-transfer/tests/test_f051_reglas_cero.py` — funciones
+  puras (R1-R3, R6-R9).
 - `services/dedicacion-transfer/tests/test_f051_pipeline_cero.py` —
-  preflight y ejecutar con el `ClienteFalso` de `conftest.py` (R3-R5,
-  R8-R11, R13-R15) y el lote (`RegistroLote.preflight` da lo mismo, R15).
+  preflight y ejecutar con el `ClienteFalso` (R4, R5, R8-R11, R13-R17) y el
+  lote (`RegistroLote.preflight` da lo mismo).
 - `services/dedicacion-transfer/tests/test_f051_sql_cero.py` — texto y
-  parámetros de la sentencia de borrado con guarda (R12) y respuesta de
-  `POST /api/registro/ejecutar` con `pisadas_cero` (R13, `TestClient`).
+  parámetros del `UPDATE` con guarda (R10-R12) y `pisadas_cero` en la
+  respuesta de `POST /api/registro/ejecutar` (R15, `TestClient`).
 
 ## 3. Ficheros a modificar
 
 | Fichero | Qué cambia |
 |---|---|
-| `application/services/reglas_porcentajes.py` | `es_linea_al_cero`, `pisables_al_cero`, `AVISO_LINEAS_CERO` (§5) y la línea del docstring del módulo |
-| `domain/models/registro_models.py` | `AccionLinea.lineas_cero: list[int]` y `ResultadoRegistro.pisadas_cero: list[int]` (vacías por defecto) |
-| `application/pipelines/registro_pipeline.py` | paso 7: pisables antes de los choques; paso 10: borrado con guarda; docstring de pasos (§6) |
-| `infrastructure/sigrid/sigrid_write_client.py` | `stmt_borrar_linea_cero` (§7) |
+| `application/services/reglas_porcentajes.py` | `es_linea_al_cero`, `pisables_al_cero`, `emparejar_ceros`, `AVISO_LINEA_CERO`, `AVISO_CEROS_QUEDAN`, `MOTIVO_CERO_CAMBIADA` (§5) |
+| `domain/models/registro_models.py` | `AccionLinea.linea_cero: dict | None` y `ResultadoRegistro.pisadas_cero: list[dict]` |
+| `application/pipelines/registro_pipeline.py` | paso 7: emparejado y choques sin pisables; paso 10: `UPDATE` en vez de `INSERT`; comprobación tras escribir (§6) |
+| `infrastructure/sigrid/sigrid_write_client.py` | `stmt_actualizar_linea_cero` (§7) |
 | `interface_adapters/api/app.py` | la respuesta de `ejecutar` gana `pisadas_cero` |
-| `prueba_escritura_porcentajes.py` | `preflight` imprime `lineas_cero` por acción; `ejecutar`, `pisadas_cero` (solo salida) |
+| `prueba_escritura_porcentajes.py` | `preflight` imprime `linea_cero`; `ejecutar`, `pisadas_cero` (solo salida) |
 | `tests/test_f002_fuente_unica.py` | `ANCLAS` gana `"regla-cero"` (única aserción anterior que cambia) |
-| `docs/ARCHITECTURE.md` | regla nueva `#regla-cero` y remisión desde `#regla-conflicto` y el índice de anclas (R17) |
-| `docs/INTEGRACION.md` | §1 (qué escribimos) y §7 (qué se rompe) (R18) |
+| `docs/ARCHITECTURE.md` | regla `#regla-cero`; remisión desde `#regla-conflicto` y el índice de anclas (R19) |
+| `docs/INTEGRACION.md` | §1 (qué escribimos: el primer `UPDATE`) y §7 (qué se rompe) (R20) |
 
 Rutas relativas a `services/dedicacion-transfer/` salvo las de `docs/`.
 
 ## 4. Ficheros que NO se tocan
 
 - `criterio_choque`, `campos_identidad`, `CAMPOS_CLAVE`, `clave_conflicto`:
-  la identidad de una línea no cambia; las pisables se **apartan** de los
-  existentes antes de llamar a `criterio_choque` (§6). Cambiar la clave
-  invalidaría confirmaciones en vuelo.
-- `evaluar_capacidad`: recibe las pisables dentro de `pisadas` (R4).
-- `estado_parte.py`, `cuenta_analitica.py` (copias de `partes`, lista
-  cerrada), `propuesta_partida.py`, `lecturas_lote.py`, `registro_lote.py`.
-- `sigrid_write_client.lineas_del_parte` / `lineas_de_partes`: ya traen
-  `can`, `synckey`, hora y partida; **ninguna lectura nueva** (R15). Los
-  enlaces de Sigrid solo se miran en la guarda del borrado (§7).
-- Todo `dedicacion-api` y `dedicacion-front`.
+  la identidad no cambia; las pisables se **apartan** antes de buscar
+  choques (§6). `evaluar_capacidad`: las recibe en `pisadas`.
+- `stmt_borrar_linea`, `stmt_insert_linea` y el pisado confirmado: siguen
+  borrando e insertando hasta que se decida D12.
+- `lineas_del_parte` / `lineas_de_partes`: ya traen recurso, hora, partida,
+  `can`, `fec` y `synckey`; **ninguna lectura nueva** (R17). Los enlaces y el
+  estado del parte solo se miran en la guarda (§7).
+- `estado_parte.py`, `cuenta_analitica.py` (copias de `partes`),
+  `propuesta_partida.py`, `lecturas_lote.py`, `registro_lote.py`; todo
+  `dedicacion-api` y `dedicacion-front`.
 
 ## 5. Funciones nuevas (application, puras)
 
-En `reglas_porcentajes.py`, junto al bloque de identidad:
+En `reglas_porcentajes.py`, junto al bloque de identidad, leyendo recurso,
+hora y partida con los lectores de `criterio_choque` (`_DE_LINEA`,
+`_DE_ACCION`):
 
 ```python
 def es_linea_al_cero(ls: LineaSigrid) -> bool:
-    """Hora M* (`es_linea_mensual`), `can` 0 o nulo, sin synckey y con
+    """Hora M* (`es_linea_mensual`), `can` 0 o nulo (exacto, D4) y con
     recurso. ARCHITECTURE.md#regla-cero."""
 
-def pisables_al_cero(existentes: Iterable[LineaSigrid],
-                     accion: AccionLinea, *,
-                     en_cerrado: set[int]) -> tuple[LineaSigrid, ...]:
-    """Las líneas de `existentes` que `accion` pisa: al cero, del MISMO
-    recurso (`_DE_LINEA["recurso"]` == `_DE_ACCION["recurso"]`), fuera de
-    `en_cerrado` (ides de líneas que viven en un parte cerrado) y, si
-    `accion.destino == "postventa"`, con su misma partida (D7). Por `ide`
-    ascendente. Una acción que no es `escribir` no pisa nada."""
+def pisables_al_cero(existentes, accion, *, en_cerrado: set[int],
+                     mias: set[str]) -> tuple[LineaSigrid, ...]:
+    """R1: al cero, mismo recurso, `ide` fuera de `en_cerrado`, `synckey`
+    fuera de `mias` y sin prefijo `partes:` (D11), y en postventa misma
+    partida (D7). Por `ide`. Una acción no `escribir` no pisa nada."""
 
-AVISO_LINEAS_CERO = ("sustituye {n} línea(s) al 0 % del parte {partes}: "
-                     "se borran al registrar")
+def emparejar_ceros(acciones, existentes, *, en_cerrado, mias
+                    ) -> tuple[dict[int, LineaSigrid], dict[int, int]]:
+    """R2: por recurso y `registro_id`, a cada acción la pisable libre con
+    clave (partida distinta, hora distinta, ide). Devuelve
+    {registro_id: línea} y {recurso: pisables que se quedan a 0}."""
 ```
 
-`can` se compara **exacto** con 0 (`_can(ls.can) == 0.0`): Sigrid guarda
-`0.0` y el SQL de la guarda compara igual (`ISNULL(can, 0) = 0`); una
-tolerancia aquí y otra allí divergirían. Lee recurso y partida con los
-mismos lectores que `criterio_choque` (`_DE_LINEA`, `_DE_ACCION`).
+`can` se compara **exacto** con 0 (`_can(ls.can) == 0.0`), igual que la
+guarda SQL (`ISNULL(can, 0) = 0`). El prefijo `partes:` vive en una
+constante de este módulo, al lado de la de `PREFIJO_SYNCKEY`.
 
 ## 6. Pipeline
 
-**Preflight, paso 7** (por destino + periodo, donde ya se leen `existentes`
-de todos los partes del periodo y `donde[ide]`):
+**Preflight, paso 7** (por destino + periodo, con `existentes` de todos los
+partes del periodo y `donde[ide]` ya leídos):
 
 1. `en_cerrado = {ls.ide for ls in existentes if donde[ls.ide].cod in
-   parte.cerrados}`.
-2. Por cada acción del grupo: `ceros = pisables_al_cero(existentes, a,
-   en_cerrado=en_cerrado)`; `choques` = los de hoy **sin** los `ide` de
-   `ceros` (R4).
-3. Si un choque está en un cerrado, la acción se omite **como hoy** y no
-   guarda `lineas_cero` (R8). Si no: `a.lineas_cero = [ide…]` y, si hay,
-   `_sumar_aviso(a, AVISO_LINEAS_CERO…)` con los códigos de parte (R3).
-4. `contexto` de un conflicto de pisado excluye los `lineas_cero` del
-   recurso (R4).
-5. Paso 7 bis: `pisadas[recurso]` gana los `lineas_cero` de sus acciones
-   que siguen en `escribir` (R4); la cifra no cambia (suman 0), pero el
-   `contexto` de la sobrecarga ya no las lista.
+   parte.cerrados}`; `ceros` = unión de `pisables_al_cero` de las acciones
+   del grupo.
+2. Choques de cada acción **sin** los `ide` de `ceros` (R5). Si uno está en
+   un cerrado, la acción se omite como hoy (R8). El `contexto` de un
+   conflicto excluye `ceros`.
+3. Con las acciones que siguen en `escribir`: `emparejar_ceros`. A cada
+   emparejada, `a.linea_cero = {ide, hmoide, parte_cod, horide, hora_codigo,
+   paride, fecha_int, synckey}` (lo **leído**) y el aviso de R4 (con la
+   partida que tenía la línea: el usuario puede elegirla si prefiere esa);
+   si al recurso le quedan, el aviso de que quedan N a 0.
+4. Paso 7 bis: `pisadas[recurso]` gana los `ceros` del recurso (suman 0; el
+   `contexto` de la sobrecarga ya no los lista).
 
-**Ejecutar, paso 10**, después de los borrados de pisados confirmados y
-antes de las inserciones, con el mismo `ides_borrados`:
+**Ejecutar, paso 10.** Orden de `statements`: borrados de pisados
+confirmados (como hoy), después un `stmt_actualizar_linea_cero` por cada
+acción de `a_escribir` con `linea_cero`, después las inserciones de las
+demás (solo ellas consumen `pos`). La entrada de `escritas` de una editada
+lleva `hmoide` y `parte_cod` de **su** parte (puede no ser el elegido para
+insertar) y `hmores_ide` = su `ide`. `a_escribir` ya excluye las retenidas
+(R14).
 
-```python
-for a in sorted(a_escribir, key=lambda x: (x.ano, x.mes, x.registro_id)):
-    for ide in a.lineas_cero:
-        if ide in ides_borrados: continue
-        ides_borrados.add(ide)
-        statements.append(self._cli.stmt_borrar_linea_cero(
-            ide, reside=int(a.recurso_ide),
-            est_registro=int(self._st.est_parte_activo)))
-        res.borradas += 1
-        res.pisadas_cero.append(ide)
-        logger.info("[registro] pisa linea al cero ide=%s parte=%s "
-                    "recurso=%s", ide, …, a.recurso_ide)
-```
+**Tras escribir** (la relectura por `synckey` de hoy, sin lectura nueva): una
+editada cuya `synckey` no aparece, o aparece en otro `ide`, sale de
+`escritas` y va a `omitidas` con `MOTIVO_CERO_CAMBIADA` (R13); las demás van
+a `pisadas_cero` con `registro_id` y lo que tenía la línea (R15), y al log.
 
-`a_escribir` ya excluye las acciones retenidas por un aviso sin confirmar,
-las omitidas y las ya registradas: eso es R11. R5 hace que una acción
-escrita del recurso baste para borrar sus pisables.
-
-`ejecutar` rehace el preflight antes de escribir (como hoy): la ventana entre
-lo leído y el borrado es de segundos, y la guarda cubre lo que cambie en ella.
+`ejecutar` rehace el preflight antes de escribir: la ventana entre lo leído y
+el `UPDATE` es de segundos y la guarda cubre lo que cambie en ella.
 
 ## 7. SQL (Sigrid, base `ruesma`, solo el transfer)
 
-No hay SQL de PostgreSQL ni ficheros `NN_*.sql`. Sentencia nueva en
-`sigrid_write_client.py`, junto a `stmt_borrar_linea`:
+Sin SQL de PostgreSQL. Sentencia nueva junto a `stmt_insert_linea`, con los
+mismos redondeos (`can` a 4, `tot = round(can × pre, 2)`):
 
 ```sql
-DELETE FROM hmores WHERE ide = ? AND reside = ?
-  AND ISNULL(can, 0) = 0 AND LTRIM(RTRIM(ISNULL(synckey, ''))) = ''
+UPDATE hmores SET can = ?, pre = ?, tot = ?, horide = ?, paride = ?,
+  caaide = ?, fec = ?, synckey = ? [, tex = ?]     -- tex solo en pruebas
+WHERE ide = ? AND reside = ? AND ISNULL(can, 0) = 0
+  AND LTRIM(RTRIM(ISNULL(synckey, ''))) = ?          -- la leída
   AND ISNULL(dvaproide, 0) = 0 AND ISNULL(dvfproide, 0) = 0
   AND ISNULL(hdereside, 0) = 0 AND ISNULL(empdpreide, 0) = 0
   AND ISNULL(empabside, 0) = 0 AND ISNULL(emprccide, 0) = 0
   AND EXISTS (SELECT 1 FROM auxhor a WHERE a.ide = hmores.horide
               AND a.cod LIKE 'M%')
   AND EXISTS (SELECT 1 FROM con c WHERE c.ide = hmores.hmoide
-              AND c.est = ?)
--- parámetros: [ide, reside, est_registro]
+              AND c.est = ?)                         -- En registro
 ```
 
-- Los enlaces son los de `azure-apps/sigrid_tablas.md` (`hmores`: línea de
-  albarán, de factura, dedicación de recursos, nóminas) y los mismos que
-  `partes` F-046 se niega a tocar. En 2025-2026 **ninguna** línea `M*` los
-  tiene (exploración): la guarda es defensiva.
-- `escribir` devuelve filas afectadas del lote, no por sentencia: si la
-  guarda no borra, `borradas` cuenta de más. Es el mismo límite que el
-  pisado de hoy; el log y `pisadas_cero` dicen qué se **pidió** borrar.
+- **No cambian** `hmoide`, `pos`, `cenide`, `obride`, `ano`, `mes`, `fac`,
+  `ortide` ni el resto: la línea sigue en su parte, de la misma obra y mes
+  (en pruebas, la 0404). Los `EXISTS` y la guarda ven la fila **antes** del
+  cambio (semántica de `UPDATE` en SQL Server).
+- **Lote:** `escribir` manda las sentencias en lotes de 15, cada uno una
+  transacción; el `UPDATE` es una sola sentencia y no reserva `ide`. Si un
+  lote posterior falla, las editadas ya llevan nuestra `synckey` y reejecutar
+  las da por registradas y completa el resto (R16).
+- `escribir` devuelve filas afectadas por lote, no por sentencia: por eso R13
+  se decide con la relectura por `synckey`, no con ese número.
+- Los enlaces son los de `azure-apps/sigrid_tablas.md` (`hmores`) y los que
+  `partes` F-046 se niega a editar; en 2025-2026 ninguna línea `M*` los tiene.
 
 ## 8. Coordinación con `partes` y con F-044
 
-- **Mismo parte.** `partes` escribe horas `H*`/`C*` con `synckey`
-  `partes:…` y nunca `M*` («los mensuales con MENC no registran por horas»,
-  `azure-apps/partes.md` §3.5): ninguna línea suya es pisable (R7). Sus
-  pisados, sus comprobaciones (F-024) y su reajuste (F-046) solo miran
-  líneas con su `synckey`. No hay carrera nueva: el borrado va en el mismo
-  envío que nuestras inserciones, bajo las mismas reglas de lote.
-- **Qué cambia para ellos**: el transfer pasa a borrar, sin confirmación,
-  líneas de Administración (sin `synckey`) en partes que también usa
-  `partes`. Se les avisa al desplegar (R18; el humano o el líder, por el
-  canal de siempre) por si un día quieren lo mismo para las horas, sin
-  tocar su repositorio.
-- **F-044 (recursos vinculados)**: sus líneas al 0 % (`OTEL`, `OGAS`, `KM`,
-  `MESVE`… de 0707) **se quedan** con F-051 (R6). F-044 debería reutilizar
-  `pisables_al_cero` para su recurso vinculado (hora no `M*`: tendrá que
-  ampliar `es_linea_al_cero` con su propia decisión).
+- **Mismo parte.** `partes` escribe `H*` y `C*` con `synckey partes:…`; nunca
+  ha escrito `M*` (exploración). Con D3 y D11 (C) ninguna línea suya se edita.
+  Su comprobación (F-024) busca sus líneas por `synckey` y, sin ella, por
+  `ide`; su reajuste (F-046) solo edita las suyas con el `can` esperado. Si
+  un día una línea suya fuera pisable y se editara, la daría por borrada
+  (`borrado_sigrid`) y al reaprobar la **reinsertaría**: por eso D11.
+- **Qué cambia para ellos:** el transfer edita, sin confirmar, líneas `M*`
+  de Administración en partes que también usan. Se les avisa al desplegar
+  (T12), sin tocar su repositorio.
+- **F-044:** las líneas al 0 % de teléfono, gasoil, KM y vehículo **siguen a
+  0** tras F-051 (R6). F-044 debería reutilizar `emparejar_ceros` con su
+  propia definición de «al 0 %» (hora no `M*`).
 
-## 9. Decisiones abiertas (las decide el humano)
+## 9. Decisiones
 
-- **D1 · Qué es «pisar».** (A) borrar la línea al 0 % e insertar la nuestra
-  al final del parte (el mecanismo del pisado de hoy); (B) igual, pero
-  insertando en la `pos` de la línea al 0 % (conserva el orden de
-  Administración: la persona junto a su teléfono y gasoil); (C) `UPDATE` de
-  la línea al 0 % en su sitio (`can`, `tot`, `pre`, `horide`, `paride`,
-  `caaide`, `synckey`, `tex`). **Recomiendo A**: es el camino probado (el
-  pisado confirmado y `limpiar` ya borran e insertan), no estrena escritura y
-  deshacer sigue siendo borrar por `synckey`. B es barata si el orden importa
-  a Administración (leer `pos`, que `lineas_de_partes` ya trae). C es una
-  escritura nueva en el ERP y deja a medias líneas ajenas si falla.
-- **D2 · ¿Se confirma?** (A) sin confirmación, con el aviso de R3 en el
-  modal; (B) como un pisado de hoy (conflicto que hay que marcar). **Recomiendo
-  A**: la línea no imputa nada (`can = 0`, `tot = 0`), es lo que pidió Juan y
-  B añade un clic por persona y mes sin decisión real detrás.
-- **D3 · Qué línea al 0 % «casa».** (A) cualquier `M*` al 0 % del recurso en
-  la obra y periodo, sea cual sea su hora y partida; (B) solo la de su misma
-  partida; (C) solo la de los cuatro campos (la identidad de hoy). **Recomiendo
-  A**: es la que resuelve lo que se pidió (con otra partida, B y C la dejan, y
-  es el caso que hoy falla); un recurso con dos líneas al 0 % las pierde las
-  dos, que no imputaban nada.
-- **D4 · «Al 0 %» = `can` exactamente 0 o nulo**, sin tolerancia (Sigrid
-  guarda `0.0`, §5). **Recomiendo** así; si no, la de la capacidad (0,00005).
-- **D5 · Solo líneas sin `synckey`** (las de Administración); con la de
-  `partes` o la nuestra, nunca. **Recomiendo** confirmarlo tal cual.
-- **D6 · Partes cerrados.** (A) como hoy: no se toca nada y, si coincide por
-  identidad, la nuestra se omite con `parte_cerrado`; (B) la línea al 0 % de
-  un cerrado se ignora (ni se toca ni bloquea: la nuestra iría al
-  complementario). **Recomiendo A**: F-051 es de partes En registro y B
-  crearía complementarios en meses cerrados.
-- **D7 · Postventa.** (A) la regla de D3 también en el parte de la obra de
-  postventa; (B) allí solo la línea al 0 % de la **misma partida** (la de la
-  obra original); (C) postventa fuera. **Recomiendo B**: el parte de
-  postventa lo comparten todas las obras y cada petición es de una obra;
-  con A, registrar la obra X borraría la línea al 0 % que el recurso tenga
-  por la obra Y.
-- **D8 · Líneas al 0 % donde el recurso ya no tiene línea este mes** (pasó
-  de la 0707 a otra obra): F-051 no las ve (solo mira la obra que registra).
-  **Recomiendo** dejarlas fuera: o las borra Administración, como pidió Juan
-  el 2026-10-08, o feature aparte que avise de ellas en el preflight del mes.
-- **D9 · Verificación y origen.** (A) para R19, el humano o Administración
-  crea a mano en Sigrid, en el parte En registro de la 0404 del mes de
-  prueba, las dos líneas al 0 % (como las crea Administración); (B) una fase
-  nueva `sembrar-cero` del script, que escribe (solo en modo pruebas, con
-  `--confirmar`). **Recomiendo A**: no añade código que escribe y reproduce
-  el origen real. Y una pregunta para Juan o Administración, que no cambia el
-  diseño: ¿esas líneas salen de una función de copia de Sigrid o se copian a
-  mano? En la base no se distingue (`hmores` no guarda autor).
+**Decididas el 2026-10-20.** D1 = **C** (editar en su sitio, nunca borrar);
+D2 = A (sin confirmar, con aviso); D3 = A (cualquier `M*` al 0 % del recurso
+en la obra); D4 (`can` exacto 0 o nulo); D5: **cualquier** línea al 0 %, con
+o sin `synckey` (matiz en D11); D6 = A (cerrados como hoy); D7 = B (en
+postventa, solo misma partida); D8 fuera; D9 = A (las líneas al 0 % de la
+prueba, a mano en Sigrid).
+
+**Abiertas (D1 = C y D5 las abren):**
+
+- **D10 · Qué campos se editan.** (A) solo el valor: `can` y `tot = can ×
+  pre` de la línea, conservando hora, partida, cuenta, `pre` y `fec` de
+  Administración. Deja incoherente: la partida de Sigrid no es la elegida o
+  propuesta que enseñan el cuadrante y el modal (rompe «lo que se ve es lo
+  que se registra», `#regla-partida`); la hora puede no ser el `M*` que elige
+  P1 y su `pre` es el copiado del mes anterior (`tot` distinto del que vio el
+  usuario); `escritas.partida_cod` (y lo que la api traza) no casa con
+  Sigrid; la cuenta sí queda coherente con su partida. (B) todo lo que
+  insertaríamos (`can`, `pre`, `tot`, hora, partida, cuenta, `fec`,
+  `synckey`): la línea queda idéntica a una insertada salvo `ide` y `pos`; se
+  pierde la partida de Administración, que era copia del mes anterior y que
+  la propuesta «parte anterior» suele dar igual (en la 0707, sí). Una línea
+  confirmada «sin partida» dejaría `paride = 0` donde había partida: el aviso
+  de R4 enseña esa partida para elegirla antes. **Recomiendo B.**
+- **D11 · `synckey`, `tex` y líneas de `partes`.** La `synckey` pasa a ser la
+  nuestra (`porcentajes:{id}`): sin ella no hay idempotencia (la siguiente
+  pasada no la reconocería, la vería con `can` ≠ 0 y pediría pisado). `tex`:
+  en pruebas, la marca (`limpiar` y la traza la necesitan); en real, el que
+  tenía (comentario de Administración). Líneas de `partes`: (A) editarlas
+  también, con nuestra `synckey` (D5 al pie de la letra; `partes` la daría por
+  borrada y podría reinsertarla: doble imputación); (B) editarlas conservando
+  la suya (rompe nuestra idempotencia); (C) excluirlas. Hoy hay **0** casos.
+  **Recomiendo C** (es una excepción a D5: la confirma el humano). Una con
+  nuestra `synckey` de otra asignación (D5) sí se edita: esa asignación, si
+  sigue viva, se volverá a insertar al registrarla.
+- **D12 · ¿«Nunca borramos» alcanza a lo de hoy?** Hoy borran: el pisado
+  confirmado (línea distinta de 0 con la misma identidad, `#regla-conflicto`:
+  `DELETE` + `INSERT`) y `limpiar` del script (solo lo nuestro marcado
+  `PRUEBA-PORC`). **Recomiendo** dejarlo fuera de F-051 y abrir una feature
+  que convierta el pisado confirmado en `UPDATE` (reutilizando esta sentencia
+  con guarda por el `can` leído); `limpiar`, como herramienta de pruebas, se
+  queda. Hasta entonces el pisado confirmado sigue borrando.
+- **D13 · Cómo se deshace un `UPDATE`.** Borrar por `synckey` (F-033, hoy
+  `limpiar`) eliminaría la línea de Administración, que existía antes. (A) el
+  transfer publica y registra en el log lo que tenía (R15: hora, partida,
+  `fec`, `synckey`; `pre`, cuenta y `tex` no se leen hoy) y F-033 decide; mi
+  recomendación para F-033: devolverla a 0 con `UPDATE` guardado por nuestra
+  `synckey`, sin borrar. (B) guardar el estado anterior en la api (columna
+  nueva en `asignacion`): sale de «solo transfer» y amplía las lecturas.
+  **Recomiendo A.**
 
 ## 10. Riesgos y alternativas descartadas
 
-- **Borrar sin confirmar en producción** (D2 = A). Acotado por R1 (solo
-  recurso propio, al 0 %, sin `synckey`, En registro), la guarda (R12) y R11
-  (solo si la nuestra se escribe). Lo peor que puede pasar es perder una
-  línea que imputaba 0.
-- **Borrado e inserción en lotes distintos** (más de 15 sentencias). Si el
-  segundo falla, la línea al 0 % ya no está y la nuestra tampoco: no se
-  pierde importe y reejecutar lo arregla (R14). Es la razón por la que la
-  regla R32 de F-002 (no borrar sin escribir) no hace falta aquí más allá de
-  R11.
-- **La propuesta de partida ve las líneas al 0 %** (F-050, paso «parte
-  anterior»: el mes en curso cuenta, con suma 0). Con una sola, propone su
-  partida, que es la que copió Administración; con dos de partidas
-  distintas hay empate y ese paso no propone. No se toca: F-051 no cambia la
-  propuesta (R15). Si molesta, es de F-050.
+- **Editar sin confirmar en producción** (D2). Acotado por R1 (recurso propio,
+  `M*`, al 0 %, En registro), la guarda (R12) y R14. Lo peor: que una línea
+  que imputaba 0 pase a llevar nuestro %, que es lo pedido.
+- **Quedan líneas a 0** si el recurso tiene más pisables que acciones (R4 lo
+  avisa): con D1 = C no se borran. En la 0707, una por persona.
+- **La propuesta de partida ve las líneas al 0 %** (F-050, «parte anterior»
+  cuenta el mes en curso, con suma 0): con una, propone su partida; con dos de
+  partidas distintas, empate. F-051 no lo cambia (R17).
+- **Descartado: si la guarda falla, insertar** (`INSERT … WHERE NOT EXISTS`
+  por `synckey`, como `partes` F-046). Si falló porque Administración acaba de
+  poner un valor, sumaríamos encima; mejor omitir y que se vuelva a registrar.
 - **Descartado: cambiar `criterio_choque`** para que una línea al 0 % choque
-  con cualquier partida. Mezcla dos reglas (identidad y limpieza), cambia la
-  clave de los conflictos y obligaría a confirmar (D2 = B por la puerta de
-  atrás).
-- **Descartado: leer los enlaces en el preflight** (avisar solo de lo que
-  la guarda borraría): cambia dos lecturas del lote (F-055) por un caso que
-  hoy no existe (§7).
+  con cualquier partida: mezcla dos reglas, cambia la clave de los
+  conflictos y obligaría a confirmar.
