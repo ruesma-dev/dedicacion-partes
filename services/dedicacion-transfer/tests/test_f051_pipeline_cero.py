@@ -641,3 +641,51 @@ def test_f051_r13_reejecutar_sin_ide_por_la_synckey_puesta():
     cli.synckeys = {synckey_de(1): cli.lineas_parte[0]}
     res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
     assert res.ya_registradas == [1] and len(cli.ediciones()) == 1
+
+
+# ================== R19 · el lote da lo mismo, mismas lecturas ================== #
+def _previas_0707():
+    return [_cero(410600), _cero(410601, reside=400, horide=6,
+                                 hora_codigo="MJEFO"),
+            _cero(410935)]
+
+
+def _previas_pisado():
+    return [linea_previa(ide=5003, paride=80001, can=0.3),
+            linea_previa(ide=5009, paride=80001, can=0.2),
+            _cero(410601, reside=400, horide=6, hora_codigo="MJEFO")]
+
+
+def _ajustes_lote() -> SettingsFalso:
+    st = SettingsFalso()
+    st.sigrid_lecturas_paralelas = 4
+    return st
+
+
+@pytest.mark.parametrize("previas", [_previas_0707, _previas_pisado],
+                         ids=["0707", "pisado"])
+def test_f051_r19_lote_igual_que_suelto_y_mismas_lecturas(previas):
+    from tests.test_f055_lecturas_lote import ClienteQueAnota
+    lineas = [linea(registro_id=1), linea(registro_id=2, recurso_ide=400)]
+
+    def suelto(lineas_parte):
+        cli = ClienteQueAnota(lineas_parte=lineas_parte)
+        pf = RegistroPipeline(cliente=cli, settings=_ajustes_lote()
+                              ).preflight(obra=OBRA, lineas=lineas)
+        return pf, sorted(cli.nombres())
+
+    def en_lote(lineas_parte):
+        cli = ClienteQueAnota(lineas_parte=lineas_parte)
+        [pf] = RegistroLote(cliente=cli, settings=_ajustes_lote()
+                            ).preflight([(OBRA, lineas)])
+        return pf, sorted(cli.nombres())
+
+    pf_suelto, leidas_suelto = suelto(previas())
+    pf_lote, leidas_lote = en_lote(previas())
+    assert asdict(pf_lote) == asdict(pf_suelto)
+    assert any(a.linea_cero for a in pf_suelto.acciones)
+    # Las mismas lecturas que sin ninguna línea previa: las pisables y el
+    # reparto del pisado no leen nada (R19).
+    assert leidas_suelto == suelto([])[1]
+    assert leidas_lote == en_lote([])[1]
+    assert "lineas_para_editar" not in leidas_suelto + leidas_lote
