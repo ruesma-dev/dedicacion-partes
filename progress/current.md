@@ -2,53 +2,27 @@
 # Trabajo en curso
 
 **En curso: F-051** (pisar las líneas del parte editándolas, nunca
-borrando), `in_progress`; T1-T11 hechas y commiteadas. Bloqueos resueltos
-por el humano el 2026-10-20: T3 con la opción A y **T12 con la opción B**
-(sección justo debajo); implementer reanudado en T12. **Spec aprobada por el humano
-el 2026-10-20** («si me vale»: D14 = A y D15 = A; D1-D13 antes). Copia
+borrando), `in_progress`; **implementer terminado el 2026-10-20**: T1-T14 y
+T17 hechas y commiteadas, informe en `progress/impl_F-051.md`; toca la
+**review**. Bloqueos resueltos por el humano el 2026-10-20: T3 con la opción
+A y T12 con la opción B. **Spec aprobada por el humano el 2026-10-20** («si
+me vale»: D14 = A y D15 = A; D1-D13 antes). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero`; sus `.venv` son uniones de directorio a
 los de la copia principal (creadas por el líder, no versionadas).
-T15 (MANUAL en modo pruebas en la 0404) la hace el
-humano; ningún agente escribe en Sigrid. **F-030** aprobada y a la espera en la copia
+**Pendiente del humano:** T15 (MANUAL en modo pruebas en la 0404, comando
+abajo) y aceptar el mutante equivalente de la campaña
+(`progress/mutacion_F-051.md`). **Pendiente del líder:** T16
+(`azure-apps/dedicacion.md` y aviso a `partes`, al desplegar). Ningún agente
+escribe en Sigrid. **F-030** aprobada y a la espera en la copia
 `porcentajes-f030` (va después de F-051). El arnés es la **1.7.3**.
 
 ## F-051 · BLOQUEO en T12 (implementer, 2026-10-20) · RESUELTO
 
 - **Resuelto por el humano el 2026-10-20 con la opción B** («La b»): el
-  detalle del pisado termina como hoy, «… y se escribe N%» («se edita la
-  línea X (…)[; quedan a 0: …] y se escribe N%»); design §1 y T12 de
-  `tasks.md` corregidos por el líder; los dos `test_f049_r2_…` no se tocan.
-  F-051 vuelve a `in_progress`; el implementer sigue desde T12 (rehacer el
-  parche guardado con el texto nuevo).
-
-- **Qué pasa.** T12 cambia el texto del pisado en `rotuloConflicto`
-  (`services/dedicacion-front/static/js/app.js`) al de design §1/§3: «se
-  edita la línea X (…) y queda N%; quedan a 0: …». Con ese cambio, la suite
-  del front da **2 failed** fuera de la lista cerrada de `tasks.md`:
-  `test_f049_avisos_registro.py::test_f049_r2_el_porcentaje_sale_de_nuevas_no_cero`
-  y `::test_f049_r2_decimales_y_sin_nuevas`. Los dos comprueban que el % sale
-  de `nuevas` (F-049 R2) mirando que el detalle del pisado **termine** en «se
-  escribe 60%» / «se escribe 43,3%»; con el texto nuevo termina en «y queda
-  60%». La lista cerrada solo tiene el `…r1_pisado_ensena_lo_que_se_borra…`.
-  No se han tocado ni rodeado.
-- **Opciones** (recomiendo **A**):
-  - **A.** Añadir esos dos tests a la lista cerrada: su `endswith("se
-    escribe N%")` pasa a `endswith("y queda N%")` (lo que prueban, que el %
-    sale de `nuevas` y no es 0, no cambia), con una línea en su docstring.
-  - **B.** Cambiar el texto de la spec para conservar el final de hoy: «se
-    edita la línea X (…)[; quedan a 0: …] y se escribe N%». Los dos tests
-    pasan sin tocarlos; el texto se aparta del aprobado («y queda»).
-- **Estado del trabajo.** T1-T11 hechas y commiteadas (HEAD `6788bfa`,
-  transfer 1067 passed, api 948 passed, front 305 passed; `init.sh` sin
-  `[KO]`, cobertura 99,2 % de 255 líneas cambiadas). **T12 no está en
-  el árbol**: el implementer la guardó como parche en su scratchpad
-  (`f051/t12_front.patch`: `app.js`, el test de F-049 de la lista y
-  `test_f051_modal_pisado.py` con 5 tests; `git apply --check` OK). Si se
-  pierde, rehacerla es pequeño: el texto está en el informe. Retomar en T12
-  con la opción elegida; después T13, T14 (mutación en serie) y T17.
-- **Nada más fuera de la lista se ha puesto rojo** en transfer ni api (las
-  suites enteras pasan tras T11).
+  detalle del pisado termina como hoy: «se edita la línea X (…)[; quedan a
+  0: …] y se escribe N%». Hecho en `24ba7aa` (T12); los dos `test_f049_r2_…`
+  no se han tocado y pasan. Motivo del bloqueo y opciones: `341e61e`.
 
 ## F-051 · BLOQUEO en T3 (implementer, 2026-10-20) · RESUELTO
 
@@ -86,26 +60,35 @@ humano; ningún agente escribe en Sigrid. **F-030** aprobada y a la espera en la
   de abajo; no se pueden descartar sorpresas en los tests que leen
   `docs/ARCHITECTURE.md` hasta hacer T13.
 
-## F-051 · implementación (implementer, 2026-10-20)
+## F-051 · implementación (implementer, 2026-10-20) · TERMINADA
 
-- **Tarea en curso:** ver `[x]` en `specs/F-051-pisar-lineas-cero/tasks.md`.
-  Informe final en `progress/impl_F-051.md`.
-- **Decisiones del implementer** (detalle en el informe):
+- **Estado:** T1-T14 y T17 `[x]` en `specs/F-051-pisar-lineas-cero/tasks.md`;
+  informe en `progress/impl_F-051.md`; campaña de mutación en
+  `progress/mutacion_F-051.md` (134 mutantes, `--workers 1`, 133 muertos,
+  1 superviviente **equivalente justificado**, a falta de que el humano
+  acepte la justificación).
+- **Decisiones del implementer** (detalle en el informe §2):
   `lineas_registradas(claves, ides)` sin `ides` delega en
-  `lineas_por_synckey` (la consulta de hoy, misma lectura y mismo nombre
-  medido), así los tests de F-055 no cambian; `repartir_choques` y
-  `es_nuestra_de_otra` son funciones puras nuevas de `reglas_porcentajes.py`
-  (reparto de R4-R5 por `registro_id` y la condición de R15).
-- **Commits:** T1 y T2 en un solo commit (mismo fichero y mismos tests);
-  T3-T11, uno por tarea (tabla en el informe).
-- **Desviaciones justificadas** (detalle en el informe §2): la fase `estado`
-  del script lee además `pos`, `paride` y `tex` (para T15); la api usa
-  `getattr(a, "sigrid_hmores_ide", None)` porque los dobles de sus tests
-  anteriores no traen la columna; el paso 9 bis (lectura previa) va antes
-  del alta de partes y solo lo que inserta crea parte o lee `max_pos`.
-- **Defecto propio corregido en T8**: en T6 se pisó la variable
-  `en_cerrado` (registros omitidos por un cerrado); renombrada la nueva a
-  `lineas_cerradas`, con test de regresión.
+  `lineas_por_synckey`; `repartir_choques` y `es_nuestra_de_otra` puras
+  nuevas; `despues` del log usa `a.can`/`a.tot` ya redondeados; `usadas`
+  arranca vacío (una línea al 0 % nunca es choque).
+- **Desviaciones justificadas:** la fase `estado` del script lee además
+  `pos`, `paride` y `tex` (para T15); la api usa
+  `getattr(a, "sigrid_hmores_ide", None)`; el paso 9 bis va antes del alta de
+  partes y solo lo que inserta crea parte o lee `max_pos`.
+- **T15 (MANUAL, humano, modo pruebas).** Preparación y pasos completos en
+  `tasks.md` T15. Lectura, en Git Bash, desde la copia que se pruebe:
+  `cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`
+  (solo lectura). Transfer, api y front locales con
+  `OBRA_PRUEBAS_FORZAR=true`. Limpieza: `limpiar --confirmar` borra también
+  las líneas de Administración EDITADAS en la 0404 (quedan con
+  `PRUEBA-PORC` y nuestra `synckey`, D15 = A); la del segundo recurso, a mano.
+- **`azure-apps` pendiente (T16, líder, al desplegar transfer → api →
+  front):** `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` §1, §5 y
+  §7: el transfer EDITA en su sitio líneas `M*` de partes compartidos
+  (`UPDATE` con guarda, sin `DELETE`); `LineaIn.hmores_ide` de ida;
+  `ya_registradas_ide`, `editadas`, `a_cero` y `escritas[].editada` de
+  vuelta; `borradas` siempre 0 en el registro. Avisar a `partes`.
 
 ## F-051 · spec pasada 3, D14-D15 abiertas (2026-10-20)
 
