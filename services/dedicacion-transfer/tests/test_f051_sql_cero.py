@@ -317,3 +317,97 @@ def test_f051_r12_lineas_para_editar_en_trozos(monkeypatch):
     cli, lectura = _cliente([])
     cli.lineas_para_editar([1, 2, 3])
     assert [p for _, p in lectura.llamadas] == [[1, 2], [3]]
+
+
+# ====================== R16, R19 · respuesta de la app ====================== #
+@pytest.fixture
+def app_con_resultado(monkeypatch):
+    """`build_app` con ajustes falsos y `RegistroPipeline.ejecutar`
+    sustituido: devuelve un resultado hecho a mano y anota las líneas."""
+    from types import SimpleNamespace
+
+    from application.pipelines.registro_pipeline import RegistroPipeline
+    from domain.models.registro_models import ResultadoRegistro
+    from fastapi.testclient import TestClient
+    from interface_adapters.api.app import build_app
+
+    ajustes = SimpleNamespace(
+        sigrid_api_base_url="http://sigrid.invalid",
+        sigrid_api_function_key="sin-clave", sigrid_api_database="ruesma",
+        sigrid_api_timeout_s=1.0, sigrid_max_statements=15,
+        sigrid_max_rows=200_000,
+        tip_parte_trabajo=35, est_parte_activo=1, obra_pruebas_forzar=True,
+        obra_pruebas_cod="0404", marca_pruebas="PRUEBA-PORC",
+        postventa_registrar=True, postventa_obra_cod="POSTV2", paso_pos=64)
+    vistas: list = []
+    traza = {"registro_id": 1, "ide": 410600, "hmoide": 777,
+             "parte_cod": "PT26/00370", "antes": {"can": 0.0},
+             "despues": {"can": 0.4}}
+
+    def ejecutar(self, *, obra, lineas, pisar_claves=None, usuario=None):
+        vistas.extend(lineas)
+        return ResultadoRegistro(
+            ok=True, obra_destino=ObraEntrada(ide=1, codigo="0404"),
+            forzada_pruebas=True,
+            escritas=[{"registro_id": 1, "editada": True,
+                       "hmores_ide": 410600}],
+            ya_registradas=[2], ya_registradas_ide={2: 9002},
+            editadas=[traza], a_cero=[dict(traza, ide=5005)])
+
+    monkeypatch.setattr(RegistroPipeline, "ejecutar", ejecutar)
+    return TestClient(build_app(ajustes)), vistas
+
+
+def test_f051_r16_respuesta_de_ejecutar_con_lo_editado(app_con_resultado):
+    cliente, vistas = app_con_resultado
+    r = cliente.post("/api/registro/ejecutar", json={
+        "obra": {"codigo": "0678"},
+        "lineas": [{"registro_id": 1, "ano": 2026, "mes": 10,
+                    "porcentaje": 0.4, "empresa": 1, "hmores_ide": 410600},
+                   {"registro_id": 2, "ano": 2026, "mes": 10,
+                    "porcentaje": 0.2, "empresa": 1}]})
+    assert r.status_code == 200, r.text
+    cuerpo = r.json()
+    assert cuerpo["borradas"] == 0
+    assert cuerpo["escritas"] == [{"registro_id": 1, "editada": True,
+                                   "hmores_ide": 410600}]
+    assert cuerpo["ya_registradas_ide"] == {"2": 9002}
+    assert [e["ide"] for e in cuerpo["editadas"]] == [410600]
+    assert [e["ide"] for e in cuerpo["a_cero"]] == [5005]
+    assert cuerpo["editadas"][0]["antes"] == {"can": 0.0}
+    # R14: el `hmores_ide` de la api llega a la línea del dominio.
+    assert [l.hmores_ide for l in vistas] == [410600, None]
+
+
+# ======================= R18 · el script de pruebas ======================= #
+def test_f051_r18_el_script_ensena_lo_que_edita(monkeypatch, capsys):
+    """`preflight` imprime la línea al 0 % que se editaría y, del pisado,
+    qué edita y qué pone a 0; `ejecutar`, lo editado y lo puesto a 0 (con
+    su antes y después), y las omitidas con su motivo. Con el doble: no
+    hay red."""
+    import prueba_escritura_porcentajes as script
+    from application.pipelines.registro_pipeline import RegistroPipeline
+
+    cli = ClienteFalso(lineas_parte=[
+        linea_previa(ide=410600, can=0.0, tot=0.0, paride=80001),
+        linea_previa(ide=5003, reside=400, horide=6, hora_codigo="MJEFO",
+                     paride=80002, can=0.3),
+        linea_previa(ide=5009, reside=400, horide=6, hora_codigo="MJEFO",
+                     paride=80002, can=0.2)])
+    monkeypatch.setattr(script, "_lineas", lambda ano, mes: [
+        linea(registro_id=1),
+        linea(registro_id=2, recurso_ide=400, paride=80002,
+              partida_cod="CI.1.20")])
+    st = SettingsFalso()
+    pl = RegistroPipeline(cliente=cli, settings=st)
+    pf = script.fase_preflight(pl, st, 2026, 7)
+    salida = capsys.readouterr().out
+    assert "linea_cero=410600" in salida
+    assert "edita=5003 a_cero=[5009]" in salida
+    script.fase_ejecutar(pl, st, 2026, 7, True,
+                         [c.clave for c in pf.conflictos])
+    salida = capsys.readouterr().out
+    assert "editadas=2 a_cero=1 borradas=0" in salida
+    assert "EDITADA ide=410600 parte=PT26/00251 registro=1" in salida
+    assert "A CERO ide=5009" in salida
+    assert "antes={'can': 0.0" in salida

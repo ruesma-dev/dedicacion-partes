@@ -256,7 +256,13 @@ def build_app(settings) -> FastAPI:
                 "omitidas": r.omitidas,
                 "ya_registradas": r.ya_registradas,
                 "pisadas": r.pisadas,
+                # F-051 (R6, R16, R18): `borradas` siempre 0; lo editado y
+                # lo puesto a 0, con su antes y después, y el `hmores.ide`
+                # de cada ya registrada.
                 "borradas": r.borradas,
+                "editadas": r.editadas,
+                "a_cero": r.a_cero,
+                "ya_registradas_ide": r.ya_registradas_ide,
                 "pendientes_confirmacion": [asdict(c) for c in
                                             r.pendientes_confirmacion],
                 "error": r.error,

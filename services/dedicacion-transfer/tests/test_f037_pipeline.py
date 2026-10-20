@@ -540,12 +540,14 @@ def test_f037_r13_choque_en_registro_es_conflicto_con_el_parte_donde_vive():
     assert (c.motivo, c.parte_cod, [ls.ide for ls in c.lineas]) == (
         "pisado", "PT26/00005", [6005])
     assert pf.partes[0].cod == "PT26/00007"
-    # R14: confirmado, se borra (parte En registro) y se escribe en el 7.
+    # R14: confirmado, se toca (parte En registro). Desde F-051 (R4, R8) se
+    # edita en su sitio, en el parte donde vive, sin `DELETE` ni `INSERT`.
     res = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()],
                             pisar_claves={c.clave})
-    assert cli.borrados() == [6005] and res.borradas == 1
-    assert [i["hmoide"] for i in cli.inserts()] == [7]
-    assert cli.inserts()[0]["caaide"] == 90001        # R17: con su cuenta
+    assert cli.borrados() == [] and res.borradas == 0
+    assert cli.inserts() == [] and res.escritas[0]["hmoide"] == 5
+    (ed,) = cli.ediciones()
+    assert ed["ide"] == 6005 and ed["caaide"] == 90001  # R17: con su cuenta
 
 
 def test_f037_r13_sin_partida_que_choca_con_cerrado_solo_se_omite():

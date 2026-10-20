@@ -574,8 +574,9 @@ def test_f013_confirmar_el_pisado_sin_la_partida_no_borra():
 
 
 def test_f013_confirmando_las_dos_si_se_pisa():
-    """Control positivo: confirmadas las dos, se borra la vieja y se escribe
-    la nueva. La guarda no es «no borres nunca»."""
+    """Control positivo: confirmadas las dos, se escribe la nueva sobre la
+    vieja. La guarda no es «no la toques nunca». Desde F-051 (R4, R6) es
+    editando la vieja en su sitio, sin `DELETE`."""
     cli0, lineas0 = _sin_partida_y_pisado()
     claves = {c.clave for c in
               _pipeline(cli0).preflight(obra=OBRA,
@@ -585,7 +586,8 @@ def test_f013_confirmando_las_dos_si_se_pisa():
     res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas,
                                   pisar_claves=claves)
 
-    assert cli.borrados() == [5001] and res.borradas == 1
+    assert cli.borrados() == [] and res.borradas == 0
+    assert [e["ide"] for e in cli.ediciones()] == [5001]
     assert [e["registro_id"] for e in res.escritas] == [1]
 
 
