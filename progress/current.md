@@ -1,25 +1,40 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Spec de F-030 en redacción** (incidencias en el cuadrante: texto en lugar
-del % con desplegable de las de partes; `sdd: true`, rigor crítico):
-**spec-author lanzado el 2026-10-20** a petición del humano, en la copia
+**Spec de F-030 escrita, a la espera del humano** (incidencias en el
+cuadrante: texto en lugar del % con desplegable de las de partes; `sdd:
+true`, rigor crítico): spec-author terminado el 2026-10-20 en la copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f030`, rama
-`feature/F-030-dias-bajas-incidencias`; sigue en `pending` hasta `spec_ready`
-(PARADA). En paralelo, **spec de F-051 en la copia `porcentajes-f051`** (su
-rama lo cuenta). Ninguna feature `in_progress`. El arnés es la **1.7.3**.
+`feature/F-030-dias-bajas-incidencias`; sigue en `pending` hasta que el humano
+responda D1-D10 y el líder la pase a `spec_ready` (PARADA). En paralelo,
+**spec de F-051 en la copia `porcentajes-f051`** (su rama lo cuenta).
+Ninguna feature `in_progress`. El arnés es la **1.7.3**.
 
-## F-030 · spec en redacción (2026-10-20)
+## F-030 · spec escrita, D1-D10 pendientes del humano (2026-10-20)
 
 - **Petición del humano (2026-10-20)**, literal en `features.json`: en la
   celda del %, si se escribe texto, desplegable con las incidencias de
-  `partes`; con número, todo igual que hoy. Sustituye a la «tecla especial
-  con subfila» del 2026-09-29. Título, descripción y `acceptance` de F-030
-  reescritos por el líder con esas palabras.
-- **Preguntas que la spec debe elevar:** fuente única de la lista de
-  incidencias; fechas o %; regla del 100 %; qué se escribe en Sigrid y cómo
-  convive con `partes`; si fechas y calendario entran ahora.
-- Sigrid, solo lectura durante la spec.
+  `partes`; con número, todo igual que hoy.
+- **Spec**: `specs/F-030-dias-bajas-incidencias/` (requirements 150/150,
+  design 250/250, tasks T1-T21). Informe: `progress/spec_F-030.md`.
+- **Toca los tres servicios**: front (desplegable al teclear letras en la
+  celda del %, chips y subfilas), api (catálogo desde Sigrid, tabla
+  `incidencia`, evento y deshacer, payload) y transfer (par `CI*`/`CIZ`).
+- **Decisiones abiertas para el humano** (requirements §7; recomendación
+  entre paréntesis): D1 fuente de la lista (A: `auxhor` de Sigrid); D2 fechas
+  (A: tramo de días del mes obligatorio); D3 tramo que cruza meses (A: cada
+  mes con su `CIZ`); D4 100 % (A: no cuenta); D5 qué se escribe (A: par
+  `CI*`/`CIZ`, `can = 0`); D6 partida (A: la de la línea de % de esa obra o
+  0); D7 duplicados y obras (A: misma `fec` y código en cualquier obra del
+  mes; solo obra normal); D8 alcance (A: captura y registro en F-030); D9
+  línea recién añadida (A: se convierte en incidencia); D10 % por días,
+  calendario de convenio y bandeja de `partes` (fuera, features nuevas).
+- **MANUAL de la feature** (T20): prueba en modo pruebas en la `0404` con
+  `prueba_escritura_porcentajes.py --incidencia`; exige autorización expresa.
+- **azure-apps**: `dedicacion.md` se actualiza en T19; `partes.md` (de
+  `partes`) debería decir que `porcentajes` escribirá `CI*`/`CIZ` en los
+  mismos partes: avisar al humano.
+- Sigrid, solo lectura durante la spec (consultas en `progress/spec_F-030.md`).
 
 ## Producción, hoy
 
