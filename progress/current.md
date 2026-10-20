@@ -41,11 +41,14 @@ anterior a F-051). **Pendiente del líder:** T16 al desplegar (transfer → api
 
 ## F-051 · implementación (implementer, 2026-10-20)
 
-- **Estado:** T1-T14 y T17 `[x]`; informe en `progress/impl_F-051.md`;
-  mutación en `progress/mutacion_F-051.md` (2.ª campaña, `--workers 1`: 134
-  mutantes, 133 muertos, 1 superviviente que la review demuestra NO
-  equivalente; se corrige en la pasada 2). `init.sh` en verde según la
-  review (sin cachés, cobertura 99,2 %).
+- **Estado:** T1-T14 y T17 `[x]`; informe en `progress/impl_F-051.md`.
+  **Cambios de la review 1 hechos (2026-10-21):** test de la frontera de
+  R13 que mata el mutante de `registro_pipeline.py:1095` (`d807cce`);
+  formato de la línea 568 y de un docstring del lote (`7a5f801`); 3.ª
+  campaña de mutación en serie (`--workers 1`) sobre `7a5f801`: **134
+  mutantes, 0 supervivientes** (`e51ba7b`, `progress/mutacion_F-051.md`);
+  primera línea con la ruta en el informe. Ya no hay ningún equivalente que
+  aceptar. `init.sh` sin `[KO]`, cobertura 99,2 %. Listo para la pasada 2.
 - **Decisiones del implementer** (detalle en el informe §2):
   `lineas_registradas(claves, ides)` sin `ides` delega en
   `lineas_por_synckey`; `repartir_choques` y `es_nuestra_de_otra` puras
