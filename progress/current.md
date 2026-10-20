@@ -2,14 +2,26 @@
 # Trabajo en curso
 
 **F-051: spec reescrita (2026-10-20, pasada 2)** con D1 = C y D5 del humano;
-**D10-D13 abiertas** (abajo). **`spec_ready` desde el 2026-10-20: PARADA**,
-espera la aprobación del humano y sus respuestas a D10-D13. Copia
+D10-D13 **decididas por el humano el 2026-10-20** (abajo): vuelve a
+`pending` y el spec-author la rehace (pasada 3); al terminar, `spec_ready` y
+PARADA otra vez. Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero`. Ninguna feature `in_progress`. F-057
 cerrada el 2026-10-19 y **desplegada el 2026-10-20** (anotado en `dev`,
 `708236f`). El arnés es la **1.7.3**.
 
 ## F-051 · spec reescrita, D10-D13 abiertas (2026-10-20)
+
+- **Decisiones del humano, pasada 3 (2026-10-20):** D10 = B (se edita todo
+  lo que insertaríamos) y D13 como recomendado («ok a lo demás»). **D11:**
+  tras explicarle el líder que `partes` (F-024) busca por su `synckey` y solo
+  usa `hmores.ide` como respaldo en líneas sin `synckey`, el humano: «y no
+  deberia encontrarla por el ide de sigrid una vez que se registra la linea?
+  es unico y no se edita nunca» y «d11 que ya localice»: F-051 **no cambia la
+  `synckey` de una línea de otro sistema** y localiza lo editado por
+  `hmores.ide`, también las líneas de `partes`. **D12:** «que pase a editar»:
+  el pisado confirmado de hoy (línea distinta de 0) **también pasa a `UPDATE`
+  dentro de F-051**; nunca se borra.
 
 - **Spec en `specs/F-051-pisar-lineas-cero/`** (rama
   `feature/F-051-pisar-lineas-cero`, copia `porcentajes-f051`); exploración y
