@@ -172,7 +172,7 @@ FAILED …test_f030_r34_p2_p3_p4_remiten_a_la_incidencia[2] / [3] / [6]
 ## 5 bis. `bash harness/init.sh` y mutación (T21)
 
 `init.sh` sobre `8b17e85`, con `.arnes_cache/suite_*.ok` borrados: **ENTORNO
-LISTO** y ningún `[KO]` (ruff, 293 avisos de deuda previa). PUERTA COBERTURA:
+LISTO** y ningún `[KO]` (ruff: 293 avisos frente a 277 en `dev`; los 16 de más eran de `test_f030_incidencias.py` de la api, corregidos en T36). PUERTA COBERTURA:
 99,5 % (634/637). PUERTA TAMAÑO: 150/150 y 250/250. Mutación en serie y sin
 muestreo: 31 supervivientes en la 1.ª campaña (251 mutantes), 1 en la 2.ª
 (250) y **0 en la 3.ª** (250). Ninguno se dio por equivalente; el análisis

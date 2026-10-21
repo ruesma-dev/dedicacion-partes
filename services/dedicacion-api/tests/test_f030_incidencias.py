@@ -212,15 +212,15 @@ def test_f030_r2_esquema_las_crea_create_all_y_asignacion_no_cambia():
 
 
 # ======================= dobles en memoria (T5-T7) ====================== #
-import dataclasses  # noqa: E402
+import dataclasses
 
-from domain.models import (  # noqa: E402
+from domain.models import (
     EventoPendiente,
     FiltroEmpresa,
     TipoIncidencia,
 )
 
-from tests.test_f024_cuadrante_empresa import (  # noqa: E402
+from tests.test_f024_cuadrante_empresa import (
     ANIO,
     MES,
     OBRAS,
@@ -230,7 +230,16 @@ from tests.test_f024_cuadrante_empresa import (  # noqa: E402
     _Uow,
     _uow,
 )
-from tests.test_f024_rutas_empresa import BASE, api  # noqa: E402,F401
+from tests.test_f024_rutas_empresa import BASE
+from tests.test_f024_rutas_empresa import api as api_f024  # noqa: F401
+
+
+@pytest.fixture
+def api(request):
+    """El `api` de `test_f024_rutas_empresa` con su nombre en este módulo
+    (importado como `api` y pedido como argumento, ruff lo da por F811)."""
+    return request.getfixturevalue("api_f024")
+
 
 #: Catálogo activo de prueba (el de `auxhor`, design §10).
 CATALOGO = [TipoIncidencia(11, "CIA", "AT", "Accidente/Enf. Profesional"),
@@ -539,7 +548,7 @@ def test_f030_r21_cuadrante_la_unidad_de_trabajo_trae_el_repositorio():
 
 
 # ============================= guardar (T6) ============================= #
-from decimal import Decimal  # noqa: E402
+from decimal import Decimal
 
 
 class _ObrasConVar:
@@ -580,7 +589,7 @@ def _tramos(incs) -> list[tuple]:
 
 def test_f030_r17_guardar_sustituye_completa_los_dias_y_deja_evento():
     uow = _uow_guardar()
-    fila, resumen = _guardar(uow, [_e(101, "CIE", 20, None), _e(100, " CIV ", None, 9)])
+    fila, _ = _guardar(uow, [_e(101, "CIE", 20, None), _e(100, " CIV ", None, 9)])
     # MES = 7: «hasta» vacío = 31; «desde» vacío = 1. Ordenadas por día.
     assert _tramos(fila.incidencias) == [(100, "CIV", 1, 9), (101, "CIE", 20, 31)]
     assert [(i.letra, i.obra_cod) for i in fila.incidencias] == [("V", "0100"),
@@ -639,7 +648,7 @@ def test_f030_r2_r22_guardar_no_toca_asignaciones_ni_el_100():
     assert uow.lineas[P_ACT] == lineas_antes
     assert uow.reemplazados == []
     assert resumen == resumen_sin
-    assert (fila.total, len(fila.lineas)) == (Decimal("100"), 2)
+    assert (fila.total, len(fila.lineas)) == (Decimal(100), 2)
 
 
 @pytest.mark.parametrize("entrada, motivo", [
@@ -693,7 +702,11 @@ def test_f030_r19_guardar_codigo_inactivo_no_vale():
 
 
 def test_f030_r18_guardar_periodo_inexistente_trabajador_inexistente_o_cerrado():
-    from domain.errors import PeriodoCerrado, PeriodoNoEncontrado, TrabajadorNoEncontrado
+    from domain.errors import (
+        PeriodoCerrado,
+        PeriodoNoEncontrado,
+        TrabajadorNoEncontrado,
+    )
     from domain.models import EstadoPeriodo, Periodo
 
     uow = _uow_guardar()
@@ -763,7 +776,7 @@ def test_f030_r19_guardar_ruta_motivo_en_el_422(api):
 
 
 def test_f030_r18_guardar_ruta_404(api):
-    cliente, _, uow = _api_inc(api)
+    cliente, *_ = _api_inc(api)
     r = cliente.put(f"/api/v1/periodos/{ANIO + 1}/{MES}/trabajadores/10/incidencias",
                     json={"incidencias": []})
     assert r.status_code == 404
@@ -891,7 +904,7 @@ def test_f030_r20_deshacer_va_por_orden_sea_del_tipo_que_sea():
     fila, _ = _deshacer(uow)
     assert fila.incidencias == ()
     assert [(ln.obra_ide, ln.porcentaje) for ln in fila.lineas] == [
-        (100, Decimal("100"))]
+        (100, Decimal(100))]
     uow.incidencias.poner(14, _inc(1, 3, obra=101, cod="CIE"))  # sin evento
     fila, _ = _deshacer(uow)                        # el GUARDAR
     assert fila.lineas == []
