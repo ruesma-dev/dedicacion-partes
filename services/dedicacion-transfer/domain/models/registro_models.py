@@ -67,6 +67,24 @@ class LineaEntrada:
 
 
 @dataclass
+class IncidenciaEntrada:
+    """F-030 (R23): una incidencia del cuadrante (vacaciones, baja…) a
+    registrar en el parte de su obra: dos líneas, ver
+    ARCHITECTURE.md#regla-incidencia. `id` es el de la incidencia en
+    PostgreSQL; `desde` y `hasta`, días del mes ya completados por la API;
+    `paride`, la partida de la línea de % del trabajador en esa obra o 0."""
+    id: int
+    recurso_ide: Optional[int]
+    empresa: Optional[int]
+    codigo: str
+    ano: int
+    mes: int
+    desde: Optional[int]
+    hasta: Optional[int]
+    paride: Optional[int] = 0
+
+
+@dataclass
 class ObraEntrada:
     ide: Optional[int] = None
     codigo: Optional[str] = None
@@ -223,6 +241,49 @@ class AccionLinea:
 
 
 @dataclass
+class AccionIncidencia:
+    """F-030 (R24, R31): qué se hará con UNA de las dos líneas de una
+    incidencia (`rol` `ini`: su `CI*` el día `desde`; `fin`: `CIZ` el día
+    `hasta`). Lleva los campos que el paso de la cuenta analítica comparte
+    con `AccionLinea` (`recurso_ide`, `hora_ide`, `paride`, `destino`,
+    `aviso` y `caa_*`). Siempre `can = 0` y `tot = 0`: no son jornada."""
+    id: int
+    rol: str                            # ini | fin
+    accion: str                         # escribir | omitir | ya_registrado
+    fecha_int: int
+    recurso_ide: Optional[int] = None
+    ano: int = 0
+    mes: int = 0
+    hora_ide: Optional[int] = None
+    hora_codigo: Optional[str] = None
+    pre: float = 0.0
+    paride: int = 0
+    motivo: Optional[str] = None
+    parte_cod: Optional[str] = None
+    hmores_ide: Optional[int] = None
+    destino: str = "obra"               # una incidencia no va a postventa
+    aviso: Optional[str] = None
+    caa_ide: int = 0
+    caa_cod: Optional[str] = None
+    caa_motivo: Optional[str] = None
+    caa_aviso: Optional[str] = None
+    caa_origen: Optional[str] = None
+    caa_nota: Optional[str] = None
+
+
+@dataclass
+class LineaIncidenciaSigrid:
+    """F-030 (R27): una línea de incidencia (`CI*`/`CIZ`) del recurso ya
+    escrita en algún parte del mes, con el código del parte."""
+    ide: int
+    reside: int
+    fecha_int: int
+    hora_codigo: Optional[str]
+    synckey: Optional[str]
+    parte_cod: Optional[str]
+
+
+@dataclass
 class Conflicto:
     """Algo que el humano tiene que confirmar antes de que se escriba.
 
@@ -281,6 +342,8 @@ class Preflight:
     partes: list[ParteDestino] = field(default_factory=list)
     acciones: list[AccionLinea] = field(default_factory=list)
     conflictos: list[Conflicto] = field(default_factory=list)
+    # F-030 (R31): las dos líneas de cada incidencia; vacía sin incidencias.
+    incidencias: list[AccionIncidencia] = field(default_factory=list)
 
     @property
     def n_escribir(self) -> int:
@@ -309,3 +372,6 @@ class ResultadoRegistro:
     borradas: int = 0
     pendientes_confirmacion: list[Conflicto] = field(default_factory=list)
     error: Optional[str] = None
+    # F-030 (R31): las líneas de las incidencias, con su `hmores_ide` si se
+    # escribieron; vacía sin incidencias.
+    incidencias: list[AccionIncidencia] = field(default_factory=list)
