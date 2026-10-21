@@ -83,6 +83,11 @@ const state = {
   ratonIde: null,
   resaltadas: [],
   edicion: [],
+  // F-030: las incidencias del editor, aparte de `edicion` (así ni
+  // `totalEdicion` ni `restanteSin` las ven: no cuentan en el 100 %, R22).
+  incidenciasEdicion: [],
+  // F-030 (R6): el catálogo del desplegable, `GET /incidencias`, una vez.
+  tiposIncidencia: [],
   timerGuardado: null,
   guardadoPendiente: false,
   empresa: null,               // empresa elegida en el selector (F-024)
@@ -285,7 +290,20 @@ async function init() {
   renderCabeceraTabla();
   enlazarEventos();
   await cargarEmpresas();
+  await cargarTiposIncidencia();
   await cargarPeriodo(state.anio, state.mes);
+}
+
+// Catálogo de incidencias del desplegable de la celda del % (F-030, R6): lo
+// sirve la API, sincronizado de Sigrid. Si falla, se avisa y se queda el que
+// hubiera: la celda sigue valiendo para el % (R1).
+async function cargarTiposIncidencia() {
+  try {
+    const datos = await api("/incidencias");
+    state.tiposIncidencia = datos.incidencias;
+  } catch (err) {
+    toast("No se pudo cargar el catálogo de incidencias: " + err.message, true);
+  }
 }
 
 // Lista de empresas del selector (F-024, R3 y R4). La de la URL si la API
@@ -1399,7 +1417,80 @@ function chipEditable(linea, idx, editor) {
   pct.className = "pct-input";
   pct.inputMode = "decimal";
   pct.value = linea.porcentaje ? String(linea.porcentaje).replace(".", ",") : "";
+
+  // F-030 (R8-R13): con alguna letra la celda busca una incidencia en vez de
+  // un %; sin letras, lo de hoy (R1). `previo` es la celda antes de la
+  // primera letra: Escape o salir sin elegir la reponen, y el % de la línea
+  // no se toca mientras haya letras (R9). Estas escuchas van ANTES que las
+  // de hoy: al elegir, paran las de hoy (Enter no va al buscador de obra y
+  // el blur de la celda que se va no la rellena).
+  let previo = pct.value;
+  let desplegable = null;
+  let elegida = false;
+  const reponer = () => {
+    desplegable.cerrar();
+    desplegable = null;
+    pct.value = previo;
+  };
+  const elegirIncidencia = (tipo) => {
+    desplegable.cerrar();
+    desplegable = null;
+    elegida = true;
+    if (linea.nueva) {
+      // R13: la línea la acaba de crear el buscador de obra; se quita y el
+      // guardado diferido la borra en la API.
+      state.edicion.splice(state.edicion.indexOf(linea), 1);
+    } else {
+      pct.value = previo;
+    }
+    state.incidenciasEdicion.push({
+      obra_ide: linea.obra_ide,
+      cod: linea.cod,
+      descripcion: linea.descripcion,
+      codigo: tipo.codigo,
+      letra: tipo.letra,
+      nombre: tipo.nombre,
+      dia_desde: null,
+      dia_hasta: null,
+    });
+    pintarEditor(editor);
+    enfocarDiaIncidencia(editor, state.incidenciasEdicion.length - 1);
+    programarGuardado();
+  };
+  pct.addEventListener("keydown", (ev) => {
+    if (!desplegable) return;
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      ev.preventDefault();
+      desplegable.mover(ev.key === "ArrowDown" ? 1 : -1);
+    } else if (ev.key === "Enter" || (ev.key === "Tab" && desplegable.hayActiva())) {
+      // Sin coincidencias, Enter no hace nada (R10).
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      desplegable.elegirActiva();
+    } else if (ev.key === "Escape") {
+      ev.stopPropagation();
+      reponer();
+    }
+  });
+  pct.addEventListener("blur", (ev) => {
+    if (elegida) {
+      ev.stopImmediatePropagation();
+      return;
+    }
+    linea.nueva = false;                 // R13: el foco ha salido de su %
+    if (desplegable) reponer();
+  });
   pct.addEventListener("input", () => {
+    if (/\p{L}/u.test(pct.value)) {
+      if (!desplegable) desplegable = montarDesplegableIncidencias(pct, elegirIncidencia);
+      desplegable.refrescar(pct.value);
+      return;
+    }
+    if (desplegable) {                   // R12: se borraron las letras
+      desplegable.cerrar();
+      desplegable = null;
+    }
+    previo = pct.value;
     linea.porcentaje = parsearPct(pct.value);
     refrescarTotalVivo(editor);
     programarGuardado();
@@ -1607,6 +1698,8 @@ function montarAutocompletado(input, panel, editor) {
       obra_activa: entrada.obra.activa,
       obra_admite_postventa: entrada.obra.admite_postventa,
       ofrecible: true,
+      // F-030 (R13): recién añadida hasta el primer blur de su %.
+      nueva: true,
     });
     pintarEditor(editor);
     enfocarPct(editor, state.edicion.length - 1);
@@ -1685,6 +1778,116 @@ function refrescarTotalVivo(editor) {
   const nuevo = badgeTotal(suma, estado);
   nuevo.classList.add("total-vivo");
   badge.replaceWith(nuevo);
+}
+
+// ------------------------------------- incidencias en la celda (F-030)
+// Panel de incidencias de la celda del % (F-030, R8, R10): el `.sugerencias`
+// de F-042, colgado de <body> y colocado con `colocarSugerencias`. Se
+// encadena a `desmontarSugerencias`, así que `retirarSugerencias` (repintar
+// la tabla o el editor) lo quita con el de obra: uno solo a la vez. Filtra el
+// catálogo de la API por letra y nombre normalizados; antes, las de letra
+// idéntica. `alElegir(tipo)` recibe la incidencia elegida.
+function montarDesplegableIncidencias(input, alElegir) {
+  const panel = document.createElement("div");
+  panel.className = "sugerencias incidencias";
+  let candidatas = [];
+  let activa = -1;
+  let vivo = false;
+  let anterior = null;
+  let desmontar = null;
+
+  const recolocar = (ev) => {
+    if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;
+    colocarSugerencias(input, panel);
+  };
+  const quitar = () => {
+    vivo = false;
+    window.removeEventListener("scroll", recolocar, true);
+    window.removeEventListener("resize", recolocar);
+    panel.remove();
+  };
+  const montar = () => {
+    vivo = true;
+    document.body.appendChild(panel);
+    window.addEventListener("scroll", recolocar, true);
+    window.addEventListener("resize", recolocar);
+    anterior = desmontarSugerencias;
+    desmontar = () => {
+      quitar();
+      if (anterior) anterior();
+    };
+    desmontarSugerencias = desmontar;
+  };
+  const marcarActiva = () => {
+    Array.from(panel.children).forEach((el, i) => {
+      el.classList.toggle("activa", i === activa);
+      if (i !== activa) return;
+      if (el.offsetTop < panel.scrollTop) {
+        panel.scrollTop = el.offsetTop;
+      } else if (el.offsetTop + el.offsetHeight > panel.scrollTop + panel.clientHeight) {
+        panel.scrollTop = el.offsetTop + el.offsetHeight - panel.clientHeight;
+      }
+    });
+  };
+
+  const refrescar = (texto) => {
+    if (!vivo) montar();
+    const tecleado = texto.trim();
+    const q = normalizar(tecleado);
+    const casan = state.tiposIncidencia.filter(
+      (t) => normalizar(t.letra + " " + t.nombre).includes(q));
+    candidatas = [
+      ...casan.filter((t) => normalizar(t.letra) === q),
+      ...casan.filter((t) => normalizar(t.letra) !== q),
+    ];
+    activa = candidatas.length ? 0 : -1;
+    panel.innerHTML = "";
+    candidatas.forEach((t, i) => {
+      const fila = document.createElement("div");
+      fila.className = "sugerencia inc" + (i === activa ? " activa" : "");
+      fila.innerHTML =
+        `<span class="cod">${escapeHtml(t.letra)}</span>` +
+        `<span class="desc">${escapeHtml(t.nombre)}</span>`;
+      fila.addEventListener("mousedown", (ev) => {
+        ev.preventDefault();
+        alElegir(t);
+      });
+      panel.appendChild(fila);
+    });
+    if (!candidatas.length) {
+      const fila = document.createElement("div");
+      fila.className = "sugerencia vacia";
+      fila.innerHTML = `Ninguna incidencia con «${escapeHtml(tecleado)}»`;
+      panel.appendChild(fila);
+    }
+    colocarSugerencias(input, panel);
+  };
+
+  return {
+    refrescar,
+    mover(delta) {
+      if (activa < 0) return;
+      activa = Math.max(0, Math.min(activa + delta, candidatas.length - 1));
+      marcarActiva();
+    },
+    hayActiva: () => activa >= 0,
+    elegirActiva() {
+      if (activa >= 0) alElegir(candidatas[activa]);
+    },
+    cerrar() {
+      if (desmontarSugerencias === desmontar) desmontarSugerencias = anterior;
+      quitar();
+    },
+  };
+}
+
+// Foco en el «del» de la incidencia `idx` del editor (F-030, R14).
+function enfocarDiaIncidencia(editor, idx) {
+  const input = editor.querySelectorAll(".inc-desde")[idx];
+  if (input) {
+    input.focus();
+    input.select();
+  }
 }
 
 // ------------------------------------------- selector de partida (F-050)

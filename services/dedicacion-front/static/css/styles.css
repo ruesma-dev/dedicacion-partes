@@ -450,6 +450,10 @@ tr.fila-editor > td {
 .sugerencia.es-pv .cod { color: var(--pv); }
 .sugerencia .desc { color: var(--ink-soft); }
 .sugerencia.activa, .sugerencia:hover { background: var(--brand-soft); }
+/* F-030: el panel de incidencias de la celda del % (letra · nombre). */
+.sugerencia.inc .cod { min-width: 32px; }
+.sugerencia.vacia { cursor: default; color: var(--ink-soft); font-style: italic; }
+.sugerencia.vacia:hover { background: none; }
 
 .editor .total-vivo { margin-left: 4px; }
 .guardando { color: var(--steel-300); font-size: 0.8rem; min-width: 14px; text-align: center; }
