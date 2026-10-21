@@ -44,6 +44,62 @@ arnés es la **1.7.3**.
   mismos partes: avisar al humano.
 - Sigrid, solo lectura durante la spec (consultas en `progress/spec_F-030.md`).
 
+## F-030 · implementación: BLOQUEADA en T4 (implementer, 2026-10-21)
+
+**Estado:** `blocked` en `features.json`. Hechas y con su commit T1
+(`a5c0386`, test de lo de hoy en la celda del %, verde antes de tocar
+`app.js`), T2 (`6c01edd`, `domain/incidencias.py`, con traza RED) y T3
+(`44d74ab`, `TipoIncidenciaORM` e `IncidenciaORM`). Suite de la api en verde
+en ese punto. Nada escrito en Sigrid; ningún test ajeno tocado.
+
+**Motivo (lista cerrada de tests ajenos).** El diseño aprobado obliga a que
+los **dobles de test** de 23 ficheros ajenos a la spec aprendan que existen
+las incidencias. Medido con un experimento desechable (cambio mínimo de cada
+causa, suite de la api, y revertido con `git checkout`; los números son
+reales):
+
+| Causa (diseño) | Qué cambia en producción | Tests que caen |
+|---|---|---|
+| A · R21 | `ObtenerCuadrante` y `ObtenerFilaTrabajador` leen `uow.incidencias` | 109 en 13 ficheros (los `_Uow` en memoria no tienen ese repositorio) |
+| B · R20 | `ultimo_pendiente` lee `evento.tipo` para despachar el deshacer | 1: `test_f027_r3_ultimo_pendiente_trae_su_autor` (su `SimpleNamespace` no trae `tipo`) |
+| C · R23 | `_payloads` hace una 2.ª lectura (las incidencias del mes) | 77 en 9 ficheros (las sesiones falsas devuelven las filas de asignación a cualquier `SELECT`) |
+| D · R3 | el contenedor real compone el paso `auxhor` del sync | 8 en 3 ficheros (el Sigrid falso responde filas de empleado a `auxhor`, y su UoW no tiene `tipos_incidencia`); el preview sumará los de `test_f025_sync_postventa` |
+
+Los dobles están casi todos centralizados: `_Uow` de
+`test_f024_cuadrante_empresa.py` y de `test_f025_cuadrante_postventa.py`;
+`_Sesion` de `test_f024_registro_empresa.py`, la de `test_f022_empresa_en_linea.py`,
+`_SesionQueFiltra` de `test_f056_trabajador_ide.py` y el `_S` de
+`test_f055_registro_lote.py`; `_SigridFalso`/`_UowEspia` de
+`test_f023_sync_empresa.py` y `test_f032_empresas_sigrid.py`, y el
+`SimpleNamespace` de `test_f027`. Unos 10 ficheros que editar; los demás
+heredan.
+
+**Opciones:**
+
+- **A (recomendada).** Lista cerrada de adaptaciones **solo de dobles**,
+  ninguna aserción cambia: los `_Uow` ganan un repositorio `incidencias`
+  vacío; el `SimpleNamespace` de `test_f027`, `tipo="GUARDAR"`; las sesiones
+  falsas del registro responden `[]` a la lectura de `incidencia`; el Sigrid
+  falso del sync responde `[]` a `dbo.auxhor` y su UoW lleva
+  `tipos_incidencia`. Cada cambio con la marca «F-030 (lista cerrada)», como
+  hizo F-055, y la lista exacta en `progress/impl_F-030.md`. Para el front
+  (T8, T9, T17), el mismo criterio: los estáticos de F-042/F-050 que ya
+  admite el design §12, y los arneses de node que solo necesiten un doble
+  nuevo; si alguno exigiera cambiar una aserción, vuelvo a parar.
+- **A'.** Como A, pero sin tocar los 9 ficheros del registro (causa C): a
+  `RegistroSigrid` se le inyecta un lector de incidencias opcional (patrón
+  `sql_empresas=None` de `PreviewSync`), que el contenedor siempre pasa. No
+  la recomiendo: el parámetro solo existe para no tocar dobles, y un
+  cableado roto registraría sin incidencias sin avisar.
+- **B.** Producción tolerante a dobles viejos (`getattr(uow, "incidencias",
+  None)` y similares). No recomendada: lógica para tests en producción.
+- **C.** Cambiar la spec: cuadrante y fila sin incidencias (endpoint aparte
+  que el front pide), registro con lector inyectado. No evita la causa B,
+  complica el front y reabre una spec aprobada.
+
+**Para retomar:** con A, sigo en T4 (sync, repositorio, preview y cableado),
+adaptando los dobles en la misma tarea que los rompe.
+
 ## Producción, hoy
 
 - **Desplegado el 2026-10-20: F-057**, api y front, en ese orden, lanzado por
