@@ -1,21 +1,24 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Spec de F-030 escrita, a la espera del humano** (incidencias en el
-cuadrante: texto en lugar del % con desplegable de las de partes; `sdd:
-true`, rigor crítico): spec-author terminado el 2026-10-20 en la copia
+**En curso: F-030** (incidencias en el cuadrante: texto en lugar del % con
+desplegable de las de partes; `sdd: true`, rigor crítico), `in_progress`
+desde el 2026-10-21. Spec **aprobada por el humano el 2026-10-20** («si»:
+D1-D10 todas la recomendada). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f030`, rama
-`feature/F-030-dias-bajas-incidencias`; **`spec_ready` y APROBADA por el humano el
-2026-10-20** («si»: D1-D10 todas la recomendada). **Va después de F-051**
-(máximo una `in_progress`): cuando F-051 se cierre, el líder la pasa a
-`in_progress`, enlaza los `.venv` del worktree y lanza el implementer. Del D10
-salen dos features a proponer al humano: % por días con el calendario de
-convenio, y leer la bandeja de `partes` (su F-019; `MENSUALES_A_DEDICACION`
-sigue apagado). En paralelo,
-**F-051 en curso (implementer) en la copia `porcentajes-f051`** (su rama lo
-cuenta). El arnés es la **1.7.3**.
+`feature/F-030-dias-bajas-incidencias`; sus `.venv` son uniones de directorio
+a los de la copia principal (creadas por el líder, no versionadas).
+**Implementer lanzado el 2026-10-21.** Arranca **en paralelo con F-051** por
+decisión expresa del humano («empieza f30», 2026-10-21) aunque el arnés pide
+una sola `in_progress`: F-051 está en su tramo final (review APROBADA, T18 y
+T15 pendientes) en la copia `porcentajes-f051`, cuya rama lo cuenta. T20
+(MANUAL en modo pruebas en la 0404) la hará el líder si el humano lo pide;
+ningún agente escribe en Sigrid por su cuenta. Del D10 salen dos features a
+proponer al humano: % por días con el calendario de convenio, y leer la
+bandeja de `partes` (su F-019; `MENSUALES_A_DEDICACION` sigue apagado). El
+arnés es la **1.7.3**.
 
-## F-030 · spec escrita, D1-D10 pendientes del humano (2026-10-20)
+## F-030 · spec escrita y aprobada (D1-D10 decididas, 2026-10-20)
 
 - **Petición del humano (2026-10-20)**, literal en `features.json`: en la
   celda del %, si se escribe texto, desplegable con las incidencias de
