@@ -3,16 +3,13 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **55 features**, 24 abiertas, 31 terminadas.
-
-En curso: **F-051**.
+Resumen: **55 features**, 23 abiertas, 32 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
-| F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | en curso | critico | `feature/F-051-pisar-lineas-cero` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
 | F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | pendiente | critico | `feature/F-053-delegados-parte-unico` |
@@ -68,6 +65,7 @@ En curso: **F-051**.
 | F-015 | Alta en el Portal Ruesma: tarjeta y usuarios del grupo | 4 | documental |
 | F-025 | Obras de postventa sacadas de los capítulos de POSTV2 | 4 | critico |
 | F-039 | Filtrar mejor las obras: partidas de VAR desde la 29 y fuera las obras de 6 dígitos | 4 | critico |
+| F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | critico |
 | F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 5 | estandar |
 | F-043 | Partida del modal de registro: buscador predictivo, ordenada y con selector CI/CD como en partes | 5 | estandar |
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
@@ -79,12 +77,6 @@ En curso: **F-051**.
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-058-porcentaje-cero-no-registra`
 
 O4 de la review de F-051 (2026-10-21): un porcentaje menor de 0,00005 (en fracción) se redondea a `can` 0,0 en `reglas_porcentajes.py` (`can = round(porcentaje, 4)`) y sale una acción `escribir` con cantidad 0. Hueco anterior a F-051, pero con F-051 esa acción podría editar una línea al 0 % dejándola a 0 con nuestra `synckey` (o insertar una línea a 0). Decisión del humano el 2026-10-21 («ok o2 y o4»: feature aparte, como recomendó el líder): esas líneas NO se registran; salen como omitidas con un aviso legible en el preflight y en `ejecutar`. Servicio: transfer (la regla que construye la cantidad); el front solo enseña el aviso que ya pinta para las omitidas. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
-
-### F-051 · Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso
-
-estado **en curso** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-051-pisar-lineas-cero`
-
-Pedida por el humano el 2026-10-08: «que al filtrar por obra (al buscar) te vele las etiquetas de las obras que no son la filtrada cuando el recurso tiene más de 1 obra. Que se vea en subfilas cada obra, no todas juntas, de forma que a la derecha de obra aparezca una columna partida, donde poder elegir la partida (quitamos la búsqueda de partida del modal de registrar, aunque mantengamos el que pueda cambiarse ahí). Al elegir partida, primero que proponga la del parte anterior por obra y empleado (o la del último en que se asignó ese recurso), y si no, con el sistema de casamiento de partes que funciona bien (nombre y categoría). Que también pise las líneas de parte a 0% que ya existan, ahora no lo hace. Que además no genere solo el parte del recurso sino de los recursos vinculados en el mismo % (vehículo, viaje, teléfono, gasoil...)». Esta feature recoge: «que también pise las líneas de parte a 0% que ya existan, ahora no lo hace». PRIMERO EXPLORAR (solo lectura en Sigrid): qué son esas líneas al 0 % (quién las crea —¿partes, una plantilla del parte?—, con qué hora y partida), por qué el criterio de choque de hoy (`criterio_choque`, ARCHITECTURE.md#regla-conflicto) no las ve, y qué significa «pisar» aquí (borrar y escribir, o actualizar la línea existente con el %). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). CONTEXTO (Juan Romero, 2026-10-08): Administración debe dejar los partes de octubre limpios («no copiéis los recursos del mes anterior… las tenéis que borrar»), salvo el personal operario con horas; las líneas al 0 % que queden de copiar el mes anterior son justo las que esta feature tiene que pisar.
 
 ### F-044 · Aplicar los porcentajes también a los recursos vinculados al trabajador
 
@@ -385,6 +377,12 @@ Salida de la revisión de negocio del 2026-09-29. Diagnóstico con evidencia en 
 estado **terminada** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-039-obras-var-y-seis-digitos`
 
 Pedida por el humano el 2026-10-06: «añade como se ha hecho en postventa la obra de código VAR, hay que coger sus partidas, pero a partir de la que empieza por 29 (inclusive), si empieza por un número inferior no. Por otro lado las obras con código de 6 números juntos o más ignóralas». Datos leídos por el líder en Sigrid (solo lectura): la obra VAR «OBRAS VARIAS» de la empresa 1 (con.ide 683806, est 15) tiene bajo su capítulo CD (obrparpar 52979) 29 partidas hoja numeradas 01-29, cada una una obra pequeña (p. ej. 29 «ACOND. NAVE MODUL-A, ARROYOMOLINOS»); hoy solo entraría la 29. Hay otra VAR en la empresa 28 con una partida 28 (las obras son siempre de la empresa de las obras, F-034). Obras con 6+ dígitos seguidos en el código: 240 (239 de la empresa 1, 1 de la 25), todas antiguas (090201, 191105, 0902051…). Como en postventa (F-025), cada partida de VAR se ofrece como una entrada propia y registra en la obra VAR con esa partida. 2026-10-06: spec escrita (`specs/F-039-obras-var-y-seis-digitos/`), con D1-D6 pendientes del humano; lecturas del spec-author: VAR está EN CURSO (hoy se ofrece como obra normal), su centro tiene cuentas VAR.CIMO01-16, la partida 29 es la ide 417055 con 4 líneas de Administración en 2026-08, y de las 240 obras de 6+ dígitos ninguna tiene parte desde 2024 ni asignaciones en la base local. 2026-10-06: spec APROBADA por el humano (D1-D6; D4 final: se ignora toda obra cuyo código contenga 6 o más dígitos seguidos, 240 obras). Pasa a implementación en paralelo con la spec de F-040 (worktree aparte), por decisión del humano. CERRADA (done) el 2026-10-06: review pasada 2 APROBADA; M1 (sync: 240 excluidas, VAR-29 activa), M2 (preflight VAR-29 → obra VAR, partida 29) y M3 (usabilidad) cumplidas por el humano («todo ok»). PENDIENTE DE DESPLEGAR (transfer → api → front, junto con F-037). DESPLEGADA el 2026-10-07 (transfer r20261007-0851, api r20261007-0852, front r20261007-0853).
+
+### F-051 · Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso
+
+estado **terminada** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-051-pisar-lineas-cero`
+
+Pedida por el humano el 2026-10-08: «que al filtrar por obra (al buscar) te vele las etiquetas de las obras que no son la filtrada cuando el recurso tiene más de 1 obra. Que se vea en subfilas cada obra, no todas juntas, de forma que a la derecha de obra aparezca una columna partida, donde poder elegir la partida (quitamos la búsqueda de partida del modal de registrar, aunque mantengamos el que pueda cambiarse ahí). Al elegir partida, primero que proponga la del parte anterior por obra y empleado (o la del último en que se asignó ese recurso), y si no, con el sistema de casamiento de partes que funciona bien (nombre y categoría). Que también pise las líneas de parte a 0% que ya existan, ahora no lo hace. Que además no genere solo el parte del recurso sino de los recursos vinculados en el mismo % (vehículo, viaje, teléfono, gasoil...)». Esta feature recoge: «que también pise las líneas de parte a 0% que ya existan, ahora no lo hace». PRIMERO EXPLORAR (solo lectura en Sigrid): qué son esas líneas al 0 % (quién las crea —¿partes, una plantilla del parte?—, con qué hora y partida), por qué el criterio de choque de hoy (`criterio_choque`, ARCHITECTURE.md#regla-conflicto) no las ve, y qué significa «pisar» aquí (borrar y escribir, o actualizar la línea existente con el %). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). CONTEXTO (Juan Romero, 2026-10-08): Administración debe dejar los partes de octubre limpios («no copiéis los recursos del mes anterior… las tenéis que borrar»), salvo el personal operario con horas; las líneas al 0 % que queden de copiar el mes anterior son justo las que esta feature tiene que pisar.
 
 ### F-027 · Deshacer solo lo propio: nadie deshace lo de otro usuario
 

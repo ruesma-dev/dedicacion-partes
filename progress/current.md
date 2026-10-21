@@ -1,49 +1,29 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-051** (pisar las líneas del parte editándolas, nunca
-borrando), `in_progress`. **Review pasada 1: RECHAZADO** (2026-10-21,
-`progress/review_F-051.md`): el mutante que el implementer daba por
-equivalente (`registro_pipeline.py:1095`) **no lo es** (con `can = 0` y una
-relectura de `1e-6` original y mutante difieren) ⇒ test que lo mate y nueva
-campaña hasta cero supervivientes; más dos arreglos menores (línea 568 de
-`registro_pipeline.py`, primera línea de `impl_F-051.md`). El rastro
-desfasado de este fichero lo ha podado el líder. **Correcciones hechas por
-el implementer** (2026-10-21: test de la frontera de R13 `d807cce`, formato
-`7a5f801`, campaña en serie sobre `7a5f801` con **134 mutantes y 0
-supervivientes** `e51ba7b`, informe `d170afb`). **Review pasada 2: APROBADO**;
-T18 (O2) hecha y **review pasada 3, solo de T18: APROBADO** (2026-10-21,
-`progress/review_F-051.md`). **Falta T15** (MANUAL en modo pruebas, la
-ejecuta el **líder** a petición del humano, en cuanto el humano autorice
-las escrituras de la preparación) para pasar a `done`. Spec aprobada por el humano el 2026-10-20 (D1-D15,
-en «decisiones» abajo); bloqueos de implementación resueltos por el humano:
-T3 opción A, T12 opción B. Copia
-`C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
-`feature/F-051-pisar-lineas-cero` (con `dev` fusionado el 2026-10-21: el
-despliegue de F-057); sus `.venv` son uniones de directorio a los de la
-copia principal (creadas por el líder, no versionadas). Ningún agente
-escribe en Sigrid por su cuenta. **F-030** en curso en paralelo en la copia
-`porcentajes-f030` (decisión del humano, 2026-10-21). El arnés es la **1.7.3**.
+**F-051 CERRADA (`done`) el 2026-10-21, pendiente de desplegar**
+(pisar las líneas del parte editándolas, nunca borrando; transfer, api y
+front). Review: pasada 1 RECHAZADO (mutante que no era equivalente y rastro
+desfasado), pasada 2 APROBADO, pasada 3 (T18, la O2) APROBADO
+(`progress/review_F-051.md`). **T15 CUMPLIDA por el líder el 2026-10-21** en
+modo pruebas en la 0404, con las escrituras autorizadas por el humano
+(«realiza tu las pruebas», «escribe en prueba para 51»): la línea a 0 se
+edita en su sitio, el pisado edita, la tercera vez es «ya registrada», 0
+`DELETE`; 0404 limpia al acabar (`progress/manual_F-051.md`). `bash
+harness/init.sh` en verde en la rama. Spec aprobada por el humano el
+2026-10-20 (D1-D15); bloqueos de implementación resueltos por él (T3 A, T12
+B); O2 dentro (T18) y O4 a la feature nueva **F-058** (`pending`), decisión
+del humano del 2026-10-21. **F-030** en curso en paralelo en la copia
+`porcentajes-f030` (decisión del humano, 2026-10-21). El arnés es la
+**1.7.3**.
 
-**Pendiente del humano para cerrar F-051:** autorizar las cuatro
-escrituras de T15 en la 0404 que le pidió el líder el 2026-10-21 (limpiar
-las líneas de prueba que quedan, `porcentajes:148/149` y `:180`; crear las
-dos líneas `M*` a 0 en PT26/00371, recursos 1705036 y 2786385, `MADM`
-`horide` 27, con `stmt_insert_linea` del transfer, `synckey` vacía y
-`PRUEBA-PORC`; los tres registros desde el front local en modo pruebas; y
-`limpiar` al final). T15 la ejecuta el líder (pasos y comando exacto abajo,
-en «implementación»). Ya **no** hace
-falta que acepte ningún mutante equivalente. **O2 y O4 decididas por el humano el
-2026-10-21** («ok o2 y o4», las recomendadas): **O2** se hace dentro de F-051
-(T18: exigir además línea `M*` al localizar por `hmores_ide`; **hecha** el
-2026-10-21, `d5d61ac`, mutación 136/0 `6ca3074`; review pasada 3: APROBADO) y **O4** va a la feature nueva **F-058** (`pending`: un % que
-redondea a `can` 0 no se registra). **T15 la hace el líder** a petición del
-humano («realiza tu las pruebas», 2026-10-21); la preparación (dos líneas
-`M*` a 0 sin `synckey` en PT26/00371, que hoy solo tiene la `porcentajes:180`,
-`ide` 410599, leída por el líder) pide una escritura directa en Sigrid
-fuera del transfer: **consultada al humano**. **F-030 arranca en paralelo**
-por decisión del humano («empieza f30»), en su copia. **Pendiente del líder:** T16 al desplegar (transfer → api
-→ front): `azure-apps/dedicacion.md` y aviso a `partes`.
+**Pendiente del líder, al desplegar F-051** (necesita permiso del humano;
+orden **transfer → api → front**): T16, refrescar `azure-apps/dedicacion.md`
+desde `docs/INTEGRACION.md` §1, §5 y §7 (el transfer EDITA en su sitio
+líneas `M*` de partes compartidos, `UPDATE` con guarda y sin `DELETE`;
+`lineas[].hmores_ide` de ida; `ya_registradas_ide`, `editadas`, `a_cero` y
+`escritas[].editada` de vuelta; `borradas` siempre 0) y avisar a `partes` de
+que el transfer edita líneas `M*` de sus partes sin borrarlas.
 
 ## F-051 · bloqueos de implementación (2026-10-20) · RESUELTOS
 
@@ -83,22 +63,9 @@ por decisión del humano («empieza f30»), en su copia. **Pendiente del líder:
   `pos`, `paride` y `tex` (para T15); la api usa
   `getattr(a, "sigrid_hmores_ide", None)`; el paso 9 bis va antes del alta de
   partes y solo lo que inserta crea parte o lee `max_pos`.
-- **T15 (MANUAL, modo pruebas; la ejecuta el líder a petición del humano,
-  «realiza tu las pruebas», 2026-10-21). Sin ejecutar a 2026-10-21**, a la
-  espera de que el humano autorice la preparación. Antes, se crea en el parte
-  En registro de la 0404 de noviembre de 2026 (PT26/00371) dos líneas `M*`
-  con `can = 0` y sin `synckey`: una del recurso de prueba (el de F-050) y
-  otra de un segundo recurso. Transfer, api y front locales con
-  `OBRA_PRUEBAS_FORZAR=true`. Lectura, en Git Bash, desde la copia que se
-  pruebe (solo lectura; anotar `ide` y `pos`):
-  `cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`.
-  Esperado: el modal dice que edita la línea; tras **Registrar**, mismo `ide`
-  y `pos`, con el %, la partida, `PRUEBA-PORC` y `porcentajes:…`, sin línea
-  nueva y la otra a 0; tras cambiar el %, pisado «se edita …» y la misma
-  línea con el % nuevo; tercera vez, «ya registrada»; ningún `DELETE` en el
-  log del transfer. Limpieza: `limpiar --confirmar` borra la editada
-  (`PRUEBA-PORC` y nuestra `synckey`, D15 = A); la del segundo recurso, a
-  mano.
+- **T15 CUMPLIDA por el líder el 2026-10-21** (modo pruebas, 0404,
+  escrituras autorizadas por el humano). Detalle en
+  `progress/manual_F-051.md`; resumen en `progress/impl_F-051.md` §6.
 - **`azure-apps` pendiente (T16, líder, al desplegar transfer → api →
   front):** `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` §1, §5 y
   §7: el transfer EDITA en su sitio líneas `M*` de partes compartidos
@@ -274,8 +241,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. Orden: **F-051** (review APROBADA; falta T15, la hace el líder), **F-030**
-(en curso en paralelo), F-044, F-052, F-053, **F-054** (el sync trae los %
+2026-10-20. F-051 cerrada el 2026-10-21 (pendiente de desplegar). Orden: **F-030** (en curso), **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 

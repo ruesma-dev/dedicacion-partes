@@ -179,20 +179,16 @@ front 310; transfer 1080. **PUERTA COBERTURA 99,2 %** (253/255, umbral 80 %);
 TAMAÑO dentro. Ruff: los avisos de más frente a `dev` son `Optional[...]`
 (estilo de esos ficheros), `dict()` en tests y un `PYI034` en un doble.
 
-## 6. Verificaciones MANUAL pendientes
+## 6. Verificación MANUAL (T15)
 
-- **T15 (humano, modo pruebas, 0404)**. Preparación y pasos completos en
-  `tasks.md` T15 (líneas `M*` a `can = 0` creadas a mano en el parte En
-  registro de la 0404 de noviembre de 2026; transfer, api y front locales con
-  `OBRA_PRUEBAS_FORZAR=true`). Lectura, en Git Bash:
-  `cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`
-  (solo lectura; anotar `ide` y `pos`). Esperado: mismo `ide` y `pos`, con
-  el %, la partida, `PRUEBA-PORC` y `porcentajes:…`, sin línea nueva, la otra
-  a 0; tras cambiar el %, «se edita» y la misma línea con el % nuevo; tercera
-  vez, «ya registrada»; ningún `DELETE` en el log. **Ojo con la limpieza**:
-  `limpiar --confirmar` borra también las líneas de Administración EDITADAS
-  en la 0404 (quedan con `PRUEBA-PORC` y nuestra `synckey`, D15 = A); la del
-  segundo recurso la quita el humano a mano.
+**CUMPLIDA por el líder el 2026-10-21** (a petición del humano, con las
+escrituras en la 0404 autorizadas por él). Detalle paso a paso en
+`progress/manual_F-051.md`. En corto: la línea `MADM` a 0 de PT26/00371
+(`ide` 411587) se editó **en su sitio** (mismo `ide` y `pos`) al registrar,
+y otra vez al confirmar el pisado («se edita la línea 411587 … y se escribe
+60%»); la tercera vez, «ya registrada» por `hmores_ide`; la línea a 0 del
+otro recurso quedó intacta; en el log, 2 `UPDATE`, 1 `INSERT` y **0
+`DELETE`**. 0404 limpia al acabar.
 
 ## 7. Fuera del alcance y pendiente
 
