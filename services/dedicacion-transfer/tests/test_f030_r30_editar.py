@@ -205,3 +205,229 @@ def test_f030_r41_sql_la_guarda_sin_codigo_es_la_de_f051():
     texto, params = cli._guarda(1, 2, 0.5, "k", "CIV")
     assert "a.cod = ?" in texto and "LIKE 'M%'" not in texto
     assert params == [1, 2, 0.5, "k", "CIV", 1]
+
+
+# ======================== reconciliar (T29) ============================= #
+from domain.models.registro_models import HoraRecurso
+
+HORAS = {200: [HoraRecurso(71, "CIV", "Vacaciones(V)", 12.5),
+               HoraRecurso(72, "CIE", "Enfermedad(B)", 0.0),
+               HoraRecurso(79, "CIZ", "Fin de Incidencia", 0.0)]}
+EST = 1
+
+
+def _entrada(id_=7, desde=6, hasta=9, traza=True, **kw) -> IncidenciaEntrada:
+    base = {"id": id_, "recurso_ide": 200, "empresa": 1, "codigo": "CIV",
+            "ano": 2026, "mes": 7, "desde": desde, "hasta": hasta,
+            **(TRAZA if traza else {})}
+    return IncidenciaEntrada(**{**base, **kw})
+
+
+def _par(entrada):
+    from application.services.reglas_incidencias import decidir_incidencia
+
+    return decidir_incidencia(entrada, HORAS)
+
+
+def _linea(ide, fec, cod="CIV", sk=None, *, reside=200, can=0.0, parte="PT26/1",
+           hmoide=777, est=EST):
+    return LineaIncidenciaSigrid(ide, reside, fec, cod, sk, parte, can=can,
+                                 hmoide=hmoide, parte_est=est)
+
+
+def _el_par(ini=20260705, fin=20260709, **kw):
+    return [_linea(9001, ini, "CIV", "porcentajes:inc:7:ini", **kw),
+            _linea(9002, fin, "CIZ", "porcentajes:inc:7:fin", **kw)]
+
+
+def _rec(entradas, existentes, est=EST):
+    from application.services.reglas_incidencias import reconciliar
+
+    acciones = [a for e in entradas for a in _par(e)]
+    reconciliar(acciones, entradas, existentes, est=est)
+    return acciones
+
+
+def _v(acciones):
+    return [(a.rol, a.accion, a.fecha_int, a.fec_antes, a.hmores_ide,
+             a.hmoide, a.parte_cod) for a in acciones]
+
+
+def test_f030_r40_misma_fec_ya_registrado_por_ide_o_por_synckey():
+    from application.services.reglas_incidencias import MOTIVO_INC_YA
+
+    acc = _rec([_entrada(desde=5)], _el_par())
+    assert _v(acc) == [("ini", "ya_registrado", 20260705, None, 9001, 777,
+                        "PT26/1"),
+                       ("fin", "ya_registrado", 20260709, None, 9002, 777,
+                        "PT26/1")]
+    assert acc[0].motivo == MOTIVO_INC_YA.format(ide=9001)
+    # Sin la traza de la api (registrada antes del anexo): por su synckey.
+    acc = _rec([_entrada(desde=5, traza=False)], _el_par())
+    assert [(a.accion, a.hmores_ide) for a in acc] == [
+        ("ya_registrado", 9001), ("ya_registrado", 9002)]
+
+
+def test_f030_r40_nuestra_solo_si_es_del_recurso_y_con_nuestra_synckey():
+    otro_recurso = [_linea(9001, 20260705, "CIV", "porcentajes:inc:7:ini",
+                           reside=999)]
+    acc = _rec([_entrada(desde=5, hasta=9)], otro_recurso)
+    assert acc[0].accion == "escribir"           # no es la nuestra
+    otra_sk = [_linea(9001, 20260705, "CIV", "partes:9:1")]
+    acc = _rec([_entrada(desde=6, hasta=9)], otra_sk)
+    assert acc[0].accion == "escribir"           # ya no está: se escribe
+
+
+def test_f030_r41_otra_fec_edita_y_cada_linea_se_decide_sola():
+    acc = _rec([_entrada(desde=6, hasta=9)], _el_par())
+    assert _v(acc) == [
+        ("ini", "editar", 20260706, 20260705, 9001, 777, "PT26/1"),
+        ("fin", "ya_registrado", 20260709, None, 9002, 777, "PT26/1")]
+    assert acc[0].motivo is None
+    acc = _rec([_entrada(desde=12, hasta=14)], _el_par())
+    assert [(a.accion, a.fec_antes) for a in acc] == [
+        ("editar", 20260705), ("editar", 20260709)]
+
+
+def test_f030_r41_sin_dia_en_la_traza_edita_si_es_del_mes():
+    sin_dias = {"dia_ini": None, "dia_fin": None}
+    acc = _rec([_entrada(desde=6, **sin_dias)], _el_par())
+    assert acc[0].accion == "editar"
+    # Por `synckey` en otro mes (no consta el día): no se cambia de mes.
+    acc = _rec([_entrada(desde=6, traza=False)],
+               _el_par(ini=20260630, fin=20260709))
+    assert acc[0].accion == "omitir"
+
+
+@pytest.mark.parametrize("cambio", [
+    {"ini": 20260704},                       # su fec, cambiada a mano
+    {"ini": 20260605},                       # a otro mes
+])
+def test_f030_r42_cambiada_en_sigrid_no_se_toca(cambio):
+    from application.services.reglas_incidencias import MOTIVO_INC_CAMBIADA
+
+    acc = _rec([_entrada(desde=6)], _el_par(**cambio))
+    assert (acc[0].accion, acc[0].hmores_ide, acc[0].fec_antes) == (
+        "omitir", 9001, None)
+    assert acc[0].motivo == MOTIVO_INC_CAMBIADA.format(ide=9001)
+    assert "cambiada en Sigrid" in acc[0].motivo
+
+
+@pytest.mark.parametrize("linea", [
+    _linea(9001, 20260705, "CIE", "porcentajes:inc:7:ini"),    # otro código
+    _linea(9001, 20260705, None, "porcentajes:inc:7:ini"),
+    _linea(9001, 20260705, "CIV", "porcentajes:inc:7:ini", can=1.0),
+])
+def test_f030_r42_otro_codigo_o_can_no_se_toca(linea):
+    acc = _rec([_entrada(desde=6)], [linea])
+    assert acc[0].accion == "omitir"
+    # Con su fec pedida, ya registrada aunque le cambien el `can` (D14).
+    acc = _rec([_entrada(desde=5)], [linea])
+    assert acc[0].accion == "ya_registrado"
+
+
+def test_f030_r42_can_nulo_cuenta_como_cero():
+    acc = _rec([_entrada(desde=6)], _el_par(can=None))
+    assert acc[0].accion == "editar"
+
+
+def test_f030_r43_parte_cerrado_no_se_edita():
+    from application.services.reglas_incidencias import MOTIVO_INC_CERRADO
+
+    acc = _rec([_entrada(desde=6, hasta=12)], _el_par(est=3))
+    assert [a.accion for a in acc] == ["omitir", "omitir"]
+    assert acc[0].motivo == MOTIVO_INC_CERRADO.format(parte="PT26/1",
+                                                      desde=5, hasta=9)
+    assert acc[0].motivo == "el parte PT26/1 está cerrado: sigue del 5 al 9"
+    # Con su fec, ya registrada aunque el parte esté cerrado.
+    acc = _rec([_entrada(desde=5, hasta=12)], _el_par(est=3))
+    assert [a.accion for a in acc] == ["ya_registrado", "omitir"]
+
+
+def test_f030_r44_dia_ocupado_por_otra_igual_no_se_edita():
+    from application.services.reglas_incidencias import MOTIVO_INC_DUPLICADA
+
+    otra = _linea(60, 20260706, "CIV", "partes:9:1", parte="PT26/9")
+    acc = _rec([_entrada(desde=6)], [*_el_par(), otra])
+    assert (acc[0].accion, acc[0].parte_cod) == ("omitir", "PT26/1")
+    assert acc[0].motivo == MOTIVO_INC_DUPLICADA.format(
+        cod="CIV", dia=6, mes=7, parte="PT26/9")
+    # Otro código, otro recurso u otro día: no ocupa.
+    libres = [_linea(61, 20260706, "CIE"), _linea(62, 20260706, reside=201),
+              _linea(63, 20260707)]
+    acc = _rec([_entrada(desde=6)], [*_el_par(), *libres])
+    assert acc[0].accion == "editar"
+
+
+def test_f030_r44_con_las_ediciones_de_la_peticion_aplicadas():
+    """La 8 se va del 6 al 20: la 7 puede ocupar el 6. La 9 iría al 25,
+    donde la 10 se queda (su parte está cerrado): no se edita."""
+    par8 = [_linea(9011, 20260706, "CIV", "porcentajes:inc:8:ini"),
+            _linea(9012, 20260722, "CIZ", "porcentajes:inc:8:fin")]
+    acc = _rec([_entrada(desde=6), _entrada(8, desde=20, hasta=22,
+                                            traza=False)],
+               [*_el_par(), *par8])
+    assert [(a.id, a.rol, a.accion) for a in acc] == [
+        (7, "ini", "editar"), (7, "fin", "ya_registrado"),
+        (8, "ini", "editar"), (8, "fin", "ya_registrado")]
+    par9 = [_linea(9021, 20260723, "CIV", "porcentajes:inc:9:ini"),
+            _linea(9022, 20260724, "CIZ", "porcentajes:inc:9:fin")]
+    par10 = [_linea(9031, 20260725, "CIV", "porcentajes:inc:10:ini", est=3),
+             _linea(9032, 20260726, "CIZ", "porcentajes:inc:10:fin", est=3)]
+    acc = _rec([_entrada(9, desde=25, hasta=26, traza=False),
+                _entrada(10, desde=27, hasta=28, traza=False)],
+               [*par9, *par10])
+    assert [(a.id, a.rol, a.accion) for a in acc] == [
+        (9, "ini", "omitir"), (9, "fin", "omitir"),
+        (10, "ini", "omitir"), (10, "fin", "omitir")]
+    # En cadena: la 11 no puede ir al 15 (otra igual) y se queda en el 12,
+    # así que la 12, que iba a ocupar ese 12 (y se decide antes), tampoco.
+    # Su fin sí: el 13 lo deja libre el fin de la 11.
+    par11 = [_linea(9041, 20260712, "CIV", "porcentajes:inc:11:ini"),
+             _linea(9042, 20260713, "CIZ", "porcentajes:inc:11:fin")]
+    par12 = [_linea(9051, 20260710, "CIV", "porcentajes:inc:12:ini"),
+             _linea(9052, 20260711, "CIZ", "porcentajes:inc:12:fin")]
+    otra = _linea(70, 20260715, "CIV", "partes:1:1")
+    acc = _rec([_entrada(12, desde=12, hasta=13, traza=False),
+                _entrada(11, desde=15, hasta=16, traza=False)],
+               [*par11, *par12, otra])
+    assert [(a.id, a.rol, a.accion) for a in acc] == [
+        (12, "ini", "omitir"), (12, "fin", "editar"),
+        (11, "ini", "omitir"), (11, "fin", "editar")]
+
+
+def test_f030_r27_sin_la_nuestra_como_siempre_y_con_lo_movido():
+    from application.services.reglas_incidencias import MOTIVO_INC_DUPLICADA
+
+    otra = _linea(60, 20260712, "CIV", None, parte="PT26/40")
+    acc = _rec([_entrada(desde=12, hasta=14, traza=False)], [otra])
+    assert (acc[0].accion, acc[0].parte_cod, acc[0].motivo) == (
+        "omitir", "PT26/40", MOTIVO_INC_DUPLICADA.format(
+            cod="CIV", dia=12, mes=7, parte="PT26/40"))
+    assert (acc[1].accion, acc[1].parte_cod) == ("escribir", None)
+    # Una nueva el 5, donde estaba la 7, que se mueve al 6: se escribe.
+    acc = _rec([_entrada(desde=6), _entrada(8, desde=5, hasta=5,
+                                            traza=False, codigo="CIV")],
+               _el_par())
+    assert [(a.id, a.rol, a.accion) for a in acc][:3] == [
+        (7, "ini", "editar"), (7, "fin", "ya_registrado"),
+        (8, "ini", "escribir")]
+
+
+def test_f030_r40_solo_se_reconcilian_las_que_se_escribirian():
+    from application.services.reglas_incidencias import reconciliar
+
+    omitidas = _par(_entrada(desde=6, recurso_ide=300))      # sin códigos
+    antes = [(a.accion, a.motivo) for a in omitidas]
+    reconciliar(omitidas, [_entrada(desde=6, recurso_ide=300)], _el_par(),
+                est=EST)
+    assert [(a.accion, a.motivo) for a in omitidas] == antes
+    assert reconciliar([], [], _el_par(), est=EST) is None
+
+
+def test_f030_r43_sin_la_otra_linea_su_dia_no_consta():
+    from application.services.reglas_incidencias import MOTIVO_INC_CERRADO
+
+    acc = _rec([_entrada(desde=6, hasta=12)], _el_par(est=3)[:1])
+    assert acc[0].motivo == MOTIVO_INC_CERRADO.format(parte="PT26/1",
+                                                      desde=5, hasta="?")

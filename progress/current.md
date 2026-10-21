@@ -25,7 +25,7 @@ cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
 
 ## F-030 · anexo R30: implementación EN CURSO (implementer, 2026-10-21)
 
-- **Tarea en curso:** T29 (T28 hecha: cliente, lectura por `ide` y `UPDATE` de la `fec`. T27 hecha: contrato del transfer. T26 hecha: traza R39, payload y quitadas; la mitad api del punta a punta ya pasa y su `xfail` estricto se quitó en T26, no en T33 (con la marca, el XPASS ponía la suite en rojo). T25 hecha: deshacer R47. T24 hecha: guardar por `id` y quitadas. T23 hecha: esquema; T22 hecha: contrato `tests/contratos/f030_r30.json`
+- **Tarea en curso:** T30 (T29 hecha: `reconciliar` puro; `deduplicar` sigue hasta que T30 cambie el pipeline. T28 hecha: cliente, lectura por `ide` y `UPDATE` de la `fec`. T27 hecha: contrato del transfer. T26 hecha: traza R39, payload y quitadas; la mitad api del punta a punta ya pasa y su `xfail` estricto se quitó en T26, no en T33 (con la marca, el XPASS ponía la suite en rojo). T25 hecha: deshacer R47. T24 hecha: guardar por `id` y quitadas. T23 hecha: esquema; T22 hecha: contrato `tests/contratos/f030_r30.json`
   y sus dos mitades en `xfail(strict=True)`).
 - **Decisiones:** los cuatro campos del contrato api → transfer se llaman
   `hmores_ide_ini`, `hmores_ide_fin`, `dia_ini` y `dia_fin` (design §6 no

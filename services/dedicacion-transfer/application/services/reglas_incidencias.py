@@ -11,6 +11,11 @@ Aquí se IMPLEMENTAN; la fuente normativa es
     se omiten las dos: nunca un inicio sin su fin (R24, R26).
   - `deduplicar`: una línea igual (recurso, código y `fec`) en cualquier
     parte del mes no se escribe otra vez (R27).
+  - `reconciliar` (anexo R30, R40-R44): la que ya es NUESTRA en Sigrid (por
+    su `ide` de la traza o por su `synckey`) no se escribe: con su `fec`, ya
+    registrada; con otra, se EDITA su `fec` en su sitio, salvo que la hayan
+    cambiado a mano, su parte esté cerrado o el día nuevo ya lo tenga otra
+    igual. Sin la nuestra, R27 como `deduplicar`.
   - `synckey_incidencia`: la idempotencia, por incidencia y rol.
 
 Una incidencia NO es jornada: no entra en la identidad de
@@ -28,6 +33,9 @@ from domain.models.registro_models import (
     IncidenciaEntrada,
     LineaIncidenciaSigrid,
 )
+
+_TRAZA_ROL = {"ini": ("hmores_ide_ini", "dia_ini"),
+              "fin": ("hmores_ide_fin", "dia_fin")}
 
 from application.services.reglas_porcentajes import (
     MOTIVO_SIN_EMPRESA,
@@ -53,6 +61,16 @@ MOTIVO_INC_YA = "ya registrada en Sigrid (línea {ide}); no se duplica"
 MOTIVO_INC_DUPLICADA = (
     "ya hay una línea {cod} del recurso el {dia:02d}/{mes:02d} en el parte "
     "{parte}: no se duplica")
+#: Anexo R30 (R42, R43, R45).
+MOTIVO_INC_CAMBIADA = (
+    "cambiada en Sigrid (línea {ide}: otro día, código o cantidad): no se "
+    "toca; para igualar, pon en el cuadrante lo que tiene Sigrid")
+MOTIVO_INC_CERRADO = "el parte {parte} está cerrado: sigue del {desde} al {hasta}"
+MOTIVO_INC_PAR = (
+    "no se edita: la otra línea de la incidencia (línea {ide}) ya no se puede "
+    "editar; se editan las dos o ninguna")
+#: `can` de una línea de incidencia: 0 (con la tolerancia de la guarda).
+_TOLERANCIA_CAN = 0.000001
 
 
 def synckey_incidencia(incidencia_id: int, rol: str) -> str:
@@ -152,3 +170,130 @@ def deduplicar(acciones: Iterable[AccionIncidencia],
             a.motivo = MOTIVO_INC_DUPLICADA.format(
                 cod=a.hora_codigo, dia=a.fecha_int % 100, mes=a.mes,
                 parte=igual.parte_cod)
+
+
+def _codigo(linea: LineaIncidenciaSigrid) -> str:
+    return (linea.hora_codigo or "").strip()
+
+
+def _nuestra(a: AccionIncidencia, entrada: IncidenciaEntrada | None,
+             por_ide: dict[int, LineaIncidenciaSigrid],
+             por_synckey: dict[str, LineaIncidenciaSigrid]
+             ) -> LineaIncidenciaSigrid | None:
+    """R40: la línea nuestra de esta acción: la de su `ide` en la traza o
+    la de su `synckey`, siempre del recurso y con NUESTRA `synckey`."""
+    sk = synckey_incidencia(a.id, a.rol)
+    ide = (getattr(entrada, _TRAZA_ROL[a.rol][0]) if entrada is not None
+           else None)
+    for linea in (por_ide.get(int(ide)) if ide else None,
+                  por_synckey.get(sk)):
+        if (linea is not None and linea.reside == a.recurso_ide
+                and linea.synckey == sk):
+            return linea
+    return None
+
+
+def _cambiada(a: AccionIncidencia, entrada: IncidenciaEntrada | None,
+              linea: LineaIncidenciaSigrid) -> bool:
+    """R42 (D14): fuera de la `fec` registrada (si no consta, fuera del
+    mes: una incidencia no cambia de mes, R48), con otro código o con
+    `can` distinto de 0 (nulo cuenta como 0)."""
+    dia = (getattr(entrada, _TRAZA_ROL[a.rol][1]) if entrada is not None
+           else None)
+    if dia is not None:
+        fuera = linea.fecha_int != a.ano * 10000 + a.mes * 100 + int(dia)
+    else:
+        fuera = linea.fecha_int // 100 != a.fecha_int // 100
+    return (fuera or _codigo(linea) != a.hora_codigo
+            or abs(float(linea.can or 0.0)) >= _TOLERANCIA_CAN)
+
+
+def _ocupada(a: AccionIncidencia, existentes: list[LineaIncidenciaSigrid],
+             fec: dict[int, int], propia: int | None
+             ) -> LineaIncidenciaSigrid | None:
+    """R27 y R44: otra línea del recurso con el código de `a` en su `fec`,
+    con las ediciones de la petición aplicadas (`fec`: la de cada línea
+    tras la petición)."""
+    return next((e for e in existentes
+                 if e.ide != propia and e.reside == a.recurso_ide
+                 and fec[e.ide] == a.fecha_int
+                 and _codigo(e) == a.hora_codigo), None)
+
+
+def reconciliar(acciones: Iterable[AccionIncidencia],
+                entradas: Iterable[IncidenciaEntrada],
+                existentes: Iterable[LineaIncidenciaSigrid], *,
+                est: int) -> None:
+    """Anexo R30 (R40-R44, D14, D15): cada acción `escribir` contra las
+    líneas de incidencia leídas (R33, también por `ide`). Cambia las
+    acciones en sitio; cada línea del par se decide sola.
+
+    - La NUESTRA (`_nuestra`) con la `fec` pedida: `ya_registrado` (aunque
+      le hayan cambiado el `can` o su parte esté cerrado, como F-051).
+    - Con otra `fec`: `omitir` si la cambiaron en Sigrid (R42) o su parte
+      no está En registro (`est`, R43); si no, `editar` su `fec`
+      (`fec_antes`, la que tiene), salvo que el día nuevo lo tenga otra
+      línea igual con las ediciones de la petición aplicadas (R44, D15).
+      Hasta un punto fijo: una edición que no se hace deja su línea donde
+      estaba.
+    - Sin la nuestra (nunca escrita o borrada a mano): R27 contra lo
+      leído, también con las ediciones aplicadas; si nada la ocupa, se
+      escribe (F-051 R17)."""
+    existentes = list(existentes)
+    por_ide = {e.ide: e for e in existentes}
+    por_synckey = {e.synckey: e for e in existentes if e.synckey}
+    por_id = {int(e.id): e for e in entradas}
+    nuestras: dict[int, dict[str, LineaIncidenciaSigrid]] = {}
+    pendientes = []
+    for a in acciones:
+        if a.accion != "escribir":
+            continue
+        linea = _nuestra(a, por_id.get(a.id), por_ide, por_synckey)
+        pendientes.append((a, linea))
+        if linea is not None:
+            nuestras.setdefault(a.id, {})[a.rol] = linea
+    for a, linea in pendientes:
+        if linea is None:
+            continue
+        a.hmores_ide, a.hmoide, a.parte_cod = (linea.ide, linea.hmoide,
+                                               linea.parte_cod)
+        if linea.fecha_int == a.fecha_int:
+            a.accion, a.motivo = "ya_registrado", MOTIVO_INC_YA.format(
+                ide=linea.ide)
+        elif _cambiada(a, por_id.get(a.id), linea):
+            a.accion = "omitir"
+            a.motivo = MOTIVO_INC_CAMBIADA.format(ide=linea.ide)
+        elif linea.parte_est != est:
+            par = nuestras[a.id]
+            dias = [par[r].fecha_int % 100 if r in par else None
+                    for r in ROLES]
+            a.accion = "omitir"
+            a.motivo = MOTIVO_INC_CERRADO.format(
+                parte=linea.parte_cod, desde=dias[0] or "?",
+                hasta=dias[1] or "?")
+        else:
+            a.accion, a.fec_antes = "editar", linea.fecha_int
+    editar = [(a, linea) for a, linea in pendientes if a.accion == "editar"]
+    while True:
+        fec = {e.ide: e.fecha_int for e in existentes}
+        fec.update({linea.ide: a.fecha_int for a, linea in editar
+                    if a.accion == "editar"})
+        ocupadas = [(a, otra) for a, linea in editar if a.accion == "editar"
+                    for otra in [_ocupada(a, existentes, fec, linea.ide)]
+                    if otra is not None]
+        if not ocupadas:
+            break
+        for a, otra in ocupadas:
+            a.accion, a.fec_antes = "omitir", None
+            a.motivo = MOTIVO_INC_DUPLICADA.format(
+                cod=a.hora_codigo, dia=a.fecha_int % 100, mes=a.mes,
+                parte=otra.parte_cod)
+    for a, linea in pendientes:
+        if linea is not None:
+            continue
+        otra = _ocupada(a, existentes, fec, None)
+        if otra is not None:
+            a.accion, a.parte_cod = "omitir", otra.parte_cod
+            a.motivo = MOTIVO_INC_DUPLICADA.format(
+                cod=a.hora_codigo, dia=a.fecha_int % 100, mes=a.mes,
+                parte=otra.parte_cod)
