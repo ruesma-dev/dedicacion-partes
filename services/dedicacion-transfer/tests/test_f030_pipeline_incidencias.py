@@ -456,3 +456,18 @@ def test_f030_r29_ejecutar_fuera_de_pruebas_sin_marca():
     _ej(cli, [], [_inc()], obra_pruebas_forzar=False)
     assert {i["tex"] for i in cli.inserts()} == {None}
     assert {i["hmoide"] for i in cli.inserts()} == {777}
+
+
+def test_f030_r28_ejecutar_una_linea_de_incidencia_no_es_linea_al_cero():
+    """Con F-051: una línea `CI*`/`CIZ` del recurso (siempre `can = 0`) no
+    es «la línea al 0 %» que se edita en su sitio; esa es solo `M*`."""
+    civ = linea_previa(ide=5002, horide=71, hora_codigo="CIV", can=0.0,
+                       tot=0.0, fecha_int=20260705)
+    ciz = linea_previa(ide=5003, horide=79, hora_codigo="CIZ", can=None,
+                       tot=0.0, fecha_int=20260709)
+    cli = ClienteEscribe(lineas_parte=[civ, ciz])
+    res = _ej(cli, [linea(registro_id=1)], [_inc(id=8, desde=12, hasta=14)])
+    assert res.editadas == [] and res.a_cero == [] and res.pendientes_confirmacion == []
+    assert [s["sql"] for s in cli.escritos] == ["insert"] * 3
+    assert [i["synckey"] for i in cli.inserts()] == [
+        "porcentajes:1", "porcentajes:inc:8:ini", "porcentajes:inc:8:fin"]

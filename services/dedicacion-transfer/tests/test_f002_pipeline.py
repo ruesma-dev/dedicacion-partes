@@ -177,7 +177,9 @@ def _una_previa_de_la_misma_partida(**kw):
 
 def test_f002_r13_borrado_unico_por_ide():
     """R13 · Si dos conflictos confirmados apuntan a la MISMA línea de
-    Sigrid, solo sale un `DELETE` y `borradas` cuenta 1.
+    Sigrid, solo sale una sentencia sobre ella. Desde F-051 (R4, R6) no es
+    un `DELETE` sino una edición del mismo `ide`, y `borradas` es 0 (el
+    nombre del test es el de antes).
 
     El escenario original de este test —dos pendientes con partidas
     distintas chocando con la misma línea previa— **ya no es alcanzable**
@@ -204,15 +206,19 @@ def test_f002_r13_borrado_unico_por_ide():
     res = pl.ejecutar(obra=OBRA, lineas=[linea(registro_id=1)],
                       pisar_claves={clave, f"{clave}|gemelo"})
 
-    assert cli.borrados() == [5001], cli.borrados()
-    assert res.borradas == 1
+    assert cli.borrados() == [], cli.borrados()
+    assert [e["ide"] for e in cli.ediciones()] == [5001]
+    assert cli.a_ceros() == [] and cli.inserts() == []
+    assert res.borradas == 0
     assert [e["registro_id"] for e in res.escritas] == [1]
 
 
 def test_f002_r13_dos_lineas_distintas_se_borran_las_dos():
     """R13 · Control negativo: dos líneas previas DISTINTAS de la misma
-    identidad (mismo recurso, código y partida, en dos días del mes) sí se
-    borran las dos. La deduplicación es por `ide`, no un tope de uno."""
+    identidad (mismo recurso, código y partida, en dos días del mes) se
+    tocan las dos. La deduplicación es por `ide`, no un tope de uno. Desde
+    F-051 (R5, R6) la de menor `ide` se edita y la otra se pone a 0: no se
+    borra ninguna (el nombre del test es el de antes)."""
     def previas():
         return [_una_previa_de_la_misma_partida(),
                 _una_previa_de_la_misma_partida(ide=5002,
@@ -227,8 +233,10 @@ def test_f002_r13_dos_lineas_distintas_se_borran_las_dos():
     res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas,
                                   pisar_claves=claves)
 
-    assert sorted(cli.borrados()) == [5001, 5002]
-    assert res.borradas == 2
+    assert cli.borrados() == []
+    assert [e["ide"] for e in cli.ediciones()] == [5001]
+    assert [z["ide"] for z in cli.a_ceros()] == [5002]
+    assert res.borradas == 0
 
 
 def test_f002_r13_sin_confirmar_no_se_borra_nada():
@@ -407,8 +415,9 @@ def test_f002_r32_no_se_borra_si_no_se_escribe():
 
 def test_f002_r32_confirmando_las_dos_si_se_borra():
     """R32 · Control positivo: confirmadas las dos, el sustituto se escribe
-    y entonces sí se borra la línea vieja. La guarda no es «no borres
-    nunca»: es «no borres sin escribir»."""
+    y entonces sí se toca la línea vieja. La guarda no es «no la toques
+    nunca»: es «no la toques sin escribir». Desde F-051 (R4, R6) tocarla es
+    editarla en su sitio, no borrarla (el nombre del test es el de antes)."""
     cli0, lineas0 = _pisado_y_sobrecarga_mas_otro_trabajador()
     claves = {c.clave for c in
               _pipeline(cli0).preflight(obra=OBRA, lineas=lineas0).conflictos}
@@ -417,6 +426,7 @@ def test_f002_r32_confirmando_las_dos_si_se_borra():
     res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas,
                                   pisar_claves=claves)
 
-    assert cli.borrados() == [5001]
-    assert res.borradas == 1
+    assert cli.borrados() == []
+    assert [e["ide"] for e in cli.ediciones()] == [5001]
+    assert res.borradas == 0
     assert sorted(e["registro_id"] for e in res.escritas) == [1, 9]

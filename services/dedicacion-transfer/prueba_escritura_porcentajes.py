@@ -9,11 +9,15 @@ Fases:
       Vuelca las últimas líneas M* reales (can/canres/pre/tot/paride/caaide)
       y una muestra de hderes: fija el mapeo ANTES de escribir nada.
   python prueba_escritura_porcentajes.py estado
-      Parte(s) de la obra de pruebas del mes actual y sus líneas.
+      Parte(s) de la obra de pruebas del mes actual y sus líneas (con su
+      `pos`, partida y `tex`: lo que una edición no debe mover, F-051).
   python prueba_escritura_porcentajes.py preflight
-      Preflight de las líneas de ejemplo (no escribe).
+      Preflight de las líneas de ejemplo (no escribe). F-051: dice qué
+      línea al 0 % editaría cada acción y, de cada pisado, qué edita y qué
+      pone a 0.
   python prueba_escritura_porcentajes.py ejecutar --confirmar
-      Escribe las líneas de ejemplo en la obra de pruebas.
+      Escribe las líneas de ejemplo en la obra de pruebas. F-051: imprime
+      lo editado y lo puesto a 0, con su antes y su después.
   python prueba_escritura_porcentajes.py verificar
       Relee por synckey lo escrito por este script.
   python prueba_escritura_porcentajes.py limpiar --confirmar
@@ -141,9 +145,12 @@ def fase_estado(cli: SigridWriteClient, st, ano: int, mes: int) -> None:
           f"cod={p.cod}")
     if p.existe and p.ide:
         filas = cli._read(
-            "SELECT hmores.ide AS ide, hmores.reside AS reside, hmores.fec "
-            "AS fec, auxhor.cod AS hora, hmores.can AS can, hmores.pre AS "
-            "pre, hmores.tot AS tot, hmores.synckey AS synckey FROM hmores "
+            "SELECT hmores.ide AS ide, hmores.pos AS pos, "
+            "hmores.reside AS reside, hmores.fec "
+            "AS fec, auxhor.cod AS hora, hmores.paride AS paride, "
+            "hmores.can AS can, hmores.pre AS "
+            "pre, hmores.tot AS tot, hmores.synckey AS synckey, "
+            "CAST(hmores.tex AS NVARCHAR(400)) AS tex FROM hmores "
             "LEFT JOIN auxhor ON auxhor.ide = hmores.horide "
             "WHERE hmores.hmoide = ? ORDER BY hmores.pos", [int(p.ide)])
         print(f"Líneas del parte: {len(filas)}")
@@ -169,9 +176,14 @@ def fase_preflight(pipeline: RegistroPipeline, st, ano: int, mes: int):
         print(f"  [{a.accion:13s}] reg={a.registro_id} {a.nombre} "
               f"dest={a.destino} paride={a.paride} cod={a.hora_codigo} "
               f"can={a.can} pre={a.pre} tot={a.tot} motivo={a.motivo}")
+        if a.linea_cero:
+            print(f"      linea_cero={a.linea_cero['ide']} "
+                  f"(parte {a.linea_cero['parte_cod']}) aviso={a.aviso}")
     for c in pf.conflictos:
         print(f"  CONFLICTO {c.clave} ({c.hora_codigo}): "
               f"{len(c.lineas)} existentes -> nuevas {c.nueva_can}")
+        if c.motivo == "pisado":
+            print(f"      edita={c.edita_ide} a_cero={c.a_cero_ides}")
     return pf
 
 
@@ -187,11 +199,19 @@ def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
     r = pipeline.ejecutar(
         obra=_obra_origen(), lineas=_lineas(ano, mes),
         pisar_claves=set(pisar), usuario="prueba_escritura_porcentajes")
-    print(f"escritas={len(r.escritas)} borradas={r.borradas} "
+    print(f"escritas={len(r.escritas)} editadas={len(r.editadas)} "
+          f"a_cero={len(r.a_cero)} borradas={r.borradas} "
           f"ya={len(r.ya_registradas)} omitidas={len(r.omitidas)} "
           f"pendientes={len(r.pendientes_confirmacion)}")
     for e in r.escritas:
         print("  ", e)
+    for rotulo, trazas in (("EDITADA", r.editadas), ("A CERO", r.a_cero)):
+        for t in trazas:
+            print(f"  {rotulo} ide={t['ide']} parte={t['parte_cod']} "
+                  f"registro={t['registro_id']} antes={t['antes']} "
+                  f"despues={t['despues']}")
+    for o in r.omitidas:
+        print(f"  OMITIDA reg={o['registro_id']}: {o['motivo']}")
     for c in r.pendientes_confirmacion:
         print(f"  PENDIENTE {c.clave}: relanza con --pisar {c.clave}")
 

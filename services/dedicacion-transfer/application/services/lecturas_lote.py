@@ -9,8 +9,9 @@ métodos de lectura, así que el pipeline de registro no cambia: un
 - `precargar` lee AGRUPADO lo que van a pedir las obras del lote, en rondas
   de lecturas independientes en paralelo (hasta `limite` a la vez):
   A) obras por `ide`, obras por código (origen, pruebas, postventa, VAR),
-  horas y `synckey`; B) partes de los periodos, validación de partidas,
-  historial, presupuestos y cuentas de partida; C) líneas de esos partes.
+  horas y lo ya registrado (`synckey` y, F-051, `hmores.ide`); B) partes
+  de los periodos, validación de partidas, historial, presupuestos y
+  cuentas de partida; C) líneas de esos partes.
   Validación e historial no dependen de A: van en B para que una obra con
   elegidas quepa en una tanda de `limite` (4) por ronda (C2).
 - Una lectura del pipeline se responde de lo precargado SOLO si la consulta
@@ -64,7 +65,9 @@ class LecturasDelLote:
         self._horas: tuple[set[int], dict] | None = None
         self._validas: tuple[set[int], dict] | None = None
         self._partidas: tuple[set[int], dict] | None = None
-        self._synckeys: tuple[set[str], dict] | None = None
+        # F-051 (R15): claves e `ide` pedidos y `({synckey: línea},
+        # {ide: línea})` leídos por `lineas_registradas`.
+        self._registradas: tuple[set[str], set[int], dict, dict] | None = None
         self._historial: dict[tuple[int, int], tuple[set[int], list]] = {}
         self._partes: dict[tuple[int, int, int], list] = {}
         self._lineas: tuple[set[int], dict] | None = None
@@ -168,8 +171,9 @@ class LecturasDelLote:
         if resides:
             tareas.append(lambda: self._cargar_horas(resides))
         claves = {synckey_de(l.registro_id) for l in todas}
+        hmores = _ides(l.hmores_ide for l in todas)
         if claves:
-            tareas.append(lambda: self._cargar_synckeys(claves))
+            tareas.append(lambda: self._cargar_registradas(claves, hmores))
         self._ronda(tareas)
 
         # --- Ronda B ---
@@ -309,9 +313,10 @@ class LecturasDelLote:
     def _cargar_horas(self, resides: set[int]) -> None:
         self._horas = (resides, self._cli.horas_de_recursos(sorted(resides)))
 
-    def _cargar_synckeys(self, claves: set[str]) -> None:
-        self._synckeys = (claves,
-                          self._cli.lineas_por_synckey(sorted(claves)))
+    def _cargar_registradas(self, claves: set[str], ides: set[int]) -> None:
+        por_sk, por_ide = self._cli.lineas_registradas(sorted(claves),
+                                                       sorted(ides))
+        self._registradas = (claves, ides, por_sk, por_ide)
 
     def _cargar_validas(self, parides: set[int]) -> None:
         self._validas = (parides,
@@ -392,11 +397,20 @@ class LecturasDelLote:
 
     def lineas_por_synckey(self, claves):
         pedidas = {k for k in claves if k}
-        if self._synckeys is not None and pedidas <= self._synckeys[0]:
-            leidas = self._synckeys[1]
+        if self._registradas is not None and pedidas <= self._registradas[0]:
+            leidas = self._registradas[2]
             return {k: leidas[k] for k in sorted(pedidas) if k in leidas}
         self._fallo("lineas_por_synckey")
         return self._cli.lineas_por_synckey(claves)
+
+    def lineas_registradas(self, claves, ides):
+        pedidas, pedidos = {k for k in claves if k}, _ides(ides)
+        r = self._registradas
+        if r is not None and pedidas <= r[0] and pedidos <= r[1]:
+            return ({k: r[2][k] for k in sorted(pedidas) if k in r[2]},
+                    {i: r[3][i] for i in sorted(pedidos) if i in r[3]})
+        self._fallo("lineas_registradas")
+        return self._cli.lineas_registradas(claves, ides)
 
     def historial_partidas(self, resides, desde, hasta):
         pedidos = _ides(resides)

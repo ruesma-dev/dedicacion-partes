@@ -152,6 +152,104 @@ heredan.
 **Para retomar:** con A, sigo en T4 (sync, repositorio, preview y cableado),
 adaptando los dobles en la misma tarea que los rompe.
 
+## F-051 · CERRADA, pendiente de desplegar (estado traído de `dev` al fusionar)
+
+**F-051 CERRADA (`done`) el 2026-10-21, pendiente de desplegar**
+(pisar las líneas del parte editándolas, nunca borrando; transfer, api y
+front). Review: pasada 1 RECHAZADO (mutante que no era equivalente y rastro
+desfasado), pasada 2 APROBADO, pasada 3 (T18, la O2) APROBADO
+(`progress/review_F-051.md`). **T15 CUMPLIDA por el líder el 2026-10-21** en
+modo pruebas en la 0404, con las escrituras autorizadas por el humano
+(«realiza tu las pruebas», «escribe en prueba para 51»): la línea a 0 se
+edita en su sitio, el pisado edita, la tercera vez es «ya registrada», 0
+`DELETE`; 0404 limpia al acabar (`progress/manual_F-051.md`). `bash
+harness/init.sh` en verde en la rama. Spec aprobada por el humano el
+2026-10-20 (D1-D15); bloqueos de implementación resueltos por él (T3 A, T12
+B); O2 dentro (T18) y O4 a la feature nueva **F-058** (`pending`), decisión
+del humano del 2026-10-21. **F-030** en curso en paralelo en la copia
+`porcentajes-f030` (decisión del humano, 2026-10-21). El arnés es la
+**1.7.3**.
+
+**Pendiente del líder, al desplegar F-051** (necesita permiso del humano;
+orden **transfer → api → front**): T16, refrescar `azure-apps/dedicacion.md`
+desde `docs/INTEGRACION.md` §1, §5 y §7 (el transfer EDITA en su sitio
+líneas `M*` de partes compartidos, `UPDATE` con guarda y sin `DELETE`;
+`lineas[].hmores_ide` de ida; `ya_registradas_ide`, `editadas`, `a_cero` y
+`escritas[].editada` de vuelta; `borradas` siempre 0) y avisar a `partes` de
+que el transfer edita líneas `M*` de sus partes sin borrarlas.
+
+## F-051 · bloqueos de implementación (2026-10-20) · RESUELTOS
+
+- **T3**: añadir `edita_ide` y `a_cero_ides` a `Conflicto` rompía
+  `test_f013_r4_no_hace_falta_ningun_campo_nuevo`, fuera de la lista cerrada.
+  Humano: **opción A** («a»): entra en la lista y su conjunto acepta los dos
+  campos (`c5bc6e9`).
+- **T12**: el texto nuevo del pisado rompía los dos `test_f049_r2_…`.
+  Humano: **opción B** («La b»): el detalle termina como hoy, «se edita la
+  línea X (…)[; quedan a 0: …] y se escribe N%»; esos tests no se tocan
+  (`d0c1ab7`, hecho en `24ba7aa`).
+
+## F-051 · implementación (implementer, 2026-10-20)
+
+- **Estado:** T1-T14 y T17 `[x]`; informe en `progress/impl_F-051.md`.
+  **Cambios de la review 1 hechos (2026-10-21):** test de la frontera de
+  R13 que mata el mutante de `registro_pipeline.py:1095` (`d807cce`);
+  formato de la línea 568 y de un docstring del lote (`7a5f801`); 3.ª
+  campaña de mutación en serie (`--workers 1`) sobre `7a5f801`: **134
+  mutantes, 0 supervivientes** (`e51ba7b`, `progress/mutacion_F-051.md`);
+  primera línea con la ruta en el informe. Ya no hay ningún equivalente que
+  aceptar. `init.sh` sin `[KO]`, cobertura 99,2 %. Listo para la pasada 2.
+- **T18 hecha (2026-10-21, O2 aceptada por el humano, «ok o2»):** el paso 6
+  exige además `es_linea_mensual` de la línea del `hmores_ide`; si no es
+  `M*`, se sigue por `synckey` (`d5d61ac`, 4 tests nuevos con RED en el
+  informe; docs `ARCHITECTURE` «Localizar lo nuestro» e `INTEGRACION` §5).
+  R13 no cambia (no usa ese criterio; la guarda ya exige `M*`). 4.ª campaña
+  en serie sobre `d5d61ac`: **136 mutantes, 0 supervivientes** (`6ca3074`).
+  `init.sh` sin `[KO]`: transfer 1080, api 949, front 310, raíz 418;
+  cobertura 99,2 %. O4 es F-058; T15, del líder.
+- **Decisiones del implementer** (detalle en el informe §2):
+  `lineas_registradas(claves, ides)` sin `ides` delega en
+  `lineas_por_synckey`; `repartir_choques` y `es_nuestra_de_otra` puras
+  nuevas; `despues` del log usa `a.can`/`a.tot` ya redondeados; `usadas`
+  arranca vacío (una línea al 0 % nunca es choque).
+- **Desviaciones justificadas:** la fase `estado` del script lee además
+  `pos`, `paride` y `tex` (para T15); la api usa
+  `getattr(a, "sigrid_hmores_ide", None)`; el paso 9 bis va antes del alta de
+  partes y solo lo que inserta crea parte o lee `max_pos`.
+- **T15 CUMPLIDA por el líder el 2026-10-21** (modo pruebas, 0404,
+  escrituras autorizadas por el humano). Detalle en
+  `progress/manual_F-051.md`; resumen en `progress/impl_F-051.md` §6.
+- **`azure-apps` pendiente (T16, líder, al desplegar transfer → api →
+  front):** `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` §1, §5 y
+  §7: el transfer EDITA en su sitio líneas `M*` de partes compartidos
+  (`UPDATE` con guarda, sin `DELETE`); `LineaIn.hmores_ide` de ida;
+  `ya_registradas_ide`, `editadas`, `a_cero` y `escritas[].editada` de
+  vuelta; `borradas` siempre 0 en el registro. Avisar a `partes`.
+
+## F-051 · decisiones del humano sobre la spec (2026-10-20, todas cerradas)
+
+- **Pasada 2:** «d1, nunca borramos lineas, editamos el valor. d5, cualquier
+  linea a 0% se puede pisar». **D1 = C** (`UPDATE` en su sitio, nunca
+  `DELETE`); **D5**: cualquier línea al 0 %, también con `synckey` de
+  `partes` o nuestra. D2-D4 y D6-D9, las recomendadas (D2 = A sin confirmar,
+  con aviso; D3 = A; D4 `can` 0 exacto o nulo; D6 = A; D7 = B; D8 fuera;
+  D9 = A).
+- **Pasada 3:** D10 = B (se edita todo lo que insertaríamos) y D13 como
+  recomendado («ok a lo demás»). **D11:** «y no deberia encontrarla por el
+  ide de sigrid una vez que se registra la linea? es unico y no se edita
+  nunca» y «d11 que ya localice»: F-051 **no cambia la `synckey` de una
+  línea de otro sistema** y localiza lo editado por `hmores.ide`; a una línea
+  de Administración (`synckey` vacía) se le pone la nuestra. **D12:** «que
+  pase a editar»: el pisado confirmado de hoy también pasa a `UPDATE`.
+- **D14 = A y D15 = A** («si me vale»): con varios choques se edita el de
+  menor `ide` y los demás a 0; `limpiar` (solo el script de pruebas) sigue
+  borrando lo marcado `PRUEBA-PORC`.
+- **Exploración (solo lectura, 10 `SELECT` por sigrid-api, base `ruesma`):**
+  en octubre, parte PT26/00370 de la 0707 (En registro), cuatro personas con
+  su línea `M*` a 0 (`hmores` 410600, 410931, 410935, 410937): copia de
+  septiembre por Administración, sin `synckey`. En 2026, 63 grupos con
+  varios choques (PT26/00109 llega a 9 líneas `MDEL`).
+
 ## Producción, hoy
 
 - **Desplegado el 2026-10-20: F-057**, api y front, en ese orden, lanzado por
@@ -296,8 +394,8 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. Orden: **F-051** (spec en redacción), F-044, F-052, F-053, **F-054** (el sync trae los %
-que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-030, F-036, F-031,
+2026-10-20. F-051 cerrada el 2026-10-21 (pendiente de desplegar). Orden: **F-030** (en curso), **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
+que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
