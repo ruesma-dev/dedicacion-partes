@@ -3,13 +3,15 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **55 features**, 23 abiertas, 32 terminadas.
+Resumen: **57 features**, 25 abiertas, 32 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
+| F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
+| F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
 | F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | pendiente | critico | `feature/F-053-delegados-parte-unico` |
@@ -77,6 +79,18 @@ Resumen: **55 features**, 23 abiertas, 32 terminadas.
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-058-porcentaje-cero-no-registra`
 
 O4 de la review de F-051 (2026-10-21): un porcentaje menor de 0,00005 (en fracción) se redondea a `can` 0,0 en `reglas_porcentajes.py` (`can = round(porcentaje, 4)`) y sale una acción `escribir` con cantidad 0. Hueco anterior a F-051, pero con F-051 esa acción podría editar una línea al 0 % dejándola a 0 con nuestra `synckey` (o insertar una línea a 0). Decisión del humano el 2026-10-21 («ok o2 y o4»: feature aparte, como recomendó el líder): esas líneas NO se registran; salen como omitidas con un aviso legible en el preflight y en `ejecutar`. Servicio: transfer (la regla que construye la cantidad); el front solo enseña el aviso que ya pinta para las omitidas. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
+
+### F-059 · El % de cada obra por días trabajados, con el calendario del convenio
+
+estado **pendiente** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-059-porcentaje-por-dias`
+
+Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21: «da de alta las features que quedaron fuera»). Hoy el % de cada obra es libre y las incidencias de F-030 (V, B, AT, FJ, F, H, M) no restan nada: no cuentan para el 100 % (F-030 D4 = A). Esta feature calcula o propone el % según los días que la persona trabajó de verdad en el mes, descontando sus incidencias y con el calendario laboral de su convenio (festivos, jornada). Abre decisiones para la spec: de dónde sale el calendario de convenio (Sigrid u otra fuente), si el % se propone o se impone, cómo convive con la regla del 100 % y con lo ya registrado. Servicios: probablemente api (cálculo) y front (solo pintar); la regla del 100 % vive en `domain/`. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
+
+### F-060 · Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios)
+
+estado **pendiente** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-060-bandeja-partes`
+
+Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21). Si `partes` enciende su interruptor `MENSUALES_A_DEDICACION` (su F-019), las incidencias de los trabajadores mensuales que se apuntan en sus partes diarios dejan de ir a Sigrid y se quedan en `dedicacion_bandeja`. Esta feature es el espejo: dedicación lee esa bandeja y las convierte en incidencias de F-030 en el cuadrante (sin duplicar las que ya estén, R27 de F-030), para que se registren por la vía de F-030. **Mientras no exista, `MENSUALES_A_DEDICACION` de `partes` debe seguir apagado.** Cruza la frontera del proyecto: leer antes `azure-apps/partes.md` y el contrato de la bandeja; el documento de `partes` lo mantiene `partes`. Servicio previsto: api (lectura de la bandeja y alta de incidencias); el front solo pinta.
 
 ### F-044 · Aplicar los porcentajes también a los recursos vinculados al trabajador
 
