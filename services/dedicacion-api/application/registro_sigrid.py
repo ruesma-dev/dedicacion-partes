@@ -30,6 +30,13 @@ F-051 (R14, R16): cada línea lleva el `sigrid_hmores_ide` de su asignación
 (si lo tiene) y la traza guarda el de cada escrita y cada ya registrada: el
 transfer reconoce lo suyo por `hmores.ide` aunque edite una línea de otro
 sistema (docs/ARCHITECTURE.md#regla-cero).
+
+F-030 (R23, R25, R31): cada obra lleva además la lista `incidencias` de sus
+trabajadores visibles y vigentes (una obra solo con incidencias también va;
+sin ninguna, la petición es la de siempre), cada una con la partida elegida
+o la propuesta guardada de la asignación del trabajador en esa obra, o 0.
+Al volver de `ejecutar`, la traza de cada incidencia
+(docs/ARCHITECTURE.md#regla-incidencia).
 """
 from __future__ import annotations
 
@@ -44,8 +51,9 @@ from domain.empresas import visible_en_empresa
 from domain.models import FiltroEmpresa
 from domain.vigencia import vigente_en
 from infrastructure.db.orm_models import (
-    AsignacionORM, ObraORM, PeriodoORM, TrabajadorORM,
+    AsignacionORM, IncidenciaORM, ObraORM, PeriodoORM, TrabajadorORM,
 )
+from application.traza_incidencias import trazar_incidencias
 from infrastructure.transfer.transfer_client import TransferClient
 
 logger = logging.getLogger(__name__)
@@ -108,6 +116,8 @@ class RegistroSigrid:
         # asignación.
         por_obra: dict[int, dict[str, Any]] = {}
         no_vigentes: list[int] = []
+        # F-030 (R25): partida de la asignación de cada (trabajador, obra).
+        partidas: dict[tuple[int, int], int] = {}
         for a, t, o in filas:
             if not visible_en_empresa(t.empresa, filtro):
                 continue
@@ -115,6 +125,9 @@ class RegistroSigrid:
             if not vigente_en(t.activo, t.fecha_baja, anio, mes):
                 no_vigentes.append(a.id)
                 continue
+            if not a.es_postventa:
+                partidas.setdefault((t.ide, o.ide), int(
+                    a.partida_ide or a.propuesta_ide or 0))
             # Entrada VAR (F-039, R20): a la petición de su obra de registro,
             # junto a las demás líneas de esa obra.
             obra = ({"ide": o.registro_obra_ide,
@@ -154,7 +167,45 @@ class RegistroSigrid:
             if hmores_ide:
                 linea["hmores_ide"] = int(hmores_ide)
             grupo["lineas"].append(linea)
+        self._sumar_incidencias(s, anio, mes, trabajador_ide, filtro,
+                                por_obra, partidas)
         return list(por_obra.values()), sorted(no_vigentes)
+
+    def _sumar_incidencias(self, s: Session, anio: int, mes: int,
+                           trabajador_ide: int | None,
+                           filtro: FiltroEmpresa,
+                           por_obra: dict[int, dict[str, Any]],
+                           partidas: dict[tuple[int, int], int]) -> None:
+        """F-030 (R23, R25): las incidencias del periodo, en la petición de
+        su obra (nunca VAR ni postventa, R19), con la visibilidad y la
+        vigencia de las líneas. Una obra solo con incidencias va al final,
+        en el orden de su código; sin ninguna, nada cambia."""
+        filas = s.execute(
+            select(IncidenciaORM, TrabajadorORM, ObraORM)
+            .join(PeriodoORM, PeriodoORM.id == IncidenciaORM.periodo_id)
+            .join(TrabajadorORM,
+                  TrabajadorORM.ide == IncidenciaORM.trabajador_ide)
+            .join(ObraORM, ObraORM.ide == IncidenciaORM.obra_ide)
+            .where(PeriodoORM.anio == anio, PeriodoORM.mes == mes,
+                   *( [IncidenciaORM.trabajador_ide == trabajador_ide]
+                      if trabajador_ide is not None else [] ))
+            .order_by(ObraORM.cod, TrabajadorORM.nombre,
+                      IncidenciaORM.dia_desde, IncidenciaORM.id)
+        ).all()
+        for i, t, o in filas:
+            if not visible_en_empresa(t.empresa, filtro) or \
+                    not vigente_en(t.activo, t.fecha_baja, anio, mes):
+                continue
+            grupo = por_obra.setdefault(o.ide, {
+                "obra": {"ide": o.ide, "codigo": o.cod,
+                         "nombre": o.descripcion},
+                "lineas": []})
+            grupo.setdefault("incidencias", []).append({
+                "id": i.id, "recurso_ide": t.ide,
+                "empresa": filtro.empresa_obras, "codigo": i.codigo,
+                "ano": anio, "mes": mes, "desde": i.dia_desde,
+                "hasta": i.dia_hasta,
+                "paride": partidas.get((t.ide, o.ide), 0)})
 
     # ------------------------------------------------------------- #
     def preflight(self, anio: int, mes: int,
@@ -279,4 +330,6 @@ class RegistroSigrid:
                     .where(AsignacionORM.id == o["registro_id"])
                     .values(sigrid_estado="omitido",
                             sigrid_motivo=(o.get("motivo") or "")[:_MAX_MOTIVO]))
+            # F-030 (R31): la de cada incidencia, en la misma sesión.
+            trazar_incidencias(s, r.get("incidencias") or [], ahora, quien)
             s.commit()

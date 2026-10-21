@@ -65,6 +65,9 @@ class _SesionQueFiltra:
         return None
 
     def execute(self, sentencia: Any) -> _Resultado:
+        # F-030 (lista cerrada): la lectura de `incidencia`, vacía.
+        if "FROM incidencia" in str(sentencia):
+            return _Resultado([])
         filas = list(self._filas)
         for nodo in iterate(sentencia.whereclause):
             if (isinstance(nodo, BinaryExpression)

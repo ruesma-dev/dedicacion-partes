@@ -42,6 +42,9 @@ class _Sesion:
         return None
 
     def execute(self, _sentencia: Any) -> _Resultado:
+        # F-030 (lista cerrada): la lectura de `incidencia`, vacía.
+        if "FROM incidencia" in str(_sentencia):
+            return _Resultado([])
         return _Resultado(self._filas)
 
 
