@@ -231,6 +231,7 @@ class SyncOut(_Base):
     obras: SyncMaestroOut
     duracion_s: float
     empresas: SyncMaestroOut  # catálogo auxemp (F-032)
+    incidencias: SyncMaestroOut  # catálogo auxhor (F-030)
 
 
 class PeriodoCreadoOut(PeriodoOut):
@@ -322,6 +323,7 @@ def a_sync_out(resultado: ResultadoSync) -> SyncOut:
         obras=SyncMaestroOut(**resultado.obras.__dict__),
         duracion_s=resultado.duracion_s,
         empresas=SyncMaestroOut(**resultado.empresas.__dict__),
+        incidencias=SyncMaestroOut(**resultado.incidencias.__dict__),
     )
 
 

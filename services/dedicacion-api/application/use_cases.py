@@ -596,6 +596,7 @@ class PreviewSync:
         universo: UniversosGateway,
         empresa_obras: int,
         digitos_excluidos: int = 0,
+        sql_incidencias: str | None = None,
     ) -> None:
         self._sigrid = sigrid
         self._sql_empleados = sql_empleados
@@ -603,6 +604,9 @@ class PreviewSync:
         # Catálogo `auxemp` (F-032). Sin consulta, el preview no lo lee ni
         # publica la sección; el contenedor la pasa siempre.
         self._sql_empresas = sql_empresas
+        # Catálogo de incidencias de `auxhor` (F-030, R3), con el mismo
+        # criterio: sin consulta no se lee ni se publica la sección.
+        self._sql_incidencias = sql_incidencias
         self._categorias = categorias_incluidas or []
         self._filtro_categorias = filtro_categorias and bool(self._categorias)
         self._estados = estados_excluidos or []
@@ -627,10 +631,12 @@ class PreviewSync:
         from application.filtros_maestros import (
             depurar_empleados,
             resumir_empresas,
+            resumir_tipos_incidencia,
         )
         from application.sync_pipeline import (
             COLUMNAS_EMPLEADOS,
             COLUMNAS_EMPRESAS,
+            COLUMNAS_INCIDENCIAS,
             COLUMNAS_OBRAS,
             _validar_columnas,
             preparar_obras,
@@ -702,6 +708,12 @@ class PreviewSync:
                 "motivo_var": uvar.motivo,
             },
         }
+        if self._sql_incidencias is not None:
+            # Antes que las empresas, en el mismo orden que el sync.
+            brutas_inc = self._sigrid.leer(self._sql_incidencias)
+            _validar_columnas(brutas_inc, COLUMNAS_INCIDENCIAS,
+                              "sync.incidencias.sql")
+            salida["incidencias"] = resumir_tipos_incidencia(brutas_inc)
         if self._sql_empresas is not None:
             brutas_empresas = self._sigrid.leer(self._sql_empresas)
             _validar_columnas(brutas_empresas, COLUMNAS_EMPRESAS,

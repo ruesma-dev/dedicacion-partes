@@ -297,6 +297,9 @@ class _SigridFalso:
         self.leidas.append(sql)
         if "dbo.auxemp" in sql:
             return [dict(f) for f in self.empresas]
+        # F-030 (lista cerrada): el catálogo de incidencias, fuera de F-032.
+        if "FROM dbo.auxhor AS aux" in sql:
+            return []
         if "dbo.obr" in sql:
             return [{"ide": 7, "cod": "0007", "empresa": 1,
                      "descripcion": "OBRA", "estado_sigrid": "En curso"}]
@@ -330,6 +333,7 @@ class _UowEspia:
         self.trabajadores = _RepoEspia()
         self.obras = _RepoEspia()
         self.empresas = _RepoEspia()
+        self.tipos_incidencia = _RepoEspia()  # F-030 (lista cerrada)
         self.periodos = _PeriodosVacios()  # ventana de bajas (F-026)
         self.commits = 0
 

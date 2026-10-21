@@ -15,6 +15,7 @@ from sqlalchemy import delete, distinct, func, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from domain.empresas import empresa_de_baja
+from domain.incidencias import letra_y_nombre
 from domain.normalizacion import texto_o_none as _texto
 from domain.vigencia import vigente_en
 from domain.models import (
@@ -26,6 +27,7 @@ from domain.models import (
     Periodo,
     ResultadoSyncMaestro,
     TipoEvento,
+    TipoIncidencia,
     Trabajador,
 )
 from infrastructure.db.orm_models import (
@@ -34,6 +36,7 @@ from infrastructure.db.orm_models import (
     EventoORM,
     ObraORM,
     PeriodoORM,
+    TipoIncidenciaORM,
     TrabajadorORM,
 )
 
@@ -304,6 +307,69 @@ class PgEmpresaRepository:
 
 
 # ----------------------------------------------------------------------
+# Tipos de incidencia (catálogo `auxhor` de Sigrid, F-030)
+# ----------------------------------------------------------------------
+class PgTipoIncidenciaRepository:
+    def __init__(self, session: Session) -> None:
+        self._s = session
+
+    def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro:
+        """Upsert por `ide` de `auxhor` (R3). Letra y nombre, de
+        `letra_y_nombre` (R4); `activa` = sin fecha de baja (R5). El que deja
+        de llegar queda `activa = false`: no se borra, sus incidencias ya
+        guardadas lo siguen nombrando."""
+        actuales = {t.ide: t for t in self._s.scalars(select(TipoIncidenciaORM)).all()}
+        recibidos: set[int] = set()
+        nuevas: set[int] = set()
+        altas = actualizados = 0
+        for fila in filas:
+            ide = _entero(fila.get("ide"))
+            codigo = _texto(fila.get("cod"))
+            if ide is None or codigo is None:
+                logger.warning("Incidencia de auxhor sin ide o código; omitida: %s",
+                               fila)
+                continue
+            recibidos.add(ide)
+            letra, nombre = letra_y_nombre(fila.get("res"), codigo)
+            valores = {"codigo": codigo, "letra": letra, "nombre": nombre,
+                       "activa": _fecha(fila.get("fecbaj")) is None}
+            existente = actuales.get(ide)
+            if existente is None:
+                nueva = TipoIncidenciaORM(ide=ide, **valores)
+                self._s.add(nueva)
+                # Un `ide` repetido actualiza la misma alta (la última manda).
+                actuales[ide] = nueva
+                nuevas.add(ide)
+                altas += 1
+                continue
+            cambio = any(getattr(existente, k) != v for k, v in valores.items())
+            for campo, valor in valores.items():
+                setattr(existente, campo, valor)
+            if cambio and ide not in nuevas:
+                actualizados += 1
+        desactivados = 0
+        for ide, orm in actuales.items():
+            if ide not in recibidos and orm.activa:
+                orm.activa = False
+                desactivados += 1
+        return ResultadoSyncMaestro(
+            recibidos=len(recibidos),
+            altas=altas,
+            actualizados=actualizados,
+            desactivados=desactivados,
+        )
+
+    def activos(self) -> list[TipoIncidencia]:
+        """Los activos, por letra y código (R6)."""
+        stmt = (
+            select(TipoIncidenciaORM)
+            .where(TipoIncidenciaORM.activa.is_(True))
+            .order_by(TipoIncidenciaORM.letra, TipoIncidenciaORM.codigo)
+        )
+        return [_a_tipo_incidencia(t) for t in self._s.scalars(stmt).all()]
+
+
+# ----------------------------------------------------------------------
 # Periodos
 # ----------------------------------------------------------------------
 class PgPeriodoRepository:
@@ -549,6 +615,7 @@ class SqlAlchemyUnitOfWork:
         self.trabajadores = PgTrabajadorRepository(s)
         self.obras = PgObraRepository(s)
         self.empresas = PgEmpresaRepository(s)
+        self.tipos_incidencia = PgTipoIncidenciaRepository(s)
         self.periodos = PgPeriodoRepository(s)
         self.asignaciones = PgAsignacionRepository(s)
         self.eventos = PgEventoRepository(s)
@@ -591,6 +658,11 @@ def _a_empresa(orm: EmpresaORM) -> Empresa:
         nombre=orm.nombre,
         de_baja=empresa_de_baja(orm.fecbaj, orm.desact),
     )
+
+
+def _a_tipo_incidencia(orm: TipoIncidenciaORM) -> TipoIncidencia:
+    return TipoIncidencia(ide=orm.ide, codigo=orm.codigo, letra=orm.letra,
+                          nombre=orm.nombre, activa=orm.activa)
 
 
 def _a_trabajador(orm: TrabajadorORM) -> Trabajador:

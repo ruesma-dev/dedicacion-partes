@@ -16,6 +16,7 @@ from domain.models import (
     Obra,
     Periodo,
     ResultadoSyncMaestro,
+    TipoIncidencia,
     ResultadoUniverso,
     ResultadoUniversoVar,
     TipoEvento,
@@ -98,6 +99,19 @@ class EmpresaRepository(Protocol):
         ...
 
 
+class TipoIncidenciaRepository(Protocol):
+    """Catálogo de incidencias copiado de `auxhor` (F-030, R3-R6)."""
+
+    def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro:
+        """Upsert por `ide`; la que no llega o tiene baja, `activa = false`
+        (nunca se borra)."""
+        ...
+
+    def activos(self) -> list[TipoIncidencia]:
+        """Los activos, por orden de letra."""
+        ...
+
+
 class PeriodoRepository(Protocol):
     def listar(self) -> list[Periodo]: ...
 
@@ -177,6 +191,7 @@ class UnitOfWork(Protocol):
     trabajadores: TrabajadorRepository
     obras: ObraRepository
     empresas: EmpresaRepository
+    tipos_incidencia: TipoIncidenciaRepository  # F-030
     periodos: PeriodoRepository
     asignaciones: AsignacionRepository
     eventos: EventoRepository

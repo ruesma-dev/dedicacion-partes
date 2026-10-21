@@ -13,9 +13,11 @@ from application.sync_pipeline import (
     FetchEmpleadosStep,
     FetchEmpresasStep,
     FetchObrasStep,
+    FetchTiposIncidenciaStep,
     SyncMaestrosPipeline,
     UpsertEmpresasStep,
     UpsertObrasStep,
+    UpsertTiposIncidenciaStep,
     UpsertTrabajadoresStep,
 )
 from application.partidas_linea import PartidasDeLinea
@@ -57,6 +59,8 @@ def construir_contenedor(
     # Catálogo de empresas (F-032). Obligatorio, como las otras dos: sin él
     # la api no arranca, en vez de dejar de actualizar nombres en silencio.
     sql_empresas = config["sync"]["empresas"]["sql"]
+    # Catálogo de incidencias (F-030, R3). Obligatorio, como el de empresas.
+    sql_incidencias = config["sync"]["incidencias"]["sql"]
     categorias = cfg_emp.get("categorias_incluidas", [])
     filtro_cat = bool(cfg_emp.get("filtro_categorias", False))
     exigir_mes = bool(cfg_emp.get("filtro_codigo_mes", True))
@@ -90,9 +94,11 @@ def construir_contenedor(
             FetchObrasStep(sigrid, sql_obras, estados_exc, filtro_est,
                            universo=transfer, empresa_obras=empresa_obras,
                            digitos_excluidos=digitos_exc),
+            FetchTiposIncidenciaStep(sigrid, sql_incidencias),
             FetchEmpresasStep(sigrid, sql_empresas),
             UpsertTrabajadoresStep(),
             UpsertObrasStep(),
+            UpsertTiposIncidenciaStep(),
             UpsertEmpresasStep(),
         ]
     )
@@ -121,6 +127,7 @@ def construir_contenedor(
             universo=transfer,
             empresa_obras=empresa_obras,
             digitos_excluidos=digitos_exc,
+            sql_incidencias=sql_incidencias,
         ),
         exporter=exporter,
         registro_sigrid=RegistroSigrid(session_factory, transfer,

@@ -297,6 +297,9 @@ class ResultadoSync:
     # Catálogo `auxemp` (F-032). Al final y con valor por defecto para no
     # romper a quien construye el resultado por posición.
     empresas: ResultadoSyncMaestro = field(default_factory=ResultadoSyncMaestro)
+    # Catálogo de incidencias de `auxhor` (F-030, R3), igual que empresas.
+    incidencias: ResultadoSyncMaestro = field(
+        default_factory=ResultadoSyncMaestro)
 
 
 @dataclass(frozen=True)

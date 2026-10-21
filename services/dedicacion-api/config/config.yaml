@@ -211,6 +211,22 @@ sync:
       FROM dbo.auxemp AS aux
       ORDER BY aux.numemp
 
+  incidencias:
+    # Catálogo de incidencias (F-030, R3, D1): los tipos de hora `CI*` de
+    # `auxhor` salvo `CIZ` («Fin de Incidencia», que no se elige: lo escribe
+    # el transfer al cerrar cada tramo). Se guarda en `tipo_incidencia`; la
+    # letra y el nombre los saca la api de `res` («Vacaciones(V)»). Nada
+    # viene de `partes`. Solo literales: no hay valores que parametrizar.
+    # Alias obligatorios: ide, cod, res, fecbaj (0 = sin baja).
+    sql: |
+      SELECT aux.ide    AS ide,
+             aux.cod    AS cod,
+             aux.res    AS res,
+             aux.fecbaj AS fecbaj
+      FROM dbo.auxhor AS aux
+      WHERE aux.cod LIKE 'CI%' AND aux.cod <> 'CIZ'
+      ORDER BY aux.cod
+
 export:
   # Prefijo con el que se exportan las líneas de postventa, para mantener
   # la compatibilidad con la plantilla Excel actual (códigos "Postv-XXX").
