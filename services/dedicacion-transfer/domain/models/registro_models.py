@@ -76,7 +76,10 @@ class IncidenciaEntrada:
     registrar en el parte de su obra: dos líneas, ver
     ARCHITECTURE.md#regla-incidencia. `id` es el de la incidencia en
     PostgreSQL; `desde` y `hasta`, días del mes ya completados por la API;
-    `paride`, la partida de la línea de % del trabajador en esa obra o 0."""
+    `paride`, la partida de la línea de % del trabajador en esa obra o 0.
+
+    Anexo R30 (R39): la traza de la api de una ya registrada, por rol, el
+    `hmores.ide` y el día de su línea en Sigrid (None si no consta)."""
     id: int
     recurso_ide: int | None
     empresa: int | None
@@ -86,6 +89,10 @@ class IncidenciaEntrada:
     desde: int | None
     hasta: int | None
     paride: int | None = 0
+    hmores_ide_ini: int | None = None
+    hmores_ide_fin: int | None = None
+    dia_ini: int | None = None
+    dia_fin: int | None = None
 
 
 @dataclass
@@ -264,10 +271,13 @@ class AccionIncidencia:
     incidencia (`rol` `ini`: su `CI*` el día `desde`; `fin`: `CIZ` el día
     `hasta`). Lleva los campos que el paso de la cuenta analítica comparte
     con `AccionLinea` (`recurso_ide`, `hora_ide`, `paride`, `destino`,
-    `aviso` y `caa_*`). Siempre `can = 0` y `tot = 0`: no son jornada."""
+    `aviso` y `caa_*`). Siempre `can = 0` y `tot = 0`: no son jornada.
+
+    Anexo R30 (R41, R46): `editar` cambia SOLO la `fec` de la línea
+    `hmores_ide` (en el parte `hmoide`) de `fec_antes` a `fecha_int`."""
     id: int
     rol: str                            # ini | fin
-    accion: str                         # escribir | omitir | ya_registrado
+    accion: str                         # escribir | editar | omitir | ya_registrado
     fecha_int: int
     recurso_ide: int | None = None
     ano: int = 0
@@ -287,18 +297,24 @@ class AccionIncidencia:
     caa_aviso: str | None = None
     caa_origen: str | None = None
     caa_nota: str | None = None
+    fec_antes: int | None = None
+    hmoide: int | None = None
 
 
 @dataclass
 class LineaIncidenciaSigrid:
     """F-030 (R27): una línea de incidencia (`CI*`/`CIZ`) del recurso ya
-    escrita en algún parte del mes, con el código del parte."""
+    escrita en algún parte del mes, con el código del parte. Anexo R30
+    (R40-R43): su `can`, su parte (`hmoide`) y el estado del parte."""
     ide: int
     reside: int
     fecha_int: int
     hora_codigo: str | None
     synckey: str | None
     parte_cod: str | None
+    can: float | None = None
+    hmoide: int | None = None
+    parte_est: int | None = None
 
 
 @dataclass

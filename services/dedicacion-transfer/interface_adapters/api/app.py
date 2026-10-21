@@ -97,6 +97,11 @@ class IncidenciaIn(BaseModel):
     desde: int | None = None
     hasta: int | None = None
     paride: int | None = 0
+    # Anexo R30 (R39): la traza de la api de una ya registrada.
+    hmores_ide_ini: int | None = None
+    hmores_ide_fin: int | None = None
+    dia_ini: int | None = None
+    dia_fin: int | None = None
 
 
 class PeticionIn(BaseModel):
@@ -175,10 +180,12 @@ CLAVES_INCIDENCIA = ("id", "rol", "accion", "fecha_int", "hora_codigo",
 
 def _con_incidencias(respuesta: dict, incidencias: list) -> dict:
     """F-030 (R31): `incidencias` solo si la petición las traía; sin
-    ellas, la respuesta es la de siempre."""
+    ellas, la respuesta es la de siempre. Anexo R30 (R46): una `editar`
+    publica además `fec_antes`; las demás, las claves de siempre."""
     if incidencias:
         respuesta["incidencias"] = [
-            {k: getattr(a, k) for k in CLAVES_INCIDENCIA}
+            {**{k: getattr(a, k) for k in CLAVES_INCIDENCIA},
+             **({"fec_antes": a.fec_antes} if a.accion == "editar" else {})}
             for a in incidencias]
     return respuesta
 
