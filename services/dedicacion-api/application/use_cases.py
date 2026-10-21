@@ -42,6 +42,7 @@ from domain.models import (
     ResultadoCopia,
     ResumenPeriodo,
     TipoEvento,
+    TipoIncidencia,
     Trabajador,
 )
 from domain.ports import SigridGateway, UnitOfWork, UniversosGateway
@@ -80,10 +81,12 @@ class ObtenerCuadrante:
             if o.empresa == filtro.empresa_obras
         ]
         autores = uow.eventos.autores_ultimo_pendiente(periodo_id)
+        incidencias = uow.incidencias.de_periodo(periodo_id)  # F-030, R21
         for fila in filas:
             fila.puede_deshacer = deshacer_permitido(
                 autores.get(fila.trabajador.ide), usuario
             )
+            fila.incidencias = tuple(incidencias.get(fila.trabajador.ide, ()))
         return Cuadrante(
             periodo=periodo,
             obras=obras,
@@ -116,6 +119,8 @@ class ObtenerFilaTrabajador:
             puede_deshacer=deshacer_permitido(
                 pendiente.usuario if pendiente else None, usuario
             ),
+            incidencias=tuple(
+                uow.incidencias.de_trabajador(periodo_id, trabajador_ide)),
         )
         resumen = _resumen_periodo(uow, periodo_id, filtro)
         return fila, resumen
@@ -503,6 +508,14 @@ def _obra_destino_o_error(
 class ListarPeriodos:
     def ejecutar(self, uow: UnitOfWork) -> list[Periodo]:
         return uow.periodos.listar()
+
+
+class ListarTiposIncidencia:
+    """Catálogo del desplegable de incidencias (F-030, R6): los activos, por
+    orden de letra. Sale del sync de `auxhor`; nada viene de `partes`."""
+
+    def ejecutar(self, uow: UnitOfWork) -> list[TipoIncidencia]:
+        return uow.tipos_incidencia.activos()
 
 
 class ListarEmpresas:

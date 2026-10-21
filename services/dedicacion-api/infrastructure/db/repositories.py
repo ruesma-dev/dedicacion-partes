@@ -22,6 +22,7 @@ from domain.models import (
     Empresa,
     EstadoPeriodo,
     EventoPendiente,
+    Incidencia,
     Linea,
     Obra,
     Periodo,
@@ -34,6 +35,7 @@ from infrastructure.db.orm_models import (
     AsignacionORM,
     EmpresaORM,
     EventoORM,
+    IncidenciaORM,
     ObraORM,
     PeriodoORM,
     TipoIncidenciaORM,
@@ -532,6 +534,47 @@ class PgAsignacionRepository:
 
 
 # ----------------------------------------------------------------------
+# Incidencias (F-030)
+# ----------------------------------------------------------------------
+def _consulta_incidencias(periodo_id: int) -> Any:
+    """Las incidencias del periodo con su obra y, si el código sigue en el
+    catálogo, su letra y nombre (`LEFT JOIN`: una incidencia guardada no
+    desaparece porque su código deje de leerse)."""
+    return (
+        select(IncidenciaORM, ObraORM.cod, ObraORM.descripcion,
+               TipoIncidenciaORM.letra, TipoIncidenciaORM.nombre)
+        .join(ObraORM, ObraORM.ide == IncidenciaORM.obra_ide)
+        .outerjoin(TipoIncidenciaORM,
+                   TipoIncidenciaORM.codigo == IncidenciaORM.codigo)
+        .where(IncidenciaORM.periodo_id == periodo_id)
+    )
+
+
+_ORDEN_INCIDENCIAS = (IncidenciaORM.trabajador_ide, IncidenciaORM.dia_desde,
+                      IncidenciaORM.id)
+
+
+class PgIncidenciaRepository:
+    def __init__(self, session: Session) -> None:
+        self._s = session
+
+    def de_periodo(self, periodo_id: int) -> dict[int, list[Incidencia]]:
+        stmt = _consulta_incidencias(periodo_id).order_by(*_ORDEN_INCIDENCIAS)
+        resultado: dict[int, list[Incidencia]] = {}
+        for fila in self._s.execute(stmt).all():
+            resultado.setdefault(fila[0].trabajador_ide, []).append(
+                _a_incidencia(*fila))
+        return resultado
+
+    def de_trabajador(self, periodo_id: int,
+                      trabajador_ide: int) -> list[Incidencia]:
+        stmt = (_consulta_incidencias(periodo_id)
+                .where(IncidenciaORM.trabajador_ide == trabajador_ide)
+                .order_by(*_ORDEN_INCIDENCIAS))
+        return [_a_incidencia(*fila) for fila in self._s.execute(stmt).all()]
+
+
+# ----------------------------------------------------------------------
 # Eventos (histórico / deshacer)
 # ----------------------------------------------------------------------
 class PgEventoRepository:
@@ -618,6 +661,7 @@ class SqlAlchemyUnitOfWork:
         self.tipos_incidencia = PgTipoIncidenciaRepository(s)
         self.periodos = PgPeriodoRepository(s)
         self.asignaciones = PgAsignacionRepository(s)
+        self.incidencias = PgIncidenciaRepository(s)
         self.eventos = PgEventoRepository(s)
         return self
 
@@ -663,6 +707,20 @@ def _a_empresa(orm: EmpresaORM) -> Empresa:
 def _a_tipo_incidencia(orm: TipoIncidenciaORM) -> TipoIncidencia:
     return TipoIncidencia(ide=orm.ide, codigo=orm.codigo, letra=orm.letra,
                           nombre=orm.nombre, activa=orm.activa)
+
+
+def _a_incidencia(orm: IncidenciaORM, obra_cod: str, obra_descripcion: str,
+                  letra: str | None, nombre: str | None) -> Incidencia:
+    """Sin el código en el catálogo, la letra de `letra_y_nombre` (el código
+    sin `CI`) y sin nombre."""
+    if letra is None:
+        letra, nombre = letra_y_nombre(None, orm.codigo)
+    return Incidencia(
+        obra_ide=orm.obra_ide, codigo=orm.codigo, dia_desde=orm.dia_desde,
+        dia_hasta=orm.dia_hasta, id=orm.id, obra_cod=obra_cod,
+        obra_descripcion=obra_descripcion, letra=letra, nombre=nombre or "",
+        sigrid_estado=orm.sigrid_estado, sigrid_parte_cod=orm.sigrid_parte_cod,
+        sigrid_motivo=orm.sigrid_motivo)
 
 
 def _a_trabajador(orm: TrabajadorORM) -> Trabajador:

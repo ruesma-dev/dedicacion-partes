@@ -429,3 +429,33 @@ def test_f030_r3_la_respuesta_del_sync_trae_el_catalogo():
         incidencias=ResultadoSyncMaestro(recibidos=7, altas=1, desactivados=2)))
     assert salida.model_dump()["incidencias"] == {
         "recibidos": 7, "altas": 1, "actualizados": 0, "desactivados": 2}
+
+
+# ------------------------------ ruta (R6) -------------------------------- #
+def test_f030_r6_ruta_incidencias_activas_por_letra():
+    from config.settings import Settings
+    from domain.models import TipoIncidencia
+    from fastapi.testclient import TestClient
+    from interface_adapters.api.app import build_app
+    from interface_adapters.api.deps import obtener_contenedor
+
+    from tests.test_f024_rutas_empresa import _Contenedor, _UowCM
+
+    class _Tipos:
+        def activos(self):
+            return [TipoIncidencia(11, "CIA", "AT", "Accidente"),
+                    TipoIncidencia(12, "CIE", "B", "Enfermedad"),
+                    TipoIncidencia(17, "CIV", "V", "Vacaciones")]
+
+    uow = _UowCM({})
+    uow.tipos_incidencia = _Tipos()
+    settings = Settings(_env_file=None)
+    app = build_app(settings)
+    app.dependency_overrides[obtener_contenedor] = lambda: _Contenedor(
+        settings=settings, uow=lambda: uow)
+    r = TestClient(app).get("/api/v1/incidencias")
+    assert r.status_code == 200, r.text
+    assert r.json() == {"incidencias": [
+        {"codigo": "CIA", "letra": "AT", "nombre": "Accidente"},
+        {"codigo": "CIE", "letra": "B", "nombre": "Enfermedad"},
+        {"codigo": "CIV", "letra": "V", "nombre": "Vacaciones"}]}

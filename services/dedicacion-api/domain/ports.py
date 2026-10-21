@@ -12,6 +12,7 @@ from domain.models import (
     CuadranteTrabajador,
     Empresa,
     EventoPendiente,
+    Incidencia,
     Linea,
     Obra,
     Periodo,
@@ -160,6 +161,22 @@ class AsignacionRepository(Protocol):
         ...
 
 
+class IncidenciaRepository(Protocol):
+    """Incidencias de los trabajadores por periodo (F-030, R17, R21)."""
+
+    def de_periodo(self, periodo_id: int) -> dict[int, list[Incidencia]]:
+        """trabajador → sus incidencias, con obra, letra y nombre."""
+        ...
+
+    def de_trabajador(self, periodo_id: int,
+                      trabajador_ide: int) -> list[Incidencia]: ...
+
+    def reemplazar(self, periodo_id: int, trabajador_ide: int,
+                   incidencias: list[Incidencia], usuario: str) -> None:
+        """Sustituye en bloque las del trabajador (transaccional)."""
+        ...
+
+
 class EventoRepository(Protocol):
     def registrar(
         self,
@@ -194,6 +211,7 @@ class UnitOfWork(Protocol):
     tipos_incidencia: TipoIncidenciaRepository  # F-030
     periodos: PeriodoRepository
     asignaciones: AsignacionRepository
+    incidencias: IncidenciaRepository  # F-030
     eventos: EventoRepository
 
     def __enter__(self) -> "UnitOfWork": ...

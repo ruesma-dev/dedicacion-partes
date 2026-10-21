@@ -19,6 +19,7 @@ from application.use_cases import (
     GuardarAsignaciones,
     ListarEmpresas,
     ListarPeriodos,
+    ListarTiposIncidencia,
     ObtenerCuadrante,
     ObtenerFilaTrabajador,
 )
@@ -46,6 +47,8 @@ from interface_adapters.api.schemas import (
     PeriodoOut,
     PropuestasOut,
     SyncOut,
+    TipoIncidenciaOut,
+    TiposIncidenciaOut,
     a_completar_out,
     a_copia_periodo_out,
     a_obra_out,
@@ -161,6 +164,19 @@ def listar_empresas(contenedor: Cont) -> EmpresasOut:
         empresas=[EmpresaOut(empresa=e.numero, nombre=e.nombre, de_baja=e.de_baja)
                   for e in empresas],
     )
+
+
+# --------------------------- Incidencias ------------------------------
+@router.get("/incidencias", response_model=TiposIncidenciaOut,
+            tags=["incidencias"])
+def listar_incidencias(contenedor: Cont) -> TiposIncidenciaOut:
+    """Catálogo del desplegable de incidencias (F-030, R6): las activas por
+    orden de letra, sincronizadas de `auxhor`."""
+    with contenedor.uow() as uow:
+        tipos = ListarTiposIncidencia().ejecutar(uow)
+    return TiposIncidenciaOut(incidencias=[
+        TipoIncidenciaOut(codigo=t.codigo, letra=t.letra, nombre=t.nombre)
+        for t in tipos])
 
 
 # --------------------------- Periodos ---------------------------------

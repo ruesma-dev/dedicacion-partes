@@ -12,6 +12,7 @@ from domain.empresas import linea_de_otra_empresa
 from domain.estados import calcular_desviacion, calcular_estado
 from domain.models import (
     CuadranteTrabajador,
+    Incidencia,
     Obra,
     Periodo,
     ResultadoCompletarTrabajador,
@@ -97,6 +98,34 @@ class LineaOut(_Base):
     propuesta_pendiente: bool = False
 
 
+class IncidenciaOut(_Base):
+    """Incidencia de un trabajador (F-030, R21): obra, código con su letra y
+    nombre, días y la traza del registro en Sigrid."""
+
+    id: int | None
+    obra_ide: int
+    obra_cod: str
+    obra_descripcion: str
+    codigo: str
+    letra: str
+    nombre: str
+    dia_desde: int
+    dia_hasta: int
+    sigrid_estado: str | None
+    sigrid_parte_cod: str | None
+    sigrid_motivo: str | None
+
+
+class TipoIncidenciaOut(_Base):
+    codigo: str
+    letra: str
+    nombre: str
+
+
+class TiposIncidenciaOut(_Base):
+    incidencias: list[TipoIncidenciaOut]
+
+
 class TrabajadorOut(_Base):
     ide: int
     nombre: str
@@ -108,6 +137,8 @@ class TrabajadorOut(_Base):
     desviacion: float
     estado: str
     puede_deshacer: bool
+    # F-030 (R21): las incidencias del trabajador; no cuentan en `total`.
+    incidencias: list[IncidenciaOut] = []
 
 
 class ObraOut(_Base):
@@ -304,7 +335,17 @@ def a_trabajador_out(
         desviacion=float(desviacion),
         estado=estado.value,
         puede_deshacer=fila.puede_deshacer,
+        incidencias=[a_incidencia_out(i) for i in fila.incidencias],
     )
+
+
+def a_incidencia_out(inc: Incidencia) -> IncidenciaOut:
+    return IncidenciaOut(
+        id=inc.id, obra_ide=inc.obra_ide, obra_cod=inc.obra_cod,
+        obra_descripcion=inc.obra_descripcion, codigo=inc.codigo,
+        letra=inc.letra, nombre=inc.nombre, dia_desde=inc.dia_desde,
+        dia_hasta=inc.dia_hasta, sigrid_estado=inc.sigrid_estado,
+        sigrid_parte_cod=inc.sigrid_parte_cod, sigrid_motivo=inc.sigrid_motivo)
 
 
 def a_resumen_out(resumen: ResumenPeriodo) -> ResumenOut:

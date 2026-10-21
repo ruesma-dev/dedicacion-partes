@@ -228,6 +228,9 @@ class _Uow:
 
         self.asignaciones = _Asig()
         self.eventos = _Eventos()
+        # F-030 (lista cerrada): el cuadrante y la fila leen las incidencias.
+        self.incidencias = SimpleNamespace(de_periodo=lambda _p: {},
+                                           de_trabajador=lambda _p, _i: [])
 
     def commit(self) -> None:
         return None

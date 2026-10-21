@@ -235,6 +235,9 @@ class CuadranteTrabajador:
     trabajador: Trabajador
     lineas: list[Linea] = field(default_factory=list)
     puede_deshacer: bool = False
+    # Incidencias del trabajador en el periodo (F-030, R21). No entran en
+    # `total` ni en el estado (R22): van aparte de las líneas.
+    incidencias: tuple[Incidencia, ...] = ()
 
     @property
     def total(self) -> Decimal:
