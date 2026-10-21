@@ -11,25 +11,32 @@ campaña hasta cero supervivientes; más dos arreglos menores (línea 568 de
 desfasado de este fichero lo ha podado el líder. **Correcciones hechas por
 el implementer** (2026-10-21: test de la frontera de R13 `d807cce`, formato
 `7a5f801`, campaña en serie sobre `7a5f801` con **134 mutantes y 0
-supervivientes** `e51ba7b`, informe `d170afb`). **Review pasada 2: APROBADO**
-(2026-10-21, `progress/review_F-051.md`). **Falta T15** (MANUAL del humano)
-para pasar a `done`. Spec aprobada por el humano el 2026-10-20 (D1-D15,
+supervivientes** `e51ba7b`, informe `d170afb`). **Review pasada 2: APROBADO**;
+T18 (O2) hecha y **review pasada 3, solo de T18: APROBADO** (2026-10-21,
+`progress/review_F-051.md`). **Falta T15** (MANUAL en modo pruebas, la
+ejecuta el **líder** a petición del humano, en cuanto el humano autorice
+las escrituras de la preparación) para pasar a `done`. Spec aprobada por el humano el 2026-10-20 (D1-D15,
 en «decisiones» abajo); bloqueos de implementación resueltos por el humano:
 T3 opción A, T12 opción B. Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f051`, rama
 `feature/F-051-pisar-lineas-cero` (con `dev` fusionado el 2026-10-21: el
 despliegue de F-057); sus `.venv` son uniones de directorio a los de la
 copia principal (creadas por el líder, no versionadas). Ningún agente
-escribe en Sigrid. **F-030** aprobada y a la espera en la copia
-`porcentajes-f030` (va después de F-051). El arnés es la **1.7.3**.
+escribe en Sigrid por su cuenta. **F-030** en curso en paralelo en la copia
+`porcentajes-f030` (decisión del humano, 2026-10-21). El arnés es la **1.7.3**.
 
-**Pendiente del humano para cerrar F-051:** T15, MANUAL en modo pruebas en
-la 0404 (pasos y comando exacto abajo, en «implementación»). Ya **no** hace
+**Pendiente del humano para cerrar F-051:** autorizar las cuatro
+escrituras de T15 en la 0404 que le pidió el líder el 2026-10-21 (limpiar
+las líneas de prueba que quedan, `porcentajes:148/149` y `:180`; crear las
+dos líneas `M*` a 0 en PT26/00371, recursos 1705036 y 2786385, `MADM`
+`horide` 27, con `stmt_insert_linea` del transfer, `synckey` vacía y
+`PRUEBA-PORC`; los tres registros desde el front local en modo pruebas; y
+`limpiar` al final). T15 la ejecuta el líder (pasos y comando exacto abajo,
+en «implementación»). Ya **no** hace
 falta que acepte ningún mutante equivalente. **O2 y O4 decididas por el humano el
 2026-10-21** («ok o2 y o4», las recomendadas): **O2** se hace dentro de F-051
 (T18: exigir además línea `M*` al localizar por `hmores_ide`; **hecha** el
-2026-10-21, `d5d61ac`, mutación 136/0 `6ca3074`; **review pasada 3, solo de
-T18, lanzada el 2026-10-21**) y **O4** va a la feature nueva **F-058** (`pending`: un % que
+2026-10-21, `d5d61ac`, mutación 136/0 `6ca3074`; review pasada 3: APROBADO) y **O4** va a la feature nueva **F-058** (`pending`: un % que
 redondea a `can` 0 no se registra). **T15 la hace el líder** a petición del
 humano («realiza tu las pruebas», 2026-10-21); la preparación (dos líneas
 `M*` a 0 sin `synckey` en PT26/00371, que hoy solo tiene la `porcentajes:180`,
@@ -76,8 +83,9 @@ por decisión del humano («empieza f30»), en su copia. **Pendiente del líder:
   `pos`, `paride` y `tex` (para T15); la api usa
   `getattr(a, "sigrid_hmores_ide", None)`; el paso 9 bis va antes del alta de
   partes y solo lo que inserta crea parte o lee `max_pos`.
-- **T15 (MANUAL, la ejecuta el humano, modo pruebas). Sin ejecutar a
-  2026-10-21.** Antes, el humano (o Administración) crea a mano en el parte
+- **T15 (MANUAL, modo pruebas; la ejecuta el líder a petición del humano,
+  «realiza tu las pruebas», 2026-10-21). Sin ejecutar a 2026-10-21**, a la
+  espera de que el humano autorice la preparación. Antes, se crea en el parte
   En registro de la 0404 de noviembre de 2026 (PT26/00371) dos líneas `M*`
   con `can = 0` y sin `synckey`: una del recurso de prueba (el de F-050) y
   otra de un segundo recurso. Transfer, api y front locales con
@@ -266,8 +274,8 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. Orden: **F-051** (review APROBADA; falta T15, MANUAL del humano), **F-030**
-(spec aprobada, va detrás), F-044, F-052, F-053, **F-054** (el sync trae los %
+2026-10-20. Orden: **F-051** (review APROBADA; falta T15, la hace el líder), **F-030**
+(en curso en paralelo), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031,
 F-033 y, detrás, F-017, F-018…
 
