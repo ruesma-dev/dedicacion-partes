@@ -6,17 +6,22 @@ desplegable de las de partes; `sdd: true`, rigor crítico), `in_progress`
 desde el 2026-10-21. Spec **aprobada por el humano el 2026-10-20** («si»:
 D1-D10 todas la recomendada). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f030`, rama
-`feature/F-030-dias-bajas-incidencias`; sus `.venv` son uniones de directorio
-a los de la copia principal (creadas por el líder, no versionadas).
-**Implementer lanzado el 2026-10-21**; T1-T3 hechas; bloqueos resueltos por el humano: T4 con la opción A (lista cerrada de dobles) y T14 con la opción A (la aserción de firma de `test_f013_r3` acepta `incidencias`); implementer reanudado en T14. Arranca **en paralelo con F-051** por
-decisión expresa del humano («empieza f30», 2026-10-21) aunque el arnés pide
-una sola `in_progress`: F-051 está en su tramo final (review APROBADA, T18 y
-T15 pendientes) en la copia `porcentajes-f051`, cuya rama lo cuenta. T20
-(MANUAL en modo pruebas en la 0404) la hará el líder si el humano lo pide;
-ningún agente escribe en Sigrid por su cuenta. Del D10 salen dos features a
-proponer al humano: % por días con el calendario de convenio, y leer la
-bandeja de `partes` (su F-019; `MENSUALES_A_DEDICACION` sigue apagado). El
-arnés es la **1.7.3**.
+`feature/F-030-dias-bajas-incidencias` (con `dev` fusionado: F-051); sus
+`.venv` son uniones de directorio a los de la copia principal (creadas por
+el líder, no versionadas). **Implementer terminado el 2026-10-21**: T1-T19 y
+T21 hechas (`progress/impl_F-030.md`; mutación en serie, 3.ª campaña con 0
+supervivientes; cobertura 99,5 %); bloqueos resueltos por el humano: T4 y
+T14, los dos con la opción A. **Review pasada 1 lanzada el 2026-10-21.**
+**F-051** cerrada el 2026-10-21 e integrada en `dev`, pendiente de desplegar.
+
+**Pendiente del humano:** autorizar T20 (MANUAL en modo pruebas en la 0404:
+el script del transfer escribe y luego borra un par `CIV`/`CIZ` a `can` 0
+marcado `PRUEBA-PORC`; comando exacto en `impl_F-030.md` §6); la ejecuta el
+líder. **Pendiente del líder:** proponer las dos features de D10 (% por días
+con el calendario de convenio; leer la bandeja de `partes`, su F-019, con
+`MENSUALES_A_DEDICACION` apagado mientras tanto) y, al desplegar,
+`azure-apps/dedicacion.md` y el aviso a `partes`. Ningún agente escribe en
+Sigrid por su cuenta. El arnés es la **1.7.3**.
 
 ## F-030 · spec escrita y aprobada (D1-D10 decididas, 2026-10-20)
 
