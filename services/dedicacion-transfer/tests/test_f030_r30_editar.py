@@ -101,3 +101,107 @@ def test_f030_r30_contrato_sin_los_campos_responde_igual(api):
             dia_fin=None)]}).json()
     assert nulos == hoy and hoy["ok"] is True
     assert [set(x) for x in hoy["incidencias"]] == [CLAVES_INC] * 2
+
+
+# ============================ cliente (T28) ============================= #
+from tests.test_f050_propuesta import _cliente_historial
+
+FILA = {"ide": 9001, "reside": 200, "fec": 20260705, "cod": "CIV ",
+        "synckey": " porcentajes:inc:7:ini ", "parte": " PT26/1 ", "can": 0,
+        "hmoide": 777, "est": 1}
+SELECT = ("SELECT h.ide AS ide, h.reside AS reside, h.fec AS fec, "
+          "a.cod AS cod, h.synckey AS synckey, c.cod AS parte, "
+          "h.can AS can, h.hmoide AS hmoide, c.est AS est FROM hmores h "
+          "JOIN auxhor a ON a.ide = h.horide JOIN hmo m ON m.ide = h.hmoide "
+          "JOIN con c ON c.ide = m.ide ")
+GUARDA_INC = (
+    "WHERE ide = ? AND reside = ? AND ABS(ISNULL(can, 0) - ?) < 0.000001 "
+    "AND LTRIM(RTRIM(ISNULL(synckey, ''))) = ? "
+    "AND ISNULL(dvaproide, 0) = 0 AND ISNULL(dvfproide, 0) = 0 "
+    "AND ISNULL(hdereside, 0) = 0 AND ISNULL(empdpreide, 0) = 0 "
+    "AND ISNULL(empabside, 0) = 0 AND ISNULL(emprccide, 0) = 0 "
+    "AND EXISTS (SELECT 1 FROM auxhor a WHERE a.ide = hmores.horide "
+    "AND a.cod = ?) "
+    "AND EXISTS (SELECT 1 FROM con c WHERE c.ide = hmores.hmoide "
+    "AND c.est = ?)")
+
+
+def test_f030_r40_sql_por_recurso_o_por_ide_con_can_parte_y_estado():
+    cli, falso = _cliente_historial([
+        FILA, dict(FILA, ide=9002, can=None, hmoide=None, est=None,
+                   cod="CIP")])
+    filas = cli.incidencias_del_mes([300, 200], 2026, 7, ides=[9002, None,
+                                                                 9001, 9001])
+    [(sql, params)] = falso.llamadas
+    assert sql == SELECT + (
+        "WHERE (h.reside IN (?,?) AND h.fec BETWEEN ? AND ? "
+        "AND a.cod LIKE ? OR h.ide IN (?,?)) ORDER BY h.ide")
+    assert params == [200, 300, 20260701, 20260731, "CI%", 9001, 9002]
+    assert filas == [
+        LineaIncidenciaSigrid(9001, 200, 20260705, "CIV",
+                              "porcentajes:inc:7:ini", "PT26/1", can=0.0,
+                              hmoide=777, parte_est=1),
+        LineaIncidenciaSigrid(9002, 200, 20260705, "CIP",
+                              "porcentajes:inc:7:ini", "PT26/1", can=None,
+                              hmoide=None, parte_est=None)]
+    assert isinstance(filas[0].can, float)
+
+
+def test_f030_r40_sql_sin_ides_el_where_de_hoy():
+    cli, falso = _cliente_historial()
+    cli.incidencias_del_mes([200], 2026, 7)
+    [(sql, params)] = falso.llamadas
+    assert sql == SELECT + (
+        "WHERE h.reside IN (?) AND h.fec BETWEEN ? AND ? "
+        "AND a.cod LIKE ? ORDER BY h.ide")
+    assert params == [200, 20260701, 20260731, "CI%"]
+
+
+def test_f030_r40_sql_en_pruebas_el_filtro_de_partes_a_todo():
+    cli, falso = _cliente_historial()
+    cli.incidencias_del_mes([200], 2026, 7, hmoides=[12, 11], ides=[9001])
+    [(sql, params)] = falso.llamadas
+    assert sql.endswith("a.cod LIKE ? OR h.ide IN (?)) "
+                        "AND h.hmoide IN (?,?) ORDER BY h.ide")
+    assert params == [200, 20260701, 20260731, "CI%", 9001, 11, 12]
+    cli, falso = _cliente_historial()
+    assert cli.incidencias_del_mes([200], 2026, 7, hmoides=[],
+                                   ides=[9001]) == []
+    assert falso.llamadas == []
+
+
+def test_f030_r40_sql_solo_ides_y_trozos_sin_repetir():
+    cli, falso = _cliente_historial()
+    cli.incidencias_del_mes([None], 2026, 7, ides=[9001])
+    [(sql, params)] = falso.llamadas
+    assert sql == SELECT + "WHERE (h.ide IN (?)) ORDER BY h.ide"
+    assert params == [9001]
+    # 600 recursos y 2 `ide`: 500 recursos y luego 100 más los 2 `ide`; la
+    # línea que sale en los dos trozos, una vez.
+    cli, falso = _cliente_historial([FILA])
+    filas = cli.incidencias_del_mes(range(1, 601), 2026, 7, ides=[9001, 9002])
+    assert [len(p) for _, p in falso.llamadas] == [503, 105]
+    assert falso.llamadas[1][1][-2:] == [9001, 9002]
+    assert "OR h.ide IN" not in falso.llamadas[0][0]
+    assert [f.ide for f in filas] == [9001]
+
+
+def test_f030_r41_sql_editar_la_fec_con_la_guarda_de_su_codigo():
+    cli, _ = _cliente_historial()
+    st = cli.stmt_editar_fecha_incidencia(
+        ide=9001, reside=200, hora_codigo="CIV", synckey_leida=" k ",
+        fecha_int=20260706)
+    assert " ".join(st["sql"].split()) == "UPDATE hmores SET fec = ? " + GUARDA_INC
+    assert st["parameters"] == [20260706, 9001, 200, 0.0, "k", "CIV", 1]
+    sin_sk = cli.stmt_editar_fecha_incidencia(
+        ide="9002", reside="200", hora_codigo=" CIZ ", synckey_leida=None,
+        fecha_int="20260712")
+    assert sin_sk["parameters"] == [20260712, 9002, 200, 0.0, "", "CIZ", 1]
+
+
+def test_f030_r41_sql_la_guarda_sin_codigo_es_la_de_f051():
+    cli, _ = _cliente_historial()
+    assert cli._guarda(1, 2, 0.5, "k") == cli._guarda(1, 2, 0.5, "k", None)
+    texto, params = cli._guarda(1, 2, 0.5, "k", "CIV")
+    assert "a.cod = ?" in texto and "LIKE 'M%'" not in texto
+    assert params == [1, 2, 0.5, "k", "CIV", 1]

@@ -40,8 +40,10 @@ from tests.conftest import (
 from tests.test_f050_propuesta import _cliente_historial
 
 # ============================ cliente (T12) ============================== #
+# Anexo R30 (design §13.7): la lectura trae además `can`, parte y estado.
 FILA_INC = {"ide": 900, "reside": 200, "fec": 20260705, "cod": "CIV ",
-            "synckey": " porcentajes:inc:7:ini ", "parte": "PT26/00012"}
+            "synckey": " porcentajes:inc:7:ini ", "parte": "PT26/00012",
+            "can": 0, "hmoide": 777, "est": 1}
 
 
 def test_f030_r27_cliente_sql_parametros_y_mapeo():
@@ -51,7 +53,8 @@ def test_f030_r27_cliente_sql_parametros_y_mapeo():
     [(sql, params)] = falso.llamadas
     assert sql == (
         "SELECT h.ide AS ide, h.reside AS reside, h.fec AS fec, a.cod AS cod, "
-        "h.synckey AS synckey, c.cod AS parte FROM hmores h "
+        "h.synckey AS synckey, c.cod AS parte, "
+        "h.can AS can, h.hmoide AS hmoide, c.est AS est FROM hmores h "
         "JOIN auxhor a ON a.ide = h.horide JOIN hmo m ON m.ide = h.hmoide "
         "JOIN con c ON c.ide = m.ide WHERE h.reside IN (?,?) "
         "AND h.fec BETWEEN ? AND ? AND a.cod LIKE ? ORDER BY h.ide")
@@ -59,9 +62,11 @@ def test_f030_r27_cliente_sql_parametros_y_mapeo():
     assert filas == [
         LineaIncidenciaSigrid(ide=900, reside=200, fecha_int=20260705,
                               hora_codigo="CIV", synckey="porcentajes:inc:7:ini",
-                              parte_cod="PT26/00012"),
+                              parte_cod="PT26/00012", can=0.0, hmoide=777,
+                              parte_est=1),
         LineaIncidenciaSigrid(ide=901, reside=200, fecha_int=20260705,
-                              hora_codigo=None, synckey=None, parte_cod=None)]
+                              hora_codigo=None, synckey=None, parte_cod=None,
+                              can=0.0, hmoide=777, parte_est=1)]
 
 
 def test_f030_r27_cliente_en_pruebas_solo_los_partes_dados():
@@ -85,7 +90,9 @@ def test_f030_r33_cliente_en_trozos_de_500_recursos():
     filas = cli.incidencias_del_mes(range(1, 1202), 2026, 7)
     assert [len(p) for _, p in falso.llamadas] == [503, 503, 204]   # + 3 fijos
     assert [p[0] for _, p in falso.llamadas] == [1, 501, 1001]
-    assert len(filas) == 3
+    # Anexo R30 (design §13.7): el doble repite la misma fila en cada trozo
+    # y cada línea sale una vez (con `ides` una puede salir en dos trozos).
+    assert len(filas) == 1
     cli, falso = _cliente_historial()
     cli.incidencias_del_mes(range(1, 501), 2026, 7)
     assert len(falso.llamadas) == 1
