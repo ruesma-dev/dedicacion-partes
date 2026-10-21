@@ -27,8 +27,9 @@ escribe en Sigrid. **F-030** aprobada y a la espera en la copia
 la 0404 (pasos y comando exacto abajo, en «implementación»). Ya **no** hace
 falta que acepte ningún mutante equivalente. **O2 y O4 decididas por el humano el
 2026-10-21** («ok o2 y o4», las recomendadas): **O2** se hace dentro de F-051
-(T18: exigir además línea `M*` al localizar por `hmores_ide`; implementer
-lanzado) y **O4** va a la feature nueva **F-058** (`pending`: un % que
+(T18: exigir además línea `M*` al localizar por `hmores_ide`; **hecha** el
+2026-10-21, `d5d61ac`, mutación 136/0 `6ca3074`; **review pasada 3, solo de
+T18, lanzada el 2026-10-21**) y **O4** va a la feature nueva **F-058** (`pending`: un % que
 redondea a `can` 0 no se registra). **T15 la hace el líder** a petición del
 humano («realiza tu las pruebas», 2026-10-21); la preparación (dos líneas
 `M*` a 0 sin `synckey` en PT26/00371, que hoy solo tiene la `porcentajes:180`,
