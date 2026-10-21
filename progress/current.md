@@ -1,34 +1,29 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-030** (incidencias en el cuadrante: texto en lugar del % con
-desplegable de las de partes; `sdd: true`, rigor crítico), `in_progress`
-desde el 2026-10-21. Spec **aprobada por el humano el 2026-10-20** («si»:
-D1-D10 todas la recomendada). Copia
+**En curso: F-030** (incidencias en el cuadrante; `sdd: true`, rigor
+crítico), `in_progress` desde el 2026-10-21, en la copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f030`, rama
-`feature/F-030-dias-bajas-incidencias` (con `dev` fusionado: F-051); sus
-`.venv` son uniones de directorio a los de la copia principal (creadas por
-el líder, no versionadas). **Implementer terminado el 2026-10-21**: T1-T19 y
-T21 hechas (`progress/impl_F-030.md`; mutación en serie, 3.ª campaña con 0
-supervivientes; cobertura 99,5 %); bloqueos resueltos por el humano: T4 y
-T14, los dos con la opción A. **Review pasada 1: RECHAZADO** (2026-10-21, `progress/review_F-030.md`): cambiar los días de una incidencia ya registrada le da un `id` nuevo y el transfer vuelve a escribir en Sigrid (obs. 1, R30); **el humano elige la opción C** («c», 2026-10-21): al cambiar los días
-de una incidencia ya registrada se **editan en Sigrid** las fechas de sus dos
-líneas (como F-051 con los %), en vez de escribir otro par. Amplía la spec:
-**spec-author lanzado para el anexo** (R/T nuevas, con las decisiones que
-abra, p. ej. quitar una registrada); se enseña al humano antes de
-implementar.
-**F-051** cerrada el 2026-10-21 e integrada en `dev`, pendiente de desplegar.
+`feature/F-030-dias-bajas-incidencias` (`dev` fusionado: F-051 desplegada,
+F-059 y F-060); sus `.venv` son uniones de directorio a los de la copia
+principal (del líder, no versionadas). Spec aprobada el 2026-10-20 (D1-D10).
+T1-T19 y T21 hechas; review 1 **RECHAZADO** por R30; el humano eligió la
+opción **C** y **aprobó el anexo R30 el 2026-10-21** («si»: D11 = B, D12-D15
+= A, todas la recomendada). **Implementer lanzado el 2026-10-21 para
+T22-T37.** T20: primera mitad hecha por el líder en la 0404
+(`progress/manual_F-030.md`); la segunda (cambio de días), tras T37, con
+autorización expresa del humano. Ningún agente escribe en Sigrid por su
+cuenta. El arnés es la **1.7.3**.
 
-**Pendiente del humano:** autorizar T20 (MANUAL en modo pruebas en la 0404:
-el script del transfer escribe y luego borra un par `CIV`/`CIZ` a `can` 0
-marcado `PRUEBA-PORC`; comando exacto en `impl_F-030.md` §6); la ejecuta el
-líder. **Pendiente del líder:** proponer las dos features de D10 (% por días
-con el calendario de convenio; leer la bandeja de `partes`, su F-019, con
-`MENSUALES_A_DEDICACION` apagado mientras tanto) y, al desplegar,
-`azure-apps/dedicacion.md` y el aviso a `partes`. Ningún agente escribe en
-Sigrid por su cuenta. El arnés es la **1.7.3**.
+**Pendiente del humano:** la comprobación de F-051 en producción (Ctrl+F5;
+un registro con una línea `M*` al 0 % en el parte la edita en su sitio y el
+modal lo avisa; un pisado dice «se edita la línea X (…) y se escribe N%»).
+**Aviso a `partes`** (lo transmite el humano; aquí no se toca `partes`):
+desde F-051 el transfer de dedicación **edita en su sitio** líneas `M*` de
+los partes compartidos (también las que tengan `synckey partes:…`, sin
+cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
 
-## F-030 · anexo R30 escrito (spec-author, 2026-10-21) · pendiente del humano
+## F-030 · anexo R30 escrito (spec-author) y APROBADO (humano, 2026-10-21)
 
 - **Qué**: anexo a la spec por la obs. 1 de la review 1 y la opción C del
   humano. `requirements.md` §8 (R36-R49) y R30 reescrito; `design.md` §11
@@ -39,14 +34,13 @@ Sigrid por su cuenta. El arnés es la **1.7.3**.
   (§2, §3, §5, §10, §11 de antes) se ha movido **sin cambios** al informe y el
   design guarda su resumen; la redacción de R1-R35 se ha apretado sin quitar
   ningún requisito.
-- **Decisiones abiertas para el humano** (requirements §7; razones en el
-  informe), recomendación entre paréntesis: **D11** quitar una registrada
-  (B: queda `quitada`, tachada «sigue en Sigrid» y listada en el modal para
-  retirarla a mano; nunca se borra); **D12** cambiar el tipo y **D13** pasarla
-  a otra obra (A: quitar + nueva); **D14** línea nuestra cambiada a mano en
-  Sigrid (A: no se toca y se avisa; si está borrada, se reescribe como F-051
-  R17); **D15** el día nuevo ya tiene una línea ajena igual (A: no se edita
-  esa). **T22 no empieza hasta que se decidan.**
+- **D11-D15 DECIDIDAS** por el humano el 2026-10-21 («si», todas la
+  recomendada): **D11 = B** (quitar una registrada la deja `quitada`, tachada
+  «sigue en Sigrid» y listada en el modal para retirarla a mano; nunca se
+  borra; deshacer la repone); **D12 = A** y **D13 = A** (cambiar tipo u obra
+  = quitar + nueva); **D14 = A** (línea nuestra cambiada a mano en Sigrid: no
+  se toca y se avisa; borrada, se reescribe); **D15 = A** (día nuevo con una
+  igual ajena: no se edita y se avisa). Implementer lanzado para T22-T37.
 - **MANUAL T20 ampliada** (tras T37, con autorización expresa): además de lo
   anterior, desde `services/dedicacion-transfer` con
   `OBRA_PRUEBAS_FORZAR=true`:
@@ -67,8 +61,8 @@ Sigrid por su cuenta. El arnés es la **1.7.3**.
 - **Toca los tres servicios**: front (desplegable al teclear letras en la
   celda del %, chips y subfilas), api (catálogo desde Sigrid, tabla
   `incidencia`, evento y deshacer, payload) y transfer (par `CI*`/`CIZ`).
-- **Decisiones abiertas para el humano** (requirements §7; recomendación
-  entre paréntesis): D1 fuente de la lista (A: `auxhor` de Sigrid); D2 fechas
+- **Decisiones del humano** (requirements §7, todas la recomendada,
+  2026-10-20): D1 fuente de la lista (A: `auxhor` de Sigrid); D2 fechas
   (A: tramo de días del mes obligatorio); D3 tramo que cruza meses (A: cada
   mes con su `CIZ`); D4 100 % (A: no cuenta); D5 qué se escribe (A: par
   `CI*`/`CIZ`, `can = 0`); D6 partida (A: la de la línea de % de esa obra o
@@ -77,8 +71,9 @@ Sigrid por su cuenta. El arnés es la **1.7.3**.
   línea recién añadida (A: se convierte en incidencia); D10 % por días,
   calendario de convenio y bandeja de `partes` (fuera, features nuevas).
 - **MANUAL de la feature** (T20): prueba en modo pruebas en la `0404`; la
-  ejecuta el líder con autorización expresa del humano (sin dar a
-  2026-10-21). Comando exacto, desde `services/dedicacion-transfer` con
+  ejecuta el líder con autorización expresa del humano. **Primera mitad
+  hecha el 2026-10-21** («autorizo pruebas de f30»; `progress/manual_F-030.md`:
+  `ide` 411730/411731, `ya_registrado`, limpia); la segunda, tras T37. Comando exacto, desde `services/dedicacion-transfer` con
   `OBRA_PRUEBAS_FORZAR=true` y `RECURSO` = un `res.ide` con `CIV` y `CIZ` en
   `reshor` (p. ej. 1705036):
   `python prueba_escritura_porcentajes.py preflight --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9`,
@@ -237,32 +232,16 @@ heredan.
 **Para retomar:** con A, sigo en T4 (sync, repositorio, preview y cableado),
 adaptando los dobles en la misma tarea que los rompe.
 
-## F-051 · CERRADA, pendiente de desplegar (estado traído de `dev` al fusionar)
+## F-051 · CERRADA y DESPLEGADA (2026-10-21)
 
-**F-051 CERRADA (`done`) el 2026-10-21, pendiente de desplegar**
-(pisar las líneas del parte editándolas, nunca borrando; transfer, api y
-front). Review: pasada 1 RECHAZADO (mutante que no era equivalente y rastro
-desfasado), pasada 2 APROBADO, pasada 3 (T18, la O2) APROBADO
-(`progress/review_F-051.md`). **T15 CUMPLIDA por el líder el 2026-10-21** en
-modo pruebas en la 0404, con las escrituras autorizadas por el humano
-(«realiza tu las pruebas», «escribe en prueba para 51»): la línea a 0 se
-edita en su sitio, el pisado edita, la tercera vez es «ya registrada», 0
-`DELETE`; 0404 limpia al acabar (`progress/manual_F-051.md`). `bash
-harness/init.sh` en verde en la rama. Spec aprobada por el humano el
-2026-10-20 (D1-D15); bloqueos de implementación resueltos por él (T3 A, T12
-B); O2 dentro (T18) y O4 a la feature nueva **F-058** (`pending`), decisión
-del humano del 2026-10-21. **F-030** en curso en paralelo en la copia
-`porcentajes-f030` (decisión del humano, 2026-10-21). El arnés es la
-**1.7.3**.
-
-**Pendiente del líder, al desplegar F-051** (necesita permiso del humano;
-orden **transfer → api → front**): T16, refrescar `azure-apps/dedicacion.md`
-desde `docs/INTEGRACION.md` §1, §5 y §7 (el transfer EDITA en su sitio
-líneas `M*` de partes compartidos, `UPDATE` con guarda y sin `DELETE`;
-`lineas[].hmores_ide` de ida; `ya_registradas_ide`, `editadas`, `a_cero` y
-`escritas[].editada` de vuelta; `borradas` siempre 0) y avisar a `partes` de
-que el transfer edita líneas `M*` de sus partes sin borrarlas.
-
+**F-051** (pisar las líneas del parte
+editándolas, nunca borrando) cerrada el 2026-10-21 y **desplegada el
+2026-10-21** por el líder con permiso del humano («autorizo … despliegue de
+f51»), transfer → api → front (ver «Producción, hoy»); T16 hecho
+(`azure-apps/dedicacion.md` `223490c`).
+Altas nuevas del 2026-10-21: **F-058** (un % que redondea a 0 no se
+registra), **F-059** (% por días con el calendario de convenio) y **F-060**
+(leer la bandeja de `partes`). El arnés es la **1.7.3**.
 ## F-051 · bloqueos de implementación (2026-10-20) · RESUELTOS
 
 - **T3**: añadir `edita_ide` y `a_cero_ides` a `Conflicto` rompía
@@ -304,12 +283,9 @@ que el transfer edita líneas `M*` de sus partes sin borrarlas.
 - **T15 CUMPLIDA por el líder el 2026-10-21** (modo pruebas, 0404,
   escrituras autorizadas por el humano). Detalle en
   `progress/manual_F-051.md`; resumen en `progress/impl_F-051.md` §6.
-- **`azure-apps` pendiente (T16, líder, al desplegar transfer → api →
-  front):** `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` §1, §5 y
-  §7: el transfer EDITA en su sitio líneas `M*` de partes compartidos
-  (`UPDATE` con guarda, sin `DELETE`); `LineaIn.hmores_ide` de ida;
-  `ya_registradas_ide`, `editadas`, `a_cero` y `escritas[].editada` de
-  vuelta; `borradas` siempre 0 en el registro. Avisar a `partes`.
+- **T16 HECHO el 2026-10-21** al desplegar (transfer → api → front):
+  `azure-apps/dedicacion.md` `223490c` (§1, §5 y §7 desde
+  `docs/INTEGRACION.md`). Aviso a `partes`: en «Pendiente del humano», arriba.
 
 ## F-051 · decisiones del humano sobre la spec (2026-10-20, todas cerradas)
 
@@ -337,6 +313,17 @@ que el transfer edita líneas `M*` de sus partes sin borrarlas.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-21: F-051**, los tres servicios en orden, por el
+  líder con `redeploy_dedicacion.ps1 -Solo transfer|api|front` (permiso del
+  humano): transfer `r20261021-1611` (revisión
+  `ca-dedicacion-transfer--r20261021161055`), api `r20261021-1613`
+  (`…--r20261021161322`) y front `r20261021-1615` (`…--r20261021161520`), las
+  tres `RunningAtMaxScale`, `Healthy` y con el 100 % del tráfico (`az
+  containerapp revision list`). El transfer sigue en **modo real**
+  (`OBRA_PRUEBAS_FORZAR=false`, `az containerapp show`) y arrancó sin errores
+  (`containerapp logs`). El script volvió a cortarse tras cada `containerapp
+  update` (el `Run-Az` de «Lo que espera al humano»). `infra/imagenes.json`
+  al día en este commit; `azure-apps/dedicacion.md` `223490c`.
 - **Desplegado el 2026-10-20: F-057**, api y front, en ese orden, lanzado por
   el humano con `redeploy_dedicacion.ps1 -Solo api` y `-Solo front` (esta vez
   sin cortarse): api `r20261020-1342` (revisión
@@ -479,8 +466,8 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada el 2026-10-21 (pendiente de desplegar). Orden: **F-030** (en curso), **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
-que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031,
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. Orden: **F-030** (en curso), **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
+que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano

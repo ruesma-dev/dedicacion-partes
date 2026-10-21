@@ -986,6 +986,37 @@
       "rigor": "critico",
       "priority": 2,
       "branch": "feature/F-058-porcentaje-cero-no-registra"
+    },
+    {
+      "id": "F-059",
+      "title": "El % de cada obra por días trabajados, con el calendario del convenio",
+      "description": "Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21: «da de alta las features que quedaron fuera»). Hoy el % de cada obra es libre y las incidencias de F-030 (V, B, AT, FJ, F, H, M) no restan nada: no cuentan para el 100 % (F-030 D4 = A). Esta feature calcula o propone el % según los días que la persona trabajó de verdad en el mes, descontando sus incidencias y con el calendario laboral de su convenio (festivos, jornada). Abre decisiones para la spec: de dónde sale el calendario de convenio (Sigrid u otra fuente), si el % se propone o se impone, cómo convive con la regla del 100 % y con lo ya registrado. Servicios: probablemente api (cálculo) y front (solo pintar); la regla del 100 % vive en `domain/`. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.",
+      "acceptance": [
+        "Spec aprobada por el humano con la fuente del calendario de convenio y la regla elegida (proponer o imponer).",
+        "Con incidencias en el mes, el % de cada obra refleja los días trabajados según el calendario del convenio de la persona; sin incidencias, nada cambia.",
+        "Tests unitarios sin red ni BBDD y `bash harness/init.sh` en verde."
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 4,
+      "branch": "feature/F-059-porcentaje-por-dias"
+    },
+    {
+      "id": "F-060",
+      "title": "Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios)",
+      "description": "Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21). Si `partes` enciende su interruptor `MENSUALES_A_DEDICACION` (su F-019), las incidencias de los trabajadores mensuales que se apuntan en sus partes diarios dejan de ir a Sigrid y se quedan en `dedicacion_bandeja`. Esta feature es el espejo: dedicación lee esa bandeja y las convierte en incidencias de F-030 en el cuadrante (sin duplicar las que ya estén, R27 de F-030), para que se registren por la vía de F-030. **Mientras no exista, `MENSUALES_A_DEDICACION` de `partes` debe seguir apagado.** Cruza la frontera del proyecto: leer antes `azure-apps/partes.md` y el contrato de la bandeja; el documento de `partes` lo mantiene `partes`. Servicio previsto: api (lectura de la bandeja y alta de incidencias); el front solo pinta.",
+      "acceptance": [
+        "Spec aprobada por el humano con el contrato de `dedicacion_bandeja` leído de `partes` (sin duplicar su documento: se enlaza).",
+        "Una incidencia de un mensual que llega a la bandeja aparece en el cuadrante de dedicación como incidencia de F-030, una sola vez, y se registra por la vía de F-030.",
+        "Hasta desplegarla, `MENSUALES_A_DEDICACION` sigue apagado en `partes` (anotado en `azure-apps/dedicacion.md`).",
+        "Tests unitarios sin red ni BBDD y `bash harness/init.sh` en verde."
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 4,
+      "branch": "feature/F-060-bandeja-partes"
     }
   ]
 }
