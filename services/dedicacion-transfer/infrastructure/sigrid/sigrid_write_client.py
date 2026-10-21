@@ -58,8 +58,8 @@ from application.services.cuenta_analitica import indexar_cuentas
 from application.services.propuesta_partida import LineaHistorial
 from domain.errores import ObraAmbigua
 from domain.models.registro_models import (
-    HoraRecurso, LineaSigrid, ObraEntrada, ParteDestino, ParteSigrid,
-    PartidaCuenta, PartidaValida,
+    HoraRecurso, LineaIncidenciaSigrid, LineaSigrid, ObraEntrada,
+    ParteDestino, ParteSigrid, PartidaCuenta, PartidaValida,
 )
 
 logger = logging.getLogger(__name__)
@@ -654,6 +654,48 @@ class SigridWriteClient:
                     synckey=sk, nuestra=True)
                 setattr(ls, "hmoide", int(f["hmoide"] or 0))
                 out[sk] = ls
+        return out
+
+    def incidencias_del_mes(
+        self, resides: Iterable[int | None], ano: int, mes: int,
+        hmoides: Iterable[int | None] | None = None,
+    ) -> list[LineaIncidenciaSigrid]:
+        """F-030 (R27, R33): las líneas de incidencia (`CI*`, también
+        `CIZ`) de esos recursos con `fec` en el mes, en CUALQUIER parte, con
+        el código del parte. Con `hmoides` (modo pruebas), solo en esos
+        partes; una lista sin partes no lee. En trozos de `LOTE_PARAMETROS`
+        recursos; un fallo o un `truncated` sube como excepción."""
+        ides = sorted({int(i) for i in resides if i})
+        partes = (None if hmoides is None
+                  else sorted({int(h) for h in hmoides if h}))
+        if not ides or partes == []:
+            return []
+        ultimo = calendar.monthrange(int(ano), int(mes))[1]
+        base = int(ano) * 10000 + int(mes) * 100
+        filtro = ""
+        extra: list = []
+        if partes is not None:
+            filtro = f" AND h.hmoide IN ({','.join('?' for _ in partes)})"
+            extra = partes
+        out: list[LineaIncidenciaSigrid] = []
+        for trozo in _trozos(ides):
+            marcas = ",".join("?" for _ in trozo)
+            filas = self._lectura(
+                "incidencias_del_mes",
+                "SELECT h.ide AS ide, h.reside AS reside, h.fec AS fec, "
+                "a.cod AS cod, h.synckey AS synckey, c.cod AS parte "
+                "FROM hmores h JOIN auxhor a ON a.ide = h.horide "
+                "JOIN hmo m ON m.ide = h.hmoide JOIN con c ON c.ide = m.ide "
+                f"WHERE h.reside IN ({marcas}) AND h.fec BETWEEN ? AND ? "
+                f"AND a.cod LIKE ?{filtro} ORDER BY h.ide",
+                trozo + [base + 1, base + ultimo, "CI%"] + extra)
+            out.extend(LineaIncidenciaSigrid(
+                ide=int(f["ide"]), reside=int(f["reside"]),
+                fecha_int=int(f["fec"]),
+                hora_codigo=(f["cod"] or "").strip() or None,
+                synckey=(f["synckey"] or "").strip() or None,
+                parte_cod=(f["parte"] or "").strip() or None)
+                for f in filas)
         return out
 
     # -------------------------- sentencias -------------------------- #
