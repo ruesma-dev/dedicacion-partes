@@ -770,10 +770,13 @@ def test_f030_r31_el_log_cuenta_las_que_se_escriben(caplog):
     import logging
 
     caplog.set_level(logging.INFO, "application.pipelines.registro_pipeline")
-    _pf(ClienteInc(), [], [_inc(), _inc(id=8, recurso_ide=300)])
+    # Una que se escribe (2 líneas) y dos que no (4): las cuentas no son
+    # simétricas, así que «escribir» no puede salir de contar las otras.
+    _pf(ClienteInc(), [], [_inc(), _inc(id=8, recurso_ide=300),
+                           _inc(id=9, recurso_ide=300)])
     [linea_log] = [r.getMessage() for r in caplog.records
                    if "incidencias obra=" in r.getMessage()]
-    assert linea_log.endswith("lineas=4 escribir=2")
+    assert linea_log.endswith("lineas=6 escribir=2")
 
 
 class _ClientePrecarga(ClienteInc):
