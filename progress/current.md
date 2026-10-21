@@ -44,6 +44,49 @@ arnés es la **1.7.3**.
   mismos partes: avisar al humano.
 - Sigrid, solo lectura durante la spec (consultas en `progress/spec_F-030.md`).
 
+## F-030 · implementación: BLOQUEADA en T14 (implementer, 2026-10-21)
+
+**Estado:** `blocked`. Hechas T1-T14, cada una con su commit y su traza RED
+(T10 `fc039a7`, T11 `d407bf6`, T12 `4207de3`, T13 `07671d3`, T14 `3e63ba7` +
+`1cde163`). Api 1063 y front 341 en verde (tras T9); **transfer 986 en verde
+y 1 en rojo**, el de abajo. Nada escrito en Sigrid; todos los dobles ajenos
+adaptados hasta aquí son los de la lista cerrada (sin ninguna aserción).
+
+**Motivo: un test ajeno exige cambiar una ASERCIÓN.**
+`services/dedicacion-transfer/tests/test_f013_sin_partida.py::test_f013_r3_la_confirmacion_no_estrena_canal`
+fija la firma literal de `RegistroPipeline.ejecutar`:
+`["self", "obra", "lineas", "pisar_claves", "usuario"]`. T14 (R23, R24;
+design §3: «`ejecutar` inserta sus líneas en los mismos lotes») necesita que
+`ejecutar` reciba las incidencias de la petición, y se lo pasé como
+parámetro nuevo, opcional y al final (`incidencias=None`): la lista pasa a
+tener 6 nombres. El test vigila otra cosa (que la **confirmación** de F-013
+viaje por `pisar_claves` y no por un canal nuevo); las incidencias no son
+una confirmación, pero la aserción es literal. El otro test que cayó
+(`test_f055_lote.py::…cada_escenario…`, por el doble `_comparado` de
+`f055_equivalencia_lote.py`) lo arreglé sin tocarlo: sin incidencias,
+`ejecutar` llama a `preflight` exactamente como antes (`1cde163`).
+
+**Opciones:**
+
+- **A (recomendada).** Mantener `incidencias=None` en `ejecutar` y que la
+  aserción de f013 sea `["self", "obra", "lineas", "pisar_claves", "usuario",
+  "incidencias"]`, con la marca «F-030 (lista cerrada)» y una línea que diga
+  que `incidencias` no es un canal de confirmación. Lo que vigila sigue
+  vigilado: un parámetro de confirmación nuevo seguiría rompiéndolo. Es un
+  cambio de una línea y se lista en `progress/impl_F-030.md`.
+- **B.** No tocar la firma: un método público hermano (p. ej.
+  `registrar(obra, lineas, incidencias, pisar_claves, usuario)`) con toda la
+  lógica, `ejecutar` delegando en él sin incidencias, y `app.py` llamando a
+  uno u otro. No cambia ningún test ajeno, pero deja dos entradas para la
+  misma operación solo para respetar una aserción literal; no la recomiendo.
+- **C.** Que las incidencias viajen dentro de `lineas` (lista mixta que el
+  pipeline separa por tipo). No la recomiendo: rompe el tipo de `lineas` y a
+  todos los que lo recorren.
+
+**Para retomar:** con A, cambio esa aserción (commit propio, «F-030 T14:
+f013 lista cerrada») y sigo con T15 (lote y `app.py`), T16-T19 y T21; T20 se
+queda para el líder con su comando exacto (`tasks.md`).
+
 ## F-030 · implementación: bloqueo de T4 RESUELTO (implementer, 2026-10-21)
 
 **Resuelto por el humano el 2026-10-21 con la opción A** («la a»): lista
