@@ -95,3 +95,76 @@ def test_f030_r19_dominio_febrero_bisiesto_y_no_bisiesto():
 
 def test_f030_r19_dominio_el_error_es_de_dominio():
     assert issubclass(IncidenciaInvalida, ErrorDominio)
+
+
+# ============================ esquema (T3) ============================== #
+def _tipos(tabla) -> dict[str, str]:
+    from sqlalchemy.dialects import postgresql
+
+    return {c.name: c.type.compile(dialect=postgresql.dialect())
+            for c in tabla.columns}
+
+
+def test_f030_r3_esquema_tabla_tipo_incidencia():
+    from infrastructure.db.orm_models import Base, TipoIncidenciaORM
+
+    tabla = TipoIncidenciaORM.__table__
+    assert tabla.name == "tipo_incidencia"
+    assert Base.metadata.tables["tipo_incidencia"] is tabla
+    assert [c.name for c in tabla.primary_key.columns] == ["ide"]
+    assert tabla.columns["ide"].autoincrement is False   # el de `auxhor`
+    assert _tipos(tabla) == {
+        "ide": "BIGINT", "codigo": "TEXT", "letra": "TEXT", "nombre": "TEXT",
+        "activa": "BOOLEAN", "sync_en": "TIMESTAMP WITH TIME ZONE"}
+    assert not tabla.columns["codigo"].nullable
+    assert not tabla.columns["activa"].nullable
+
+
+def test_f030_r17_esquema_tabla_incidencia():
+    from infrastructure.db.orm_models import Base, IncidenciaORM
+
+    tabla = IncidenciaORM.__table__
+    assert tabla.name == "incidencia"
+    assert Base.metadata.tables["incidencia"] is tabla
+    assert _tipos(tabla) == {
+        "id": "INTEGER", "periodo_id": "INTEGER", "trabajador_ide": "BIGINT",
+        "obra_ide": "BIGINT", "codigo": "TEXT", "dia_desde": "SMALLINT",
+        "dia_hasta": "SMALLINT", "actualizado_en": "TIMESTAMP WITH TIME ZONE",
+        "actualizado_por": "TEXT", "sigrid_estado": "VARCHAR(16)",
+        "sigrid_parte_cod": "VARCHAR(24)", "sigrid_ide_ini": "INTEGER",
+        "sigrid_ide_fin": "INTEGER", "sigrid_motivo": "VARCHAR(300)",
+        "sigrid_registrado_at_utc": "TIMESTAMP WITH TIME ZONE",
+        "sigrid_registrado_by": "VARCHAR(64)"}
+    fks = {fk.parent.name: (fk.column.table.name, fk.ondelete)
+           for fk in tabla.foreign_keys}
+    assert fks == {"periodo_id": ("periodo", "CASCADE"),
+                   "trabajador_ide": ("trabajador", None),
+                   "obra_ide": ("obra", None)}
+    obligatorias = {c.name for c in tabla.columns if not c.nullable}
+    assert obligatorias == {"id", "periodo_id", "trabajador_ide", "obra_ide",
+                            "codigo", "dia_desde", "dia_hasta",
+                            "actualizado_en", "actualizado_por"}
+    checks = {c.name: str(c.sqltext) for c in tabla.constraints
+              if c.__class__.__name__ == "CheckConstraint"}
+    assert checks == {"ck_incidencia_dias": (
+        "dia_desde BETWEEN 1 AND 31 AND dia_hasta BETWEEN dia_desde AND 31")}
+    assert [(i.name, [c.name for c in i.columns]) for i in tabla.indexes] == [
+        ("ix_incidencia_periodo_trab", ["periodo_id", "trabajador_ide"])]
+
+
+def test_f030_r2_esquema_las_crea_create_all_y_asignacion_no_cambia():
+    """Dos tablas NUEVAS: sobre una base sin ellas `alters_faltantes` no
+    emite nada (las crea `create_all` al arrancar) y nada para `asignacion`,
+    cuyo esquema F-030 no toca (R2)."""
+    from infrastructure.db.esquema import alters_faltantes
+    from infrastructure.db.orm_models import AsignacionORM, Base
+
+    al_dia = {t.name: {c.name for c in t.columns}
+              for t in Base.metadata.tables.values()}
+    sin_nuevas = {k: v for k, v in al_dia.items()
+                  if k not in ("tipo_incidencia", "incidencia")}
+    assert alters_faltantes(Base.metadata, sin_nuevas) == []
+    assert alters_faltantes(Base.metadata, al_dia) == []
+    assert "codigo" not in AsignacionORM.__table__.columns
+    assert not any("incidencia" in c.name
+                   for c in AsignacionORM.__table__.columns)

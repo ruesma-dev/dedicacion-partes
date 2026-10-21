@@ -15,6 +15,7 @@ from sqlalchemy import (
     Index,
     Integer,
     Numeric,
+    SmallInteger,
     String,
     Text,
     UniqueConstraint,
@@ -194,6 +195,73 @@ class AsignacionORM(Base):
             "porcentaje > 0 AND porcentaje <= 100", name="ck_asignacion_pct"
         ),
         Index("ix_asignacion_periodo_trab", "periodo_id", "trabajador_ide"),
+    )
+
+
+class TipoIncidenciaORM(Base):
+    """Catálogo de tipos de incidencia, copia de solo lectura de `auxhor` de
+    Sigrid (los `CI*` salvo `CIZ`), que trae el sync (F-030, R3, D1). La clave
+    es el `auxhor.ide`: nunca la genera PostgreSQL. Un código que deja de
+    leerse o tiene fecha de baja queda `activa = false`; no se borra (R5).
+    Tabla NUEVA: la crea `create_all` al arrancar, como `empresa` (F-032)."""
+
+    __tablename__ = "tipo_incidencia"
+
+    ide: Mapped[int] = mapped_column(
+        BigInteger, primary_key=True, autoincrement=False
+    )
+    codigo: Mapped[str] = mapped_column(Text, nullable=False)
+    letra: Mapped[str] = mapped_column(Text, nullable=False)
+    nombre: Mapped[str] = mapped_column(Text, nullable=False)
+    activa: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    sync_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class IncidenciaORM(Base):
+    """Incidencia de un trabajador en una obra durante un tramo de días del
+    periodo (F-030, R17, docs/ARCHITECTURE.md#regla-incidencia). Va aparte de
+    `asignacion` (cuyo `CHECK porcentaje > 0` sigue): no es una línea de % y
+    no cuenta para el 100 % (R22). Tabla NUEVA, por `create_all`.
+
+    La traza `sigrid_*` la escribe solo `application/registro_sigrid.py`
+    (R31), como la de la asignación: nulables y sin default."""
+
+    __tablename__ = "incidencia"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    periodo_id: Mapped[int] = mapped_column(
+        ForeignKey("periodo.id", ondelete="CASCADE"), nullable=False
+    )
+    trabajador_ide: Mapped[int] = mapped_column(
+        ForeignKey("trabajador.ide"), nullable=False
+    )
+    obra_ide: Mapped[int] = mapped_column(ForeignKey("obra.ide"), nullable=False)
+    codigo: Mapped[str] = mapped_column(Text, nullable=False)  # `CI*` de auxhor
+    dia_desde: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    dia_hasta: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    actualizado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    actualizado_por: Mapped[str] = mapped_column(Text, nullable=False, default="local")
+    sigrid_estado: Mapped[str | None] = mapped_column(String(16))
+    sigrid_parte_cod: Mapped[str | None] = mapped_column(String(24))
+    # `hmores.ide` de la línea de inicio (`CI*`) y de la de fin (`CIZ`).
+    sigrid_ide_ini: Mapped[int | None] = mapped_column(Integer)
+    sigrid_ide_fin: Mapped[int | None] = mapped_column(Integer)
+    sigrid_motivo: Mapped[str | None] = mapped_column(String(300))
+    sigrid_registrado_at_utc: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    sigrid_registrado_by: Mapped[str | None] = mapped_column(String(64))
+
+    __table_args__ = (
+        CheckConstraint(
+            "dia_desde BETWEEN 1 AND 31 AND dia_hasta BETWEEN dia_desde AND 31",
+            name="ck_incidencia_dias",
+        ),
+        Index("ix_incidencia_periodo_trab", "periodo_id", "trabajador_ide"),
     )
 
 
