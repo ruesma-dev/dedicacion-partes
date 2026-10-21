@@ -99,8 +99,9 @@ def _compilada(stmt: Any) -> tuple[str, dict[str, Any]]:
 
 
 def test_f027_r3_ultimo_pendiente_trae_su_autor():
+    # F-030 (lista cerrada): el evento ORM tiene `tipo`; el repo lo lee.
     orm = SimpleNamespace(id=7, usuario="ana@ruesma.es",
-                          snapshot_antes=[{"obra_ide": 100}])
+                          snapshot_antes=[{"obra_ide": 100}], tipo="GUARDAR")
     sesion = _Sesion([orm])
     pendiente = PgEventoRepository(sesion).ultimo_pendiente(3, 10)  # type: ignore[arg-type]
     assert pendiente == EventoPendiente(id=7, usuario="ana@ruesma.es",

@@ -341,6 +341,10 @@ class DeshacerUltimaModificacion:
     Solo si ese evento es de `usuario` (F-027, decisión A,
     `domain/deshacer.py`): si es de otro, `DeshacerAjeno` sin tocar nada.
     Nunca se deshace un evento que no sea el último.
+
+    F-030 (R20): despacha por el tipo del evento ANTES de leer su snapshot.
+    Uno `INCIDENCIAS` devuelve las incidencias del trabajador a su
+    `snapshot_antes` y no toca las líneas; los demás, las líneas, como hoy.
     """
 
     def ejecutar(
@@ -363,10 +367,17 @@ class DeshacerUltimaModificacion:
                 "La última modificación de este trabajador es de "
                 f"{pendiente.usuario}: solo puede deshacerla quien la hizo"
             )
-        lineas = _validar_lineas(
-            uow, pendiente.snapshot_antes, permitir_inactivas=True
-        )
-        uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas, usuario)
+        if pendiente.tipo == TipoEvento.INCIDENCIAS.value:
+            uow.incidencias.reemplazar(
+                periodo_id, trabajador_ide,
+                [_parsear_incidencia(b) for b in pendiente.snapshot_antes],
+                usuario)
+        else:
+            lineas = _validar_lineas(
+                uow, pendiente.snapshot_antes, permitir_inactivas=True
+            )
+            uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas,
+                                        usuario)
         uow.eventos.marcar_deshecho(pendiente.id)
         uow.commit()
         return ObtenerFilaTrabajador().ejecutar(

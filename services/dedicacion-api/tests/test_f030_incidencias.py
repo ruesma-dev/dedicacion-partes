@@ -185,6 +185,7 @@ from tests.test_f024_cuadrante_empresa import (  # noqa: E402
     OBRAS,
     P_ACT,
     TRABAJADORES,
+    _ln,
     _Uow,
     _uow,
 )
@@ -365,6 +366,9 @@ class _Filas:
 
     def all(self):
         return list(self._filas)
+
+    def first(self):
+        return self._filas[0] if self._filas else None
 
 
 class _SesionInc:
@@ -768,3 +772,143 @@ def test_f030_r19_guardar_repo_entradas_var():
         "AND obra.registro_obra_ide IS NOT NULL")
     assert repo.entradas_var(set()) == set()
     assert len(sesion.sentencias) == 1
+
+
+# ======================= deshacer y copias (T7) ========================= #
+def _deshacer(uow, ide=14, usuario=USUARIO):
+    from application.use_cases import DeshacerUltimaModificacion
+
+    return DeshacerUltimaModificacion().ejecutar(uow, ANIO, MES, ide, usuario,
+                                                 filtro=FILTRO)
+
+
+def test_f030_r20_deshacer_incidencias_vuelve_al_snapshot_antes():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _inc(5, 9, obra=100))
+    _guardar(uow, [_e(101, "CIE", 1, 3)])
+    lineas_antes = {k: list(v) for k, v in uow.lineas[P_ACT].items()}
+    fila, _ = _deshacer(uow)
+    assert _tramos(fila.incidencias) == [(100, "CIV", 5, 9)]
+    assert uow.incidencias.reemplazos[-1] == (P_ACT, 14, USUARIO)
+    assert uow.eventos.deshechos == {1}
+    assert uow.lineas[P_ACT] == lineas_antes and uow.reemplazados == []
+    assert fila.puede_deshacer is False
+
+
+def test_f030_r20_deshacer_la_primera_incidencia_las_deja_vacias():
+    uow = _uow_guardar()
+    _guardar(uow, [_e(100, "CIV", 1, 3)])
+    fila, _ = _deshacer(uow)
+    assert fila.incidencias == ()
+
+
+def test_f030_r20_deshacer_va_por_orden_sea_del_tipo_que_sea():
+    """GUARDAR y luego INCIDENCIAS: el primer Ctrl+Z deshace las incidencias
+    y no toca las líneas; el segundo, las líneas y no toca las incidencias."""
+    from application.use_cases import GuardarAsignaciones
+
+    uow = _uow_guardar()
+    GuardarAsignaciones().ejecutar(
+        uow, ANIO, MES, 14, [{"obra_ide": 100, "porcentaje": "100"}], USUARIO,
+        filtro=FILTRO)
+    _guardar(uow, [_e(101, "CIE", 1, 3)])
+    fila, _ = _deshacer(uow)
+    assert fila.incidencias == ()
+    assert [(ln.obra_ide, ln.porcentaje) for ln in fila.lineas] == [
+        (100, Decimal("100"))]
+    uow.incidencias.poner(14, _inc(1, 3, obra=101, cod="CIE"))  # sin evento
+    fila, _ = _deshacer(uow)                        # el GUARDAR
+    assert fila.lineas == []
+    assert _tramos(fila.incidencias) == [(101, "CIE", 1, 3)]
+
+
+def test_f030_r20_deshacer_incidencias_ajeno_o_sin_pendiente():
+    from domain.errors import DeshacerAjeno, NadaQueDeshacer
+
+    uow = _uow_guardar()
+    with pytest.raises(NadaQueDeshacer):
+        _deshacer(uow)
+    _guardar(uow, [_e(100, "CIV", 1, 3)], usuario="pablo@ruesma.es")
+    with pytest.raises(DeshacerAjeno, match="pablo@ruesma.es"):
+        _deshacer(uow)
+    assert _tramos(uow.incidencias.de_trabajador(P_ACT, 14)) == [(100, "CIV", 1, 3)]
+    assert uow.eventos.deshechos == set()
+
+
+def test_f030_r20_deshacer_repo_lee_el_tipo_del_evento():
+    from types import SimpleNamespace
+
+    from infrastructure.db.repositories import PgEventoRepository
+
+    class _S:
+        def __init__(self, orm):
+            self.orm = orm
+
+        def scalars(self, stmt):
+            return _Filas([self.orm])
+
+    orm = SimpleNamespace(id=7, usuario="ana", snapshot_antes=[{"x": 1}],
+                          tipo="INCIDENCIAS")
+    pendiente = PgEventoRepository(_S(orm)).ultimo_pendiente(P_ACT, 14)  # type: ignore[arg-type]
+    assert pendiente == EventoPendiente(7, "ana", [{"x": 1}], tipo="INCIDENCIAS")
+    assert EventoPendiente(1, "a", []).tipo == "GUARDAR"
+
+
+def _copias_uow() -> _UowInc:
+    from tests.test_f024_cuadrante_empresa import P_ANT
+
+    uow = _uow_guardar()
+    uow.lineas[P_ANT] = {14: [_ln(101, "100")], 10: [_ln(100, "100")]}
+    uow.incidencias.poner(14, _inc(1, 3, obra=101), periodo_id=P_ANT)
+    uow.incidencias.poner(10, _inc(4, 6, obra=100), periodo_id=P_ACT)
+    return uow
+
+
+def _foto(uow) -> dict:
+    return {k: list(v) for k, v in uow.incidencias.datos.items()}
+
+
+def test_f030_r21_copias_f8_no_copia_ni_toca_incidencias():
+    from application.use_cases import CopiarTrabajadorAnterior
+
+    uow = _copias_uow()
+    antes = _foto(uow)
+    fila, *_ = CopiarTrabajadorAnterior().ejecutar(uow, ANIO, MES, 14, USUARIO,
+                                                   filtro=FILTRO)
+    assert [ln.obra_ide for ln in fila.lineas] == [101]
+    assert fila.incidencias == ()
+    assert _foto(uow) == antes and uow.incidencias.reemplazos == []
+
+
+def test_f030_r21_copias_mes_no_copia_ni_toca_incidencias():
+    from application.use_cases import CopiarPeriodoAnterior
+
+    uow = _copias_uow()
+    antes = _foto(uow)
+    r = CopiarPeriodoAnterior().ejecutar(uow, ANIO, MES, USUARIO, filtro=FILTRO)
+    assert r.trabajadores_copiados == 1
+    assert _foto(uow) == antes and uow.incidencias.reemplazos == []
+
+
+def test_f030_r21_copias_completar_no_toca_incidencias():
+    from application.use_cases import CompletarHasta100
+
+    uow = _copias_uow()
+    antes = _foto(uow)
+    resultados, _ = CompletarHasta100().ejecutar(uow, ANIO, MES, [14, 10], 101,
+                                                 False, USUARIO, filtro=FILTRO)
+    assert [r.resultado.value for r in resultados] == ["COMPLETADO", "YA_AL_100"]
+    assert _foto(uow) == antes and uow.incidencias.reemplazos == []
+
+
+def test_f030_r21_copias_f7_es_guardar_asignaciones_y_no_toca_incidencias():
+    """F7 (copiar la fila de arriba) es un PUT de asignaciones del front."""
+    from application.use_cases import GuardarAsignaciones
+
+    uow = _copias_uow()
+    antes = _foto(uow)
+    fila, _ = GuardarAsignaciones().ejecutar(
+        uow, ANIO, MES, 10, [{"obra_ide": 101, "porcentaje": "100"}], USUARIO,
+        filtro=FILTRO)
+    assert _tramos(fila.incidencias) == [(100, "CIV", 4, 6)]
+    assert _foto(uow) == antes and uow.incidencias.reemplazos == []

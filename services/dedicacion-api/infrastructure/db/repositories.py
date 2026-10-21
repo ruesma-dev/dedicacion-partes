@@ -653,7 +653,8 @@ class PgEventoRepository:
         if orm is None:
             return None
         return EventoPendiente(id=orm.id, usuario=orm.usuario,
-                               snapshot_antes=orm.snapshot_antes)
+                               snapshot_antes=orm.snapshot_antes,
+                               tipo=orm.tipo)
 
     def marcar_deshecho(self, evento_id: int) -> None:
         self._s.execute(
