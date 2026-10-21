@@ -1,8 +1,8 @@
 <!-- specs/F-030-dias-bajas-incidencias/design.md -->
 # F-030 · Diseño técnico
 
-Escrito con las recomendaciones de D1-D10 (requirements §7), **todas
-aceptadas por el humano el 2026-10-20 («si»): spec aprobada**.
+D1-D10 (requirements §7) **aceptadas por el humano el 2026-10-20 («si»):
+spec aprobada**. **Anexo R30** (2026-10-21): §13, con D11-D15 abiertas (§11).
 
 ## 1. Servicios que toca y por qué (límite de servicio)
 
@@ -19,106 +19,38 @@ aquí como regla propia ([`#regla-incidencia`]), no se copia código de
 `CLAUDE.md`). La letra de cada código la saca solo la api (R4); el transfer
 trabaja con códigos.
 
-## 2. Ficheros a crear
+## 2. Ficheros a crear (hechos en T1-T19)
 
-- `services/dedicacion-api/domain/incidencias.py` — puras:
-  `letra_y_nombre(res, cod) -> tuple[str, str]` (R4);
-  `completar_dias(desde, hasta, anio, mes) -> tuple[int, int]` (R17);
-  `validar_incidencias(lista, anio, mes) -> None` (lanza `IncidenciaInvalida`:
-  día fuera del mes, `desde > hasta`, solape entre dos, R19).
-- `services/dedicacion-transfer/application/services/reglas_incidencias.py` —
-  puras: `decidir_incidencia(inc, horas) -> list[AccionIncidencia]` (R24,
-  R26), `deduplicar(acciones, existentes) -> None` (R27),
-  `synckey_incidencia(id, rol) -> str` (`porcentajes:inc:{id}:ini|fin`).
-- Tests (todos sin red ni BBDD): `services/dedicacion-api/tests/
-  test_f030_catalogo.py`, `test_f030_incidencias.py`,
-  `test_f030_registro.py`; `services/dedicacion-transfer/tests/
-  test_f030_reglas_incidencias.py`, `test_f030_pipeline_incidencias.py`;
-  `services/dedicacion-front/tests/test_f030_celda_pct.py`,
+Detalle en `progress/spec_F-030.md` §«Diseño de T1-T19»; los del anexo, §13.
+
+- api `domain/incidencias.py` (puras: `letra_y_nombre`, `completar_dias`,
+  `validar_incidencias`) y `application/traza_incidencias.py`; transfer
+  `application/services/reglas_incidencias.py` (`decidir_incidencia`,
+  `deduplicar`, `synckey_incidencia`).
+- Tests sin red ni BBDD: api `test_f030_catalogo.py`, `test_f030_incidencias.py`,
+  `test_f030_registro.py`; transfer `test_f030_reglas_incidencias.py`,
+  `test_f030_pipeline_incidencias.py`; front `test_f030_celda_pct.py`,
   `test_f030_tabla_incidencias.py`.
 
-## 3. Ficheros a modificar
+## 3. Ficheros a modificar (hechos en T1-T19; resumen)
 
-**api**
-- `infrastructure/db/orm_models.py`: `TipoIncidenciaORM` (`tipo_incidencia`:
-  `ide` BigInteger PK sin autoincremento = `auxhor.ide`, `codigo`, `letra`,
-  `nombre` Text, `activa` Boolean) e `IncidenciaORM` (`incidencia`: `id` PK,
-  `periodo_id` FK con CASCADE, `trabajador_ide` FK, `obra_ide` FK, `codigo`
-  Text, `dia_desde`, `dia_hasta` SmallInteger, `actualizado_en`/`_por`, y la
-  traza nulable `sigrid_estado` String(16), `sigrid_parte_cod` String(24),
-  `sigrid_ide_ini`, `sigrid_ide_fin` Integer, `sigrid_motivo` String(300),
-  `sigrid_registrado_at_utc`, `sigrid_registrado_by` String(64); `CHECK`
-  `dia_desde BETWEEN 1 AND 31 AND dia_hasta BETWEEN dia_desde AND 31`; índice
-  `(periodo_id, trabajador_ide)`). Dos tablas **nuevas**: las crea
-  `create_all` al arrancar, como `empresa` en F-032; `asignacion` no cambia.
-- `config/config.yaml`: `sync.incidencias.sql` = `SELECT ide, cod, res,
-  fecbaj FROM dbo.auxhor WHERE cod LIKE 'CI%' AND cod <> 'CIZ' ORDER BY cod`
-  (solo literales: no hay parámetros que concatenar).
-- `application/sync_pipeline.py`: pasos `FetchTiposIncidencia` y
-  `UpsertTiposIncidencia`, calcados de los de empresas (R3, R5, R7).
-- `domain/models.py`: `TipoIncidencia`, `Incidencia`;
-  `TipoEvento.INCIDENCIAS`; `CuadranteTrabajador.incidencias` (tupla vacía
-  por defecto, para no tocar a quien lo construye hoy).
-- `domain/ports.py` y `infrastructure/db/repositories.py`: repos
-  `tipos_incidencia` (`sincronizar`, `activos`) e `incidencias`
-  (`de_periodo`, `de_trabajador`, `reemplazar`, `trazar`).
-- `application/use_cases.py`: `GuardarIncidencias` (R17-R19: periodo
-  abierto, trabajador, `_validar_obra_incidencia` = obra activa de la empresa
-  de las obras y sin `registro_obra_ide`, código activo, `completar_dias`,
-  `validar_incidencias`, evento con snapshot de incidencias);
-  `DeshacerUltimaModificacion` despacha por `pendiente.tipo`: `INCIDENCIAS`
-  → `incidencias.reemplazar(snapshot_antes)`; el resto, como hoy (R20);
-  `ObtenerCuadrante` y `ObtenerFilaTrabajador` añaden `incidencias` (R21).
-  `GuardarAsignaciones`, `Completar*` y `Copiar*` no se tocan (R2, R21).
-- `interface_adapters/api/schemas.py` y `routes.py`: `IncidenciaIn`
-  (`obra_ide`, `codigo`, `dia_desde`/`dia_hasta` opcionales), `IncidenciaOut`,
-  `GET /incidencias`, `PUT …/trabajadores/{ide}/incidencias`; `TrabajadorOut`
-  gana `incidencias: list[IncidenciaOut] = []`.
-- `application/registro_sigrid.py`: `_payloads` añade por obra la lista
-  `incidencias` (R23, R25: `paride` = `partida_ide` o `propuesta_ide` de la
-  asignación `(trabajador, obra, es_postventa=False)` si existe); al volver,
-  `_trazar_incidencias` (R31). Las obras con solo incidencias entran en la
-  agrupación por obra.
-
-**transfer**
-- `domain/models/registro_models.py`: `IncidenciaEntrada` (id, recurso_ide,
-  empresa, codigo, ano, mes, desde, hasta, paride) y `AccionIncidencia` (id,
-  rol, accion, fecha_int, hora_ide, hora_codigo, pre, paride, motivo,
-  parte_cod, hmores_ide, caa_ide); `ResultadoPreflight` gana `incidencias`.
-- `infrastructure/sigrid/sigrid_write_client.py`: `incidencias_del_mes(resides,
-  ano, mes, hmoides=None)` (R27, R33): `SELECT h.ide, h.reside, h.fec,
-  a.cod, h.synckey, c.cod AS parte FROM hmores h JOIN auxhor a ON a.ide =
-  h.horide JOIN hmo m ON m.ide = h.hmoide JOIN con c ON c.ide = m.ide WHERE
-  h.reside IN (…) AND h.fec BETWEEN ? AND ? AND a.cod LIKE ?` (+ `AND
-  h.hmoide IN (…)` en modo pruebas), en trozos de 500, lanza ante
-  `truncated`. Las inserciones reutilizan `stmt_insert_linea` (con `can = 0`
-  da `tot = 0`).
-- `application/pipelines/registro_pipeline.py`: tras el paso de reglas,
-  `reglas_incidencias.decidir_incidencia` por incidencia; comparten con las
-  líneas el paso «parte del periodo», el alta protegida, la cuenta analítica
-  y el modo pruebas; **no** entran en los pasos de pisados, sobrecarga ni sin
-  partida (R28). Idempotencia por su `synckey` y R27 con
-  `incidencias_del_mes`. `ejecutar` inserta sus líneas en los mismos lotes.
-- `application/pipelines/registro_lote.py`: la lectura de R33, una por lote.
-- `interface_adapters/api/app.py`: `PeticionIn` y `LoteIn` aceptan
-  `incidencias` (por defecto `[]`: una petición de hoy es idéntica);
-  `_respuesta_preflight` las publica (R31).
-- `prueba_escritura_porcentajes.py`: `--incidencia RECURSO:COD:DESDE:HASTA` en
-  `preflight`, `ejecutar` y `verificar` (R35); `limpiar` ya borra por marca.
-
-**front** (`services/dedicacion-front/static/`)
-- `js/app.js`: `chipEditable` (rama de letras, R8-R13), `chipIncidencia` y
-  `montarDesplegableIncidencias` (nuevas), `guardarAhora` (PUT de
-  incidencias si cambiaron, mismo diferido), `construirFila` (subfilas de
-  incidencia, R16), `textoColumna` (Obra encuentra la incidencia),
-  `pintarModalPreflight` (sección Incidencias, R32), `init` (carga
-  `GET /incidencias` una vez).
-- `css/styles.css`: `.chip-inc`, `.sugerencia.inc` y la subfila `.fila-inc`.
-
-**docs**: `docs/ARCHITECTURE.md` (§regla nueva 20 `#regla-incidencia`, una
-línea en P2, P3 y P4 que remite a ella, tabla de §Capas), `docs/INTEGRACION.md`
-§1 y §5, `services/dedicacion-transfer/tests/test_f002_fuente_unica.py` (el
-ancla nueva) y `azure-apps/dedicacion.md` (otro repositorio, su propio commit).
+- **api**: `orm_models.py` (`TipoIncidenciaORM`, `IncidenciaORM` con la traza
+  `sigrid_*`; por `create_all`), `config.yaml` (`sync.incidencias.sql`, solo
+  literales), `sync_pipeline.py`, `domain/models.py`, `ports.py`,
+  `repositories.py` (repos `tipos_incidencia` e `incidencias`),
+  `use_cases.py` (`GuardarIncidencias`, deshacer por tipo, cuadrante y fila),
+  `schemas.py`/`routes.py` (`GET /incidencias`, `PUT …/incidencias`) y
+  `registro_sigrid.py` (`_sumar_incidencias`, traza).
+- **transfer**: `registro_models.py` (`IncidenciaEntrada`, `AccionIncidencia`,
+  `LineaIncidenciaSigrid`), `sigrid_write_client.py` (`incidencias_del_mes`;
+  se inserta con `stmt_insert_linea`), `registro_pipeline.py` (fuera de
+  pisados, sobrecarga y sin partida), `registro_lote.py`, `app.py` y
+  `prueba_escritura_porcentajes.py --incidencia`.
+- **front**: `app.js` (`chipEditable`, `chipIncidencia`,
+  `montarDesplegableIncidencias`, `guardarAhora`, `construirFila`,
+  `textoColumna`, `pintarModalPreflight`, `init`) y `styles.css`.
+- **docs**: `ARCHITECTURE.md` (`#regla-incidencia`, remisiones de P2-P4),
+  `INTEGRACION.md`, `test_f002_fuente_unica.py` y `azure-apps/dedicacion.md`.
 
 ## 4. Ficheros que NO se tocan
 
@@ -129,31 +61,18 @@ sin partida de las líneas de %: R2, R28), `estado_parte.py` y
 (D10), el esquema de `asignacion`, `evento` (el tipo es `Text` sin `CHECK`),
 el repositorio de `partes` y `azure-apps/partes.md` (lo actualiza `partes`;
 el líder se lo avisa al humano, §12).
+**Anexo:** `stmt_editar_linea`, `stmt_poner_a_cero`, `lineas_para_editar`,
+`lineas_registradas`, `emparejar_ceros` y el texto SQL de la guarda de F-051
+(solo gana un parámetro opcional); `stmt_borrar_linea` sigue solo para
+`limpiar`; las asignaciones y su `reemplazar`; `decidir_incidencia` (R26).
 
-## 5. UX exacta con teclado (front)
+## 5. UX exacta con teclado (front, hecha en T8-T9)
 
-Estado nuevo por línea de % en edición: `previo` (valor de la celda antes de
-la primera letra) y `nueva` (true desde `elegir` del buscador de obra hasta
-el primer blur del %). Lista nueva `state.incidenciasEdicion`, aparte de
-`state.edicion` (así `totalEdicion` y `restanteSin` no cambian).
-
-1. Celda del % con foco. `input`: si `/\p{L}/u` no casa → rama de hoy, el
-   mismo código (R1). Si casa → no se toca `linea.porcentaje` ni se programa
-   guardado; se abre/refresca el panel (R8, R9).
-2. Panel: el `.sugerencias` de F-042 (cuelga de `<body>`, `position: fixed`,
-   `posicionSugerencias`/`colocarSugerencias`/`retirarSugerencias`: uno solo a
-   la vez). Filas «**V** · Vacaciones». ↓/↑ mueven; Enter/Tab eligen; Escape
-   cierra y repone `previo` (R10, R11). Se cierra al borrar las letras (R12).
-3. Elegir: si `nueva`, se quita la línea de `state.edicion` (y su guardado
-   diferido la borra en la api); si no, la celda repone `previo`. Se añade
-   `{obra_ide, codigo, desde: null, hasta: null}` a `incidenciasEdicion`, se
-   repinta el editor y el foco va a «del» (R13, R14).
-4. «del»/«al»: `input` numérico de 2 cifras con placeholder `1` y último día.
-   Enter en «del» → «al»; Enter en «al» → buscador de obra; Escape → buscador.
-   Vacío viaja como `null` y la api lo completa (R17). Lo que la api rechace
-   (422) sale en el `toast` de error de guardado de hoy.
-5. Atajos del editor (F7, F8, Ctrl+Z, Esc para cerrar) no cambian; con el
-   panel de incidencias abierto, Escape solo lo cierra (como F-042).
+Texto completo en `progress/spec_F-030.md` §«Diseño de T1-T19». Resumen:
+`previo` y `nueva` por línea de %; `state.incidenciasEdicion` aparte de
+`state.edicion` (`totalEdicion` no cambia); con letras no se toca el % ni se
+guarda; panel `.sugerencias` de F-042; elegir en una `nueva` la quita;
+«del»/«al» numéricos, vacíos viajan `null`; con el panel, Escape solo cierra.
 
 ## 6. Contrato api → transfer
 
@@ -179,72 +98,146 @@ el primer blur del %). Lista nueva `state.incidenciasEdicion`, aparte de
 
 ## 8. Convivencia con `partes`
 
-`partes` escribe incidencias de mensuales solo si llegan por sus partes
-diarios: en Sigrid hay 2 desde 2025 con `synckey partes:` (§10). R27 evita el
-duplicado exacto con ellas y con las de Administración, en cualquier obra.
-Si `partes` enciende su `MENSUALES_A_DEDICACION` (su F-019), sus incidencias
-de mensuales dejan de ir a Sigrid y van a `dedicacion_bandeja`: leerla es la
-feature espejo (D10). Mientras no exista, ese interruptor sigue apagado.
+`partes` escribe incidencias de mensuales solo por sus partes diarios (2 desde
+2025 con `synckey partes:`): R27 evita duplicarlas, y las de Administración, en
+cualquier obra. Su `MENSUALES_A_DEDICACION` (su F-019) sigue apagado mientras
+nadie lea `dedicacion_bandeja` (D10). El anexo solo edita líneas nuestras.
 
 ## 9. SQL
 
-Solo lecturas nuevas (`config.yaml` de la api, cliente del transfer) y las
-`INSERT` de siempre. Sin DDL a mano (las dos tablas, por `create_all`).
+Lecturas nuevas (`config.yaml` de la api, cliente del transfer), las `INSERT`
+de siempre y, con el anexo, un `UPDATE` de la `fec` (§13.5). Sin DDL a mano:
+tablas por `create_all`, columnas nuevas por `alters_faltantes`.
 
-## 10. Evidencia leída en Sigrid (2026-10-20, solo `/api/sql/read`, `ruesma`)
+## 10. Evidencia de Sigrid y razones de D1-D10
 
-- `auxhor`: `CIA` «Accidente/Enf. Profesional(AT)», `CIE` «Enfermedad/Acc. no
-  laboral(B)», `CIF` «Falta injustificada(F)», `CIH` «Huelga(H)», `CIM`
-  «Maternidad/Paternidad(M)», `CIP` «Falta Justificada/Permiso(FJ)», `CIV`
-  «Vacaciones(V)», `CIZ` «Fin de Incidencia». `numemp = 0` (todas las
-  empresas), `pre = 0`, `tipincnom = 0` en todas: `cod LIKE 'CI%'` es el
-  criterio. Las 7 letras son las de `partes/config/incidencias.yaml`.
-- `reshor`: 711 recursos con los 8 códigos; de los 658 mensuales, 451 los
-  tienen; de los 229 mensuales activos, 169.
-- `hmores` desde 2025, recursos mensuales: 784 `CIV`, 1.000 `CIZ`, 65 `CIP`,
-  58 `CIE`, 11 `CIA`, 11 `CIM`, 3 `CIF`; **todas menos 2 sin `synckey`**
-  (las mete Administración a mano), `tot = 0` y casi siempre `can = 0`.
-- Muestra 2026: inicio y fin en el **mismo parte de la obra** donde está su
-  línea `M*`, con la partida de esa línea o 0, `hordes`/`horhas` vacíos; un
-  día suelto = `CIV` y `CIZ` el mismo día; una baja larga se repite el día 1
-  de cada mes con un único `CIZ` al final (base de D3).
+Movidas sin cambios a `progress/spec_F-030.md` §«D1-D10» (2026-10-21), para
+que cupiera el anexo. El anexo no ha necesitado leer Sigrid.
 
-## 11. Decisiones: alternativas y por qué se recomienda cada una
+## 11. Decisiones abiertas del anexo (razones en `progress/spec_F-030.md`)
 
-- **D1.** A (`auxhor`) es la fuente que ya usan Administración y `partes`
-  (sus `sigrid:` son estos códigos); B duplicaría datos entre repositorios
-  (ampliar la lista cerrada); pedírsela a `partes` crearía una dependencia
-  que hoy no existe. La «clase» de `partes` (día completo/parcial) no aplica:
-  un mensual no tiene horas por día.
-- **D2.** Sin días no hay nada que escribir (Sigrid pinta el tramo con
-  inicio y fin): B solo anotaría; C dejaría un tramo abierto.
-- **D3.** A es determinista y cada periodo se registra solo; B imita a
-  Administración pero deja tramos abiertos si nadie captura el mes siguiente.
-- **D4.** A respeta «el comportamiento no debe cambiar»; B exige calendario.
-- **D5.** A es lo que hacen `partes` y Administración.
-- **D6.** A es lo que se ve en la muestra; B es más simple y, con `tot = 0`,
-  no mueve importes.
-- **D7.** Comparar solo la obra destino dejaría duplicar una incidencia que
-  Administración puso en otra obra; `Postv-` y VAR no son partes «de» la
-  persona.
-- **D8.** A cierra la petición («funciona igual que partes»); B entrega antes
-  una captura que nadie registra. Las tareas van en dos bloques (T1-T9
-  captura, T10-T18 registro) por si el humano elige B.
-- **D9.** A evita la línea de % sobrante en una obra que solo lleva la
-  incidencia; B obliga a borrarla a mano.
-- **D10.** % por días y calendario de convenio son otra regla del 100 %;
-  la bandeja de `partes` es otra frontera. Cada una, feature propia.
+- **D11 · Quitar una registrada.** Una línea `CI*` ya va a `can` 0: no tiene
+  forma neutra y retirarla es borrarla, que el registro no hace. A: 422 hasta
+  F-033 (bloquea unas vacaciones anuladas y, si Administración borra el par,
+  R42 lo reescribe: sin salida). **B (rec.)**: `quitada`, a la vista hasta que
+  se retire a mano o con F-033; deshacer la repone. C: borrar en la api con
+  un aviso único (huérfanas sin rastro).
+- **D12 · Tipo.** El chip no cambia de tipo: es ✕ + otra. **A (rec.)**: quitar
+  + nueva, sin UX nueva. B: `UPDATE` de `horide` y `pre` del inicio, con un
+  gesto nuevo en el chip (feature aparte si se quiere).
+- **D13 · Obra.** [`#regla-cero`] no cambia parte, obra ni centro de una
+  línea: B (moverla) exige borrar. **A (rec.)**: quitar + nueva; con mismo
+  código y días, R27 omite la nueva hasta que se retire la vieja.
+- **D14 · Cambiada a mano.** **A (rec.)**, como F-051 (da por registrada la
+  nuestra aunque le cambien el `can`): no se pisa una corrección; para
+  igualar, el cuadrante toma los días de Sigrid. B: el cuadrante manda.
+  Borrada a mano: se reescribe (F-051 R17) en A y en B.
+- **D15 · Día ocupado.** **A (rec.)** mantiene R27: nunca dos iguales.
 
 ## 12. Riesgos
 
-- **Rigor crítico y escritura nueva**: tipos de hora nuevos en `hmores`. Sin
-  prueba en la `0404` (R35) no se cierra; el transfer desplegado está en modo
-  real, así que **no se despliega** sin esa prueba.
-- **Rendimiento**: R33 añade una lectura por lote filtrada por recurso y
-  `fec`; se mide con `prueba_escritura_porcentajes.py medir`.
-- **Tests estáticos de F-042/F-050** que fijen texto literal de
-  `chipEditable`: se adaptan sin perder lo que vigilan, y se dice en el informe.
-- **`azure-apps/partes.md`**: «qué se rompe» debería decir que `porcentajes`
-  escribe `CI*`/`CIZ` en los mismos partes; es de `partes` y se le avisa.
-- **Identificador de evento**: `evento.tipo = 'INCIDENCIAS'` con snapshot de
-  otra forma; Deshacer despacha por tipo antes de leerlo (R20).
+- **Rigor crítico, escritura nueva** (`INSERT` de `CI*`/`CIZ` y el primer
+  `UPDATE` de su `fec`). Sin T20 en la `0404` no se cierra ni se despliega:
+  el transfer desplegado está en modo real.
+- **Rendimiento**: R33 es una lectura por lote (el anexo le suma `OR ide IN`);
+  `ejecutar`, la de F-051 R12. Se mide con `prueba_escritura_porcentajes.py`.
+- **Par a medias**: si la guarda de una falla entre la relectura y el
+  `UPDATE` (ventana mínima), la relectura lo saca a `omitir` y el log lo dice.
+- **Un `id` que no vuelve del front** (R37): la registrada queda `quitada` y
+  la nueva no duplica (R27 si los días coinciden; si no, el modal lo enseña).
+- **Tests estáticos de F-042/F-050** que fijen texto de `chipEditable`: se
+  adaptan sin perder lo que vigilan (lista cerrada, tasks).
+- **`azure-apps/partes.md`** es de `partes`: avisar de que escribimos y
+  editamos `CI*`/`CIZ` en sus partes. **Deshacer** despacha por tipo (R20).
+
+## 13. Anexo R30: editar en su sitio la `fec` de una registrada (R36-R49)
+
+El patrón de F-051 ([`#regla-cero`]), sin inventar otro: localizar por
+`hmores.ide`, releer una vez antes de escribir, `UPDATE` con guarda,
+relectura y log con lo que tenía. Los tres servicios, como en §1; ningún
+`DELETE`; nada de otro microservicio.
+
+**13.1 api.** `orm_models.py`: `IncidenciaORM` + `quitada` (Boolean, `NOT
+NULL`, `server_default false`), `sigrid_dia_ini`/`_fin` (SmallInteger nulos).
+`domain/models.py`: `Incidencia` + `quitada`, `sigrid_ide_*`, `sigrid_dia_*`.
+`schemas.py`: `IncidenciaIn.id: int | None`, `IncidenciaOut.quitada`.
+`use_cases.py`: `_parsear_incidencia` lee `id`; `GuardarIncidencias` valida
+R36 y pasa a `validar_incidencias` solo las no quitadas;
+`_snapshot_incidencias` + `id`, `quitada` (sin `id` = nueva; R47).
+`repositories.py`, `PgIncidenciaRepository.reemplazar(…)` (misma firma): con
+`id`, actualiza obra, código y días y `quitada = false`; sin `id`, añade;
+previa ausente, `quitada = true` si es registrada y `delete` si no.
+`registro_sigrid.py`: `_sumar_incidencias` salta las quitadas y añade los
+cuatro campos de §6; `preflight` devuelve `incidencias_quitadas`
+(trabajador, obra, letra, días, parte, `ide`s). `traza_incidencias.py`:
+R39 por rol (`sigrid_dia_<rol>` = `fecha_int % 100`); `omitido` solo si no
+queda ningún `ide`. Obs. 5: su import de ORM se queda (precedente
+`registro_sigrid.py`) y lo dice su docstring.
+
+**13.2 transfer.** `registro_models.py`: `IncidenciaEntrada` + los cuatro
+campos (None por defecto); `AccionIncidencia` + `editar`, `fec_antes`,
+`hmoide`; `LineaIncidenciaSigrid` + `can`, `hmoide`, `parte_est`. `app.py`:
+`IncidenciaIn` igual y `fec_antes` en la respuesta. `reglas_incidencias.py`:
+`deduplicar` → `reconciliar(acciones, entradas, existentes, *, est)`, pura:
+nuestra por `ide` (del recurso y con su `synckey`) o por `synckey`; misma
+`fec` → `ya_registrado`; otra → `editar` u `omitir` (R41-R43); R44 contra lo
+existente con las ediciones de la petición aplicadas; sin nuestra, R27 como
+hoy (obs. 6: fuera la rama inalcanzable). Motivos `MOTIVO_INC_CAMBIADA`,
+`MOTIVO_INC_CERRADO`, `MOTIVO_INC_PAR`. `sigrid_write_client.py`:
+`incidencias_del_mes(…, ides=())` (§13.5); `_guarda(…, hora=None)`: con
+`hora`, `a.cod = ?`; sin ella, el texto de F-051 **idéntico**;
+`stmt_editar_fecha_incidencia(*, ide, reside, hora_codigo, synckey_leida,
+fecha_int)`. `registro_pipeline.py`: `reconciliar` antes del paso 5 (obs.
+7: solo las `escribir` piden parte; `editar` usa el de su línea); en
+`ejecutar`, sus `ide` entran en la lectura de `_planear_ediciones` (R45),
+sus `UPDATE` van juntos en el mismo lote, log (R46) y `_comprobar_escrito`
+los relee. `lecturas_lote.py`: los `ide` en la misma ronda (y obs. 3, su
+línea 351). `prueba_escritura_porcentajes.py`: imprime `editar` y
+`fec_antes`; `verificar`, `ide` y `fec` de cada línea.
+
+**13.3 front** (`app.js`). `cargarEdicion` guarda `id` y deja fuera las
+quitadas; `cuerpoIncidencias` manda `id`; tras el PUT, cada una sin `id`
+toma el de la respuesta con su obra y código aún no usado, en orden (R37);
+`construirFila` tacha la quitada; `pintarModalPreflight`, «se cambia del d
+al d» y la lista de quitadas.
+
+**13.4 docs.** `#regla-incidencia`: «no se reescribe» pasa a «Cambiar los
+días» y «Quitar»; `INTEGRACION.md` §5, campos y el `UPDATE`;
+`azure-apps/dedicacion.md`, el líder al desplegar.
+
+**13.5 SQL** (Sigrid, `ruesma`; ni `ano`/`mes`, hora, `pre`, partida, cuenta,
+`synckey`, `tex`, `pos` ni parte cambian):
+
+```sql
+-- incidencias_del_mes: + h.can, h.hmoide, c.est AS est
+WHERE (h.reside IN (…) AND h.fec BETWEEN ? AND ? AND a.cod LIKE ?
+       OR h.ide IN (…)) [AND h.hmoide IN (…)]            -- en pruebas
+-- stmt_editar_fecha_incidencia: la guarda de F-051 con su código
+UPDATE hmores SET fec = ? WHERE ide = ? AND reside = ?
+  AND ABS(ISNULL(can, 0) - 0) < 0.000001 AND LTRIM(RTRIM(ISNULL(synckey,
+  ''))) = ? AND <sin enlaces> AND EXISTS (SELECT 1 FROM auxhor a WHERE
+  a.ide = hmores.horide AND a.cod = ?) AND EXISTS (SELECT 1 FROM con c
+  WHERE c.ide = hmores.hmoide AND c.est = ?)
+```
+
+**13.6 Punta a punta (obligatorio).** `tests/contratos/f030_r30.json`, el
+contrato entre dos mitades sin red ni BBDD (los servicios no comparten
+intérprete): la api (`test_f030_r30_punta_a_punta.py`, con `reemplazar`,
+`trazar_incidencias` y `_payloads` reales sobre sesión en memoria) registra
+la 7 del 5 al 9, la cambia (6-9 y 12-14) y su payload debe ser el del JSON;
+el transfer (`test_f030_r30_punta_a_punta.py`) ejecuta ese JSON contra el
+`ClienteFalso` con el par: solo `UPDATE` de `fec`, sin `INSERT`. Hoy, rojo
+en las dos (la api manda la 8 sin `ide`; el transfer, `INSERT`).
+
+**13.7 Tests que cambian (lista CERRADA; si cambia otro, PARA).** Ajenos,
+solo dobles y sin tocar ninguna aserción: `EdicionesFalsas`/`ClienteFalso`
+de `services/dedicacion-transfer/tests/conftest.py` aplican también
+`stmt_editar_fecha_incidencia` y aceptan `ides` en `incidencias_del_mes`;
+los dobles de la lista de T4 (tasks) que lean `incidencia` aceptan las
+columnas nuevas. `test_f051_sql_cero.py` **no** cambia. Propios de F-030
+que fijan el R30 viejo y se reescriben al nuevo, citándolo:
+`test_f030_r30_deduplicar_la_nuestra_aunque_cambien_los_dias`,
+`test_f030_r30_ejecutar_no_reescribe_la_ya_registrada`,
+`test_f030_r17_guardar_repo_reemplazar_*`, los `test_f030_r20_*` del
+snapshot, los de `trazar_incidencias` en `test_f030_registro.py` y los
+`r33_cliente_*` (SQL con las columnas nuevas; sin `ides`, el `WHERE` de hoy).

@@ -28,6 +28,35 @@ con el calendario de convenio; leer la bandeja de `partes`, su F-019, con
 `azure-apps/dedicacion.md` y el aviso a `partes`. Ningún agente escribe en
 Sigrid por su cuenta. El arnés es la **1.7.3**.
 
+## F-030 · anexo R30 escrito (spec-author, 2026-10-21) · pendiente del humano
+
+- **Qué**: anexo a la spec por la obs. 1 de la review 1 y la opción C del
+  humano. `requirements.md` §8 (R36-R49) y R30 reescrito; `design.md` §11
+  (D11-D15), §12 y §13; `tasks.md` T22-T37 y T20 ampliada. Informe:
+  `progress/spec_F-030.md` §«Anexo R30». Topes: 150/150 y 243/250. Ni código
+  ni Sigrid tocados.
+- **Para caber en los topes**, el texto ya implementado o decidido del design
+  (§2, §3, §5, §10, §11 de antes) se ha movido **sin cambios** al informe y el
+  design guarda su resumen; la redacción de R1-R35 se ha apretado sin quitar
+  ningún requisito.
+- **Decisiones abiertas para el humano** (requirements §7; razones en el
+  informe), recomendación entre paréntesis: **D11** quitar una registrada
+  (B: queda `quitada`, tachada «sigue en Sigrid» y listada en el modal para
+  retirarla a mano; nunca se borra); **D12** cambiar el tipo y **D13** pasarla
+  a otra obra (A: quitar + nueva); **D14** línea nuestra cambiada a mano en
+  Sigrid (A: no se toca y se avisa; si está borrada, se reescribe como F-051
+  R17); **D15** el día nuevo ya tiene una línea ajena igual (A: no se edita
+  esa). **T22 no empieza hasta que se decidan.**
+- **MANUAL T20 ampliada** (tras T37, con autorización expresa): además de lo
+  anterior, desde `services/dedicacion-transfer` con
+  `OBRA_PRUEBAS_FORZAR=true`:
+  `python prueba_escritura_porcentajes.py preflight --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12`,
+  `… ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12`
+  y `… verificar --incidencia RECURSO:CIV:6:12`: los **mismos dos `ide`** que
+  dio el registro del 5 al 9, con `fec` 6 y 12, y ninguna línea nueva.
+- **azure-apps** (líder, al desplegar): `dedicacion.md` dirá también que el
+  transfer edita la `fec` de sus líneas `CI*`/`CIZ`; avisar a `partes`.
+
 ## F-030 · spec escrita y aprobada (D1-D10 decididas, 2026-10-20)
 
 - **Petición del humano (2026-10-20)**, literal en `features.json`: en la
