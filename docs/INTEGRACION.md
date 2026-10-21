@@ -82,7 +82,7 @@
 | Recurso | Compartido con | Qué hacemos | Desde |
 |---|---|---|---|
 | PostgreSQL `psql-albaranes-rs9k2` | `albaranes`, `partes`, `datamart-seg-anual`, `postventa-incidencias` | Base propia `dedicacion`: periodos, cuadrante, asignaciones y auditoría | **F-008** |
-| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna** | F-001, F-002, F-037, F-051 |
+| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna**. Desde F-030 la api lee en cada sync el catálogo de incidencias (`auxhor`, códigos `CI*`), y el transfer **escribe** por cada incidencia un par de líneas `CI*`/`CIZ` con `can = 0` y `synckey` `porcentajes:inc:{id}:ini|fin`, tras **una** lectura de las líneas `CI*` del mes de esos recursos en cualquier parte (`hmores` + `auxhor` + `hmo` + `con`) para no duplicar | F-001, F-002, F-037, F-051, F-030 |
 | `acralbaranesdev` | `albaranes`, `partes` | Publicar y tirar las tres imágenes, por identidad gestionada | **F-008** |
 | Entra ID | todo el ecosistema | Autenticación del front (Easy Auth) y grupo de acceso | **F-008** |
 
@@ -99,6 +99,12 @@ e insertar: las al 0 % del recurso sin confirmar y las de un pisado
 confirmado, conservando su `ide` y, si es de otro sistema (`partes:…`), su
 `synckey`; las localiza después por `hmores.ide`
 (`docs/ARCHITECTURE.md#regla-cero`). `partes` nunca ha escrito líneas `M*`.
+Desde F-030 este proyecto escribe además en ese parte compartido líneas de
+**incidencia** (`CI*`/`CIZ`, `can = 0`), las mismas que escribe `partes`:
+antes de escribir mira las de ese recurso, código y día en todos los partes
+del mes, y lo que ya está (de `partes` o de Administración) no se duplica
+(`docs/ARCHITECTURE.md#regla-incidencia`). `azure-apps/partes.md` debería
+decirlo en su «qué se rompe»; es de `partes`.
 
 **Lo nuevo de F-008 son tres de esas cuatro filas.** La primera es la que
 convierte a este proyecto en **quinto inquilino** de un servidor que ya usaban
@@ -382,6 +388,26 @@ Desde F-051 (editar, nunca borrar; `docs/ARCHITECTURE.md#regla-cero`):
   (`{registro_id: hmores.ide}`) y `escritas[].editada`; `borradas` sigue y
   vale siempre 0. La api guarda en `sigrid_hmores_ide` el `ide` de cada
   escrita y de cada ya registrada (columna existente, sin DDL).
+
+Desde F-030 (incidencias en el cuadrante;
+`docs/ARCHITECTURE.md#regla-incidencia`):
+
+- La api sirve **al front** `GET /api/v1/incidencias` (`{incidencias:
+  [{codigo, letra, nombre}]}`, el catálogo activo por letra, solo lee) y
+  `PUT /api/v1/periodos/{anio}/{mes}/trabajadores/{ide}/incidencias`
+  (`{incidencias: [{obra_ide, codigo, dia_desde, dia_hasta}]}`, días vacíos
+  = mes entero; sustituye las del trabajador con evento deshacible y
+  responde como el `PUT …/asignaciones`). Cada fila del cuadrante gana
+  `incidencias` (obra, código, letra, nombre, días y la traza del
+  registro). Dos tablas nuevas, `tipo_incidencia` e `incidencia`, que la
+  api crea al arrancar; `asignacion` no cambia.
+- `registro/preflight`, `registro/preflight-lote` y `registro/ejecutar` del
+  transfer aceptan en cada petición una lista opcional `incidencias`
+  (`{id, recurso_ide, empresa, codigo, ano, mes, desde, hasta, paride}`) y,
+  solo si la trae, responden `incidencias` (por línea: `id`, `rol`
+  `ini`/`fin`, `accion`, `fecha_int`, `hora_codigo`, `paride`, `parte_cod`,
+  `hmores_ide` y `motivo`). Sin ella, petición y respuesta son las de antes.
+  La api la manda por obra y guarda la traza en `incidencia`.
 
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 

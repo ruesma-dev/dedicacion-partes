@@ -37,7 +37,9 @@ ANCLAS = ("regla-p1", "regla-p2", "regla-p3", "regla-p4", "regla-p5",
           "regla-empresa", "regla-recurso", "regla-analitica",
           "regla-var", "regla-seis-digitos", "regla-partida",
           # F-051: las líneas se editan, nunca se borran.
-          "regla-cero")
+          "regla-cero",
+          # F-030: la incidencia, un par CI*/CIZ sin importe.
+          "regla-incidencia")
 
 #: Ficheros de producción donde vive el código de la obra de postventa como
 #: literal. Fuera de aquí se cita el ajuste, no el valor (R5).
@@ -146,6 +148,13 @@ def test_f002_r1_la_cabecera_ya_no_avisa_de_puntos_sin_validar():
 def test_f002_r2_el_readme_remite_a_las_anclas(ancla):
     """R2 · El README enlaza P1-P3 en vez de reenunciarlas."""
     assert f"ARCHITECTURE.md#{ancla}" in _texto(README), ancla
+
+
+@pytest.mark.parametrize("numero", (2, 3, 6))
+def test_f030_r34_p2_p3_p4_remiten_a_la_incidencia(numero):
+    """F-030 (R34) · P2 (punto 2), P3 (punto 3) y P4 (punto 6) nombran la
+    excepción remitiendo al ancla, sin reenunciarla."""
+    assert "(#regla-incidencia)" in _punto(numero), numero
 
 
 def test_f002_r2_los_docstrings_remiten_p4_p5():

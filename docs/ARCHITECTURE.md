@@ -85,7 +85,9 @@ Endpoints bajo `/api/v1`: `health`, `sync` y `sync/preview`, CRUD de
 atómica de asignaciones por trabajador, `deshacer` (solo lo propio,
 [`#regla-deshacer`](#regla-deshacer)), `completar` (lote «completar al
 100 %» en una obra, [`#regla-completar`](#regla-completar)), `export.xlsx`,
-`registro/preflight` + `registro/ejecutar`, `empresas` (las del selector,
+`registro/preflight` + `registro/ejecutar`, `incidencias` (catálogo del
+desplegable) y, por trabajador, `trabajadores/{ide}/incidencias` (sustituir
+las suyas, [`#regla-incidencia`](#regla-incidencia), F-030), `empresas` (las del selector,
 con su nombre de Sigrid y si están de baja) y, por línea, `trabajadores/{ide}/
 partidas` (catálogo, propuesta y botón preelegido del selector, que calcula
 el transfer) y `trabajadores/{ide}/partida` (cambiar la partida elegida),
@@ -103,7 +105,10 @@ ninguna obra con 6 o más dígitos seguidos en el código,
 `numemp`, que es el `con.emp` de las fichas; F-032), `periodo` (año+mes único, `ABIERTO`/`CERRADO`),
 `asignacion` (periodo × trabajador × obra × `es_postventa`, `porcentaje` en
 0-100 y la partida ELEGIDA, `partida_ide` / `partida_cod` / `partida_res`,
-nulas = automática, [`#regla-partida`](#regla-partida)) y `evento`
+nulas = automática, [`#regla-partida`](#regla-partida)), `tipo_incidencia`
+(catálogo `CI*` de `auxhor`, sincronizado) e `incidencia` (periodo ×
+trabajador × obra × código × días, con la traza de su registro; no cuenta en
+el 100 %, [`#regla-incidencia`](#regla-incidencia)) y `evento`
 (auditoría con `snapshot_antes` / `snapshot_despues` en JSONB, que es lo
 que permite deshacer multinivel).
 
@@ -124,7 +129,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
   no lo elige: [`#regla-recurso`](#regla-recurso)), aplicar las reglas,
   resolver la cuenta analítica de cada línea, elegir el parte del periodo,
   comprobar idempotencia y detectar conflictos
-  ([`#regla-analitica`](#regla-analitica)). No escribe nada.
+  ([`#regla-analitica`](#regla-analitica)); y decidir el par de líneas de
+  cada incidencia ([`#regla-incidencia`](#regla-incidencia)). No escribe
+  nada.
 - `POST /api/registro/ejecutar` — pasos 9-10: crear los partes que falten
   (`con` + `hmo` con alta protegida, releyendo el periodo), editar en su
   sitio las líneas al 0 % y las pisadas confirmadas e insertar el resto, por
@@ -146,7 +153,7 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > `#regla-sin-partida`, `#regla-pruebas`, `#regla-empresa`,
 > `#regla-recurso`, `#regla-deshacer`, `#regla-completar`,
 > `#regla-analitica`, `#regla-var`, `#regla-seis-digitos`,
-> `#regla-partida` y `#regla-cero`; no vuelven a
+> `#regla-partida`, `#regla-cero` y `#regla-incidencia`; no vuelven a
 > enunciar la regla con palabras propias. Lo vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
@@ -175,12 +182,16 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
    `M*` se omite con motivo; no es un error.
 2. <a id="regla-p2"></a>**La línea va al último día del mes (P2).** El parte de Sigrid es por
    obra y mes natural; la fecha (`fec`) de la línea es siempre el último día
-   de ese mes, no el día en que se trabajó ni el de captura.
+   de ese mes, no el día en que se trabajó ni el de captura. Excepción: las
+   líneas de incidencia, con la `fec` de su tramo
+   ([`#regla-incidencia`](#regla-incidencia)).
 3. <a id="regla-p3"></a>**El porcentaje viaja sobre 1 (P3).** En PostgreSQL se guarda 0-100
    (`asignacion.porcentaje`, `Numeric(6,2)`); al transfer se manda **dividido
    entre 100** (40 % → `0.4`). En Sigrid, `can` = ese valor sobre 1, `pre` =
    importe mensual del recurso en `reshor`, `tot = can × pre`. Confundir las
-   dos escalas escribe importes 100 veces mayores o menores.
+   dos escalas escribe importes 100 veces mayores o menores. Excepción: la
+   línea de incidencia no lleva porcentaje, va con `can = 0` y `tot = 0`
+   ([`#regla-incidencia`](#regla-incidencia)).
 4. **El total de un trabajador debe ser 100 %.** `FALTA` (<100), `EXCESO`
    (>100) y `SIN_CARGA` (sin líneas) son estados visibles, no bloqueos: se
    puede guardar un cuadrante incompleto. La comparación usa una épsilon de
@@ -249,7 +260,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
    fuera), `specs/F-025-obras-postventa-postv2/requirements.md`.*
 6. <a id="regla-p4"></a><a id="regla-conflicto"></a>**Identidad de la línea e idempotencia (P4 · Regla A).**
    `synckey = "porcentajes:{asignacion_id}"` (no se cruza con los partes
-   diarios, que usan otro prefijo): reejecutar no duplica.
+   diarios, que usan otro prefijo): reejecutar no duplica. Excepción: las
+   líneas de incidencia tienen su propia identidad y no son pisado, ni
+   sobrecarga, ni sin partida ([`#regla-incidencia`](#regla-incidencia)).
 
    Dos líneas del parte son **la misma línea** si, y solo si, coinciden los
    **cuatro** campos: recurso, mes, código de hora y **partida**. En la obra
@@ -793,6 +806,63 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     editamos el valor»; D5: «cualquier linea a 0% se puede pisar»; D11: se
     localiza por `hmores.ide`; D12: «que pase a editar»; D14 = A y D15 = A)
     · F-051, `specs/F-051-pisar-lineas-cero/requirements.md`.*
+21. <a id="regla-incidencia"></a>**Una incidencia es un par de líneas
+    `CI*`/`CIZ` sin importe.** Las incidencias (vacaciones, bajas,
+    permisos…) se capturan en el cuadrante por obra y tramo de días del mes
+    y **no cuentan en el 100 %** del punto 4. Su catálogo son los códigos
+    `CI*` de `auxhor` salvo `CIZ` («Fin de Incidencia», que no se elige),
+    con su letra en `res`: los mismos que usa `partes`. Solo en obra normal:
+    ni postventa ni VAR.
+
+    - **Qué se escribe.** Cada incidencia son **dos** líneas `hmores` en el
+      parte del periodo de su obra, el mismo que elegiría una línea de %
+      ([`#regla-analitica`](#regla-analitica)): el **inicio**, con su código
+      `CI*` y `fec` = primer día del tramo, y el **fin**, con `CIZ` y `fec` =
+      último día (el mismo si dura uno). `can = 0`, `tot = 0`, `pre` = el de
+      `reshor` del recurso para ese código, la cuenta analítica como
+      cualquier línea y `synckey` `porcentajes:inc:{id}:ini` / `:fin`. Un
+      tramo que cruza meses se captura en cada mes, y cada mes cierra el suyo
+      con su `CIZ`.
+    - **Partida.** La elegida, o la propuesta guardada, de la línea de % del
+      trabajador en esa obra, si la hay y es válida por `ide`
+      ([`#regla-partida`](#regla-partida)); si no, 0, sin aviso ni
+      confirmación.
+    - **Nunca un inicio sin su fin.** Si el recurso no tiene en `reshor` el
+      código de la incidencia o `CIZ`, se omiten **las dos** líneas con un
+      motivo que nombra el código. Igual sin empresa, sin recurso o con días
+      imposibles.
+    - **Sin duplicar lo que ya está.** Si en algún parte del mes de
+      **cualquier** obra (en modo pruebas, solo de la obra de pruebas) ya hay
+      una línea del recurso con el mismo código y la misma `fec`, esa línea
+      no se escribe: «ya registrada» si la `synckey` es la suya; si no,
+      omitida con el parte donde está, sea de Administración o de `partes`.
+      La otra del par se decide sola. Una incidencia ya registrada no se
+      reescribe aunque cambien sus días (corregir lo escrito es de F-033).
+    - **Fuera de las reglas A, B y C.** Una línea de incidencia no es pisado
+      ([`#regla-conflicto`](#regla-conflicto)), ni sobrecarga (no suma en
+      [`#regla-capacidad`](#regla-capacidad)), ni sin partida
+      ([`#regla-sin-partida`](#regla-sin-partida)), ni pisa una línea al 0 %
+      ([`#regla-cero`](#regla-cero)): no avisa y no se confirma. Una petición
+      sin incidencias decide sus líneas de % exactamente igual que antes.
+    - **Como cualquier línea**: modo pruebas, obra de pruebas y marca
+      ([`#regla-pruebas`](#regla-pruebas)), empresa
+      ([`#regla-empresa`](#regla-empresa)), parte En registro y alta
+      protegida.
+    - **Una lectura.** La comprobación de duplicados es **una** lectura de
+      Sigrid por petición o por lote, y solo si alguna incidencia se
+      escribiría. Si falla o viene `truncated`, la petición falla sin
+      escribir nada.
+    - **Traza.** Preflight y `ejecutar` devuelven `incidencias`, una entrada
+      por línea (id, rol `ini`/`fin`, acción, `fec`, código, partida, parte,
+      `hmores.ide` y motivo), solo cuando la petición las trae; el modal las
+      enseña en su sección, sin confirmaciones. La api guarda en cada
+      incidencia su estado, parte, el `ide` de sus dos líneas y el motivo.
+
+    *Decidido por Pablo Gris el 2026-10-20 (D1-D10, todas la recomendada:
+    `auxhor`, tramo del mes, cada mes con su `CIZ`, fuera del 100 %, par
+    `CI*`/`CIZ` con `can = 0`, la partida de la línea de % o 0, duplicados en
+    cualquier obra del mes) · F-030,
+    `specs/F-030-dias-bajas-incidencias/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 
