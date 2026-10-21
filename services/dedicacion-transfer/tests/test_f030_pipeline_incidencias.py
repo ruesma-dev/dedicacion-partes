@@ -8,10 +8,35 @@ inventados y no coinciden con ningún dato real.
 """
 from __future__ import annotations
 
+from dataclasses import asdict
+
 import pytest
+from application.pipelines.registro_pipeline import RegistroPipeline
+from application.services.reglas_incidencias import (
+    MOTIVO_INC_DUPLICADA,
+    MOTIVO_INC_SIN_CODIGO,
+)
+from application.services.reglas_porcentajes import (
+    MOTIVO_EMPRESA_OBRA,
+    MOTIVO_SIN_EMPRESA,
+    EmpresasMezcladas,
+)
+from domain.models.registro_models import (
+    HoraRecurso,
+    IncidenciaEntrada,
+    LineaIncidenciaSigrid,
+    ObraEntrada,
+)
 
+from tests.conftest import (
+    EMPRESA,
+    OBRA_ORIGEN,
+    ClienteFalso,
+    SettingsFalso,
+    linea,
+    linea_previa,
+)
 from tests.test_f050_propuesta import _cliente_historial
-
 
 # ============================ cliente (T12) ============================== #
 FILA_INC = {"ide": 900, "reside": 200, "fec": 20260705, "cod": "CIV ",
@@ -19,8 +44,6 @@ FILA_INC = {"ide": 900, "reside": 200, "fec": 20260705, "cod": "CIV ",
 
 
 def test_f030_r27_cliente_sql_parametros_y_mapeo():
-    from domain.models.registro_models import LineaIncidenciaSigrid
-
     cli, falso = _cliente_historial([FILA_INC, dict(FILA_INC, ide=901, synckey=None,
                                                     cod=None, parte=None)])
     filas = cli.incidencias_del_mes([300, 200, 300, None, 0], 2026, 2)
@@ -83,3 +106,203 @@ def test_f030_r33_cliente_se_mide_con_su_nombre():
     with medir_lecturas() as m:
         cli.incidencias_del_mes([1], 2026, 7)
     assert [l.nombre for l in m.lecturas] == ["incidencias_del_mes"]
+
+
+# ============================ pipeline (T13) ============================= #
+OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
+
+
+class ClienteInc(ClienteFalso):
+    """El doble de `conftest.py` con las horas de incidencia (`CIV`, `CIZ`)
+    en los recursos 200 y 400 (el 300 no las tiene; el `CIV` del 200 con su
+    cuenta de plantilla) y la lectura de R27, que anota cada llamada y
+    devuelve ``existentes`` (o lanza ``falla``)."""
+
+    def __init__(self, *, existentes=(), falla=None, **kw) -> None:
+        super().__init__(**kw)
+        for r in (200, 400):
+            self.horas[r] = [*self.horas[r],
+                             HoraRecurso(71, "CIV", "Vacaciones(V)", 12.5,
+                                         caa_cod=("00000.CIMO07" if r == 200
+                                                  else None)),
+                             HoraRecurso(79, "CIZ", "Fin de Incidencia", 0.0)]
+        self.existentes_inc = list(existentes)
+        self.falla = falla
+        self.leidas_inc: list[tuple] = []
+        self.leidas_horas: list[list[int]] = []
+
+    def horas_de_recursos(self, resides):
+        self.leidas_horas.append(sorted(resides))
+        return super().horas_de_recursos(resides)
+
+    def incidencias_del_mes(self, resides, ano, mes, hmoides=None):
+        self.leidas_inc.append((sorted(resides), ano, mes, hmoides))
+        if self.falla is not None:
+            raise self.falla
+        return list(self.existentes_inc)
+
+
+def _inc(**kw) -> IncidenciaEntrada:
+    base = {"id": 7, "recurso_ide": 200, "empresa": EMPRESA, "codigo": "CIV",
+            "ano": 2026, "mes": 7, "desde": 5, "hasta": 9, "paride": 0}
+    base.update(kw)
+    return IncidenciaEntrada(**base)
+
+
+def _pf(cli, lineas=(), incidencias=None, *, obra=OBRA, **ajustes):
+    pipe = RegistroPipeline(cliente=cli, settings=SettingsFalso(**ajustes))
+    if incidencias is None:
+        return pipe.preflight(obra=obra, lineas=list(lineas))
+    return pipe.preflight(obra=obra, lineas=list(lineas),
+                          incidencias=list(incidencias))
+
+
+def _resumen(pf):
+    return [(a.id, a.rol, a.accion, a.fecha_int, a.hora_codigo, a.parte_cod,
+             a.motivo) for a in pf.incidencias]
+
+
+def test_f030_r24_preflight_par_en_el_parte_del_periodo_con_su_cuenta():
+    cli = ClienteInc()
+    pf = _pf(cli, [linea(registro_id=1)], [_inc(paride=80001)])
+    assert _resumen(pf) == [
+        (7, "ini", "escribir", 20260705, "CIV", "PT26/00251", None),
+        (7, "fin", "escribir", 20260709, "CIZ", "PT26/00251", None)]
+    ini, fin = pf.incidencias
+    assert (ini.hora_ide, ini.pre, fin.hora_ide, fin.pre) == (71, 12.5, 79, 0.0)
+    assert (ini.paride, fin.paride) == (80001, 80001)
+    # Cuenta analítica como cualquier línea (en el centro de la obra destino,
+    # la de pruebas): la plantilla de su hora; el CIZ no tiene, ni su
+    # partida (el doble no da cuenta de partida): 0.
+    assert (ini.caa_cod, ini.caa_origen) == ("0404.CIMO07", "recurso")
+    assert ini.caa_ide > 0
+    assert (fin.caa_ide, fin.caa_cod) == (0, None)
+    assert pf.acciones[0].caa_cod == "0404.CIMO03"
+    assert len(pf.partes) == 1
+
+
+def test_f030_r2_preflight_las_lineas_deciden_igual_con_y_sin_incidencias():
+    lineas = [linea(registro_id=1), linea(registro_id=2, recurso_ide=400),
+              linea(registro_id=3, recurso_ide=300)]
+    previas = [linea_previa(),
+               linea_previa(ide=5002, reside=200, horide=71,
+                            hora_codigo="CIV", can=0.0, tot=0.0,
+                            fecha_int=20260705)]
+    sin = _pf(ClienteInc(lineas_parte=previas), lineas)
+    con = _pf(ClienteInc(lineas_parte=previas), lineas,
+              [_inc(), _inc(id=8, recurso_ide=400, desde=1, hasta=31)])
+    assert [asdict(a) for a in con.acciones] == [asdict(a) for a in sin.acciones]
+    assert [asdict(c) for c in con.conflictos] == [
+        asdict(c) for c in sin.conflictos]
+    assert [asdict(p) for p in con.partes] == [asdict(p) for p in sin.partes]
+    assert sin.incidencias == []
+    assert [a.accion for a in con.incidencias] == ["escribir"] * 4
+    # R28: ninguna incidencia es conflicto (ni pisado, ni sobrecarga, ni
+    # sin partida), aunque el recurso tenga su M* en el mismo parte.
+    assert con.conflictos
+    assert all(set(c.registros) <= {1, 2, 3} for c in con.conflictos)
+
+
+def test_f030_r28_preflight_sin_partida_no_es_conflicto():
+    pf = _pf(ClienteInc(), [], [_inc(paride=0)])
+    assert pf.conflictos == [] and pf.acciones == []
+    assert [(a.accion, a.paride) for a in pf.incidencias] == [
+        ("escribir", 0)] * 2
+
+
+def test_f030_r23_preflight_obra_solo_con_incidencias():
+    cli = ClienteInc(parte_existe=False)
+    pf = _pf(cli, [], [_inc()])
+    assert pf.acciones == []
+    assert [(p.existe, p.cod) for p in pf.partes] == [(False, "PT26/09999")]
+    assert _resumen(pf)[0][2:6] == ("escribir", 20260705, "CIV", "PT26/09999")
+    assert cli.leidas_horas == [[200]]
+
+
+def test_f030_r23_preflight_sin_empresa_se_omite_sin_leer():
+    cli = ClienteInc()
+    pf = _pf(cli, [], [_inc(empresa=None)])
+    assert [(a.accion, a.motivo) for a in pf.incidencias] == [
+        ("omitir", MOTIVO_SIN_EMPRESA)] * 2
+    assert cli.leidas_inc == [] and cli.leidas_horas == []
+    assert pf.partes == []
+
+
+def test_f030_r23_preflight_obra_de_otra_empresa():
+    cli = ClienteInc()
+    pf = _pf(cli, [], [_inc(empresa=2)], obra=ObraEntrada(ide=828942))
+    motivo = MOTIVO_EMPRESA_OBRA.format(cod="0404", emp_obra=1, emp_linea=2)
+    assert [(a.accion, a.motivo) for a in pf.incidencias] == [
+        ("omitir", motivo)] * 2
+    assert cli.leidas_inc == [] and cli.leidas_horas == []
+
+
+def test_f030_r23_preflight_una_empresa_por_peticion():
+    with pytest.raises(EmpresasMezcladas):
+        _pf(ClienteInc(), [linea(registro_id=1)], [_inc(empresa=2)])
+    pf = _pf(ClienteInc(), [linea(registro_id=1, empresa=None)], [_inc()])
+    assert (pf.acciones[0].accion, pf.acciones[0].motivo) == (
+        "omitir", MOTIVO_SIN_EMPRESA)
+    assert [a.accion for a in pf.incidencias] == ["escribir"] * 2
+
+
+def test_f030_r26_preflight_recurso_sin_codigos_no_lee_r27():
+    cli = ClienteInc()
+    pf = _pf(cli, [], [_inc(recurso_ide=300)])
+    assert [(a.accion, a.motivo) for a in pf.incidencias] == [
+        ("omitir", MOTIVO_INC_SIN_CODIGO.format(cod="CIV"))] * 2
+    assert cli.leidas_inc == []
+    assert pf.partes == []
+
+
+def test_f030_r27_preflight_duplicada_en_otro_parte_y_modo_pruebas():
+    otra = LineaIncidenciaSigrid(ide=61, reside=200, fecha_int=20260709,
+                                 hora_codigo="CIZ", synckey=None,
+                                 parte_cod="PT26/00041")
+    cli = ClienteInc(existentes=[otra])
+    pf = _pf(cli, [linea(registro_id=1)], [_inc()])
+    assert _resumen(pf) == [
+        (7, "ini", "escribir", 20260705, "CIV", "PT26/00251", None),
+        (7, "fin", "omitir", 20260709, "CIZ", "PT26/00041",
+         MOTIVO_INC_DUPLICADA.format(cod="CIZ", dia=9, mes=7,
+                                     parte="PT26/00041"))]
+    # En pruebas, solo los partes del periodo de la obra de pruebas.
+    assert cli.leidas_inc == [([200], 2026, 7, [777])]
+
+
+def test_f030_r27_preflight_en_real_todas_las_obras():
+    cli = ClienteInc()
+    _pf(cli, [], [_inc()], obra_pruebas_forzar=False)
+    assert cli.leidas_inc == [([200], 2026, 7, None)]
+
+
+def test_f030_r27_preflight_en_pruebas_sin_partes_no_hay_duplicado():
+    cli = ClienteInc(parte_existe=False, existentes=[])
+    pf = _pf(cli, [], [_inc()])
+    assert [a.accion for a in pf.incidencias] == ["escribir", "escribir"]
+    assert cli.leidas_inc == [([200], 2026, 7, [])]
+
+
+def test_f030_r33_preflight_una_lectura_por_peticion_y_solo_con_incidencias():
+    cli = ClienteInc()
+    _pf(cli, [linea(registro_id=1)])
+    _pf(cli, [linea(registro_id=1)], [])
+    assert cli.leidas_inc == []
+    _pf(cli, [], [_inc(), _inc(id=8, recurso_ide=400, desde=12, hasta=12),
+                  _inc(id=9, recurso_ide=300)])
+    assert cli.leidas_inc == [([200, 400], 2026, 7, [777])]
+
+
+def test_f030_r33_preflight_si_la_lectura_falla_la_peticion_falla():
+    cli = ClienteInc(falla=RuntimeError("lectura truncada"))
+    with pytest.raises(RuntimeError, match="truncada"):
+        _pf(cli, [linea(registro_id=1)], [_inc()])
+
+
+def test_f030_r25_preflight_la_partida_se_valida_por_ide():
+    cli = ClienteInc()
+    pf = _pf(cli, [linea(registro_id=1, paride=80002, partida_cod="CI.1.20")],
+             [_inc(paride=80001), _inc(id=8, recurso_ide=400, paride=70001)])
+    assert [(a.accion, a.paride, a.motivo) for a in pf.incidencias] == [
+        ("escribir", 80001, None)] * 2 + [("escribir", 0, None)] * 2
+    assert cli.validadas == [[70001, 80001, 80002]]   # una sola lectura

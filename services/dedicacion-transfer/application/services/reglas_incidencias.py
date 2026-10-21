@@ -116,6 +116,7 @@ def decidir_incidencia(
                              pre=float(hora.pre or 0.0), **base)
             for rol, fecha, hora in zip(ROLES, fechas, horas)]
 
+
 def deduplicar(acciones: Iterable[AccionIncidencia],
                existentes: Iterable[LineaIncidenciaSigrid]) -> None:
     """R27: cada acción `escribir` que ya está en algún parte del mes (el
