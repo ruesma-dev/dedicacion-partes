@@ -570,3 +570,166 @@ def test_f030_r33_lote_sin_la_linea_larga_de_la_obs_3():
               / "lecturas_lote.py").read_text(encoding="utf-8")
     assert not [n for n, linea_ in enumerate(fuente.splitlines(), 1)
                 if "}" + " " * 10 in linea_]
+
+
+# =========================== ejecutar (T31) ============================= #
+from dataclasses import replace
+
+from domain.models.registro_models import LineaSigrid
+
+from tests.test_f030_pipeline_incidencias import ClienteEscribe, _ej
+
+
+class _ClienteEdita(ClienteEscribe):
+    """El par de la 7 (9001 `CIV` el 5, 9002 `CIZ` el 9) en el parte 777
+    En registro. La lectura de R33 sale de esas líneas; `cambios` (por
+    `ide`: campos o `None`, borrada) es lo que alguien tocó en Sigrid entre
+    el preflight y la relectura de R45. El `UPDATE` de la `fec` lo aplica
+    `EdicionesFalsas` (conftest), con su guarda."""
+
+    def __init__(self, cambios=None, **kw) -> None:
+        par = [LineaSigrid(9001, 200, 20260705, 71, "CIV", 0.0, 0.0,
+                           "porcentajes:inc:7:ini", nuestra=True),
+               LineaSigrid(9002, 200, 20260709, 79, "CIZ", 0.0, 0.0,
+                           "porcentajes:inc:7:fin", nuestra=True)]
+        super().__init__(lineas_parte=par, **kw)
+        self.cambios = dict(cambios or {})
+
+    def incidencias_del_mes(self, resides, ano, mes, hmoides=None, ides=()):
+        self.leidas_inc.append((sorted(resides), ano, mes, hmoides))
+        self.leidas_ides.append(sorted(ides))
+        base = int(ano) * 10000 + int(mes) * 100
+        return [LineaIncidenciaSigrid(
+            ls.ide, ls.reside, ls.fecha_int, ls.hora_codigo, ls.synckey,
+            self.parte.cod, can=ls.can, hmoide=int(self.parte.ide),
+            parte_est=1) for ls in self.lineas_parte
+            if (ls.reside in set(resides) and base < ls.fecha_int <= base + 31)
+            or ls.ide in set(ides)]
+
+    def lineas_para_editar(self, ides):
+        out = super().lineas_para_editar(ides)
+        for ide, kw in self.cambios.items():
+            if ide in out and kw is None:
+                del out[ide]
+            elif ide in out:
+                out[ide] = replace(out[ide], **kw)
+        return out
+
+    def lineas_registradas(self, claves, ides=()):
+        self.lineas_registradas_pedidas = [
+            *getattr(self, "lineas_registradas_pedidas", []),
+            sorted(int(i) for i in ides if i)]
+        return super().lineas_registradas(claves, ides)
+
+    def dias(self):
+        return [(ls.ide, ls.fecha_int) for ls in self.lineas_parte]
+
+
+def _acc(res):
+    return [(a.rol, a.accion, a.fecha_int, a.fec_antes, a.hmores_ide,
+             a.parte_cod) for a in res.incidencias]
+
+
+def test_f030_r41_ejecutar_edita_el_par_en_su_sitio_y_nada_mas():
+    cli = _ClienteEdita()
+    res = _ej(cli, [], [_inc_pf(desde=6, hasta=12, **TRAZA)])
+    assert [s["sql"] for s in cli.escritos] == ["editar_fec", "editar_fec"]
+    assert [s["parameters"] for s in cli.escritos] == [
+        {"ide": 9001, "reside": 200, "hora_codigo": "CIV",
+         "synckey_leida": "porcentajes:inc:7:ini", "fecha_int": 20260706},
+        {"ide": 9002, "reside": 200, "hora_codigo": "CIZ",
+         "synckey_leida": "porcentajes:inc:7:fin", "fecha_int": 20260712}]
+    assert cli.dias() == [(9001, 20260706), (9002, 20260712)]
+    assert _acc(res) == [
+        ("ini", "editar", 20260706, 20260705, 9001, "PT26/00251"),
+        ("fin", "editar", 20260712, 20260709, 9002, "PT26/00251")]
+    assert [a.motivo for a in res.incidencias] == [None, None]
+    assert cli.para_editar == [[9001, 9002]]       # UNA relectura (R45)
+    assert (cli.inserts(), res.partes, res.escritas) == ([], [], [])
+
+
+def test_f030_r41_ejecutar_con_lineas_una_sola_relectura_y_juntas():
+    cli = _ClienteEdita()
+    res = _ej(cli, [linea(registro_id=1)], [_inc_pf(desde=6, **TRAZA)])
+    assert [s["sql"] for s in cli.escritos] == ["insert", "editar_fec"]
+    assert cli.para_editar == [[9001]]
+    assert [a.accion for a in res.incidencias] == ["editar", "ya_registrado"]
+    assert cli.dias() == [(9001, 20260706), (9002, 20260709)]
+
+
+@pytest.mark.parametrize("cambio", [
+    {"can": 1.0}, {"fecha_int": 20260707},
+    {"hora_codigo": "CIE"}, {"synckey": "porcentajes:inc:8:fin"},
+    {"reside": 201}, {"enlazada": True}, {"parte_est": 3}, None])
+def test_f030_r45_si_una_del_par_ya_no_vale_no_se_edita_ninguna(cambio):
+    from application.services.reglas_incidencias import (
+        MOTIVO_INC_CAMBIADA,
+        MOTIVO_INC_PAR,
+    )
+
+    cli = _ClienteEdita(cambios={9002: cambio})
+    res = _ej(cli, [], [_inc_pf(desde=6, hasta=12, **TRAZA)])
+    assert cli.escritos == []
+    assert cli.dias() == [(9001, 20260705), (9002, 20260709)]
+    assert [(a.accion, a.fec_antes, a.hmores_ide, a.motivo)
+            for a in res.incidencias] == [
+        ("omitir", None, 9001, MOTIVO_INC_PAR.format(ide=9002)),
+        ("omitir", None, 9002, MOTIVO_INC_CAMBIADA.format(ide=9002))]
+
+
+def test_f030_r45_can_nulo_en_la_relectura_cuenta_como_cero():
+    cli = _ClienteEdita(cambios={9002: {"can": None}})
+    res = _ej(cli, [], [_inc_pf(desde=6, hasta=12, **TRAZA)])
+    assert [a.accion for a in res.incidencias] == ["editar", "editar"]
+
+
+def test_f030_r45_la_que_no_se_edita_no_arrastra_a_la_ya_registrada():
+    from application.services.reglas_incidencias import MOTIVO_INC_CAMBIADA
+
+    cli = _ClienteEdita(cambios={9001: {"can": 2.0}})
+    res = _ej(cli, [linea(registro_id=1)], [_inc_pf(desde=6, **TRAZA)])
+    assert [s["sql"] for s in cli.escritos] == ["insert"]
+    assert [(a.accion, a.motivo) for a in res.incidencias] == [
+        ("omitir", MOTIVO_INC_CAMBIADA.format(ide=9001)),
+        ("ya_registrado", ("ya registrada en Sigrid (línea 9002); no se "
+                           "duplica"))]
+
+
+def test_f030_r45_si_la_guarda_no_la_cambia_va_a_omitir_y_no_se_inserta():
+    from application.services.reglas_incidencias import MOTIVO_INC_CAMBIADA
+
+    cli = _ClienteEdita()
+    cli.guarda_falla = frozenset({9001})
+    res = _ej(cli, [], [_inc_pf(desde=6, hasta=12, **TRAZA)])
+    assert [s["sql"] for s in cli.escritos] == ["editar_fec", "editar_fec"]
+    assert cli.dias() == [(9001, 20260705), (9002, 20260712)]
+    assert [(a.accion, a.fec_antes, a.motivo) for a in res.incidencias] == [
+        ("omitir", None, MOTIVO_INC_CAMBIADA.format(ide=9001)),
+        ("editar", 20260709, None)]
+    assert cli.inserts() == []
+    # La relectura de lo escrito pide los `ide` editados (F-051 R15).
+    assert cli.lineas_registradas_pedidas[-1] == [9001, 9002]
+
+
+def test_f030_r46_el_log_de_cada_edicion(caplog):
+    import logging
+
+    caplog.set_level(logging.INFO)
+    _ej(_ClienteEdita(), [], [_inc_pf(desde=6, **TRAZA)])
+    lineas = [r.getMessage() for r in caplog.records
+              if "edita fec" in r.getMessage()]
+    assert len(lineas) == 1
+    msg = lineas[0]
+    for trozo in ("ide=9001", "parte=PT26/00251", "incidencia=7", "rol=ini",
+                  "'fecha_int': 20260705", "'synckey': 'porcentajes:inc:7:ini'",
+                  "'can': 0.0", "'hora_codigo': 'CIV'", "fec=20260706"):
+        assert trozo in msg, trozo
+
+
+def test_f030_r41_ejecutar_repetido_no_hace_nada():
+    cli = _ClienteEdita()
+    _ej(cli, [], [_inc_pf(desde=6, hasta=12, **TRAZA)])
+    traza = {**TRAZA, "dia_ini": 6, "dia_fin": 12}
+    res = _ej(cli, [], [_inc_pf(desde=6, hasta=12, **traza)])
+    assert len(cli.escritos) == 2
+    assert [a.accion for a in res.incidencias] == ["ya_registrado"] * 2

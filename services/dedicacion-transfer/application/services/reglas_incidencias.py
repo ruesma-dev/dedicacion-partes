@@ -260,3 +260,36 @@ def reconciliar(acciones: Iterable[AccionIncidencia],
             a.motivo = MOTIVO_INC_DUPLICADA.format(
                 cod=a.hora_codigo, dia=a.fecha_int % 100, mes=a.mes,
                 parte=otra.parte_cod)
+
+
+def sigue_editable(linea, a: AccionIncidencia, est: int) -> bool:
+    """R45: la línea releída justo antes de escribir (la de F-051 R12)
+    sigue cumpliendo R41 para la acción `editar` `a`: existe, sin enlaces,
+    del recurso, con su código, `can` 0 (nulo cuenta como 0), nuestra
+    `synckey`, en la `fec` que vio el preflight (`fec_antes`) y en un parte
+    En registro (`est`)."""
+    return (linea is not None and not linea.enlazada
+            and linea.reside == a.recurso_ide
+            and _codigo(linea) == a.hora_codigo
+            and abs(float(linea.can or 0.0)) < _TOLERANCIA_CAN
+            and (linea.synckey or "").strip()
+            == synckey_incidencia(a.id, a.rol)
+            and linea.fecha_int == a.fec_antes and linea.parte_est == est)
+
+
+def no_editar_el_par(acciones: Iterable[AccionIncidencia],
+                     fallan: set[int]) -> None:
+    """R45: si una línea `editar` de una incidencia ya no se puede editar
+    (su `hmores_ide` en `fallan`), no se edita ninguna del par: esa va a
+    `omitir` «cambiada en Sigrid» y la otra, con `MOTIVO_INC_PAR`. Cambia
+    las acciones en sitio."""
+    acciones = [a for a in acciones if a.accion == "editar"]
+    malas = {a.id: a.hmores_ide for a in acciones if a.hmores_ide in fallan}
+    for a in acciones:
+        if a.id not in malas:
+            continue
+        motivo = (MOTIVO_INC_CAMBIADA if a.hmores_ide in fallan
+                  else MOTIVO_INC_PAR)
+        a.accion, a.fec_antes = "omitir", None
+        a.motivo = motivo.format(
+            ide=a.hmores_ide if a.hmores_ide in fallan else malas[a.id])

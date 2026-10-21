@@ -429,17 +429,24 @@ def test_f030_r28_ejecutar_un_conflicto_sin_confirmar_no_las_retiene():
 
 def test_f030_r30_ejecutar_no_reescribe_la_ya_registrada():
     # La 7 ya se registró del 5 al 9; ahora llega del 6 al 9. Anexo R30
-    # (R41, design §13.7): su `ini` ya no es `ya_registrado` sino `editar`
-    # (sin insertar nada); las líneas leídas traen ya `can` y estado.
+    # (R41, R45, design §13.7): su `ini` ya no es `ya_registrado` sino
+    # `editar`: un `UPDATE` de su `fec`, sin insertar nada. Las líneas
+    # leídas traen ya `can` y estado, y el par está en el parte (relectura).
+    from domain.models.registro_models import LineaSigrid
+
     ya = [LineaIncidenciaSigrid(51, 200, 20260705, "CIV",
                                 "porcentajes:inc:7:ini", "PT26/00251",
                                 can=0.0, hmoide=777, parte_est=1),
           LineaIncidenciaSigrid(52, 200, 20260709, "CIZ",
                                 "porcentajes:inc:7:fin", "PT26/00251",
                                 can=0.0, hmoide=777, parte_est=1)]
-    cli = ClienteEscribe(existentes=ya)
+    par = [LineaSigrid(x.ide, 200, x.fecha_int, None, x.hora_codigo, 0.0,
+                       0.0, x.synckey) for x in ya]
+    cli = ClienteEscribe(existentes=ya, lineas_parte=par)
     res = _ej(cli, [], [_inc(desde=6)])
     assert cli.inserts() == []
+    assert [(s["sql"], s["parameters"]["ide"]) for s in cli.escritos] == [
+        ("editar_fec", 51)]
     assert [(a.rol, a.accion, a.hmores_ide, a.parte_cod)
             for a in res.incidencias] == [
         ("ini", "editar", 51, "PT26/00251"),

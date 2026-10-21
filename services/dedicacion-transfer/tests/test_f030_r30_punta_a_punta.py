@@ -83,8 +83,6 @@ class ClienteConElPar(ClienteEscribe):
         return [s["sql"] for s in self.escritos]
 
 
-@pytest.mark.xfail(strict=True, reason="T22: hueco de la review 1 (cambiar "
-                   "los días no edita el par en su sitio); T33 quita la marca")
 @pytest.mark.parametrize("caso", CONTRATO["casos"],
                          ids=[f"{c['dias'][0]}-{c['dias'][1]}"
                               for c in CONTRATO["casos"]])

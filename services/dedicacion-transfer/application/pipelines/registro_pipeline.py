@@ -81,7 +81,8 @@ from application.services.propuesta_partida import (
     proponer_partida, ventana,
 )
 from application.services.reglas_incidencias import (
-    decidir_incidencia, reconciliar, synckey_incidencia,
+    MOTIVO_INC_CAMBIADA, decidir_incidencia, no_editar_el_par, reconciliar,
+    sigue_editable, synckey_incidencia,
 )
 from application.services.reglas_porcentajes import (
     AVISO_LINEA_CERO, AVISO_QUEDAN_A_CERO, AVISO_SIN_PARTIDA,
@@ -929,7 +930,9 @@ class RegistroPipeline:
         """Pasos 0-10. Las incidencias (F-030) se escriben tras las líneas,
         en el mismo lote de sentencias; ningún conflicto las retiene (R28)
         y no salen en `escritas` (que es de las asignaciones), sino en
-        `incidencias`, con el `hmores_ide` de cada línea escrita."""
+        `incidencias`, con el `hmores_ide` de cada línea escrita. Las que
+        cambian de días (anexo R30, R45) editan la `fec` de su línea, en su
+        sitio y sin parte nuevo."""
         pisar = {str(k) for k in (pisar_claves or set())}
         # Sin incidencias, la llamada de siempre (R2): ni un argumento más.
         pf = self.preflight(obra=obra, lineas=lineas, **(
@@ -953,6 +956,7 @@ class RegistroPipeline:
             incidencias=pf.incidencias,
         )
         inc_escribir = [a for a in pf.incidencias if a.accion == "escribir"]
+        inc_editar = [a for a in pf.incidencias if a.accion == "editar"]
 
         bloqueadas: set[int] = set()
         # Registros ya listados en `omitidas` por un aviso anterior. Empieza
@@ -1003,7 +1007,7 @@ class RegistroPipeline:
         a_escribir = [a for a in pf.acciones
                       if a.accion == "escribir"
                       and a.registro_id not in bloqueadas]
-        if not a_escribir and not inc_escribir:
+        if not a_escribir and not inc_escribir and not inc_editar:
             logger.info("[registro] nada que escribir (bloqueadas=%s)",
                         len(bloqueadas))
             return res
@@ -1012,8 +1016,16 @@ class RegistroPipeline:
         # pone a 0, comprobado contra Sigrid justo antes de escribir. Va
         # ANTES del alta de partes: la acción que edita no necesita parte
         # nuevo, y la que cae no tiene que dejar uno vacío.
-        edita, ceros, cambiadas = self._planear_ediciones(
-            pf, a_escribir, pisar)
+        edita, ceros, cambiadas, leidas_inc = self._planear_ediciones(
+            pf, a_escribir, pisar, [a.hmores_ide for a in inc_editar])
+        # Anexo R30 (R45): la `fec` de una incidencia se edita con lo que
+        # hay AHORA en Sigrid (la misma lectura); si una del par ya no se
+        # puede editar, ninguna.
+        no_editar_el_par(inc_editar, {
+            a.hmores_ide for a in inc_editar
+            if not sigue_editable(leidas_inc.get(a.hmores_ide), a,
+                                  int(self._st.est_parte_activo))})
+        inc_editar = [a for a in inc_editar if a.accion == "editar"]
         for a in a_escribir:
             if a.registro_id in cambiadas:
                 res.omitidas.append({
@@ -1022,7 +1034,7 @@ class RegistroPipeline:
                         ide=cambiadas[a.registro_id])})
         a_escribir = [a for a in a_escribir
                       if a.registro_id not in cambiadas]
-        if not a_escribir and not inc_escribir:
+        if not a_escribir and not inc_escribir and not inc_editar:
             logger.info("[registro] nada que escribir (cambiadas=%s)",
                         len(cambiadas))
             return res
@@ -1108,6 +1120,18 @@ class RegistroPipeline:
             res.escritas.append(self._escrita(a, d, hmoide, p.cod,
                                               editada=False))
 
+        # Anexo R30 (R41, R46): la `fec` de cada línea de incidencia que
+        # cambia de día, con la guarda de F-051 y su código; las dos de un
+        # par, juntas. El log, antes de enviar, con todo lo releído.
+        for a in sorted(inc_editar, key=lambda x: (x.ano, x.mes, x.id)):
+            ls = leidas_inc[a.hmores_ide]
+            logger.info("[registro] edita fec incidencia ide=%s parte=%s "
+                        "incidencia=%s rol=%s antes=%s fec=%s", ls.ide,
+                        ls.parte_cod, a.id, a.rol, _fila(ls), a.fecha_int)
+            statements.append(self._cli.stmt_editar_fecha_incidencia(
+                ide=ls.ide, reside=int(ls.reside), hora_codigo=a.hora_codigo,
+                synckey_leida=ls.synckey, fecha_int=a.fecha_int))
+
         # F-030 (R24): las dos líneas de cada incidencia, `can = 0` (así
         # `tot = 0`) y su propia `synckey`.
         for a in sorted(inc_escribir, key=lambda x: (x.ano, x.mes, x.id)):
@@ -1132,17 +1156,20 @@ class RegistroPipeline:
                     len(res.escritas), len(res.editadas), len(res.a_cero),
                     res.borradas, afectadas, usuario,
                     datetime.now(timezone.utc).isoformat())
-        self._comprobar_escrito(res, inc_escribir)
+        self._comprobar_escrito(res, inc_escribir, inc_editar)
         return res
 
     # ------------------------------------------------------------- #
     def _planear_ediciones(self, pf: Preflight, a_escribir: list,
-                           pisar: set[str]) -> tuple[dict, list, dict]:
+                           pisar: set[str], inc_ides: list[int]
+                           ) -> tuple[dict, list, dict, dict]:
         """Paso 9 bis, F-051 (design §6.4, 1-2): `({registro_id: línea a
         editar}, [(registro_id, línea a poner a 0)], {registro_id: ide que
-        ha cambiado})`, con las líneas tal y como están AHORA en Sigrid
-        (una lectura, R12). Si la línea al 0 % ya no es pisable, cae su
-        acción; si un choque ya no lo es, cae el pisado entero."""
+        ha cambiado}, {ide: línea de incidencia releída})`, con las líneas
+        tal y como están AHORA en Sigrid (una lectura, R12; con las de las
+        incidencias que cambian de días, anexo R30 R45). Si la línea al
+        0 % ya no es pisable, cae su acción; si un choque ya no lo es, cae
+        el pisado entero."""
         escribibles = {a.registro_id: a for a in a_escribir}
         mias = {synckey_de(a.registro_id) for a in pf.acciones}
         # (qué, ide, registro_id, acción de referencia, criterio, caen)
@@ -1166,9 +1193,10 @@ class RegistroPipeline:
                         tuple(regs)) for r, ide in por_reg.items()]
             piezas += [("a_cero", ide, regs[0], escribibles[regs[0]],
                         "choque", tuple(regs)) for ide in a_cero]
-        if not piezas:
-            return {}, [], {}
-        leidas = self._cli.lineas_para_editar([pz[1] for pz in piezas])
+        if not piezas and not inc_ides:
+            return {}, [], {}, {}
+        leidas = self._cli.lineas_para_editar(
+            [pz[1] for pz in piezas] + list(inc_ides))
         cambiadas: dict[int, int] = {}
         for _, ide, _, a, criterio, caen in piezas:
             if not self._sigue_valiendo(leidas.get(ide), a, criterio, mias):
@@ -1178,7 +1206,7 @@ class RegistroPipeline:
                  if que == "edita" and r not in cambiadas}
         ceros = [(r, leidas[ide]) for que, ide, r, *_ in piezas
                  if que == "a_cero" and r not in cambiadas]
-        return edita, ceros, cambiadas
+        return edita, ceros, cambiadas, {i: leidas.get(i) for i in inc_ides}
 
     def _sigue_valiendo(self, ls, a: AccionLinea, criterio: str,
                         mias: set[str]) -> bool:
@@ -1206,20 +1234,32 @@ class RegistroPipeline:
         return e
 
     def _comprobar_escrito(self, res: ResultadoRegistro,
-                           inc_escritas: list[AccionIncidencia]) -> None:
+                           inc_escritas: list[AccionIncidencia],
+                           inc_editadas: list[AccionIncidencia]) -> None:
         """Paso 10, relectura (R13, R16): el `hmores_ide` de cada insertada
         por su `synckey`; una editada que no tiene lo escrito (la guarda no
         la cambió) sale de `escritas` y va a `omitidas`; una puesta a 0 que
         no quedó a 0, al log. UNA lectura, la de siempre, que también trae
-        el `hmores_ide` de las líneas de incidencia escritas (F-030)."""
+        el `hmores_ide` de las líneas de incidencia escritas (F-030) y las
+        de `fec` editada (anexo R30, R45: sin la `fec` nueva, `omitir`;
+        nunca se inserta en su lugar)."""
         por_sk, por_ide = self._cli.lineas_registradas(
             [synckey_de(e["registro_id"]) for e in res.escritas]
             + [synckey_incidencia(a.id, a.rol) for a in inc_escritas],
-            [t["ide"] for t in res.editadas + res.a_cero])
+            [t["ide"] for t in res.editadas + res.a_cero]
+            + [a.hmores_ide for a in inc_editadas])
         for a in inc_escritas:
             hit = por_sk.get(synckey_incidencia(a.id, a.rol))
             if hit is not None:
                 a.hmores_ide = hit.ide
+        for a in inc_editadas:
+            hit = por_ide.get(a.hmores_ide)
+            if hit is None or hit.fecha_int != a.fecha_int:
+                logger.warning("[registro] la guarda no dejo editar la fec "
+                               "de la linea %s (incidencia %s %s)",
+                               a.hmores_ide, a.id, a.rol)
+                a.accion, a.fec_antes = "omitir", None
+                a.motivo = MOTIVO_INC_CAMBIADA.format(ide=a.hmores_ide)
         trazas = {t["registro_id"]: t for t in res.editadas}
         for e in list(res.escritas):
             if not e["editada"]:
