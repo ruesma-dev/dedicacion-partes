@@ -823,7 +823,9 @@ class RegistroPipeline:
         y no salen en `escritas` (que es de las asignaciones), sino en
         `incidencias`, con el `hmores_ide` de cada línea escrita."""
         pisar = {str(k) for k in (pisar_claves or set())}
-        pf = self.preflight(obra=obra, lineas=lineas, incidencias=incidencias)
+        # Sin incidencias, la llamada de siempre (R2): ni un argumento más.
+        pf = self.preflight(obra=obra, lineas=lineas, **(
+            {"incidencias": incidencias} if incidencias else {}))
         destino_normal = pf.obra_destino
         destino_pv = getattr(pf, "obra_postventa", None)
 
