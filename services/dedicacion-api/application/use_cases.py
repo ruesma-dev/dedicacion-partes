@@ -383,10 +383,13 @@ class DeshacerUltimaModificacion:
                 f"{pendiente.usuario}: solo puede deshacerla quien la hizo"
             )
         if pendiente.tipo == TipoEvento.INCIDENCIAS.value:
+            # R47: cada una vuelve con su `id` (y su traza); las quitadas del
+            # snapshot no se mandan, así que la registrada que falte queda
+            # `quitada` y la no registrada se borra. Sin `id` = nueva.
+            snapshot = [_parsear_incidencia(b) for b in pendiente.snapshot_antes]
             uow.incidencias.reemplazar(
                 periodo_id, trabajador_ide,
-                [_parsear_incidencia(b) for b in pendiente.snapshot_antes],
-                usuario)
+                [i for i in snapshot if not i.quitada], usuario)
         else:
             lineas = _validar_lineas(
                 uow, pendiente.snapshot_antes, permitir_inactivas=True

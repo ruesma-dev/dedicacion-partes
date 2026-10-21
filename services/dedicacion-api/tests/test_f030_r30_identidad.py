@@ -277,3 +277,68 @@ def test_f030_r36_r38_repo_reemplazar_por_id_quita_o_borra():
         (None, "CIP", 14, False, USUARIO, None),
         (None, "CIA", 1, False, USUARIO, None)]
     assert sesion.flushes == 1
+
+
+# ============================ deshacer (T25) ============================ #
+def _deshacer(uow, ide=14):
+    from tests.test_f030_incidencias import _deshacer as deshacer
+
+    return deshacer(uow, ide=ide)
+
+
+def _estado(fila) -> list[tuple]:
+    return [(i.id, i.dia_desde, i.dia_hasta, i.quitada, i.sigrid_ide_ini,
+             i.sigrid_ide_fin) for i in fila.incidencias]
+
+
+def test_f030_r47_deshacer_un_cambio_de_dias_repone_id_y_traza():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9))
+    _guardar(uow, [_con_id(7, desde=12, hasta=14)])
+    fila, _ = _deshacer(uow)
+    assert _estado(fila) == [(7, 5, 9, False, 9001, 9002)]
+    assert _traza(fila.incidencias[0]) == ("registrado", "PT26/1", 9001, 9002,
+                                           5, 9)
+
+
+def test_f030_r47_deshacer_quitar_la_repone():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9))
+    _guardar(uow, [])
+    fila, _ = _deshacer(uow)
+    assert _estado(fila) == [(7, 5, 9, False, 9001, 9002)]
+
+
+def test_f030_r47_deshacer_reponer_una_quitada_la_vuelve_a_quitar():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9, quitada=True))
+    _guardar(uow, [_con_id(7, desde=5, hasta=9)])
+    fila, _ = _deshacer(uow)
+    assert _estado(fila) == [(7, 5, 9, True, 9001, 9002)]
+
+
+def test_f030_r47_deshacer_lo_que_quitaria_una_registrada_la_deja_quitada():
+    """Alta, el registro le pone traza y luego se deshace el alta: no se
+    borra (sigue en Sigrid), queda quitada."""
+    uow = _uow_guardar()
+    fila, _ = _guardar(uow, [_e(100, "CIV", 5, 9)])
+    [nueva] = fila.incidencias
+    uow.incidencias.poner(14, _reg(nueva.id, 5, 9))       # la traza (R39)
+    fila, _ = _deshacer(uow)
+    assert _estado(fila) == [(nueva.id, 5, 9, True, 9001, 9002)]
+
+
+def test_f030_r47_deshacer_snapshot_sin_id_son_nuevas():
+    """Un evento de antes del anexo (sin `id`): lo suyo vuelve como nuevo y
+    la no registrada de ahora se borra."""
+    from domain.models import TipoEvento
+
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 12, 14, ini=None, fin=None))
+    uow.eventos.registrar(P_ACT, 14, TipoEvento.INCIDENCIAS, USUARIO, [
+        {"obra_ide": 100, "codigo": "CIV", "dia_desde": 5, "dia_hasta": 9}],
+        [])
+    fila, _ = _deshacer(uow)
+    [inc] = fila.incidencias
+    assert (inc.id not in (None, 7), inc.dia_desde, inc.dia_hasta,
+            inc.quitada) == (True, 5, 9, False)
