@@ -8,7 +8,7 @@ D1-D10 todas la recomendada). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f030`, rama
 `feature/F-030-dias-bajas-incidencias`; sus `.venv` son uniones de directorio
 a los de la copia principal (creadas por el líder, no versionadas).
-**Implementer lanzado el 2026-10-21**; T1-T3 hechas; bloqueo de T4 resuelto por el humano con la opción A (lista cerrada de dobles) e implementer reanudado en T4. Arranca **en paralelo con F-051** por
+**Implementer lanzado el 2026-10-21**; T1-T3 hechas; bloqueos resueltos por el humano: T4 con la opción A (lista cerrada de dobles) y T14 con la opción A (la aserción de firma de `test_f013_r3` acepta `incidencias`); implementer reanudado en T14. Arranca **en paralelo con F-051** por
 decisión expresa del humano («empieza f30», 2026-10-21) aunque el arnés pide
 una sola `in_progress`: F-051 está en su tramo final (review APROBADA, T18 y
 T15 pendientes) en la copia `porcentajes-f051`, cuya rama lo cuenta. T20
@@ -44,9 +44,12 @@ arnés es la **1.7.3**.
   mismos partes: avisar al humano.
 - Sigrid, solo lectura durante la spec (consultas en `progress/spec_F-030.md`).
 
-## F-030 · implementación: BLOQUEADA en T14 (implementer, 2026-10-21)
+## F-030 · implementación: bloqueo de T14 RESUELTO (implementer, 2026-10-21)
 
-**Estado:** `blocked`. Hechas T1-T14, cada una con su commit y su traza RED
+**Resuelto por el humano el 2026-10-21 con la opción A** («a»): la aserción
+de `test_f013_r3_la_confirmacion_no_estrena_canal` acepta `incidencias`
+(`tasks.md`, cabecera). F-030 vuelve a `in_progress`; el implementer sigue
+en T14. **Estado al bloquear:** `blocked` (ya no). Hechas T1-T14, cada una con su commit y su traza RED
 (T10 `fc039a7`, T11 `d407bf6`, T12 `4207de3`, T13 `07671d3`, T14 `3e63ba7` +
 `1cde163`). Api 1063 y front 341 en verde (tras T9); **transfer 986 en verde
 y 1 en rojo**, el de abajo. Nada escrito en Sigrid; todos los dobles ajenos
