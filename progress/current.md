@@ -25,11 +25,16 @@ escribe en Sigrid. **F-030** aprobada y a la espera en la copia
 
 **Pendiente del humano para cerrar F-051:** T15, MANUAL en modo pruebas en
 la 0404 (pasos y comando exacto abajo, en «implementación»). Ya **no** hace
-falta que acepte ningún mutante equivalente. **Pendiente del humano,
-decidir (observaciones de la review):** O2 (exigir además línea mensual al
-localizar por `hmores_ide`) y O4 (con un % menor de 0,00005 sale `can` 0,
-que editaría una línea al 0 % dejándola a 0 con nuestra `synckey`; hueco
-anterior a F-051). **Pendiente del líder:** T16 al desplegar (transfer → api
+falta que acepte ningún mutante equivalente. **O2 y O4 decididas por el humano el
+2026-10-21** («ok o2 y o4», las recomendadas): **O2** se hace dentro de F-051
+(T18: exigir además línea `M*` al localizar por `hmores_ide`; implementer
+lanzado) y **O4** va a la feature nueva **F-058** (`pending`: un % que
+redondea a `can` 0 no se registra). **T15 la hace el líder** a petición del
+humano («realiza tu las pruebas», 2026-10-21); la preparación (dos líneas
+`M*` a 0 sin `synckey` en PT26/00371, que hoy solo tiene la `porcentajes:180`,
+`ide` 410599, leída por el líder) pide una escritura directa en Sigrid
+fuera del transfer: **consultada al humano**. **F-030 arranca en paralelo**
+por decisión del humano («empieza f30»), en su copia. **Pendiente del líder:** T16 al desplegar (transfer → api
 → front): `azure-apps/dedicacion.md` y aviso a `partes`.
 
 ## F-051 · bloqueos de implementación (2026-10-20) · RESUELTOS

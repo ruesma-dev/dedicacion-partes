@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **54 features**, 23 abiertas, 31 terminadas.
+Resumen: **55 features**, 24 abiertas, 31 terminadas.
 
 En curso: **F-051**.
 
@@ -11,6 +11,7 @@ En curso: **F-051**.
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
+| F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
 | F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | en curso | critico | `feature/F-051-pisar-lineas-cero` |
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
@@ -72,6 +73,12 @@ En curso: **F-051**.
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 
 ## Detalle
+
+### F-058 · Un porcentaje que redondea a cantidad 0 no se registra en Sigrid
+
+estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-058-porcentaje-cero-no-registra`
+
+O4 de la review de F-051 (2026-10-21): un porcentaje menor de 0,00005 (en fracción) se redondea a `can` 0,0 en `reglas_porcentajes.py` (`can = round(porcentaje, 4)`) y sale una acción `escribir` con cantidad 0. Hueco anterior a F-051, pero con F-051 esa acción podría editar una línea al 0 % dejándola a 0 con nuestra `synckey` (o insertar una línea a 0). Decisión del humano el 2026-10-21 («ok o2 y o4»: feature aparte, como recomendó el líder): esas líneas NO se registran; salen como omitidas con un aviso legible en el preflight y en `ejecutar`. Servicio: transfer (la regla que construye la cantidad); el front solo enseña el aviso que ya pinta para las omitidas. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
 
 ### F-051 · Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso
 
