@@ -532,3 +532,37 @@ def test_f030_r39_traza_docstring_explica_el_import_de_orm():
 
     assert "registro_sigrid.py" in traza_incidencias.__doc__
     assert "importa el ORM" in traza_incidencias.__doc__
+
+
+# ================= huecos de la 4.ª campaña de mutación ================= #
+def test_f030_r36_registrada_con_cualquiera_de_sus_dos_lineas():
+    """Una sola línea con `ide` en la traza basta (la otra se omitió o la
+    borraron): la incidencia está registrada."""
+    from domain.incidencias import registrada
+
+    assert registrada(_reg(7, 5, 9, ini=9001, fin=None)) is True
+    assert registrada(_reg(7, 5, 9, ini=None, fin=9002)) is True
+    assert registrada(_reg(7, 5, 9, ini=9001, fin=9002)) is True
+    assert registrada(_reg(7, 5, 9, ini=None, fin=None)) is False
+
+
+def test_f030_r47_snapshot_iguales_salvo_el_id_por_id_y_la_nueva_primero():
+    """El orden del evento no depende del de entrada: con todo igual, la
+    nueva (sin `id`) va primero y las demás por su `id`."""
+    from application.use_cases import _snapshot_incidencias
+
+    base = Incidencia(obra_ide=100, codigo="CIV", dia_desde=5, dia_hasta=9)
+    incs = [dataclasses.replace(base, id=2), dataclasses.replace(base, id=1),
+            dataclasses.replace(base, id=None)]
+    assert [s["id"] for s in _snapshot_incidencias(incs)] == [None, 1, 2]
+    assert [s["id"] for s in _snapshot_incidencias(incs[::-1])] == [None, 1, 2]
+
+
+def test_f030_r38_salida_sin_quitada_es_no_quitada():
+    from interface_adapters.api.schemas import IncidenciaOut
+
+    out = IncidenciaOut(id=7, obra_ide=1, obra_cod="0001", obra_descripcion="Una",
+                        codigo="CIV", letra="V", nombre="Vacaciones",
+                        dia_desde=5, dia_hasta=9, sigrid_estado=None,
+                        sigrid_parte_cod=None, sigrid_motivo=None)
+    assert out.quitada is False

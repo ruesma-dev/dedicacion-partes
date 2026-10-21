@@ -762,3 +762,31 @@ def test_f030_r34_integracion_cuenta_los_campos_y_el_update():
                   "`fec_antes`", "`incidencias_quitadas`", "`editar`",
                   "`UPDATE` de **solo** la `fec`", "`id`"):
         assert trozo in plano, trozo
+
+
+# ================= huecos de la 4.ª campaña de mutación ================= #
+def test_f030_r40_por_ide_la_de_la_traza_aunque_haya_otra_con_su_synckey():
+    """Una copia de la línea con la misma `synckey` (en otro parte, más
+    abajo en la lectura): manda el `ide` de la traza, no la última leída."""
+    copia = _linea(9099, 20260720, "CIV", "porcentajes:inc:7:ini",
+                   parte="PT26/2", hmoide=778)
+    acc = _rec([_entrada(desde=6)], [*_el_par(), copia])
+    assert (acc[0].accion, acc[0].hmores_ide, acc[0].fec_antes,
+            acc[0].parte_cod) == ("editar", 9001, 20260705, "PT26/1")
+
+
+def test_f030_r42_can_en_el_borde_de_la_tolerancia_ya_no_es_cero():
+    """La guarda del `UPDATE` exige `ABS(can) < 0.000001`: con justo esa
+    cantidad, la línea ya no es nuestra sin tocar (ni en el preflight ni al
+    releer en `ejecutar`)."""
+    from application.services.reglas_incidencias import sigue_editable
+
+    acc = _rec([_entrada(desde=6)], _el_par(can=0.000001))
+    assert acc[0].accion == "omitir"
+    acc = _rec([_entrada(desde=6)], _el_par(can=0.0000009))
+    assert acc[0].accion == "editar"
+    ls = LineaSigrid(9001, 200, 20260705, 71, "CIV", 0.000001, 0.0,
+                     "porcentajes:inc:7:ini", hmoide=777, parte_cod="PT26/1",
+                     parte_est=1)
+    assert sigue_editable(ls, acc[0], 1) is False
+    assert sigue_editable(replace(ls, can=0.0000009), acc[0], 1) is True
