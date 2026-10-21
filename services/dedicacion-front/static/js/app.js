@@ -86,6 +86,9 @@ const state = {
   // F-030: las incidencias del editor, aparte de `edicion` (así ni
   // `totalEdicion` ni `restanteSin` las ven: no cuentan en el 100 %, R22).
   incidenciasEdicion: [],
+  // F-030 (R15): lo último guardado de cada lista, en JSON (cargarEdicion).
+  lineasGuardadas: "[]",
+  incidenciasGuardadas: "[]",
   // F-030 (R6): el catálogo del desplegable, `GET /incidencias`, una vez.
   tiposIncidencia: [],
   timerGuardado: null,
@@ -791,6 +794,10 @@ function trabajadoresVisibles() {
       const casa = clave === "asignaciones"
         ? t.lineas.some((l) => lineaCasa(l, filtro))
         : normalizar(textoColumna(t, clave)).includes(filtro);
+      // F-030 (R16): o alguna de sus incidencias, por su obra y su texto.
+      const casaIncidencia = clave === "asignaciones" &&
+        (t.incidencias || []).some((i) => incidenciaCasa(i, filtro));
+      if (casaIncidencia) continue;
       if (!casa) return false;
     }
     if (!q) return true;
@@ -863,10 +870,13 @@ function renderTabla() {
 function construirFila(t) {
   const frag = document.createDocumentFragment();
   const n = Math.max(1, t.lineas.length);
+  // F-030 (R16): detrás de las líneas, una subfila por incidencia.
+  const filas = n + (t.incidencias || []).length;
   const trs = [];
-  for (let idx = 0; idx < n; idx++) {
+  for (let idx = 0; idx < filas; idx++) {
     const tr = document.createElement("tr");
     tr.className = idx ? "fila subfila" : "fila";
+    if (idx >= n) tr.classList.add("fila-inc");
     tr.dataset.ide = t.ide;
     tr.dataset.linea = idx;
     if (!t.activo) tr.classList.add("inactivo");
@@ -924,6 +934,10 @@ function construirFila(t) {
       else renderTabla();
     });
     frag.appendChild(tr);
+  }
+  // F-030 (R16): las columnas del trabajador abarcan también sus incidencias.
+  if (filas > n) {
+    trs[0].querySelectorAll("td[rowspan]").forEach((td) => { td.rowSpan = filas; });
   }
   // T15e (obs. 1 de la review 5): repintado con el ratón quieto encima, sale
   // ya sombreado (el navegador no le manda `mouseenter` hasta que se mueve).
@@ -1198,7 +1212,16 @@ function construirCelda(t, clave, idx) {
     const chips = document.createElement("div");
     chips.className = "celda-chips";
     const l = t.lineas[idx];
-    if (!l) {
+    const inc = incidenciaDeSubfila(t, idx);       // F-030 (R16)
+    if (inc) {
+      const chip = document.createElement("span");
+      chip.className = "chip-linea chip-inc";
+      chip.title = `${inc.obra_descripcion} · ${inc.nombre}`;
+      chip.innerHTML =
+        `<span class="cod">${escapeHtml(inc.obra_cod)}</span>` +
+        `<span class="inc">${escapeHtml(textoIncidencia(inc))}</span>`;
+      chips.appendChild(chip);
+    } else if (!l) {
       chips.innerHTML = '<span class="sin-carga-texto">sin carga</span>';
     } else {
       const chip = document.createElement("span");
@@ -1272,6 +1295,24 @@ function construirCelda(t, clave, idx) {
   return td;
 }
 
+// La incidencia de la subfila `idx` (F-030, R16): las subfilas de
+// incidencia van detrás de las de línea (al menos una, la de «sin carga»).
+function incidenciaDeSubfila(t, idx) {
+  const n = Math.max(1, t.lineas.length);
+  return idx >= n ? (t.incidencias || [])[idx - n] || null : null;
+}
+
+// «V del 5 al 9»: la incidencia en la tabla (F-030, R16).
+function textoIncidencia(i) {
+  return `${i.letra} del ${i.dia_desde} al ${i.dia_hasta}`;
+}
+
+// ¿La incidencia casa con el filtro de Obra? `q` llega normalizado (R16).
+function incidenciaCasa(i, q) {
+  return normalizar(`${i.obra_cod} ${i.obra_descripcion} ${textoIncidencia(i)} ` +
+    `${i.nombre}`).includes(q);
+}
+
 // Total: ✓ OK · ✗ con lo que falta o sobra hasta el 100 %.
 function badgeTotal(total, estado) {
   const span = document.createElement("span");
@@ -1309,7 +1350,7 @@ async function abrirEditor(ide) {
   const t = trabajadorPorIde(ide);
   if (!t) return;
   state.editandoIde = ide;
-  state.edicion = t.lineas.map((l) => ({ ...l }));
+  cargarEdicion(t);
   renderTabla();
   const editor = $("#cuerpo tr.fila-editor");
   if (editor) {
@@ -1324,7 +1365,27 @@ async function cerrarEditor() {
   await guardarAhora();
   state.editandoIde = null;
   state.edicion = [];
+  state.incidenciasEdicion = [];
   renderTabla();
+}
+
+// El editor parte de lo guardado del trabajador `t` (F-030): sus líneas, sus
+// incidencias y la foto de las dos que guardarAhora compara para saber qué
+// PUT hace falta (R15).
+function cargarEdicion(t) {
+  state.edicion = t.lineas.map((l) => ({ ...l }));
+  state.incidenciasEdicion = (t.incidencias || []).map((i) => ({
+    obra_ide: i.obra_ide,
+    cod: i.obra_cod,
+    descripcion: i.obra_descripcion,
+    codigo: i.codigo,
+    letra: i.letra,
+    nombre: i.nombre,
+    dia_desde: i.dia_desde,
+    dia_hasta: i.dia_hasta,
+  }));
+  state.lineasGuardadas = JSON.stringify(cuerpoLineas(state.edicion));
+  state.incidenciasGuardadas = JSON.stringify(cuerpoIncidencias(state.incidenciasEdicion));
 }
 
 function construirFilaEditor() {
@@ -1345,6 +1406,10 @@ function pintarEditor(editor) {
 
   state.edicion.forEach((linea, idx) => {
     editor.appendChild(chipEditable(linea, idx, editor));
+  });
+  // F-030 (R14): las incidencias, aparte y detrás.
+  state.incidenciasEdicion.forEach((inc, idx) => {
+    editor.appendChild(chipIncidencia(inc, idx, editor));
   });
 
   // --- añadir obra (normal o Postv-) ---
@@ -1555,6 +1620,82 @@ function chipEditable(linea, idx, editor) {
   chip.appendChild(btnX);
 
   return chip;
+}
+
+// Chip de una incidencia en el editor (F-030, R14, R15): «obra · letra
+// nombre · del [ ] al [ ] · ✕». Sin PV y fuera del total en vivo. Un día
+// vacío viaja como null y lo completa la API (1 y el último del mes: los
+// marcadores solo lo enseñan). Enter en «del» pasa a «al»; Enter en «al» y
+// Escape en cualquiera vuelven al buscador de obra.
+function chipIncidencia(inc, idx, editor) {
+  const chip = document.createElement("span");
+  chip.className = "chip-edit chip-inc";
+
+  const cod = document.createElement("span");
+  cod.className = "cod";
+  cod.textContent = inc.cod;
+  cod.title = inc.descripcion;
+  chip.appendChild(cod);
+
+  const tipo = document.createElement("span");
+  tipo.className = "inc-tipo";
+  tipo.textContent = `${inc.letra} ${inc.nombre}`;
+  chip.appendChild(tipo);
+
+  const alBuscador = () => {
+    const inputObra = editor.querySelector(".obra-input");
+    if (inputObra) inputObra.focus();
+  };
+  const ultimo = new Date(state.anio, state.mes, 0).getDate();
+  const dias = {};
+  [["desde", "del", "1"], ["hasta", "al", String(ultimo)]].forEach(([campo, rotulo, marcador]) => {
+    const etiqueta = document.createElement("span");
+    etiqueta.className = "inc-rotulo";
+    etiqueta.textContent = rotulo;
+    chip.appendChild(etiqueta);
+    const dia = document.createElement("input");
+    dia.className = "inc-dia inc-" + campo;
+    dia.inputMode = "numeric";
+    dia.maxLength = 2;
+    dia.placeholder = marcador;
+    const valor = inc["dia_" + campo];
+    dia.value = valor == null ? "" : String(valor);
+    dia.addEventListener("input", () => {
+      inc["dia_" + campo] = parsearDia(dia.value);
+      programarGuardado();
+    });
+    dia.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        if (campo === "desde") dias.hasta.focus();
+        else alBuscador();
+      } else if (ev.key === "Escape") {
+        alBuscador();
+      }
+    });
+    dias[campo] = dia;
+    chip.appendChild(dia);
+  });
+
+  const btnX = document.createElement("button");
+  btnX.className = "btn-x";
+  btnX.textContent = "✕";
+  btnX.title = "Quitar la incidencia";
+  btnX.addEventListener("click", () => {
+    state.incidenciasEdicion.splice(idx, 1);
+    pintarEditor(editor);
+    programarGuardado();
+  });
+  chip.appendChild(btnX);
+
+  return chip;
+}
+
+// Día tecleado en el chip de una incidencia: 1 o 2 cifras; si no, vacío
+// (null), que la API completa (F-030, R17).
+function parsearDia(texto) {
+  const limpio = String(texto).trim();
+  return /^\d{1,2}$/.test(limpio) ? parseInt(limpio, 10) : null;
 }
 
 // ------------------------------------------- panel de sugerencias (F-042)
@@ -2099,22 +2240,53 @@ function marcarGuardando(simbolo) {
   if (el) el.textContent = simbolo;
 }
 
-async function guardarAhora() {
-  clearTimeout(state.timerGuardado);
-  if (!state.guardadoPendiente || state.editandoIde === null) return;
-  const ide = state.editandoIde;
-  const lineas = state.edicion
+// Lo que se manda en el PUT de asignaciones: las líneas con %.
+function cuerpoLineas(edicion) {
+  return edicion
     .filter((l) => l.porcentaje > 0)
     .map((l) => ({
       obra_ide: l.obra_ide,
       es_postventa: l.es_postventa,
       porcentaje: l.porcentaje,
     }));
+}
+
+// Lo que se manda en el PUT de incidencias (F-030, R17).
+function cuerpoIncidencias(incidencias) {
+  return incidencias.map((i) => ({
+    obra_ide: i.obra_ide,
+    codigo: i.codigo,
+    dia_desde: i.dia_desde,
+    dia_hasta: i.dia_hasta,
+  }));
+}
+
+// F-030 (R15): un mismo diferido guarda las líneas y las incidencias. Si las
+// incidencias no cambiaron, es lo de hoy: el PUT de asignaciones, siempre.
+// Si cambiaron, su PUT; y el de asignaciones solo si las líneas también.
+// Lo que la API rechace sale en el aviso de siempre y queda pendiente.
+async function guardarAhora() {
+  clearTimeout(state.timerGuardado);
+  if (!state.guardadoPendiente || state.editandoIde === null) return;
+  const ide = state.editandoIde;
+  const lineas = cuerpoLineas(state.edicion);
+  const incidencias = cuerpoIncidencias(state.incidenciasEdicion);
+  const cambianIncidencias = JSON.stringify(incidencias) !== state.incidenciasGuardadas;
+  const cambianLineas = !cambianIncidencias ||
+    JSON.stringify(lineas) !== state.lineasGuardadas;
+  const ruta = `/periodos/${state.anio}/${state.mes}/trabajadores/${ide}`;
   try {
-    const datos = await api(
-      `/periodos/${state.anio}/${state.mes}/trabajadores/${ide}/asignaciones`,
-      { method: "PUT", body: JSON.stringify({ lineas }) }
-    );
+    let datos = null;
+    if (cambianLineas) {
+      datos = await api(`${ruta}/asignaciones`,
+        { method: "PUT", body: JSON.stringify({ lineas }) });
+      state.lineasGuardadas = JSON.stringify(lineas);
+    }
+    if (cambianIncidencias) {
+      datos = await api(`${ruta}/incidencias`,
+        { method: "PUT", body: JSON.stringify({ incidencias }) });
+      state.incidenciasGuardadas = JSON.stringify(incidencias);
+    }
     state.guardadoPendiente = false;
     aplicarFila(datos);
     marcarGuardando("✓");
@@ -2161,7 +2333,7 @@ async function deshacer(ide) {
       { method: "POST" }
     );
     if (state.editandoIde === ide) {
-      state.edicion = datos.trabajador.lineas.map((l) => ({ ...l }));
+      cargarEdicion(datos.trabajador);
       state.guardadoPendiente = false;
     }
     aplicarFila(datos);
@@ -2185,7 +2357,7 @@ async function copiarTrabajador(ide) {
       return;
     }
     if (state.editandoIde === ide) {
-      state.edicion = datos.trabajador.lineas.map((l) => ({ ...l }));
+      cargarEdicion(datos.trabajador);
       state.guardadoPendiente = false;
     }
     aplicarFila(datos);
@@ -2229,7 +2401,7 @@ async function copiarDeArriba(ide) {
       { method: "PUT", body: JSON.stringify({ lineas }) }
     );
     if (state.editandoIde === ide) {
-      state.edicion = datos.trabajador.lineas.map((l) => ({ ...l }));
+      cargarEdicion(datos.trabajador);
       state.guardadoPendiente = false;
     }
     aplicarFila(datos);

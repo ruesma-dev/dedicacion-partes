@@ -452,6 +452,12 @@ tr.fila-editor > td {
 .sugerencia.activa, .sugerencia:hover { background: var(--brand-soft); }
 /* F-030: el panel de incidencias de la celda del % (letra · nombre). */
 .sugerencia.inc .cod { min-width: 32px; }
+/* F-030 (R14, R16): la incidencia en el editor y su subfila en la tabla. */
+.chip-inc { border-style: dashed; }
+.chip-inc .inc-tipo, .chip-inc .inc { font-weight: 600; color: var(--ink-soft); }
+.chip-inc .inc-rotulo { font-size: 0.78rem; color: var(--steel-300); }
+.chip-inc .inc-dia { width: 2.4em; text-align: center; }
+tr.fila-inc td { font-style: italic; }
 .sugerencia.vacia { cursor: default; color: var(--ink-soft); font-style: italic; }
 .sugerencia.vacia:hover { background: none; }
 

@@ -214,10 +214,14 @@ FUNCIONES_LETRAS = (*FUNCIONES_HOY, "normalizar", "posicionSugerencias",
 
 
 def _celda_letras(cuerpo: str) -> object:
-    # `let desmontarSugerencias = null;` viaja con `chipEditable`: `_funcion`
-    # corta en la siguiente `function` y la variable va entre las dos.
+    # `let desmontarSugerencias = null;` puede viajar ya con la función que
+    # la precede en `app.js` (`_funcion` corta en la siguiente `function`):
+    # se añade solo si no viene, para no declararla dos veces.
     funciones = [_funcion(f) for f in FUNCIONES_LETRAS]
-    assert "let desmontarSugerencias = null;" in "".join(funciones)
+    variable = "let desmontarSugerencias = null;"
+    assert re.search(rf"^{re.escape(variable)}", JS, re.MULTILINE)
+    if variable not in "".join(funciones):
+        funciones.insert(0, variable)
     programa = "\n".join([DOM_DE_PRUEBA, DOM_CELDA, DOM_LETRAS, *funciones,
                           "var resultado;", cuerpo,
                           "process.stdout.write(JSON.stringify(resultado));"])
