@@ -23,7 +23,8 @@ Bloqueos resueltos por el humano: T3 opción A, T12 opción B (`current.md`).
 | T12 front: «se edita la línea X (…)[; quedan a 0: …] y se escribe N%» | `24ba7aa` |
 | T13 documentación (`#regla-cero`, INTEGRACION §1, §5, §7) | `e74dbe7` |
 | T14 tests contra supervivientes + mutación (review 1: `d807cce`, `e51ba7b`) | `4dea061`, `f8a79b7` |
-| T17 `init.sh` en verde e informe | este commit |
+| T17 `init.sh` en verde e informe | `d170afb` |
+| T18 paso 6: el `ide` de `hmores_ide` además `M*` (O2; docs) + mutación | `d5d61ac`, `6ca3074` |
 
 Ficheros de producción, por servicio:
 
@@ -149,35 +150,32 @@ E   + 00319: se borran línea 8001 (MADM 40%, fec 20260930), línea 8002 (MADM 2
 E   assert 'borr' not in 'madm de gon... escribe 60%'
 6 failed, 17 passed in 5.77s
 ```
+T18 (O2 de la review, humano 2026-10-21: el `ide` del paso 6 debe ser `M*`),
+`tests/test_f051_pipeline_cero.py -k "no_mensual"`:
+```
+E       AssertionError: assert 'ya_registrado' == 'escribir'        (×3: H*, C*, sin hora)
+E       AssertionError: assert ('ya_registrado', 410931) == ('ya_registrado', 9001)
+4 failed, 61 deselected in 1.03s
+```
 Sin fase RED propia: T3 (modelos), T10 (no-regresión de R19) y T13 (docs).
 Tests de T14: cada uno contra su mutante a mano, **12 de 12 muertos**.
 
-## 4. Mutación (T14, rigor crítico)
+## 4. Mutación (T14 y T18, rigor crítico)
 
-Detalle e historial en `progress/mutacion_F-051.md`. Todas en serie,
-`--workers 1`:
+Historial completo en `progress/mutacion_F-051.md`; todas en serie,
+`--workers 1`. 1.ª (`e74dbe7`): 138 mutantes, 16 supervivientes (12 muertos
+con tests nuevos, 3 eliminados simplificando, 1 mal dado por equivalente).
+2.ª (`4dea061`): 1 superviviente, `registro_pipeline.py:1095` `>=` → `>`,
+**no equivalente** (review 1, RM5: `can` puede valer 0 y una relectura de
+`1e-6` cae en la frontera); test `…r13_editada_a_una_millonesima…`, que con
+el mutante a mano da `1 failed, 60 deselected` (`d807cce`). 3.ª (`7a5f801`):
+134 / 0. **4.ª, tras T18 (`d5d61ac`): 136 mutantes, 136 muertos, 0
+supervivientes, 0 timeouts**, 946,3 s.
 
-- **1.ª** (`e74dbe7`): 138 mutantes, **16 supervivientes**: 12 muertos con
-  tests nuevos, 3 eliminados con dos simplificaciones (`despues` con
-  `a.can`/`a.tot`; `usadas` vacío) y 1 dado por equivalente.
-- **2.ª** (`4dea061`): 134 mutantes, 1 superviviente,
-  `registro_pipeline.py:1095` `>= 0.000001` → `>`. **No era equivalente**
-  (review 1, RM5): mi búsqueda empezaba en `k = 1` y `can` puede valer 0
-  (porcentaje < 0,00005); con relectura `1e-6` la diferencia es exactamente
-  1e-6. Test nuevo `test_f051_r13_editada_a_una_millonesima_de_lo_escrito_no_cuenta`
-  (`d807cce`); RED con el mutante aplicado a mano,
-  `pytest tests/test_f051_pipeline_cero.py -q -p no:cacheprovider -k millonesima`:
-  ```
-  E   Left contains one more item: {'registro_id': 1, 'hmoide': 777, 'parte_cod': 'PT26/00251', 'obra_cod': '0404', ...}
-  1 failed, 60 deselected in 3.64s        (con el original: 1 passed)
-  ```
-- **3.ª** (`7a5f801`, completa): **134 mutantes, 134 muertos, 0
-  supervivientes, 0 timeouts**, 1635,8 s.
-
-## 5. `bash harness/init.sh` (T17, worktree, HEAD tras la review 1)
+## 5. `bash harness/init.sh` (T17 y T18, worktree, HEAD `6ca3074`)
 
 Sin ningún `[KO]` («ENTORNO LISTO»): raíz 418 passed, 1 skipped; api 949;
-front 310; transfer 1076. **PUERTA COBERTURA 99,2 %** (253/255, umbral 80 %);
+front 310; transfer 1080. **PUERTA COBERTURA 99,2 %** (253/255, umbral 80 %);
 TAMAÑO dentro. Ruff: los avisos de más frente a `dev` son `Optional[...]`
 (estilo de esos ficheros), `dict()` en tests y un `PYI034` en un doble.
 
@@ -206,14 +204,17 @@ TAMAÑO dentro. Ruff: los avisos de más frente a `dev` son `Optional[...]`
   = 0); de ida, `lineas[].hmores_ide`; de vuelta, `ya_registradas_ide`,
   `editadas`, `a_cero` y `escritas[].editada`. Avisar a `partes` de que el
   transfer edita líneas `M*` de sus partes sin borrarlas.
-- Ningún agente ha escrito en Sigrid; ningún `push`. O1-O5 de la review 1
-  sin cambios de comportamiento (O2 y O4, del humano).
+- Ningún agente ha escrito en Sigrid; ningún `push`. O2 hecha como T18; O4
+  es la feature F-058 (fuera de F-051); T15 la hará el líder.
+- R13 (relectura) no cambia en T18: no usa el criterio de «ya registrada»
+  por `hmores_ide`, sino el `ide` que acabamos de editar, que la guarda del
+  `UPDATE` ya exige `M*` (`LIKE 'M%'`) y que la edición deja con nuestra hora.
 
 ## Evidencias
 
 | Evidencia | Valor |
 |---|---|
-| Tests ejecutados | 2.753 passed, 1 skipped, 0 failed: raíz 418 (+1 skipped), api 949, front 310, transfer 1076 |
+| Tests ejecutados | 2.757 passed, 1 skipped, 0 failed: raíz 418 (+1 skipped), api 949, front 310, transfer 1080 |
 | Cobertura de líneas cambiadas | 99,2 % (253/255), PUERTA COBERTURA de `init.sh` |
-| Mutación | 134 generados, 134 muertos, **0 supervivientes**, 0 timeouts; `--workers 1`; 1635,8 s (HEAD `7a5f801`) |
-| Tiempo de la suite | raíz 48,94 s; api 66,19 s; front 34,66 s; transfer 29,63 s (pytest, en `init.sh`) |
+| Mutación | 136 generados, 136 muertos, **0 supervivientes**, 0 timeouts; `--workers 1`; 946,3 s (HEAD `d5d61ac`) |
+| Tiempo de la suite | raíz 49,86 s; api 77,33 s; front 39,63 s; transfer 19,79 s (pytest, en `init.sh`) |

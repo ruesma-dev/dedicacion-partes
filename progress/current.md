@@ -58,6 +58,14 @@ por decisión del humano («empieza f30»), en su copia. **Pendiente del líder:
   mutantes, 0 supervivientes** (`e51ba7b`, `progress/mutacion_F-051.md`);
   primera línea con la ruta en el informe. Ya no hay ningún equivalente que
   aceptar. `init.sh` sin `[KO]`, cobertura 99,2 %. Listo para la pasada 2.
+- **T18 hecha (2026-10-21, O2 aceptada por el humano, «ok o2»):** el paso 6
+  exige además `es_linea_mensual` de la línea del `hmores_ide`; si no es
+  `M*`, se sigue por `synckey` (`d5d61ac`, 4 tests nuevos con RED en el
+  informe; docs `ARCHITECTURE` «Localizar lo nuestro» e `INTEGRACION` §5).
+  R13 no cambia (no usa ese criterio; la guarda ya exige `M*`). 4.ª campaña
+  en serie sobre `d5d61ac`: **136 mutantes, 0 supervivientes** (`6ca3074`).
+  `init.sh` sin `[KO]`: transfer 1080, api 949, front 310, raíz 418;
+  cobertura 99,2 %. O4 es F-058; T15, del líder.
 - **Decisiones del implementer** (detalle en el informe §2):
   `lineas_registradas(claves, ides)` sin `ides` delega en
   `lineas_por_synckey`; `repartir_choques` y `es_nuestra_de_otra` puras
