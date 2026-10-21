@@ -25,7 +25,7 @@ cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
 
 ## F-030 · anexo R30: implementación EN CURSO (implementer, 2026-10-21)
 
-- **Tarea en curso:** T24 (T23 hecha: esquema; `test_f030_r31_la_traza_escribe_columnas_de_incidencia` queda rojo A PROPÓSITO hasta T26, que escribe `sigrid_dia_*`. T22 hecha: contrato `tests/contratos/f030_r30.json`
+- **Tarea en curso:** T25 (T24 hecha: guardar por `id` y quitadas. T23 hecha: esquema; `test_f030_r31_la_traza_escribe_columnas_de_incidencia` queda rojo A PROPÓSITO hasta T26, que escribe `sigrid_dia_*`. T22 hecha: contrato `tests/contratos/f030_r30.json`
   y sus dos mitades en `xfail(strict=True)`).
 - **Decisiones:** los cuatro campos del contrato api → transfer se llaman
   `hmores_ide_ini`, `hmores_ide_fin`, `dia_ini` y `dia_fin` (design §6 no

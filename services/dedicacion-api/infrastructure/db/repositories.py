@@ -584,28 +584,44 @@ class PgIncidenciaRepository:
 
     def reemplazar(self, periodo_id: int, trabajador_ide: int,
                    incidencias: list[Incidencia], usuario: str) -> None:
-        """Sustituye las del trabajador. Las que no cambian (misma obra,
-        código y días) se CONSERVAN con su `id` y su traza: su `synckey` en
-        Sigrid es `porcentajes:inc:{id}` (R24, R30). Las demás se borran o se
-        añaden."""
+        """Sustituye las del trabajador por su `id` (anexo R30, R36, R38).
+
+        Con `id` de una previa, la CONSERVA con su `id` y su traza (su
+        `synckey` en Sigrid es `porcentajes:inc:{id}`, R24) y le pone obra,
+        código y días y `quitada = false`. Sin `id`, o con uno repetido o
+        que ya no está, la añade. Una previa que no viene queda `quitada` si
+        está registrada (algún `hmores.ide` en su traza) y se borra si no."""
         previas = self._s.scalars(
             select(IncidenciaORM)
             .where(IncidenciaORM.periodo_id == periodo_id,
                    IncidenciaORM.trabajador_ide == trabajador_ide)
             .order_by(IncidenciaORM.id)
         ).all()
-        pendientes = [_clave_incidencia(i) for i in incidencias]
+        por_id = {orm.id: orm for orm in previas}
+        usadas: set[int] = set()
+        for inc in incidencias:
+            orm = por_id.get(inc.id) if inc.id not in usadas else None
+            if orm is None:
+                self._s.add(IncidenciaORM(
+                    periodo_id=periodo_id, trabajador_ide=trabajador_ide,
+                    obra_ide=inc.obra_ide, codigo=inc.codigo,
+                    dia_desde=inc.dia_desde, dia_hasta=inc.dia_hasta,
+                    quitada=False, actualizado_por=usuario))
+                continue
+            usadas.add(orm.id)
+            nuevo = (*_clave_incidencia(inc), False)
+            if (orm.obra_ide, orm.codigo, orm.dia_desde, orm.dia_hasta,
+                    bool(orm.quitada)) != nuevo:
+                (orm.obra_ide, orm.codigo, orm.dia_desde, orm.dia_hasta,
+                 orm.quitada) = nuevo
+                orm.actualizado_por = usuario
         for orm in previas:
-            clave = (orm.obra_ide, orm.codigo, orm.dia_desde, orm.dia_hasta)
-            if clave in pendientes:
-                pendientes.remove(clave)
-            else:
+            if orm.id in usadas:
+                continue
+            if orm.sigrid_ide_ini is None and orm.sigrid_ide_fin is None:
                 self._s.delete(orm)
-        for obra_ide, codigo, desde, hasta in pendientes:
-            self._s.add(IncidenciaORM(
-                periodo_id=periodo_id, trabajador_ide=trabajador_ide,
-                obra_ide=obra_ide, codigo=codigo, dia_desde=desde,
-                dia_hasta=hasta, actualizado_por=usuario))
+            elif not orm.quitada:
+                orm.quitada, orm.actualizado_por = True, usuario
         self._s.flush()
 
 

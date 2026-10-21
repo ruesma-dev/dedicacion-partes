@@ -251,7 +251,9 @@ class _TiposMem:
 class _IncidenciasMem:
     """Incidencias en memoria por (periodo, trabajador), con `id` propio y
     los datos de lectura (obra, letra y nombre) resueltos como el
-    repositorio."""
+    repositorio. Anexo R30 (design §13.7, propio): `reemplazar` conserva
+    por `id` como `PgIncidenciaRepository` (traza intacta, la registrada
+    ausente queda `quitada`) y `poner` guarda tal cual, con su traza."""
 
     def __init__(self) -> None:
         self.datos: dict[tuple[int, int], list[Incidencia]] = {}
@@ -274,19 +276,41 @@ class _IncidenciasMem:
 
     def reemplazar(self, periodo_id: int, ide: int, lista: list[Incidencia],
                    usuario: str) -> None:
+        previas = {i.id: i for i in self.datos.get((periodo_id, ide), [])}
+        usadas: set[int] = set()
         nuevas = []
         for inc in lista:
+            previa = previas.get(inc.id) if inc.id not in usadas else None
+            if previa is None:
+                nuevas.append(self._resolver(dataclasses.replace(
+                    inc, id=self.siguiente, quitada=False, sigrid_estado=None,
+                    sigrid_parte_cod=None, sigrid_motivo=None,
+                    sigrid_ide_ini=None, sigrid_ide_fin=None,
+                    sigrid_dia_ini=None, sigrid_dia_fin=None)))
+                self.siguiente += 1
+                continue
+            usadas.add(previa.id)  # type: ignore[arg-type]
             nuevas.append(self._resolver(dataclasses.replace(
-                inc, id=self.siguiente, sigrid_estado=None,
-                sigrid_parte_cod=None, sigrid_motivo=None)))
-            self.siguiente += 1
+                previa, obra_ide=inc.obra_ide, codigo=inc.codigo,
+                dia_desde=inc.dia_desde, dia_hasta=inc.dia_hasta,
+                quitada=False)))
+        nuevas += [dataclasses.replace(p, quitada=True)
+                   for i, p in previas.items() if i not in usadas
+                   and (p.sigrid_ide_ini is not None
+                        or p.sigrid_ide_fin is not None)]
         self.datos[(periodo_id, ide)] = sorted(
             nuevas, key=lambda i: (i.dia_desde, i.id))
         self.reemplazos.append((periodo_id, ide, usuario))
 
     def poner(self, ide: int, *incs: Incidencia, periodo_id: int = P_ACT) -> None:
-        self.reemplazar(periodo_id, ide, list(incs), "previo")
-        self.reemplazos.clear()
+        guardadas = []
+        for inc in incs:
+            if inc.id is None:
+                inc = dataclasses.replace(inc, id=self.siguiente)
+            self.siguiente = max(self.siguiente, inc.id + 1)  # type: ignore[operator]
+            guardadas.append(self._resolver(inc))
+        self.datos[(periodo_id, ide)] = sorted(
+            guardadas, key=lambda i: (i.dia_desde, i.id))
 
 
 class _EventosConTipo:
@@ -565,9 +589,12 @@ def test_f030_r17_guardar_sustituye_completa_los_dias_y_deja_evento():
     [(ide, evento, despues)] = uow.eventos.eventos
     assert (ide, evento.usuario, evento.tipo) == (14, USUARIO, "INCIDENCIAS")
     assert evento.snapshot_antes == []
+    # Anexo R30 (R47; design §13.7): el snapshot lleva `id` y `quitada`.
     assert despues == [
-        {"obra_ide": 100, "codigo": "CIV", "dia_desde": 1, "dia_hasta": 9},
-        {"obra_ide": 101, "codigo": "CIE", "dia_desde": 20, "dia_hasta": 31}]
+        {"id": 2, "obra_ide": 100, "codigo": "CIV", "dia_desde": 1,
+         "dia_hasta": 9, "quitada": False},
+        {"id": 1, "obra_ide": 101, "codigo": "CIE", "dia_desde": 20,
+         "dia_hasta": 31, "quitada": False}]
     assert uow.commits == 1
     assert fila.puede_deshacer is True
 
@@ -577,15 +604,18 @@ def test_f030_r17_guardar_snapshot_antes_son_las_incidencias_previas():
     uow.incidencias.poner(14, _inc(5, 9, obra=100))
     _guardar(uow, [_e(100, "CIV", 5, 9), _e(100, "CIP", 12, 12)])
     [(_, evento, despues)] = uow.eventos.eventos
+    # Anexo R30 (R47; design §13.7): el snapshot lleva `id` y `quitada`.
     assert evento.snapshot_antes == [
-        {"obra_ide": 100, "codigo": "CIV", "dia_desde": 5, "dia_hasta": 9}]
+        {"id": 1, "obra_ide": 100, "codigo": "CIV", "dia_desde": 5,
+         "dia_hasta": 9, "quitada": False}]
     assert len(despues) == 2
 
 
 def test_f030_r17_guardar_lo_mismo_no_escribe_ni_deja_evento():
     uow = _uow_guardar()
     uow.incidencias.poner(14, _inc(1, 31, obra=100))
-    fila, _ = _guardar(uow, [_e(100, "CIV")])          # vacío = mes entero
+    # Anexo R30 (R37; design §13.7): la guardada vuelve con su `id`.
+    fila, _ = _guardar(uow, [{"id": 1, **_e(100, "CIV")}])  # vacío = mes entero
     assert uow.incidencias.reemplazos == []
     assert uow.eventos.eventos == []
     assert uow.commits == 1
@@ -765,15 +795,17 @@ class _SesionReemplazo:
 
 
 def test_f030_r17_guardar_repo_reemplazar_conserva_las_iguales():
-    """Las que no cambian conservan su `id` y su traza (su `synckey` en
-    Sigrid es `porcentajes:inc:{id}`); las demás se borran o se añaden."""
+    """Las que vuelven con su `id` conservan `id` y traza (su `synckey` en
+    Sigrid es `porcentajes:inc:{id}`); las demás se borran o se añaden.
+    Anexo R30 (R36; design §13.7): la identidad es el `id`, no la clave."""
     from infrastructure.db.repositories import PgIncidenciaRepository
 
     igual = _orm_inc(3, 14, 100, "CIV", 5, 9, sigrid_estado="registrado")
     cambia = _orm_inc(4, 14, 101, "CIE", 20, 22)
     sesion = _SesionReemplazo([igual, cambia])
     PgIncidenciaRepository(sesion).reemplazar(  # type: ignore[arg-type]
-        P_ACT, 14, [_inc(5, 9, obra=100), _inc(20, 23, obra=101, cod="CIE"),
+        P_ACT, 14, [dataclasses.replace(_inc(5, 9, obra=100), id=3),
+                    _inc(20, 23, obra=101, cod="CIE"),
                     _inc(25, 25, obra=100, cod="CIP")], USUARIO)
     assert sesion.borradas == [cambia]
     assert [(o.periodo_id, o.trabajador_ide, o.obra_ide, o.codigo, o.dia_desde,
@@ -795,9 +827,10 @@ def test_f030_r17_guardar_repo_reemplazar_duplicadas_y_vacia():
     a = _orm_inc(3, 14, 100, "CIV", 5, 9)
     b = _orm_inc(4, 14, 100, "CIV", 5, 9)      # misma clave, dos filas
     sesion = _SesionReemplazo([a, b])
+    # Anexo R30 (R36; design §13.7): se conserva la del `id` que vuelve.
     PgIncidenciaRepository(sesion).reemplazar(  # type: ignore[arg-type]
-        P_ACT, 14, [_inc(5, 9, obra=100)], USUARIO)
-    assert sesion.borradas == [b] and sesion.anadidas == []
+        P_ACT, 14, [dataclasses.replace(_inc(5, 9, obra=100), id=4)], USUARIO)
+    assert sesion.borradas == [a] and sesion.anadidas == []
     sesion = _SesionReemplazo([a])
     PgIncidenciaRepository(sesion).reemplazar(P_ACT, 14, [], USUARIO)  # type: ignore[arg-type]
     assert sesion.borradas == [a] and sesion.anadidas == []

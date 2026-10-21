@@ -2,13 +2,15 @@
 """Incidencias del cuadrante (F-030, docs/ARCHITECTURE.md#regla-incidencia).
 
 Puras y sin dependencias: la letra y el nombre de cada código de `auxhor`
-(R4), los días por defecto de un tramo (R17, D2) y la validación de las
-incidencias de un trabajador en un mes (R19). Única fuente de esas reglas:
+(R4), los días por defecto de un tramo (R17, D2), la validación de las
+incidencias de un trabajador en un mes (R19) y su identidad al guardar
+(anexo R30: R36, R38). Única fuente de esas reglas:
 el front no las repite y el transfer trabaja con códigos.
 """
 from __future__ import annotations
 
 import calendar
+import dataclasses
 import re
 from collections.abc import Sequence
 from itertools import pairwise
@@ -71,3 +73,41 @@ def validar_incidencias(lista: Sequence[Incidencia], anio: int,
                 f"Dos incidencias comparten días: del {previa.dia_desde} al "
                 f"{previa.dia_hasta} y del {siguiente.dia_desde} al "
                 f"{siguiente.dia_hasta}")
+
+
+def registrada(inc: Incidencia) -> bool:
+    """Registrada en Sigrid: con algún `hmores.ide` en su traza (R36)."""
+    return inc.sigrid_ide_ini is not None or inc.sigrid_ide_fin is not None
+
+
+def identificar(nuevas: Sequence[Incidencia],
+                previas: Sequence[Incidencia]) -> list[Incidencia]:
+    """Lo que queda tras guardar `nuevas` sobre las `previas` del trabajador
+    en el periodo (anexo R30: R36, R38, D11-D13).
+
+    Con `id`, es una previa que se conserva (fila, `id` y traza): SI no es
+    de las previas o viene repetida, o es una **registrada** que llega con
+    otra obra o código (eso es quitarla y añadir otra), `IncidenciaInvalida`.
+    Sin `id`, es nueva. Una previa registrada que no viene queda `quitada`
+    (sigue en Sigrid hasta retirarla a mano); una no registrada desaparece.
+    Devuelve las nuevas (no quitadas) seguidas de las quitadas."""
+    por_id = {p.id: p for p in previas}
+    vistos: set[int] = set()
+    for inc in nuevas:
+        if inc.id is None:
+            continue
+        previa = por_id.get(inc.id)
+        if previa is None:
+            raise IncidenciaInvalida(
+                f"La incidencia {inc.id} no es de este trabajador en el periodo")
+        if inc.id in vistos:
+            raise IncidenciaInvalida(f"La incidencia {inc.id} viene repetida")
+        vistos.add(inc.id)
+        if registrada(previa) and (previa.obra_ide, previa.codigo) != (
+                inc.obra_ide, inc.codigo):
+            raise IncidenciaInvalida(
+                f"La incidencia {inc.id} ya está registrada en Sigrid: no "
+                "cambia de obra ni de código (quítala y añade otra)")
+    return ([dataclasses.replace(i, quitada=False) for i in nuevas]
+            + [dataclasses.replace(p, quitada=True) for p in previas
+               if p.id not in vistos and registrada(p)])

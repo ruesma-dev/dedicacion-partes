@@ -29,7 +29,7 @@ from domain.errors import (
     TrabajadorNoEncontrado,
 )
 from domain.estados import calcular_estado, completar_hasta_100, resumir
-from domain.incidencias import completar_dias, validar_incidencias
+from domain.incidencias import completar_dias, identificar, validar_incidencias
 from domain.models import (
     CuadranteTrabajador,
     Empresa,
@@ -180,7 +180,13 @@ class GuardarIncidencias:
     código no activo, obra que no se ofrece como normal o entrada VAR, días
     fuera del mes, `desde > hasta` o dos que comparten días). Un día vacío se
     completa con `completar_dias` (D2). Si no cambia nada, ni escribe ni deja
-    evento."""
+    evento.
+
+    Anexo R30: con `id`, la incidencia es la guardada (conserva fila y
+    traza); un `id` ajeno o una registrada con otra obra o código es 422, y
+    la registrada que no viene queda `quitada` (`identificar`, R36, R38).
+    Las quitadas no cuentan en los solapes. El evento guarda `id` y
+    `quitada` (R47)."""
 
     def ejecutar(
         self,
@@ -209,9 +215,10 @@ class GuardarIncidencias:
             for desde, hasta in [completar_dias(inc.dia_desde, inc.dia_hasta,
                                                 anio, mes)]
         ]
-        validar_incidencias(despues, anio, mes)
         antes = uow.incidencias.de_trabajador(periodo_id, trabajador_ide)
-        if _snapshot_incidencias(antes) != _snapshot_incidencias(despues):
+        previsto = identificar(despues, antes)
+        validar_incidencias(despues, anio, mes)
+        if _snapshot_incidencias(antes) != _snapshot_incidencias(previsto):
             uow.incidencias.reemplazar(periodo_id, trabajador_ide, despues,
                                        usuario)
             uow.eventos.registrar(
@@ -220,7 +227,8 @@ class GuardarIncidencias:
                 TipoEvento.INCIDENCIAS,
                 usuario,
                 _snapshot_incidencias(antes),
-                _snapshot_incidencias(despues),
+                _snapshot_incidencias(uow.incidencias.de_trabajador(
+                    periodo_id, trabajador_ide)),
             )
         uow.commit()
         return ObtenerFilaTrabajador().ejecutar(
@@ -234,17 +242,21 @@ def _entero_estricto(valor: Any) -> bool:
 
 def _parsear_incidencia(bruto: dict[str, Any]) -> Incidencia:
     """Una incidencia de la entrada (o de un snapshot): `obra_ide` entero,
-    `codigo` con texto y días enteros o vacíos (`None`, aún sin completar)."""
+    `codigo` con texto, días enteros o vacíos (`None`, aún sin completar),
+    `id` entero o vacío (R36) y `quitada` booleana (solo en snapshots, R47)."""
     codigo = bruto.get("codigo")
     if not isinstance(codigo, str) or not codigo.strip():
         raise IncidenciaInvalida(f"Incidencia sin código: {bruto}")
     obra_ide = bruto.get("obra_ide")
     desde, hasta = bruto.get("dia_desde"), bruto.get("dia_hasta")
+    id_, quitada = bruto.get("id"), bruto.get("quitada", False)
     if not _entero_estricto(obra_ide) or any(
-            d is not None and not _entero_estricto(d) for d in (desde, hasta)):
+            d is not None and not _entero_estricto(d)
+            for d in (desde, hasta, id_)) or not isinstance(quitada, bool):
         raise IncidenciaInvalida(f"Incidencia inválida: {bruto}")
     return Incidencia(obra_ide=obra_ide, codigo=codigo.strip(),
-                      dia_desde=desde, dia_hasta=hasta)  # type: ignore[arg-type]
+                      dia_desde=desde, dia_hasta=hasta,  # type: ignore[arg-type]
+                      id=id_, quitada=quitada)
 
 
 def _validar_obras_incidencia(uow: UnitOfWork, periodo_id: int,
@@ -263,12 +275,15 @@ def _validar_obras_incidencia(uow: UnitOfWork, periodo_id: int,
 
 
 def _snapshot_incidencias(incs: list[Incidencia]) -> list[dict[str, Any]]:
-    """Lo que guarda un evento `INCIDENCIAS` (R20): obra, código y días."""
+    """Lo que guarda un evento `INCIDENCIAS` (R20): `id` (vacío = nueva),
+    obra, código, días y si está `quitada` (R47)."""
     return [
-        {"obra_ide": i.obra_ide, "codigo": i.codigo,
-         "dia_desde": i.dia_desde, "dia_hasta": i.dia_hasta}
+        {"id": i.id, "obra_ide": i.obra_ide, "codigo": i.codigo,
+         "dia_desde": i.dia_desde, "dia_hasta": i.dia_hasta,
+         "quitada": i.quitada}
         for i in sorted(incs, key=lambda i: (i.dia_desde, i.dia_hasta,
-                                             i.obra_ide, i.codigo))
+                                             i.obra_ide, i.codigo, i.quitada,
+                                             i.id or 0))
     ]
 
 

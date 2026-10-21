@@ -96,3 +96,184 @@ def test_f030_r30_esquema_el_repo_mapea_quitada_e_ides_y_dias_de_sigrid():
                                                         5, 9)
     orm.quitada = None                  # fila aún sin `flush`: no es quitada
     assert _a_incidencia(orm, "0100", "OBRA", "V", "V").quitada is False
+
+
+# ================= guardar con `id` y quitadas (T24) ==================== #
+from tests.test_f030_incidencias import (
+    P_ACT,
+    USUARIO,
+    _e,
+    _guardar,
+    _orm_inc,
+    _SesionReemplazo,
+    _uow_guardar,
+)
+
+
+def _reg(id_: int, desde: int, hasta: int, obra: int = 100, cod: str = "CIV",
+         ini: int | None = 9001, fin: int | None = 9002, **kw) -> Incidencia:
+    """Una incidencia ya guardada; con `ini`/`fin`, registrada (R36)."""
+    traza = bool(ini or fin)
+    return Incidencia(obra_ide=obra, codigo=cod, dia_desde=desde,
+                      dia_hasta=hasta, id=id_,
+                      sigrid_estado="registrado" if traza else None,
+                      sigrid_parte_cod="PT26/1" if traza else None,
+                      sigrid_ide_ini=ini, sigrid_ide_fin=fin,
+                      sigrid_dia_ini=desde if ini else None,
+                      sigrid_dia_fin=hasta if fin else None, **kw)
+
+
+def _con_id(id_: int, **kw) -> dict:
+    return {"id": id_, **_e(**kw)}
+
+
+def _snap(id_, obra, cod, desde, hasta, quitada=False) -> dict:
+    return {"id": id_, "obra_ide": obra, "codigo": cod, "dia_desde": desde,
+            "dia_hasta": hasta, "quitada": quitada}
+
+
+def _traza(inc: Incidencia) -> tuple:
+    return (inc.sigrid_estado, inc.sigrid_parte_cod, inc.sigrid_ide_ini,
+            inc.sigrid_ide_fin, inc.sigrid_dia_ini, inc.sigrid_dia_fin)
+
+
+def test_f030_r36_guardar_con_id_conserva_fila_id_y_traza():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9))
+    fila, _ = _guardar(uow, [_con_id(7, desde=6, hasta=9)])
+    [inc] = fila.incidencias
+    assert (inc.id, inc.dia_desde, inc.dia_hasta, inc.quitada) == (7, 6, 9, False)
+    assert _traza(inc) == ("registrado", "PT26/1", 9001, 9002, 5, 9)
+    [(_, evento, despues)] = uow.eventos.eventos
+    assert evento.snapshot_antes == [_snap(7, 100, "CIV", 5, 9)]
+    assert despues == [_snap(7, 100, "CIV", 6, 9)]
+
+
+def test_f030_r36_guardar_sin_id_es_nueva():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9, ini=None, fin=None))
+    fila, _ = _guardar(uow, [_e(100, "CIV", 5, 9)])
+    [inc] = fila.incidencias
+    assert inc.id not in (None, 7)
+    [(_, evento, despues)] = uow.eventos.eventos
+    assert evento.snapshot_antes == [_snap(7, 100, "CIV", 5, 9)]
+    assert despues == [_snap(inc.id, 100, "CIV", 5, 9)]
+
+
+def test_f030_r36_guardar_lo_mismo_con_su_id_no_escribe():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9), _reg(8, 12, 12, cod="CIP",
+                                                   ini=None, fin=None))
+    _guardar(uow, [_con_id(8, codigo="CIP", desde=12, hasta=12),
+                   _con_id(7, desde=5, hasta=9)])
+    assert uow.incidencias.reemplazos == [] and uow.eventos.eventos == []
+
+
+@pytest.mark.parametrize("entrada, motivo", [
+    ([_con_id(99, desde=5, hasta=9)], "99 no es"),          # no existe
+    ([_con_id(3, desde=5, hasta=9)], "3 no es"),            # de otro trabajador
+    ([_con_id(7, desde=5, hasta=6),
+      _con_id(7, desde=8, hasta=9)], "repetida"),
+    ([{**_e(100, "CIV", 5, 9), "id": "7"}], "inválida"),
+    ([{**_e(100, "CIV", 5, 9), "id": True}], "inválida"),
+    ([_con_id(7, obra=101, desde=5, hasta=9)], "registrada"),     # D13
+    ([_con_id(7, codigo="CIE", desde=5, hasta=9)], "registrada"),  # D12
+])
+def test_f030_r36_guardar_id_ajeno_o_registrada_cambiada_422(entrada, motivo):
+    from domain.errors import IncidenciaInvalida
+
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9))
+    uow.incidencias.poner(10, _reg(3, 1, 2, ini=None, fin=None))
+    with pytest.raises(IncidenciaInvalida, match=motivo):
+        _guardar(uow, entrada)
+    assert uow.incidencias.reemplazos == [] and uow.eventos.eventos == []
+    assert uow.commits == 0
+
+
+def test_f030_r36_guardar_no_registrada_si_cambia_de_obra_o_codigo():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9, ini=None, fin=None))
+    fila, _ = _guardar(uow, [_con_id(7, obra=101, codigo="CIE", desde=5,
+                                     hasta=9)])
+    assert [(i.id, i.obra_ide, i.codigo) for i in fila.incidencias] == [
+        (7, 101, "CIE")]
+
+
+@pytest.mark.parametrize("ini, fin", [(9001, 9002), (9001, None), (None, 9002)])
+def test_f030_r38_guardar_registrada_ausente_queda_quitada(ini, fin):
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9, ini=ini, fin=fin),
+                          _reg(8, 12, 12, cod="CIP", ini=None, fin=None))
+    fila, _ = _guardar(uow, [])
+    [inc] = fila.incidencias                     # la 8, borrada
+    assert (inc.id, inc.quitada, inc.sigrid_ide_ini, inc.sigrid_ide_fin) == (
+        7, True, ini, fin)
+    [(_, evento, despues)] = uow.eventos.eventos
+    assert evento.snapshot_antes == [_snap(7, 100, "CIV", 5, 9),
+                                     _snap(8, 100, "CIP", 12, 12)]
+    assert despues == [_snap(7, 100, "CIV", 5, 9, quitada=True)]
+
+
+def test_f030_r38_guardar_las_quitadas_no_cuentan_en_los_solapes():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9, quitada=True))
+    fila, _ = _guardar(uow, [_e(101, "CIE", 5, 9)])
+    assert sorted((i.codigo, i.quitada) for i in fila.incidencias) == [
+        ("CIE", False), ("CIV", True)]
+    # Otra vez ausente: sigue quitada y no hay nada que escribir.
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9, quitada=True))
+    _guardar(uow, [])
+    assert uow.incidencias.reemplazos == [] and uow.eventos.eventos == []
+
+
+def test_f030_r38_guardar_volver_a_mandar_la_quitada_la_repone():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9, quitada=True))
+    fila, _ = _guardar(uow, [_con_id(7, desde=5, hasta=9)])
+    [inc] = fila.incidencias
+    assert (inc.id, inc.quitada, inc.sigrid_ide_ini) == (7, False, 9001)
+
+
+def test_f030_r36_r38_repo_reemplazar_por_id_quita_o_borra():
+    from infrastructure.db.repositories import PgIncidenciaRepository
+
+    cambia = _orm_inc(3, 14, 100, "CIV", 5, 9, sigrid_ide_ini=9001,
+                      sigrid_ide_fin=9002, sigrid_dia_ini=5, sigrid_dia_fin=9,
+                      sigrid_estado="registrado", quitada=True,
+                      actualizado_por="previo")
+    igual = _orm_inc(4, 14, 100, "CIP", 12, 12, actualizado_por="previo",
+                     quitada=False)
+    borrar = _orm_inc(5, 14, 101, "CIE", 20, 22, quitada=False)
+    queda = _orm_inc(6, 14, 101, "CIE", 25, 26, sigrid_ide_fin=9010,
+                     quitada=False, actualizado_por="previo")
+    ya_quitada = _orm_inc(8, 14, 101, "CIE", 27, 27, sigrid_ide_ini=9011,
+                          quitada=True, actualizado_por="previo")
+    sesion = _SesionReemplazo([cambia, igual, borrar, queda, ya_quitada])
+    PgIncidenciaRepository(sesion).reemplazar(  # type: ignore[arg-type]
+        P_ACT, 14, [_reg(3, 6, 12, ini=None, fin=None),
+                    _reg(4, 12, 12, cod="CIP", ini=None, fin=None),
+                    _reg(4, 13, 13, cod="CIP", ini=None, fin=None),   # repetida
+                    _reg(99, 14, 14, cod="CIP", ini=None, fin=None),  # no está
+                    Incidencia(obra_ide=100, codigo="CIA", dia_desde=1,
+                               dia_hasta=2)], USUARIO)
+    # Con `id`: obra, código y días nuevos; repuesta; la traza, intacta.
+    assert (cambia.id, cambia.dia_desde, cambia.dia_hasta, cambia.quitada,
+            cambia.actualizado_por) == (3, 6, 12, False, USUARIO)
+    assert (cambia.sigrid_ide_ini, cambia.sigrid_ide_fin, cambia.sigrid_dia_ini,
+            cambia.sigrid_dia_fin, cambia.sigrid_estado) == (
+        9001, 9002, 5, 9, "registrado")
+    assert (igual.dia_desde, igual.actualizado_por) == (12, "previo")
+    # Ausentes: la no registrada se borra; la registrada queda quitada.
+    assert sesion.borradas == [borrar]
+    assert (queda.quitada, queda.actualizado_por, queda.sigrid_ide_fin) == (
+        True, USUARIO, 9010)
+    assert (ya_quitada.quitada, ya_quitada.actualizado_por) == (True, "previo")
+    # Sin `id`, con uno repetido o con uno que no está: nuevas.
+    assert [(o.id, o.codigo, o.dia_desde, o.quitada, o.actualizado_por,
+             o.sigrid_ide_ini) for o in sesion.anadidas] == [
+        (None, "CIP", 13, False, USUARIO, None),
+        (None, "CIP", 14, False, USUARIO, None),
+        (None, "CIA", 1, False, USUARIO, None)]
+    assert sesion.flushes == 1
