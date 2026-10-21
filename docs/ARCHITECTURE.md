@@ -776,8 +776,10 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       inserta en su lugar.
     - **Localizar lo nuestro.** Una línea es ya registrada si existe la fila
       del `hmores.ide` que guarda la asignación (`sigrid_hmores_ide`, lo
-      manda la api), de su recurso y sin `synckey` nuestra de otra
-      asignación; si no, por su `synckey`. Las dos en la misma lectura.
+      manda la api), de su recurso, `M*` (un `ide` reutilizado puede caer
+      en una `H*`/`C*` de `partes`; decisión del humano del 2026-10-21) y
+      sin `synckey` nuestra de otra asignación; si no, por su `synckey`. Las
+      dos en la misma lectura.
     - **Traza.** Cada línea editada o puesta a 0 deja en el log su `ide`,
       parte, `registro_id`, todo lo que tenía y lo que queda; `ejecutar` lo
       publica en `editadas` y `a_cero` (`borradas` sigue, siempre 0).

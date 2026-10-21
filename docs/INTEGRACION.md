@@ -373,7 +373,8 @@ Desde F-051 (editar, nunca borrar; `docs/ARCHITECTURE.md#regla-cero`):
 - Las líneas de `registro/preflight` y `registro/ejecutar` ganan
   `hmores_ide` (opcional): la api manda el `asignacion.sigrid_hmores_ide`
   que tenga la asignación, y el transfer da la línea por ya registrada si
-  esa fila sigue siendo suya.
+  esa fila sigue siendo suya (su recurso, código de hora `M*` y sin
+  `synckey` nuestra de otra asignación).
 - Cada acción del preflight publica `linea_cero` (la línea al 0 % que se
   editaría, o nulo) y cada conflicto, `edita_ide` y `a_cero_ides`.
 - La respuesta de `registro/ejecutar` gana `editadas` y `a_cero` (cada

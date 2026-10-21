@@ -75,6 +75,32 @@ def test_f051_r15_ide_que_no_es_suyo_no_cuenta(cambio):
     assert pf.acciones[0].accion == "escribir"
 
 
+@pytest.mark.parametrize("hora", ["HNOR", "CVAC", None],
+                         ids=["horas_H", "concepto_C", "sin_hora"])
+def test_f051_r15_ide_de_una_linea_no_mensual_no_cuenta(hora):
+    """T18 (O2 de la review, humano 2026-10-21): un `ide` reutilizado que cae
+    en una línea que no es `M*` (las `H*`/`C*` que escribe `partes`) no es
+    la nuestra aunque sea del mismo recurso: sin `synckey` propia, se
+    escribe."""
+    cli = ClienteFalso(lineas_parte=[_nuestra(410931, hora_codigo=hora,
+                                              synckey=SK_PARTES,
+                                              nuestra=False)])
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea(hmores_ide=410931)])
+    assert pf.acciones[0].accion == "escribir"
+
+
+def test_f051_r15_ide_no_mensual_pero_synckey_propia_por_synckey():
+    """T18: si el `ide` no vale por no ser `M*`, se sigue por la `synckey`
+    como hoy."""
+    cli = ClienteFalso(lineas_parte=[_nuestra(410931, hora_codigo="HNOR",
+                                              synckey=SK_PARTES,
+                                              nuestra=False)],
+                       synckeys={synckey_de(1): _nuestra(9001)})
+    (a,) = _pl(cli).preflight(obra=OBRA,
+                              lineas=[linea(hmores_ide=410931)]).acciones
+    assert (a.accion, a.hmores_ide) == ("ya_registrado", 9001)
+
+
 def test_f051_r15_sin_ide_por_synckey_como_hoy():
     hit = _nuestra(9001)
     cli = ClienteFalso(synckeys={synckey_de(1): hit})

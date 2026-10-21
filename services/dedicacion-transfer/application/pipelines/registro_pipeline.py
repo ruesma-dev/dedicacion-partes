@@ -557,8 +557,9 @@ class RegistroPipeline:
             _sumar_aviso(a, partes[clave].aviso)
 
         # Paso 6: idempotencia (F-051 R15): la fila de su `hmores_ide` si es
-        # de su recurso y no es nuestra de otra asignación; si no, la de su
-        # `synckey`, como siempre. Las dos en UNA lectura.
+        # de su recurso, es `M*` (T18: un `ide` reutilizado puede caer en
+        # una `H*`/`C*` de `partes`) y no es nuestra de otra asignación; si
+        # no, la de su `synckey`, como siempre. Las dos en UNA lectura.
         por_sk, por_ide = self._cli.lineas_registradas(
             [synckey_de(a.registro_id) for a in escribir],
             [por_id[a.registro_id].hmores_ide for a in escribir])
@@ -566,6 +567,7 @@ class RegistroPipeline:
             propia = synckey_de(a.registro_id)
             hit = por_ide.get(int(por_id[a.registro_id].hmores_ide or 0))
             if (hit is None or hit.reside != a.recurso_ide
+                    or not es_linea_mensual(hit)
                     or es_nuestra_de_otra(hit.synckey, propia)):
                 hit = por_sk.get(propia)
             if hit is not None:
