@@ -2,7 +2,7 @@
 # F-030 · Diseño técnico
 
 D1-D10 (requirements §7) **aceptadas por el humano el 2026-10-20 («si»):
-spec aprobada**. **Anexo R30** (2026-10-21): §13, con D11-D15 abiertas (§11).
+spec aprobada**. **Anexo R30** (2026-10-21): §13; D11-D15 decididas el 2026-10-21 (§11).
 
 ## 1. Servicios que toca y por qué (límite de servicio)
 
@@ -114,7 +114,7 @@ tablas por `create_all`, columnas nuevas por `alters_faltantes`.
 Movidas sin cambios a `progress/spec_F-030.md` §«D1-D10» (2026-10-21), para
 que cupiera el anexo. El anexo no ha necesitado leer Sigrid.
 
-## 11. Decisiones abiertas del anexo (razones en `progress/spec_F-030.md`)
+## 11. Decisiones del anexo (humano, 2026-10-21: D11 B, D12-D15 A)
 
 - **D11 · Quitar una registrada.** Una línea `CI*` ya va a `can` 0: no tiene
   forma neutra y retirarla es borrarla, que el registro no hace. A: 422 hasta

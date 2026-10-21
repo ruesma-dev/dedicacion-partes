@@ -3,7 +3,7 @@
 
 Rigor **`critico`**; front, api y transfer (design §1). Petición del humano
 del 2026-10-20. **D1-D10 DECIDIDAS**; **anexo R30** (review 1, opción C del
-humano, 2026-10-21) en §8, con **D11-D15 ABIERTAS** (§7). **Incidencia** = V,
+humano, 2026-10-21) en §8; **D11-D15 DECIDIDAS** (§7). **Incidencia** = V,
 B, AT, FJ, F, H o M (su `CI*` de `auxhor`); **línea de %** = la de hoy. Fuera
 (D10): % por días, calendario, bandeja de `partes`, Excel y copias.
 
@@ -103,8 +103,8 @@ B, AT, FJ, F, H o M (su `CI*` de `auxhor`); **línea de %** = la de hoy. Fuera
 
 ## 7. Preguntas al humano
 D1-D10 **decididas** (2026-10-20, todas la recomendada; `progress/
-spec_F-030.md`). **Abiertas**, con alternativas y razones en design §11 (§8
-va con la rec.): **D11** quitar una registrada (B: `quitada`); **D12** cambiar
+spec_F-030.md`). **D11-D15 decididas** (humano, 2026-10-21, «si»: todas la
+rec.; razones en design §11): **D11** quitar una registrada (B: `quitada`); **D12** cambiar
 su tipo y **D13** su obra (A: quitar + nueva); **D14** nuestra cambiada a mano
 en Sigrid (A: no tocar); **D15** día nuevo con otra igual (A: no editar esa).
 
