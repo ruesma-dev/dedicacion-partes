@@ -11,7 +11,7 @@ D1-D10 todas la recomendada). Copia
 el líder, no versionadas). **Implementer terminado el 2026-10-21**: T1-T19 y
 T21 hechas (`progress/impl_F-030.md`; mutación en serie, 3.ª campaña con 0
 supervivientes; cobertura 99,5 %); bloqueos resueltos por el humano: T4 y
-T14, los dos con la opción A. **Review pasada 1 lanzada el 2026-10-21.**
+T14, los dos con la opción A. **Review pasada 1: RECHAZADO** (2026-10-21, `progress/review_F-030.md`): cambiar los días de una incidencia ya registrada le da un `id` nuevo y el transfer vuelve a escribir en Sigrid (obs. 1, R30); **decisión a/b consultada al humano**.
 **F-051** cerrada el 2026-10-21 e integrada en `dev`, pendiente de desplegar.
 
 **Pendiente del humano:** autorizar T20 (MANUAL en modo pruebas en la 0404:
