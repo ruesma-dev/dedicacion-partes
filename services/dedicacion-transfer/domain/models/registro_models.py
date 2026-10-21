@@ -74,14 +74,14 @@ class IncidenciaEntrada:
     PostgreSQL; `desde` y `hasta`, días del mes ya completados por la API;
     `paride`, la partida de la línea de % del trabajador en esa obra o 0."""
     id: int
-    recurso_ide: Optional[int]
-    empresa: Optional[int]
+    recurso_ide: int | None
+    empresa: int | None
     codigo: str
     ano: int
     mes: int
-    desde: Optional[int]
-    hasta: Optional[int]
-    paride: Optional[int] = 0
+    desde: int | None
+    hasta: int | None
+    paride: int | None = 0
 
 
 @dataclass
@@ -251,24 +251,24 @@ class AccionIncidencia:
     rol: str                            # ini | fin
     accion: str                         # escribir | omitir | ya_registrado
     fecha_int: int
-    recurso_ide: Optional[int] = None
+    recurso_ide: int | None = None
     ano: int = 0
     mes: int = 0
-    hora_ide: Optional[int] = None
-    hora_codigo: Optional[str] = None
+    hora_ide: int | None = None
+    hora_codigo: str | None = None
     pre: float = 0.0
     paride: int = 0
-    motivo: Optional[str] = None
-    parte_cod: Optional[str] = None
-    hmores_ide: Optional[int] = None
+    motivo: str | None = None
+    parte_cod: str | None = None
+    hmores_ide: int | None = None
     destino: str = "obra"               # una incidencia no va a postventa
-    aviso: Optional[str] = None
+    aviso: str | None = None
     caa_ide: int = 0
-    caa_cod: Optional[str] = None
-    caa_motivo: Optional[str] = None
-    caa_aviso: Optional[str] = None
-    caa_origen: Optional[str] = None
-    caa_nota: Optional[str] = None
+    caa_cod: str | None = None
+    caa_motivo: str | None = None
+    caa_aviso: str | None = None
+    caa_origen: str | None = None
+    caa_nota: str | None = None
 
 
 @dataclass
@@ -278,9 +278,9 @@ class LineaIncidenciaSigrid:
     ide: int
     reside: int
     fecha_int: int
-    hora_codigo: Optional[str]
-    synckey: Optional[str]
-    parte_cod: Optional[str]
+    hora_codigo: str | None
+    synckey: str | None
+    parte_cod: str | None
 
 
 @dataclass

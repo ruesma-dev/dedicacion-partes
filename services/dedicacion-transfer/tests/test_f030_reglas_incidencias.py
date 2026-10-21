@@ -14,14 +14,19 @@ Funciones puras de `reglas_incidencias`, sin pipeline ni cliente:
 from __future__ import annotations
 
 import pytest
-
 from application.services.reglas_incidencias import (
-    CODIGO_FIN, MOTIVO_INC_DIAS, MOTIVO_INC_SIN_CODIGO, MOTIVO_INC_SIN_RECURSO,
-    decidir_incidencia, synckey_incidencia,
+    CODIGO_FIN,
+    MOTIVO_INC_DIAS,
+    MOTIVO_INC_SIN_CODIGO,
+    MOTIVO_INC_SIN_RECURSO,
+    decidir_incidencia,
+    synckey_incidencia,
 )
 from application.services.reglas_porcentajes import MOTIVO_SIN_EMPRESA
 from domain.models.registro_models import (
-    AccionIncidencia, HoraRecurso, IncidenciaEntrada,
+    AccionIncidencia,
+    HoraRecurso,
+    IncidenciaEntrada,
 )
 
 #: Recurso 200: mensual con las incidencias de Sigrid (CIV, CIE y el fin CIZ)
@@ -38,8 +43,8 @@ HORAS = {
 
 
 def _inc(**kw) -> IncidenciaEntrada:
-    base = dict(id=7, recurso_ide=200, empresa=1, codigo="CIV", ano=2026,
-                mes=7, desde=5, hasta=9, paride=0)
+    base = {"id": 7, "recurso_ide": 200, "empresa": 1, "codigo": "CIV",
+            "ano": 2026, "mes": 7, "desde": 5, "hasta": 9, "paride": 0}
     base.update(kw)
     return IncidenciaEntrada(**base)
 
@@ -137,3 +142,87 @@ def test_f030_r24_decidir_dias_validos_en_los_bordes():
     for desde, hasta, mes in ((1, 1, 7), (31, 31, 7), (1, 31, 7), (28, 28, 2)):
         ini, fin = decidir_incidencia(_inc(desde=desde, hasta=hasta, mes=mes), HORAS)
         assert (ini.accion, fin.accion) == ("escribir", "escribir"), (desde, hasta, mes)
+
+
+# ================================ R27 ==================================== #
+def _existente(ide, reside, fec, cod, synckey=None, parte="PT26/00012"):
+    from domain.models.registro_models import LineaIncidenciaSigrid
+
+    return LineaIncidenciaSigrid(ide=ide, reside=reside, fecha_int=fec,
+                                 hora_codigo=cod, synckey=synckey,
+                                 parte_cod=parte)
+
+
+def _par(**kw):
+    ini, fin = decidir_incidencia(_inc(**kw), HORAS)
+    ini.parte_cod = fin.parte_cod = "PT26/00099"     # el elegido en el paso 5
+    return ini, fin
+
+
+def test_f030_r27_deduplicar_nada_igual_se_escribe():
+    from application.services.reglas_incidencias import deduplicar
+
+    ini, fin = _par()
+    deduplicar([ini, fin], [
+        _existente(1, 200, 20260706, "CIV"),          # otro día
+        _existente(2, 201, 20260705, "CIV"),          # otro recurso
+        _existente(3, 200, 20260705, "CIE"),          # otro código
+        _existente(4, 200, 20260708, "CIZ")])
+    assert [(a.accion, a.parte_cod, a.motivo) for a in (ini, fin)] == [
+        ("escribir", "PT26/00099", None)] * 2
+
+
+def test_f030_r27_deduplicar_la_nuestra_es_ya_registrada():
+    from application.services.reglas_incidencias import MOTIVO_INC_YA, deduplicar
+
+    ini, fin = _par()
+    deduplicar([ini, fin], [
+        _existente(51, 200, 20260705, "CIV ", "porcentajes:inc:7:ini", "PT26/00031")])
+    assert (ini.accion, ini.hmores_ide, ini.parte_cod, ini.motivo) == (
+        "ya_registrado", 51, "PT26/00031", MOTIVO_INC_YA.format(ide=51))
+    assert "51" in ini.motivo
+    assert (fin.accion, fin.hmores_ide, fin.parte_cod) == ("escribir", None, "PT26/00099")
+
+
+def test_f030_r27_deduplicar_la_de_otro_se_omite_con_su_parte():
+    from application.services.reglas_incidencias import (
+        MOTIVO_INC_DUPLICADA,
+        deduplicar,
+    )
+
+    ini, fin = _par()
+    deduplicar([ini, fin], [
+        _existente(60, 200, 20260709, "CIZ", None, "PT26/00040"),
+        _existente(61, 200, 20260705, "CIV", "partes:9:1", "PT26/00041"),
+        _existente(62, 200, 20260705, "CIV", "porcentajes:inc:8:ini", "PT26/00042")])
+    assert (fin.accion, fin.parte_cod, fin.hmores_ide) == ("omitir", "PT26/00040", None)
+    assert fin.motivo == MOTIVO_INC_DUPLICADA.format(cod="CIZ", dia=9, mes=7,
+                                                     parte="PT26/00040")
+    assert fin.motivo == ("ya hay una línea CIZ del recurso el 09/07 en el parte "
+                          "PT26/00040: no se duplica")
+    # La primera igual manda (la de `partes`), aunque luego haya otra.
+    assert (ini.accion, ini.parte_cod) == ("omitir", "PT26/00041")
+
+
+def test_f030_r27_deduplicar_solo_mira_las_que_se_escriben():
+    from application.services.reglas_incidencias import deduplicar
+
+    ini, fin = decidir_incidencia(_inc(recurso_ide=300), HORAS)      # omitidas
+    antes = (ini.motivo, fin.motivo)
+    deduplicar([ini, fin], [_existente(1, 300, 20260705, "CIV",
+                                       "porcentajes:inc:7:ini")])
+    assert (ini.accion, fin.accion, (ini.motivo, fin.motivo)) == (
+        "omitir", "omitir", antes)
+    assert ini.hmores_ide is None and ini.parte_cod is None
+    ya, _ = _par()
+    ya.accion = "ya_registrado"
+    deduplicar([ya], [_existente(2, 200, 20260705, "CIV")])
+    assert (ya.accion, ya.parte_cod) == ("ya_registrado", "PT26/00099")
+
+
+def test_f030_r27_deduplicar_codigo_nulo_en_sigrid_no_casa():
+    from application.services.reglas_incidencias import deduplicar
+
+    ini, fin = _par()
+    deduplicar([ini, fin], [_existente(1, 200, 20260705, None)])
+    assert ini.accion == "escribir"

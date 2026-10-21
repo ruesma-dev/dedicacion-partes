@@ -22,11 +22,16 @@ from __future__ import annotations
 import calendar
 from collections.abc import Iterable
 
-from application.services.reglas_porcentajes import (
-    MOTIVO_SIN_EMPRESA, empresa_valida,
-)
 from domain.models.registro_models import (
-    AccionIncidencia, HoraRecurso, IncidenciaEntrada, LineaIncidenciaSigrid,
+    AccionIncidencia,
+    HoraRecurso,
+    IncidenciaEntrada,
+    LineaIncidenciaSigrid,
+)
+
+from application.services.reglas_porcentajes import (
+    MOTIVO_SIN_EMPRESA,
+    empresa_valida,
 )
 
 #: Código de `auxhor` que cierra el tramo de cualquier incidencia.
@@ -81,9 +86,9 @@ def decidir_incidencia(
     validos = _dias_validos(inc)
     fechas = ((_fecha(inc, inc.desde), _fecha(inc, inc.hasta)) if validos
               else (0, 0))
-    base = dict(id=int(inc.id), recurso_ide=inc.recurso_ide,
-                ano=int(inc.ano), mes=int(inc.mes),
-                paride=int(inc.paride or 0))
+    base = {"id": int(inc.id), "recurso_ide": inc.recurso_ide,
+            "ano": int(inc.ano), "mes": int(inc.mes),
+            "paride": int(inc.paride or 0)}
 
     def omitir(motivo: str) -> list[AccionIncidencia]:
         return [AccionIncidencia(rol=rol, accion="omitir", fecha_int=fecha,
@@ -111,3 +116,29 @@ def decidir_incidencia(
                              pre=float(hora.pre or 0.0), **base)
             for rol, fecha, hora in zip(ROLES, fechas, horas)]
 
+def deduplicar(acciones: Iterable[AccionIncidencia],
+               existentes: Iterable[LineaIncidenciaSigrid]) -> None:
+    """R27: cada acción `escribir` que ya está en algún parte del mes (el
+    mismo recurso, código y `fec`) no se escribe: `ya_registrado` si la
+    línea es la nuestra (su `synckey`); si no, `omitir` con el parte donde
+    está. Cada línea del par se decide sola. Cambia las acciones en sitio."""
+    existentes = list(existentes)
+    for a in acciones:
+        if a.accion != "escribir":
+            continue
+        igual = next((e for e in existentes
+                      if e.reside == a.recurso_ide
+                      and e.fecha_int == a.fecha_int
+                      and (e.hora_codigo or "").strip() == a.hora_codigo),
+                     None)
+        if igual is None:
+            continue
+        a.parte_cod = igual.parte_cod
+        if igual.synckey == synckey_incidencia(a.id, a.rol):
+            a.accion, a.hmores_ide = "ya_registrado", igual.ide
+            a.motivo = MOTIVO_INC_YA.format(ide=igual.ide)
+        else:
+            a.accion = "omitir"
+            a.motivo = MOTIVO_INC_DUPLICADA.format(
+                cod=a.hora_codigo, dia=a.fecha_int % 100, mes=a.mes,
+                parte=igual.parte_cod)
