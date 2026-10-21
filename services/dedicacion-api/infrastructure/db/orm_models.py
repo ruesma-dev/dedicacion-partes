@@ -226,7 +226,13 @@ class IncidenciaORM(Base):
     no cuenta para el 100 % (R22). Tabla NUEVA, por `create_all`.
 
     La traza `sigrid_*` la escribe solo `application/registro_sigrid.py`
-    (R31), como la de la asignación: nulables y sin default."""
+    (R31), como la de la asignación: nulables y sin default.
+
+    Anexo R30 (R38, R39): `quitada` marca la registrada que el usuario quitó
+    (sigue en Sigrid hasta retirarla a mano; nunca se borra la fila) y
+    `sigrid_dia_ini`/`_fin`, el día de Sigrid de cada línea del par. Llegan
+    a una base ya creada por `alters_faltantes` (`quitada` con
+    `server_default`)."""
 
     __tablename__ = "incidencia"
 
@@ -255,6 +261,12 @@ class IncidenciaORM(Base):
         DateTime(timezone=True)
     )
     sigrid_registrado_by: Mapped[str | None] = mapped_column(String(64))
+    # Anexo R30, al final para no mover el DDL de T3.
+    quitada: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    sigrid_dia_ini: Mapped[int | None] = mapped_column(SmallInteger)
+    sigrid_dia_fin: Mapped[int | None] = mapped_column(SmallInteger)
 
     __table_args__ = (
         CheckConstraint(

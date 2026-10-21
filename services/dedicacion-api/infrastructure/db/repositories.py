@@ -760,7 +760,9 @@ def _a_incidencia(orm: IncidenciaORM, obra_cod: str, obra_descripcion: str,
         dia_hasta=orm.dia_hasta, id=orm.id, obra_cod=obra_cod,
         obra_descripcion=obra_descripcion, letra=letra, nombre=nombre or "",
         sigrid_estado=orm.sigrid_estado, sigrid_parte_cod=orm.sigrid_parte_cod,
-        sigrid_motivo=orm.sigrid_motivo)
+        sigrid_motivo=orm.sigrid_motivo, quitada=bool(orm.quitada),
+        sigrid_ide_ini=orm.sigrid_ide_ini, sigrid_ide_fin=orm.sigrid_ide_fin,
+        sigrid_dia_ini=orm.sigrid_dia_ini, sigrid_dia_fin=orm.sigrid_dia_fin)
 
 
 def _a_trabajador(orm: TrabajadorORM) -> Trabajador:

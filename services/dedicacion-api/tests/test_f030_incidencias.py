@@ -172,7 +172,10 @@ def test_f030_r17_esquema_tabla_incidencia():
         "sigrid_parte_cod": "VARCHAR(24)", "sigrid_ide_ini": "INTEGER",
         "sigrid_ide_fin": "INTEGER", "sigrid_motivo": "VARCHAR(300)",
         "sigrid_registrado_at_utc": "TIMESTAMP WITH TIME ZONE",
-        "sigrid_registrado_by": "VARCHAR(64)"}
+        "sigrid_registrado_by": "VARCHAR(64)",
+        # Anexo R30 (R38, R39; design §13.7, propio de F-030).
+        "quitada": "BOOLEAN", "sigrid_dia_ini": "SMALLINT",
+        "sigrid_dia_fin": "SMALLINT"}
     fks = {fk.parent.name: (fk.column.table.name, fk.ondelete)
            for fk in tabla.foreign_keys}
     assert fks == {"periodo_id": ("periodo", "CASCADE"),
@@ -181,7 +184,7 @@ def test_f030_r17_esquema_tabla_incidencia():
     obligatorias = {c.name for c in tabla.columns if not c.nullable}
     assert obligatorias == {"id", "periodo_id", "trabajador_ide", "obra_ide",
                             "codigo", "dia_desde", "dia_hasta",
-                            "actualizado_en", "actualizado_por"}
+                            "actualizado_en", "actualizado_por", "quitada"}
     checks = {c.name: str(c.sqltext) for c in tabla.constraints
               if c.__class__.__name__ == "CheckConstraint"}
     assert checks == {"ck_incidencia_dias": (
@@ -376,7 +379,7 @@ def test_f030_r21_cuadrante_salida_json_de_las_incidencias():
         "obra_descripcion": "OBRA 100", "codigo": "CIV", "letra": "V",
         "nombre": "Vacaciones", "dia_desde": 5, "dia_hasta": 9,
         "sigrid_estado": "registrado", "sigrid_parte_cod": "PT26/1",
-        "sigrid_motivo": None}]
+        "sigrid_motivo": None, "quitada": False}]   # R38 (anexo R30)
     # R22: sin líneas sigue «sin carga», con incidencias o sin ellas.
     assert (out["total"], out["estado"], out["desviacion"]) == (0.0, "SIN_CARGA", 0.0)
     sin = a_trabajador_out(CuadranteTrabajador(trabajador=TRABAJADORES[14]), 1)
@@ -471,6 +474,8 @@ def test_f030_r21_cuadrante_repo_de_periodo_mapea_y_agrupa():
         "incidencia.sigrid_parte_cod, incidencia.sigrid_ide_ini, "
         "incidencia.sigrid_ide_fin, incidencia.sigrid_motivo, "
         "incidencia.sigrid_registrado_at_utc, incidencia.sigrid_registrado_by, "
+        # Anexo R30 (design §13.7, propio de F-030): las tres columnas nuevas.
+        "incidencia.quitada, incidencia.sigrid_dia_ini, incidencia.sigrid_dia_fin, "
         "obra.cod, obra.descripcion, tipo_incidencia.letra, "
         "tipo_incidencia.nombre FROM incidencia "
         "JOIN obra ON obra.ide = incidencia.obra_ide "

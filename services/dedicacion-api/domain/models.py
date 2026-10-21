@@ -149,7 +149,9 @@ class Incidencia:
     línea de %: no cuenta para el 100 % (R22).
 
     `id` es nulo hasta guardarla. Obra, letra y nombre son de lectura (R21);
-    `sigrid_*`, la traza del registro (R31)."""
+    `sigrid_*`, la traza del registro (R31). Anexo R30: `quitada`, la
+    registrada que se quitó (R38); `sigrid_ide_*` y `sigrid_dia_*`, el `ide`
+    y el día de cada línea del par en Sigrid (R39)."""
 
     obra_ide: int
     codigo: str
@@ -163,6 +165,11 @@ class Incidencia:
     sigrid_estado: str | None = None
     sigrid_parte_cod: str | None = None
     sigrid_motivo: str | None = None
+    quitada: bool = False
+    sigrid_ide_ini: int | None = None
+    sigrid_ide_fin: int | None = None
+    sigrid_dia_ini: int | None = None
+    sigrid_dia_fin: int | None = None
 
 
 @dataclass(frozen=True)

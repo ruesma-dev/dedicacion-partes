@@ -39,8 +39,10 @@ class AsignacionesIn(_Base):
 
 class IncidenciaIn(_Base):
     """Una incidencia tal como la teclea el usuario (F-030, R17): días
-    vacíos = mes entero (los completa la api)."""
+    vacíos = mes entero (los completa la api). `id`, el de una ya guardada
+    (R36, R37); sin él, es nueva."""
 
+    id: int | None = None
     obra_ide: int
     codigo: str
     dia_desde: int | None = None
@@ -114,7 +116,7 @@ class LineaOut(_Base):
 
 class IncidenciaOut(_Base):
     """Incidencia de un trabajador (F-030, R21): obra, código con su letra y
-    nombre, días y la traza del registro en Sigrid."""
+    nombre, días, si está `quitada` (R38) y la traza del registro en Sigrid."""
 
     id: int | None
     obra_ide: int
@@ -128,6 +130,7 @@ class IncidenciaOut(_Base):
     sigrid_estado: str | None
     sigrid_parte_cod: str | None
     sigrid_motivo: str | None
+    quitada: bool = False
 
 
 class TipoIncidenciaOut(_Base):
@@ -359,7 +362,8 @@ def a_incidencia_out(inc: Incidencia) -> IncidenciaOut:
         obra_descripcion=inc.obra_descripcion, codigo=inc.codigo,
         letra=inc.letra, nombre=inc.nombre, dia_desde=inc.dia_desde,
         dia_hasta=inc.dia_hasta, sigrid_estado=inc.sigrid_estado,
-        sigrid_parte_cod=inc.sigrid_parte_cod, sigrid_motivo=inc.sigrid_motivo)
+        sigrid_parte_cod=inc.sigrid_parte_cod, sigrid_motivo=inc.sigrid_motivo,
+        quitada=inc.quitada)
 
 
 def a_resumen_out(resumen: ResumenPeriodo) -> ResumenOut:
