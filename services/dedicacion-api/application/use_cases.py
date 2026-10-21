@@ -19,6 +19,7 @@ from domain.deshacer import deshacer_permitido
 from domain.empresas import visible_en_empresa
 from domain.errors import (
     DeshacerAjeno,
+    IncidenciaInvalida,
     LineaNoEncontrada,
     LineasInvalidas,
     NadaQueDeshacer,
@@ -28,12 +29,14 @@ from domain.errors import (
     TrabajadorNoEncontrado,
 )
 from domain.estados import calcular_estado, completar_hasta_100, resumir
+from domain.incidencias import completar_dias, validar_incidencias
 from domain.models import (
     CuadranteTrabajador,
     Empresa,
     EstadoPeriodo,
     EstadoTrabajador,
     FiltroEmpresa,
+    Incidencia,
     Linea,
     Obra,
     Periodo,
@@ -164,6 +167,109 @@ class GuardarAsignaciones:
         return ObtenerFilaTrabajador().ejecutar(
             uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
         )
+
+
+class GuardarIncidencias:
+    """Sustituye las incidencias del trabajador en el periodo (F-030,
+    R17-R19, docs/ARCHITECTURE.md#regla-incidencia) y deja un evento
+    `INCIDENCIAS`, deshacible como cualquier otro (R20). No toca sus líneas
+    de % ni cuenta para el 100 % (R2, R22).
+
+    Todo o nada: periodo inexistente (404) o cerrado (409), trabajador
+    inexistente (404) o una incidencia que no vale (422, `IncidenciaInvalida`:
+    código no activo, obra que no se ofrece como normal o entrada VAR, días
+    fuera del mes, `desde > hasta` o dos que comparten días). Un día vacío se
+    completa con `completar_dias` (D2). Si no cambia nada, ni escribe ni deja
+    evento."""
+
+    def ejecutar(
+        self,
+        uow: UnitOfWork,
+        anio: int,
+        mes: int,
+        trabajador_ide: int,
+        entrada: list[dict[str, Any]],
+        usuario: str,
+        *,
+        filtro: FiltroEmpresa,
+    ) -> tuple[CuadranteTrabajador, ResumenPeriodo]:
+        periodo_id, _ = _periodo_abierto_o_error(uow, anio, mes)
+        _trabajador_o_error(uow, trabajador_ide)
+        brutas = [_parsear_incidencia(b) for b in entrada]
+        activos = {t.codigo for t in uow.tipos_incidencia.activos()}
+        for inc in brutas:
+            if inc.codigo not in activos:
+                raise IncidenciaInvalida(
+                    f"El código {inc.codigo} no es una incidencia activa")
+        _validar_obras_incidencia(uow, periodo_id,
+                                  {i.obra_ide for i in brutas}, filtro)
+        despues = [
+            dataclasses.replace(inc, dia_desde=desde, dia_hasta=hasta)
+            for inc in brutas
+            for desde, hasta in [completar_dias(inc.dia_desde, inc.dia_hasta,
+                                                anio, mes)]
+        ]
+        validar_incidencias(despues, anio, mes)
+        antes = uow.incidencias.de_trabajador(periodo_id, trabajador_ide)
+        if _snapshot_incidencias(antes) != _snapshot_incidencias(despues):
+            uow.incidencias.reemplazar(periodo_id, trabajador_ide, despues,
+                                       usuario)
+            uow.eventos.registrar(
+                periodo_id,
+                trabajador_ide,
+                TipoEvento.INCIDENCIAS,
+                usuario,
+                _snapshot_incidencias(antes),
+                _snapshot_incidencias(despues),
+            )
+        uow.commit()
+        return ObtenerFilaTrabajador().ejecutar(
+            uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
+        )
+
+
+def _entero_estricto(valor: Any) -> bool:
+    return isinstance(valor, int) and not isinstance(valor, bool)
+
+
+def _parsear_incidencia(bruto: dict[str, Any]) -> Incidencia:
+    """Una incidencia de la entrada (o de un snapshot): `obra_ide` entero,
+    `codigo` con texto y días enteros o vacíos (`None`, aún sin completar)."""
+    codigo = bruto.get("codigo")
+    if not isinstance(codigo, str) or not codigo.strip():
+        raise IncidenciaInvalida(f"Incidencia sin código: {bruto}")
+    obra_ide = bruto.get("obra_ide")
+    desde, hasta = bruto.get("dia_desde"), bruto.get("dia_hasta")
+    if not _entero_estricto(obra_ide) or any(
+            d is not None and not _entero_estricto(d) for d in (desde, hasta)):
+        raise IncidenciaInvalida(f"Incidencia inválida: {bruto}")
+    return Incidencia(obra_ide=obra_ide, codigo=codigo.strip(),
+                      dia_desde=desde, dia_hasta=hasta)  # type: ignore[arg-type]
+
+
+def _validar_obras_incidencia(uow: UnitOfWork, periodo_id: int,
+                              ides: set[int], filtro: FiltroEmpresa) -> None:
+    """La obra de una incidencia es una obra NORMAL de la lista que ofrece el
+    cuadrante: de la empresa de las obras, activa y que no sea una entrada
+    VAR (F-030, R19, D7). Ni `Postv-` ni VAR: no son partes «de» la persona."""
+    normales = {o.ide for o in uow.obras.listar_para_periodo(periodo_id)
+                if o.empresa == filtro.empresa_obras and o.activa}
+    for obra_ide in sorted(ides - normales):
+        raise IncidenciaInvalida(
+            f"La obra {obra_ide} no se ofrece como obra normal")
+    for obra_ide in sorted(uow.obras.entradas_var(ides)):
+        raise IncidenciaInvalida(
+            f"La obra {obra_ide} es una entrada VAR: no admite incidencias")
+
+
+def _snapshot_incidencias(incs: list[Incidencia]) -> list[dict[str, Any]]:
+    """Lo que guarda un evento `INCIDENCIAS` (R20): obra, código y días."""
+    return [
+        {"obra_ide": i.obra_ide, "codigo": i.codigo,
+         "dia_desde": i.dia_desde, "dia_hasta": i.dia_hasta}
+        for i in sorted(incs, key=lambda i: (i.dia_desde, i.dia_hasta,
+                                             i.obra_ide, i.codigo))
+    ]
 
 
 class CambiarPartida:

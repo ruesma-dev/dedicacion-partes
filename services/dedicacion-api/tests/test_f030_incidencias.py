@@ -465,3 +465,306 @@ def test_f030_r21_cuadrante_la_unidad_de_trabajo_trae_el_repositorio():
 
     with SqlAlchemyUnitOfWork(lambda: _S()) as uow:  # type: ignore[arg-type]
         assert isinstance(uow.incidencias, PgIncidenciaRepository)
+
+
+# ============================= guardar (T6) ============================= #
+from decimal import Decimal  # noqa: E402
+
+
+class _ObrasConVar:
+    """Las obras de F-024 y, como el repositorio, cuáles son entradas VAR."""
+
+    def __init__(self, base, var=frozenset()) -> None:
+        self._base = base
+        self.var = set(var)
+
+    def __getattr__(self, nombre):
+        return getattr(self._base, nombre)
+
+    def entradas_var(self, ides: set[int]) -> set[int]:
+        return set(ides) & self.var
+
+
+def _uow_guardar(var=frozenset()) -> _UowInc:
+    uow = _UowInc()
+    uow.obras = _ObrasConVar(uow.obras, var)
+    return uow
+
+
+def _guardar(uow, entrada, ide=14, usuario=USUARIO, anio=ANIO, mes=MES):
+    from application.use_cases import GuardarIncidencias
+
+    return GuardarIncidencias().ejecutar(uow, anio, mes, ide, entrada, usuario,
+                                         filtro=FILTRO)
+
+
+def _e(obra=100, codigo="CIV", desde=None, hasta=None) -> dict:
+    return {"obra_ide": obra, "codigo": codigo, "dia_desde": desde,
+            "dia_hasta": hasta}
+
+
+def _tramos(incs) -> list[tuple]:
+    return [(i.obra_ide, i.codigo, i.dia_desde, i.dia_hasta) for i in incs]
+
+
+def test_f030_r17_guardar_sustituye_completa_los_dias_y_deja_evento():
+    uow = _uow_guardar()
+    fila, resumen = _guardar(uow, [_e(101, "CIE", 20, None), _e(100, " CIV ", None, 9)])
+    # MES = 7: «hasta» vacío = 31; «desde» vacío = 1. Ordenadas por día.
+    assert _tramos(fila.incidencias) == [(100, "CIV", 1, 9), (101, "CIE", 20, 31)]
+    assert [(i.letra, i.obra_cod) for i in fila.incidencias] == [("V", "0100"),
+                                                                 ("B", "0101")]
+    assert uow.incidencias.reemplazos == [(P_ACT, 14, USUARIO)]
+    [(ide, evento, despues)] = uow.eventos.eventos
+    assert (ide, evento.usuario, evento.tipo) == (14, USUARIO, "INCIDENCIAS")
+    assert evento.snapshot_antes == []
+    assert despues == [
+        {"obra_ide": 100, "codigo": "CIV", "dia_desde": 1, "dia_hasta": 9},
+        {"obra_ide": 101, "codigo": "CIE", "dia_desde": 20, "dia_hasta": 31}]
+    assert uow.commits == 1
+    assert fila.puede_deshacer is True
+
+
+def test_f030_r17_guardar_snapshot_antes_son_las_incidencias_previas():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _inc(5, 9, obra=100))
+    _guardar(uow, [_e(100, "CIV", 5, 9), _e(100, "CIP", 12, 12)])
+    [(_, evento, despues)] = uow.eventos.eventos
+    assert evento.snapshot_antes == [
+        {"obra_ide": 100, "codigo": "CIV", "dia_desde": 5, "dia_hasta": 9}]
+    assert len(despues) == 2
+
+
+def test_f030_r17_guardar_lo_mismo_no_escribe_ni_deja_evento():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _inc(1, 31, obra=100))
+    fila, _ = _guardar(uow, [_e(100, "CIV")])          # vacío = mes entero
+    assert uow.incidencias.reemplazos == []
+    assert uow.eventos.eventos == []
+    assert uow.commits == 1
+    assert _tramos(fila.incidencias) == [(100, "CIV", 1, 31)]
+
+
+def test_f030_r17_guardar_lista_vacia_las_borra():
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _inc(5, 9, obra=100))
+    fila, _ = _guardar(uow, [])
+    assert fila.incidencias == ()
+    [(_, evento, despues)] = uow.eventos.eventos
+    assert (evento.tipo, despues) == ("INCIDENCIAS", [])
+
+
+def test_f030_r2_r22_guardar_no_toca_asignaciones_ni_el_100():
+    uow = _uow_guardar()
+    lineas_antes = {k: list(v) for k, v in uow.lineas[P_ACT].items()}
+    _, resumen_sin = _guardar(_uow_guardar(), [])
+    fila, resumen = _guardar(uow, [_e(100, "CIV", 1, 30)], ide=10)
+    assert uow.lineas[P_ACT] == lineas_antes
+    assert uow.reemplazados == []
+    assert resumen == resumen_sin
+    assert (fila.total, len(fila.lineas)) == (Decimal("100"), 2)
+
+
+@pytest.mark.parametrize("entrada, motivo", [
+    ([_e(100, "CIZ")], "CIZ"),                        # fin: no se elige
+    ([_e(100, "CIX")], "CIX"),                        # no está en el catálogo
+    ([_e(100, "")], "código"),
+    ([_e(999)], "999"),                               # no existe
+    ([_e(900)], "900"),                               # de otra empresa
+    ([_e(102)], "102"),                               # cerrada: no es normal
+    ([_e(100, "CIV", 0, 3)], "fuera del mes"),
+    ([_e(100, "CIV", 5, 32)], "fuera del mes"),       # julio
+    ([_e(100, "CIV", 9, 5)], "posterior"),
+    ([_e(100, "CIV", 5, 9), _e(101, "CIE", 9, 12)], "comparten"),
+    ([_e(100, "CIV", None, None), _e(101, "CIE", 30, None)], "comparten"),
+    ([{"obra_ide": "x", "codigo": "CIV"}], "inválida"),
+    ([{"codigo": "CIV"}], "inválida"),
+    ([{"obra_ide": 100, "codigo": "CIV", "dia_desde": "5"}], "inválida"),
+    ([{"obra_ide": 100, "codigo": "CIV", "dia_hasta": True}], "inválida"),
+    ([{"obra_ide": 100, "codigo": None}], "código"),
+])
+def test_f030_r19_guardar_invalidas_422_sin_tocar_nada(entrada, motivo):
+    from domain.errors import IncidenciaInvalida
+
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _inc(5, 9, obra=100))
+    with pytest.raises(IncidenciaInvalida, match=motivo):
+        _guardar(uow, entrada)
+    assert uow.incidencias.reemplazos == []
+    assert uow.eventos.eventos == []
+    assert uow.commits == 0
+
+
+def test_f030_r19_guardar_entrada_var_no_vale():
+    from domain.errors import IncidenciaInvalida
+
+    uow = _uow_guardar(var={101})
+    with pytest.raises(IncidenciaInvalida, match="VAR"):
+        _guardar(uow, [_e(101)])
+    assert uow.incidencias.reemplazos == [] and uow.commits == 0
+    fila, _ = _guardar(uow, [_e(100)])              # la normal, sí
+    assert _tramos(fila.incidencias) == [(100, "CIV", 1, 31)]
+
+
+def test_f030_r19_guardar_codigo_inactivo_no_vale():
+    from domain.errors import IncidenciaInvalida
+
+    uow = _uow_guardar()
+    uow.tipos_incidencia = _TiposMem([dataclasses.replace(CATALOGO[3], activa=False)])
+    with pytest.raises(IncidenciaInvalida, match="CIV"):
+        _guardar(uow, [_e(100, "CIV")])
+
+
+def test_f030_r18_guardar_periodo_inexistente_trabajador_inexistente_o_cerrado():
+    from domain.errors import PeriodoCerrado, PeriodoNoEncontrado, TrabajadorNoEncontrado
+    from domain.models import EstadoPeriodo, Periodo
+
+    uow = _uow_guardar()
+    with pytest.raises(PeriodoNoEncontrado):
+        _guardar(uow, [_e()], anio=ANIO + 1)
+    with pytest.raises(TrabajadorNoEncontrado):
+        _guardar(uow, [_e()], ide=999)
+    uow.periodos.obtener = lambda a, m: (P_ACT, Periodo(a, m, EstadoPeriodo.CERRADO))
+    with pytest.raises(PeriodoCerrado):
+        _guardar(uow, [_e()])
+    assert uow.incidencias.reemplazos == [] and uow.eventos.eventos == []
+    assert uow.commits == 0
+
+
+# ----------------------------- ruta (T6) -------------------------------- #
+def _api_inc(api, var=frozenset()):
+    cliente, contenedor = api
+    uow = contenedor.uow()
+    uow.incidencias = _IncidenciasMem()
+    uow.tipos_incidencia = _TiposMem()
+    uow.obras = _ObrasConVar(uow.obras, var)
+    uow.eventos = _EventosConTipo()
+    return cliente, contenedor, uow
+
+
+def test_f030_r17_guardar_ruta_put_devuelve_la_fila(api):
+    cliente, contenedor, uow = _api_inc(api)
+    r = cliente.put(f"{BASE}/trabajadores/10/incidencias",
+                    json={"incidencias": [{"obra_ide": 100, "codigo": "CIV",
+                                           "dia_desde": 5}]},
+                    headers={"X-Usuario": USUARIO})
+    assert r.status_code == 200, r.text
+    cuerpo = r.json()
+    assert [(i["codigo"], i["letra"], i["dia_desde"], i["dia_hasta"])
+            for i in cuerpo["trabajador"]["incidencias"]] == [("CIV", "V", 5, 31)]
+    assert cuerpo["trabajador"]["total"] == 100.0
+    assert set(cuerpo) == {"trabajador", "resumen", "propuestas_en_curso"}
+    assert contenedor.propuestas_mes.lanzadas == [(ANIO, MES, [10])]
+    [(ide, evento, _)] = uow.eventos.eventos
+    assert (ide, evento.usuario, evento.tipo) == (10, USUARIO, "INCIDENCIAS")
+
+
+@pytest.mark.parametrize("cuerpo", [
+    {"incidencias": [{"obra_ide": 100, "codigo": "CIV", "pv": True}]},
+    {"incidencias": [{"obra_ide": 100}]},
+    {"incidencias": [{"obra_ide": 100, "codigo": "CIV", "dia_desde": 1.5}]},
+    {"lineas": []},
+])
+def test_f030_r19_guardar_ruta_cuerpo_invalido_422(api, cuerpo):
+    cliente, _, uow = _api_inc(api)
+    r = cliente.put(f"{BASE}/trabajadores/10/incidencias", json=cuerpo)
+    assert r.status_code == 422
+    assert uow.incidencias.reemplazos == []
+
+
+def test_f030_r19_guardar_ruta_motivo_en_el_422(api):
+    cliente, _, uow = _api_inc(api, var={101})
+    r = cliente.put(f"{BASE}/trabajadores/10/incidencias",
+                    json={"incidencias": [{"obra_ide": 101, "codigo": "CIV"}]})
+    assert r.status_code == 422
+    assert "VAR" in r.json()["error"]
+    r = cliente.put(f"{BASE}/trabajadores/10/incidencias",
+                    json={"incidencias": [{"obra_ide": 100, "codigo": "CIV",
+                                           "dia_desde": 40}]})
+    assert r.status_code == 422 and "fuera del mes" in r.json()["error"]
+    assert uow.incidencias.reemplazos == []
+
+
+def test_f030_r18_guardar_ruta_404(api):
+    cliente, _, uow = _api_inc(api)
+    r = cliente.put(f"/api/v1/periodos/{ANIO + 1}/{MES}/trabajadores/10/incidencias",
+                    json={"incidencias": []})
+    assert r.status_code == 404
+    r = cliente.put(f"{BASE}/trabajadores/999/incidencias", json={"incidencias": []})
+    assert r.status_code == 404
+
+
+# -------------------------- repositorio (T6) ---------------------------- #
+class _SesionReemplazo:
+    def __init__(self, previas):
+        self.previas = list(previas)
+        self.borradas: list = []
+        self.anadidas: list = []
+        self.sentencias: list = []
+        self.flushes = 0
+
+    def scalars(self, stmt):
+        self.sentencias.append(stmt)
+        return _Filas(self.previas)
+
+    def delete(self, orm):
+        self.borradas.append(orm)
+
+    def add(self, orm):
+        self.anadidas.append(orm)
+
+    def flush(self):
+        self.flushes += 1
+
+
+def test_f030_r17_guardar_repo_reemplazar_conserva_las_iguales():
+    """Las que no cambian conservan su `id` y su traza (su `synckey` en
+    Sigrid es `porcentajes:inc:{id}`); las demás se borran o se añaden."""
+    from infrastructure.db.repositories import PgIncidenciaRepository
+
+    igual = _orm_inc(3, 14, 100, "CIV", 5, 9, sigrid_estado="registrado")
+    cambia = _orm_inc(4, 14, 101, "CIE", 20, 22)
+    sesion = _SesionReemplazo([igual, cambia])
+    PgIncidenciaRepository(sesion).reemplazar(  # type: ignore[arg-type]
+        P_ACT, 14, [_inc(5, 9, obra=100), _inc(20, 23, obra=101, cod="CIE"),
+                    _inc(25, 25, obra=100, cod="CIP")], USUARIO)
+    assert sesion.borradas == [cambia]
+    assert [(o.periodo_id, o.trabajador_ide, o.obra_ide, o.codigo, o.dia_desde,
+             o.dia_hasta, o.actualizado_por) for o in sesion.anadidas] == [
+        (P_ACT, 14, 101, "CIE", 20, 23, USUARIO),
+        (P_ACT, 14, 100, "CIP", 25, 25, USUARIO)]
+    assert igual.sigrid_estado == "registrado" and igual.id == 3
+    assert sesion.flushes == 1
+    [stmt] = sesion.sentencias
+    assert _sql(stmt).endswith(
+        "FROM incidencia WHERE incidencia.periodo_id = %(periodo_id_1)s "
+        "AND incidencia.trabajador_ide = %(trabajador_ide_1)s "
+        "ORDER BY incidencia.id")
+
+
+def test_f030_r17_guardar_repo_reemplazar_duplicadas_y_vacia():
+    from infrastructure.db.repositories import PgIncidenciaRepository
+
+    a = _orm_inc(3, 14, 100, "CIV", 5, 9)
+    b = _orm_inc(4, 14, 100, "CIV", 5, 9)      # misma clave, dos filas
+    sesion = _SesionReemplazo([a, b])
+    PgIncidenciaRepository(sesion).reemplazar(  # type: ignore[arg-type]
+        P_ACT, 14, [_inc(5, 9, obra=100)], USUARIO)
+    assert sesion.borradas == [b] and sesion.anadidas == []
+    sesion = _SesionReemplazo([a])
+    PgIncidenciaRepository(sesion).reemplazar(P_ACT, 14, [], USUARIO)  # type: ignore[arg-type]
+    assert sesion.borradas == [a] and sesion.anadidas == []
+
+
+def test_f030_r19_guardar_repo_entradas_var():
+    from infrastructure.db.repositories import PgObraRepository
+
+    sesion = _SesionInc()
+    sesion.scalars = lambda stmt: (sesion.sentencias.append(stmt), _Filas([101]))[1]
+    repo = PgObraRepository(sesion)  # type: ignore[arg-type]
+    assert repo.entradas_var({100, 101}) == {101}
+    assert _sql(sesion.sentencias[0]).startswith(
+        "SELECT obra.ide FROM obra WHERE obra.ide IN (__[POSTCOMPILE_ide_1]) "
+        "AND obra.registro_obra_ide IS NOT NULL")
+    assert repo.entradas_var(set()) == set()
+    assert len(sesion.sentencias) == 1

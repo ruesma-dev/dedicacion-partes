@@ -255,6 +255,15 @@ class PgObraRepository:
         return {ide: (activa, admite)
                 for ide, activa, admite in self._s.execute(stmt).all()}
 
+    def entradas_var(self, ides: set[int]) -> set[int]:
+        """Las de `ides` que son entradas VAR (`registro_obra_ide` no nulo,
+        F-039): no admiten incidencias (F-030, D7)."""
+        if not ides:
+            return set()
+        stmt = select(ObraORM.ide).where(ObraORM.ide.in_(ides),
+                                         ObraORM.registro_obra_ide.is_not(None))
+        return set(self._s.scalars(stmt).all())
+
 
 # ----------------------------------------------------------------------
 # Empresas (catálogo `auxemp` de Sigrid, F-032)
@@ -573,6 +582,32 @@ class PgIncidenciaRepository:
                 .order_by(*_ORDEN_INCIDENCIAS))
         return [_a_incidencia(*fila) for fila in self._s.execute(stmt).all()]
 
+    def reemplazar(self, periodo_id: int, trabajador_ide: int,
+                   incidencias: list[Incidencia], usuario: str) -> None:
+        """Sustituye las del trabajador. Las que no cambian (misma obra,
+        código y días) se CONSERVAN con su `id` y su traza: su `synckey` en
+        Sigrid es `porcentajes:inc:{id}` (R24, R30). Las demás se borran o se
+        añaden."""
+        previas = self._s.scalars(
+            select(IncidenciaORM)
+            .where(IncidenciaORM.periodo_id == periodo_id,
+                   IncidenciaORM.trabajador_ide == trabajador_ide)
+            .order_by(IncidenciaORM.id)
+        ).all()
+        pendientes = [_clave_incidencia(i) for i in incidencias]
+        for orm in previas:
+            clave = (orm.obra_ide, orm.codigo, orm.dia_desde, orm.dia_hasta)
+            if clave in pendientes:
+                pendientes.remove(clave)
+            else:
+                self._s.delete(orm)
+        for obra_ide, codigo, desde, hasta in pendientes:
+            self._s.add(IncidenciaORM(
+                periodo_id=periodo_id, trabajador_ide=trabajador_ide,
+                obra_ide=obra_ide, codigo=codigo, dia_desde=desde,
+                dia_hasta=hasta, actualizado_por=usuario))
+        self._s.flush()
+
 
 # ----------------------------------------------------------------------
 # Eventos (histórico / deshacer)
@@ -707,6 +742,10 @@ def _a_empresa(orm: EmpresaORM) -> Empresa:
 def _a_tipo_incidencia(orm: TipoIncidenciaORM) -> TipoIncidencia:
     return TipoIncidencia(ide=orm.ide, codigo=orm.codigo, letra=orm.letra,
                           nombre=orm.nombre, activa=orm.activa)
+
+
+def _clave_incidencia(inc: Incidencia) -> tuple[int, str, int, int]:
+    return (inc.obra_ide, inc.codigo, inc.dia_desde, inc.dia_hasta)
 
 
 def _a_incidencia(orm: IncidenciaORM, obra_cod: str, obra_descripcion: str,

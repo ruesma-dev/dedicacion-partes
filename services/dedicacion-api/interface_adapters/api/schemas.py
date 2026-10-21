@@ -37,6 +37,20 @@ class AsignacionesIn(_Base):
     lineas: list[LineaIn]
 
 
+class IncidenciaIn(_Base):
+    """Una incidencia tal como la teclea el usuario (F-030, R17): días
+    vacíos = mes entero (los completa la api)."""
+
+    obra_ide: int
+    codigo: str
+    dia_desde: int | None = None
+    dia_hasta: int | None = None
+
+
+class IncidenciasIn(_Base):
+    incidencias: list[IncidenciaIn]
+
+
 class PeriodoIn(_Base):
     anio: int = Field(ge=2020, le=2100)
     mes: int = Field(ge=1, le=12)

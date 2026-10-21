@@ -87,6 +87,10 @@ class ObraRepository(Protocol):
         """(activa, admite_postventa) de cada obra de `ides` (F-025, R20)."""
         ...
 
+    def entradas_var(self, ides: set[int]) -> set[int]:
+        """Las de `ides` que son entradas VAR (F-030, D7)."""
+        ...
+
 
 class EmpresaRepository(Protocol):
     """Catálogo de empresas copiado de Sigrid (`auxemp`, F-032)."""

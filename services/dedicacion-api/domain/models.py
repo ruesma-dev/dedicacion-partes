@@ -226,6 +226,9 @@ class EventoPendiente:
     id: int
     usuario: str
     snapshot_antes: list[dict[str, Any]]
+    # Tipo del evento (F-030, R20): deshacer `INCIDENCIAS` restaura las
+    # incidencias; los demás, las líneas.
+    tipo: str = "GUARDAR"
 
 
 @dataclass
