@@ -342,3 +342,193 @@ def test_f030_r47_deshacer_snapshot_sin_id_son_nuevas():
     [inc] = fila.incidencias
     assert (inc.id not in (None, 7), inc.dia_desde, inc.dia_hasta,
             inc.quitada) == (True, 5, 9, False)
+
+
+# ===================== registro y traza (T26) =========================== #
+from tests.test_f024_registro_empresa import _fila, _Transfer
+from tests.test_f030_registro import _inc as _inc_reg
+from tests.test_f030_registro import _registro, _Sesion, _trazas
+
+
+def _inc_traza(inc_id, trab, obra, codigo="CIV", desde=5, hasta=9, *,
+               ini=None, fin=None, dia_ini=None, dia_fin=None, quitada=False,
+               parte=None):
+    i, t, o = _inc_reg(inc_id, trab, obra, codigo, desde, hasta)
+    i.sigrid_ide_ini, i.sigrid_ide_fin = ini, fin
+    i.sigrid_dia_ini, i.sigrid_dia_fin = dia_ini, dia_fin
+    i.quitada, i.sigrid_parte_cod = quitada, parte
+    return i, t, o
+
+
+class _SesionTipos(_Sesion):
+    """Como la de `test_f030_registro`, y la lectura del catálogo devuelve
+    (código, letra)."""
+
+    def execute(self, sentencia):
+        if "FROM tipo_incidencia" in str(sentencia):
+            self._anotado["selects"].append(str(sentencia))
+            return _Resultado_([("CIV", "V"), ("CIE", "B")])
+        return super().execute(sentencia)
+
+
+class _Resultado_:
+    def __init__(self, filas):
+        self._filas = filas
+
+    def all(self):
+        return list(self._filas)
+
+
+def _registro_tipos(transfer, filas=(), incidencias=(), anotado=None):
+    from application.registro_sigrid import RegistroSigrid
+
+    anotado = anotado if anotado is not None else {"updates": [],
+                                                   "selects": []}
+    return RegistroSigrid(
+        lambda: _SesionTipos(list(filas), list(incidencias), anotado),
+        transfer, 1)
+
+
+def test_f030_r39_registro_la_registrada_viaja_con_su_traza():
+    transfer = _Transfer()
+    incs = [_inc_traza(7, (10, 1), (678, 1), desde=6, ini=9001, fin=9002,
+                       dia_ini=5, dia_fin=9),
+            _inc_traza(8, (11, 1), (678, 1), ini=None, fin=9010, dia_fin=9),
+            _inc_traza(9, (12, 1), (678, 1))]                  # sin registrar
+    _registro(transfer, [], incs).preflight(2026, 7)
+    i7, i8, i9 = transfer.payloads[0]["incidencias"]
+    assert i7 == {"id": 7, "recurso_ide": 10, "empresa": 1, "codigo": "CIV",
+                  "ano": 2026, "mes": 7, "desde": 6, "hasta": 9, "paride": 0,
+                  "hmores_ide_ini": 9001, "hmores_ide_fin": 9002,
+                  "dia_ini": 5, "dia_fin": 9}
+    assert (i8["hmores_ide_ini"], i8["hmores_ide_fin"], i8["dia_ini"],
+            i8["dia_fin"]) == (None, 9010, None, 9)
+    # Sin traza, la petición de siempre (sin las cuatro claves).
+    assert set(i9) == {"id", "recurso_ide", "empresa", "codigo", "ano", "mes",
+                       "desde", "hasta", "paride"}
+
+
+@pytest.mark.parametrize("fase", ["preflight", "ejecutar"])
+def test_f030_r38_registro_las_quitadas_no_van_al_transfer(fase):
+    transfer = _Transfer()
+    incs = [_inc_traza(7, (10, 1), (678, 1), ini=9001, fin=9002, quitada=True),
+            _inc_traza(8, (10, 1), (694, 1), ini=9003, fin=9004, quitada=True),
+            _inc_traza(9, (11, 1), (694, 1))]
+    reg = _registro_tipos(transfer, [_fila(1, (10, 1), (678, 1))], incs)
+    r = (reg.preflight(2026, 7) if fase == "preflight"
+         else reg.ejecutar(2026, 7, pisar_claves=[]))
+    p678, p694 = transfer.payloads
+    assert "incidencias" not in p678              # solo tenía la quitada
+    assert [i["id"] for i in p694["incidencias"]] == [9]
+    if fase == "ejecutar":
+        assert "incidencias_quitadas" not in r
+
+
+def test_f030_r38_registro_el_preflight_lista_las_quitadas():
+    transfer = _Transfer()
+    anotado = {"updates": [], "selects": []}
+    incs = [_inc_traza(7, (10, 1), (678, 1), ini=9001, fin=9002, quitada=True,
+                       parte="PT26/00251"),
+            _inc_traza(8, (11, 1), (694, 1), codigo="CIE", desde=1, hasta=3,
+                       ini=None, fin=9004, quitada=True, parte="PT26/00252"),
+            _inc_traza(9, (11, 1), (694, 1)),
+            _inc_traza(6, (12, 28), (678, 1), ini=1, quitada=True)]  # no visible
+    reg = _registro_tipos(transfer, [], incs, anotado)
+    r = reg.preflight(2026, 7, empresa=1)
+    assert r["incidencias_quitadas"] == [
+        {"id": 7, "trabajador_ide": 10, "trabajador": "T10", "obra_ide": 678,
+         "obra_cod": "0678", "obra_nombre": "OBRA", "codigo": "CIV",
+         "letra": "V", "desde": 5, "hasta": 9, "parte_cod": "PT26/00251",
+         "hmores_ide_ini": 9001, "hmores_ide_fin": 9002},
+        {"id": 8, "trabajador_ide": 11, "trabajador": "T11", "obra_ide": 694,
+         "obra_cod": "0694", "obra_nombre": "OBRA", "codigo": "CIE",
+         "letra": "B", "desde": 1, "hasta": 3, "parte_cod": "PT26/00252",
+         "hmores_ide_ini": None, "hmores_ide_fin": 9004}]
+    [tipos] = [s for s in anotado["selects"] if "FROM tipo_incidencia" in s]
+    assert "tipo_incidencia.codigo IN" in " ".join(tipos.split())
+    # La de una obra: solo sus quitadas. Sin quitadas, ni la clave ni la
+    # lectura del catálogo.
+    r = _registro_tipos(_Transfer(), [], incs).preflight(2026, 7, empresa=1,
+                                                         obra_ide=694)
+    assert [q["id"] for q in r["incidencias_quitadas"]] == [8]
+    anotado = {"updates": [], "selects": []}
+    r = _registro_tipos(_Transfer(), [], incs[2:3], anotado).preflight(2026, 7)
+    assert "incidencias_quitadas" not in r
+    assert not [s for s in anotado["selects"] if "tipo_incidencia" in s]
+
+
+def test_f030_r38_registro_letra_sin_catalogo():
+    incs = [_inc_traza(7, (10, 1), (678, 1), codigo="CIQ", ini=1,
+                       quitada=True)]
+    r = _registro_tipos(_Transfer(), [], incs).preflight(2026, 7)
+    assert r["incidencias_quitadas"][0]["letra"] == "Q"
+
+
+def _resp(*acciones):
+    return {"ok": True, "escritas": [], "omitidas": [], "ya_registradas": [],
+            "incidencias": [
+                {"id": i, "rol": rol, "accion": acc, "fecha_int": fec,
+                 "hora_codigo": "CIV", "paride": 0, "parte_cod": parte,
+                 "hmores_ide": ide, "motivo": motivo}
+                for i, rol, acc, fec, parte, ide, motivo in acciones]}
+
+
+def _ejecutar_traza(*acciones):
+    anotado = {"updates": [], "selects": []}
+    _registro(_Transfer(_resp(*acciones)), [_fila(1, (10, 1), (678, 1))], [],
+              anotado).ejecutar(2026, 7, pisar_claves=[], usuario="ana")
+    return _trazas(anotado), anotado["wheres"]
+
+
+def test_f030_r39_traza_escrita_guarda_ide_y_dia_por_rol():
+    [t7], _ = _ejecutar_traza(
+        (7, "ini", "escribir", 20260705, "PT26/1", 9001, None),
+        (7, "fin", "escribir", 20260709, "PT26/1", 9002, None))
+    assert (t7["sigrid_estado"], t7["sigrid_ide_ini"], t7["sigrid_dia_ini"],
+            t7["sigrid_ide_fin"], t7["sigrid_dia_fin"],
+            t7["sigrid_registrado_by"]) == ("registrado", 9001, 5, 9002, 9,
+                                            "ana")
+
+
+def test_f030_r39_traza_editada_y_ya_registrada():
+    [t7], _ = _ejecutar_traza(
+        (7, "ini", "editar", 20260712, "PT26/1", 9001, None),
+        (7, "fin", "ya_registrado", 20260709, "PT26/1", 9002, "ya está"))
+    assert (t7["sigrid_ide_ini"], t7["sigrid_dia_ini"], t7["sigrid_ide_fin"],
+            t7["sigrid_dia_fin"], t7["sigrid_motivo"]) == (9001, 12, 9002, 9,
+                                                           None)
+    assert t7["sigrid_registrado_by"] == "ana"      # editar también escribe
+    [t8], _ = _ejecutar_traza(
+        (8, "ini", "ya_registrado", 20260705, "PT26/1", 9001, None),
+        (8, "fin", "ya_registrado", 20260709, "PT26/1", 9002, None))
+    assert "sigrid_registrado_by" not in t8 and t8["sigrid_dia_fin"] == 9
+
+
+def test_f030_r39_traza_un_omitir_no_borra_el_ide_de_su_rol():
+    [t7], _ = _ejecutar_traza(
+        (7, "ini", "editar", 20260706, "PT26/1", 9001, None),
+        (7, "fin", "omitir", 20260712, "PT26/1", None, "cambiada en Sigrid"))
+    assert (t7["sigrid_ide_ini"], t7["sigrid_dia_ini"], t7["sigrid_motivo"]) \
+        == (9001, 6, "cambiada en Sigrid")
+    assert "sigrid_ide_fin" not in t7 and "sigrid_dia_fin" not in t7
+
+
+def test_f030_r39_traza_todo_omitido_solo_degrada_la_no_registrada():
+    (motivo, estado), wheres = _ejecutar_traza(
+        (7, "ini", "omitir", 20260706, None, None, "el parte X está cerrado"),
+        (7, "fin", "omitir", 20260712, None, None, "el parte X está cerrado"))
+    assert motivo == {"id_1": 7, "sigrid_motivo": "el parte X está cerrado"}
+    assert estado == {"id_1": 7, "sigrid_estado": "omitido"}
+    assert wheres[-2:] == [
+        "incidencia.id = :id_1",
+        ("incidencia.id = :id_1 AND incidencia.sigrid_ide_ini IS NULL "
+         "AND incidencia.sigrid_ide_fin IS NULL")]
+
+
+def test_f030_r39_traza_docstring_explica_el_import_de_orm():
+    """Obs. 5 de la review: el import del ORM en `application/` se queda
+    (precedente `registro_sigrid.py`) y su docstring lo dice."""
+    from application import traza_incidencias
+
+    assert "registro_sigrid.py" in traza_incidencias.__doc__
+    assert "importa el ORM" in traza_incidencias.__doc__

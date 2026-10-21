@@ -70,8 +70,12 @@ def _inc(inc_id, trab, obra, codigo="CIV", desde=5, hasta=9):
     """(incidencia, trabajador, obra) como los devuelve la lectura; `trab` y
     `obra` son (ide, empresa)."""
     _, t, o = _fila(0, trab, obra)
+    # Anexo R30 (design §13.7): sin quitar y sin traza de Sigrid.
     i = SimpleNamespace(id=inc_id, trabajador_ide=trab[0], obra_ide=obra[0],
-                        codigo=codigo, dia_desde=desde, dia_hasta=hasta)
+                        codigo=codigo, dia_desde=desde, dia_hasta=hasta,
+                        quitada=False, sigrid_ide_ini=None,
+                        sigrid_ide_fin=None, sigrid_dia_ini=None,
+                        sigrid_dia_fin=None, sigrid_parte_cod=None)
     return i, t, o
 
 
@@ -209,22 +213,28 @@ def test_f030_r31_traza_registrada_omitida_y_mixta():
     _registro(transfer, [_fila(1, (10, 1), (678, 1))],
               [_inc(7, (10, 1), (678, 1))], anotado).ejecutar(
         2026, 7, pisar_claves=[], usuario="ana")
-    t7, t8, t9 = _trazas(anotado)
+    # Anexo R30 (R39; design §13.7): la omitida son dos UPDATE (motivo y,
+    # si no tiene ningún `ide`, `omitido`).
+    t7, t8, t8_estado, t9 = _trazas(anotado)
     # Cada UPDATE, solo a su incidencia.
-    assert anotado["wheres"][-3:] == ["incidencia.id = :id_1"] * 3
+    assert anotado["wheres"][-4:] == [
+        "incidencia.id = :id_1", "incidencia.id = :id_1",
+        ("incidencia.id = :id_1 AND incidencia.sigrid_ide_ini IS NULL "
+         "AND incidencia.sigrid_ide_fin IS NULL"), "incidencia.id = :id_1"]
     assert t7["id_1"] == 7 and t7["sigrid_estado"] == "registrado"
     assert (t7["sigrid_parte_cod"], t7["sigrid_ide_ini"], t7["sigrid_ide_fin"],
             t7["sigrid_motivo"], t7["sigrid_registrado_by"]) == (
         "PT26/00251", 70001, 70002, None, "ana")
     assert t7["sigrid_registrado_at_utc"] is not None
-    assert (t8["id_1"], t8["sigrid_estado"], t8["sigrid_motivo"]) == (
-        8, "omitido", "sin CIZ")
-    assert "sigrid_registrado_by" not in t8
+    assert (t8, t8_estado) == ({"id_1": 8, "sigrid_motivo": "sin CIZ"},
+                               {"id_1": 8, "sigrid_estado": "omitido"})
     # Una ya registrada y la otra ya en Sigrid de otro: registrada, con el
     # motivo de la omitida y sin pisar quién la registró.
+    # La omitida no borra el `ide` de su rol (R39).
     assert (t9["id_1"], t9["sigrid_estado"], t9["sigrid_parte_cod"],
-            t9["sigrid_ide_ini"], t9["sigrid_ide_fin"], t9["sigrid_motivo"]) \
-        == (9, "registrado", "PT26/00031", 51, None, "ya hay una línea CIZ")
+            t9["sigrid_ide_ini"], t9["sigrid_motivo"]) \
+        == (9, "registrado", "PT26/00031", 51, "ya hay una línea CIZ")
+    assert "sigrid_ide_fin" not in t9
     assert "sigrid_registrado_by" not in t9
 
 
@@ -235,7 +245,7 @@ def test_f030_r31_motivo_recortado_a_300():
                                     (8, "fin", "omitir", None, None, largo)))
     _registro(transfer, [_fila(1, (10, 1), (678, 1))], [],
               anotado).ejecutar(2026, 7, pisar_claves=[])
-    [t8] = _trazas(anotado)
+    t8, _ = _trazas(anotado)          # anexo R30: motivo y estado (R39)
     assert t8["sigrid_motivo"] == "x" * 300
 
 

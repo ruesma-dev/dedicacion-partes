@@ -127,8 +127,6 @@ def _registrada_del_5_al_9() -> tuple[_SesionMem, RegistroSigrid]:
     return sesion, reg
 
 
-@pytest.mark.xfail(strict=True, reason="T22: hueco de la review 1 (la api "
-                   "manda otra incidencia sin su traza); T33 quita la marca")
 @pytest.mark.parametrize("caso", CONTRATO["casos"],
                          ids=[f"{c['dias'][0]}-{c['dias'][1]}"
                               for c in CONTRATO["casos"]])
