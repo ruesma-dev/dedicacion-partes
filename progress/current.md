@@ -44,6 +44,41 @@ arnés es la **1.7.3**.
   mismos partes: avisar al humano.
 - Sigrid, solo lectura durante la spec (consultas en `progress/spec_F-030.md`).
 
+## F-030 · implementación: TERMINADA, lista para review (implementer, 2026-10-21)
+
+- **Estado:** T1-T19 y T21 `[x]`, cada una con su commit `F-030 Tn`. El
+  informe está en `progress/impl_F-030.md` y la mutación en
+  `progress/mutacion_F-030.md`. **T20 (MANUAL) es del líder** y exige
+  autorización expresa del humano. Su comando exacto está en el informe §6:
+  transfer local con `OBRA_PRUEBAS_FORZAR=true` y
+  `prueba_escritura_porcentajes.py preflight|ejecutar --confirmar|verificar
+  --incidencia RECURSO:CIV:5:9`, repetir `ejecutar` y `limpiar --confirmar`.
+- **Fusión de `dev` (F-051) antes de T15:** commit `46cf116`, conservando
+  los dos comportamientos. Las incidencias quedan fuera de pisados,
+  sobrecarga y líneas al 0 %, y comparten la relectura de F-051.
+- **`bash harness/init.sh`:** en verde sobre `8b17e85` (con la caché de suites borrada): raíz 418 (+1 skipped), api 1.083, front 350, transfer 1.168; cobertura de líneas cambiadas 99,5 % (634/637); tamaño 150/150 y 250/250.
+- **Mutación:**
+  - 1.ª campaña (en serie, sin muestreo): 251 mutantes, 31 supervivientes,
+    todos huecos reales. Les puse tests (`42c0fb5`) y reescribí la
+    comprobación del lote que miraba solo la primera línea del par.
+  - 2.ª campaña: 250 mutantes, 1 superviviente (el test del log tenía cuentas simétricas; corregido en `8b17e85`). **3.ª campaña: 250 mutantes, 0 supervivientes**, en serie (`--workers 1`) y completa, sin muestreo.
+- **Desviaciones justificadas** (informe §2):
+  - La traza de la incidencia va en `application/traza_incidencias.py`, no
+    en `registro_sigrid.py`, para no tocar `test_f003_r17`. Un test igual la
+    vigila contra las columnas de `incidencia`.
+  - Sin incidencias, ni el kwarg ni la clave de respuesta `incidencias`
+    (R2 literal).
+  - Con `--incidencia`, el script manda solo las incidencias.
+- **Lista cerrada de tests ajenos:** la tabla exacta está en el informe §3.
+  Solo dobles, salvo la aserción de f013 (opción A del humano).
+- **Pendiente del líder al desplegar** (orden transfer → api → front):
+  - `azure-apps/dedicacion.md` (R34) debe decir que leemos `auxhor` y
+    escribimos `CI*`/`CIZ` con `can = 0` y `synckey porcentajes:inc:`, más
+    las rutas nuevas.
+  - Avisar a `partes` de que su `azure-apps/partes.md` debería decir que
+    `porcentajes` escribe `CI*`/`CIZ` en los mismos partes.
+- Nada escrito en Sigrid; ningún `push`.
+
 ## F-030 · implementación: bloqueo de T14 RESUELTO (implementer, 2026-10-21)
 
 **Resuelto por el humano el 2026-10-21 con la opción A** («a»): la aserción
