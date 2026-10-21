@@ -740,3 +740,94 @@ def test_f030_r35_script_incidencia_mal_escrita(monkeypatch, valor):
     with pytest.raises(SystemExit):
         _script(monkeypatch, ClienteEscribe(), "preflight", "--incidencia",
                 valor)
+
+
+# ======================= mutación (T21): huecos ========================== #
+def test_f030_r24_defectos_de_entrada_y_accion():
+    """Lo que no se manda vale 0 (sin partida, sin periodo), no 1."""
+    from domain.models.registro_models import AccionIncidencia
+    from interface_adapters.api.app import IncidenciaIn
+
+    entrada = IncidenciaEntrada(id=1, recurso_ide=200, empresa=1,
+                                codigo="CIV", ano=2026, mes=7, desde=5,
+                                hasta=9)
+    assert entrada.paride == 0
+    assert IncidenciaIn(id=1, codigo="CIV", ano=2026, mes=7).paride == 0
+    a = AccionIncidencia(id=1, rol="ini", accion="omitir", fecha_int=0)
+    assert (a.recurso_ide, a.ano, a.mes, a.hora_ide, a.hora_codigo, a.pre,
+            a.paride, a.motivo, a.parte_cod, a.hmores_ide, a.destino,
+            a.aviso, a.caa_ide) == (None, 0, 0, None, None, 0.0, 0, None,
+                                     None, None, "obra", None, 0)
+
+
+def test_f030_r24_ejecutar_sin_partida_inserta_paride_cero():
+    cli = ClienteEscribe()
+    _ej(cli, [], [_inc(paride=0)])
+    assert [i["paride"] for i in cli.inserts()] == [0, 0]
+
+
+def test_f030_r31_el_log_cuenta_las_que_se_escriben(caplog):
+    import logging
+
+    caplog.set_level(logging.INFO, "application.pipelines.registro_pipeline")
+    _pf(ClienteInc(), [], [_inc(), _inc(id=8, recurso_ide=300)])
+    [linea_log] = [r.getMessage() for r in caplog.records
+                   if "incidencias obra=" in r.getMessage()]
+    assert linea_log.endswith("lineas=4 escribir=2")
+
+
+class _ClientePrecarga(ClienteInc):
+    """Anota las partidas cuya cuenta se precarga; el 500 tiene las dos
+    horas de incidencia con subcuenta y una hora sin ella que no es de la
+    incidencia."""
+
+    def __init__(self, **kw) -> None:
+        super().__init__(**kw)
+        self.horas[500] = [
+            HoraRecurso(5, "MENC", None, 9000.0, caa_cod="00000.CIMO03"),
+            HoraRecurso(9, "HEGR", None, 30.0),
+            HoraRecurso(71, "CIV", "Vacaciones(V)", 12.5,
+                        caa_cod="00000.CIMO07"),
+            HoraRecurso(79, "CIZ", "Fin de Incidencia", 0.0,
+                        caa_cod="00000.CIMO07")]
+        self.precargadas: list[list[int]] = []
+
+    def partidas_de_lineas(self, parides):
+        self.precargadas.append(sorted(parides))
+        return super().partidas_de_lineas(parides)
+
+
+def test_f030_r33_lote_precarga_la_cuenta_solo_si_falta_subcuenta():
+    """La del 200 (su `CIZ` sin subcuenta) se precarga; la del 500 (las dos
+    con subcuenta) y la de una incidencia sin recurso, no."""
+    from application.services.lecturas_lote import LecturasDelLote
+
+    cli = _ClientePrecarga()
+    LecturasDelLote(cli, 2).precargar([(OBRA, [], [
+        _inc(paride=80001), _inc(id=8, recurso_ide=500, paride=80002),
+        _inc(id=9, recurso_ide=None, paride=80003)])], _ajustes())
+    assert cli.precargadas == [[80001]]
+
+
+class _ClienteVerifica(ClienteEscribe):
+    def __init__(self, **kw) -> None:
+        super().__init__(**kw)
+        self.pedidas: list[set[str]] = []
+
+    def lineas_por_synckey(self, claves):
+        self.pedidas.append(set(claves))
+        return super().lineas_por_synckey(claves)
+
+
+@pytest.mark.parametrize("argv, incidencias", [
+    ((), [990101]),
+    (("--incidencia", "200:CIV:5:9", "--incidencia", "400:CIV:1:2"),
+     [990101, 990102])])
+def test_f030_r35_script_verificar_pide_justo_esas_synckeys(monkeypatch,
+                                                            argv, incidencias):
+    cli = _ClienteVerifica()
+    _script(monkeypatch, cli, "verificar", *argv)
+    assert cli.pedidas == [
+        {"porcentajes:900001", "porcentajes:900002", "porcentajes:900003",
+         *(f"porcentajes:inc:{i}:{rol}" for i in incidencias
+           for rol in ("ini", "fin"))}]

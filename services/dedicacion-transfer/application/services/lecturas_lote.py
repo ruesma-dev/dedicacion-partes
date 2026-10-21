@@ -346,7 +346,9 @@ class LecturasDelLote:
             if empresas[i] is None:
                 continue
             for x in lista:
-                if decidir_incidencia(x, horas)[0].accion != "escribir":
+                # Las dos del par deciden lo mismo (R26: nunca una sin la
+                # otra); se miran las dos, sin depender de esa posición.
+                if {a.accion for a in decidir_incidencia(x, horas)}                         != {"escribir"}:
                     continue
                 partes = None
                 if settings.obra_pruebas_forzar:

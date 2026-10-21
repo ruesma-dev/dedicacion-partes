@@ -379,6 +379,17 @@ def test_f030_r3_preview_informa_del_catalogo_sin_persistir():
     assert sigrid.leidas[-2:] == [SQL_INC, "SELECT ... FROM dbo.auxemp"]
 
 
+def test_f030_r3_preview_sin_ide_o_sin_codigo_no_cuenta():
+    """Mutación: basta con que falte UNO de los dos para que la fila no
+    cuente (como en el sync), y una fila sin los dos tampoco."""
+    filas = [_fila(None, "CIX", "Sin ide(X)"), _fila(19, "", "Sin código(Y)"),
+             _fila(None, None, "Nada(Z)"), *AUXHOR[:1]]
+    salida = _preview(_Sigrid(filas)).ejecutar()
+    assert salida["incidencias"] == {
+        "leidas": 4, "activas": 1, "de_baja": [],
+        "letras": {"CIA": "AT · Accidente/Enf. Profesional"}}
+
+
 def test_f030_r3_preview_sin_columnas_avisa_como_el_sync():
     filas = [{k: v for k, v in AUXHOR[0].items() if k != "res"}]
     with pytest.raises(ValueError, match=r"sync\.incidencias\.sql.*res"):

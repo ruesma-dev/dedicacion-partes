@@ -53,6 +53,8 @@ class _Sesion:
         if isinstance(sentencia, Update):
             self._anotado["updates"].append(
                 (sentencia.table.name, sentencia.compile().params))
+            self._anotado.setdefault("wheres", []).append(
+                str(sentencia.whereclause))
             return None
         texto = str(sentencia)
         self._anotado["selects"].append(texto)
@@ -149,6 +151,19 @@ def test_f030_r23_el_filtro_de_trabajador_y_de_obra():
         s for s in anotado["selects"] if "FROM incidencia" in s][-1]
 
 
+def test_f030_r23_la_lectura_de_incidencias_es_la_del_periodo():
+    """La sesión falsa no filtra: el texto de la consulta dice qué cruza
+    (periodo, trabajador y obra de la incidencia) y qué periodo pide."""
+    anotado = {"updates": [], "selects": []}
+    _registro(_Transfer(), [], [], anotado).preflight(2026, 7)
+    [sql] = [" ".join(s.split()) for s in anotado["selects"]
+             if "FROM incidencia" in s]
+    assert "JOIN periodo ON periodo.id = incidencia.periodo_id" in sql
+    assert "JOIN trabajador ON trabajador.ide = incidencia.trabajador_ide"         in sql
+    assert "JOIN obra ON obra.ide = incidencia.obra_ide" in sql
+    assert "WHERE periodo.anio = :anio_1 AND periodo.mes = :mes_1" in sql
+
+
 # ================================ R25 ==================================== #
 def test_f030_r25_partida_elegida_propuesta_o_cero():
     transfer = _Transfer()
@@ -157,13 +172,15 @@ def test_f030_r25_partida_elegida_propuesta_o_cero():
         _asig(2, (11, 1), (678, 1), propuesta_ide=80002),
         _asig(3, (12, 1), (678, 1), es_postventa=True, partida_ide=70001),
         _asig(4, (13, 1), (694, 1), partida_ide=80004),
+        _asig(5, (14, 1), (678, 1)),            # ni elegida ni propuesta
     ]
     incs = [_inc(1, (10, 1), (678, 1)), _inc(2, (11, 1), (678, 1)),
-            _inc(3, (12, 1), (678, 1)), _inc(4, (13, 1), (678, 1))]
+            _inc(3, (12, 1), (678, 1)), _inc(4, (13, 1), (678, 1)),
+            _inc(5, (14, 1), (678, 1))]
     _registro(transfer, filas, incs).preflight(2026, 7)
     p678 = next(p for p in transfer.payloads if p["obra"]["ide"] == 678)
     assert [(i["id"], i["paride"]) for i in p678["incidencias"]] == [
-        (1, 80001), (2, 80002), (3, 0), (4, 0)]
+        (1, 80001), (2, 80002), (3, 0), (4, 0), (5, 0)]
 
 
 # ================================ R31 ==================================== #
@@ -193,6 +210,8 @@ def test_f030_r31_traza_registrada_omitida_y_mixta():
               [_inc(7, (10, 1), (678, 1))], anotado).ejecutar(
         2026, 7, pisar_claves=[], usuario="ana")
     t7, t8, t9 = _trazas(anotado)
+    # Cada UPDATE, solo a su incidencia.
+    assert anotado["wheres"][-3:] == ["incidencia.id = :id_1"] * 3
     assert t7["id_1"] == 7 and t7["sigrid_estado"] == "registrado"
     assert (t7["sigrid_parte_cod"], t7["sigrid_ide_ini"], t7["sigrid_ide_fin"],
             t7["sigrid_motivo"], t7["sigrid_registrado_by"]) == (

@@ -120,6 +120,44 @@ def test_f030_r3_esquema_tabla_tipo_incidencia():
     assert not tabla.columns["activa"].nullable
 
 
+def _ddl(tabla) -> list[str]:
+    from sqlalchemy.dialects import postgresql
+    from sqlalchemy.schema import CreateTable
+
+    texto = str(CreateTable(tabla).compile(dialect=postgresql.dialect()))
+    return [l.strip().rstrip(",") for l in texto.strip().splitlines()]
+
+
+def test_f030_r3_r17_esquema_ddl_y_defectos():
+    """Mutación: el DDL entero de PostgreSQL (obligatorias, `SERIAL`,
+    defectos de servidor) y los defectos de Python de las dos tablas."""
+    from infrastructure.db.orm_models import IncidenciaORM, TipoIncidenciaORM
+
+    assert _ddl(TipoIncidenciaORM.__table__) == [
+        "CREATE TABLE tipo_incidencia (", "ide BIGINT NOT NULL",
+        "codigo TEXT NOT NULL", "letra TEXT NOT NULL", "nombre TEXT NOT NULL",
+        "activa BOOLEAN NOT NULL",
+        "sync_en TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL",
+        "PRIMARY KEY (ide)", ")"]
+    ddl = _ddl(IncidenciaORM.__table__)
+    assert ddl[1] == "id SERIAL NOT NULL"
+    assert ddl[8] == "actualizado_en TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL"
+    assert TipoIncidenciaORM.__table__.columns["activa"].default.arg is True
+    assert IncidenciaORM.__table__.columns["actualizado_por"].default.arg         == "local"
+
+
+def test_f030_r17_los_modelos_son_inmutables():
+    import dataclasses
+
+    from domain.models import Incidencia, TipoIncidencia
+
+    tipo = TipoIncidencia(ide=17, codigo="CIV", letra="V", nombre="Vacaciones")
+    inc = Incidencia(obra_ide=100, codigo="CIV", dia_desde=5, dia_hasta=9)
+    for objeto, campo in ((tipo, "activa"), (inc, "dia_hasta")):
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            setattr(objeto, campo, 1)
+
+
 def test_f030_r17_esquema_tabla_incidencia():
     from infrastructure.db.orm_models import Base, IncidenciaORM
 
