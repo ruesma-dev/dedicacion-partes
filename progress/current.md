@@ -1,29 +1,25 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-051 CERRADA (`done`) el 2026-10-21, pendiente de desplegar**
-(pisar las líneas del parte editándolas, nunca borrando; transfer, api y
-front). Review: pasada 1 RECHAZADO (mutante que no era equivalente y rastro
-desfasado), pasada 2 APROBADO, pasada 3 (T18, la O2) APROBADO
-(`progress/review_F-051.md`). **T15 CUMPLIDA por el líder el 2026-10-21** en
-modo pruebas en la 0404, con las escrituras autorizadas por el humano
-(«realiza tu las pruebas», «escribe en prueba para 51»): la línea a 0 se
-edita en su sitio, el pisado edita, la tercera vez es «ya registrada», 0
-`DELETE`; 0404 limpia al acabar (`progress/manual_F-051.md`). `bash
-harness/init.sh` en verde en la rama. Spec aprobada por el humano el
-2026-10-20 (D1-D15); bloqueos de implementación resueltos por él (T3 A, T12
-B); O2 dentro (T18) y O4 a la feature nueva **F-058** (`pending`), decisión
-del humano del 2026-10-21. **F-030** en curso en paralelo en la copia
-`porcentajes-f030` (decisión del humano, 2026-10-21). El arnés es la
-**1.7.3**.
+**Ninguna feature en curso en `dev`.** **F-051** (pisar las líneas del parte
+editándolas, nunca borrando) cerrada el 2026-10-21 y **desplegada el
+2026-10-21** por el líder con permiso del humano («autorizo … despliegue de
+f51»), transfer → api → front (ver «Producción, hoy»); T16 hecho
+(`azure-apps/dedicacion.md` `223490c`). **F-030** (incidencias) en curso en
+paralelo en la copia `porcentajes-f030` (decisión del humano, 2026-10-21):
+review 1 RECHAZADO por R30, el humano eligió la opción C (editar en Sigrid
+las fechas del par) y el spec-author redacta el anexo; su rama lo cuenta.
+Altas nuevas del 2026-10-21: **F-058** (un % que redondea a 0 no se
+registra), **F-059** (% por días con el calendario de convenio) y **F-060**
+(leer la bandeja de `partes`). El arnés es la **1.7.3**.
 
-**Pendiente del líder, al desplegar F-051** (necesita permiso del humano;
-orden **transfer → api → front**): T16, refrescar `azure-apps/dedicacion.md`
-desde `docs/INTEGRACION.md` §1, §5 y §7 (el transfer EDITA en su sitio
-líneas `M*` de partes compartidos, `UPDATE` con guarda y sin `DELETE`;
-`lineas[].hmores_ide` de ida; `ya_registradas_ide`, `editadas`, `a_cero` y
-`escritas[].editada` de vuelta; `borradas` siempre 0) y avisar a `partes` de
-que el transfer edita líneas `M*` de sus partes sin borrarlas.
+**Pendiente del humano:** la comprobación de F-051 en producción (Ctrl+F5;
+un registro con una línea `M*` al 0 % en el parte la edita en su sitio y el
+modal lo avisa; un pisado dice «se edita la línea X (…) y se escribe N%»).
+**Aviso a `partes`** (lo transmite el humano; aquí no se toca `partes`):
+desde F-051 el transfer de dedicación **edita en su sitio** líneas `M*` de
+los partes compartidos (también las que tengan `synckey partes:…`, sin
+cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
 
 ## F-051 · bloqueos de implementación (2026-10-20) · RESUELTOS
 
@@ -66,12 +62,9 @@ que el transfer edita líneas `M*` de sus partes sin borrarlas.
 - **T15 CUMPLIDA por el líder el 2026-10-21** (modo pruebas, 0404,
   escrituras autorizadas por el humano). Detalle en
   `progress/manual_F-051.md`; resumen en `progress/impl_F-051.md` §6.
-- **`azure-apps` pendiente (T16, líder, al desplegar transfer → api →
-  front):** `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` §1, §5 y
-  §7: el transfer EDITA en su sitio líneas `M*` de partes compartidos
-  (`UPDATE` con guarda, sin `DELETE`); `LineaIn.hmores_ide` de ida;
-  `ya_registradas_ide`, `editadas`, `a_cero` y `escritas[].editada` de
-  vuelta; `borradas` siempre 0 en el registro. Avisar a `partes`.
+- **T16 HECHO el 2026-10-21** al desplegar (transfer → api → front):
+  `azure-apps/dedicacion.md` `223490c` (§1, §5 y §7 desde
+  `docs/INTEGRACION.md`). Aviso a `partes`: en «Pendiente del humano», arriba.
 
 ## F-051 · decisiones del humano sobre la spec (2026-10-20, todas cerradas)
 
@@ -99,6 +92,17 @@ que el transfer edita líneas `M*` de sus partes sin borrarlas.
 
 ## Producción, hoy
 
+- **Desplegado el 2026-10-21: F-051**, los tres servicios en orden, por el
+  líder con `redeploy_dedicacion.ps1 -Solo transfer|api|front` (permiso del
+  humano): transfer `r20261021-1611` (revisión
+  `ca-dedicacion-transfer--r20261021161055`), api `r20261021-1613`
+  (`…--r20261021161322`) y front `r20261021-1615` (`…--r20261021161520`), las
+  tres `RunningAtMaxScale`, `Healthy` y con el 100 % del tráfico (`az
+  containerapp revision list`). El transfer sigue en **modo real**
+  (`OBRA_PRUEBAS_FORZAR=false`, `az containerapp show`) y arrancó sin errores
+  (`containerapp logs`). El script volvió a cortarse tras cada `containerapp
+  update` (el `Run-Az` de «Lo que espera al humano»). `infra/imagenes.json`
+  al día en este commit; `azure-apps/dedicacion.md` `223490c`.
 - **Desplegado el 2026-10-20: F-057**, api y front, en ese orden, lanzado por
   el humano con `redeploy_dedicacion.ps1 -Solo api` y `-Solo front` (esta vez
   sin cortarse): api `r20261020-1342` (revisión
@@ -241,8 +245,8 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada el 2026-10-21 (pendiente de desplegar). Orden: **F-030** (en curso), **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
-que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031,
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. Orden: **F-030** (en curso), **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
+que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
