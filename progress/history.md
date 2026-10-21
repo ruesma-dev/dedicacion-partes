@@ -2778,3 +2778,8 @@ líneas de prueba que quedaban (`porcentajes:148/149` y `:180`).
 equivalente cubre los extremos del dominio: 0, máximo, nulo) ⇒ lista del
 arnés, a portar a `arnes-base`. Pendiente de desplegar (transfer → api →
 front) y T16 (`azure-apps/dedicacion.md` y aviso a `partes`).
+
+**Desplegada el 2026-10-21** por el líder con permiso del humano (transfer
+`r20261021-1611`, api `r20261021-1613` y front `r20261021-1615`, en ese
+orden; revisiones `Healthy` al 100 %; transfer en modo real);
+`azure-apps/dedicacion.md` `223490c`. Comprobación en producción, del humano.
