@@ -310,8 +310,11 @@ def test_f013_r3_la_confirmacion_no_estrena_canal():
     import inspect
 
     firma = inspect.signature(RegistroPipeline.ejecutar)
+    # F-030 (lista cerrada): `incidencias` son los datos de las incidencias
+    # de la obra; NO es un canal de confirmación (esa sigue en `pisar_claves`).
     assert list(firma.parameters) == ["self", "obra", "lineas",
-                                      "pisar_claves", "usuario"]
+                                      "pisar_claves", "usuario",
+                                      "incidencias"]
 
 
 def test_f013_r3_una_clave_ajena_no_confirma_nada():
