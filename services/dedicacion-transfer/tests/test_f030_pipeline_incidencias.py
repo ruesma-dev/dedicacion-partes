@@ -31,6 +31,7 @@ from domain.models.registro_models import (
 from tests.conftest import (
     EMPRESA,
     OBRA_ORIGEN,
+    OBRA_SIN_PARTIDA_PV,
     ClienteFalso,
     SettingsFalso,
     linea,
@@ -471,3 +472,207 @@ def test_f030_r28_ejecutar_una_linea_de_incidencia_no_es_linea_al_cero():
     assert [s["sql"] for s in cli.escritos] == ["insert"] * 3
     assert [i["synckey"] for i in cli.inserts()] == [
         "porcentajes:1", "porcentajes:inc:8:ini", "porcentajes:inc:8:fin"]
+
+
+# ============================== lote (T15) =============================== #
+from application.pipelines.registro_lote import RegistroLote
+
+OBRA_B = ObraEntrada(codigo=OBRA_SIN_PARTIDA_PV)
+
+
+def _ajustes(**kw):
+    st = SettingsFalso(**kw)
+    st.sigrid_lecturas_paralelas = 4
+    return st
+
+
+def _lote(cli, peticiones, **kw):
+    return RegistroLote(cliente=cli, settings=_ajustes(**kw)).preflight(
+        peticiones)
+
+
+def _suelto(cli, obra, lineas, incidencias, **kw):
+    return RegistroPipeline(cliente=cli, settings=_ajustes(**kw)).preflight(
+        obra=obra, lineas=lineas, incidencias=incidencias)
+
+
+def _peticiones():
+    return [
+        (OBRA, [linea(registro_id=1)], [_inc(paride=80001)]),
+        (OBRA_B, [], [_inc(id=8, recurso_ide=400, desde=12, hasta=14)]),
+        (OBRA, [linea(registro_id=3, recurso_ide=400)]),
+    ]
+
+
+@pytest.mark.parametrize("pruebas", [True, False])
+def test_f030_r33_lote_una_lectura_y_lo_mismo_que_suelto(pruebas):
+    from interface_adapters.api.app import _respuesta_preflight
+
+    otra = LineaIncidenciaSigrid(61, 400, 20260714, "CIZ", None, "PT26/00041")
+    cli = ClienteInc(existentes=[otra])
+    lote = _lote(cli, _peticiones(), obra_pruebas_forzar=pruebas)
+    assert cli.leidas_inc == [([200, 400], 2026, 7,
+                               [777] if pruebas else None)]
+    for r, p in zip(lote, _peticiones()):
+        obra, lineas, *inc = p
+        suelto = _suelto(ClienteInc(existentes=[otra]), obra, lineas,
+                         inc[0] if inc else None,
+                         obra_pruebas_forzar=pruebas)
+        assert _respuesta_preflight(r) == _respuesta_preflight(suelto)
+    assert [a.accion for a in lote[1].incidencias] == ["escribir", "omitir"]
+    assert lote[2].incidencias == []
+
+
+def test_f030_r33_lote_sin_incidencias_no_lee():
+    cli = ClienteInc()
+    _lote(cli, [(OBRA, [linea(registro_id=1)]),
+                (OBRA, [linea(registro_id=2)], [])])
+    assert cli.leidas_inc == []
+
+
+def test_f030_r33_lote_solo_si_alguna_se_escribiria():
+    cli = ClienteInc()
+    lote = _lote(cli, [(OBRA, [], [_inc(recurso_ide=300)]),
+                       (OBRA_B, [], [_inc(id=9, empresa=None)])])
+    assert cli.leidas_inc == []
+    assert [a.accion for r in lote for a in r.incidencias] == ["omitir"] * 4
+
+
+def test_f030_r33_lote_si_la_lectura_falla_falla_el_lote():
+    cli = ClienteInc(falla=RuntimeError("lectura truncada"))
+    with pytest.raises(RuntimeError, match="truncada"):
+        _lote(cli, _peticiones())
+
+
+def test_f030_r33_lote_lo_que_no_se_precargo_va_al_cliente():
+    from application.services.lecturas_lote import LecturasDelLote
+
+    cli = ClienteInc()
+    memoria = LecturasDelLote(cli, 2)
+    memoria.precargar([(OBRA, [], [_inc()])], _ajustes())
+    assert cli.leidas_inc == [([200], 2026, 7, [777])]
+    assert memoria.incidencias_del_mes([200], 2026, 7, hmoides=[777]) == []
+    assert memoria.fallos_de_memoria == {}
+    for args, kw in ((([200, 400], 2026, 7), {"hmoides": [777]}),
+                     (([200], 2026, 8), {"hmoides": [777]}),
+                     (([200], 2026, 7), {"hmoides": [778]}),
+                     (([200], 2026, 7), {})):
+        memoria.incidencias_del_mes(*args, **kw)
+    assert memoria.fallos_de_memoria == {"incidencias_del_mes": 4}
+    assert len(cli.leidas_inc) == 5
+
+
+def test_f030_r33_lote_filtra_por_recurso_lo_precargado():
+    from application.services.lecturas_lote import LecturasDelLote
+
+    filas = [LineaIncidenciaSigrid(1, 200, 20260705, "CIV", None, "P"),
+             LineaIncidenciaSigrid(2, 400, 20260705, "CIV", None, "P")]
+    cli = ClienteInc(existentes=filas)
+    memoria = LecturasDelLote(cli, 2)
+    memoria.precargar([(OBRA, [], [_inc(), _inc(id=8, recurso_ide=400)])],
+                      _ajustes(obra_pruebas_forzar=False))
+    assert memoria.incidencias_del_mes([400], 2026, 7) == [filas[1]]
+    assert memoria.fallos_de_memoria == {}
+
+
+# ============================ contrato (T15) ============================= #
+@pytest.fixture
+def api(monkeypatch):
+    from types import SimpleNamespace
+
+    from fastapi.testclient import TestClient
+    from interface_adapters.api import app as modulo_app
+
+    from tests.test_f050_endpoint_propuesta import AJUSTES
+
+    def fabricar(cli, **ajustes):
+        monkeypatch.setattr(modulo_app, "SigridWriteClient",
+                            lambda **kw: cli)
+        st = SimpleNamespace(**{**AJUSTES, "sigrid_lecturas_paralelas": 4,
+                                **ajustes})
+        return TestClient(modulo_app.build_app(st))
+    return fabricar
+
+
+def _json_linea(i, **kw):
+    return {"registro_id": i, "ano": 2026, "mes": 7, "porcentaje": 0.4,
+            "recurso_ide": 200, "nombre": "Acuna Mera, Antonio",
+            "categoria": "Encargado", "empresa": 1, **kw}
+
+
+def _json_inc(i=7, **kw):
+    return {"id": i, "recurso_ide": 200, "empresa": 1, "codigo": "CIV",
+            "ano": 2026, "mes": 7, "desde": 5, "hasta": 9, "paride": 0, **kw}
+
+
+CLAVES_INC = {"id", "rol", "accion", "fecha_int", "hora_codigo", "paride",
+              "parte_cod", "hmores_ide", "motivo"}
+
+
+def test_f030_r31_contrato_preflight_con_incidencias(api):
+    cuerpo = api(ClienteInc()).post("/api/registro/preflight", json={
+        "obra": {"codigo": OBRA_ORIGEN}, "lineas": [_json_linea(1)],
+        "incidencias": [_json_inc()]}).json()
+    assert cuerpo["ok"] is True
+    assert [set(x) for x in cuerpo["incidencias"]] == [CLAVES_INC] * 2
+    assert [(x["id"], x["rol"], x["accion"], x["fecha_int"], x["hora_codigo"],
+             x["parte_cod"], x["hmores_ide"], x["motivo"])
+            for x in cuerpo["incidencias"]] == [
+        (7, "ini", "escribir", 20260705, "CIV", "PT26/00251", None, None),
+        (7, "fin", "escribir", 20260709, "CIZ", "PT26/00251", None, None)]
+    assert cuerpo["resumen"]["escribir"] == 1     # las de % no cambian
+
+
+def test_f030_r31_contrato_sin_incidencias_responde_como_hoy(api):
+    peticion = {"obra": {"codigo": OBRA_ORIGEN}, "lineas": [_json_linea(1)]}
+    hoy = api(ClienteInc()).post("/api/registro/preflight",
+                                 json=peticion).json()
+    vacia = api(ClienteInc()).post("/api/registro/preflight", json={
+        **peticion, "incidencias": []}).json()
+    assert "incidencias" not in hoy and vacia == hoy
+    ej = api(ClienteEscribe()).post("/api/registro/ejecutar",
+                                    json=peticion).json()
+    assert "incidencias" not in ej and ej["ok"] is True
+
+
+def test_f030_r31_contrato_ejecutar_devuelve_las_escritas(api):
+    cli = ClienteEscribe()
+    cuerpo = api(cli).post("/api/registro/ejecutar", json={
+        "obra": {"codigo": OBRA_ORIGEN}, "lineas": [],
+        "incidencias": [_json_inc(paride=None)]}).json()
+    assert cuerpo["ok"] is True and cuerpo["escritas"] == []
+    assert [(x["rol"], x["accion"], x["hmores_ide"], x["paride"])
+            for x in cuerpo["incidencias"]] == [
+        ("ini", "escribir", 70001, 0), ("fin", "escribir", 70002, 0)]
+    assert [i["synckey"] for i in cli.inserts()] == [
+        "porcentajes:inc:7:ini", "porcentajes:inc:7:fin"]
+
+
+def test_f030_r31_contrato_lote_por_obra(api):
+    cli = ClienteInc()
+    cuerpo = api(cli).post("/api/registro/preflight-lote", json={
+        "peticiones": [
+            {"obra": {"codigo": OBRA_ORIGEN}, "lineas": [_json_linea(1)],
+             "incidencias": [_json_inc()]},
+            {"obra": {"codigo": OBRA_ORIGEN}, "lineas": [_json_linea(2)]}]}
+    ).json()
+    a, b = cuerpo["obras"]
+    assert [x["accion"] for x in a["incidencias"]] == ["escribir"] * 2
+    assert "incidencias" not in b
+    assert len(cli.leidas_inc) == 1
+
+
+def test_f030_r23_contrato_valores_que_omiten_sin_422(api):
+    cuerpo = api(ClienteInc()).post("/api/registro/preflight", json={
+        "obra": {"codigo": OBRA_ORIGEN}, "lineas": [_json_linea(1)],
+        "incidencias": [{"id": 7, "codigo": "CIV", "ano": 2026, "mes": 7}]}
+    ).json()
+    assert [(x["accion"], x["motivo"]) for x in cuerpo["incidencias"]] == [
+        ("omitir", MOTIVO_SIN_EMPRESA)] * 2
+
+
+def test_f030_r23_contrato_empresas_mezcladas_422(api):
+    r = api(ClienteInc()).post("/api/registro/preflight", json={
+        "obra": {"codigo": OBRA_ORIGEN}, "lineas": [_json_linea(1)],
+        "incidencias": [_json_inc(empresa=2)]})
+    assert r.status_code == 422

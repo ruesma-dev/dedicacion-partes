@@ -39,8 +39,11 @@ from concurrent.futures import Future, ThreadPoolExecutor
 
 from application.services.cuenta_analitica import subcuenta_de_linea
 from application.services.propuesta_partida import ventana
+from application.services.reglas_incidencias import (
+    CODIGO_FIN, decidir_incidencia,
+)
 from application.services.reglas_porcentajes import empresa_de_peticion
-from domain.models.registro_models import LineaEntrada, ObraEntrada
+from domain.models.registro_models import ObraEntrada
 from infrastructure.sigrid.sigrid_write_client import synckey_de
 
 logger = logging.getLogger(__name__)
@@ -71,6 +74,8 @@ class LecturasDelLote:
         self._historial: dict[tuple[int, int], tuple[set[int], list]] = {}
         self._partes: dict[tuple[int, int, int], list] = {}
         self._lineas: tuple[set[int], dict] | None = None
+        # F-030 (R33): por (año, mes, partes o None), recursos y líneas.
+        self._incidencias: dict[tuple, tuple[set[int], list]] = {}
 
     # ------------------------------------------------------------ #
     #  Utilidades
@@ -129,18 +134,20 @@ class LecturasDelLote:
     # ------------------------------------------------------------ #
     #  Precarga
     # ------------------------------------------------------------ #
-    def precargar(self, peticiones: list[tuple[ObraEntrada,
-                                               list[LineaEntrada]]],
-                  settings) -> None:
+    def precargar(self, peticiones: list[tuple], settings) -> None:
         """Rondas A-C (design §2, con validación e historial en B) para
-        las peticiones del lote."""
+        las peticiones del lote: `(obra, lineas)` o, con incidencias
+        (F-030), `(obra, lineas, incidencias)`."""
+        incs = [list(p[2]) if len(p) > 2 else [] for p in peticiones]
+        peticiones = [(p[0], p[1]) for p in peticiones]
         empresas: dict[int, int | None] = {}
         for i, (_, lineas) in enumerate(peticiones):
             try:
-                empresas[i] = empresa_de_peticion(lineas)
+                empresas[i] = empresa_de_peticion([*lineas, *incs[i]])
             except Exception:                       # noqa: BLE001
                 empresas[i] = None      # la petición fallará sola
         todas = [l for _, ls in peticiones for l in ls]
+        todas_inc = [x for xs in incs for x in xs]
         con_empresa = sorted({e for e in empresas.values() if e})
 
         # --- Ronda A ---
@@ -168,8 +175,9 @@ class LecturasDelLote:
                     tareas.append(self._codigo(var, emp))
                     compartidas.add(var)
         resides = _ides(l.recurso_ide for l in todas)
-        if resides:
-            tareas.append(lambda: self._cargar_horas(resides))
+        con_inc = resides | _ides(x.recurso_ide for x in todas_inc)
+        if con_inc:
+            tareas.append(lambda: self._cargar_horas(con_inc))
         claves = {synckey_de(l.registro_id) for l in todas}
         hmores = _ides(l.hmores_ide for l in todas)
         if claves:
@@ -200,7 +208,7 @@ class LecturasDelLote:
                            emp))
             if pv is not None and any(l.es_postventa for l in ls):
                 destinos.add(int(pv.ide))
-        periodos = {(int(l.ano), int(l.mes)) for l in todas}
+        periodos = {(int(l.ano), int(l.mes)) for l in [*todas, *todas_inc]}
         if destinos and periodos:
             tareas.append(lambda: self._cargar_partes(destinos, periodos))
         presupuestos: set[int] = set()
@@ -221,6 +229,7 @@ class LecturasDelLote:
         normales = [l for l in todas
                     if not l.es_postventa and l.var_paride is None]
         parides = _ides(l.paride or l.propuesta_paride for l in normales)
+        parides |= _ides(x.paride for x in todas_inc)
         if parides:
             tareas.append(lambda: self._cargar_validas(parides))
         for (desde, hasta), recursos in self._ventanas(
@@ -229,14 +238,22 @@ class LecturasDelLote:
         sin_sub = _ides(
             l.paride or l.propuesta_paride or l.var_paride for l in todas
             if self._sin_subcuenta(l.recurso_ide))
+        sin_sub |= _ides(x.paride for x in todas_inc
+                         if self._inc_sin_subcuenta(x))
         if sin_sub:
             tareas.append(lambda: self._cargar_partidas(sin_sub))
         self._ronda(tareas)
 
         # --- Ronda C ---
+        tareas = []
         hmoides = {int(p.ide) for ps in self._partes.values() for p in ps}
         if hmoides and resides:
-            self._ronda([lambda: self._cargar_lineas(hmoides, resides)])
+            tareas.append(lambda: self._cargar_lineas(hmoides, resides))
+        for clave, recursos in self._por_leer_incidencias(
+                incs, empresas, settings).items():
+            tareas.append(lambda c=clave, r=recursos:
+                          self._cargar_incidencias(c, r))
+        self._ronda(tareas)
 
     def precargar_propuestas(self, peticiones: list[dict], settings) -> None:
         """Design §2.1 (R34): A) obras e historial de TODOS los recursos de
@@ -305,6 +322,51 @@ class LecturasDelLote:
         horas = self._horas[1].get(int(recurso), [])
         return any(h.es_mensual and not subcuenta_de_linea(horas, h.horide)
                    for h in horas)
+
+    def _inc_sin_subcuenta(self, inc) -> bool:
+        """F-030: ¿alguna de las dos horas de la incidencia se queda sin
+        subcuenta del recurso? Acota, como `_sin_subcuenta`, qué cuentas de
+        partida se precargan (un superconjunto)."""
+        if self._horas is None or not inc.recurso_ide:
+            return False
+        horas = self._horas[1].get(int(inc.recurso_ide), [])
+        return any(h.cod in (inc.codigo, CODIGO_FIN)
+                   and not subcuenta_de_linea(horas, h.horide)
+                   for h in horas)
+
+    def _por_leer_incidencias(self, incs: list[list], empresas: dict,
+                              settings) -> dict[tuple, set[int]]:
+        """F-030 (R33): los recursos de las incidencias que se escribirían
+        (`decidir_incidencia` con las horas ya leídas), por (año, mes,
+        partes): en pruebas, los partes del periodo de la obra de pruebas de
+        la empresa (los mismos que verá el pipeline); si no, `None`."""
+        horas = self._horas[1] if self._horas is not None else {}
+        out: dict[tuple, set[int]] = {}
+        for i, lista in enumerate(incs):
+            if empresas[i] is None:
+                continue
+            for x in lista:
+                if decidir_incidencia(x, horas)[0].accion != "escribir":
+                    continue
+                partes = None
+                if settings.obra_pruebas_forzar:
+                    pruebas = self._ya(("obra_por_codigo",
+                                        settings.obra_pruebas_cod,
+                                        empresas[i]))
+                    if pruebas is None:
+                        continue
+                    partes = frozenset(int(p.ide) for p in self._partes.get(
+                        (int(pruebas.ide), int(x.ano), int(x.mes)), []))
+                out.setdefault((int(x.ano), int(x.mes), partes),
+                               set()).add(int(x.recurso_ide))
+        return out
+
+    def _cargar_incidencias(self, clave: tuple, recursos: set[int]) -> None:
+        ano, mes, partes = clave
+        self._incidencias[clave] = (recursos, list(
+            self._cli.incidencias_del_mes(
+                sorted(recursos), ano, mes,
+                hmoides=None if partes is None else sorted(partes))))
 
     def _cargar_obras(self, ides: set[int]) -> None:
         leidas = self._cli.obras_por_ide(sorted(ides))
@@ -435,6 +497,19 @@ class LecturasDelLote:
                     if l.reside in pedidos]
         self._fallo("lineas_del_parte")
         return self._cli.lineas_del_parte(hmoide, resides)
+
+    def incidencias_del_mes(self, resides, ano, mes, hmoides=None):
+        """F-030 (R33): de lo precargado si es el mismo mes y los mismos
+        partes (o ninguno) y los recursos están dentro."""
+        pedidos = _ides(resides)
+        clave = (int(ano), int(mes),
+                 None if hmoides is None else frozenset(_ides(hmoides)))
+        cargado = self._incidencias.get(clave)
+        if cargado is not None and pedidos <= cargado[0]:
+            return [l for l in cargado[1] if l.reside in pedidos]
+        self._fallo("incidencias_del_mes")
+        return self._cli.incidencias_del_mes(resides, ano, mes,
+                                             hmoides=hmoides)
 
     def escribir(self, statements):
         raise RuntimeError("las lecturas de un lote no escriben en Sigrid")

@@ -13,6 +13,8 @@ es el de su petición suelta con los mismos datos de Sigrid (R21).
   excepción sube.
 - Sin estado entre llamadas: memoria y pipelines son de cada llamada
   (F-025 R9, D4). `ejecutar` no va en lote (D6).
+- F-030: una petición puede traer, en tercer lugar, sus incidencias; sin
+  ellas, la petición de siempre `(obra, lineas)`.
 """
 from __future__ import annotations
 
@@ -64,14 +66,17 @@ class RegistroLote:
         return self._por_obra(memoria, [(lambda p=p: una(p))
                                         for p in peticiones])
 
-    def preflight(self, peticiones: list[tuple[ObraEntrada,
-                                               list[LineaEntrada]]]
+    def preflight(self, peticiones: list[tuple]
                   ) -> list[Preflight | Exception]:
-        """R19: un resultado por petición, en su orden."""
+        """R19: un resultado por petición, en su orden. Cada petición es
+        `(obra, lineas)` o `(obra, lineas, incidencias)` (F-030)."""
         memoria = LecturasDelLote(self._cli, self._limite)
         memoria.precargar(peticiones, self._st)
-        return self._por_obra(memoria, [
-            (lambda o=obra, ls=lineas: RegistroPipeline(
-                cliente=memoria, settings=self._st).preflight(
-                    obra=o, lineas=ls))
-            for obra, lineas in peticiones])
+
+        def una(obra: ObraEntrada, lineas: list[LineaEntrada], *inc):
+            kw = {"incidencias": inc[0]} if inc and inc[0] else {}
+            return RegistroPipeline(cliente=memoria,
+                                    settings=self._st).preflight(
+                obra=obra, lineas=lineas, **kw)
+        return self._por_obra(memoria, [(lambda p=p: una(*p))
+                                        for p in peticiones])
