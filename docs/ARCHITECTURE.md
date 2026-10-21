@@ -836,8 +836,31 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       una línea del recurso con el mismo código y la misma `fec`, esa línea
       no se escribe: «ya registrada» si la `synckey` es la suya; si no,
       omitida con el parte donde está, sea de Administración o de `partes`.
-      La otra del par se decide sola. Una incidencia ya registrada no se
-      reescribe aunque cambien sus días (corregir lo escrito es de F-033).
+      La otra del par se decide sola.
+    - **Cambiar los días.** La incidencia guardada viaja con su `id` y, si
+      está registrada (su traza tiene el `ide` de alguna de sus líneas), no
+      cambia de obra ni de código (se quita y se añade otra) ni de mes.
+      Cambiarle los días **edita la `fec`** de sus líneas en su sitio, nunca
+      escribe otro par: un `UPDATE` de solo la `fec`, con la guarda de
+      [`#regla-cero`](#regla-cero) y su código (mismo `ide` y recurso, `can`
+      0, la `synckey` leída, sin enlaces, parte En registro). La línea
+      nuestra se busca por su `ide` o por su `synckey`, siempre del recurso
+      y con nuestra `synckey`; con la `fec` pedida, «ya registrada». Cada
+      línea del par se decide sola, pero `ejecutar` relee las que va a
+      editar y, si una de las dos ya no vale, no edita ninguna. No se toca,
+      y sale omitida con su motivo: la que cambiaron a mano en Sigrid (otra
+      `fec` que la registrada, otro código o `can` distinto de 0), la de un
+      parte que no está En registro («el parte X está cerrado: sigue del d
+      al h»; nada va a otro parte) y la que iría a un día que ya tiene otra
+      línea igual del recurso, contando lo que la propia petición mueve. La
+      que ya no está en Sigrid se escribe de nuevo. El modal dice «se cambia
+      del d al d».
+    - **Quitar.** Quitar del cuadrante una incidencia no registrada la
+      borra. Una registrada no se borra ni se retira de Sigrid: queda
+      `quitada`, con su `id` y su traza; no cuenta en los solapes ni va al
+      transfer, la tabla la pinta tachada, «quitada · sigue en Sigrid», y el
+      modal de registro la lista con su parte y el `ide` de sus líneas para
+      retirarla a mano. Deshacer la repone con su `id`.
     - **Fuera de las reglas A, B y C.** Una línea de incidencia no es pisado
       ([`#regla-conflicto`](#regla-conflicto)), ni sobrecarga (no suma en
       [`#regla-capacidad`](#regla-capacidad)), ni sin partida
@@ -849,19 +872,23 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       ([`#regla-empresa`](#regla-empresa)), parte En registro y alta
       protegida.
     - **Una lectura.** La comprobación de duplicados es **una** lectura de
-      Sigrid por petición o por lote, y solo si alguna incidencia se
-      escribiría. Si falla o viene `truncated`, la petición falla sin
-      escribir nada.
+      Sigrid por petición o por lote (las líneas `CI*` del mes y, por su
+      `ide`, las de la traza), y solo si alguna incidencia se escribiría.
+      Si falla o viene `truncated`, la petición falla sin escribir nada.
     - **Traza.** Preflight y `ejecutar` devuelven `incidencias`, una entrada
       por línea (id, rol `ini`/`fin`, acción, `fec`, código, partida, parte,
       `hmores.ide` y motivo), solo cuando la petición las trae; el modal las
       enseña en su sección, sin confirmaciones. La api guarda en cada
-      incidencia su estado, parte, el `ide` de sus dos líneas y el motivo.
+      incidencia su estado, parte, el motivo y, por línea, el `ide` y el día
+      escritos, editados o ya registrados; una omitida de una registrada
+      solo cambia el motivo.
 
     *Decidido por Pablo Gris el 2026-10-20 (D1-D10, todas la recomendada:
     `auxhor`, tramo del mes, cada mes con su `CIZ`, fuera del 100 %, par
     `CI*`/`CIZ` con `can = 0`, la partida de la línea de % o 0, duplicados en
-    cualquier obra del mes) · F-030,
+    cualquier obra del mes); el 2026-10-21, D11-D15 (anexo R30: la quitada
+    queda `quitada`; obra y código no cambian en una registrada; la cambiada
+    a mano en Sigrid y el día ya ocupado no se editan) · F-030,
     `specs/F-030-dias-bajas-incidencias/requirements.md`.*
 
 ## Acceso a datos y sistemas externos

@@ -733,3 +733,32 @@ def test_f030_r41_ejecutar_repetido_no_hace_nada():
     res = _ej(cli, [], [_inc_pf(desde=6, hasta=12, **traza)])
     assert len(cli.escritos) == 2
     assert [a.accion for a in res.incidencias] == ["ya_registrado"] * 2
+
+
+# ============================== docs (T35) ============================== #
+def _doc(nombre: str) -> str:
+    from pathlib import Path
+
+    return (Path(__file__).resolve().parents[3] / "docs" / nombre).read_text(
+        encoding="utf-8")
+
+
+def test_f030_r34_la_regla_dice_cambiar_los_dias_y_quitar():
+    texto = _doc("ARCHITECTURE.md")
+    punto = texto[texto.index('<a id="regla-incidencia"></a>'):]
+    punto = punto[:punto.index("\n## ")]
+    assert "no se\n      reescribe aunque cambien sus días" not in punto
+    assert "no se reescribe" not in " ".join(punto.split())
+    plano = " ".join(punto.split())
+    for trozo in ("**Cambiar los días.**", "**Quitar.**", "edita la `fec`",
+                  "se cambia del d al d", "quitada · sigue en Sigrid",
+                  "el parte X está cerrado: sigue del d al h", "D11-D15"):
+        assert trozo in plano, trozo
+
+
+def test_f030_r34_integracion_cuenta_los_campos_y_el_update():
+    plano = " ".join(_doc("INTEGRACION.md").split())
+    for trozo in ("hmores_ide_ini", "hmores_ide_fin", "dia_ini", "dia_fin",
+                  "`fec_antes`", "`incidencias_quitadas`", "`editar`",
+                  "`UPDATE` de **solo** la `fec`", "`id`"):
+        assert trozo in plano, trozo

@@ -82,7 +82,7 @@
 | Recurso | Compartido con | Qué hacemos | Desde |
 |---|---|---|---|
 | PostgreSQL `psql-albaranes-rs9k2` | `albaranes`, `partes`, `datamart-seg-anual`, `postventa-incidencias` | Base propia `dedicacion`: periodos, cuadrante, asignaciones y auditoría | **F-008** |
-| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna**. Desde F-030 la api lee en cada sync el catálogo de incidencias (`auxhor`, códigos `CI*`), y el transfer **escribe** por cada incidencia un par de líneas `CI*`/`CIZ` con `can = 0` y `synckey` `porcentajes:inc:{id}:ini|fin`, tras **una** lectura de las líneas `CI*` del mes de esos recursos en cualquier parte (`hmores` + `auxhor` + `hmo` + `con`) para no duplicar | F-001, F-002, F-037, F-051, F-030 |
+| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna**. Desde F-030 la api lee en cada sync el catálogo de incidencias (`auxhor`, códigos `CI*`), y el transfer **escribe** por cada incidencia un par de líneas `CI*`/`CIZ` con `can = 0` y `synckey` `porcentajes:inc:{id}:ini|fin`, tras **una** lectura de las líneas `CI*` del mes de esos recursos en cualquier parte (`hmores` + `auxhor` + `hmo` + `con`) para no duplicar; si la incidencia ya registrada cambia de días, **edita la `fec`** de su par (`UPDATE` con guarda, anexo R30) | F-001, F-002, F-037, F-051, F-030 |
 | `acralbaranesdev` | `albaranes`, `partes` | Publicar y tirar las tres imágenes, por identidad gestionada | **F-008** |
 | Entra ID | todo el ecosistema | Autenticación del front (Easy Auth) y grupo de acceso | **F-008** |
 
@@ -395,19 +395,32 @@ Desde F-030 (incidencias en el cuadrante;
 - La api sirve **al front** `GET /api/v1/incidencias` (`{incidencias:
   [{codigo, letra, nombre}]}`, el catálogo activo por letra, solo lee) y
   `PUT /api/v1/periodos/{anio}/{mes}/trabajadores/{ide}/incidencias`
-  (`{incidencias: [{obra_ide, codigo, dia_desde, dia_hasta}]}`, días vacíos
-  = mes entero; sustituye las del trabajador con evento deshacible y
-  responde como el `PUT …/asignaciones`). Cada fila del cuadrante gana
-  `incidencias` (obra, código, letra, nombre, días y la traza del
-  registro). Dos tablas nuevas, `tipo_incidencia` e `incidencia`, que la
-  api crea al arrancar; `asignacion` no cambia.
+  (`{incidencias: [{id, obra_ide, codigo, dia_desde, dia_hasta}]}`, días
+  vacíos = mes entero; `id` opcional: con él se conserva la incidencia
+  guardada, sin él es nueva; sustituye las del trabajador con evento
+  deshacible y responde como el `PUT …/asignaciones`). Cada fila del
+  cuadrante gana `incidencias` (`id`, obra, código, letra, nombre, días,
+  `quitada` y la traza del registro). Dos tablas nuevas, `tipo_incidencia`
+  e `incidencia`, que la api crea al arrancar (y completa con
+  `alters_faltantes`: `quitada`, `sigrid_dia_ini`, `sigrid_dia_fin`);
+  `asignacion` no cambia.
 - `registro/preflight`, `registro/preflight-lote` y `registro/ejecutar` del
   transfer aceptan en cada petición una lista opcional `incidencias`
-  (`{id, recurso_ide, empresa, codigo, ano, mes, desde, hasta, paride}`) y,
-  solo si la trae, responden `incidencias` (por línea: `id`, `rol`
-  `ini`/`fin`, `accion`, `fecha_int`, `hora_codigo`, `paride`, `parte_cod`,
-  `hmores_ide` y `motivo`). Sin ella, petición y respuesta son las de antes.
-  La api la manda por obra y guarda la traza en `incidencia`.
+  (`{id, recurso_ide, empresa, codigo, ano, mes, desde, hasta, paride}`,
+  y la traza de una registrada: `hmores_ide_ini`, `hmores_ide_fin`,
+  `dia_ini`, `dia_fin`, que solo viajan si hay alguna) y, solo si la trae,
+  responden `incidencias` (por línea: `id`, `rol` `ini`/`fin`, `accion`,
+  `fecha_int`, `hora_codigo`, `paride`, `parte_cod`, `hmores_ide` y
+  `motivo`; con `accion` `editar`, también `fec_antes`). Sin ella, petición
+  y respuesta son las de antes. La api la manda por obra y guarda la traza
+  en `incidencia`; las quitadas no viajan y su `POST …/preflight` las
+  devuelve en `incidencias_quitadas` (trabajador, obra, letra, días, parte
+  e `ide`s) para retirarlas a mano.
+- Cambiar los días de una registrada (anexo R30) es, en Sigrid, un
+  `UPDATE` de **solo** la `fec` de cada línea del par, con la guarda de
+  F-051 y su código (`a.cod = ?`): ni `INSERT`, ni `DELETE`, ni parte
+  nuevo. La lectura de las líneas `CI*` del mes trae además `h.can`,
+  `h.hmoide` y `con.est`, y busca también por `h.ide` las de la traza.
 
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 
