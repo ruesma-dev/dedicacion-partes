@@ -11,7 +11,12 @@ D1-D10 todas la recomendada). Copia
 el líder, no versionadas). **Implementer terminado el 2026-10-21**: T1-T19 y
 T21 hechas (`progress/impl_F-030.md`; mutación en serie, 3.ª campaña con 0
 supervivientes; cobertura 99,5 %); bloqueos resueltos por el humano: T4 y
-T14, los dos con la opción A. **Review pasada 1: RECHAZADO** (2026-10-21, `progress/review_F-030.md`): cambiar los días de una incidencia ya registrada le da un `id` nuevo y el transfer vuelve a escribir en Sigrid (obs. 1, R30); **decisión a/b consultada al humano**.
+T14, los dos con la opción A. **Review pasada 1: RECHAZADO** (2026-10-21, `progress/review_F-030.md`): cambiar los días de una incidencia ya registrada le da un `id` nuevo y el transfer vuelve a escribir en Sigrid (obs. 1, R30); **el humano elige la opción C** («c», 2026-10-21): al cambiar los días
+de una incidencia ya registrada se **editan en Sigrid** las fechas de sus dos
+líneas (como F-051 con los %), en vez de escribir otro par. Amplía la spec:
+**spec-author lanzado para el anexo** (R/T nuevas, con las decisiones que
+abra, p. ej. quitar una registrada); se enseña al humano antes de
+implementar.
 **F-051** cerrada el 2026-10-21 e integrada en `dev`, pendiente de desplegar.
 
 **Pendiente del humano:** autorizar T20 (MANUAL en modo pruebas en la 0404:
@@ -42,9 +47,20 @@ Sigrid por su cuenta. El arnés es la **1.7.3**.
   mes; solo obra normal); D8 alcance (A: captura y registro en F-030); D9
   línea recién añadida (A: se convierte en incidencia); D10 % por días,
   calendario de convenio y bandeja de `partes` (fuera, features nuevas).
-- **MANUAL de la feature** (T20): prueba en modo pruebas en la `0404` con
-  `prueba_escritura_porcentajes.py --incidencia`; exige autorización expresa.
-- **azure-apps**: `dedicacion.md` se actualiza en T19; `partes.md` (de
+- **MANUAL de la feature** (T20): prueba en modo pruebas en la `0404`; la
+  ejecuta el líder con autorización expresa del humano (sin dar a
+  2026-10-21). Comando exacto, desde `services/dedicacion-transfer` con
+  `OBRA_PRUEBAS_FORZAR=true` y `RECURSO` = un `res.ide` con `CIV` y `CIZ` en
+  `reshor` (p. ej. 1705036):
+  `python prueba_escritura_porcentajes.py preflight --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9`,
+  `… ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9`,
+  `… verificar --incidencia RECURSO:CIV:5:9`, otra vez `ejecutar` (debe dar
+  `ya_registrado`) y `… limpiar --confirmar`. **Lo que deja sin probar su
+  ausencia** (review 1): que SQL Server y sigrid-api acepten el `INSERT` del
+  par `CI*`/`CIZ` y la lectura de las `CI*` del mes (R27); el resto está
+  cubierto por tests. Con la opción C de R30 se añade el cambio de días.
+- **azure-apps**: `dedicacion.md` lo actualiza el **líder al desplegar**
+  (no en T19); `partes.md` (de
   `partes`) debería decir que `porcentajes` escribirá `CI*`/`CIZ` en los
   mismos partes: avisar al humano.
 - Sigrid, solo lectura durante la spec (consultas en `progress/spec_F-030.md`).
