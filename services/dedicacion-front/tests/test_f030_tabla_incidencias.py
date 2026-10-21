@@ -324,8 +324,8 @@ def _fila(lineas: int, incidencias: int) -> list:
     const = re.search(r"^const COLUMNAS_POR_LINEA = .*?;", JS, re.MULTILINE).group(0)
     return _node("\n".join([
         const, FILA, _funcion("construirFila"),
-        "const state = {columnas: ['nombre', 'asignaciones', 'partida', 'total'],"
-        " seleccionIde: 7, seleccion: new Set(), editandoIde: null};",
+        ("const state = {columnas: ['nombre', 'asignaciones', 'partida', 'total'],"
+        " seleccionIde: 7, seleccion: new Set(), editandoIde: null};"),
         "const t = {ide: 7, activo: true, lineas: " +
         json.dumps([{"obra_ide": i} for i in range(lineas)]) + ", incidencias: " +
         json.dumps([{"obra_ide": i} for i in range(incidencias)]) + "};",
@@ -477,11 +477,11 @@ def test_f030_r32_modal_seccion_por_incidencia():
            "<th>Qué se hará</th>" in html
     assert _celdas(html) == [
         ["Ana Ruiz", "0678", "V Vacaciones", "del 5 al 9",
-         "inicio CIV 05/07: se escribe en el parte PT26/00251 · "
-         "fin CIZ 09/07: se escribe en el parte PT26/00251"],
+         ("inicio CIV 05/07: se escribe en el parte PT26/00251 · "
+         "fin CIZ 09/07: se escribe en el parte PT26/00251")],
         ["Ana Ruiz", "0678", "B Enfermedad", "del 12 al 12",
-         "inicio CIE 12/07: ya registrada · fin CIZ 12/07: no se escribe: "
-         "ya hay una línea CIZ del recurso el 12/07 en el parte PT26/00041"]]
+         ("inicio CIE 12/07: ya registrada · fin CIZ 12/07: no se escribe: "
+         "ya hay una línea CIZ del recurso el 12/07 en el parte PT26/00041")]]
     # Sin confirmaciones (R28, R32).
     assert "checkbox" not in html and "chk-pisar" not in html
 
@@ -492,8 +492,8 @@ def test_f030_r32_modal_omitidas_sin_dias_y_desconocida():
         _accion(9, "fin", "omitir", 0, None, None, "días <imposibles>")]}, [ANA])
     assert _celdas(html) == [[
         "incidencia 9", "", "", "",
-        "inicio: no se escribe: días &lt;imposibles&gt; · "
-        "fin: no se escribe: días &lt;imposibles&gt;"]]
+        ("inicio: no se escribe: días &lt;imposibles&gt; · "
+        "fin: no se escribe: días &lt;imposibles&gt;")]]
 
 
 def test_f030_r32_modal_sin_incidencias_nada():
