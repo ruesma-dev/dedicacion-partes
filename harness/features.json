@@ -477,7 +477,7 @@
         "Decidido y escrito qué se registra en Sigrid de una incidencia y cómo cuenta para el 100 %; si se escribe algo nuevo, probado en modo pruebas en la obra 0404",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "blocked",
+      "status": "in_progress",
       "sdd": true,
       "rigor": "critico",
       "priority": 14,

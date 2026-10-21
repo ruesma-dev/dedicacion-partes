@@ -8,7 +8,7 @@ D1-D10 todas la recomendada). Copia
 `C:\Users\pgris\PycharmProjects\porcentajes-f030`, rama
 `feature/F-030-dias-bajas-incidencias`; sus `.venv` son uniones de directorio
 a los de la copia principal (creadas por el líder, no versionadas).
-**Implementer lanzado el 2026-10-21.** Arranca **en paralelo con F-051** por
+**Implementer lanzado el 2026-10-21**; T1-T3 hechas; bloqueo de T4 resuelto por el humano con la opción A (lista cerrada de dobles) e implementer reanudado en T4. Arranca **en paralelo con F-051** por
 decisión expresa del humano («empieza f30», 2026-10-21) aunque el arnés pide
 una sola `in_progress`: F-051 está en su tramo final (review APROBADA, T18 y
 T15 pendientes) en la copia `porcentajes-f051`, cuya rama lo cuenta. T20
@@ -44,9 +44,15 @@ arnés es la **1.7.3**.
   mismos partes: avisar al humano.
 - Sigrid, solo lectura durante la spec (consultas en `progress/spec_F-030.md`).
 
-## F-030 · implementación: BLOQUEADA en T4 (implementer, 2026-10-21)
+## F-030 · implementación: bloqueo de T4 RESUELTO (implementer, 2026-10-21)
 
-**Estado:** `blocked` en `features.json`. Hechas y con su commit T1
+**Resuelto por el humano el 2026-10-21 con la opción A** («la a»): lista
+cerrada de adaptaciones solo de dobles, sin cambiar ninguna aserción
+(`tasks.md`, cabecera). F-030 vuelve a `in_progress`; el implementer sigue en
+T4. Lo de abajo es el motivo y las opciones, tal como se plantearon.
+
+
+**Estado al bloquear:** `blocked` (ya no). Hechas y con su commit T1
 (`a5c0386`, test de lo de hoy en la celda del %, verde antes de tocar
 `app.js`), T2 (`6c01edd`, `domain/incidencias.py`, con traza RED) y T3
 (`44d74ab`, `TipoIncidenciaORM` e `IncidenciaORM`). Suite de la api en verde

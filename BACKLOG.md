@@ -5,7 +5,7 @@
 
 Resumen: **54 features**, 23 abiertas, 31 terminadas.
 
-Bloqueadas: **F-030**.
+En curso: **F-030**.
 
 ## Trabajo abierto
 
@@ -21,7 +21,7 @@ Bloqueadas: **F-030**.
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 11 | pendiente | estandar | `feature/F-046-permiso-cerrar-periodo` |
 | F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 12 | pendiente | estandar | `feature/F-038-pestana-analitica` |
 | F-028 | Borrar todo lo que está en pantalla | 13 | pendiente | estandar | `feature/F-028-borrar-todo-filtrado` |
-| F-030 | Incidencias en el cuadrante: texto en lugar del % con desplegable de las de partes (y dedicación por días) | 14 | bloqueada | critico | `feature/F-030-dias-bajas-incidencias` |
+| F-030 | Incidencias en el cuadrante: texto en lugar del % con desplegable de las de partes (y dedicación por días) | 14 | en curso | critico | `feature/F-030-dias-bajas-incidencias` |
 | F-036 | Un recurso cerrado en bloque en Sigrid no cuenta en el mes de su cierre | 15 | pendiente | critico | `feature/F-036-baja-efectiva-recurso` |
 | F-031 | MCP para que una IA haga el trabajo del usuario | 16 | pendiente | critico | `feature/F-031-mcp-ia` |
 | F-033 | Deshacer una línea real mal escrita en Sigrid | 17 | pendiente | critico | `feature/F-033-deshacer-linea-real` |
@@ -135,7 +135,7 @@ Salida de la revisión de negocio del 2026-09-29. Botón «Borrar todo». Decisi
 
 ### F-030 · Incidencias en el cuadrante: texto en lugar del % con desplegable de las de partes (y dedicación por días)
 
-estado **bloqueada** · prioridad 14 · rigor `critico` · SDD sí · rama `feature/F-030-dias-bajas-incidencias`
+estado **en curso** · prioridad 14 · rigor `critico` · SDD sí · rama `feature/F-030-dias-bajas-incidencias`
 
 RETOMADA por el humano el 2026-10-20, con prioridad: «hay que añadir o continuar la feature de añadir las incidencias. para eso al buscar la obra, en lugar de indicar el %, podra poner el texto de las incidencias (las mismas que en partes, funciona igual). de formas que se podra elegir en un desplegable si se pone texto (el comportamiento no deb cambiar esta muy bie)n, si en lugar del numero sugerido o de un numero se pone texto, debera salire el desplegable con las incidencias». Es decir: en la celda donde hoy se teclea el % (o se acepta el sugerido), si se escribe TEXTO sale un desplegable con las incidencias de partes (V/B/AT/FJ/F/H/M, `azure-apps/partes.md` §3.4-3.5: en Sigrid van SIN horas, can=0, con código CI* al inicio de la racha y CIZ al fin) y se elige una; con un número todo sigue EXACTAMENTE igual que hoy. Esta UX SUSTITUYE a la «tecla especial (+) con subfila» decidida el 2026-09-29. Lo anterior (2026-09-29) sigue como contexto a decidir en la spec: (1) indicar un rango de fechas y que el % salga de los días laborables; (2) bajas e incidencias con el % calculado por días; calendario el de nominas-extras (convenio por CCC, festivos por convenio y año; application/services/convenio_calendar.py). A DECIDIR EN LA SPEC (preguntas al humano con recomendación): de dónde sale la lista de incidencias sin copiar lógica ni datos entre repositorios (la tabla de partes es su `config/incidencias.yaml`; ¿los códigos CI*/CIZ de `auxhor` en Sigrid?); si una incidencia lleva fechas (en Sigrid el tramo se pinta con inicio/fin) o porcentaje; cómo cuenta para la regla del 100 %; qué se escribe en Sigrid y cómo convive con `partes` en el mismo parte (incidencias de partes con `synckey partes:`); cómo afecta a P1-P5 del transfer; si el rango de fechas y el calendario entran ahora o quedan para después.
 
