@@ -866,7 +866,7 @@
         "Verificado en modo pruebas con el humano",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "done",
       "sdd": true,
       "rigor": "critico",
       "priority": 4,
@@ -972,6 +972,21 @@
       "rigor": "estandar",
       "priority": 3,
       "branch": "feature/F-057-buscando-solo-pendientes"
+    },
+    {
+      "id": "F-058",
+      "title": "Un porcentaje que redondea a cantidad 0 no se registra en Sigrid",
+      "description": "O4 de la review de F-051 (2026-10-21): un porcentaje menor de 0,00005 (en fracción) se redondea a `can` 0,0 en `reglas_porcentajes.py` (`can = round(porcentaje, 4)`) y sale una acción `escribir` con cantidad 0. Hueco anterior a F-051, pero con F-051 esa acción podría editar una línea al 0 % dejándola a 0 con nuestra `synckey` (o insertar una línea a 0). Decisión del humano el 2026-10-21 («ok o2 y o4»: feature aparte, como recomendó el líder): esas líneas NO se registran; salen como omitidas con un aviso legible en el preflight y en `ejecutar`. Servicio: transfer (la regla que construye la cantidad); el front solo enseña el aviso que ya pinta para las omitidas. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.",
+      "acceptance": [
+        "Un porcentaje que redondea a `can` 0 (p. ej. 0,00004) no produce ninguna acción `escribir` ni edita ninguna línea: sale en `omitidas` con un aviso que dice por qué.",
+        "Un porcentaje que redondea a `can` > 0 (p. ej. 0,00005 o más) se registra como hoy.",
+        "Tests unitarios de la frontera (0, justo por debajo y justo en el umbral) sin red ni BBDD; `bash harness/init.sh` en verde."
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "critico",
+      "priority": 2,
+      "branch": "feature/F-058-porcentaje-cero-no-registra"
     }
   ]
 }

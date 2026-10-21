@@ -74,6 +74,10 @@ LOTE_RECURSOS_HISTORIAL = 500
 #: F-055 (R20): parámetros por lectura de las consultas con `IN (?…)`
 #: agrupadas (`validar_partidas` y las de T5).
 LOTE_PARAMETROS = 500
+#: F-051 (R11): enlaces de una línea con otros documentos de Sigrid
+#: (albarán, factura, dedicación, nómina); una línea con alguno no se edita.
+_ENLACES = ("dvaproide", "dvfproide", "hdereside", "empdpreide",
+            "empabside", "emprccide")
 
 
 def synckey_de(registro_id: int) -> str:
@@ -656,6 +660,48 @@ class SigridWriteClient:
                 out[sk] = ls
         return out
 
+    def lineas_registradas(
+        self, claves: Iterable[str], ides: Iterable[int | None]
+    ) -> tuple[dict[str, LineaSigrid], dict[int, LineaSigrid]]:
+        """F-051 (R15): lo ya registrado por `synckey` **o** por
+        `hmores.ide`, en UNA lectura por trozo de `LOTE_PARAMETROS`
+        parámetros. Devuelve `({synckey: línea}, {ide: línea})`. Sin `ides`
+        es la consulta de hoy (`lineas_por_synckey`)."""
+        ks = sorted({k for k in claves if k})
+        ids = sorted({int(i) for i in ides if i})
+        if not ids:
+            return self.lineas_por_synckey(ks), {}
+        por_sk: dict[str, LineaSigrid] = {}
+        por_ide: dict[int, LineaSigrid] = {}
+        pedidas = [("k", k) for k in ks] + [("i", i) for i in ids]
+        for trozo in _trozos(pedidas, LOTE_PARAMETROS):
+            t_k = [v for t, v in trozo if t == "k"]
+            t_i = [v for t, v in trozo if t == "i"]
+            conds = []
+            if t_k:
+                conds.append("hmores.synckey IN ("
+                             + ",".join("?" for _ in t_k) + ")")
+            if t_i:
+                conds.append("hmores.ide IN ("
+                             + ",".join("?" for _ in t_i) + ")")
+            filas = self._lectura(
+                "lineas_registradas",
+                "SELECT hmores.ide AS ide, hmores.hmoide AS hmoide, "
+                "hmores.reside AS reside, hmores.fec AS fec, "
+                "hmores.horide AS horide, hmores.paride AS paride, "
+                "auxhor.cod AS hora, hmores.can AS can, hmores.tot AS tot, "
+                "hmores.synckey AS synckey FROM hmores "
+                "LEFT JOIN auxhor ON auxhor.ide = hmores.horide "
+                f"WHERE {' OR '.join(conds)}", t_k + t_i)
+            for f in filas:
+                ls = self._linea_del_parte(f)
+                ls.hmoide = int(f["hmoide"] or 0)
+                if ls.synckey in ks:
+                    por_sk[ls.synckey] = ls
+                if ls.ide in ids:
+                    por_ide[ls.ide] = ls
+        return por_sk, por_ide
+
     # -------------------------- sentencias -------------------------- #
 
     def stmts_crear_parte(
@@ -741,8 +787,99 @@ class SigridWriteClient:
 
     @staticmethod
     def stmt_borrar_linea(ide: int) -> dict:
+        """Solo para `limpiar` del script de pruebas (F-051 D15): el
+        registro nunca borra una línea."""
         return {"sql": "DELETE FROM hmores WHERE ide = ?",
                 "parameters": [int(ide)]}
+
+    # ------------------- edición en su sitio (F-051) ------------------- #
+
+    def lineas_para_editar(self, ides: Iterable[int | None]
+                           ) -> dict[int, LineaSigrid]:
+        """F-051 (R12, R18): las líneas que se van a editar o poner a 0,
+        con TODO lo que tienen (su parte y su `con.est`, `pre`, cuenta,
+        `tex` y si tienen enlaces de Sigrid), justo antes de escribir. UNA
+        lectura por trozo de `LOTE_PARAMETROS`; sin `ide` no se lee."""
+        ids = sorted({int(i) for i in ides if i})
+        out: dict[int, LineaSigrid] = {}
+        for trozo in _trozos(ids, LOTE_PARAMETROS):
+            enlaces = " OR ".join(f"ISNULL(hmores.{c}, 0) <> 0"
+                                  for c in _ENLACES)
+            filas = self._lectura(
+                "lineas_para_editar",
+                "SELECT hmores.ide AS ide, hmores.hmoide AS hmoide, "
+                "hmores.reside AS reside, hmores.horide AS horide, "
+                "auxhor.cod AS hora, hmores.paride AS paride, "
+                "hmores.can AS can, hmores.pre AS pre, hmores.tot AS tot, "
+                "hmores.caaide AS caaide, hmores.fec AS fec, "
+                "hmores.synckey AS synckey, "
+                "CAST(hmores.tex AS NVARCHAR(400)) AS tex, "
+                "con.cod AS parte, con.est AS est, "
+                f"CASE WHEN {enlaces} THEN 1 ELSE 0 END AS enlazada "
+                "FROM hmores LEFT JOIN auxhor ON auxhor.ide = hmores.horide "
+                "JOIN con ON con.ide = hmores.hmoide "
+                f"WHERE hmores.ide IN ({','.join('?' for _ in trozo)})",
+                trozo)
+            for f in filas:
+                ls = self._linea_del_parte(f)
+                ls.hmoide = int(f["hmoide"])
+                ls.parte_cod = f["parte"]
+                ls.parte_est = None if f["est"] is None else int(f["est"])
+                ls.pre = None if f["pre"] is None else float(f["pre"])
+                ls.caaide = int(f["caaide"] or 0)
+                ls.tex = f["tex"]
+                ls.enlazada = bool(f["enlazada"])
+                out[ls.ide] = ls
+        return out
+
+    def _guarda(self, ide: int, reside: int, can_leido: float | None,
+                synckey_leida: str | None) -> tuple[str, list]:
+        """F-051 (R11): solo cambia la fila si sigue siendo del recurso,
+        `M*`, con el `can` y la `synckey` leídos, sin enlaces y en un parte
+        En registro. SQL Server la evalúa sobre la fila ANTES del cambio."""
+        sin_enlaces = " ".join(f"AND ISNULL({c}, 0) = 0" for c in _ENLACES)
+        return (
+            ("WHERE ide = ? AND reside = ? "
+            "AND ABS(ISNULL(can, 0) - ?) < 0.000001 "
+            "AND LTRIM(RTRIM(ISNULL(synckey, ''))) = ? "
+            f"{sin_enlaces} "
+            "AND EXISTS (SELECT 1 FROM auxhor a WHERE a.ide = hmores.horide "
+            "AND a.cod LIKE 'M%') "
+            "AND EXISTS (SELECT 1 FROM con c WHERE c.ide = hmores.hmoide "
+            "AND c.est = ?)"),
+            [int(ide), int(reside), float(can_leido or 0.0),
+             (synckey_leida or "").strip(), self._est])
+
+    def stmt_editar_linea(
+        self, *, ide: int, reside: int, can_leido: float | None,
+        synckey_leida: str | None, horide: int, can: float, pre: float,
+        paride: int, caaide: int, fecha_int: int, synckey: str,
+        tex: str | None,
+    ) -> dict:
+        """F-051 (R8-R11): la línea pasa a ser la que habríamos insertado
+        (mismos valores y redondeos que `stmt_insert_linea`), en su sitio:
+        no cambian `ide`, `pos`, parte, obra, centro ni periodo. `tex` solo
+        se escribe si viene (modo pruebas, R10)."""
+        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida)
+        con_tex = tex is not None
+        return {"sql": (
+            "UPDATE hmores SET can = ?, pre = ?, tot = ?, horide = ?, "
+            "paride = ?, caaide = ?, fec = ?, synckey = ?"
+            f"{', tex = ?' if con_tex else ''} {guarda}"),
+            "parameters": [round(float(can), 4), float(pre),
+                           round(float(can) * float(pre), 2), int(horide),
+                           int(paride or 0), int(caaide or 0),
+                           int(fecha_int), synckey]
+            + ([tex] if con_tex else []) + params}
+
+    def stmt_poner_a_cero(self, *, ide: int, reside: int,
+                          can_leido: float | None,
+                          synckey_leida: str | None) -> dict:
+        """F-051 (R5, D14 = A): `can` y `tot` a 0, nada más, con la misma
+        guarda que la edición."""
+        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida)
+        return {"sql": f"UPDATE hmores SET can = 0, tot = 0 {guarda}",
+                "parameters": params}
 
     # -------------------------- inspección -------------------------- #
 

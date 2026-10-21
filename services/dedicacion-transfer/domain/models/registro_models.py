@@ -58,6 +58,10 @@ class LineaEntrada:
     propuesta_res: Optional[str] = None
     propuesta_metodo: Optional[str] = None
     propuesta_origen: Optional[str] = None
+    # F-051 (R14): `hmores.ide` de la línea que ya escribimos para esta
+    # asignación (`asignacion.sigrid_hmores_ide`); None si la api no lo
+    # tiene. Localiza lo nuestro aunque su `synckey` sea de otro sistema.
+    hmores_ide: Optional[int] = None
 
     @property
     def fecha_int(self) -> int:
@@ -166,6 +170,16 @@ class LineaSigrid:
     synckey: Optional[str]
     nuestra: bool = False               # la escribimos nosotros (synckey)
     paride: int = 0                     # partida/capítulo (postventa)
+    # F-051 (R12, R18): lo que solo rellena `lineas_para_editar`, la lectura
+    # previa a editar una línea: su parte (`hmoide`, código y `con.est`),
+    # `pre`, cuenta analítica, `tex` y si tiene enlaces de Sigrid.
+    hmoide: Optional[int] = None
+    parte_cod: Optional[str] = None
+    parte_est: Optional[int] = None
+    pre: Optional[float] = None
+    caaide: Optional[int] = None
+    tex: Optional[str] = None
+    enlazada: bool = False
 
 
 # ----------------------------- salida ----------------------------- #
@@ -205,6 +219,10 @@ class AccionLinea:
     # alguien confirme (ARCHITECTURE.md#regla-sin-partida).
     aviso: Optional[str] = None
     hmores_ide: Optional[int] = None    # si ya estaba registrada
+    # F-051 (R3): la línea al 0 % que esta acción EDITA en vez de insertar
+    # (lo leído: ide, hmoide, parte_cod, horide, hora_codigo, paride, can,
+    # fecha_int, synckey); None si inserta.
+    linea_cero: Optional[dict] = None
     # F-037 (R6, contrato de `partes`): cuenta analítica que se escribirá en
     # `hmores.caaide`. `caa_ide = 0` = sin cuenta (la línea se escribe
     # igual); `caa_motivo` None = cuenta resuelta; `caa_aviso` solo si la
@@ -230,8 +248,10 @@ class Conflicto:
 
     - ``"pisado"``: ya hay en el parte una línea que es LA MISMA que la
       nuestra (ARCHITECTURE.md#regla-conflicto). ``lineas`` son las que se
-      BORRARÍAN al confirmar (cualquier día del mes: incluye registros mal
-      fechados fuera del último día).
+      EDITAN al confirmar (cualquier día del mes: incluye registros mal
+      fechados fuera del último día): ``edita_ide`` la que pasa a ser la
+      nuestra y ``a_cero_ides`` las que se ponen a 0 (F-051, R4-R5). Nunca
+      se borra ninguna.
     - ``"sobrecarga"``: el trabajador se pasaría de la jornada del parte
       (ARCHITECTURE.md#regla-capacidad). **Nunca lleva ``lineas``**, porque
       una sobrecarga no borra nada: eso hace que sea cierto *por
@@ -266,6 +286,9 @@ class Conflicto:
     suma_existente: float = 0.0         # jornada ya ocupada que se ha contado
     suma_total: float = 0.0             # suma_existente + nueva_can
     exceso: float = 0.0                 # suma_total - 1
+    # F-051 (R4, R5): solo en el pisado.
+    edita_ide: Optional[int] = None
+    a_cero_ides: list[int] = field(default_factory=list)
 
     @property
     def nueva_can(self) -> float:
@@ -306,6 +329,11 @@ class ResultadoRegistro:
     omitidas: list[dict] = field(default_factory=list)   # {registro_id, motivo}
     ya_registradas: list[int] = field(default_factory=list)
     pisadas: list[str] = field(default_factory=list)     # claves pisadas
-    borradas: int = 0
+    borradas: int = 0                   # F-051 (R19): siempre 0
+    # F-051 (R16, R18): las líneas editadas y las puestas a 0, con lo que
+    # tenían y lo que queda; `hmores.ide` de cada ya registrada.
+    editadas: list[dict] = field(default_factory=list)
+    a_cero: list[dict] = field(default_factory=list)
+    ya_registradas_ide: dict[int, int] = field(default_factory=dict)
     pendientes_confirmacion: list[Conflicto] = field(default_factory=list)
     error: Optional[str] = None

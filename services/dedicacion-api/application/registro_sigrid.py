@@ -25,6 +25,11 @@ F-055 (R14, R16, R26): una automática con propuesta GUARDADA viaja con sus
 del periodo es UNA llamada al lote del transfer y, al volver, cada acción
 con método de propuesta guarda su partida en la asignación si sigue sin
 elegida (sin evento ni traza). `ejecutar` sigue por obra y en serie.
+
+F-051 (R14, R16): cada línea lleva el `sigrid_hmores_ide` de su asignación
+(si lo tiene) y la traza guarda el de cada escrita y cada ya registrada: el
+transfer reconoce lo suyo por `hmores.ide` aunque edite una línea de otro
+sistema (docs/ARCHITECTURE.md#regla-cero).
 """
 from __future__ import annotations
 
@@ -141,6 +146,13 @@ class RegistroSigrid:
                              propuesta_res=a.propuesta_res,
                              propuesta_metodo=a.propuesta_metodo,
                              propuesta_origen=a.propuesta_origen)
+            # F-051 (R14): la línea de Sigrid que ya tiene la asignación,
+            # para que el transfer la reconozca aunque su `synckey` sea de
+            # otro sistema. Sin ella, la línea viaja como antes (`getattr`:
+            # los dobles de los tests anteriores a F-051 no la traen).
+            hmores_ide = getattr(a, "sigrid_hmores_ide", None)
+            if hmores_ide:
+                linea["hmores_ide"] = int(hmores_ide)
             grupo["lineas"].append(linea)
         return list(por_obra.values()), sorted(no_vigentes)
 
@@ -252,6 +264,15 @@ class RegistroSigrid:
                            AsignacionORM.sigrid_estado.is_distinct_from(
                                "registrado"))
                     .values(sigrid_estado="registrado"))
+            # F-051 (R16): el `hmores.ide` de cada ya registrada, también
+            # de las registradas antes de F-051 (el JSON trae las claves
+            # como texto).
+            for rid, ide in (r.get("ya_registradas_ide") or {}).items():
+                if ide:
+                    s.execute(
+                        update(AsignacionORM)
+                        .where(AsignacionORM.id == int(rid))
+                        .values(sigrid_hmores_ide=int(ide)))
             for o in r.get("omitidas", []):
                 s.execute(
                     update(AsignacionORM)

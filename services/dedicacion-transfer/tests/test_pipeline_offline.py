@@ -14,6 +14,10 @@ from domain.models.registro_models import (
 )
 from infrastructure.sigrid.sigrid_write_client import synckey_de
 
+# F-051: los métodos de edición del doble (lectura previa, sentencias de
+# edición aplicadas a `lineas_parte` y relectura por `ide`).
+from tests.conftest import EdicionesFalsas
+
 
 class Settings:
     obra_pruebas_forzar = True
@@ -30,7 +34,7 @@ class Settings:
     propuesta_meses_atras = 24
 
 
-class ClienteFalso:
+class ClienteFalso(EdicionesFalsas):
     def __init__(self):
         self.obra = ObraEntrada(ide=828942, codigo="0404", nombre="PRUEBAS",
                                 empresa=1)
@@ -180,6 +184,7 @@ class ClienteFalso:
 
     def escribir(self, statements):
         self.escritos.extend(statements)
+        self._aplicar_ediciones(statements)
         return len(statements)
 
 
@@ -241,16 +246,17 @@ def test_ejecutar_pisando():
     assert len(r1.escritas) == 1 and r1.escritas[0]["registro_id"] == 3
     assert r1.escritas[0]["destino"] == "postventa"
     assert len(r1.pendientes_confirmacion) == 1
-    # 2) confirmando el pisado: borra la del día 15 e inserta la normal
+    # 2) confirmando el pisado: edita la del día 15 en su sitio (F-051:
+    #    ningún DELETE) e inserta la de postventa
     r2 = pl.ejecutar(obra=ObraEntrada(codigo="0678"),
                      lineas=lineas_entrada(),
                      pisar_claves={"200|202607|5|80001"})
-    assert r2.borradas == 1 and len(r2.escritas) == 2
+    assert r2.borradas == 0 and len(r2.escritas) == 2
     ins = [s for s in cli.escritos if s["sql"] == "insert"]
-    dele = [s for s in cli.escritos if s["sql"] == "delete"]
-    assert dele[0]["parameters"] == [5001]
+    assert [s for s in cli.escritos if s["sql"] == "delete"] == []
+    (kw1,) = [s["parameters"] for s in cli.escritos if s["sql"] == "editar"]
+    assert kw1["ide"] == 5001 and kw1["synckey"] == synckey_de(1)
     por_sk = {i["parameters"]["synckey"]: i["parameters"] for i in ins}
-    kw1 = por_sk[synckey_de(1)]
     assert kw1["fecha_int"] == 20260731 and kw1["can"] == 0.4
     assert kw1["paride"] == 80001
     kw3 = por_sk[synckey_de(3)]

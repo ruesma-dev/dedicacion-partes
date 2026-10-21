@@ -82,7 +82,7 @@
 | Recurso | Compartido con | Qué hacemos | Desde |
 |---|---|---|---|
 | PostgreSQL `psql-albaranes-rs9k2` | `albaranes`, `partes`, `datamart-seg-anual`, `postventa-incidencias` | Base propia `dedicacion`: periodos, cuadrante, asignaciones y auditoría | **F-008** |
-| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada | F-001, F-002, F-037 |
+| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna** | F-001, F-002, F-037, F-051 |
 | `acralbaranesdev` | `albaranes`, `partes` | Publicar y tirar las tres imágenes, por identidad gestionada | **F-008** |
 | Entra ID | todo el ecosistema | Autenticación del front (Easy Auth) y grupo de acceso | **F-008** |
 
@@ -93,7 +93,12 @@ escriben líneas en el **mismo** parte de obra y mes, y eligen igual en cuál
 literal de las de `partes` (`estado_parte.py`, `cuenta_analitica.py`). El
 asiento analítico (`ANA`) **no** lo escribe el transfer: lo genera Sigrid
 cuando Administración pulsa «Contabiliza parte…», que deja el parte en
-Imputado; desde entonces el transfer no escribe en él.
+Imputado; desde entonces el transfer no escribe en él. Desde F-051 el
+transfer **edita** líneas `M*` de ese parte compartido en vez de borrarlas
+e insertar: las al 0 % del recurso sin confirmar y las de un pisado
+confirmado, conservando su `ide` y, si es de otro sistema (`partes:…`), su
+`synckey`; las localiza después por `hmores.ide`
+(`docs/ARCHITECTURE.md#regla-cero`). `partes` nunca ha escrito líneas `M*`.
 
 **Lo nuevo de F-008 son tres de esas cuatro filas.** La primera es la que
 convierte a este proyecto en **quinto inquilino** de un servidor que ya usaban
@@ -363,6 +368,21 @@ parte anterior → casamiento → último parte):
   con `pendientes`; `propuestas_en_curso` / `en_curso` siguen gobernando
   solo la consulta.
 
+Desde F-051 (editar, nunca borrar; `docs/ARCHITECTURE.md#regla-cero`):
+
+- Las líneas de `registro/preflight` y `registro/ejecutar` ganan
+  `hmores_ide` (opcional): la api manda el `asignacion.sigrid_hmores_ide`
+  que tenga la asignación, y el transfer da la línea por ya registrada si
+  esa fila sigue siendo suya (su recurso, código de hora `M*` y sin
+  `synckey` nuestra de otra asignación).
+- Cada acción del preflight publica `linea_cero` (la línea al 0 % que se
+  editaría, o nulo) y cada conflicto, `edita_ide` y `a_cero_ides`.
+- La respuesta de `registro/ejecutar` gana `editadas` y `a_cero` (cada
+  línea tocada con su `antes` y su `despues`), `ya_registradas_ide`
+  (`{registro_id: hmores.ide}`) y `escritas[].editada`; `borradas` sigue y
+  vale siempre 0. La api guarda en `sigrid_hmores_ide` el `ide` de cada
+  escrita y de cada ya registrada (columna existente, sin DDL).
+
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 
 El acceso lo decide la pertenencia al grupo de Entra
@@ -518,6 +538,7 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Publicar la api de F-055 antes que el transfer | El preflight del registro y las propuestas en segundo plano fallan (404 en `POST /api/registro/preflight-lote` y `/api/partidas/propuesta-lote`): el modal enseña el error en cada obra y las celdas Partida siguen en «automática». **Orden de despliegue: transfer → api → front** (F-055); la api pone al día la tabla `asignacion` al arrancar (`propuesta_*`, nulables) |
 | Subir `SIGRID_LECTURAS_PARALELAS` del transfer | Más lecturas a la vez contra `sigrid-api` (tope 8 **por lote**, no por proceso; dos lotes simultáneos suman las suyas); `sigrid-api` no documenta un tope de concurrencia (`azure-apps/sigrid_api.md` §3.4). 1 vuelve al serie de antes de F-055 |
 | Cambiar `PROPUESTA_MESES_ATRAS` del transfer | Cambia hasta dónde se mira atrás para proponer la partida del parte anterior y del último parte; cuantos más meses, más filas lee el historial (F-050) |
+| Publicar la api o el front de F-051 antes que el transfer | El transfer viejo ignora `hmores_ide` y sigue **borrando** al pisar mientras el front nuevo dice «se edita»: **orden de despliegue transfer → api → front** (F-051) |
 | Cambiar en el transfer la elección del parte o la regla de la cuenta (`estado_parte.py`, `cuenta_analitica.py`) sin cambiarla en `partes` | Los dos servicios dejan de caer en el mismo parte o de poner la misma cuenta: dos complementarios en un mes, o un asiento analítico (`ANA`) con cuentas distintas para la misma persona. Las copias se vigilan con `tests/test_f037_copias_partes.py` (F-037) |
 
 ### Si tocan algo de otros
@@ -536,7 +557,8 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Cambiar los estados del parte (`con.est`: 1 En registro, 3 Cerrado, 10 Imputado) o las cuentas analíticas (`caa`, `reshor.caaide`, `obrparpar.caaide`) | Con otro código de «En registro», el transfer da todos los partes por cerrados y crea complementarios; sin cuenta del centro, las líneas van con `caaide = 0` y no entran en el asiento analítico del parte (F-037) |
 | Que `partes` cree un parte del mismo periodo a la vez que nosotros | El alta del transfer es condicional (código libre en la empresa y ningún parte En registro del periodo) y relee el periodo: usa el que haya. `partes` recogió la misma protección en su F-031 (`9ea7c59`) y su alta (`stmts_crear_parte`) es hoy idéntica a la nuestra (F-037, D17) |
 | Cambiar en el transfer el alta del parte (`stmts_crear_parte`) | Deja de ser idéntica a la de `partes` (aviso de su F-031, 2026-10-06) y los dos servicios podrían crear partes distintos para el mismo periodo: avisar a `partes` en el mismo trabajo, igual que con `estado_parte.py` y `cuenta_analitica.py` |
-| Que Administración contabilice un parte («Contabiliza parte…») | Pasa a Imputado: el transfer ya no escribe ni borra en él; lo nuevo va a un complementario y lo que choque con sus líneas se omite (`parte_cerrado`). Corregirlo es de Administración (F-037) |
+| Que Administración contabilice un parte («Contabiliza parte…») | Pasa a Imputado: el transfer ya no escribe ni edita en él; lo nuevo va a un complementario y lo que choque con sus líneas se omite (`parte_cerrado`). Corregirlo es de Administración (F-037) |
+| Que Administración o `partes` cambie una línea entre el preflight y el registro | El transfer relee lo que va a editar justo antes de escribir y cada `UPDATE` lleva guarda (`can` y `synckey` leídos, recurso, `M*`, sin enlaces, parte En registro): esa línea no se toca y su asignación sale omitida pidiendo volver a registrar (F-051) |
 | Cambiar `res` o `con` de Sigrid en lo que lee el sync de trabajadores (`res.cla`, `res.conide`, `res.cif`, `con.fecbaj`) | El sync parte de `res` (F-026): con `res.cla` cambiada entran o salen recursos del cuadrante; `res.conide` es lo único que une la ficha de empleado (solo da el DNI); `res.cif` es el documento del aviso de posible misma persona cuando no hay ficha; y `con.fecbaj` decide en qué meses está vigente cada trabajador |
 | Cambiar `auxemp` de Sigrid (`numemp`, `res`, `fecbaj`, `desact`) | El sync de maestros falla entero (columnas obligatorias `numemp` y `nombre`) y el selector se queda con los nombres del último sync bueno |
 

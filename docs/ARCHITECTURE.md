@@ -126,8 +126,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
   comprobar idempotencia y detectar conflictos
   ([`#regla-analitica`](#regla-analitica)). No escribe nada.
 - `POST /api/registro/ejecutar` — pasos 9-10: crear los partes que falten
-  (`con` + `hmo` con alta protegida, releyendo el periodo) y borrar las
-  pisadas confirmadas + insertar las líneas nuevas, por lotes.
+  (`con` + `hmo` con alta protegida, releyendo el periodo), editar en su
+  sitio las líneas al 0 % y las pisadas confirmadas e insertar el resto, por
+  lotes; nunca borra una línea ([`#regla-cero`](#regla-cero)).
 - `POST /api/partidas/propuesta` — solo lectura: catálogo de la obra con el
   mayor de cada partida y la partida propuesta de cada línea, con la misma
   función que el preflight ([`#regla-partida`](#regla-partida), F-050).
@@ -144,8 +145,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 > `#regla-p1` … `#regla-p5`, `#regla-conflicto`, `#regla-capacidad`,
 > `#regla-sin-partida`, `#regla-pruebas`, `#regla-empresa`,
 > `#regla-recurso`, `#regla-deshacer`, `#regla-completar`,
-> `#regla-analitica`, `#regla-var`, `#regla-seis-digitos` y
-> `#regla-partida`; no vuelven a
+> `#regla-analitica`, `#regla-var`, `#regla-seis-digitos`,
+> `#regla-partida` y `#regla-cero`; no vuelven a
 > enunciar la regla con palabras propias. Lo vigila `services/dedicacion-transfer/tests/test_f002_fuente_unica.py`, que
 > falla si alguien la reenuncia fuera de aquí.
 >
@@ -261,7 +262,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      [`#regla-capacidad`](#regla-capacidad).
    - Cuando los cuatro campos sí coinciden es **conflicto**, aunque la línea
      previa esté en **otro día** del mes: hay que confirmar el pisado, que
-     la sustituye y de paso corrige la fecha.
+     la **edita en su sitio** (nunca la borra,
+     [`#regla-cero`](#regla-cero)) y de paso corrige la fecha. Una línea
+     `M*` al 0 % del recurso no es conflicto: se edita sin confirmar.
    - Una línea que lleve una `synckey` de la ejecución en curso no choca:
      lo que escribimos nosotros no compite con nosotros mismos.
    - Hay un tercer caso que también se confirma antes de escribir y que no
@@ -272,7 +275,7 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      de ellos, también cerrado, es «ya registrada». Si la línea que choca
      está en un parte **cerrado**, la nuestra se **omite** con motivo
      `parte_cerrado` (y prevalece sobre un choque En registro): en un
-     cerrado no se escribe ni se borra. Si está en uno En registro, es el
+     cerrado no se escribe ni se edita. Si está en uno En registro, es el
      conflicto de siempre, con el código del parte donde vive. Ver
      [`#regla-analitica`](#regla-analitica).
 
@@ -573,12 +576,13 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     - **Duplicados y conflictos** contra todos los partes del periodo:
       [`#regla-conflicto`](#regla-conflicto) y
       [`#regla-capacidad`](#regla-capacidad). En un parte cerrado **nunca**
-      se inserta ni se borra.
+      se inserta ni se edita.
     - **Lecturas.** Partidas y cuentas de centro, una vez por petición;
       partes y líneas, por periodo. Si una falla o viene `truncated`, la
       petición falla sin escribir nada.
     - **Deshacer y corregir.** En un parte En registro, como hasta ahora
-      (`limpiar`, pisado confirmado: la línea nueva lleva su cuenta). En uno
+      (`limpiar`; pisado confirmado o línea al 0 %: la línea editada lleva su
+      cuenta, [`#regla-cero`](#regla-cero)). En uno
       cerrado **no se borra nada**: lo ajusta Administración (anula el `ANA`
       o hace el complementario), y lo heredará F-033. Una línea ya
       registrada no se reescribe ni se le rellena la cuenta.
@@ -735,13 +739,67 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     Pablo Gris el 2026-10-14 (D10: «si pero en reglas hay que cambiar el
     orden, a c b») · F-055, `specs/F-055-preflight-rapido/requirements.md`
     R38.*
+20. <a id="regla-cero"></a>**Las líneas del parte se editan, nunca se
+    borran.** Al registrar, el transfer no emite ningún `DELETE`: lo que
+    antes se borraba e insertaba se **edita en su sitio** (`UPDATE`), y la
+    línea conserva su `ide`, su `pos`, su parte, obra, centro y periodo.
+
+    - **Línea al 0 %**: hora `M*` y `can` 0 o nulo. Es **pisable** por una
+      acción si es del mismo recurso, está en un parte **En registro** del
+      periodo de la obra destino, su `synckey` no es de esta ejecución y, en
+      postventa, tiene la partida de la acción; en la obra normal vale
+      cualquier hora `M*` y cualquier partida. Son las que deja
+      Administración al copiar el parte del mes anterior.
+    - **Sin confirmar.** Cada acción sin choque edita **como mucho una**
+      pisable libre de su recurso (la de su partida; si no, la de su hora;
+      si no, la de menor `ide`; acciones por `registro_id`). El preflight lo
+      dice en la acción (`linea_cero`) y en su aviso, con cuántas pisables
+      del recurso se quedan a 0. Una pisable no es choque, no sale en ningún
+      contexto y no suma a la capacidad. Sin pisable libre, se inserta.
+    - **El pisado** ([`#regla-conflicto`](#regla-conflicto)) se sigue
+      confirmando. Confirmado, cada registro edita un choque (el de menor
+      `ide`, por `registro_id`, `edita_ide`) y los choques que sobran **se
+      ponen a 0** (`can` y `tot`, nada más; `a_cero_ides`).
+    - **Qué se escribe.** `can`, `pre`, `tot`, hora, partida, cuenta
+      analítica y `fec`, con los valores y redondeos de una inserción. La
+      `synckey` vacía (Administración) o nuestra de otra asignación pasa a
+      ser la de esta; la de **otro sistema** (`partes:…`) no se cambia
+      nunca. `tex`: la marca de pruebas en modo pruebas
+      ([`#regla-pruebas`](#regla-pruebas)); en real, el que tenía.
+    - **Guarda.** Justo antes de escribir se releen (una lectura) las líneas
+      que se van a tocar: la que ya no cumple su condición no se toca y su
+      acción (o el pisado entero) sale en `omitidas` pidiendo volver a
+      registrar. Cada `UPDATE` solo cambia la fila si sigue siendo del
+      recurso, `M*`, con el `can` y la `synckey` leídos, sin enlaces con
+      otros documentos de Sigrid y en un parte En registro. Tras escribir se
+      relee: la editada que no tiene lo escrito va a `omitidas`; nunca se
+      inserta en su lugar.
+    - **Localizar lo nuestro.** Una línea es ya registrada si existe la fila
+      del `hmores.ide` que guarda la asignación (`sigrid_hmores_ide`, lo
+      manda la api), de su recurso, `M*` (un `ide` reutilizado puede caer
+      en una `H*`/`C*` de `partes`; decisión del humano del 2026-10-21) y
+      sin `synckey` nuestra de otra asignación; si no, por su `synckey`. Las
+      dos en la misma lectura.
+    - **Traza.** Cada línea editada o puesta a 0 deja en el log su `ide`,
+      parte, `registro_id`, todo lo que tenía y lo que queda; `ejecutar` lo
+      publica en `editadas` y `a_cero` (`borradas` sigue, siempre 0).
+      Deshacer será de F-033. `limpiar` (script de pruebas) sí borra lo
+      marcado `PRUEBA-PORC` con nuestra `synckey`.
+    - Nunca se toca una línea de otro recurso, de un parte cerrado (choca
+      como `parte_cerrado`), con hora que no sea `M*` ni, en modo pruebas,
+      fuera de la obra de pruebas.
+
+    *Decidido por Pablo Gris el 2026-10-20 (D1: «nunca borramos lineas,
+    editamos el valor»; D5: «cualquier linea a 0% se puede pisar»; D11: se
+    localiza por `hmores.ide`; D12: «que pase a editar»; D14 = A y D15 = A)
+    · F-051, `specs/F-051-pisar-lineas-cero/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 
 | Sistema | Quién | Modo | Notas |
 |---|---|---|---|
 | `sigrid-api` (Function App) | api | **solo lectura** (`POST /api/sql/read`) | maestros de empleados y obras y catálogo de empresas (`auxemp`, F-032); consultas parametrizadas en `config/config.yaml` |
-| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura). Lee además partes del periodo con su estado, cuentas analíticas del centro y cuentas de partida ([`#regla-analitica`](#regla-analitica)) y el historial de partidas de los recursos ([`#regla-partida`](#regla-partida)); un `truncated` es error |
+| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura). Inserta y edita líneas `M*` en su sitio, nunca las borra ([`#regla-cero`](#regla-cero)). Lee además partes del periodo con su estado, cuentas analíticas del centro y cuentas de partida ([`#regla-analitica`](#regla-analitica)) y el historial de partidas de los recursos ([`#regla-partida`](#regla-partida)); un `truncated` es error |
 | PostgreSQL `dedicacion` | api | lectura y escritura | en local, `localhost`. Desplegado, **base propia dentro del servidor compartido `psql-albaranes-rs9k2`** (decisión del humano, 2026-08-20), esquema `public`, rol de aplicación propio y `PG_SSLMODE=require` |
 | `dedicacion-transfer` | api | HTTP interno | `TRANSFER_BASE_URL`, timeout 180 s |
 

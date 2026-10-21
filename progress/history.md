@@ -2749,3 +2749,32 @@ falsos de `harness/mutacion_paralela.py` con 4 workers y la automejora de C4
 **Desplegada el 2026-10-20** (api `r20261020-1342` y front `r20261020-1351`,
 en ese orden, por el humano; revisiones `Healthy` al 100 %);
 `azure-apps/dedicacion.md` `a4c046c`. Comprobación en producción, del humano.
+
+## 2026-10-21 · F-051 · Pisar las líneas del parte editándolas, nunca borrando
+
+**Qué.** El registro ya no emite ningún `DELETE`: una línea `M*` al 0 % del
+recurso en el parte se **edita en su sitio** (`UPDATE` con guarda: recurso,
+`M*`, `can` y `synckey` leídas, sin enlaces, parte En registro) en vez de
+añadir otra, sin confirmar y con aviso; el pisado confirmado también edita
+(con varios choques, el de menor `ide` y los demás a 0); la `synckey` de otro
+sistema se conserva y a la de Administración se le pone la nuestra; lo ya
+registrado se localiza por `hmores.ide` (que la api guarda y envía), exigiendo
+línea `M*` (T18, O2), y si no por `synckey`. El log guarda lo que tenía la
+línea. Transfer, api y front (texto del modal: «se edita la línea X (…) y se
+escribe N%»). Spec en `specs/F-051-pisar-lineas-cero/`, D1-D15 del humano.
+
+**Cómo se cerró.** Implementer con dos bloqueos por tests ajenos resueltos por
+el humano (T3 A, T12 B). Review 1 RECHAZADO (un mutante dado por equivalente
+no lo era con `can = 0`; rastro desfasado); review 2 APROBADO; review 3 (T18)
+APROBADO. Mutación en serie: 136 mutantes, 0 supervivientes. Cobertura de lo
+cambiado 99,2 %. **T15 la hizo el líder** a petición del humano, con las
+escrituras en la 0404 autorizadas por él: línea a 0 editada en su sitio (mismo
+`ide` y `pos`), pisado que edita, tercera vez «ya registrada», 0 `DELETE`;
+0404 limpia al acabar (`progress/manual_F-051.md`). De paso se borraron las
+líneas de prueba que quedaban (`porcentajes:148/149` y `:180`).
+
+**Observaciones recogidas.** O4 (un % que redondea a `can` 0) ⇒ feature nueva
+**F-058**. Automejora de la review (RM5: la demostración de un mutante
+equivalente cubre los extremos del dominio: 0, máximo, nulo) ⇒ lista del
+arnés, a portar a `arnes-base`. Pendiente de desplegar (transfer → api →
+front) y T16 (`azure-apps/dedicacion.md` y aviso a `partes`).

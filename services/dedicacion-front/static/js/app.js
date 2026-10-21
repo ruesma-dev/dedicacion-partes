@@ -2385,12 +2385,22 @@ function rotuloConflicto(c) {
         `casilla para escribirlo igualmente` };
   }
   if (motivo === "pisado") {
-    const viejas = (c.lineas || []).map((l) =>
-      `línea ${l.ide} (${l.hora_codigo || ""} ` +
-      `${fmtPct((Number(l.can) || 0) * 100)}, fec ${l.fecha_int})`).join(", ");
+    // F-051 (R4-R6): el pisado edita, nunca elimina. El transfer dice
+    // cuál se edita en su sitio (`edita_ide`) y cuáles se ponen a 0
+    // (`a_cero_ides`); sin `edita_ide` (transfer anterior), la de menor
+    // `ide`, que es la que editaría él. Aquí solo se formatea. El detalle
+    // termina como antes, en «se escribe N%» (opción B, 2026-10-20).
+    const lineas = c.lineas || [];
+    const linea = (l) => `línea ${l.ide} (${l.hora_codigo || ""} ` +
+      `${fmtPct((Number(l.can) || 0) * 100)}, fec ${l.fecha_int})`;
+    const porIde = (ide) => lineas.find((l) => l.ide === ide) || { ide };
+    const edita = porIde(c.edita_ide != null ? c.edita_ide
+      : Math.min(...lineas.map((l) => l.ide)));
+    const aCero = (c.a_cero_ides || []).map((ide) => linea(porIde(ide)));
     return { tipo: motivo, titulo: "Pisar",
-      detalle: `${hora} de ${quien}${enParte}: se borran ${viejas} y se ` +
-        `escribe ${nuevo}` };
+      detalle: `${hora} de ${quien}${enParte}: se edita la ${linea(edita)}` +
+        (aCero.length ? `; quedan a 0: ${aCero.join(", ")}` : "") +
+        ` y se escribe ${nuevo}` };
   }
   // Un motivo que este front aún no conoce no se disfraza de «Pisar»: se
   // enseña tal cual, con lo que se escribiría.

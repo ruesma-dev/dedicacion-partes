@@ -62,7 +62,10 @@ CLAVES_PREFLIGHT = {"ok", "obra_destino", "obra_postventa",
                     "acciones", "conflictos", "resumen"}
 CLAVES_EJECUTAR = {"ok", "obra_destino", "forzada_pruebas", "partes",
                    "escritas", "omitidas", "ya_registradas", "pisadas",
-                   "borradas", "pendientes_confirmacion", "error"}
+                   "borradas", "pendientes_confirmacion", "error",
+                   # F-051 (R16, R18): lo editado, lo puesto a 0 y el
+                   # `hmores.ide` de cada ya registrada.
+                   "editadas", "a_cero", "ya_registradas_ide"}
 CLAVES_OBRA = {"ide", "codigo", "nombre", "empresa"}
 
 
