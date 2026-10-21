@@ -184,10 +184,13 @@ def test_f030_r15_cargar_edicion_parte_de_lo_guardado():
       resultado.vacio = [state.incidenciasEdicion, state.incidenciasGuardadas];
     """)
     assert r["copia"] is True and r["edicion"] == ["01", "02"]
-    assert r["inc"] == [{"obra_ide": 3, "cod": "0003", "descripcion": "Tres", "codigo": "CIV",
-                         "letra": "V", "nombre": "Vacaciones", "dia_desde": 1, "dia_hasta": 31}]
+    # Anexo R30 (R37, design §13.3): con su `id`, en el editor y en la foto.
+    assert r["inc"] == [{"id": 7, "obra_ide": 3, "cod": "0003", "descripcion": "Tres",
+                         "codigo": "CIV", "letra": "V", "nombre": "Vacaciones",
+                         "dia_desde": 1, "dia_hasta": 31}]
     assert r["lineas"] == [{"obra_ide": 1, "es_postventa": False, "porcentaje": 60}]
-    assert r["incs"] == [{"obra_ide": 3, "codigo": "CIV", "dia_desde": 1, "dia_hasta": 31}]
+    assert r["incs"] == [{"id": 7, "obra_ide": 3, "codigo": "CIV", "dia_desde": 1,
+                          "dia_hasta": 31}]
     assert r["vacio"] == [[], "[]"]
 
 

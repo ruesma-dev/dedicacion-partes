@@ -1215,11 +1215,14 @@ function construirCelda(t, clave, idx) {
     const inc = incidenciaDeSubfila(t, idx);       // F-030 (R16)
     if (inc) {
       const chip = document.createElement("span");
-      chip.className = "chip-linea chip-inc";
-      chip.title = `${inc.obra_descripcion} · ${inc.nombre}`;
+      // Anexo R30 (R38): la quitada del cuadrante que sigue en Sigrid, tachada.
+      chip.className = "chip-linea chip-inc" + (inc.quitada ? " inc-quitada" : "");
+      chip.title = `${inc.obra_descripcion} · ${inc.nombre}` + (inc.quitada
+        ? " · quitada del cuadrante: sigue en Sigrid hasta retirarla a mano" : "");
       chip.innerHTML =
         `<span class="cod">${escapeHtml(inc.obra_cod)}</span>` +
-        `<span class="inc">${escapeHtml(textoIncidencia(inc))}</span>`;
+        `<span class="inc">${escapeHtml(textoIncidencia(inc))}</span>` +
+        (inc.quitada ? '<span class="quitada">quitada · sigue en Sigrid</span>' : "");
       chips.appendChild(chip);
     } else if (!l) {
       chips.innerHTML = '<span class="sin-carga-texto">sin carga</span>';
@@ -1371,10 +1374,12 @@ async function cerrarEditor() {
 
 // El editor parte de lo guardado del trabajador `t` (F-030): sus líneas, sus
 // incidencias y la foto de las dos que guardarAhora compara para saber qué
-// PUT hace falta (R15).
+// PUT hace falta (R15). Anexo R30: cada incidencia lleva su `id` (R37) y las
+// quitadas, que siguen en Sigrid, no entran en el editor (R38).
 function cargarEdicion(t) {
   state.edicion = t.lineas.map((l) => ({ ...l }));
-  state.incidenciasEdicion = (t.incidencias || []).map((i) => ({
+  state.incidenciasEdicion = (t.incidencias || []).filter((i) => !i.quitada).map((i) => ({
+    id: i.id,
     obra_ide: i.obra_ide,
     cod: i.obra_cod,
     descripcion: i.obra_descripcion,
@@ -2251,9 +2256,11 @@ function cuerpoLineas(edicion) {
     }));
 }
 
-// Lo que se manda en el PUT de incidencias (F-030, R17).
+// Lo que se manda en el PUT de incidencias (F-030, R17). Anexo R30 (R37):
+// con su `id` la de lo guardado; sin él, la nueva.
 function cuerpoIncidencias(incidencias) {
   return incidencias.map((i) => ({
+    ...(i.id != null ? { id: i.id } : {}),
     obra_ide: i.obra_ide,
     codigo: i.codigo,
     dia_desde: i.dia_desde,
@@ -2270,7 +2277,8 @@ async function guardarAhora() {
   if (!state.guardadoPendiente || state.editandoIde === null) return;
   const ide = state.editandoIde;
   const lineas = cuerpoLineas(state.edicion);
-  const incidencias = cuerpoIncidencias(state.incidenciasEdicion);
+  const enviadas = state.incidenciasEdicion.slice();
+  const incidencias = cuerpoIncidencias(enviadas);
   const cambianIncidencias = JSON.stringify(incidencias) !== state.incidenciasGuardadas;
   const cambianLineas = !cambianIncidencias ||
     JSON.stringify(lineas) !== state.lineasGuardadas;
@@ -2285,7 +2293,14 @@ async function guardarAhora() {
     if (cambianIncidencias) {
       datos = await api(`${ruta}/incidencias`,
         { method: "PUT", body: JSON.stringify({ incidencias }) });
-      state.incidenciasGuardadas = JSON.stringify(incidencias);
+      // R37: las nuevas toman su `id` y la foto lo lleva (si no, el
+      // siguiente diferido vería un cambio que no hay). Solo si la fila
+      // trae incidencias: sin ellas no hay `id` que tomar (y los arneses
+      // del guardado de R15 no cargan `idsDeLaRespuesta` y siguen igual).
+      const guardadas = datos.trabajador.incidencias;
+      if (guardadas) idsDeLaRespuesta(enviadas, guardadas);
+      state.incidenciasGuardadas = JSON.stringify(incidencias.map((c, k) =>
+        (c.id != null || enviadas[k].id == null ? c : { id: enviadas[k].id, ...c })));
     }
     state.guardadoPendiente = false;
     aplicarFila(datos);
@@ -2294,6 +2309,22 @@ async function guardarAhora() {
     marcarGuardando("!");
     toast("No se pudo guardar: " + err.message, true);
   }
+}
+
+// Anexo R30 (R37): tras el PUT, cada incidencia nueva (sin `id`) toma el
+// de la respuesta con su obra y su código que aún no tenga ninguna, en orden;
+// las quitadas no cuentan. Solo lleva la identidad: qué fila es cuál lo
+// decide la api.
+function idsDeLaRespuesta(enviadas, guardadas) {
+  const usados = new Set(enviadas.map((i) => i.id).filter((id) => id != null));
+  enviadas.forEach((i) => {
+    if (i.id != null) return;
+    const g = guardadas.find((x) => !x.quitada && !usados.has(x.id) &&
+      x.obra_ide === i.obra_ide && x.codigo === i.codigo);
+    if (!g) return;
+    i.id = g.id;
+    usados.add(g.id);
+  });
 }
 
 function aplicarFila(datos) {
@@ -2799,10 +2830,14 @@ function textoLineaIncidencia(a) {
   const fec = String(a.fecha_int || "");
   const dia = fec.length === 8 ? ` ${fec.slice(6)}/${fec.slice(4, 6)}` : "";
   const hora = a.hora_codigo ? ` ${a.hora_codigo}` : "";
-  const que = a.accion === "escribir"
-    ? `se escribe${a.parte_cod ? ` en el parte ${a.parte_cod}` : ""}`
-    : a.accion === "ya_registrado" ? "ya registrada"
-      : `no se escribe: ${a.motivo || ""}`;
+  const parte = a.parte_cod ? ` en el parte ${a.parte_cod}` : "";
+  // Anexo R30 (R46): la que cambia de día, «se cambia del d al d».
+  const que = a.accion === "escribir" ? `se escribe${parte}`
+    : a.accion === "editar"
+      ? `se cambia del ${Number(String(a.fec_antes).slice(6))} al ` +
+        `${Number(fec.slice(6))}${parte}`
+      : a.accion === "ya_registrado" ? "ya registrada"
+        : `no se escribe: ${a.motivo || ""}`;
   return `${a.rol === "ini" ? "inicio" : "fin"}${hora}${dia}: ${que}`;
 }
 
@@ -2823,6 +2858,28 @@ function seccionIncidencias(o) {
   return `<h4>Incidencias</h4><table class="tabla-reg tabla-inc"><thead><tr>` +
     `<th>Trabajador</th><th>Obra</th><th>Incidencia</th><th>Días</th>` +
     `<th>Qué se hará</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+
+// Anexo R30 (R38): las incidencias quitadas del cuadrante que siguen en
+// Sigrid, para retirarlas a mano (su parte y sus líneas). Solo formatea lo
+// que manda la api en `incidencias_quitadas`; sin ellas, nada.
+function seccionQuitadas(pf) {
+  const quitadas = pf.incidencias_quitadas || [];
+  if (!quitadas.length) return "";
+  const filas = quitadas.map((q) => {
+    const ides = [q.hmores_ide_ini, q.hmores_ide_fin].filter((x) => x != null);
+    const lineas = ides.length
+      ? `${ides.length > 1 ? "líneas" : "línea"} ${ides.join(" y ")}` : "";
+    const donde = [q.parte_cod ? `parte ${q.parte_cod}` : "", lineas]
+      .filter(Boolean).join(" · ");
+    const celdas = [q.trabajador, q.obra_cod, `${q.letra} (${q.codigo})`,
+      `del ${q.desde} al ${q.hasta}`, donde];
+    return `<tr>${celdas.map((c) => `<td>${escapeHtml(c)}</td>`).join("")}</tr>`;
+  }).join("");
+  return `<h4>Quitadas del cuadrante: siguen en Sigrid</h4>` +
+    `<table class="tabla-reg tabla-inc"><thead><tr>` +
+    `<th>Trabajador</th><th>Obra</th><th>Incidencia</th><th>Días</th>` +
+    `<th>Retirar a mano en Sigrid</th></tr></thead><tbody>${filas}</tbody></table>`;
 }
 
 function pintarModalPreflight(pf) {
@@ -2896,6 +2953,9 @@ function pintarModalPreflight(pf) {
     // F-030 (R32): solo si la obra trae incidencias; sin ellas, como antes.
     if ((o.incidencias || []).length) html += seccionIncidencias(o);
   });
+  // Anexo R30 (R38): solo si hay quitadas; sin ellas, como antes (los
+  // arneses del modal de F-049/F-050 no la cargan y siguen igual).
+  if ((pf.incidencias_quitadas || []).length) html += seccionQuitadas(pf);
   html += `<div class="pie-modal">` +
     `<button class="btn secondary" onclick="cerrarModal()">Cancelar</button>` +
     `<button class="btn primary" id="btn-ejecutar-registro">Registrar</button></div>`;

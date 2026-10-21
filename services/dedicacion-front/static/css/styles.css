@@ -458,6 +458,9 @@ tr.fila-editor > td {
 .chip-inc .inc-rotulo { font-size: 0.78rem; color: var(--steel-300); }
 .chip-inc .inc-dia { width: 2.4em; text-align: center; }
 tr.fila-inc td { font-style: italic; }
+/* F-030, anexo R30 (R38): la quitada del cuadrante que sigue en Sigrid. */
+.inc-quitada .inc { text-decoration: line-through; }
+.inc-quitada .quitada { margin-left: 6px; font-size: 0.78rem; color: var(--steel-300); }
 .sugerencia.vacia { cursor: default; color: var(--ink-soft); font-style: italic; }
 .sugerencia.vacia:hover { background: none; }
 
