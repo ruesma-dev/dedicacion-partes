@@ -2783,6 +2783,48 @@ function rotuloConflicto(c) {
     detalle: `${quien}, ${hora} ${nuevo}${enParte}: ${motivo}` };
 }
 
+// F-030 (R32): la sección «Incidencias» de cada obra del modal de registro.
+// Solo formatea lo que manda el transfer (dos líneas por incidencia: `ini`
+// con su CI* y `fin` con CIZ) con lo que el cuadrante ya sabe de ella
+// (trabajador, letra y días). No decide nada ni pide confirmación (R28).
+function datosIncidencia(id) {
+  for (const t of state.trabajadores || []) {
+    const i = (t.incidencias || []).find((x) => x.id === id);
+    if (i) return { trabajador: t.nombre, i };
+  }
+  return null;
+}
+
+function textoLineaIncidencia(a) {
+  const fec = String(a.fecha_int || "");
+  const dia = fec.length === 8 ? ` ${fec.slice(6)}/${fec.slice(4, 6)}` : "";
+  const hora = a.hora_codigo ? ` ${a.hora_codigo}` : "";
+  const que = a.accion === "escribir"
+    ? `se escribe${a.parte_cod ? ` en el parte ${a.parte_cod}` : ""}`
+    : a.accion === "ya_registrado" ? "ya registrada"
+      : `no se escribe: ${a.motivo || ""}`;
+  return `${a.rol === "ini" ? "inicio" : "fin"}${hora}${dia}: ${que}`;
+}
+
+function seccionIncidencias(o) {
+  const lineas = o.incidencias || [];
+  if (!lineas.length) return "";
+  const filas = [...new Set(lineas.map((a) => a.id))].map((id) => {
+    const d = datosIncidencia(id);
+    const celdas = d
+      ? [d.trabajador, d.i.obra_cod, `${d.i.letra} ${d.i.nombre}`,
+        `del ${d.i.dia_desde} al ${d.i.dia_hasta}`]
+      : [`incidencia ${id}`, "", "", ""];
+    const que = lineas.filter((a) => a.id === id).map(textoLineaIncidencia)
+      .join(" · ");
+    return `<tr>${[...celdas, que].map((c) => `<td>${escapeHtml(c)}</td>`)
+      .join("")}</tr>`;
+  }).join("");
+  return `<h4>Incidencias</h4><table class="tabla-reg tabla-inc"><thead><tr>` +
+    `<th>Trabajador</th><th>Obra</th><th>Incidencia</th><th>Días</th>` +
+    `<th>Qué se hará</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+
 function pintarModalPreflight(pf) {
   registro.lineas = {};
   let html = `<h2>Registrar en Sigrid · ${MESES[state.mes - 1]} ${state.anio}</h2>`;
@@ -2851,6 +2893,8 @@ function pintarModalPreflight(pf) {
         `<strong>${escapeHtml(r.titulo)}</strong> · ${escapeHtml(r.detalle)}` +
         `</label></div>`;
     });
+    // F-030 (R32): solo si la obra trae incidencias; sin ellas, como antes.
+    if ((o.incidencias || []).length) html += seccionIncidencias(o);
   });
   html += `<div class="pie-modal">` +
     `<button class="btn secondary" onclick="cerrarModal()">Cancelar</button>` +

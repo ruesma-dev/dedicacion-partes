@@ -420,3 +420,92 @@ def test_f030_r16_el_filtro_de_obra_encuentra_la_incidencia():
 def test_f030_r16_css_de_la_incidencia():
     assert re.search(r"\.chip-inc\s*[,{]", CSS)
     assert re.search(r"tr\.fila-inc\b", CSS)
+
+
+# ================================ R32 ==================================== #
+#: `escapeHtml` usa el DOM: un nodo de texto que se lee como HTML, como el
+#: navegador (escapa `&`, `<` y `>`).
+DOM_TEXTO = r"""
+var document = { createElement: () => ({
+  set textContent(v) { this._t = v; },
+  get innerHTML() {
+    return this._t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  } }) };
+"""
+
+
+def _modal(obra: dict, trabajadores: list) -> str:
+    programa = "\n".join([
+        DOM_TEXTO,
+        *[_funcion(f) for f in ("escapeHtml", "datosIncidencia",
+                                "textoLineaIncidencia", "seccionIncidencias")],
+        "var state = " + json.dumps({"trabajadores": trabajadores},
+                                    ensure_ascii=False) + ";",
+        "process.stdout.write(JSON.stringify(seccionIncidencias(" +
+        json.dumps(obra, ensure_ascii=False) + ")));"])
+    return _node(programa)
+
+
+ANA = {"ide": 10, "nombre": "Ana Ruiz", "incidencias": [
+    {"id": 7, "obra_ide": 678, "obra_cod": "0678", "codigo": "CIV", "letra": "V",
+     "nombre": "Vacaciones", "dia_desde": 5, "dia_hasta": 9},
+    {"id": 8, "obra_ide": 678, "obra_cod": "0678", "codigo": "CIE", "letra": "B",
+     "nombre": "Enfermedad", "dia_desde": 12, "dia_hasta": 12}]}
+
+
+def _accion(i, rol, accion, fec, hora, parte=None, motivo=None):
+    return {"id": i, "rol": rol, "accion": accion, "fecha_int": fec,
+            "hora_codigo": hora, "paride": 0, "parte_cod": parte,
+            "hmores_ide": None, "motivo": motivo}
+
+
+def _celdas(html: str) -> list[list[str]]:
+    filas = re.findall(r"<tr>(.*?)</tr>", html.split("<tbody>")[1])
+    return [re.findall(r"<td>(.*?)</td>", f) for f in filas]
+
+
+def test_f030_r32_modal_seccion_por_incidencia():
+    html = _modal({"incidencias": [
+        _accion(7, "ini", "escribir", 20260705, "CIV", "PT26/00251"),
+        _accion(7, "fin", "escribir", 20260709, "CIZ", "PT26/00251"),
+        _accion(8, "ini", "ya_registrado", 20260712, "CIE", "PT26/00031"),
+        _accion(8, "fin", "omitir", 20260712, "CIZ", "PT26/00041",
+                "ya hay una línea CIZ del recurso el 12/07 en el parte PT26/00041"),
+    ]}, [ANA])
+    assert html.startswith("<h4>Incidencias</h4>")
+    assert "<th>Trabajador</th><th>Obra</th><th>Incidencia</th><th>Días</th>" \
+           "<th>Qué se hará</th>" in html
+    assert _celdas(html) == [
+        ["Ana Ruiz", "0678", "V Vacaciones", "del 5 al 9",
+         "inicio CIV 05/07: se escribe en el parte PT26/00251 · "
+         "fin CIZ 09/07: se escribe en el parte PT26/00251"],
+        ["Ana Ruiz", "0678", "B Enfermedad", "del 12 al 12",
+         "inicio CIE 12/07: ya registrada · fin CIZ 12/07: no se escribe: "
+         "ya hay una línea CIZ del recurso el 12/07 en el parte PT26/00041"]]
+    # Sin confirmaciones (R28, R32).
+    assert "checkbox" not in html and "chk-pisar" not in html
+
+
+def test_f030_r32_modal_omitidas_sin_dias_y_desconocida():
+    html = _modal({"incidencias": [
+        _accion(9, "ini", "omitir", 0, None, None, "días <imposibles>"),
+        _accion(9, "fin", "omitir", 0, None, None, "días <imposibles>")]}, [ANA])
+    assert _celdas(html) == [[
+        "incidencia 9", "", "", "",
+        "inicio: no se escribe: días &lt;imposibles&gt; · "
+        "fin: no se escribe: días &lt;imposibles&gt;"]]
+
+
+def test_f030_r32_modal_sin_incidencias_nada():
+    assert _modal({}, [ANA]) == ""
+    assert _modal({"incidencias": []}, [ANA]) == ""
+
+
+def test_f030_r32_modal_la_pinta_cada_obra():
+    cuerpo = _funcion("pintarModalPreflight")
+    # Sin incidencias ni se llama (los arneses del modal de F-049/F-050 no
+    # la cargan y siguen igual).
+    assert "if ((o.incidencias || []).length) html += seccionIncidencias(o);" \
+        in cuerpo
+    assert cuerpo.index("seccionIncidencias(o)") > cuerpo.index("(o.conflictos || [])")
+    assert re.search(r"\.tabla-inc\b", CSS)

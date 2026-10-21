@@ -597,3 +597,6 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
   font-size: .84rem; }
 
 .btn-sigrid-fila { color: var(--brand); font-weight: 700; }
+
+/* F-030 (R32): la sección «Incidencias» del modal de registro. */
+.tabla-inc { margin-top: 4px; }
