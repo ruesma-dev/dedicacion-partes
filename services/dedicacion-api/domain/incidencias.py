@@ -11,6 +11,7 @@ from __future__ import annotations
 import calendar
 import re
 from collections.abc import Sequence
+from itertools import pairwise
 
 from domain.errors import IncidenciaInvalida
 from domain.models import Incidencia
@@ -30,7 +31,7 @@ def letra_y_nombre(res: str | None, cod: str) -> tuple[str, str]:
     if m and m.group("letra").strip():
         return m.group("letra").strip(), m.group("nombre").strip()
     codigo = cod.strip()
-    return (codigo[2:] if codigo.startswith("CI") else codigo), texto
+    return codigo.removeprefix("CI"), texto
 
 
 def ultimo_dia(anio: int, mes: int) -> int:
@@ -64,7 +65,7 @@ def validar_incidencias(lista: Sequence[Incidencia], anio: int,
                 f"El día desde ({inc.dia_desde}) es posterior al día hasta "
                 f"({inc.dia_hasta})")
     ordenadas = sorted(lista, key=lambda i: (i.dia_desde, i.dia_hasta))
-    for previa, siguiente in zip(ordenadas, ordenadas[1:]):
+    for previa, siguiente in pairwise(ordenadas):
         if siguiente.dia_desde <= previa.dia_hasta:
             raise IncidenciaInvalida(
                 f"Dos incidencias comparten días: del {previa.dia_desde} al "
