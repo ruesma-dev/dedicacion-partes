@@ -755,6 +755,63 @@ def test_f030_r35_script_verificar_por_synckey(monkeypatch, capsys):
            "fec=20260709" in salida
 
 
+class _ClienteConPar(ClienteEscribe):
+    """Anexo R30 (T34): el par de la primera --incidencia del script
+    (990101) ya escrito del 5 al 9 en el parte 777, En registro; la lectura
+    de R33 y la de `verificar` salen de esas líneas."""
+
+    def __init__(self) -> None:
+        from domain.models.registro_models import LineaSigrid
+
+        super().__init__(lineas_parte=[
+            LineaSigrid(70001, 200, 20260705, 71, "CIV", 0.0, 0.0,
+                        "porcentajes:inc:990101:ini", nuestra=True),
+            LineaSigrid(70002, 200, 20260709, 79, "CIZ", 0.0, 0.0,
+                        "porcentajes:inc:990101:fin", nuestra=True)])
+
+    def incidencias_del_mes(self, resides, ano, mes, hmoides=None, ides=()):
+        return [LineaIncidenciaSigrid(
+            ls.ide, ls.reside, ls.fecha_int, ls.hora_codigo, ls.synckey,
+            self.parte.cod, can=ls.can, hmoide=777, parte_est=1)
+            for ls in self.lineas_parte]
+
+    def lineas_por_synckey(self, claves):
+        return {ls.synckey: ls for ls in self.lineas_parte
+                if ls.synckey in set(claves)}
+
+
+def test_f030_r49_script_cambiar_los_dias_edita_y_lo_imprime(monkeypatch,
+                                                             capsys):
+    cli = _ClienteConPar()
+    argv = ("--ano", "2026", "--mes", "7", "--incidencia", "200:CIV:6:12")
+    _script(monkeypatch, cli, "preflight", *argv)
+    salida = capsys.readouterr().out
+    assert "[editar       ] inc=990101 ini CIV fec=20260706 parte=PT26/00251" \
+        in salida
+    assert "fec_antes=20260705 hmores.ide=70001" in salida
+    assert "fec_antes=20260709 hmores.ide=70002" in salida
+    _script(monkeypatch, cli, "ejecutar", "--confirmar", *argv)
+    salida = capsys.readouterr().out
+    assert ("INCIDENCIA inc=990101 ini editar hmores.ide=70001 "
+            "parte=PT26/00251 fec=20260706 fec_antes=20260705") in salida
+    assert ("INCIDENCIA inc=990101 fin editar hmores.ide=70002 "
+            "parte=PT26/00251 fec=20260712 fec_antes=20260709") in salida
+    assert [s["sql"] for s in cli.escritos] == ["editar_fec"] * 2
+    # R49: los mismos dos `ide`, con la `fec` 6 y 12.
+    _script(monkeypatch, cli, "verificar", "--incidencia", "200:CIV:6:12")
+    salida = capsys.readouterr().out
+    assert "porcentajes:inc:990101:ini: hmores.ide=70001 reside=200 " \
+           "fec=20260706" in salida
+    assert "porcentajes:inc:990101:fin: hmores.ide=70002 reside=200 " \
+           "fec=20260712" in salida
+    # Repetir: ya registradas, con su `ide` y sin `fec_antes`.
+    _script(monkeypatch, cli, "ejecutar", "--confirmar", *argv)
+    salida = capsys.readouterr().out
+    assert ("INCIDENCIA inc=990101 ini ya_registrado hmores.ide=70001 "
+            "parte=PT26/00251 fec=20260706 motivo=") in salida
+    assert len(cli.escritos) == 2
+
+
 @pytest.mark.parametrize("valor", ["200:CIV:5", "x:CIV:5:9", "200::5:9",
                                    "200:CIV:a:9", "200:CIV:5:9:1"])
 def test_f030_r35_script_incidencia_mal_escrita(monkeypatch, valor):

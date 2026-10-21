@@ -39,6 +39,9 @@ Fases:
       de ejemplo), del mes de --ano/--mes: el par CI*/CIZ que se escribiría
       o se escribió (`can = 0`) y su relectura por synckey. `limpiar` ya
       las borra (llevan la marca de pruebas y el prefijo de este hilo).
+      Anexo R30 (R49): con otros días, la ya escrita sale `editar` con su
+      `fec_antes` y su `hmores.ide`; `verificar` imprime el `ide` y la `fec`
+      de cada línea (los mismos dos `ide`, con la `fec` nueva).
 
 Sin --confirmar, las fases de escritura solo muestran lo que harían.
 """
@@ -228,8 +231,14 @@ def fase_preflight(pipeline: RegistroPipeline, st, ano: int, mes: int,
     for a in pf.incidencias:
         print(f"  [{a.accion:13s}] inc={a.id} {a.rol} {a.hora_codigo} "
               f"fec={a.fecha_int} parte={a.parte_cod} paride={a.paride} "
-              f"pre={a.pre} motivo={a.motivo}")
+              f"pre={a.pre} motivo={a.motivo}{_fec_antes(a)} "
+              f"hmores.ide={a.hmores_ide}")
     return pf
+
+
+def _fec_antes(a) -> str:
+    """Anexo R30 (R46, R49): la `fec` que tiene la línea que se edita."""
+    return f" fec_antes={a.fec_antes}" if a.accion == "editar" else ""
 
 
 def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
@@ -263,7 +272,7 @@ def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
     for a in r.incidencias:
         print(f"  INCIDENCIA inc={a.id} {a.rol} {a.accion} "
               f"hmores.ide={a.hmores_ide} parte={a.parte_cod} "
-              f"motivo={a.motivo}")
+              f"fec={a.fecha_int}{_fec_antes(a)} motivo={a.motivo}")
 
 
 def fase_verificar(cli: SigridWriteClient,
