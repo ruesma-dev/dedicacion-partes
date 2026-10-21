@@ -29,6 +29,9 @@ class TipoEvento(str, Enum):
     COPIA = "COPIA"
     COMPLETAR = "COMPLETAR"  # lote «completar al 100 %» (F-029)
     PARTIDA = "PARTIDA"  # cambio de la partida elegida de una línea (F-050)
+    # Sustitución de las incidencias del trabajador (F-030, R17); su
+    # snapshot es de incidencias, no de líneas (R20).
+    INCIDENCIAS = "INCIDENCIAS"
 
 
 class ResultadoCompletado(str, Enum):
@@ -123,6 +126,43 @@ class Linea:
         if self.es_postventa:
             return self.obra_admite_postventa
         return self.obra_activa
+
+
+@dataclass(frozen=True)
+class TipoIncidencia:
+    """Tipo de incidencia del catálogo, copiado de `auxhor` de Sigrid por el
+    sync (F-030, R3-R5): `ide` y código de `auxhor`, letra y nombre según
+    `domain.incidencias.letra_y_nombre`. `activa` falsa = ya no se lee o
+    tiene fecha de baja; no se borra."""
+
+    ide: int
+    codigo: str
+    letra: str
+    nombre: str
+    activa: bool = True
+
+
+@dataclass(frozen=True)
+class Incidencia:
+    """Incidencia de un trabajador en una obra durante un tramo de días del
+    periodo (F-030, R17, docs/ARCHITECTURE.md#regla-incidencia). No es una
+    línea de %: no cuenta para el 100 % (R22).
+
+    `id` es nulo hasta guardarla. Obra, letra y nombre son de lectura (R21);
+    `sigrid_*`, la traza del registro (R31)."""
+
+    obra_ide: int
+    codigo: str
+    dia_desde: int
+    dia_hasta: int
+    id: int | None = None
+    obra_cod: str = ""
+    obra_descripcion: str = ""
+    letra: str = ""
+    nombre: str = ""
+    sigrid_estado: str | None = None
+    sigrid_parte_cod: str | None = None
+    sigrid_motivo: str | None = None
 
 
 @dataclass(frozen=True)

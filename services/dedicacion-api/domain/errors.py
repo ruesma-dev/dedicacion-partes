@@ -69,3 +69,10 @@ class PropuestaNoDisponible(ErrorDominio):
 class UniversoVarNoDisponible(ErrorDominio):
     """El transfer no ha dado el universo VAR (caído, `ok` que no es `true` o
     sin `partidas`): el sync y el preview fallan enteros (F-039, R16)."""
+
+
+class IncidenciaInvalida(ErrorDominio):
+    """Las incidencias de un trabajador no valen (F-030, R19): un día fuera
+    del mes, `desde` posterior a `hasta`, dos que comparten algún día, un
+    código que no está activo o una obra que no se ofrece como normal. 422
+    con el motivo, sin tocar nada."""
