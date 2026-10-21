@@ -226,3 +226,18 @@ def test_f030_r27_deduplicar_codigo_nulo_en_sigrid_no_casa():
     ini, fin = _par()
     deduplicar([ini, fin], [_existente(1, 200, 20260705, None)])
     assert ini.accion == "escribir"
+
+
+def test_f030_r30_deduplicar_la_nuestra_aunque_cambien_los_dias():
+    from application.services.reglas_incidencias import MOTIVO_INC_YA, deduplicar
+
+    ini, fin = _par(desde=6, hasta=10)
+    deduplicar([ini, fin], [
+        _existente(51, 200, 20260705, "CIV", "porcentajes:inc:7:ini", "PT26/00031"),
+        _existente(52, 999, 20260709, "CIZ", "porcentajes:inc:7:fin", "PT26/00032"),
+        _existente(53, 200, 20260710, "CIZ", "porcentajes:inc:8:fin", "PT26/00033")])
+    assert (ini.accion, ini.hmores_ide, ini.parte_cod, ini.motivo) == (
+        "ya_registrado", 51, "PT26/00031", MOTIVO_INC_YA.format(ide=51))
+    # La synckey manda sobre la coincidencia de día y código.
+    assert (fin.accion, fin.hmores_ide, fin.parte_cod) == (
+        "ya_registrado", 52, "PT26/00032")

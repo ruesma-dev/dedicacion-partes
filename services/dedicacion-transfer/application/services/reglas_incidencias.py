@@ -122,10 +122,19 @@ def deduplicar(acciones: Iterable[AccionIncidencia],
     """R27: cada acción `escribir` que ya está en algún parte del mes (el
     mismo recurso, código y `fec`) no se escribe: `ya_registrado` si la
     línea es la nuestra (su `synckey`); si no, `omitir` con el parte donde
-    está. Cada línea del par se decide sola. Cambia las acciones en sitio."""
+    está. R30: la que ya tiene su `synckey` en el mes es `ya_registrado`
+    aunque hayan cambiado sus días (eso es F-033). Cada línea del par se
+    decide sola. Cambia las acciones en sitio."""
     existentes = list(existentes)
+    por_synckey = {e.synckey: e for e in existentes if e.synckey}
     for a in acciones:
         if a.accion != "escribir":
+            continue
+        nuestra = por_synckey.get(synckey_incidencia(a.id, a.rol))
+        if nuestra is not None:
+            a.accion, a.hmores_ide = "ya_registrado", nuestra.ide
+            a.parte_cod = nuestra.parte_cod
+            a.motivo = MOTIVO_INC_YA.format(ide=nuestra.ide)
             continue
         igual = next((e for e in existentes
                       if e.reside == a.recurso_ide

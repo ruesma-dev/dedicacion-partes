@@ -306,3 +306,153 @@ def test_f030_r25_preflight_la_partida_se_valida_por_ide():
     assert [(a.accion, a.paride, a.motivo) for a in pf.incidencias] == [
         ("escribir", 80001, None)] * 2 + [("escribir", 0, None)] * 2
     assert cli.validadas == [[70001, 80001, 80002]]   # una sola lectura
+
+
+# ============================ ejecutar (T14) ============================= #
+class ClienteEscribe(ClienteInc):
+    """`ClienteInc` que «escribe»: el alta deja el parte En registro y cada
+    INSERT queda localizable por su `synckey`, como en Sigrid."""
+
+    def __init__(self, **kw) -> None:
+        super().__init__(**kw)
+        self._siguiente = 70000
+
+    def escribir(self, statements):
+        from domain.models.registro_models import LineaSigrid
+
+        n = super().escribir(statements)
+        for s in statements:
+            kw = s["parameters"]
+            if s["sql"] == "crear":
+                self.parte.existe, self.parte.ide = True, 778
+                self.parte.cod = kw["cod"]
+            elif s["sql"] == "insert":
+                self._siguiente += 1
+                self.synckeys[kw["synckey"]] = LineaSigrid(
+                    ide=self._siguiente, reside=kw["reside"],
+                    fecha_int=kw["fecha_int"], horide=kw["horide"],
+                    hora_codigo=None, can=kw["can"], tot=None,
+                    synckey=kw["synckey"], nuestra=True)
+        return n
+
+
+def _ej(cli, lineas=(), incidencias=None, *, pisar=None, **ajustes):
+    pipe = RegistroPipeline(cliente=cli, settings=SettingsFalso(**ajustes))
+    kw = {} if incidencias is None else {"incidencias": list(incidencias)}
+    return pipe.ejecutar(obra=OBRA, lineas=list(lineas), pisar_claves=pisar,
+                         **kw)
+
+
+def _sin_pos(inserts):
+    return [{k: v for k, v in i.items() if k != "obra"} for i in inserts]
+
+
+def test_f030_r24_ejecutar_inserta_el_par_con_can_cero_tras_las_lineas():
+    cli = ClienteEscribe()
+    res = _ej(cli, [linea(registro_id=1)], [_inc(paride=80001)])
+    linea_m, ini, fin = _sin_pos(cli.inserts())
+    assert linea_m["synckey"] == "porcentajes:1"
+    assert (ini["pos"], fin["pos"]) == (linea_m["pos"] + 64, linea_m["pos"] + 128)
+    for ins, rol, fec, horide, pre in ((ini, "ini", 20260705, 71, 12.5),
+                                       (fin, "fin", 20260709, 79, 0.0)):
+        assert ins == {
+            "hmoide": 777, "reside": 200, "pos": ins["pos"],
+            "fecha_int": fec, "horide": horide, "can": 0.0, "pre": pre,
+            "ano": 2026, "mes": 7, "synckey": f"porcentajes:inc:7:{rol}",
+            "tex": "PRUEBA-PORC", "paride": 80001,
+            "caaide": ins["caaide"]}
+    assert ini["caaide"] > 0 and fin["caaide"] == 0
+    # Las incidencias no son `escritas` (eso es de las asignaciones).
+    assert [e["registro_id"] for e in res.escritas] == [1]
+    assert [(a.rol, a.accion, a.hmores_ide, a.parte_cod)
+            for a in res.incidencias] == [
+        ("ini", "escribir", 70002, "PT26/00251"),
+        ("fin", "escribir", 70003, "PT26/00251")]
+
+
+def test_f030_r24_ejecutar_con_el_cliente_real_tot_cero():
+    from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
+
+    cli = SigridWriteClient(base_url="http://sigrid.invalid",
+                            function_key="sin-clave", database="ruesma")
+    obra = ObraEntrada(ide=5, codigo="0404")
+    obra.cenide = 6
+    st = cli.stmt_insert_linea(hmoide=1, obra=obra, reside=200, pos=64,
+                               fecha_int=20260705, horide=71, can=0.0,
+                               pre=12.5, ano=2026, mes=7,
+                               synckey="porcentajes:inc:7:ini", tex=None)
+    assert st["parameters"][8:11] == [0.0, 12.5, 0.0]       # can, pre, tot
+
+
+def test_f030_r2_ejecutar_las_lineas_se_escriben_igual():
+    lineas = [linea(registro_id=1), linea(registro_id=2, recurso_ide=400)]
+    sin, con = ClienteEscribe(), ClienteEscribe()
+    r_sin = _ej(sin, lineas)
+    r_con = _ej(con, lineas, [_inc(), _inc(id=8, recurso_ide=400)])
+    assert con.inserts()[:2] == sin.inserts()
+    assert [i["synckey"] for i in con.inserts()[2:]] == [
+        "porcentajes:inc:7:ini", "porcentajes:inc:7:fin",
+        "porcentajes:inc:8:ini", "porcentajes:inc:8:fin"]
+    assert r_con.escritas == r_sin.escritas and r_sin.incidencias == []
+    assert (r_con.omitidas, r_con.ya_registradas) == (
+        r_sin.omitidas, r_sin.ya_registradas)
+
+
+def test_f030_r23_ejecutar_obra_solo_con_incidencias_crea_el_parte():
+    cli = ClienteEscribe(parte_existe=False)
+    res = _ej(cli, [], [_inc()])
+    assert [s["sql"] for s in cli.escritos] == ["crear", "insert", "insert"]
+    assert {i["hmoide"] for i in cli.inserts()} == {778}
+    assert [a.parte_cod for a in res.incidencias] == ["PT26/09999"] * 2
+    assert res.partes[0].creado is True
+
+
+def test_f030_r28_ejecutar_un_conflicto_sin_confirmar_no_las_retiene():
+    cli = ClienteEscribe(lineas_parte=[linea_previa()])
+    res = _ej(cli, [linea(registro_id=1)], [_inc()])
+    assert res.pendientes_confirmacion and res.escritas == []
+    assert [i["synckey"] for i in cli.inserts()] == [
+        "porcentajes:inc:7:ini", "porcentajes:inc:7:fin"]
+    assert cli.borrados() == []
+
+
+def test_f030_r30_ejecutar_no_reescribe_la_ya_registrada():
+    # La 7 ya se registró del 5 al 9; ahora llega del 6 al 9.
+    ya = [LineaIncidenciaSigrid(51, 200, 20260705, "CIV",
+                                "porcentajes:inc:7:ini", "PT26/00251"),
+          LineaIncidenciaSigrid(52, 200, 20260709, "CIZ",
+                                "porcentajes:inc:7:fin", "PT26/00251")]
+    cli = ClienteEscribe(existentes=ya)
+    res = _ej(cli, [], [_inc(desde=6)])
+    assert cli.inserts() == []
+    assert [(a.rol, a.accion, a.hmores_ide, a.parte_cod)
+            for a in res.incidencias] == [
+        ("ini", "ya_registrado", 51, "PT26/00251"),
+        ("fin", "ya_registrado", 52, "PT26/00251")]
+    # Repetir ejecutar con lo mismo: tampoco.
+    res = _ej(cli, [], [_inc()])
+    assert cli.inserts() == []
+    assert [a.accion for a in res.incidencias] == ["ya_registrado"] * 2
+
+
+def test_f030_r27_ejecutar_omitidas_no_se_escriben():
+    otra = LineaIncidenciaSigrid(61, 200, 20260705, "CIV", None, "PT26/00041")
+    cli = ClienteEscribe(existentes=[otra])
+    res = _ej(cli, [], [_inc(), _inc(id=9, recurso_ide=300)])
+    assert [i["synckey"] for i in cli.inserts()] == ["porcentajes:inc:7:fin"]
+    assert [a.accion for a in res.incidencias] == [
+        "omitir", "escribir", "omitir", "omitir"]
+
+
+def test_f030_r33_ejecutar_si_la_lectura_falla_no_escribe_nada():
+    cli = ClienteEscribe(falla=RuntimeError("lectura truncada"))
+    with pytest.raises(RuntimeError, match="truncada"):
+        _ej(cli, [linea(registro_id=1)], [_inc()])
+    assert cli.escritos == []
+
+
+def test_f030_r29_ejecutar_fuera_de_pruebas_sin_marca():
+    cli = ClienteEscribe()
+    _ej(cli, [], [_inc()], obra_pruebas_forzar=False)
+    assert {i["tex"] for i in cli.inserts()} == {None}
+    assert {i["hmoide"] for i in cli.inserts()} == {777}

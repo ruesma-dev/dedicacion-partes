@@ -78,7 +78,7 @@ from application.services.propuesta_partida import (
     proponer_partida, ventana,
 )
 from application.services.reglas_incidencias import (
-    decidir_incidencia, deduplicar,
+    decidir_incidencia, deduplicar, synckey_incidencia,
 )
 from application.services.reglas_porcentajes import (
     AVISO_SIN_PARTIDA, MOTIVO_EMPRESA_OBRA, MOTIVO_PARTIDA_PV_NO_HOJA,
@@ -815,9 +815,15 @@ class RegistroPipeline:
     # ------------------------------------------------------------- #
     def ejecutar(self, *, obra: ObraEntrada, lineas: list[LineaEntrada],
                  pisar_claves: set[str] | None = None,
-                 usuario: str | None = None) -> ResultadoRegistro:
+                 usuario: str | None = None,
+                 incidencias: list[IncidenciaEntrada] | None = None,
+                 ) -> ResultadoRegistro:
+        """Pasos 0-10. Las incidencias (F-030) se escriben tras las líneas,
+        en el mismo lote de sentencias; ningún conflicto las retiene (R28)
+        y no salen en `escritas` (que es de las asignaciones), sino en
+        `incidencias`, con el `hmores_ide` de cada línea escrita."""
         pisar = {str(k) for k in (pisar_claves or set())}
-        pf = self.preflight(obra=obra, lineas=lineas)
+        pf = self.preflight(obra=obra, lineas=lineas, incidencias=incidencias)
         destino_normal = pf.obra_destino
         destino_pv = getattr(pf, "obra_postventa", None)
 
@@ -831,7 +837,9 @@ class RegistroPipeline:
                       for a in pf.acciones if a.accion == "omitir"],
             ya_registradas=[a.registro_id for a in pf.acciones
                             if a.accion == "ya_registrado"],
+            incidencias=pf.incidencias,
         )
+        inc_escribir = [a for a in pf.incidencias if a.accion == "escribir"]
 
         bloqueadas: set[int] = set()
         # Registros ya listados en `omitidas` por un aviso anterior. Empieza
@@ -882,7 +890,7 @@ class RegistroPipeline:
         a_escribir = [a for a in pf.acciones
                       if a.accion == "escribir"
                       and a.registro_id not in bloqueadas]
-        if not a_escribir:
+        if not a_escribir and not inc_escribir:
             logger.info("[registro] nada que escribir (bloqueadas=%s)",
                         len(bloqueadas))
             return res
@@ -894,7 +902,8 @@ class RegistroPipeline:
                      and p.obra_cod == o.codigo}
         # (clave robusta: si ambos destinos coinciden —modo pruebas— es la
         #  misma entrada)
-        for a in sorted(a_escribir, key=lambda x: (x.ano, x.mes)):
+        for a in sorted([*a_escribir, *inc_escribir],
+                        key=lambda x: (x.ano, x.mes)):
             d = obra_de(a)
             clave = (int(d.ide), a.ano, a.mes)
             p = por_parte.get(clave)
@@ -956,6 +965,23 @@ class RegistroPipeline:
                                  "partida_cod": a.partida_cod,
                                  "caa_cod": a.caa_cod,
                                  "can": a.can, "pre": a.pre, "tot": a.tot})
+        # F-030 (R24): las dos líneas de cada incidencia, `can = 0` (así
+        # `tot = 0`) y su propia `synckey`.
+        for a in sorted(inc_escribir, key=lambda x: (x.ano, x.mes, x.id)):
+            d = destino_normal
+            p = por_parte[(int(d.ide), a.ano, a.mes)]
+            hmoide = int(p.ide)
+            if hmoide not in pos_por_parte:
+                pos_por_parte[hmoide] = self._cli.max_pos(hmoide)
+            pos_por_parte[hmoide] += int(self._st.paso_pos)
+            a.parte_cod = p.cod
+            statements.append(self._cli.stmt_insert_linea(
+                hmoide=hmoide, obra=d, reside=int(a.recurso_ide),
+                pos=pos_por_parte[hmoide], fecha_int=a.fecha_int,
+                horide=int(a.hora_ide), can=0.0, pre=float(a.pre),
+                ano=a.ano, mes=a.mes, synckey=synckey_incidencia(a.id, a.rol),
+                tex=tex, paride=int(a.paride or 0),
+                caaide=int(a.caa_ide or 0)))
 
         afectadas = self._cli.escribir(statements)
         logger.info("[registro] escritas=%s borradas=%s filas=%s usuario=%s "
@@ -963,9 +989,14 @@ class RegistroPipeline:
                     usuario, datetime.now(timezone.utc).isoformat())
 
         mapa = self._cli.lineas_por_synckey(
-            [synckey_de(e["registro_id"]) for e in res.escritas])
+            [synckey_de(e["registro_id"]) for e in res.escritas]
+            + [synckey_incidencia(a.id, a.rol) for a in inc_escribir])
         for e in res.escritas:
             hit = mapa.get(synckey_de(e["registro_id"]))
             if hit is not None:
                 e["hmores_ide"] = hit.ide
+        for a in inc_escribir:
+            hit = mapa.get(synckey_incidencia(a.id, a.rol))
+            if hit is not None:
+                a.hmores_ide = hit.ide
         return res
