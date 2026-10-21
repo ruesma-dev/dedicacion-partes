@@ -23,6 +23,14 @@ desde F-051 el transfer de dedicación **edita en su sitio** líneas `M*` de
 los partes compartidos (también las que tengan `synckey partes:…`, sin
 cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
 
+## F-030 · anexo R30: implementación EN CURSO (implementer, 2026-10-21)
+
+- **Tarea en curso:** T23 (T22 hecha: contrato `tests/contratos/f030_r30.json`
+  y sus dos mitades en `xfail(strict=True)`).
+- **Decisiones:** los cuatro campos del contrato api → transfer se llaman
+  `hmores_ide_ini`, `hmores_ide_fin`, `dia_ini` y `dia_fin` (design §6 no
+  los nombra); la api solo los manda si la incidencia está registrada.
+
 ## F-030 · anexo R30 escrito (spec-author) y APROBADO (humano, 2026-10-21)
 
 - **Qué**: anexo a la spec por la obs. 1 de la review 1 y la opción C del
