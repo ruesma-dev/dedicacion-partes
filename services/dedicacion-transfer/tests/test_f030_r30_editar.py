@@ -22,7 +22,7 @@ from domain.models.registro_models import (
     LineaIncidenciaSigrid,
 )
 
-from tests.conftest import OBRA_ORIGEN
+from tests.conftest import OBRA_ORIGEN, linea
 from tests.test_f030_pipeline_incidencias import (
     CLAVES_INC,
     ClienteInc,
@@ -431,3 +431,142 @@ def test_f030_r43_sin_la_otra_linea_su_dia_no_consta():
     acc = _rec([_entrada(desde=6, hasta=12)], _el_par(est=3)[:1])
     assert acc[0].motivo == MOTIVO_INC_CERRADO.format(parte="PT26/1",
                                                       desde=5, hasta="?")
+
+
+# ====================== preflight y lote (T30) ========================== #
+from tests.test_f030_pipeline_incidencias import (
+    OBRA,
+    OBRA_B,
+    _ajustes,
+    _lote,
+    _pf,
+    _suelto,
+)
+from tests.test_f030_pipeline_incidencias import _inc as _inc_pf
+
+
+def _par_sigrid(ini=20260705, fin=20260709, est=1):
+    return [LineaIncidenciaSigrid(9001, 200, ini, "CIV", "porcentajes:inc:7:ini",
+                                  "PT26/00251", can=0.0, hmoide=777,
+                                  parte_est=est),
+            LineaIncidenciaSigrid(9002, 200, fin, "CIZ", "porcentajes:inc:7:fin",
+                                  "PT26/00251", can=0.0, hmoide=777,
+                                  parte_est=est)]
+
+
+class _CuentaPartes(ClienteInc):
+    def __init__(self, **kw) -> None:
+        super().__init__(**kw)
+        self.lecturas_partes = 0
+        self.codigos_nuevos = 0
+
+    def partes_del_periodo(self, obra_ide, ano, mes):
+        self.lecturas_partes += 1
+        return super().partes_del_periodo(obra_ide, ano, mes)
+
+    def siguiente_cod_pt(self, ano, empresa=None):
+        self.codigos_nuevos += 1
+        return super().siguiente_cod_pt(ano, empresa)
+
+
+def test_f030_r41_preflight_edita_con_la_traza_y_lee_por_ide():
+    cli = ClienteInc(existentes=_par_sigrid())
+    pf = _pf(cli, [], [_inc_pf(desde=6, **TRAZA)])
+    assert [(a.rol, a.accion, a.fecha_int, a.fec_antes, a.hmores_ide,
+             a.parte_cod) for a in pf.incidencias] == [
+        ("ini", "editar", 20260706, 20260705, 9001, "PT26/00251"),
+        ("fin", "ya_registrado", 20260709, None, 9002, "PT26/00251")]
+    assert cli.leidas_inc == [([200], 2026, 7, [777])]
+    assert cli.leidas_ides == [[9001, 9002]]
+    # Sin traza, la lectura no pide ningún `ide`.
+    cli = ClienteInc()
+    _pf(cli, [], [_inc_pf()])
+    assert cli.leidas_ides == [[]]
+
+
+@pytest.mark.parametrize("pruebas", [True, False])
+def test_f030_r33_preflight_el_parte_nuevo_solo_por_las_que_se_escriben(pruebas):
+    """Obs. 7: editar y ya registrada no piden parte; en pruebas, el parte
+    del periodo se lee una vez para R33 y para el paso 5."""
+    cli = _CuentaPartes(parte_existe=False, existentes=_par_sigrid())
+    pf = _pf(cli, [], [_inc_pf(desde=6, **TRAZA)],
+             obra_pruebas_forzar=pruebas)
+    assert [a.accion for a in pf.incidencias] == ["editar", "ya_registrado"]
+    assert (pf.partes, cli.codigos_nuevos) == ([], 0)
+    assert cli.lecturas_partes == (1 if pruebas else 0)
+    cli = _CuentaPartes(parte_existe=False)
+    pf = _pf(cli, [linea(registro_id=1)], [_inc_pf()],
+             obra_pruebas_forzar=pruebas)
+    assert [(p.existe, p.cod) for p in pf.partes] == [(False, "PT26/09999")]
+    assert [a.parte_cod for a in pf.incidencias] == ["PT26/09999"] * 2
+    assert (cli.lecturas_partes, cli.codigos_nuevos) == (1, 1)
+
+
+def test_f030_r43_preflight_parte_cerrado_omite():
+    from application.services.reglas_incidencias import MOTIVO_INC_CERRADO
+
+    pf = _pf(ClienteInc(existentes=_par_sigrid(est=3)), [],
+             [_inc_pf(desde=6, hasta=12, **TRAZA)])
+    assert [(a.accion, a.motivo) for a in pf.incidencias] == [
+        ("omitir", MOTIVO_INC_CERRADO.format(parte="PT26/00251", desde=5,
+                                             hasta=9))] * 2
+    assert pf.partes == []
+
+
+@pytest.mark.parametrize("pruebas", [True, False])
+def test_f030_r40_lote_los_ide_en_la_misma_ronda_y_como_suelto(pruebas):
+    from interface_adapters.api.app import _respuesta_preflight
+
+    peticiones = [(OBRA, [], [_inc_pf(desde=6, **TRAZA)]),
+                  (OBRA_B, [], [_inc_pf(id=8, recurso_ide=400, desde=12,
+                                        hasta=14)])]
+    cli = ClienteInc(existentes=_par_sigrid())
+    lote = _lote(cli, peticiones, obra_pruebas_forzar=pruebas)
+    assert cli.leidas_inc == [([200, 400], 2026, 7,
+                               [777] if pruebas else None)]
+    assert cli.leidas_ides == [[9001, 9002]]
+    for r, (obra, lineas, inc) in zip(lote, peticiones):
+        suelto = _suelto(ClienteInc(existentes=_par_sigrid()), obra, lineas,
+                         inc, obra_pruebas_forzar=pruebas)
+        assert _respuesta_preflight(r) == _respuesta_preflight(suelto)
+    assert [a.accion for a in lote[0].incidencias] == ["editar",
+                                                       "ya_registrado"]
+    assert _respuesta_preflight(lote[0])["incidencias"][0]["fec_antes"] \
+        == 20260705
+
+
+def test_f030_r40_lote_sirve_lo_leido_por_ide_y_pide_lo_que_falta():
+    from application.services.lecturas_lote import LecturasDelLote
+
+    filas = [LineaIncidenciaSigrid(1, 200, 20260705, "CIV", None, "P"),
+             LineaIncidenciaSigrid(2, 400, 20260705, "CIV", None, "P"),
+             LineaIncidenciaSigrid(3, 999, 20260605, "CIE", None, "P"),
+             LineaIncidenciaSigrid(4, 200, 20260605, "CIV", None, "P"),
+             LineaIncidenciaSigrid(5, 200, 20260706, "MENC", None, "P"),
+             LineaIncidenciaSigrid(6, 200, 20260731, None, None, "P")]
+    cli = ClienteInc(existentes=filas)
+    memoria = LecturasDelLote(cli, 2)
+    memoria.precargar([(OBRA, [], [_inc_pf(hmores_ide_ini=3, dia_ini=5)]),
+                       (OBRA, [], [_inc_pf(id=8, recurso_ide=400)])],
+                      _ajustes(obra_pruebas_forzar=False))
+    assert (cli.leidas_inc, cli.leidas_ides) == ([([200, 400], 2026, 7, None)],
+                                                 [[3]])
+    # Del recurso, en el mes y `CI*`; o por su `ide`, esté donde esté.
+    assert [x.ide for x in memoria.incidencias_del_mes(
+        [200], 2026, 7, ides=[3])] == [1, 3]
+    assert [x.ide for x in memoria.incidencias_del_mes([400], 2026, 7)] == [2]
+    assert memoria.fallos_de_memoria == {}
+    memoria.incidencias_del_mes([200], 2026, 7, ides=[3, 9])
+    assert memoria.fallos_de_memoria == {"incidencias_del_mes": 1}
+    assert cli.leidas_ides[-1] == [3, 9]
+
+
+def test_f030_r33_lote_sin_la_linea_larga_de_la_obs_3():
+    """Obs. 3 de la review: la condición de `_por_leer_incidencias` partida
+    a mano con 25 espacios dentro de la línea."""
+    from pathlib import Path
+
+    fuente = (Path(__file__).resolve().parents[1] / "application" / "services"
+              / "lecturas_lote.py").read_text(encoding="utf-8")
+    assert not [n for n, linea_ in enumerate(fuente.splitlines(), 1)
+                if "}" + " " * 10 in linea_]

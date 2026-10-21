@@ -75,7 +75,7 @@ class LecturasDelLote:
         self._partes: dict[tuple[int, int, int], list] = {}
         self._lineas: tuple[set[int], dict] | None = None
         # F-030 (R33): por (año, mes, partes o None), recursos y líneas.
-        self._incidencias: dict[tuple, tuple[set[int], list]] = {}
+        self._incidencias: dict[tuple, tuple[set[int], set[int], list]] = {}
 
     # ------------------------------------------------------------ #
     #  Utilidades
@@ -249,10 +249,10 @@ class LecturasDelLote:
         hmoides = {int(p.ide) for ps in self._partes.values() for p in ps}
         if hmoides and resides:
             tareas.append(lambda: self._cargar_lineas(hmoides, resides))
-        for clave, recursos in self._por_leer_incidencias(
+        for clave, (recursos, lineas) in self._por_leer_incidencias(
                 incs, empresas, settings).items():
-            tareas.append(lambda c=clave, r=recursos:
-                          self._cargar_incidencias(c, r))
+            tareas.append(lambda c=clave, r=recursos, i=lineas:
+                          self._cargar_incidencias(c, r, i))
         self._ronda(tareas)
 
     def precargar_propuestas(self, peticiones: list[dict], settings) -> None:
@@ -335,20 +335,23 @@ class LecturasDelLote:
                    for h in horas)
 
     def _por_leer_incidencias(self, incs: list[list], empresas: dict,
-                              settings) -> dict[tuple, set[int]]:
+                              settings
+                              ) -> dict[tuple, tuple[set[int], set[int]]]:
         """F-030 (R33): los recursos de las incidencias que se escribirían
         (`decidir_incidencia` con las horas ya leídas), por (año, mes,
         partes): en pruebas, los partes del periodo de la obra de pruebas de
-        la empresa (los mismos que verá el pipeline); si no, `None`."""
+        la empresa (los mismos que verá el pipeline); si no, `None`. Anexo
+        R30 (R40): con los `hmores.ide` de su traza, en la misma ronda."""
         horas = self._horas[1] if self._horas is not None else {}
-        out: dict[tuple, set[int]] = {}
+        out: dict[tuple, tuple[set[int], set[int]]] = {}
         for i, lista in enumerate(incs):
             if empresas[i] is None:
                 continue
             for x in lista:
                 # Las dos del par deciden lo mismo (R26: nunca una sin la
                 # otra); se miran las dos, sin depender de esa posición.
-                if {a.accion for a in decidir_incidencia(x, horas)}                         != {"escribir"}:
+                acciones = {a.accion for a in decidir_incidencia(x, horas)}
+                if acciones != {"escribir"}:
                     continue
                 partes = None
                 if settings.obra_pruebas_forzar:
@@ -359,16 +362,20 @@ class LecturasDelLote:
                         continue
                     partes = frozenset(int(p.ide) for p in self._partes.get(
                         (int(pruebas.ide), int(x.ano), int(x.mes)), []))
-                out.setdefault((int(x.ano), int(x.mes), partes),
-                               set()).add(int(x.recurso_ide))
+                recursos, lineas = out.setdefault(
+                    (int(x.ano), int(x.mes), partes), (set(), set()))
+                recursos.add(int(x.recurso_ide))
+                lineas |= _ides((x.hmores_ide_ini, x.hmores_ide_fin))
         return out
 
-    def _cargar_incidencias(self, clave: tuple, recursos: set[int]) -> None:
+    def _cargar_incidencias(self, clave: tuple, recursos: set[int],
+                            lineas: set[int]) -> None:
         ano, mes, partes = clave
-        self._incidencias[clave] = (recursos, list(
+        self._incidencias[clave] = (recursos, lineas, list(
             self._cli.incidencias_del_mes(
                 sorted(recursos), ano, mes,
-                hmoides=None if partes is None else sorted(partes))))
+                hmoides=None if partes is None else sorted(partes),
+                ides=sorted(lineas))))
 
     def _cargar_obras(self, ides: set[int]) -> None:
         leidas = self._cli.obras_por_ide(sorted(ides))
@@ -500,18 +507,25 @@ class LecturasDelLote:
         self._fallo("lineas_del_parte")
         return self._cli.lineas_del_parte(hmoide, resides)
 
-    def incidencias_del_mes(self, resides, ano, mes, hmoides=None):
+    def incidencias_del_mes(self, resides, ano, mes, hmoides=None, ides=()):
         """F-030 (R33): de lo precargado si es el mismo mes y los mismos
-        partes (o ninguno) y los recursos están dentro."""
-        pedidos = _ides(resides)
+        partes (o ninguno) y los recursos y los `ide` (anexo R30) están
+        dentro, con el mismo criterio que la consulta: del recurso, en el
+        mes y `CI*`, o pedida por su `ide`."""
+        pedidos, lineas = _ides(resides), _ides(ides)
         clave = (int(ano), int(mes),
                  None if hmoides is None else frozenset(_ides(hmoides)))
         cargado = self._incidencias.get(clave)
-        if cargado is not None and pedidos <= cargado[0]:
-            return [l for l in cargado[1] if l.reside in pedidos]
+        if cargado is not None and pedidos <= cargado[0] \
+                and lineas <= cargado[1]:
+            mes_ = int(ano) * 100 + int(mes)
+            return [l for l in cargado[2]
+                    if (l.reside in pedidos and l.fecha_int // 100 == mes_
+                        and (l.hora_codigo or "").startswith("CI"))
+                    or l.ide in lineas]
         self._fallo("incidencias_del_mes")
         return self._cli.incidencias_del_mes(resides, ano, mes,
-                                             hmoides=hmoides)
+                                             hmoides=hmoides, ides=ides)
 
     def escribir(self, statements):
         raise RuntimeError("las lecturas de un lote no escriben en Sigrid")

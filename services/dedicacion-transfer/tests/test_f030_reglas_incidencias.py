@@ -6,9 +6,10 @@ Funciones puras de `reglas_incidencias`, sin pipeline ni cliente:
 - `decidir_incidencia` (R24, R26): cada incidencia son DOS líneas, el inicio
   con su `CI*` el día `desde` y el fin con `CIZ` el día `hasta`; si el
   recurso no tiene alguno de los dos códigos, se omiten las dos.
-- `deduplicar` (R27): una línea que ya está en algún parte del mes (mismo
-  recurso, código y `fec`) no se escribe: «ya registrada» si es nuestra; si
-  no, omitida con el parte donde está.
+- `reconciliar` (R27; anexo R30 en `test_f030_r30_editar.py`): una línea
+  que ya está en algún parte del mes (mismo recurso, código y `fec`) no se
+  escribe: «ya registrada» si es nuestra; si no, omitida con el parte donde
+  está. Hasta el anexo R30 era `deduplicar`.
 - `synckey_incidencia`: `porcentajes:inc:{id}:ini|fin`.
 """
 from __future__ import annotations
@@ -145,12 +146,21 @@ def test_f030_r24_decidir_dias_validos_en_los_bordes():
 
 
 # ================================ R27 ==================================== #
-def _existente(ide, reside, fec, cod, synckey=None, parte="PT26/00012"):
+def _existente(ide, reside, fec, cod, synckey=None, parte="PT26/00012",
+               **kw):
     from domain.models.registro_models import LineaIncidenciaSigrid
 
     return LineaIncidenciaSigrid(ide=ide, reside=reside, fecha_int=fec,
                                  hora_codigo=cod, synckey=synckey,
-                                 parte_cod=parte)
+                                 parte_cod=parte, **kw)
+
+
+def deduplicar(acciones, existentes):
+    """R27 con `reconciliar` sin traza de la api (anexo R30): lo mismo que
+    hacía `deduplicar`, que desapareció con el anexo."""
+    from application.services.reglas_incidencias import reconciliar
+
+    reconciliar(acciones, [], existentes, est=1)
 
 
 def _par(**kw):
@@ -160,8 +170,6 @@ def _par(**kw):
 
 
 def test_f030_r27_deduplicar_nada_igual_se_escribe():
-    from application.services.reglas_incidencias import deduplicar
-
     ini, fin = _par()
     deduplicar([ini, fin], [
         _existente(1, 200, 20260706, "CIV"),          # otro día
@@ -173,7 +181,7 @@ def test_f030_r27_deduplicar_nada_igual_se_escribe():
 
 
 def test_f030_r27_deduplicar_la_nuestra_es_ya_registrada():
-    from application.services.reglas_incidencias import MOTIVO_INC_YA, deduplicar
+    from application.services.reglas_incidencias import MOTIVO_INC_YA
 
     ini, fin = _par()
     deduplicar([ini, fin], [
@@ -185,10 +193,7 @@ def test_f030_r27_deduplicar_la_nuestra_es_ya_registrada():
 
 
 def test_f030_r27_deduplicar_la_de_otro_se_omite_con_su_parte():
-    from application.services.reglas_incidencias import (
-        MOTIVO_INC_DUPLICADA,
-        deduplicar,
-    )
+    from application.services.reglas_incidencias import MOTIVO_INC_DUPLICADA
 
     ini, fin = _par()
     deduplicar([ini, fin], [
@@ -205,8 +210,6 @@ def test_f030_r27_deduplicar_la_de_otro_se_omite_con_su_parte():
 
 
 def test_f030_r27_deduplicar_solo_mira_las_que_se_escriben():
-    from application.services.reglas_incidencias import deduplicar
-
     ini, fin = decidir_incidencia(_inc(recurso_ide=300), HORAS)      # omitidas
     antes = (ini.motivo, fin.motivo)
     deduplicar([ini, fin], [_existente(1, 300, 20260705, "CIV",
@@ -221,23 +224,25 @@ def test_f030_r27_deduplicar_solo_mira_las_que_se_escriben():
 
 
 def test_f030_r27_deduplicar_codigo_nulo_en_sigrid_no_casa():
-    from application.services.reglas_incidencias import deduplicar
-
     ini, fin = _par()
     deduplicar([ini, fin], [_existente(1, 200, 20260705, None)])
     assert ini.accion == "escribir"
 
 
 def test_f030_r30_deduplicar_la_nuestra_aunque_cambien_los_dias():
-    from application.services.reglas_incidencias import MOTIVO_INC_YA, deduplicar
+    """Anexo R30 (design §13.7): la nuestra con otros días ya no es «ya
+    registrada» sino `editar` (R41); y solo es nuestra si es del recurso
+    (R40): la 52, de otro, no cuenta y la 53 de otra incidencia ocupa."""
+    from application.services.reglas_incidencias import MOTIVO_INC_DUPLICADA
 
     ini, fin = _par(desde=6, hasta=10)
     deduplicar([ini, fin], [
-        _existente(51, 200, 20260705, "CIV", "porcentajes:inc:7:ini", "PT26/00031"),
+        _existente(51, 200, 20260705, "CIV", "porcentajes:inc:7:ini", "PT26/00031",
+                   can=0.0, hmoide=31, parte_est=1),
         _existente(52, 999, 20260709, "CIZ", "porcentajes:inc:7:fin", "PT26/00032"),
         _existente(53, 200, 20260710, "CIZ", "porcentajes:inc:8:fin", "PT26/00033")])
-    assert (ini.accion, ini.hmores_ide, ini.parte_cod, ini.motivo) == (
-        "ya_registrado", 51, "PT26/00031", MOTIVO_INC_YA.format(ide=51))
-    # La synckey manda sobre la coincidencia de día y código.
-    assert (fin.accion, fin.hmores_ide, fin.parte_cod) == (
-        "ya_registrado", 52, "PT26/00032")
+    assert (ini.accion, ini.hmores_ide, ini.parte_cod, ini.fec_antes,
+            ini.motivo) == ("editar", 51, "PT26/00031", 20260705, None)
+    assert (fin.accion, fin.hmores_ide, fin.parte_cod, fin.motivo) == (
+        "omitir", None, "PT26/00033", MOTIVO_INC_DUPLICADA.format(
+            cod="CIZ", dia=10, mes=7, parte="PT26/00033"))

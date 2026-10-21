@@ -81,7 +81,7 @@ from application.services.propuesta_partida import (
     proponer_partida, ventana,
 )
 from application.services.reglas_incidencias import (
-    decidir_incidencia, deduplicar, synckey_incidencia,
+    decidir_incidencia, reconciliar, synckey_incidencia,
 )
 from application.services.reglas_porcentajes import (
     AVISO_LINEA_CERO, AVISO_QUEDAN_A_CERO, AVISO_SIN_PARTIDA,
@@ -336,10 +336,15 @@ class RegistroPipeline:
 
     # ------------------------------------------------------------- #
     def _parte_nuevo_o_del_periodo(self, d: ObraEntrada, ano: int,
-                                   mes: int) -> ParteDestino:
+                                   mes: int,
+                                   leido: ParteDestino | None = None
+                                   ) -> ParteDestino:
         """Paso 5 para un destino y periodo: el parte elegido o, si no
-        hay ninguno En registro, el código del nuevo, con su aviso."""
-        p = self._parte_del_periodo(d, ano, mes)
+        hay ninguno En registro, el código del nuevo, con su aviso.
+        `leido`: el de `_parte_del_periodo` si ya se leyó (anexo R30, R33
+        en pruebas), para no leerlo dos veces."""
+        p = leido if leido is not None else self._parte_del_periodo(d, ano,
+                                                                    mes)
         p.obra_cod = d.codigo
         if not p.existe:
             p.cod = self._cli.siguiente_cod_pt(ano, int(d.empresa))
@@ -349,22 +354,32 @@ class RegistroPipeline:
         return p
 
     # ------------------------------------------------------------- #
-    def _deduplicar_incidencias(self, inc_escribir: list[AccionIncidencia],
-                                partes: dict, destino: ObraEntrada,
-                                forzada: bool) -> None:
-        """R27 y R33 (F-030): las líneas de incidencia del mes de esos
-        recursos, en UNA lectura por mes; en pruebas, solo en los partes
-        del periodo de la obra de pruebas. Sin `try`: si falla o viene
-        `truncated`, la petición falla sin escribir nada."""
+    def _reconciliar_incidencias(
+        self, inc_escribir: list[AccionIncidencia],
+        entradas: list[IncidenciaEntrada], destino: ObraEntrada,
+        forzada: bool, leidos: dict[tuple[int, int, int], ParteDestino],
+    ) -> None:
+        """R27, R33 y anexo R30 (R40-R44): las líneas de incidencia del mes
+        de esos recursos y las de la traza de la api (sus `hmores.ide`), en
+        UNA lectura por mes; en pruebas, solo en los partes del periodo de
+        la obra de pruebas (ese parte queda en `leidos` para el paso 5).
+        Luego `reconciliar`. Sin `try`: si falla o viene `truncated`, la
+        petición falla sin escribir nada."""
         for ano, mes in sorted({(a.ano, a.mes) for a in inc_escribir}):
             del_mes = [a for a in inc_escribir if (a.ano, a.mes) == (ano, mes)]
             hmoides = None
             if forzada:
-                hmoides = [int(ps.ide) for ps in
-                           partes[(int(destino.ide), ano, mes)].del_periodo]
-            deduplicar(del_mes, self._cli.incidencias_del_mes(
+                clave = (int(destino.ide), ano, mes)
+                leidos[clave] = self._parte_del_periodo(destino, ano, mes)
+                hmoides = [int(ps.ide) for ps in leidos[clave].del_periodo]
+            ids = {a.id for a in del_mes}
+            propias = [e for e in entradas if int(e.id) in ids]
+            reconciliar(del_mes, propias, self._cli.incidencias_del_mes(
                 sorted({int(a.recurso_ide) for a in del_mes}), ano, mes,
-                hmoides=hmoides))
+                hmoides=hmoides, ides=sorted({
+                    int(i) for e in propias
+                    for i in (e.hmores_ide_ini, e.hmores_ide_fin) if i})),
+                est=int(self._st.est_parte_activo))
 
     # ------------------------------------------------------------- #
     def _crear_parte(self, p: ParteDestino, d: ObraEntrada,
@@ -606,6 +621,18 @@ class RegistroPipeline:
         if escribir or inc_escribir:
             self._cuentas([*escribir, *inc_escribir], horas, obra_de)
 
+        # R27 y anexo R30 (F-030): una línea de incidencia que ya está en
+        # un parte del mes no se escribe: la nuestra con otra `fec` se
+        # edita (R41) y la de otro se omite. UNA lectura por mes (R33) y
+        # solo si alguna se escribiría; en pruebas, solo los partes de la
+        # obra de pruebas. ANTES del paso 5 (obs. 7): solo las que siguen
+        # `escribir` piden parte; `editar` va en el de su línea.
+        leidos: dict[tuple[int, int, int], ParteDestino] = {}
+        if inc_escribir:
+            self._reconciliar_incidencias(inc_escribir, incidencias,
+                                          destino_normal, forzada, leidos)
+        inc_escribir = [a for a in inc_escribir if a.accion == "escribir"]
+
         # Paso 5: parte por DESTINO + periodo, entre TODOS los del periodo
         # (F-037 R9-R11, R15; ARCHITECTURE.md#regla-analitica).
         partes: dict[tuple[int, int, int], ParteDestino] = {}
@@ -614,21 +641,14 @@ class RegistroPipeline:
             clave = (int(d.ide), a.ano, a.mes)
             if clave not in partes:
                 partes[clave] = self._parte_nuevo_o_del_periodo(
-                    d, a.ano, a.mes)
+                    d, a.ano, a.mes, leidos.get(clave))
             _sumar_aviso(a, partes[clave].aviso)
         for a in inc_escribir:
             clave = (int(destino_normal.ide), a.ano, a.mes)
             if clave not in partes:
                 partes[clave] = self._parte_nuevo_o_del_periodo(
-                    destino_normal, a.ano, a.mes)
+                    destino_normal, a.ano, a.mes, leidos.get(clave))
             a.parte_cod = partes[clave].cod
-
-        # R27 (F-030): una línea de incidencia que ya está en un parte del
-        # mes no se escribe. UNA lectura por mes (R33) y solo si alguna se
-        # va a escribir; en pruebas, solo los partes de la obra de pruebas.
-        if inc_escribir:
-            self._deduplicar_incidencias(inc_escribir, partes, destino_normal,
-                                         forzada)
 
         # Paso 6: idempotencia (F-051 R15): la fila de su `hmores_ide` si es
         # de su recurso, es `M*` (T18: un `ide` reutilizado puede caer en

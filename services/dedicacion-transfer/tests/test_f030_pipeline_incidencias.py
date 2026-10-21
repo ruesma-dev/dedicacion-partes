@@ -124,7 +124,8 @@ class ClienteInc(ClienteFalso):
     """El doble de `conftest.py` con las horas de incidencia (`CIV`, `CIZ`)
     en los recursos 200 y 400 (el 300 no las tiene; el `CIV` del 200 con su
     cuenta de plantilla) y la lectura de R27, que anota cada llamada y
-    devuelve ``existentes`` (o lanza ``falla``)."""
+    devuelve ``existentes`` (o lanza ``falla``). Anexo R30 (design §13.7):
+    acepta los `ides` de la traza y los anota aparte, en ``leidas_ides``."""
 
     def __init__(self, *, existentes=(), falla=None, **kw) -> None:
         super().__init__(**kw)
@@ -137,14 +138,16 @@ class ClienteInc(ClienteFalso):
         self.existentes_inc = list(existentes)
         self.falla = falla
         self.leidas_inc: list[tuple] = []
+        self.leidas_ides: list[list[int]] = []
         self.leidas_horas: list[list[int]] = []
 
     def horas_de_recursos(self, resides):
         self.leidas_horas.append(sorted(resides))
         return super().horas_de_recursos(resides)
 
-    def incidencias_del_mes(self, resides, ano, mes, hmoides=None):
+    def incidencias_del_mes(self, resides, ano, mes, hmoides=None, ides=()):
         self.leidas_inc.append((sorted(resides), ano, mes, hmoides))
+        self.leidas_ides.append(sorted(ides))
         if self.falla is not None:
             raise self.falla
         return list(self.existentes_inc)
@@ -425,17 +428,21 @@ def test_f030_r28_ejecutar_un_conflicto_sin_confirmar_no_las_retiene():
 
 
 def test_f030_r30_ejecutar_no_reescribe_la_ya_registrada():
-    # La 7 ya se registró del 5 al 9; ahora llega del 6 al 9.
+    # La 7 ya se registró del 5 al 9; ahora llega del 6 al 9. Anexo R30
+    # (R41, design §13.7): su `ini` ya no es `ya_registrado` sino `editar`
+    # (sin insertar nada); las líneas leídas traen ya `can` y estado.
     ya = [LineaIncidenciaSigrid(51, 200, 20260705, "CIV",
-                                "porcentajes:inc:7:ini", "PT26/00251"),
+                                "porcentajes:inc:7:ini", "PT26/00251",
+                                can=0.0, hmoide=777, parte_est=1),
           LineaIncidenciaSigrid(52, 200, 20260709, "CIZ",
-                                "porcentajes:inc:7:fin", "PT26/00251")]
+                                "porcentajes:inc:7:fin", "PT26/00251",
+                                can=0.0, hmoide=777, parte_est=1)]
     cli = ClienteEscribe(existentes=ya)
     res = _ej(cli, [], [_inc(desde=6)])
     assert cli.inserts() == []
     assert [(a.rol, a.accion, a.hmores_ide, a.parte_cod)
             for a in res.incidencias] == [
-        ("ini", "ya_registrado", 51, "PT26/00251"),
+        ("ini", "editar", 51, "PT26/00251"),
         ("fin", "ya_registrado", 52, "PT26/00251")]
     # Repetir ejecutar con lo mismo: tampoco.
     res = _ej(cli, [], [_inc()])

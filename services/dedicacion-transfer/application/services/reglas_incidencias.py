@@ -9,13 +9,13 @@ Aquí se IMPLEMENTAN; la fuente normativa es
     con su `CI*` el día `desde` y el fin con `CIZ` el día `hasta`, con
     `can = 0`. Si el recurso no tiene en `reshor` alguno de los dos códigos,
     se omiten las dos: nunca un inicio sin su fin (R24, R26).
-  - `deduplicar`: una línea igual (recurso, código y `fec`) en cualquier
-    parte del mes no se escribe otra vez (R27).
-  - `reconciliar` (anexo R30, R40-R44): la que ya es NUESTRA en Sigrid (por
-    su `ide` de la traza o por su `synckey`) no se escribe: con su `fec`, ya
-    registrada; con otra, se EDITA su `fec` en su sitio, salvo que la hayan
-    cambiado a mano, su parte esté cerrado o el día nuevo ya lo tenga otra
-    igual. Sin la nuestra, R27 como `deduplicar`.
+  - `reconciliar` (R27 y anexo R30, R40-R44): la que ya es NUESTRA en
+    Sigrid (por su `ide` de la traza o por su `synckey`) no se escribe: con
+    su `fec`, ya registrada; con otra, se EDITA su `fec` en su sitio, salvo
+    que la hayan cambiado a mano, su parte esté cerrado o el día nuevo ya lo
+    tenga otra igual. Sin la nuestra, una línea igual (recurso, código y
+    `fec`) en cualquier parte del mes no se escribe otra vez (R27). Sustituye
+    a `deduplicar` (obs. 6: su rama «igual y nuestra» era inalcanzable).
   - `synckey_incidencia`: la idempotencia, por incidencia y rol.
 
 Una incidencia NO es jornada: no entra en la identidad de
@@ -133,43 +133,6 @@ def decidir_incidencia(
                              hora_ide=hora.horide, hora_codigo=hora.cod,
                              pre=float(hora.pre or 0.0), **base)
             for rol, fecha, hora in zip(ROLES, fechas, horas)]
-
-
-def deduplicar(acciones: Iterable[AccionIncidencia],
-               existentes: Iterable[LineaIncidenciaSigrid]) -> None:
-    """R27: cada acción `escribir` que ya está en algún parte del mes (el
-    mismo recurso, código y `fec`) no se escribe: `ya_registrado` si la
-    línea es la nuestra (su `synckey`); si no, `omitir` con el parte donde
-    está. R30: la que ya tiene su `synckey` en el mes es `ya_registrado`
-    aunque hayan cambiado sus días (eso es F-033). Cada línea del par se
-    decide sola. Cambia las acciones en sitio."""
-    existentes = list(existentes)
-    por_synckey = {e.synckey: e for e in existentes if e.synckey}
-    for a in acciones:
-        if a.accion != "escribir":
-            continue
-        nuestra = por_synckey.get(synckey_incidencia(a.id, a.rol))
-        if nuestra is not None:
-            a.accion, a.hmores_ide = "ya_registrado", nuestra.ide
-            a.parte_cod = nuestra.parte_cod
-            a.motivo = MOTIVO_INC_YA.format(ide=nuestra.ide)
-            continue
-        igual = next((e for e in existentes
-                      if e.reside == a.recurso_ide
-                      and e.fecha_int == a.fecha_int
-                      and (e.hora_codigo or "").strip() == a.hora_codigo),
-                     None)
-        if igual is None:
-            continue
-        a.parte_cod = igual.parte_cod
-        if igual.synckey == synckey_incidencia(a.id, a.rol):
-            a.accion, a.hmores_ide = "ya_registrado", igual.ide
-            a.motivo = MOTIVO_INC_YA.format(ide=igual.ide)
-        else:
-            a.accion = "omitir"
-            a.motivo = MOTIVO_INC_DUPLICADA.format(
-                cod=a.hora_codigo, dia=a.fecha_int % 100, mes=a.mes,
-                parte=igual.parte_cod)
 
 
 def _codigo(linea: LineaIncidenciaSigrid) -> str:
