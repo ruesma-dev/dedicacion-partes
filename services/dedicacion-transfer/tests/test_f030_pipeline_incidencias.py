@@ -676,3 +676,67 @@ def test_f030_r23_contrato_empresas_mezcladas_422(api):
         "obra": {"codigo": OBRA_ORIGEN}, "lineas": [_json_linea(1)],
         "incidencias": [_json_inc(empresa=2)]})
     assert r.status_code == 422
+
+
+# ============================= script (T18) ============================== #
+def _script(monkeypatch, cli, *argv, **ajustes):
+    import prueba_escritura_porcentajes as script
+
+    monkeypatch.setattr(script, "get_settings", lambda: _ajustes(**ajustes))
+    monkeypatch.setattr(script, "_cliente", lambda st: cli)
+    monkeypatch.setattr("sys.argv", ["prueba_escritura_porcentajes.py", *argv])
+    script.main()
+    return script
+
+
+def test_f030_r35_script_preflight_solo_la_incidencia(monkeypatch, capsys):
+    cli = ClienteEscribe()
+    script = _script(monkeypatch, cli, "preflight", "--ano", "2026", "--mes",
+                     "7", "--incidencia", "200:civ:5:9")
+    salida = capsys.readouterr().out
+    assert "[escribir     ] inc=990101 ini CIV fec=20260705 parte=PT26/00251" \
+        in salida
+    assert "[escribir     ] inc=990101 fin CIZ fec=20260709 parte=PT26/00251" \
+        in salida
+    assert "reg=9000" not in salida                 # sin las líneas de ejemplo
+    assert cli.escritos == []
+    assert script.ID_INCIDENCIA_PRUEBA == 990101
+
+
+def test_f030_r35_script_ejecutar_dry_run_y_confirmado(monkeypatch, capsys):
+    cli = ClienteEscribe()
+    _script(monkeypatch, cli, "ejecutar", "--ano", "2026", "--mes", "7",
+            "--incidencia", "200:CIV:5:9")
+    assert "DRY-RUN" in capsys.readouterr().out and cli.escritos == []
+    _script(monkeypatch, cli, "ejecutar", "--confirmar", "--ano", "2026",
+            "--mes", "7", "--incidencia", "200:CIV:5:9",
+            "--incidencia", "400:CIV:12:12")
+    salida = capsys.readouterr().out
+    assert [i["synckey"] for i in cli.inserts()] == [
+        "porcentajes:inc:990101:ini", "porcentajes:inc:990101:fin",
+        "porcentajes:inc:990102:ini", "porcentajes:inc:990102:fin"]
+    assert {i["tex"] for i in cli.inserts()} == {"PRUEBA-PORC"}
+    assert {i["can"] for i in cli.inserts()} == {0.0}
+    assert "INCIDENCIA inc=990101 ini escribir hmores.ide=70001" in salida
+    assert "escritas=0" in salida
+
+
+def test_f030_r35_script_verificar_por_synckey(monkeypatch, capsys):
+    cli = ClienteEscribe()
+    _script(monkeypatch, cli, "ejecutar", "--confirmar", "--ano", "2026",
+            "--mes", "7", "--incidencia", "200:CIV:5:9")
+    capsys.readouterr()
+    _script(monkeypatch, cli, "verificar", "--incidencia", "200:CIV:5:9")
+    salida = capsys.readouterr().out
+    assert "porcentajes:inc:990101:ini: hmores.ide=70001 reside=200 " \
+           "fec=20260705" in salida
+    assert "porcentajes:inc:990101:fin: hmores.ide=70002 reside=200 " \
+           "fec=20260709" in salida
+
+
+@pytest.mark.parametrize("valor", ["200:CIV:5", "x:CIV:5:9", "200::5:9",
+                                   "200:CIV:a:9", "200:CIV:5:9:1"])
+def test_f030_r35_script_incidencia_mal_escrita(monkeypatch, valor):
+    with pytest.raises(SystemExit):
+        _script(monkeypatch, ClienteEscribe(), "preflight", "--incidencia",
+                valor)
