@@ -1,54 +1,54 @@
 <!-- progress/mutacion_F-030.md -->
 # F-030 · Campaña de mutación
 
-Generado por `python -m harness.mutacion --feature F-030` el 2026-10-21 14:40.
+Generado por `python -m harness.mutacion --feature F-030` el 2026-10-22 02:22.
 
 ## Alcance
 
-Origen del diff: **rama** (`20a8e0631105f70c9416917bd6b1ae6d3c1b80c9` .. `feature/F-030-dias-bajas-incidencias`).
+Origen del diff: **rama** (`7ab115a691cb2ed413e9b006f97d033617d1a8de` .. `feature/F-030-dias-bajas-incidencias`).
 
 | Fichero | Líneas en alcance |
 |---|---|
 | `services/dedicacion-api/application/filtros_maestros.py` | 26 |
-| `services/dedicacion-api/application/registro_sigrid.py` | 54 |
+| `services/dedicacion-api/application/registro_sigrid.py` | 111 |
 | `services/dedicacion-api/application/sync_pipeline.py` | 36 |
-| `services/dedicacion-api/application/traza_incidencias.py` | 58 |
-| `services/dedicacion-api/application/use_cases.py` | 146 |
+| `services/dedicacion-api/application/traza_incidencias.py` | 107 |
+| `services/dedicacion-api/application/use_cases.py` | 164 |
 | `services/dedicacion-api/domain/errors.py` | 7 |
-| `services/dedicacion-api/domain/incidencias.py` | 73 |
-| `services/dedicacion-api/domain/models.py` | 49 |
+| `services/dedicacion-api/domain/incidencias.py` | 113 |
+| `services/dedicacion-api/domain/models.py` | 56 |
 | `services/dedicacion-api/domain/ports.py` | 37 |
-| `services/dedicacion-api/infrastructure/db/orm_models.py` | 68 |
-| `services/dedicacion-api/infrastructure/db/repositories.py` | 171 |
+| `services/dedicacion-api/infrastructure/db/orm_models.py` | 80 |
+| `services/dedicacion-api/infrastructure/db/repositories.py` | 189 |
 | `services/dedicacion-api/interface_adapters/api/app.py` | 2 |
 | `services/dedicacion-api/interface_adapters/api/deps.py` | 7 |
 | `services/dedicacion-api/interface_adapters/api/routes.py` | 49 |
-| `services/dedicacion-api/interface_adapters/api/schemas.py` | 57 |
+| `services/dedicacion-api/interface_adapters/api/schemas.py` | 61 |
 | `services/dedicacion-transfer/application/pipelines/registro_lote.py` | 13 |
-| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | 156 |
-| `services/dedicacion-transfer/application/services/lecturas_lote.py` | 87 |
-| `services/dedicacion-transfer/application/services/reglas_incidencias.py` | 154 |
-| `services/dedicacion-transfer/domain/models/registro_models.py` | 66 |
-| `services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py` | 44 |
-| `services/dedicacion-transfer/interface_adapters/api/app.py` | 55 |
-| `services/dedicacion-transfer/prueba_escritura_porcentajes.py` | 72 |
-| **Total** | **1487** |
+| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | 227 |
+| `services/dedicacion-transfer/application/services/lecturas_lote.py` | 101 |
+| `services/dedicacion-transfer/application/services/reglas_incidencias.py` | 295 |
+| `services/dedicacion-transfer/domain/models/registro_models.py` | 82 |
+| `services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py` | 91 |
+| `services/dedicacion-transfer/interface_adapters/api/app.py` | 62 |
+| `services/dedicacion-transfer/prueba_escritura_porcentajes.py` | 81 |
+| **Total** | **1997** |
 
 ## Totales
 
 | Métrica | Valor |
 |---|---|
-| Mutantes generados | 250 |
-| Mutantes evaluados | 250 |
-| Muertos | 250 |
+| Mutantes generados | 405 |
+| Mutantes evaluados | 405 |
+| Muertos | 404 |
 | Supervivientes | 0 |
-| Timeouts | 0 |
+| Timeouts | 1 |
 | Sin veredicto (base rota) | 0 |
-| Tiempo total | 1888.2 s |
-| SHA de HEAD medido | `8b17e8515656e29ccb609667d16f3969a4ea7f6c` |
-| Línea base (s) — `services/dedicacion-api` | 33.5 |
-| Línea base (s) — `services/dedicacion-transfer` | 24.9 |
-| Media por mutante evaluado (s) | 7.6 |
+| Tiempo total | 1626.6 s |
+| SHA de HEAD medido | `b614b916a0b2f0b4ef08270af5d8cc2672c6fedb` |
+| Línea base (s) — `services/dedicacion-api` | 13.8 |
+| Línea base (s) — `services/dedicacion-transfer` | 9.2 |
+| Media por mutante evaluado (s) | 4.0 |
 | Timeout efectivo por mutante (s) | 120 — derivado de la línea base × 2.0 |
 | Suelo configurado (s) | 120 |
 | Workers | 1 |
@@ -57,6 +57,10 @@ Origen del diff: **rama** (`20a8e0631105f70c9416917bd6b1ae6d3c1b80c9` .. `featur
 ## Supervivientes
 
 Ninguno: cada mutación aplicada la cazó al menos un test.
+
+## Timeouts
+
+- `services/dedicacion-transfer/application/services/reglas_incidencias.py:247` [not] if not ocupadas: -> if ocupadas:
 
 
 
@@ -68,9 +72,41 @@ con un cambio de código.
 
 | Campaña | HEAD | Mutantes | Supervivientes | Resolución |
 |---|---|---|---|---|
-| 1.ª | `3b9ab12` | 251 | 31 | Todos eran huecos reales. 30 se cerraron con tests (`42c0fb5`) y 1 con código (abajo) |
-| 2.ª | `42c0fb5` | 250 | 1 | `registro_pipeline.py:826`: el test del log usaba 2 líneas a escribir y 2 a omitir, así que `==` y `!=` daban lo mismo. Ahora usa 2 y 4 (`8b17e85`); con el mutante aplicado a mano da «1 failed» |
-| 3.ª | `8b17e85` | 250 | **0** | esta campaña |
+| 1.ª | `3b9ab12` | 251 | 31 | Todos eran huecos reales. 30 se cerraron con tests (`42c0fb5`) y 1 con código |
+| 2.ª | `42c0fb5` | 250 | 1 | `registro_pipeline.py:826`: test del log con 2 y 4 líneas (`8b17e85`) |
+| 3.ª | `8b17e85` | 250 | 0 | fin de T1-T21 |
+| 4.ª | `42c1cc8` | 405 | 7 (+1 timeout) | anexo R30 (T22-T36). Los 7, huecos reales, cerrados con tests (`b614b91`); abajo |
+| 5.ª | `b614b91` | 405 | **0** (+1 timeout, detectado) | esta campaña |
+
+**Los 7 de la 4.ª (anexo R30) y cómo se cerraron.** Cada mutante, aplicado a
+mano tras el test nuevo, da «1 failed».
+
+- `api use_cases.py:286` (`i.id or 0` → `i.id and 0` y → `i.id or 1`): el
+  desempate por `id` del snapshot del evento no lo fijaba ningún test (nunca
+  había dos iguales salvo el `id`). Lo cubre
+  `test_f030_r47_snapshot_iguales_salvo_el_id_por_id_y_la_nueva_primero`
+  (ids 2, 1 y nueva, en los dos órdenes: `and 0` compara `None` con `0` y
+  revienta; `or 1` empata la nueva con la 1).
+- `api domain/incidencias.py:80` (`or` → `and` en `registrada`): todos los
+  tests tenían las dos líneas o ninguna. Lo cubre
+  `test_f030_r36_registrada_con_cualquiera_de_sus_dos_lineas`.
+- `api schemas.py:133` (`quitada = False` → `True`): la salida siempre se
+  construía con `quitada` explícito. Lo cubre
+  `test_f030_r38_salida_sin_quitada_es_no_quitada`.
+- `transfer reglas_incidencias.py:149` (el `ide` de la traza leído de
+  `dia_*`): en los tests, lo encontrado por `ide` también se encontraba por
+  `synckey`. Con una copia de la línea con la misma `synckey` más abajo en la
+  lectura, manda la de la traza:
+  `test_f030_r40_por_ide_la_de_la_traza_aunque_haya_otra_con_su_synckey`.
+- `transfer reglas_incidencias.py:171` y `:274` (`>=` → `>` y `<` → `<=` en
+  la tolerancia del `can`): ningún test usaba justo `0.000001`, el borde de
+  la guarda del `UPDATE` (`ABS(can) < 0.000001`). Lo cubre
+  `test_f030_r42_can_en_el_borde_de_la_tolerancia_ya_no_es_cero`, en
+  `reconciliar` y en `sigue_editable`.
+- El timeout (`reglas_incidencias.py:247`, `if not ocupadas` → `if
+  ocupadas`) es un mutante **detectado**: el punto fijo de R44 no termina y
+  la suite agota los 120 s.
+
 
 **Los 31 de la 1.ª y cómo se cerraron:**
 

@@ -9,8 +9,8 @@ F-059 y F-060); sus `.venv` son uniones de directorio a los de la copia
 principal (del líder, no versionadas). Spec aprobada el 2026-10-20 (D1-D10).
 T1-T19 y T21 hechas; review 1 **RECHAZADO** por R30; el humano eligió la
 opción **C** y **aprobó el anexo R30 el 2026-10-21** («si»: D11 = B, D12-D15
-= A, todas la recomendada). **Implementer lanzado el 2026-10-21 para
-T22-T37.** T20: primera mitad hecha por el líder en la 0404
+= A, todas la recomendada). **Anexo T22-T37 implementado (2026-10-22),
+pendiente de review**: informe `progress/impl_F-030.md`. T20: primera mitad hecha por el líder en la 0404
 (`progress/manual_F-030.md`); la segunda (cambio de días), tras T37, con
 autorización expresa del humano. Ningún agente escribe en Sigrid por su
 cuenta. El arnés es la **1.7.3**.
@@ -23,13 +23,41 @@ desde F-051 el transfer de dedicación **edita en su sitio** líneas `M*` de
 los partes compartidos (también las que tengan `synckey partes:…`, sin
 cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
 
-## F-030 · anexo R30: implementación EN CURSO (implementer, 2026-10-21)
+## F-030 · anexo R30: implementación TERMINADA, lista para review (implementer, 2026-10-22)
 
-- **Tarea en curso:** T37 (T36 hecha: `test_f030_incidencias.py` de la api sin avisos de ruff (el `api` de F-024 llega por `getfixturevalue`), ruff del repo en 277 como `dev`, y la frase «293, deuda previa» corregida en el informe. T35 hecha: `#regla-incidencia` con «Cambiar los días» y «Quitar» y `INTEGRACION.md` §5 con los campos, `fec_antes`, `incidencias_quitadas` y el `UPDATE`; `azure-apps/dedicacion.md` queda para el líder al desplegar. T34 hecha: el script imprime `editar`, `fec_antes` y `hmores.ide` en preflight y ejecutar; `verificar` ya imprimía `ide` y `fec`, ahora con test de R49. T33 hecha: las dos mitades del punta a punta en verde sin `xfail` (quitados en T26 y T31 al pasar a XPASS estricto) y el contrato sin tocar desde T22. T32 hecha: front con `id` en editor y PUT, ids de la respuesta para las nuevas, quitada tachada y fuera del editor, «se cambia del d al d» y lista de quitadas en el modal; `test_f030_r15_cargar_edicion_parte_de_lo_guardado` adaptado al `id` (§13.3). T31 hecha: `ejecutar` edita la `fec` (R45, R46) en la relectura única de F-051, el par o ninguna, relectura tras escribir; la mitad transfer del punta a punta pasó a XPASS estricto y su `xfail` se quitó en T31, no en T33, igual que la de la api en T26; `test_f030_r30_ejecutar_no_reescribe_*` reescrito otra vez (§13.7) con el par en el parte. T30 hecha: preflight y lote reconcilian antes del paso 5 con los `ide` de la traza; `deduplicar` eliminado, sus tests propios pasan por `reconciliar` con un adaptador local y `test_f030_r30_deduplicar_*` y `test_f030_r30_ejecutar_no_reescribe_*` reescritos (lista cerrada §13.7). T29 hecha: `reconciliar` puro. T28 hecha: cliente, lectura por `ide` y `UPDATE` de la `fec`. T27 hecha: contrato del transfer. T26 hecha: traza R39, payload y quitadas; la mitad api del punta a punta ya pasa y su `xfail` estricto se quitó en T26, no en T33 (con la marca, el XPASS ponía la suite en rojo). T25 hecha: deshacer R47. T24 hecha: guardar por `id` y quitadas. T23 hecha: esquema; T22 hecha: contrato `tests/contratos/f030_r30.json`
-  y sus dos mitades en `xfail(strict=True)`).
-- **Decisiones:** los cuatro campos del contrato api → transfer se llaman
-  `hmores_ide_ini`, `hmores_ide_fin`, `dia_ini` y `dia_fin` (design §6 no
-  los nombra); la api solo los manda si la incidencia está registrada.
+- **Estado:** T22-T37 `[x]`, un commit `F-030 Tn` por tarea (código cerrado
+  en `b614b91`). Informe: `progress/impl_F-030.md` (el detalle de T1-T21
+  pasó a `progress/impl_F-030_anexo.md`); mutación:
+  `progress/mutacion_F-030.md` (5.ª campaña en serie: 405 mutantes,
+  **0 supervivientes**, 1 timeout detectado). `bash harness/init.sh` en
+  verde, ruff en 277 como `dev`, cobertura de lo cambiado 99,9 %.
+- **Decisiones y desviaciones** (justificadas en el informe, §3): los campos
+  del contrato api → transfer se llaman `hmores_ide_ini`, `hmores_ide_fin`,
+  `dia_ini` y `dia_fin` y solo viajan si la incidencia está registrada; los
+  `xfail` estrictos del punta a punta se quitaron en T26 (api) y T31
+  (transfer), no en T33, al pasar a XPASS; `deduplicar` desaparece en favor
+  de `reconciliar` (adaptador local en sus tests de R27); R42 sin día en la
+  traza mira el mes; R43 dice los días que tiene hoy el par.
+- **Tests ajenos:** solo `services/dedicacion-transfer/tests/conftest.py`
+  (dobles, lista cerrada de design §13.7); `test_f051_sql_cero.py` intacto.
+- **T20 (MANUAL, del líder, con autorización expresa del humano):** segunda
+  mitad (R49), transfer LOCAL con `OBRA_PRUEBAS_FORZAR=true`, desde
+  `services/dedicacion-transfer`, el mismo `RECURSO` de la primera mitad (si
+  se limpió, repetir antes la primera con `RECURSO:CIV:5:9`):
+  `python prueba_escritura_porcentajes.py preflight --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12`
+  (dos `editar`, `fec_antes` 5 y 9);
+  `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12`;
+  `python prueba_escritura_porcentajes.py verificar --incidencia RECURSO:CIV:6:12`
+  (**los mismos dos `ide`**, `fec` 6 y 12, ninguna línea nueva); otra vez
+  `ejecutar` (`ya_registrado`); y
+  `python prueba_escritura_porcentajes.py limpiar --confirmar`. El resultado
+  real se anota en `progress/manual_F-030.md` y en el informe.
+- **`azure-apps` pendiente (del líder, al desplegar):** `azure-apps/dedicacion.md`
+  debe decir que leemos `auxhor` (`CI*`), escribimos el par `CI*`/`CIZ` con
+  `can = 0` y `synckey porcentajes:inc:` y **editamos la `fec`** de ese par
+  (`UPDATE` con guarda, nunca `DELETE`) cuando cambian sus días; y las rutas
+  y campos nuevos (`id`, `quitada`, `incidencias_quitadas`, `fec_antes`).
+  Avisar a `partes` de que su `partes.md` debería contarlo.
 
 ## F-030 · anexo R30 escrito (spec-author) y APROBADO (humano, 2026-10-21)
 
