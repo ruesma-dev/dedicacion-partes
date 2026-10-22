@@ -923,17 +923,19 @@ class SigridWriteClient:
 
     def stmt_editar_fecha_incidencia(
         self, *, ide: int, reside: int, hora_codigo: str,
-        synckey_leida: str | None, fecha_int: int,
+        synckey_leida: str | None, fecha_int: int, fec_leida: int,
     ) -> dict:
         """Anexo R30 (R41, design §13.5): cambia SOLO la `fec` de una línea
         de incidencia nuestra, en su sitio (ni hora, `pre`, `can`, partida,
         cuenta, `synckey`, `tex`, `pos` ni parte), con la guarda de F-051 y
         su código: mismo `ide` y recurso, `can` 0, la `synckey` leída, sin
-        enlaces y en un parte En registro."""
+        enlaces y en un parte En registro. D16 (design §11): y en la `fec`
+        leída, `fec_leida`; si alguien la movió tras leer, no se pisa. Va
+        al final, fuera de `_guarda`: el texto de F-051 no cambia."""
         guarda, params = self._guarda(ide, reside, 0.0, synckey_leida,
                                       hora_codigo)
-        return {"sql": f"UPDATE hmores SET fec = ? {guarda}",
-                "parameters": [int(fecha_int)] + params}
+        return {"sql": f"UPDATE hmores SET fec = ? {guarda} AND fec = ?",
+                "parameters": [int(fecha_int)] + params + [int(fec_leida)]}
 
     def stmt_editar_linea(
         self, *, ide: int, reside: int, can_leido: float | None,

@@ -191,6 +191,28 @@ def test_f030_r36_guardar_id_ajeno_o_registrada_cambiada_422(entrada, motivo):
     assert uow.commits == 0
 
 
+def test_f030_r48_guardar_id_de_otro_periodo_422():
+    """R48 (D3, cambio 2 de la review 2, T38): una incidencia no cambia de
+    mes. La 7, registrada en otro periodo, no se puede guardar en este con
+    su `id` (alargar el tramo es una nueva en este mes): 422 y nada se
+    escribe. Verde de entrada, como T1: lo fijaba ya `identificar` (T24)."""
+    from domain.errors import IncidenciaInvalida
+
+    uow = _uow_guardar()
+    uow.incidencias.poner(14, _reg(7, 5, 9), periodo_id=P_ACT + 1)
+    with pytest.raises(IncidenciaInvalida, match="7 no es de este trabajador "
+                                                 "en el periodo"):
+        _guardar(uow, [_con_id(7, desde=1, hasta=9)])
+    assert uow.incidencias.reemplazos == [] and uow.eventos.eventos == []
+    assert uow.commits == 0
+    # Una nueva (sin `id`) en este mes sí entra; la del otro sigue igual.
+    fila, _ = _guardar(uow, [_e(100, "CIV", 1, 9)])
+    assert [(i.id is not None and i.id != 7, i.dia_desde, i.dia_hasta)
+            for i in fila.incidencias] == [(True, 1, 9)]
+    assert [(i.id, i.dia_desde, i.dia_hasta) for i in
+            uow.incidencias.de_trabajador(P_ACT + 1, 14)] == [(7, 5, 9)]
+
+
 def test_f030_r36_guardar_no_registrada_si_cambia_de_obra_o_codigo():
     uow = _uow_guardar()
     uow.incidencias.poner(14, _reg(7, 5, 9, ini=None, fin=None))

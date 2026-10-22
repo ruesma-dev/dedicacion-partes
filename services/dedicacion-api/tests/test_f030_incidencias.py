@@ -173,7 +173,7 @@ def test_f030_r17_esquema_tabla_incidencia():
         "sigrid_ide_fin": "INTEGER", "sigrid_motivo": "VARCHAR(300)",
         "sigrid_registrado_at_utc": "TIMESTAMP WITH TIME ZONE",
         "sigrid_registrado_by": "VARCHAR(64)",
-        # Anexo R30 (R38, R39; design §13.7, propio de F-030).
+        # Anexo R30 (R38, R39; T23, propio de F-030).
         "quitada": "BOOLEAN", "sigrid_dia_ini": "SMALLINT",
         "sigrid_dia_fin": "SMALLINT"}
     fks = {fk.parent.name: (fk.column.table.name, fk.ondelete)
@@ -260,7 +260,7 @@ class _TiposMem:
 class _IncidenciasMem:
     """Incidencias en memoria por (periodo, trabajador), con `id` propio y
     los datos de lectura (obra, letra y nombre) resueltos como el
-    repositorio. Anexo R30 (design §13.7, propio): `reemplazar` conserva
+    repositorio. Anexo R30 (R36, R38; T24, propio): `reemplazar` conserva
     por `id` como `PgIncidenciaRepository` (traza intacta, la registrada
     ausente queda `quitada`) y `poner` guarda tal cual, con su traza."""
 
@@ -507,7 +507,7 @@ def test_f030_r21_cuadrante_repo_de_periodo_mapea_y_agrupa():
         "incidencia.sigrid_parte_cod, incidencia.sigrid_ide_ini, "
         "incidencia.sigrid_ide_fin, incidencia.sigrid_motivo, "
         "incidencia.sigrid_registrado_at_utc, incidencia.sigrid_registrado_by, "
-        # Anexo R30 (design §13.7, propio de F-030): las tres columnas nuevas.
+        # Anexo R30 (T23, propio de F-030): las tres columnas nuevas.
         "incidencia.quitada, incidencia.sigrid_dia_ini, incidencia.sigrid_dia_fin, "
         "obra.cod, obra.descripcion, tipo_incidencia.letra, "
         "tipo_incidencia.nombre FROM incidencia "
@@ -598,7 +598,7 @@ def test_f030_r17_guardar_sustituye_completa_los_dias_y_deja_evento():
     [(ide, evento, despues)] = uow.eventos.eventos
     assert (ide, evento.usuario, evento.tipo) == (14, USUARIO, "INCIDENCIAS")
     assert evento.snapshot_antes == []
-    # Anexo R30 (R47; design §13.7): el snapshot lleva `id` y `quitada`.
+    # Anexo R30 (R47; T24): el snapshot lleva `id` y `quitada`.
     assert despues == [
         {"id": 2, "obra_ide": 100, "codigo": "CIV", "dia_desde": 1,
          "dia_hasta": 9, "quitada": False},
@@ -613,7 +613,7 @@ def test_f030_r17_guardar_snapshot_antes_son_las_incidencias_previas():
     uow.incidencias.poner(14, _inc(5, 9, obra=100))
     _guardar(uow, [_e(100, "CIV", 5, 9), _e(100, "CIP", 12, 12)])
     [(_, evento, despues)] = uow.eventos.eventos
-    # Anexo R30 (R47; design §13.7): el snapshot lleva `id` y `quitada`.
+    # Anexo R30 (R47; T24): el snapshot lleva `id` y `quitada`.
     assert evento.snapshot_antes == [
         {"id": 1, "obra_ide": 100, "codigo": "CIV", "dia_desde": 5,
          "dia_hasta": 9, "quitada": False}]
@@ -623,7 +623,7 @@ def test_f030_r17_guardar_snapshot_antes_son_las_incidencias_previas():
 def test_f030_r17_guardar_lo_mismo_no_escribe_ni_deja_evento():
     uow = _uow_guardar()
     uow.incidencias.poner(14, _inc(1, 31, obra=100))
-    # Anexo R30 (R37; design §13.7): la guardada vuelve con su `id`.
+    # Anexo R30 (R36, R37; T24): la guardada vuelve con su `id`.
     fila, _ = _guardar(uow, [{"id": 1, **_e(100, "CIV")}])  # vacío = mes entero
     assert uow.incidencias.reemplazos == []
     assert uow.eventos.eventos == []

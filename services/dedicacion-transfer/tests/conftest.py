@@ -223,10 +223,12 @@ class EdicionesFalsas:
 
     def _editar_fec(self, kw) -> None:
         """La guarda de `stmt_editar_fecha_incidencia`: la de F-051 con el
-        código de la línea en vez de `M*` y `can` 0."""
+        código de la línea en vez de `M*` y `can` 0, y la `fec` leída (D16
+        de design §11; F-030 (lista cerrada), design §13.7)."""
         for _, _, est, lista in self._partes_de_lineas():
             for i, ls in enumerate(lista):
                 if (ls.ide == kw["ide"] and ls.ide not in self.guarda_falla
+                        and ls.fecha_int == kw.get("fec_leida")
                         and ls.ide not in self.enlazadas and est == 1
                         and ls.reside == kw["reside"]
                         and (ls.hora_codigo or "").strip() == kw["hora_codigo"]

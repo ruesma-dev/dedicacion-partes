@@ -843,7 +843,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       Cambiarle los días **edita la `fec`** de sus líneas en su sitio, nunca
       escribe otro par: un `UPDATE` de solo la `fec`, con la guarda de
       [`#regla-cero`](#regla-cero) y su código (mismo `ide` y recurso, `can`
-      0, la `synckey` leída, sin enlaces, parte En registro). La línea
+      0, la `synckey` y la `fec` leídas, sin enlaces, parte En registro):
+      si alguien le cambia la `fec` entre la lectura y el `UPDATE`, no se
+      pisa (D16). La línea
       nuestra se busca por su `ide` o por su `synckey`, siempre del recurso
       y con nuestra `synckey`; con la `fec` pedida, «ya registrada». Cada
       línea del par se decide sola, pero `ejecutar` relee las que va a
@@ -888,7 +890,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     `CI*`/`CIZ` con `can = 0`, la partida de la línea de % o 0, duplicados en
     cualquier obra del mes); el 2026-10-21, D11-D15 (anexo R30: la quitada
     queda `quitada`; obra y código no cambian en una registrada; la cambiada
-    a mano en Sigrid y el día ya ocupado no se editan) · F-030,
+    a mano en Sigrid y el día ya ocupado no se editan); el 2026-10-22, D16
+    (la guarda del `UPDATE` exige además la `fec` leída) · F-030,
     `specs/F-030-dias-bajas-incidencias/requirements.md`.*
 
 ## Acceso a datos y sistemas externos

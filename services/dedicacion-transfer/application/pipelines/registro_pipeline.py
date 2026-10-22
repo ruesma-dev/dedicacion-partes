@@ -133,6 +133,14 @@ def _fila(ls) -> dict:
             "fecha_int": ls.fecha_int, "synckey": ls.synckey, "tex": ls.tex}
 
 
+def _fila_incidencia(ls) -> dict:
+    """Anexo R30 (R46; obs. 4 de la review 2): TODO lo leído en R45 de una
+    línea de incidencia cuya `fec` se edita: lo de `_fila` (sin cambiar el
+    log de F-051) más recurso, parte, su estado y si tiene enlaces."""
+    return {**_fila(ls), "reside": ls.reside, "hmoide": ls.hmoide,
+            "est": ls.parte_est, "enlazada": ls.enlazada}
+
+
 def _traza(que: str, registro_id: int, ls, despues: dict) -> dict:
     """F-051 (R18): el log y la entrada de `editadas`/`a_cero` de una
     línea, con lo que tenía y lo que queda (para que F-033 la deshaga). Se
@@ -1122,15 +1130,20 @@ class RegistroPipeline:
 
         # Anexo R30 (R41, R46): la `fec` de cada línea de incidencia que
         # cambia de día, con la guarda de F-051 y su código; las dos de un
-        # par, juntas. El log, antes de enviar, con todo lo releído.
+        # par, juntas. El log, antes de enviar, con todo lo releído. D16: la
+        # guarda exige además la `fec` releída (la `fec_antes`, que
+        # `sigue_editable` ya comprobó): si cambia antes del `UPDATE`, no se
+        # pisa y `_comprobar_escrito` la saca a `omitir`.
         for a in sorted(inc_editar, key=lambda x: (x.ano, x.mes, x.id)):
             ls = leidas_inc[a.hmores_ide]
             logger.info("[registro] edita fec incidencia ide=%s parte=%s "
                         "incidencia=%s rol=%s antes=%s fec=%s", ls.ide,
-                        ls.parte_cod, a.id, a.rol, _fila(ls), a.fecha_int)
+                        ls.parte_cod, a.id, a.rol, _fila_incidencia(ls),
+                        a.fecha_int)
             statements.append(self._cli.stmt_editar_fecha_incidencia(
                 ide=ls.ide, reside=int(ls.reside), hora_codigo=a.hora_codigo,
-                synckey_leida=ls.synckey, fecha_int=a.fecha_int))
+                synckey_leida=ls.synckey, fecha_int=a.fecha_int,
+                fec_leida=ls.fecha_int))
 
         # F-030 (R24): las dos líneas de cada incidencia, `can = 0` (así
         # `tot = 0`) y su propia `synckey`.

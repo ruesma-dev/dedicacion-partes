@@ -187,16 +187,30 @@ def test_f030_r40_sql_solo_ides_y_trozos_sin_repetir():
 
 
 def test_f030_r41_sql_editar_la_fec_con_la_guarda_de_su_codigo():
+    # D16 = A (T38): la guarda exige además la `fec` leída, al final.
     cli, _ = _cliente_historial()
     st = cli.stmt_editar_fecha_incidencia(
         ide=9001, reside=200, hora_codigo="CIV", synckey_leida=" k ",
-        fecha_int=20260706)
-    assert " ".join(st["sql"].split()) == "UPDATE hmores SET fec = ? " + GUARDA_INC
-    assert st["parameters"] == [20260706, 9001, 200, 0.0, "k", "CIV", 1]
+        fecha_int=20260706, fec_leida=20260705)
+    assert " ".join(st["sql"].split()) == (
+        "UPDATE hmores SET fec = ? " + GUARDA_INC + " AND fec = ?")
+    assert st["parameters"] == [20260706, 9001, 200, 0.0, "k", "CIV", 1,
+                                20260705]
     sin_sk = cli.stmt_editar_fecha_incidencia(
         ide="9002", reside="200", hora_codigo=" CIZ ", synckey_leida=None,
-        fecha_int="20260712")
-    assert sin_sk["parameters"] == [20260712, 9002, 200, 0.0, "", "CIZ", 1]
+        fecha_int="20260712", fec_leida="20260709")
+    assert sin_sk["parameters"] == [20260712, 9002, 200, 0.0, "", "CIZ", 1,
+                                    20260709]
+
+
+def test_f030_r41_d16_sql_sin_la_fec_leida_no_hay_update():
+    """D16 = A (T38): sin la `fec` leída no se arma el `UPDATE` (nunca una
+    guarda que no la mire)."""
+    cli, _ = _cliente_historial()
+    with pytest.raises(TypeError):
+        cli.stmt_editar_fecha_incidencia(
+            ide=9001, reside=200, hora_codigo="CIV", synckey_leida="k",
+            fecha_int=20260706)
 
 
 def test_f030_r41_sql_la_guarda_sin_codigo_es_la_de_f051():
@@ -297,6 +311,27 @@ def test_f030_r41_sin_dia_en_la_traza_edita_si_es_del_mes():
     acc = _rec([_entrada(desde=6, traza=False)],
                _el_par(ini=20260630, fin=20260709))
     assert acc[0].accion == "omitir"
+
+
+@pytest.mark.parametrize("traza", [
+    TRAZA,                                            # con el día registrado
+    {**TRAZA, "dia_ini": None, "dia_fin": None},      # sin él
+    {},                                               # solo por `synckey`
+])
+def test_f030_r48_la_nuestra_en_otro_mes_no_se_edita(traza):
+    """R48 (D3, cambio 2 de la review 2, T38): una incidencia no cambia de
+    mes. La 7 llega en agosto y su par nuestro está en julio (por `ide` o
+    por `synckey`): no se mueve a agosto, `omitir` «cambiada en Sigrid»;
+    cada mes edita solo su par. Verde de entrada, como T1: lo fijaba ya
+    `_cambiada` (T29)."""
+    from application.services.reglas_incidencias import MOTIVO_INC_CAMBIADA
+
+    agosto = _entrada(desde=5, hasta=9, traza=False, mes=8, **traza)
+    acc = _rec([agosto], _el_par())
+    assert [(a.accion, a.fecha_int, a.fec_antes, a.hmores_ide, a.motivo)
+            for a in acc] == [
+        ("omitir", 20260805, None, 9001, MOTIVO_INC_CAMBIADA.format(ide=9001)),
+        ("omitir", 20260809, None, 9002, MOTIVO_INC_CAMBIADA.format(ide=9002))]
 
 
 @pytest.mark.parametrize("cambio", [
@@ -585,15 +620,18 @@ class _ClienteEdita(ClienteEscribe):
     En registro. La lectura de R33 sale de esas líneas; `cambios` (por
     `ide`: campos o `None`, borrada) es lo que alguien tocó en Sigrid entre
     el preflight y la relectura de R45. El `UPDATE` de la `fec` lo aplica
-    `EdicionesFalsas` (conftest), con su guarda."""
+    `EdicionesFalsas` (conftest), con su guarda. `tras_releer` (por `ide`:
+    campos) es lo que alguien toca en Sigrid DESPUÉS de esa relectura y
+    antes del `UPDATE` (D16, T38)."""
 
-    def __init__(self, cambios=None, **kw) -> None:
+    def __init__(self, cambios=None, tras_releer=None, **kw) -> None:
         par = [LineaSigrid(9001, 200, 20260705, 71, "CIV", 0.0, 0.0,
                            "porcentajes:inc:7:ini", nuestra=True),
                LineaSigrid(9002, 200, 20260709, 79, "CIZ", 0.0, 0.0,
                            "porcentajes:inc:7:fin", nuestra=True)]
         super().__init__(lineas_parte=par, **kw)
         self.cambios = dict(cambios or {})
+        self.tras_releer = dict(tras_releer or {})
 
     def incidencias_del_mes(self, resides, ano, mes, hmoides=None, ides=()):
         self.leidas_inc.append((sorted(resides), ano, mes, hmoides))
@@ -613,6 +651,8 @@ class _ClienteEdita(ClienteEscribe):
                 del out[ide]
             elif ide in out:
                 out[ide] = replace(out[ide], **kw)
+        self.lineas_parte[:] = [replace(ls, **self.tras_releer.get(ls.ide, {}))
+                                for ls in self.lineas_parte]
         return out
 
     def lineas_registradas(self, claves, ides=()):
@@ -636,9 +676,11 @@ def test_f030_r41_ejecutar_edita_el_par_en_su_sitio_y_nada_mas():
     assert [s["sql"] for s in cli.escritos] == ["editar_fec", "editar_fec"]
     assert [s["parameters"] for s in cli.escritos] == [
         {"ide": 9001, "reside": 200, "hora_codigo": "CIV",
-         "synckey_leida": "porcentajes:inc:7:ini", "fecha_int": 20260706},
+         "synckey_leida": "porcentajes:inc:7:ini", "fecha_int": 20260706,
+         "fec_leida": 20260705},                         # D16 (T38)
         {"ide": 9002, "reside": 200, "hora_codigo": "CIZ",
-         "synckey_leida": "porcentajes:inc:7:fin", "fecha_int": 20260712}]
+         "synckey_leida": "porcentajes:inc:7:fin", "fecha_int": 20260712,
+         "fec_leida": 20260709}]
     assert cli.dias() == [(9001, 20260706), (9002, 20260712)]
     assert _acc(res) == [
         ("ini", "editar", 20260706, 20260705, 9001, "PT26/00251"),
@@ -711,6 +753,33 @@ def test_f030_r45_si_la_guarda_no_la_cambia_va_a_omitir_y_no_se_inserta():
     assert cli.lineas_registradas_pedidas[-1] == [9001, 9002]
 
 
+@pytest.mark.parametrize("rol, ide, otra", [("ini", 9001, 9002),
+                                            ("fin", 9002, 9001)])
+def test_f030_r41_d16_la_fec_cambiada_tras_releer_no_se_pisa(rol, ide, otra):
+    """D16 = A (T38): si la `fec` de una línea cambia en Sigrid entre la
+    relectura de R45 y el `UPDATE`, la guarda (`fec` = la leída) no la
+    toca: se queda en el día que le pusieron a mano y su acción sale a
+    `omitir` «cambiada en Sigrid» en la relectura de lo escrito (R45),
+    nunca se inserta otra. La otra del par ya pasó la relectura y su
+    `UPDATE` sí entra: la ventana del par de design §12."""
+    from application.services.reglas_incidencias import MOTIVO_INC_CAMBIADA
+
+    a_mano = {9001: 20260707, 9002: 20260710}
+    cli = _ClienteEdita(tras_releer={ide: {"fecha_int": a_mano[ide]}})
+    res = _ej(cli, [], [_inc_pf(desde=6, hasta=12, **TRAZA)])
+    assert [s["sql"] for s in cli.escritos] == ["editar_fec", "editar_fec"]
+    nuevas = {9001: 20260706, 9002: 20260712}
+    assert dict(cli.dias()) == {ide: a_mano[ide], otra: nuevas[otra]}
+    por_rol = {a.rol: a for a in res.incidencias}
+    assert (por_rol[rol].accion, por_rol[rol].fec_antes,
+            por_rol[rol].motivo) == ("omitir", None,
+                                     MOTIVO_INC_CAMBIADA.format(ide=ide))
+    otro_rol = "fin" if rol == "ini" else "ini"
+    assert (por_rol[otro_rol].accion, por_rol[otro_rol].motivo) == (
+        "editar", None)
+    assert cli.inserts() == []
+
+
 def test_f030_r46_el_log_de_cada_edicion(caplog):
     import logging
 
@@ -720,9 +789,13 @@ def test_f030_r46_el_log_de_cada_edicion(caplog):
               if "edita fec" in r.getMessage()]
     assert len(lineas) == 1
     msg = lineas[0]
+    # Obs. 4 de la review 2 (T38): TODO lo leído en R45, también `reside`,
+    # `hmoide`, `est` y `enlazada`.
     for trozo in ("ide=9001", "parte=PT26/00251", "incidencia=7", "rol=ini",
                   "'fecha_int': 20260705", "'synckey': 'porcentajes:inc:7:ini'",
-                  "'can': 0.0", "'hora_codigo': 'CIV'", "fec=20260706"):
+                  "'can': 0.0", "'hora_codigo': 'CIV'", "fec=20260706",
+                  "'reside': 200", "'hmoide': 777", "'est': 1",
+                  "'enlazada': False"):
         assert trozo in msg, trozo
 
 
@@ -752,7 +825,8 @@ def test_f030_r34_la_regla_dice_cambiar_los_dias_y_quitar():
     plano = " ".join(punto.split())
     for trozo in ("**Cambiar los días.**", "**Quitar.**", "edita la `fec`",
                   "se cambia del d al d", "quitada · sigue en Sigrid",
-                  "el parte X está cerrado: sigue del d al h", "D11-D15"):
+                  "el parte X está cerrado: sigue del d al h", "D11-D15",
+                  "la `synckey` y la `fec` leídas", "D16"):   # D16: T38
         assert trozo in plano, trozo
 
 
@@ -760,7 +834,8 @@ def test_f030_r34_integracion_cuenta_los_campos_y_el_update():
     plano = " ".join(_doc("INTEGRACION.md").split())
     for trozo in ("hmores_ide_ini", "hmores_ide_fin", "dia_ini", "dia_fin",
                   "`fec_antes`", "`incidencias_quitadas`", "`editar`",
-                  "`UPDATE` de **solo** la `fec`", "`id`"):
+                  "`UPDATE` de **solo** la `fec`", "`id`",
+                  "la `fec` leída (`fec = ?`, D16)"):        # D16: T38
         assert trozo in plano, trozo
 
 

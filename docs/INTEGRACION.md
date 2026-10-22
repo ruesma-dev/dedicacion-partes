@@ -418,7 +418,8 @@ Desde F-030 (incidencias en el cuadrante;
   e `ide`s) para retirarlas a mano.
 - Cambiar los días de una registrada (anexo R30) es, en Sigrid, un
   `UPDATE` de **solo** la `fec` de cada línea del par, con la guarda de
-  F-051 y su código (`a.cod = ?`): ni `INSERT`, ni `DELETE`, ni parte
+  F-051, su código (`a.cod = ?`) y la `fec` leída (`fec = ?`, D16): ni
+  `INSERT`, ni `DELETE`, ni parte
   nuevo. La lectura de las líneas `CI*` del mes trae además `h.can`,
   `h.hmoide` y `con.est`, y busca también por `h.ide` las de la traza.
 

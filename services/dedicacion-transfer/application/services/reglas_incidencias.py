@@ -34,13 +34,15 @@ from domain.models.registro_models import (
     LineaIncidenciaSigrid,
 )
 
-_TRAZA_ROL = {"ini": ("hmores_ide_ini", "dia_ini"),
-              "fin": ("hmores_ide_fin", "dia_fin")}
-
 from application.services.reglas_porcentajes import (
     MOTIVO_SIN_EMPRESA,
     empresa_valida,
 )
+
+#: Anexo R30 (R39, R40): los campos de la traza de la api por rol, el
+#: `hmores.ide` y el día registrados.
+_TRAZA_ROL = {"ini": ("hmores_ide_ini", "dia_ini"),
+              "fin": ("hmores_ide_fin", "dia_fin")}
 
 #: Código de `auxhor` que cierra el tramo de cualquier incidencia.
 CODIGO_FIN = "CIZ"

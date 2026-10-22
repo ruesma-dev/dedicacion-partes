@@ -124,7 +124,7 @@ class ClienteInc(ClienteFalso):
     """El doble de `conftest.py` con las horas de incidencia (`CIV`, `CIZ`)
     en los recursos 200 y 400 (el 300 no las tiene; el `CIV` del 200 con su
     cuenta de plantilla) y la lectura de R27, que anota cada llamada y
-    devuelve ``existentes`` (o lanza ``falla``). Anexo R30 (design §13.7):
+    devuelve ``existentes`` (o lanza ``falla``). Anexo R30 (R40, T28):
     acepta los `ides` de la traza y los anota aparte, en ``leidas_ides``."""
 
     def __init__(self, *, existentes=(), falla=None, **kw) -> None:

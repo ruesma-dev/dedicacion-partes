@@ -70,7 +70,7 @@ def _inc(inc_id, trab, obra, codigo="CIV", desde=5, hasta=9):
     """(incidencia, trabajador, obra) como los devuelve la lectura; `trab` y
     `obra` son (ide, empresa)."""
     _, t, o = _fila(0, trab, obra)
-    # Anexo R30 (design §13.7): sin quitar y sin traza de Sigrid.
+    # Anexo R30 (R38, R39; T26): sin quitar y sin traza de Sigrid.
     i = SimpleNamespace(id=inc_id, trabajador_ide=trab[0], obra_ide=obra[0],
                         codigo=codigo, dia_desde=desde, dia_hasta=hasta,
                         quitada=False, sigrid_ide_ini=None,

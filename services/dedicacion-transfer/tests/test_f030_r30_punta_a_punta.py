@@ -29,7 +29,8 @@ class ClienteConElPar(ClienteEscribe):
     """El Sigrid falso con el par ya escrito en su parte (777, En
     registro): la lectura de R33 y la de F-051 R12 salen de esas líneas, y
     `stmt_editar_fecha_incidencia` les cambia la `fec` como lo haría el
-    `UPDATE` (con su guarda: recurso, código, `can` 0 y `synckey`)."""
+    `UPDATE` (con su guarda: recurso, código, `can` 0, `synckey` y, por
+    D16 (T38), la `fec` leída)."""
 
     def __init__(self, peticion: dict) -> None:
         reg = CONTRATO["registro"]
@@ -74,7 +75,8 @@ class ClienteConElPar(ClienteEscribe):
             for i, ls in enumerate(self.lineas_parte):
                 if (ls.ide == kw["ide"] and ls.reside == kw["reside"]
                         and ls.hora_codigo == kw["hora_codigo"]
-                        and not ls.can and ls.synckey == kw["synckey_leida"]):
+                        and not ls.can and ls.synckey == kw["synckey_leida"]
+                        and ls.fecha_int == kw.get("fec_leida")):
                     self.lineas_parte[i] = replace(ls,
                                                    fecha_int=kw["fecha_int"])
         return n
