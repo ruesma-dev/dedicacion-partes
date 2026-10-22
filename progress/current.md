@@ -107,19 +107,19 @@ cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
   mes; solo obra normal); D8 alcance (A: captura y registro en F-030); D9
   línea recién añadida (A: se convierte en incidencia); D10 % por días,
   calendario de convenio y bandeja de `partes` (fuera, features nuevas).
-- **MANUAL de la feature** (T20): prueba en modo pruebas en la `0404`; la
-  ejecuta el líder con autorización expresa del humano. **Primera mitad
-  hecha el 2026-10-21** («autorizo pruebas de f30»; `progress/manual_F-030.md`:
-  `ide` 411730/411731, `ya_registrado`, limpia); la segunda, tras T37. Comando exacto, desde `services/dedicacion-transfer` con
-  `OBRA_PRUEBAS_FORZAR=true` y `RECURSO` = un `res.ide` con `CIV` y `CIZ` en
-  `reshor` (p. ej. 1705036):
-  `python prueba_escritura_porcentajes.py preflight --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9`,
-  `… ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9`,
-  `… verificar --incidencia RECURSO:CIV:5:9`, otra vez `ejecutar` (debe dar
-  `ya_registrado`) y `… limpiar --confirmar`. **Lo que deja sin probar su
-  ausencia** (review 1): que SQL Server y sigrid-api acepten el `INSERT` del
-  par `CI*`/`CIZ` y la lectura de las `CI*` del mes (R27); el resto está
-  cubierto por tests. Con la opción C de R30 se añade el cambio de días.
+- **MANUAL de la feature** (T20), en modo pruebas en la `0404`, la ejecuta
+  el líder con autorización expresa del humano. **Primera mitad hecha el
+  2026-10-21** («autorizo pruebas de f30»; `progress/manual_F-030.md`): quedó
+  probado contra Sigrid el `INSERT` del par `CI*`/`CIZ`, la lectura de las
+  `CI*` del mes (R27/R33), la relectura por `synckey` y `limpiar`. La
+  **segunda mitad** (cambio de días) tiene el comando exacto arriba, en la
+  sección del anexo. Tiene que probar el `UPDATE … SET fec` con su guarda,
+  `lineas_para_editar` sobre líneas `CI*`, la relectura por `ide` y las
+  columnas nuevas que lee (`can`, `hmoide`, `est`). **Ni con ella quedará
+  probado** (review 2): el script no manda la traza y localiza por
+  `synckey`, así que la rama `OR h.ide IN (…)` de la lectura y R42 con día
+  solo los cubren tests de texto. Si esa SQL fallara en Sigrid, el preflight
+  falla sin escribir nada.
 - **azure-apps**: `dedicacion.md` lo actualiza el **líder al desplegar**
   (no en T19); `partes.md` (de
   `partes`) debería decir que `porcentajes` escribirá `CI*`/`CIZ` en los
