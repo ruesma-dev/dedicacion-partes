@@ -9,9 +9,10 @@ F-059 y F-060); sus `.venv` son uniones de directorio a los de la copia
 principal (del líder, no versionadas). Spec aprobada el 2026-10-20 (D1-D10).
 T1-T19 y T21 hechas; review 1 **RECHAZADO** por R30; el humano eligió la
 opción **C** y **aprobó el anexo R30 el 2026-10-21** («si»: D11 = B, D12-D15
-= A, todas la recomendada). **Anexo T22-T37 implementado (2026-10-22),
-pendiente de review**: informe `progress/impl_F-030.md`. T20: primera mitad hecha por el líder en la 0404
-(`progress/manual_F-030.md`); la segunda (cambio de días), tras T37, con
+= A, todas la recomendada). **Anexo T22-T37 implementado (2026-10-22);
+review pasada 2 lanzada el 2026-10-22.** Informe `progress/impl_F-030.md`.
+T20: primera mitad hecha por el líder en la 0404 (`progress/manual_F-030.md`);
+la segunda (cambio de días, comando exacto abajo) la ejecuta el líder con
 autorización expresa del humano. Ningún agente escribe en Sigrid por su
 cuenta. El arnés es la **1.7.3**.
 
@@ -125,7 +126,7 @@ cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
   mismos partes: avisar al humano.
 - Sigrid, solo lectura durante la spec (consultas en `progress/spec_F-030.md`).
 
-## F-030 · implementación: TERMINADA, lista para review (implementer, 2026-10-21)
+## F-030 · implementación T1-T21 (implementer, 2026-10-21) · review 1 RECHAZADO (R30, resuelto por el anexo)
 
 - **Estado:** T1-T19 y T21 `[x]`, cada una con su commit `F-030 Tn`. El
   informe está en `progress/impl_F-030.md` y la mutación en
@@ -278,75 +279,6 @@ f51»), transfer → api → front (ver «Producción, hoy»); T16 hecho
 Altas nuevas del 2026-10-21: **F-058** (un % que redondea a 0 no se
 registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés es la **1.7.3**.
-## F-051 · bloqueos de implementación (2026-10-20) · RESUELTOS
-
-- **T3**: añadir `edita_ide` y `a_cero_ides` a `Conflicto` rompía
-  `test_f013_r4_no_hace_falta_ningun_campo_nuevo`, fuera de la lista cerrada.
-  Humano: **opción A** («a»): entra en la lista y su conjunto acepta los dos
-  campos (`c5bc6e9`).
-- **T12**: el texto nuevo del pisado rompía los dos `test_f049_r2_…`.
-  Humano: **opción B** («La b»): el detalle termina como hoy, «se edita la
-  línea X (…)[; quedan a 0: …] y se escribe N%»; esos tests no se tocan
-  (`d0c1ab7`, hecho en `24ba7aa`).
-
-## F-051 · implementación (implementer, 2026-10-20)
-
-- **Estado:** T1-T14 y T17 `[x]`; informe en `progress/impl_F-051.md`.
-  **Cambios de la review 1 hechos (2026-10-21):** test de la frontera de
-  R13 que mata el mutante de `registro_pipeline.py:1095` (`d807cce`);
-  formato de la línea 568 y de un docstring del lote (`7a5f801`); 3.ª
-  campaña de mutación en serie (`--workers 1`) sobre `7a5f801`: **134
-  mutantes, 0 supervivientes** (`e51ba7b`, `progress/mutacion_F-051.md`);
-  primera línea con la ruta en el informe. Ya no hay ningún equivalente que
-  aceptar. `init.sh` sin `[KO]`, cobertura 99,2 %. Listo para la pasada 2.
-- **T18 hecha (2026-10-21, O2 aceptada por el humano, «ok o2»):** el paso 6
-  exige además `es_linea_mensual` de la línea del `hmores_ide`; si no es
-  `M*`, se sigue por `synckey` (`d5d61ac`, 4 tests nuevos con RED en el
-  informe; docs `ARCHITECTURE` «Localizar lo nuestro» e `INTEGRACION` §5).
-  R13 no cambia (no usa ese criterio; la guarda ya exige `M*`). 4.ª campaña
-  en serie sobre `d5d61ac`: **136 mutantes, 0 supervivientes** (`6ca3074`).
-  `init.sh` sin `[KO]`: transfer 1080, api 949, front 310, raíz 418;
-  cobertura 99,2 %. O4 es F-058; T15, del líder.
-- **Decisiones del implementer** (detalle en el informe §2):
-  `lineas_registradas(claves, ides)` sin `ides` delega en
-  `lineas_por_synckey`; `repartir_choques` y `es_nuestra_de_otra` puras
-  nuevas; `despues` del log usa `a.can`/`a.tot` ya redondeados; `usadas`
-  arranca vacío (una línea al 0 % nunca es choque).
-- **Desviaciones justificadas:** la fase `estado` del script lee además
-  `pos`, `paride` y `tex` (para T15); la api usa
-  `getattr(a, "sigrid_hmores_ide", None)`; el paso 9 bis va antes del alta de
-  partes y solo lo que inserta crea parte o lee `max_pos`.
-- **T15 CUMPLIDA por el líder el 2026-10-21** (modo pruebas, 0404,
-  escrituras autorizadas por el humano). Detalle en
-  `progress/manual_F-051.md`; resumen en `progress/impl_F-051.md` §6.
-- **T16 HECHO el 2026-10-21** al desplegar (transfer → api → front):
-  `azure-apps/dedicacion.md` `223490c` (§1, §5 y §7 desde
-  `docs/INTEGRACION.md`). Aviso a `partes`: en «Pendiente del humano», arriba.
-
-## F-051 · decisiones del humano sobre la spec (2026-10-20, todas cerradas)
-
-- **Pasada 2:** «d1, nunca borramos lineas, editamos el valor. d5, cualquier
-  linea a 0% se puede pisar». **D1 = C** (`UPDATE` en su sitio, nunca
-  `DELETE`); **D5**: cualquier línea al 0 %, también con `synckey` de
-  `partes` o nuestra. D2-D4 y D6-D9, las recomendadas (D2 = A sin confirmar,
-  con aviso; D3 = A; D4 `can` 0 exacto o nulo; D6 = A; D7 = B; D8 fuera;
-  D9 = A).
-- **Pasada 3:** D10 = B (se edita todo lo que insertaríamos) y D13 como
-  recomendado («ok a lo demás»). **D11:** «y no deberia encontrarla por el
-  ide de sigrid una vez que se registra la linea? es unico y no se edita
-  nunca» y «d11 que ya localice»: F-051 **no cambia la `synckey` de una
-  línea de otro sistema** y localiza lo editado por `hmores.ide`; a una línea
-  de Administración (`synckey` vacía) se le pone la nuestra. **D12:** «que
-  pase a editar»: el pisado confirmado de hoy también pasa a `UPDATE`.
-- **D14 = A y D15 = A** («si me vale»): con varios choques se edita el de
-  menor `ide` y los demás a 0; `limpiar` (solo el script de pruebas) sigue
-  borrando lo marcado `PRUEBA-PORC`.
-- **Exploración (solo lectura, 10 `SELECT` por sigrid-api, base `ruesma`):**
-  en octubre, parte PT26/00370 de la 0707 (En registro), cuatro personas con
-  su línea `M*` a 0 (`hmores` 410600, 410931, 410935, 410937): copia de
-  septiembre por Administración, sin `synckey`. En 2026, 63 grupos con
-  varios choques (PT26/00109 llega a 9 líneas `MDEL`).
-
 ## Producción, hoy
 
 - **Desplegado el 2026-10-21: F-051**, los tres servicios en orden, por el
