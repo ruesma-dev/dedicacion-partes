@@ -51,6 +51,9 @@ class _Sesion:
         if isinstance(sentencia, Update):
             self._updates.append(sentencia.compile().params)
             return None
+        # F-030 (lista cerrada): la lectura de `incidencia`, vacía.
+        if "FROM incidencia" in str(sentencia):
+            return _Resultado([])
         return _Resultado(self._filas)
 
     def commit(self) -> None:

@@ -30,6 +30,17 @@ F-051 (R14, R16): cada línea lleva el `sigrid_hmores_ide` de su asignación
 (si lo tiene) y la traza guarda el de cada escrita y cada ya registrada: el
 transfer reconoce lo suyo por `hmores.ide` aunque edite una línea de otro
 sistema (docs/ARCHITECTURE.md#regla-cero).
+
+F-030 (R23, R25, R31): cada obra lleva además la lista `incidencias` de sus
+trabajadores visibles y vigentes (una obra solo con incidencias también va;
+sin ninguna, la petición es la de siempre), cada una con la partida elegida
+o la propuesta guardada de la asignación del trabajador en esa obra, o 0.
+Al volver de `ejecutar`, la traza de cada incidencia
+(docs/ARCHITECTURE.md#regla-incidencia). Anexo R30 (R38, R39): las
+quitadas no viajan (el preflight las devuelve en `incidencias_quitadas`
+para retirarlas a mano) y una registrada lleva sus `hmores_ide_ini`/`_fin`
+y `dia_ini`/`_fin`: con ellos el transfer edita su par en vez de escribir
+otro.
 """
 from __future__ import annotations
 
@@ -41,10 +52,17 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from domain.empresas import visible_en_empresa
+from domain.incidencias import letra_y_nombre
 from domain.models import FiltroEmpresa
 from domain.vigencia import vigente_en
 from infrastructure.db.orm_models import (
-    AsignacionORM, ObraORM, PeriodoORM, TrabajadorORM,
+    AsignacionORM, IncidenciaORM, ObraORM, PeriodoORM, TipoIncidenciaORM,
+    TrabajadorORM,
+)
+from application.traza_incidencias import (
+    campos_de_traza,
+    quitada_para_el_modal,
+    trazar_incidencias,
 )
 from infrastructure.transfer.transfer_client import TransferClient
 
@@ -85,9 +103,12 @@ class RegistroSigrid:
     def _payloads(self, s: Session, anio: int, mes: int,
                   overrides: dict[int, int],
                   trabajador_ide: Optional[int],
-                  filtro: FiltroEmpresa
+                  filtro: FiltroEmpresa,
+                  quitadas: list[tuple] | None = None,
                   ) -> tuple[list[dict[str, Any]], list[int]]:
-        """Payloads por obra y `registro_id` de los no vigentes en el mes."""
+        """Payloads por obra y `registro_id` de los no vigentes en el mes.
+        Con `quitadas`, añade ahí las incidencias quitadas visibles y
+        vigentes (R38), que no van en ningún payload."""
         filas = s.execute(
             select(AsignacionORM, TrabajadorORM, ObraORM)
             .join(PeriodoORM, PeriodoORM.id == AsignacionORM.periodo_id)
@@ -108,6 +129,8 @@ class RegistroSigrid:
         # asignación.
         por_obra: dict[int, dict[str, Any]] = {}
         no_vigentes: list[int] = []
+        # F-030 (R25): partida de la asignación de cada (trabajador, obra).
+        partidas: dict[tuple[int, int], int] = {}
         for a, t, o in filas:
             if not visible_en_empresa(t.empresa, filtro):
                 continue
@@ -115,6 +138,9 @@ class RegistroSigrid:
             if not vigente_en(t.activo, t.fecha_baja, anio, mes):
                 no_vigentes.append(a.id)
                 continue
+            if not a.es_postventa:
+                partidas.setdefault((t.ide, o.ide), int(
+                    a.partida_ide or a.propuesta_ide or 0))
             # Entrada VAR (F-039, R20): a la petición de su obra de registro,
             # junto a las demás líneas de esa obra.
             obra = ({"ide": o.registro_obra_ide,
@@ -154,7 +180,72 @@ class RegistroSigrid:
             if hmores_ide:
                 linea["hmores_ide"] = int(hmores_ide)
             grupo["lineas"].append(linea)
+        self._sumar_incidencias(s, anio, mes, trabajador_ide, filtro,
+                                por_obra, partidas, quitadas)
         return list(por_obra.values()), sorted(no_vigentes)
+
+    def _sumar_incidencias(self, s: Session, anio: int, mes: int,
+                           trabajador_ide: int | None,
+                           filtro: FiltroEmpresa,
+                           por_obra: dict[int, dict[str, Any]],
+                           partidas: dict[tuple[int, int], int],
+                           quitadas: list[tuple] | None = None) -> None:
+        """F-030 (R23, R25): las incidencias del periodo, en la petición de
+        su obra (nunca VAR ni postventa, R19), con la visibilidad y la
+        vigencia de las líneas. Una obra solo con incidencias va al final,
+        en el orden de su código; sin ninguna, nada cambia.
+
+        Anexo R30: una quitada no va (a `quitadas`, si se pide; R38); una
+        con traza lleva sus `hmores_ide_*` y `dia_*`, nulos los que falten
+        (R39). Sin traza, el elemento de siempre."""
+        filas = s.execute(
+            select(IncidenciaORM, TrabajadorORM, ObraORM)
+            .join(PeriodoORM, PeriodoORM.id == IncidenciaORM.periodo_id)
+            .join(TrabajadorORM,
+                  TrabajadorORM.ide == IncidenciaORM.trabajador_ide)
+            .join(ObraORM, ObraORM.ide == IncidenciaORM.obra_ide)
+            .where(PeriodoORM.anio == anio, PeriodoORM.mes == mes,
+                   *( [IncidenciaORM.trabajador_ide == trabajador_ide]
+                      if trabajador_ide is not None else [] ))
+            .order_by(ObraORM.cod, TrabajadorORM.nombre,
+                      IncidenciaORM.dia_desde, IncidenciaORM.id)
+        ).all()
+        for i, t, o in filas:
+            if not visible_en_empresa(t.empresa, filtro) or \
+                    not vigente_en(t.activo, t.fecha_baja, anio, mes):
+                continue
+            if i.quitada:
+                if quitadas is not None:
+                    quitadas.append((i, t, o))
+                continue
+            grupo = por_obra.setdefault(o.ide, {
+                "obra": {"ide": o.ide, "codigo": o.cod,
+                         "nombre": o.descripcion},
+                "lineas": []})
+            item = {
+                "id": i.id, "recurso_ide": t.ide,
+                "empresa": filtro.empresa_obras, "codigo": i.codigo,
+                "ano": anio, "mes": mes, "desde": i.dia_desde,
+                "hasta": i.dia_hasta,
+                "paride": partidas.get((t.ide, o.ide), 0)}
+            item.update(campos_de_traza(i))
+            grupo.setdefault("incidencias", []).append(item)
+
+    @staticmethod
+    def _quitadas(s: Session, filas: list[tuple]) -> list[dict[str, Any]]:
+        """R38: las quitadas para el modal (retirarlas a mano en Sigrid):
+        trabajador, obra, código con su letra, días, parte y `ide`s. La
+        letra, del catálogo; sin él, la de `letra_y_nombre`."""
+        if not filas:
+            return []
+        codigos = sorted({i.codigo for i, _, _ in filas})
+        letras = dict(s.execute(
+            select(TipoIncidenciaORM.codigo, TipoIncidenciaORM.letra)
+            .where(TipoIncidenciaORM.codigo.in_(codigos))).all())
+        return [quitada_para_el_modal(
+                    i, t, o, letras.get(i.codigo)
+                    or letra_y_nombre(None, i.codigo)[0])
+                for i, t, o in filas]
 
     # ------------------------------------------------------------- #
     def preflight(self, anio: int, mes: int,
@@ -164,18 +255,29 @@ class RegistroSigrid:
                   obra_ide: int | None = None) -> dict:
         """`obra_ide` (F-050, M2 punto 5): solo la petición de esa obra, la
         del grupo (la de registro en las entradas VAR). Es lo que repite el
-        modal al cambiar una partida, en vez del mes entero."""
+        modal al cambiar una partida, en vez del mes entero.
+
+        Anexo R30 (R38): si hay incidencias quitadas, la respuesta las lista
+        en `incidencias_quitadas`; si no, la clave no está."""
+        filas_quitadas: list[tuple] = []
         with self._sf() as s:
             payloads, no_vigentes = self._payloads(
                 s, anio, mes, overrides or {}, trabajador_ide,
-                self._filtro(empresa))
+                self._filtro(empresa), filas_quitadas)
+            if obra_ide is not None:
+                filas_quitadas = [f for f in filas_quitadas
+                                  if f[2].ide == obra_ide]
+            quitadas = self._quitadas(s, filas_quitadas)
         if obra_ide is not None:
             payloads = [p for p in payloads if p["obra"]["ide"] == obra_ide]
         resultados = [{"obra": p["obra"], **r} for p, r in zip(
             payloads, self._preflight_lote(payloads))]
         self._guardar_propuestas(resultados)
-        return {"ok": all(r.get("ok") for r in resultados) if resultados
-                else True, "obras": resultados, "no_vigentes": no_vigentes}
+        respuesta = {"ok": all(r.get("ok") for r in resultados) if resultados
+                     else True, "obras": resultados, "no_vigentes": no_vigentes}
+        if quitadas:
+            respuesta["incidencias_quitadas"] = quitadas
+        return respuesta
 
     def _preflight_lote(self, payloads: list[dict]) -> list[dict]:
         """F-055 (R26): UNA llamada al lote del transfer; por obra, la
@@ -279,4 +381,6 @@ class RegistroSigrid:
                     .where(AsignacionORM.id == o["registro_id"])
                     .values(sigrid_estado="omitido",
                             sigrid_motivo=(o.get("motivo") or "")[:_MAX_MOTIVO]))
+            # F-030 (R31): la de cada incidencia, en la misma sesión.
+            trazar_incidencias(s, r.get("incidencias") or [], ahora, quien)
             s.commit()

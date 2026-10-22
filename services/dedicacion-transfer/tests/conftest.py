@@ -217,8 +217,30 @@ class EdicionesFalsas:
     def stmt_poner_a_cero(self, **kw):
         return {"sql": "a_cero", "parameters": kw}
 
+    def stmt_editar_fecha_incidencia(self, **kw):
+        """F-030, anexo R30 (design §13.7): el `UPDATE` de la `fec`."""
+        return {"sql": "editar_fec", "parameters": kw}
+
+    def _editar_fec(self, kw) -> None:
+        """La guarda de `stmt_editar_fecha_incidencia`: la de F-051 con el
+        código de la línea en vez de `M*` y `can` 0, y la `fec` leída (D16
+        de design §11; F-030 (lista cerrada), design §13.7)."""
+        for _, _, est, lista in self._partes_de_lineas():
+            for i, ls in enumerate(lista):
+                if (ls.ide == kw["ide"] and ls.ide not in self.guarda_falla
+                        and ls.fecha_int == kw.get("fec_leida")
+                        and ls.ide not in self.enlazadas and est == 1
+                        and ls.reside == kw["reside"]
+                        and (ls.hora_codigo or "").strip() == kw["hora_codigo"]
+                        and abs(float(ls.can or 0)) < 0.000001
+                        and (ls.synckey or "").strip()
+                        == (kw["synckey_leida"] or "").strip()):
+                    lista[i] = replace(ls, fecha_int=kw["fecha_int"])
+
     def _aplicar_ediciones(self, statements) -> None:
         for st in statements:
+            if st["sql"] == "editar_fec":
+                self._editar_fec(st["parameters"])
             if st["sql"] not in ("editar", "a_cero"):
                 continue
             kw = st["parameters"]

@@ -49,6 +49,10 @@ COLUMNAS_OBRAS = frozenset({"ide", "cod", "empresa"})
 #: Catálogo `auxemp` (F-032): sin número no hay con qué casar `con.emp`, y
 #: sin nombre la tabla no sirve para lo que existe.
 COLUMNAS_EMPRESAS = frozenset({"numemp", "nombre"})
+#: Catálogo de incidencias de `auxhor` (F-030, R3-R5): sin `ide` no hay
+#: clave, sin `cod`/`res` no hay letra ni nombre y sin `fecbaj` no se sabe
+#: si sigue activa.
+COLUMNAS_INCIDENCIAS = frozenset({"ide", "cod", "res", "fecbaj"})
 
 
 @dataclass
@@ -56,9 +60,11 @@ class SyncContext:
     filas_empleados: list[dict[str, Any]] = field(default_factory=list)
     filas_obras: list[dict[str, Any]] = field(default_factory=list)
     filas_empresas: list[dict[str, Any]] = field(default_factory=list)
+    filas_incidencias: list[dict[str, Any]] = field(default_factory=list)
     resultado_empleados: ResultadoSyncMaestro | None = None
     resultado_obras: ResultadoSyncMaestro | None = None
     resultado_empresas: ResultadoSyncMaestro | None = None
+    resultado_incidencias: ResultadoSyncMaestro | None = None
 
 
 def ventana_de_bajas(periodos: Iterable[Periodo], hoy: date) -> int:
@@ -266,6 +272,24 @@ class FetchEmpresasStep:
         ctx.filas_empresas = filas
 
 
+class FetchTiposIncidenciaStep:
+    """Lee el catálogo de incidencias de `auxhor` (F-030, R3). Si la lectura
+    falla o viene truncada (el cliente lanza `SigridError`), el sync falla
+    entero antes de persistir nada, como con cualquier maestro (R7)."""
+
+    nombre = "fetch_tipos_incidencia"
+
+    def __init__(self, sigrid: SigridGateway, sql: str) -> None:
+        self._sigrid = sigrid
+        self._sql = sql
+
+    def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
+        filas = self._sigrid.leer(self._sql)
+        _validar_columnas(filas, COLUMNAS_INCIDENCIAS, "sync.incidencias.sql")
+        logger.info("sync incidencias: %d leídas", len(filas))
+        ctx.filas_incidencias = filas
+
+
 class UpsertTrabajadoresStep:
     nombre = "upsert_trabajadores"
 
@@ -285,6 +309,14 @@ class UpsertEmpresasStep:
 
     def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
         ctx.resultado_empresas = uow.empresas.sincronizar(ctx.filas_empresas)
+
+
+class UpsertTiposIncidenciaStep:
+    nombre = "upsert_tipos_incidencia"
+
+    def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
+        ctx.resultado_incidencias = uow.tipos_incidencia.sincronizar(
+            ctx.filas_incidencias)
 
 
 # ----------------------------------------------------------------------
@@ -310,13 +342,16 @@ class SyncMaestrosPipeline:
             obras=ctx.resultado_obras,
             duracion_s=duracion,
             empresas=ctx.resultado_empresas or ResultadoSyncMaestro(),
+            incidencias=ctx.resultado_incidencias or ResultadoSyncMaestro(),
         )
         logger.info(
-            "sync completado en %.2fs: empleados=%s obras=%s empresas=%s",
+            "sync completado en %.2fs: empleados=%s obras=%s empresas=%s "
+            "incidencias=%s",
             duracion,
             resultado.empleados,
             resultado.obras,
             resultado.empresas,
+            resultado.incidencias,
         )
         return resultado
 

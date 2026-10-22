@@ -29,6 +29,9 @@ class TipoEvento(str, Enum):
     COPIA = "COPIA"
     COMPLETAR = "COMPLETAR"  # lote «completar al 100 %» (F-029)
     PARTIDA = "PARTIDA"  # cambio de la partida elegida de una línea (F-050)
+    # Sustitución de las incidencias del trabajador (F-030, R17); su
+    # snapshot es de incidencias, no de líneas (R20).
+    INCIDENCIAS = "INCIDENCIAS"
 
 
 class ResultadoCompletado(str, Enum):
@@ -126,6 +129,50 @@ class Linea:
 
 
 @dataclass(frozen=True)
+class TipoIncidencia:
+    """Tipo de incidencia del catálogo, copiado de `auxhor` de Sigrid por el
+    sync (F-030, R3-R5): `ide` y código de `auxhor`, letra y nombre según
+    `domain.incidencias.letra_y_nombre`. `activa` falsa = ya no se lee o
+    tiene fecha de baja; no se borra."""
+
+    ide: int
+    codigo: str
+    letra: str
+    nombre: str
+    activa: bool = True
+
+
+@dataclass(frozen=True)
+class Incidencia:
+    """Incidencia de un trabajador en una obra durante un tramo de días del
+    periodo (F-030, R17, docs/ARCHITECTURE.md#regla-incidencia). No es una
+    línea de %: no cuenta para el 100 % (R22).
+
+    `id` es nulo hasta guardarla. Obra, letra y nombre son de lectura (R21);
+    `sigrid_*`, la traza del registro (R31). Anexo R30: `quitada`, la
+    registrada que se quitó (R38); `sigrid_ide_*` y `sigrid_dia_*`, el `ide`
+    y el día de cada línea del par en Sigrid (R39)."""
+
+    obra_ide: int
+    codigo: str
+    dia_desde: int
+    dia_hasta: int
+    id: int | None = None
+    obra_cod: str = ""
+    obra_descripcion: str = ""
+    letra: str = ""
+    nombre: str = ""
+    sigrid_estado: str | None = None
+    sigrid_parte_cod: str | None = None
+    sigrid_motivo: str | None = None
+    quitada: bool = False
+    sigrid_ide_ini: int | None = None
+    sigrid_ide_fin: int | None = None
+    sigrid_dia_ini: int | None = None
+    sigrid_dia_fin: int | None = None
+
+
+@dataclass(frozen=True)
 class Completado:
     """Lo que devuelve la regla pura `completar_hasta_100` (F-029): las
     líneas del trabajador tras completar y lo añadido (escala 0-100)."""
@@ -186,6 +233,9 @@ class EventoPendiente:
     id: int
     usuario: str
     snapshot_antes: list[dict[str, Any]]
+    # Tipo del evento (F-030, R20): deshacer `INCIDENCIAS` restaura las
+    # incidencias; los demás, las líneas.
+    tipo: str = "GUARDAR"
 
 
 @dataclass
@@ -195,6 +245,9 @@ class CuadranteTrabajador:
     trabajador: Trabajador
     lineas: list[Linea] = field(default_factory=list)
     puede_deshacer: bool = False
+    # Incidencias del trabajador en el periodo (F-030, R21). No entran en
+    # `total` ni en el estado (R22): van aparte de las líneas.
+    incidencias: tuple[Incidencia, ...] = ()
 
     @property
     def total(self) -> Decimal:
@@ -257,6 +310,9 @@ class ResultadoSync:
     # Catálogo `auxemp` (F-032). Al final y con valor por defecto para no
     # romper a quien construye el resultado por posición.
     empresas: ResultadoSyncMaestro = field(default_factory=ResultadoSyncMaestro)
+    # Catálogo de incidencias de `auxhor` (F-030, R3), igual que empresas.
+    incidencias: ResultadoSyncMaestro = field(
+        default_factory=ResultadoSyncMaestro)
 
 
 @dataclass(frozen=True)

@@ -237,6 +237,17 @@ class _Empresas:
         return list(self.fichas)
 
 
+class _IncidenciasVacias:
+    """F-030 (lista cerrada): el cuadrante y la fila leen las incidencias
+    del periodo; aquí no hay ninguna."""
+
+    def de_periodo(self, periodo_id: int) -> dict:
+        return {}
+
+    def de_trabajador(self, periodo_id: int, ide: int) -> list:
+        return []
+
+
 class _Uow:
     """UnitOfWork en memoria con los repositorios que usan los casos."""
 
@@ -249,6 +260,7 @@ class _Uow:
         self.periodos = _Periodos()
         self.asignaciones = _Asignaciones(self)
         self.eventos = _Eventos()
+        self.incidencias = _IncidenciasVacias()  # F-030 (lista cerrada)
 
     def commit(self) -> None:
         return None

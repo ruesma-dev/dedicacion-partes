@@ -71,6 +71,31 @@ class LineaEntrada:
 
 
 @dataclass
+class IncidenciaEntrada:
+    """F-030 (R23): una incidencia del cuadrante (vacaciones, baja…) a
+    registrar en el parte de su obra: dos líneas, ver
+    ARCHITECTURE.md#regla-incidencia. `id` es el de la incidencia en
+    PostgreSQL; `desde` y `hasta`, días del mes ya completados por la API;
+    `paride`, la partida de la línea de % del trabajador en esa obra o 0.
+
+    Anexo R30 (R39): la traza de la api de una ya registrada, por rol, el
+    `hmores.ide` y el día de su línea en Sigrid (None si no consta)."""
+    id: int
+    recurso_ide: int | None
+    empresa: int | None
+    codigo: str
+    ano: int
+    mes: int
+    desde: int | None
+    hasta: int | None
+    paride: int | None = 0
+    hmores_ide_ini: int | None = None
+    hmores_ide_fin: int | None = None
+    dia_ini: int | None = None
+    dia_fin: int | None = None
+
+
+@dataclass
 class ObraEntrada:
     ide: Optional[int] = None
     codigo: Optional[str] = None
@@ -241,6 +266,58 @@ class AccionLinea:
 
 
 @dataclass
+class AccionIncidencia:
+    """F-030 (R24, R31): qué se hará con UNA de las dos líneas de una
+    incidencia (`rol` `ini`: su `CI*` el día `desde`; `fin`: `CIZ` el día
+    `hasta`). Lleva los campos que el paso de la cuenta analítica comparte
+    con `AccionLinea` (`recurso_ide`, `hora_ide`, `paride`, `destino`,
+    `aviso` y `caa_*`). Siempre `can = 0` y `tot = 0`: no son jornada.
+
+    Anexo R30 (R41, R46): `editar` cambia SOLO la `fec` de la línea
+    `hmores_ide` (en el parte `hmoide`) de `fec_antes` a `fecha_int`."""
+    id: int
+    rol: str                            # ini | fin
+    accion: str                         # escribir | editar | omitir | ya_registrado
+    fecha_int: int
+    recurso_ide: int | None = None
+    ano: int = 0
+    mes: int = 0
+    hora_ide: int | None = None
+    hora_codigo: str | None = None
+    pre: float = 0.0
+    paride: int = 0
+    motivo: str | None = None
+    parte_cod: str | None = None
+    hmores_ide: int | None = None
+    destino: str = "obra"               # una incidencia no va a postventa
+    aviso: str | None = None
+    caa_ide: int = 0
+    caa_cod: str | None = None
+    caa_motivo: str | None = None
+    caa_aviso: str | None = None
+    caa_origen: str | None = None
+    caa_nota: str | None = None
+    fec_antes: int | None = None
+    hmoide: int | None = None
+
+
+@dataclass
+class LineaIncidenciaSigrid:
+    """F-030 (R27): una línea de incidencia (`CI*`/`CIZ`) del recurso ya
+    escrita en algún parte del mes, con el código del parte. Anexo R30
+    (R40-R43): su `can`, su parte (`hmoide`) y el estado del parte."""
+    ide: int
+    reside: int
+    fecha_int: int
+    hora_codigo: str | None
+    synckey: str | None
+    parte_cod: str | None
+    can: float | None = None
+    hmoide: int | None = None
+    parte_est: int | None = None
+
+
+@dataclass
 class Conflicto:
     """Algo que el humano tiene que confirmar antes de que se escriba.
 
@@ -304,6 +381,8 @@ class Preflight:
     partes: list[ParteDestino] = field(default_factory=list)
     acciones: list[AccionLinea] = field(default_factory=list)
     conflictos: list[Conflicto] = field(default_factory=list)
+    # F-030 (R31): las dos líneas de cada incidencia; vacía sin incidencias.
+    incidencias: list[AccionIncidencia] = field(default_factory=list)
 
     @property
     def n_escribir(self) -> int:
@@ -337,3 +416,6 @@ class ResultadoRegistro:
     ya_registradas_ide: dict[int, int] = field(default_factory=dict)
     pendientes_confirmacion: list[Conflicto] = field(default_factory=list)
     error: Optional[str] = None
+    # F-030 (R31): las líneas de las incidencias, con su `hmores_ide` si se
+    # escribieron; vacía sin incidencias.
+    incidencias: list[AccionIncidencia] = field(default_factory=list)

@@ -45,6 +45,14 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
      (ARCHITECTURE.md#regla-capacidad) -> confirmar escritura. Van DESPUÉS
      de los de pisado: su cifra ya presupone que el pisado ocurre.
   8. (fin del preflight)
+
+  Las INCIDENCIAS de la petición (F-030, ARCHITECTURE.md#regla-incidencia)
+  se deciden tras el paso 4 con `reglas_incidencias` y comparten con las
+  líneas la empresa (paso 0), las horas (paso 3), la validación de la
+  partida, la cuenta analítica (4 bis), el parte (5), el modo pruebas y el
+  alta (9); NO entran en los pasos 6 bis, 7 ni 7 bis (R28). Tras el paso 5,
+  R27: UNA lectura de las líneas de incidencia del mes (`incidencias_del_mes`)
+  solo si alguna se va a escribir. Sin incidencias, todo es como antes.
   9. Crear los partes que falten (alta protegida, releer el periodo y,
      si no aparece uno En registro, UN reintento con otro código).
  10. EDITAR en su sitio la línea al 0 % de cada acción (`linea_cero`) y
@@ -72,6 +80,10 @@ from application.services.propuesta_partida import (
     MOTIVO_PARTIDA_NO_HOJA, Propuesta, catalogo, mayor_inicial,
     proponer_partida, ventana,
 )
+from application.services.reglas_incidencias import (
+    MOTIVO_INC_CAMBIADA, decidir_incidencia, no_editar_el_par, reconciliar,
+    sigue_editable, synckey_incidencia,
+)
 from application.services.reglas_porcentajes import (
     AVISO_LINEA_CERO, AVISO_QUEDAN_A_CERO, AVISO_SIN_PARTIDA,
     MOTIVO_EMPRESA_OBRA, MOTIVO_LINEA_CAMBIADA, MOTIVO_PARTIDA_PV_NO_HOJA,
@@ -87,8 +99,8 @@ from application.services.universo_var import (
     MOTIVO_VAR_POSTVENTA, cargar_catalogo_var, partida_var_de,
 )
 from domain.models.registro_models import (
-    AccionLinea, Conflicto, LineaEntrada, ObraEntrada, ParteDestino,
-    Preflight, ResultadoRegistro,
+    AccionIncidencia, AccionLinea, Conflicto, IncidenciaEntrada, LineaEntrada,
+    ObraEntrada, ParteDestino, Preflight, ResultadoRegistro,
 )
 from infrastructure.sigrid.sigrid_write_client import (
     medir_lecturas, synckey_de,
@@ -119,6 +131,14 @@ def _fila(ls) -> dict:
             "horide": ls.horide, "hora_codigo": ls.hora_codigo,
             "paride": ls.paride, "caaide": ls.caaide,
             "fecha_int": ls.fecha_int, "synckey": ls.synckey, "tex": ls.tex}
+
+
+def _fila_incidencia(ls) -> dict:
+    """Anexo R30 (R46; obs. 4 de la review 2): TODO lo leído en R45 de una
+    línea de incidencia cuya `fec` se edita: lo de `_fila` (sin cambiar el
+    log de F-051) más recurso, parte, su estado y si tiene enlaces."""
+    return {**_fila(ls), "reside": ls.reside, "hmoide": ls.hmoide,
+            "est": ls.parte_est, "enlazada": ls.enlazada}
 
 
 def _traza(que: str, registro_id: int, ls, despues: dict) -> dict:
@@ -187,16 +207,20 @@ class RegistroPipeline:
 
     # ------------------------------------------------------------- #
     def _todas_omitidas(self, obra: ObraEntrada, lineas: list[LineaEntrada],
-                        motivo_empresa: Optional[str]) -> Preflight:
+                        motivo_empresa: Optional[str],
+                        incidencias: list[IncidenciaEntrada]) -> Preflight:
         """Fin anticipado del paso 0: ninguna línea se puede escribir.
 
         Las acciones salen del MISMO `decidir` que el resto, que omite cada
-        línea por su empresa antes de mirar horas o recursos."""
+        línea por su empresa antes de mirar horas o recursos; las de las
+        incidencias, del mismo `decidir_incidencia` (F-030)."""
         reglas = ReglasPorcentajes({}, motivo_empresa=motivo_empresa)
         return Preflight(
             obra_destino=obra, obra_origen=obra,
             forzada_pruebas=self._st.obra_pruebas_forzar,
-            acciones=[reglas.decidir(l) for l in lineas])
+            acciones=[reglas.decidir(l) for l in lineas],
+            incidencias=[a for i in incidencias for a in decidir_incidencia(
+                i, {}, motivo_empresa=motivo_empresa)])
 
     # ------------------------------------------------------------- #
     def _destino_postventa(
@@ -242,12 +266,15 @@ class RegistroPipeline:
             sorted({l.recurso_ide for l in lineas}), desde, hasta)
 
     # ------------------------------------------------------------- #
-    def _validas(self, normales: list[LineaEntrada]) -> dict:
+    def _validas(self, normales: list[LineaEntrada],
+                 incidencias: list[AccionIncidencia]) -> dict:
         """F-055 (R3): UNA lectura de `validar_partidas` con la elegida de
-        cada línea de obra normal o, sin ella, su propuesta guardada. Sin
-        ninguna no se lee. Sin `try`: si falla, la petición falla."""
-        parides = {int(l.paride or l.propuesta_paride or 0)
-                   for l in normales} - {0}
+        cada línea de obra normal o, sin ella, su propuesta guardada, y la
+        partida de cada incidencia que se escribe (F-030 R25). Sin ninguna
+        no se lee. Sin `try`: si falla, la petición falla."""
+        parides = ({int(l.paride or l.propuesta_paride or 0)
+                    for l in normales}
+                   | {a.paride for a in incidencias}) - {0}
         return self._cli.validar_partidas(sorted(parides)) if parides else {}
 
     # ------------------------------------------------------------- #
@@ -317,6 +344,53 @@ class RegistroPipeline:
             est_registro=self._st.est_parte_activo)
 
     # ------------------------------------------------------------- #
+    def _parte_nuevo_o_del_periodo(self, d: ObraEntrada, ano: int,
+                                   mes: int,
+                                   leido: ParteDestino | None = None
+                                   ) -> ParteDestino:
+        """Paso 5 para un destino y periodo: el parte elegido o, si no
+        hay ninguno En registro, el código del nuevo, con su aviso.
+        `leido`: el de `_parte_del_periodo` si ya se leyó (anexo R30, R33
+        en pruebas), para no leerlo dos veces."""
+        p = leido if leido is not None else self._parte_del_periodo(d, ano,
+                                                                    mes)
+        p.obra_cod = d.codigo
+        if not p.existe:
+            p.cod = self._cli.siguiente_cod_pt(ano, int(d.empresa))
+        p.aviso = aviso_de_parte(p, {
+            ps.cod: self._nombre_estado(ps.est)
+            for ps in p.del_periodo if ps.cod in p.cerrados})
+        return p
+
+    # ------------------------------------------------------------- #
+    def _reconciliar_incidencias(
+        self, inc_escribir: list[AccionIncidencia],
+        entradas: list[IncidenciaEntrada], destino: ObraEntrada,
+        forzada: bool, leidos: dict[tuple[int, int, int], ParteDestino],
+    ) -> None:
+        """R27, R33 y anexo R30 (R40-R44): las líneas de incidencia del mes
+        de esos recursos y las de la traza de la api (sus `hmores.ide`), en
+        UNA lectura por mes; en pruebas, solo en los partes del periodo de
+        la obra de pruebas (ese parte queda en `leidos` para el paso 5).
+        Luego `reconciliar`. Sin `try`: si falla o viene `truncated`, la
+        petición falla sin escribir nada."""
+        for ano, mes in sorted({(a.ano, a.mes) for a in inc_escribir}):
+            del_mes = [a for a in inc_escribir if (a.ano, a.mes) == (ano, mes)]
+            hmoides = None
+            if forzada:
+                clave = (int(destino.ide), ano, mes)
+                leidos[clave] = self._parte_del_periodo(destino, ano, mes)
+                hmoides = [int(ps.ide) for ps in leidos[clave].del_periodo]
+            ids = {a.id for a in del_mes}
+            propias = [e for e in entradas if int(e.id) in ids]
+            reconciliar(del_mes, propias, self._cli.incidencias_del_mes(
+                sorted({int(a.recurso_ide) for a in del_mes}), ano, mes,
+                hmoides=hmoides, ides=sorted({
+                    int(i) for e in propias
+                    for i in (e.hmores_ide_ini, e.hmores_ide_fin) if i})),
+                est=int(self._st.est_parte_activo))
+
+    # ------------------------------------------------------------- #
     def _crear_parte(self, p: ParteDestino, d: ObraEntrada,
                      desc: str) -> None:
         """Paso 9 (F-037 R11, D17): alta protegida y relectura del periodo.
@@ -375,13 +449,17 @@ class RegistroPipeline:
 
     # ------------------------------------------------------------- #
     def preflight(self, *, obra: ObraEntrada,
-                  lineas: list[LineaEntrada]) -> Preflight:
+                  lineas: list[LineaEntrada],
+                  incidencias: list[IncidenciaEntrada] | None = None,
+                  ) -> Preflight:
         """Pasos 0-8, con el resumen de sus lecturas en el log (F-055 R1:
-        obra, lecturas, segundos leyendo y totales), también si falla."""
+        obra, lecturas, segundos leyendo y totales), también si falla.
+        `incidencias` (F-030): las de la obra; sin ellas, como siempre."""
         t0 = _ahora()
         with medir_lecturas() as m:
             try:
-                return self._preflight(obra=obra, lineas=lineas)
+                return self._preflight(obra=obra, lineas=lineas,
+                                       incidencias=list(incidencias or []))
             finally:
                 logger.info(
                     "[registro] lecturas preflight obra=%s lecturas=%s "
@@ -390,12 +468,13 @@ class RegistroPipeline:
                     _ahora() - t0)
 
     # ------------------------------------------------------------- #
-    def _preflight(self, *, obra: ObraEntrada,
-                   lineas: list[LineaEntrada]) -> Preflight:
+    def _preflight(self, *, obra: ObraEntrada, lineas: list[LineaEntrada],
+                   incidencias: list[IncidenciaEntrada]) -> Preflight:
         # Paso 0: empresa y obra de origen (ARCHITECTURE.md#regla-empresa).
-        empresa = empresa_de_peticion(lineas)
+        # Las incidencias cuentan: una obra solo con ellas también va (R23).
+        empresa = empresa_de_peticion([*lineas, *incidencias])
         if empresa is None:
-            return self._todas_omitidas(obra, lineas, None)
+            return self._todas_omitidas(obra, lineas, None, incidencias)
         origen = self._obra_origen(obra, empresa)
         if origen.empresa != empresa:
             motivo = MOTIVO_EMPRESA_OBRA.format(
@@ -403,7 +482,8 @@ class RegistroPipeline:
             # Se publica la obra de origen RESUELTA, con su empresa, no la
             # de entrada (F-024, R20). Sin empresa, arriba, no hay obra
             # resuelta y sigue saliendo la de entrada.
-            return self._todas_omitidas(origen, lineas, motivo)
+            return self._todas_omitidas(origen, lineas, motivo,
+                                        incidencias)
         destino_normal, forzada = self._obra_destino(origen, empresa)
 
         # Paso 1b: destino de postventa (solo si hace falta).
@@ -418,11 +498,16 @@ class RegistroPipeline:
                                         empresa)
 
         # Pasos 2-4: horas de los recursos dados + reglas.
-        horas = self._horas_de_lineas(lineas)
+        # Las horas, en UNA lectura con los recursos de las incidencias.
+        horas = self._horas_de_lineas([*lineas, *incidencias])
         reglas = ReglasPorcentajes(
             horas, postventa_registrar=self._st.postventa_registrar,
             partida_postventa=partida_pv, motivo_postventa=motivo_pv)
         acciones: list[AccionLinea] = [reglas.decidir(l) for l in lineas]
+        # F-030 (R24, R26): las dos líneas de cada incidencia.
+        acciones_inc: list[AccionIncidencia] = [
+            a for i in incidencias for a in decidir_incidencia(i, horas)]
+        inc_escribir = [a for a in acciones_inc if a.accion == "escribir"]
 
         # Partida de imputación por línea (ARCHITECTURE.md#regla-partida): la
         # elegida (override) manda si es hoja activa del presupuesto de la
@@ -440,7 +525,7 @@ class RegistroPipeline:
             l for a in acciones
             if a.accion == "escribir" and a.destino != "postventa"
             for l in [por_id[a.registro_id]] if l.var_paride is None]
-        validas = self._validas(normales)
+        validas = self._validas(normales, inc_escribir)
 
         def vale(paride) -> bool:
             v = validas.get(int(paride or 0))
@@ -448,6 +533,11 @@ class RegistroPipeline:
 
         por_proponer = [l for l in normales
                         if not l.paride and not vale(l.propuesta_paride)]
+        for a in inc_escribir:
+            # R25: la partida de la línea de % que vale por `ide` o 0, sin
+            # aviso ni confirmación.
+            if not vale(a.paride):
+                a.paride = 0
         for a in acciones:
             if a.accion != "escribir":
                 continue
@@ -535,9 +625,22 @@ class RegistroPipeline:
         def obra_de(a: AccionLinea) -> ObraEntrada:
             return destino_pv if a.destino == "postventa" else destino_normal
 
-        # Paso 4 bis: cuenta analítica (ARCHITECTURE.md#regla-analitica).
-        if escribir:
-            self._cuentas(escribir, horas, obra_de)
+        # Paso 4 bis: cuenta analítica (ARCHITECTURE.md#regla-analitica),
+        # con las incidencias (van a la obra normal) en las mismas lecturas.
+        if escribir or inc_escribir:
+            self._cuentas([*escribir, *inc_escribir], horas, obra_de)
+
+        # R27 y anexo R30 (F-030): una línea de incidencia que ya está en
+        # un parte del mes no se escribe: la nuestra con otra `fec` se
+        # edita (R41) y la de otro se omite. UNA lectura por mes (R33) y
+        # solo si alguna se escribiría; en pruebas, solo los partes de la
+        # obra de pruebas. ANTES del paso 5 (obs. 7): solo las que siguen
+        # `escribir` piden parte; `editar` va en el de su línea.
+        leidos: dict[tuple[int, int, int], ParteDestino] = {}
+        if inc_escribir:
+            self._reconciliar_incidencias(inc_escribir, incidencias,
+                                          destino_normal, forzada, leidos)
+        inc_escribir = [a for a in inc_escribir if a.accion == "escribir"]
 
         # Paso 5: parte por DESTINO + periodo, entre TODOS los del periodo
         # (F-037 R9-R11, R15; ARCHITECTURE.md#regla-analitica).
@@ -546,15 +649,15 @@ class RegistroPipeline:
             d = obra_de(a)
             clave = (int(d.ide), a.ano, a.mes)
             if clave not in partes:
-                p = self._parte_del_periodo(d, a.ano, a.mes)
-                p.obra_cod = d.codigo
-                if not p.existe:
-                    p.cod = self._cli.siguiente_cod_pt(a.ano, int(d.empresa))
-                p.aviso = aviso_de_parte(p, {
-                    ps.cod: self._nombre_estado(ps.est)
-                    for ps in p.del_periodo if ps.cod in p.cerrados})
-                partes[clave] = p
+                partes[clave] = self._parte_nuevo_o_del_periodo(
+                    d, a.ano, a.mes, leidos.get(clave))
             _sumar_aviso(a, partes[clave].aviso)
+        for a in inc_escribir:
+            clave = (int(destino_normal.ide), a.ano, a.mes)
+            if clave not in partes:
+                partes[clave] = self._parte_nuevo_o_del_periodo(
+                    destino_normal, a.ano, a.mes, leidos.get(clave))
+            a.parte_cod = partes[clave].cod
 
         # Paso 6: idempotencia (F-051 R15): la fila de su `hmores_ide` si es
         # de su recurso, es `M*` (T18: un `ide` reutilizado puede caer en
@@ -744,7 +847,12 @@ class RegistroPipeline:
             obra_destino=destino_normal, obra_origen=obra,
             forzada_pruebas=forzada,
             partes=[partes[k] for k in sorted(partes)], acciones=acciones,
-            conflictos=conflictos)
+            conflictos=conflictos, incidencias=acciones_inc)
+        if acciones_inc:
+            logger.info(
+                "[registro] incidencias obra=%s lineas=%s escribir=%s",
+                destino_normal.codigo, len(acciones_inc),
+                sum(a.accion == "escribir" for a in acciones_inc))
         logger.info(
             "[registro] preflight obra=%s partes=%s escribir=%s omitir=%s "
             "ya=%s conflictos=%s", destino_normal.codigo, len(pf.partes),
@@ -824,9 +932,19 @@ class RegistroPipeline:
     # ------------------------------------------------------------- #
     def ejecutar(self, *, obra: ObraEntrada, lineas: list[LineaEntrada],
                  pisar_claves: set[str] | None = None,
-                 usuario: str | None = None) -> ResultadoRegistro:
+                 usuario: str | None = None,
+                 incidencias: list[IncidenciaEntrada] | None = None,
+                 ) -> ResultadoRegistro:
+        """Pasos 0-10. Las incidencias (F-030) se escriben tras las líneas,
+        en el mismo lote de sentencias; ningún conflicto las retiene (R28)
+        y no salen en `escritas` (que es de las asignaciones), sino en
+        `incidencias`, con el `hmores_ide` de cada línea escrita. Las que
+        cambian de días (anexo R30, R45) editan la `fec` de su línea, en su
+        sitio y sin parte nuevo."""
         pisar = {str(k) for k in (pisar_claves or set())}
-        pf = self.preflight(obra=obra, lineas=lineas)
+        # Sin incidencias, la llamada de siempre (R2): ni un argumento más.
+        pf = self.preflight(obra=obra, lineas=lineas, **(
+            {"incidencias": incidencias} if incidencias else {}))
         destino_normal = pf.obra_destino
         destino_pv = getattr(pf, "obra_postventa", None)
 
@@ -843,7 +961,10 @@ class RegistroPipeline:
             ya_registradas_ide={a.registro_id: a.hmores_ide
                                 for a in pf.acciones
                                 if a.accion == "ya_registrado"},
+            incidencias=pf.incidencias,
         )
+        inc_escribir = [a for a in pf.incidencias if a.accion == "escribir"]
+        inc_editar = [a for a in pf.incidencias if a.accion == "editar"]
 
         bloqueadas: set[int] = set()
         # Registros ya listados en `omitidas` por un aviso anterior. Empieza
@@ -894,7 +1015,7 @@ class RegistroPipeline:
         a_escribir = [a for a in pf.acciones
                       if a.accion == "escribir"
                       and a.registro_id not in bloqueadas]
-        if not a_escribir:
+        if not a_escribir and not inc_escribir and not inc_editar:
             logger.info("[registro] nada que escribir (bloqueadas=%s)",
                         len(bloqueadas))
             return res
@@ -903,8 +1024,16 @@ class RegistroPipeline:
         # pone a 0, comprobado contra Sigrid justo antes de escribir. Va
         # ANTES del alta de partes: la acción que edita no necesita parte
         # nuevo, y la que cae no tiene que dejar uno vacío.
-        edita, ceros, cambiadas = self._planear_ediciones(
-            pf, a_escribir, pisar)
+        edita, ceros, cambiadas, leidas_inc = self._planear_ediciones(
+            pf, a_escribir, pisar, [a.hmores_ide for a in inc_editar])
+        # Anexo R30 (R45): la `fec` de una incidencia se edita con lo que
+        # hay AHORA en Sigrid (la misma lectura); si una del par ya no se
+        # puede editar, ninguna.
+        no_editar_el_par(inc_editar, {
+            a.hmores_ide for a in inc_editar
+            if not sigue_editable(leidas_inc.get(a.hmores_ide), a,
+                                  int(self._st.est_parte_activo))})
+        inc_editar = [a for a in inc_editar if a.accion == "editar"]
         for a in a_escribir:
             if a.registro_id in cambiadas:
                 res.omitidas.append({
@@ -913,7 +1042,7 @@ class RegistroPipeline:
                         ide=cambiadas[a.registro_id])})
         a_escribir = [a for a in a_escribir
                       if a.registro_id not in cambiadas]
-        if not a_escribir:
+        if not a_escribir and not inc_escribir and not inc_editar:
             logger.info("[registro] nada que escribir (cambiadas=%s)",
                         len(cambiadas))
             return res
@@ -927,7 +1056,8 @@ class RegistroPipeline:
                      and p.obra_cod == o.codigo}
         # (clave robusta: si ambos destinos coinciden —modo pruebas— es la
         #  misma entrada)
-        for a in sorted(a_insertar, key=lambda x: (x.ano, x.mes)):
+        for a in sorted([*a_insertar, *inc_escribir],
+                        key=lambda x: (x.ano, x.mes)):
             d = obra_de(a)
             clave = (int(d.ide), a.ano, a.mes)
             p = por_parte.get(clave)
@@ -998,23 +1128,61 @@ class RegistroPipeline:
             res.escritas.append(self._escrita(a, d, hmoide, p.cod,
                                               editada=False))
 
+        # Anexo R30 (R41, R46): la `fec` de cada línea de incidencia que
+        # cambia de día, con la guarda de F-051 y su código; las dos de un
+        # par, juntas. El log, antes de enviar, con todo lo releído. D16: la
+        # guarda exige además la `fec` releída (la `fec_antes`, que
+        # `sigue_editable` ya comprobó): si cambia antes del `UPDATE`, no se
+        # pisa y `_comprobar_escrito` la saca a `omitir`.
+        for a in sorted(inc_editar, key=lambda x: (x.ano, x.mes, x.id)):
+            ls = leidas_inc[a.hmores_ide]
+            logger.info("[registro] edita fec incidencia ide=%s parte=%s "
+                        "incidencia=%s rol=%s antes=%s fec=%s", ls.ide,
+                        ls.parte_cod, a.id, a.rol, _fila_incidencia(ls),
+                        a.fecha_int)
+            statements.append(self._cli.stmt_editar_fecha_incidencia(
+                ide=ls.ide, reside=int(ls.reside), hora_codigo=a.hora_codigo,
+                synckey_leida=ls.synckey, fecha_int=a.fecha_int,
+                fec_leida=ls.fecha_int))
+
+        # F-030 (R24): las dos líneas de cada incidencia, `can = 0` (así
+        # `tot = 0`) y su propia `synckey`.
+        for a in sorted(inc_escribir, key=lambda x: (x.ano, x.mes, x.id)):
+            d = destino_normal
+            p = por_parte[(int(d.ide), a.ano, a.mes)]
+            hmoide = int(p.ide)
+            if hmoide not in pos_por_parte:
+                pos_por_parte[hmoide] = self._cli.max_pos(hmoide)
+            pos_por_parte[hmoide] += int(self._st.paso_pos)
+            a.parte_cod = p.cod
+            statements.append(self._cli.stmt_insert_linea(
+                hmoide=hmoide, obra=d, reside=int(a.recurso_ide),
+                pos=pos_por_parte[hmoide], fecha_int=a.fecha_int,
+                horide=int(a.hora_ide), can=0.0, pre=float(a.pre),
+                ano=a.ano, mes=a.mes, synckey=synckey_incidencia(a.id, a.rol),
+                tex=tex, paride=int(a.paride or 0),
+                caaide=int(a.caa_ide or 0)))
+
         afectadas = self._cli.escribir(statements)
         logger.info("[registro] escritas=%s editadas=%s a_cero=%s "
                     "borradas=%s filas=%s usuario=%s ts=%s",
                     len(res.escritas), len(res.editadas), len(res.a_cero),
                     res.borradas, afectadas, usuario,
                     datetime.now(timezone.utc).isoformat())
-        self._comprobar_escrito(res)
+        self._comprobar_escrito(res, inc_escribir, inc_editar)
         return res
 
     # ------------------------------------------------------------- #
     def _planear_ediciones(self, pf: Preflight, a_escribir: list,
-                           pisar: set[str]) -> tuple[dict, list, dict]:
+                           pisar: set[str], inc_ides: list[int]
+                           ) -> tuple[dict, list, dict, dict]:
         """Paso 9 bis, F-051 (design §6.4, 1-2): `({registro_id: línea a
         editar}, [(registro_id, línea a poner a 0)], {registro_id: ide que
-        ha cambiado})`, con las líneas tal y como están AHORA en Sigrid
-        (una lectura, R12). Si la línea al 0 % ya no es pisable, cae su
-        acción; si un choque ya no lo es, cae el pisado entero."""
+        ha cambiado}, {ide: línea de incidencia releída})`, con las líneas
+        tal y como están AHORA en Sigrid (una lectura, R12; con las de las
+        incidencias que cambian de días, anexo R30 R45). Si la línea al
+        0 % ya no es pisable, cae su acción; si un choque ya no lo es, cae
+        el pisado entero."""
         escribibles = {a.registro_id: a for a in a_escribir}
         mias = {synckey_de(a.registro_id) for a in pf.acciones}
         # (qué, ide, registro_id, acción de referencia, criterio, caen)
@@ -1038,9 +1206,10 @@ class RegistroPipeline:
                         tuple(regs)) for r, ide in por_reg.items()]
             piezas += [("a_cero", ide, regs[0], escribibles[regs[0]],
                         "choque", tuple(regs)) for ide in a_cero]
-        if not piezas:
-            return {}, [], {}
-        leidas = self._cli.lineas_para_editar([pz[1] for pz in piezas])
+        if not piezas and not inc_ides:
+            return {}, [], {}, {}
+        leidas = self._cli.lineas_para_editar(
+            [pz[1] for pz in piezas] + list(inc_ides))
         cambiadas: dict[int, int] = {}
         for _, ide, _, a, criterio, caen in piezas:
             if not self._sigue_valiendo(leidas.get(ide), a, criterio, mias):
@@ -1050,7 +1219,7 @@ class RegistroPipeline:
                  if que == "edita" and r not in cambiadas}
         ceros = [(r, leidas[ide]) for que, ide, r, *_ in piezas
                  if que == "a_cero" and r not in cambiadas]
-        return edita, ceros, cambiadas
+        return edita, ceros, cambiadas, {i: leidas.get(i) for i in inc_ides}
 
     def _sigue_valiendo(self, ls, a: AccionLinea, criterio: str,
                         mias: set[str]) -> bool:
@@ -1077,14 +1246,33 @@ class RegistroPipeline:
             e["hmores_ide"] = hmores_ide
         return e
 
-    def _comprobar_escrito(self, res: ResultadoRegistro) -> None:
+    def _comprobar_escrito(self, res: ResultadoRegistro,
+                           inc_escritas: list[AccionIncidencia],
+                           inc_editadas: list[AccionIncidencia]) -> None:
         """Paso 10, relectura (R13, R16): el `hmores_ide` de cada insertada
         por su `synckey`; una editada que no tiene lo escrito (la guarda no
         la cambió) sale de `escritas` y va a `omitidas`; una puesta a 0 que
-        no quedó a 0, al log. UNA lectura, la de siempre."""
+        no quedó a 0, al log. UNA lectura, la de siempre, que también trae
+        el `hmores_ide` de las líneas de incidencia escritas (F-030) y las
+        de `fec` editada (anexo R30, R45: sin la `fec` nueva, `omitir`;
+        nunca se inserta en su lugar)."""
         por_sk, por_ide = self._cli.lineas_registradas(
-            [synckey_de(e["registro_id"]) for e in res.escritas],
-            [t["ide"] for t in res.editadas + res.a_cero])
+            [synckey_de(e["registro_id"]) for e in res.escritas]
+            + [synckey_incidencia(a.id, a.rol) for a in inc_escritas],
+            [t["ide"] for t in res.editadas + res.a_cero]
+            + [a.hmores_ide for a in inc_editadas])
+        for a in inc_escritas:
+            hit = por_sk.get(synckey_incidencia(a.id, a.rol))
+            if hit is not None:
+                a.hmores_ide = hit.ide
+        for a in inc_editadas:
+            hit = por_ide.get(a.hmores_ide)
+            if hit is None or hit.fecha_int != a.fecha_int:
+                logger.warning("[registro] la guarda no dejo editar la fec "
+                               "de la linea %s (incidencia %s %s)",
+                               a.hmores_ide, a.id, a.rol)
+                a.accion, a.fec_antes = "omitir", None
+                a.motivo = MOTIVO_INC_CAMBIADA.format(ide=a.hmores_ide)
         trazas = {t["registro_id"]: t for t in res.editadas}
         for e in list(res.escritas):
             if not e["editada"]:

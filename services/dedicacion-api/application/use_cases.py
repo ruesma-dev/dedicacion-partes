@@ -19,6 +19,7 @@ from domain.deshacer import deshacer_permitido
 from domain.empresas import visible_en_empresa
 from domain.errors import (
     DeshacerAjeno,
+    IncidenciaInvalida,
     LineaNoEncontrada,
     LineasInvalidas,
     NadaQueDeshacer,
@@ -28,12 +29,14 @@ from domain.errors import (
     TrabajadorNoEncontrado,
 )
 from domain.estados import calcular_estado, completar_hasta_100, resumir
+from domain.incidencias import completar_dias, identificar, validar_incidencias
 from domain.models import (
     CuadranteTrabajador,
     Empresa,
     EstadoPeriodo,
     EstadoTrabajador,
     FiltroEmpresa,
+    Incidencia,
     Linea,
     Obra,
     Periodo,
@@ -42,6 +45,7 @@ from domain.models import (
     ResultadoCopia,
     ResumenPeriodo,
     TipoEvento,
+    TipoIncidencia,
     Trabajador,
 )
 from domain.ports import SigridGateway, UnitOfWork, UniversosGateway
@@ -80,10 +84,12 @@ class ObtenerCuadrante:
             if o.empresa == filtro.empresa_obras
         ]
         autores = uow.eventos.autores_ultimo_pendiente(periodo_id)
+        incidencias = uow.incidencias.de_periodo(periodo_id)  # F-030, R21
         for fila in filas:
             fila.puede_deshacer = deshacer_permitido(
                 autores.get(fila.trabajador.ide), usuario
             )
+            fila.incidencias = tuple(incidencias.get(fila.trabajador.ide, ()))
         return Cuadrante(
             periodo=periodo,
             obras=obras,
@@ -116,6 +122,8 @@ class ObtenerFilaTrabajador:
             puede_deshacer=deshacer_permitido(
                 pendiente.usuario if pendiente else None, usuario
             ),
+            incidencias=tuple(
+                uow.incidencias.de_trabajador(periodo_id, trabajador_ide)),
         )
         resumen = _resumen_periodo(uow, periodo_id, filtro)
         return fila, resumen
@@ -159,6 +167,124 @@ class GuardarAsignaciones:
         return ObtenerFilaTrabajador().ejecutar(
             uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
         )
+
+
+class GuardarIncidencias:
+    """Sustituye las incidencias del trabajador en el periodo (F-030,
+    R17-R19, docs/ARCHITECTURE.md#regla-incidencia) y deja un evento
+    `INCIDENCIAS`, deshacible como cualquier otro (R20). No toca sus líneas
+    de % ni cuenta para el 100 % (R2, R22).
+
+    Todo o nada: periodo inexistente (404) o cerrado (409), trabajador
+    inexistente (404) o una incidencia que no vale (422, `IncidenciaInvalida`:
+    código no activo, obra que no se ofrece como normal o entrada VAR, días
+    fuera del mes, `desde > hasta` o dos que comparten días). Un día vacío se
+    completa con `completar_dias` (D2). Si no cambia nada, ni escribe ni deja
+    evento.
+
+    Anexo R30: con `id`, la incidencia es la guardada (conserva fila y
+    traza); un `id` ajeno o una registrada con otra obra o código es 422, y
+    la registrada que no viene queda `quitada` (`identificar`, R36, R38).
+    Las quitadas no cuentan en los solapes. El evento guarda `id` y
+    `quitada` (R47)."""
+
+    def ejecutar(
+        self,
+        uow: UnitOfWork,
+        anio: int,
+        mes: int,
+        trabajador_ide: int,
+        entrada: list[dict[str, Any]],
+        usuario: str,
+        *,
+        filtro: FiltroEmpresa,
+    ) -> tuple[CuadranteTrabajador, ResumenPeriodo]:
+        periodo_id, _ = _periodo_abierto_o_error(uow, anio, mes)
+        _trabajador_o_error(uow, trabajador_ide)
+        brutas = [_parsear_incidencia(b) for b in entrada]
+        activos = {t.codigo for t in uow.tipos_incidencia.activos()}
+        for inc in brutas:
+            if inc.codigo not in activos:
+                raise IncidenciaInvalida(
+                    f"El código {inc.codigo} no es una incidencia activa")
+        _validar_obras_incidencia(uow, periodo_id,
+                                  {i.obra_ide for i in brutas}, filtro)
+        despues = [
+            dataclasses.replace(inc, dia_desde=desde, dia_hasta=hasta)
+            for inc in brutas
+            for desde, hasta in [completar_dias(inc.dia_desde, inc.dia_hasta,
+                                                anio, mes)]
+        ]
+        antes = uow.incidencias.de_trabajador(periodo_id, trabajador_ide)
+        previsto = identificar(despues, antes)
+        validar_incidencias(despues, anio, mes)
+        if _snapshot_incidencias(antes) != _snapshot_incidencias(previsto):
+            uow.incidencias.reemplazar(periodo_id, trabajador_ide, despues,
+                                       usuario)
+            uow.eventos.registrar(
+                periodo_id,
+                trabajador_ide,
+                TipoEvento.INCIDENCIAS,
+                usuario,
+                _snapshot_incidencias(antes),
+                _snapshot_incidencias(uow.incidencias.de_trabajador(
+                    periodo_id, trabajador_ide)),
+            )
+        uow.commit()
+        return ObtenerFilaTrabajador().ejecutar(
+            uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
+        )
+
+
+def _entero_estricto(valor: Any) -> bool:
+    return isinstance(valor, int) and not isinstance(valor, bool)
+
+
+def _parsear_incidencia(bruto: dict[str, Any]) -> Incidencia:
+    """Una incidencia de la entrada (o de un snapshot): `obra_ide` entero,
+    `codigo` con texto, días enteros o vacíos (`None`, aún sin completar),
+    `id` entero o vacío (R36) y `quitada` booleana (solo en snapshots, R47)."""
+    codigo = bruto.get("codigo")
+    if not isinstance(codigo, str) or not codigo.strip():
+        raise IncidenciaInvalida(f"Incidencia sin código: {bruto}")
+    obra_ide = bruto.get("obra_ide")
+    desde, hasta = bruto.get("dia_desde"), bruto.get("dia_hasta")
+    id_, quitada = bruto.get("id"), bruto.get("quitada", False)
+    if not _entero_estricto(obra_ide) or any(
+            d is not None and not _entero_estricto(d)
+            for d in (desde, hasta, id_)) or not isinstance(quitada, bool):
+        raise IncidenciaInvalida(f"Incidencia inválida: {bruto}")
+    return Incidencia(obra_ide=obra_ide, codigo=codigo.strip(),
+                      dia_desde=desde, dia_hasta=hasta,  # type: ignore[arg-type]
+                      id=id_, quitada=quitada)
+
+
+def _validar_obras_incidencia(uow: UnitOfWork, periodo_id: int,
+                              ides: set[int], filtro: FiltroEmpresa) -> None:
+    """La obra de una incidencia es una obra NORMAL de la lista que ofrece el
+    cuadrante: de la empresa de las obras, activa y que no sea una entrada
+    VAR (F-030, R19, D7). Ni `Postv-` ni VAR: no son partes «de» la persona."""
+    normales = {o.ide for o in uow.obras.listar_para_periodo(periodo_id)
+                if o.empresa == filtro.empresa_obras and o.activa}
+    for obra_ide in sorted(ides - normales):
+        raise IncidenciaInvalida(
+            f"La obra {obra_ide} no se ofrece como obra normal")
+    for obra_ide in sorted(uow.obras.entradas_var(ides)):
+        raise IncidenciaInvalida(
+            f"La obra {obra_ide} es una entrada VAR: no admite incidencias")
+
+
+def _snapshot_incidencias(incs: list[Incidencia]) -> list[dict[str, Any]]:
+    """Lo que guarda un evento `INCIDENCIAS` (R20): `id` (vacío = nueva),
+    obra, código, días y si está `quitada` (R47)."""
+    return [
+        {"id": i.id, "obra_ide": i.obra_ide, "codigo": i.codigo,
+         "dia_desde": i.dia_desde, "dia_hasta": i.dia_hasta,
+         "quitada": i.quitada}
+        for i in sorted(incs, key=lambda i: (i.dia_desde, i.dia_hasta,
+                                             i.obra_ide, i.codigo, i.quitada,
+                                             i.id or 0))
+    ]
 
 
 class CambiarPartida:
@@ -230,6 +356,10 @@ class DeshacerUltimaModificacion:
     Solo si ese evento es de `usuario` (F-027, decisión A,
     `domain/deshacer.py`): si es de otro, `DeshacerAjeno` sin tocar nada.
     Nunca se deshace un evento que no sea el último.
+
+    F-030 (R20): despacha por el tipo del evento ANTES de leer su snapshot.
+    Uno `INCIDENCIAS` devuelve las incidencias del trabajador a su
+    `snapshot_antes` y no toca las líneas; los demás, las líneas, como hoy.
     """
 
     def ejecutar(
@@ -252,10 +382,20 @@ class DeshacerUltimaModificacion:
                 "La última modificación de este trabajador es de "
                 f"{pendiente.usuario}: solo puede deshacerla quien la hizo"
             )
-        lineas = _validar_lineas(
-            uow, pendiente.snapshot_antes, permitir_inactivas=True
-        )
-        uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas, usuario)
+        if pendiente.tipo == TipoEvento.INCIDENCIAS.value:
+            # R47: cada una vuelve con su `id` (y su traza); las quitadas del
+            # snapshot no se mandan, así que la registrada que falte queda
+            # `quitada` y la no registrada se borra. Sin `id` = nueva.
+            snapshot = [_parsear_incidencia(b) for b in pendiente.snapshot_antes]
+            uow.incidencias.reemplazar(
+                periodo_id, trabajador_ide,
+                [i for i in snapshot if not i.quitada], usuario)
+        else:
+            lineas = _validar_lineas(
+                uow, pendiente.snapshot_antes, permitir_inactivas=True
+            )
+            uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas,
+                                        usuario)
         uow.eventos.marcar_deshecho(pendiente.id)
         uow.commit()
         return ObtenerFilaTrabajador().ejecutar(
@@ -505,6 +645,14 @@ class ListarPeriodos:
         return uow.periodos.listar()
 
 
+class ListarTiposIncidencia:
+    """Catálogo del desplegable de incidencias (F-030, R6): los activos, por
+    orden de letra. Sale del sync de `auxhor`; nada viene de `partes`."""
+
+    def ejecutar(self, uow: UnitOfWork) -> list[TipoIncidencia]:
+        return uow.tipos_incidencia.activos()
+
+
 class ListarEmpresas:
     """Empresas del selector (F-024 R1, F-032): las que tienen algún
     trabajador activo más la por defecto, ordenadas.
@@ -596,6 +744,7 @@ class PreviewSync:
         universo: UniversosGateway,
         empresa_obras: int,
         digitos_excluidos: int = 0,
+        sql_incidencias: str | None = None,
     ) -> None:
         self._sigrid = sigrid
         self._sql_empleados = sql_empleados
@@ -603,6 +752,9 @@ class PreviewSync:
         # Catálogo `auxemp` (F-032). Sin consulta, el preview no lo lee ni
         # publica la sección; el contenedor la pasa siempre.
         self._sql_empresas = sql_empresas
+        # Catálogo de incidencias de `auxhor` (F-030, R3), con el mismo
+        # criterio: sin consulta no se lee ni se publica la sección.
+        self._sql_incidencias = sql_incidencias
         self._categorias = categorias_incluidas or []
         self._filtro_categorias = filtro_categorias and bool(self._categorias)
         self._estados = estados_excluidos or []
@@ -627,10 +779,12 @@ class PreviewSync:
         from application.filtros_maestros import (
             depurar_empleados,
             resumir_empresas,
+            resumir_tipos_incidencia,
         )
         from application.sync_pipeline import (
             COLUMNAS_EMPLEADOS,
             COLUMNAS_EMPRESAS,
+            COLUMNAS_INCIDENCIAS,
             COLUMNAS_OBRAS,
             _validar_columnas,
             preparar_obras,
@@ -702,6 +856,12 @@ class PreviewSync:
                 "motivo_var": uvar.motivo,
             },
         }
+        if self._sql_incidencias is not None:
+            # Antes que las empresas, en el mismo orden que el sync.
+            brutas_inc = self._sigrid.leer(self._sql_incidencias)
+            _validar_columnas(brutas_inc, COLUMNAS_INCIDENCIAS,
+                              "sync.incidencias.sql")
+            salida["incidencias"] = resumir_tipos_incidencia(brutas_inc)
         if self._sql_empresas is not None:
             brutas_empresas = self._sigrid.leer(self._sql_empresas)
             _validar_columnas(brutas_empresas, COLUMNAS_EMPRESAS,

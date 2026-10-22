@@ -450,6 +450,19 @@ tr.fila-editor > td {
 .sugerencia.es-pv .cod { color: var(--pv); }
 .sugerencia .desc { color: var(--ink-soft); }
 .sugerencia.activa, .sugerencia:hover { background: var(--brand-soft); }
+/* F-030: el panel de incidencias de la celda del % (letra · nombre). */
+.sugerencia.inc .cod { min-width: 32px; }
+/* F-030 (R14, R16): la incidencia en el editor y su subfila en la tabla. */
+.chip-inc { border-style: dashed; }
+.chip-inc .inc-tipo, .chip-inc .inc { font-weight: 600; color: var(--ink-soft); }
+.chip-inc .inc-rotulo { font-size: 0.78rem; color: var(--steel-300); }
+.chip-inc .inc-dia { width: 2.4em; text-align: center; }
+tr.fila-inc td { font-style: italic; }
+/* F-030, anexo R30 (R38): la quitada del cuadrante que sigue en Sigrid. */
+.inc-quitada .inc { text-decoration: line-through; }
+.inc-quitada .quitada { margin-left: 6px; font-size: 0.78rem; color: var(--steel-300); }
+.sugerencia.vacia { cursor: default; color: var(--ink-soft); font-style: italic; }
+.sugerencia.vacia:hover { background: none; }
 
 .editor .total-vivo { margin-left: 4px; }
 .guardando { color: var(--steel-300); font-size: 0.8rem; min-width: 14px; text-align: center; }
@@ -587,3 +600,6 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
   font-size: .84rem; }
 
 .btn-sigrid-fila { color: var(--brand); font-weight: 700; }
+
+/* F-030 (R32): la sección «Incidencias» del modal de registro. */
+.tabla-inc { margin-top: 4px; }

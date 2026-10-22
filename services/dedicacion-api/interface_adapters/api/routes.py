@@ -17,8 +17,10 @@ from application.use_cases import (
     CrearObtenerPeriodo,
     DeshacerUltimaModificacion,
     GuardarAsignaciones,
+    GuardarIncidencias,
     ListarEmpresas,
     ListarPeriodos,
+    ListarTiposIncidencia,
     ObtenerCuadrante,
     ObtenerFilaTrabajador,
 )
@@ -40,12 +42,15 @@ from interface_adapters.api.schemas import (
     EmpresaOut,
     EmpresasOut,
     FilaOut,
+    IncidenciasIn,
     PartidaIn,
     PeriodoCreadoOut,
     PeriodoIn,
     PeriodoOut,
     PropuestasOut,
     SyncOut,
+    TipoIncidenciaOut,
+    TiposIncidenciaOut,
     a_completar_out,
     a_copia_periodo_out,
     a_obra_out,
@@ -163,6 +168,19 @@ def listar_empresas(contenedor: Cont) -> EmpresasOut:
     )
 
 
+# --------------------------- Incidencias ------------------------------
+@router.get("/incidencias", response_model=TiposIncidenciaOut,
+            tags=["incidencias"])
+def listar_incidencias(contenedor: Cont) -> TiposIncidenciaOut:
+    """Catálogo del desplegable de incidencias (F-030, R6): las activas por
+    orden de letra, sincronizadas de `auxhor`."""
+    with contenedor.uow() as uow:
+        tipos = ListarTiposIncidencia().ejecutar(uow)
+    return TiposIncidenciaOut(incidencias=[
+        TipoIncidenciaOut(codigo=t.codigo, letra=t.letra, nombre=t.nombre)
+        for t in tipos])
+
+
 # --------------------------- Periodos ---------------------------------
 @router.get("/periodos", tags=["periodos"])
 def listar_periodos(contenedor: Cont) -> dict[str, list[PeriodoOut]]:
@@ -255,6 +273,37 @@ def propuestas_del_mes(anio: int, mes: int,
     with contenedor.uow() as uow:
         return PropuestasOut(**contenedor.propuestas_mes.estado(uow, anio,
                                                                 mes))
+
+
+@router.put(
+    "/periodos/{anio}/{mes}/trabajadores/{trabajador_ide}/incidencias",
+    response_model=FilaOut,
+    tags=["cuadrante"],
+)
+def guardar_incidencias(
+    anio: int,
+    mes: int,
+    trabajador_ide: int,
+    payload: IncidenciasIn,
+    contenedor: Cont,
+    usuario: Usuario,
+    empresa: EmpresaQ = None,
+) -> FilaOut:
+    """F-030 (R17-R19): sustituye las incidencias del trabajador; responde
+    como el PUT de asignaciones."""
+    filtro = _filtro(contenedor, empresa)
+    with contenedor.uow() as uow:
+        fila, resumen = GuardarIncidencias().ejecutar(
+            uow, anio, mes, trabajador_ide,
+            [i.model_dump() for i in payload.incidencias], usuario,
+            filtro=filtro,
+        )
+    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
+    return FilaOut(
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes),
+        resumen=a_resumen_out(resumen),
+        propuestas_en_curso=en_curso,
+    )
 
 
 @router.put(

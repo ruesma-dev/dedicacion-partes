@@ -1,0 +1,38 @@
+{
+  "descripcion": "F-030 R30 (design §13.6): contrato entre las dos mitades del test de punta a punta. La incidencia 7 (trabajador y recurso 200, CIV, obra 0678, julio de 2026) se registró del 5 al 9: hmores.ide 9001 (CIV el 5) y 9002 (CIZ el 9) en el parte PT26/00251. Después se cambian sus días (cada caso parte de ese registro). La api (services/dedicacion-api/tests/test_f030_r30_punta_a_punta.py) tiene que mandar exactamente `peticion`; el transfer (services/dedicacion-transfer/tests/test_f030_r30_punta_a_punta.py), con esa petición y el par en Sigrid, tiene que editar en su sitio la fec de las líneas de `ediciones` y no insertar ni borrar nada.",
+  "periodo": {"ano": 2026, "mes": 7},
+  "registro": {
+    "ini": {"hmores_ide": 9001, "fecha_int": 20260705, "hora_codigo": "CIV", "parte_cod": "PT26/00251"},
+    "fin": {"hmores_ide": 9002, "fecha_int": 20260709, "hora_codigo": "CIZ", "parte_cod": "PT26/00251"}
+  },
+  "casos": [
+    {
+      "dias": [6, 9],
+      "peticion": {
+        "obra": {"ide": 678, "codigo": "0678", "nombre": "OBRA"},
+        "lineas": [],
+        "incidencias": [
+          {"id": 7, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 7, "desde": 6, "hasta": 9, "paride": 0, "hmores_ide_ini": 9001, "hmores_ide_fin": 9002, "dia_ini": 5, "dia_fin": 9}
+        ]
+      },
+      "esperado": {
+        "acciones": [["ini", "editar", 20260706, 20260705], ["fin", "ya_registrado", 20260709, null]],
+        "ediciones": [[9001, 20260706]]
+      }
+    },
+    {
+      "dias": [12, 14],
+      "peticion": {
+        "obra": {"ide": 678, "codigo": "0678", "nombre": "OBRA"},
+        "lineas": [],
+        "incidencias": [
+          {"id": 7, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 7, "desde": 12, "hasta": 14, "paride": 0, "hmores_ide_ini": 9001, "hmores_ide_fin": 9002, "dia_ini": 5, "dia_fin": 9}
+        ]
+      },
+      "esperado": {
+        "acciones": [["ini", "editar", 20260712, 20260705], ["fin", "editar", 20260714, 20260709]],
+        "ediciones": [[9001, 20260712], [9002, 20260714]]
+      }
+    }
+  ]
+}

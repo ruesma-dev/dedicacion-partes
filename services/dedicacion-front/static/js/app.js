@@ -83,6 +83,14 @@ const state = {
   ratonIde: null,
   resaltadas: [],
   edicion: [],
+  // F-030: las incidencias del editor, aparte de `edicion` (así ni
+  // `totalEdicion` ni `restanteSin` las ven: no cuentan en el 100 %, R22).
+  incidenciasEdicion: [],
+  // F-030 (R15): lo último guardado de cada lista, en JSON (cargarEdicion).
+  lineasGuardadas: "[]",
+  incidenciasGuardadas: "[]",
+  // F-030 (R6): el catálogo del desplegable, `GET /incidencias`, una vez.
+  tiposIncidencia: [],
   timerGuardado: null,
   guardadoPendiente: false,
   empresa: null,               // empresa elegida en el selector (F-024)
@@ -285,7 +293,20 @@ async function init() {
   renderCabeceraTabla();
   enlazarEventos();
   await cargarEmpresas();
+  await cargarTiposIncidencia();
   await cargarPeriodo(state.anio, state.mes);
+}
+
+// Catálogo de incidencias del desplegable de la celda del % (F-030, R6): lo
+// sirve la API, sincronizado de Sigrid. Si falla, se avisa y se queda el que
+// hubiera: la celda sigue valiendo para el % (R1).
+async function cargarTiposIncidencia() {
+  try {
+    const datos = await api("/incidencias");
+    state.tiposIncidencia = datos.incidencias;
+  } catch (err) {
+    toast("No se pudo cargar el catálogo de incidencias: " + err.message, true);
+  }
 }
 
 // Lista de empresas del selector (F-024, R3 y R4). La de la URL si la API
@@ -773,6 +794,10 @@ function trabajadoresVisibles() {
       const casa = clave === "asignaciones"
         ? t.lineas.some((l) => lineaCasa(l, filtro))
         : normalizar(textoColumna(t, clave)).includes(filtro);
+      // F-030 (R16): o alguna de sus incidencias, por su obra y su texto.
+      const casaIncidencia = clave === "asignaciones" &&
+        (t.incidencias || []).some((i) => incidenciaCasa(i, filtro));
+      if (casaIncidencia) continue;
       if (!casa) return false;
     }
     if (!q) return true;
@@ -845,10 +870,13 @@ function renderTabla() {
 function construirFila(t) {
   const frag = document.createDocumentFragment();
   const n = Math.max(1, t.lineas.length);
+  // F-030 (R16): detrás de las líneas, una subfila por incidencia.
+  const filas = n + (t.incidencias || []).length;
   const trs = [];
-  for (let idx = 0; idx < n; idx++) {
+  for (let idx = 0; idx < filas; idx++) {
     const tr = document.createElement("tr");
     tr.className = idx ? "fila subfila" : "fila";
+    if (idx >= n) tr.classList.add("fila-inc");
     tr.dataset.ide = t.ide;
     tr.dataset.linea = idx;
     if (!t.activo) tr.classList.add("inactivo");
@@ -906,6 +934,10 @@ function construirFila(t) {
       else renderTabla();
     });
     frag.appendChild(tr);
+  }
+  // F-030 (R16): las columnas del trabajador abarcan también sus incidencias.
+  if (filas > n) {
+    trs[0].querySelectorAll("td[rowspan]").forEach((td) => { td.rowSpan = filas; });
   }
   // T15e (obs. 1 de la review 5): repintado con el ratón quieto encima, sale
   // ya sombreado (el navegador no le manda `mouseenter` hasta que se mueve).
@@ -1180,7 +1212,19 @@ function construirCelda(t, clave, idx) {
     const chips = document.createElement("div");
     chips.className = "celda-chips";
     const l = t.lineas[idx];
-    if (!l) {
+    const inc = incidenciaDeSubfila(t, idx);       // F-030 (R16)
+    if (inc) {
+      const chip = document.createElement("span");
+      // Anexo R30 (R38): la quitada del cuadrante que sigue en Sigrid, tachada.
+      chip.className = "chip-linea chip-inc" + (inc.quitada ? " inc-quitada" : "");
+      chip.title = `${inc.obra_descripcion} · ${inc.nombre}` + (inc.quitada
+        ? " · quitada del cuadrante: sigue en Sigrid hasta retirarla a mano" : "");
+      chip.innerHTML =
+        `<span class="cod">${escapeHtml(inc.obra_cod)}</span>` +
+        `<span class="inc">${escapeHtml(textoIncidencia(inc))}</span>` +
+        (inc.quitada ? '<span class="quitada">quitada · sigue en Sigrid</span>' : "");
+      chips.appendChild(chip);
+    } else if (!l) {
       chips.innerHTML = '<span class="sin-carga-texto">sin carga</span>';
     } else {
       const chip = document.createElement("span");
@@ -1254,6 +1298,24 @@ function construirCelda(t, clave, idx) {
   return td;
 }
 
+// La incidencia de la subfila `idx` (F-030, R16): las subfilas de
+// incidencia van detrás de las de línea (al menos una, la de «sin carga»).
+function incidenciaDeSubfila(t, idx) {
+  const n = Math.max(1, t.lineas.length);
+  return idx >= n ? (t.incidencias || [])[idx - n] || null : null;
+}
+
+// «V del 5 al 9»: la incidencia en la tabla (F-030, R16).
+function textoIncidencia(i) {
+  return `${i.letra} del ${i.dia_desde} al ${i.dia_hasta}`;
+}
+
+// ¿La incidencia casa con el filtro de Obra? `q` llega normalizado (R16).
+function incidenciaCasa(i, q) {
+  return normalizar(`${i.obra_cod} ${i.obra_descripcion} ${textoIncidencia(i)} ` +
+    `${i.nombre}`).includes(q);
+}
+
 // Total: ✓ OK · ✗ con lo que falta o sobra hasta el 100 %.
 function badgeTotal(total, estado) {
   const span = document.createElement("span");
@@ -1291,7 +1353,7 @@ async function abrirEditor(ide) {
   const t = trabajadorPorIde(ide);
   if (!t) return;
   state.editandoIde = ide;
-  state.edicion = t.lineas.map((l) => ({ ...l }));
+  cargarEdicion(t);
   renderTabla();
   const editor = $("#cuerpo tr.fila-editor");
   if (editor) {
@@ -1306,7 +1368,29 @@ async function cerrarEditor() {
   await guardarAhora();
   state.editandoIde = null;
   state.edicion = [];
+  state.incidenciasEdicion = [];
   renderTabla();
+}
+
+// El editor parte de lo guardado del trabajador `t` (F-030): sus líneas, sus
+// incidencias y la foto de las dos que guardarAhora compara para saber qué
+// PUT hace falta (R15). Anexo R30: cada incidencia lleva su `id` (R37) y las
+// quitadas, que siguen en Sigrid, no entran en el editor (R38).
+function cargarEdicion(t) {
+  state.edicion = t.lineas.map((l) => ({ ...l }));
+  state.incidenciasEdicion = (t.incidencias || []).filter((i) => !i.quitada).map((i) => ({
+    id: i.id,
+    obra_ide: i.obra_ide,
+    cod: i.obra_cod,
+    descripcion: i.obra_descripcion,
+    codigo: i.codigo,
+    letra: i.letra,
+    nombre: i.nombre,
+    dia_desde: i.dia_desde,
+    dia_hasta: i.dia_hasta,
+  }));
+  state.lineasGuardadas = JSON.stringify(cuerpoLineas(state.edicion));
+  state.incidenciasGuardadas = JSON.stringify(cuerpoIncidencias(state.incidenciasEdicion));
 }
 
 function construirFilaEditor() {
@@ -1327,6 +1411,10 @@ function pintarEditor(editor) {
 
   state.edicion.forEach((linea, idx) => {
     editor.appendChild(chipEditable(linea, idx, editor));
+  });
+  // F-030 (R14): las incidencias, aparte y detrás.
+  state.incidenciasEdicion.forEach((inc, idx) => {
+    editor.appendChild(chipIncidencia(inc, idx, editor));
   });
 
   // --- añadir obra (normal o Postv-) ---
@@ -1399,7 +1487,80 @@ function chipEditable(linea, idx, editor) {
   pct.className = "pct-input";
   pct.inputMode = "decimal";
   pct.value = linea.porcentaje ? String(linea.porcentaje).replace(".", ",") : "";
+
+  // F-030 (R8-R13): con alguna letra la celda busca una incidencia en vez de
+  // un %; sin letras, lo de hoy (R1). `previo` es la celda antes de la
+  // primera letra: Escape o salir sin elegir la reponen, y el % de la línea
+  // no se toca mientras haya letras (R9). Estas escuchas van ANTES que las
+  // de hoy: al elegir, paran las de hoy (Enter no va al buscador de obra y
+  // el blur de la celda que se va no la rellena).
+  let previo = pct.value;
+  let desplegable = null;
+  let elegida = false;
+  const reponer = () => {
+    desplegable.cerrar();
+    desplegable = null;
+    pct.value = previo;
+  };
+  const elegirIncidencia = (tipo) => {
+    desplegable.cerrar();
+    desplegable = null;
+    elegida = true;
+    if (linea.nueva) {
+      // R13: la línea la acaba de crear el buscador de obra; se quita y el
+      // guardado diferido la borra en la API.
+      state.edicion.splice(state.edicion.indexOf(linea), 1);
+    } else {
+      pct.value = previo;
+    }
+    state.incidenciasEdicion.push({
+      obra_ide: linea.obra_ide,
+      cod: linea.cod,
+      descripcion: linea.descripcion,
+      codigo: tipo.codigo,
+      letra: tipo.letra,
+      nombre: tipo.nombre,
+      dia_desde: null,
+      dia_hasta: null,
+    });
+    pintarEditor(editor);
+    enfocarDiaIncidencia(editor, state.incidenciasEdicion.length - 1);
+    programarGuardado();
+  };
+  pct.addEventListener("keydown", (ev) => {
+    if (!desplegable) return;
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      ev.preventDefault();
+      desplegable.mover(ev.key === "ArrowDown" ? 1 : -1);
+    } else if (ev.key === "Enter" || (ev.key === "Tab" && desplegable.hayActiva())) {
+      // Sin coincidencias, Enter no hace nada (R10).
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      desplegable.elegirActiva();
+    } else if (ev.key === "Escape") {
+      ev.stopPropagation();
+      reponer();
+    }
+  });
+  pct.addEventListener("blur", (ev) => {
+    if (elegida) {
+      ev.stopImmediatePropagation();
+      return;
+    }
+    linea.nueva = false;                 // R13: el foco ha salido de su %
+    if (desplegable) reponer();
+  });
   pct.addEventListener("input", () => {
+    if (/\p{L}/u.test(pct.value)) {
+      if (!desplegable) desplegable = montarDesplegableIncidencias(pct, elegirIncidencia);
+      desplegable.refrescar(pct.value);
+      return;
+    }
+    if (desplegable) {                   // R12: se borraron las letras
+      desplegable.cerrar();
+      desplegable = null;
+    }
+    previo = pct.value;
     linea.porcentaje = parsearPct(pct.value);
     refrescarTotalVivo(editor);
     programarGuardado();
@@ -1464,6 +1625,82 @@ function chipEditable(linea, idx, editor) {
   chip.appendChild(btnX);
 
   return chip;
+}
+
+// Chip de una incidencia en el editor (F-030, R14, R15): «obra · letra
+// nombre · del [ ] al [ ] · ✕». Sin PV y fuera del total en vivo. Un día
+// vacío viaja como null y lo completa la API (1 y el último del mes: los
+// marcadores solo lo enseñan). Enter en «del» pasa a «al»; Enter en «al» y
+// Escape en cualquiera vuelven al buscador de obra.
+function chipIncidencia(inc, idx, editor) {
+  const chip = document.createElement("span");
+  chip.className = "chip-edit chip-inc";
+
+  const cod = document.createElement("span");
+  cod.className = "cod";
+  cod.textContent = inc.cod;
+  cod.title = inc.descripcion;
+  chip.appendChild(cod);
+
+  const tipo = document.createElement("span");
+  tipo.className = "inc-tipo";
+  tipo.textContent = `${inc.letra} ${inc.nombre}`;
+  chip.appendChild(tipo);
+
+  const alBuscador = () => {
+    const inputObra = editor.querySelector(".obra-input");
+    if (inputObra) inputObra.focus();
+  };
+  const ultimo = new Date(state.anio, state.mes, 0).getDate();
+  const dias = {};
+  [["desde", "del", "1"], ["hasta", "al", String(ultimo)]].forEach(([campo, rotulo, marcador]) => {
+    const etiqueta = document.createElement("span");
+    etiqueta.className = "inc-rotulo";
+    etiqueta.textContent = rotulo;
+    chip.appendChild(etiqueta);
+    const dia = document.createElement("input");
+    dia.className = "inc-dia inc-" + campo;
+    dia.inputMode = "numeric";
+    dia.maxLength = 2;
+    dia.placeholder = marcador;
+    const valor = inc["dia_" + campo];
+    dia.value = valor == null ? "" : String(valor);
+    dia.addEventListener("input", () => {
+      inc["dia_" + campo] = parsearDia(dia.value);
+      programarGuardado();
+    });
+    dia.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        if (campo === "desde") dias.hasta.focus();
+        else alBuscador();
+      } else if (ev.key === "Escape") {
+        alBuscador();
+      }
+    });
+    dias[campo] = dia;
+    chip.appendChild(dia);
+  });
+
+  const btnX = document.createElement("button");
+  btnX.className = "btn-x";
+  btnX.textContent = "✕";
+  btnX.title = "Quitar la incidencia";
+  btnX.addEventListener("click", () => {
+    state.incidenciasEdicion.splice(idx, 1);
+    pintarEditor(editor);
+    programarGuardado();
+  });
+  chip.appendChild(btnX);
+
+  return chip;
+}
+
+// Día tecleado en el chip de una incidencia: 1 o 2 cifras; si no, vacío
+// (null), que la API completa (F-030, R17).
+function parsearDia(texto) {
+  const limpio = String(texto).trim();
+  return /^\d{1,2}$/.test(limpio) ? parseInt(limpio, 10) : null;
 }
 
 // ------------------------------------------- panel de sugerencias (F-042)
@@ -1607,6 +1844,8 @@ function montarAutocompletado(input, panel, editor) {
       obra_activa: entrada.obra.activa,
       obra_admite_postventa: entrada.obra.admite_postventa,
       ofrecible: true,
+      // F-030 (R13): recién añadida hasta el primer blur de su %.
+      nueva: true,
     });
     pintarEditor(editor);
     enfocarPct(editor, state.edicion.length - 1);
@@ -1685,6 +1924,116 @@ function refrescarTotalVivo(editor) {
   const nuevo = badgeTotal(suma, estado);
   nuevo.classList.add("total-vivo");
   badge.replaceWith(nuevo);
+}
+
+// ------------------------------------- incidencias en la celda (F-030)
+// Panel de incidencias de la celda del % (F-030, R8, R10): el `.sugerencias`
+// de F-042, colgado de <body> y colocado con `colocarSugerencias`. Se
+// encadena a `desmontarSugerencias`, así que `retirarSugerencias` (repintar
+// la tabla o el editor) lo quita con el de obra: uno solo a la vez. Filtra el
+// catálogo de la API por letra y nombre normalizados; antes, las de letra
+// idéntica. `alElegir(tipo)` recibe la incidencia elegida.
+function montarDesplegableIncidencias(input, alElegir) {
+  const panel = document.createElement("div");
+  panel.className = "sugerencias incidencias";
+  let candidatas = [];
+  let activa = -1;
+  let vivo = false;
+  let anterior = null;
+  let desmontar = null;
+
+  const recolocar = (ev) => {
+    if (ev && ev.type === "scroll" && panel.contains(ev.target)) return;
+    colocarSugerencias(input, panel);
+  };
+  const quitar = () => {
+    vivo = false;
+    window.removeEventListener("scroll", recolocar, true);
+    window.removeEventListener("resize", recolocar);
+    panel.remove();
+  };
+  const montar = () => {
+    vivo = true;
+    document.body.appendChild(panel);
+    window.addEventListener("scroll", recolocar, true);
+    window.addEventListener("resize", recolocar);
+    anterior = desmontarSugerencias;
+    desmontar = () => {
+      quitar();
+      if (anterior) anterior();
+    };
+    desmontarSugerencias = desmontar;
+  };
+  const marcarActiva = () => {
+    Array.from(panel.children).forEach((el, i) => {
+      el.classList.toggle("activa", i === activa);
+      if (i !== activa) return;
+      if (el.offsetTop < panel.scrollTop) {
+        panel.scrollTop = el.offsetTop;
+      } else if (el.offsetTop + el.offsetHeight > panel.scrollTop + panel.clientHeight) {
+        panel.scrollTop = el.offsetTop + el.offsetHeight - panel.clientHeight;
+      }
+    });
+  };
+
+  const refrescar = (texto) => {
+    if (!vivo) montar();
+    const tecleado = texto.trim();
+    const q = normalizar(tecleado);
+    const casan = state.tiposIncidencia.filter(
+      (t) => normalizar(t.letra + " " + t.nombre).includes(q));
+    candidatas = [
+      ...casan.filter((t) => normalizar(t.letra) === q),
+      ...casan.filter((t) => normalizar(t.letra) !== q),
+    ];
+    activa = candidatas.length ? 0 : -1;
+    panel.innerHTML = "";
+    candidatas.forEach((t, i) => {
+      const fila = document.createElement("div");
+      fila.className = "sugerencia inc" + (i === activa ? " activa" : "");
+      fila.innerHTML =
+        `<span class="cod">${escapeHtml(t.letra)}</span>` +
+        `<span class="desc">${escapeHtml(t.nombre)}</span>`;
+      fila.addEventListener("mousedown", (ev) => {
+        ev.preventDefault();
+        alElegir(t);
+      });
+      panel.appendChild(fila);
+    });
+    if (!candidatas.length) {
+      const fila = document.createElement("div");
+      fila.className = "sugerencia vacia";
+      fila.innerHTML = `Ninguna incidencia con «${escapeHtml(tecleado)}»`;
+      panel.appendChild(fila);
+    }
+    colocarSugerencias(input, panel);
+  };
+
+  return {
+    refrescar,
+    mover(delta) {
+      if (activa < 0) return;
+      activa = Math.max(0, Math.min(activa + delta, candidatas.length - 1));
+      marcarActiva();
+    },
+    hayActiva: () => activa >= 0,
+    elegirActiva() {
+      if (activa >= 0) alElegir(candidatas[activa]);
+    },
+    cerrar() {
+      if (desmontarSugerencias === desmontar) desmontarSugerencias = anterior;
+      quitar();
+    },
+  };
+}
+
+// Foco en el «del» de la incidencia `idx` del editor (F-030, R14).
+function enfocarDiaIncidencia(editor, idx) {
+  const input = editor.querySelectorAll(".inc-desde")[idx];
+  if (input) {
+    input.focus();
+    input.select();
+  }
 }
 
 // ------------------------------------------- selector de partida (F-050)
@@ -1896,22 +2245,63 @@ function marcarGuardando(simbolo) {
   if (el) el.textContent = simbolo;
 }
 
-async function guardarAhora() {
-  clearTimeout(state.timerGuardado);
-  if (!state.guardadoPendiente || state.editandoIde === null) return;
-  const ide = state.editandoIde;
-  const lineas = state.edicion
+// Lo que se manda en el PUT de asignaciones: las líneas con %.
+function cuerpoLineas(edicion) {
+  return edicion
     .filter((l) => l.porcentaje > 0)
     .map((l) => ({
       obra_ide: l.obra_ide,
       es_postventa: l.es_postventa,
       porcentaje: l.porcentaje,
     }));
+}
+
+// Lo que se manda en el PUT de incidencias (F-030, R17). Anexo R30 (R37):
+// con su `id` la de lo guardado; sin él, la nueva.
+function cuerpoIncidencias(incidencias) {
+  return incidencias.map((i) => ({
+    ...(i.id != null ? { id: i.id } : {}),
+    obra_ide: i.obra_ide,
+    codigo: i.codigo,
+    dia_desde: i.dia_desde,
+    dia_hasta: i.dia_hasta,
+  }));
+}
+
+// F-030 (R15): un mismo diferido guarda las líneas y las incidencias. Si las
+// incidencias no cambiaron, es lo de hoy: el PUT de asignaciones, siempre.
+// Si cambiaron, su PUT; y el de asignaciones solo si las líneas también.
+// Lo que la API rechace sale en el aviso de siempre y queda pendiente.
+async function guardarAhora() {
+  clearTimeout(state.timerGuardado);
+  if (!state.guardadoPendiente || state.editandoIde === null) return;
+  const ide = state.editandoIde;
+  const lineas = cuerpoLineas(state.edicion);
+  const enviadas = state.incidenciasEdicion.slice();
+  const incidencias = cuerpoIncidencias(enviadas);
+  const cambianIncidencias = JSON.stringify(incidencias) !== state.incidenciasGuardadas;
+  const cambianLineas = !cambianIncidencias ||
+    JSON.stringify(lineas) !== state.lineasGuardadas;
+  const ruta = `/periodos/${state.anio}/${state.mes}/trabajadores/${ide}`;
   try {
-    const datos = await api(
-      `/periodos/${state.anio}/${state.mes}/trabajadores/${ide}/asignaciones`,
-      { method: "PUT", body: JSON.stringify({ lineas }) }
-    );
+    let datos = null;
+    if (cambianLineas) {
+      datos = await api(`${ruta}/asignaciones`,
+        { method: "PUT", body: JSON.stringify({ lineas }) });
+      state.lineasGuardadas = JSON.stringify(lineas);
+    }
+    if (cambianIncidencias) {
+      datos = await api(`${ruta}/incidencias`,
+        { method: "PUT", body: JSON.stringify({ incidencias }) });
+      // R37: las nuevas toman su `id` y la foto lo lleva (si no, el
+      // siguiente diferido vería un cambio que no hay). Solo si la fila
+      // trae incidencias: sin ellas no hay `id` que tomar (y los arneses
+      // del guardado de R15 no cargan `idsDeLaRespuesta` y siguen igual).
+      const guardadas = datos.trabajador.incidencias;
+      if (guardadas) idsDeLaRespuesta(enviadas, guardadas);
+      state.incidenciasGuardadas = JSON.stringify(incidencias.map((c, k) =>
+        (c.id != null || enviadas[k].id == null ? c : { id: enviadas[k].id, ...c })));
+    }
     state.guardadoPendiente = false;
     aplicarFila(datos);
     marcarGuardando("✓");
@@ -1919,6 +2309,22 @@ async function guardarAhora() {
     marcarGuardando("!");
     toast("No se pudo guardar: " + err.message, true);
   }
+}
+
+// Anexo R30 (R37): tras el PUT, cada incidencia nueva (sin `id`) toma el
+// de la respuesta con su obra y su código que aún no tenga ninguna, en orden;
+// las quitadas no cuentan. Solo lleva la identidad: qué fila es cuál lo
+// decide la api.
+function idsDeLaRespuesta(enviadas, guardadas) {
+  const usados = new Set(enviadas.map((i) => i.id).filter((id) => id != null));
+  enviadas.forEach((i) => {
+    if (i.id != null) return;
+    const g = guardadas.find((x) => !x.quitada && !usados.has(x.id) &&
+      x.obra_ide === i.obra_ide && x.codigo === i.codigo);
+    if (!g) return;
+    i.id = g.id;
+    usados.add(g.id);
+  });
 }
 
 function aplicarFila(datos) {
@@ -1958,7 +2364,7 @@ async function deshacer(ide) {
       { method: "POST" }
     );
     if (state.editandoIde === ide) {
-      state.edicion = datos.trabajador.lineas.map((l) => ({ ...l }));
+      cargarEdicion(datos.trabajador);
       state.guardadoPendiente = false;
     }
     aplicarFila(datos);
@@ -1982,7 +2388,7 @@ async function copiarTrabajador(ide) {
       return;
     }
     if (state.editandoIde === ide) {
-      state.edicion = datos.trabajador.lineas.map((l) => ({ ...l }));
+      cargarEdicion(datos.trabajador);
       state.guardadoPendiente = false;
     }
     aplicarFila(datos);
@@ -2026,7 +2432,7 @@ async function copiarDeArriba(ide) {
       { method: "PUT", body: JSON.stringify({ lineas }) }
     );
     if (state.editandoIde === ide) {
-      state.edicion = datos.trabajador.lineas.map((l) => ({ ...l }));
+      cargarEdicion(datos.trabajador);
       state.guardadoPendiente = false;
     }
     aplicarFila(datos);
@@ -2408,6 +2814,74 @@ function rotuloConflicto(c) {
     detalle: `${quien}, ${hora} ${nuevo}${enParte}: ${motivo}` };
 }
 
+// F-030 (R32): la sección «Incidencias» de cada obra del modal de registro.
+// Solo formatea lo que manda el transfer (dos líneas por incidencia: `ini`
+// con su CI* y `fin` con CIZ) con lo que el cuadrante ya sabe de ella
+// (trabajador, letra y días). No decide nada ni pide confirmación (R28).
+function datosIncidencia(id) {
+  for (const t of state.trabajadores || []) {
+    const i = (t.incidencias || []).find((x) => x.id === id);
+    if (i) return { trabajador: t.nombre, i };
+  }
+  return null;
+}
+
+function textoLineaIncidencia(a) {
+  const fec = String(a.fecha_int || "");
+  const dia = fec.length === 8 ? ` ${fec.slice(6)}/${fec.slice(4, 6)}` : "";
+  const hora = a.hora_codigo ? ` ${a.hora_codigo}` : "";
+  const parte = a.parte_cod ? ` en el parte ${a.parte_cod}` : "";
+  // Anexo R30 (R46): la que cambia de día, «se cambia del d al d».
+  const que = a.accion === "escribir" ? `se escribe${parte}`
+    : a.accion === "editar"
+      ? `se cambia del ${Number(String(a.fec_antes).slice(6))} al ` +
+        `${Number(fec.slice(6))}${parte}`
+      : a.accion === "ya_registrado" ? "ya registrada"
+        : `no se escribe: ${a.motivo || ""}`;
+  return `${a.rol === "ini" ? "inicio" : "fin"}${hora}${dia}: ${que}`;
+}
+
+function seccionIncidencias(o) {
+  const lineas = o.incidencias || [];
+  if (!lineas.length) return "";
+  const filas = [...new Set(lineas.map((a) => a.id))].map((id) => {
+    const d = datosIncidencia(id);
+    const celdas = d
+      ? [d.trabajador, d.i.obra_cod, `${d.i.letra} ${d.i.nombre}`,
+        `del ${d.i.dia_desde} al ${d.i.dia_hasta}`]
+      : [`incidencia ${id}`, "", "", ""];
+    const que = lineas.filter((a) => a.id === id).map(textoLineaIncidencia)
+      .join(" · ");
+    return `<tr>${[...celdas, que].map((c) => `<td>${escapeHtml(c)}</td>`)
+      .join("")}</tr>`;
+  }).join("");
+  return `<h4>Incidencias</h4><table class="tabla-reg tabla-inc"><thead><tr>` +
+    `<th>Trabajador</th><th>Obra</th><th>Incidencia</th><th>Días</th>` +
+    `<th>Qué se hará</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+
+// Anexo R30 (R38): las incidencias quitadas del cuadrante que siguen en
+// Sigrid, para retirarlas a mano (su parte y sus líneas). Solo formatea lo
+// que manda la api en `incidencias_quitadas`; sin ellas, nada.
+function seccionQuitadas(pf) {
+  const quitadas = pf.incidencias_quitadas || [];
+  if (!quitadas.length) return "";
+  const filas = quitadas.map((q) => {
+    const ides = [q.hmores_ide_ini, q.hmores_ide_fin].filter((x) => x != null);
+    const lineas = ides.length
+      ? `${ides.length > 1 ? "líneas" : "línea"} ${ides.join(" y ")}` : "";
+    const donde = [q.parte_cod ? `parte ${q.parte_cod}` : "", lineas]
+      .filter(Boolean).join(" · ");
+    const celdas = [q.trabajador, q.obra_cod, `${q.letra} (${q.codigo})`,
+      `del ${q.desde} al ${q.hasta}`, donde];
+    return `<tr>${celdas.map((c) => `<td>${escapeHtml(c)}</td>`).join("")}</tr>`;
+  }).join("");
+  return `<h4>Quitadas del cuadrante: siguen en Sigrid</h4>` +
+    `<table class="tabla-reg tabla-inc"><thead><tr>` +
+    `<th>Trabajador</th><th>Obra</th><th>Incidencia</th><th>Días</th>` +
+    `<th>Retirar a mano en Sigrid</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+
 function pintarModalPreflight(pf) {
   registro.lineas = {};
   let html = `<h2>Registrar en Sigrid · ${MESES[state.mes - 1]} ${state.anio}</h2>`;
@@ -2476,7 +2950,12 @@ function pintarModalPreflight(pf) {
         `<strong>${escapeHtml(r.titulo)}</strong> · ${escapeHtml(r.detalle)}` +
         `</label></div>`;
     });
+    // F-030 (R32): solo si la obra trae incidencias; sin ellas, como antes.
+    if ((o.incidencias || []).length) html += seccionIncidencias(o);
   });
+  // Anexo R30 (R38): solo si hay quitadas; sin ellas, como antes (los
+  // arneses del modal de F-049/F-050 no la cargan y siguen igual).
+  if ((pf.incidencias_quitadas || []).length) html += seccionQuitadas(pf);
   html += `<div class="pie-modal">` +
     `<button class="btn secondary" onclick="cerrarModal()">Cancelar</button>` +
     `<button class="btn primary" id="btn-ejecutar-registro">Registrar</button></div>`;

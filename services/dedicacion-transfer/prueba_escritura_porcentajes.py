@@ -33,6 +33,15 @@ Fases:
       la partida elegida de --partida), con los segundos de cada lectura,
       de cada obra y del total. No llama a escribir ni a ejecutar. Con
       --lote, todas las obras a la vez, como el preflight en lote (T18).
+  python prueba_escritura_porcentajes.py preflight|ejecutar|verificar
+      --incidencia RECURSO:COD:DESDE:HASTA [--incidencia ...]
+      F-030 (R35): con --incidencia, SOLO esas incidencias (sin las líneas
+      de ejemplo), del mes de --ano/--mes: el par CI*/CIZ que se escribiría
+      o se escribió (`can = 0`) y su relectura por synckey. `limpiar` ya
+      las borra (llevan la marca de pruebas y el prefijo de este hilo).
+      Anexo R30 (R49): con otros días, la ya escrita sale `editar` con su
+      `fec_antes` y su `hmores.ide`; `verificar` imprime el `ide` y la `fec`
+      de cada línea (los mismos dos `ide`, con la `fec` nueva).
 
 Sin --confirmar, las fases de escritura solo muestran lo que harían.
 """
@@ -48,7 +57,10 @@ from datetime import date
 from config.settings import get_settings
 from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
-from domain.models.registro_models import LineaEntrada, ObraEntrada
+from application.services.reglas_incidencias import synckey_incidencia
+from domain.models.registro_models import (
+    IncidenciaEntrada, LineaEntrada, ObraEntrada,
+)
 from infrastructure.sigrid.sigrid_write_client import (
     PREFIJO_SYNCKEY, SigridWriteClient, medir_lecturas,
 )
@@ -77,6 +89,10 @@ LINEAS_PRUEBA = [
 #: arbitrario como los de arriba (synckey 'porcentajes:9900xx').
 REGISTRO_MEDIR = 990000
 
+#: F-030 (R35): `id` de la primera incidencia de --incidencia (synckey
+#: 'porcentajes:inc:9901xx:ini|fin'), tan arbitrario como los de arriba.
+ID_INCIDENCIA_PRUEBA = 990101
+
 # La obra "original" de estas líneas de prueba: su capítulo debe existir
 # en la obra de postventa (fase capitulos para verlos).
 OBRA_ORIGEN_PRUEBA = {"codigo": "0678"}
@@ -103,6 +119,34 @@ def _lineas(ano: int, mes: int) -> list[LineaEntrada]:
 
 def _obra_origen() -> ObraEntrada:
     return ObraEntrada(**OBRA_ORIGEN_PRUEBA)
+
+
+def _incidencias(parser, valores: list[str], ano: int,
+                 mes: int) -> list[IncidenciaEntrada]:
+    """`--incidencia RECURSO:COD:DESDE:HASTA` -> incidencias del mes, con
+    `id` correlativo desde `ID_INCIDENCIA_PRUEBA`."""
+    out: list[IncidenciaEntrada] = []
+    for n, v in enumerate(valores):
+        trozos = v.split(":")
+        if (len(trozos) != 4 or not trozos[1].strip()
+                or not all(t.isdigit() for t in (trozos[0], *trozos[2:]))):
+            parser.error(f"--incidencia {v}: se espera "
+                         f"RECURSO:COD:DESDE:HASTA (números salvo COD)")
+        recurso, cod, desde, hasta = trozos
+        out.append(IncidenciaEntrada(
+            id=ID_INCIDENCIA_PRUEBA + n, recurso_ide=int(recurso),
+            empresa=EMPRESA_PRUEBA, codigo=cod.strip().upper(), ano=ano,
+            mes=mes, desde=int(desde), hasta=int(hasta)))
+    return out
+
+
+def _peticion(ano: int, mes: int, incidencias: list) -> dict:
+    """Lo que se manda al pipeline: las líneas de ejemplo o, con
+    --incidencia, solo las incidencias (F-030)."""
+    if incidencias:
+        return {"obra": _obra_origen(), "lineas": [],
+                "incidencias": incidencias}
+    return {"obra": _obra_origen(), "lineas": _lineas(ano, mes)}
 
 
 def fase_inspeccionar(cli: SigridWriteClient) -> None:
@@ -159,9 +203,9 @@ def fase_estado(cli: SigridWriteClient, st, ano: int, mes: int) -> None:
                                    default=str))
 
 
-def fase_preflight(pipeline: RegistroPipeline, st, ano: int, mes: int):
-    pf = pipeline.preflight(
-        obra=_obra_origen(), lineas=_lineas(ano, mes))
+def fase_preflight(pipeline: RegistroPipeline, st, ano: int, mes: int,
+                   incidencias: list | None = None):
+    pf = pipeline.preflight(**_peticion(ano, mes, incidencias or []))
     print(f"Obra destino: {pf.obra_destino.codigo} "
           f"(pruebas={pf.forzada_pruebas})")
     for p in pf.partes:
@@ -184,12 +228,23 @@ def fase_preflight(pipeline: RegistroPipeline, st, ano: int, mes: int):
               f"{len(c.lineas)} existentes -> nuevas {c.nueva_can}")
         if c.motivo == "pisado":
             print(f"      edita={c.edita_ide} a_cero={c.a_cero_ides}")
+    for a in pf.incidencias:
+        print(f"  [{a.accion:13s}] inc={a.id} {a.rol} {a.hora_codigo} "
+              f"fec={a.fecha_int} parte={a.parte_cod} paride={a.paride} "
+              f"pre={a.pre} motivo={a.motivo}{_fec_antes(a)} "
+              f"hmores.ide={a.hmores_ide}")
     return pf
 
 
+def _fec_antes(a) -> str:
+    """Anexo R30 (R46, R49): la `fec` que tiene la línea que se edita."""
+    return f" fec_antes={a.fec_antes}" if a.accion == "editar" else ""
+
+
 def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
-                  confirmar: bool, pisar: list[str]) -> None:
-    pf = fase_preflight(pipeline, st, ano, mes)
+                  confirmar: bool, pisar: list[str],
+                  incidencias: list | None = None) -> None:
+    fase_preflight(pipeline, st, ano, mes, incidencias)
     if not confirmar:
         print("\nDRY-RUN: añade --confirmar para escribir de verdad.")
         return
@@ -197,7 +252,7 @@ def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
         print("ATENCIÓN: OBRA_PRUEBAS_FORZAR=false (¡producción!). Aborta "
               "si no era la intención.")
     r = pipeline.ejecutar(
-        obra=_obra_origen(), lineas=_lineas(ano, mes),
+        **_peticion(ano, mes, incidencias or []),
         pisar_claves=set(pisar), usuario="prueba_escritura_porcentajes")
     print(f"escritas={len(r.escritas)} editadas={len(r.editadas)} "
           f"a_cero={len(r.a_cero)} borradas={r.borradas} "
@@ -214,10 +269,20 @@ def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
         print(f"  OMITIDA reg={o['registro_id']}: {o['motivo']}")
     for c in r.pendientes_confirmacion:
         print(f"  PENDIENTE {c.clave}: relanza con --pisar {c.clave}")
+    for a in r.incidencias:
+        print(f"  INCIDENCIA inc={a.id} {a.rol} {a.accion} "
+              f"hmores.ide={a.hmores_ide} parte={a.parte_cod} "
+              f"fec={a.fecha_int}{_fec_antes(a)} motivo={a.motivo}")
 
 
-def fase_verificar(cli: SigridWriteClient) -> None:
+def fase_verificar(cli: SigridWriteClient,
+                   incidencias: list | None = None) -> None:
+    """Relee por synckey las líneas de ejemplo y las de incidencia de este
+    script (F-030: tantas como --incidencia; sin ninguna, la primera)."""
+    ids = range(ID_INCIDENCIA_PRUEBA,
+                ID_INCIDENCIA_PRUEBA + max(len(incidencias or []), 1))
     claves = [f"{PREFIJO_SYNCKEY}{d['registro_id']}" for d in LINEAS_PRUEBA]
+    claves += [synckey_incidencia(i, rol) for i in ids for rol in ("ini", "fin")]
     mapa = cli.lineas_por_synckey(claves)
     if not mapa:
         print("No hay líneas nuestras (synckey) en Sigrid.")
@@ -396,6 +461,8 @@ def main() -> None:
     parser.add_argument("--nombre")
     parser.add_argument("--partida", action="append", default=[])
     parser.add_argument("--lote", action="store_true")
+    # F-030 (R35): RECURSO:COD:DESDE:HASTA, repetible.
+    parser.add_argument("--incidencia", action="append", default=[])
     args = parser.parse_args()
     if args.fase == "propuesta" and (len(args.obra) != 1
                                      or len(args.recurso) != 1):
@@ -403,6 +470,7 @@ def main() -> None:
     if args.fase == "medir" and (not args.obra or not args.recurso):
         parser.error("la fase medir exige --obra y --recurso")
     partidas = _partidas_por_obra(parser, args.partida, args.obra)
+    incidencias = _incidencias(parser, args.incidencia, args.ano, args.mes)
 
     st = get_settings()
     cli = _cliente(st)
@@ -415,12 +483,12 @@ def main() -> None:
     elif args.fase == "estado":
         fase_estado(cli, st, args.ano, args.mes)
     elif args.fase == "preflight":
-        fase_preflight(pipeline, st, args.ano, args.mes)
+        fase_preflight(pipeline, st, args.ano, args.mes, incidencias)
     elif args.fase == "ejecutar":
         fase_ejecutar(pipeline, st, args.ano, args.mes, args.confirmar,
-                      args.pisar)
+                      args.pisar, incidencias)
     elif args.fase == "verificar":
-        fase_verificar(cli)
+        fase_verificar(cli, incidencias)
     elif args.fase == "limpiar":
         fase_limpiar(cli, st, args.confirmar)
     elif args.fase == "propuesta":

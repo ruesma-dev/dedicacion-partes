@@ -38,9 +38,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from domain.empresas import empresa_de_baja
+from domain.incidencias import letra_y_nombre
 from domain.models import ResultadoUniversoVar
 from domain.normalizacion import entero_o_none as _entero
-from domain.normalizacion import normalizar
+from domain.normalizacion import normalizar, texto_o_none
 from domain.obras import codigo_entrada, ide_entrada, tiene_digitos_seguidos
 
 
@@ -295,4 +296,28 @@ def resumir_empresas(filas: list[dict[str, Any]]) -> dict[str, Any]:
         "sin_numero": sin_numero,
         "de_baja": sorted(de_baja),
         "nombres": nombres,
+    }
+
+
+def resumir_tipos_incidencia(filas: list[dict[str, Any]]) -> dict[str, Any]:
+    """Lo que el preview enseña del catálogo de incidencias de `auxhor`
+    (F-030, R3): cuántas se leen, cuántas quedarían activas, los códigos con
+    fecha de baja y, por código, «letra · nombre» tal como los guardará el
+    sync (`letra_y_nombre`). Las filas sin `ide` o sin código no cuentan
+    como activas ni salen en `letras`, igual que el sync no las guarda."""
+    letras: dict[str, str] = {}
+    de_baja: list[str] = []
+    for fila in filas:
+        codigo = texto_o_none(fila.get("cod"))
+        if codigo is None or _entero(fila.get("ide")) is None:
+            continue
+        letra, nombre = letra_y_nombre(fila.get("res"), codigo)
+        letras[codigo] = f"{letra} · {nombre}"
+        if _entero(fila.get("fecbaj")):
+            de_baja.append(codigo)
+    return {
+        "leidas": len(filas),
+        "activas": len(letras) - len(de_baja),
+        "de_baja": de_baja,
+        "letras": letras,
     }

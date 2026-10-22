@@ -12,10 +12,12 @@ from domain.models import (
     CuadranteTrabajador,
     Empresa,
     EventoPendiente,
+    Incidencia,
     Linea,
     Obra,
     Periodo,
     ResultadoSyncMaestro,
+    TipoIncidencia,
     ResultadoUniverso,
     ResultadoUniversoVar,
     TipoEvento,
@@ -85,6 +87,10 @@ class ObraRepository(Protocol):
         """(activa, admite_postventa) de cada obra de `ides` (F-025, R20)."""
         ...
 
+    def entradas_var(self, ides: set[int]) -> set[int]:
+        """Las de `ides` que son entradas VAR (F-030, D7)."""
+        ...
+
 
 class EmpresaRepository(Protocol):
     """Catálogo de empresas copiado de Sigrid (`auxemp`, F-032)."""
@@ -95,6 +101,19 @@ class EmpresaRepository(Protocol):
 
     def listar(self) -> list[Empresa]:
         """Todas las empresas de la tabla, por número."""
+        ...
+
+
+class TipoIncidenciaRepository(Protocol):
+    """Catálogo de incidencias copiado de `auxhor` (F-030, R3-R6)."""
+
+    def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro:
+        """Upsert por `ide`; la que no llega o tiene baja, `activa = false`
+        (nunca se borra)."""
+        ...
+
+    def activos(self) -> list[TipoIncidencia]:
+        """Los activos, por orden de letra."""
         ...
 
 
@@ -146,6 +165,22 @@ class AsignacionRepository(Protocol):
         ...
 
 
+class IncidenciaRepository(Protocol):
+    """Incidencias de los trabajadores por periodo (F-030, R17, R21)."""
+
+    def de_periodo(self, periodo_id: int) -> dict[int, list[Incidencia]]:
+        """trabajador → sus incidencias, con obra, letra y nombre."""
+        ...
+
+    def de_trabajador(self, periodo_id: int,
+                      trabajador_ide: int) -> list[Incidencia]: ...
+
+    def reemplazar(self, periodo_id: int, trabajador_ide: int,
+                   incidencias: list[Incidencia], usuario: str) -> None:
+        """Sustituye en bloque las del trabajador (transaccional)."""
+        ...
+
+
 class EventoRepository(Protocol):
     def registrar(
         self,
@@ -177,8 +212,10 @@ class UnitOfWork(Protocol):
     trabajadores: TrabajadorRepository
     obras: ObraRepository
     empresas: EmpresaRepository
+    tipos_incidencia: TipoIncidenciaRepository  # F-030
     periodos: PeriodoRepository
     asignaciones: AsignacionRepository
+    incidencias: IncidenciaRepository  # F-030
     eventos: EventoRepository
 
     def __enter__(self) -> "UnitOfWork": ...

@@ -35,7 +35,9 @@ from application.services.reglas_porcentajes import (
 from application.services.universo_postventa import UniversoPostventa
 from application.services.universo_var import UniversoVar
 from domain.errores import EmpresasMezcladas
-from domain.models.registro_models import LineaEntrada, ObraEntrada
+from domain.models.registro_models import (
+    IncidenciaEntrada, LineaEntrada, ObraEntrada,
+)
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
 
 logger = logging.getLogger(__name__)
@@ -82,9 +84,31 @@ class LineaIn(BaseModel):
     hmores_ide: Optional[int] = None
 
 
+class IncidenciaIn(BaseModel):
+    """F-030 (R23): una incidencia de la obra. Todo lo que puede faltar es
+    opcional A PROPÓSITO, como en `LineaIn`: llega al pipeline y se omite
+    con motivo, no muere en un 422."""
+    id: int
+    recurso_ide: int | None = None
+    empresa: int | None = None
+    codigo: str
+    ano: int
+    mes: int
+    desde: int | None = None
+    hasta: int | None = None
+    paride: int | None = 0
+    # Anexo R30 (R39): la traza de la api de una ya registrada.
+    hmores_ide_ini: int | None = None
+    hmores_ide_fin: int | None = None
+    dia_ini: int | None = None
+    dia_fin: int | None = None
+
+
 class PeticionIn(BaseModel):
     obra: ObraIn
     lineas: list[LineaIn] = Field(default_factory=list)
+    # F-030 (R23): por defecto vacía; sin ellas, la petición de siempre.
+    incidencias: list[IncidenciaIn] = Field(default_factory=list)
     pisar_claves: list[str] = Field(default_factory=list)
     usuario: Optional[str] = None
 
@@ -149,11 +173,28 @@ def _empresas_mezcladas(exc: EmpresasMezcladas) -> JSONResponse:
                         content={"ok": False, "error": str(exc)})
 
 
+#: F-030 (R31, design §6): lo que se publica de cada línea de incidencia.
+CLAVES_INCIDENCIA = ("id", "rol", "accion", "fecha_int", "hora_codigo",
+                     "paride", "parte_cod", "hmores_ide", "motivo")
+
+
+def _con_incidencias(respuesta: dict, incidencias: list) -> dict:
+    """F-030 (R31): `incidencias` solo si la petición las traía; sin
+    ellas, la respuesta es la de siempre. Anexo R30 (R46): una `editar`
+    publica además `fec_antes`; las demás, las claves de siempre."""
+    if incidencias:
+        respuesta["incidencias"] = [
+            {**{k: getattr(a, k) for k in CLAVES_INCIDENCIA},
+             **({"fec_antes": a.fec_antes} if a.accion == "editar" else {})}
+            for a in incidencias]
+    return respuesta
+
+
 def _respuesta_preflight(pf) -> dict:
     """La respuesta de `POST /api/registro/preflight` (y de cada obra de
     `POST /api/registro/preflight-lote`) para un `Preflight`."""
     obra_pv = getattr(pf, "obra_postventa", None)
-    return {
+    return _con_incidencias({
         "ok": True,
         "obra_destino": asdict(pf.obra_destino),
         "obra_postventa": asdict(obra_pv) if obra_pv else None,
@@ -168,7 +209,7 @@ def _respuesta_preflight(pf) -> dict:
         "resumen": {"escribir": pf.n_escribir, "omitir": pf.n_omitir,
                     "ya_registrado": pf.n_ya,
                     "conflictos": len(pf.conflictos)},
-    }
+    }, pf.incidencias)
 
 
 def build_app(settings) -> FastAPI:
@@ -188,11 +229,19 @@ def build_app(settings) -> FastAPI:
     universo = UniversoPostventa(cliente=cliente, settings=settings)
     universo_var = UniversoVar(cliente=cliente, settings=settings)
 
-    def _dominio(p: PeticionIn):
+    def _dominio(p: PeticionIn) -> tuple:
+        """`(obra, lineas)` y, si las trae, sus incidencias (F-030)."""
         obra = ObraEntrada(ide=p.obra.ide, codigo=p.obra.codigo,
                            nombre=p.obra.nombre)
         lineas = [LineaEntrada(**l.model_dump()) for l in p.lineas]
-        return obra, lineas
+        if not p.incidencias:
+            return obra, lineas
+        return obra, lineas, [IncidenciaEntrada(**x.model_dump())
+                              for x in p.incidencias]
+
+    def _kw_incidencias(resto: list) -> dict:
+        """Sin incidencias, la llamada de siempre (R2)."""
+        return {"incidencias": resto[0]} if resto else {}
 
     @app.get("/health")
     async def health() -> dict[str, Any]:
@@ -208,8 +257,9 @@ def build_app(settings) -> FastAPI:
     @app.post("/api/registro/preflight")
     async def preflight(p: PeticionIn):
         try:
-            obra, lineas = _dominio(p)
-            pf = pipeline.preflight(obra=obra, lineas=lineas)
+            obra, lineas, *resto = _dominio(p)
+            pf = pipeline.preflight(obra=obra, lineas=lineas,
+                                    **_kw_incidencias(resto))
             return _respuesta_preflight(pf)
         except EmpresasMezcladas as exc:
             return _empresas_mezcladas(exc)
@@ -243,11 +293,12 @@ def build_app(settings) -> FastAPI:
     @app.post("/api/registro/ejecutar")
     async def ejecutar(p: PeticionIn):
         try:
-            obra, lineas = _dominio(p)
+            obra, lineas, *resto = _dominio(p)
             r = pipeline.ejecutar(obra=obra, lineas=lineas,
                                   pisar_claves=set(p.pisar_claves),
-                                  usuario=p.usuario)
-            return {
+                                  usuario=p.usuario,
+                                  **_kw_incidencias(resto))
+            return _con_incidencias({
                 "ok": r.ok,
                 "obra_destino": asdict(r.obra_destino),
                 "forzada_pruebas": r.forzada_pruebas,
@@ -266,7 +317,7 @@ def build_app(settings) -> FastAPI:
                 "pendientes_confirmacion": [asdict(c) for c in
                                             r.pendientes_confirmacion],
                 "error": r.error,
-            }
+            }, r.incidencias)
         except EmpresasMezcladas as exc:
             return _empresas_mezcladas(exc)
         except Exception as exc:                # noqa: BLE001

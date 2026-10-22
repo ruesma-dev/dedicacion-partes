@@ -58,8 +58,8 @@ from application.services.cuenta_analitica import indexar_cuentas
 from application.services.propuesta_partida import LineaHistorial
 from domain.errores import ObraAmbigua
 from domain.models.registro_models import (
-    HoraRecurso, LineaSigrid, ObraEntrada, ParteDestino, ParteSigrid,
-    PartidaCuenta, PartidaValida,
+    HoraRecurso, LineaIncidenciaSigrid, LineaSigrid, ObraEntrada,
+    ParteDestino, ParteSigrid, PartidaCuenta, PartidaValida,
 )
 
 logger = logging.getLogger(__name__)
@@ -660,6 +660,70 @@ class SigridWriteClient:
                 out[sk] = ls
         return out
 
+    def incidencias_del_mes(
+        self, resides: Iterable[int | None], ano: int, mes: int,
+        hmoides: Iterable[int | None] | None = None,
+        ides: Iterable[int | None] = (),
+    ) -> list[LineaIncidenciaSigrid]:
+        """F-030 (R27, R33): las líneas de incidencia (`CI*`, también
+        `CIZ`) de esos recursos con `fec` en el mes, en CUALQUIER parte, con
+        el código del parte. Con `hmoides` (modo pruebas), solo en esos
+        partes; una lista sin partes no lee. En trozos de `LOTE_PARAMETROS`
+        recursos; un fallo o un `truncated` sube como excepción.
+
+        Anexo R30 (R40, design §13.5): también las líneas `ides` (las de la
+        traza de la api), estén donde estén y tengan el código que tengan,
+        en la MISMA lectura (`OR h.ide IN`, con el filtro de partes de
+        pruebas a todo), y de cada una su `can`, su parte y el estado del
+        parte. Sin `ides`, el `WHERE` de siempre. Cada línea, una vez."""
+        recursos = sorted({int(i) for i in resides if i})
+        lineas = sorted({int(i) for i in ides if i})
+        partes = (None if hmoides is None
+                  else sorted({int(h) for h in hmoides if h}))
+        if not (recursos or lineas) or partes == []:
+            return []
+        ultimo = calendar.monthrange(int(ano), int(mes))[1]
+        base = int(ano) * 10000 + int(mes) * 100
+        filtro = ""
+        extra: list = []
+        if partes is not None:
+            filtro = f" AND h.hmoide IN ({','.join('?' for _ in partes)})"
+            extra = partes
+        out: dict[int, LineaIncidenciaSigrid] = {}
+        pedidas = [("r", r) for r in recursos] + [("i", i) for i in lineas]
+        for trozo in _trozos(pedidas):
+            t_r = [v for t, v in trozo if t == "r"]
+            t_i = [v for t, v in trozo if t == "i"]
+            conds, params = [], []
+            if t_r:
+                conds.append(f"h.reside IN ({','.join('?' for _ in t_r)}) "
+                             "AND h.fec BETWEEN ? AND ? AND a.cod LIKE ?")
+                params += t_r + [base + 1, base + ultimo, "CI%"]
+            if t_i:
+                conds.append(f"h.ide IN ({','.join('?' for _ in t_i)})")
+                params += t_i
+            donde = (conds[0] if not t_i else f"({' OR '.join(conds)})")
+            filas = self._lectura(
+                "incidencias_del_mes",
+                "SELECT h.ide AS ide, h.reside AS reside, h.fec AS fec, "
+                "a.cod AS cod, h.synckey AS synckey, c.cod AS parte, "
+                "h.can AS can, h.hmoide AS hmoide, c.est AS est "
+                "FROM hmores h JOIN auxhor a ON a.ide = h.horide "
+                "JOIN hmo m ON m.ide = h.hmoide JOIN con c ON c.ide = m.ide "
+                f"WHERE {donde}{filtro} ORDER BY h.ide",
+                params + extra)
+            for f in filas:
+                out.setdefault(int(f["ide"]), LineaIncidenciaSigrid(
+                    ide=int(f["ide"]), reside=int(f["reside"]),
+                    fecha_int=int(f["fec"]),
+                    hora_codigo=(f["cod"] or "").strip() or None,
+                    synckey=(f["synckey"] or "").strip() or None,
+                    parte_cod=(f["parte"] or "").strip() or None,
+                    can=None if f["can"] is None else float(f["can"]),
+                    hmoide=None if f["hmoide"] is None else int(f["hmoide"]),
+                    parte_est=None if f["est"] is None else int(f["est"])))
+        return list(out.values())
+
     def lineas_registradas(
         self, claves: Iterable[str], ides: Iterable[int | None]
     ) -> tuple[dict[str, LineaSigrid], dict[int, LineaSigrid]]:
@@ -833,22 +897,45 @@ class SigridWriteClient:
         return out
 
     def _guarda(self, ide: int, reside: int, can_leido: float | None,
-                synckey_leida: str | None) -> tuple[str, list]:
+                synckey_leida: str | None,
+                hora: str | None = None) -> tuple[str, list]:
         """F-051 (R11): solo cambia la fila si sigue siendo del recurso,
         `M*`, con el `can` y la `synckey` leídos, sin enlaces y en un parte
-        En registro. SQL Server la evalúa sobre la fila ANTES del cambio."""
+        En registro. SQL Server la evalúa sobre la fila ANTES del cambio.
+
+        Anexo R30 (R41): con `hora`, en vez de `M*` la línea tiene que
+        seguir teniendo ESE código (una incidencia, `CI*`/`CIZ`). Sin ella,
+        el texto de F-051 sin cambiar ni un carácter."""
         sin_enlaces = " ".join(f"AND ISNULL({c}, 0) = 0" for c in _ENLACES)
+        codigo = "a.cod LIKE 'M%'" if hora is None else "a.cod = ?"
         return (
             ("WHERE ide = ? AND reside = ? "
             "AND ABS(ISNULL(can, 0) - ?) < 0.000001 "
             "AND LTRIM(RTRIM(ISNULL(synckey, ''))) = ? "
             f"{sin_enlaces} "
             "AND EXISTS (SELECT 1 FROM auxhor a WHERE a.ide = hmores.horide "
-            "AND a.cod LIKE 'M%') "
+            f"AND {codigo}) "
             "AND EXISTS (SELECT 1 FROM con c WHERE c.ide = hmores.hmoide "
             "AND c.est = ?)"),
             [int(ide), int(reside), float(can_leido or 0.0),
-             (synckey_leida or "").strip(), self._est])
+             (synckey_leida or "").strip()]
+            + ([] if hora is None else [hora.strip()]) + [self._est])
+
+    def stmt_editar_fecha_incidencia(
+        self, *, ide: int, reside: int, hora_codigo: str,
+        synckey_leida: str | None, fecha_int: int, fec_leida: int,
+    ) -> dict:
+        """Anexo R30 (R41, design §13.5): cambia SOLO la `fec` de una línea
+        de incidencia nuestra, en su sitio (ni hora, `pre`, `can`, partida,
+        cuenta, `synckey`, `tex`, `pos` ni parte), con la guarda de F-051 y
+        su código: mismo `ide` y recurso, `can` 0, la `synckey` leída, sin
+        enlaces y en un parte En registro. D16 (design §11): y en la `fec`
+        leída, `fec_leida`; si alguien la movió tras leer, no se pisa. Va
+        al final, fuera de `_guarda`: el texto de F-051 no cambia."""
+        guarda, params = self._guarda(ide, reside, 0.0, synckey_leida,
+                                      hora_codigo)
+        return {"sql": f"UPDATE hmores SET fec = ? {guarda} AND fec = ?",
+                "parameters": [int(fecha_int)] + params + [int(fec_leida)]}
 
     def stmt_editar_linea(
         self, *, ide: int, reside: int, can_leido: float | None,
