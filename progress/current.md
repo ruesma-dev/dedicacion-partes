@@ -10,7 +10,12 @@ principal (del líder, no versionadas). Spec aprobada el 2026-10-20 (D1-D10).
 T1-T19 y T21 hechas; review 1 **RECHAZADO** por R30; el humano eligió la
 opción **C** y **aprobó el anexo R30 el 2026-10-21** («si»: D11 = B, D12-D15
 = A, todas la recomendada). **Anexo T22-T37 implementado (2026-10-22);
-review pasada 2 lanzada el 2026-10-22.** Informe `progress/impl_F-030.md`.
+review pasada 2 RECHAZADO solo por papeleo**
+(`progress/review_F-030.md`: obs. 1 resuelta de punta a punta; el cambio 1,
+`current.md`, ya hecho por el líder). El humano decidió **D16 = A** (la
+guarda exige también `fec = fec_antes`, 2026-10-22, «a»). **Implementer
+lanzado el 2026-10-22 para T38** (R48 con su test, D16, obs. 3, 4 y 6,
+campaña nueva). Informe `progress/impl_F-030.md`.
 T20: primera mitad hecha por el líder en la 0404 (`progress/manual_F-030.md`);
 la segunda (cambio de días, comando exacto abajo) la ejecuta el líder con
 autorización expresa del humano. Ningún agente escribe en Sigrid por su
