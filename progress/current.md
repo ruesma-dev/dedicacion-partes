@@ -1,10 +1,11 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**BLOQUEADA: F-061** (búsqueda predictiva en el desplegable de incidencias;
-`sdd: false`, rigor estándar), `blocked` desde el 2026-10-22 (implementer,
-antes de escribir código; motivo y opciones en «F-061 · BLOQUEADA» justo
-debajo), rama
+**En curso: F-061** (búsqueda predictiva en el desplegable de incidencias;
+`sdd: false`, rigor estándar), `in_progress` desde el 2026-10-22; bloqueada
+por el implementer antes de escribir código y **desbloqueada por el humano
+el 2026-10-22** («yes» a las dos recomendadas; ver «F-061 · bloqueo
+RESUELTO» justo debajo); **implementer retomado**; rama
 `feature/F-061-busqueda-predictiva-incidencias` en la copia principal.
 Pedida por el humano tras desplegar F-030 (`baj` no encontraba B: su nombre
 en Sigrid es «Enfermedad/Acc. no laboral(B)»); propuesta aprobada («me
@@ -15,7 +16,15 @@ en `features.json`. **Implementer lanzado el 2026-10-22.** Api y front; ni
 transfer ni Sigrid. Al desplegar (api → front): `azure-apps/dedicacion.md`
 (campos nuevos de `GET /incidencias`).
 
-## F-061 · BLOQUEADA (2026-10-22, implementer)
+## F-061 · bloqueo RESUELTO (2026-10-22, implementer; decisión del humano)
+
+**Resuelto por el humano el 2026-10-22** («yes»): punto 1, opción **(a)**
+(cambio mínimo de la aserción de `test_f030_r6_…`: solo `"palabras"`);
+punto 2, opción **(b)** (empate por el orden de las entradas de
+`config.yaml`, escritas B, AT, M, FJ, F, V, H), con las dos aclaraciones
+(código y letra que empieza, tras «letra exacta»; errata con OSA). Constan
+en el `description` de F-061 (`features.json`). Lo de abajo es el motivo y
+las opciones, tal como se plantearon.
 
 Dos puntos que la propuesta aprobada no resuelve. No se ha escrito código;
 solo cambian `features.json` (`blocked`) y este fichero.
