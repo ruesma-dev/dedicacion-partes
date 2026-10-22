@@ -1,140 +1,134 @@
-Revisión completa (pasada 1) · `git diff dev...HEAD`, HEAD `32d764a`, base `20a8e06`
+Revisión incremental desde 8d9eca8 (pasada 2) · `git diff 8d9eca8..HEAD`, HEAD `0e80f92`
 <!-- progress/review_F-030.md -->
-# F-030 · Review (pasada 1)
+# F-030 · Review (pasada 2)
 
-**Veredicto: RECHAZADO (CHANGES_REQUESTED).** Hay un defecto que llega a Sigrid
-(obs. 1: R30 no se cumple de punta a punta). El resto está bien hecho y
-verificado; tras corregir la obs. 1, la pasada 2 es incremental.
+**Veredicto: RECHAZADO (CHANGES_REQUESTED), solo por papeleo.** La obs. 1
+queda resuelta de punta a punta y el código del anexo está bien. Fallan dos
+casillas: C2 (`current.md` da por no probado lo que T20 ya probó y calla
+lo que deja sin probar la segunda mitad) y C4 (R48, sin test con su nombre).
+Ningún arreglo toca producción: la 5.ª campaña sigue valiendo (RM1).
 
-**Rigor:** `critico`, declarado en `features.json`. Exige fase RED, cobertura,
-mutación con 0 supervivientes y MANUAL con su comando exacto y su resultado real.
+**Rigor:** `critico`, declarado. Exige RED, cobertura, mutación con 0
+supervivientes y MANUAL con su comando exacto y su resultado real.
 
 ## Lo que se ha ejecutado
 
-- `bash harness/init.sh` tal cual, con `.arnes_cache/suite_*.ok` borrados:
-  **ENTORNO LISTO**, ningún `[KO]`. Raíz 418 (+1 skipped), api 1083, front 350
-  (node `passed`), transfer 1168. COBERTURA `[OK]` 99,5 % (634/637). TAMAÑO
-  `[OK]`. Ruff: 293 `[AVISO]` frente a 277 en `dev` (obs. 4).
-- **Mutación, recálculo puro** (`harness.alcance` + `generar_mutantes`): 23
-  ficheros, **1487 líneas y 250 mutantes**, igual que el informe.
-  - Campaña **no reejecutada**: 1888,2 s según el informe (> 60 s). Coste por
-    mutante 7,55 s (× 1 worker).
-  - RM2: media 7,6 s > 1/10 de las bases (33,5 y 24,9 s); 250 × 7,6 ≈ 1888.
-  - RM1: SHA medido `8b17e85`; después solo cambian `progress/` y `tasks.md`.
-  - Ni «⚠ CAMPAÑA NO VÁLIDA» ni base rota. RM3: ninguno de los 250 es
-    equivalente. RM5: N/A (no hay equivalentes). RM6: ninguna guarda quitada.
-- **RM4**, en una copia del scratchpad: `orm_models.py:253`
-  `String(300)→String(301)` da 2 failed y `registro_pipeline.py:1099` `+=→-=`
-  da 1 failed. Los muertos son reales.
-- **Fusión de F-051** (`46cf116`): lo que se quita es refactor de F-030; los
-  `test_f051_*` pasan. **Lista cerrada**: solo dobles con la marca, más la
-  aserción autorizada de `test_f013_r3`.
+- **`bash harness/init.sh`** tal cual, con las cachés `suite_*.ok`
+  borradas: **ENTORNO LISTO**, 0 `[KO]`.
+  - Suites: raíz 418 (+1 skipped), api 1125, front 359, transfer 1224.
+  - COBERTURA 99,9 % (831/832) y TAMAÑO, los dos `[OK]`.
+  - Ruff, 277 como `dev`: en los 6 ficheros de producción que más toca el
+    anexo, ningún aviso nuevo.
+- **Mutación, recálculo puro** (`alcance_de_feature` + `generar_mutantes`
+  sobre HEAD): 23 ficheros, 1997 líneas y **405 mutantes**, como el informe.
+  El timeout (`reglas_incidencias.py:247`) y los de la 4.ª campaña (`:149`,
+  `:171`, `:274`) existen tal cual.
+  - No reejecutada: 1626,6 s según el informe (> 60 s).
+  - RM1: se midió en `b614b91`; lo posterior solo toca `progress/` y
+    `tasks.md`.
+  - RM2: media de 4,0 s con bases de 13,8 y 9,2 s, y 405 × 4,0 ≈ 1620 s:
+    coherente.
+  - Sin «CAMPAÑA NO VÁLIDA» ni base rota. RM3: en mi muestra (cliente,
+    lote, traza, dominio), ningún equivalente.
+  - RM5: N/A. RM6: `b614b91` solo añade tests.
+- **RM4**, en una copia del scratchpad, cuatro mutantes aplicados y
+  revertidos, todos muertos: `sigrid_write_client.py:910` (1 failed),
+  `reglas_incidencias.py:171` (1), `lecturas_lote.py:524` (6) y api
+  `incidencias.py:106` (7). El árbol de trabajo sigue limpio.
+
+## Obs. 1 de punta a punta: RESUELTA
+
+- **Contrato** `tests/contratos/f030_r30.json`: sin cambios desde T22.
+  `4e24df6` y `423a203` solo quitan los `xfail`.
+- **Mitad api**, con el código real: la 7 conserva su `id`, 9001/9002 y los
+  días 5/9, y `_payloads` arma exactamente la `peticion` de los casos 6-9 y
+  12-14.
+- **Mitad transfer**, por HTTP y con el pipeline real: solo `editar_fec`,
+  con los mismos `ide`; ni `INSERT` ni `DELETE`.
+- **La cadena entera** está cubierta: front (`r37_*`) → caso de uso
+  (`r36_*`) → payload → transfer.
+
+## Lo que pidió el líder
+
+- **Guarda del `UPDATE`.** Es la de F-051 (`ide`, recurso, `can` ≈ 0,
+  `synckey`, sin enlaces, `con.est`) más `a.cod = ?`: igual de estricta.
+  Sin `hora`, el texto de F-051 queda idéntico (test
+  `r41_sql_la_guarda_sin_codigo_…`).
+- **R45, el par.** Al releer se editan las dos líneas o ninguna; la que la
+  guarda no cambia pasa a `omitir` y nunca se inserta. La ventana que queda
+  está aceptada en design §12.
+- **Ni `DELETE` ni `INSERT` nuevos** por las líneas que se editan.
+- **Front sin lógica.** `idsDeLaRespuesta` solo copia identidad (§13.3).
+- **`test_f051_sql_cero.py` intacto** (`dev...HEAD` vacío).
+- **Obs. 3-7, recogidas**: 3 (con test), 4 (T36), 5 (docstring con test),
+  6 (`reconciliar`) y 7 (el parte, solo por las `escribir`).
+- **Desviaciones del §3, aceptadas**: los nombres (§6 no los fijaba), los
+  `xfail` quitados en T26/T31 (con `strict`, el XPASS pone la suite en
+  rojo), `reconciliar` con su adaptador, R42 sin día (solo la de T20, ya
+  limpia) y R43.
+- **Lista cerrada (§13.7).** De los tests ajenos solo cambian dobles. Hay
+  propios cambiados que la lista no nombra: los esquemas `r17`/`r2`,
+  `r21_cuadrante_repo_de_periodo`, los `r17_guardar_*` del snapshot y
+  `r15_cargar_edicion` en el front. Los obligan T23, R36 y §13.3, constan en
+  impl §4 y ninguno debilita una aserción: aceptados (obs. 6).
 
 ## Checkpoints
 
 | | Estado |
 |---|---|
 | C1 init.sh exit 0 · ficheros base | [x] · [x] |
-| C2 una sola `in_progress` · rama | [x] · [x] |
-| C2 `current.md` solo con la sesión activa | [ ] obs. 2: dato caducado en las líneas 47-49 |
-| C2 cada `done` con su resumen en `history.md` | [x] F-030 no está `done` |
-| C3 hexagonal | [x] `domain/incidencias.py` pura; el import de ORM en `traza_incidencias.py` tiene precedente (obs. 5) |
-| C3 ruta en la primera línea · sin `print` de depuración · sin secretos · sin dependencias nuevas | [x] los `print` son del script CLI, que ya los usaba |
-| C3 escala del % · postventa · solo escribe el transfer, con `synckey` | [x] `can = 0`; solo obra normal (R19); `porcentajes:inc:` |
-| C3 reglas del dominio | [ ] obs. 1: `#regla-incidencia` («no se reescribe aunque cambien sus días») no se cumple |
-| C3 bis | N/A: no toca `docs/referencia/` |
-| C4 cada R con su test · sin red ni BBDD | [x] tabla abajo · [x] |
-| C4 MANUAL en `current.md` con su comando exacto | [ ] obs. 2: comando abreviado y sin lo que queda sin probar |
-| C4 bis nivel · RED · cobertura · mutación verificada | [x] · [x] trazas reales T2-T19 (T1 fija lo de hoy) · [x] · [x] |
-| C4 bis muertos · coste · cabecera · RM1 · RM2 · RM5 · RM6 · manual · supervivientes | [x] recálculo + RM4 · [x] · [x] · [x] · [x] · N/A · [x] · N/A (automática) · [x] 0 |
-| C4 bis «Evidencias» con los cuatro números y los workers | [x] |
-| C4 ter | N/A: no hay `harness/rutas_sensibles.json` |
-| C5 `tasks.md` | [x] T1-T19 y T21 con su commit `F-030 Tn`; T20 es MANUAL pendiente |
-| C5 árbol limpio · `features.json` | [x] · [x] |
+| C2 una `in_progress` · rama · `history.md` | [x] · [x] · [x] (no está `done`) |
+| C2 `current.md` sin restos | [ ] cambio 1: líneas 119-122 caducadas |
+| C3 hexagonal · ruta · sin `print` · sin secretos · sin dependencias | [x] reglas puras; el ORM de `traza_incidencias.py` consta |
+| C3 reglas del dominio | [x] `#regla-incidencia` («Cambiar los días», «Quitar»); `INTEGRACION.md` |
+| C3 bis · C4 ter | N/A: sin `docs/referencia/` · sin `rutas_sensibles.json` |
+| C4 cada R con su test · sin red ni BBDD | [ ] cambio 2: R48 · [x] |
+| C4 MANUAL en `current.md` con su comando exacto | [x] las dos mitades, con `--ano`/`--mes` |
+| C4 bis nivel · RED · cobertura · mutación | [x] · [x] trazas de T22-T35 · [x] · [x] recálculo + RM4 |
+| C4 bis muertos · coste · cabecera · RM1 · RM2 · RM5 · RM6 · manual · supervivientes | [x] · [x] · [x] · [x] · [x] · N/A · [x] · N/A · [x] 0 |
+| C4 bis «Evidencias» · C5 `tasks.md` · árbol · `features.json` | [x] · [x] (T20, MANUAL pendiente) · [x] · [x] |
 
-## Cobertura (requisito → test; detalle con `grep -n "def test_f030_rN"`)
+## Cobertura del anexo (R1-R35, en la pasada 1)
 
 | R | Test(s) |
 |---|---|
-| R1, R8-R13 | front `test_f030_celda_pct.py` (`r1_*`, `r8_r9_letras_abren_el_panel_…`, `r10`-`r13`) |
-| R14-R16, R32 | front `test_f030_tabla_incidencias.py` |
-| R2 | transfer `r2_preflight_…_igual_…`, `r2_ejecutar_…`; api `r2_r22_guardar_no_toca_…`, `r2_esquema_…` |
-| R3-R7 | api `test_f030_catalogo.py` (`r7_sync_falla_entero_…`, `r7_el_cliente_lanza_ante_truncated`) |
-| R17-R22 | api `test_f030_incidencias.py` (guardar, 404/409, 422, deshacer por tipo, copias, `r22_cuadrante_…`) |
-| R23, R25, R31 | api `test_f030_registro.py`; transfer contrato `r31_*` |
-| R24, R26-R30 | transfer `test_f030_reglas_incidencias.py` y `test_f030_pipeline_incidencias.py` (D3: días 31-31 y 1-31) |
-| R33 | transfer `r33_cliente_*`, `r33_preflight_una_lectura_…`, `r33_lote_una_lectura_y_lo_mismo_que_suelto` |
-| R34 | `test_f002` (ancla y `r34_p2_p3_p4_remiten_…`) |
-| R35 | `r35_script_*`; la prueba real es T20, MANUAL |
-
-## Puntos que el líder pidió mirar
-
-- **Front sin lógica de negocio: cumple.** `app.js` detecta letras, filtra el
-  catálogo, quita la línea recién añadida (R13) y pinta. Los días vacíos
-  viajan `null` y los completa la api. Las incidencias van en
-  `incidenciasEdicion`, fuera de `totalEdicion`.
-- **Fuera de pisados, sobrecarga, sin partida y línea al 0 %: cumple.** Viajan
-  aparte (D-c), `es_linea_mensual` exige `M*`; test `r28_…linea_al_cero`.
-- **`synckey`, R27 y D3: correctos en el transfer.** R27 mira `CI%` en
-  cualquier parte del mes (en pruebas, solo la `0404`); D3 sale por
-  construcción. Pero la `{id}` no sobrevive a la api: obs. 1.
-- **Sync de `auxhor`:** lee antes de cualquier upsert y falla entero ante error
-  o `truncated`. **Lote igual a suelto:** sí, con una lectura por lote.
-- **Deshacer:** despacha por tipo. **D-a…D-g:** justificadas.
-- **Documentación:** `#regla-incidencia` e `INTEGRACION.md` bien; `azure-apps`
-  es del líder.
-- **T20:** listada con su comando exacto en `impl` §6 y en `tasks.md`. **Sin
-  T20 no se despliega** (design §12). Mientras no se haga, queda sin probar:
-  - la SQL real de `incidencias_del_mes` (`JOIN con c ON c.ide = m.ide`,
-    `fec`, `LIKE 'CI%'`);
-  - la inserción real del par `CI*`/`CIZ` (`can = 0`, `pre` de `reshor`), con
-    su cuenta analítica;
-  - la relectura por `synckey` y que `limpiar` lo borre;
-  - el coste de la lectura nueva.
-
-  T20 tampoco toca la SQL del sync de `auxhor`.
+| R36, R38, R39, R47 | api `test_f030_r30_identidad.py`: `r36_*`, `r38_*`, `r39_*`, `r47_*` |
+| R37, R38, R46 | front `test_f030_r30_front.py`: `r37_*`, `r38_*`, `r46_*` |
+| R40-R46 | transfer `test_f030_r30_editar.py`: de `r40_*` a `r46_*` |
+| **R48** | **ninguno con su nombre** (lo cubren `r41_sin_dia_…_del_mes` y `r42_cambiada`): cambio 2 |
+| R49 · R30 | `r49_script_*` y T20 · los dos `test_f030_r30_punta_a_punta.py` |
 
 ## Cambios requeridos
 
-1. **[BLOQUEANTE] R30 falla de punta a punta: cambiar los días de una
-   incidencia registrada vuelve a escribir en Sigrid.**
-   - **Causa.** `PgIncidenciaRepository.reemplazar` (`api/.../repositories.py:585-606`)
-     solo conserva `id` y traza si coinciden obra, código, desde y hasta. Si
-     cambian los días, crea otra fila con `id` nuevo y el transfer recibe
-     `synckey`s nuevas.
-   - **Reproducido** con `decidir_incidencia` y `deduplicar` reales: la 7,
-     registrada del 5 al 9, llega como la 8.
-     - Del 6 al 9: `ini escribir 20260706`, `fin omitir`. Quedan dos `CIV`
-       abiertos y un `CIZ`.
-     - Del 12 al 14: escribe el par entero, y el del 5 al 9 sigue en Sigrid.
-   - **Por qué no lo caza ningún test:** `test_f030_r30_*` del transfer dan por
-     hecho que la 7 sobrevive, y no hay test api→transfer. Deshacer un
-     `INCIDENCIAS` que repone una registrada la recrea igual, sin traza.
-   - **Decisión del humano** (hueco de la spec):
-     - a) conservar `id` y traza aunque cambien los días (el PUT trae `id`);
-     - b) 422 al cambiar o quitar una ya registrada, hasta F-033;
-     - c) otra.
-   - **Con cualquiera:** test `test_f030_r30_*` de punta a punta en la api, y
-     nueva campaña si cambia código del alcance (RM1).
-2. **`progress/current.md`:**
-   - Las líneas 47-49 dicen que `dedicacion.md` «se actualiza en T19»: es del
-     líder al desplegar.
-   - En el MANUAL de T20, poner el comando exacto de `impl` §6 (con
-     `--ano`/`--mes`) y lo que queda sin probar (sección anterior).
+1. **`progress/current.md` (del líder), líneas 119-122.** Dicen que falta
+   probar el `INSERT` del par y la lectura de las `CI*`, y eso ya lo probó
+   la primera mitad (`manual_F-030.md`). Hay que poner en su lugar:
+   - **Lo que la segunda mitad tiene que probar:** el `UPDATE … SET fec`
+     con su guarda, `lineas_para_editar` sobre líneas `CI*`, la relectura
+     por `ide` y las columnas nuevas (`can`, `hmoide`, `est`).
+   - **Lo que no probará ni así:** el script no manda la traza y localiza
+     por `synckey`, así que la rama `OR h.ide IN (…)` y R42 con día solo
+     quedan probadas con tests de texto. Si esa SQL falla, el preflight
+     falla sin escribir nada.
+2. **R48 sin test con su nombre (C4).** Añadir un `test_f030_r48_*` (la
+   nuestra en otro mes no se edita, o un `id` de otro periodo da 422).
+   Saldrá verde de entrada, como T1, sin campaña nueva.
 
 ## Observaciones no bloqueantes (recógelas o di por qué no)
 
-3. `lecturas_lote.py:351`: 108 caracteres con 25 espacios en medio, restos de
-   una unión de líneas.
-4. Ruff +16, todos en `api/tests/test_f030_incidencias.py` (F811 ×6, RUF100 ×5,
-   I001, RUF059, FURB157). «293, deuda previa» no es exacto.
-5. `traza_incidencias.py` importa ORM desde `application/` (precedente:
-   `registro_sigrid.py`). Aceptado; que conste.
-6. `reglas_incidencias.py:147`: la rama `igual.synckey == synckey_incidencia(…)`
-   no se alcanza (`por_synckey` la habría devuelto antes). Simplificarla.
-7. Preflight: el parte de la incidencia entra antes de R27 («se creará» con el par omitido).
+3. `reglas_incidencias.py:34-37`: `_TRAZA_ROL` está entre dos bloques de
+   `import`. Va debajo de ellos.
+4. R46 pide «todo lo leído», y el log (`_fila`, como en F-051) no lleva
+   `reside`, `hmoide`, `est` ni `enlazada`.
+5. Para el humano: la guarda no exige `fec = fec_antes`. R41 no lo pide,
+   pero cerraría la ventana de §12.
+6. Esos tests propios citan «design §13.7», y §13.7 no los lista.
 
-## Automejora (propuesta, no aplicada)
+**Automejora (propuesta):** que en `specs/SPECS.md` la lista cerrada separe
+los tests ajenos (cerrados) de los propios que fija un R nuevo (permitidos
+si se citan).
 
-- `CHECKPOINTS.md` C4 (`critico`): si la idempotencia usa un `id` de otro
-  servicio, test de que sobrevive a la edición allí (aquí ambos lados, verdes).
+## Pasada 1, resumida (completa en `git show 0e80f92:progress/review_F-030.md`)
+
+**RECHAZADO** sobre `32d764a`. Obs. 1, resuelta arriba; obs. 2, lo de T19
+corregido y lo sin probar abierto (cambio 1); obs. 3-7, recogidas.
