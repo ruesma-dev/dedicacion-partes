@@ -2816,3 +2816,9 @@ entre la relectura y el `UPDATE`: esa sale `omitir` y la otra se edita)
 Automejora de la review 3 (RM4 con `python -B` o sin `__pycache__` entre
 mutantes) ⇒ lista del arnés, a portar a `arnes-base`. Pendiente de desplegar
 (transfer → api → front), `azure-apps/dedicacion.md` y aviso a `partes`.
+
+**Desplegada el 2026-10-22** con permiso del humano (transfer
+`r20261022-1513`, api `r20261022-1514` y front `r20261022-1516`, en ese
+orden, lanzado por el humano; revisiones `Healthy` al 100 %; transfer en
+modo real); `azure-apps/dedicacion.md` `3d5c80b`. Sync, comprobación en
+producción y aviso a `partes`, del humano.
