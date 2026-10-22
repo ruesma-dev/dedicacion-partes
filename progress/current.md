@@ -1,8 +1,10 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-061** (búsqueda predictiva en el desplegable de incidencias;
-`sdd: false`, rigor estándar), `in_progress` desde el 2026-10-22, rama
+**BLOQUEADA: F-061** (búsqueda predictiva en el desplegable de incidencias;
+`sdd: false`, rigor estándar), `blocked` desde el 2026-10-22 (implementer,
+antes de escribir código; motivo y opciones en «F-061 · BLOQUEADA» justo
+debajo), rama
 `feature/F-061-busqueda-predictiva-incidencias` en la copia principal.
 Pedida por el humano tras desplegar F-030 (`baj` no encontraba B: su nombre
 en Sigrid es «Enfermedad/Acc. no laboral(B)»); propuesta aprobada («me
@@ -12,6 +14,52 @@ errata tolerada al final, y recarga del catálogo tras cada sync. Criterios
 en `features.json`. **Implementer lanzado el 2026-10-22.** Api y front; ni
 transfer ni Sigrid. Al desplegar (api → front): `azure-apps/dedicacion.md`
 (campos nuevos de `GET /incidencias`).
+
+## F-061 · BLOQUEADA (2026-10-22, implementer)
+
+Dos puntos que la propuesta aprobada no resuelve. No se ha escrito código;
+solo cambian `features.json` (`blocked`) y este fichero.
+
+1. **Un test de F-030 exige cambiar su aserción.**
+   `services/dedicacion-api/tests/test_f030_catalogo.py::test_f030_r6_ruta_incidencias_activas_por_letra`
+   compara el cuerpo ENTERO de `GET /api/v1/incidencias` con igualdad exacta
+   (`r.json() == {"incidencias": [{"codigo", "letra", "nombre"}, …]}`) y usa
+   CIA, CIE y CIV. El primer criterio de F-061 pide un campo nuevo en cada
+   incidencia (la lista de palabras extra, vacía si no tiene), así que ese
+   `==` falla con cualquier implementación que lo cumpla; no hay forma
+   compatible (ni a nivel raíz: también es igualdad del cuerpo entero).
+   Opciones: **(a, recomendada)** autorizar el cambio mínimo de esa aserción:
+   añadir a cada dict esperado `"palabras": [...]` con lo que diga
+   `config.yaml` (CIA y CIE con las suyas, CIV `[]`), sin tocar nada más del
+   test; **(b)** que el test de F-030 pase a comparar solo
+   `codigo/letra/nombre` de cada elemento (cambia más la aserción que (a));
+   **(c)** no publicar las palabras en `GET /incidencias` sino en una ruta
+   nueva (`GET /incidencias/palabras`): no toca el test, pero incumple el
+   criterio 1 tal como está escrito y obliga al front a dos peticiones.
+2. **«`baj` → B, AT y M (B primero)» no sale de la regla de orden aprobada.**
+   Las tres casan solo por la palabra extra «baja» (misma categoría: «palabra
+   extra que empieza»), y el empate es «el orden del catálogo», que la api
+   sirve por letra y código (`PgTipoIncidenciaRepository.activos`): AT, B, F,
+   FJ, H, M, V. Con la regla tal cual, `baj` da **AT, B, M**, no B primero.
+   Opciones: **(a)** aceptar AT, B, M y corregir el criterio (la regla queda
+   como está); **(b, recomendada si el humano quiere B primero)** el empate
+   dentro de «palabra extra» lo decide el ORDEN DE LAS ENTRADAS en
+   `config.yaml` (CIE la primera): es dato, editable sin código, y el resto
+   del orden no cambia; **(c)** una categoría nueva «la letra es la inicial de
+   lo tecleado» (`baj` empieza por B) por delante de las palabras extra:
+   regla nueva que habría que aprobar, y afecta a otras búsquedas (`fal` → F
+   y FJ antes que el resto).
+   Además, para cerrar el orden sin improvisar: el código (`civ`, `ci`) y la
+   letra que empieza por lo tecleado (sin ser idéntica, `a` → AT) no están
+   en la lista de categorías; propuesta del implementer: ponerlos **detrás**
+   de «letra exacta» y delante de «nombre que empieza» (ningún caso de los
+   criterios ni de los tests de F-030 cambia con eso). Y la errata
+   `enfremedad` → B es un cambio de dos letras contiguas: cuenta como UNA
+   errata solo con la distancia que admite transposiciones
+   (Damerau/OSA); con Levenshtein puro serían dos. Se implementará OSA
+   salvo que se diga otra cosa.
+
+Con las dos decisiones, se retoma desde cero (nada a medias).
 
 **F-030** (incidencias en el cuadrante)
 **cerrada (`done`) y desplegada el 2026-10-22** (permiso del humano, «3

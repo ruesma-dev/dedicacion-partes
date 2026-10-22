@@ -5,13 +5,13 @@
 
 Resumen: **58 features**, 25 abiertas, 33 terminadas.
 
-En curso: **F-061**.
+Bloqueadas: **F-061**.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-061 | Búsqueda predictiva en el desplegable de incidencias (nombre, palabras extra, letra y código) | 1 | en curso | estandar | `feature/F-061-busqueda-predictiva-incidencias` |
+| F-061 | Búsqueda predictiva en el desplegable de incidencias (nombre, palabras extra, letra y código) | 1 | bloqueada | estandar | `feature/F-061-busqueda-predictiva-incidencias` |
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
@@ -79,7 +79,7 @@ En curso: **F-061**.
 
 ### F-061 · Búsqueda predictiva en el desplegable de incidencias (nombre, palabras extra, letra y código)
 
-estado **en curso** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-061-busqueda-predictiva-incidencias`
+estado **bloqueada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-061-busqueda-predictiva-incidencias`
 
 Pedida por el humano el 2026-10-22 tras desplegar F-030: «debe usar tambien el texto descriptivo de la incidencia para buscar de forma predictiva, por ejemplo si pongo baj que tambien salga baja» y «no quiero que sean solo palabras extras, sino que ademas haga busqueda predictiva tanto al nombre de la incidencia como a extra words». Hoy (F-030) el filtro de `app.js` busca el texto tecleado como subcadena de «letra + nombre», y el nombre de Sigrid de B es «Enfermedad/Acc. no laboral(B)»: `baj` no encuentra nada. Además el catálogo solo se carga al abrir la página (tras un sync seguía vacío) y el código de Sigrid (`CIV`) no se puede teclear. Propuesta aprobada por el humano el 2026-10-22 («me parece bien»): (1) PALABRAS EXTRA por código en `config/config.yaml` de la api, junto a `sync.incidencias.sql` (datos, no lógica; editar la lista no exige código): CIE «baja, IT, enfermedad común»; CIA «baja, accidente de trabajo»; CIM «baja, nacimiento, permiso»; CIP «permiso, ausencia»; CIF «ausencia»; CIV y CIH ninguna. `GET /api/v1/incidencias` las publica con el código (campos nuevos, compatibles hacia atrás). (2) BÚSQUEDA PREDICTIVA en el front (solo filtra y ordena el desplegable; no decide nada que se registre): cada palabra tecleada debe ser el COMIENZO de alguna palabra de la letra, el código, el nombre de Sigrid o las palabras extra, en cualquier orden (el nombre se trocea por lo que no sea letra o dígito: «Enf.», «Profesional(AT)»), sin tildes ni mayúsculas; ORDEN: letra exacta, nombre que empieza por lo tecleado, palabra del nombre que empieza, palabra extra que empieza, subcadena en medio de palabra (para que nada de lo que hoy funciona deje de funcionar) y, al final, TOLERANCIA A UNA ERRATA (distancia de edición 1) en palabras tecleadas de 4 o más letras. Empate: el orden del catálogo. (3) El front RECARGA el catálogo de incidencias al terminar cada sync con éxito. Servicios: api (config y la ruta) y front (filtro y recarga). Ni transfer ni Sigrid. Despliegue api → front; `docs/INTEGRACION.md` §5 y `azure-apps/dedicacion.md` (campos nuevos de `GET /incidencias`) al desplegar.
 

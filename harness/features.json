@@ -1031,7 +1031,7 @@
         "`docs/INTEGRACION.md` §5 recoge los campos nuevos de `GET /api/v1/incidencias`.",
         "Tests unitarios sin red ni BBDD (api: la ruta y la config; front: el filtro y el orden con los casos de arriba y la recarga tras el sync); `bash harness/init.sh` en verde."
       ],
-      "status": "in_progress",
+      "status": "blocked",
       "sdd": false,
       "rigor": "estandar",
       "priority": 1,
