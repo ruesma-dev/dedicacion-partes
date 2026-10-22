@@ -1,27 +1,9 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-030** (incidencias en el cuadrante; `sdd: true`, rigor
-crítico), `in_progress` desde el 2026-10-21, en la copia
-`C:\Users\pgris\PycharmProjects\porcentajes-f030`, rama
-`feature/F-030-dias-bajas-incidencias` (`dev` fusionado: F-051 desplegada,
-F-059 y F-060); sus `.venv` son uniones de directorio a los de la copia
-principal (del líder, no versionadas). Spec aprobada el 2026-10-20 (D1-D10).
-T1-T19 y T21 hechas; review 1 **RECHAZADO** por R30; el humano eligió la
-opción **C** y **aprobó el anexo R30 el 2026-10-21** («si»: D11 = B, D12-D15
-= A, todas la recomendada). **Anexo T22-T37 implementado (2026-10-22);
-review pasada 2 RECHAZADO solo por papeleo**
-(`progress/review_F-030.md`: obs. 1 resuelta de punta a punta; el cambio 1,
-`current.md`, ya hecho por el líder). El humano decidió **D16 = A** (la
-guarda exige también `fec = fec_antes`, 2026-10-22, «a»). **T38 hecha por
-el implementer el 2026-10-22** (R48 con su test, D16, obs. 3, 4 y 6, 6.ª
-campaña con 0 supervivientes), **review pasada 3 lanzada el 2026-10-22**; el
-punto del par en la ventana de D16 (abajo) va a la review y al humano. Informe
-`progress/impl_F-030.md`.
-T20: primera mitad hecha por el líder en la 0404 (`progress/manual_F-030.md`);
-la segunda (cambio de días, comando exacto abajo) la ejecuta el líder con
-autorización expresa del humano. Ningún agente escribe en Sigrid por su
-cuenta. El arnés es la **1.7.3**.
+**Ninguna feature en curso.** **F-030** (incidencias en el cuadrante)
+**cerrada (`done`) el 2026-10-22**, pendiente de desplegar con permiso del
+humano («3 si», si la prueba salía bien: salió). El arnés es la **1.7.3**.
 
 **Pendiente del humano:** la comprobación de F-051 en producción (Ctrl+F5;
 un registro con una línea `M*` al 0 % en el parte la edita en su sitio y el
@@ -31,267 +13,26 @@ desde F-051 el transfer de dedicación **edita en su sitio** líneas `M*` de
 los partes compartidos (también las que tengan `synckey partes:…`, sin
 cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
 
-## F-030 · anexo R30 y T38: implementación TERMINADA, lista para review 3 (implementer, 2026-10-22)
+## F-030 · CERRADA (2026-10-22), pendiente de desplegar
 
-- **Estado:** T22-T38 `[x]`, commits `F-030 Tn` (código cerrado en
-  `7a96edc`, T38). Informe: `progress/impl_F-030.md` (T38 en su §6; el
-  detalle de T1-T21 y del anexo, en `progress/impl_F-030_anexo.md`);
-  mutación: `progress/mutacion_F-030.md` (6.ª campaña en serie sobre
-  `7a96edc`: 406 mutantes, **0 supervivientes**, 1 timeout detectado).
-  `bash harness/init.sh` en verde con las cachés borradas, ruff en 277 como
-  `dev`, cobertura de lo cambiado 99,9 % (833/834).
-- **T38:** `test_f030_r48_*` en api y transfer (verdes de entrada, como T1);
-  D16, la guarda del `UPDATE` de la `fec` acaba en `AND fec = ?` con la
-  `fec` releída (fuera de `_guarda`: F-051 idéntico,
-  `test_f051_sql_cero.py` intacto), con RED; obs. 3, 4 (log de R46 con
-  `reside`, `hmoide`, `est`, `enlazada`) y 6 (citas); docs con D16.
-- **Punto para el líder (D16 y el par):** si la `fec` de una línea cambia
-  entre la relectura de R45 y el `UPDATE`, esa no se pisa y sale `omitir`,
-  pero la otra del par **sí** se edita (cada `UPDATE` con su guarda, como
-  pide R41 y acepta design §12): el par queda a medias y la respuesta lo
-  dice. Cerrarlo del todo exigiría acoplar las dos guardas en SQL: cambio
-  de spec, no hecho (informe §6).
-- **Decisiones y desviaciones** (justificadas en el informe, §3): los campos
-  del contrato api → transfer se llaman `hmores_ide_ini`, `hmores_ide_fin`,
-  `dia_ini` y `dia_fin` y solo viajan si la incidencia está registrada; los
-  `xfail` estrictos del punta a punta se quitaron en T26 (api) y T31
-  (transfer), no en T33, al pasar a XPASS; `deduplicar` desaparece en favor
-  de `reconciliar` (adaptador local en sus tests de R27); R42 sin día en la
-  traza mira el mes; R43 dice los días que tiene hoy el par.
-- **Tests ajenos:** solo `services/dedicacion-transfer/tests/conftest.py`
-  (dobles, lista cerrada de design §13.7); `test_f051_sql_cero.py` intacto.
-- **T20 (MANUAL, del líder, con autorización expresa del humano):** segunda
-  mitad (R49), transfer LOCAL con `OBRA_PRUEBAS_FORZAR=true`, desde
-  `services/dedicacion-transfer`, el mismo `RECURSO` de la primera mitad (si
-  se limpió, repetir antes la primera con `RECURSO:CIV:5:9`):
-  `python prueba_escritura_porcentajes.py preflight --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12`
-  (dos `editar`, `fec_antes` 5 y 9);
-  `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12`;
-  `python prueba_escritura_porcentajes.py verificar --incidencia RECURSO:CIV:6:12`
-  (**los mismos dos `ide`**, `fec` 6 y 12, ninguna línea nueva: prueba que
-  Sigrid acepta y aplica la guarda **con `AND fec = ?`**, D16); otra vez
-  `ejecutar` (`ya_registrado`); y
-  `python prueba_escritura_porcentajes.py limpiar --confirmar`. El resultado
-  real se anota en `progress/manual_F-030.md` y en el informe. No prueba que
-  una `fec` movida a mano entre la relectura y el `UPDATE` no se pise: eso
-  solo lo cubren tests (`test_f030_r41_d16_*`).
-- **`azure-apps` pendiente (del líder, al desplegar):** `azure-apps/dedicacion.md`
-  debe decir que leemos `auxhor` (`CI*`), escribimos el par `CI*`/`CIZ` con
-  `can = 0` y `synckey porcentajes:inc:` y **editamos la `fec`** de ese par
-  (`UPDATE` con guarda, también la `fec` leída; nunca `DELETE`) cuando
-  cambian sus días; y las rutas
-  y campos nuevos (`id`, `quitada`, `incidencias_quitadas`, `fec_antes`).
-  Avisar a `partes` de que su `partes.md` debería contarlo.
-
-## F-030 · anexo R30 escrito (spec-author) y APROBADO (humano, 2026-10-21)
-
-- **Qué**: anexo a la spec por la obs. 1 de la review 1 y la opción C del
-  humano. `requirements.md` §8 (R36-R49) y R30 reescrito; `design.md` §11
-  (D11-D15), §12 y §13; `tasks.md` T22-T37 y T20 ampliada. Informe:
-  `progress/spec_F-030.md` §«Anexo R30». Topes: 150/150 y 243/250. Ni código
-  ni Sigrid tocados.
-- **Para caber en los topes**, el texto ya implementado o decidido del design
-  (§2, §3, §5, §10, §11 de antes) se ha movido **sin cambios** al informe y el
-  design guarda su resumen; la redacción de R1-R35 se ha apretado sin quitar
-  ningún requisito.
-- **D11-D15 DECIDIDAS** por el humano el 2026-10-21 («si», todas la
-  recomendada): **D11 = B** (quitar una registrada la deja `quitada`, tachada
-  «sigue en Sigrid» y listada en el modal para retirarla a mano; nunca se
-  borra; deshacer la repone); **D12 = A** y **D13 = A** (cambiar tipo u obra
-  = quitar + nueva); **D14 = A** (línea nuestra cambiada a mano en Sigrid: no
-  se toca y se avisa; borrada, se reescribe); **D15 = A** (día nuevo con una
-  igual ajena: no se edita y se avisa). Implementer lanzado para T22-T37.
-- **MANUAL T20 ampliada** (tras T37, con autorización expresa): además de lo
-  anterior, desde `services/dedicacion-transfer` con
-  `OBRA_PRUEBAS_FORZAR=true`:
-  `python prueba_escritura_porcentajes.py preflight --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12`,
-  `… ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12`
-  y `… verificar --incidencia RECURSO:CIV:6:12`: los **mismos dos `ide`** que
-  dio el registro del 5 al 9, con `fec` 6 y 12, y ninguna línea nueva.
-- **azure-apps** (líder, al desplegar): `dedicacion.md` dirá también que el
-  transfer edita la `fec` de sus líneas `CI*`/`CIZ`; avisar a `partes`.
-
-## F-030 · spec escrita y aprobada (D1-D10 decididas, 2026-10-20)
-
-- **Petición del humano (2026-10-20)**, literal en `features.json`: en la
-  celda del %, si se escribe texto, desplegable con las incidencias de
-  `partes`; con número, todo igual que hoy.
-- **Spec**: `specs/F-030-dias-bajas-incidencias/` (requirements 150/150,
-  design 250/250, tasks T1-T21). Informe: `progress/spec_F-030.md`.
-- **Toca los tres servicios**: front (desplegable al teclear letras en la
-  celda del %, chips y subfilas), api (catálogo desde Sigrid, tabla
-  `incidencia`, evento y deshacer, payload) y transfer (par `CI*`/`CIZ`).
-- **Decisiones del humano** (requirements §7, todas la recomendada,
-  2026-10-20): D1 fuente de la lista (A: `auxhor` de Sigrid); D2 fechas
-  (A: tramo de días del mes obligatorio); D3 tramo que cruza meses (A: cada
-  mes con su `CIZ`); D4 100 % (A: no cuenta); D5 qué se escribe (A: par
-  `CI*`/`CIZ`, `can = 0`); D6 partida (A: la de la línea de % de esa obra o
-  0); D7 duplicados y obras (A: misma `fec` y código en cualquier obra del
-  mes; solo obra normal); D8 alcance (A: captura y registro en F-030); D9
-  línea recién añadida (A: se convierte en incidencia); D10 % por días,
-  calendario de convenio y bandeja de `partes` (fuera, features nuevas).
-- **MANUAL de la feature** (T20), en modo pruebas en la `0404`, la ejecuta
-  el líder con autorización expresa del humano. **Primera mitad hecha el
-  2026-10-21** («autorizo pruebas de f30»; `progress/manual_F-030.md`): quedó
-  probado contra Sigrid el `INSERT` del par `CI*`/`CIZ`, la lectura de las
-  `CI*` del mes (R27/R33), la relectura por `synckey` y `limpiar`. La
-  **segunda mitad** (cambio de días) tiene el comando exacto arriba, en la
-  sección del anexo. Tiene que probar el `UPDATE … SET fec` con su guarda
-  (desde T38, con `AND fec = ?`, D16),
-  `lineas_para_editar` sobre líneas `CI*`, la relectura por `ide` y las
-  columnas nuevas que lee (`can`, `hmoide`, `est`). **Ni con ella quedará
-  probado** (review 2): el script no manda la traza y localiza por
-  `synckey`, así que la rama `OR h.ide IN (…)` de la lectura y R42 con día
-  solo los cubren tests de texto. Si esa SQL fallara en Sigrid, el preflight
-  falla sin escribir nada.
-- **azure-apps**: `dedicacion.md` lo actualiza el **líder al desplegar**
-  (no en T19); `partes.md` (de
-  `partes`) debería decir que `porcentajes` escribirá `CI*`/`CIZ` en los
-  mismos partes: avisar al humano.
-- Sigrid, solo lectura durante la spec (consultas en `progress/spec_F-030.md`).
-
-## F-030 · implementación T1-T21 (implementer, 2026-10-21) · review 1 RECHAZADO (R30, resuelto por el anexo)
-
-- **Estado:** T1-T19 y T21 `[x]`, cada una con su commit `F-030 Tn`. El
-  informe está en `progress/impl_F-030.md` y la mutación en
-  `progress/mutacion_F-030.md`. **T20 (MANUAL) es del líder** y exige
-  autorización expresa del humano. Su comando exacto está en el informe §6:
-  transfer local con `OBRA_PRUEBAS_FORZAR=true` y
-  `prueba_escritura_porcentajes.py preflight|ejecutar --confirmar|verificar
-  --incidencia RECURSO:CIV:5:9`, repetir `ejecutar` y `limpiar --confirmar`.
-- **Fusión de `dev` (F-051) antes de T15:** commit `46cf116`, conservando
-  los dos comportamientos. Las incidencias quedan fuera de pisados,
-  sobrecarga y líneas al 0 %, y comparten la relectura de F-051.
-- **`bash harness/init.sh`:** en verde sobre `8b17e85` (con la caché de suites borrada): raíz 418 (+1 skipped), api 1.083, front 350, transfer 1.168; cobertura de líneas cambiadas 99,5 % (634/637); tamaño 150/150 y 250/250.
-- **Mutación:**
-  - 1.ª campaña (en serie, sin muestreo): 251 mutantes, 31 supervivientes,
-    todos huecos reales. Les puse tests (`42c0fb5`) y reescribí la
-    comprobación del lote que miraba solo la primera línea del par.
-  - 2.ª campaña: 250 mutantes, 1 superviviente (el test del log tenía cuentas simétricas; corregido en `8b17e85`). **3.ª campaña: 250 mutantes, 0 supervivientes**, en serie (`--workers 1`) y completa, sin muestreo.
-- **Desviaciones justificadas** (informe §2):
-  - La traza de la incidencia va en `application/traza_incidencias.py`, no
-    en `registro_sigrid.py`, para no tocar `test_f003_r17`. Un test igual la
-    vigila contra las columnas de `incidencia`.
-  - Sin incidencias, ni el kwarg ni la clave de respuesta `incidencias`
-    (R2 literal).
-  - Con `--incidencia`, el script manda solo las incidencias.
-- **Lista cerrada de tests ajenos:** la tabla exacta está en el informe §3.
-  Solo dobles, salvo la aserción de f013 (opción A del humano).
-- **Pendiente del líder al desplegar** (orden transfer → api → front):
-  - `azure-apps/dedicacion.md` (R34) debe decir que leemos `auxhor` y
-    escribimos `CI*`/`CIZ` con `can = 0` y `synckey porcentajes:inc:`, más
-    las rutas nuevas.
-  - Avisar a `partes` de que su `azure-apps/partes.md` debería decir que
-    `porcentajes` escribe `CI*`/`CIZ` en los mismos partes.
-- Nada escrito en Sigrid; ningún `push`.
-
-## F-030 · implementación: bloqueo de T14 RESUELTO (implementer, 2026-10-21)
-
-**Resuelto por el humano el 2026-10-21 con la opción A** («a»): la aserción
-de `test_f013_r3_la_confirmacion_no_estrena_canal` acepta `incidencias`
-(`tasks.md`, cabecera). F-030 vuelve a `in_progress`; el implementer sigue
-en T14. **Estado al bloquear:** `blocked` (ya no). Hechas T1-T14, cada una con su commit y su traza RED
-(T10 `fc039a7`, T11 `d407bf6`, T12 `4207de3`, T13 `07671d3`, T14 `3e63ba7` +
-`1cde163`). Api 1063 y front 341 en verde (tras T9); **transfer 986 en verde
-y 1 en rojo**, el de abajo. Nada escrito en Sigrid; todos los dobles ajenos
-adaptados hasta aquí son los de la lista cerrada (sin ninguna aserción).
-
-**Motivo: un test ajeno exige cambiar una ASERCIÓN.**
-`services/dedicacion-transfer/tests/test_f013_sin_partida.py::test_f013_r3_la_confirmacion_no_estrena_canal`
-fija la firma literal de `RegistroPipeline.ejecutar`:
-`["self", "obra", "lineas", "pisar_claves", "usuario"]`. T14 (R23, R24;
-design §3: «`ejecutar` inserta sus líneas en los mismos lotes») necesita que
-`ejecutar` reciba las incidencias de la petición, y se lo pasé como
-parámetro nuevo, opcional y al final (`incidencias=None`): la lista pasa a
-tener 6 nombres. El test vigila otra cosa (que la **confirmación** de F-013
-viaje por `pisar_claves` y no por un canal nuevo); las incidencias no son
-una confirmación, pero la aserción es literal. El otro test que cayó
-(`test_f055_lote.py::…cada_escenario…`, por el doble `_comparado` de
-`f055_equivalencia_lote.py`) lo arreglé sin tocarlo: sin incidencias,
-`ejecutar` llama a `preflight` exactamente como antes (`1cde163`).
-
-**Opciones:**
-
-- **A (recomendada).** Mantener `incidencias=None` en `ejecutar` y que la
-  aserción de f013 sea `["self", "obra", "lineas", "pisar_claves", "usuario",
-  "incidencias"]`, con la marca «F-030 (lista cerrada)» y una línea que diga
-  que `incidencias` no es un canal de confirmación. Lo que vigila sigue
-  vigilado: un parámetro de confirmación nuevo seguiría rompiéndolo. Es un
-  cambio de una línea y se lista en `progress/impl_F-030.md`.
-- **B.** No tocar la firma: un método público hermano (p. ej.
-  `registrar(obra, lineas, incidencias, pisar_claves, usuario)`) con toda la
-  lógica, `ejecutar` delegando en él sin incidencias, y `app.py` llamando a
-  uno u otro. No cambia ningún test ajeno, pero deja dos entradas para la
-  misma operación solo para respetar una aserción literal; no la recomiendo.
-- **C.** Que las incidencias viajen dentro de `lineas` (lista mixta que el
-  pipeline separa por tipo). No la recomiendo: rompe el tipo de `lineas` y a
-  todos los que lo recorren.
-
-**Para retomar:** con A, cambio esa aserción (commit propio, «F-030 T14:
-f013 lista cerrada») y sigo con T15 (lote y `app.py`), T16-T19 y T21; T20 se
-queda para el líder con su comando exacto (`tasks.md`).
-
-## F-030 · implementación: bloqueo de T4 RESUELTO (implementer, 2026-10-21)
-
-**Resuelto por el humano el 2026-10-21 con la opción A** («la a»): lista
-cerrada de adaptaciones solo de dobles, sin cambiar ninguna aserción
-(`tasks.md`, cabecera). F-030 vuelve a `in_progress`; el implementer sigue en
-T4. Lo de abajo es el motivo y las opciones, tal como se plantearon.
-
-
-**Estado al bloquear:** `blocked` (ya no). Hechas y con su commit T1
-(`a5c0386`, test de lo de hoy en la celda del %, verde antes de tocar
-`app.js`), T2 (`6c01edd`, `domain/incidencias.py`, con traza RED) y T3
-(`44d74ab`, `TipoIncidenciaORM` e `IncidenciaORM`). Suite de la api en verde
-en ese punto. Nada escrito en Sigrid; ningún test ajeno tocado.
-
-**Motivo (lista cerrada de tests ajenos).** El diseño aprobado obliga a que
-los **dobles de test** de 23 ficheros ajenos a la spec aprendan que existen
-las incidencias. Medido con un experimento desechable (cambio mínimo de cada
-causa, suite de la api, y revertido con `git checkout`; los números son
-reales):
-
-| Causa (diseño) | Qué cambia en producción | Tests que caen |
-|---|---|---|
-| A · R21 | `ObtenerCuadrante` y `ObtenerFilaTrabajador` leen `uow.incidencias` | 109 en 13 ficheros (los `_Uow` en memoria no tienen ese repositorio) |
-| B · R20 | `ultimo_pendiente` lee `evento.tipo` para despachar el deshacer | 1: `test_f027_r3_ultimo_pendiente_trae_su_autor` (su `SimpleNamespace` no trae `tipo`) |
-| C · R23 | `_payloads` hace una 2.ª lectura (las incidencias del mes) | 77 en 9 ficheros (las sesiones falsas devuelven las filas de asignación a cualquier `SELECT`) |
-| D · R3 | el contenedor real compone el paso `auxhor` del sync | 8 en 3 ficheros (el Sigrid falso responde filas de empleado a `auxhor`, y su UoW no tiene `tipos_incidencia`); el preview sumará los de `test_f025_sync_postventa` |
-
-Los dobles están casi todos centralizados: `_Uow` de
-`test_f024_cuadrante_empresa.py` y de `test_f025_cuadrante_postventa.py`;
-`_Sesion` de `test_f024_registro_empresa.py`, la de `test_f022_empresa_en_linea.py`,
-`_SesionQueFiltra` de `test_f056_trabajador_ide.py` y el `_S` de
-`test_f055_registro_lote.py`; `_SigridFalso`/`_UowEspia` de
-`test_f023_sync_empresa.py` y `test_f032_empresas_sigrid.py`, y el
-`SimpleNamespace` de `test_f027`. Unos 10 ficheros que editar; los demás
-heredan.
-
-**Opciones:**
-
-- **A (recomendada).** Lista cerrada de adaptaciones **solo de dobles**,
-  ninguna aserción cambia: los `_Uow` ganan un repositorio `incidencias`
-  vacío; el `SimpleNamespace` de `test_f027`, `tipo="GUARDAR"`; las sesiones
-  falsas del registro responden `[]` a la lectura de `incidencia`; el Sigrid
-  falso del sync responde `[]` a `dbo.auxhor` y su UoW lleva
-  `tipos_incidencia`. Cada cambio con la marca «F-030 (lista cerrada)», como
-  hizo F-055, y la lista exacta en `progress/impl_F-030.md`. Para el front
-  (T8, T9, T17), el mismo criterio: los estáticos de F-042/F-050 que ya
-  admite el design §12, y los arneses de node que solo necesiten un doble
-  nuevo; si alguno exigiera cambiar una aserción, vuelvo a parar.
-- **A'.** Como A, pero sin tocar los 9 ficheros del registro (causa C): a
-  `RegistroSigrid` se le inyecta un lector de incidencias opcional (patrón
-  `sql_empresas=None` de `PreviewSync`), que el contenedor siempre pasa. No
-  la recomiendo: el parámetro solo existe para no tocar dobles, y un
-  cableado roto registraría sin incidencias sin avisar.
-- **B.** Producción tolerante a dobles viejos (`getattr(uow, "incidencias",
-  None)` y similares). No recomendada: lógica para tests en producción.
-- **C.** Cambiar la spec: cuadrante y fila sin incidencias (endpoint aparte
-  que el front pide), registro con lector inyectado. No evita la causa B,
-  complica el front y reabre una spec aprobada.
-
-**Para retomar:** con A, sigo en T4 (sync, repositorio, preview y cableado),
-adaptando los dobles en la misma tarea que los rompe.
+- Review 3 **APROBADO** (`progress/review_F-030.md`); `init.sh` en verde;
+  6.ª campaña de mutación con 0 supervivientes; cobertura 99,9 %. Resumen
+  en `progress/history.md`; el detalle de la implementación, los bloqueos
+  de T4 y T14 y el anexo R30, en `progress/impl_F-030.md`,
+  `progress/impl_F-030_anexo.md` y `progress/spec_F-030.md`.
+- **T20 hecha por el líder** en la 0404 con autorización del humano («1
+  si»): cambio de días 5-9 → 6-12 sobre los mismos dos `ide`, ninguna línea
+  nueva, `ya_registrado` y 0404 limpia (`progress/manual_F-030.md`).
+- **El par a medias** (design §12) lo aceptó el humano el 2026-10-22
+  («2ok»): sin D17.
+- **Al desplegar** (líder, transfer → api → front; el transfer, en modo
+  real): `azure-apps/dedicacion.md` dirá que leemos `auxhor` (`CI*`),
+  escribimos el par `CI*`/`CIZ` con `can = 0` y `synckey porcentajes:inc:`
+  y **editamos la `fec`** de ese par (`UPDATE` con guarda, también la `fec`
+  leída; nunca `DELETE`), con los campos nuevos (`id`, `quitada`,
+  `incidencias_quitadas`, `fec_antes`). **Aviso a `partes`** (del humano):
+  su `partes.md` debería decir que `porcentajes` escribe y edita `CI*`/`CIZ`
+  en los mismos partes.
 
 ## F-051 · CERRADA y DESPLEGADA (2026-10-21)
 
@@ -458,7 +199,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada y desplegada el 2026-10-21. Orden: **F-030** (en curso), **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. Orden: **F-030** (cerrada el 2026-10-22, pendiente de desplegar), **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
 F-033 y, detrás, F-017, F-018…
 

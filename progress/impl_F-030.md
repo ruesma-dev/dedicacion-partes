@@ -12,8 +12,8 @@ rigor **crítico**. Tres entregas, commits `F-030 Tn`:
 - **T38** (`7a96edc`): la review 2 (R48 con test, obs. 3, 4 y 6) y **D16**
   (la guarda exige la `fec` leída). §6; **hay un punto para el líder**.
 
-**T20 (MANUAL) es del líder** (§8). Nada escrito ni leído en Sigrid, ningún
-`push`, ningún `.env` tocado.
+**T20 (MANUAL) la hizo el líder** (§8). El implementer no escribió ni leyó en
+Sigrid, ni hizo `push`, ni tocó ningún `.env`.
 
 ## 2-3. Qué cambió en el anexo R30 (T22-T37) y decisiones
 
@@ -172,28 +172,14 @@ detectado (el punto fijo de R44 no termina, `reglas_incidencias.py:249`).
 El mutante nuevo, en la guarda (`+ [int(fec_leida)]` → `-`), muerto.
 Ninguno equivalente; detalle en `progress/mutacion_F-030.md` § «Historial».
 
-## 8. Verificación MANUAL pendiente (T20, del líder)
+## 8. Verificación MANUAL (T20, del líder): hecha
 
-Requiere autorización expresa del humano. La primera mitad (5-9) ya la
-hizo el líder (`progress/manual_F-030.md`); si se limpió, repetirla antes
-con `RECURSO:CIV:5:9`. Segunda mitad (R49): transfer **local** con
-`OBRA_PRUEBAS_FORZAR=true`, desde `services/dedicacion-transfer`, el mismo
-`RECURSO` (con `CIV` y `CIZ` en `reshor`):
-
-```
-python prueba_escritura_porcentajes.py preflight --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12
-python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12
-python prueba_escritura_porcentajes.py verificar --incidencia RECURSO:CIV:6:12
-python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12
-python prueba_escritura_porcentajes.py limpiar --confirmar
-```
-
-Esperado: el preflight da las dos `editar` con `fec_antes` 5 y 9; tras
-`ejecutar`, `verificar` enseña **los mismos dos `hmores.ide`** con `fec` 6 y
-12 y ninguna línea nueva (eso prueba que SQL Server acepta y aplica la
-guarda **con `AND fec = ?`**, D16); el último `ejecutar`, `ya_registrado`;
-`limpiar` las borra. Lo que el MANUAL no prueba: que una `fec` movida a
-mano entre la relectura y el `UPDATE` no se pise (solo tests, §6).
+Las dos mitades, en la 0404 con autorización expresa del humano (2026-10-21
+y 2026-10-22); detalle en `progress/manual_F-030.md`. Segunda mitad: el par
+5-9 (`ide` 411828/411829) pasó a 6-12 con **los mismos dos `ide`**, ninguna
+línea nueva; el siguiente `ejecutar` dio `ya_registrado` y `limpiar` dejó
+el parte como estaba. Sin probar contra Sigrid (solo tests): `OR h.ide IN`,
+R42 con día y la ventana de D16.
 
 ## 9. Fuera del alcance y pendiente
 
@@ -203,8 +189,6 @@ mano entre la relectura y el `UPDATE` no se pise (solo tests, §6).
   **editamos la `fec`** del par (`UPDATE` con guarda, también la `fec`
   leída; nunca `DELETE`); `id`, `quitada`, `incidencias_quitadas`,
   `fec_antes`. Avisar a `partes` de que su `partes.md` debería contarlo.
-- **design §13.5** enseña la SQL del `UPDATE` sin `AND fec = ?`; D16 (§11)
-  ya lo decide. Si se quiere el bloque al día, es del spec-author.
 - Por D10 quedan fuera F-059 y F-060. Retirar una `quitada` es a mano (D11).
 
 ## Evidencias

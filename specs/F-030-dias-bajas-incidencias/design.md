@@ -145,7 +145,7 @@ que cupiera el anexo. El anexo no ha necesitado leer Sigrid.
 - **Rendimiento**: R33 es una lectura por lote (el anexo le suma `OR ide IN`);
   `ejecutar`, la de F-051 R12. Se mide con `prueba_escritura_porcentajes.py`.
 - **Par a medias**: si la guarda de una falla entre la relectura y el
-  `UPDATE` (ventana mínima), la relectura lo saca a `omitir` y el log lo dice.
+  `UPDATE` (ventana mínima), sale a `omitir` y el log lo dice (aceptado, 10-22).
 - **Un `id` que no vuelve del front** (R37): la registrada queda `quitada` y
   la nueva no duplica (R27 si los días coinciden; si no, el modal lo enseña).
 - **Tests estáticos de F-042/F-050** que fijen texto de `chipEditable`: se

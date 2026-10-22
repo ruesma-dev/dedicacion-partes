@@ -2783,3 +2783,36 @@ front) y T16 (`azure-apps/dedicacion.md` y aviso a `partes`).
 `r20261021-1611`, api `r20261021-1613` y front `r20261021-1615`, en ese
 orden; revisiones `Healthy` al 100 %; transfer en modo real);
 `azure-apps/dedicacion.md` `223490c`. Comprobación en producción, del humano.
+
+## 2026-10-22 · F-030 · Incidencias en el cuadrante
+
+**Qué.** En la celda del %, si se escribe texto sale un desplegable con las
+incidencias de `partes` (catálogo de `auxhor` `CI*` sincronizado de Sigrid);
+con un número todo sigue igual. La incidencia lleva un tramo de días del mes,
+no cuenta para el 100 % y se registra como el par `CI*` (inicio) / `CIZ`
+(fin) con `can = 0` y `synckey porcentajes:inc:{id}:ini|fin`, en la obra y
+la partida de la línea de %, sin duplicar una igual del mes en cualquier
+obra. Anexo R30 (opción C del humano): cambiar los días de una registrada
+**edita la `fec`** de sus dos líneas en Sigrid (`UPDATE` con la guarda de
+F-051, el código y la `fec` leída, D16; nunca `DELETE`); quitar una
+registrada la deja `quitada` («sigue en Sigrid», D11 B); tipo u obra
+distintos = quitar + nueva. Los tres servicios. Spec en
+`specs/F-030-dias-bajas-incidencias/`, D1-D16 del humano; F-059 y F-060
+salen por D10.
+
+**Cómo se cerró.** Implementer con dos bloqueos por tests ajenos resueltos
+por el humano (T4 y T14, opción A: lista cerrada). Review 1 RECHAZADO por R30
+(cambiar los días escribía otro par), resuelto con el anexo; review 2
+RECHAZADO por papeleo (R48 sin test, rastro); review 3 APROBADO. Mutación en
+serie: 6.ª campaña, 406 mutantes, 0 supervivientes. Cobertura de lo cambiado
+99,9 %. **T20 la hizo el líder** con las escrituras en la 0404 autorizadas
+por el humano: alta del par, `ya_registrado`, cambio de días 5-9 → 6-12 con
+los mismos dos `ide` y ninguna línea nueva; 0404 limpia
+(`progress/manual_F-030.md`).
+
+**Observaciones recogidas.** El par a medias (la guarda de una línea falla
+entre la relectura y el `UPDATE`: esa sale `omitir` y la otra se edita)
+**lo aceptó el humano** el 2026-10-22 («2ok»), tal como dice design §12.
+Automejora de la review 3 (RM4 con `python -B` o sin `__pycache__` entre
+mutantes) ⇒ lista del arnés, a portar a `arnes-base`. Pendiente de desplegar
+(transfer → api → front), `azure-apps/dedicacion.md` y aviso a `partes`.
