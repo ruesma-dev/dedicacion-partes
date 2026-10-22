@@ -1,7 +1,19 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-030** (incidencias en el cuadrante)
+**En curso: F-061** (búsqueda predictiva en el desplegable de incidencias;
+`sdd: false`, rigor estándar), `in_progress` desde el 2026-10-22, rama
+`feature/F-061-busqueda-predictiva-incidencias` en la copia principal.
+Pedida por el humano tras desplegar F-030 (`baj` no encontraba B: su nombre
+en Sigrid es «Enfermedad/Acc. no laboral(B)»); propuesta aprobada («me
+parece bien», 2026-10-22): palabras extra en la config de la api, búsqueda
+por comienzo de palabra en letra, código, nombre y palabras extra, con una
+errata tolerada al final, y recarga del catálogo tras cada sync. Criterios
+en `features.json`. **Implementer lanzado el 2026-10-22.** Api y front; ni
+transfer ni Sigrid. Al desplegar (api → front): `azure-apps/dedicacion.md`
+(campos nuevos de `GET /incidencias`).
+
+**F-030** (incidencias en el cuadrante)
 **cerrada (`done`) y desplegada el 2026-10-22** (permiso del humano, «3
 si»; el script lo lanzó el humano, ver «Producción, hoy»);
 `azure-apps/dedicacion.md` `3d5c80b`. El arnés es la **1.7.3**.

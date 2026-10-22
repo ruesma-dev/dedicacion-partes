@@ -1017,6 +1017,25 @@
       "rigor": "critico",
       "priority": 4,
       "branch": "feature/F-060-bandeja-partes"
+    },
+    {
+      "id": "F-061",
+      "title": "Búsqueda predictiva en el desplegable de incidencias (nombre, palabras extra, letra y código)",
+      "description": "Pedida por el humano el 2026-10-22 tras desplegar F-030: «debe usar tambien el texto descriptivo de la incidencia para buscar de forma predictiva, por ejemplo si pongo baj que tambien salga baja» y «no quiero que sean solo palabras extras, sino que ademas haga busqueda predictiva tanto al nombre de la incidencia como a extra words». Hoy (F-030) el filtro de `app.js` busca el texto tecleado como subcadena de «letra + nombre», y el nombre de Sigrid de B es «Enfermedad/Acc. no laboral(B)»: `baj` no encuentra nada. Además el catálogo solo se carga al abrir la página (tras un sync seguía vacío) y el código de Sigrid (`CIV`) no se puede teclear. Propuesta aprobada por el humano el 2026-10-22 («me parece bien»): (1) PALABRAS EXTRA por código en `config/config.yaml` de la api, junto a `sync.incidencias.sql` (datos, no lógica; editar la lista no exige código): CIE «baja, IT, enfermedad común»; CIA «baja, accidente de trabajo»; CIM «baja, nacimiento, permiso»; CIP «permiso, ausencia»; CIF «ausencia»; CIV y CIH ninguna. `GET /api/v1/incidencias` las publica con el código (campos nuevos, compatibles hacia atrás). (2) BÚSQUEDA PREDICTIVA en el front (solo filtra y ordena el desplegable; no decide nada que se registre): cada palabra tecleada debe ser el COMIENZO de alguna palabra de la letra, el código, el nombre de Sigrid o las palabras extra, en cualquier orden (el nombre se trocea por lo que no sea letra o dígito: «Enf.», «Profesional(AT)»), sin tildes ni mayúsculas; ORDEN: letra exacta, nombre que empieza por lo tecleado, palabra del nombre que empieza, palabra extra que empieza, subcadena en medio de palabra (para que nada de lo que hoy funciona deje de funcionar) y, al final, TOLERANCIA A UNA ERRATA (distancia de edición 1) en palabras tecleadas de 4 o más letras. Empate: el orden del catálogo. (3) El front RECARGA el catálogo de incidencias al terminar cada sync con éxito. Servicios: api (config y la ruta) y front (filtro y recarga). Ni transfer ni Sigrid. Despliegue api → front; `docs/INTEGRACION.md` §5 y `azure-apps/dedicacion.md` (campos nuevos de `GET /incidencias`) al desplegar.",
+      "acceptance": [
+        "`GET /api/v1/incidencias` devuelve en cada incidencia, además de `codigo`, `letra` y `nombre`, sus palabras extra (lista, vacía si no tiene) leídas de `config/config.yaml`; un código del catálogo sin entrada en la config sale con la lista vacía y una entrada de la config sin código en el catálogo no aparece.",
+        "Con el catálogo real de Sigrid y las palabras extra aprobadas: `baj` → B, AT y M (B primero); `enf` → B y AT; `enf pro` → solo AT; `acc lab` → B; `vac` → V; `civ` → V; `ci` → todas; `b` → B la primera; `vacasiones` → V y `enfremedad` → B (una errata, en palabras de 4+ letras, ordenadas después de las coincidencias exactas); tildes y mayúsculas no importan.",
+        "Nada de lo que hoy encuentra el desplegable deja de encontrarse (subcadena de letra + nombre); con un número en la celda todo sigue igual que hoy (F-030 R1).",
+        "Tras un sync con éxito el front vuelve a pedir `GET /incidencias` y el desplegable usa el catálogo nuevo sin recargar la página; si la petición falla, se avisa y se queda el que hubiera (como al abrir).",
+        "El front no decide nada que se registre en Sigrid: solo filtra y ordena las opciones del desplegable.",
+        "`docs/INTEGRACION.md` §5 recoge los campos nuevos de `GET /api/v1/incidencias`.",
+        "Tests unitarios sin red ni BBDD (api: la ruta y la config; front: el filtro y el orden con los casos de arriba y la recarga tras el sync); `bash harness/init.sh` en verde."
+      ],
+      "status": "in_progress",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 1,
+      "branch": "feature/F-061-busqueda-predictiva-incidencias"
     }
   ]
 }
