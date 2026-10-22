@@ -190,7 +190,7 @@ hoy (obs. 6: fuera la rama inalcanzable). Motivos `MOTIVO_INC_CAMBIADA`,
 `incidencias_del_mes(…, ides=())` (§13.5); `_guarda(…, hora=None)`: con
 `hora`, `a.cod = ?`; sin ella, el texto de F-051 **idéntico**;
 `stmt_editar_fecha_incidencia(*, ide, reside, hora_codigo, synckey_leida,
-fecha_int)`. `registro_pipeline.py`: `reconciliar` antes del paso 5 (obs.
+fecha_int, fec_leida)` (D16). `registro_pipeline.py`: `reconciliar` antes del paso 5 (obs.
 7: solo las `escribir` piden parte; `editar` usa el de su línea); en
 `ejecutar`, sus `ide` entran en la lectura de `_planear_ediciones` (R45),
 sus `UPDATE` van juntos en el mismo lote, log (R46) y `_comprobar_escrito`
@@ -220,7 +220,7 @@ UPDATE hmores SET fec = ? WHERE ide = ? AND reside = ?
   AND ABS(ISNULL(can, 0) - 0) < 0.000001 AND LTRIM(RTRIM(ISNULL(synckey,
   ''))) = ? AND <sin enlaces> AND EXISTS (SELECT 1 FROM auxhor a WHERE
   a.ide = hmores.horide AND a.cod = ?) AND EXISTS (SELECT 1 FROM con c
-  WHERE c.ide = hmores.hmoide AND c.est = ?)
+  WHERE c.ide = hmores.hmoide AND c.est = ?) AND fec = ?    -- D16: la leída
 ```
 
 **13.6 Punta a punta (obligatorio).** `tests/contratos/f030_r30.json`, el
