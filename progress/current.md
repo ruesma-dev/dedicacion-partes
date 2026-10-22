@@ -15,8 +15,8 @@ review pasada 2 RECHAZADO solo por papeleo**
 `current.md`, ya hecho por el líder). El humano decidió **D16 = A** (la
 guarda exige también `fec = fec_antes`, 2026-10-22, «a»). **T38 hecha por
 el implementer el 2026-10-22** (R48 con su test, D16, obs. 3, 4 y 6, 6.ª
-campaña con 0 supervivientes), **lista para la review 3**; trae un punto
-para el líder (el par en la ventana de D16, abajo). Informe
+campaña con 0 supervivientes), **review pasada 3 lanzada el 2026-10-22**; el
+punto del par en la ventana de D16 (abajo) va a la review y al humano. Informe
 `progress/impl_F-030.md`.
 T20: primera mitad hecha por el líder en la 0404 (`progress/manual_F-030.md`);
 la segunda (cambio de días, comando exacto abajo) la ejecuta el líder con
