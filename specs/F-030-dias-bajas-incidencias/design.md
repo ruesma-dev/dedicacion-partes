@@ -133,6 +133,9 @@ que cupiera el anexo. El anexo no ha necesitado leer Sigrid.
   igualar, el cuadrante toma los días de Sigrid. B: el cuadrante manda.
   Borrada a mano: se reescribe (F-051 R17) en A y en B.
 - **D15 · Día ocupado.** **A (rec.)** mantiene R27: nunca dos iguales.
+- **D16 · `fec` en la guarda** (review 2, obs. 5). **A**, del humano el
+  2026-10-22: la guarda exige además `fec = fec_antes`; cierra la ventana de
+  §12 (una `fec` cambiada a mano tras leer no se pisa, como D14). T38.
 
 ## 12. Riesgos
 

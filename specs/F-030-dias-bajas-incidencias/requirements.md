@@ -126,8 +126,8 @@ en Sigrid (A: no tocar); **D15** día nuevo con otra igual (A: no editar esa).
   su parte; con la `fec` pedida, `ya_registrado`.
 - **R41.** CUANDO se pide otra `fec` y la nuestra sigue en la registrada (o
   no consta), la acción es **`editar`**: `UPDATE` de **solo** su `fec`, con
-  guarda (mismo `ide` y recurso, su código, `can` 0, la `synckey` leída, sin
-  enlaces, parte En registro). Cada línea del par se decide sola.
+  guarda (mismo `ide` y recurso, su código, `can` 0, la `synckey` y la `fec`
+  leídas [D16], sin enlaces, parte En registro). Cada línea, sola.
 - **R42.** `[D14]` SI la nuestra está fuera de la `fec` registrada, con otro
   código o `can` ≠ 0, ENTONCES no se toca: `omitir` «cambiada en Sigrid». La
   que ya no está (ni por `ide` ni por `synckey`) se escribe (F-051 R17).
