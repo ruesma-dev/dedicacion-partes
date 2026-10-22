@@ -1,7 +1,7 @@
 <!-- progress/mutacion_F-030.md -->
 # F-030 · Campaña de mutación
 
-Generado por `python -m harness.mutacion --feature F-030` el 2026-10-22 02:22.
+Generado por `python -m harness.mutacion --feature F-030` el 2026-10-22 09:57.
 
 ## Alcance
 
@@ -25,30 +25,30 @@ Origen del diff: **rama** (`7ab115a691cb2ed413e9b006f97d033617d1a8de` .. `featur
 | `services/dedicacion-api/interface_adapters/api/routes.py` | 49 |
 | `services/dedicacion-api/interface_adapters/api/schemas.py` | 61 |
 | `services/dedicacion-transfer/application/pipelines/registro_lote.py` | 13 |
-| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | 227 |
+| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | 240 |
 | `services/dedicacion-transfer/application/services/lecturas_lote.py` | 101 |
-| `services/dedicacion-transfer/application/services/reglas_incidencias.py` | 295 |
+| `services/dedicacion-transfer/application/services/reglas_incidencias.py` | 297 |
 | `services/dedicacion-transfer/domain/models/registro_models.py` | 82 |
-| `services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py` | 91 |
+| `services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py` | 93 |
 | `services/dedicacion-transfer/interface_adapters/api/app.py` | 62 |
 | `services/dedicacion-transfer/prueba_escritura_porcentajes.py` | 81 |
-| **Total** | **1997** |
+| **Total** | **2014** |
 
 ## Totales
 
 | Métrica | Valor |
 |---|---|
-| Mutantes generados | 405 |
-| Mutantes evaluados | 405 |
-| Muertos | 404 |
+| Mutantes generados | 406 |
+| Mutantes evaluados | 406 |
+| Muertos | 405 |
 | Supervivientes | 0 |
 | Timeouts | 1 |
 | Sin veredicto (base rota) | 0 |
-| Tiempo total | 1626.6 s |
-| SHA de HEAD medido | `b614b916a0b2f0b4ef08270af5d8cc2672c6fedb` |
-| Línea base (s) — `services/dedicacion-api` | 13.8 |
-| Línea base (s) — `services/dedicacion-transfer` | 9.2 |
-| Media por mutante evaluado (s) | 4.0 |
+| Tiempo total | 3240.5 s |
+| SHA de HEAD medido | `7a96edc1e6c2c8218f4d7c1c1147f9891d62d8cc` |
+| Línea base (s) — `services/dedicacion-api` | 33.9 |
+| Línea base (s) — `services/dedicacion-transfer` | 19.2 |
+| Media por mutante evaluado (s) | 8.0 |
 | Timeout efectivo por mutante (s) | 120 — derivado de la línea base × 2.0 |
 | Suelo configurado (s) | 120 |
 | Workers | 1 |
@@ -60,8 +60,7 @@ Ninguno: cada mutación aplicada la cazó al menos un test.
 
 ## Timeouts
 
-- `services/dedicacion-transfer/application/services/reglas_incidencias.py:247` [not] if not ocupadas: -> if ocupadas:
-
+- `services/dedicacion-transfer/application/services/reglas_incidencias.py:249` [not] if not ocupadas: -> if ocupadas:
 
 
 ## Historial de campañas (implementer)
@@ -76,7 +75,20 @@ con un cambio de código.
 | 2.ª | `42c0fb5` | 250 | 1 | `registro_pipeline.py:826`: test del log con 2 y 4 líneas (`8b17e85`) |
 | 3.ª | `8b17e85` | 250 | 0 | fin de T1-T21 |
 | 4.ª | `42c1cc8` | 405 | 7 (+1 timeout) | anexo R30 (T22-T36). Los 7, huecos reales, cerrados con tests (`b614b91`); abajo |
-| 5.ª | `b614b91` | 405 | **0** (+1 timeout, detectado) | esta campaña |
+| 5.ª | `b614b91` | 405 | 0 (+1 timeout, detectado) | fin del anexo (T22-T37) |
+| 6.ª | `7a96edc` | 406 | **0** (+1 timeout, detectado) | esta campaña: T38 (D16, obs. 3, 4 y 6) |
+
+**La 6.ª (T38).** Mismo alcance más lo de T38 (2.014 líneas): un mutante
+más, en la guarda nueva (`sigrid_write_client.py:938`, `+ [int(fec_leida)]`
+→ `-`: muerto, como el `+ params` → `-`). Las líneas de `_fila_incidencia`
+y el `AND fec = ?` del texto no generan mutantes con los operadores de la
+herramienta; los cubren `test_f030_r46_el_log_de_cada_edicion` y
+`test_f030_r41_sql_editar_la_fec_*`, con su RED en el informe §6. El
+timeout es el mismo de la 5.ª (`reglas_incidencias.py:249`, antes `:247`:
+solo bajó dos líneas al mover `_TRAZA_ROL`). Tiempo: 3.240,5 s, el doble
+que la 5.ª porque las líneas base también lo son (api 33,9 s frente a
+13,8 s; transfer 19,2 s frente a 9,2 s): 406 × 8,0 s ≈ 3.248 s, coherente
+(RM2).
 
 **Los 7 de la 4.ª (anexo R30) y cómo se cerraron.** Cada mutante, aplicado a
 mano tras el test nuevo, da «1 failed».

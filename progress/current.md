@@ -13,9 +13,11 @@ opción **C** y **aprobó el anexo R30 el 2026-10-21** («si»: D11 = B, D12-D15
 review pasada 2 RECHAZADO solo por papeleo**
 (`progress/review_F-030.md`: obs. 1 resuelta de punta a punta; el cambio 1,
 `current.md`, ya hecho por el líder). El humano decidió **D16 = A** (la
-guarda exige también `fec = fec_antes`, 2026-10-22, «a»). **Implementer
-lanzado el 2026-10-22 para T38** (R48 con su test, D16, obs. 3, 4 y 6,
-campaña nueva). Informe `progress/impl_F-030.md`.
+guarda exige también `fec = fec_antes`, 2026-10-22, «a»). **T38 hecha por
+el implementer el 2026-10-22** (R48 con su test, D16, obs. 3, 4 y 6, 6.ª
+campaña con 0 supervivientes), **lista para la review 3**; trae un punto
+para el líder (el par en la ventana de D16, abajo). Informe
+`progress/impl_F-030.md`.
 T20: primera mitad hecha por el líder en la 0404 (`progress/manual_F-030.md`);
 la segunda (cambio de días, comando exacto abajo) la ejecuta el líder con
 autorización expresa del humano. Ningún agente escribe en Sigrid por su
@@ -29,14 +31,26 @@ desde F-051 el transfer de dedicación **edita en su sitio** líneas `M*` de
 los partes compartidos (también las que tengan `synckey partes:…`, sin
 cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
 
-## F-030 · anexo R30: implementación TERMINADA, lista para review (implementer, 2026-10-22)
+## F-030 · anexo R30 y T38: implementación TERMINADA, lista para review 3 (implementer, 2026-10-22)
 
-- **Estado:** T22-T37 `[x]`, un commit `F-030 Tn` por tarea (código cerrado
-  en `b614b91`). Informe: `progress/impl_F-030.md` (el detalle de T1-T21
-  pasó a `progress/impl_F-030_anexo.md`); mutación:
-  `progress/mutacion_F-030.md` (5.ª campaña en serie: 405 mutantes,
-  **0 supervivientes**, 1 timeout detectado). `bash harness/init.sh` en
-  verde, ruff en 277 como `dev`, cobertura de lo cambiado 99,9 %.
+- **Estado:** T22-T38 `[x]`, commits `F-030 Tn` (código cerrado en
+  `7a96edc`, T38). Informe: `progress/impl_F-030.md` (T38 en su §6; el
+  detalle de T1-T21 y del anexo, en `progress/impl_F-030_anexo.md`);
+  mutación: `progress/mutacion_F-030.md` (6.ª campaña en serie sobre
+  `7a96edc`: 406 mutantes, **0 supervivientes**, 1 timeout detectado).
+  `bash harness/init.sh` en verde con las cachés borradas, ruff en 277 como
+  `dev`, cobertura de lo cambiado 99,9 % (833/834).
+- **T38:** `test_f030_r48_*` en api y transfer (verdes de entrada, como T1);
+  D16, la guarda del `UPDATE` de la `fec` acaba en `AND fec = ?` con la
+  `fec` releída (fuera de `_guarda`: F-051 idéntico,
+  `test_f051_sql_cero.py` intacto), con RED; obs. 3, 4 (log de R46 con
+  `reside`, `hmoide`, `est`, `enlazada`) y 6 (citas); docs con D16.
+- **Punto para el líder (D16 y el par):** si la `fec` de una línea cambia
+  entre la relectura de R45 y el `UPDATE`, esa no se pisa y sale `omitir`,
+  pero la otra del par **sí** se edita (cada `UPDATE` con su guarda, como
+  pide R41 y acepta design §12): el par queda a medias y la respuesta lo
+  dice. Cerrarlo del todo exigiría acoplar las dos guardas en SQL: cambio
+  de spec, no hecho (informe §6).
 - **Decisiones y desviaciones** (justificadas en el informe, §3): los campos
   del contrato api → transfer se llaman `hmores_ide_ini`, `hmores_ide_fin`,
   `dia_ini` y `dia_fin` y solo viajan si la incidencia está registrada; los
@@ -54,14 +68,18 @@ cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
   (dos `editar`, `fec_antes` 5 y 9);
   `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:6:12`;
   `python prueba_escritura_porcentajes.py verificar --incidencia RECURSO:CIV:6:12`
-  (**los mismos dos `ide`**, `fec` 6 y 12, ninguna línea nueva); otra vez
+  (**los mismos dos `ide`**, `fec` 6 y 12, ninguna línea nueva: prueba que
+  Sigrid acepta y aplica la guarda **con `AND fec = ?`**, D16); otra vez
   `ejecutar` (`ya_registrado`); y
   `python prueba_escritura_porcentajes.py limpiar --confirmar`. El resultado
-  real se anota en `progress/manual_F-030.md` y en el informe.
+  real se anota en `progress/manual_F-030.md` y en el informe. No prueba que
+  una `fec` movida a mano entre la relectura y el `UPDATE` no se pise: eso
+  solo lo cubren tests (`test_f030_r41_d16_*`).
 - **`azure-apps` pendiente (del líder, al desplegar):** `azure-apps/dedicacion.md`
   debe decir que leemos `auxhor` (`CI*`), escribimos el par `CI*`/`CIZ` con
   `can = 0` y `synckey porcentajes:inc:` y **editamos la `fec`** de ese par
-  (`UPDATE` con guarda, nunca `DELETE`) cuando cambian sus días; y las rutas
+  (`UPDATE` con guarda, también la `fec` leída; nunca `DELETE`) cuando
+  cambian sus días; y las rutas
   y campos nuevos (`id`, `quitada`, `incidencias_quitadas`, `fec_antes`).
   Avisar a `partes` de que su `partes.md` debería contarlo.
 
@@ -118,7 +136,8 @@ cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
   probado contra Sigrid el `INSERT` del par `CI*`/`CIZ`, la lectura de las
   `CI*` del mes (R27/R33), la relectura por `synckey` y `limpiar`. La
   **segunda mitad** (cambio de días) tiene el comando exacto arriba, en la
-  sección del anexo. Tiene que probar el `UPDATE … SET fec` con su guarda,
+  sección del anexo. Tiene que probar el `UPDATE … SET fec` con su guarda
+  (desde T38, con `AND fec = ?`, D16),
   `lineas_para_editar` sobre líneas `CI*`, la relectura por `ide` y las
   columnas nuevas que lee (`can`, `hmoide`, `est`). **Ni con ella quedará
   probado** (review 2): el script no manda la traza y localiza por

@@ -226,3 +226,48 @@ Resultado esperado: `verificar` encuentra dos líneas en la `0404` (`CIV` el
 | Cobertura de líneas cambiadas | 99,5 % (634/637), PUERTA COBERTURA de `init.sh` |
 | Mutación | 3.ª campaña: 250 generados, 250 muertos, **0 supervivientes**, 0 timeouts; `--workers 1`; 1.888,2 s (HEAD `8b17e85`). Antes: 31 y 1 supervivientes, todos cerrados con tests o código |
 | Tiempo de la suite | raíz 50,38 s; api 60,54 s; front 40,06 s; transfer 19,04 s (pytest, en `init.sh`) |
+
+## Anexo R30: qué cambió (T22-T37), movido de `impl_F-030.md` en T38
+
+- **Contrato** (T22): `tests/contratos/f030_r30.json` (6-9 y 12-14), en dos
+  mitades sin red (`test_f030_r30_punta_a_punta.py` en api y transfer).
+- **api** (T23-T26): `incidencia` + `quitada`, `sigrid_dia_ini/_fin`; PUT por
+  `id` (R36: 422 si el `id` no es del trabajador o del periodo, repetido, o
+  una registrada cambia de obra o código); `reemplazar` conserva por `id`,
+  borra la no registrada ausente y deja `quitada` la registrada (R38);
+  solapes sin quitadas; evento con `id`/`quitada` (R47); las quitadas no
+  viajan y el preflight las lista; `hmores_ide_*`/`dia_*` con la traza;
+  traza por rol, y un `omitir` de una registrada solo cambia el motivo (R39).
+- **transfer** (T27-T31, T34):
+  - Contrato con los cuatro campos; `fec_antes` y `hmoide` en la acción.
+  - `incidencias_del_mes(…, ides=())` trae `can`, `hmoide`, `con.est` y
+    busca por `h.ide`; `stmt_editar_fecha_incidencia`, `UPDATE hmores SET
+    fec = ?` con la guarda de F-051 y `a.cod = ?` (sin `hora`, F-051 igual).
+  - `reconciliar` (sustituye a `deduplicar`), puro: la nuestra por `ide` o
+    `synckey` con su `fec` → `ya_registrado`; con otra → `editar`, salvo
+    cambiada a mano (R42), parte cerrado (R43) o día ocupado con las
+    ediciones aplicadas, en punto fijo (R44). Sin la nuestra, R27.
+  - Preflight y lote: `reconciliar` antes del paso 5 (obs. 7) y los `ide`
+    en la misma lectura y ronda (obs. 3 de la review 1).
+  - `ejecutar` (R45, R46): las `editar` en la relectura de
+    `_planear_ediciones`; `sigue_editable` y `no_editar_el_par` (el par o
+    ninguna); `UPDATE` juntos; log; sin la `fec` nueva tras escribir,
+    `omitir`. Ni `INSERT`, ni `DELETE`, ni parte nuevo por ellas.
+  - Script: `editar`, `fec_antes` y `hmores.ide`.
+- **front** (T32): `id` en `cargarEdicion` y el PUT, `idsDeLaRespuesta`
+  (R37), quitada tachada y fuera del editor, «se cambia del d al d» y
+  `seccionQuitadas`. Solo formato e identidad.
+- **docs** (T35) e **T36** (16 avisos de ruff fuera; el repo, 277 como `dev`).
+
+### Decisiones y desviaciones del anexo (justificadas)
+
+- **Nombres del contrato**: `hmores_ide_ini/_fin`, `dia_ini/_fin` (design §6
+  no los fijaba); solo viajan si hay alguno.
+- **Los `xfail` estrictos se quitaron antes de T33** (api en T26, transfer
+  en T31, al pasar a XPASS: con `strict` la suite se habría puesto roja).
+- **R42 sin día en la traza**: cambiada si está fuera del mes (R48).
+- **R43**: «sigue del d al h» con los días de hoy en Sigrid (`?` si falta).
+- **`deduplicar` desaparece**: sus tests de R27, con un adaptador local.
+- **Front**: `idsDeLaRespuesta`/`seccionQuitadas` solo si hay datos.
+- **T34**: `verificar` ya imprimía `hmores.ide` y `fec`; ahora con test.
+- **T38, D16**: la `fec` va al final del `UPDATE`, fuera de `_guarda` (§6).
