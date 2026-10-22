@@ -4,22 +4,22 @@
     "servicios":  {
                       "dedicacion-transfer":  {
                                                   "repositorio":  "dedicacion-transfer",
-                                                  "tag":  "r20261021-1611",
-                                                  "publicado":  "2026-10-21T16:11:07",
+                                                  "tag":  "r20261022-1513",
+                                                  "publicado":  "2026-10-22T15:13:08",
                                                   "nota":  "Publicado por build_images_dedicacion.ps1.",
                                                   "digest":  "sha256:cf872c89d1bcc9dfd613baea8a0e196c87391edd0da2cf848100c21dff413e3f"
                                               },
                       "dedicacion-api":  {
                                              "repositorio":  "dedicacion-api",
-                                             "tag":  "r20261021-1613",
-                                             "publicado":  "2026-10-21T16:13:30",
+                                             "tag":  "r20261022-1514",
+                                             "publicado":  "2026-10-22T15:14:48",
                                              "nota":  "Publicado por build_images_dedicacion.ps1.",
                                              "digest":  "sha256:d5b4a18a32c260e7aeb6eafc1b19d66aba789f2ea4a09e2cee02ab6983edb84e"
                                          },
                       "dedicacion-front":  {
                                                "repositorio":  "dedicacion-front",
-                                               "tag":  "r20261021-1615",
-                                               "publicado":  "2026-10-21T16:15:31",
+                                               "tag":  "r20261022-1516",
+                                               "publicado":  "2026-10-22T15:16:25",
                                                "nota":  "Publicado por build_images_dedicacion.ps1.",
                                                "digest":  "sha256:abd1b6f40e802b112a5d3a1ce2e580ba6bb4fc1149d895050adba72129cec8f3"
                                            }

@@ -2,8 +2,9 @@
 # Trabajo en curso
 
 **Ninguna feature en curso.** **F-030** (incidencias en el cuadrante)
-**cerrada (`done`) el 2026-10-22**, pendiente de desplegar con permiso del
-humano («3 si», si la prueba salía bien: salió). El arnés es la **1.7.3**.
+**cerrada (`done`) y desplegada el 2026-10-22** (permiso del humano, «3
+si»; el script lo lanzó el humano, ver «Producción, hoy»);
+`azure-apps/dedicacion.md` `3d5c80b`. El arnés es la **1.7.3**.
 
 **Pendiente del humano:** la comprobación de F-051 en producción (Ctrl+F5;
 un registro con una línea `M*` al 0 % en el parte la edita en su sitio y el
@@ -12,8 +13,15 @@ modal lo avisa; un pisado dice «se edita la línea X (…) y se escribe N%»).
 desde F-051 el transfer de dedicación **edita en su sitio** líneas `M*` de
 los partes compartidos (también las que tengan `synckey partes:…`, sin
 cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
+**F-030 en producción:** lanzar un sync (el desplegable de incidencias sale
+vacío hasta que el sync llene el catálogo de `auxhor`) y comprobarla
+(Ctrl+F5; texto en la celda del % ⇒ desplegable; registrar ⇒ el par
+`CI*`/`CIZ` en el parte). **Aviso a `partes`** de F-030: dedicación escribe
+líneas de incidencia `CI*`/`CIZ` (`can = 0`, `synckey porcentajes:inc:`) en
+los mismos partes, no duplica las suyas y, si cambian los días, edita la
+`fec` de las nuestras; nunca borra.
 
-## F-030 · CERRADA (2026-10-22), pendiente de desplegar
+## F-030 · CERRADA y DESPLEGADA (2026-10-22)
 
 - Review 3 **APROBADO** (`progress/review_F-030.md`); `init.sh` en verde;
   6.ª campaña de mutación con 0 supervivientes; cobertura 99,9 %. Resumen
@@ -25,14 +33,9 @@ cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
   nueva, `ya_registrado` y 0404 limpia (`progress/manual_F-030.md`).
 - **El par a medias** (design §12) lo aceptó el humano el 2026-10-22
   («2ok»): sin D17.
-- **Al desplegar** (líder, transfer → api → front; el transfer, en modo
-  real): `azure-apps/dedicacion.md` dirá que leemos `auxhor` (`CI*`),
-  escribimos el par `CI*`/`CIZ` con `can = 0` y `synckey porcentajes:inc:`
-  y **editamos la `fec`** de ese par (`UPDATE` con guarda, también la `fec`
-  leída; nunca `DELETE`), con los campos nuevos (`id`, `quitada`,
-  `incidencias_quitadas`, `fec_antes`). **Aviso a `partes`** (del humano):
-  su `partes.md` debería decir que `porcentajes` escribe y edita `CI*`/`CIZ`
-  en los mismos partes.
+- **Desplegada el 2026-10-22** (ver «Producción, hoy»);
+  `azure-apps/dedicacion.md` `3d5c80b` (§1, §5 y §7: `auxhor`, el par
+  `CI*`/`CIZ`, la edición de su `fec`, las tablas y los campos nuevos).
 
 ## F-051 · CERRADA y DESPLEGADA (2026-10-21)
 
@@ -46,6 +49,15 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés es la **1.7.3**.
 ## Producción, hoy
 
+- **Desplegado el 2026-10-22: F-030**, los tres servicios en orden con
+  `redeploy_dedicacion.ps1 -Solo transfer,api,front` (lo lanzó el humano:
+  el permiso de la sesión no dejó al líder): transfer `r20261022-1513`,
+  api `r20261022-1514` y front `r20261022-1516`, revisiones
+  `…--r20261022151217`, las tres `RunningAtMaxScale`, `Healthy` y con el
+  100 % del tráfico (`az containerapp revision list`). El transfer sigue en
+  **modo real** (`OBRA_PRUEBAS_FORZAR=false`) y transfer y api arrancaron sin
+  errores (`containerapp logs`; la api crea `tipo_incidencia` e `incidencia`
+  al arrancar). `infra/imagenes.json` al día en este commit.
 - **Desplegado el 2026-10-21: F-051**, los tres servicios en orden, por el
   líder con `redeploy_dedicacion.ps1 -Solo transfer|api|front` (permiso del
   humano): transfer `r20261021-1611` (revisión
@@ -199,7 +211,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada y desplegada el 2026-10-21. Orden: **F-030** (cerrada el 2026-10-22, pendiente de desplegar), **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
 F-033 y, detrás, F-017, F-018…
 
