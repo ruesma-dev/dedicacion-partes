@@ -1,140 +1,139 @@
 <!-- progress/review_F-061.md -->
-Revisión completa (pasada 1), `dev` (`87d1733`) .. `8be5c81`
+Revisión incremental desde 8be5c81 (pasada 2), delta `8be5c81`..`f688443`
 
 # Review F-061 · búsqueda predictiva en el desplegable de incidencias
 
-**Veredicto: CHANGES_REQUESTED** (RECHAZADO). El código es correcto y
-cumple el contrato. Lo que falla son los tests de node: dos cambios
-razonables en `app.js` los pasan en verde (punto 4). Además, «Evidencias» no
-da el número de workers. Los arreglos son de tests y de papeleo; no hay que
-tocar código de producción.
+**Veredicto: APPROVED** (APROBADO).
+
+La pasada 1 (CHANGES_REQUESTED) está en el commit `c517600`, en este mismo
+fichero: allí está la revisión completa del código, los cinco puntos pedidos
+y la campaña manual de 24 mutantes de JS. Lo que se aprobó en esa pasada no
+se vuelve a revisar. El delta cambia `palabras_incidencia.py` (2 líneas),
+`test_f061_palabras.py`, `test_f061_busqueda.py` y `progress/`. No cambia
+ninguna firma pública ni ningún fichero de sitio, y `app.js` no se toca. El
+alcance de la campaña sí cambia (la línea 35), así que reviso de nuevo la
+mutación (ver C4 bis).
 
 **Nivel de rigor:** `estandar`, declarado en `features.json`. Exige fase RED,
 cobertura de las líneas cambiadas ≥ 80 % y mutación con los supervivientes
-analizados. `sdd: false`: el contrato son el `description` (con las dos
-decisiones del humano) y los 7 `acceptance`.
+analizados.
 
 ## Verificación ejecutada
 
-`bash harness/init.sh`, solo, con `.arnes_cache/suite_*.ok` borradas:
-**ENTORNO LISTO**, sin `[KO]`. Raíz 418 + 1 skipped (previo), api 1141, front
-369 (0 skipped: node corrió), transfer 1230; COBERTURA 100 % (32/32), ruff
-277 (previos). Árbol limpio; los mutantes de JS, en una copia del scratchpad.
+`bash harness/init.sh`, solo y con `.arnes_cache/suite_*.ok` borradas antes:
+**ENTORNO LISTO**, ningún `[KO]`.
 
-## Los cinco puntos pedidos
+- Tests: raíz 418 + 1 skipped (ya estaba), api **1145** (+4), front **371**
+  (+2, 0 skipped: node corrió) y transfer 1230.
+- Puertas: COBERTURA `[OK]` 100 % (32/32); TAMAÑO impl 210/220.
+- ruff: 277 avisos, los de antes.
 
-1. **Test ajeno: cumple.** Contra `dev`, el único test que ya existía y
-   cambia es `test_f030_catalogo.py`. En `test_f030_r6_…` los tres dicts
-   mantienen `codigo`/`letra`/`nombre` y solo ganan `"palabras"` y
-   `"orden_busqueda"` (CIA 1, CIE 0, CIV 5). Hay además un comentario de 2
-   líneas que cita la autorización; no cambia ninguna aserción.
-2. **El front no decide: cumple.** `categoria`, `peso` y el `sort` solo
-   eligen qué candidatas salen y en qué orden. Se siguen pintando `letra` y
-   `nombre`, y `alElegir(t)` recibe el mismo objeto del catálogo. Las
-   palabras extra ni se pintan ni viajan. Lo fija `test_f061_r5_…`.
-3. **Criterios contra los tests: cumple, con los huecos del punto 4.** Los
-   diez casos, uno a uno, en `test_f061_r2_los_casos_…`, con el catálogo
-   real: sin «(X)», que quita `letra_y_nombre`; los comprobé también a mano.
-   Las categorías, con ESCALERA (`orden_busqueda` al revés); el desempate y
-   las nulas detrás, con `…_empate_…`; la recarga, con `test_f061_r4_*`. §5
-   de `INTEGRACION.md` recoge los dos campos, el orden por letra y la recarga.
-4. **El JS en los tests de node.** Apliqué a mano 24 mutantes razonables en
-   `app.js` y corrí `test_f061_*` + `test_f030_celda_pct.py` en cada uno.
-   Mueren 22: umbral 4→3 y 4→5, `<=1`→`<=2`, sin transposición OSA,
-   `every`→`some` en las categorías 3, 4 y 6, intercambiar 3↔4, quitar las
-   categorías 0, 1, 2 o 5, palabras extra sin trocear o sin usar, nulas
-   delante, desempate quitado o invertido, trocear por espacios, sin recarga
-   y recarga antes de `cargarPeriodo`. **Sobreviven 2:**
-   - `Math.min(p.length, w.length + 1)` → `w.length`. La errata por **letra
-     que falta** deja de funcionar («enfermdad» ya no encuentra B) y ningún
-     test lo nota. Hay casos de sustitución, transposición y letra de más,
-     pero ninguno de letra de menos.
-   - `includes(q)) return 5;` → `return 7;`, es decir, la subcadena pasa
-     detrás de la errata. Contradice el orden del contrato («subcadena … y,
-     al final, … errata»). Ninguna búsqueda de los tests tiene a la vez un
-     candidato por subcadena y otro por errata.
-5. **Decisiones del implementer: las dos encajan.**
-   - «Una errata por palabra tecleada»: el contrato dice errata «en palabras
-     tecleadas de 4 o más letras»; leerlo por palabra es lo natural y ningún
-     criterio lo contradice («vacasionez», dos erratas → [], está afirmado).
-     Que el humano sepa que «vacasiones enfremedad» tolera una en cada una.
-   - Config en cada petición: `cargar_config` va con `lru_cache` y es la
-     misma fuente de `construir_contenedor`, con precedente en el export
-     (`routes.py:485`); `deps` valida al arrancar. Coste: parsear 7
-     entradas. Editar la lista no exige código, sí reinicio o redespliegue.
+`git status` queda limpio antes y después. Las pruebas de JS se hicieron sobre
+una copia del front en el scratchpad.
+
+## Los cambios requeridos de la pasada 1
+
+1. **Dos tests de node: hecho.** Son `test_f061_r2_errata_por_letra_que_falta`
+   («enfermdad» → B, «vcaciones» → V) y
+   `test_f061_r2_la_subcadena_va_antes_que_la_errata` (Baca/Llevaca, «vaca» →
+   S, R), los dos tal como se pidieron. **Los matan de verdad:** en una copia
+   nueva de `dedicacion-front` en `HEAD` repetí los mismos 24 mutantes de la
+   pasada 1 (`test_f061_*` y `test_f030_celda_pct.py`), y ahora mueren **24 de
+   24**:
+   - `w.length + 1` → `w.length`: 1 fallo.
+   - `return 5` → `return 7`: 1 fallo.
+   Los otros 22 siguen muertos. El informe trae además la traza de cada
+   mutante, aplicada por el implementer.
+2. **«4 workers» en «Evidencias»: hecho.** Está en la fila de la mutación
+   Python.
+3. **Campaña manual de JS escrita: hecho.** Tiene su fila en «Evidencias»
+   (24 mutantes: 22 muertos y 2 que matan los tests nuevos) y su sección
+   «Review 1: lo corregido».
+
+## O1 (`e7a9371`): no rompe nada
+
+`entrada.get("palabras") or []` pasa a ser `entrada.get("palabras", [])`.
+Ahora solo la clave que falta cuenta como lista vacía; `""`, `0`, `false` o
+`null` dan el `ValueError` de siempre.
+
+- **Tests:** cuatro casos nuevos en el `parametrize` de config mal escrita.
+  Su fase RED tiene traza real (4 failed antes del cambio).
+- **Test propio cambiado:** el de lectura usaba `"palabras": None` y ahora
+  usa `[]`. Es de F-061, no es ajeno, y el cambio es coherente con O1.
+- **Config real:** `config.yaml` escribe `palabras: []` en CIV y CIH (no
+  `palabras:` vacío), así que sigue siendo válida. Lo confirman
+  `test_f061_r1_config_trae_las_palabras_aprobadas_en_su_orden` y las rutas,
+  en verde.
+- **Arranque:** `deps` valida con la misma función. Con la config real, la
+  api arranca: los tests de contenedor (`test_f023_*`) y de rutas están en
+  verde.
+- **Riesgo residual:** si alguien deja `palabras:` vacío en el YAML, la api no
+  arranca, con un mensaje que dice la clave y el código. Es lo que pedía O1:
+  fallar, no ignorarlo.
 
 ## Checkpoints
 
 - **C1** `[x]` init.sh con exit 0 · `[x]` los ficheros del arnés existen.
-- **C2** `[x]` una sola `in_progress` (F-061) · `[x]` rama correcta · `[x]`
-  current.md encabezado por F-061, con despliegue, MANUAL y azure-apps (el
-  resto es estado vivo de producción) · `[x]` las `done` están en history.
-- **C3** `[x]` hexagonal: función pura en `application/`; el adaptador lee
-  la config como ya hacía el export · `[x]` primera línea con la ruta ·
-  `[x]` sin prints, secretos ni dependencias nuevas · `[x]` trampas: ni %,
-  ni postventa, ni escrituras en Sigrid; solo api y front.
+- **C2** `[x]` una sola `in_progress` (F-061) · `[x]` rama
+  `feature/F-061-…` · `[x]` `current.md` encabezado por F-061, con el
+  rechazo, la corrección y el relanzamiento; despliegue, MANUAL y azure-apps
+  siguen listados · `[x]` las `done` están en `history.md`.
+- **C3** `[x]` hexagonal sin cambios respecto a la pasada 1 · `[x]` primera
+  línea con la ruta · `[x]` sin prints, secretos ni dependencias nuevas ·
+  `[x]` trampas: ni %, ni postventa, ni escrituras en Sigrid.
 - **C3 bis** `N/A`: no toca `docs/referencia/`.
-- **C4** `[ ]` todos los criterios tienen test y pasan, **pero** dos reglas
-  del contrato no las fija ningún test: errata por letra que falta y
-  subcadena antes de errata (punto 4) · `[x]` sin red ni BBDD · `[x]` MANUAL
-  en current.md con los pasos exactos.
+- **C4** `[x]` cada criterio tiene su test y todos pasan; las dos reglas que
+  faltaban tienen ahora el suyo · `[x]` sin red ni BBDD · `[x]` MANUAL en
+  `current.md` con los pasos exactos.
 - **C4 bis**
-  - `[x]` rigor declarado · `[x]` fase RED con trazas reales de las tres
-    suites · `[x]` cobertura `[OK]` 100 %.
-  - `[x]` mutación verificada aparte: `alcance_de_feature("F-061")` da 61
-    líneas (41/4/12/4) y `generar_mutantes`, 10, todos en
-    `palabras_incidencia.py`. Mismo alcance y mismo número que el informe.
-  - `[x]` campaña **no reejecutada**: 259 s según el informe (más de 60 s).
-    Vale el recálculo puro más RM1-RM6.
-  - `[x]` coste por mutante 259 × 4 / 10 = 104 s ≥ 72 s de base; RM2 sin
-    salto de orden de magnitud · `[x]` sin «CAMPAÑA NO VÁLIDA», «Sin
-    veredicto» 0 · `[x]` RM1: medida sobre `54ad111`; después solo cambia
-    `progress/` · RM3: ninguno de los 10 muertos es equivalente.
-  - `N/A` RM5 (nivel `estandar`) · `[x]` RM6: no se quitó ninguna guarda ·
-    `N/A` campaña manual (la automática dio 10) · `N/A` análisis de
-    supervivientes (hubo 0).
-  - `[ ]` **«Evidencias» no da el nº de workers** (4, solo en
-    `mutacion_F-061.md`); el checkbox lo pide en el informe del implementer.
+  - `[x]` rigor declarado.
+  - `[x]` fase RED: trazas reales, también la de O1.
+  - `[x]` cobertura `[OK]` 100 %.
+  - `[x]` mutación verificada de forma independiente:
+    `alcance_de_feature("F-061")` da **63** líneas (43/4/12/4) y
+    `generar_mutantes` da **9**, todos en `palabras_incidencia.py`. Mismo
+    alcance y mismo número que el informe. El `or` de la línea 35 ya no
+    existe, de ahí los 9 frente a los 10 de antes.
+  - `[x]` campaña **no reejecutada**: 205,9 s según el informe, por encima de
+    60 s. Vale el recálculo puro más RM1-RM6.
+  - `[x]` coste por mutante: 205,9 × 4 / 9 = 91,5 s ≥ 71,4 s de línea base.
+  - `[x]` sin «CAMPAÑA NO VÁLIDA»; «Sin veredicto» 0.
+  - `[x]` RM1: se midió sobre `e7a9371…`. Después solo cambia `progress/`
+    (`git diff --stat e7a9371..HEAD`), así que el alcance es el mismo.
+  - `[x]` RM2: 9 × 22,9 = 206 s, cuadra con el «Tiempo total».
+    22,9 × 4 = 91,6 s contra 71,4 s de base: no hay salto de orden de
+    magnitud.
+  - RM3: ninguno de los 9 muertos es equivalente. Son las guardas de tipo y
+    las de `and`/`or`, todas observables con la config mal escrita de los
+    tests.
+  - `N/A` RM5: el nivel es `estandar`.
+  - `[x]` RM6: no se quitó ninguna guarda. O1 añade defensa: un valor
+    presente que no es lista se rechaza.
+  - `N/A` campaña manual de Python: la automática dio 9.
+  - `N/A` análisis de supervivientes: hubo 0.
+  - `[x]` «Evidencias» trae los cuatro números y los workers.
 - **C4 ter** `N/A`: no existe `harness/rutas_sensibles.json`.
-- **C5** `N/A` tasks.md (`sdd: false`); hay commits `F-061 T1..T4` y
-  `F-061: …` · `[x]` sin temporales · `[x]` features.json = `in_progress`.
+- **C5** `N/A` `tasks.md` (`sdd: false`); hay commits `F-061 T1..T4` y
+  `F-061: …` · `[x]` sin temporales · `[x]` `features.json` dice
+  `in_progress`, que es lo real hasta el cierre.
 
 ## Cobertura criterio → test
 
 | Criterio | Test |
 |---|---|
-| 1 api `palabras`/`orden_busqueda` | `test_f061_r1_*` (15) y `test_f030_r6_…` |
-| 2 los diez casos, tildes y orden | `test_f061_r2_*` (5); faltan los del cambio 1 |
+| 1 api `palabras`/`orden_busqueda`; sin entrada `[]`/`null`; sobrante ignorada | `test_f061_r1_*` (19) y `test_f030_r6_…` |
+| 2 los diez casos, tildes, orden, errata | `test_f061_r2_*` (7), con los dos nuevos |
 | 3 nada se pierde; con número, como hoy | `test_f061_r3_…` (>1000) y F-030 R1, R8-R13 |
 | 4 recarga tras el sync | `test_f061_r4_*` (3) |
 | 5 el front no decide | `test_f061_r5_…` |
-| 6 INTEGRACION §5 | revisado a mano |
+| 6 INTEGRACION §5 | revisado a mano (pasada 1) |
 | 7 sin red ni BBDD; init.sh verde | «Verificación ejecutada» |
 
-## Cambios requeridos
+## Para el líder (no bloquea)
 
-1. `services/dedicacion-front/tests/test_f061_busqueda.py`: añadir dos
-   tests:
-   - (a) `_buscar(["enfermdad", "vcaciones"])` da `["B"]` y `["V"]`. Mata el
-     mutante de `casiEmpieza` en `app.js` (`w.length + 1` → `w.length`).
-   - (b) con el catálogo `[{codigo:"CI6", letra:"R", nombre:"Baca",
-     orden_busqueda:0}, {codigo:"CI5", letra:"S", nombre:"Llevaca",
-     orden_busqueda:1}]`, `"vaca"` da `["S", "R"]`. Mata el mutante
-     `return 5` → `return 7`.
-   Probados en la copia: pasan hoy y cada uno falla con su mutante.
-2. `progress/impl_F-061.md`, «Evidencias», fila de mutación: «4 workers».
-3. `progress/impl_F-061.md`: dejar constancia de los mutantes de JS de esta
-   review (24: 22 muertos y 2 que matan los tests del cambio 1), para que la
-   cobertura real del JS quede escrita.
-
-## Observación no bloqueante
-
-- O1 `palabras_incidencia.py:35`: `entrada.get("palabras") or []` acepta en
-  silencio `""`, `0` o `false` como lista vacía; lo demás mal escrito falla.
-
-## Automejora propuesta (no aplicada)
-
-- `CHECKPOINTS.md` C4 bis: si la lógica vive en JS (u otro lenguaje sin
-  puerta), una mini-campaña manual documentada (original → mutado,
-  resultado). Aquí se midieron 41 líneas de Python y 0 de las ~80 de JS.
-  Vale para cualquier proyecto ⇒ `arnes-base`.
+- **Al desplegar:** api antes que front, `azure-apps/dedicacion.md` y el
+  MANUAL. Todo está ya en `current.md`.
+- **Para el humano** (de la pasada 1): «una errata por palabra tecleada»
+  hace que «vacasiones enfremedad» tolere una errata en cada palabra.
+- **Automejora para `arnes-base`:** mini-campaña manual cuando la lógica
+  vive en JS. Pendiente de PARADA 1; ya está anotada en `current.md`.
