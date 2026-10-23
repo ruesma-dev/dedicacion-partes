@@ -2542,6 +2542,9 @@ async function sincronizar() {
       `(+${datos.obras.altas}/-${datos.obras.desactivados})`
     );
     await cargarPeriodo(state.anio, state.mes);
+    // F-061: el sync puede traer tipos de incidencia nuevos; el desplegable
+    // usa ya el catálogo nuevo. Si falla, avisa y se queda el que había.
+    await cargarTiposIncidencia();
   } catch (err) {
     toast(err.message, true);
   } finally {
