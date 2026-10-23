@@ -6,7 +6,8 @@
 dos veces por el implementer antes de escribir código y desbloqueada las
 dos por el humano (2026-10-22 «yes» y 2026-10-23 «continua»; ver «F-061 ·
 segundo bloqueo RESUELTO» y «F-061 · bloqueo RESUELTO» justo debajo);
-**implementer retomado el 2026-10-23**; rama
+**implementer retomado el 2026-10-23**: T1-T4 hechas (api, búsqueda,
+recarga, `INTEGRACION.md` §5), informe en `progress/impl_F-061.md`; rama
 `feature/F-061-busqueda-predictiva-incidencias` en la copia principal.
 Pedida por el humano tras desplegar F-030 (`baj` no encontraba B: su nombre
 en Sigrid es «Enfermedad/Acc. no laboral(B)»); propuesta aprobada («me
