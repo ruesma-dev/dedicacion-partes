@@ -2853,3 +2853,8 @@ review 1 (mini-campaña manual de mutación cuando la lógica vive en JS u
 otro lenguaje sin puerta) ⇒ pendiente de PARADA 1 para `arnes-base`.
 Pendiente de desplegar (api → front), `azure-apps/dedicacion.md` y el
 MANUAL.
+
+**Desplegada el 2026-10-23** con permiso del humano (api `r20261023-1235`
+y front `r20261023-1236`, en ese orden, lanzado por el humano; revisiones
+`Healthy` al 100 %; la api arrancó sin errores); `azure-apps/dedicacion.md`
+`47c7c3c`. MANUAL, del humano.

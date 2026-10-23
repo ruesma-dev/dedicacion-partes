@@ -4,9 +4,10 @@
 **Ninguna feature en curso.** **F-061** (búsqueda predictiva en el
 desplegable de incidencias; `sdd: false`, rigor estándar) **cerrada
 (`done`) el 2026-10-23**, review 2 APROBADA (`3a55dfb`), rama
-`feature/F-061-busqueda-predictiva-incidencias` unida a `dev`; **pendiente
-de desplegar** (api → front) con permiso del humano. Api y front; ni
-transfer ni Sigrid.
+`feature/F-061-busqueda-predictiva-incidencias` unida a `dev`;
+**desplegada el 2026-10-23** (api → front, lo lanzó el humano; ver
+«Producción, hoy»); `azure-apps/dedicacion.md` `47c7c3c`. Api y front; ni
+transfer ni Sigrid. **Pendiente del humano:** el MANUAL de F-061 (abajo).
 
 ## F-061 · decisiones del humano a los dos bloqueos del implementer
 
@@ -25,21 +26,17 @@ detalle de las opciones, en el historial de git de este fichero,
   (F-030 R6 intacta). El cambio autorizado de `test_f030_r6_…` es añadir
   `"palabras"` y `"orden_busqueda"` a cada dict esperado, nada más.
 
-## F-061 · CERRADA, pendiente de desplegar: despliegue y MANUAL
+## F-061 · CERRADA y DESPLEGADA (2026-10-23): MANUAL pendiente
 
 - **Propuesta de la review para `arnes-base`** (pendiente de PARADA 1 con
   el humano, no aplicada): en `CHECKPOINTS.md` C4 bis, si la lógica vive en
   JS u otro lenguaje sin puerta de mutación, una mini-campaña manual
   documentada (original → mutado, resultado).
 
-- **Despliegue** (con permiso del humano; el script lo lanza el humano):
-  `redeploy_dedicacion.ps1 -Solo api,front`, **api antes que front** (el
-  front nuevo sin la api nueva no tiene `palabras` ni `orden_busqueda`:
-  busca solo por letra, código y nombre).
-- **`azure-apps/dedicacion.md`** (líder, al desplegar): §5, `GET
-  /api/v1/incidencias` gana `palabras` (lista) y `orden_busqueda` (entero o
-  `null`) por incidencia; las palabras extra viven en
-  `config/config.yaml` de la api (`sync.incidencias.palabras_extra`).
+- **Desplegada el 2026-10-23** (api → front; ver «Producción, hoy»).
+  `azure-apps/dedicacion.md` `47c7c3c` (cabecera, §5 y §7: `palabras` y
+  `orden_busqueda` en `GET /incidencias`, orden api → front, editar la
+  lista exige redesplegar la api).
 - **MANUAL tras desplegar** (humano): Ctrl+F5 en el front; en la celda del
   % de una línea teclear `baj` ⇒ B, AT y M, con B arriba; `civ` ⇒ V;
   `vacasiones` ⇒ V; después «Sincronizar Sigrid» y comprobar que el
@@ -93,6 +90,16 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés es la **1.7.3**.
 ## Producción, hoy
 
+- **Desplegado el 2026-10-23: F-061**, api y front en ese orden con
+  `redeploy_dedicacion.ps1 -Solo api,front` (lo lanzó el humano): api
+  `r20261023-1235` y front `r20261023-1236`, revisiones
+  `…--r20261023123457`, las dos `RunningAtMaxScale`, `Healthy` y con el
+  100 % del tráfico (`az containerapp revision list`). La api arrancó sin
+  errores (`containerapp logs`: «Application startup complete», o sea, la
+  lista `palabras_extra` es válida). `infra/imagenes.json` al día en este
+  commit. **Ojo:** el script actualiza `tag` y `publicado` pero no el
+  `digest` de `imagenes.json` (el front publicado es `sha256:87f7b709…`, el
+  fichero sigue con el anterior); deuda de `infra/`, no de F-061.
 - **Desplegado el 2026-10-22: F-030**, los tres servicios en orden con
   `redeploy_dedicacion.ps1 -Solo transfer,api,front` (lo lanzó el humano:
   el permiso de la sesión no dejó al líder): transfer `r20261022-1513`,
@@ -255,7 +262,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
 F-033 y, detrás, F-017, F-018…
 
