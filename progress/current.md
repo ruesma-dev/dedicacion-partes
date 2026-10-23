@@ -10,6 +10,37 @@ rama `feature/F-062-rachas-incidencias`; las dos son solo spec y ninguna
 está `in_progress`. Al terminar, F-054 pasa a `spec_ready`, y entonces
 **PARADA**: la aprueba el humano.
 
+## F-054 · spec escrita (spec-author, 2026-10-24): D1-D11 ABIERTAS
+
+`specs/F-054-sync-trae-porcentajes/` (requirements 149 líneas, design 247,
+tasks T1-T15). El estado en `features.json` **no** lo ha cambiado el
+spec-author: lo pasa el líder. `bash harness/init.sh` en esta copia: tests
+en verde (418) y PUERTA TAMAÑO OK; único `[KO]`, el `.venv` de la api que
+falta en la copia `porcentajes-f054` (de entorno, no de la spec).
+
+**Límite de servicio:** el transfer **lee** Sigrid (endpoint nuevo de solo
+lectura `POST /api/porcentajes/existentes`: una lectura de las `M*` con
+`can` ≠ 0 del periodo, más los catálogos de postventa y VAR solo si hacen
+falta) y traduce cada línea a obra normal, `Postv-X` (casado inverso con
+`casar_postventa`) o `VAR-NN`; la api **escribe** en `dedicacion` (`POST
+/api/v1/periodos/{a}/{m}/traer-sigrid`); el front la llama tras un sync con
+éxito. Nada escribe en Sigrid.
+
+**Decisiones que tiene que validar el humano** (requirements §9; la
+recomendada es la A en todas): D1 disparador (tras «Sincronizar Sigrid», el
+periodo abierto); D2 qué líneas (nuestras y manuales); D3 traducción
+(partida del parte como elegida; lo no ofrecible no se trae y se lista); D4
+conflicto (solo trabajadores sin líneas; los que tienen, «coinciden» o
+«diferencias» con botón «Usar lo de Sigrid»); D5 marcar ya registradas
+(guardar el `hmores.ide`); D6 partes cerrados (cuentan); D7 mes cerrado
+(409); D8 deshacer (evento `SIGRID` por trabajador); D9 incidencias fuera
+(F-062); D10 varias líneas en una entrada (sumar; con partidas distintas,
+no se trae); D11 trabajadores visibles en la empresa elegida y vigentes.
+Riesgos a conocer (design §10): editar la fila traída le quita la traza y
+el registro pide un pisado (como hoy, sin duplicar); una `M*` con otro
+código que el del recurso puede dar sobrecarga al editar. Test ajeno que
+cambia (lista cerrada): solo `ANCLAS` de `test_f002_fuente_unica.py`.
+
 ## Antes de F-054
 
 **F-061** (búsqueda predictiva en el
