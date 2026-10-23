@@ -20,6 +20,7 @@ from application.sync_pipeline import (
     UpsertTiposIncidenciaStep,
     UpsertTrabajadoresStep,
 )
+from application.palabras_incidencia import palabras_por_codigo
 from application.partidas_linea import PartidasDeLinea
 from application.propuestas_mes import PropuestasDelMes
 from application.use_cases import PreviewSync
@@ -61,6 +62,9 @@ def construir_contenedor(
     sql_empresas = config["sync"]["empresas"]["sql"]
     # Catálogo de incidencias (F-030, R3). Obligatorio, como el de empresas.
     sql_incidencias = config["sync"]["incidencias"]["sql"]
+    # F-061: las palabras extra las lee la ruta en cada petición; aquí solo
+    # se validan, para que una lista mal escrita no deje arrancar la api.
+    palabras_por_codigo(config["sync"]["incidencias"].get("palabras_extra"))
     categorias = cfg_emp.get("categorias_incluidas", [])
     filtro_cat = bool(cfg_emp.get("filtro_categorias", False))
     exigir_mes = bool(cfg_emp.get("filtro_codigo_mes", True))

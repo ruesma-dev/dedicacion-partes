@@ -137,6 +137,10 @@ class TipoIncidenciaOut(_Base):
     codigo: str
     letra: str
     nombre: str
+    # F-061: palabras extra del buscador y posición de su entrada en
+    # `config.yaml` (desempate del desplegable); sin entrada, [] y None.
+    palabras: list[str] = []
+    orden_busqueda: int | None = None
 
 
 class TiposIncidenciaOut(_Base):

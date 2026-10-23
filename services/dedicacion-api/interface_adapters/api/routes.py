@@ -24,6 +24,7 @@ from application.use_cases import (
     ObtenerCuadrante,
     ObtenerFilaTrabajador,
 )
+from application.palabras_incidencia import palabras_por_codigo
 from config.settings import cargar_config
 from domain.errors import ErrorDominio, ObraNoValida, TrabajadorNoValido
 from domain.models import EstadoPeriodo, FiltroEmpresa
@@ -173,12 +174,19 @@ def listar_empresas(contenedor: Cont) -> EmpresasOut:
             tags=["incidencias"])
 def listar_incidencias(contenedor: Cont) -> TiposIncidenciaOut:
     """Catálogo del desplegable de incidencias (F-030, R6): las activas por
-    orden de letra, sincronizadas de `auxhor`."""
+    orden de letra, sincronizadas de `auxhor`. Cada una con sus palabras
+    extra y la posición de su entrada en `config.yaml` (F-061)."""
     with contenedor.uow() as uow:
         tipos = ListarTiposIncidencia().ejecutar(uow)
-    return TiposIncidenciaOut(incidencias=[
-        TipoIncidenciaOut(codigo=t.codigo, letra=t.letra, nombre=t.nombre)
-        for t in tipos])
+    extra = palabras_por_codigo(
+        cargar_config()["sync"]["incidencias"].get("palabras_extra"))
+    salida = []
+    for t in tipos:
+        orden, palabras = extra.get(t.codigo, (None, []))
+        salida.append(TipoIncidenciaOut(
+            codigo=t.codigo, letra=t.letra, nombre=t.nombre,
+            palabras=palabras, orden_busqueda=orden))
+    return TiposIncidenciaOut(incidencias=salida)
 
 
 # --------------------------- Periodos ---------------------------------
