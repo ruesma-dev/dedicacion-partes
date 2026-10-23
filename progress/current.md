@@ -1,12 +1,12 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**BLOQUEADA: F-061** (búsqueda predictiva en el desplegable de incidencias;
-`sdd: false`, rigor estándar), `blocked` desde el 2026-10-22; bloqueada
-por el implementer antes de escribir código, desbloqueada por el humano
-el 2026-10-22 («yes» a las dos recomendadas; ver «F-061 · bloqueo
-RESUELTO») y **bloqueada otra vez al retomar** por una pregunta que sale
-de esa decisión (ver «F-061 · BLOQUEADA OTRA VEZ» justo debajo); rama
+**En curso: F-061** (búsqueda predictiva en el desplegable de incidencias;
+`sdd: false`, rigor estándar), `in_progress` desde el 2026-10-22; bloqueada
+dos veces por el implementer antes de escribir código y desbloqueada las
+dos por el humano (2026-10-22 «yes» y 2026-10-23 «continua»; ver «F-061 ·
+segundo bloqueo RESUELTO» y «F-061 · bloqueo RESUELTO» justo debajo);
+**implementer retomado el 2026-10-23**; rama
 `feature/F-061-busqueda-predictiva-incidencias` en la copia principal.
 Pedida por el humano tras desplegar F-030 (`baj` no encontraba B: su nombre
 en Sigrid es «Enfermedad/Acc. no laboral(B)»); propuesta aprobada («me
@@ -17,7 +17,15 @@ en `features.json`. **Implementer lanzado el 2026-10-22.** Api y front; ni
 transfer ni Sigrid. Al desplegar (api → front): `azure-apps/dedicacion.md`
 (campos nuevos de `GET /incidencias`).
 
-## F-061 · BLOQUEADA OTRA VEZ (2026-10-22, implementer, al retomar)
+## F-061 · segundo bloqueo RESUELTO (2026-10-22, implementer; decisión del humano)
+
+**Resuelto por el humano el 2026-10-23** («continua» a la recomendada):
+opción **(a)**, campo `orden_busqueda` por incidencia (posición en
+`config.yaml`, `null` sin entrada); la lista sigue por letra. El cambio
+autorizado de `test_f030_r6_…` pasa a ser añadir `"palabras"` y
+`"orden_busqueda"` a cada dict esperado, nada más. Consta en el
+`description` de F-061. Lo de abajo es el motivo y las opciones, tal como
+se plantearon.
 
 **Una sola pregunta, consecuencia de la decisión (b) de abajo** (error
 mío al proponerla: no vi cómo llega ese orden al front). Sin código escrito.
