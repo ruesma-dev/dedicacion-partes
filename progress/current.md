@@ -1,7 +1,18 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-061** (búsqueda predictiva en el
+**En spec: F-054** (al sincronizar, traer al cuadrante los % que ya existen
+en los partes de Sigrid; `sdd: true`, rigor crítico), `pending` desde el
+2026-10-23, con el **spec-author lanzado** a petición del humano («lanza
+spec de f54»); rama `feature/F-054-sync-trae-porcentajes`, en la copia
+`porcentajes-f054`. **A la vez**, F-062 está en spec en la copia principal,
+rama `feature/F-062-rachas-incidencias`; las dos son solo spec y ninguna
+está `in_progress`. Al terminar, F-054 pasa a `spec_ready`, y entonces
+**PARADA**: la aprueba el humano.
+
+## Antes de F-054
+
+**F-061** (búsqueda predictiva en el
 desplegable de incidencias; `sdd: false`, rigor estándar) **cerrada
 (`done`) el 2026-10-23**, review 2 APROBADA (`3a55dfb`), rama
 `feature/F-061-busqueda-predictiva-incidencias` unida a `dev`;
