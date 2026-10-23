@@ -34,8 +34,8 @@ def _sincronizar(sync: str, incidencias: str) -> dict:
         "async function cargarPeriodo() { pedidas.push('cargarPeriodo'); }",
         "async function api(ruta) {",
         "  pedidas.push(ruta);",
-        f"  if (ruta === '/sync') {{ if ('{sync}' === 'falla') throw new Error('sin sigrid');"
-        f" return {SYNC_OK}; }}",
+        f"  if (ruta === '/sync') {{ if ('{sync}' === 'falla') throw new Error('sin sigrid');",
+        f"    return {SYNC_OK}; }}",
         f"  if ('{incidencias}' === 'falla') throw new Error('caida');",
         f"  return {{ incidencias: {json.dumps(NUEVO)} }};",
         "}",

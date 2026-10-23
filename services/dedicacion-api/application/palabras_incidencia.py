@@ -22,7 +22,8 @@ def palabras_por_codigo(entradas: Any) -> dict[str, tuple[int, list[str]]]:
     if entradas is None:
         return {}
     if not isinstance(entradas, list):
-        raise ValueError(f"{_CLAVE}: tiene que ser una lista de entradas")
+        # ValueError, no TypeError: es config mal escrita, como el resto.
+        raise ValueError(f"{_CLAVE}: tiene que ser una lista de entradas")  # noqa: TRY004
     leidas: dict[str, tuple[int, list[str]]] = {}
     for posicion, entrada in enumerate(entradas):
         codigo = entrada.get("codigo") if isinstance(entrada, dict) else None
