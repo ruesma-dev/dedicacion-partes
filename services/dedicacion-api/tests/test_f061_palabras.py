@@ -43,7 +43,7 @@ def test_f061_r1_leer_la_config_da_posicion_y_palabras_por_codigo():
 
     leidas = palabras_por_codigo([
         {"codigo": "CIE", "palabras": ["baja", "IT"]},
-        {"codigo": " CIV ", "palabras": None},
+        {"codigo": " CIV ", "palabras": []},
         {"codigo": "CIH"},
     ])
     assert leidas == {"CIE": (0, ["baja", "IT"]), "CIV": (1, []),
@@ -68,6 +68,12 @@ def test_f061_r1_sin_palabras_extra_en_la_config_nadie_tiene():
     ([{"codigo": "CIE", "palabras": ["baja", "  "]}], "palabras"),
     ([{"codigo": "CIE", "palabras": []}, {"codigo": "CIE", "palabras": []}],
      "repetido"),
+    # Review 1 (O1): un valor presente que no es lista no vale por vacía;
+    # solo la clave que falta.
+    ([{"codigo": "CIE", "palabras": ""}], "palabras"),
+    ([{"codigo": "CIE", "palabras": 0}], "palabras"),
+    ([{"codigo": "CIE", "palabras": False}], "palabras"),
+    ([{"codigo": "CIE", "palabras": None}], "palabras"),
 ])
 def test_f061_r1_una_config_mal_escrita_avisa_con_su_motivo(entradas, motivo):
     from application.palabras_incidencia import palabras_por_codigo

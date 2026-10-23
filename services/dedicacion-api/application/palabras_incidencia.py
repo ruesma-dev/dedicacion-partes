@@ -32,7 +32,9 @@ def palabras_por_codigo(entradas: Any) -> dict[str, tuple[int, list[str]]]:
         codigo = codigo.strip()
         if codigo in leidas:
             raise ValueError(f"{_CLAVE}: codigo repetido, {codigo}")
-        palabras = entrada.get("palabras") or []
+        # Sin la clave, ninguna palabra; un valor presente tiene que ser una
+        # lista (`""`, `0`, `false` o vacío en el YAML son error, no «nada»).
+        palabras = entrada.get("palabras", [])
         if not isinstance(palabras, list) or not all(
                 isinstance(p, str) and p.strip() for p in palabras):
             raise ValueError(
