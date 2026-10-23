@@ -8,8 +8,10 @@
 informe `progress/impl_F-061.md`, mutación `progress/mutacion_F-061.md`
 10/10 muertos); **review 1 RECHAZADA el 2026-10-23** (`progress/review_F-061.md`,
 `c517600`: dos mutantes de JS sobreviven a los tests de node y falta el nº de
-workers en «Evidencias»; solo tests y papeleo, más la O1); **implementer
-retomado para corregirlo**. Api y front; ni
+workers en «Evidencias»; solo tests y papeleo, más la O1); corregida por el
+implementer el 2026-10-23 (`61369dd`..`6a48150`: los dos tests, la O1 con su
+test y el informe; mutación repetida, 9/9 muertos); **reviewer relanzado
+(review 2) el 2026-10-23**. Api y front; ni
 transfer ni Sigrid. Pedida por el humano tras desplegar F-030 (`baj` no
 encontraba B: su nombre en Sigrid es «Enfermedad/Acc. no laboral(B)»);
 propuesta aprobada el 2026-10-22 («me parece bien»). Criterios y las
