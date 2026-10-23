@@ -1,21 +1,12 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-061** (búsqueda predictiva en el desplegable de incidencias;
-`sdd: false`, rigor estándar), `in_progress` desde el 2026-10-22, rama
-`feature/F-061-busqueda-predictiva-incidencias` en la copia principal.
-**Implementación hecha el 2026-10-23** (T1-T4, `d9061e0`..`a4aeaae`;
-informe `progress/impl_F-061.md`, mutación `progress/mutacion_F-061.md`
-10/10 muertos); **review 1 RECHAZADA el 2026-10-23** (`progress/review_F-061.md`,
-`c517600`: dos mutantes de JS sobreviven a los tests de node y falta el nº de
-workers en «Evidencias»; solo tests y papeleo, más la O1); corregida por el
-implementer el 2026-10-23 (`61369dd`..`6a48150`: los dos tests, la O1 con su
-test y el informe; mutación repetida, 9/9 muertos); **reviewer relanzado
-(review 2) el 2026-10-23**. Api y front; ni
-transfer ni Sigrid. Pedida por el humano tras desplegar F-030 (`baj` no
-encontraba B: su nombre en Sigrid es «Enfermedad/Acc. no laboral(B)»);
-propuesta aprobada el 2026-10-22 («me parece bien»). Criterios y las
-decisiones del humano, en el `description` de F-061 (`features.json`).
+**Ninguna feature en curso.** **F-061** (búsqueda predictiva en el
+desplegable de incidencias; `sdd: false`, rigor estándar) **cerrada
+(`done`) el 2026-10-23**, review 2 APROBADA (`3a55dfb`), rama
+`feature/F-061-busqueda-predictiva-incidencias` unida a `dev`; **pendiente
+de desplegar** (api → front) con permiso del humano. Api y front; ni
+transfer ni Sigrid.
 
 ## F-061 · decisiones del humano a los dos bloqueos del implementer
 
@@ -34,7 +25,7 @@ detalle de las opciones, en el historial de git de este fichero,
   (F-030 R6 intacta). El cambio autorizado de `test_f030_r6_…` es añadir
   `"palabras"` y `"orden_busqueda"` a cada dict esperado, nada más.
 
-## F-061 · al desplegar y MANUAL
+## F-061 · CERRADA, pendiente de desplegar: despliegue y MANUAL
 
 - **Propuesta de la review para `arnes-base`** (pendiente de PARADA 1 con
   el humano, no aplicada): en `CHECKPOINTS.md` C4 bis, si la lógica vive en

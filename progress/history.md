@@ -2822,3 +2822,34 @@ mutantes) ⇒ lista del arnés, a portar a `arnes-base`. Pendiente de desplegar
 orden, lanzado por el humano; revisiones `Healthy` al 100 %; transfer en
 modo real); `azure-apps/dedicacion.md` `3d5c80b`. Sync, comprobación en
 producción y aviso a `partes`, del humano.
+
+## 2026-10-23 · F-061 · Búsqueda predictiva en el desplegable de incidencias
+
+Pedida por el humano el 2026-10-22 tras desplegar F-030 (`baj` no
+encontraba B: su nombre en Sigrid es «Enfermedad/Acc. no laboral(B)»).
+`sdd: false`, rigor estándar; api y front. **Qué hace:** palabras extra por
+código en `config.yaml` de la api (`sync.incidencias.palabras_extra`);
+`GET /api/v1/incidencias` publica `palabras` y `orden_busqueda` (posición en
+la config, `null` sin entrada; la lista sigue por letra); el desplegable
+busca por comienzo de palabra en letra, código, nombre y palabras extra, con
+siete categorías de orden (letra exacta, código o letra que empieza, nombre
+que empieza, palabra del nombre, palabra extra, subcadena de F-030 y, al
+final, una errata OSA por palabra tecleada de 4+ letras) y empate por
+`orden_busqueda`; el catálogo se recarga tras cada sync con éxito. Una lista
+mal escrita no deja arrancar la api.
+
+**Recorrido.** El implementer paró dos veces antes de escribir código; el
+humano decidió las dos (2026-10-22 «yes»: cambio mínimo de
+`test_f030_r6_…` y empate por el orden de la config; 2026-10-23 «continua»:
+campo `orden_busqueda`). Review 1 RECHAZADA: dos mutantes de JS (errata por
+letra que falta; subcadena detrás de la errata) sobrevivían a los tests de
+node; corregido con dos tests y la O1 (unas `palabras` presentes que no son
+lista son error). Review 2 APROBADA. Mutación Python 9/9 muertos; campaña
+manual de JS de la review, 24/24. Cobertura de lo cambiado 100 %.
+
+**Observaciones recogidas.** «Una errata por palabra tecleada»: «vacasiones
+enfremedad» tolera una en cada una (dicho al humano). Automejora de la
+review 1 (mini-campaña manual de mutación cuando la lógica vive en JS u
+otro lenguaje sin puerta) ⇒ pendiente de PARADA 1 para `arnes-base`.
+Pendiente de desplegar (api → front), `azure-apps/dedicacion.md` y el
+MANUAL.
