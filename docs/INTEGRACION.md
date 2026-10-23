@@ -423,6 +423,16 @@ Desde F-030 (incidencias en el cuadrante;
   nuevo. La lectura de las líneas `CI*` del mes trae además `h.can`,
   `h.hmoide` y `con.est`, y busca también por `h.ide` las de la traza.
 
+Desde F-061 (búsqueda predictiva en el desplegable de incidencias), cada
+incidencia de `GET /api/v1/incidencias` trae dos campos más, compatibles
+hacia atrás: `{codigo, letra, nombre, palabras, orden_busqueda}`.
+`palabras` son las palabras extra del buscador (lista, vacía si no tiene) y
+`orden_busqueda` la posición de su entrada en `config.yaml`
+(`sync.incidencias.palabras_extra`; 0 = la primera, `null` sin entrada),
+con la que el front desempata el desplegable. La lista sigue por letra. Es
+dato de la api, no de Sigrid: no cambia ninguna lectura ni escritura. El
+front vuelve a pedir el catálogo tras cada `POST /sync` con éxito.
+
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 
 El acceso lo decide la pertenencia al grupo de Entra

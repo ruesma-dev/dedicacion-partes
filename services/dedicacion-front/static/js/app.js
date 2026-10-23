@@ -1930,9 +1930,9 @@ function refrescarTotalVivo(editor) {
 // Panel de incidencias de la celda del % (F-030, R8, R10): el `.sugerencias`
 // de F-042, colgado de <body> y colocado con `colocarSugerencias`. Se
 // encadena a `desmontarSugerencias`, así que `retirarSugerencias` (repintar
-// la tabla o el editor) lo quita con el de obra: uno solo a la vez. Filtra el
-// catálogo de la API por letra y nombre normalizados; antes, las de letra
-// idéntica. `alElegir(tipo)` recibe la incidencia elegida.
+// la tabla o el editor) lo quita con el de obra: uno solo a la vez. Filtra y
+// ordena el catálogo de la API con la búsqueda predictiva de F-061 (ver
+// `categoria`). `alElegir(tipo)` recibe la incidencia elegida.
 function montarDesplegableIncidencias(input, alElegir) {
   const panel = document.createElement("div");
   panel.className = "sugerencias incidencias";
@@ -1976,16 +1976,75 @@ function montarDesplegableIncidencias(input, alElegir) {
     });
   };
 
+  // F-061: búsqueda predictiva. Cada palabra tecleada es el comienzo de
+  // alguna palabra de la letra, el código, el nombre o las palabras extra
+  // (las de `config.yaml` que manda la API), en cualquier orden y sin tildes
+  // ni mayúsculas. Solo filtra y ordena lo que se ofrece: no decide nada que
+  // se registre. Palabras: lo que hay entre lo que no sea letra o dígito.
+  const trocear = (texto) =>
+    normalizar(texto).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const empiezaAlguna = (w, palabras) => palabras.some((p) => p.startsWith(w));
+  // Distancia de edición que cuenta como UNA el intercambio de dos letras
+  // contiguas (Damerau restringida, OSA): «enfremedad» está a 1 de
+  // «enfermedad».
+  const distancia = (a, b) => {
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        const coste = a[i - 1] === b[j - 1] ? 0 : 1;
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + coste);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+          d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+        }
+      }
+    }
+    return d[a.length][b.length];
+  };
+  // Una errata en una palabra tecleada de 4 o más letras: el comienzo de
+  // alguna palabra (de una letra menos a una más) está a distancia 1.
+  const casiEmpieza = (w, palabras) => w.length >= 4 && palabras.some((p) => {
+    for (let n = w.length - 1; n <= Math.min(p.length, w.length + 1); n++) {
+      if (distancia(w, p.slice(0, n)) <= 1) return true;
+    }
+    return false;
+  });
+  // Categoría con la que casa `t` (menor = antes) o null si no casa:
+  // 0 letra exacta; 1 código o letra que empieza; 2 nombre que empieza;
+  // 3 palabras del nombre; 4 palabras de letra, código, nombre o extra;
+  // 5 subcadena de «letra nombre», lo de F-030, para que nada de lo que
+  // encontraba deje de encontrarse; 6 con una errata por palabra.
+  const categoria = (t, q, tecleadas) => {
+    const letra = trocear(t.letra);
+    const codigo = trocear(t.codigo || "");
+    const nombre = trocear(t.nombre);
+    const todas = [...letra, ...codigo, ...nombre,
+                   ...(t.palabras || []).flatMap(trocear)];
+    const junto = tecleadas.join(" ");
+    if (junto && letra.join(" ") === junto) return 0;
+    if (junto && (codigo.join(" ").startsWith(junto) || letra.join(" ").startsWith(junto))) return 1;
+    if (junto && nombre.join(" ").startsWith(junto)) return 2;
+    if (junto && tecleadas.every((w) => empiezaAlguna(w, nombre))) return 3;
+    if (junto && tecleadas.every((w) => empiezaAlguna(w, todas))) return 4;
+    if (normalizar(t.letra + " " + t.nombre).includes(q)) return 5;
+    if (junto && tecleadas.every((w) => empiezaAlguna(w, todas) || casiEmpieza(w, todas))) return 6;
+    return null;
+  };
+  // Empate dentro de una categoría: `orden_busqueda` (la posición en
+  // `config.yaml`) de menor a mayor; las que no tienen, detrás, en el orden
+  // del catálogo.
+  const peso = (t) => (Number.isInteger(t.orden_busqueda) ? t.orden_busqueda : Infinity);
+
   const refrescar = (texto) => {
     if (!vivo) montar();
     const tecleado = texto.trim();
     const q = normalizar(tecleado);
-    const casan = state.tiposIncidencia.filter(
-      (t) => normalizar(t.letra + " " + t.nombre).includes(q));
-    candidatas = [
-      ...casan.filter((t) => normalizar(t.letra) === q),
-      ...casan.filter((t) => normalizar(t.letra) !== q),
-    ];
+    const tecleadas = trocear(tecleado);
+    candidatas = state.tiposIncidencia
+      .map((t, i) => ({ t, i, c: categoria(t, q, tecleadas) }))
+      .filter((x) => x.c !== null)
+      .sort((a, b) => a.c - b.c || peso(a.t) - peso(b.t) || a.i - b.i)
+      .map((x) => x.t);
     activa = candidatas.length ? 0 : -1;
     panel.innerHTML = "";
     candidatas.forEach((t, i) => {
@@ -2483,6 +2542,9 @@ async function sincronizar() {
       `(+${datos.obras.altas}/-${datos.obras.desactivados})`
     );
     await cargarPeriodo(state.anio, state.mes);
+    // F-061: el sync puede traer tipos de incidencia nuevos; el desplegable
+    // usa ya el catálogo nuevo. Si falla, avisa y se queda el que había.
+    await cargarTiposIncidencia();
   } catch (err) {
     toast(err.message, true);
   } finally {

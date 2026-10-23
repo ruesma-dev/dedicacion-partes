@@ -226,6 +226,28 @@ sync:
       FROM dbo.auxhor AS aux
       WHERE aux.cod LIKE 'CI%' AND aux.cod <> 'CIZ'
       ORDER BY aux.cod
+    # Palabras extra del buscador del desplegable de incidencias (F-061):
+    # con ellas «baj» encuentra B, aunque su nombre en Sigrid no diga «baja».
+    # Las publica `GET /api/v1/incidencias` con el código; no van a Sigrid ni
+    # deciden nada que se registre. Editarlas no exige tocar código.
+    # El ORDEN DE LAS ENTRADAS decide el empate en el desplegable (la primera,
+    # antes); un código sin entrada va detrás de todos. Un código que no esté
+    # en el catálogo se ignora. Decidido por el humano el 2026-10-22.
+    palabras_extra:
+      - codigo: CIE     # B · Enfermedad/Acc. no laboral
+        palabras: [baja, IT, enfermedad común]
+      - codigo: CIA     # AT · Accidente/Enf. Profesional
+        palabras: [baja, accidente de trabajo]
+      - codigo: CIM     # M · Maternidad/Paternidad
+        palabras: [baja, nacimiento, permiso]
+      - codigo: CIP     # FJ · Falta Justificada/Permiso
+        palabras: [permiso, ausencia]
+      - codigo: CIF     # F · Falta injustificada
+        palabras: [ausencia]
+      - codigo: CIV     # V · Vacaciones
+        palabras: []
+      - codigo: CIH     # H · Huelga
+        palabras: []
 
 export:
   # Prefijo con el que se exportan las líneas de postventa, para mantener

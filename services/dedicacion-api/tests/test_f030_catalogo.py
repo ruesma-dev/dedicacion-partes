@@ -466,7 +466,12 @@ def test_f030_r6_ruta_incidencias_activas_por_letra():
         settings=settings, uow=lambda: uow)
     r = TestClient(app).get("/api/v1/incidencias")
     assert r.status_code == 200, r.text
+    # F-061 (lista cerrada, autorizado por el humano el 2026-10-23): cada
+    # incidencia trae además `palabras` y `orden_busqueda` de config.yaml.
     assert r.json() == {"incidencias": [
-        {"codigo": "CIA", "letra": "AT", "nombre": "Accidente"},
-        {"codigo": "CIE", "letra": "B", "nombre": "Enfermedad"},
-        {"codigo": "CIV", "letra": "V", "nombre": "Vacaciones"}]}
+        {"codigo": "CIA", "letra": "AT", "nombre": "Accidente",
+         "palabras": ["baja", "accidente de trabajo"], "orden_busqueda": 1},
+        {"codigo": "CIE", "letra": "B", "nombre": "Enfermedad",
+         "palabras": ["baja", "IT", "enfermedad común"], "orden_busqueda": 0},
+        {"codigo": "CIV", "letra": "V", "nombre": "Vacaciones",
+         "palabras": [], "orden_busqueda": 5}]}

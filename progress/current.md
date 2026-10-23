@@ -1,7 +1,51 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-030** (incidencias en el cuadrante)
+**Ninguna feature en curso.** **F-061** (búsqueda predictiva en el
+desplegable de incidencias; `sdd: false`, rigor estándar) **cerrada
+(`done`) el 2026-10-23**, review 2 APROBADA (`3a55dfb`), rama
+`feature/F-061-busqueda-predictiva-incidencias` unida a `dev`; **pendiente
+de desplegar** (api → front) con permiso del humano. Api y front; ni
+transfer ni Sigrid.
+
+## F-061 · decisiones del humano a los dos bloqueos del implementer
+
+Bloqueada dos veces antes de escribir código; resueltas las dos (el
+detalle de las opciones, en el historial de git de este fichero,
+`9110c80` y `ecf6ed8`):
+
+- **2026-10-22, «yes»:** cambio MÍNIMO de la aserción de
+  `test_f030_catalogo.py::test_f030_r6_ruta_incidencias_activas_por_letra`
+  (lista cerrada de tests ajenos: solo ese); empate por el ORDEN DE LAS
+  ENTRADAS de `config.yaml` (B, AT, M, FJ, F, V, H); código y letra que
+  empieza, justo detrás de «letra exacta»; errata medida con OSA.
+- **2026-10-23, «continua» a la recomendada:** ese orden llega al front
+  como campo `orden_busqueda` por incidencia en `GET /api/v1/incidencias`
+  (posición en `config.yaml`, `null` sin entrada); la lista sigue por letra
+  (F-030 R6 intacta). El cambio autorizado de `test_f030_r6_…` es añadir
+  `"palabras"` y `"orden_busqueda"` a cada dict esperado, nada más.
+
+## F-061 · CERRADA, pendiente de desplegar: despliegue y MANUAL
+
+- **Propuesta de la review para `arnes-base`** (pendiente de PARADA 1 con
+  el humano, no aplicada): en `CHECKPOINTS.md` C4 bis, si la lógica vive en
+  JS u otro lenguaje sin puerta de mutación, una mini-campaña manual
+  documentada (original → mutado, resultado).
+
+- **Despliegue** (con permiso del humano; el script lo lanza el humano):
+  `redeploy_dedicacion.ps1 -Solo api,front`, **api antes que front** (el
+  front nuevo sin la api nueva no tiene `palabras` ni `orden_busqueda`:
+  busca solo por letra, código y nombre).
+- **`azure-apps/dedicacion.md`** (líder, al desplegar): §5, `GET
+  /api/v1/incidencias` gana `palabras` (lista) y `orden_busqueda` (entero o
+  `null`) por incidencia; las palabras extra viven en
+  `config/config.yaml` de la api (`sync.incidencias.palabras_extra`).
+- **MANUAL tras desplegar** (humano): Ctrl+F5 en el front; en la celda del
+  % de una línea teclear `baj` ⇒ B, AT y M, con B arriba; `civ` ⇒ V;
+  `vacasiones` ⇒ V; después «Sincronizar Sigrid» y comprobar que el
+  desplegable sigue saliendo sin recargar la página.
+
+**F-030** (incidencias en el cuadrante)
 **cerrada (`done`) y desplegada el 2026-10-22** (permiso del humano, «3
 si»; el script lo lanzó el humano, ver «Producción, hoy»);
 `azure-apps/dedicacion.md` `3d5c80b`. El arnés es la **1.7.3**.
