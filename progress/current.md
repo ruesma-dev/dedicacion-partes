@@ -1,14 +1,16 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En spec: F-054** (al sincronizar, traer al cuadrante los % que ya existen
-en los partes de Sigrid; `sdd: true`, rigor crítico), `pending` desde el
-2026-10-23, con el **spec-author lanzado** a petición del humano («lanza
-spec de f54»); rama `feature/F-054-sync-trae-porcentajes`, en la copia
-`porcentajes-f054`. **A la vez**, F-062 está en spec en la copia principal,
-rama `feature/F-062-rachas-incidencias`; las dos son solo spec y ninguna
-está `in_progress`. Al terminar, F-054 pasa a `spec_ready`, y entonces
-**PARADA**: la aprueba el humano.
+**Esperando aprobación de la spec: F-054** (al sincronizar, traer al
+cuadrante los % que ya existen en los partes de Sigrid; `sdd: true`, rigor
+crítico), `spec_ready` desde el 2026-10-24. La spec la escribió el
+spec-author, lanzado a petición del humano («lanza spec de f54»), y está en
+`specs/F-054-sync-trae-porcentajes/` (`7b780ef`), con las decisiones D1-D11
+abiertas (abajo). Rama `feature/F-054-sync-trae-porcentajes`, en la copia
+`porcentajes-f054`. **A la vez**, la spec de F-062 espera aprobación en la
+copia principal (rama `feature/F-062-rachas-incidencias`); ninguna de las
+dos está `in_progress`. **PARADA**: la spec la aprueba el humano, con sus
+decisiones.
 
 ## F-054 · spec escrita (spec-author, 2026-10-24): D1-D11 ABIERTAS
 

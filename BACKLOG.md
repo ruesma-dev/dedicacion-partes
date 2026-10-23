@@ -15,7 +15,7 @@ Resumen: **58 features**, 24 abiertas, 34 terminadas.
 | F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
 | F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | pendiente | critico | `feature/F-053-delegados-parte-unico` |
-| F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 8 | pendiente | critico | `feature/F-054-sync-trae-porcentajes` |
+| F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 8 | spec lista | critico | `feature/F-054-sync-trae-porcentajes` |
 | F-021 | Filtro por obra: velar las etiquetas de las demás obras del recurso | 9 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-048 | Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas») | 10 | pendiente | estandar | `feature/F-048-aviso-obra-fallida` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 11 | pendiente | estandar | `feature/F-046-permiso-cerrar-periodo` |
@@ -113,7 +113,7 @@ Pedida por el humano el 2026-10-08 (mismo encargo que F-052). Hilo «RE: Porcent
 
 ### F-054 · Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid
 
-estado **pendiente** · prioridad 8 · rigor `critico` · SDD sí · rama `feature/F-054-sync-trae-porcentajes`
+estado **spec lista** · prioridad 8 · rigor `critico` · SDD sí · rama `feature/F-054-sync-trae-porcentajes`
 
 Pedida por el humano el 2026-10-08: «al sincronizar debería traer los % ya existentes en Sigrid». Hoy el sync solo trae maestros (recursos, obras, partidas); el cuadrante no sabe lo que Administración ya metió a mano en los partes (ejemplo real: GONZALEZ PANIAGUA tiene MADM 95 % en PT26/00319 de la 0694, 2026-09, sin synckey, y el cuadrante no lo enseñaba: salió como sobrecarga al registrar). Se trata de LEER (solo lectura, vía sigrid-api) las líneas mensuales (horas M*) de los partes de obra del periodo y cargarlas como asignaciones del trabajador en la base `dedicacion`. Lectura en Sigrid (transfer o api según el límite de servicio: el transfer ya tiene la lectura de líneas y el casado de postventa/VAR) y escritura solo en la base local de la app. DECISIONES PARA LA SPEC: qué periodo (el del cuadrante abierto, al pulsar sync o con botón aparte); qué líneas cuentan (horas mensuales M*, can = %; las nuestras con synckey vs las manuales); cómo se traduce la partida a la entrada del cuadrante (obra normal, `Postv-` por partida de POSTV2, `VAR-NN`); qué pasa si el cuadrante ya tiene algo para ese trabajador (no pisar lo editado, avisar, o Sigrid manda); si se marcan como «ya registradas» para no volver a escribirlas; partes cerrados; meses cerrados en la app; deshacer. Relación: F-051 (pisar líneas al 0 %), F-044 (vinculados), F-050 (partida por línea).
 
