@@ -9,6 +9,44 @@ las cuatro») están en su `description`. La evidencia de Sigrid está en
 `progress/explore_F-062_sigrid.md`. Al terminar la spec pasa a
 `spec_ready`, y entonces **PARADA**: la aprueba el humano.
 
+## F-062 · spec escrita (spec-author, 2026-10-24)
+
+Spec en `specs/F-062-rachas-incidencias/` (requirements 149/150, design
+250/250, tasks T1-T22; `python -m harness.tamano --feature F-062` en verde).
+El estado en `features.json` **no** se ha tocado: lo cambia el líder.
+Qué hace: el transfer decide por **cadena** (incidencias pegadas del mismo
+recurso y código en el mes) si abre, continúa o cierra una racha, mirando
+las `CI*`/`CIZ` del recurso en todos los partes. La api le manda el
+contexto del mes (`incidencias_mes`, `cierres_recursos`, `devolver`) y el
+front solo pinta. Qué de F-030 se conserva y qué se reemplaza: requirements
+§1. Los casos C1-C9 son los ejemplos del humano y de la evidencia.
+
+**Decisiones abiertas para el humano** (requirements §10; la recomendada es
+la A en todas, y design y tasks siguen la A):
+- **D5**: cada `CIZ` cierra el inicio abierto más reciente.
+- **D6**: ventana de 12 meses hacia atrás (configurable,
+  `INCIDENCIAS_MESES_ATRAS`) y el mes siguiente solo para avisar.
+- **D7**: un tramo al que solo le quedan sábados y domingos llega a fin de
+  mes (27-30 de octubre queda abierta).
+- **D8**: una racha pegada cuyo `CIZ` es del mes anterior: se abre otra y se
+  avisa.
+- **D9**: si la regla pidiera quitar una línea ya escrita, no se une y se
+  avisa.
+- **D10**: quitar o recortar una incidencia que movió un `CIZ` ajeno se lo
+  devuelve con un `UPDATE` (columna nueva `sigrid_dia_fin_antes`).
+- **D11**: incidencias pegadas en obras distintas forman una cadena, en la
+  obra de la primera (sin 422 en la api).
+- **D12**: un `CIZ` ajeno con `can = 1` se mueve igual.
+- **D13**: una línea ajena dentro del tramo ⇒ `omitir`.
+- **D14**: una racha abierta desde antes del mes anterior que no continúa:
+  solo aviso.
+
+Riesgos para el humano: hay escritura nueva en partes ajenos (mover la `fec`
+de un `CIZ` de Administración o de `partes`, y añadir uno en su parte),
+siempre con la guarda de F-051/D16. Sale **una lectura más por lote** en el
+preflight, que se mide en T19 (≤ 15 %). T19 y T20 son MANUAL del humano.
+`azure-apps/dedicacion.md` y el aviso a `partes` le tocan al líder (T21).
+
 ## Antes de F-062
 
 **F-061** (búsqueda predictiva en el
