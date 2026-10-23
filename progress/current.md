@@ -1,7 +1,17 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-061** (búsqueda predictiva en el
+**En spec: F-062** (rachas de incidencia como Administración: abrir,
+alargar o cerrar la de cualquier parte; `sdd: true`, rigor crítico),
+`pending` desde el 2026-10-23, con el **spec-author lanzado**; rama
+`feature/F-062-rachas-incidencias`. Las decisiones D1-D4 del humano («sí a
+las cuatro») están en su `description`. La evidencia de Sigrid está en
+`progress/explore_F-062_sigrid.md`. Al terminar la spec pasa a
+`spec_ready`, y entonces **PARADA**: la aprueba el humano.
+
+## Antes de F-062
+
+**F-061** (búsqueda predictiva en el
 desplegable de incidencias; `sdd: false`, rigor estándar) **cerrada
 (`done`) el 2026-10-23**, review 2 APROBADA (`3a55dfb`), rama
 `feature/F-061-busqueda-predictiva-incidencias` unida a `dev`;
