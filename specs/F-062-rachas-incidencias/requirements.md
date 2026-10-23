@@ -124,7 +124,7 @@ A). Evidencia: `progress/explore_F-062_sigrid.md` (fila n = E-n). 2026: el
   domingo) sin inicio y `CIZ` 6 en el parte de noviembre de su obra.
 - **C4.** 27-31 sin continuación: al registrar noviembre, `CIZ` 31 en el parte
   del inicio; cerrado, solo aviso. 27-30 igual (D7: el 31 es sábado).
-- **C5.** Baja 15-sep a 10-nov: `CIB` 15-sep; octubre (1-31) nada; noviembre
+- **C5.** Baja 15-sep a 10-nov: `CIE` 15-sep; octubre (1-31) nada; noviembre
   (1-10) `CIZ` 10. **C6.** Dos obras 40/60, V 5-9 en la del 60: líneas solo
   en esa; con `CIV` 5 y `CIZ` 7 ajenos en la del 40, su `CIZ` pasa al 9.
 - **C7.** V 5-9 y B 12-16: dos rachas (R8); ajena de otro código en el tramo:

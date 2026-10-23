@@ -1,13 +1,15 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En spec: F-062** (rachas de incidencia como Administración: abrir,
+**Esperando aprobación de la spec: F-062** (rachas de incidencia como Administración: abrir,
 alargar o cerrar la de cualquier parte; `sdd: true`, rigor crítico),
-`pending` desde el 2026-10-23, con el **spec-author lanzado**; rama
+`spec_ready` desde el 2026-10-24. La spec está en
+`specs/F-062-rachas-incidencias/` (`90945d4`); rama
 `feature/F-062-rachas-incidencias`. Las decisiones D1-D4 del humano («sí a
-las cuatro») están en su `description`. La evidencia de Sigrid está en
-`progress/explore_F-062_sigrid.md`. Al terminar la spec pasa a
-`spec_ready`, y entonces **PARADA**: la aprueba el humano.
+las cuatro») están en su `description` y las D5-D14 siguen abiertas (abajo).
+La evidencia de Sigrid está en `progress/explore_F-062_sigrid.md`. **A la
+vez**, la spec de F-054 espera aprobación en la copia `porcentajes-f054`.
+**PARADA**: la spec la aprueba el humano, con sus decisiones.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24)
 

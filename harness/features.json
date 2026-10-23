@@ -1050,7 +1050,7 @@
         "El preflight enseña, por incidencia, si abre, continúa o cierra una racha y en qué parte; nada se escribe en Sigrid desde los tests.",
         "Tests unitarios sin red ni BBDD con los casos de `progress/explore_F-062_sigrid.md` y los ejemplos explicados al humano (5-9 de octubre; 5-9 y 13-16; 27 de octubre - 6 de noviembre; 27-31 de octubre sin continuación; baja de 15 de septiembre a 10 de noviembre; dos obras 40/60); `bash harness/init.sh` en verde."
       ],
-      "status": "pending",
+      "status": "spec_ready",
       "sdd": true,
       "rigor": "critico",
       "priority": 1,
