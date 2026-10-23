@@ -2,110 +2,47 @@
 # Trabajo en curso
 
 **En curso: F-061** (búsqueda predictiva en el desplegable de incidencias;
-`sdd: false`, rigor estándar), `in_progress` desde el 2026-10-22; bloqueada
-dos veces por el implementer antes de escribir código y desbloqueada las
-dos por el humano (2026-10-22 «yes» y 2026-10-23 «continua»; ver «F-061 ·
-segundo bloqueo RESUELTO» y «F-061 · bloqueo RESUELTO» justo debajo);
-**implementer retomado el 2026-10-23**: T1-T4 hechas (api, búsqueda,
-recarga, `INTEGRACION.md` §5), informe en `progress/impl_F-061.md`; rama
+`sdd: false`, rigor estándar), `in_progress` desde el 2026-10-22, rama
 `feature/F-061-busqueda-predictiva-incidencias` en la copia principal.
-Pedida por el humano tras desplegar F-030 (`baj` no encontraba B: su nombre
-en Sigrid es «Enfermedad/Acc. no laboral(B)»); propuesta aprobada («me
-parece bien», 2026-10-22): palabras extra en la config de la api, búsqueda
-por comienzo de palabra en letra, código, nombre y palabras extra, con una
-errata tolerada al final, y recarga del catálogo tras cada sync. Criterios
-en `features.json`. **Implementer lanzado el 2026-10-22.** Api y front; ni
-transfer ni Sigrid. Al desplegar (api → front): `azure-apps/dedicacion.md`
-(campos nuevos de `GET /incidencias`).
+**Implementación hecha el 2026-10-23** (T1-T4, `d9061e0`..`a4aeaae`;
+informe `progress/impl_F-061.md`, mutación `progress/mutacion_F-061.md`
+10/10 muertos); **reviewer lanzado el 2026-10-23**. Api y front; ni
+transfer ni Sigrid. Pedida por el humano tras desplegar F-030 (`baj` no
+encontraba B: su nombre en Sigrid es «Enfermedad/Acc. no laboral(B)»);
+propuesta aprobada el 2026-10-22 («me parece bien»). Criterios y las
+decisiones del humano, en el `description` de F-061 (`features.json`).
 
-## F-061 · segundo bloqueo RESUELTO (2026-10-22, implementer; decisión del humano)
+## F-061 · decisiones del humano a los dos bloqueos del implementer
 
-**Resuelto por el humano el 2026-10-23** («continua» a la recomendada):
-opción **(a)**, campo `orden_busqueda` por incidencia (posición en
-`config.yaml`, `null` sin entrada); la lista sigue por letra. El cambio
-autorizado de `test_f030_r6_…` pasa a ser añadir `"palabras"` y
-`"orden_busqueda"` a cada dict esperado, nada más. Consta en el
-`description` de F-061. Lo de abajo es el motivo y las opciones, tal como
-se plantearon.
+Bloqueada dos veces antes de escribir código; resueltas las dos (el
+detalle de las opciones, en el historial de git de este fichero,
+`9110c80` y `ecf6ed8`):
 
-**Una sola pregunta, consecuencia de la decisión (b) de abajo** (error
-mío al proponerla: no vi cómo llega ese orden al front). Sin código escrito.
+- **2026-10-22, «yes»:** cambio MÍNIMO de la aserción de
+  `test_f030_catalogo.py::test_f030_r6_ruta_incidencias_activas_por_letra`
+  (lista cerrada de tests ajenos: solo ese); empate por el ORDEN DE LAS
+  ENTRADAS de `config.yaml` (B, AT, M, FJ, F, V, H); código y letra que
+  empieza, justo detrás de «letra exacta»; errata medida con OSA.
+- **2026-10-23, «continua» a la recomendada:** ese orden llega al front
+  como campo `orden_busqueda` por incidencia en `GET /api/v1/incidencias`
+  (posición en `config.yaml`, `null` sin entrada); la lista sigue por letra
+  (F-030 R6 intacta). El cambio autorizado de `test_f030_r6_…` es añadir
+  `"palabras"` y `"orden_busqueda"` a cada dict esperado, nada más.
 
-El empate «por el orden de las entradas de `config.yaml`» se aplica en el
-front, que no lee `config.yaml`: tiene que llegarle por
-`GET /api/v1/incidencias`. Cualquier forma de mandarlo vuelve a romper la
-igualdad exacta de `test_f030_r6_ruta_incidencias_activas_por_letra` más
-allá del `"palabras"` autorizado (lista cerrada: «sin tocar nada más»):
+## F-061 · al desplegar y MANUAL
 
-- **(a, recomendada)** un campo más por incidencia, `orden_busqueda`: la
-  posición de su entrada en `config.yaml` (0 = la primera, B) o `null` si no
-  tiene entrada. La lista sigue por letra (F-030 R6 intacta). Cambio del
-  test: añadir también `"orden_busqueda": n` a cada dict esperado (CIA 1,
-  CIE 0, CIV 5), nada más.
-- **(b)** la api sirve la lista en el orden de `config.yaml` (B, AT, M, FJ,
-  F, V, H; las sin entrada detrás, por letra) y el front desempata por la
-  posición en la lista. Sin campo nuevo, pero cambia el orden esperado del
-  test (CIE antes que CIA) y reescribe F-030 R6 («por orden de letra»). En
-  el front no se nota fuera de los empates: el catálogo solo lo usa el
-  desplegable (`app.js`, `state.tiposIncidencia`).
-- **(c)** un campo de primer nivel, `"orden_busqueda": ["CIE", "CIA", …]`,
-  junto a `incidencias`: también cambia el `==` del cuerpo entero.
-
-Con la respuesta, se retoma desde cero.
-
-## F-061 · bloqueo RESUELTO (2026-10-22, implementer; decisión del humano)
-
-**Resuelto por el humano el 2026-10-22** («yes»): punto 1, opción **(a)**
-(cambio mínimo de la aserción de `test_f030_r6_…`: solo `"palabras"`);
-punto 2, opción **(b)** (empate por el orden de las entradas de
-`config.yaml`, escritas B, AT, M, FJ, F, V, H), con las dos aclaraciones
-(código y letra que empieza, tras «letra exacta»; errata con OSA). Constan
-en el `description` de F-061 (`features.json`). Lo de abajo es el motivo y
-las opciones, tal como se plantearon.
-
-Dos puntos que la propuesta aprobada no resuelve. No se ha escrito código;
-solo cambian `features.json` (`blocked`) y este fichero.
-
-1. **Un test de F-030 exige cambiar su aserción.**
-   `services/dedicacion-api/tests/test_f030_catalogo.py::test_f030_r6_ruta_incidencias_activas_por_letra`
-   compara el cuerpo ENTERO de `GET /api/v1/incidencias` con igualdad exacta
-   (`r.json() == {"incidencias": [{"codigo", "letra", "nombre"}, …]}`) y usa
-   CIA, CIE y CIV. El primer criterio de F-061 pide un campo nuevo en cada
-   incidencia (la lista de palabras extra, vacía si no tiene), así que ese
-   `==` falla con cualquier implementación que lo cumpla; no hay forma
-   compatible (ni a nivel raíz: también es igualdad del cuerpo entero).
-   Opciones: **(a, recomendada)** autorizar el cambio mínimo de esa aserción:
-   añadir a cada dict esperado `"palabras": [...]` con lo que diga
-   `config.yaml` (CIA y CIE con las suyas, CIV `[]`), sin tocar nada más del
-   test; **(b)** que el test de F-030 pase a comparar solo
-   `codigo/letra/nombre` de cada elemento (cambia más la aserción que (a));
-   **(c)** no publicar las palabras en `GET /incidencias` sino en una ruta
-   nueva (`GET /incidencias/palabras`): no toca el test, pero incumple el
-   criterio 1 tal como está escrito y obliga al front a dos peticiones.
-2. **«`baj` → B, AT y M (B primero)» no sale de la regla de orden aprobada.**
-   Las tres casan solo por la palabra extra «baja» (misma categoría: «palabra
-   extra que empieza»), y el empate es «el orden del catálogo», que la api
-   sirve por letra y código (`PgTipoIncidenciaRepository.activos`): AT, B, F,
-   FJ, H, M, V. Con la regla tal cual, `baj` da **AT, B, M**, no B primero.
-   Opciones: **(a)** aceptar AT, B, M y corregir el criterio (la regla queda
-   como está); **(b, recomendada si el humano quiere B primero)** el empate
-   dentro de «palabra extra» lo decide el ORDEN DE LAS ENTRADAS en
-   `config.yaml` (CIE la primera): es dato, editable sin código, y el resto
-   del orden no cambia; **(c)** una categoría nueva «la letra es la inicial de
-   lo tecleado» (`baj` empieza por B) por delante de las palabras extra:
-   regla nueva que habría que aprobar, y afecta a otras búsquedas (`fal` → F
-   y FJ antes que el resto).
-   Además, para cerrar el orden sin improvisar: el código (`civ`, `ci`) y la
-   letra que empieza por lo tecleado (sin ser idéntica, `a` → AT) no están
-   en la lista de categorías; propuesta del implementer: ponerlos **detrás**
-   de «letra exacta» y delante de «nombre que empieza» (ningún caso de los
-   criterios ni de los tests de F-030 cambia con eso). Y la errata
-   `enfremedad` → B es un cambio de dos letras contiguas: cuenta como UNA
-   errata solo con la distancia que admite transposiciones
-   (Damerau/OSA); con Levenshtein puro serían dos. Se implementará OSA
-   salvo que se diga otra cosa.
-
-Con las dos decisiones, se retoma desde cero (nada a medias).
+- **Despliegue** (con permiso del humano; el script lo lanza el humano):
+  `redeploy_dedicacion.ps1 -Solo api,front`, **api antes que front** (el
+  front nuevo sin la api nueva no tiene `palabras` ni `orden_busqueda`:
+  busca solo por letra, código y nombre).
+- **`azure-apps/dedicacion.md`** (líder, al desplegar): §5, `GET
+  /api/v1/incidencias` gana `palabras` (lista) y `orden_busqueda` (entero o
+  `null`) por incidencia; las palabras extra viven en
+  `config/config.yaml` de la api (`sync.incidencias.palabras_extra`).
+- **MANUAL tras desplegar** (humano): Ctrl+F5 en el front; en la celda del
+  % de una línea teclear `baj` ⇒ B, AT y M, con B arriba; `civ` ⇒ V;
+  `vacasiones` ⇒ V; después «Sincronizar Sigrid» y comprobar que el
+  desplegable sigue saliendo sin recargar la página.
 
 **F-030** (incidencias en el cuadrante)
 **cerrada (`done`) y desplegada el 2026-10-22** (permiso del humano, «3
