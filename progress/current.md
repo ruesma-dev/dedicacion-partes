@@ -6,7 +6,10 @@
 `feature/F-061-busqueda-predictiva-incidencias` en la copia principal.
 **Implementación hecha el 2026-10-23** (T1-T4, `d9061e0`..`a4aeaae`;
 informe `progress/impl_F-061.md`, mutación `progress/mutacion_F-061.md`
-10/10 muertos); **reviewer lanzado el 2026-10-23**. Api y front; ni
+10/10 muertos); **review 1 RECHAZADA el 2026-10-23** (`progress/review_F-061.md`,
+`c517600`: dos mutantes de JS sobreviven a los tests de node y falta el nº de
+workers en «Evidencias»; solo tests y papeleo, más la O1); **implementer
+retomado para corregirlo**. Api y front; ni
 transfer ni Sigrid. Pedida por el humano tras desplegar F-030 (`baj` no
 encontraba B: su nombre en Sigrid es «Enfermedad/Acc. no laboral(B)»);
 propuesta aprobada el 2026-10-22 («me parece bien»). Criterios y las
@@ -30,6 +33,11 @@ detalle de las opciones, en el historial de git de este fichero,
   `"palabras"` y `"orden_busqueda"` a cada dict esperado, nada más.
 
 ## F-061 · al desplegar y MANUAL
+
+- **Propuesta de la review para `arnes-base`** (pendiente de PARADA 1 con
+  el humano, no aplicada): en `CHECKPOINTS.md` C4 bis, si la lógica vive en
+  JS u otro lenguaje sin puerta de mutación, una mini-campaña manual
+  documentada (original → mutado, resultado).
 
 - **Despliegue** (con permiso del humano; el script lo lanza el humano):
   `redeploy_dedicacion.ps1 -Solo api,front`, **api antes que front** (el
