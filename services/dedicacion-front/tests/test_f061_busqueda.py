@@ -101,6 +101,24 @@ def test_f061_r2_errata_solo_en_palabras_de_4_o_mas_y_solo_una():
     assert r["ausensia"] == ["FJ", "F"]
 
 
+def test_f061_r2_errata_por_letra_que_falta():
+    """Review 1: la palabra tecleada con una letra de menos casa con el
+    comienzo de una letra MÁS largo que ella (`n` hasta `w.length + 1`)."""
+    r = _buscar(["enfermdad", "vcaciones"])
+    assert r["enfermdad"] == ["B"]
+    assert r["vcaciones"] == ["V"]
+
+
+def test_f061_r2_la_subcadena_va_antes_que_la_errata():
+    """Review 1: «llevaca» contiene «vaca» (categoría 5) y «baca» está a una
+    errata (6); el orden de config.yaml diría lo contrario."""
+    catalogo = [
+        {"codigo": "CI6", "letra": "R", "nombre": "Baca", "orden_busqueda": 0},
+        {"codigo": "CI5", "letra": "S", "nombre": "Llevaca", "orden_busqueda": 1},
+    ]
+    assert _buscar(["vaca"], catalogo)["vaca"] == ["S", "R"]
+
+
 # ============================ el orden, uno a uno ========================= #
 #: Un catálogo de prueba en el que cada fila casa con «va» por un motivo
 #: distinto, puesto al revés del orden esperado y con `orden_busqueda` que
