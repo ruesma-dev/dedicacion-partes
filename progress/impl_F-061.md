@@ -32,8 +32,8 @@ Ficheros:
   al montar el contenedor (fallo al arrancar, no en el primer GET).
 - `services/dedicacion-front/static/js/app.js`: `montarDesplegableIncidencias`
   (filtro y orden) y `sincronizar` (recarga).
-- Tests nuevos: `services/dedicacion-api/tests/test_f061_palabras.py` (15),
-  `services/dedicacion-front/tests/test_f061_busqueda.py` (7),
+- Tests nuevos: `services/dedicacion-api/tests/test_f061_palabras.py` (19 tras la review 1),
+  `services/dedicacion-front/tests/test_f061_busqueda.py` (9),
   `services/dedicacion-front/tests/test_f061_recarga.py` (3).
 - Test ajeno tocado (lista cerrada, autorizado por el humano el 2026-10-23):
   `services/dedicacion-api/tests/test_f030_catalogo.py::test_f030_r6_ruta_incidencias_activas_por_letra`,
@@ -131,6 +131,39 @@ E   AssertionError: assert ['/sync', 'cargarPeriodo'] == ['/sync', 'ca.../incide
 (El que pasa es «un sync fallido no recarga»: ya era así.) Después, los tres
 ficheros en verde: 15, 7 y 3 passed.
 
+## Review 1 (CHANGES_REQUESTED): lo corregido
+
+1. **Dos tests nuevos** en `test_f061_busqueda.py` (`61369dd`). Pasan con
+   el código y cada uno falla con su mutante, aplicado a mano en `app.js` y
+   revertido después. Comando:
+   `.venv/Scripts/python.exe -m pytest tests/test_f061_busqueda.py::<test> -q --tb=line`.
+   ```
+   == mutante A: for (let n = w.length - 1; n <= Math.min(p.length, w.length); n++) {
+   E   AssertionError: assert [] == ['B']
+   ...\tests\test_f061_busqueda.py:108: AssertionError: assert [] == ['B']
+   FAILED tests/test_f061_busqueda.py::test_f061_r2_errata_por_letra_que_falta
+   == mutante B: if (normalizar(t.letra + " " + t.nombre).includes(q)) return 7;
+   E   AssertionError: assert ['R', 'S'] == ['S', 'R']
+   ...\tests\test_f061_busqueda.py:119: AssertionError: assert ['R', 'S'] == ['S', 'R']
+   FAILED tests/test_f061_busqueda.py::test_f061_r2_la_subcadena_va_antes_que_la_errata
+   ```
+   Con `app.js` restaurado: `2 passed`.
+2. **O1** (`e7a9371`). `palabras_por_codigo` solo toma por lista vacía la
+   clave **que falta**. Un valor presente que no sea lista (`""`, `0`,
+   `false` o `null`, también `palabras:` vacío en el YAML) da el `ValueError`
+   de siempre. Un caso propio de F-061 que usaba `None` pasa a `[]`. Fase RED
+   con `-m pytest tests/test_f061_palabras.py -q --tb=line`, antes del cambio:
+   ```
+   E   Failed: DID NOT RAISE ValueError
+   ...\tests\test_f061_palabras.py:81: Failed: DID NOT RAISE ValueError
+   FAILED tests/test_f061_palabras.py::test_f061_r1_una_config_mal_escrita_avisa_con_su_motivo[entradas9-palabras]
+   … (entradas10, 11 y 12, igual)
+   4 failed, 15 passed in 3.76s
+   ```
+   Después: `88 passed` (`test_f061_palabras`, `test_f030_catalogo` y `test_f023_sync_empresa`).
+3. Las Evidencias se actualizan: la campaña Python se repite (cambió la línea
+   35) y queda anotada la campaña manual de JS de la review.
+
 ## Criterios y su test
 
 | Criterio | Tests |
@@ -157,27 +190,21 @@ ficheros en verde: 15, 7 y 3 passed.
 
 ## Evidencias
 
-Medidas el 2026-10-23 sobre `54ad111` (código final; luego solo papeleo).
+Medidas el 2026-10-23 sobre `e7a9371` (código final tras la review 1).
 
 | Evidencia | Valor |
 |---|---|
-| `bash harness/init.sh` (cachés `.arnes_cache/suite_*.ok` borradas antes) | **ENTORNO LISTO**, ningún `[KO]` |
-| Tests: raíz | 418 passed, 1 skipped (61,2 s) |
-| Tests: api | 1141 passed (73,5 s); antes de F-061, 1126: **+15** |
-| Tests: front | 369 passed (45,2 s); antes, 359: **+10** |
-| Tests: transfer | 1230 passed (25,7 s), sin cambios |
+| `bash harness/init.sh` (cachés `.arnes_cache/suite_*.ok` borradas) | **ENTORNO LISTO**, ningún `[KO]` |
+| Tests raíz / api / front / transfer | 418 + 1 saltado (53,4 s) / **1145** (62,6 s; 1126 antes, +19) / **371** (40,4 s; 359 antes, +12) / 1230 (21,5 s) |
 | Cobertura de líneas cambiadas | `PUERTA COBERTURA: 100.0% de 32 líneas cambiadas cubiertas (32/32, umbral 80%, nivel estandar)` |
-| Mutación (`python -m harness.mutacion --feature F-061`) | **10 generados, 10 muertos, 0 supervivientes**, 0 timeouts, 259 s → `progress/mutacion_F-061.md` |
-| ruff | 277 avisos previos; los 2 que añadía F-061 corregidos (ISC004) o justificados (TRY004, `noqa` con motivo) |
+| Mutación Python (`python -m harness.mutacion --feature F-061`, 4 workers) | **9 generados, 9 muertos, 0 supervivientes**, 0 timeouts, 205,9 s → `progress/mutacion_F-061.md` (repetida tras O1; la 1.ª, 10/10 muertos) |
+| Mutación JS (manual, review 1, `app.js`) | **24 mutantes: 22 muertos** con los tests de entonces; los **2 supervivientes** (`w.length + 1` → `w.length`; `return 5` → `return 7`) los matan los dos tests nuevos (trazas arriba) |
+| ruff | 277 avisos previos; los 2 de F-061 corregidos (ISC004) o justificados (TRY004, `noqa` con motivo) |
 
-- **Mutación**: el muestreo pedía hasta 20, pero solo salen 10 de las
-  61 líneas Python de producción, todos de `palabras_incidencia.py`. No hay
+- La muestra Python admitía hasta 20 mutantes, pero en las 63 líneas de
+  producción solo hay 9 candidatos, todos en `palabras_incidencia.py`. No hay
   supervivientes que analizar.
-- **El JavaScript** (`app.js`: búsqueda y recarga) queda fuera de la
-  cobertura y de la mutación del arnés, que son solo Python. Lo cubren los
-  tests de node: los 10 casos de los criterios, la escalera de categorías,
-  el desempate y más de 1000 subcadenas del criterio 3.
-- Última ejecución de `init.sh`, con el informe ya escrito y las cachés
-  borradas: **ENTORNO LISTO**. Tests: 418 + 1 saltado, 1141, 369 y 1230.
-  Cobertura de líneas cambiadas, 100 % (32/32). Tamaño del informe, 181/220.
-  ruff, 277 avisos (los de antes).
+- El JS queda fuera de la puerta de cobertura y de la mutación del arnés,
+  que solo miden Python. Lo cubren los tests de node (casos de los criterios,
+  categorías, desempate, erratas y más de 1000 subcadenas del criterio 3) y
+  la campaña manual de la review.
