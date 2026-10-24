@@ -23,8 +23,8 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   del humano, preparadas y sin ejecutar).
 - Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`). La fase RED
   de T1-T10 y T12 está en
-  `C:\Users\pgris\AppData\Local\Temp\claude\C--Users-pgris-PycharmProjects-porcentajes\5cb867d0-7a0e-4697-8553-fb67f1894080\scratchpad\red\`
-  y pasa a `progress/impl_F-062.md` al cerrar.
+  la carpeta `red/` del scratchpad de la sesión del implementer (fuera del
+  repositorio) y pasa a `progress/impl_F-062.md` al cerrar.
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
