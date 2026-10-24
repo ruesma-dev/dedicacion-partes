@@ -46,6 +46,10 @@ Review 1 RECHAZADA (`progress/review_F-062.md`); los 6 bloqueos, arreglados:
 - **B6 y O3** (`77bf5d6`): «decidir la racha»; `#regla-incidencia` dice que
   en pruebas también la lectura por `ide` es de la 0404 y que no se mezclan
   modos sobre la misma base (una quitada se borraría en PostgreSQL).
+- **Campaña 2** (RM1, HEAD `44841b8`): 609 / 598 muertos / 11 vivos. En
+  serie: 5 falsos de la api (caen con tests que ya había: O1 otra vez, para
+  el líder), 4 del script con test nuevo (`2f04d28`) y los 2 equivalentes
+  aceptados. Detalle en `progress/mutacion_F-062.md`.
 
 ### F-062 · T19 y T20, MANUAL del humano (NO ejecutadas por ningún agente)
 
@@ -596,7 +600,9 @@ F-033 y, detrás, F-017, F-018…
   **Equivalentes de la mutación nº 14 (`rachas.py:113`) y nº 23
   (`rachas.py:528`): ACEPTADOS** por el humano el 2026-10-24 («ok a 1 y
   2»), con la condición de que la campaña nueva los repita y sigan siendo
-  equivalentes (estado en `progress/mutacion_F-062.md`).
+  equivalentes: **se cumple** (campaña 2 sobre `44841b8`: los mismos dos, aquí
+  nº 6 y 7, vivos en serie y con demostración ejecutable original == mutado;
+  ningún equivalente nuevo; `progress/mutacion_F-062.md`).
 
 - **O1 de F-056: ¿feature propia para validar el resto del cuerpo del
   registro?** `overrides` no enteros dan 500 (`int(k)`, `int(v)` en

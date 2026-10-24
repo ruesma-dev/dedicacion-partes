@@ -1,7 +1,7 @@
 <!-- progress/mutacion_F-062.md -->
 # F-062 · Campaña de mutación
 
-Generado por `python -m harness.mutacion --feature F-062` el 2026-10-24 20:50.
+Generado por `python -m harness.mutacion --feature F-062` el 2026-10-24 23:51.
 
 ## Alcance
 
@@ -15,7 +15,7 @@ Origen del diff: **rama** (`91648df8b8ba08b40cc6f9ade9455f18485134d5` .. `featur
 | `services/dedicacion-api/infrastructure/db/orm_models.py` | 4 |
 | `services/dedicacion-api/infrastructure/db/repositories.py` | 2 |
 | `services/dedicacion-transfer/application/pipelines/registro_lote.py` | 9 |
-| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | 216 |
+| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py` | 217 |
 | `services/dedicacion-transfer/application/services/lecturas_lote.py` | 119 |
 | `services/dedicacion-transfer/application/services/rachas.py` | 1121 |
 | `services/dedicacion-transfer/application/services/reglas_incidencias.py` | 29 |
@@ -23,31 +23,31 @@ Origen del diff: **rama** (`91648df8b8ba08b40cc6f9ade9455f18485134d5` .. `featur
 | `services/dedicacion-transfer/domain/models/registro_models.py` | 47 |
 | `services/dedicacion-transfer/infrastructure/sigrid/sigrid_write_client.py` | 40 |
 | `services/dedicacion-transfer/interface_adapters/api/app.py` | 70 |
-| `services/dedicacion-transfer/prueba_escritura_porcentajes.py` | 84 |
-| **Total** | **1920** |
+| `services/dedicacion-transfer/prueba_escritura_porcentajes.py` | 155 |
+| **Total** | **1992** |
 
 ## Totales
 
 | Métrica | Valor |
 |---|---|
-| Mutantes generados | 591 |
-| Mutantes evaluados | 591 |
-| Muertos | 560 |
-| Supervivientes | 31 |
+| Mutantes generados | 609 |
+| Mutantes evaluados | 609 |
+| Muertos | 598 |
+| Supervivientes | 11 |
 | Timeouts | 0 |
 | Sin veredicto (base rota) | 0 |
-| Tiempo total | 3322.3 s |
-| SHA de HEAD medido | `30ef3b41ca990b2abb80b644182c6e2788d73160` |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_jm_zy5v0/wk_0/services/dedicacion-api` | 48.3 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_jm_zy5v0/wk_0/services/dedicacion-transfer` | 29.5 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_jm_zy5v0/wk_1/services/dedicacion-api` | 48.2 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_jm_zy5v0/wk_1/services/dedicacion-transfer` | 29.4 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_jm_zy5v0/wk_2/services/dedicacion-api` | 48.3 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_jm_zy5v0/wk_2/services/dedicacion-transfer` | 29.2 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_jm_zy5v0/wk_3/services/dedicacion-api` | 48.2 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_jm_zy5v0/wk_3/services/dedicacion-transfer` | 29.4 |
-| Media por mutante evaluado (s) | 5.6 |
-| Timeout efectivo por mutante (s) | 120 — derivado de la línea base × 2.0 |
+| Tiempo total | 4819.9 s |
+| SHA de HEAD medido | `44841b892b4f1993b13d8390bccd19556420f7af` |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_6g4kgo43/wk_0/services/dedicacion-api` | 72.5 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_6g4kgo43/wk_0/services/dedicacion-transfer` | 35.6 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_6g4kgo43/wk_1/services/dedicacion-api` | 71.8 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_6g4kgo43/wk_1/services/dedicacion-transfer` | 35.7 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_6g4kgo43/wk_2/services/dedicacion-api` | 72.3 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_6g4kgo43/wk_2/services/dedicacion-transfer` | 35.2 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_6g4kgo43/wk_3/services/dedicacion-api` | 71.6 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-062_6g4kgo43/wk_3/services/dedicacion-transfer` | 35.8 |
+| Media por mutante evaluado (s) | 7.9 |
+| Timeout efectivo por mutante (s) | 145 — derivado de la línea base × 2.0 |
 | Suelo configurado (s) | 120 |
 | Workers | 4 |
 | Muestreo | no: campaña completa |
@@ -56,137 +56,57 @@ Origen del diff: **rama** (`91648df8b8ba08b40cc6f9ade9455f18485134d5` .. `featur
 
 Cada superviviente es una línea que ningún test comprueba de verdad, o una mutación equivalente. Distinguirlo es trabajo del implementer: ningún análisis puede quedarse sin completar al cerrar la feature.
 
-### 1. `services/dedicacion-api/application/traza_incidencias.py:103` [logico]
+### 1. `services/dedicacion-api/application/registro_sigrid.py:436` [logico]
 
-- Original: `devuelta = devolver is not None and devolver["accion"] in _HECHAS`
-- Mutado:   `devuelta = devolver is not None or devolver["accion"] in _HECHAS`
+- Original: `cierres=r.get("cierres_racha") or [],`
+- Mutado:   `cierres=r.get("cierres_racha") and [],`
 
 #### Análisis (implementer)
 
-> Por qué ningún test lo cazaba: Reaplicado a mano en un worktree limpio de `30ef3b4` (el HEAD medido) y con el intérprete del árbol principal, la suite de la api cae (15 fallos; el primero `test_f030_r30_identidad.py::test_f030_r39_traza_escrita_guarda_ide_y_dia_por_rol`, y `test_f062_r17_traza_devolver_anula_y_borra_la_quitada_sin_ide` lo caza de lleno). Con el mutante, toda incidencia sin `devolver` hace `None["accion"]`. La campaña lo dio por vivo sin serlo: aviso al líder (posible defecto del arnés).
-> Decisión: falso superviviente de la campaña paralela.
+> Por qué ningún test lo caza: sí lo caza. **Falso superviviente de la campaña paralela** (O1 de la review 1): reaplicado igual, en serie, en un worktree de `44841b8` (el HEAD medido), la suite de la api cae en `test_f062_payload_rachas.py::test_f062_r23_traza_ejecutar_pasa_cierres_y_no_coincide`. En la campaña 1 este mutante salió muerto.
+> Decisión: muerto (sin test nuevo); aviso al líder por O1.
 
-### 2. `services/dedicacion-api/application/traza_incidencias.py:127` [logico]
+### 2. `services/dedicacion-api/application/traza_incidencias.py:64` [comparacion]
+
+- Original: `if antes is not None:`
+- Mutado:   `if antes is None:`
+
+#### Análisis (implementer)
+
+> Por qué ningún test lo caza: sí lo caza. **Falso superviviente de la campaña paralela** (O1 de la review 1): reaplicado igual, en serie, en un worktree de `44841b8` (el HEAD medido), la suite de la api cae en `test_f030_r30_identidad.py::test_f030_r39_registro_la_registrada_viaja_con_su_traza`. En la campaña 1 este mutante salió muerto.
+> Decisión: muerto (sin test nuevo); aviso al líder por O1.
+
+### 3. `services/dedicacion-api/application/traza_incidencias.py:127` [not]
 
 - Original: `if n.get("tipo") != "quitada" or not inc_id or n.get("en_sigrid"):`
-- Mutado:   `if n.get("tipo") != "quitada" and not inc_id or n.get("en_sigrid"):`
+- Mutado:   `if n.get("tipo") != "quitada" or inc_id or n.get("en_sigrid"):`
 
 #### Análisis (implementer)
 
-> Por qué ningún test lo cazaba: Ningún test mandaba un `solo_sigrid` con `incidencia_id`. `test_f062_payload_rachas.py::test_f062_r17_traza_solo_sigrid_nunca_borra_aunque_traiga_incidencia`.
-> Decisión: test nuevo.
+> Por qué ningún test lo caza: sí lo caza. **Falso superviviente de la campaña paralela** (O1 de la review 1): reaplicado igual, en serie, en un worktree de `44841b8` (el HEAD medido), la suite de la api cae en `test_f062_payload_rachas.py::test_f062_r17_traza_la_quitada_sin_lineas_en_sigrid_se_borra`. En la campaña 1 este mutante salió muerto.
+> Decisión: muerto (sin test nuevo); aviso al líder por O1.
 
-### 3. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:195` [entero]
+### 4. `services/dedicacion-api/application/traza_incidencias.py:138` [booleano]
 
-- Original: `o = ObraEntrada(ide=int(obride or 0))`
-- Mutado:   `o = ObraEntrada(ide=int(obride or 1))`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Ningún test pasaba una línea sin obra. `test_f062_pipeline_rachas.py::test_f062_r5_obra_de_linea_sin_obra_ni_centro_es_cero`.
-> Decisión: test nuevo.
-
-### 4. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:196` [entero]
-
-- Original: `o.cenide = int(cenide or 0)         # como `obra_por_ide` (F-037)`
-- Mutado:   `o.cenide = int(cenide or 1)         # como `obra_por_ide` (F-037)`
+- Original: `IncidenciaORM.quitada.is_(True)]`
+- Mutado:   `IncidenciaORM.quitada.is_(False)]`
 
 #### Análisis (implementer)
 
-> Por qué ningún test lo cazaba: Ningún test pasaba una línea sin centro. `test_f062_pipeline_rachas.py::test_f062_r5_obra_de_linea_sin_obra_ni_centro_es_cero`.
-> Decisión: test nuevo.
+> Por qué ningún test lo caza: sí lo caza. **Falso superviviente de la campaña paralela** (O1 de la review 1): reaplicado igual, en serie, en un worktree de `44841b8` (el HEAD medido), la suite de la api cae en `test_f062_payload_rachas.py::test_f062_r17_traza_devolver_anula_y_borra_la_quitada_sin_ide`. En la campaña 1 este mutante salió muerto.
+> Decisión: muerto (sin test nuevo); aviso al líder por O1.
 
-### 5. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:484` [logico]
+### 5. `services/dedicacion-api/application/traza_incidencias.py:167` [entero]
 
-- Original: `c.hora_ide, c.pre = ciz.horide, float(ciz.pre or 0.0)`
-- Mutado:   `c.hora_ide, c.pre = ciz.horide, float(ciz.pre and 0.0)`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: El `CIZ` de `reshor` de los dobles tenía `pre` 0.0. `test_f062_pipeline_rachas.py::test_f062_r12_ejecutar_el_cierre_lleva_el_pre_del_ciz_y_sin_partida_0`.
-> Decisión: test nuevo.
-
-### 6. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:1290` [aritmetico]
-
-- Original: `pos_por_parte[hmoide] += int(self._st.paso_pos)`
-- Mutado:   `pos_por_parte[hmoide] -= int(self._st.paso_pos)`
+- Original: `"sigrid_parte_cod": hechas[0].get("parte_cod"),`
+- Mutado:   `"sigrid_parte_cod": hechas[1].get("parte_cod"),`
 
 #### Análisis (implementer)
 
-> Por qué ningún test lo cazaba: Nadie miraba la `pos` del cierre. `test_f062_pipeline_rachas.py::test_f062_r12_ejecutar_el_cierre_con_la_partida_y_la_cuenta_del_inicio` (pos 192).
-> Decisión: test nuevo.
+> Por qué ningún test lo caza: sí lo caza. **Falso superviviente de la campaña paralela** (O1 de la review 1): reaplicado igual, en serie, en un worktree de `44841b8` (el HEAD medido), la suite de la api cae en `test_f030_r30_identidad.py::test_f030_r39_traza_un_omitir_no_borra_el_ide_de_su_rol`. En la campaña 1 este mutante salió muerto.
+> Decisión: muerto (sin test nuevo); aviso al líder por O1.
 
-### 7. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:1300` [logico]
-
-- Original: `paride=int(c.paride or 0), caaide=int(c.caaide or 0)))`
-- Mutado:   `paride=int(c.paride and 0), caaide=int(c.caaide or 0)))`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Los inicios de los tests tenían partida 0. `test_f062_pipeline_rachas.py::test_f062_r12_ejecutar_el_cierre_con_la_partida_y_la_cuenta_del_inicio`.
-> Decisión: test nuevo.
-
-### 8. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:1300` [entero]
-
-- Original: `paride=int(c.paride or 0), caaide=int(c.caaide or 0)))`
-- Mutado:   `paride=int(c.paride or 1), caaide=int(c.caaide or 0)))`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Sin partida en el inicio, 0. `test_f062_pipeline_rachas.py::test_f062_r12_ejecutar_el_cierre_lleva_el_pre_del_ciz_y_sin_partida_0`.
-> Decisión: test nuevo.
-
-### 9. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:1300` [logico]
-
-- Original: `paride=int(c.paride or 0), caaide=int(c.caaide or 0)))`
-- Mutado:   `paride=int(c.paride or 0), caaide=int(c.caaide and 0)))`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Los inicios de los tests tenían cuenta 0. `test_f062_pipeline_rachas.py::test_f062_r12_ejecutar_el_cierre_con_la_partida_y_la_cuenta_del_inicio`.
-> Decisión: test nuevo.
-
-### 10. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:1300` [entero]
-
-- Original: `paride=int(c.paride or 0), caaide=int(c.caaide or 0)))`
-- Mutado:   `paride=int(c.paride or 0), caaide=int(c.caaide or 1)))`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Sin cuenta en el inicio, 0. `test_f062_pipeline_rachas.py::test_f062_r12_ejecutar_el_cierre_lleva_el_pre_del_ciz_y_sin_partida_0`.
-> Decisión: test nuevo.
-
-### 11. `services/dedicacion-transfer/application/services/lecturas_lote.py:570` [comparacion]
-
-- Original: `and int(desde) <= l.fecha_int <= int(hasta)`
-- Mutado:   `and int(desde) < l.fecha_int <= int(hasta)`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Ninguna línea caía en el primer día de la ventana pedida. `test_f062_lote.py::test_f062_r19_lote_la_ventana_de_memoria_incluye_sus_dos_extremos`.
-> Decisión: test nuevo.
-
-### 12. `services/dedicacion-transfer/application/services/lecturas_lote.py:570` [comparacion]
-
-- Original: `and int(desde) <= l.fecha_int <= int(hasta)`
-- Mutado:   `and int(desde) <= l.fecha_int < int(hasta)`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Ninguna línea caía en el último día de la ventana pedida. `test_f062_lote.py::test_f062_r19_lote_la_ventana_de_memoria_incluye_sus_dos_extremos`.
-> Decisión: test nuevo.
-
-### 13. `services/dedicacion-transfer/application/services/rachas.py:93` [booleano]
-
-- Original: `@dataclass(frozen=True)`
-- Mutado:   `@dataclass(frozen=False)`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Nadie comprobaba que una `Racha` leída no se cambia. `test_f062_rachas.py::test_f062_d5_una_racha_leida_no_se_cambia`.
-> Decisión: test nuevo.
-
-### 14. `services/dedicacion-transfer/application/services/rachas.py:113` [entero]
+### 6. `services/dedicacion-transfer/application/services/rachas.py:113` [entero]
 
 - Original: `0 if es_inicio(x) else 1,`
 - Mutado:   `0 if es_inicio(x) else 2,`
@@ -196,87 +116,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 > Por qué ningún test lo cazaba: La clave de orden de `emparejar` solo compara el 0 del inicio con el valor del `CIZ`: con 1 o con 2 el orden es el mismo (inicio antes que `CIZ` el mismo día). Ningún test puede distinguirlos.
 > Decisión: mutante equivalente, justificado.
 
-### 15. `services/dedicacion-transfer/application/services/rachas.py:142` [comparacion]
+> **Sigue siendo el mismo y sigue siendo equivalente en la campaña 2** (HEAD `44841b8`): mismo fichero, línea, operador y texto; vive también en serie con la suite de `2f04d28`; y la demostración ejecutable (abajo) da original == mutado. **Aceptado por el humano el 2026-10-24** («ok a 1 y 2»).
 
-- Original: `and 1 <= inc.desde <= inc.hasta <= ultimo):`
-- Mutado:   `and 1 <= inc.desde < inc.hasta <= ultimo):`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Ninguna incidencia de un solo día. `test_f062_rachas.py::test_f062_r11_fechas_de_un_solo_dia_y_los_extremos_del_mes`.
-> Decisión: test nuevo.
-
-### 16. `services/dedicacion-transfer/application/services/rachas.py:160` [entero]
-
-- Original: `(x[0].codigo or "").strip(), x[1][0],`
-- Mutado:   `(x[0].codigo or "").strip(), x[1][1],`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: El orden por el último día solo difiere con incidencias que se solapan (la api no las deja pasar). `test_f062_rachas.py::test_f062_d11_cadenas_por_su_primer_dia`.
-> Decisión: test nuevo.
-
-### 17. `services/dedicacion-transfer/application/services/rachas.py:226` [entero]
-
-- Original: `return mes - 1 if mes % 100 > 1 else (mes // 100 - 1) * 100 + 12`
-- Mutado:   `return mes - 1 if mes % 100 > 2 else (mes // 100 - 1) * 100 + 12`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Ningún test registraba febrero. `test_f062_rachas.py::test_f062_r12_mes_anterior_en_cada_frontera`.
-> Decisión: test nuevo.
-
-### 18. `services/dedicacion-transfer/application/services/rachas.py:239` [aritmetico]
-
-- Original: `return ultimo_dia(cadena.hasta // 10000, cadena.hasta // 100 % 100)`
-- Mutado:   `return ultimo_dia(cadena.hasta * 10000, cadena.hasta // 100 % 100)`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: El destino solo cuenta si el `CIZ` de la previa ya está el último día y no se puede mover. `test_f062_rachas.py::test_f062_r10_previa_que_ya_cierra_el_ultimo_dia_del_mes_no_se_mueve`.
-> Decisión: test nuevo.
-
-### 19. `services/dedicacion-transfer/application/services/rachas.py:434` [entero]
-
-- Original: `a.paride, a.caa_ide = int(inicio.paride or 0), int(inicio.caaide or 0)`
-- Mutado:   `a.paride, a.caa_ide = int(inicio.paride or 1), int(inicio.caaide or 0)`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Los inicios de los tests tenían partida. `test_f062_rachas.py::test_f062_r5_decidir_el_ciz_en_el_parte_del_inicio_con_su_partida`.
-> Decisión: test nuevo.
-
-### 20. `services/dedicacion-transfer/application/services/rachas.py:434` [entero]
-
-- Original: `a.paride, a.caa_ide = int(inicio.paride or 0), int(inicio.caaide or 0)`
-- Mutado:   `a.paride, a.caa_ide = int(inicio.paride or 0), int(inicio.caaide or 1)`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Los inicios de los tests tenían cuenta. `test_f062_rachas.py::test_f062_r5_decidir_el_ciz_en_el_parte_del_inicio_con_su_partida`.
-> Decisión: test nuevo.
-
-### 21. `services/dedicacion-transfer/application/services/rachas.py:443` [logico]
-
-- Original: `"mes": int(m.mes), "paride": int(m.paride or 0),`
-- Mutado:   `"mes": int(m.mes), "paride": int(m.paride and 0),`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Las que continúan la cadena tenían partida 0. `test_f062_rachas.py::test_f062_r8_decidir_la_que_continua_la_cadena_lleva_su_partida`.
-> Decisión: test nuevo.
-
-### 22. `services/dedicacion-transfer/application/services/rachas.py:443` [entero]
-
-- Original: `"mes": int(m.mes), "paride": int(m.paride or 0),`
-- Mutado:   `"mes": int(m.mes), "paride": int(m.paride or 1),`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Las que continúan la cadena tenían partida. `test_f062_rachas.py::test_f062_r8_decidir_la_que_continua_la_cadena_lleva_su_partida`.
-> Decisión: test nuevo.
-
-### 23. `services/dedicacion-transfer/application/services/rachas.py:528` [entero]
+### 7. `services/dedicacion-transfer/application/services/rachas.py:528` [entero]
 
 - Original: `return _omitir_todo(cadena, base, base[0].motivo)`
 - Mutado:   `return _omitir_todo(cadena, base, base[1].motivo)`
@@ -286,102 +128,74 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 > Por qué ningún test lo cazaba: `decidir_incidencia` omite «LAS DOS, con el mismo motivo» (su docstring y cada `return omitir(motivo)` de `reglas_incidencias.py`): cuando alguna de la base omite, `base[0].motivo == base[1].motivo`. Distinguirlas exigiría una base que el código no produce.
 > Decisión: mutante equivalente, justificado.
 
-### 24. `services/dedicacion-transfer/application/services/rachas.py:665` [comparacion]
+> **Sigue siendo el mismo y sigue siendo equivalente en la campaña 2** (HEAD `44841b8`): mismo fichero, línea, operador y texto; vive también en serie con la suite de `2f04d28`; y la demostración ejecutable (abajo) da original == mutado. **Aceptado por el humano el 2026-10-24** («ok a 1 y 2»).
 
-- Original: `or _mes(racha.cierre.fecha_int) <= mes:`
-- Mutado:   `or _mes(racha.cierre.fecha_int) < mes:`
+### 8. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:159` [comparacion]
 
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Ningún `CIZ` suelto del mismo mes cerraba el inicio propio. `test_f062_rachas.py::test_f062_r21_un_ciz_suelto_del_mismo_mes_no_hace_seguir_la_racha`.
-> Decisión: test nuevo.
-
-### 25. `services/dedicacion-transfer/application/services/rachas.py:738` [logico]
-
-- Original: `if (sk.startswith(PREFIJO_SYNCKEY_INCIDENCIA) and len(resto) == 2`
-- Mutado:   `if (sk.startswith(PREFIJO_SYNCKEY_INCIDENCIA) or len(resto) == 2`
+- Original: `if len(valores) > MAX_INCIDENCIAS_MES:`
+- Mutado:   `if len(valores) >= MAX_INCIDENCIAS_MES:`
 
 #### Análisis (implementer)
 
-> Por qué ningún test lo cazaba: Ninguna `synckey` ajena con la cola `{n}:ini`. `test_f062_rachas.py::test_f062_r12_synckey_de_cierre_de_un_inicio_ajeno_que_lo_parece`.
-> Decisión: test nuevo.
+> Por qué ningún test lo cazaba: ningún test pasaba justo 100 `--incidencia` (el tope de la centena del mes, B1).
+> Decisión: test nuevo, `test_f062_r5_script_caben_cien_incidencias_por_mes` (`2f04d28`); reaplicado en serie en un worktree de `44841b8` con ese test, cae.
 
-### 26. `services/dedicacion-transfer/application/services/rachas.py:739` [logico]
+### 9. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:328` [entero]
 
-- Original: `and resto[0].isdigit() and resto[1] == "ini"):`
-- Mutado:   `or resto[0].isdigit() and resto[1] == "ini"):`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Ninguna `synckey` ajena con la cola `{n}:ini`. `test_f062_rachas.py::test_f062_r12_synckey_de_cierre_de_un_inicio_ajeno_que_lo_parece`.
-> Decisión: test nuevo.
-
-### 27. `services/dedicacion-transfer/application/services/rachas.py:846` [entero]
-
-- Original: `ini, partes_m1.get((int(ini.obride or 0), m1 // 100,`
-- Mutado:   `ini, partes_m1.get((int(ini.obride or 1), m1 // 100,`
+- Original: `sys.exit(1)`
+- Mutado:   `sys.exit(2)`
 
 #### Análisis (implementer)
 
-> Por qué ningún test lo cazaba: Ningún inicio sin obra. `test_f062_rachas.py::test_f062_c12_cierres_un_inicio_sin_obra_no_busca_parte_de_otra`.
-> Decisión: test nuevo.
+> Por qué ningún test lo cazaba: el test de O2 solo pedía un código distinto de 0; ahora fija el 1.
+> Decisión: test nuevo, `test_f062_o2_script_en_modo_real_no_escribe` (`2f04d28`); reaplicado en serie en un worktree de `44841b8` con ese test, cae.
 
-### 28. `services/dedicacion-transfer/application/services/rachas.py:867` [booleano]
+### 10. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:335` [booleano]
 
-- Original: `@dataclass(frozen=True)`
-- Mutado:   `@dataclass(frozen=False)`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Nadie comprobaba que una `LineaVista` no se cambia. `test_f062_rachas.py::test_f062_r30_la_linea_vista_no_se_cambia`.
-> Decisión: test nuevo.
-
-### 29. `services/dedicacion-transfer/application/services/rachas.py:898` [booleano]
-
-- Original: `designado: bool = True) -> list[NoCoincide]:`
-- Mutado:   `designado: bool = False) -> list[NoCoincide]:`
+- Original: `permitir_modo_real: bool = False) -> None:`
+- Mutado:   `permitir_modo_real: bool = True) -> None:`
 
 #### Análisis (implementer)
 
-> Por qué ningún test lo cazaba: El pipeline y los tests pasaban siempre `designado`. `test_f062_rachas.py::test_f062_c11_no_coincide_por_defecto_el_recurso_es_el_designado`.
-> Decisión: test nuevo.
+> Por qué ningún test lo cazaba: los tests llamaban a la fase por `main()`, que siempre pasa la opción; nadie llamaba a `fase_ejecutar` sin ella.
+> Decisión: test nuevo, `test_f062_o2_script_las_fases_por_defecto_no_escriben_en_modo_real` (`2f04d28`); reaplicado en serie en un worktree de `44841b8` con ese test, cae.
 
-### 30. `services/dedicacion-transfer/interface_adapters/api/app.py:219` [booleano]
+### 11. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:391` [booleano]
 
-- Original: `def _respuesta_preflight(pf, con_rachas: bool = False) -> dict:`
-- Mutado:   `def _respuesta_preflight(pf, con_rachas: bool = True) -> dict:`
-
-#### Análisis (implementer)
-
-> Por qué ningún test lo cazaba: Los tests de equivalencia comparaban dos respuestas con el mismo defecto. `test_f062_pipeline_rachas.py::test_f062_r22_contrato_sin_pedirlas_la_respuesta_no_lleva_rachas`.
-> Decisión: test nuevo.
-
-### 31. `services/dedicacion-transfer/prueba_escritura_porcentajes.py:164` [aritmetico]
-
-- Original: `return [LineaEntrada(registro_id=REGISTRO_TESTIGO + n, recurso_ide=r,`
-- Mutado:   `return [LineaEntrada(registro_id=REGISTRO_TESTIGO - n, recurso_ide=r,`
+- Original: `permitir_modo_real: bool = False) -> None:`
+- Mutado:   `permitir_modo_real: bool = True) -> None:`
 
 #### Análisis (implementer)
 
-> Por qué ningún test lo cazaba: Los tests del script usaban un solo `--cierres`. `test_f062_pipeline_rachas.py::test_f062_r12_script_una_linea_testigo_por_recurso_de_cierres`.
-> Decisión: test nuevo.
+> Por qué ningún test lo cazaba: igual que el anterior, para `fase_limpiar`.
+> Decisión: test nuevo, `test_f062_o2_script_las_fases_por_defecto_no_escriben_en_modo_real` (`2f04d28`); reaplicado en serie en un worktree de `44841b8` con ese test, cae.
 
+## Reproducción en serie y equivalentes (implementer, 2026-10-25)
 
-## Reverificación de los supervivientes (implementer, 2026-10-24)
+Por O1 (rigor `critico`), los 11 se reaplicaron uno a uno en un worktree
+desacoplado de `44841b8`, con la suite del servicio (`-x`) y el intérprete
+del árbol principal (`verificar_supervivientes.py` y `verificar_informe.py`
+del scratchpad del implementer):
 
-Tras los tests nuevos (`3e2cee8`, `6266a9f`), cada uno de los 31 se volvió a
-aplicar **en serie**, en un `git worktree` limpio de `6266a9f`, con el
-intérprete del árbol principal y `pytest -x -q --tb=no -p no:cacheprovider`
-(lo mismo que la campaña), restaurando el fichero tras cada uno:
-
-| Resultado | Cuántos | Cuáles (nº de esta lista) |
+| Resultado | Nº | Cuáles |
 |---|---|---|
-| Muerto por un test nuevo | 28 | 2-13, 15-22, 24-31 |
-| Muerto por los tests que ya había (falso superviviente) | 1 | 1 |
-| Vivo: equivalente justificado | 2 | 14 (`rachas.py:113`), 23 (`rachas.py:528`) |
+| Falso superviviente (cae en serie) | 5 | 1-5 (api) |
+| Muerto con test nuevo (`2f04d28`) | 4 | 8-11 (script) |
+| Vivo: equivalente aceptado por el humano | 2 | 6 (`rachas.py:113`), 7 (`rachas.py:528`) |
 
-Cada «muerto» nombra el test que cae en la traza de la reverificación; el
-del nº 1 ya caía en `30ef3b4` (`test_f030_r30_identidad.py::test_f030_r39_…`).
-**Aviso para el líder (arnés):** la campaña paralela dio el nº 1 por vivo y,
-reaplicado igual en serie en un worktree del mismo HEAD, la suite cae. No se
-ha localizado la causa; no se tocó `harness/`.
+Ningún equivalente nuevo. **Demostración ejecutable** de los dos
+(`demo_equivalentes_impl.py`, carga `rachas.py` original y mutado por
+sustitución exacta del texto del mutante y compara):
+
+```
+nº 14 (rachas.py:113): emparejar original == mutado en 30000 casos
+nº 23 (rachas.py:528): decidir_cadena original == mutado en 558 de 9582 bases que omiten; en las 9582, base[0].motivo == base[1].motivo
+```
+
+(Los números «14» y «23» son los de la campaña 1; aquí son el 6 y el 7. Las
+9024 bases que omiten sin cadena no llegan a `decidir_cadena`: sin recurso o
+sin días posibles, `cadenas` no las forma.)
+
+**Aviso para el líder (arnés, O1):** la campaña paralela volvió a dar 5
+supervivientes falsos, todos de la api (en la campaña 1, uno). Con `-x`, en
+serie, cada uno cae con un test que ya existía. No se tocó `harness/`.
