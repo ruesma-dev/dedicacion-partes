@@ -625,3 +625,149 @@ def test_f062_r6_decidir_lo_escrito_lleva_la_base_de_la_duena():
     ini, fin = plan.acciones[:2]
     assert (ini.hora_ide, ini.pre, fin.hora_ide, fin.paride) == (
         71, 12.5, 79, 80001)
+
+
+# ================ T5: cierres del mes anterior (R12, R13, D14) ============ #
+from application.services.rachas import (
+    cierres_mes_anterior,
+    obras_de_cierres,
+    origen_de,
+)
+from domain.models.registro_models import ParteSigrid
+
+#: El inicio, con su obra, centro, partida y cuenta (E-6, E-13).
+INICIO = {"obride": 40, "cenide": 7, "paride": 300, "caaide": 400}
+
+
+def _cierres(lineas, incs=(), partes=None, mes=11, est=EST, empresa=1,
+             pruebas=None, recurso=200):
+    """Los cierres al registrar `mes` de 2026 del recurso 200."""
+    return cierres_mes_anterior(
+        emparejar(lineas), recurso, list(incs), partes or {}, 2026, mes,
+        est=est, empresa=empresa, obride_pruebas=pruebas)
+
+
+def _c(cierre):
+    return (cierre.accion, cierre.fecha_int, cierre.parte_cod, cierre.hmoide,
+            cierre.synckey, cierre.incidencia_id)
+
+
+def test_f062_c4_cierres_inicio_de_m1_sin_continuacion_cierra_en_su_parte():
+    lineas = [_l(51, 20261027, sk="porcentajes:inc:5:ini", **INICIO)]
+    [c] = _cierres(lineas)
+    assert _c(c) == ("escribir", 20261031, "PT26/00100", 100,
+                     "porcentajes:inc:5:fin", 5)
+    assert (c.recurso_ide, c.codigo, c.inicio_ide, c.inicio_fec,
+            c.inicio_parte) == (200, "CIV", 51, 20261027, "PT26/00100")
+    assert (c.obride, c.cenide, c.paride, c.caaide) == (40, 7, 300, 400)
+    assert c.motivo == ("la racha CIV del 27/10 (parte PT26/00100) no sigue "
+                        "en 11/2026: CIZ el 31/10 en el parte PT26/00100")
+
+
+@pytest.mark.parametrize("kw", [{"est": 3}, {"parte_emp": 2},
+                                {"obride": 41}])
+def test_f062_r13_cierres_parte_del_inicio_que_no_vale_solo_avisa(kw):
+    datos = {**INICIO, **kw}
+    lineas = [_l(51, 20261027, sk="porcentajes:inc:5:ini", **datos)]
+    [c] = _cierres(lineas, pruebas=40)
+    assert (c.accion, c.fecha_int, c.hmoide) == ("aviso", 20261031, None)
+    assert c.motivo == ("la racha CIV del 27/10 (parte PT26/00100) no sigue "
+                        "en 11/2026 y no se puede cerrar el 31/10: el parte "
+                        "PT26/00100 no está En registro, no es de la empresa "
+                        "o no es de la obra de pruebas")
+
+
+def test_f062_c5_cierres_la_que_continua_una_incidencia_de_m_no_se_cierra():
+    lineas = [_l(51, 20260915, "CIE", sk="porcentajes:inc:3:ini", **INICIO)]
+    octubre = _inc(9, 1, 31, "CIE", mes=10)
+    assert _cierres(lineas, [octubre], mes=10) == []
+    noviembre = _inc(10, 1, 10, "CIE", mes=11)
+    assert _cierres(lineas, [noviembre]) == []
+    # Otro código o no pegada al último día de M−1: no la continúa.
+    assert len(_cierres(lineas, [_inc(10, 1, 10, "CIV", mes=11)])) == 1
+    assert len(_cierres(lineas, [_inc(10, 3, 10, "CIE", mes=11)])) == 1
+
+
+def test_f062_c12_cierres_inicio_anterior_a_m1_en_el_parte_de_m1_de_su_obra():
+    lineas = [_l(51, 20260915, "CIE", sk="porcentajes:inc:3:ini",
+                 parte="PT26/00090", hmoide=90, **INICIO)]
+    partes = {(40, 2026, 10): [ParteSigrid(130, "PT26/00130", 3),
+                               ParteSigrid(120, "PT26/00120", EST),
+                               ParteSigrid(110, "PT26/00110", EST)]}
+    [c] = _cierres(lineas, partes=partes)
+    assert _c(c) == ("escribir", 20261031, "PT26/00120", 120,
+                     "porcentajes:inc:3:fin", 3)
+    assert (c.obride, c.cenide, c.paride, c.caaide) == (40, 7, 300, 400)
+    assert c.motivo == ("la racha CIE del 15/09 (parte PT26/00090) no sigue "
+                        "en 11/2026: CIZ el 31/10 en el parte PT26/00120")
+    assert obras_de_cierres(emparejar(lineas), 200, [], 2026, 11,
+                            est=EST) == {40}
+
+
+@pytest.mark.parametrize("partes", [
+    {}, {(40, 2026, 10): []}, {(40, 2026, 10): [ParteSigrid(130, "X", 3)]},
+    {(41, 2026, 10): [ParteSigrid(120, "PT26/00120", 1)]}])
+def test_f062_c12_cierres_sin_parte_de_m1_que_valga_solo_avisa(partes):
+    lineas = [_l(51, 20260915, "CIE", sk="porcentajes:inc:3:ini",
+                 parte="PT26/00090", **INICIO)]
+    [c] = _cierres(lineas, partes=partes)
+    assert (c.accion, c.hmoide, c.parte_cod) == ("aviso", None, None)
+    assert c.motivo == ("la racha CIE del 15/09 (parte PT26/00090) no sigue "
+                        "en 11/2026 y no se puede cerrar el 31/10: su obra no "
+                        "tiene en 10/2026 ningún parte En registro")
+
+
+def test_f062_c12_cierres_d14_de_otra_empresa_o_fuera_de_pruebas_avisa():
+    partes = {(40, 2026, 10): [ParteSigrid(120, "PT26/00120", EST)]}
+    for kw, pruebas in (({"parte_emp": 2}, None), ({}, 41)):
+        lineas = [_l(51, 20260915, "CIE", sk="porcentajes:inc:3:ini",
+                     **{**INICIO, **kw})]
+        [c] = _cierres(lineas, partes=partes, pruebas=pruebas)
+        assert c.accion == "aviso"
+
+
+def test_f062_r12_cierres_inicio_ajeno_lleva_synckey_de_cierre():
+    lineas = [_l(51, 20261027, sk=None, **INICIO)]
+    [c] = _cierres(lineas)
+    assert _c(c) == ("escribir", 20261031, "PT26/00100", 100,
+                     "porcentajes:inc:cierre:51", None)
+    lineas = [_l(51, 20261027, sk="partes:9:1", **INICIO)]
+    assert _c(_cierres(lineas)[0])[4] == "porcentajes:inc:cierre:51"
+
+
+def test_f062_r18_cierres_ya_cerrada_el_ultimo_dia_con_nuestra_synckey():
+    for sk_ini, sk_fin in (("porcentajes:inc:5:ini", "porcentajes:inc:5:fin"),
+                           (None, "porcentajes:inc:cierre:51")):
+        lineas = [_l(51, 20261027, sk=sk_ini, **INICIO),
+                  _l(52, 20261031, "CIZ", sk=sk_fin, parte="PT26/00101",
+                     hmoide=101)]
+        [c] = _cierres(lineas)
+        assert _c(c)[:4] == ("ya_registrado", 20261031, "PT26/00101", 101)
+        assert c.hmores_ide == 52
+    # Cerrada por otro el último día, o antes: no es un cierre nuestro.
+    for ciz in (_l(52, 20261031, "CIZ"),
+                _l(52, 20261030, "CIZ", sk="porcentajes:inc:5:fin")):
+        lineas = [_l(51, 20261027, sk="porcentajes:inc:5:ini"), ciz]
+        assert _cierres(lineas) == []
+
+
+def test_f062_r12_cierres_solo_las_abiertas_de_antes_de_m_del_recurso():
+    # Inicio en M (abierta en noviembre), otro recurso, cerrada en M.
+    assert _cierres([_l(51, 20261103, **INICIO)]) == []
+    assert _cierres([_l(51, 20261027, reside=201, **INICIO)]) == []
+    assert _cierres([_l(51, 20261027, **INICIO),
+                     _l(52, 20261104, "CIZ")]) == []
+    assert obras_de_cierres(emparejar([_l(51, 20261027, **INICIO)]), 200,
+                            [], 2026, 11, est=EST) == set()
+
+
+def test_f062_r12_cierres_en_enero_cierra_el_31_de_diciembre():
+    lineas = [_l(51, 20251229, sk="porcentajes:inc:5:ini", **INICIO)]
+    [c] = cierres_mes_anterior(emparejar(lineas), 200, [], {}, 2026, 1,
+                               est=EST, empresa=1)
+    assert (c.accion, c.fecha_int) == ("escribir", 20251231)
+
+
+def test_f062_r9_cierres_origen_de_una_synckey_de_cierre():
+    assert origen_de(_l(1, 20261005, sk="porcentajes:inc:cierre:51")) == (
+        "de un cierre de racha de porcentajes")

@@ -16,7 +16,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T5 (hechas T1-T4).
+- **Tarea en curso:** T5b (hechas T1-T5).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
@@ -27,6 +27,12 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   T4: la «cubierta» es `ya_registrado` con la `fec` del `CIZ` ajeno; el
   aviso R21 deja el `fin` en `abierta`; si la guarda R9 o la base (R26)
   omiten, no hay resumen de racha.
+  T5 (D14 = B; no llegó enmienda del líder, se implementa la spec): la
+  empresa y la obra de pruebas del parte de M−1 se miran en el parte del
+  inicio (misma obra; `ParteSigrid` no trae `emp`); una racha que una
+  cadena de M continúa según `previa` no se cierra aunque la cadena omita;
+  `ya_registrado` = cerrada el último día de M−1 con la `synckey` de
+  cierre. `PREFIJO_CIERRE` se adelanta de T6.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

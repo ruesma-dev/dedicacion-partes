@@ -49,6 +49,9 @@ CODIGO_FIN = "CIZ"
 #: Prefijo de la `synckey` de las líneas de incidencia (distinta de la de las
 #: líneas de %, `porcentajes:{id}`).
 PREFIJO_SYNCKEY_INCIDENCIA = "porcentajes:inc:"
+#: F-062 (R12): la `synckey` del `CIZ` con que se cierra en M−1 una
+#: racha de inicio ajeno: `porcentajes:inc:cierre:{ide del inicio}`.
+PREFIJO_CIERRE = "porcentajes:inc:cierre:"
 ROLES = ("ini", "fin")
 
 #: Motivos. Caben en los 300 caracteres de `incidencia.sigrid_motivo`.

@@ -24,6 +24,7 @@ from domain.models.registro_models import (
     AccionIncidencia,
     IncidenciaEntrada,
     LineaIncidenciaSigrid,
+    ParteSigrid,
 )
 
 from application.services.reglas_incidencias import (
@@ -31,6 +32,7 @@ from application.services.reglas_incidencias import (
     MOTIVO_INC_CAMBIADA,
     MOTIVO_INC_CERRADO,
     MOTIVO_INC_YA,
+    PREFIJO_CIERRE,
     PREFIJO_SYNCKEY_INCIDENCIA,
     synckey_incidencia,
 )
@@ -324,6 +326,8 @@ def origen_de(linea: LineaIncidenciaSigrid) -> str:
     sk = (linea.synckey or "").strip()
     if not sk:
         return "de Administración"
+    if sk.startswith(PREFIJO_CIERRE):
+        return "de un cierre de racha de porcentajes"
     if sk.startswith(PREFIJO_SYNCKEY_INCIDENCIA):
         resto = sk[len(PREFIJO_SYNCKEY_INCIDENCIA):]
         return f"de la incidencia {resto.split(':')[0]}"
@@ -643,3 +647,174 @@ def _ciz_posterior(r_previa: Racha | None,
             or _mes(racha.cierre.fecha_int) <= mes:
         return None
     return racha.cierre
+
+
+# ================= Cierre del mes anterior (R12, R13, D14) ================ #
+
+MOTIVO_CIERRE = ("la racha {cod} del {ini} (parte {parte}) no sigue en "
+                 "{mes:02d}/{ano}: CIZ el {dia} en el parte {destino}")
+MOTIVO_CIERRE_YA = ("la racha {cod} del {ini} (parte {parte}) ya está "
+                    "cerrada el {dia} (línea {ide}, parte {destino})")
+AVISO_CIERRE_PARTE = (
+    "la racha {cod} del {ini} (parte {parte}) no sigue en {mes:02d}/{ano} y "
+    "no se puede cerrar el {dia}: el parte {parte} no está En registro, no "
+    "es de la empresa o no es de la obra de pruebas")
+AVISO_CIERRE_SIN_PARTE = (
+    "la racha {cod} del {ini} (parte {parte}) no sigue en {mes:02d}/{ano} y "
+    "no se puede cerrar el {dia}: su obra no tiene en {mes1:02d}/{ano1} "
+    "ningún parte En registro")
+
+
+@dataclass
+class CierreRacha:
+    """R12-R13, R22: el `CIZ` del último día de M−1 de una racha abierta
+    que ninguna incidencia de M continúa. `accion`: `escribir` (en el parte
+    `hmoide`, con la obra, centro, partida y cuenta del inicio),
+    `ya_registrado` (`hmores_ide`, la línea que ya la cierra) o `aviso` (no
+    hay parte que valga). `incidencia_id`: la nuestra del inicio, o None si
+    el inicio es ajeno."""
+    recurso_ide: int
+    codigo: str
+    inicio_ide: int
+    inicio_fec: int
+    inicio_parte: str | None
+    accion: str
+    fecha_int: int
+    synckey: str
+    incidencia_id: int | None
+    motivo: str
+    parte_cod: str | None = None
+    hmoide: int | None = None
+    obride: int | None = None
+    cenide: int | None = None
+    paride: int | None = None
+    caaide: int | None = None
+    hmores_ide: int | None = None
+
+
+def synckey_de_cierre(inicio: LineaIncidenciaSigrid
+                      ) -> tuple[str, int | None]:
+    """R12: la `synckey` del `CIZ` de cierre y su incidencia: la nuestra
+    del inicio (`porcentajes:inc:{id}:fin`) o, si el inicio es ajeno,
+    `porcentajes:inc:cierre:{ide del inicio}` y None."""
+    sk = (inicio.synckey or "").strip()
+    resto = sk[len(PREFIJO_SYNCKEY_INCIDENCIA):].split(":")
+    if (sk.startswith(PREFIJO_SYNCKEY_INCIDENCIA) and len(resto) == 2
+            and resto[0].isdigit() and resto[1] == "ini"):
+        return synckey_incidencia(int(resto[0]), "fin"), int(resto[0])
+    return f"{PREFIJO_CIERRE}{int(inicio.ide)}", None
+
+
+def _sin_continuar(rachas: list[Racha], recurso: int,
+                   incidencias_mes: list[IncidenciaEntrada], mes: int,
+                   est: int, obride_pruebas: int | None
+                   ) -> tuple[list[Racha], list[Racha]]:
+    """Las rachas del recurso con inicio anterior a M: las abiertas que
+    ninguna cadena de M continúa (R1 b) y las ya cerradas el último día de
+    M−1 por un `CIZ` con la `synckey` de cierre (R18)."""
+    mias = [r for r in rachas if r.inicio.reside == recurso
+            and _mes(r.inicio.fecha_int) < mes]
+    m1 = mes_anterior(mes)
+    fin_m1 = ultimo_dia(m1 // 100, m1 % 100)
+    seguidas = set()
+    for c in cadenas(incidencias_mes):
+        if c.recurso == recurso:
+            r, _ = previa(mias, c, est=est, obride_pruebas=obride_pruebas)
+            if r is not None:
+                seguidas.add(r.inicio.ide)
+    abiertas = [r for r in mias if r.cierre is None
+                and r.inicio.ide not in seguidas]
+    hechas = [r for r in mias if r.cierre is not None
+              and r.cierre.fecha_int == fin_m1
+              and (r.cierre.synckey or "").strip()
+              == synckey_de_cierre(r.inicio)[0]]
+    return abiertas, hechas
+
+
+def obras_de_cierres(rachas: Iterable[Racha], recurso: int,
+                     incidencias_mes: Iterable[IncidenciaEntrada], ano: int,
+                     mes: int, *, est: int,
+                     obride_pruebas: int | None = None) -> set[int]:
+    """D14: las obras de los inicios anteriores a M−1 por cerrar; sus
+    partes de M−1 se leen solo si las hay (R20, ronda D)."""
+    m = int(ano) * 100 + int(mes)
+    abiertas, _ = _sin_continuar(list(rachas), recurso,
+                                 list(incidencias_mes), m, est,
+                                 obride_pruebas)
+    return {int(r.inicio.obride) for r in abiertas
+            if _mes(r.inicio.fecha_int) < mes_anterior(m)
+            and r.inicio.obride is not None}
+
+
+def _parte_de_m1(inicio: LineaIncidenciaSigrid,
+                 partes: list[ParteSigrid] | None, *, est: int, empresa: int,
+                 obride_pruebas: int | None) -> ParteSigrid | None:
+    """D14 = B: el parte de M−1 de la obra del inicio En registro, de la
+    empresa y (pruebas) de la obra de pruebas, el de mayor `ide`. La
+    empresa y la obra se miran en el parte del inicio (misma obra)."""
+    if inicio.parte_emp != empresa or (obride_pruebas is not None
+                                       and inicio.obride != obride_pruebas):
+        return None
+    validos = [p for p in partes or [] if p.est == est]
+    return max(validos, key=lambda p: p.ide) if validos else None
+
+
+def cierres_mes_anterior(rachas: Iterable[Racha], recurso: int,
+                         incidencias_mes: Iterable[IncidenciaEntrada],
+                         partes_m1: dict[tuple[int, int, int],
+                                         list[ParteSigrid]],
+                         ano: int, mes: int, *, est: int, empresa: int,
+                         obride_pruebas: int | None = None
+                         ) -> list[CierreRacha]:
+    """R12-R13 (D14 = B): al registrar el mes M de un recurso designado,
+    un `CIZ` el último día de M−1 por cada racha suya abierta con inicio
+    anterior a M que ninguna incidencia de M continúa. Inicio en M−1: en
+    el parte del inicio, si vale (R5); anterior: en el parte de M−1 de la
+    obra del inicio que vale (`partes_m1`, por `(obride, ano, mes)`), sin
+    crear ninguno. Sin parte que valga, `aviso`."""
+    m = int(ano) * 100 + int(mes)
+    m1 = mes_anterior(m)
+    fin_m1 = ultimo_dia(m1 // 100, m1 % 100)
+    abiertas, hechas = _sin_continuar(list(rachas), recurso,
+                                      list(incidencias_mes), m, est,
+                                      obride_pruebas)
+    out: list[CierreRacha] = []
+    for r in sorted([*abiertas, *hechas],
+                    key=lambda r: (r.inicio.fecha_int, r.inicio.ide)):
+        ini = r.inicio
+        sk, inc_id = synckey_de_cierre(ini)
+        texto = {"cod": r.codigo, "ini": ddmm(ini.fecha_int),
+                 "parte": ini.parte_cod, "mes": m % 100, "ano": m // 100,
+                 "dia": ddmm(fin_m1), "mes1": m1 % 100, "ano1": m1 // 100}
+        c = CierreRacha(recurso_ide=int(recurso), codigo=r.codigo,
+                        inicio_ide=ini.ide, inicio_fec=ini.fecha_int,
+                        inicio_parte=ini.parte_cod, accion="aviso",
+                        fecha_int=fin_m1, synckey=sk, incidencia_id=inc_id,
+                        motivo="")
+        out.append(c)
+        if r.cierre is not None:
+            c.accion, c.hmores_ide = "ya_registrado", r.cierre.ide
+            c.parte_cod, c.hmoide = r.cierre.parte_cod, r.cierre.hmoide
+            c.motivo = MOTIVO_CIERRE_YA.format(
+                **texto, ide=r.cierre.ide, destino=r.cierre.parte_cod)
+            continue
+        if _mes(ini.fecha_int) == m1:
+            vale = parte_vale(ini, est=est, empresa=empresa,
+                              obride_pruebas=obride_pruebas)
+            destino = (ini.hmoide, ini.parte_cod) if vale else None
+            aviso = AVISO_CIERRE_PARTE
+        else:
+            p = _parte_de_m1(
+                ini, partes_m1.get((int(ini.obride or 0), m1 // 100,
+                                    m1 % 100)),
+                est=est, empresa=empresa, obride_pruebas=obride_pruebas)
+            destino = (p.ide, p.cod) if p is not None else None
+            aviso = AVISO_CIERRE_SIN_PARTE
+        if destino is None:
+            c.motivo = aviso.format(**texto)
+            continue
+        c.accion, (c.hmoide, c.parte_cod) = "escribir", destino
+        c.obride, c.cenide = ini.obride, ini.cenide
+        c.paride, c.caaide = ini.paride, ini.caaide
+        c.motivo = MOTIVO_CIERRE.format(**texto, destino=destino[1])
+    return out
