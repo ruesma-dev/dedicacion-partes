@@ -969,7 +969,7 @@ def test_f062_o2_script_en_modo_real_no_escribe(monkeypatch, capsys, fase):
     cli = ClienteRachas()
     with pytest.raises(SystemExit) as fin:
         _script(monkeypatch, cli, *fase, obra_pruebas_forzar=False)
-    assert fin.value.code not in (0, None)
+    assert fin.value.code == 1                      # distinto de 0
     assert cli.escritos == []
     assert "--permitir-modo-real" in capsys.readouterr().err
 
@@ -1023,3 +1023,34 @@ def test_f062_r20_script_medir_cierres_que_no_son_recursos_es_error(
     with pytest.raises(SystemExit):
         _script(monkeypatch, ClienteRachas(), "medir", "--obra", "0678",
                 "--recurso", "200", "--cierres", "400", "--lote")
+
+
+def test_f062_o2_script_las_fases_por_defecto_no_escriben_en_modo_real():
+    # O2 (supervivientes de la campaña de la review 1): sin decir nada,
+    # `fase_ejecutar` y `fase_limpiar` no escriben en modo real.
+    import prueba_escritura_porcentajes as script
+
+    from tests.conftest import SettingsFalso
+
+    real = SettingsFalso(obra_pruebas_forzar=False)
+    cli = ClienteRachas()
+    for fase in (lambda: script.fase_ejecutar(None, real, 2026, 10, True, []),
+                 lambda: script.fase_limpiar(cli, real, True)):
+        with pytest.raises(SystemExit) as fin:
+            fase()
+        assert fin.value.code == 1
+    assert cli.escritos == []
+
+
+def test_f062_r5_script_caben_cien_incidencias_por_mes(monkeypatch, capsys):
+    # B1: los ids de un mes son una centena: la incidencia 100 (n = 99) es
+    # la última que cabe; con 101 el `id` sería del mes siguiente.
+    import argparse
+
+    import prueba_escritura_porcentajes as script
+
+    parser = argparse.ArgumentParser()
+    cien = script._incidencias(parser, ["200:CIV:1:1"] * 100, 2026, 10)
+    assert [i.id for i in cien][-1] == 991100 == script._id_de_prueba(11, 0) - 1
+    with pytest.raises(SystemExit):
+        script._incidencias(parser, ["200:CIV:1:1"] * 101, 2026, 10)
