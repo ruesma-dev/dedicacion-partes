@@ -1142,12 +1142,13 @@ def test_f062_r21_un_ciz_suelto_del_mismo_mes_no_hace_seguir_la_racha():
 
 def test_f062_r12_synckey_de_cierre_de_un_inicio_ajeno_que_lo_parece():
     # Solo una `synckey` nuestra (`porcentajes:inc:{id}:ini`) da la `:fin`
-    # de su incidencia; una ajena con la misma cola, no.
+    # de su incidencia; una ajena con la misma cola (tras los 16 caracteres
+    # de `porcentajes:inc:` queda `3:ini`), no.
     from application.services.rachas import synckey_de_cierre
 
     assert synckey_de_cierre(_l(51, 20260915, sk="porcentajes:inc:7:ini")) \
         == ("porcentajes:inc:7:fin", 7)
-    assert synckey_de_cierre(_l(51, 20260915, sk="partes:inc:12345:ini")) \
+    assert synckey_de_cierre(_l(51, 20260915, sk="partes:inc:000123:ini")) \
         == ("porcentajes:inc:cierre:51", None)
 
 
