@@ -80,3 +80,24 @@ por el humano en PowerShell, desde `services/dedicacion-transfer`, con el
   cerrada el 31/10 (línea 411884)»; nada nuevo. Idempotente.
 - `limpiar --confirmar`: 2 líneas (`…991001:ini` 20261027, `…991001:fin`
   20261031, las dos en el parte de octubre `hmoide` 2855815), borradas.
+
+### (4) C12 y C13 (D17) — CUMPLE
+
+- Septiembre, `--incidencia 1705036:CIV:15:30`: `ini escribir hmores.ide=411883`
+  (20260915, PT26/00344), `fin abierta`.
+- Octubre, `--incidencia 1705036:CIV:1:31`: `ini continua` «continúa la racha
+  CIV del 15/09 (parte PT26/00344, línea 411883)» y `fin abierta`; nada escrito.
+- Noviembre, `--cierres 1705036` **sin `--pisar`**: `PENDIENTE cierre:411883:
+  relanza con --pisar cierre:411883` y `CIERRE … pendiente fec=20261031
+  parte=PT26/00373 hmores.ide=None` «sin confirmar, no se escribe» (C13).
+- Con `--pisar cierre:411883`: `CIERRE … escribir fec=20261031 parte=PT26/00373
+  hmores.ide=411884` (C12): el `CIZ` en el parte de **octubre** (M−1) de la
+  0404, no en el del inicio.
+- `limpiar --confirmar`: 2 líneas (`…990901:ini` 20260915 `hmoide` 2850247;
+  `…990901:fin` 20261031 `hmoide` 2855815), borradas.
+- **Observación (no bloquea):** la línea `CIERRE` del preflight que imprime el
+  script dice `escribir` sin decir que pedirá confirmación; solo la de
+  `ejecutar` dice `pendiente`. El modal no tiene ese problema: pinta la casilla
+  con `accion == "escribir" && requiere_confirmar` del preflight
+  (`app.js:3003`). Mejora del script, si se quiere: imprimir
+  `requiere_confirmar` y la `clave` también en el preflight.
