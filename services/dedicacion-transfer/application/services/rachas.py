@@ -624,10 +624,10 @@ def decidir_cadena(cadena: Cadena, lineas: Iterable[LineaIncidenciaSigrid],
                 dia=ddmm(siguiente.fecha_int), parte=siguiente.parte_cod)
             fin.accion, fin.motivo, cierre = "abierta", aviso, "abierta"
             avisos.append(aviso)
-        elif inicio is not None and _mes(inicio.fecha_int) <= mes and (
-                inicio is propio_ini or _mes(inicio.fecha_int) == mes) \
-                and parte_vale(inicio, est=est, empresa=empresa,
-                               obride_pruebas=obride_pruebas):
+        elif (inicio is not None and _mes(inicio.fecha_int) == mes
+              and parte_vale(inicio, est=est, empresa=empresa,
+                             obride_pruebas=obride_pruebas)):
+            # R5: al parte del inicio solo si es de M (propio o ajeno).
             _al_parte_de(fin, inicio)
     acciones = [ini, fin]
     if movida is not None and movida[0] is not usada \

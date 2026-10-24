@@ -1178,3 +1178,17 @@ def test_f062_r30_la_linea_vista_no_se_cambia():
     v = LineaVista(63, "CIB", 20261026, "PT26/00040")
     with pytest.raises(FrozenInstanceError):
         v.ide = 64
+
+
+def test_f062_r5_decidir_el_ciz_solo_va_al_parte_de_un_inicio_de_m():
+    # R5 literal (review 1, bloqueo 1): «en el parte del inicio si es de M»,
+    # también si el inicio es propio. Un inicio propio de M−1 (la misma
+    # `synckey`) no lleva el CIZ de noviembre a su parte de octubre: paso 5.
+    civ = _l(51, 20261027, sk=SK_INI, parte="PT26/00100", hmoide=100)
+    fin = _decidir([civ], _inc(7, 2, 6, mes=11)).acciones[1]
+    assert (fin.accion, fin.fecha_int, fin.hmoide_destino) == (
+        "escribir", 20261106, None)
+    # El de M, sí.
+    civ = _l(51, 20261102, sk=SK_INI, parte="PT26/00110", hmoide=110)
+    fin = _decidir([civ], _inc(7, 2, 6, mes=11)).acciones[1]
+    assert (fin.accion, fin.hmoide_destino) == ("escribir", 110)
