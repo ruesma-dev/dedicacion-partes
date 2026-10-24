@@ -18,7 +18,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T11 (hechas T1-T10 y T12; T5c, D17, va tras T18
+- **Tarea en curso:** T13 (hechas T1-T12; T5c, D17, va tras T18
   según `tasks.md` de `a565823`).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
@@ -96,6 +96,16 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   queda preparado para el filtro de `pisar_claves` de T5c (R31), que no
   se hace aquí. Un cierre que no se encuentra al releer se queda sin
   `hmores_ide`, igual que una incidencia (F-030).
+  T11: `ClienteInc` lee con `incidencias_en_ventana` (sobre
+  `existentes`) y anota `(recursos, desde, hasta, obra de pruebas)`. Las
+  líneas de los dobles en pruebas llevan `obride` 828942. Se reescriben,
+  citando su R de F-062, los de R27 (ahora R9 y R19), la de 1-31 (R7,
+  `abierta`) y los de ejecutar y lote. Los de cliente y memoria de
+  `incidencias_del_mes` se sustituyen por un puntero a
+  `test_f062_cliente_ventana.py` y `test_f062_lote.py`, y la lectura se
+  borra del cliente. Se hace también en `test_f030_r30_editar.py` (está
+  en la lista cerrada), donde el `UPDATE` esperado lleva `can_leido`. En
+  rojo solo quedan los dos de `test_f030_r30_punta_a_punta.py` (T16).
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

@@ -5,8 +5,9 @@ ARCHITECTURE.md#regla-incidencia).
 
 - Contrato (T27): la incidencia trae la traza de la api (`hmores_ide_*`,
   `dia_*`, opcionales) y la acción `editar` publica `fec_antes`.
-- Cliente (T28): la lectura de R33 trae `can`, parte y estado y busca
-  también por `ide`; el `UPDATE` de la `fec` lleva la guarda de F-051.
+- Cliente (T28): el `UPDATE` de la `fec` lleva la guarda de F-051 (la
+  lectura de R33 es, desde F-062, `incidencias_en_ventana`:
+  `test_f062_cliente_ventana.py`).
 - Reglas (T29): lo que decidía `reconciliar` lo decide desde F-062
   `rachas.decidir_cadena` (lista cerrada de su design §12).
 - Preflight, lote (T30) y `ejecutar` (T31).
@@ -109,14 +110,6 @@ def test_f030_r30_contrato_sin_los_campos_responde_igual(api):
 # ============================ cliente (T28) ============================= #
 from tests.test_f050_propuesta import _cliente_historial
 
-FILA = {"ide": 9001, "reside": 200, "fec": 20260705, "cod": "CIV ",
-        "synckey": " porcentajes:inc:7:ini ", "parte": " PT26/1 ", "can": 0,
-        "hmoide": 777, "est": 1}
-SELECT = ("SELECT h.ide AS ide, h.reside AS reside, h.fec AS fec, "
-          "a.cod AS cod, h.synckey AS synckey, c.cod AS parte, "
-          "h.can AS can, h.hmoide AS hmoide, c.est AS est FROM hmores h "
-          "JOIN auxhor a ON a.ide = h.horide JOIN hmo m ON m.ide = h.hmoide "
-          "JOIN con c ON c.ide = m.ide ")
 GUARDA_INC = (
     "WHERE ide = ? AND reside = ? AND ABS(ISNULL(can, 0) - ?) < 0.000001 "
     "AND LTRIM(RTRIM(ISNULL(synckey, ''))) = ? "
@@ -129,64 +122,9 @@ GUARDA_INC = (
     "AND c.est = ?)")
 
 
-def test_f030_r40_sql_por_recurso_o_por_ide_con_can_parte_y_estado():
-    cli, falso = _cliente_historial([
-        FILA, dict(FILA, ide=9002, can=None, hmoide=None, est=None,
-                   cod="CIP")])
-    filas = cli.incidencias_del_mes([300, 200], 2026, 7, ides=[9002, None,
-                                                                 9001, 9001])
-    [(sql, params)] = falso.llamadas
-    assert sql == SELECT + (
-        "WHERE (h.reside IN (?,?) AND h.fec BETWEEN ? AND ? "
-        "AND a.cod LIKE ? OR h.ide IN (?,?)) ORDER BY h.ide")
-    assert params == [200, 300, 20260701, 20260731, "CI%", 9001, 9002]
-    assert filas == [
-        LineaIncidenciaSigrid(9001, 200, 20260705, "CIV",
-                              "porcentajes:inc:7:ini", "PT26/1", can=0.0,
-                              hmoide=777, parte_est=1),
-        LineaIncidenciaSigrid(9002, 200, 20260705, "CIP",
-                              "porcentajes:inc:7:ini", "PT26/1", can=None,
-                              hmoide=None, parte_est=None)]
-    assert isinstance(filas[0].can, float)
-
-
-def test_f030_r40_sql_sin_ides_el_where_de_hoy():
-    cli, falso = _cliente_historial()
-    cli.incidencias_del_mes([200], 2026, 7)
-    [(sql, params)] = falso.llamadas
-    assert sql == SELECT + (
-        "WHERE h.reside IN (?) AND h.fec BETWEEN ? AND ? "
-        "AND a.cod LIKE ? ORDER BY h.ide")
-    assert params == [200, 20260701, 20260731, "CI%"]
-
-
-def test_f030_r40_sql_en_pruebas_el_filtro_de_partes_a_todo():
-    cli, falso = _cliente_historial()
-    cli.incidencias_del_mes([200], 2026, 7, hmoides=[12, 11], ides=[9001])
-    [(sql, params)] = falso.llamadas
-    assert sql.endswith("a.cod LIKE ? OR h.ide IN (?)) "
-                        "AND h.hmoide IN (?,?) ORDER BY h.ide")
-    assert params == [200, 20260701, 20260731, "CI%", 9001, 11, 12]
-    cli, falso = _cliente_historial()
-    assert cli.incidencias_del_mes([200], 2026, 7, hmoides=[],
-                                   ides=[9001]) == []
-    assert falso.llamadas == []
-
-
-def test_f030_r40_sql_solo_ides_y_trozos_sin_repetir():
-    cli, falso = _cliente_historial()
-    cli.incidencias_del_mes([None], 2026, 7, ides=[9001])
-    [(sql, params)] = falso.llamadas
-    assert sql == SELECT + "WHERE (h.ide IN (?)) ORDER BY h.ide"
-    assert params == [9001]
-    # 600 recursos y 2 `ide`: 500 recursos y luego 100 más los 2 `ide`; la
-    # línea que sale en los dos trozos, una vez.
-    cli, falso = _cliente_historial([FILA])
-    filas = cli.incidencias_del_mes(range(1, 601), 2026, 7, ides=[9001, 9002])
-    assert [len(p) for _, p in falso.llamadas] == [503, 105]
-    assert falso.llamadas[1][1][-2:] == [9001, 9002]
-    assert "OR h.ide IN" not in falso.llamadas[0][0]
-    assert [f.ide for f in filas] == [9001]
+# F-062 (R19, lista cerrada): `incidencias_del_mes` desaparece; la
+# lectura por recurso o por `ide`, con `can`, parte y estado, en pruebas y
+# en trozos, es la de `incidencias_en_ventana` (test_f062_cliente_ventana).
 
 
 def test_f030_r41_sql_editar_la_fec_con_la_guarda_de_su_codigo():
@@ -457,7 +395,6 @@ def test_f030_r43_sin_la_otra_linea_su_dia_no_consta():
 from tests.test_f030_pipeline_incidencias import (
     OBRA,
     OBRA_B,
-    _ajustes,
     _lote,
     _pf,
     _suelto,
@@ -466,12 +403,13 @@ from tests.test_f030_pipeline_incidencias import _inc as _inc_pf
 
 
 def _par_sigrid(ini=20260705, fin=20260709, est=1):
+    # F-062 (R19, lista cerrada): en el parte 777 de la obra de pruebas.
     return [LineaIncidenciaSigrid(9001, 200, ini, "CIV", "porcentajes:inc:7:ini",
                                   "PT26/00251", can=0.0, hmoide=777,
-                                  parte_est=est),
+                                  parte_est=est, obride=828942),
             LineaIncidenciaSigrid(9002, 200, fin, "CIZ", "porcentajes:inc:7:fin",
                                   "PT26/00251", can=0.0, hmoide=777,
-                                  parte_est=est)]
+                                  parte_est=est, obride=828942)]
 
 
 class _CuentaPartes(ClienteInc):
@@ -496,7 +434,8 @@ def test_f030_r41_preflight_edita_con_la_traza_y_lee_por_ide():
              a.parte_cod) for a in pf.incidencias] == [
         ("ini", "editar", 20260706, 20260705, 9001, "PT26/00251"),
         ("fin", "ya_registrado", 20260709, None, 9002, "PT26/00251")]
-    assert cli.leidas_inc == [([200], 2026, 7, [777])]
+    # F-062 (R19, lista cerrada): la ventana, en la obra de pruebas.
+    assert cli.leidas_inc == [([200], 20250701, 20260831, 828942)]
     assert cli.leidas_ides == [[9001, 9002]]
     # Sin traza, la lectura no pide ningún `ide`.
     cli = ClienteInc()
@@ -506,14 +445,15 @@ def test_f030_r41_preflight_edita_con_la_traza_y_lee_por_ide():
 
 @pytest.mark.parametrize("pruebas", [True, False])
 def test_f030_r33_preflight_el_parte_nuevo_solo_por_las_que_se_escriben(pruebas):
-    """Obs. 7: editar y ya registrada no piden parte; en pruebas, el parte
-    del periodo se lee una vez para R33 y para el paso 5."""
+    """Obs. 7: editar y ya registrada no piden parte. F-062 (R19, lista
+    cerrada): en pruebas la lectura filtra por la obra, no por sus partes:
+    sin nada que escribir, ningún parte se lee."""
     cli = _CuentaPartes(parte_existe=False, existentes=_par_sigrid())
     pf = _pf(cli, [], [_inc_pf(desde=6, **TRAZA)],
              obra_pruebas_forzar=pruebas)
     assert [a.accion for a in pf.incidencias] == ["editar", "ya_registrado"]
     assert (pf.partes, cli.codigos_nuevos) == ([], 0)
-    assert cli.lecturas_partes == (1 if pruebas else 0)
+    assert cli.lecturas_partes == 0
     cli = _CuentaPartes(parte_existe=False)
     pf = _pf(cli, [linea(registro_id=1)], [_inc_pf()],
              obra_pruebas_forzar=pruebas)
@@ -542,8 +482,9 @@ def test_f030_r40_lote_los_ide_en_la_misma_ronda_y_como_suelto(pruebas):
                                         hasta=14)])]
     cli = ClienteInc(existentes=_par_sigrid())
     lote = _lote(cli, peticiones, obra_pruebas_forzar=pruebas)
-    assert cli.leidas_inc == [([200, 400], 2026, 7,
-                               [777] if pruebas else None)]
+    # F-062 (R19, R20; lista cerrada): una lectura en ventana por lote.
+    assert cli.leidas_inc == [([200, 400], 20250701, 20260831,
+                               828942 if pruebas else None)]
     assert cli.leidas_ides == [[9001, 9002]]
     for r, (obra, lineas, inc) in zip(lote, peticiones):
         suelto = _suelto(ClienteInc(existentes=_par_sigrid()), obra, lineas,
@@ -555,30 +496,8 @@ def test_f030_r40_lote_los_ide_en_la_misma_ronda_y_como_suelto(pruebas):
         == 20260705
 
 
-def test_f030_r40_lote_sirve_lo_leido_por_ide_y_pide_lo_que_falta():
-    from application.services.lecturas_lote import LecturasDelLote
-
-    filas = [LineaIncidenciaSigrid(1, 200, 20260705, "CIV", None, "P"),
-             LineaIncidenciaSigrid(2, 400, 20260705, "CIV", None, "P"),
-             LineaIncidenciaSigrid(3, 999, 20260605, "CIE", None, "P"),
-             LineaIncidenciaSigrid(4, 200, 20260605, "CIV", None, "P"),
-             LineaIncidenciaSigrid(5, 200, 20260706, "MENC", None, "P"),
-             LineaIncidenciaSigrid(6, 200, 20260731, None, None, "P")]
-    cli = ClienteInc(existentes=filas)
-    memoria = LecturasDelLote(cli, 2)
-    memoria.precargar([(OBRA, [], [_inc_pf(hmores_ide_ini=3, dia_ini=5)]),
-                       (OBRA, [], [_inc_pf(id=8, recurso_ide=400)])],
-                      _ajustes(obra_pruebas_forzar=False))
-    assert (cli.leidas_inc, cli.leidas_ides) == ([([200, 400], 2026, 7, None)],
-                                                 [[3]])
-    # Del recurso, en el mes y `CI*`; o por su `ide`, esté donde esté.
-    assert [x.ide for x in memoria.incidencias_del_mes(
-        [200], 2026, 7, ides=[3])] == [1, 3]
-    assert [x.ide for x in memoria.incidencias_del_mes([400], 2026, 7)] == [2]
-    assert memoria.fallos_de_memoria == {}
-    memoria.incidencias_del_mes([200], 2026, 7, ides=[3, 9])
-    assert memoria.fallos_de_memoria == {"incidencias_del_mes": 1}
-    assert cli.leidas_ides[-1] == [3, 9]
+# F-062 (R19, lista cerrada): lo leído por `ide` y lo que falta, en la
+# memoria de `incidencias_en_ventana` (test_f062_lote.py).
 
 
 def test_f030_r33_lote_sin_la_linea_larga_de_la_obs_3():
@@ -618,15 +537,17 @@ class _ClienteEdita(ClienteEscribe):
         self.cambios = dict(cambios or {})
         self.tras_releer = dict(tras_releer or {})
 
-    def incidencias_del_mes(self, resides, ano, mes, hmoides=None, ides=()):
-        self.leidas_inc.append((sorted(resides), ano, mes, hmoides))
+    def incidencias_en_ventana(self, resides, desde, hasta, *,
+                               obride_pruebas=None, ides=()):
+        # F-062 (R19, lista cerrada): la lectura en ventana sobre el par.
+        self.leidas_inc.append((sorted(resides), desde, hasta,
+                                obride_pruebas))
         self.leidas_ides.append(sorted(ides))
-        base = int(ano) * 10000 + int(mes) * 100
         return [LineaIncidenciaSigrid(
             ls.ide, ls.reside, ls.fecha_int, ls.hora_codigo, ls.synckey,
             self.parte.cod, can=ls.can, hmoide=int(self.parte.ide),
-            parte_est=1) for ls in self.lineas_parte
-            if (ls.reside in set(resides) and base < ls.fecha_int <= base + 31)
+            parte_est=1, obride=828942) for ls in self.lineas_parte
+            if (ls.reside in set(resides) and desde <= ls.fecha_int <= hasta)
             or ls.ide in set(ides)]
 
     def lineas_para_editar(self, ides):
@@ -662,10 +583,10 @@ def test_f030_r41_ejecutar_edita_el_par_en_su_sitio_y_nada_mas():
     assert [s["parameters"] for s in cli.escritos] == [
         {"ide": 9001, "reside": 200, "hora_codigo": "CIV",
          "synckey_leida": "porcentajes:inc:7:ini", "fecha_int": 20260706,
-         "fec_leida": 20260705},                         # D16 (T38)
+         "fec_leida": 20260705, "can_leido": 0.0},       # D16 (T38)
         {"ide": 9002, "reside": 200, "hora_codigo": "CIZ",
          "synckey_leida": "porcentajes:inc:7:fin", "fecha_int": 20260712,
-         "fec_leida": 20260709}]
+         "fec_leida": 20260709, "can_leido": 0.0}]       # F-062 R14
     assert cli.dias() == [(9001, 20260706), (9002, 20260712)]
     assert _acc(res) == [
         ("ini", "editar", 20260706, 20260705, 9001, "PT26/00251"),
