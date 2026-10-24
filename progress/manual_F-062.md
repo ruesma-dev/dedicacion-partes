@@ -63,3 +63,20 @@ por el humano en PowerShell, desde `services/dedicacion-transfer`, con el
   el arreglo B1 de la review 1. El 1-nov es domingo: la racha se pega.
 - `limpiar --confirmar`: 2 líneas (`porcentajes:inc:991001:ini`,
   `porcentajes:inc:991101:fin`), borradas.
+
+### (3) C4 — CUMPLE
+
+- Octubre, `--incidencia 1705036:CIV:27:31`: `ini escribir hmores.ide=411883`
+  (20261027, PT26/00373), `fin abierta`.
+- Noviembre, `--cierres 1705036`: `CIERRE recurso=1705036 CIV inicio=411883
+  20261027 (PT26/00373) escribir fec=20261031 parte=PT26/00373
+  hmores.ide=411884` «no sigue en 11/2026: CIZ el 31/10 en el parte
+  PT26/00373», **sin `--pisar`** (inicio en M−1, R12; D17 no aplica).
+  La línea testigo `reg=990201` sale `omitir` (porcentaje 0), como prevé el
+  script (P3 la omite siempre).
+- Repetir octubre: `ini` y `fin` `ya_registrado` (411883, 411884), aviso R11
+  «no se deja abierta: el CIZ (línea 411884) ya está en el mes; va al último
+  día»; nada nuevo. Repetir noviembre: `CIERRE … ya_registrado` «ya está
+  cerrada el 31/10 (línea 411884)»; nada nuevo. Idempotente.
+- `limpiar --confirmar`: 2 líneas (`…991001:ini` 20261027, `…991001:fin`
+  20261031, las dos en el parte de octubre `hmoide` 2855815), borradas.
