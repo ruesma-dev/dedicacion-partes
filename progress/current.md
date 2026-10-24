@@ -19,7 +19,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T17 (hechas T1-T16; T5c, D17, va tras T18).
+- **Tarea en curso:** T18 (hechas T1-T17; T5c, D17, va tras T18).
 - Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`). La fase RED
   de T1-T10 y T12 está en
   `C:\Users\pgris\AppData\Local\Temp\claude\C--Users-pgris-PycharmProjects-porcentajes\5cb867d0-7a0e-4697-8553-fb67f1894080\scratchpad\red\`
@@ -146,6 +146,13 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   una sola incidencia (la 7); en el contrato no hay una 8. Ambos pasan a
   la primera: prueban T9-T15 ya hechos (sin fase RED propia); comprobado
   que fallan al cambiar un dato del contrato (`dia_fin_antes` 7 → 8).
+  T17: `seccionQuitadas` se borra de `app.js` (R25: la sustituye
+  `pintarNoCoincide`, tras las obras, solo con elementos con líneas). En
+  `test_f030_r30_front.py` salen los dos tests de esa lista (el de su
+  contenido y el de su sitio en `pintarModalPreflight`) y su ayudante,
+  con un puntero a los de F-062: los dos son «el de la lista de quitadas
+  del modal» de la lista cerrada. `textoLineaIncidencia` aprende
+  `continua`, `abierta` y el rol `devolver` («se devuelve»).
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

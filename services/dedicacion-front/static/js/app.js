@@ -2899,8 +2899,14 @@ function textoLineaIncidencia(a) {
       ? `se cambia del ${Number(String(a.fec_antes).slice(6))} al ` +
         `${Number(fec.slice(6))}${parte}`
       : a.accion === "ya_registrado" ? "ya registrada"
-        : `no se escribe: ${a.motivo || ""}`;
-  return `${a.rol === "ini" ? "inicio" : "fin"}${hora}${dia}: ${que}`;
+        // F-062 (R22, R25): sin línea propia (sigue otra racha) o sin CIZ.
+        : a.accion === "continua" ? "continúa la racha (sin línea)"
+          : a.accion === "abierta" ? "queda abierta (sin CIZ este mes)"
+            : `no se escribe: ${a.motivo || ""}`;
+  // F-062 (R16): `devolver` lleva el CIZ ajeno a su día original.
+  const rol = a.rol === "ini" ? "inicio"
+    : a.rol === "devolver" ? "se devuelve" : "fin";
+  return `${rol}${hora}${dia}: ${que}`;
 }
 
 function seccionIncidencias(o) {
@@ -2922,26 +2928,102 @@ function seccionIncidencias(o) {
     `<th>Qué se hará</th></tr></thead><tbody>${filas}</tbody></table>`;
 }
 
-// Anexo R30 (R38): las incidencias quitadas del cuadrante que siguen en
-// Sigrid, para retirarlas a mano (su parte y sus líneas). Solo formatea lo
-// que manda la api en `incidencias_quitadas`; sin ellas, nada.
-function seccionQuitadas(pf) {
-  const quitadas = pf.incidencias_quitadas || [];
-  if (!quitadas.length) return "";
-  const filas = quitadas.map((q) => {
-    const ides = [q.hmores_ide_ini, q.hmores_ide_fin].filter((x) => x != null);
-    const lineas = ides.length
-      ? `${ides.length > 1 ? "líneas" : "línea"} ${ides.join(" y ")}` : "";
-    const donde = [q.parte_cod ? `parte ${q.parte_cod}` : "", lineas]
-      .filter(Boolean).join(" · ");
-    const celdas = [q.trabajador, q.obra_cod, `${q.letra} (${q.codigo})`,
-      `del ${q.desde} al ${q.hasta}`, donde];
-    return `<tr>${celdas.map((c) => `<td>${escapeHtml(c)}</td>`).join("")}</tr>`;
+// F-062 (R25, design §10): las rachas, sus cierres y lo que no coincide con
+// Sigrid. Solo formatean lo que manda el transfer (`rachas`, `cierres_racha`,
+// `no_coincide`) con lo que el cuadrante ya sabe (trabajador, letra y días):
+// ni calculan ni deciden. «No coincide con Sigrid» sustituye a la lista de
+// quitadas de F-030 (R38).
+function diaMes(fec) {
+  const f = String(fec || "");
+  return f.length === 8 ? `${f.slice(6)}/${f.slice(4, 6)}` : "";
+}
+
+function nombreTrabajador(ide) {
+  const t = (state.trabajadores || []).find((x) => x.ide === ide);
+  return t ? t.nombre : `recurso ${ide}`;
+}
+
+function textoRacha(r) {
+  const parte = (p) => (p ? ` en el parte ${p}` : "");
+  const papel = r.papel === "continua"
+    ? `continúa la racha del ${diaMes(r.inicio_fec)}` +
+      (r.inicio_parte ? ` (parte ${r.inicio_parte})` : "")
+    : "abre";
+  let cierre;
+  if (r.cierre === "cierra") {
+    cierre = `cierra el ${diaMes(r.cierre_fec)}` +
+      parte(r.cierre_parte);
+  } else if (r.cierre === "cubierta") {
+    cierre = `ya cerrada el ${diaMes(r.cierre_fec)}` +
+      parte(r.cierre_parte);
+  } else if (r.cierre === "cadena") {
+    const d = datosIncidencia(r.duena_id);
+    cierre = "en la cadena de " + (d
+      ? `${d.i.letra} del ${d.i.dia_desde} al ${d.i.dia_hasta}`
+      : `la incidencia ${r.duena_id}`);
+  } else {
+    cierre = "queda abierta";
+  }
+  return [papel, cierre, ...(r.avisos || []).map((a) => `aviso: ${a}`)]
+    .join(" · ");
+}
+
+function pintarRachas(o) {
+  const rachas = o.rachas || [];
+  if (!rachas.length) return "";
+  const filas = rachas.map((r) => {
+    const d = datosIncidencia(r.id);
+    const celdas = d
+      ? [d.trabajador, d.i.obra_cod, `${d.i.letra} ${d.i.nombre}`,
+        `del ${d.i.dia_desde} al ${d.i.dia_hasta}`]
+      : [`incidencia ${r.id}`, "", "", ""];
+    return `<tr>${[...celdas, textoRacha(r)]
+      .map((c) => `<td>${escapeHtml(c)}</td>`).join("")}</tr>`;
   }).join("");
-  return `<h4>Quitadas del cuadrante: siguen en Sigrid</h4>` +
-    `<table class="tabla-reg tabla-inc"><thead><tr>` +
+  return `<h4>Rachas</h4><table class="tabla-reg tabla-inc"><thead><tr>` +
     `<th>Trabajador</th><th>Obra</th><th>Incidencia</th><th>Días</th>` +
-    `<th>Retirar a mano en Sigrid</th></tr></thead><tbody>${filas}</tbody></table>`;
+    `<th>Racha</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+
+function pintarCierresRacha(o) {
+  const cierres = o.cierres_racha || [];
+  if (!cierres.length) return "";
+  const filas = cierres.map((c) => {
+    const inicio = `${diaMes(c.inicio_fec)}` +
+      (c.inicio_parte ? ` (parte ${c.inicio_parte})` : "");
+    const que = c.accion === "escribir"
+      ? `se cierra el ${diaMes(c.fecha_int)}` +
+        (c.parte_cod ? ` en el parte ${c.parte_cod}` : "")
+      : c.accion === "ya_registrado" ? `ya cerrada el ${diaMes(c.fecha_int)}`
+        : c.accion === "pendiente" ? "pendiente de confirmar: no se ha escrito"
+          : `no se cierra: ${c.motivo || ""}`;
+    return `<tr>${[nombreTrabajador(c.recurso_ide), c.codigo, inicio, que]
+      .map((x) => `<td>${escapeHtml(x)}</td>`).join("")}</tr>`;
+  }).join("");
+  return `<h4>Cierres de rachas</h4><table class="tabla-reg tabla-inc">` +
+    `<thead><tr><th>Trabajador</th><th>Incidencia</th><th>Inicio</th>` +
+    `<th>Qué se hará</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+
+function pintarNoCoincide(pf) {
+  // Sin líneas en Sigrid (la quitada que ya se retiró), sin aviso.
+  const items = (pf.obras || []).flatMap((o) => o.no_coincide || [])
+    .filter((n) => (n.lineas || []).length);
+  if (!items.length) return "";
+  const filas = items.map((n) => {
+    const d = n.incidencia_id != null ? datosIncidencia(n.incidencia_id) : null;
+    const inc = n.incidencia_id == null ? "sin incidencia"
+      : d ? `${d.i.letra} del ${d.i.dia_desde} al ${d.i.dia_hasta}`
+        : `incidencia ${n.incidencia_id}`;
+    const lineas = n.lineas.map((l) => [`${l.codigo} ${diaMes(l.fecha_int)}`,
+      l.parte_cod ? `parte ${l.parte_cod}` : "", `línea ${l.ide}`]
+      .filter(Boolean).join(" · ")).join("; ");
+    return `<tr>${[nombreTrabajador(n.recurso_ide), inc, n.motivo, lineas]
+      .map((x) => `<td>${escapeHtml(x)}</td>`).join("")}</tr>`;
+  }).join("");
+  return `<h4>No coincide con Sigrid</h4><table class="tabla-reg tabla-inc">` +
+    `<thead><tr><th>Trabajador</th><th>Incidencia</th><th>Motivo</th>` +
+    `<th>Editar a mano en Sigrid</th></tr></thead><tbody>${filas}</tbody></table>`;
 }
 
 function pintarModalPreflight(pf) {
@@ -3014,10 +3096,16 @@ function pintarModalPreflight(pf) {
     });
     // F-030 (R32): solo si la obra trae incidencias; sin ellas, como antes.
     if ((o.incidencias || []).length) html += seccionIncidencias(o);
+    // F-062 (R25): las rachas y sus cierres; sin ellos, como antes.
+    if ((o.rachas || []).length) html += pintarRachas(o);
+    if ((o.cierres_racha || []).length) html += pintarCierresRacha(o);
   });
-  // Anexo R30 (R38): solo si hay quitadas; sin ellas, como antes (los
-  // arneses del modal de F-049/F-050 no la cargan y siguen igual).
-  if ((pf.incidencias_quitadas || []).length) html += seccionQuitadas(pf);
+  // F-062 (R25): «No coincide con Sigrid», en vez de las quitadas de F-030
+  // R38; sin nada que avisar, como antes (los arneses del modal de
+  // F-049/F-050 no lo cargan y siguen igual).
+  if ((pf.obras || []).some((o) => (o.no_coincide || []).length)) {
+    html += pintarNoCoincide(pf);
+  }
   html += `<div class="pie-modal">` +
     `<button class="btn secondary" onclick="cerrarModal()">Cancelar</button>` +
     `<button class="btn primary" id="btn-ejecutar-registro">Registrar</button></div>`;
