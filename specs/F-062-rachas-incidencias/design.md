@@ -1,5 +1,5 @@
 # F-062 · Diseño técnico
-Requisitos: `requirements.md` (R1-R31; D5-D17 en su §10) y casos C1-C13 en
+Requisitos: `requirements.md` (R1-R31; D5-D18 en su §10) y casos C1-C13 en
 `tasks.md`. Base: `specs/F-030-dias-bajas-incidencias/design.md`, salvo esto.
 ## 1. Servicios que toca y por qué (límite de servicio)
 | Servicio | Qué hace en F-062 | Por qué ahí |
@@ -85,8 +85,7 @@ con `synckey_leida` y `can_leido` de la acción (no con nuestra `synckey` y
   `can_leido`, `ajena`, `hmoide_destino`, `obride`, `cenide`;
   `LineaIncidenciaSigrid` + `obride`, `cenide`, `paride`, `caaide`,
   `parte_emp`; `Preflight` + `rachas`, `cierres_racha`.
-- `config/settings.py`: `incidencias_meses_atras: int = Field(12,
-  alias="INCIDENCIAS_MESES_ATRAS")`, que tiene que ser ≥ 1.
+- `config/settings.py`: `incidencias_meses_atras` (`INCIDENCIAS_MESES_ATRAS`, 12, ≥ 1).
 - `infrastructure/sigrid/sigrid_write_client.py`: `incidencias_del_mes` →
   `incidencias_en_ventana(resides, desde, hasta, *, obride_pruebas=None,
   ides=())` (§6); `stmt_editar_fecha_incidencia(…, can_leido=0.0)` (la
@@ -110,9 +109,8 @@ con `synckey_leida` y `can_leido` de la acción (no con nuestra `synckey` y
   `application/registro_sigrid.py`: `_sumar_incidencias` arma `incidencias_mes`
   y `quitadas`; `_designar_cierres(payloads)` tras el filtro `obra_ide` (R24).
 - **front** `static/js/app.js`: `pintarModalPreflight` + `pintarRachas`,
-  `pintarCierresRacha` (casilla de R31) y `pintarNoCoincide` (sustituye a la
-  lista de quitadas de F-030 R38, R25); el aviso de `registroEjecutar` suma los
-  `pendiente`. Nada en la captura.
+  `pintarCierresRacha` (casilla R31) y `pintarNoCoincide` (en vez de las
+  quitadas de F-030 R38); `registroEjecutar` suma los `pendiente` al aviso.
 - **docs**: `docs/ARCHITECTURE.md` (`#regla-incidencia` y la línea del transfer
   «decidir el par» → «decidir la racha»), `docs/INTEGRACION.md` §5 y su fila de
   `sigrid-api`, `test_f002_fuente_unica.py` si cambia el texto vigilado.
@@ -225,9 +223,11 @@ parte, para editarlas a mano). Solo R31 se confirma: el cierre
   `test_f030_r30_front.py` el de la lista de quitadas del modal (R25).
 - **Ajenos, solo dobles y claves**: `ClienteFalso`/`EdicionesFalsas` de
   `services/dedicacion-transfer/tests/conftest.py` (`incidencias_en_ventana`,
-  `can_leido`); los de `services/dedicacion-api/tests/` que comparan un
-  payload entero solo añaden `cierres_recursos` (e `incidencias_mes`) al
-  esperado. Ninguna otra aserción; cada cambio, marca «F-062 (lista cerrada)».
+  `can_leido`); en `services/dedicacion-api/tests/`, los que comparan un
+  payload entero solo añaden `cierres_recursos` (e `incidencias_mes`) y, D18,
+  en `test_f030_incidencias.py`, `test_f030_r17_esquema_tabla_incidencia` y
+  `test_f030_r21_cuadrante_repo_de_periodo_mapea_y_agrupa`, solo la columna
+  `sigrid_dia_fin_antes` (R15). Nada más; cada cambio marca «F-062 (lista cerrada)».
 ## 13. Riesgos y decisiones
 - **Escritura nueva en partes ajenos** (mover o añadir un `CIZ`): guarda de
   F-051/D16 con `can` y `synckey` leídos, solo hacia delante (R4), relectura

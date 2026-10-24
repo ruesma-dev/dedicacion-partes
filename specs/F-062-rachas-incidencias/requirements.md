@@ -1,8 +1,7 @@
 # F-062 · Rachas de incidencia como Administración
-
 Rigor **`critico`**; transfer (decide y escribe), api (contexto y traza),
 front (solo pinta): design §1. **Decididas** por el humano: D1-D4 (2026-10-23,
-«sí a las cuatro», `features.json`), R17 y D5-D17 (2026-10-24, §10). E-n: fila
+«sí a las cuatro», `features.json`), R17 y D5-D18 (2026-10-24, §10). E-n: fila
 n de `progress/explore_F-062_sigrid.md`. 2026: 1-oct jue, 31-oct sáb, 1-nov dom.
 ## 1. Qué se conserva de F-030 y qué se reemplaza («→», números de esta spec)
 - **Se conservan de F-030**: catálogo y captura (R3-R16; el chip «del al» no
@@ -44,8 +43,7 @@ n de `progress/explore_F-062_sigrid.md`. 2026: 1-oct jue, 31-oct sáb, 1-nov dom
 - **R6.** Lo escrito lleva la `synckey` de la dueña; un `CIZ` ajeno movido,
   la suya (`[D1]`, [`#regla-cero`]). **R7.** CUANDO la cadena llega a fin de
   mes (`[D4]`, `[D7]`), no hay `CIZ`: queda **abierta** hasta R1 b o R12.
-- **R8.** Códigos distintos, rachas distintas; las no dueñas de una cadena
-  no escriben: «continúa (cadena de la incidencia N)».
+- **R8.** Códigos distintos, rachas distintas; la no dueña no escribe (design §2).
 - **R9.** `[D13]` SI en [`d`, `h`] hay una línea ajena que no es de la previa
   (otro código u otro inicio del mismo), ENTONCES la cadena no escribe ni
   mueve nada: `omitir` «en el tramo ya está la línea X (código, día) de Y».
@@ -103,9 +101,8 @@ n de `progress/explore_F-062_sigrid.md`. 2026: 1-oct jue, 31-oct sáb, 1-nov dom
   al último de M+1, de los recursos de las incidencias y de los designados,
   más las de las trazas (también de las quitadas) por `ide`; en pruebas,
   solo de la obra de pruebas. SI falla o viene `truncated`, ENTONCES nada.
-- **R20.** En el lote (F-055) va en la ronda C; el preflight del mes hace
-  **una** lectura más que hoy (y otra de partes de M−1 solo si hay cierres
-  D14, R12) y, medido como F-055 T18, no sube > 15 %.
+- **R20.** En el lote (F-055), ronda C; el preflight del mes lee **una** vez más
+  (y los partes de M−1 solo con cierres D14, R12) y no sube > 15 % (F-055 T18).
 - **R21.** SI la racha tiene `CIZ` en M+1 y la cadena ya no llega a fin de
   mes, ENTONCES no se escribe el `CIZ` y se avisa «la racha sigue en MM».
 ## 7. Contrato, api y front
@@ -133,8 +130,7 @@ n de `progress/explore_F-062_sigrid.md`. 2026: 1-oct jue, 31-oct sáb, 1-nov dom
   `azure-apps/dedicacion.md` y prepara el aviso a `partes` (lo da el humano).
 - **R28.** Tests sin red ni BBDD con §9. **R29.** MANUAL en la `0404` (T20).
 ## 9. Casos de test
-C1-C13 en `tasks.md` §«Casos», cada uno con su R (C1-C6, ejemplos del humano;
-D14 en C12, D17 en C13). En todos, las `M*` igual (R26).
+C1-C13 en `tasks.md` §«Casos» (C1-C6 del humano; D14 en C12, D17 en C13; R26).
 ## 10. Decisiones (DECIDIDAS por el humano el 2026-10-24)
 «ok a lo demas» (A en D5-D13, D15 y D16) y «adelante, en d14 b»:
 - **D5**: el `CIZ` cierra el inicio abierto más reciente. **D6**: 12 meses
@@ -147,4 +143,8 @@ D14 en C12, D17 en C13). En todos, las `M*` igual (R26).
   antes de M−1 se cierra en un parte de M−1 de la obra del inicio (R12).
   **D15**: lo que solo está en Sigrid sale en `no_coincide` (R30). **D16**:
   al quitar, solo `devolver` y aviso (R17). **D17** («si añade»): el cierre D14
-  con inicio anterior a M−1 se confirma como un pisado (R31; E-11).
+  con inicio anterior a M−1 se confirma como un pisado (R31; E-11). **D18**
+  («metelo»): entran en la lista cerrada (design §12) de la api
+  `test_f030_r17_esquema_tabla_incidencia` y
+  `test_f030_r21_cuadrante_repo_de_periodo_mapea_y_agrupa`, solo con
+  `sigrid_dia_fin_antes` (R15, T13) en el esperado.
