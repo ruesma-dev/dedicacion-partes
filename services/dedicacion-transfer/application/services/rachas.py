@@ -900,3 +900,13 @@ def no_coincide(lineas: Iterable[LineaIncidenciaSigrid], recurso: int,
                               [_vista(ls) for ls in g],
                               MOTIVO_NC_SOLO_SIGRID))
     return out
+
+
+def ventana(ano: int, mes: int, meses_atras: int) -> tuple[int, int]:
+    """R19 (D6): la ventana de la lectura de las rachas, AAAAMMDD: del día 1
+    de M − `meses_atras` al último día de M+1 (para avisar, R21)."""
+    m = int(ano) * 12 + int(mes) - 1
+    a = m - int(meses_atras)
+    s = m + 1
+    return ((a // 12) * 10000 + (a % 12 + 1) * 100 + 1,
+            ultimo_dia(s // 12, s % 12 + 1))

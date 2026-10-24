@@ -84,6 +84,8 @@ class SettingsFalso:
         self.est_parte_imputado = 10
         # F-050: ventana del historial de partidas, como en `settings.py`.
         self.propuesta_meses_atras = propuesta_meses_atras
+        # F-062 (lista cerrada): ventana de las rachas, como en `settings.py`.
+        self.incidencias_meses_atras = 12
 
 
 def _fila(ide: int, padide: int, pos: int, cod: str, res: str,
@@ -221,6 +223,24 @@ class EdicionesFalsas:
         """F-030, anexo R30 (design §13.7): el `UPDATE` de la `fec`."""
         return {"sql": "editar_fec", "parameters": kw}
 
+    #: F-062 (lista cerrada): las `CI*`/`CIZ` que ve `incidencias_en_ventana`.
+    lineas_incidencia: tuple = ()
+
+    def incidencias_en_ventana(self, resides, desde, hasta, *,
+                               obride_pruebas=None, ides=()):
+        """F-062 (R19, lista cerrada): la lectura de las rachas sobre
+        ``lineas_incidencia``: las del recurso en la ventana o por `ide`
+        y, en pruebas, de esa obra. Anota cada llamada en
+        ``leidas_ventana``."""
+        recursos = sorted({int(r) for r in resides if r})
+        pedidas = sorted({int(i) for i in ides if i})
+        self.leidas_ventana = getattr(self, "leidas_ventana", []) + [
+            (recursos, desde, hasta, obride_pruebas, pedidas)]
+        return [ls for ls in self.lineas_incidencia
+                if (ls.reside in recursos and desde <= ls.fecha_int <= hasta
+                    or ls.ide in pedidas)
+                and (obride_pruebas is None or ls.obride == obride_pruebas)]
+
     def _editar_fec(self, kw) -> None:
         """La guarda de `stmt_editar_fecha_incidencia`: la de F-051 con el
         código de la línea en vez de `M*` y `can` 0, y la `fec` leída (D16
@@ -232,7 +252,9 @@ class EdicionesFalsas:
                         and ls.ide not in self.enlazadas and est == 1
                         and ls.reside == kw["reside"]
                         and (ls.hora_codigo or "").strip() == kw["hora_codigo"]
-                        and abs(float(ls.can or 0)) < 0.000001
+                        and abs(float(ls.can or 0)
+                                - float(kw.get("can_leido") or 0.0))
+                        < 0.000001
                         and (ls.synckey or "").strip()
                         == (kw["synckey_leida"] or "").strip()):
                     lista[i] = replace(ls, fecha_int=kw["fecha_int"])

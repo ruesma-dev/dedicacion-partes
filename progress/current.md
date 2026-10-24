@@ -16,7 +16,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T8 (hechas T1-T7).
+- **Tarea en curso:** T9 (hechas T1-T8).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
@@ -52,6 +52,10 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   `no_coincide` solo si la petición traía alguna clave nueva; `ajena`
   solo cuando es cierta; los cierres, sin `synckey`, `hmoide`, `obride`,
   `cenide`, `paride` ni `caaide`.
+  T8: `incidencias_del_mes` sigue hasta que T9 y T12 quiten sus
+  llamadores (luego se borra con sus tests de la lista cerrada);
+  `ventana(ano, mes, n)` en `rachas.py`; `INCIDENCIAS_MESES_ATRAS` también
+  en `.env.example`.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 
