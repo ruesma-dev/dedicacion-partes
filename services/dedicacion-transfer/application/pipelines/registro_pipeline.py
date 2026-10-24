@@ -549,7 +549,10 @@ class RegistroPipeline:
                    incidencias: list[IncidenciaEntrada]) -> Preflight:
         # Paso 0: empresa y obra de origen (ARCHITECTURE.md#regla-empresa).
         # Las incidencias cuentan: una obra solo con ellas también va (R23).
-        empresa = empresa_de_peticion([*lineas, *incidencias])
+        # F-062 (R17, R24): y las quitadas, con las que la api crea la
+        # petición de una obra que solo tiene esas.
+        quitadas = self._contexto.quitadas if self._contexto else []
+        empresa = empresa_de_peticion([*lineas, *incidencias, *quitadas])
         if empresa is None:
             return self._todas_omitidas(obra, lineas, None, incidencias)
         origen = self._obra_origen(obra, empresa)

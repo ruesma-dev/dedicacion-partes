@@ -70,3 +70,93 @@ def test_f062_r15_esquema_la_traza_al_transfer_lleva_el_dia_original():
     assert campos_de_traza(inc(sigrid_dia_fin_antes=7)) == {
         "hmores_ide_ini": None, "hmores_ide_fin": None, "dia_ini": None,
         "dia_fin": None, "dia_fin_antes": 7}
+
+
+# ============================== payload (T14) ============================ #
+from tests.test_f024_registro_empresa import _fila, _Transfer
+from tests.test_f030_r30_identidad import _inc_traza, _registro_tipos
+
+
+def _incs():
+    """El 10 tiene la 7 en la 678 (con su línea) y la 8 en la 694; el 11,
+    la 9 en la 694. La 5 del 10, quitada con traza en la 678; la 4 del 11,
+    quitada sin traza; la 3 del 12, quitada con traza en la 700 (sin
+    nada más ahí)."""
+    return [_inc_traza(7, (10, 1), (678, 1), ini=9001, fin=9002, dia_ini=5,
+                       dia_fin=9),
+            _inc_traza(5, (10, 1), (678, 1), desde=20, hasta=22, ini=9101,
+                       fin=None, dia_ini=20, quitada=True),
+            _inc_traza(8, (10, 1), (694, 1), desde=12, hasta=16),
+            _inc_traza(9, (11, 1), (694, 1), codigo="CIE", desde=1,
+                       hasta=3),
+            _inc_traza(4, (11, 1), (694, 1), desde=27, hasta=28,
+                       quitada=True),
+            _inc_traza(3, (12, 1), (700, 1), desde=6, hasta=7, fin=9301,
+                       dia_fin=7, quitada=True)]
+
+
+def _elem(inc_id, recurso, obra, codigo="CIV", desde=5, hasta=9, **traza):
+    return {"id": inc_id, "obra_ide": obra, "recurso_ide": recurso,
+            "empresa": 1, "codigo": codigo, "ano": 2026, "mes": 7,
+            "desde": desde, "hasta": hasta, "paride": 0, **traza}
+
+
+I7 = _elem(7, 10, 678, hmores_ide_ini=9001, hmores_ide_fin=9002, dia_ini=5,
+           dia_fin=9)
+I8 = _elem(8, 10, 694, desde=12, hasta=16)
+I9 = _elem(9, 11, 694, "CIE", 1, 3)
+
+
+def test_f062_r24_payload_incidencias_mes_quitadas_y_cierres():
+    transfer = _Transfer()
+    _registro_tipos(transfer, [_fila(1, (10, 1), (678, 1))],
+                    _incs()).preflight(2026, 7)
+    p678, p694, p700 = transfer.payloads
+    # R24: las del mes de SUS recursos en cualquier obra, sin quitadas.
+    assert p678["incidencias_mes"] == [I7, I8]
+    assert p694["incidencias_mes"] == [I7, I8, I9]
+    # R17: las quitadas con algún `ide`, en la petición de su obra (si no
+    # la hay, se crea); sin traza, no viajan.
+    assert p678["quitadas"] == [_elem(5, 10, 678, desde=20, hasta=22,
+                                      hmores_ide_ini=9101,
+                                      hmores_ide_fin=None, dia_ini=20,
+                                      dia_fin=None)]
+    assert "quitadas" not in p694
+    assert (p700["lineas"], p700["quitadas"]) == ([], [_elem(
+        3, 12, 700, desde=6, hasta=7, hmores_ide_ini=None,
+        hmores_ide_fin=9301, dia_ini=None, dia_fin=7)])
+    # R24: cada recurso, designado en la primera petición donde sale.
+    assert (p678["cierres_recursos"], p694["cierres_recursos"]) == ([10], [11])
+    assert "cierres_recursos" not in p700 and "incidencias_mes" not in p700
+    # Las suyas, como en F-030 (sin `obra_ide`).
+    assert [i["id"] for i in p678["incidencias"]] == [7]
+    assert "obra_ide" not in p678["incidencias"][0]
+
+
+def test_f062_r24_payload_tras_el_filtro_de_obra_se_designa_en_ella():
+    transfer = _Transfer()
+    _registro_tipos(transfer, [_fila(1, (10, 1), (678, 1))],
+                    _incs()).preflight(2026, 7, obra_ide=694)
+    [p694] = transfer.payloads
+    assert p694["cierres_recursos"] == [10, 11]
+    assert p694["incidencias_mes"] == [I7, I8, I9]
+
+
+def test_f062_r24_payload_ejecutar_lleva_lo_mismo():
+    transfer = _Transfer()
+    _registro_tipos(transfer, [_fila(1, (10, 1), (678, 1))],
+                    _incs()).ejecutar(2026, 7, pisar_claves=[])
+    p678, p694, p700 = transfer.payloads
+    assert p678["incidencias_mes"] == [I7, I8]
+    assert (p678["cierres_recursos"], p694["cierres_recursos"]) == ([10], [11])
+    assert [q["id"] for q in p700["quitadas"]] == [3]
+
+
+def test_f062_r24_payload_sin_incidencias_solo_los_designados():
+    transfer = _Transfer()
+    _registro_tipos(transfer, [_fila(1, (10, 1), (678, 1)),
+                               _fila(2, (10, 1), (694, 1)),
+                               _fila(3, (11, 1), (694, 1))]).preflight(2026, 7)
+    assert [set(p) for p in transfer.payloads] == [
+        {"obra", "lineas", "pisar_claves", "cierres_recursos"}] * 2
+    assert [p["cierres_recursos"] for p in transfer.payloads] == [[10], [11]]

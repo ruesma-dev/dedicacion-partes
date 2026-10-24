@@ -174,3 +174,20 @@ def test_f062_r19_lote_si_la_lectura_falla_falla_el_lote():
     with pytest.raises(RuntimeError, match="truncada"):
         RegistroLote(cliente=_cli(cls=Falla),
                      settings=_st(False)).preflight(_peticiones())
+
+
+def test_f062_r17_lote_la_peticion_solo_con_quitadas_como_suelta():
+    traza = {"hmores_ide_fin": 62, "dia_fin": 9, "dia_fin_antes": 7}
+    adm = [_l(61, 20261005, obride=40, parte_emp=1),
+           _l(62, 20261009, "CIZ", obride=40, parte_emp=1, can=1.0)]
+    p = (OBRA, [], [], ContextoRachas(quitadas=[_inc(**traza)]))
+    cli = _cli(adm)
+    memoria = LecturasDelLote(cli, 2)
+    memoria.precargar([p], _st(False))
+    pf = _suelto(memoria, p, _st(False))
+    # La ventana, precargada (sin líneas, `lineas_registradas` va vacía al
+    # cliente, como la obra solo con incidencias de F-030).
+    assert len(cli.leidas_ventana) == 1
+    assert "incidencias_en_ventana" not in memoria.fallos_de_memoria
+    assert [(a.rol, a.accion, a.fecha_int) for a in pf.incidencias] == [
+        ("devolver", "editar", 20261007)]

@@ -19,7 +19,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T14 (hechas T1-T13; T5c, D17, va tras T18).
+- **Tarea en curso:** T15 (hechas T1-T14; T5c, D17, va tras T18).
 - Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`). La fase RED
   de T1-T10 y T12 está en
   `C:\Users\pgris\AppData\Local\Temp\claude\C--Users-pgris-PycharmProjects-porcentajes\5cb867d0-7a0e-4697-8553-fb67f1894080\scratchpad\red\`
@@ -116,6 +116,15 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   `test_f030_r30_identidad.py` y `test_f030_r30_punta_a_punta.py` no
   cambian: los dos últimos no están en la lista cerrada para eso. En la
   api, 1149 en verde.
+  T14: la respuesta de la api conserva `incidencias_quitadas` (el front
+  deja de pintarla en T17). La quitada con traza que crea la petición de
+  su obra (R24) la deja sin líneas ni incidencias: el transfer saca la
+  empresa también de `quitadas` (`_preflight` y precarga del lote), si no
+  la omitiría entera y no devolvería el `CIZ` (R17; test propio). La
+  condición de «tiene algún `ide`» mira la traza ya calculada
+  (`hmores_ide_*`), no las columnas: `test_f003_esquema.py` R17 fija los
+  `sigrid_*` que nombra `registro_sigrid.py`. Ajeno cambiado: solo
+  `test_f030_r23_sin_incidencias_la_peticion_de_siempre` (+`cierres_recursos`).
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

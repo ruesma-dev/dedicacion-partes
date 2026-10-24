@@ -697,3 +697,18 @@ def test_f062_r14_ejecutar_ninguna_sentencia_delete():
     assert len(cli.textos) >= 3
     assert all("DELETE" not in t.upper() for t in cli.textos)
     assert not any("delete" in s["sql"] for s in cli.escritos)
+
+
+def test_f062_r17_la_peticion_solo_con_quitadas_devuelve_el_ciz_ajeno():
+    """La api crea la petición de una obra que solo tiene quitadas (R24):
+    su empresa sale de ellas, no se omite entera."""
+    traza = {"hmores_ide_fin": 62, "dia_fin": 9, "dia_fin_antes": 7}
+    adm = [_l(61, 20261005, obride=40, parte_emp=1),
+           _l(62, 20261009, "CIZ", obride=40, parte_emp=1, can=1.0)]
+    ctx = ContextoRachas(quitadas=[_inc(**traza)])
+    pf = _pf(_cli(adm), [], contexto=ctx)
+    assert [(a.rol, a.accion, a.fecha_int) for a in pf.incidencias] == [
+        ("devolver", "editar", 20261007)]
+    cli = ClienteRachas(adm)
+    _ejr(cli, contexto=ctx)
+    assert cli.ediciones() == [(62, 20261009, 20261007, 1.0)]

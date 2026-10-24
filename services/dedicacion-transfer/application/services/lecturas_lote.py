@@ -151,7 +151,10 @@ class LecturasDelLote:
         empresas: dict[int, int | None] = {}
         for i, (_, lineas) in enumerate(peticiones):
             try:
-                empresas[i] = empresa_de_peticion([*lineas, *incs[i]])
+                # F-062 (R17): las quitadas también dan la empresa.
+                quitadas = ctxs[i].quitadas if ctxs[i] else []
+                empresas[i] = empresa_de_peticion(
+                    [*lineas, *incs[i], *quitadas])
             except Exception:                       # noqa: BLE001
                 empresas[i] = None      # la petición fallará sola
         todas = [l for _, ls in peticiones for l in ls]
