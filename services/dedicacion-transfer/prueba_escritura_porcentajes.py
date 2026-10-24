@@ -105,7 +105,13 @@ REGISTRO_MEDIR = 990000
 
 #: F-030 (R35): `id` de la primera incidencia de --incidencia (synckey
 #: 'porcentajes:inc:9901xx:ini|fin'), tan arbitrario como los de arriba.
+#: F-062 (review 1): es la de enero; cada mes M tiene su centena
+#: (`_id_de_prueba`), para que una incidencia de M no tome por propia la
+#: línea que otra de M-1 escribió con el mismo `id` (R5, R12).
 ID_INCIDENCIA_PRUEBA = 990101
+
+#: Incidencias de prueba que caben en un mes (una centena).
+MAX_INCIDENCIAS_MES = 100
 
 #: F-062 (R12): primer `registro_id` de las líneas testigo de --cierres
 #: (al 0 %: se omiten siempre, nunca se escriben).
@@ -139,10 +145,19 @@ def _obra_origen() -> ObraEntrada:
     return ObraEntrada(**OBRA_ORIGEN_PRUEBA)
 
 
+def _id_de_prueba(mes: int, n: int) -> int:
+    """F-062 (review 1): `id` de la n-ésima --incidencia del mes: estable
+    dentro del mes (relanzar edita lo suyo, R33) y distinto entre meses
+    (julio 9907xx, octubre 9910xx)."""
+    return ID_INCIDENCIA_PRUEBA + (mes - 1) * MAX_INCIDENCIAS_MES + n
+
+
 def _incidencias(parser, valores: list[str], ano: int,
                  mes: int) -> list[IncidenciaEntrada]:
     """`--incidencia RECURSO:COD:DESDE:HASTA` -> incidencias del mes, con
-    `id` correlativo desde `ID_INCIDENCIA_PRUEBA`."""
+    `id` correlativo desde el primero del mes (`_id_de_prueba`)."""
+    if len(valores) > MAX_INCIDENCIAS_MES:
+        parser.error(f"como mucho {MAX_INCIDENCIAS_MES} --incidencia")
     out: list[IncidenciaEntrada] = []
     for n, v in enumerate(valores):
         trozos = v.split(":")
@@ -152,7 +167,7 @@ def _incidencias(parser, valores: list[str], ano: int,
                          f"RECURSO:COD:DESDE:HASTA (números salvo COD)")
         recurso, cod, desde, hasta = trozos
         out.append(IncidenciaEntrada(
-            id=ID_INCIDENCIA_PRUEBA + n, recurso_ide=int(recurso),
+            id=_id_de_prueba(mes, n), recurso_ide=int(recurso),
             empresa=EMPRESA_PRUEBA, codigo=cod.strip().upper(), ano=ano,
             mes=mes, desde=int(desde), hasta=int(hasta)))
     return out
@@ -301,17 +316,31 @@ def _fec_antes(a) -> str:
     return f" fec_antes={a.fec_antes}" if a.accion == "editar" else ""
 
 
+def _solo_en_pruebas(st, confirmar: bool, permitir_modo_real: bool) -> None:
+    """F-062 (O2, aprobada por el humano el 2026-10-24, «ok a 1 y 2»): una
+    fase que escribe no escribe en modo real (OBRA_PRUEBAS_FORZAR=false)
+    salvo con --permitir-modo-real. Sale con código 1 y sin escribir."""
+    if confirmar and not st.obra_pruebas_forzar and not permitir_modo_real:
+        print("ABORTADO: OBRA_PRUEBAS_FORZAR=false (modo real: se "
+              "escribiría en la obra real, no en la de pruebas). Este "
+              "script no escribe en modo real salvo con "
+              "--permitir-modo-real.", file=sys.stderr)
+        sys.exit(1)
+
+
 def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
                   confirmar: bool, pisar: list[str],
                   incidencias: list | None = None,
-                  cierres: list[int] | None = None) -> None:
+                  cierres: list[int] | None = None,
+                  permitir_modo_real: bool = False) -> None:
+    _solo_en_pruebas(st, confirmar, permitir_modo_real)
     fase_preflight(pipeline, st, ano, mes, incidencias, cierres)
     if not confirmar:
         print("\nDRY-RUN: añade --confirmar para escribir de verdad.")
         return
     if not st.obra_pruebas_forzar:
-        print("ATENCIÓN: OBRA_PRUEBAS_FORZAR=false (¡producción!). Aborta "
-              "si no era la intención.")
+        print("ATENCIÓN: OBRA_PRUEBAS_FORZAR=false (¡producción!), con "
+              "--permitir-modo-real.")
     r = pipeline.ejecutar(
         **_peticion(ano, mes, incidencias or [], cierres),
         pisar_claves=set(pisar), usuario="prueba_escritura_porcentajes")
@@ -341,12 +370,12 @@ def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
     _imprimir_rachas(r)
 
 
-def fase_verificar(cli: SigridWriteClient,
-                   incidencias: list | None = None) -> None:
+def fase_verificar(cli: SigridWriteClient, incidencias: list | None,
+                   mes: int) -> None:
     """Relee por synckey las líneas de ejemplo y las de incidencia de este
-    script (F-030: tantas como --incidencia; sin ninguna, la primera)."""
-    ids = range(ID_INCIDENCIA_PRUEBA,
-                ID_INCIDENCIA_PRUEBA + max(len(incidencias or []), 1))
+    script (F-030: las de --incidencia; sin ninguna, la primera del mes)."""
+    ids = ([i.id for i in incidencias] if incidencias
+           else [_id_de_prueba(mes, 0)])
     claves = [f"{PREFIJO_SYNCKEY}{d['registro_id']}" for d in LINEAS_PRUEBA]
     claves += [synckey_incidencia(i, rol) for i in ids for rol in ("ini", "fin")]
     mapa = cli.lineas_por_synckey(claves)
@@ -358,7 +387,11 @@ def fase_verificar(cli: SigridWriteClient,
               f"tot={ls.tot}")
 
 
-def fase_limpiar(cli: SigridWriteClient, st, confirmar: bool) -> None:
+def fase_limpiar(cli: SigridWriteClient, st, confirmar: bool,
+                 permitir_modo_real: bool = False) -> None:
+    """Borra las líneas de este script: por la marca y el prefijo de synckey,
+    de todos los meses (los `id` de incidencia de cualquier mes incluidos)."""
+    _solo_en_pruebas(st, confirmar, permitir_modo_real)
     filas = cli._read(
         "SELECT ide, hmoide, reside, fec, can, synckey FROM hmores "
         "WHERE CAST(tex AS NVARCHAR(200)) = ? "
@@ -455,14 +488,24 @@ def _imprimir_acciones(pf) -> None:
 
 def fase_medir(pipeline: RegistroPipeline, ano: int, mes: int,
                obras: list[str], recursos: list[int],
-               partidas: dict[str, int], lote=None) -> None:
+               partidas: dict[str, int], lote=None,
+               cierres: list[int] | None = None) -> None:
     """F-055 (R2, T2 y T18): SOLO LECTURA. El preflight de cada obra con
     esos recursos (y su partida elegida, si se da), midiendo cada lectura:
     segundos por lectura, por obra y en total. Sin `lote`, obra a obra con el
     mismo `RegistroPipeline.preflight` que el endpoint suelto; con `lote` (un
     `RegistroLote`), todas a la vez como `POST /api/registro/preflight-lote`
-    (T18). Nunca `ejecutar`."""
+    (T18). Nunca `ejecutar`.
+
+    F-062 (review 1, R20): con `cierres`, cada uno de esos recursos se
+    designa en la PRIMERA obra (como `_designar_cierres` de la api), y solo
+    ella lee sus incidencias del mes y cierra sus rachas; las demás van con
+    el contexto vacío. Sin `cierres`, las peticiones de siempre."""
     porcentaje = round(1 / len(obras), 4)
+    designados = [r for r in recursos if r in (cierres or [])]
+
+    def contexto(i: int) -> ContextoRachas:
+        return ContextoRachas(cierres_recursos=designados if i == 0 else [])
 
     def lineas_de(i: int, cod: str) -> list[LineaEntrada]:
         return [LineaEntrada(
@@ -477,7 +520,9 @@ def fase_medir(pipeline: RegistroPipeline, ano: int, mes: int,
         with medir_lecturas() as total:
             try:
                 resultados = lote.preflight(
-                    [(ObraEntrada(codigo=cod), lineas_de(i, cod))
+                    [(ObraEntrada(codigo=cod), lineas_de(i, cod), [],
+                      contexto(i)) if designados
+                     else (ObraEntrada(codigo=cod), lineas_de(i, cod))
                      for i, cod in enumerate(obras)])
             except Exception as exc:            # noqa: BLE001
                 print(f"NO se pudo: {exc}")
@@ -495,8 +540,10 @@ def fase_medir(pipeline: RegistroPipeline, ano: int, mes: int,
                 pf = None
                 with medir_lecturas() as m:
                     try:
-                        pf = pipeline.preflight(obra=ObraEntrada(codigo=cod),
-                                                lineas=lineas_de(i, cod))
+                        pl = (pipeline.con_contexto(contexto(i))
+                              if designados else pipeline)
+                        pf = pl.preflight(obra=ObraEntrada(codigo=cod),
+                                          lineas=lineas_de(i, cod))
                     except Exception as exc:    # noqa: BLE001
                         print(f"NO se pudo: {exc}")
                 segundos = time.perf_counter() - t_obra
@@ -532,12 +579,17 @@ def main() -> None:
     # F-062 (R12): RECURSO cuyas rachas del mes anterior se cierran,
     # repetible.
     parser.add_argument("--cierres", type=int, action="append", default=[])
+    # F-062 (O2): sin ella, ejecutar y limpiar no escriben en modo real.
+    parser.add_argument("--permitir-modo-real", action="store_true")
     args = parser.parse_args()
     if args.fase == "propuesta" and (len(args.obra) != 1
                                      or len(args.recurso) != 1):
         parser.error("la fase propuesta exige un --obra y un --recurso")
     if args.fase == "medir" and (not args.obra or not args.recurso):
         parser.error("la fase medir exige --obra y --recurso")
+    if args.fase == "medir" and not set(args.cierres) <= set(args.recurso):
+        parser.error("en la fase medir, cada --cierres es uno de los "
+                     "--recurso")
     partidas = _partidas_por_obra(parser, args.partida, args.obra)
     incidencias = _incidencias(parser, args.incidencia, args.ano, args.mes)
 
@@ -559,18 +611,19 @@ def main() -> None:
                        args.cierres)
     elif args.fase == "ejecutar":
         fase_ejecutar(pipeline, st, args.ano, args.mes, args.confirmar,
-                      args.pisar, incidencias, args.cierres)
+                      args.pisar, incidencias, args.cierres,
+                      args.permitir_modo_real)
     elif args.fase == "verificar":
-        fase_verificar(cli, incidencias)
+        fase_verificar(cli, incidencias, args.mes)
     elif args.fase == "limpiar":
-        fase_limpiar(cli, st, args.confirmar)
+        fase_limpiar(cli, st, args.confirmar, args.permitir_modo_real)
     elif args.fase == "propuesta":
         fase_propuesta(cli, pipeline, args.obra[0], args.recurso[0],
                        args.ano, args.mes, args.categoria, args.nombre)
     elif args.fase == "medir":
         fase_medir(pipeline, args.ano, args.mes, args.obra, args.recurso,
                    partidas, RegistroLote(cliente=cli, settings=st)
-                   if args.lote else None)
+                   if args.lote else None, args.cierres)
 
 
 if __name__ == "__main__":

@@ -653,13 +653,14 @@ def test_f030_r35_script_preflight_solo_la_incidencia(monkeypatch, capsys):
     script = _script(monkeypatch, cli, "preflight", "--ano", "2026", "--mes",
                      "7", "--incidencia", "200:civ:5:9")
     salida = capsys.readouterr().out
-    assert "[escribir     ] inc=990101 ini CIV fec=20260705 parte=PT26/00251" \
+    assert "[escribir     ] inc=990701 ini CIV fec=20260705 parte=PT26/00251" \
         in salida
-    assert "[escribir     ] inc=990101 fin CIZ fec=20260709 parte=PT26/00251" \
+    assert "[escribir     ] inc=990701 fin CIZ fec=20260709 parte=PT26/00251" \
         in salida
     assert "reg=9000" not in salida                 # sin las líneas de ejemplo
     assert cli.escritos == []
     assert script.ID_INCIDENCIA_PRUEBA == 990101
+    assert script._id_de_prueba(7, 0) == 990701
 
 
 def test_f030_r35_script_ejecutar_dry_run_y_confirmado(monkeypatch, capsys):
@@ -672,11 +673,11 @@ def test_f030_r35_script_ejecutar_dry_run_y_confirmado(monkeypatch, capsys):
             "--incidencia", "400:CIV:12:12")
     salida = capsys.readouterr().out
     assert [i["synckey"] for i in cli.inserts()] == [
-        "porcentajes:inc:990101:ini", "porcentajes:inc:990101:fin",
-        "porcentajes:inc:990102:ini", "porcentajes:inc:990102:fin"]
+        "porcentajes:inc:990701:ini", "porcentajes:inc:990701:fin",
+        "porcentajes:inc:990702:ini", "porcentajes:inc:990702:fin"]
     assert {i["tex"] for i in cli.inserts()} == {"PRUEBA-PORC"}
     assert {i["can"] for i in cli.inserts()} == {0.0}
-    assert "INCIDENCIA inc=990101 ini escribir hmores.ide=70001" in salida
+    assert "INCIDENCIA inc=990701 ini escribir hmores.ide=70001" in salida
     assert "escritas=0" in salida
 
 
@@ -685,17 +686,18 @@ def test_f030_r35_script_verificar_por_synckey(monkeypatch, capsys):
     _script(monkeypatch, cli, "ejecutar", "--confirmar", "--ano", "2026",
             "--mes", "7", "--incidencia", "200:CIV:5:9")
     capsys.readouterr()
-    _script(monkeypatch, cli, "verificar", "--incidencia", "200:CIV:5:9")
+    _script(monkeypatch, cli, "verificar", "--mes", "7",
+            "--incidencia", "200:CIV:5:9")
     salida = capsys.readouterr().out
-    assert "porcentajes:inc:990101:ini: hmores.ide=70001 reside=200 " \
+    assert "porcentajes:inc:990701:ini: hmores.ide=70001 reside=200 " \
            "fec=20260705" in salida
-    assert "porcentajes:inc:990101:fin: hmores.ide=70002 reside=200 " \
+    assert "porcentajes:inc:990701:fin: hmores.ide=70002 reside=200 " \
            "fec=20260709" in salida
 
 
 class _ClienteConPar(ClienteEscribe):
     """Anexo R30 (T34): el par de la primera --incidencia del script
-    (990101) ya escrito del 5 al 9 en el parte 777, En registro; la lectura
+    (990701) ya escrito del 5 al 9 en el parte 777, En registro; la lectura
     de R33 y la de `verificar` salen de esas líneas."""
 
     def __init__(self) -> None:
@@ -703,9 +705,9 @@ class _ClienteConPar(ClienteEscribe):
 
         super().__init__(lineas_parte=[
             LineaSigrid(70001, 200, 20260705, 71, "CIV", 0.0, 0.0,
-                        "porcentajes:inc:990101:ini", nuestra=True),
+                        "porcentajes:inc:990701:ini", nuestra=True),
             LineaSigrid(70002, 200, 20260709, 79, "CIZ", 0.0, 0.0,
-                        "porcentajes:inc:990101:fin", nuestra=True)])
+                        "porcentajes:inc:990701:fin", nuestra=True)])
 
     def incidencias_en_ventana(self, resides, desde, hasta, *,
                                obride_pruebas=None, ides=()):
@@ -727,28 +729,29 @@ def test_f030_r49_script_cambiar_los_dias_edita_y_lo_imprime(monkeypatch,
     argv = ("--ano", "2026", "--mes", "7", "--incidencia", "200:CIV:6:12")
     _script(monkeypatch, cli, "preflight", *argv)
     salida = capsys.readouterr().out
-    assert "[editar       ] inc=990101 ini CIV fec=20260706 parte=PT26/00251" \
+    assert "[editar       ] inc=990701 ini CIV fec=20260706 parte=PT26/00251" \
         in salida
     assert "fec_antes=20260705 hmores.ide=70001" in salida
     assert "fec_antes=20260709 hmores.ide=70002" in salida
     _script(monkeypatch, cli, "ejecutar", "--confirmar", *argv)
     salida = capsys.readouterr().out
-    assert ("INCIDENCIA inc=990101 ini editar hmores.ide=70001 "
+    assert ("INCIDENCIA inc=990701 ini editar hmores.ide=70001 "
             "parte=PT26/00251 fec=20260706 fec_antes=20260705") in salida
-    assert ("INCIDENCIA inc=990101 fin editar hmores.ide=70002 "
+    assert ("INCIDENCIA inc=990701 fin editar hmores.ide=70002 "
             "parte=PT26/00251 fec=20260712 fec_antes=20260709") in salida
     assert [s["sql"] for s in cli.escritos] == ["editar_fec"] * 2
     # R49: los mismos dos `ide`, con la `fec` 6 y 12.
-    _script(monkeypatch, cli, "verificar", "--incidencia", "200:CIV:6:12")
+    _script(monkeypatch, cli, "verificar", "--mes", "7",
+            "--incidencia", "200:CIV:6:12")
     salida = capsys.readouterr().out
-    assert "porcentajes:inc:990101:ini: hmores.ide=70001 reside=200 " \
+    assert "porcentajes:inc:990701:ini: hmores.ide=70001 reside=200 " \
            "fec=20260706" in salida
-    assert "porcentajes:inc:990101:fin: hmores.ide=70002 reside=200 " \
+    assert "porcentajes:inc:990701:fin: hmores.ide=70002 reside=200 " \
            "fec=20260712" in salida
     # Repetir: ya registradas, con su `ide` y sin `fec_antes`.
     _script(monkeypatch, cli, "ejecutar", "--confirmar", *argv)
     salida = capsys.readouterr().out
-    assert ("INCIDENCIA inc=990101 ini ya_registrado hmores.ide=70001 "
+    assert ("INCIDENCIA inc=990701 ini ya_registrado hmores.ide=70001 "
             "parte=PT26/00251 fec=20260706 motivo=") in salida
     assert len(cli.escritos) == 2
 
@@ -842,13 +845,13 @@ class _ClienteVerifica(ClienteEscribe):
 
 
 @pytest.mark.parametrize("argv, incidencias", [
-    ((), [990101]),
+    ((), [990701]),
     (("--incidencia", "200:CIV:5:9", "--incidencia", "400:CIV:1:2"),
-     [990101, 990102])])
+     [990701, 990702])])
 def test_f030_r35_script_verificar_pide_justo_esas_synckeys(monkeypatch,
                                                             argv, incidencias):
     cli = _ClienteVerifica()
-    _script(monkeypatch, cli, "verificar", *argv)
+    _script(monkeypatch, cli, "verificar", "--mes", "7", *argv)
     assert cli.pedidas == [
         {"porcentajes:900001", "porcentajes:900002", "porcentajes:900003",
          *(f"porcentajes:inc:{i}:{rol}" for i in incidencias

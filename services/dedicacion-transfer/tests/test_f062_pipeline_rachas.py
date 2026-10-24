@@ -716,10 +716,10 @@ def test_f062_r17_la_peticion_solo_con_quitadas_devuelve_el_ciz_ajeno():
 
 
 # ============================= script (T18) ============================== #
-def _script(monkeypatch, cli, *argv):
+def _script(monkeypatch, cli, *argv, **ajustes):
     from tests.test_f030_pipeline_incidencias import _script as script_f030
 
-    return script_f030(monkeypatch, cli, *argv)
+    return script_f030(monkeypatch, cli, *argv, **ajustes)
 
 
 def test_f062_r24_script_varias_incidencias_son_una_cadena(monkeypatch,
@@ -731,18 +731,18 @@ def test_f062_r24_script_varias_incidencias_son_una_cadena(monkeypatch,
     salida = capsys.readouterr().out
     # C2: una racha, CIV el 5 y CIZ el 16; la segunda, de la cadena.
     assert cli.de_incidencia() == [
-        (777, 20261005, "CIV", "porcentajes:inc:990101:ini"),
-        (777, 20261016, "CIZ", "porcentajes:inc:990101:fin")]
-    assert ("RACHA inc=990101 abre · cierra el 20261016 en el parte "
+        (777, 20261005, "CIV", "porcentajes:inc:991001:ini"),
+        (777, 20261016, "CIZ", "porcentajes:inc:991001:fin")]
+    assert ("RACHA inc=991001 abre · cierra el 20261016 en el parte "
             "PT26/00251") in salida
-    assert "RACHA inc=990102 continua desde 20261005 (PT26/00251)" \
-        " · cadena de 990101" in salida
-    assert "INCIDENCIA inc=990102 ini continua" in salida
+    assert "RACHA inc=991002 continua desde 20261005 (PT26/00251)" \
+        " · cadena de 991001" in salida
+    assert "INCIDENCIA inc=991002 ini continua" in salida
 
 
 def test_f062_r12_script_cierres_sin_incidencias_cierra_el_mes_anterior(
         monkeypatch, capsys):
-    octubre = [_l(51, 20261027, sk="porcentajes:inc:990101:ini",
+    octubre = [_l(51, 20261027, sk="porcentajes:inc:991001:ini",
                   hmoide=777, parte="PT26/00251", obride=828942,
                   cenide=828943, paride=0, caaide=0, parte_emp=1)]
     cli = ClienteRachas(octubre)
@@ -758,7 +758,7 @@ def test_f062_r12_script_cierres_sin_incidencias_cierra_el_mes_anterior(
     _script(monkeypatch, cli, "ejecutar", "--confirmar", *argv)
     salida = capsys.readouterr().out
     [cierre] = cli.de_incidencia()
-    assert cierre == (777, 20261031, "CIZ", "porcentajes:inc:990101:fin")
+    assert cierre == (777, 20261031, "CIZ", "porcentajes:inc:991001:fin")
     assert [i for i in cli.inserts() if i["synckey"].startswith(
         "porcentajes:99")] == []                    # el testigo, nunca
     assert "CIERRE recurso=200 CIV inicio=51" in salida
@@ -919,3 +919,107 @@ def test_f062_r22_contrato_sin_pedirlas_la_respuesta_no_lleva_rachas():
         & set(_respuesta_preflight(pf)) == set()
     assert {"rachas", "cierres_racha", "no_coincide"} \
         <= set(_respuesta_preflight(pf, True))
+
+
+# ================= review 1: ids por mes, modo real y medir ================ #
+def test_f062_r5_script_ids_de_prueba_estables_por_mes_y_distintos_entre_meses(
+        monkeypatch, capsys):
+    # Bloqueo 1 de la review 1: con el mismo `id` en todos los meses, el
+    # registro de noviembre tomaba por propio el `CIV` de octubre.
+    import prueba_escritura_porcentajes as script
+
+    assert [script._id_de_prueba(m, n) for m, n in
+            ((1, 0), (7, 0), (10, 0), (10, 1), (11, 0), (12, 0))] == [
+        990101, 990701, 991001, 991002, 991101, 991201]
+    for mes, ids in (("10", (991001, 991002)), ("11", (991101, 991102))):
+        _script(monkeypatch, ClienteRachas(), "preflight", "--ano", "2026",
+                "--mes", mes, "--incidencia", "200:CIV:2:6",
+                "--incidencia", "400:CIV:2:6")
+        salida = capsys.readouterr().out
+        assert all(f"inc={i} ini" in salida for i in ids)
+
+
+def test_f062_r5_script_verificar_pide_las_synckeys_de_su_mes(monkeypatch,
+                                                              capsys):
+    cli = ClienteRachas()
+    pedidas = []
+    original = cli.lineas_por_synckey
+
+    def lineas_por_synckey(claves):
+        pedidas.append(set(claves))
+        return original(claves)
+
+    cli.lineas_por_synckey = lineas_por_synckey
+    _script(monkeypatch, cli, "verificar", "--ano", "2026", "--mes", "11",
+            "--incidencia", "200:CIV:2:6")
+    assert {k for k in pedidas[0] if ":inc:" in k} == {
+        "porcentajes:inc:991101:ini", "porcentajes:inc:991101:fin"}
+    _script(monkeypatch, cli, "verificar", "--ano", "2026", "--mes", "9")
+    assert {k for k in pedidas[1] if ":inc:" in k} == {
+        "porcentajes:inc:990901:ini", "porcentajes:inc:990901:fin"}
+
+
+@pytest.mark.parametrize("fase", [
+    ("ejecutar", "--confirmar", "--ano", "2026", "--mes", "10",
+     "--incidencia", "200:CIV:5:9"),
+    ("limpiar", "--confirmar")])
+def test_f062_o2_script_en_modo_real_no_escribe(monkeypatch, capsys, fase):
+    # O2 (humano, 2026-10-24, «ok a 1 y 2»): sin OBRA_PRUEBAS_FORZAR, las
+    # fases que escriben abortan con código distinto de 0 y sin escribir.
+    cli = ClienteRachas()
+    with pytest.raises(SystemExit) as fin:
+        _script(monkeypatch, cli, *fase, obra_pruebas_forzar=False)
+    assert fin.value.code not in (0, None)
+    assert cli.escritos == []
+    assert "--permitir-modo-real" in capsys.readouterr().err
+
+
+def test_f062_o2_script_en_modo_real_dry_run_y_con_permiso(monkeypatch,
+                                                            capsys):
+    argv = ("ejecutar", "--ano", "2026", "--mes", "10", "--incidencia",
+            "200:CIV:5:9")
+    cli = ClienteRachas()
+    _script(monkeypatch, cli, *argv, obra_pruebas_forzar=False)
+    assert "DRY-RUN" in capsys.readouterr().out and cli.escritos == []
+    _script(monkeypatch, cli, *argv, "--confirmar", "--permitir-modo-real",
+            obra_pruebas_forzar=False)
+    assert cli.escritos != []
+    # En modo pruebas, sin la opción, como siempre.
+    cli = ClienteRachas()
+    _script(monkeypatch, cli, *argv, "--confirmar")
+    assert cli.escritos != []
+
+
+def test_f062_r20_script_medir_lote_con_cierres_designa_en_la_primera_obra(
+        monkeypatch, capsys):
+    # Bloqueo 2 de la review 1: como `_designar_cierres` de la api, cada
+    # recurso de --cierres se designa en la primera obra, para que el lote
+    # lea las incidencias (R20) como en producción.
+    import prueba_escritura_porcentajes as script
+
+    pedidas = []
+
+    def preflight(self, peticiones):
+        pedidas.append(list(peticiones))
+        return [RuntimeError("doble") for _ in peticiones]
+
+    monkeypatch.setattr(script.RegistroLote, "preflight", preflight)
+    _script(monkeypatch, ClienteRachas(), "medir", "--ano", "2026", "--mes",
+            "10", "--obra", "0678", "--obra", "0694", "--recurso", "200",
+            "--recurso", "400", "--cierres", "200", "--cierres", "400",
+            "--lote")
+    [(o1, _, i1, c1), (o2, _, i2, c2)] = pedidas[0]
+    assert (o1.codigo, o2.codigo, i1, i2) == ("0678", "0694", [], [])
+    assert (c1.cierres_recursos, c2.cierres_recursos) == ([200, 400], [])
+    # Sin --cierres, las peticiones de siempre (obra, líneas).
+    pedidas.clear()
+    _script(monkeypatch, ClienteRachas(), "medir", "--ano", "2026", "--mes",
+            "10", "--obra", "0678", "--recurso", "200", "--lote")
+    assert [len(p) for p in pedidas[0]] == [2]
+
+
+def test_f062_r20_script_medir_cierres_que_no_son_recursos_es_error(
+        monkeypatch):
+    with pytest.raises(SystemExit):
+        _script(monkeypatch, ClienteRachas(), "medir", "--obra", "0678",
+                "--recurso", "200", "--cierres", "400", "--lote")
