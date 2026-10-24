@@ -1316,7 +1316,8 @@ class RegistroPipeline:
         no trae su `clave` en `pisar_claves` pasa a `pendiente` y no se
         escribe (no es un conflicto ni va a `pendientes_confirmacion`)."""
         for c in pf.cierres_racha:
-            if c.accion == "escribir" and c.requiere_confirmar                     and c.clave not in pisar:
+            if (c.accion == "escribir" and c.requiere_confirmar
+                    and c.clave not in pisar):
                 c.accion = "pendiente"
                 c.motivo = MOTIVO_CIERRE_PENDIENTE.format(
                     motivo=c.motivo, clave=c.clave)
