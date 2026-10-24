@@ -5,8 +5,8 @@
 cuadrante los % que ya existen en los partes de Sigrid; `sdd: true`, rigor
 crítico), `spec_ready` desde el 2026-10-24. La spec la escribió el
 spec-author, lanzado a petición del humano («lanza spec de f54»), y está en
-`specs/F-054-sync-trae-porcentajes/` (`7b780ef`), revisada el 2026-10-24
-con D4 y la parte B decididas y D12-D15 nuevas (abajo). Rama `feature/F-054-sync-trae-porcentajes`, en la copia
+`specs/F-054-sync-trae-porcentajes/` (`7b780ef`, revisada en `3398f37` el 2026-10-24
+con D4 y la parte B decididas y D12-D15 nuevas, abajo). Rama `feature/F-054-sync-trae-porcentajes`, en la copia
 `porcentajes-f054`. **A la vez**, la spec de F-062 espera aprobación en la
 copia principal (rama `feature/F-062-rachas-incidencias`); ninguna de las
 dos está `in_progress`. **PARADA**: la spec la aprueba el humano, con sus
