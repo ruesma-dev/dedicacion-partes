@@ -189,7 +189,7 @@ con `CIV` y `CIZ` en `reshor`. Resultado en `progress/manual_F-062.md`.
 | Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 99.8% de 898 líneas cambiadas cubiertas (896/898, umbral 80%, nivel critico)` |
 | Mutación (`python -m harness.mutacion --feature F-062`, completa, 4 workers, HEAD `30ef3b4`) | **591** generados y evaluados, **560** muertos, **31** supervivientes, 0 timeouts, 0 sin veredicto, 3322.3 s |
 | Supervivientes tras el análisis (`progress/mutacion_F-062.md`) | **0 sin cubrir**: 28 caen con un test nuevo, 1 era falso (cae con los tests de antes) y **2 equivalentes justificados** (`rachas.py:113`, orden 1→2 en la clave; `rachas.py:528`, las dos de la base omiten con el mismo motivo). Reverificados uno a uno, en serie, en un worktree de `6266a9f` |
-| `bash harness/init.sh` | `ENTORNO LISTO` (tras borrar `.arnes_cache/suite_*.ok`); `PUERTA TAMAÑO … impl 186/220`; ruff 277 avisos, deuda previa: los ficheros tocados tienen los mismos que en `dev` |
+| `bash harness/init.sh` | `ENTORNO LISTO` (tras borrar `.arnes_cache/suite_*.ok`); `PUERTA TAMAÑO … impl 203/220`; ruff 277 avisos, deuda previa: los ficheros tocados tienen los mismos que en `dev` |
 
 Notas de la campaña, para el líder:
 
