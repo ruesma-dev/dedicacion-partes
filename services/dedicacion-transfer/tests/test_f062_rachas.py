@@ -107,3 +107,115 @@ def test_f062_d5_emparejar_cruza_meses_y_ordena_por_inicio():
               _l(8, 20261002, "CIZ")]
     assert [(r.inicio.ide, r.cierre.ide) for r in emparejar(lineas)] == [
         (7, 8), (1, 3)]
+
+
+# ======================= T2: cadenas (D11, R11) ========================== #
+from application.services.rachas import cadenas, propias  # noqa: E402
+from domain.models.registro_models import IncidenciaEntrada  # noqa: E402
+
+
+def _inc(id_=7, desde=5, hasta=9, codigo="CIV", *, recurso=200, mes=10,
+         obra=40, **kw) -> IncidenciaEntrada:
+    """Una incidencia del cuadrante de octubre de 2026 (el mes M)."""
+    base = dict(id=id_, recurso_ide=recurso, empresa=1, codigo=codigo,
+                ano=2026, mes=mes, desde=desde, hasta=hasta, paride=0,
+                obra_ide=obra)
+    base.update(kw)
+    return IncidenciaEntrada(**base)
+
+
+def _cad(c):
+    return (c.recurso, c.codigo, c.duena.id, [m.id for m in c.miembros],
+            c.desde, c.hasta)
+
+
+def test_f062_d11_cadenas_pegadas_del_mismo_recurso_y_codigo():
+    # C2: 5-9 y 12-16 (el 12 es lunes): una; 5-9 y 13-16: dos.
+    assert [_cad(c) for c in cadenas([_inc(8, 12, 16), _inc(7, 5, 9)])] == [
+        (200, "CIV", 7, [7, 8], 20261005, 20261016)]
+    assert [_cad(c) for c in cadenas([_inc(7, 5, 9), _inc(8, 13, 16)])] == [
+        (200, "CIV", 7, [7], 20261005, 20261009),
+        (200, "CIV", 8, [8], 20261013, 20261016)]
+
+
+def test_f062_d11_cadenas_entre_obras_y_tres_seguidas():
+    incs = [_inc(9, 19, 23, obra=60), _inc(7, 5, 9, obra=40),
+            _inc(8, 12, 16, obra=60)]
+    [c] = cadenas(incs)
+    assert _cad(c) == (200, "CIV", 7, [7, 8, 9], 20261005, 20261023)
+    assert c.duena.obra_ide == 40
+
+
+def test_f062_r8_cadenas_por_codigo_y_por_recurso():
+    incs = [_inc(7, 5, 9), _inc(8, 12, 16, "CIB"), _inc(9, 12, 16, recurso=400)]
+    assert [_cad(c) for c in cadenas(incs)] == [
+        (200, "CIB", 8, [8], 20261012, 20261016),
+        (200, "CIV", 7, [7], 20261005, 20261009),
+        (400, "CIV", 9, [9], 20261012, 20261016)]
+
+
+def test_f062_r11_cadenas_la_que_tiene_traza_no_se_une_a_la_anterior():
+    for traza in ({"hmores_ide_ini": 51}, {"hmores_ide_fin": 52}):
+        assert [_cad(c) for c in cadenas([_inc(7, 5, 9),
+                                           _inc(8, 12, 16, **traza)])] == [
+            (200, "CIV", 7, [7], 20261005, 20261009),
+            (200, "CIV", 8, [8], 20261012, 20261016)]
+    # La dueña sí puede tener traza: es la siguiente la que no se une.
+    [c] = cadenas([_inc(7, 5, 9, hmores_ide_ini=51), _inc(8, 12, 16)])
+    assert _cad(c)[3] == [7, 8]
+
+
+def test_f062_r11_cadenas_sin_recurso_o_con_dias_imposibles_no_cuentan():
+    incs = [_inc(7, 5, 9, recurso=None), _inc(8, 10, 9), _inc(9, 0, 3),
+            _inc(10, 30, 32), _inc(11, None, 9), _inc(12, 5, 9)]
+    assert [c.duena.id for c in cadenas(incs)] == [12]
+
+
+def test_f062_d11_cadenas_un_solape_no_es_pegado():
+    # La api no deja solapes (F-030 R18); si llegara uno, dos cadenas.
+    assert len(cadenas([_inc(7, 5, 9), _inc(8, 9, 12)])) == 2
+
+
+# ============================ T2: propias (R15) ========================== #
+SK_INI, SK_FIN = "porcentajes:inc:7:ini", "porcentajes:inc:7:fin"
+
+
+def test_f062_r15_propias_por_synckey_del_recurso():
+    lineas = [_l(51, 20261005, sk=SK_INI), _l(52, 20261009, "CIZ", sk=SK_FIN),
+              _l(53, 20261009, "CIZ", sk=SK_FIN, reside=400)]
+    [c] = cadenas([_inc()])
+    assert {r: ls.ide for r, ls in propias(c, lineas).items()} == {
+        "ini": 51, "fin": 52}
+
+
+def test_f062_r15_propias_por_ide_de_la_traza_con_nuestra_synckey():
+    lineas = [_l(51, 20261006, sk=SK_INI), _l(60, 20261009, "CIZ", sk=SK_FIN)]
+    [c] = cadenas([_inc(hmores_ide_ini=51, hmores_ide_fin=52)])
+    # Sin la línea 52 en Sigrid, el `fin` se busca por su `synckey`.
+    assert {r: ls.ide for r, ls in propias(c, lineas).items()} == {
+        "ini": 51, "fin": 60}
+
+
+def test_f062_r15_propias_por_ide_que_no_es_nuestra_no_vale():
+    lineas = [_l(51, 20261005, sk=None), _l(52, 20261009, "CIZ", reside=400,
+                                             sk=SK_FIN)]
+    [c] = cadenas([_inc(hmores_ide_ini=51, hmores_ide_fin=52)])
+    assert propias(c, lineas) == {}
+
+
+def test_f062_r15_propias_el_ciz_ajeno_movido_por_su_ide():
+    ajeno = _l(70, 20261009, "CIZ", sk="partes:9", parte="PT26/00040")
+    [c] = cadenas([_inc(hmores_ide_fin=70, dia_fin_antes=7)])
+    assert propias(c, [ajeno]) == {"fin": ajeno}
+    # Sin `dia_fin_antes` un `CIZ` ajeno no es propio; y un inicio, nunca.
+    [c] = cadenas([_inc(hmores_ide_fin=70)])
+    assert propias(c, [ajeno]) == {}
+    civ = _l(70, 20261009, "CIV", sk="partes:9")
+    [c] = cadenas([_inc(hmores_ide_fin=70, dia_fin_antes=7)])
+    assert propias(c, [civ]) == {}
+
+
+def test_f062_r15_propias_solo_las_de_la_duena():
+    lineas = [_l(51, 20261012, sk="porcentajes:inc:8:ini")]
+    [c] = cadenas([_inc(7, 5, 9), _inc(8, 12, 16)])
+    assert propias(c, lineas) == {}

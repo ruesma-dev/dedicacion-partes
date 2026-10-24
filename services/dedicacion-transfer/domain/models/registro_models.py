@@ -93,6 +93,10 @@ class IncidenciaEntrada:
     hmores_ide_fin: int | None = None
     dia_ini: int | None = None
     dia_fin: int | None = None
+    # F-062 (R15, R24): la obra de la incidencia (para la cadena entre obras,
+    # D11) y, si su `fin` es un `CIZ` ajeno que movimos, su día original.
+    obra_ide: int | None = None
+    dia_fin_antes: int | None = None
 
 
 @dataclass

@@ -20,10 +20,14 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-from domain.models.registro_models import LineaIncidenciaSigrid
+from domain.models.registro_models import (
+    IncidenciaEntrada, LineaIncidenciaSigrid,
+)
 
 #: Código de `auxhor` que cierra la racha de cualquier incidencia.
 CODIGO_FIN = "CIZ"
+#: Prefijo de la `synckey` de las líneas de incidencia (F-030).
+PREFIJO_SYNCKEY_INCIDENCIA = "porcentajes:inc:"
 #: Sábado y domingo en `date.weekday()`.
 _FIN_DE_SEMANA = (5, 6)
 
@@ -95,10 +99,10 @@ def emparejar(lineas: Iterable[LineaIncidenciaSigrid]) -> list[Racha]:
         if es_inicio(ls) or es_fin(ls):
             por_recurso.setdefault(int(ls.reside), []).append(ls)
     rachas: list[Racha] = []
-    for propias in por_recurso.values():
+    for del_recurso in por_recurso.values():
         pila: list[LineaIncidenciaSigrid] = []
         cerradas: dict[int, LineaIncidenciaSigrid] = {}
-        for ls in sorted(propias, key=lambda x: (x.fecha_int,
+        for ls in sorted(del_recurso, key=lambda x: (x.fecha_int,
                                                  0 if es_inicio(x) else 1,
                                                  x.ide)):
             if es_inicio(ls):
@@ -106,5 +110,92 @@ def emparejar(lineas: Iterable[LineaIncidenciaSigrid]) -> list[Racha]:
             elif pila:
                 cerradas[pila.pop().ide] = ls
         rachas += [Racha(codigo(ls), ls, cerradas.get(ls.ide))
-                   for ls in propias if es_inicio(ls)]
+                   for ls in del_recurso if es_inicio(ls)]
     return sorted(rachas, key=lambda r: (r.inicio.fecha_int, r.inicio.ide))
+
+
+@dataclass
+class Cadena:
+    """Incidencias del recurso y código en el mes, cada una pegada a la
+    anterior (también de obras distintas, D11); la DUEÑA es la primera.
+    `desde` y `hasta`, AAAAMMDD."""
+    recurso: int
+    codigo: str
+    duena: IncidenciaEntrada
+    miembros: list[IncidenciaEntrada]
+    desde: int
+    hasta: int
+
+
+def fechas_de(inc: IncidenciaEntrada) -> tuple[int, int] | None:
+    """(`desde`, `hasta`) AAAAMMDD de una incidencia con días posibles en
+    su mes (como `decidir_incidencia`); si no, None."""
+    ultimo = calendar.monthrange(int(inc.ano), int(inc.mes))[1]
+    if not (type(inc.desde) is int and type(inc.hasta) is int
+            and 1 <= inc.desde <= inc.hasta <= ultimo):
+        return None
+    base = int(inc.ano) * 10000 + int(inc.mes) * 100
+    return base + inc.desde, base + inc.hasta
+
+
+def _con_traza(inc: IncidenciaEntrada) -> bool:
+    return bool(inc.hmores_ide_ini or inc.hmores_ide_fin)
+
+
+def cadenas(incidencias_mes: Iterable[IncidenciaEntrada]) -> list[Cadena]:
+    """D11, R11: por (recurso, código, `desde`), cada incidencia se une a la
+    cadena anterior si está pegada a su último día (D2) y no tiene traza
+    (una con línea propia sigue abriendo su racha). Las que no tienen
+    recurso o días posibles no forman cadena."""
+    validas = [(inc, f) for inc in incidencias_mes if inc.recurso_ide
+               for f in [fechas_de(inc)] if f is not None]
+    validas.sort(key=lambda x: (int(x[0].recurso_ide),
+                                (x[0].codigo or "").strip(), x[1][0],
+                                int(x[0].id)))
+    out: list[Cadena] = []
+    for inc, (desde, hasta) in validas:
+        cod = (inc.codigo or "").strip()
+        ultima = out[-1] if out else None
+        if (ultima is not None and ultima.recurso == int(inc.recurso_ide)
+                and ultima.codigo == cod and pegado(ultima.hasta, desde)
+                and not _con_traza(inc)):
+            ultima.miembros.append(inc)
+            ultima.hasta = hasta
+            continue
+        out.append(Cadena(int(inc.recurso_ide), cod, inc, [inc], desde,
+                          hasta))
+    return out
+
+
+def synckey_de_rol(incidencia_id: int, rol: str) -> str:
+    """`porcentajes:inc:{id}:ini|fin` (la de `reglas_incidencias`)."""
+    return f"{PREFIJO_SYNCKEY_INCIDENCIA}{int(incidencia_id)}:{rol}"
+
+
+def propias_de(inc: IncidenciaEntrada,
+               lineas: Iterable[LineaIncidenciaSigrid]
+               ) -> dict[str, LineaIncidenciaSigrid]:
+    """R15 (F-030 R39): por rol, la línea del recurso con la `synckey` de
+    la incidencia o la del `ide` de su traza; por `ide`, con nuestra
+    `synckey` o, el `fin` con `dia_fin_antes`, el `CIZ` ajeno que movimos.
+    El `ide` de la traza manda sobre la `synckey`."""
+    lineas = [ls for ls in lineas if ls.reside == inc.recurso_ide]
+    por_ide = {ls.ide: ls for ls in lineas}
+    out: dict[str, LineaIncidenciaSigrid] = {}
+    for rol, ide in (("ini", inc.hmores_ide_ini), ("fin", inc.hmores_ide_fin)):
+        sk = synckey_de_rol(inc.id, rol)
+        ls = por_ide.get(int(ide)) if ide else None
+        ajena = (rol == "fin" and inc.dia_fin_antes is not None
+                 and ls is not None and es_fin(ls))
+        if ls is None or not (ajena or (ls.synckey or "").strip() == sk):
+            ls = next((x for x in lineas if (x.synckey or "").strip() == sk),
+                      None)
+        if ls is not None:
+            out[rol] = ls
+    return out
+
+
+def propias(cadena: Cadena, lineas: Iterable[LineaIncidenciaSigrid]
+            ) -> dict[str, LineaIncidenciaSigrid]:
+    """Las líneas propias de la DUEÑA de la cadena (las que escribe)."""
+    return propias_de(cadena.duena, lineas)
