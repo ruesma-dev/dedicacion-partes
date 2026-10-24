@@ -19,8 +19,12 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T22 (hechas T1-T18 y T5c; T19 y T20 son MANUAL
-  del humano, preparadas y sin ejecutar).
+- **Implementación terminada** (T1-T18, T5c y T22; informe en
+  `progress/impl_F-062.md`). Pendiente: review; T19 y T20 MANUAL del
+  humano (comandos exactos en el informe, sin ejecutar); T21 del líder.
+  T22: `init.sh` en verde, cobertura 99.8 %, mutación 591/560/31 con los
+  31 analizados en `progress/mutacion_F-062.md` (28 con test nuevo, 1
+  falso de la campaña paralela, 2 equivalentes justificados).
 - Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`). La fase RED
   de T1-T10 y T12 está en
   la carpeta `red/` del scratchpad de la sesión del implementer (fuera del
