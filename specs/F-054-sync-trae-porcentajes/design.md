@@ -1,9 +1,9 @@
 <!-- specs/F-054-sync-trae-porcentajes/design.md -->
 # F-054 · Diseño
 
-Requisitos en `requirements.md`. D4 y la parte B, **decididas** por el humano
-el 2026-10-24; el resto (requirements §6), **abiertas** y escritas con la A.
-Si el humano elige otra, el diseño se revisa antes de implementar.
+Requisitos en `requirements.md`. **Todas las decisiones, cerradas** por el
+humano el 2026-10-24 (requirements §6): D13 = B (la parte B, aquí), D12 con
+la casilla marcada por defecto y el resto con la A. **Spec aprobada.**
 
 ## 1. Servicios, límite y contrato
 
@@ -196,8 +196,8 @@ sumando en la capacidad, R36). El resultado gana `a_cero` y
 - A: `sincronizar()` devuelve `true`/`false`; `#btn-sync` pasa a
   `sincronizarYTraer()` (así `test_f061_recarga.py` no cambia), que llama a
   `traerDeSigrid([])`; la ventana lista por trabajador sus entradas (estado,
-  los dos %), con casilla en las `distinta`/`solo_sigrid`, y «Aceptar las
-  marcadas» ⇒ `traerDeSigrid(aceptar)` y `cargarPeriodo`.
+  los dos %), con casilla en las `distinta` (desmarcada) y `solo_sigrid`
+  (marcada, D12), y «Aceptar las marcadas» ⇒ `traerDeSigrid(aceptar)`.
 - B: el modal de registro gana la sección «En Sigrid, en obras que no tiene
   en la plataforma»: una casilla «poner a 0» por `sobrante` confirmable y las
   demás como aviso con su motivo; `ejecutar` manda `a_cero` con los campos
@@ -234,8 +234,8 @@ api `sync_pipeline.py`, `propuestas_mes.py`, `reemplazar`, `esquema.py`;
 ## 11. Riesgos y alternativas descartadas
 
 - **B escribe en producción** líneas de Administración: solo `can`/`tot` a
-  0, confirmada por línea, con guarda doble y log del antes (para F-033).
-  Por eso D13 recomienda partirla.
+  0, confirmada por línea, con guarda doble y log del antes (para F-033);
+  MANUAL en modo pruebas (T19). Se queda en F-054 (D13 = B).
 - **Obra quitada del cuadrante:** su línea nuestra pasa a sobrante (R34):
   es justo «una obra sin nada es un 0 %».
 - **Traza perdida al guardar la fila** (R24) y **línea nuestra huérfana**:

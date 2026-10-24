@@ -57,15 +57,15 @@ mensual de un recurso del registro en una entrada que la plataforma no le da.
   de `domain/estados.py`; la partida no cuenta), `distinta`, `solo_sigrid`,
   `solo_cuadrante` o `no_traducible`. Sin `aceptar`, nada se escribe.
 
-## 3. Aceptar línea a línea (A) `[DECIDIDO, D5, D8, D12]`
+## 3. Aceptar línea a línea (A) `[D4, D5, D8, D12]`
 
 - **R19.** CUANDO la petición trae `aceptar: [{trabajador_ide, obra_ide,
   es_postventa}]`, cada aceptada `distinta` o `solo_sigrid` pisa **solo esa**
   línea (la actualiza en su sitio o la crea); las otras y su traza no cambian.
 - **R20.** SI la aceptada está en otro estado, ENTONCES no se toca y vuelve
   con su motivo. Las `solo_cuadrante` no se aceptan: las escribe el registro.
-- **R21.** `[D12]` Las `solo_sigrid` se eligen igual, también las de un
-  trabajador sin líneas: nada entra sin aceptarlo.
+- **R21.** `[D12]` Las `solo_sigrid`, también las de un trabajador sin
+  líneas, se eligen igual: nada entra sin pasar por «Aceptar las marcadas».
 - **R22.** Una transacción; aceptar dos veces lo mismo no cambia nada.
 - **R23.** `[D5]` La aceptada guarda `sigrid_hmores_ide` (el menor `ide` de
   sus líneas), `sigrid_parte_cod`, `sigrid_estado = registrado` y el motivo
@@ -83,15 +83,16 @@ mensual de un recurso del registro en una entrada que la plataforma no le da.
   los dos lados, parte y motivo; y `aceptadas`, `no_traidas`,
   `fuera_maestro`, `lineas_leidas`, `excluidas_pruebas` y motivos de catálogo.
 - **R28.** El front enseña el resumen y una ventana por trabajador con una
-  casilla por entrada `distinta` o `solo_sigrid` y «Aceptar las marcadas»,
-  que repite la petición con `aceptar` y recarga. No compara ni decide.
+  casilla por entrada `distinta` (sale desmarcada) o `solo_sigrid` (sale
+  **marcada**, desmarcable) y «Aceptar las marcadas», que repite la petición
+  con `aceptar` y recarga. No compara ni decide.
 - **R29.** `ARCHITECTURE.md`: `#regla-traer-sigrid` (A), `#regla-obra-cero`
   (B) y la tabla de acceso; `INTEGRACION.md` §1, §5 y §7 (transfer → api →
   front); `azure-apps/dedicacion.md` al desplegar; `test_f002_fuente_unica`.
 - **R30.** MANUAL (humano): A en local con septiembre 2026, solo lectura; B
   en modo pruebas sobre la 0404 (tasks T18, T19).
 
-## 5. Parte B · Al registrar, obra sin nada = 0 % `[DECIDIDO, D13-D15]`
+## 5. Parte B · Al registrar, obra sin nada = 0 % `[D13-D15]`
 
 - **R31.** CUANDO se pide el preflight del periodo o de un trabajador (no el
   de una obra sola), el transfer lee en **una** lectura más, en la primera
@@ -119,31 +120,30 @@ mensual de un recurso del registro en una entrada que la plataforma no le da.
 - **R37.** Coste: el preflight del mes no sube más de un 15 % sobre el
   medido antes de B (método de F-055 T18). Sync y propuestas, sin lecturas.
 
-## 6. Decisiones
+## 6. Decisiones: todas DECIDIDAS por el humano el 2026-10-24
 
-**DECIDIDAS por el humano el 2026-10-24** («al sincronizar, puedo querer
-trarme algunas laineas(obras) de sigrid y otras no. si acepto en la
-plataforma piso solo esas lineas del trabjador. al registrar, si el
-trabajador no tiene nada en una obra es como un 0%. si en sigrid si tiene
-debe preguntar si lo pisa (y lo deja a 0) o no»): **D4** = aceptar por
-entrada (R19-R22; sustituye a «solo los trabajadores sin líneas» y a
-`sustituir: [ide]`); **parte B** (R31-R36). **D9** = A (vía el líder).
+Primera tanda («al sincronizar, puedo querer trarme algunas laineas(obras)
+de sigrid y otras no. si acepto en la plataforma piso solo esas lineas del
+trabjador. al registrar, si el trabajador no tiene nada en una obra es como
+un 0%. si en sigrid si tiene debe preguntar si lo pisa (y lo deja a 0) o
+no»): **D4** = aceptar por entrada (R19-R22; sustituye a «solo los
+trabajadores sin líneas» y a `sustituir: [ide]`) y **parte B** (R31-R36).
+**D9** = A, vía el líder. Segunda tanda («d12, con la casilla marcada por
+defecto, aunque se puede desmarcar. d13, metelo aqui. ok a lo demas»):
 
-**ABIERTAS** (recomendada: **A**):
-
-1. **D1 · Disparador.** (A) tras el sync, el periodo abierto; (B) botón; (C) en `/sync`.
-2. **D2 · Qué líneas.** (A) mensuales nuestras y manuales; (B) sin las nuestras.
-3. **D3 · Traducción.** (A) R8-R17, partida como elegida; (B) como propuesta
-   guardada (el selector la reescribe); (C) también a no ofrecibles.
-4. **D5 · Ya registradas.** (A) R23; (B) no marcar (pisado al registrar).
-5. **D6 · Partes cerrados.** (A) cuentan; (B) solo los En registro.
-6. **D7 · Mes cerrado.** (A) 409 sin leer; (B) comparar igual.
-7. **D8 · Deshacer.** (A) un evento por trabajador y petición; (B) el lote.
-8. **D10 · Varias líneas en una entrada.** (A) R15; (B) elegir la de más %.
-9. **D11 · Trabajadores.** (A) visibles y vigentes; (B) todo el maestro.
-10. **D12 · Entradas `solo_sigrid`.** (A) se eligen igual, también sin
-    líneas; (B) solas si no tiene líneas; (C) siempre solas.
-11. **D13 · ¿B en otra feature?** (A) sí: B escribe en Sigrid (otro riesgo y
-    MANUAL en pruebas) y pasa a una nueva con §5 y design §6; (B) no.
-12. **D14 · Trabajador sin líneas.** (A) no se revisa; (B) todo es sobrante.
-13. **D15 · `synckey` de otro sistema.** (A) aviso; (B) preguntar (F-051 las edita).
+1. **D1 = A.** Tras «Sincronizar Sigrid», el periodo abierto (R1).
+2. **D2 = A.** Las mensuales, nuestras y manuales (R4).
+3. **D3 = A.** R8-R17: partida del parte como elegida; lo no ofrecible no.
+4. **D5 = A.** La aceptada guarda el `hmores.ide` (R23).
+5. **D6 = A.** Los partes cerrados cuentan, con su estado (R4, R6).
+6. **D7 = A.** Mes cerrado en la app ⇒ 409 sin leer (R2).
+7. **D8 = A.** Un evento por trabajador y petición (R25).
+8. **D10 = A.** Se suman; con partidas distintas, `no_traducible` (R15).
+9. **D11 = A.** Trabajadores visibles en la empresa y vigentes (R14).
+10. **D12.** Las `solo_sigrid` se eligen con su casilla, **marcada por
+    defecto** y desmarcable; las `distinta`, **desmarcadas** (el humano solo
+    lo dijo de las `solo_sigrid`). Nada entra sin «Aceptar las marcadas».
+11. **D13 = B.** La parte B se queda en F-054, con su MANUAL en modo pruebas
+    sobre la 0404 (T19); rigor crítico.
+12. **D14 = A.** Un trabajador sin líneas en la plataforma no se revisa (R31).
+13. **D15 = A.** `synckey` de otro sistema ⇒ aviso sin escribir (R34).

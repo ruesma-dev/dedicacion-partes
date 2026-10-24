@@ -36,15 +36,13 @@ a 0 en `POST /api/registro/poner-a-cero`, **antes** del `ejecutar` por
 obra, con la guarda de F-051; la api solo encamina las confirmaciones.
 Coste medido antes (T10) y después (T19): ≤ +15 %.
 
-**Decisiones ABIERTAS** (requirements §6, recomendada A en todas): D1
-disparador; D2 qué líneas; D3 traducción; D5 marcar ya registradas; D6
-partes cerrados; D7 mes cerrado; D8 deshacer (un evento por trabajador y
-petición); D10 varias líneas en una entrada; D11 trabajadores visibles y
-vigentes; **nuevas:** D12 las entradas `solo_sigrid` también se eligen
-(nada entra solo); **D13 partir la parte B en una feature aparte** (escribe
-en Sigrid, otro riesgo y otro MANUAL; recomendada A); D14 un trabajador sin
-ninguna línea en la plataforma no se revisa en B; D15 una línea con
-`synckey` de otro sistema es solo aviso. Riesgos (design §11): capacidad
+**Decisiones: TODAS CERRADAS por el humano el 2026-10-24** («d12, con la
+casilla marcada por defecto, aunque se puede desmarcar. d13, metelo aqui. ok
+a lo demas»; requirements §6): D12, las `solo_sigrid` con casilla
+**marcada** por defecto y desmarcable (las `distinta`, desmarcadas); D13 = B,
+la parte B se queda en F-054 (MANUAL en modo pruebas sobre la 0404, T19);
+D1-D3, D5-D8, D10, D11, D14 y D15 = A; D9 = A. Spec aprobada en el texto; el
+estado en `features.json` lo pasa el líder. Riesgos (design §11): capacidad
 conservadora en la obra de postventa, la VAR y la 0404; una obra quitada
 del cuadrante deja su línea nuestra como sobrante (se pregunta). Test ajeno
 que cambia (lista cerrada): solo `ANCLAS` de `test_f002_fuente_unica.py`.
