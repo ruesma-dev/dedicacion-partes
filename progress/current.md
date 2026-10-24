@@ -6,22 +6,31 @@ alargar o cerrar la de cualquier parte; `sdd: true`, rigor crítico),
 `spec_ready` desde el 2026-10-24. La spec está en
 `specs/F-062-rachas-incidencias/` (`90945d4`); rama
 `feature/F-062-rachas-incidencias`. Las decisiones D1-D4 del humano («sí a
-las cuatro») están en su `description` y las D5-D14 siguen abiertas (abajo).
+las cuatro») están en su `description` y las D5-D16 siguen abiertas (abajo).
 La evidencia de Sigrid está en `progress/explore_F-062_sigrid.md`. **A la
 vez**, la spec de F-054 espera aprobación en la copia `porcentajes-f054`.
 **PARADA**: la spec la aprueba el humano, con sus decisiones.
 
-## F-062 · spec escrita (spec-author, 2026-10-24)
+## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 
-Spec en `specs/F-062-rachas-incidencias/` (requirements 149/150, design
-250/250, tasks T1-T22; `python -m harness.tamano --feature F-062` en verde).
+Spec en `specs/F-062-rachas-incidencias/` (requirements 150/150, design
+250/250, tasks T1-T22 + T5b; `python -m harness.tamano --feature F-062` en
+verde). **Revisión del 2026-10-24** por la decisión del humano («si las
+quite de la plataforma y al registrar me debe avisar de que no coincide con
+sigrid para editarlo»): F-030 D11/R38 pasan a R17. La quitada sigue
+`quitada`, pero viaja al transfer en `quitadas`, y el preflight devuelve el
+bloque `no_coincide` con las líneas que siguen en Sigrid (código, día,
+parte, `ide`), sin escribir nada, para que el humano las edite a mano. El
+`CIZ` ajeno que movió se sigue devolviendo solo (D10), y cuando ya no queda
+ninguna línea en Sigrid, la api borra la quitada. Los casos C1-C11 viven
+ahora en `tasks.md` §Casos, por el tope de líneas.
 El estado en `features.json` **no** se ha tocado: lo cambia el líder.
 Qué hace: el transfer decide por **cadena** (incidencias pegadas del mismo
 recurso y código en el mes) si abre, continúa o cierra una racha, mirando
 las `CI*`/`CIZ` del recurso en todos los partes. La api le manda el
-contexto del mes (`incidencias_mes`, `cierres_recursos`, `devolver`) y el
+contexto del mes (`incidencias_mes`, `cierres_recursos`, `quitadas`) y el
 front solo pinta. Qué de F-030 se conserva y qué se reemplaza: requirements
-§1. Los casos C1-C9 son los ejemplos del humano y de la evidencia.
+§1. Los casos C1-C11 son los ejemplos del humano y de la evidencia.
 
 **Decisiones abiertas para el humano** (requirements §10; la recomendada es
 la A en todas, y design y tasks siguen la A):
@@ -42,6 +51,12 @@ la A en todas, y design y tasks siguen la A):
 - **D13**: una línea ajena dentro del tramo ⇒ `omitir`.
 - **D14**: una racha abierta desde antes del mes anterior que no continúa:
   solo aviso.
+- **D15** (nueva): las `CI*`/`CIZ` del mes que están en Sigrid pero no en la
+  plataforma también salen en `no_coincide` (`solo_sigrid`). Solo salen en la
+  petición designada del recurso, sin escribir y sin lecturas nuevas.
+- **D16** (nueva): al quitar una incidencia no hay más edición automática que
+  el `devolver` de D10; lo demás es solo aviso. La B sería mover el inicio de
+  la dueña de una cadena al día de la siguiente.
 
 Riesgos para el humano: hay escritura nueva en partes ajenos (mover la `fec`
 de un `CIZ` de Administración o de `partes`, y añadir uno en su parte),
