@@ -27,6 +27,26 @@ Primer paso: `.venv/Scripts/python -c "from config.settings import get_settings 
   de Sigrid (`explore_F-062_sigrid.md`, 1.895 líneas `CI*` de mensuales
   desde 2025) son decenas de filas por recurso, no miles.
 
-## T20 · escritura en modo pruebas sobre la 0404 — PENDIENTE
+## T20 · escritura en modo pruebas sobre la 0404 — EN CURSO
 
-Comandos exactos en `progress/current.md`, «F-062 · T19 y T20».
+Comandos exactos en `progress/current.md`, «F-062 · T19 y T20». Ejecutada
+por el humano en PowerShell, desde `services/dedicacion-transfer`, con el
+`.venv` (modo comprobado: `True 0404`), recurso `1705036`, 2026-10-25.
+
+### (1) C1 y C2 — CUMPLE
+
+- Dry-run `ejecutar --ano 2026 --mes 10 --incidencia 1705036:CIV:5:9`: `ini CIV`
+  el 20261005 y `fin CIZ` el 20261009 en PT26/00373 (0404); «DRY-RUN».
+- Con `--confirmar`: `ini escribir hmores.ide=411883` (20261005) y `fin
+  escribir hmores.ide=411884` (20261009); `RACHA inc=991001 abre · cierra el
+  20261009 en el parte PT26/00373`.
+- Con `--incidencia …:5:9 --incidencia …:12:16`: `ini ya_registrado 411883`,
+  `fin editar hmores.ide=411884 fec=20261016 fec_antes=20261009`, la 991002
+  `continua` (ini y fin, sin `ide`); **ningún inicio nuevo** (el 10 y el 11
+  son sábado y domingo).
+- `verificar`: `porcentajes:inc:991001:fin hmores.ide=411884 … fec=20261016
+  cod=CIZ can=0.0 tot=0.0` (el **mismo** `ide`) e `…:ini 411883 fec=20261005 CIV`.
+- `limpiar --confirmar`: 2 líneas `PRUEBA-PORC` (411883, 411884), borradas.
+- **Observación (no bloquea):** la línea de resumen `escritas=0 editadas=0 …`
+  sale a 0 aunque se escribieron y editaron incidencias: esos contadores son
+  de las líneas de %; las incidencias se ven en las líneas `INCIDENCIA`.
