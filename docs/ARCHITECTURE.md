@@ -806,93 +806,142 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     editamos el valor»; D5: «cualquier linea a 0% se puede pisar»; D11: se
     localiza por `hmores.ide`; D12: «que pase a editar»; D14 = A y D15 = A)
     · F-051, `specs/F-051-pisar-lineas-cero/requirements.md`.*
-21. <a id="regla-incidencia"></a>**Una incidencia es un par de líneas
-    `CI*`/`CIZ` sin importe.** Las incidencias (vacaciones, bajas,
-    permisos…) se capturan en el cuadrante por obra y tramo de días del mes
-    y **no cuentan en el 100 %** del punto 4. Su catálogo son los códigos
-    `CI*` de `auxhor` salvo `CIZ` («Fin de Incidencia», que no se elige),
-    con su letra en `res`: los mismos que usa `partes`. Solo en obra normal:
-    ni postventa ni VAR.
+21. <a id="regla-incidencia"></a>**Una incidencia es una racha `CI*` …
+    `CIZ` sin importe, como las escribe Administración.** Las incidencias
+    (vacaciones, bajas, permisos…) se capturan en el cuadrante por obra y
+    tramo de días del mes y **no cuentan en el 100 %** del punto 4. Su
+    catálogo son los códigos `CI*` de `auxhor` salvo `CIZ` («Fin de
+    Incidencia», que no se elige), con su letra en `res`: los mismos que usa
+    `partes`. Solo en obra normal: ni postventa ni VAR.
 
-    - **Qué se escribe.** Cada incidencia son **dos** líneas `hmores` en el
-      parte del periodo de su obra, el mismo que elegiría una línea de %
-      ([`#regla-analitica`](#regla-analitica)): el **inicio**, con su código
-      `CI*` y `fec` = primer día del tramo, y el **fin**, con `CIZ` y `fec` =
-      último día (el mismo si dura uno). `can = 0`, `tot = 0`, `pre` = el de
-      `reshor` del recurso para ese código, la cuenta analítica como
-      cualquier línea y `synckey` `porcentajes:inc:{id}:ini` / `:fin`. Un
-      tramo que cruza meses se captura en cada mes, y cada mes cierra el suyo
-      con su `CIZ`.
+    - **La racha.** Una racha es un inicio `CI*` y el `CIZ` que lo cierra:
+      ordenadas por `fec` (el inicio antes que el `CIZ` del mismo día), cada
+      `CIZ` cierra el inicio abierto más reciente del recurso; sin `CIZ`, la
+      racha está **abierta**. Las incidencias del recurso y código en el
+      mes, cada una **pegada** a la anterior (entre las dos solo hay sábados
+      y domingos; los festivos cuentan como laborables), forman una
+      **cadena**, también entre obras; la primera es su dueña y la única que
+      escribe, en el parte del periodo de su obra
+      ([`#regla-analitica`](#regla-analitica)); las demás «continúan». Sin
+      racha anterior que la continúe, la cadena **abre**: el inicio el
+      primer día. Con ella, la **continúa** sin inicio, sea de quien sea.
+      Si no llega a fin de mes, se cierra el último día: el `CIZ` de la
+      anterior se mueve a ese día o, si no hay, se escribe uno, en el parte
+      del inicio si es del mes, En registro, de la empresa y, en pruebas, de
+      la obra de pruebas (con su obra, centro, partida y cuenta), y si no
+      en el de la dueña. Un `CIZ` ajeno ya en ese día o después no se
+      acorta nunca («cubierta»). Si **llega a fin de mes** (tras su último
+      día solo quedan sábados y domingos), no hay `CIZ`: queda abierta para
+      el mes siguiente. Lo escrito lleva la `synckey`
+      `porcentajes:inc:{id}:ini` / `:fin` de la dueña; un `CIZ` ajeno movido
+      conserva la suya. `can = 0`, `tot = 0` y `pre` el de `reshor` del
+      recurso para ese código. Códigos distintos son rachas distintas. Si
+      continuar o unir exigiría quitar una línea ya escrita, no se quita ni
+      se une, y avisa. Si la racha tiene su `CIZ` en el mes siguiente y la
+      cadena ya no llega a fin de mes, no se escribe el `CIZ` y avisa.
+    - **La previa y la guarda.** La racha que se continúa es, de lo leído
+      sin las líneas propias de la cadena y con sus `CIZ` ajenos movidos en
+      su día original, la del mismo código con inicio en o antes del primer
+      día y: abierta con inicio en el mes; abierta desde antes del mes, si
+      la cadena empieza pegada al último día del mes anterior; o con su
+      `CIZ` en el mes, en el primer día, después o pegado a él. De varias, la
+      de inicio más reciente. Un `CIZ` del mes anterior o que no se puede
+      mover (parte que no está En registro, con enlaces o, en pruebas, fuera
+      de la obra de pruebas) no hace previa: la cadena abre otra y avisa. Si
+      en el tramo hay una línea ajena que no es de la previa (otro código u
+      otro inicio), la cadena no escribe ni mueve nada: omitida con la línea,
+      su día y su parte.
     - **Partida.** La elegida, o la propuesta guardada, de la línea de % del
       trabajador en esa obra, si la hay y es válida por `ide`
       ([`#regla-partida`](#regla-partida)); si no, 0, sin aviso ni
-      confirmación.
-    - **Nunca un inicio sin su fin.** Si el recurso no tiene en `reshor` el
-      código de la incidencia o `CIZ`, se omiten **las dos** líneas con un
-      motivo que nombra el código. Igual sin empresa, sin recurso o con días
-      imposibles.
-    - **Sin duplicar lo que ya está.** Si en algún parte del mes de
-      **cualquier** obra (en modo pruebas, solo de la obra de pruebas) ya hay
-      una línea del recurso con el mismo código y la misma `fec`, esa línea
-      no se escribe: «ya registrada» si la `synckey` es la suya; si no,
-      omitida con el parte donde está, sea de Administración o de `partes`.
-      La otra del par se decide sola.
-    - **Cambiar los días.** La incidencia guardada viaja con su `id` y, si
-      está registrada (su traza tiene el `ide` de alguna de sus líneas), no
-      cambia de obra ni de código (se quita y se añade otra) ni de mes.
-      Cambiarle los días **edita la `fec`** de sus líneas en su sitio, nunca
-      escribe otro par: un `UPDATE` de solo la `fec`, con la guarda de
-      [`#regla-cero`](#regla-cero) y su código (mismo `ide` y recurso, `can`
-      0, la `synckey` y la `fec` leídas, sin enlaces, parte En registro):
-      si alguien le cambia la `fec` entre la lectura y el `UPDATE`, no se
-      pisa (D16). La línea
-      nuestra se busca por su `ide` o por su `synckey`, siempre del recurso
-      y con nuestra `synckey`; con la `fec` pedida, «ya registrada». Cada
-      línea del par se decide sola, pero `ejecutar` relee las que va a
-      editar y, si una de las dos ya no vale, no edita ninguna. No se toca,
-      y sale omitida con su motivo: la que cambiaron a mano en Sigrid (otra
-      `fec` que la registrada, otro código o `can` distinto de 0), la de un
+      confirmación. Si el recurso no tiene en `reshor` el código de la
+      incidencia o `CIZ`, la cadena se omite con un motivo que nombra el
+      código; igual sin empresa, sin recurso o con días imposibles.
+    - **Cambiar los días.** Mover un `CIZ` o editar una línea propia (la de
+      su `synckey` o la del `ide` de su traza) **edita la `fec`** en su
+      sitio, nunca escribe ni borra otra: un `UPDATE` de solo la `fec`, con
+      la guarda de [`#regla-cero`](#regla-cero) y su código (mismo `ide` y
+      recurso, su `can`, la `synckey` y la `fec` leídas, sin enlaces y parte
+      En registro: si alguien cambia la `fec` entre la lectura y el
+      `UPDATE`, no se pisa, D16). Un `CIZ` ajeno se mueve con su `can` (0 o
+      1); uno propio, con 0. `ejecutar` relee lo que mueve y, si una línea
+      de la cadena ya no cumple, no mueve ninguna. No se toca, y sale
+      omitida con su motivo, la propia que cambiaron a mano en Sigrid (otra
+      `fec` que la registrada, otro código o `can` distinto de 0) y la de un
       parte que no está En registro («el parte X está cerrado: sigue del d
-      al h»; nada va a otro parte) y la que iría a un día que ya tiene otra
-      línea igual del recurso, contando lo que la propia petición mueve. La
-      que ya no está en Sigrid se escribe de nuevo. El modal dice «se cambia
-      del d al d».
+      al h»; nada va a otro parte). Al cambiar los días se decide
+      de nuevo: lo propio se edita, el `CIZ` ajeno va a su día nuevo y, si
+      la cadena ya no lo continúa, **se devuelve** a su día original (que
+      la api guarda la primera vez que lo mueve). La guardada viaja con su
+      `id` y, registrada, no cambia de obra ni de código (se quita y se
+      añade otra) ni de mes. Repetir sin cambios no escribe ni mueve nada.
+      El modal dice «se cambia del d al d».
     - **Quitar.** Quitar del cuadrante una incidencia no registrada la
-      borra. Una registrada no se borra ni se retira de Sigrid: queda
-      `quitada`, con su `id` y su traza; no cuenta en los solapes ni va al
-      transfer, la tabla la pinta tachada, «quitada · sigue en Sigrid», y el
-      modal de registro la lista con su parte y el `ide` de sus líneas para
-      retirarla a mano. Deshacer la repone con su `id`.
+      borra. Una registrada queda `quitada`, con su `id` y su traza (la
+      tabla la pinta tachada, «quitada · sigue en Sigrid»); no cuenta en los
+      solapes y viaja en `quitadas`. Al registrar,
+      el `CIZ` ajeno que movió se devuelve, y cada línea propia que sigue en
+      Sigrid sale en «No coincide con Sigrid» (código, día, parte e `ide`)
+      para editarla a mano: nunca se borra. Sin ninguna línea en Sigrid, la
+      api la borra. Deshacer la repone con su `id`. En el registro del
+      recurso designado salen también ahí las `CI*`/`CIZ` del mes que no son
+      de ninguna incidencia, quitada ni racha continuada («en Sigrid y no en
+      la plataforma»), por racha y sin escribir.
+    - **Cierre del mes anterior.** Al registrar el mes de un recurso
+      **designado** (la primera petición donde sale), cada racha suya
+      abierta desde antes del mes que ninguna incidencia del mes continúa
+      se cierra con un `CIZ` el último día del mes anterior (`can = tot =
+      0`): con inicio en ese mes, en el parte del inicio; con inicio
+      anterior, en el parte de ese mes de la obra del inicio, En registro,
+      de la empresa y, en pruebas, de la obra de pruebas (el de mayor `ide`;
+      nunca se crea), con el centro, la partida y la cuenta del inicio, y
+      solo si se confirma como un pisado (clave `cierre:{ide del inicio}`;
+      sin ella, queda pendiente). `synckey`: la `:fin` de la nuestra o
+      `porcentajes:inc:cierre:{ide del inicio}` si el inicio es ajeno. Sin
+      parte que valga, nada se escribe y avisa.
     - **Fuera de las reglas A, B y C.** Una línea de incidencia no es pisado
       ([`#regla-conflicto`](#regla-conflicto)), ni sobrecarga (no suma en
       [`#regla-capacidad`](#regla-capacidad)), ni sin partida
       ([`#regla-sin-partida`](#regla-sin-partida)), ni pisa una línea al 0 %
-      ([`#regla-cero`](#regla-cero)): no avisa y no se confirma. Una petición
-      sin incidencias decide sus líneas de % exactamente igual que antes.
+      ([`#regla-cero`](#regla-cero)): no avisa y no se confirma, salvo el
+      cierre del mes anterior con inicio más antiguo. Una petición sin
+      incidencias decide sus líneas de % exactamente igual que antes.
     - **Como cualquier línea**: modo pruebas, obra de pruebas y marca
       ([`#regla-pruebas`](#regla-pruebas)), empresa
       ([`#regla-empresa`](#regla-empresa)), parte En registro y alta
       protegida.
-    - **Una lectura.** La comprobación de duplicados es **una** lectura de
-      Sigrid por petición o por lote (las líneas `CI*` del mes y, por su
-      `ide`, las de la traza), y solo si alguna incidencia se escribiría.
-      Si falla o viene `truncated`, la petición falla sin escribir nada.
-    - **Traza.** Preflight y `ejecutar` devuelven `incidencias`, una entrada
-      por línea (id, rol `ini`/`fin`, acción, `fec`, código, partida, parte,
-      `hmores.ide` y motivo), solo cuando la petición las trae; el modal las
-      enseña en su sección, sin confirmaciones. La api guarda en cada
-      incidencia su estado, parte, el motivo y, por línea, el `ide` y el día
-      escritos, editados o ya registrados; una omitida de una registrada
-      solo cambia el motivo.
+    - **Una lectura.** Las `CI*`/`CIZ` se leen en **una** lectura por
+      petición o por lote (trozos de 500 recursos), del día 1 de 12 meses
+      antes (`INCIDENCIAS_MESES_ATRAS`) al último del mes siguiente, de los
+      recursos de las incidencias y de los designados, más las de las trazas
+      (también de las quitadas) por `ide`; en pruebas, solo de la obra de
+      pruebas. Los partes del mes anterior se leen solo si hay que cerrar
+      una racha más antigua. Sin nada que escribir, cerrar ni devolver, no
+      se lee. Si falla o viene `truncated`, la petición falla sin escribir.
+    - **Traza.** Preflight y `ejecutar` devuelven `incidencias` (una entrada
+      por línea: id, rol `ini`/`fin`/`devolver`, acción, `fec`, código,
+      partida, parte, `hmores.ide` y motivo), `rachas` (abre o continúa,
+      cómo se cierra, dueña y avisos), `cierres_racha` y `no_coincide`,
+      solo cuando la petición los trae; el modal los enseña sin calcular
+      nada. La api guarda en cada incidencia su estado, parte, el motivo y,
+      por línea, el `ide` y el día escritos, editados o ya registrados (la
+      que solo continúa o queda abierta, registrada sin `ide`); el cierre
+      escrito del mes anterior es el `fin` de su incidencia.
 
     *Decidido por Pablo Gris el 2026-10-20 (D1-D10, todas la recomendada:
-    `auxhor`, tramo del mes, cada mes con su `CIZ`, fuera del 100 %, par
-    `CI*`/`CIZ` con `can = 0`, la partida de la línea de % o 0, duplicados en
-    cualquier obra del mes); el 2026-10-21, D11-D15 (anexo R30: la quitada
-    queda `quitada`; obra y código no cambian en una registrada; la cambiada
-    a mano en Sigrid y el día ya ocupado no se editan); el 2026-10-22, D16
-    (la guarda del `UPDATE` exige además la `fec` leída) · F-030,
+    `auxhor`, tramo del mes, fuera del 100 %, `can = 0`, la partida de la
+    línea de % o 0); el 2026-10-21, D11-D15 (anexo R30: la quitada queda
+    `quitada`; obra y código no cambian en una registrada; la cambiada a
+    mano en Sigrid y el día ya ocupado no se editan); el 2026-10-22, D16 (la
+    guarda del `UPDATE` exige además la `fec` leída) · F-030,
     `specs/F-030-dias-bajas-incidencias/requirements.md`.*
+
+    *Decidido por Pablo Gris el 2026-10-23 (D1-D4: continuar la racha de
+    quien sea, pegadas solo por sábados y domingos, abrir en el parte del
+    periodo de la obra de la dueña y dejarla abierta a fin de mes para
+    cerrarla al registrar el siguiente) y el 2026-10-24 (D5-D17; R17: la
+    quitada avisa contra Sigrid) · F-062,
+    `specs/F-062-rachas-incidencias/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 

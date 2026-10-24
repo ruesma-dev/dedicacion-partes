@@ -42,6 +42,17 @@ Fases:
       Anexo R30 (R49): con otros días, la ya escrita sale `editar` con su
       `fec_antes` y su `hmores.ide`; `verificar` imprime el `ide` y la `fec`
       de cada línea (los mismos dos `ide`, con la `fec` nueva).
+      F-062: varias --incidencia del mismo recurso pegadas son una racha
+      (un `CI*` y un `CIZ`); imprime las `rachas` (RACHA), los cierres del
+      mes anterior (CIERRE) y lo que no coincide con Sigrid (NO COINCIDE).
+  python prueba_escritura_porcentajes.py preflight|ejecutar
+      --cierres RECURSO [--cierres ...] [--incidencia ...]
+      F-062 (R12): el registro de --ano/--mes designa esos recursos para
+      cerrar sus rachas abiertas del mes anterior (el `CIZ` el último día
+      de M−1, en el parte del inicio). Sin --incidencia, cada recurso va
+      con una línea testigo al 0 %, que se omite siempre (P3): solo da el
+      periodo y la empresa de la petición, como las líneas que el recurso
+      tendría en el cuadrante.
 
 Sin --confirmar, las fases de escritura solo muestran lo que harían.
 """
@@ -59,7 +70,7 @@ from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.reglas_incidencias import synckey_incidencia
 from domain.models.registro_models import (
-    IncidenciaEntrada, LineaEntrada, ObraEntrada,
+    ContextoRachas, IncidenciaEntrada, LineaEntrada, ObraEntrada,
 )
 from infrastructure.sigrid.sigrid_write_client import (
     PREFIJO_SYNCKEY, SigridWriteClient, medir_lecturas,
@@ -92,6 +103,10 @@ REGISTRO_MEDIR = 990000
 #: F-030 (R35): `id` de la primera incidencia de --incidencia (synckey
 #: 'porcentajes:inc:9901xx:ini|fin'), tan arbitrario como los de arriba.
 ID_INCIDENCIA_PRUEBA = 990101
+
+#: F-062 (R12): primer `registro_id` de las líneas testigo de --cierres
+#: (al 0 %: se omiten siempre, nunca se escriben).
+REGISTRO_TESTIGO = 990201
 
 # La obra "original" de estas líneas de prueba: su capítulo debe existir
 # en la obra de postventa (fase capitulos para verlos).
@@ -140,13 +155,53 @@ def _incidencias(parser, valores: list[str], ano: int,
     return out
 
 
-def _peticion(ano: int, mes: int, incidencias: list) -> dict:
+def _testigos(ano: int, mes: int, cierres: list[int]) -> list[LineaEntrada]:
+    """F-062 (R12): una línea al 0 % por recurso de --cierres. P3 la omite
+    siempre; solo da a la petición su periodo y su empresa."""
+    return [LineaEntrada(registro_id=REGISTRO_TESTIGO + n, recurso_ide=r,
+                         dni=None, nombre=f"testigo de --cierres {r}",
+                         porcentaje=0.0, ano=ano, mes=mes,
+                         empresa=EMPRESA_PRUEBA)
+            for n, r in enumerate(cierres)]
+
+
+def _peticion(ano: int, mes: int, incidencias: list,
+              cierres: list[int] | None = None) -> dict:
     """Lo que se manda al pipeline: las líneas de ejemplo o, con
-    --incidencia, solo las incidencias (F-030)."""
+    --incidencia, solo las incidencias (F-030); con --cierres y sin
+    --incidencia, solo las líneas testigo (F-062)."""
     if incidencias:
         return {"obra": _obra_origen(), "lineas": [],
                 "incidencias": incidencias}
+    if cierres:
+        return {"obra": _obra_origen(), "lineas": _testigos(ano, mes, cierres)}
     return {"obra": _obra_origen(), "lineas": _lineas(ano, mes)}
+
+
+def _imprimir_rachas(r) -> None:
+    """F-062 (R22): las rachas, los cierres del mes anterior y lo que no
+    coincide con Sigrid, de un preflight o de un `ejecutar`."""
+    for x in getattr(r, "rachas", []):
+        papel = (f"continua desde {x.inicio_fec} ({x.inicio_parte})"
+                 if x.papel == "continua" else x.papel)
+        cierre = {"cierra": f"cierra el {x.cierre_fec} en el parte "
+                            f"{x.cierre_parte}",
+                  "cubierta": f"cubierta el {x.cierre_fec} en el parte "
+                              f"{x.cierre_parte}",
+                  "cadena": f"cadena de {x.duena_id}"}.get(x.cierre,
+                                                           "queda abierta")
+        avisos = "".join(f" · aviso: {a}" for a in x.avisos)
+        print(f"  RACHA inc={x.id} {papel} · {cierre}{avisos}")
+    for c in getattr(r, "cierres_racha", []):
+        print(f"  CIERRE recurso={c.recurso_ide} {c.codigo} "
+              f"inicio={c.inicio_ide} {c.inicio_fec} ({c.inicio_parte}) "
+              f"{c.accion} fec={c.fecha_int} parte={c.parte_cod} "
+              f"hmores.ide={c.hmores_ide} motivo={c.motivo}")
+    for n in getattr(r, "no_coincide", []):
+        lineas = "; ".join(f"{x.ide} {x.codigo} {x.fecha_int} ({x.parte_cod})"
+                           for x in n.lineas)
+        print(f"  NO COINCIDE {n.tipo} recurso={n.recurso_ide} "
+              f"inc={n.incidencia_id}: {lineas}")
 
 
 def fase_inspeccionar(cli: SigridWriteClient) -> None:
@@ -204,8 +259,9 @@ def fase_estado(cli: SigridWriteClient, st, ano: int, mes: int) -> None:
 
 
 def fase_preflight(pipeline: RegistroPipeline, st, ano: int, mes: int,
-                   incidencias: list | None = None):
-    pf = pipeline.preflight(**_peticion(ano, mes, incidencias or []))
+                   incidencias: list | None = None,
+                   cierres: list[int] | None = None):
+    pf = pipeline.preflight(**_peticion(ano, mes, incidencias or [], cierres))
     print(f"Obra destino: {pf.obra_destino.codigo} "
           f"(pruebas={pf.forzada_pruebas})")
     for p in pf.partes:
@@ -233,6 +289,7 @@ def fase_preflight(pipeline: RegistroPipeline, st, ano: int, mes: int,
               f"fec={a.fecha_int} parte={a.parte_cod} paride={a.paride} "
               f"pre={a.pre} motivo={a.motivo}{_fec_antes(a)} "
               f"hmores.ide={a.hmores_ide}")
+    _imprimir_rachas(pf)
     return pf
 
 
@@ -243,8 +300,9 @@ def _fec_antes(a) -> str:
 
 def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
                   confirmar: bool, pisar: list[str],
-                  incidencias: list | None = None) -> None:
-    fase_preflight(pipeline, st, ano, mes, incidencias)
+                  incidencias: list | None = None,
+                  cierres: list[int] | None = None) -> None:
+    fase_preflight(pipeline, st, ano, mes, incidencias, cierres)
     if not confirmar:
         print("\nDRY-RUN: añade --confirmar para escribir de verdad.")
         return
@@ -252,7 +310,7 @@ def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
         print("ATENCIÓN: OBRA_PRUEBAS_FORZAR=false (¡producción!). Aborta "
               "si no era la intención.")
     r = pipeline.ejecutar(
-        **_peticion(ano, mes, incidencias or []),
+        **_peticion(ano, mes, incidencias or [], cierres),
         pisar_claves=set(pisar), usuario="prueba_escritura_porcentajes")
     print(f"escritas={len(r.escritas)} editadas={len(r.editadas)} "
           f"a_cero={len(r.a_cero)} borradas={r.borradas} "
@@ -273,6 +331,7 @@ def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
         print(f"  INCIDENCIA inc={a.id} {a.rol} {a.accion} "
               f"hmores.ide={a.hmores_ide} parte={a.parte_cod} "
               f"fec={a.fecha_int}{_fec_antes(a)} motivo={a.motivo}")
+    _imprimir_rachas(r)
 
 
 def fase_verificar(cli: SigridWriteClient,
@@ -463,6 +522,9 @@ def main() -> None:
     parser.add_argument("--lote", action="store_true")
     # F-030 (R35): RECURSO:COD:DESDE:HASTA, repetible.
     parser.add_argument("--incidencia", action="append", default=[])
+    # F-062 (R12): RECURSO cuyas rachas del mes anterior se cierran,
+    # repetible.
+    parser.add_argument("--cierres", type=int, action="append", default=[])
     args = parser.parse_args()
     if args.fase == "propuesta" and (len(args.obra) != 1
                                      or len(args.recurso) != 1):
@@ -474,7 +536,10 @@ def main() -> None:
 
     st = get_settings()
     cli = _cliente(st)
-    pipeline = RegistroPipeline(cliente=cli, settings=st)
+    # F-062 (R24): el contexto de la petición, con los recursos designados.
+    pipeline = RegistroPipeline(cliente=cli, settings=st,
+                                contexto=ContextoRachas(
+                                    cierres_recursos=list(args.cierres)))
 
     if args.fase == "inspeccionar":
         fase_inspeccionar(cli)
@@ -483,10 +548,11 @@ def main() -> None:
     elif args.fase == "estado":
         fase_estado(cli, st, args.ano, args.mes)
     elif args.fase == "preflight":
-        fase_preflight(pipeline, st, args.ano, args.mes, incidencias)
+        fase_preflight(pipeline, st, args.ano, args.mes, incidencias,
+                       args.cierres)
     elif args.fase == "ejecutar":
         fase_ejecutar(pipeline, st, args.ano, args.mes, args.confirmar,
-                      args.pisar, incidencias)
+                      args.pisar, incidencias, args.cierres)
     elif args.fase == "verificar":
         fase_verificar(cli, incidencias)
     elif args.fase == "limpiar":

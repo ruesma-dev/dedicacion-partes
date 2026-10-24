@@ -171,6 +171,23 @@ def _nueva(a: AccionLinea) -> dict:
             "partida_cod": a.partida_cod}
 
 
+def _partes_de_rachas(rachas: list, acciones_inc: list[AccionIncidencia]
+                      ) -> None:
+    """F-062 (R22): la racha que abre o cierra con una línea nueva lleva el
+    parte donde se escribe, que se sabe tras el paso 5 (el parte que se
+    crea en `ejecutar` lleva el código del preflight); `rachas.py` solo
+    conoce el de las líneas ya en Sigrid."""
+    por_rol = {(int(a.id), a.rol): a for a in acciones_inc
+               if a.accion == "escribir"}
+    for r in rachas:
+        ini = por_rol.get((int(r.duena_id), "ini"))
+        fin = por_rol.get((int(r.duena_id), "fin"))
+        if ini is not None:
+            r.inicio_parte = ini.parte_cod
+        if fin is not None and r.cierre != "abierta":
+            r.cierre_parte = fin.parte_cod
+
+
 def _obra_de_linea(obride: int | None, cenide: int | None) -> ObraEntrada:
     """F-062 (R5, R12): la obra y el centro de una línea leída de Sigrid,
     para el `INSERT` de un `CIZ` en el parte de esa línea."""
@@ -921,6 +938,7 @@ class RegistroPipeline:
                       if not (c.motivo == "sin_partida"
                               and set(c.registros) <= en_cerrado)]
 
+        _partes_de_rachas(rachas, acciones_inc)
         pf = Preflight(
             obra_destino=destino_normal, obra_origen=obra,
             forzada_pruebas=forzada,

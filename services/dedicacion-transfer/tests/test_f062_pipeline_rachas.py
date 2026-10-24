@@ -712,3 +712,86 @@ def test_f062_r17_la_peticion_solo_con_quitadas_devuelve_el_ciz_ajeno():
     cli = ClienteRachas(adm)
     _ejr(cli, contexto=ctx)
     assert cli.ediciones() == [(62, 20261009, 20261007, 1.0)]
+
+
+# ============================= script (T18) ============================== #
+def _script(monkeypatch, cli, *argv):
+    from tests.test_f030_pipeline_incidencias import _script as script_f030
+
+    return script_f030(monkeypatch, cli, *argv)
+
+
+def test_f062_r24_script_varias_incidencias_son_una_cadena(monkeypatch,
+                                                           capsys):
+    cli = ClienteRachas()
+    argv = ("--ano", "2026", "--mes", "10", "--incidencia", "200:CIV:5:9",
+            "--incidencia", "200:CIV:12:16")
+    _script(monkeypatch, cli, "ejecutar", "--confirmar", *argv)
+    salida = capsys.readouterr().out
+    # C2: una racha, CIV el 5 y CIZ el 16; la segunda, de la cadena.
+    assert cli.de_incidencia() == [
+        (777, 20261005, "CIV", "porcentajes:inc:990101:ini"),
+        (777, 20261016, "CIZ", "porcentajes:inc:990101:fin")]
+    assert ("RACHA inc=990101 abre · cierra el 20261016 en el parte "
+            "PT26/00251") in salida
+    assert "RACHA inc=990102 continua desde 20261005 (PT26/00251)" \
+        " · cadena de 990101" in salida
+    assert "INCIDENCIA inc=990102 ini continua" in salida
+
+
+def test_f062_r12_script_cierres_sin_incidencias_cierra_el_mes_anterior(
+        monkeypatch, capsys):
+    octubre = [_l(51, 20261027, sk="porcentajes:inc:990101:ini",
+                  hmoide=777, parte="PT26/00251", obride=828942,
+                  cenide=828943, paride=0, caaide=0, parte_emp=1)]
+    cli = ClienteRachas(octubre)
+    argv = ("--ano", "2026", "--mes", "11", "--cierres", "200")
+    _script(monkeypatch, cli, "preflight", *argv)
+    salida = capsys.readouterr().out
+    assert ("CIERRE recurso=200 CIV inicio=51 20261027 (PT26/00251) "
+            "escribir fec=20261031 parte=PT26/00251") in salida
+    # La línea testigo (0 %, solo da el periodo y la empresa) se omite.
+    assert "reg=990201" in salida and "[omitir" in salida
+    assert "reg=9000" not in salida                 # sin las de ejemplo
+    assert cli.escritos == []
+    _script(monkeypatch, cli, "ejecutar", "--confirmar", *argv)
+    salida = capsys.readouterr().out
+    [cierre] = cli.de_incidencia()
+    assert cierre == (777, 20261031, "CIZ", "porcentajes:inc:990101:fin")
+    assert [i for i in cli.inserts() if i["synckey"].startswith(
+        "porcentajes:99")] == []                    # el testigo, nunca
+    assert "CIERRE recurso=200 CIV inicio=51" in salida
+    assert "hmores.ide=" in salida.split("CIERRE recurso=200")[-1]
+
+
+def test_f062_r30_script_imprime_lo_que_no_coincide(monkeypatch, capsys):
+    lineas = [_l(91, 20261020, "CIE", obride=828942, parte_emp=1),
+              _l(92, 20261022, "CIZ", obride=828942, parte_emp=1)]
+    _script(monkeypatch, _cli(lineas), "preflight", "--ano", "2026", "--mes",
+            "10", "--cierres", "200")
+    salida = capsys.readouterr().out
+    assert ("NO COINCIDE solo_sigrid recurso=200 inc=None: "
+            "91 CIE 20261020 (PT26/00040); 92 CIZ 20261022 (PT26/00040)"
+            ) in salida
+
+
+def test_f062_r24_script_cierres_mal_escrito(monkeypatch):
+    with pytest.raises(SystemExit):
+        _script(monkeypatch, ClienteRachas(), "preflight", "--cierres", "x")
+
+
+def test_f062_r22_la_racha_nueva_lleva_el_parte_donde_se_escribe():
+    pf = _pf(_cli(), [_inc(7, 5, 9), _inc(8, 12, 16)])
+    assert [(r.id, r.inicio_parte, r.cierre_parte) for r in pf.rachas] == [
+        (7, "PT26/00251", "PT26/00251"), (8, "PT26/00251", "PT26/00251")]
+    # Con el parte por crear: el que dicen sus líneas, en el preflight y
+    # en `ejecutar`.
+    pf = _pf(_cli(cls=lambda: ClienteInc(parte_existe=False)), [_inc()])
+    parte = pf.incidencias[0].parte_cod
+    assert [(r.inicio_parte, r.cierre_parte) for r in pf.rachas] == [
+        (parte, parte)]
+    res = _ejr(ClienteRachas(parte_existe=False), [_inc()])
+    parte = res.incidencias[0].parte_cod
+    assert parte is not None
+    assert [(r.inicio_parte, r.cierre_parte) for r in res.rachas] == [
+        (parte, parte)]
