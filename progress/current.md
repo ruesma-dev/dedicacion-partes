@@ -18,9 +18,8 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T10, o antes T5c (D17) si ya está en `tasks.md`
-  (hechas T1-T9; T9 sin marcar `[x]` en `tasks.md` mientras el
-  spec-author enmienda `specs/`).
+- **Tarea en curso:** T10 (hechas T1-T9 y T12; T5c, D17, va tras T18
+  según `tasks.md` de `a565823`).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
@@ -73,6 +72,21 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   `test_f030_r30_editar.py`, `test_f030_r30_punta_a_punta.py`) fallan
   porque sus dobles leen con `incidencias_del_mes` o fijan la semántica
   de F-030; se reescriben en T10-T12 y T16.
+  **T12 antes que T10-T11** (orden cambiado): se hizo mientras el
+  spec-author escribía D17, porque el lote no toca `ejecutar`. Lo que lee
+  una petición sale de `rachas.lectura_de_peticion`, el mismo en suelto y
+  en lote, y así la memoria lo sirve entero. En el lote hay una lectura por
+  obra de pruebas (o ninguna), con la unión de recursos, de `ide` y de
+  ventanas; la memoria filtra como el SQL (recurso, ventana y `CI*`, o
+  `ide`). La ronda D lee `partes_de_periodos` de M−1 solo si hay cierres
+  D14. Para no pedir de más, el lote decide si lee con
+  `decidir_incidencia`, que da un superconjunto de lo que lee el pipeline.
+  Se quita `incidencias_del_mes` del lote. El del cliente, con sus tests,
+  se va en T11, junto con los de la memoria del lote de F-030 en
+  `test_f030_pipeline_incidencias.py` y `test_f030_r30_editar.py`, que
+  fallan hasta entonces: ahora son 42 en rojo, todos de la lista cerrada.
+  El `incidencias_en_ventana` falso de `conftest.py` devuelve en el orden
+  de la consulta (`fec`, `ide`).
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

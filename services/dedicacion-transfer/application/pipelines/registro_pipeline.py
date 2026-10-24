@@ -82,10 +82,9 @@ from application.services.propuesta_partida import (
     proponer_partida, ventana,
 )
 from application.services.rachas import (
-    cierres_mes_anterior, decidir_peticion, emparejar, mes_anterior,
-    no_coincide, obras_de_cierres,
+    cierres_mes_anterior, decidir_peticion, lectura_de_peticion,
+    mes_anterior, no_coincide, obras_de_m1, rachas_de_designados,
 )
-from application.services.rachas import ventana as ventana_rachas
 from application.services.reglas_incidencias import (
     CODIGO_FIN, MOTIVO_INC_CAMBIADA, MOTIVO_INC_SIN_CODIGO,
     decidir_incidencia, no_editar_el_par, sigue_editable, synckey_incidencia,
@@ -401,35 +400,25 @@ class RegistroPipeline:
         escriben = any(a.accion == "escribir" for a in acciones_inc)
         if not (escriben or ctx.cierres_recursos or ctx.quitadas):
             return acciones_inc, [], [], []
-        vistas = {int(i.id) for i in ctx.incidencias_mes}
-        inc_mes = [*ctx.incidencias_mes,
-                   *(i for i in incidencias if int(i.id) not in vistas)]
-        periodos = {(int(x.ano), int(x.mes))
-                    for x in [*incidencias, *lineas, *inc_mes,
-                              *ctx.quitadas]}
-        ano, mes = max(periodos)
-        n = int(self._st.incidencias_meses_atras)
-        desde = ventana_rachas(*min(periodos), n)[0]
-        hasta = ventana_rachas(ano, mes, n)[1]
+        lec = lectura_de_peticion(incidencias, lineas, ctx,
+                                  int(self._st.incidencias_meses_atras))
+        inc_mes, ano, mes = lec.incidencias_mes, lec.ano, lec.mes
         obride_pruebas = int(destino.ide) if forzada else None
-        designados = {int(r) for r in ctx.cierres_recursos if r}
-        recursos = {int(i.recurso_ide) for i in incidencias
-                    if i.recurso_ide} | designados
-        ides = {int(v) for i in [*inc_mes, *ctx.quitadas]
-                for v in (i.hmores_ide_ini, i.hmores_ide_fin) if v}
         leidas = self._cli.incidencias_en_ventana(
-            sorted(recursos), desde, hasta, obride_pruebas=obride_pruebas,
-            ides=sorted(ides))
+            lec.recursos, lec.desde, lec.hasta,
+            obride_pruebas=obride_pruebas, ides=lec.ides)
         est = int(self._st.est_parte_activo)
         plan = decidir_peticion(incidencias, base, inc_mes, ctx.quitadas,
                                 leidas, horas, est=est, empresa=empresa,
                                 obride_pruebas=obride_pruebas)
-        cierres = self._cierres_racha(sorted(designados), leidas, inc_mes,
+        cierres = self._cierres_racha(lec.designados, leidas, inc_mes,
                                       horas, ano, mes, est, empresa,
                                       obride_pruebas)
         nc = []
-        for r in sorted(recursos | {int(q.recurso_ide) for q in ctx.quitadas
-                                    if q.recurso_ide}):
+        designados = set(lec.designados)
+        for r in sorted(set(lec.recursos) | {int(q.recurso_ide)
+                                             for q in ctx.quitadas
+                                             if q.recurso_ide}):
             nc += no_coincide(leidas, r, ctx.quitadas, inc_mes, plan.previas,
                               ano, mes, designado=r in designados)
         logger.info(
@@ -449,12 +438,9 @@ class RegistroPipeline:
         escribiría sin `CIZ` en el `reshor` del recurso, solo avisa."""
         if not designados:
             return []
-        rachas = {r: emparejar([x for x in leidas if x.reside == r])
-                  for r in designados}
-        obras: set[int] = set()
-        for r, rs in rachas.items():
-            obras |= obras_de_cierres(rs, r, inc_mes, ano, mes, est=est,
-                                      obride_pruebas=obride_pruebas)
+        rachas = rachas_de_designados(designados, leidas)
+        obras = obras_de_m1(rachas, inc_mes, ano, mes, est=est,
+                            obride_pruebas=obride_pruebas)
         m1 = mes_anterior(int(ano) * 100 + int(mes))
         partes_m1 = (self._cli.partes_de_periodos(
             sorted(obras), [(m1 // 100, m1 % 100)]) if obras else {})

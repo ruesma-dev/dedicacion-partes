@@ -22,6 +22,7 @@ from datetime import date, timedelta
 
 from domain.models.registro_models import (
     AccionIncidencia,
+    ContextoRachas,
     IncidenciaEntrada,
     LineaIncidenciaSigrid,
     ParteSigrid,
@@ -1033,3 +1034,71 @@ def decidir_peticion(incidencias: Iterable[IncidenciaEntrada],
             salida.append(d)
     return PlanPeticion(salida, [resumenes[int(i.id)] for i in incidencias
                                  if int(i.id) in resumenes], previas)
+
+
+# ==================== Qué lee una petición (R19, R20) ==================== #
+
+@dataclass
+class LecturaRachas:
+    """R19 (design §7-§8): la lectura de las rachas de una petición, la
+    misma en suelto y en el lote (para que la memoria la sirva entera):
+    los recursos de sus incidencias y los designados, la ventana
+    (AAAAMMDD), los `ide` de las trazas de `incidencias_mes` y de las
+    quitadas, el mes de la petición (el mayor), las incidencias del mes
+    (las del contexto más las de la petición que no traía) y los
+    designados."""
+    recursos: list[int]
+    desde: int
+    hasta: int
+    ides: list[int]
+    ano: int
+    mes: int
+    incidencias_mes: list[IncidenciaEntrada]
+    designados: list[int]
+
+
+def lectura_de_peticion(incidencias: Iterable[IncidenciaEntrada],
+                        lineas: Iterable, contexto: ContextoRachas,
+                        meses_atras: int) -> LecturaRachas:
+    """R19: de M−`meses_atras` del primer mes de la petición al último día
+    de M+1 del último. Sin decidir si hace falta leer (R26: eso lo mira
+    quien llama)."""
+    incidencias = list(incidencias)
+    vistas = {int(i.id) for i in contexto.incidencias_mes}
+    inc_mes = [*contexto.incidencias_mes,
+               *(i for i in incidencias if int(i.id) not in vistas)]
+    periodos = {(int(x.ano), int(x.mes))
+                for x in [*incidencias, *lineas, *inc_mes,
+                          *contexto.quitadas]}
+    ano, mes = max(periodos)
+    designados = sorted({int(r) for r in contexto.cierres_recursos if r})
+    recursos = sorted({int(i.recurso_ide) for i in incidencias
+                       if i.recurso_ide} | set(designados))
+    ides = sorted({int(v) for i in [*inc_mes, *contexto.quitadas]
+                   for v in (i.hmores_ide_ini, i.hmores_ide_fin) if v})
+    return LecturaRachas(recursos, ventana(*min(periodos), meses_atras)[0],
+                         ventana(ano, mes, meses_atras)[1], ides, ano, mes,
+                         inc_mes, designados)
+
+
+def rachas_de_designados(designados: Iterable[int],
+                         lineas: Iterable[LineaIncidenciaSigrid]
+                         ) -> dict[int, list[Racha]]:
+    """R12: las rachas de cada recurso designado, con lo leído."""
+    lineas = list(lineas)
+    return {int(r): emparejar([x for x in lineas if x.reside == int(r)])
+            for r in designados}
+
+
+def obras_de_m1(rachas: dict[int, list[Racha]],
+                incidencias_mes: Iterable[IncidenciaEntrada], ano: int,
+                mes: int, *, est: int,
+                obride_pruebas: int | None = None) -> set[int]:
+    """R20 (D14): las obras cuyos partes de M−1 hay que leer, de todos los
+    designados (`obras_de_cierres`); vacío si ningún cierre es D14."""
+    inc_mes = list(incidencias_mes)
+    obras: set[int] = set()
+    for r, rs in rachas.items():
+        obras |= obras_de_cierres(rs, r, inc_mes, ano, mes, est=est,
+                                  obride_pruebas=obride_pruebas)
+    return obras

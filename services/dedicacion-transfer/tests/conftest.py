@@ -231,15 +231,17 @@ class EdicionesFalsas:
         """F-062 (R19, lista cerrada): la lectura de las rachas sobre
         ``lineas_incidencia``: las del recurso en la ventana o por `ide`
         y, en pruebas, de esa obra. Anota cada llamada en
-        ``leidas_ventana``."""
+        ``leidas_ventana``. En el orden de la consulta (`fec`, `ide`)."""
         recursos = sorted({int(r) for r in resides if r})
         pedidas = sorted({int(i) for i in ides if i})
         self.leidas_ventana = getattr(self, "leidas_ventana", []) + [
             (recursos, desde, hasta, obride_pruebas, pedidas)]
-        return [ls for ls in self.lineas_incidencia
-                if (ls.reside in recursos and desde <= ls.fecha_int <= hasta
-                    or ls.ide in pedidas)
-                and (obride_pruebas is None or ls.obride == obride_pruebas)]
+        return sorted(
+            (ls for ls in self.lineas_incidencia
+             if (ls.reside in recursos and desde <= ls.fecha_int <= hasta
+                 or ls.ide in pedidas)
+             and (obride_pruebas is None or ls.obride == obride_pruebas)),
+            key=lambda ls: (ls.fecha_int, ls.ide))
 
     def _editar_fec(self, kw) -> None:
         """La guarda de `stmt_editar_fecha_incidencia`: la de F-051 con el
