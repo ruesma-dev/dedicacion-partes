@@ -50,3 +50,16 @@ por el humano en PowerShell, desde `services/dedicacion-transfer`, con el
 - **Observación (no bloquea):** la línea de resumen `escritas=0 editadas=0 …`
   sale a 0 aunque se escribieron y editaron incidencias: esos contadores son
   de las líneas de %; las incidencias se ven en las líneas `INCIDENCIA`.
+
+### (2) C3 — CUMPLE
+
+- Octubre, `--incidencia 1705036:CIV:27:31`: `ini escribir hmores.ide=411883`
+  (20261027, PT26/00373) y `fin abierta` «llega a fin de mes: queda abierta
+  (sin CIZ)»; `RACHA inc=991001 abre · queda abierta`.
+- Noviembre, `--incidencia 1705036:CIV:2:6`: `ini continua` «continúa la racha
+  CIV del 27/10 (parte PT26/00373, línea 411883)», **sin inicio nuevo**, y `fin
+  escribir hmores.ide=411884` el 20261106 en **PT26/00371, el parte de
+  noviembre** (`hmoide` 2854393, distinto del de octubre 2855815): R5 literal,
+  el arreglo B1 de la review 1. El 1-nov es domingo: la racha se pega.
+- `limpiar --confirmar`: 2 líneas (`porcentajes:inc:991001:ini`,
+  `porcentajes:inc:991101:fin`), borradas.
