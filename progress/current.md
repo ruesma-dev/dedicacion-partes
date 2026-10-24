@@ -18,7 +18,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T10 (hechas T1-T9 y T12; T5c, D17, va tras T18
+- **Tarea en curso:** T11 (hechas T1-T10 y T12; T5c, D17, va tras T18
   según `tasks.md` de `a565823`).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
@@ -87,6 +87,15 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   fallan hasta entonces: ahora son 42 en rojo, todos de la lista cerrada.
   El `incidencias_en_ventana` falso de `conftest.py` devuelve en el orden
   de la consulta (`fec`, `ide`).
+  T10: el `INSERT` de un `CIZ` en el parte del inicio (R5) y el de un
+  cierre (R12) llevan una `ObraEntrada` con el `obride` y el `cenide` de
+  la línea leída (`_obra_de_linea`), y `ano`/`mes` del día que se escribe.
+  El cierre lleva `can = 0` y el `pre` de la hora `CIZ` del recurso. Se
+  escriben después de los `INSERT` de la petición, con el `max_pos` de su
+  parte. `_cierres_a_escribir(pf, pisar)` hoy devuelve los `escribir`;
+  queda preparado para el filtro de `pisar_claves` de T5c (R31), que no
+  se hace aquí. Un cierre que no se encuentra al releer se queda sin
+  `hmores_ide`, igual que una incidencia (F-030).
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

@@ -435,3 +435,265 @@ def test_f062_r19_preflight_si_la_lectura_falla_la_peticion_falla():
 
     with pytest.raises(RuntimeError, match="truncada"):
         _pf(_cli(cls=Falla), [_inc()])
+
+
+# ============================ ejecutar (T10) ============================= #
+from dataclasses import replace as _replace
+
+from domain.models.registro_models import LineaSigrid
+
+
+class ClienteRachas(ClienteEscribe):
+    """`ClienteEscribe` en el que ``lineas_incidencia`` es Sigrid: la
+    relectura de `ejecutar` (`lineas_para_editar`) y la de después
+    (`lineas_registradas`) las ven; `escribir` aplica el `UPDATE` de la
+    `fec` con su guarda (como el SQL: recurso, código, `can` y `synckey`
+    leídos, `fec` leída, sin enlaces y parte En registro) y cada `INSERT`
+    de una `CI*`/`CIZ` queda como una línea más (para repetir, C9)."""
+
+    def __init__(self, lineas=(), **kw) -> None:
+        super().__init__(**kw)
+        self.lineas_incidencia = list(lineas)
+        self.horas[200] = [*self.horas[200],
+                           HoraRecurso(72, "CIE", "Baja(B)", 0.0)]
+        self.enlazadas_inc: set[int] = set()
+
+    def _como_linea(self, x) -> LineaSigrid:
+        return LineaSigrid(
+            ide=x.ide, reside=x.reside, fecha_int=x.fecha_int, horide=None,
+            hora_codigo=x.hora_codigo, can=x.can, tot=0.0, synckey=x.synckey,
+            hmoide=x.hmoide, parte_cod=x.parte_cod, parte_est=x.parte_est,
+            enlazada=x.ide in self.enlazadas_inc)
+
+    def lineas_para_editar(self, ides):
+        out = super().lineas_para_editar(ides)
+        out.update({x.ide: self._como_linea(x) for x in self.lineas_incidencia
+                    if x.ide in set(ides)})
+        return out
+
+    def lineas_registradas(self, claves, ides=()):
+        por_sk, por_ide = super().lineas_registradas(claves, ides)
+        pedidos = {int(i) for i in ides if i}
+        por_ide.update({x.ide: self._como_linea(x)
+                        for x in self.lineas_incidencia if x.ide in pedidos})
+        return por_sk, por_ide
+
+    def _cod(self, horide):
+        return next(h.cod for hs in self.horas.values() for h in hs
+                    if h.horide == horide)
+
+    def escribir(self, statements):
+        n = super().escribir(statements)
+        for s in statements:
+            kw = s["parameters"]
+            if s["sql"] == "editar_fec":
+                for i, x in enumerate(self.lineas_incidencia):
+                    if (x.ide == kw["ide"] and x.parte_est == 1
+                            and x.ide not in self.enlazadas_inc
+                            and x.fecha_int == kw["fec_leida"]
+                            and x.reside == kw["reside"]
+                            and x.hora_codigo == kw["hora_codigo"]
+                            and abs(float(x.can or 0)
+                                    - float(kw["can_leido"] or 0)) < 1e-6
+                            and (x.synckey or "") == (
+                                kw["synckey_leida"] or "")):
+                        self.lineas_incidencia[i] = _replace(
+                            x, fecha_int=kw["fecha_int"])
+            elif s["sql"] == "insert" and self._cod(
+                    kw["horide"]).startswith("CI"):
+                o = kw["obra"]
+                self.lineas_incidencia.append(LineaIncidenciaSigrid(
+                    self.synckeys[kw["synckey"]].ide, kw["reside"],
+                    kw["fecha_int"], self._cod(kw["horide"]), kw["synckey"],
+                    "PT26/00251" if kw["hmoide"] == 777 else "PT26/00040",
+                    can=kw["can"], hmoide=kw["hmoide"], parte_est=1,
+                    obride=o.ide, cenide=getattr(o, "cenide", None),
+                    paride=kw["paride"], caaide=kw["caaide"], parte_emp=1))
+        return n
+
+    def ediciones(self):
+        return [(s["parameters"]["ide"], s["parameters"]["fec_leida"],
+                 s["parameters"]["fecha_int"],
+                 s["parameters"]["can_leido"])
+                for s in self.escritos if s["sql"] == "editar_fec"]
+
+    def de_incidencia(self):
+        return [(i["hmoide"], i["fecha_int"], self._cod(i["horide"]),
+                 i["synckey"]) for i in self.inserts()
+                if self._cod(i["horide"]).startswith("CI")]
+
+
+def _ejr(cli, incs=(), *, lineas=(), contexto=None, pisar=None):
+    pipe = RegistroPipeline(cliente=cli, settings=SettingsFalso(
+        obra_pruebas_forzar=False), contexto=contexto)
+    kw = {"incidencias": list(incs)} if incs else {}
+    return pipe.ejecutar(obra=OBRA, lineas=list(lineas), pisar_claves=pisar,
+                         **kw)
+
+
+def _traza(res, i):
+    """La traza que guardaría la api de la incidencia `i` (F-030 R39)."""
+    por_rol = {a.rol: a for a in res.incidencias if a.id == i}
+    out = {}
+    for rol in ("ini", "fin"):
+        a = por_rol.get(rol)
+        if a is not None and a.hmores_ide:
+            out[f"hmores_ide_{rol}"] = a.hmores_ide
+            out[f"dia_{rol}"] = a.fecha_int % 100
+    return out
+
+
+def test_f062_c1_ejecutar_abre_y_cierra_y_repetir_no_escribe():
+    cli = ClienteRachas()
+    res = _ejr(cli, [_inc()])
+    assert cli.de_incidencia() == [(777, 20261005, "CIV", SK_INI),
+                                   (777, 20261009, "CIZ", SK_FIN)]
+    assert all(a.hmores_ide for a in res.incidencias)
+    antes = len(cli.escritos)
+    res = _ejr(cli, [_inc(**_traza(res, 7))])
+    assert len(cli.escritos) == antes                          # C9, R18
+    assert [a.accion for a in res.incidencias] == ["ya_registrado"] * 2
+
+
+def test_f062_c2_ejecutar_el_ciz_del_9_al_16_sin_insert():
+    cli = ClienteRachas()
+    traza = _traza(_ejr(cli, [_inc()]), 7)
+    n = len(cli.de_incidencia())
+    res = _ejr(cli, [_inc(**traza), _inc(8, 12, 16)])
+    assert cli.ediciones() == [(traza["hmores_ide_fin"], 20261009, 20261016,
+                                0.0)]
+    assert len(cli.de_incidencia()) == n                       # sin INSERT
+    assert [(a.id, a.rol, a.accion) for a in res.incidencias] == [
+        (7, "ini", "ya_registrado"), (7, "fin", "editar"),
+        (8, "ini", "continua"), (8, "fin", "continua")]
+    fin = next(x for x in cli.lineas_incidencia
+               if x.ide == traza["hmores_ide_fin"])
+    assert fin.fecha_int == 20261016
+    antes = len(cli.escritos)
+    traza = {**traza, "dia_fin": 16}
+    _ejr(cli, [_inc(**traza), _inc(8, 12, 16)])
+    assert len(cli.escritos) == antes                          # C9
+
+
+def test_f062_c6_ejecutar_mueve_el_ciz_ajeno_con_su_can_y_lo_devuelve():
+    adm = [_l(61, 20261005, obride=40, parte_emp=1),
+           _l(62, 20261007, "CIZ", obride=40, parte_emp=1, can=1.0)]
+    cli = ClienteRachas(adm)
+    res = _ejr(cli, [_inc()], lineas=[linea(registro_id=1, mes=10)])
+    assert cli.ediciones() == [(62, 20261007, 20261009, 1.0)]
+    assert cli.de_incidencia() == []
+    fin = res.incidencias[1]
+    assert (fin.accion, fin.ajena, fin.hmores_ide) == ("editar", True, 62)
+    # R15: la api guarda el `ide` y el día original; repetir no hace nada.
+    traza = {"hmores_ide_fin": 62, "dia_fin": 9, "dia_fin_antes": 7}
+    antes = len(cli.escritos)
+    res = _ejr(cli, [_inc(**traza)], lineas=[linea(registro_id=1, mes=10)])
+    assert [s for s in cli.escritos[antes:]
+            if s["sql"] == "editar_fec"] == []
+    # C9 (R17): quitarla devuelve el CIZ al 7 y no sale en `no_coincide`.
+    res = _ejr(cli, lineas=[linea(registro_id=1, mes=10)],
+               contexto=ContextoRachas(quitadas=[_inc(**traza)]))
+    assert cli.ediciones()[-1] == (62, 20261009, 20261007, 1.0)
+    assert [(a.rol, a.accion) for a in res.incidencias] == [
+        ("devolver", "editar")]
+    assert [x.fecha_int for x in cli.lineas_incidencia if x.ide == 62] == [
+        20261007]
+    assert all(62 not in [x.ide for x in n.lineas] for n in res.no_coincide)
+
+
+def test_f062_r5_ejecutar_el_ciz_va_al_parte_del_inicio_con_su_obra():
+    adm = [_l(61, 20261001, obride=40, cenide=4, paride=300, caaide=400,
+              parte_emp=1)]
+    cli = ClienteRachas(adm)
+    res = _ejr(cli, [_inc()])
+    [ins] = [i for i in cli.inserts() if i["synckey"] == SK_FIN]
+    assert (ins["hmoide"], ins["obra"].ide, ins["obra"].cenide,
+            ins["paride"], ins["caaide"], ins["fecha_int"], ins["can"],
+            ins["ano"], ins["mes"], ins["horide"], ins["pos"]) == (
+        640, 40, 4, 300, 400, 20261009, 0.0, 2026, 10, 79, 128)
+    assert not any(s["sql"] == "crear" for s in cli.escritos)
+    assert res.incidencias[1].hmores_ide == cli.synckeys[SK_FIN].ide
+
+
+def test_f062_c4_ejecutar_escribe_el_cierre_del_mes_anterior():
+    octubre = [_l(51, 20261027, sk="porcentajes:inc:5:ini", hmoide=777,
+                  parte="PT26/00251", obride=555001, cenide=555101,
+                  paride=0, caaide=0, parte_emp=1)]
+    cli = ClienteRachas(octubre)
+    res = _ejr(cli, lineas=[linea(registro_id=1, mes=11)],
+               contexto=ContextoRachas(cierres_recursos=[200]))
+    [ins] = [i for i in cli.inserts()
+             if i["synckey"] == "porcentajes:inc:5:fin"]
+    assert (ins["hmoide"], ins["obra"].ide, ins["obra"].cenide,
+            ins["fecha_int"], ins["can"], ins["pre"], ins["horide"],
+            ins["ano"], ins["mes"], ins["reside"]) == (
+        777, 555001, 555101, 20261031, 0.0, 0.0, 79, 2026, 10, 200)
+    [c] = res.cierres_racha
+    assert c.accion == "escribir" and c.hmores_ide == cli.synckeys[
+        "porcentajes:inc:5:fin"].ide
+    antes = len(cli.escritos)
+    _ejr(cli, lineas=[linea(registro_id=1, mes=11)],
+         contexto=ContextoRachas(cierres_recursos=[200]))
+    assert [s for s in cli.escritos[antes:] if s["sql"] == "insert"
+            and s["parameters"]["synckey"].startswith(
+                "porcentajes:inc:")] == []                     # C9
+
+
+def test_f062_c12_ejecutar_el_cierre_d14_en_el_parte_de_m1():
+    sep = [_l(51, 20260915, sk="porcentajes:inc:3:ini", obride=555001,
+              cenide=555101, paride=0, caaide=0, parte_emp=1)]
+    cli = ClienteRachas(sep)
+    res = _ejr(cli, lineas=[linea(registro_id=1, mes=11)],
+               contexto=ContextoRachas(cierres_recursos=[200]),
+               pisar={"cierre:51"})
+    [ins] = [i for i in cli.inserts()
+             if i["synckey"] == "porcentajes:inc:3:fin"]
+    assert (ins["hmoide"], ins["fecha_int"], ins["ano"], ins["mes"]) == (
+        777, 20261031, 2026, 10)
+    assert res.cierres_racha[0].hmores_ide == cli.synckeys[
+        "porcentajes:inc:3:fin"].ide
+
+
+def test_f062_r14_ejecutar_si_una_de_la_cadena_no_cumple_no_se_mueve_ninguna():
+    cli = ClienteRachas()
+    traza = _traza(_ejr(cli, [_inc()]), 7)
+    cli.enlazadas_inc.add(traza["hmores_ide_ini"])
+    res = _ejr(cli, [_inc(7, 6, 16, **traza)])
+    assert cli.ediciones() == []
+    assert [(a.rol, a.accion) for a in res.incidencias] == [
+        ("ini", "omitir"), ("fin", "omitir")]
+
+
+def test_f062_r14_ejecutar_ninguna_sentencia_delete():
+    """Design §7: el texto REAL de todas las sentencias de `ejecutar` (alta
+    de parte, `INSERT` de la petición y de cierre y `UPDATE` de la `fec`)."""
+    from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
+
+    from tests.test_f050_propuesta import _cliente_historial
+
+    real, _ = _cliente_historial()
+
+    class Texto(ClienteRachas):
+        def stmt_insert_linea(self, **kw):
+            st = real.stmt_insert_linea(**kw)
+            self.textos.append(st["sql"])
+            return super().stmt_insert_linea(**kw)
+
+        def stmt_editar_fecha_incidencia(self, **kw):
+            st = real.stmt_editar_fecha_incidencia(**kw)
+            self.textos.append(st["sql"])
+            return super().stmt_editar_fecha_incidencia(**kw)
+
+        def stmts_crear_parte(self, **kw):
+            self.textos += [s["sql"] for s in real.stmts_crear_parte(**kw)]
+            return super().stmts_crear_parte(**kw)
+
+    assert isinstance(real, SigridWriteClient)
+    adm = [_l(61, 20261005, obride=40, parte_emp=1),
+           _l(62, 20261007, "CIZ", obride=40, parte_emp=1, can=1.0)]
+    cli = Texto(adm, parte_existe=False)
+    cli.textos = []
+    _ejr(cli, [_inc()], lineas=[linea(registro_id=1, mes=10)])
+    assert len(cli.textos) >= 3
+    assert all("DELETE" not in t.upper() for t in cli.textos)
+    assert not any("delete" in s["sql"] for s in cli.escritos)
