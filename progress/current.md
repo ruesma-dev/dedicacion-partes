@@ -14,6 +14,12 @@ cerrar) piden confirmación por línea. La spec de F-054 está aprobada y en
 espera en la copia `porcentajes-f054`. **MANUAL del humano:** T19 (medir el
 preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
+## F-062 · implementación (implementer, 2026-10-24)
+
+- **Tarea en curso:** T2 (T1 hecha: `pegado`, `llega_a_fin`, `emparejar`).
+- **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
+  ninguna todavía.
+
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 
 Spec en `specs/F-062-rachas-incidencias/` (requirements 150/150, design
