@@ -3,7 +3,7 @@
 
 **En curso: F-062** (rachas de incidencia como Administración; `sdd: true`,
 rigor crítico), `in_progress` desde el 2026-10-24: **review 1 RECHAZADA (6 bloqueos), arreglados por el
-implementer; pendiente la review 2** (ver «F-062 · review 1»). Estuvo `blocked` en T13 y se desbloqueó el mismo día
+implementer; review 2 lanzada** (ver «F-062 · review 1»). Estuvo `blocked` en T13 y se desbloqueó el mismo día
 con D18 (humano, «metelo»): los dos tests de la api del esquema de
 `incidencia` entran en la lista cerrada (`ca6c4ef`). Spec
 APROBADA por el humano el 2026-10-24 («ok a lo demas», «adelante, en d14
@@ -631,7 +631,14 @@ F-033 y, detrás, F-017, F-018…
   Más el aviso del implementer de F-057: `harness/mutacion_paralela.py` con 4
   workers dio 4 supervivientes falsos (la 2.ª tanda de los workers; a mano y
   en serie mueren), detalle en `progress/mutacion_F-057.md`. Si es defecto de
-  la herramienta, vale para cualquier proyecto ⇒ `arnes-base`. Y la
+  la herramienta, vale para cualquier proyecto ⇒ `arnes-base`. **Se repite
+  en F-062** (O1 de su review 1): el nº 1 de la campaña 1 y 5 de la api en la
+  campaña 2 sobreviven en paralelo y mueren en serie; causa sin localizar,
+  podría dar también muertos falsos. Hasta arreglarlo, en `critico` los
+  supervivientes se reproducen en serie. Y la automejora de la review 1 de
+  F-062 para `reviewer.md`/C4: ejecutar en seco los MANUAL contra las
+  funciones puras o leer el script que invocan, y comprobar el modo en el
+  proceso que escribe, no en un `/health`. Y la
   automejora de la review de F-057: C4 dice «MANUAL … pendientes de que el
   humano las ejecute», pero aquí el líder las cumple a menudo antes de la
   review (F-055, F-056, F-057); propuesta: «listadas con su comando exacto y,
