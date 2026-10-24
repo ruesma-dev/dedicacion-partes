@@ -13,11 +13,13 @@ from domain.models.registro_models import LineaIncidenciaSigrid
 
 
 def _l(ide, fec, cod="CIV", *, reside=200, sk=None, parte="PT26/00100",
-       hmoide=100, est=1, can=0.0, **kw) -> LineaIncidenciaSigrid:
+       hmoide=100, est=1, can=0.0, parte_emp=1, **kw
+       ) -> LineaIncidenciaSigrid:
     """Una línea `CI*`/`CIZ` leída de Sigrid."""
     return LineaIncidenciaSigrid(ide=ide, reside=reside, fecha_int=fec,
                                  hora_codigo=cod, synckey=sk, parte_cod=parte,
-                                 can=can, hmoide=hmoide, parte_est=est, **kw)
+                                 can=can, hmoide=hmoide, parte_est=est,
+                                 parte_emp=parte_emp, **kw)
 
 
 # ============================ T1: pegado (D2) ============================ #
@@ -110,16 +112,16 @@ def test_f062_d5_emparejar_cruza_meses_y_ordena_por_inicio():
 
 
 # ======================= T2: cadenas (D11, R11) ========================== #
-from application.services.rachas import cadenas, propias  # noqa: E402
-from domain.models.registro_models import IncidenciaEntrada  # noqa: E402
+from application.services.rachas import cadenas, propias
+from domain.models.registro_models import IncidenciaEntrada
 
 
 def _inc(id_=7, desde=5, hasta=9, codigo="CIV", *, recurso=200, mes=10,
          obra=40, **kw) -> IncidenciaEntrada:
     """Una incidencia del cuadrante de octubre de 2026 (el mes M)."""
-    base = dict(id=id_, recurso_ide=recurso, empresa=1, codigo=codigo,
-                ano=2026, mes=mes, desde=desde, hasta=hasta, paride=0,
-                obra_ide=obra)
+    base = {"id": id_, "recurso_ide": recurso, "empresa": 1,
+            "codigo": codigo, "ano": 2026, "mes": mes, "desde": desde,
+            "hasta": hasta, "paride": 0, "obra_ide": obra}
     base.update(kw)
     return IncidenciaEntrada(**base)
 
@@ -222,7 +224,7 @@ def test_f062_r15_propias_solo_las_de_la_duena():
 
 
 # ========================= T3: previa (R1, R10) ========================== #
-from application.services.rachas import previa  # noqa: E402
+from application.services.rachas import previa
 
 EST = 1
 
@@ -286,8 +288,8 @@ def test_f062_r10_c8_previa_no_con_ciz_del_mes_anterior_y_avisa():
     lineas = [_l(1, 20260920), _l(2, 20260930, "CIZ", parte="PT26/00090")]
     ide, avisos = _previa(lineas, _inc(7, 1, 9))
     assert ide is None
-    assert avisos == ["la racha CIV del 20/09 se cerró el 30/09 en el parte "
-                      "PT26/00090 (línea 2), del mes anterior: se abre otra"]
+    assert avisos == [("la racha CIV del 20/09 se cerró el 30/09 en el parte "
+                      "PT26/00090 (línea 2), del mes anterior: se abre otra")]
     # Sin pegar (el 1 de octubre es jueves; del 2 ya no): sin aviso.
     assert _previa(lineas, _inc(7, 2, 9)) == (None, [])
 
@@ -297,9 +299,9 @@ def test_f062_r10_previa_no_si_su_ciz_no_se_puede_mover():
                                      parte="PT26/00041")]
     ide, avisos = _previa(cerrado, _inc(7, 5, 9))
     assert ide is None
-    assert avisos == ["la racha CIV del 05/10 se cierra el 07/10 en el parte "
+    assert avisos == [("la racha CIV del 05/10 se cierra el 07/10 en el parte "
                       "PT26/00041 (línea 2), que no se puede mover: se abre "
-                      "otra"]
+                      "otra")]
     # Si no hay que moverlo (ya está en `h` o después), vale aunque esté
     # cerrado: la cubre.
     cubre = [_l(1, 20261005), _l(2, 20261009, "CIZ", est=3)]
@@ -315,3 +317,311 @@ def test_f062_r10_previa_no_en_pruebas_fuera_de_la_obra_de_pruebas():
     assert _previa(lineas, _inc(7, 5, 9), pruebas=828942)[0] is None
     lineas[1] = _l(2, 20261007, "CIZ", obride=828942)
     assert _previa(lineas, _inc(7, 5, 9), pruebas=828942) == (1, [])
+
+
+# ===================== T4: decidir_cadena (R1-R11, …) ==================== #
+from application.services.rachas import decidir_cadena
+from application.services.reglas_incidencias import (
+    MOTIVO_INC_CAMBIADA,
+    decidir_incidencia,
+)
+from domain.models.registro_models import HoraRecurso
+
+HORAS = {200: [HoraRecurso(71, "CIV", "Vacaciones(V)", 12.5),
+               HoraRecurso(72, "CIE", "Baja(B)", 0.0),
+               HoraRecurso(73, "CIB", "Permiso", 0.0),
+               HoraRecurso(79, "CIZ", "Fin de Incidencia", 0.0)]}
+
+
+def _decidir(lineas, *incs, est=EST, empresa=1, pruebas=None):
+    """El plan de la (única) cadena de `incs`, con la base de su dueña."""
+    [c] = cadenas(list(incs))
+    base = decidir_incidencia(c.duena, HORAS)
+    return decidir_cadena(c, lineas, base, est=est, empresa=empresa,
+                          obride_pruebas=pruebas)
+
+
+def _v(plan):
+    """(id, rol, acción, fec, hmores_ide) de cada acción."""
+    return [(a.id, a.rol, a.accion, a.fecha_int, a.hmores_ide)
+            for a in plan.acciones]
+
+
+def _r(plan):
+    return [(r.id, r.papel, r.inicio_fec, r.cierre, r.cierre_fec, r.duena_id)
+            for r in plan.resumenes]
+
+
+def test_f062_c1_decidir_abre_y_cierra_en_el_mismo_parte():
+    plan = _decidir([], _inc(7, 5, 9))
+    assert _v(plan) == [(7, "ini", "escribir", 20261005, None),
+                        (7, "fin", "escribir", 20261009, None)]
+    ini, fin = plan.acciones
+    assert (ini.hora_codigo, fin.hora_codigo, fin.hmoide_destino) == (
+        "CIV", "CIZ", None)          # los dos, al parte del paso 5 (R2)
+    assert _r(plan) == [(7, "abre", 20261005, "cierra", 20261009, 7)]
+    assert plan.resumenes[0].avisos == []
+
+
+def test_f062_r8_decidir_la_no_duena_continua_en_la_cadena():
+    plan = _decidir([], _inc(7, 5, 9), _inc(8, 12, 16, obra=60))
+    assert _v(plan) == [(7, "ini", "escribir", 20261005, None),
+                        (7, "fin", "escribir", 20261016, None),
+                        (8, "ini", "continua", 20261012, None),
+                        (8, "fin", "continua", 20261016, None)]
+    assert {a.motivo for a in plan.acciones if a.id == 8} == {
+        "continúa (cadena de la incidencia 7)"}
+    assert _r(plan) == [(7, "abre", 20261005, "cierra", 20261016, 7),
+                        (8, "continua", 20261005, "cadena", 20261016, 7)]
+
+
+def test_f062_c2_r14_decidir_alarga_el_ciz_propio_sin_insertar():
+    lineas = [_l(51, 20261005, sk=SK_INI), _l(52, 20261009, "CIZ", sk=SK_FIN)]
+    plan = _decidir(lineas, _inc(7, 5, 9, hmores_ide_ini=51, hmores_ide_fin=52,
+                                 dia_ini=5, dia_fin=9), _inc(8, 12, 16))
+    assert _v(plan)[:2] == [(7, "ini", "ya_registrado", 20261005, 51),
+                            (7, "fin", "editar", 20261016, 52)]
+    fin = plan.acciones[1]
+    assert (fin.fec_antes, fin.synckey_leida, fin.can_leido, fin.ajena,
+            fin.hmoide, fin.parte_cod) == (20261009, SK_FIN, 0.0, False, 100,
+                                           "PT26/00100")
+
+
+def test_f062_c2_decidir_dos_rachas_si_el_lunes_corta():
+    lineas = [_l(51, 20261005, sk=SK_INI), _l(52, 20261009, "CIZ", sk=SK_FIN)]
+    plan = _decidir(lineas, _inc(8, 13, 16))
+    assert _v(plan) == [(8, "ini", "escribir", 20261013, None),
+                        (8, "fin", "escribir", 20261016, None)]
+
+
+def test_f062_c3_r7_decidir_a_fin_de_mes_queda_abierta():
+    plan = _decidir([], _inc(7, 27, 31))
+    assert _v(plan) == [(7, "ini", "escribir", 20261027, None),
+                        (7, "fin", "abierta", 20261031, None)]
+    assert _r(plan) == [(7, "abre", 20261027, "abierta", None, 7)]
+    # C4 (D7): del 27 al 30, también (el 31 es sábado).
+    assert [a.accion for a in _decidir([], _inc(7, 27, 30)).acciones] == [
+        "escribir", "abierta"]
+
+
+def test_f062_c3_r1b_r5_decidir_noviembre_sin_inicio_y_ciz_en_su_parte():
+    civ = _l(51, 20261027, sk=SK_INI, parte="PT26/00100")
+    plan = _decidir([civ], _inc(8, 2, 6, mes=11))
+    assert _v(plan) == [(8, "ini", "continua", 20261102, None),
+                        (8, "fin", "escribir", 20261106, None)]
+    ini, fin = plan.acciones
+    assert ini.motivo == ("continúa la racha CIV del 27/10 (parte PT26/00100, "
+                          "línea 51)")
+    assert fin.hmoide_destino is None    # el inicio no es de M: paso 5
+    assert _r(plan) == [(8, "continua", 20261027, "cierra", 20261106, 8)]
+
+
+def test_f062_c5_decidir_baja_de_septiembre_a_noviembre():
+    cie = [_l(41, 20260915, "CIE", sk="porcentajes:inc:5:ini")]
+    octubre = _decidir(cie, _inc(8, 1, 31, "CIE"))
+    assert _v(octubre) == [(8, "ini", "continua", 20261001, None),
+                           (8, "fin", "abierta", 20261031, None)]
+    noviembre = _decidir(cie, _inc(9, 1, 10, "CIE", mes=11))
+    assert _v(noviembre) == [(9, "ini", "continua", 20261101, None),
+                             (9, "fin", "escribir", 20261110, None)]
+
+
+def test_f062_c6_r3_r14_d12_decidir_continua_la_de_otra_obra_y_mueve_su_ciz():
+    admin = [_l(61, 20261005, obride=40, hmoide=400, parte="PT26/00040"),
+             _l(62, 20261007, "CIZ", obride=40, hmoide=400, parte="PT26/00040",
+                can=1.0, sk=None)]
+    plan = _decidir(admin, _inc(7, 5, 9, obra=60))
+    assert _v(plan) == [(7, "ini", "continua", 20261005, None),
+                        (7, "fin", "editar", 20261009, 62)]
+    fin = plan.acciones[1]
+    assert (fin.fec_antes, fin.synckey_leida, fin.can_leido, fin.ajena,
+            fin.hmoide, fin.parte_cod, fin.hora_codigo) == (
+        20261007, None, 1.0, True, 400, "PT26/00040", "CIZ")
+    assert _r(plan) == [(7, "continua", 20261005, "cierra", 20261009, 7)]
+    assert plan.resumenes[0].cierre_parte == "PT26/00040"
+
+
+def test_f062_c9_r18_decidir_repetir_la_de_c6_no_mueve_nada():
+    movido = [_l(61, 20261005, obride=40, hmoide=400),
+              _l(62, 20261009, "CIZ", obride=40, hmoide=400, can=1.0)]
+    plan = _decidir(movido, _inc(7, 5, 9, obra=60, hmores_ide_fin=62,
+                                 dia_fin=9, dia_fin_antes=7))
+    assert _v(plan) == [(7, "ini", "continua", 20261005, None),
+                        (7, "fin", "ya_registrado", 20261009, 62)]
+    assert plan.acciones[1].ajena is True
+
+
+def test_f062_r16_decidir_si_ya_no_lo_continua_devuelve_el_ciz_ajeno():
+    movido = [_l(61, 20261005, obride=40, hmoide=400),
+              _l(62, 20261009, "CIZ", obride=40, hmoide=400, can=1.0)]
+    # Ahora del 5 al 6: el CIZ ajeno, en su día original (7), la cubre.
+    plan = _decidir(movido, _inc(7, 5, 6, obra=60, hmores_ide_fin=62,
+                                 dia_fin=9, dia_fin_antes=7))
+    assert _v(plan) == [(7, "ini", "continua", 20261005, None),
+                        (7, "fin", "ya_registrado", 20261007, None),
+                        (7, "devolver", "editar", 20261007, 62)]
+    dev = plan.acciones[2]
+    assert (dev.fec_antes, dev.can_leido, dev.ajena, dev.hora_codigo) == (
+        20261009, 1.0, True, "CIZ")
+    assert _r(plan) == [(7, "continua", 20261005, "cubierta", 20261007, 7)]
+
+
+def test_f062_r16_decidir_devolver_a_un_parte_cerrado_se_omite():
+    movido = [_l(61, 20261005), _l(62, 20261009, "CIZ", est=3,
+                                     parte="PT26/00040")]
+    plan = _decidir(movido, _inc(7, 5, 6, hmores_ide_fin=62, dia_fin=9,
+                                 dia_fin_antes=7))
+    dev = plan.acciones[2]
+    assert (dev.rol, dev.accion, dev.motivo) == (
+        "devolver", "omitir", ("el CIZ (línea 62) no se puede devolver al "
+        "07/10: el parte PT26/00040 no está En registro"))
+
+
+def test_f062_r4_decidir_un_ciz_ajeno_nunca_se_acorta():
+    admin = [_l(61, 20261005), _l(62, 20261012, "CIZ", parte="PT26/00040")]
+    plan = _decidir(admin, _inc(7, 5, 9))
+    assert _v(plan) == [(7, "ini", "continua", 20261005, None),
+                        (7, "fin", "ya_registrado", 20261012, None)]
+    assert plan.acciones[1].motivo == (
+        "la cierra el CIZ del 12/10 (parte PT26/00040, línea 62)")
+    assert [a.accion for a in plan.acciones if a.rol == "devolver"] == []
+
+
+def test_f062_r5_decidir_el_ciz_va_al_parte_del_inicio_si_es_de_m():
+    civ = _l(61, 20261005, obride=40, hmoide=400, parte="PT26/00040",
+             cenide=4001, paride=8040, caaide=9040, parte_emp=1)
+    plan = _decidir([civ], _inc(7, 5, 9, obra=60))
+    fin = plan.acciones[1]
+    assert (fin.accion, fin.hmoide_destino, fin.obride, fin.cenide,
+            fin.paride, fin.caa_ide, fin.parte_cod) == (
+        "escribir", 400, 40, 4001, 8040, 9040, "PT26/00040")
+    assert plan.resumenes[0].cierre_parte == "PT26/00040"
+
+
+@pytest.mark.parametrize("cambio", [{"est": 3}, {"parte_emp": 2},
+                                    {"obride": 41}])
+def test_f062_r5_decidir_si_el_parte_del_inicio_no_vale_va_al_paso_5(cambio):
+    datos = {"obride": 40, "hmoide": 400, "cenide": 4001, "parte_emp": 1}
+    datos.update(cambio)
+    civ = _l(61, 20261005, **datos)
+    fin = _decidir([civ], _inc(7, 5, 9), pruebas=40).acciones[1]
+    assert (fin.accion, fin.hmoide_destino) == ("escribir", None)
+
+
+def test_f062_r9_c7_decidir_una_ajena_en_el_tramo_omite_la_cadena():
+    otra = _l(61, 20261007, "CIE", parte="PT26/00041", sk="partes:3")
+    plan = _decidir([otra], _inc(7, 5, 9), _inc(8, 12, 16))
+    motivo = ("en el tramo ya está la línea 61 (CIE, 07/10) del parte "
+              "PT26/00041, de partes: no se escribe ni se mueve nada")
+    assert [(a.id, a.rol, a.accion, a.motivo) for a in plan.acciones] == [
+        (7, "ini", "omitir", motivo), (7, "fin", "omitir", motivo),
+        (8, "ini", "omitir", motivo), (8, "fin", "omitir", motivo)]
+    assert plan.resumenes == []
+
+
+@pytest.mark.parametrize("sk, origen", [
+    (None, "de Administración"), ("porcentajes:inc:9:ini", "de la incidencia 9"),
+    ("otro:1", "de otro sistema")])
+def test_f062_r9_decidir_el_motivo_dice_de_quien_es(sk, origen):
+    otra = _l(61, 20261006, "CIV", sk=sk)
+    plan = _decidir([otra, _l(62, 20261008, "CIZ")], _inc(7, 5, 9))
+    assert plan.acciones[0].motivo.endswith(
+        f"{origen}: no se escribe ni se mueve nada")
+
+
+def test_f062_r9_c7_decidir_codigos_distintos_no_se_estorban_fuera_del_tramo():
+    # C7: la V del 5-9 ya escrita no estorba a la B del 12-16.
+    v = [_l(51, 20261005, sk=SK_INI), _l(52, 20261009, "CIZ", sk=SK_FIN)]
+    plan = _decidir(v, _inc(8, 12, 16, "CIB"))
+    assert [a.accion for a in plan.acciones] == ["escribir", "escribir"]
+
+
+def test_f062_r11_decidir_con_inicio_propio_no_se_une_y_avisa():
+    lineas = [_l(41, 20261001), _l(51, 20261006, sk=SK_INI)]
+    plan = _decidir(lineas, _inc(7, 5, 9, hmores_ide_ini=51, dia_ini=6))
+    assert _v(plan) == [(7, "ini", "editar", 20261005, 51),
+                        (7, "fin", "escribir", 20261009, None)]
+    assert plan.acciones[0].fec_antes == 20261006
+    assert plan.acciones[1].hmoide_destino == 100     # el parte del inicio
+    assert plan.resumenes[0].papel == "abre"
+    assert plan.resumenes[0].avisos == [
+        ("no se une a la racha CIV del 01/10 (parte PT26/00100): su inicio "
+        "(línea 51) ya está escrito")]
+
+
+def test_f062_r11_decidir_un_ciz_propio_a_fin_de_mes_va_al_ultimo_dia():
+    lineas = [_l(51, 20261020, sk=SK_INI), _l(52, 20261023, "CIZ", sk=SK_FIN)]
+    plan = _decidir(lineas, _inc(7, 20, 30, hmores_ide_ini=51,
+                                 hmores_ide_fin=52, dia_ini=20, dia_fin=23))
+    assert _v(plan) == [(7, "ini", "ya_registrado", 20261020, 51),
+                        (7, "fin", "editar", 20261031, 52)]
+    assert plan.resumenes[0].avisos == [
+        ("no se deja abierta: el CIZ (línea 52) ya está en el mes; va al "
+        "último día")]
+    assert _r(plan) == [(7, "abre", 20261020, "cierra", 20261031, 7)]
+
+
+def test_f062_r11_decidir_el_ciz_de_la_previa_a_fin_de_mes_va_al_ultimo_dia():
+    admin = [_l(61, 20261019), _l(62, 20261021, "CIZ")]
+    plan = _decidir(admin, _inc(7, 19, 30))
+    assert _v(plan) == [(7, "ini", "continua", 20261019, None),
+                        (7, "fin", "editar", 20261031, 62)]
+    assert plan.acciones[1].ajena is True
+
+
+def test_f062_r21_decidir_con_ciz_en_m1_no_escribe_y_avisa():
+    lineas = [_l(51, 20261027, sk=SK_INI),
+              _l(70, 20261106, "CIZ", sk="porcentajes:inc:8:fin",
+                 parte="PT26/00111")]
+    plan = _decidir(lineas, _inc(7, 27, 29, hmores_ide_ini=51, dia_ini=27))
+    assert _v(plan) == [(7, "ini", "ya_registrado", 20261027, 51),
+                        (7, "fin", "abierta", 20261029, None)]
+    aviso = ("la racha sigue en 11/2026: su CIZ (línea 70) es del 06/11 en "
+             "el parte PT26/00111; no se escribe el CIZ")
+    assert plan.acciones[1].motivo == aviso
+    assert plan.resumenes[0].avisos == [aviso]
+    # Con la previa de otro (abierta en M y cerrada en M+1), igual.
+    lineas[0] = _l(51, 20261027, sk=None)
+    plan = _decidir(lineas, _inc(7, 27, 29))
+    assert [a.accion for a in plan.acciones] == ["continua", "abierta"]
+
+
+def test_f062_r10_decidir_abre_otra_y_lleva_el_aviso():
+    lineas = [_l(1, 20260920), _l(2, 20260930, "CIZ", parte="PT26/00090")]
+    plan = _decidir(lineas, _inc(7, 1, 9))
+    assert [a.accion for a in plan.acciones] == ["escribir", "escribir"]
+    assert plan.resumenes[0].avisos == [
+        ("la racha CIV del 20/09 se cerró el 30/09 en el parte PT26/00090 "
+        "(línea 2), del mes anterior: se abre otra")]
+
+
+def test_f062_r14_decidir_inicio_propio_cambiado_a_mano_o_en_parte_cerrado():
+    cambiado = [_l(51, 20261006, sk=SK_INI, can=1.0)]
+    plan = _decidir(cambiado, _inc(7, 5, 9, hmores_ide_ini=51, dia_ini=6))
+    assert (plan.acciones[0].accion, plan.acciones[0].motivo) == (
+        "omitir", MOTIVO_INC_CAMBIADA.format(ide=51))
+    cerrado = [_l(51, 20261006, sk=SK_INI, est=3, parte="PT26/7"),
+               _l(52, 20261009, "CIZ", sk=SK_FIN, est=3, parte="PT26/7")]
+    plan = _decidir(cerrado, _inc(7, 5, 9, hmores_ide_ini=51, dia_ini=6,
+                                  hmores_ide_fin=52, dia_fin=9))
+    assert [(a.rol, a.accion, a.motivo) for a in plan.acciones] == [
+        ("ini", "omitir", "el parte PT26/7 está cerrado: sigue del 6 al 9"),
+        ("fin", "ya_registrado", ("ya registrada en Sigrid (línea 52); no se "
+                                 "duplica"))]
+
+
+def test_f062_r26_decidir_si_la_base_omite_se_omite_la_cadena():
+    [c] = cadenas([_inc(7, 5, 9, "CIX"), _inc(8, 12, 16, "CIX")])
+    base = decidir_incidencia(c.duena, HORAS)
+    plan = decidir_cadena(c, [], base, est=EST, empresa=1)
+    assert [(a.id, a.accion) for a in plan.acciones] == [
+        (7, "omitir"), (7, "omitir"), (8, "omitir"), (8, "omitir")]
+    assert {a.motivo for a in plan.acciones} == {base[0].motivo}
+    assert plan.resumenes == []
+
+
+def test_f062_r6_decidir_lo_escrito_lleva_la_base_de_la_duena():
+    plan = _decidir([], _inc(7, 5, 9, paride=80001), _inc(8, 12, 16))
+    ini, fin = plan.acciones[:2]
+    assert (ini.hora_ide, ini.pre, fin.hora_ide, fin.paride) == (
+        71, 12.5, 79, 80001)

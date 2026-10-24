@@ -16,12 +16,17 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T4 (hechas T1-T3).
+- **Tarea en curso:** T5 (hechas T1-T4).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
   `LineaIncidenciaSigrid` (`obride`, `cenide`, `paride`, `caaide`,
-  `parte_emp`), que necesita R10.
+  `parte_emp`), que necesita R10; T4, los de `AccionIncidencia`
+  (`synckey_leida`, `can_leido`, `ajena`, `hmoide_destino`, `obride`,
+  `cenide`) y las acciones `continua`/`abierta` y el rol `devolver`.
+  T4: la «cubierta» es `ya_registrado` con la `fec` del `CIZ` ajeno; el
+  aviso R21 deja el `fin` en `abierta`; si la guarda R9 o la base (R26)
+  omiten, no hay resumen de racha.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

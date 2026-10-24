@@ -280,8 +280,10 @@ class AccionIncidencia:
     Anexo R30 (R41, R46): `editar` cambia SOLO la `fec` de la línea
     `hmores_ide` (en el parte `hmoide`) de `fec_antes` a `fecha_int`."""
     id: int
-    rol: str                            # ini | fin
-    accion: str                         # escribir | editar | omitir | ya_registrado
+    rol: str                            # ini | fin | devolver (F-062 R16)
+    # escribir | editar | omitir | ya_registrado; F-062 (R8, R23): continua
+    # (la racha ya está abierta) | abierta (llega a fin de mes, sin CIZ)
+    accion: str
     fecha_int: int
     recurso_ide: int | None = None
     ano: int = 0
@@ -303,6 +305,16 @@ class AccionIncidencia:
     caa_nota: str | None = None
     fec_antes: int | None = None
     hmoide: int | None = None
+    # F-062 (R14, D12): la `synckey` y el `can` leídos de la línea que se
+    # edita (nuestra: la nuestra y 0; un `CIZ` ajeno: los suyos) y si es
+    # ajena. R5 y R12: el parte, la obra y el centro donde va un `CIZ` que
+    # se escribe en el parte del inicio (None: el parte del paso 5).
+    synckey_leida: str | None = None
+    can_leido: float | None = None
+    ajena: bool = False
+    hmoide_destino: int | None = None
+    obride: int | None = None
+    cenide: int | None = None
 
 
 @dataclass
