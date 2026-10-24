@@ -19,7 +19,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T16 (hechas T1-T15; T5c, D17, va tras T18).
+- **Tarea en curso:** T17 (hechas T1-T16; T5c, D17, va tras T18).
 - Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`). La fase RED
   de T1-T10 y T12 está en
   `C:\Users\pgris\AppData\Local\Temp\claude\C--Users-pgris-PycharmProjects-porcentajes\5cb867d0-7a0e-4697-8553-fb67f1894080\scratchpad\red\`
@@ -135,6 +135,17 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   cerrada de `test_f030_registro.py` siguen en verde tal cual, y el de «la
   quitada no va al transfer» (está en `test_f030_r30_identidad.py`, fuera
   de la lista) también: sigue sin ir en `incidencias`.
+  T16: `f062_rachas.json` en tres escenarios encadenados en la api (c2;
+  c6 y c9; c10 y borradas a mano); el transfer ejecuta cada paso por HTTP
+  sin modo pruebas, desde el Sigrid del contrato. En las `escribir`, el
+  contrato fija el `hmores_ide` que traza la api y el transfer solo exige
+  que no sea nulo. `f030_r30.json`: la petición gana `incidencias_mes` y
+  `cierres_recursos` (la api llama a `_designar_cierres`, como `ejecutar`)
+  y el doble del transfer lee la ventana; lo esperado no cambia. Lectura
+  de «6-9 y 12-14 = una cadena» (tasks T16): cada caso es una cadena de
+  una sola incidencia (la 7); en el contrato no hay una 8. Ambos pasan a
+  la primera: prueban T9-T15 ya hechos (sin fase RED propia); comprobado
+  que fallan al cambiar un dato del contrato (`dia_fin_antes` 7 → 8).
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 
