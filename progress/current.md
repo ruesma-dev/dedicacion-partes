@@ -2,8 +2,8 @@
 # Trabajo en curso
 
 **En curso: F-062** (rachas de incidencia como Administración; `sdd: true`,
-rigor crítico), `in_progress` desde el 2026-10-24, con el **implementer
-relanzado en T13**. Estuvo `blocked` en T13 y se desbloqueó el mismo día
+rigor crítico), `in_progress` desde el 2026-10-24: **implementación terminada y reviewer
+lanzado** (review 1). Estuvo `blocked` en T13 y se desbloqueó el mismo día
 con D18 (humano, «metelo»): los dos tests de la api del esquema de
 `incidencia` entran en la lista cerrada (`ca6c4ef`). Spec
 APROBADA por el humano el 2026-10-24 («ok a lo demas», «adelante, en d14
@@ -21,7 +21,8 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 - **Implementación terminada** (T1-T18, T5c y T22; informe en
   `progress/impl_F-062.md`). Pendiente: review; T19 y T20 MANUAL del
-  humano (comandos exactos en el informe, sin ejecutar); T21 del líder.
+  humano (comandos exactos en el informe, sin ejecutar); T21 hecha por el
+  líder (`ff0acb4` en `azure-apps`, ver «Riesgos para el humano»).
   T22: `init.sh` en verde, cobertura 99.8 %, mutación 591/560/31 con los
   31 analizados en `progress/mutacion_F-062.md` (28 con test nuevo, 1
   falso de la campaña paralela, 2 equivalentes justificados).
@@ -242,7 +243,18 @@ Riesgos para el humano: hay escritura nueva en partes ajenos (mover la `fec`
 de un `CIZ` de Administración o de `partes`, y añadir uno en su parte),
 siempre con la guarda de F-051/D16. Sale **una lectura más por lote** en el
 preflight, que se mide en T19 (≤ 15 %). T19 y T20 son MANUAL del humano.
-`azure-apps/dedicacion.md` y el aviso a `partes` le tocan al líder (T21).
+**T21 hecha por el líder** (2026-10-24): `azure-apps/dedicacion.md`
+`ff0acb4` (cabecera «pendiente de despliegue», §1, §3
+`INCIDENCIAS_MESES_ATRAS`, §5 contrato y columna
+`incidencia.sigrid_dia_fin_antes`, §7 orden transfer → api → front y
+rachas compartidas con `partes`). **Aviso a `partes`** de F-062 (lo
+transmite el humano; aquí no se toca `partes`): desde F-062 dedicación
+**mueve la `fec`** de `CIZ` que no son suyos (también con `synckey
+partes:…`, sin cambiarla y con guarda) para continuar una racha y la
+devuelve a su día si deja de continuarla; **añade** `CIZ` en sus partes
+(el del inicio de la racha y, para cerrarla, uno de M−1); y deja rachas
+**abiertas** a fin de mes, que el papel de sv4 verá. Nunca borra. Su
+`partes.md` debería decirlo en su «qué se rompe».
 
 ## Antes de F-062
 
