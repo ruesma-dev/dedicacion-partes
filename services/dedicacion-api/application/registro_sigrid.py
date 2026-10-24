@@ -432,5 +432,7 @@ class RegistroSigrid:
                     .values(sigrid_estado="omitido",
                             sigrid_motivo=(o.get("motivo") or "")[:_MAX_MOTIVO]))
             # F-030 (R31): la de cada incidencia, en la misma sesión.
-            trazar_incidencias(s, r.get("incidencias") or [], ahora, quien)
+            trazar_incidencias(s, r.get("incidencias") or [], ahora, quien,
+                               cierres=r.get("cierres_racha") or [],
+                               no_coincide=r.get("no_coincide") or [])
             s.commit()

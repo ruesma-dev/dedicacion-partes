@@ -19,7 +19,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T15 (hechas T1-T14; T5c, D17, va tras T18).
+- **Tarea en curso:** T16 (hechas T1-T15; T5c, D17, va tras T18).
 - Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`). La fase RED
   de T1-T10 y T12 está en
   `C:\Users\pgris\AppData\Local\Temp\claude\C--Users-pgris-PycharmProjects-porcentajes\5cb867d0-7a0e-4697-8553-fb67f1894080\scratchpad\red\`
@@ -125,6 +125,16 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   (`hmores_ide_*`), no las columnas: `test_f003_esquema.py` R17 fija los
   `sigrid_*` que nombra `registro_sigrid.py`. Ajeno cambiado: solo
   `test_f030_r23_sin_incidencias_la_peticion_de_siempre` (+`cierres_recursos`).
+  T15: `continua`/`abierta` son `registrado` sin tocar el `ide` ni el día
+  de su rol (no los anulan) y sin quién/cuándo (solo `escribir`/`editar`);
+  el parte, el de la primera con línea. `devolver` hecho = `editar` o
+  `ya_registrado`; omitido no toca nada. La quitada con `en_sigrid` vacío
+  NO se borra si le queda un `devolver` sin hacer (su traza hace falta
+  para devolverlo la próxima vez). El cierre `ya_registrado` no toca la
+  traza (la spec dice «escrito»). Ningún test ajeno cambia: los de la lista
+  cerrada de `test_f030_registro.py` siguen en verde tal cual, y el de «la
+  quitada no va al transfer» (está en `test_f030_r30_identidad.py`, fuera
+  de la lista) también: sigue sin ir en `incidencias`.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 
