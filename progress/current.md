@@ -60,7 +60,7 @@ T20** (el modo del proceso que escribe, el del script; siempre con el
 Debe dar `True 0404`; si no, **PARAR**. Ningún comando lleva
 `--permitir-modo-real`.
 
-**T19** (solo lectura, R20):
+**T19** (solo lectura, R20) — **HECHA el 2026-10-25 por el humano, cumple** (`progress/manual_F-062.md`):
 1. En `dev` (allí no hay `--cierres`): `.venv/Scripts/python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036`
 2. En la rama: `.venv/Scripts/python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036 --cierres 1705036`
 3. Esperado: el `TOTAL … s en total` de la rama ≤ 1,15 × el de `dev`, y en
