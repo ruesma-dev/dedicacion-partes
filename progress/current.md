@@ -4,7 +4,7 @@
 **Esperando aprobación de la spec: F-062** (rachas de incidencia como Administración: abrir,
 alargar o cerrar la de cualquier parte; `sdd: true`, rigor crítico),
 `spec_ready` desde el 2026-10-24. La spec está en
-`specs/F-062-rachas-incidencias/` (`90945d4`); rama
+`specs/F-062-rachas-incidencias/` (`90945d4`, revisada en `9b40cc7` el 2026-10-24 con el aviso «no coincide con Sigrid»); rama
 `feature/F-062-rachas-incidencias`. Las decisiones D1-D4 del humano («sí a
 las cuatro») están en su `description` y las D5-D16 siguen abiertas (abajo).
 La evidencia de Sigrid está en `progress/explore_F-062_sigrid.md`. **A la
