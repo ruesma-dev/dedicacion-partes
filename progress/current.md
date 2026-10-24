@@ -1,15 +1,18 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Esperando aprobación de la spec: F-062** (rachas de incidencia como Administración: abrir,
+**En curso: F-062** (rachas de incidencia como Administración: abrir,
 alargar o cerrar la de cualquier parte; `sdd: true`, rigor crítico),
-`spec_ready` desde el 2026-10-24. La spec está en
-`specs/F-062-rachas-incidencias/` (`90945d4`, revisada en `9b40cc7` el 2026-10-24 con el aviso «no coincide con Sigrid»); rama
-`feature/F-062-rachas-incidencias`. Las decisiones D1-D4 del humano («sí a
-las cuatro») están en su `description` y las D5-D16 las **decidió el humano el 2026-10-24** (A, salvo D14 = B; abajo).
-La evidencia de Sigrid está en `progress/explore_F-062_sigrid.md`. **A la
-vez**, la spec de F-054 espera aprobación en la copia `porcentajes-f054`.
-**PARADA**: la spec la aprueba el humano, con sus decisiones.
+`in_progress` desde el 2026-10-24, con el **implementer lanzado**. Spec
+APROBADA por el humano el 2026-10-24 («ok a lo demas», «adelante, en d14
+b»): D1-D4 del 2026-10-23, D5-D13, D15 y D16 = A, D14 = B; está en
+`specs/F-062-rachas-incidencias/` (`60c7d04`). Rama
+`feature/F-062-rachas-incidencias`. Evidencia de Sigrid:
+`progress/explore_F-062_sigrid.md`. **Pregunta al humano pendiente** (no
+bloquea T1-T4): si los cierres de D14 de inicios viejos (E-11: 9 sin
+cerrar) piden confirmación por línea. La spec de F-054 está aprobada y en
+espera en la copia `porcentajes-f054`. **MANUAL del humano:** T19 (medir el
+preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 
