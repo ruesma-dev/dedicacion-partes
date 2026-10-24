@@ -19,31 +19,11 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **BLOQUEADA en T13** (implementer, 2026-10-24). Para cumplir T13 y R15
-  hay que añadir `IncidenciaORM.sigrid_dia_fin_antes` (`SMALLINT`, por
-  `alters_faltantes`). Esa columna pone en rojo dos tests de
-  `services/dedicacion-api/tests/test_f030_incidencias.py` que **no están
-  en la lista cerrada** de design §12:
-  `test_f030_r17_esquema_tabla_incidencia`, que compara el dict exacto de
-  columnas y tipos de `incidencia`, y
-  `test_f030_r21_cuadrante_repo_de_periodo_mapea_y_agrupa`, que compara el
-  texto del `SELECT` con todas las columnas. Se comprobó añadiendo la
-  columna y revirtiéndola (no queda en el árbol): el resultado fue 3 en
-  rojo. El tercero, `test_f030_registro.py::
-  test_f030_r31_la_traza_escribe_columnas_de_incidencia`, está en un
-  fichero de la lista y se pone verde solo cuando `traza_incidencias.py`
-  escriba la columna (T15). No hay alternativa sin la columna: T13 y R15
-  la piden. **Propuesta** para el humano o el líder: meter esos dos tests
-  en la lista cerrada. Cada uno solo añadiría al esperado
-  `sigrid_dia_fin_antes`, con la marca «F-062 (lista cerrada)». Con eso
-  se sigue por T13 y luego T14-T18, T5c y T22.
-  Hechas y en commit T1-T12 (`87036d9`..`6b721fe`). Suite del transfer:
-  1374 en verde y 2 en rojo previstos, los de
-  `test_f030_r30_punta_a_punta.py`, que se reescriben en T16. La fase RED
+- **Tarea en curso:** T14 (hechas T1-T13; T5c, D17, va tras T18).
+- Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`). La fase RED
   de T1-T10 y T12 está en
   `C:\Users\pgris\AppData\Local\Temp\claude\C--Users-pgris-PycharmProjects-porcentajes\5cb867d0-7a0e-4697-8553-fb67f1894080\scratchpad\red\`
-  (ficheros `T1.txt`..`T12.txt` de esta sesión). Pasará a
-  `progress/impl_F-062.md` al cerrar.
+  y pasa a `progress/impl_F-062.md` al cerrar.
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
@@ -130,6 +110,12 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   borra del cliente. Se hace también en `test_f030_r30_editar.py` (está
   en la lista cerrada), donde el `UPDATE` esperado lleva `can_leido`. En
   rojo solo quedan los dos de `test_f030_r30_punta_a_punta.py` (T16).
+  T13: `campos_de_traza` manda `dia_fin_antes` solo si lo hay y lo lee con
+  `getattr`. Sin día original, la traza es la de F-030 tal cual. Así los
+  dobles `SimpleNamespace` de `test_f030_registro.py`,
+  `test_f030_r30_identidad.py` y `test_f030_r30_punta_a_punta.py` no
+  cambian: los dos últimos no están en la lista cerrada para eso. En la
+  api, 1149 en verde.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

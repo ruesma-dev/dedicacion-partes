@@ -42,10 +42,15 @@ _HECHAS = ("escribir", "editar", "ya_registrado")
 def campos_de_traza(inc: Any) -> dict[str, Any]:
     """R39: lo que la api manda al transfer de la traza de una incidencia
     (`hmores_ide_*` y `dia_*`, nulos los que falten). Sin ninguno (no
-    registrada), nada: la petición de siempre."""
+    registrada), nada: la petición de siempre. F-062 (R15): y
+    `dia_fin_antes`, el día original del `CIZ` ajeno que movió, solo si lo
+    hay (sin él, la traza de F-030 tal cual)."""
     traza = {"hmores_ide_ini": inc.sigrid_ide_ini,
              "hmores_ide_fin": inc.sigrid_ide_fin,
              "dia_ini": inc.sigrid_dia_ini, "dia_fin": inc.sigrid_dia_fin}
+    antes = getattr(inc, "sigrid_dia_fin_antes", None)
+    if antes is not None:
+        traza["dia_fin_antes"] = antes
     return traza if any(v is not None for v in traza.values()) else {}
 
 
