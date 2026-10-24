@@ -191,3 +191,19 @@ def test_f062_r17_lote_la_peticion_solo_con_quitadas_como_suelta():
     assert "incidencias_en_ventana" not in memoria.fallos_de_memoria
     assert [(a.rol, a.accion, a.fecha_int) for a in pf.incidencias] == [
         ("devolver", "editar", 20261007)]
+
+
+def test_f062_r19_lote_la_ventana_de_memoria_incluye_sus_dos_extremos():
+    # Mutación (T22): como el `BETWEEN` de la consulta, el primer y el
+    # último día de la ventana pedida entran; uno antes o uno después, no.
+    cli = _cli(_lineas(555001))
+    memoria = LecturasDelLote(cli, 2)
+    memoria.precargar([(OBRA, [linea(registro_id=1, mes=10)], [_inc()],
+                        ContextoRachas())], _st(False))
+    def ides(desde, hasta):
+        return [x.ide for x in memoria.incidencias_en_ventana(
+            [200], desde, hasta)]
+    assert ides(20261005, 20261009) == [51, 52]
+    assert ides(20261006, 20261009) == [52]
+    assert ides(20261005, 20261008) == [51]
+    assert memoria.fallos_de_memoria == {}

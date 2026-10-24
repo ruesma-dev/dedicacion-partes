@@ -855,3 +855,67 @@ def test_f062_r31_script_el_cierre_pendiente_dice_como_confirmarlo(
     salida = capsys.readouterr().out
     assert "PENDIENTE cierre:51" not in salida
     assert [x[3] for x in cli.de_incidencia()] == ["porcentajes:inc:3:fin"]
+
+
+def test_f062_r5_obra_de_linea_sin_obra_ni_centro_es_cero():
+    # Mutación (T22): la obra del `INSERT` en el parte de una línea leída;
+    # sin obra o sin centro, 0, como `obra_por_ide` (F-037).
+    from application.pipelines.registro_pipeline import _obra_de_linea
+
+    o = _obra_de_linea(None, None)
+    assert (o.ide, o.cenide) == (0, 0)
+    o = _obra_de_linea(828942, 828943)
+    assert (o.ide, o.cenide) == (828942, 828943)
+
+
+def test_f062_r12_ejecutar_el_cierre_lleva_el_pre_del_ciz_y_sin_partida_0():
+    # Mutación (T22): el `pre` del `CIZ` del cierre es el de `reshor` del
+    # recurso (no un 0 fijo), y sin partida ni cuenta en el inicio, 0.
+    octubre = [_l(51, 20261027, sk="porcentajes:inc:5:ini", hmoide=777,
+                  parte="PT26/00251", obride=555001, cenide=555101,
+                  paride=None, caaide=None, parte_emp=1)]
+    cli = ClienteRachas(octubre)
+    cli.horas[200] = [_replace(h, pre=7.5) if h.cod == "CIZ" else h
+                      for h in cli.horas[200]]
+    _ejr(cli, lineas=[linea(registro_id=1, mes=11)],
+         contexto=ContextoRachas(cierres_recursos=[200]))
+    [ins] = [i for i in cli.inserts()
+             if i["synckey"] == "porcentajes:inc:5:fin"]
+    assert (ins["pre"], ins["paride"], ins["caaide"]) == (7.5, 0, 0)
+
+
+def test_f062_r12_ejecutar_el_cierre_con_la_partida_y_la_cuenta_del_inicio():
+    # Mutación (T22): el cierre va con la partida y la cuenta del inicio.
+    octubre = [_l(51, 20261027, sk="porcentajes:inc:5:ini", hmoide=777,
+                  parte="PT26/00251", obride=555001, cenide=555101,
+                  paride=4242, caaide=31, parte_emp=1)]
+    cli = ClienteRachas(octubre)
+    _ejr(cli, lineas=[linea(registro_id=1, mes=11)],
+         contexto=ContextoRachas(cierres_recursos=[200]))
+    [ins] = [i for i in cli.inserts()
+             if i["synckey"] == "porcentajes:inc:5:fin"]
+    assert (ins["paride"], ins["caaide"]) == (4242, 31)
+    # Detrás de lo que la petición escribe en ese parte: `max_pos` 64, la
+    # línea de % 128 y el cierre, un paso más (64).
+    [pct] = [i for i in cli.inserts() if i["synckey"].startswith("porcentajes:1")]
+    assert (pct["hmoide"], pct["pos"], ins["pos"]) == (777, 128, 192)
+
+
+def test_f062_r12_script_una_linea_testigo_por_recurso_de_cierres():
+    # Mutación (T22): `registro_id` consecutivos desde `REGISTRO_TESTIGO`.
+    import prueba_escritura_porcentajes as script
+
+    t = script._testigos(2026, 11, [200, 400])
+    assert [(x.registro_id, x.recurso_ide, x.porcentaje, x.mes) for x in t] \
+        == [(990201, 200, 0.0, 11), (990202, 400, 0.0, 11)]
+
+
+def test_f062_r22_contrato_sin_pedirlas_la_respuesta_no_lleva_rachas():
+    # Mutación (T22): por defecto, la respuesta del preflight es la de F-030.
+    from interface_adapters.api.app import _respuesta_preflight
+
+    pf = _pf(ClienteRachas(), [_inc()])
+    assert {"rachas", "cierres_racha", "no_coincide"} \
+        & set(_respuesta_preflight(pf)) == set()
+    assert {"rachas", "cierres_racha", "no_coincide"} \
+        <= set(_respuesta_preflight(pf, True))

@@ -1059,3 +1059,121 @@ def test_f062_r31_cierres_con_inicio_anterior_a_m1_requieren_confirmar():
     assert PREFIJO_CLAVE_CIERRE == "cierre:"
     assert not PREFIJO_CLAVE_CIERRE[0].isdigit()
     assert not PREFIJO_CLAVE_CIERRE.startswith(("sobrecarga:", "sin_partida:"))
+
+
+# ========================= mutación (T22) ================================ #
+def test_f062_r11_fechas_de_un_solo_dia_y_los_extremos_del_mes():
+    from application.services.rachas import fechas_de
+
+    assert fechas_de(_inc(desde=5, hasta=5)) == (20261005, 20261005)
+    assert fechas_de(_inc(desde=1, hasta=31)) == (20261001, 20261031)
+    assert fechas_de(_inc(desde=0, hasta=5)) is None
+    assert fechas_de(_inc(desde=5, hasta=32)) is None
+    assert fechas_de(_inc(desde=6, hasta=5)) is None
+    assert fechas_de(_inc(desde=30, hasta=31, mes=11)) is None  # noviembre: 30
+
+
+def test_f062_d5_una_racha_leida_no_se_cambia():
+    # Una `Racha` es lo leído de Sigrid: nadie la cambia después.
+    from dataclasses import FrozenInstanceError
+
+    [r] = emparejar([_l(51, 20261005)])
+    with pytest.raises(FrozenInstanceError):
+        r.cierre = None
+
+
+def test_f062_d11_cadenas_por_su_primer_dia():
+    # Las cadenas salen por el primer día de cada incidencia, no por el
+    # último (con dos que se solapan, que la api no deja, se ve la
+    # diferencia).
+    from application.services.rachas import cadenas
+
+    larga, corta = _inc(1, 5, 20), _inc(2, 6, 9)
+    assert [c.duena.id for c in cadenas([corta, larga])] == [1, 2]
+
+
+def test_f062_r12_mes_anterior_en_cada_frontera():
+    from application.services.rachas import mes_anterior
+
+    assert [mes_anterior(m) for m in (202601, 202602, 202603, 202610)] == [
+        202512, 202601, 202602, 202609]
+
+
+def test_f062_r10_previa_que_ya_cierra_el_ultimo_dia_del_mes_no_se_mueve():
+    # Llega a fin de mes (31-oct es sábado) y su CIZ ya está el 31: no hay
+    # que moverlo, así que vale aunque su parte esté cerrado.
+    lineas = [_l(1, 20261026), _l(2, 20261031, "CIZ", est=3)]
+    assert _previa(lineas, _inc(7, 26, 30)) == (1, [])
+
+
+@pytest.mark.parametrize("paride, caaide, esperado", [
+    (None, None, (0, 0)), (4242, 31, (4242, 31))])
+def test_f062_r5_decidir_el_ciz_en_el_parte_del_inicio_con_su_partida(
+        paride, caaide, esperado):
+    # El inicio abierto de Administración en M (otra obra): el CIZ va a su
+    # parte, con su partida y su cuenta; sin ellas, 0.
+    civ = _l(51, 20261005, parte="PT26/00040", hmoide=40, obride=555040,
+             cenide=555041, paride=paride, caaide=caaide)
+    fin = _decidir([civ], _inc(8, 5, 9)).acciones[1]
+    assert (fin.accion, fin.hmoide_destino, fin.paride, fin.caa_ide) == (
+        "escribir", 40, *esperado)
+
+
+@pytest.mark.parametrize("paride, esperado", [(None, 0), (4242, 4242)])
+def test_f062_r8_decidir_la_que_continua_la_cadena_lleva_su_partida(
+        paride, esperado):
+    plan = _decidir([], _inc(7, 5, 9), _inc(8, 12, 16, paride=paride))
+    assert [(a.id, a.accion, a.paride) for a in plan.acciones
+            if a.id == 8] == [(8, "continua", esperado)] * 2
+
+
+def test_f062_r21_un_ciz_suelto_del_mismo_mes_no_hace_seguir_la_racha():
+    # Nuestro inicio del 5 ya escrito y su CIZ borrado a mano; un CIZ suelto
+    # el 20 del mismo mes no es «la racha sigue en M+1» (R21): se escribe
+    # el CIZ del 9 en el parte del inicio.
+    lineas = [_l(51, 20261005, sk=SK_INI, parte="PT26/00100"),
+              _l(90, 20261020, "CIZ", parte="PT26/00040", hmoide=40)]
+    plan = _decidir(lineas, _inc(7, 5, 9))
+    assert _v(plan) == [(7, "ini", "ya_registrado", 20261005, 51),
+                        (7, "fin", "escribir", 20261009, None)]
+    assert plan.acciones[1].hmoide_destino == 100
+    assert _r(plan) == [(7, "abre", 20261005, "cierra", 20261009, 7)]
+
+
+def test_f062_r12_synckey_de_cierre_de_un_inicio_ajeno_que_lo_parece():
+    # Solo una `synckey` nuestra (`porcentajes:inc:{id}:ini`) da la `:fin`
+    # de su incidencia; una ajena con la misma cola, no.
+    from application.services.rachas import synckey_de_cierre
+
+    assert synckey_de_cierre(_l(51, 20260915, sk="porcentajes:inc:7:ini")) \
+        == ("porcentajes:inc:7:fin", 7)
+    assert synckey_de_cierre(_l(51, 20260915, sk="partes:inc:12345:ini")) \
+        == ("porcentajes:inc:cierre:51", None)
+
+
+def test_f062_c12_cierres_un_inicio_sin_obra_no_busca_parte_de_otra():
+    # Sin `obride` en el inicio no hay obra cuyo parte de M−1 mirar (ni la
+    # 1 ni ninguna): solo aviso.
+    lineas = [_l(51, 20260915, "CIE", sk="porcentajes:inc:3:ini",
+                 parte="PT26/00090", **{**INICIO, "obride": None})]
+    partes = {(1, 2026, 10): [ParteSigrid(120, "PT26/00120", EST)],
+              (0, 2026, 10): []}
+    [c] = _cierres(lineas, partes=partes)
+    assert (c.accion, c.hmoide) == ("aviso", None)
+
+
+def test_f062_c11_no_coincide_por_defecto_el_recurso_es_el_designado():
+    # Mutación (T22): sin decir `designado`, lo solo en Sigrid sale.
+    lineas = [_l(63, 20261026, "CIB", parte="PT26/00040")]
+    [nc] = no_coincide(lineas, 200, [], [], set(), 2026, 10)
+    assert nc.tipo == "solo_sigrid"
+
+
+def test_f062_r30_la_linea_vista_no_se_cambia():
+    from dataclasses import FrozenInstanceError
+
+    from application.services.rachas import LineaVista
+
+    v = LineaVista(63, "CIB", 20261026, "PT26/00040")
+    with pytest.raises(FrozenInstanceError):
+        v.ide = 64

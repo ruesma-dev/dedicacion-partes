@@ -332,3 +332,11 @@ def test_f062_r31_traza_el_cierre_pendiente_no_toca_el_fin():
     assert _trazar([], cierres=cierres) == [
         ("update", {"id_1": 4, "sigrid_ide_fin": 99, "sigrid_dia_fin": 31},
          SOLO_ID)]
+
+
+def test_f062_r17_traza_solo_sigrid_nunca_borra_aunque_traiga_incidencia():
+    # Mutación (T22): solo una `quitada` con su `id` y sin líneas en Sigrid
+    # se borra; un `solo_sigrid`, aunque traiga `incidencia_id`, nunca.
+    nc = [{"tipo": "solo_sigrid", "recurso_ide": 10, "incidencia_id": 5,
+           "lineas": [], "motivo": "m", "en_sigrid": []}]
+    assert _trazar([], no_coincide=nc) == []
