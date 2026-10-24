@@ -1,10 +1,11 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-062 BLOQUEADA en T13** (rachas de incidencia como Administración;
-`sdd: true`, rigor crítico): T13 rompe dos tests de la api que no están
-en la lista cerrada; motivo y propuesta en «F-062 · implementación».
-Antes, `in_progress` desde el 2026-10-24 con el implementer lanzado. Spec
+**En curso: F-062** (rachas de incidencia como Administración; `sdd: true`,
+rigor crítico), `in_progress` desde el 2026-10-24, con el **implementer
+relanzado en T13**. Estuvo `blocked` en T13 y se desbloqueó el mismo día
+con D18 (humano, «metelo»): los dos tests de la api del esquema de
+`incidencia` entran en la lista cerrada (`ca6c4ef`). Spec
 APROBADA por el humano el 2026-10-24 («ok a lo demas», «adelante, en d14
 b»): D1-D4 del 2026-10-23, D5-D13, D15 y D16 = A, D14 = B; está en
 `specs/F-062-rachas-incidencias/` (`60c7d04`). Rama
@@ -12,8 +13,7 @@ b»): D1-D4 del 2026-10-23, D5-D13, D15 y D16 = A, D14 = B; está en
 `progress/explore_F-062_sigrid.md`. **Enmienda D17** (humano, 2026-10-24,
 «si añade»): el cierre D14 de una racha con inicio anterior a M−1 pide
 confirmación por línea, como un pisado (casilla desmarcada por defecto); el
-de inicio en M−1 sigue solo. Spec-author enmendando R12-R13 (tarea T5c);
-el implementer la hace después de T9. La spec de F-054 está aprobada y en
+de inicio en M−1 sigue solo (`a565823`, tarea T5c, después de T18). La spec de F-054 está aprobada y en
 espera en la copia `porcentajes-f054`. **MANUAL del humano:** T19 (medir el
 preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
