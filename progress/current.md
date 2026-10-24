@@ -2,8 +2,8 @@
 # Trabajo en curso
 
 **En curso: F-062** (rachas de incidencia como Administración; `sdd: true`,
-rigor crítico), `in_progress` desde el 2026-10-24: **implementación terminada y reviewer
-lanzado** (review 1). Estuvo `blocked` en T13 y se desbloqueó el mismo día
+rigor crítico), `in_progress` desde el 2026-10-24: **review 1 RECHAZADA (6 bloqueos), arreglados por el
+implementer; pendiente la review 2** (ver «F-062 · review 1»). Estuvo `blocked` en T13 y se desbloqueó el mismo día
 con D18 (humano, «metelo»): los dos tests de la api del esquema de
 `incidencia` entran en la lista cerrada (`ca6c4ef`). Spec
 APROBADA por el humano el 2026-10-24 («ok a lo demas», «adelante, en d14
@@ -15,21 +15,87 @@ b»): D1-D4 del 2026-10-23, D5-D13, D15 y D16 = A, D14 = B; está en
 confirmación por línea, como un pisado (casilla desmarcada por defecto); el
 de inicio en M−1 sigue solo (`a565823`, tarea T5c, después de T18). La spec de F-054 está aprobada y en
 espera en la copia `porcentajes-f054`. **MANUAL del humano:** T19 (medir el
-preflight) y T20 (escritura en modo pruebas sobre la 0404).
+preflight) y T20 (escritura en modo pruebas sobre la 0404), con sus
+comandos exactos en «F-062 · T19 y T20» (abajo).
+
+## F-062 · review 1: arreglos (implementer, 2026-10-24)
+
+Review 1 RECHAZADA (`progress/review_F-062.md`); los 6 bloqueos, arreglados:
+- **B1** (`453f870`, `441e6a3`): R5 literal también para el inicio propio
+  (`rachas.py`, `==` y no `<=`; test RED). El script da a la n-ésima
+  `--incidencia` el id `990101 + (mes−1)·100 + n` (julio 9907xx, octubre
+  9910xx): estable en el mes, distinto entre meses; `verificar` pide los
+  del mes (`--mes`); `limpiar` ya borraba por marca y prefijo, de todos los
+  meses. Ids esperados al día en `test_f030_pipeline_incidencias.py` (lista
+  cerrada; sus `verificar` llevan `--mes 7`) y en los de F-062.
+- **B2** (`441e6a3`): `medir --cierres R` designa R en la **primera** obra
+  (como `_designar_cierres`), en lote y obra a obra; sin `--cierres`, las
+  peticiones de siempre. **Decisión**: designar solo con `--cierres` y no
+  siempre, porque `test_f055_medicion.py` (fuera de la lista cerrada) fija
+  la forma `(obra, lineas)` del lote; la review admitía «o `--cierres` en
+  lote». Un `--cierres` que no es `--recurso` es error de argumentos.
+- **O2** (`441e6a3`; aprobada por el humano el 2026-10-24, «ok a 1 y 2»):
+  `ejecutar`/`limpiar --confirmar` con `OBRA_PRUEBAS_FORZAR=false` salen con
+  código 1 y sin escribir (ni leer, en `limpiar`), salvo
+  `--permitir-modo-real`. Desviación aprobada. Ningún test ajeno la fijaba.
+- **B3/B4**: T19 y T20 con el primer paso del modo y sus comandos exactos
+  (abajo); `tasks.md` T21 `[x]` (`ff0acb4` en `azure-apps`, `fb351e0`).
+  Ensayados en seco contra las funciones puras con los ids nuevos: lo
+  esperado de (1)-(4) sale tal cual.
+- **B5** (`743923b`): la condición de `_cierres_a_escribir`, entre paréntesis.
+- **B6 y O3** (`77bf5d6`): «decidir la racha»; `#regla-incidencia` dice que
+  en pruebas también la lectura por `ide` es de la 0404 y que no se mezclan
+  modos sobre la misma base (una quitada se borraría en PostgreSQL).
+
+### F-062 · T19 y T20, MANUAL del humano (NO ejecutadas por ningún agente)
+
+Git Bash, desde `services/dedicacion-transfer`. **Primer paso de T19 y de
+T20** (el modo del proceso que escribe, el del script):
+`python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`.
+Debe dar `True 0404`; si no, **PARAR**. Ningún comando lleva
+`--permitir-modo-real`.
+
+**T19** (solo lectura, R20):
+1. En `dev` (allí no hay `--cierres`): `python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036`
+2. En la rama: `python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036 --cierres 1705036`
+3. Esperado: el `TOTAL … s en total` de la rama ≤ 1,15 × el de `dev`, y en
+   la rama **una** línea `lectura incidencias_en_ventana:` en el lote (en
+   seco, con los dobles: sin `--cierres`, cero lecturas; con él, una). Si
+   no, **PARAR**.
+
+**T20** (escritura en modo pruebas, obra `0404`, transfer LOCAL; `RECURSO`
+con `CIV` y `CIZ` en `reshor`). Resultado real en `progress/manual_F-062.md`.
+1. C1 y C2.
+   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9`: `CIV` el 5 y `CIZ` el 9 (`porcentajes:inc:991001:ini|fin`).
+   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9 --incidencia RECURSO:CIV:12:16`: `fin editar` del mismo `CIZ` al 16; la 991002 `continua`; ningún inicio nuevo.
+   - `python prueba_escritura_porcentajes.py verificar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9 --incidencia RECURSO:CIV:12:16`: `porcentajes:inc:991001:fin` con el **mismo** `hmores.ide` y `fec=20261016`.
+   - `python prueba_escritura_porcentajes.py limpiar --confirmar`
+2. C3.
+   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:27:31`: `CIV` el 27; `fin abierta`, sin `CIZ`.
+   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --incidencia RECURSO:CIV:2:6`: `ini continua`, sin inicio, y `CIZ` el 6 en el parte de **noviembre** de la `0404` (`porcentajes:inc:991101:fin`).
+   - `python prueba_escritura_porcentajes.py limpiar --confirmar`
+3. C4.
+   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:27:31`
+   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO`: `CIERRE … escribir`, `CIZ` el 31 en el parte de octubre, sin `--pisar` (inicio en M−1), `porcentajes:inc:991001:fin`.
+   - Repetir los dos: nada nuevo (`ya_registrado`). Luego `python prueba_escritura_porcentajes.py limpiar --confirmar`
+4. C12 y C13.
+   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 9 --incidencia RECURSO:CIV:15:30`: `CIV` el 15 de septiembre, abierta.
+   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:1:31`: `continua` y `abierta`, nada escrito.
+   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO`: nada escrito y `PENDIENTE cierre:{ide}: relanza con --pisar cierre:{ide}` (`{ide}`, el del `CIV` del 15).
+   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO --pisar cierre:{ide}`: `CIZ` el 31 de octubre en el parte de octubre de la `0404` (`porcentajes:inc:990901:fin`).
+   - `python prueba_escritura_porcentajes.py limpiar --confirmar`
+5. C10, navegador local. Aquí escribe el transfer servidor (otro proceso):
+   antes, `curl -s http://localhost:8006/health` debe decir
+   `"modo_pruebas": true`; si no, **PARAR**. Registrar 5-9, quitarla del
+   cuadrante y abrir Registrar: «No coincide con Sigrid» con las dos
+   líneas; Cancelar. Al final, `python prueba_escritura_porcentajes.py limpiar --confirmar`
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
 - **Implementación terminada** (T1-T18, T5c y T22; informe en
-  `progress/impl_F-062.md`). Pendiente: review; T19 y T20 MANUAL del
-  humano (comandos exactos en el informe, sin ejecutar); T21 hecha por el
-  líder (`ff0acb4` en `azure-apps`, ver «Riesgos para el humano»).
-  T22: `init.sh` en verde, cobertura 99.8 %, mutación 591/560/31 con los
-  31 analizados en `progress/mutacion_F-062.md` (28 con test nuevo, 1
-  falso de la campaña paralela, 2 equivalentes justificados).
-- Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`). La fase RED
-  de T1-T10 y T12 está en
-  la carpeta `red/` del scratchpad de la sesión del implementer (fuera del
-  repositorio) y pasa a `progress/impl_F-062.md` al cerrar.
+  `progress/impl_F-062.md`). T21 la hizo el líder (`ff0acb4` en
+  `azure-apps`, ver «Riesgos para el humano»).
+- Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
@@ -524,6 +590,13 @@ que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-0
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
+
+- **F-062: T19 y T20, MANUAL**, con sus comandos exactos en «F-062 · T19 y
+  T20» (arriba), primer paso incluido (`True 0404` o PARAR).
+  **Equivalentes de la mutación nº 14 (`rachas.py:113`) y nº 23
+  (`rachas.py:528`): ACEPTADOS** por el humano el 2026-10-24 («ok a 1 y
+  2»), con la condición de que la campaña nueva los repita y sigan siendo
+  equivalentes (estado en `progress/mutacion_F-062.md`).
 
 - **O1 de F-056: ¿feature propia para validar el resto del cuerpo del
   registro?** `overrides` no enteros dan 500 (`int(k)`, `int(v)` en
