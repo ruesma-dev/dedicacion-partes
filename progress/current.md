@@ -54,14 +54,15 @@ Review 1 RECHAZADA (`progress/review_F-062.md`); los 6 bloqueos, arreglados:
 ### F-062 · T19 y T20, MANUAL del humano (NO ejecutadas por ningún agente)
 
 Git Bash, desde `services/dedicacion-transfer`. **Primer paso de T19 y de
-T20** (el modo del proceso que escribe, el del script):
-`python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`.
+T20** (el modo del proceso que escribe, el del script; siempre con el
+`.venv` del transfer, nunca el `python` del PATH):
+`.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`.
 Debe dar `True 0404`; si no, **PARAR**. Ningún comando lleva
 `--permitir-modo-real`.
 
 **T19** (solo lectura, R20):
-1. En `dev` (allí no hay `--cierres`): `python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036`
-2. En la rama: `python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036 --cierres 1705036`
+1. En `dev` (allí no hay `--cierres`): `.venv/Scripts/python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036`
+2. En la rama: `.venv/Scripts/python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036 --cierres 1705036`
 3. Esperado: el `TOTAL … s en total` de la rama ≤ 1,15 × el de `dev`, y en
    la rama **una** línea `lectura incidencias_en_ventana:` en el lote (en
    seco, con los dobles: sin `--cierres`, cero lecturas; con él, una). Si
@@ -70,29 +71,29 @@ Debe dar `True 0404`; si no, **PARAR**. Ningún comando lleva
 **T20** (escritura en modo pruebas, obra `0404`, transfer LOCAL; `RECURSO`
 con `CIV` y `CIZ` en `reshor`). Resultado real en `progress/manual_F-062.md`.
 1. C1 y C2.
-   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9`: `CIV` el 5 y `CIZ` el 9 (`porcentajes:inc:991001:ini|fin`).
-   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9 --incidencia RECURSO:CIV:12:16`: `fin editar` del mismo `CIZ` al 16; la 991002 `continua`; ningún inicio nuevo.
-   - `python prueba_escritura_porcentajes.py verificar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9 --incidencia RECURSO:CIV:12:16`: `porcentajes:inc:991001:fin` con el **mismo** `hmores.ide` y `fec=20261016`.
-   - `python prueba_escritura_porcentajes.py limpiar --confirmar`
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9`: `CIV` el 5 y `CIZ` el 9 (`porcentajes:inc:991001:ini|fin`).
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9 --incidencia RECURSO:CIV:12:16`: `fin editar` del mismo `CIZ` al 16; la 991002 `continua`; ningún inicio nuevo.
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py verificar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9 --incidencia RECURSO:CIV:12:16`: `porcentajes:inc:991001:fin` con el **mismo** `hmores.ide` y `fec=20261016`.
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar`
 2. C3.
-   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:27:31`: `CIV` el 27; `fin abierta`, sin `CIZ`.
-   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --incidencia RECURSO:CIV:2:6`: `ini continua`, sin inicio, y `CIZ` el 6 en el parte de **noviembre** de la `0404` (`porcentajes:inc:991101:fin`).
-   - `python prueba_escritura_porcentajes.py limpiar --confirmar`
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:27:31`: `CIV` el 27; `fin abierta`, sin `CIZ`.
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --incidencia RECURSO:CIV:2:6`: `ini continua`, sin inicio, y `CIZ` el 6 en el parte de **noviembre** de la `0404` (`porcentajes:inc:991101:fin`).
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar`
 3. C4.
-   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:27:31`
-   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO`: `CIERRE … escribir`, `CIZ` el 31 en el parte de octubre, sin `--pisar` (inicio en M−1), `porcentajes:inc:991001:fin`.
-   - Repetir los dos: nada nuevo (`ya_registrado`). Luego `python prueba_escritura_porcentajes.py limpiar --confirmar`
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:27:31`
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO`: `CIERRE … escribir`, `CIZ` el 31 en el parte de octubre, sin `--pisar` (inicio en M−1), `porcentajes:inc:991001:fin`.
+   - Repetir los dos: nada nuevo (`ya_registrado`). Luego `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar`
 4. C12 y C13.
-   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 9 --incidencia RECURSO:CIV:15:30`: `CIV` el 15 de septiembre, abierta.
-   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:1:31`: `continua` y `abierta`, nada escrito.
-   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO`: nada escrito y `PENDIENTE cierre:{ide}: relanza con --pisar cierre:{ide}` (`{ide}`, el del `CIV` del 15).
-   - `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO --pisar cierre:{ide}`: `CIZ` el 31 de octubre en el parte de octubre de la `0404` (`porcentajes:inc:990901:fin`).
-   - `python prueba_escritura_porcentajes.py limpiar --confirmar`
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 9 --incidencia RECURSO:CIV:15:30`: `CIV` el 15 de septiembre, abierta.
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:1:31`: `continua` y `abierta`, nada escrito.
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO`: nada escrito y `PENDIENTE cierre:{ide}: relanza con --pisar cierre:{ide}` (`{ide}`, el del `CIV` del 15).
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO --pisar cierre:{ide}`: `CIZ` el 31 de octubre en el parte de octubre de la `0404` (`porcentajes:inc:990901:fin`).
+   - `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar`
 5. C10, navegador local. Aquí escribe el transfer servidor (otro proceso):
    antes, `curl -s http://localhost:8006/health` debe decir
    `"modo_pruebas": true`; si no, **PARAR**. Registrar 5-9, quitarla del
    cuadrante y abrir Registrar: «No coincide con Sigrid» con las dos
-   líneas; Cancelar. Al final, `python prueba_escritura_porcentajes.py limpiar --confirmar`
+   líneas; Cancelar. Al final, `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar`
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
