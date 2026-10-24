@@ -1,16 +1,19 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Esperando aprobación de la spec: F-054** (al sincronizar, traer al
-cuadrante los % que ya existen en los partes de Sigrid; `sdd: true`, rigor
-crítico), `spec_ready` desde el 2026-10-24. La spec la escribió el
-spec-author, lanzado a petición del humano («lanza spec de f54»), y está en
-`specs/F-054-sync-trae-porcentajes/` (`7b780ef`, revisada en `3398f37` el 2026-10-24
-con D4 y la parte B decididas y D12-D15 nuevas, abajo). Rama `feature/F-054-sync-trae-porcentajes`, en la copia
-`porcentajes-f054`. **A la vez**, la spec de F-062 espera aprobación en la
-copia principal (rama `feature/F-062-rachas-incidencias`); ninguna de las
-dos está `in_progress`. **PARADA**: la spec la aprueba el humano, con sus
-decisiones.
+**Spec APROBADA, en espera: F-054** (al sincronizar, traer al cuadrante
+los % que ya existen en los partes de Sigrid, y al registrar preguntar si
+se pone a 0 una obra que el trabajador ya no tiene; `sdd: true`, rigor
+crítico), `spec_ready`. El humano la aprobó el 2026-10-24 («d12, con la
+casilla marcada por defecto, aunque se puede desmarcar. d13, metelo aqui.
+ok a lo demas»). La spec está en `specs/F-054-sync-trae-porcentajes/`
+(`6981a05`, todas las decisiones cerradas). Rama
+`feature/F-054-sync-trae-porcentajes`, en la copia `porcentajes-f054`.
+**No pasa a `in_progress` hasta que se cierre F-062**, que va primero
+(recomendación del líder, aceptada en el «ok a lo demas»): una sola
+`in_progress` a la vez. **A esta copia le falta el `.venv` de la api**
+(`[KO]` de init.sh, según el spec-author); hay que crearlo antes de
+implementar aquí.
 
 ## F-054 · spec REVISADA (spec-author, 2026-10-24) con las decisiones del humano
 
