@@ -5,43 +5,49 @@
 cuadrante los % que ya existen en los partes de Sigrid; `sdd: true`, rigor
 crítico), `spec_ready` desde el 2026-10-24. La spec la escribió el
 spec-author, lanzado a petición del humano («lanza spec de f54»), y está en
-`specs/F-054-sync-trae-porcentajes/` (`7b780ef`), con las decisiones D1-D11
-abiertas (abajo). Rama `feature/F-054-sync-trae-porcentajes`, en la copia
+`specs/F-054-sync-trae-porcentajes/` (`7b780ef`), revisada el 2026-10-24
+con D4 y la parte B decididas y D12-D15 nuevas (abajo). Rama `feature/F-054-sync-trae-porcentajes`, en la copia
 `porcentajes-f054`. **A la vez**, la spec de F-062 espera aprobación en la
 copia principal (rama `feature/F-062-rachas-incidencias`); ninguna de las
 dos está `in_progress`. **PARADA**: la spec la aprueba el humano, con sus
 decisiones.
 
-## F-054 · spec escrita (spec-author, 2026-10-24): D1-D11 ABIERTAS
+## F-054 · spec REVISADA (spec-author, 2026-10-24) con las decisiones del humano
 
-`specs/F-054-sync-trae-porcentajes/` (requirements 149 líneas, design 247,
-tasks T1-T15). El estado en `features.json` **no** lo ha cambiado el
-spec-author: lo pasa el líder. `bash harness/init.sh` en esta copia: tests
-en verde (418) y PUERTA TAMAÑO OK; único `[KO]`, el `.venv` de la api que
-falta en la copia `porcentajes-f054` (de entorno, no de la spec).
+`specs/F-054-sync-trae-porcentajes/` (requirements 149 líneas, design 250,
+tasks T1-T21). Revisión con las tres decisiones del humano del 2026-10-24
+(«al sincronizar, puedo querer trarme algunas laineas(obras) de sigrid y
+otras no…»): **D4** = aceptar **por entrada** (sustituye a «solo los
+trabajadores sin líneas» y a `sustituir: [ide]`); **parte B** nueva: al
+registrar, una obra que la plataforma no le da al trabajador es un 0 % y, si
+Sigrid tiene ahí una `M*` suya, el preflight pregunta por línea si la pone a
+0 (editándola, `can`/`tot` a 0, nunca `DELETE`); **D9** = A (incidencias
+fuera, vía el líder). El estado en `features.json` no lo toca el
+spec-author.
 
-**Límite de servicio:** el transfer **lee** Sigrid (endpoint nuevo de solo
-lectura `POST /api/porcentajes/existentes`: una lectura de las `M*` con
-`can` ≠ 0 del periodo, más los catálogos de postventa y VAR solo si hacen
-falta) y traduce cada línea a obra normal, `Postv-X` (casado inverso con
-`casar_postventa`) o `VAR-NN`; la api **escribe** en `dedicacion` (`POST
-/api/v1/periodos/{a}/{m}/traer-sigrid`); el front la llama tras un sync con
-éxito. Nada escribe en Sigrid.
+**Límite de servicio.** A: el transfer **lee** (`POST
+/api/porcentajes/existentes`, solo lectura) y traduce a obra normal,
+`Postv-X` o `VAR-NN`; la api compara por entrada y escribe en `dedicacion`
+solo lo aceptado (`POST /api/v1/periodos/{a}/{m}/traer-sigrid`, `aceptar`).
+B: el transfer detecta las sobrantes en el **preflight-lote completo** (una
+lectura más, en la primera ronda paralela; no en el de una obra sola,
+porque solo el pipeline tiene la partida resuelta de cada acción) y las pone
+a 0 en `POST /api/registro/poner-a-cero`, **antes** del `ejecutar` por
+obra, con la guarda de F-051; la api solo encamina las confirmaciones.
+Coste medido antes (T10) y después (T19): ≤ +15 %.
 
-**Decisiones que tiene que validar el humano** (requirements §9; la
-recomendada es la A en todas): D1 disparador (tras «Sincronizar Sigrid», el
-periodo abierto); D2 qué líneas (nuestras y manuales); D3 traducción
-(partida del parte como elegida; lo no ofrecible no se trae y se lista); D4
-conflicto (solo trabajadores sin líneas; los que tienen, «coinciden» o
-«diferencias» con botón «Usar lo de Sigrid»); D5 marcar ya registradas
-(guardar el `hmores.ide`); D6 partes cerrados (cuentan); D7 mes cerrado
-(409); D8 deshacer (evento `SIGRID` por trabajador); D9 incidencias fuera
-(F-062); D10 varias líneas en una entrada (sumar; con partidas distintas,
-no se trae); D11 trabajadores visibles en la empresa elegida y vigentes.
-Riesgos a conocer (design §10): editar la fila traída le quita la traza y
-el registro pide un pisado (como hoy, sin duplicar); una `M*` con otro
-código que el del recurso puede dar sobrecarga al editar. Test ajeno que
-cambia (lista cerrada): solo `ANCLAS` de `test_f002_fuente_unica.py`.
+**Decisiones ABIERTAS** (requirements §6, recomendada A en todas): D1
+disparador; D2 qué líneas; D3 traducción; D5 marcar ya registradas; D6
+partes cerrados; D7 mes cerrado; D8 deshacer (un evento por trabajador y
+petición); D10 varias líneas en una entrada; D11 trabajadores visibles y
+vigentes; **nuevas:** D12 las entradas `solo_sigrid` también se eligen
+(nada entra solo); **D13 partir la parte B en una feature aparte** (escribe
+en Sigrid, otro riesgo y otro MANUAL; recomendada A); D14 un trabajador sin
+ninguna línea en la plataforma no se revisa en B; D15 una línea con
+`synckey` de otro sistema es solo aviso. Riesgos (design §11): capacidad
+conservadora en la obra de postventa, la VAR y la 0404; una obra quitada
+del cuadrante deja su línea nuestra como sobrante (se pregunta). Test ajeno
+que cambia (lista cerrada): solo `ANCLAS` de `test_f002_fuente_unica.py`.
 
 ## Antes de F-054
 

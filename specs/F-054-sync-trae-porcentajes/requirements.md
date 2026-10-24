@@ -1,149 +1,149 @@
 <!-- specs/F-054-sync-trae-porcentajes/requirements.md -->
-# F-054 · Al sincronizar, traer al cuadrante los % que ya están en Sigrid
+# F-054 · Traer de Sigrid los % que se elijan; al registrar, obra sin nada = 0 %
 
-Rigor **`critico`**. Los tres servicios (design §1): el transfer **lee**
-Sigrid y traduce, la api **escribe** en `dedicacion` y el front lanza y
-enseña. **En Sigrid, solo lectura.** Pedida el 2026-10-08 («al sincronizar
-debería traer los % ya existentes en Sigrid»); ejemplo: el caso de la 0694,
-2026-09 (una `MADM` al 95 % a mano, sin `synckey`, que salió como sobrecarga).
-**D1-D11 ABIERTAS** (§9); los R con `[Dn]` van con la recomendada. Fuera:
-incidencias de Sigrid (D9, F-062), vinculados (F-044), escribir y `partes`.
+Rigor **`critico`**, los tres servicios (design §1). **Parte A** (§1-§3): al
+sincronizar, el transfer lee Sigrid y traduce, y la api escribe en
+`dedicacion` **solo las líneas que el usuario acepta**; en Sigrid, solo
+lectura. **Parte B** (§5): al registrar, una obra que la plataforma no le da
+al trabajador es un 0 %; si Sigrid tiene ahí una línea suya, se pregunta si
+se pone a 0, **editándola**. Pedida el 2026-10-08, precisada el 2026-10-24
+(§6). Ejemplo: el caso de la 0694, 2026-09 (una `MADM` al 95 % a mano, sin
+`synckey`, que salió como sobrecarga). Fuera: incidencias (D9), F-044, `partes`.
 
-## 0. Lo que hay en Sigrid y glosario
+Lecturas del líder (2026-10-23, mensuales desde 2025): las `M*` suman el
+100 % por recurso y mes «en 730 de 756 meses con incidencia»; la `M*` lleva
+`fec` = último día del mes en el 94 %; las `CI*`/`CIZ` tienen `can = tot = 0`.
+**Línea mensual**: `hmores` `M*` con `can` ≠ 0 en un parte de trabajo de obra.
+**Entrada**: obra + modo (normal, `Postv-X`, `VAR-NN`). **Sobrante**: línea
+mensual de un recurso del registro en una entrada que la plataforma no le da.
 
-Lecturas agregadas del líder (2026-10-23, mensuales desde 2025): las `M*`
-suman el 100 % por recurso y mes «en 730 de 756 meses con incidencia»; la
-`M*` lleva `fec` = último día del mes en el 94 %; las `CI*`/`CIZ` tienen
-`can = tot = 0` y no cuentan para el %. **Línea mensual**: `hmores` con hora
-`M*` y `can` ≠ 0 en un parte de trabajo de obra. **Entrada**: obra + modo del
-cuadrante (obra normal, `Postv-X` o `VAR-NN`).
+## 1. Disparador y lectura (A) `[D1, D2, D6, D7]`
 
-## 1. Disparador y periodo `[D1, D7]`
-
-- **R1.** CUANDO el sync de maestros termina con éxito, el front debe pedir
-  `POST /api/v1/periodos/{anio}/{mes}/traer-sigrid` del periodo abierto en el
-  cuadrante, con la empresa elegida. SI el sync falla, no se pide.
+- **R1.** CUANDO el sync de maestros termina con éxito, el front pide `POST
+  /api/v1/periodos/{anio}/{mes}/traer-sigrid` del periodo abierto, con la
+  empresa elegida y sin `aceptar`; SI el sync falla, no se pide.
 - **R2.** Periodo inexistente ⇒ 404; `CERRADO` ⇒ 409; sin llamar al transfer.
-- **R3.** SI una lectura de Sigrid falla o viene `truncated`, ENTONCES el
-  transfer responde 502 y la api 502 con el motivo, sin tocar la base; el
-  front lo avisa y el sync de maestros ya hecho se queda.
-
-## 2. Qué se lee (transfer) `[D2, D6]`
-
-- **R4.** El transfer lee en **una** lectura las líneas mensuales de los
-  partes de trabajo de obra (`con.tip` del ajuste, `hmo.reside` 0) del
-  periodo pedido (`hmo.ano`, `hmo.mes`) en obras de la empresa pedida, con
-  cualquier `fec`, `synckey` y estado del parte.
+- **R3.** SI una lectura de Sigrid falla o viene `truncated`, ENTONCES
+  transfer y api responden 502 con el motivo, sin tocar la base.
+- **R4.** **Una** lectura de las líneas mensuales de los partes de trabajo
+  de obra (`con.tip` del ajuste, `hmo.reside` 0) del periodo (`hmo.ano`,
+  `mes`) en obras de la empresa pedida; cualquier `fec`, `synckey` y estado.
 - **R5.** Las de la obra de pruebas (`OBRA_PRUEBAS_COD`) solo se cuentan.
-- **R6.** Cada línea publica `hmores_ide`, recurso, obra del parte, parte
-  (`ide`, código, estado, `en_registro`), hora, `can`, `fec`, partida (`ide`,
-  `cod`, `res`) y `synckey`.
-- **R7.** El endpoint nunca escribe en Sigrid, esté o no en modo pruebas.
+- **R6.** Cada línea publica `hmores_ide`, recurso, obra, parte (`ide`,
+  código, estado, `en_registro`), hora, `can`, `fec`, partida y `synckey`.
+- **R7.** El endpoint de la parte A nunca escribe en Sigrid.
 
-## 3. Traducción a una entrada (transfer) `[D3]`
+## 2. Traducción (transfer) y comparación (api) `[D3, D10, D11]`
 
-- **R8.** Línea de una obra normal: `destino = normal`, con su obra.
-- **R9.** Línea de la obra de postventa (`POSTVENTA_OBRA_COD`): `destino =
-  postventa` y `obra_origen_ide` = la **única** obra, de las que manda la
-  api, cuyo casado (`casar_postventa`, `#regla-p5`) da su partida; ninguna ⇒
-  motivo «no casa»; varias ⇒ «ambigua», con sus códigos.
-- **R10.** Línea de la obra VAR (`VAR_OBRA_COD`): `destino = var` con
-  `var_paride` si `partida_var_de` (`#regla-var`) la acepta; si no, su motivo.
-- **R11.** Los catálogos de postventa y VAR se leen solo si alguna línea es
-  de esa obra. **R12.** Son las funciones del preflight: un `Postv-X` o
-  `VAR-NN` traído se registra en la partida de la que vino.
+- **R8.** Obra normal: `destino = normal`. **R9.** Obra de postventa:
+  `destino = postventa` y la **única** obra, de las que manda la api, cuyo
+  `casar_postventa` (`#regla-p5`) da su partida; ninguna o varias ⇒ motivo.
+- **R10.** Obra VAR: `var_paride` si `partida_var_de` (`#regla-var`) la
+  acepta; si no, motivo. **R11.** Los catálogos de postventa y VAR se leen
+  solo si alguna línea es de esa obra. **R12.** Son las funciones del
+  preflight: lo traído se registra en la partida de la que vino.
+- **R13.** La api agrupa por trabajador (`recurso_ide`) y entrada: normal =
+  la obra; postventa = (obra de origen, postventa); VAR = `obra.ide` −`var_paride`.
+- **R14.** Va a `no_traidas`, con su motivo, la línea de un trabajador no
+  visible en la empresa o no vigente, la de una entrada que no está en la
+  base, es de otra empresa o no es ofrecible, y la que el transfer devolvió
+  con motivo. Las de recursos fuera del maestro, solo `fuera_maestro`.
+- **R15.** Las líneas de un trabajador en una entrada se suman; con partidas
+  distintas (normal), la entrada es `no_traducible`.
+- **R16.** % = suma de `can` × 100 a centésimas; ≤ 0 o > 100 ⇒ `no_traducible`.
+- **R17.** Partida: normal, la de sus líneas como **elegida** (0 ⇒
+  automática); postventa, automática; VAR, la fija. Sin propuesta guardada.
+- **R18.** Cada entrada sale con su estado: `igual` (% con la épsilon 0,005
+  de `domain/estados.py`; la partida no cuenta), `distinta`, `solo_sigrid`,
+  `solo_cuadrante` o `no_traducible`. Sin `aceptar`, nada se escribe.
 
-## 4. Qué se trae al cuadrante (api) `[D3, D10, D11]`
+## 3. Aceptar línea a línea (A) `[DECIDIDO, D5, D8, D12]`
 
-- **R13.** La api agrupa por trabajador (`recurso_ide` = `trabajador.ide`) y
-  entrada: normal = la obra; postventa = (`obra_origen_ide`, postventa); VAR
-  = la fila de `obra` con `ide` = −`var_paride`.
-- **R14.** Una línea no se trae y sale en `no_traidas` con su motivo si el
-  trabajador no es visible en la empresa elegida o no está vigente en el mes;
-  si su entrada no está en la base, es de otra empresa o no es ofrecible
-  (`Linea.ofrecible`); o si el transfer la devolvió con motivo. Las de
-  recursos que no están en el maestro (p. ej. vinculados) solo se cuentan,
-  en `fuera_maestro`.
-- **R15.** Las líneas de un trabajador en la misma entrada (varios partes,
-  días o partidas) se suman. SI en una normal tienen partidas distintas,
-  ENTONCES esa entrada no se trae.
-- **R16.** % = suma de `can` × 100 a centésimas; ≤ 0 o > 100 ⇒ no se trae.
-- **R17.** Partida: en la normal, la de sus líneas como **elegida** (0 ⇒
-  automática); en postventa, automática (el casado da la misma); en VAR, la
-  fija de la entrada. Sin propuesta guardada.
-- **R18.** Las entradas buenas se traen aunque otras del trabajador no.
+- **R19.** CUANDO la petición trae `aceptar: [{trabajador_ide, obra_ide,
+  es_postventa}]`, cada aceptada `distinta` o `solo_sigrid` pisa **solo esa**
+  línea (la actualiza en su sitio o la crea); las otras y su traza no cambian.
+- **R20.** SI la aceptada está en otro estado, ENTONCES no se toca y vuelve
+  con su motivo. Las `solo_cuadrante` no se aceptan: las escribe el registro.
+- **R21.** `[D12]` Las `solo_sigrid` se eligen igual, también las de un
+  trabajador sin líneas: nada entra sin aceptarlo.
+- **R22.** Una transacción; aceptar dos veces lo mismo no cambia nada.
+- **R23.** `[D5]` La aceptada guarda `sigrid_hmores_ide` (el menor `ide` de
+  sus líneas), `sigrid_parte_cod`, `sigrid_estado = registrado` y el motivo
+  «traída de Sigrid»: al registrar es **ya registrada** (`#regla-cero`).
+- **R24.** Si luego se guarda la fila, pierde la traza y el registro pide un
+  pisado que **edita** la línea de Sigrid (regla de hoy): nunca un duplicado.
+- **R25.** `[D8]` Cada trabajador con alguna aceptada deja **un** evento
+  `SIGRID` por petición, con su `X-Usuario`; deshacerlo (`#regla-deshacer`)
+  devuelve solo las entradas que esa aceptación cambió.
+- **R26.** Tras aceptar, se encolan las propuestas de los escritos.
 
-## 5. Lo que ya tiene el cuadrante `[D4]`
+## 4. Resultado, front y documentación
 
-- **R19.** MIENTRAS no tiene líneas en el periodo, se le crean las traídas.
-- **R20.** SI ya tiene líneas y coinciden con las traducibles de Sigrid
-  (mismas entradas y %, con la épsilon 0,005 de `domain/estados.py`; la
-  partida no cuenta), ENTONCES no se toca y suma en `coinciden`.
-- **R21.** SI difieren, ENTONCES no se toca: sale en `diferencias`.
-- **R22.** CUANDO la petición trae `sustituir: [ide]`, a esos trabajadores se
-  les **sustituyen** las líneas por las traducibles de Sigrid; uno sin
-  ninguna no se toca y sale con su motivo.
-- **R23.** Una transacción; repetir sin cambios en Sigrid no cambia nada.
+- **R27.** La respuesta da, por trabajador, sus entradas con estado, % de
+  los dos lados, parte y motivo; y `aceptadas`, `no_traidas`,
+  `fuera_maestro`, `lineas_leidas`, `excluidas_pruebas` y motivos de catálogo.
+- **R28.** El front enseña el resumen y una ventana por trabajador con una
+  casilla por entrada `distinta` o `solo_sigrid` y «Aceptar las marcadas»,
+  que repite la petición con `aceptar` y recarga. No compara ni decide.
+- **R29.** `ARCHITECTURE.md`: `#regla-traer-sigrid` (A), `#regla-obra-cero`
+  (B) y la tabla de acceso; `INTEGRACION.md` §1, §5 y §7 (transfer → api →
+  front); `azure-apps/dedicacion.md` al desplegar; `test_f002_fuente_unica`.
+- **R30.** MANUAL (humano): A en local con septiembre 2026, solo lectura; B
+  en modo pruebas sobre la 0404 (tasks T18, T19).
 
-## 6. Marcar «ya registradas» `[D5]`
+## 5. Parte B · Al registrar, obra sin nada = 0 % `[DECIDIDO, D13-D15]`
 
-- **R24.** Cada entrada traída guarda en su asignación `sigrid_hmores_ide`
-  (el menor `ide` de las líneas que suma), `sigrid_parte_cod`,
-  `sigrid_estado = registrado` y el motivo «traída de Sigrid»: al registrar
-  viaja como `hmores_ide` y el transfer la da por **ya registrada**
-  (`#regla-cero`). **R25.** Las que ya tenía el cuadrante no se marcan.
-- **R26.** Lo que se cambie después sigue la regla de hoy: la fila guardada
-  pierde la traza y la línea de Sigrid es un pisado a confirmar, que se
-  **edita** en su sitio. Nunca un duplicado.
+- **R31.** CUANDO se pide el preflight del periodo o de un trabajador (no el
+  de una obra sola), el transfer lee en **una** lectura más, en la primera
+  ronda paralela del lote, las líneas mensuales del periodo de los recursos
+  del lote (la de R4, por recurso) y marca **sobrante** la que no cubre
+  ninguna línea de su recurso: normal, si no tiene esa obra; postventa, si
+  ningún `Postv-` suyo casa con esa partida; VAR, si ninguna entrada suya es
+  esa partida. `[D14]` Solo recursos con alguna línea en la petición.
+- **R32.** En modo pruebas solo cuentan las de la obra de pruebas, cubiertas
+  si una acción del recurso la reconoce (ya registrada, choque) o tiene su partida.
+- **R33.** Cada sobrante es un conflicto `a_cero`, **uno por línea**
+  (`hmores_ide`, obra, parte, hora, partida, `can`, `synckey`), que se
+  confirma por línea, aparte de los demás; sin confirmar no se toca.
+- **R34.** SI está en un parte cerrado o su `synckey` es de otro sistema
+  `[D15]`, ENTONCES es un aviso, sin confirmación ni escritura. Una nuestra
+  de una asignación que ya no existe es sobrante como una de Administración.
+- **R35.** CUANDO se confirma, `ejecutar` la pone a 0 **antes** de las demás
+  escrituras, editándola en su sitio (`can` y `tot` a 0) con la relectura y
+  la guarda de `#regla-cero` (recurso, `M*`, `can` y `synckey` del preflight,
+  sin enlaces, En registro, en pruebas solo la 0404); la que ya no cumple va
+  a `omitidas`. Ningún `DELETE`; log antes/después; `a_cero` en la respuesta.
+- **R36.** Capacidad (`#regla-capacidad`): en el preflight una sobrante suma
+  como cualquier línea del parte (solo pasa en la obra de postventa, la VAR o
+  la de pruebas); en `ejecutar` no suman las ya puestas a 0. El 100 % no cambia.
+- **R37.** Coste: el preflight del mes no sube más de un 15 % sobre el
+  medido antes de B (método de F-055 T18). Sync y propuestas, sin lecturas.
 
-## 7. Deshacer y propuestas `[D8]`
+## 6. Decisiones
 
-- **R27.** Cada trabajador traído o sustituido deja **un** evento `SIGRID`
-  con su `X-Usuario` y los snapshots, deshacible (`#regla-deshacer`).
-- **R28.** Tras traer, se encolan las propuestas de los escritos (Copiar mes).
+**DECIDIDAS por el humano el 2026-10-24** («al sincronizar, puedo querer
+trarme algunas laineas(obras) de sigrid y otras no. si acepto en la
+plataforma piso solo esas lineas del trabjador. al registrar, si el
+trabajador no tiene nada en una obra es como un 0%. si en sigrid si tiene
+debe preguntar si lo pisa (y lo deja a 0) o no»): **D4** = aceptar por
+entrada (R19-R22; sustituye a «solo los trabajadores sin líneas» y a
+`sustituir: [ide]`); **parte B** (R31-R36). **D9** = A (vía el líder).
 
-## 8. Resultado, front y lo que no cambia
+**ABIERTAS** (recomendada: **A**):
 
-- **R29.** La respuesta publica `traidos` y `sustituidos` (trabajador y
-  entradas), `coinciden`, `diferencias` (las dos versiones), `no_traidas`
-  (trabajador, obra, parte, %, motivo), `fuera_maestro`, `lineas_leidas`,
-  `excluidas_pruebas` y los motivos de postventa y VAR.
-- **R30.** El front enseña un aviso con el resumen y, si hay diferencias o no
-  traídas, una ventana con las listas; cada diferencia con «Usar lo de
-  Sigrid», que repite la petición con `sustituir: [ide]` y recarga el
-  cuadrante. El front no compara ni decide.
-- **R31.** Preflight, `ejecutar`, sync de maestros y propuestas hacen las
-  mismas lecturas que hoy (F-055): ninguno usa la lectura nueva.
-- **R32.** `ARCHITECTURE.md` gana `#regla-traer-sigrid` y la fila de lectura;
-  `INTEGRACION.md`, §1, §5 y §7 (despliegue transfer → api → front);
-  `azure-apps/dedicacion.md`, al desplegar y dentro de F-054;
-  `test_f002_fuente_unica` vigila la ancla.
-- **R33.** MANUAL (humano, local, septiembre 2026): tras sincronizar, el caso
-  de la 0694 sale en el cuadrante o en `diferencias`, y el preflight da lo
-  traído por ya registrado (tasks T13).
-
-## 9. Preguntas abiertas para el humano (recomendada: **A** en todas)
-
-1. **D1 · Disparador.** (A) al pulsar «Sincronizar Sigrid», tras el sync con
-   éxito, el periodo abierto en el cuadrante; (B) botón aparte; (C) dentro
-   de `POST /sync`, todos los abiertos y sin ver el resultado.
-2. **D2 · Qué líneas.** (A) todas las mensuales, nuestras y manuales; (B)
-   solo las sin `synckey` nuestra. A: Sigrid es lo registrado.
-3. **D3 · Traducción.** (A) R8-R17: la partida del parte como **elegida**, y
-   sin entrada ofrecible no se trae; (B) como propuesta guardada (el
-   selector la reescribe); (C) traer también a no ofrecibles, marcadas.
-4. **D4 · Lo que ya hay.** (A) R19-R22: solo los trabajadores sin líneas; con
-   líneas, coincide o se lista con «Usar lo de Sigrid»; (B) Sigrid manda
-   siempre; (C) mezclar línea a línea. A: como Copiar mes.
-5. **D5 · Ya registradas.** (A) R24, guardar el `hmores.ide`; (B) no marcar:
-   cada traída pediría confirmar un pisado al registrar.
-6. **D6 · Partes cerrados.** (A) cuentan igual, con su estado en la
-   respuesta; (B) solo los En registro. A: son % del mes.
-7. **D7 · Mes cerrado en la app.** (A) 409 sin leer; (B) traer igual.
-8. **D8 · Deshacer.** (A) un evento por trabajador; (B) el lote de una vez.
-9. **D9 · Incidencias.** (A) solo %, las `CI*`/`CIZ` a F-062; (B) también.
-10. **D10 · Varias líneas en una entrada.** (A) R15: sumar, y con partidas
-    distintas no se trae; (B) sumar y elegir la de más %; (C) no traer
-    nunca. A: elegir una dejaría otra sumando de más al registrar.
-11. **D11 · Qué trabajadores.** (A) los visibles en la empresa elegida y
-    vigentes, como Copiar mes y Registrar; (B) todos los del maestro.
+1. **D1 · Disparador.** (A) tras el sync, el periodo abierto; (B) botón; (C) en `/sync`.
+2. **D2 · Qué líneas.** (A) mensuales nuestras y manuales; (B) sin las nuestras.
+3. **D3 · Traducción.** (A) R8-R17, partida como elegida; (B) como propuesta
+   guardada (el selector la reescribe); (C) también a no ofrecibles.
+4. **D5 · Ya registradas.** (A) R23; (B) no marcar (pisado al registrar).
+5. **D6 · Partes cerrados.** (A) cuentan; (B) solo los En registro.
+6. **D7 · Mes cerrado.** (A) 409 sin leer; (B) comparar igual.
+7. **D8 · Deshacer.** (A) un evento por trabajador y petición; (B) el lote.
+8. **D10 · Varias líneas en una entrada.** (A) R15; (B) elegir la de más %.
+9. **D11 · Trabajadores.** (A) visibles y vigentes; (B) todo el maestro.
+10. **D12 · Entradas `solo_sigrid`.** (A) se eligen igual, también sin
+    líneas; (B) solas si no tiene líneas; (C) siempre solas.
+11. **D13 · ¿B en otra feature?** (A) sí: B escribe en Sigrid (otro riesgo y
+    MANUAL en pruebas) y pasa a una nueva con §5 y design §6; (B) no.
+12. **D14 · Trabajador sin líneas.** (A) no se revisa; (B) todo es sobrante.
+13. **D15 · `synckey` de otro sistema.** (A) aviso; (B) preguntar (F-051 las edita).
