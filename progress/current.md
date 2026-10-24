@@ -16,7 +16,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T6 (hechas T1-T5b).
+- **Tarea en curso:** T7 (hechas T1-T6).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
@@ -38,6 +38,13 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   aviso»); una racha con alguna línea explicada (propia, de quitada o de
   la previa) no sale entera como `solo_sigrid`; `PlanCadena.previas` da
   los `ide` de la previa que la cadena continúa.
+  **Desviación T6**: `reconciliar` se borra en T9, no en T6: su único
+  llamador es `_reconciliar_incidencias` del pipeline, que sustituye T9;
+  borrarlo antes deja la suite del transfer en rojo entre commits. Sus
+  tests ya están reescritos a F-062 (lista cerrada). `no_editar_el_par`
+  ya iba «por cadena»: todas las `editar`/`devolver` de una cadena llevan
+  el `id` de la dueña; cambian su docstring y `MOTIVO_INC_PAR`. La guarda
+  R9 solo cuenta líneas `CI*`/`CIZ`.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

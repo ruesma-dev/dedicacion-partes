@@ -71,9 +71,10 @@ MOTIVO_INC_CAMBIADA = (
     "cambiada en Sigrid (línea {ide}: otro día, código o cantidad): no se "
     "toca; para igualar, pon en el cuadrante lo que tiene Sigrid")
 MOTIVO_INC_CERRADO = "el parte {parte} está cerrado: sigue del {desde} al {hasta}"
+#: F-062 (R14): la guarda va por cadena (`ini`, `fin` y `devolver`).
 MOTIVO_INC_PAR = (
-    "no se edita: la otra línea de la incidencia (línea {ide}) ya no se puede "
-    "editar; se editan las dos o ninguna")
+    "no se edita: otra línea de la racha (línea {ide}) ya no se puede "
+    "editar; se editan todas o ninguna")
 #: `can` de una línea de incidencia: 0 (con la tolerancia de la guarda).
 _TOLERANCIA_CAN = 0.000001
 
@@ -268,25 +269,31 @@ def reconciliar(acciones: Iterable[AccionIncidencia],
 
 
 def sigue_editable(linea, a: AccionIncidencia, est: int) -> bool:
-    """R45: la línea releída justo antes de escribir (la de F-051 R12)
-    sigue cumpliendo R41 para la acción `editar` `a`: existe, sin enlaces,
-    del recurso, con su código, `can` 0 (nulo cuenta como 0), nuestra
-    `synckey`, en la `fec` que vio el preflight (`fec_antes`) y en un parte
-    En registro (`est`)."""
+    """R45 y F-062 R14 (D12): la línea releída justo antes de escribir (la
+    de F-051 R12) sigue cumpliendo para la acción `editar` `a`: existe, sin
+    enlaces, del recurso, con su código, en la `fec` que vio el preflight
+    (`fec_antes`), en un parte En registro (`est`) y con el `can` y la
+    `synckey` leídos: los nuestros (0, nulo cuenta como 0, y nuestra
+    `synckey`) o, si es un `CIZ` ajeno (`a.ajena`), los suyos
+    (`can_leido` y `synckey_leida`)."""
+    if a.ajena:
+        sk, can = (a.synckey_leida or "").strip(), float(a.can_leido or 0.0)
+    else:
+        sk, can = synckey_incidencia(a.id, a.rol), 0.0
     return (linea is not None and not linea.enlazada
             and linea.reside == a.recurso_ide
             and _codigo(linea) == a.hora_codigo
-            and abs(float(linea.can or 0.0)) < _TOLERANCIA_CAN
-            and (linea.synckey or "").strip()
-            == synckey_incidencia(a.id, a.rol)
+            and abs(float(linea.can or 0.0) - can) < _TOLERANCIA_CAN
+            and (linea.synckey or "").strip() == sk
             and linea.fecha_int == a.fec_antes and linea.parte_est == est)
 
 
 def no_editar_el_par(acciones: Iterable[AccionIncidencia],
                      fallan: set[int]) -> None:
-    """R45: si una línea `editar` de una incidencia ya no se puede editar
-    (su `hmores_ide` en `fallan`), no se edita ninguna del par: esa va a
-    `omitir` «cambiada en Sigrid» y la otra, con `MOTIVO_INC_PAR`. Cambia
+    """R45 y F-062 R14: si una línea `editar` de una cadena ya no se puede
+    editar (su `hmores_ide` en `fallan`), no se edita ninguna de la cadena
+    (`ini`, `fin` y `devolver`; todas llevan el `id` de la dueña): esa va a
+    `omitir` «cambiada en Sigrid» y las demás, con `MOTIVO_INC_PAR`. Cambia
     las acciones en sitio."""
     acciones = [a for a in acciones if a.accion == "editar"]
     malas = {a.id: a.hmores_ide for a in acciones if a.hmores_ide in fallan}

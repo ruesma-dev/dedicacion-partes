@@ -542,6 +542,7 @@ def decidir_cadena(cadena: Cadena, lineas: Iterable[LineaIncidenciaSigrid],
                                else [])}
     en_tramo = sorted((ls for ls in leidas
                        if cadena.desde <= ls.fecha_int <= cadena.hasta
+                       and (es_inicio(ls) or es_fin(ls))
                        and ls.ide not in de_la_previa),
                       key=lambda x: (x.fecha_int, x.ide))
     if en_tramo:

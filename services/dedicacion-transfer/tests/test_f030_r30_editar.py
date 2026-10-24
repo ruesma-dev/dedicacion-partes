@@ -7,7 +7,8 @@ ARCHITECTURE.md#regla-incidencia).
   `dia_*`, opcionales) y la acción `editar` publica `fec_antes`.
 - Cliente (T28): la lectura de R33 trae `can`, parte y estado y busca
   también por `ide`; el `UPDATE` de la `fec` lleva la guarda de F-051.
-- Reglas (T29): `reconciliar`, pura.
+- Reglas (T29): lo que decidía `reconciliar` lo decide desde F-062
+  `rachas.decidir_cadena` (lista cerrada de su design §12).
 - Preflight, lote (T30) y `ejecutar` (T31).
 
 Sin red ni BBDD: el cliente con su `_read` sustituido por un doble y el
@@ -221,7 +222,9 @@ def test_f030_r41_sql_la_guarda_sin_codigo_es_la_de_f051():
     assert params == [1, 2, 0.5, "k", "CIV", 1]
 
 
-# ======================== reconciliar (T29) ============================= #
+# ================= reconciliar (T29) → F-062 (lista cerrada) ============ #
+# F-062 quita `reconciliar`: lo que decidía (R40-R44) lo decide ahora
+# `rachas.decidir_cadena` por cadena (R14, R18; R44 → R9). Mismos casos.
 from domain.models.registro_models import HoraRecurso
 
 HORAS = {200: [HoraRecurso(71, "CIV", "Vacaciones(V)", 12.5),
@@ -255,10 +258,14 @@ def _el_par(ini=20260705, fin=20260709, **kw):
 
 
 def _rec(entradas, existentes, est=EST):
-    from application.services.reglas_incidencias import reconciliar
+    """F-062 (lista cerrada): las acciones de cada cadena de `entradas`
+    decididas contra lo leído (lo que hacía `reconciliar`)."""
+    from application.services.rachas import cadenas, decidir_cadena
 
-    acciones = [a for e in entradas for a in _par(e)]
-    reconciliar(acciones, entradas, existentes, est=est)
+    acciones = []
+    for c in cadenas(entradas):
+        acciones += decidir_cadena(c, existentes, _par(c.duena), est=est,
+                                   empresa=1).acciones
     return acciones
 
 
@@ -282,14 +289,15 @@ def test_f030_r40_misma_fec_ya_registrado_por_ide_o_por_synckey():
         ("ya_registrado", 9001), ("ya_registrado", 9002)]
 
 
-def test_f030_r40_nuestra_solo_si_es_del_recurso_y_con_nuestra_synckey():
+def test_f030_r40_f062_r3_nuestra_solo_si_es_del_recurso_y_con_nuestra_synckey():
     otro_recurso = [_linea(9001, 20260705, "CIV", "porcentajes:inc:7:ini",
                            reside=999)]
     acc = _rec([_entrada(desde=5, hasta=9)], otro_recurso)
     assert acc[0].accion == "escribir"           # no es la nuestra
+    # La de otra `synckey` no es nuestra: es la previa abierta (R3).
     otra_sk = [_linea(9001, 20260705, "CIV", "partes:9:1")]
     acc = _rec([_entrada(desde=6, hasta=9)], otra_sk)
-    assert acc[0].accion == "escribir"           # ya no está: se escribe
+    assert (acc[0].accion, acc[0].hmores_ide) == ("continua", None)
 
 
 def test_f030_r41_otra_fec_edita_y_cada_linea_se_decide_sola():
@@ -322,8 +330,7 @@ def test_f030_r48_la_nuestra_en_otro_mes_no_se_edita(traza):
     """R48 (D3, cambio 2 de la review 2, T38): una incidencia no cambia de
     mes. La 7 llega en agosto y su par nuestro está en julio (por `ide` o
     por `synckey`): no se mueve a agosto, `omitir` «cambiada en Sigrid»;
-    cada mes edita solo su par. Verde de entrada, como T1: lo fijaba ya
-    `_cambiada` (T29)."""
+    cada mes edita solo su par."""
     from application.services.reglas_incidencias import MOTIVO_INC_CAMBIADA
 
     agosto = _entrada(desde=5, hasta=9, traza=False, mes=8, **traza)
@@ -379,85 +386,61 @@ def test_f030_r43_parte_cerrado_no_se_edita():
     assert [a.accion for a in acc] == ["ya_registrado", "omitir"]
 
 
-def test_f030_r44_dia_ocupado_por_otra_igual_no_se_edita():
-    from application.services.reglas_incidencias import MOTIVO_INC_DUPLICADA
+def test_f030_r44_f062_r9_otra_en_el_tramo_no_deja_editar():
+    """R44 → F-062 R9 (D13): otra línea de incidencia en el tramo, de
+    cualquier código, deja la cadena sin escribir ni mover nada."""
+    from application.services.rachas import MOTIVO_EN_EL_TRAMO
 
     otra = _linea(60, 20260706, "CIV", "partes:9:1", parte="PT26/9")
     acc = _rec([_entrada(desde=6)], [*_el_par(), otra])
-    assert (acc[0].accion, acc[0].parte_cod) == ("omitir", "PT26/1")
-    assert acc[0].motivo == MOTIVO_INC_DUPLICADA.format(
-        cod="CIV", dia=6, mes=7, parte="PT26/9")
-    # Otro código, otro recurso u otro día: no ocupa.
-    libres = [_linea(61, 20260706, "CIE"), _linea(62, 20260706, reside=201),
-              _linea(63, 20260707)]
-    acc = _rec([_entrada(desde=6)], [*_el_par(), *libres])
-    assert acc[0].accion == "editar"
+    assert [(a.accion, a.hmores_ide) for a in acc] == [("omitir", None)] * 2
+    assert acc[0].motivo == MOTIVO_EN_EL_TRAMO.format(
+        ide=60, cod="CIV", dia="06/07", parte="PT26/9", origen="de partes")
+    # Otro recurso o fuera del tramo: no estorba.
+    for libre in (_linea(62, 20260706, reside=201),
+                  _linea(63, 20260720, "CIE")):
+        acc = _rec([_entrada(desde=6)], [*_el_par(), libre])
+        assert acc[0].accion == "editar"
 
 
-def test_f030_r44_con_las_ediciones_de_la_peticion_aplicadas():
-    """La 8 se va del 6 al 20: la 7 puede ocupar el 6. La 9 iría al 25,
-    donde la 10 se queda (su parte está cerrado): no se edita."""
+def test_f030_r44_f062_r9_otra_incidencia_nuestra_en_el_tramo_es_ajena():
+    """La 8 se va del 6 al 20, pero en esta petición su inicio sigue el 6,
+    dentro del tramo de la 7: la 7 no se edita (R9) hasta el registro
+    siguiente; la 8 sí (R14)."""
     par8 = [_linea(9011, 20260706, "CIV", "porcentajes:inc:8:ini"),
             _linea(9012, 20260722, "CIZ", "porcentajes:inc:8:fin")]
     acc = _rec([_entrada(desde=6), _entrada(8, desde=20, hasta=22,
                                             traza=False)],
                [*_el_par(), *par8])
     assert [(a.id, a.rol, a.accion) for a in acc] == [
-        (7, "ini", "editar"), (7, "fin", "ya_registrado"),
+        (7, "ini", "omitir"), (7, "fin", "omitir"),
         (8, "ini", "editar"), (8, "fin", "ya_registrado")]
-    par9 = [_linea(9021, 20260723, "CIV", "porcentajes:inc:9:ini"),
-            _linea(9022, 20260724, "CIZ", "porcentajes:inc:9:fin")]
-    par10 = [_linea(9031, 20260725, "CIV", "porcentajes:inc:10:ini", est=3),
-             _linea(9032, 20260726, "CIZ", "porcentajes:inc:10:fin", est=3)]
-    acc = _rec([_entrada(9, desde=25, hasta=26, traza=False),
-                _entrada(10, desde=27, hasta=28, traza=False)],
-               [*par9, *par10])
-    assert [(a.id, a.rol, a.accion) for a in acc] == [
-        (9, "ini", "omitir"), (9, "fin", "omitir"),
-        (10, "ini", "omitir"), (10, "fin", "omitir")]
-    # En cadena: la 11 no puede ir al 15 (otra igual) y se queda en el 12,
-    # así que la 12, que iba a ocupar ese 12 (y se decide antes), tampoco.
-    # Su fin sí: el 13 lo deja libre el fin de la 11.
-    par11 = [_linea(9041, 20260712, "CIV", "porcentajes:inc:11:ini"),
-             _linea(9042, 20260713, "CIZ", "porcentajes:inc:11:fin")]
-    par12 = [_linea(9051, 20260710, "CIV", "porcentajes:inc:12:ini"),
-             _linea(9052, 20260711, "CIZ", "porcentajes:inc:12:fin")]
-    otra = _linea(70, 20260715, "CIV", "partes:1:1")
-    acc = _rec([_entrada(12, desde=12, hasta=13, traza=False),
-                _entrada(11, desde=15, hasta=16, traza=False)],
-               [*par11, *par12, otra])
-    assert [(a.id, a.rol, a.accion) for a in acc] == [
-        (12, "ini", "omitir"), (12, "fin", "editar"),
-        (11, "ini", "omitir"), (11, "fin", "editar")]
 
 
-def test_f030_r27_sin_la_nuestra_como_siempre_y_con_lo_movido():
-    from application.services.reglas_incidencias import MOTIVO_INC_DUPLICADA
+def test_f030_r27_f062_r3_r5_sin_la_nuestra_continua_la_de_administracion():
+    from dataclasses import replace
+
+    from application.services.rachas import MOTIVO_CONTINUA_RACHA
 
     otra = _linea(60, 20260712, "CIV", None, parte="PT26/40")
     acc = _rec([_entrada(desde=12, hasta=14, traza=False)], [otra])
     assert (acc[0].accion, acc[0].parte_cod, acc[0].motivo) == (
-        "omitir", "PT26/40", MOTIVO_INC_DUPLICADA.format(
-            cod="CIV", dia=12, mes=7, parte="PT26/40"))
-    assert (acc[1].accion, acc[1].parte_cod) == ("escribir", None)
-    # Una nueva el 5, donde estaba la 7, que se mueve al 6: se escribe.
-    acc = _rec([_entrada(desde=6), _entrada(8, desde=5, hasta=5,
-                                            traza=False, codigo="CIV")],
-               _el_par())
-    assert [(a.id, a.rol, a.accion) for a in acc][:3] == [
-        (7, "ini", "editar"), (7, "fin", "ya_registrado"),
-        (8, "ini", "escribir")]
+        "continua", "PT26/40", MOTIVO_CONTINUA_RACHA.format(
+            cod="CIV", dia="12/07", parte="PT26/40", ide=60))
+    assert (acc[1].accion, acc[1].fecha_int, acc[1].parte_cod,
+            acc[1].hmoide_destino) == ("escribir", 20260714, None, None)
+    # Con el parte del inicio de la empresa: el CIZ va a ese parte (R5).
+    acc = _rec([_entrada(desde=12, hasta=14, traza=False)],
+               [replace(otra, parte_emp=1)])
+    assert (acc[1].parte_cod, acc[1].hmoide_destino) == ("PT26/40", 777)
 
 
-def test_f030_r40_solo_se_reconcilian_las_que_se_escribirian():
-    from application.services.reglas_incidencias import reconciliar
-
+def test_f030_r40_f062_r26_solo_se_deciden_las_que_se_escribirian():
     omitidas = _par(_entrada(desde=6, recurso_ide=300))      # sin códigos
     antes = [(a.accion, a.motivo) for a in omitidas]
-    reconciliar(omitidas, [_entrada(desde=6, recurso_ide=300)], _el_par(),
-                est=EST)
-    assert [(a.accion, a.motivo) for a in omitidas] == antes
-    assert reconciliar([], [], _el_par(), est=EST) is None
+    acc = _rec([_entrada(desde=6, recurso_ide=300)], _el_par())
+    assert [(a.accion, a.motivo) for a in acc] == antes
+    assert _rec([], _el_par()) == []
 
 
 def test_f030_r43_sin_la_otra_linea_su_dia_no_consta():

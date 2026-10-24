@@ -869,3 +869,72 @@ def test_f062_r30_decidir_dice_que_lineas_son_de_la_previa():
     assert _decidir([], _inc(7, 5, 9)).previas == set()
     abierta = [_l(61, 20261001, parte="PT26/00040")]
     assert _decidir(abierta, _inc(7, 5, 9)).previas == {61}
+
+
+# ========== T6: reglas_incidencias (R14, D12; sin `reconciliar`) ========= #
+from application.services.reglas_incidencias import (
+    MOTIVO_INC_PAR,
+    no_editar_el_par,
+    sigue_editable,
+)
+from domain.models.registro_models import AccionIncidencia, LineaSigrid
+
+
+def _releida(ide=62, fec=20261009, cod="CIZ", can=1.0, sk=None, **kw):
+    """La línea releída justo antes del `UPDATE` (la de F-051 R12)."""
+    datos = {"hmoide": 40, "parte_cod": "PT26/00040", "parte_est": EST,
+             **kw}
+    return LineaSigrid(ide, 200, fec, 79, cod, can, 0.0, sk, **datos)
+
+
+def _mover(rol="devolver", **kw):
+    datos = {"id": 7, "rol": rol, "accion": "editar", "fecha_int": 20261007,
+             "recurso_ide": 200, "hora_codigo": "CIZ", "hmores_ide": 62,
+             "fec_antes": 20261009, "synckey_leida": None, "can_leido": 1.0,
+             "ajena": True, **kw}
+    return AccionIncidencia(**datos)
+
+
+def test_f062_r14_sigue_editable_un_ajeno_con_su_can_y_su_synckey():
+    a = _mover()
+    assert sigue_editable(_releida(), a, EST) is True
+    assert sigue_editable(_releida(sk="partes:9:1"), a, EST) is False
+    assert sigue_editable(_releida(can=0.0), a, EST) is False
+    assert sigue_editable(_releida(fec=20261008), a, EST) is False
+    assert sigue_editable(_releida(parte_est=3), a, EST) is False
+    assert sigue_editable(_releida(enlazada=True), a, EST) is False
+    assert sigue_editable(_releida(cod="CIV"), a, EST) is False
+    assert sigue_editable(None, a, EST) is False
+    # D12: con `can` 0 leído y `synckey` de `partes`, esa.
+    b = _mover(rol="fin", can_leido=0.0, synckey_leida="partes:9:1")
+    assert sigue_editable(_releida(can=0.0, sk="partes:9:1"), b, EST) is True
+    assert sigue_editable(_releida(can=None, sk="partes:9:1"), b, EST) is True
+
+
+def test_f062_r14_sigue_editable_la_propia_con_0_y_nuestra_synckey():
+    a = _mover(rol="fin", ajena=False, synckey_leida=SK_FIN, can_leido=0.0)
+    assert sigue_editable(_releida(can=0.0, sk=SK_FIN), a, EST) is True
+    assert sigue_editable(_releida(can=1.0, sk=SK_FIN), a, EST) is False
+    assert sigue_editable(_releida(can=0.0, sk=None), a, EST) is False
+
+
+def test_f062_r14_no_editar_el_par_va_por_cadena_con_el_devolver():
+    acciones = [_mover(rol="ini", hmores_ide=51, ajena=False),
+                _mover(rol="fin", hmores_ide=52, ajena=False),
+                _mover(hmores_ide=62),
+                _mover(id=8, rol="fin", hmores_ide=72)]
+    no_editar_el_par(acciones, {62})
+    assert [(a.id, a.rol, a.accion, a.fec_antes) for a in acciones] == [
+        (7, "ini", "omitir", None), (7, "fin", "omitir", None),
+        (7, "devolver", "omitir", None), (8, "fin", "editar", 20261009)]
+    assert acciones[0].motivo == MOTIVO_INC_PAR.format(ide=62)
+    assert acciones[0].motivo == (
+        "no se edita: otra línea de la racha (línea 62) ya no se puede "
+        "editar; se editan todas o ninguna")
+    assert acciones[2].motivo == MOTIVO_INC_CAMBIADA.format(ide=62)
+
+
+def test_f062_r9_decidir_una_linea_sin_codigo_de_incidencia_no_cuenta():
+    plan = _decidir([_l(61, 20261007, None), _l(62, 20261007, "MENC")],
+                    _inc(7, 5, 9))
+    assert [a.accion for a in plan.acciones] == ["escribir", "escribir"]
