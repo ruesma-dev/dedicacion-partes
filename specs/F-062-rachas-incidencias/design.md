@@ -1,7 +1,7 @@
 # F-062 · Diseño técnico
 
-Requisitos: `requirements.md` (R1-R30, casos C1-C11 en `tasks.md`, D5-D16
-abiertas; este diseño sigue la A). La base es el diseño de F-030
+Requisitos: `requirements.md` (R1-R30, casos C1-C12 en `tasks.md`; D5-D16
+decididas el 2026-10-24: A salvo D14 = B). La base es el diseño de F-030
 (`specs/F-030-dias-bajas-incidencias/design.md`) salvo lo dicho aquí.
 ## 1. Servicios que toca y por qué (límite de servicio)
 | Servicio | Qué hace en F-062 | Por qué ahí |
@@ -37,8 +37,10 @@ Sin I/O ni `settings`, como `reglas_incidencias.py`; fechas `int` AAAAMMDD.
   resto, `continua` «cadena de la incidencia N». `RachaResumen(id, papel,
   inicio_fec, inicio_parte, cierre, cierre_fec, cierre_parte, duena_id,
   avisos)` por incidencia (R22).
-- `cierres_mes_anterior(rachas, recurso, incidencias_mes, ano, mes, *, est,
-  empresa, obride_pruebas) -> list[CierreRacha]` (R12-R13): `recurso_ide`,
+- `cierres_mes_anterior(rachas, recurso, incidencias_mes, partes_m1, ano,
+  mes, *, est, empresa, obride_pruebas) -> list[CierreRacha]` (R12-R13; D14
+  = B: `partes_m1` son los partes de M−1 de la obra de cada inicio anterior a
+  M−1; se elige el En registro de la empresa de mayor `ide`): `recurso_ide`,
   `codigo`, `inicio_ide`/`_fec`/`_parte`, `accion` (`escribir`|
   `ya_registrado`|`aviso`), `fecha_int`, `parte_cod`, `hmoide`, `obride`,
   `cenide`, `paride`, `caaide`, `synckey`, `incidencia_id` o nulo, `motivo`.
@@ -159,26 +161,25 @@ F-030: `_decidir_rachas` hace **una** lectura (R19) con los recursos de
 `incidencias_mes` y `quitadas`. Después: `cadenas(incidencias_mes)` → por
 cada cadena con alguna incidencia de esta petición, `decidir_cadena` (si la
 dueña es de otra obra, solo los `continua` de las suyas) →
-`cierres_mes_anterior` y `no_coincide` (R17, R30). Las acciones `escribir` sin
+`cierres_mes_anterior` (antes, si algún cierre es D14, **una** lectura
+`partes_de_periodos` de F-055 con esas obras y M−1) y `no_coincide` (R17,
+R30). Las acciones `escribir` sin
 `hmoide_destino` piden parte en el paso 5 como hoy. Las que lo tienen
 (R5, R12) no lo piden, y su cuenta y su partida son las del inicio. En
 `ejecutar`, en este orden: los `UPDATE` de `editar`/`devolver` (releídos en
 la lectura de `_planear_ediciones`; si uno no cumple, `no_editar_el_par`
 por cadena), los `INSERT` de la petición y los de cierre (`max_pos` de su
-`hmoide`). `_comprobar_escrito` relee por `synckey`, incluida la de cierre.
-`ejecutar` va por obra y en serie (api): cada obra relee Sigrid, así que una
-cadena repartida entre obras se escribe en la petición de su dueña, y las
-demás solo dicen `continua`.
+`hmoide`). `_comprobar_escrito` relee por `synckey`, también la de cierre.
+`ejecutar` va por obra y en serie: la cadena entre obras la escribe la
+petición de su dueña; las demás solo dicen `continua`.
 ## 8. Lote (F-055) y coste
-`_por_leer_incidencias` agrupa por (año, mes, `obride` de pruebas o `None`):
-recursos de las incidencias que se escribirían y de `cierres_recursos`, `ide`
-de las trazas; va en la **ronda C**, en paralelo con `_cargar_lineas`; con
-≤ 500 recursos, **una** llamada por lote. Volumen (E-1: 1.895 `CI*` desde
-2025): ~1.100 filas en 13 meses para todos, lejos de `MAX_ALLOWED_ROWS`. La
-memoria responde si la ventana es la misma y recursos e `ide` están dentro;
-si no, cliente y fallo apuntado (F-055 R22). Antes solo se leía si se
-escribía una incidencia; ahora, si hay un designado: **una lectura más por
-lote** (R20), medida en T19.
+`_por_leer_incidencias` agrupa por (año, mes, `obride` de pruebas o `None`)
+los recursos de las incidencias y de `cierres_recursos` y los `ide` de las
+trazas: **ronda C**, en paralelo con `_cargar_lineas`, una llamada por lote
+(≤ 500 recursos; E-1: ~1.100 filas en 13 meses, lejos de `MAX_ALLOWED_ROWS`).
+Memoria: misma ventana y recursos e `ide` dentro; si no, cliente y fallo
+apuntado (F-055 R22). Es **una lectura más por lote** (R20, T19); los partes
+de M−1 de D14, una ronda D solo si hace falta (caso raro, E-11 y E-14).
 ## 9. Api: designación, `quitadas` y traza
 - `_designar_cierres`: en el orden de los payloads (código de obra), cada
   recurso (de líneas o incidencias) va a `cierres_recursos` del primero donde
@@ -202,9 +203,9 @@ y parte, para editarlas a mano). Sin botones ni confirmaciones (F-030 R28).
 ## 11. Documentación y otros repositorios
 - `#regla-incidencia` se reescribe: «Qué se escribe» → «La racha» (R1-R11),
   «Sin duplicar» → «La previa y la guarda» (R1, R9), «Cambiar los días» y
-  «Quitar» (aviso contra Sigrid) con R14-R18 y R30, «Una lectura» con la ventana (R19) y «Cierre del mes
-  anterior» (R12-R13). Se añade el pie «Decidido por Pablo Gris el 2026-10-23
-  (D1-D4) · F-062». P2 (excepción de la `fec`) no cambia.
+  «Quitar» (aviso contra Sigrid) con R14-R18 y R30, «Una lectura» (R19) y
+  «Cierre del mes anterior» (R12-R13); pie «Decidido por Pablo Gris el
+  2026-10-23 (D1-D4) y el 2026-10-24 (D5-D16) · F-062». P2 no cambia.
 - `INTEGRACION.md` §5: los campos de §6 y la fila de `sigrid-api` (lectura
   en ventana; se mueven `CIZ` ajenos). `azure-apps/dedicacion.md` (§1, §5, §7
   y la variable `INCIDENCIAS_MESES_ATRAS`): el líder, en el mismo trabajo y
@@ -235,9 +236,8 @@ y parte, para editarlas a mano). Sin botones ni confirmaciones (F-030 R28).
   transfer desplegado está en **modo real**).
 - **Lo que no se puede deshacer sin borrar** (D9): las líneas que F-030 ya
   escribió desde el 2026-10-22 con un `CIZ` por mes se quedan y avisan (R11).
-- **Inicios abiertos viejos** (E-11: 9 nunca cerrados): en la ventana pueden
-  «continuar» una del día 1 (R1 b) y avisan cada mes (R13); se acepta.
-  **Recurso sin registro en M**: nadie lo designa; su racha sigue abierta.
+- **Inicios abiertos viejos** (E-11: 9): D14 = B los cierra el último día de
+  M−1, a la vista en «Cierres de rachas». Recurso sin registro en M: abierta.
 - **Cadena entre obras con `ejecutar` a medias**: si falla la de la dueña, las
   otras quedan `continua` sin líneas; el registro siguiente lo completa (R18).
 - **Cuenta del `CIZ` en el parte del inicio** (R5): la del inicio (mismo

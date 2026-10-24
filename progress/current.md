@@ -6,7 +6,7 @@ alargar o cerrar la de cualquier parte; `sdd: true`, rigor crítico),
 `spec_ready` desde el 2026-10-24. La spec está en
 `specs/F-062-rachas-incidencias/` (`90945d4`, revisada en `9b40cc7` el 2026-10-24 con el aviso «no coincide con Sigrid»); rama
 `feature/F-062-rachas-incidencias`. Las decisiones D1-D4 del humano («sí a
-las cuatro») están en su `description` y las D5-D16 siguen abiertas (abajo).
+las cuatro») están en su `description` y las D5-D16 las **decidió el humano el 2026-10-24** (A, salvo D14 = B; abajo).
 La evidencia de Sigrid está en `progress/explore_F-062_sigrid.md`. **A la
 vez**, la spec de F-054 espera aprobación en la copia `porcentajes-f054`.
 **PARADA**: la spec la aprueba el humano, con sus decisiones.
@@ -32,8 +32,9 @@ contexto del mes (`incidencias_mes`, `cierres_recursos`, `quitadas`) y el
 front solo pinta. Qué de F-030 se conserva y qué se reemplaza: requirements
 §1. Los casos C1-C11 son los ejemplos del humano y de la evidencia.
 
-**Decisiones abiertas para el humano** (requirements §10; la recomendada es
-la A en todas, y design y tasks siguen la A):
+**Decisiones DECIDIDAS por el humano el 2026-10-24** («ok a lo demas»;
+«adelante, en d14 b»; requirements §10). Todas A salvo D14 = B, ya aplicadas
+en requirements, design y tasks:
 - **D5**: cada `CIZ` cierra el inicio abierto más reciente.
 - **D6**: ventana de 12 meses hacia atrás (configurable,
   `INCIDENCIAS_MESES_ATRAS`) y el mes siguiente solo para avisar.
@@ -49,8 +50,14 @@ la A en todas, y design y tasks siguen la A):
   obra de la primera (sin 422 en la api).
 - **D12**: un `CIZ` ajeno con `can = 1` se mueve igual.
 - **D13**: una línea ajena dentro del tramo ⇒ `omitir`.
-- **D14**: una racha abierta desde antes del mes anterior que no continúa:
-  solo aviso.
+- **D14 = B**: una racha abierta desde antes del mes anterior que M no
+  continúa se cierra con un `CIZ` el último día de M−1, en el parte de M−1
+  de la obra del inicio (En registro, de la empresa y, en pruebas, la 0404,
+  el de mayor `ide`, sin crear ninguno), con el centro, la partida y la
+  cuenta del inicio y `can = tot = 0`. Sin parte válido, solo aviso (R12,
+  R13, caso C12). Cuesta una lectura de partes de M−1, solo en ese caso.
+  **Ojo**: también cierra los inicios viejos que nunca se cerraron (E-11: 9),
+  y se ve en «Cierres de rachas» antes de ejecutar.
 - **D15** (nueva): las `CI*`/`CIZ` del mes que están en Sigrid pero no en la
   plataforma también salen en `no_coincide` (`solo_sigrid`). Solo salen en la
   petición designada del recurso, sin escribir y sin lecturas nuevas.

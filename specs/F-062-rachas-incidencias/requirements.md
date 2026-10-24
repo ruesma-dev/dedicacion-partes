@@ -3,7 +3,7 @@
 Rigor **`critico`**; transfer (decide y escribe), api (contexto y traza),
 front (solo pinta): design §1. **Decididas** por el humano: D1-D4 (2026-10-23,
 «sí a las cuatro», `features.json`) y el aviso de las quitadas (2026-10-24,
-R17). **D5-D16 abiertas** (§10, rec. A). Evidencia: `progress/explore_F-062_
+R17) y D5-D16 (2026-10-24, §10). Evidencia: `progress/explore_F-062_
 sigrid.md` (fila n = E-n). 2026: 1-oct jueves, 31-oct sábado, 1-nov domingo.
 ## 1. Qué se conserva de F-030 y qué se reemplaza («→», números de esta spec)
 - **Se conservan de F-030**: catálogo y captura (R3-R16; el chip «del al» no
@@ -59,13 +59,16 @@ sigrid.md` (fila n = E-n). 2026: 1-oct jueves, 31-oct sábado, 1-nov domingo.
   ahora llega a fin de mes, va al último día; aviso «no se une: X ya está».
 ## 4. Cierre del mes anterior (D4)
 - **R12.** CUANDO se registra el mes M de un recurso designado (R24), por cada
-  racha suya abierta con inicio en M−1 que ninguna incidencia de M continúa
-  (R1 b), se escribe un `CIZ` el último día de M−1 en el parte del inicio
-  (como R5), con `synckey` `porcentajes:inc:{id}:fin` si el inicio es nuestro
-  y `porcentajes:inc:cierre:{ide del inicio}` si es ajeno.
-- **R13.** SI ese parte no está En registro, es de otra empresa o (pruebas) de
-  otra obra, o `[D14]` la racha empieza antes de M−1 (un `CIZ` de M−1 no cabe
-  en un parte de otro mes), ENTONCES nada se escribe y el preflight avisa.
+  racha suya abierta con inicio anterior a M que ninguna incidencia de M
+  continúa (R1 b), se escribe un `CIZ` el último día de M−1 (`can = tot =
+  0`): con inicio en M−1, en el parte del inicio (como R5); `[D14]` con
+  inicio anterior, en el parte de M−1 de la obra del inicio En registro, de
+  la empresa y (pruebas) de la `0404`, el de mayor `ide` si hay varios (como
+  [`#regla-analitica`]) y sin crear ninguno, con centro, partida y cuenta
+  del inicio (misma obra). `synckey`: `porcentajes:inc:{id}:fin` si el
+  inicio es nuestro y `porcentajes:inc:cierre:{ide del inicio}` si es ajeno.
+- **R13.** SI el parte del inicio no vale o la obra del inicio no tiene en M−1
+  ningún parte que valga, ENTONCES nada se escribe y el preflight avisa.
 ## 5. Cambiar, quitar, idempotencia y «no coincide con Sigrid»
 - **R14.** Mover un `CIZ` o editar una propia es el `UPDATE` de solo la `fec`
   de F-030 (R41, D16): mismo `ide` y recurso, su código, `can` y `synckey`
@@ -97,8 +100,9 @@ sigrid.md` (fila n = E-n). 2026: 1-oct jueves, 31-oct sábado, 1-nov domingo.
   al último de M+1, de los recursos de las incidencias y de los designados,
   más las de las trazas (también de las quitadas) por `ide`; en pruebas,
   solo de la obra de pruebas. SI falla o viene `truncated`, ENTONCES nada.
-- **R20.** En el lote (F-055) va en la ronda C; el preflight del mes hace como
-  mucho **una** lectura más que hoy y, medido como F-055 T18, no sube > 15 %.
+- **R20.** En el lote (F-055) va en la ronda C; el preflight del mes hace
+  **una** lectura más que hoy (y otra de partes de M−1 solo si hay cierres
+  D14, R12) y, medido como F-055 T18, no sube > 15 %.
 - **R21.** SI la racha tiene `CIZ` en M+1 y la cadena ya no llega a fin de
   mes, ENTONCES no se escribe el `CIZ` y se avisa «la racha sigue en MM».
 ## 7. Contrato, api y front
@@ -128,23 +132,16 @@ sigrid.md` (fila n = E-n). 2026: 1-oct jueves, 31-oct sábado, 1-nov domingo.
 C1-C11, uno por línea en `tasks.md` §«Casos», cada uno con el R que fija: los
 ejemplos del humano (5-9 oct; 5-9 y 13-16; 27-oct a 6-nov; 27-31 sin
 continuación; baja 15-sep a 10-nov; dos obras 40/60), E-12 y E-15, quitar
-(C9, C10) y lo que solo está en Sigrid (C11). En todos, las `M*` igual (R26).
-## 10. Preguntas al humano (D5-D16; recomendada A)
-- **D5 · Emparejar `CIZ`** (sin código). **A**: el inicio abierto más
-  reciente. B: el más antiguo. **D6 · Ventana.** **A**: 12 meses atrás,
-  configurable, y M+1 para avisar (R21). B: 6 meses. C: sin tope.
-- **D7 · Fin de mes en fin de semana.** **A**: cuenta (C4). B: solo el último
-  día. **D8 · Pegada con `CIZ` de M−1.** **A**: abre otra, avisa (E-12). B: no.
-- **D9 · Habría que quitar una escrita.** **A**: no se une, avisa (R11). B:
-  omitirla. **D10 · Quitar o recortar una que movió un `CIZ` ajeno.** **A**:
-  se le devuelve su día con `UPDATE` (R16, R17). B: solo el aviso.
-- **D11 · Pegadas del mismo código en obras distintas.** **A**: una cadena en
-  la obra de la primera (R24, sin copiar D2 en la api). B: 422 en el PUT.
-- **D12 · `CIZ` ajeno con `can = 1`.** **A**: se mueve (solo `fec`). B: no.
-  **D13 · Ajena en el tramo.** **A**: `omitir` (R9). B: se escribe.
-- **D14 · Abierta desde antes de M−1, sin continuar.** **A**: solo aviso
-  (R13). B: `CIZ` en un parte de M−1 de la obra del inicio.
-- **D15 · `CI*` en Sigrid y no en la plataforma.** **A**: también en
-  `no_coincide`, solo de los designados y sin escribir (R30). B: no se avisa.
-- **D16 · Más edición al quitar.** **A**: solo `devolver` (R17) y aviso. B:
-  quitada la dueña de una cadena, su inicio pasa al día de la siguiente.
+(C9, C10), lo que solo está en Sigrid (C11) y D14 (C12). En todos, las `M*` igual (R26).
+## 10. Decisiones (DECIDIDAS por el humano el 2026-10-24)
+«ok a lo demas» (A en D5-D13, D15 y D16) y «adelante, en d14 b»:
+- **D5**: el `CIZ` cierra el inicio abierto más reciente. **D6**: 12 meses
+  atrás, configurable, y M+1 para avisar (R21). **D7**: fin de semana a fin
+  de mes cuenta como fin de mes (C4). **D8**: pegada con `CIZ` de M−1, abre
+  otra y avisa (R10). **D9**: no se une y avisa (R11). **D10**: el `CIZ`
+  ajeno movido se devuelve con `UPDATE` (R16, R17). **D11**: cadena entre
+  obras, en la de la primera (R24). **D12**: un ajeno con `can = 1` se mueve.
+  **D13**: ajena en el tramo ⇒ `omitir` (R9). **D14 = B**: la abierta desde
+  antes de M−1 se cierra en un parte de M−1 de la obra del inicio (R12).
+  **D15**: lo que solo está en Sigrid sale en `no_coincide` (R30). **D16**:
+  al quitar, solo `devolver` y aviso (R17).
