@@ -19,7 +19,8 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T5c (hechas T1-T18).
+- **Tarea en curso:** T22 (hechas T1-T18 y T5c; T19 y T20 son MANUAL
+  del humano, preparadas y sin ejecutar).
 - Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`). La fase RED
   de T1-T10 y T12 está en
   `C:\Users\pgris\AppData\Local\Temp\claude\C--Users-pgris-PycharmProjects-porcentajes\5cb867d0-7a0e-4697-8553-fb67f1894080\scratchpad\red\`
@@ -168,6 +169,16 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   siguen, sin tocar ese test) e `INTEGRACION.md` §1 (fila de `sigrid-api` y
   parte compartido), §3 (`INCIDENCIAS_MESES_ATRAS`) y §5;
   `test_f002_fuente_unica.py` gana `test_f062_r27_…` (tarea T18).
+  T5c (R31, D17): `CierreRacha` gana `requiere_confirmar` (inicio anterior
+  al día 1 de M−1) y `clave` (`cierre:{ide del inicio}`); `ejecutar` deja
+  `pendiente` el que no trae su clave (motivo con la clave, sin escribir,
+  fuera de `pendientes_confirmacion`). La api ya no tocaba el `fin` con un
+  `pendiente` desde T15 (solo `escribir`): su test r31 pasó a la primera,
+  sin fase RED (dicho en el informe). Front: casilla `chk-pisar` en el
+  `escribir` que pide confirmar y el aviso de `registroEjecutar` cuenta los
+  `pendiente`; script: `PENDIENTE cierre:{ide}: relanza con --pisar …`.
+  El comentario del front no dice «pisado»: `test_f013_r4_…` prohíbe esa
+  palabra fuera de `rotuloConflicto`.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

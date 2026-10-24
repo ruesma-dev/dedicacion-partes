@@ -443,8 +443,12 @@ Desde F-062 (rachas de incidencia como Administración;
   la respuesta gana `rachas` (por incidencia: `papel` `abre`|`continua`,
   inicio, `cierre` `cierra`|`abierta`|`cubierta`|`cadena` con día y parte,
   dueña y avisos), `cierres_racha` (recurso, código, inicio, `accion`
-  `escribir`|`ya_registrado`|`aviso`, `fecha_int`, parte, `incidencia_id` y
-  `hmores_ide`) y `no_coincide` (`tipo` `quitada`|`solo_sigrid`, recurso,
+  `escribir`|`ya_registrado`|`aviso`|`pendiente`, `fecha_int`, parte,
+  `incidencia_id`, `hmores_ide`, `requiere_confirmar` y `clave`: la racha
+  con inicio anterior a M−1 solo se cierra con `cierre:{ide del inicio}` en
+  `pisar_claves`; sin ella, `ejecutar` la devuelve `pendiente`, sin
+  escribir y fuera de `pendientes_confirmacion`) y `no_coincide` (`tipo`
+  `quitada`|`solo_sigrid`, recurso,
   incidencia, líneas con `ide`, código, día y parte, motivo y `en_sigrid`);
   las de `incidencias` ganan el rol `devolver`, las acciones `continua` y
   `abierta` y `ajena`. Sin ninguna, petición y respuesta son las de F-030.

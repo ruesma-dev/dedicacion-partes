@@ -317,3 +317,18 @@ def test_f062_r23_traza_ejecutar_pasa_cierres_y_no_coincide():
             ] == [("incidencia", {"id_1": 4, "sigrid_ide_fin": 99,
                                   "sigrid_dia_fin": 31}),
                   ("borrar", {"id_1": 5})]
+
+
+def test_f062_r31_traza_el_cierre_pendiente_no_toca_el_fin():
+    # R31 (D17): sin confirmar, el cierre no se escribe: su incidencia de
+    # M−1 sigue sin `fin`, aunque el elemento traiga la clave y el día.
+    cierres = [{"recurso_ide": 10, "accion": "pendiente", "incidencia_id": 4,
+                "hmores_ide": None, "fecha_int": 20261031,
+                "parte_cod": "PT26/00251", "requiere_confirmar": True,
+                "clave": "cierre:51"}]
+    assert _trazar([], cierres=cierres) == []
+    # Confirmado (relanzado con la clave), es un `escribir` y va al `fin`.
+    cierres[0].update(accion="escribir", hmores_ide=99)
+    assert _trazar([], cierres=cierres) == [
+        ("update", {"id_1": 4, "sigrid_ide_fin": 99, "sigrid_dia_fin": 31},
+         SOLO_ID)]

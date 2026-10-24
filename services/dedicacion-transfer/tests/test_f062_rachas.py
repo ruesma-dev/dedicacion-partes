@@ -1033,3 +1033,29 @@ def test_f062_r30_peticion_previas_de_todas_las_cadenas_del_mes():
                       est=EST) == set()
     plan = _peticion([], adm, mes_=[_inc(7, 5, 9)])
     assert (plan.acciones, plan.previas) == ([], {61, 62})
+
+
+def test_f062_r31_cierres_con_inicio_anterior_a_m1_requieren_confirmar():
+    from application.services.rachas import PREFIJO_CLAVE_CIERRE
+
+    sep = [_l(51, 20260915, "CIE", sk="porcentajes:inc:3:ini",
+              parte="PT26/00090", hmoide=90, **INICIO)]
+    partes = {(40, 2026, 10): [ParteSigrid(120, "PT26/00120", EST)]}
+    [c] = _cierres(sep, partes=partes)
+    assert (c.accion, c.requiere_confirmar, c.clave) == (
+        "escribir", True, "cierre:51")
+    # Con inicio en M−1 (C4), sin confirmar; la clave, la misma forma.
+    octubre = [_l(52, 20261027, sk="porcentajes:inc:5:ini", **INICIO)]
+    [c] = _cierres(octubre)
+    assert (c.accion, c.requiere_confirmar, c.clave) == (
+        "escribir", False, "cierre:52")
+    # El 1 de M−1 ya es de M−1; el 30 de M−2, anterior.
+    for fec, confirma in ((20261001, False), (20260930, True)):
+        [c] = _cierres([_l(53, fec, sk="porcentajes:inc:6:ini", **INICIO)],
+                       partes=partes)
+        assert c.requiere_confirmar is confirma, fec
+    # R31: la clave no choca con las de pisado (empiezan por un entero),
+    # sobrecarga ni sin partida.
+    assert PREFIJO_CLAVE_CIERRE == "cierre:"
+    assert not PREFIJO_CLAVE_CIERRE[0].isdigit()
+    assert not PREFIJO_CLAVE_CIERRE.startswith(("sobrecarga:", "sin_partida:"))

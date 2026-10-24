@@ -681,6 +681,10 @@ AVISO_CIERRE_SIN_PARTE = (
     "la racha {cod} del {ini} (parte {parte}) no sigue en {mes:02d}/{ano} y "
     "no se puede cerrar el {dia}: su obra no tiene en {mes1:02d}/{ano1} "
     "ningún parte En registro")
+#: R31 (D17): el cierre con inicio anterior a M−1 que `ejecutar` no escribe
+#: porque su clave no viene en `pisar_claves`.
+MOTIVO_CIERRE_PENDIENTE = ("{motivo}; sin confirmar, no se escribe: marca "
+                           "{clave} para cerrarla")
 
 
 @dataclass
@@ -689,8 +693,10 @@ class CierreRacha:
     que ninguna incidencia de M continúa. `accion`: `escribir` (en el parte
     `hmoide`, con la obra, centro, partida y cuenta del inicio),
     `ya_registrado` (`hmores_ide`, la línea que ya la cierra) o `aviso` (no
-    hay parte que valga). `incidencia_id`: la nuestra del inicio, o None si
-    el inicio es ajeno."""
+    hay parte que valga); en `ejecutar`, `pendiente` (R31). `incidencia_id`:
+    la nuestra del inicio, o None si el inicio es ajeno. R31 (D17):
+    `requiere_confirmar` si el inicio es anterior al día 1 de M−1, con su
+    `clave` (`cierre:{ide del inicio}`) como la de un pisado."""
     recurso_ide: int
     codigo: str
     inicio_ide: int
@@ -711,6 +717,15 @@ class CierreRacha:
     # La hora `CIZ` del recurso y su precio (los pone el pipeline).
     hora_ide: int | None = None
     pre: float = 0.0
+    # R31 (D17): se confirma como un pisado, con esta clave.
+    requiere_confirmar: bool = False
+    clave: str | None = None
+
+
+#: R31 (D17): prefijo de la clave con la que se confirma un cierre D14 con
+#: inicio anterior a M−1, como un pisado. No choca con las de `conflictos`
+#: (las de pisado empiezan por un entero; `sobrecarga:`, `sin_partida:`).
+PREFIJO_CLAVE_CIERRE = "cierre:"
 
 
 def synckey_de_cierre(inicio: LineaIncidenciaSigrid
@@ -811,7 +826,9 @@ def cierres_mes_anterior(rachas: Iterable[Racha], recurso: int,
                         inicio_ide=ini.ide, inicio_fec=ini.fecha_int,
                         inicio_parte=ini.parte_cod, accion="aviso",
                         fecha_int=fin_m1, synckey=sk, incidencia_id=inc_id,
-                        motivo="")
+                        motivo="",
+                        requiere_confirmar=_mes(ini.fecha_int) < m1,
+                        clave=f"{PREFIJO_CLAVE_CIERRE}{int(ini.ide)}")
         out.append(c)
         if r.cierre is not None:
             c.accion, c.hmores_ide = "ya_registrado", r.cierre.ide

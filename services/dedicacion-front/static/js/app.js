@@ -2997,8 +2997,18 @@ function pintarCierresRacha(o) {
       : c.accion === "ya_registrado" ? `ya cerrada el ${diaMes(c.fecha_int)}`
         : c.accion === "pendiente" ? "pendiente de confirmar: no se ha escrito"
           : `no se cierra: ${c.motivo || ""}`;
-    return `<tr>${[nombreTrabajador(c.recurso_ide), c.codigo, inicio, que]
-      .map((x) => `<td>${escapeHtml(x)}</td>`).join("")}</tr>`;
+    // R31 (D17): la racha que empezó antes de M−1 se cierra solo si se
+    // confirma, con la misma casilla que un conflicto (su `clave` va en
+    // `pisar_claves`).
+    const confirmar = c.accion === "escribir" && c.requiere_confirmar;
+    const casilla = confirmar
+      ? `<input type="checkbox" class="chk-pisar" value="${escapeHtml(c.clave)}"` +
+        `${registro.pisar.has(c.clave) ? " checked" : ""}> `
+      : "";
+    const celdas = [nombreTrabajador(c.recurso_ide), c.codigo, inicio]
+      .map((x) => `<td>${escapeHtml(x)}</td>`).join("");
+    const texto = confirmar ? `${que} (marca la casilla para cerrarla)` : que;
+    return `<tr>${celdas}<td>${casilla}${escapeHtml(texto)}</td></tr>`;
   }).join("");
   return `<h4>Cierres de rachas</h4><table class="tabla-reg tabla-inc">` +
     `<thead><tr><th>Trabajador</th><th>Incidencia</th><th>Inicio</th>` +
@@ -3134,6 +3144,9 @@ async function registroEjecutar() {
     (r.obras || []).forEach((o) => {
       esc += (o.escritas || []).length; omi += (o.omitidas || []).length;
       pend += (o.pendientes_confirmacion || []).length;
+      // R31 (D17): el cierre sin confirmar tampoco se ha escrito.
+      pend += (o.cierres_racha || [])
+        .filter((c) => c.accion === "pendiente").length;
     });
     cerrarModal();
     toast(`Sigrid: ${esc} escritas · ${omi} omitidas · ` +

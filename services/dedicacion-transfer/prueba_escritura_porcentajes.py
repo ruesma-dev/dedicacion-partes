@@ -53,6 +53,9 @@ Fases:
       con una línea testigo al 0 %, que se omite siempre (P3): solo da el
       periodo y la empresa de la petición, como las líneas que el recurso
       tendría en el cuadrante.
+      El cierre de una racha que empezó antes de M−1 no se escribe sin
+      confirmar: sale PENDIENTE cierre:{ide}; se relanza con --pisar
+      cierre:{ide} (R31).
 
 Sin --confirmar, las fases de escritura solo muestran lo que harían.
 """
@@ -327,6 +330,10 @@ def fase_ejecutar(pipeline: RegistroPipeline, st, ano: int, mes: int,
         print(f"  OMITIDA reg={o['registro_id']}: {o['motivo']}")
     for c in r.pendientes_confirmacion:
         print(f"  PENDIENTE {c.clave}: relanza con --pisar {c.clave}")
+    # F-062 (R31, D17): el cierre D14 sin su clave no se escribe.
+    for c in getattr(r, "cierres_racha", []):
+        if c.accion == "pendiente":
+            print(f"  PENDIENTE {c.clave}: relanza con --pisar {c.clave}")
     for a in r.incidencias:
         print(f"  INCIDENCIA inc={a.id} {a.rol} {a.accion} "
               f"hmores.ide={a.hmores_ide} parte={a.parte_cod} "

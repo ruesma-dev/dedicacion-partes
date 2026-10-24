@@ -207,7 +207,8 @@ def test_f062_r22_contrato_rachas_cierres_y_no_coincide_en_json():
         "recurso_ide": 200, "codigo": "CIV", "inicio_ide": 51,
         "inicio_fec": 20260927, "inicio_parte": "PT26/9",
         "accion": "escribir", "fecha_int": 20260930, "incidencia_id": 5,
-        "motivo": "motivo", "parte_cod": "PT26/9", "hmores_ide": None}]
+        "motivo": "motivo", "parte_cod": "PT26/9", "hmores_ide": None,
+        "requiere_confirmar": False, "clave": None}]
     assert r["no_coincide"] == [{
         "tipo": "quitada", "recurso_ide": 200, "incidencia_id": 9,
         "lineas": [{"ide": 51, "codigo": "CIV", "fecha_int": 20261005,
@@ -795,3 +796,62 @@ def test_f062_r22_la_racha_nueva_lleva_el_parte_donde_se_escribe():
     assert parte is not None
     assert [(r.inicio_parte, r.cierre_parte) for r in res.rachas] == [
         (parte, parte)]
+
+
+def test_f062_c13_ejecutar_sin_su_clave_el_cierre_d14_queda_pendiente():
+    from interface_adapters.api.app import _con_rachas
+
+    sep = [_l(51, 20260915, sk="porcentajes:inc:3:ini", obride=555001,
+              cenide=555101, paride=0, caaide=0, parte_emp=1)]
+    ctx = ContextoRachas(cierres_recursos=[200])
+    testigo = [linea(registro_id=1, mes=11, porcentaje=0.0)]
+    pf = _pf(_cli(sep), [], lineas=testigo, contexto=ctx)
+    [c] = pf.cierres_racha
+    assert (c.accion, c.requiere_confirmar, c.clave) == (
+        "escribir", True, "cierre:51")
+    [publico] = _con_rachas({}, pf)["cierres_racha"]
+    assert (publico["clave"], publico["requiere_confirmar"]) == (
+        "cierre:51", True)
+    # Sin su clave: ningún INSERT, `pendiente`, ni conflicto ni pendiente de
+    # confirmar (no es un pisado de líneas).
+    cli = ClienteRachas(sep)
+    res = _ejr(cli, lineas=testigo, contexto=ctx, pisar={"1:MENC"})
+    assert cli.inserts() == [] and cli.escritos == []
+    [c] = res.cierres_racha
+    assert (c.accion, c.hmores_ide) == ("pendiente", None)
+    assert res.pendientes_confirmacion == []
+    # Con ella, se escribe (C12).
+    res = _ejr(cli, lineas=testigo, contexto=ctx, pisar={"cierre:51"})
+    assert [i["synckey"] for i in cli.inserts()] == ["porcentajes:inc:3:fin"]
+    assert res.cierres_racha[0].accion == "escribir"
+
+
+def test_f062_r31_ejecutar_el_pendiente_dice_su_clave():
+    sep = [_l(51, 20260915, sk="porcentajes:inc:3:ini", obride=555001,
+              cenide=555101, paride=0, caaide=0, parte_emp=1)]
+    res = _ejr(ClienteRachas(sep),
+               lineas=[linea(registro_id=1, mes=11, porcentaje=0.0)],
+               contexto=ContextoRachas(cierres_recursos=[200]))
+    [c] = res.cierres_racha
+    assert c.motivo == (
+        "la racha CIV del 15/09 (parte PT26/00040) no sigue en 11/2026: CIZ "
+        "el 31/10 en el parte PT26/00251; sin confirmar, no se escribe: "
+        "marca cierre:51 para cerrarla")
+
+
+def test_f062_r31_script_el_cierre_pendiente_dice_como_confirmarlo(
+        monkeypatch, capsys):
+    sep = [_l(51, 20260915, sk="porcentajes:inc:3:ini", hmoide=777,
+              parte="PT26/00251", obride=828942, cenide=828943, paride=0,
+              caaide=0, parte_emp=1)]
+    cli = ClienteRachas(sep)
+    argv = ("--ano", "2026", "--mes", "11", "--cierres", "200")
+    _script(monkeypatch, cli, "ejecutar", "--confirmar", *argv)
+    salida = capsys.readouterr().out
+    assert "PENDIENTE cierre:51: relanza con --pisar cierre:51" in salida
+    assert cli.de_incidencia() == []
+    _script(monkeypatch, cli, "ejecutar", "--confirmar", *argv,
+            "--pisar", "cierre:51")
+    salida = capsys.readouterr().out
+    assert "PENDIENTE cierre:51" not in salida
+    assert [x[3] for x in cli.de_incidencia()] == ["porcentajes:inc:3:fin"]

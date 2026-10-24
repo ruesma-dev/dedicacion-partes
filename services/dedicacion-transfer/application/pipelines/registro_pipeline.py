@@ -82,8 +82,9 @@ from application.services.propuesta_partida import (
     proponer_partida, ventana,
 )
 from application.services.rachas import (
-    cierres_mes_anterior, decidir_peticion, lectura_de_peticion,
-    mes_anterior, no_coincide, obras_de_m1, rachas_de_designados,
+    MOTIVO_CIERRE_PENDIENTE, cierres_mes_anterior, decidir_peticion,
+    lectura_de_peticion, mes_anterior, no_coincide, obras_de_m1,
+    rachas_de_designados,
 )
 from application.services.reglas_incidencias import (
     CODIGO_FIN, MOTIVO_INC_CAMBIADA, MOTIVO_INC_SIN_CODIGO,
@@ -1311,7 +1312,14 @@ class RegistroPipeline:
     @staticmethod
     def _cierres_a_escribir(pf: Preflight, pisar: set[str]) -> list:
         """F-062 (R12): los `cierres_racha` que se escriben: los
-        `escribir` del preflight."""
+        `escribir` del preflight. R31 (D17): el que `requiere_confirmar` y
+        no trae su `clave` en `pisar_claves` pasa a `pendiente` y no se
+        escribe (no es un conflicto ni va a `pendientes_confirmacion`)."""
+        for c in pf.cierres_racha:
+            if c.accion == "escribir" and c.requiere_confirmar                     and c.clave not in pisar:
+                c.accion = "pendiente"
+                c.motivo = MOTIVO_CIERRE_PENDIENTE.format(
+                    motivo=c.motivo, clave=c.clave)
         return [c for c in pf.cierres_racha if c.accion == "escribir"]
 
     # ------------------------------------------------------------- #

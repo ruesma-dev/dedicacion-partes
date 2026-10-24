@@ -159,3 +159,66 @@ def test_f062_r25_modal_pintar_las_pinta_y_no_calcula():
     for f in ("textoRacha", "pintarRachas", "pintarCierresRacha",
               "pintarNoCoincide"):
         assert "api(" not in _funcion(f) and "fetch(" not in _funcion(f)
+
+
+# ======================= R31 (D17): confirmar el cierre ==================== #
+def _cierres_con_pisar(cierres: list, pisar: list) -> str:
+    programa = "\n".join([
+        DOM_TEXTO, *[_funcion(f) for f in FUNCIONES],
+        "var state = " + json.dumps({"trabajadores": [ANA]},
+                                    ensure_ascii=False) + ";",
+        "var registro = { pisar: new Set(" + json.dumps(pisar) + ") };",
+        "process.stdout.write(JSON.stringify(pintarCierresRacha("
+        + json.dumps({"cierres_racha": cierres}, ensure_ascii=False) + ")));"])
+    return _node(programa)
+
+
+def test_f062_r31_modal_la_casilla_solo_en_el_cierre_a_confirmar():
+    cierres = [
+        _cierre("escribir", requiere_confirmar=True, clave="cierre:51"),
+        _cierre("escribir", inicio_ide=52),
+        _cierre("pendiente", requiere_confirmar=True, clave="cierre:53")]
+    html = _cierres_con_pisar(cierres, [])
+    casilla = '<input type="checkbox" class="chk-pisar" value="cierre:51">'
+    # Una sola casilla, la del `escribir` que pide confirmar; desmarcada.
+    assert html.count('class="chk-pisar"') == 1 and casilla in html
+    filas = html.split("<tbody>")[1].split("</tr>")
+    assert casilla in filas[0] and "checkbox" not in filas[1] + filas[2]
+    assert "marca la casilla para cerrarla" in filas[0]
+    # Al repintar, marcada si ya se había marcado.
+    html = _cierres_con_pisar(cierres, ["cierre:51"])
+    assert ('<input type="checkbox" class="chk-pisar" value="cierre:51" '
+            "checked>") in html
+    # Sin `requiere_confirmar` no hace falta `registro` (F-062 R25, igual).
+    assert "checkbox" not in _js("pintarCierresRacha", {"cierres_racha": [
+        _cierre("escribir")]})
+
+
+def _ejecutar(respuesta: dict) -> str:
+    # El `document` va antes: el trozo de `app.js` trae detrás el
+    # `addEventListener` de DOMContentLoaded.
+    programa = "\n".join([
+        "var document = { querySelectorAll: () => [], body: { dataset: {} },",
+        "  addEventListener() {} };",
+        _funcion("registroEjecutar"),
+        "var registro = { trabajadorIde: null };",
+        "var boton = {};",
+        "function $() { return boton; }",
+        "var state = { anio: 2026, mes: 11 };",
+        "function cerrarModal() {}",
+        "async function api() { return " + json.dumps(respuesta) + "; }",
+        "function toast(m) { process.stdout.write(JSON.stringify(m)); }",
+        "registroEjecutar();"])
+    return _node(programa)
+
+
+def test_f062_r31_ejecutar_cuenta_los_cierres_pendientes():
+    msg = _ejecutar({"ok": True, "obras": [
+        {"escritas": [], "omitidas": [], "pendientes_confirmacion": [{}],
+         "cierres_racha": [{"accion": "pendiente"}, {"accion": "escribir"}]},
+        {"cierres_racha": [{"accion": "pendiente"}]}]})
+    assert msg == ("Sigrid: 0 escritas · 0 omitidas · 3 pendientes de "
+                   "confirmar (repite y marca pisar)")
+    assert _ejecutar({"ok": True, "obras": [{"cierres_racha": [
+        {"accion": "escribir"}]}]}) == ("Sigrid: 0 escritas · 0 omitidas · "
+                                        "0 pendientes de confirmar")
