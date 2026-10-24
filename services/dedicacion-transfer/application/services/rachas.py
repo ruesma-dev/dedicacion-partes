@@ -34,6 +34,7 @@ from application.services.reglas_incidencias import (
     MOTIVO_INC_YA,
     PREFIJO_CIERRE,
     PREFIJO_SYNCKEY_INCIDENCIA,
+    decidir_incidencia,
     synckey_incidencia,
 )
 
@@ -430,6 +431,7 @@ def _al_parte_de(a: AccionIncidencia, inicio: LineaIncidenciaSigrid) -> None:
     a.hmoide_destino, a.parte_cod = inicio.hmoide, inicio.parte_cod
     a.obride, a.cenide = inicio.obride, inicio.cenide
     a.paride, a.caa_ide = int(inicio.paride or 0), int(inicio.caaide or 0)
+    a.caa_cod = a.caa_origen = None
 
 
 def _continua(m: IncidenciaEntrada, duena_id: int) -> list[AccionIncidencia]:
@@ -495,6 +497,25 @@ def movidas_de(inc: IncidenciaEntrada,
         inc.dia_fin_antes)
 
 
+def _sin_propias(cadena: Cadena, lineas: Iterable[LineaIncidenciaSigrid]
+                 ) -> tuple[list[LineaIncidenciaSigrid],
+                            dict[str, LineaIncidenciaSigrid],
+                            tuple[LineaIncidenciaSigrid, int] | None,
+                            list[LineaIncidenciaSigrid]]:
+    """Paso 1 (R1, R15): las líneas del recurso, las propias de la dueña,
+    el `CIZ` ajeno que movió (y su día original) y lo leído sin las propias
+    de la cadena, con ese `CIZ` en su día original."""
+    lineas = [ls for ls in lineas if ls.reside == cadena.recurso]
+    suyas = propias(cadena, lineas)
+    fuera = {ls.ide for m in cadena.miembros
+             for ls in propias_de(m, lineas).values()}
+    movida = movidas_de(cadena.duena, lineas)
+    leidas = [ls for ls in lineas if ls.ide not in fuera]
+    if movida is not None:
+        leidas.append(replace(movida[0], fecha_int=movida[1]))
+    return lineas, suyas, movida, leidas
+
+
 def decidir_cadena(cadena: Cadena, lineas: Iterable[LineaIncidenciaSigrid],
                    base: list[AccionIncidencia], *, est: int, empresa: int,
                    obride_pruebas: int | None = None) -> PlanCadena:
@@ -508,16 +529,9 @@ def decidir_cadena(cadena: Cadena, lineas: Iterable[LineaIncidenciaSigrid],
     ini.fecha_int, fin.fecha_int = cadena.desde, cadena.hasta
     mes = _mes(cadena.desde)
     fin_m = ultimo_dia(mes // 100, mes % 100)
-    lineas = [ls for ls in lineas if ls.reside == cadena.recurso]
     # Paso 1: sin las propias de la cadena y con el CIZ ajeno que movió la
     # dueña en su día original.
-    suyas = propias(cadena, lineas)
-    fuera = {ls.ide for m in cadena.miembros
-             for ls in propias_de(m, lineas).values()}
-    movida = movidas_de(duena, lineas)
-    leidas = [ls for ls in lineas if ls.ide not in fuera]
-    if movida is not None:
-        leidas.append(replace(movida[0], fecha_int=movida[1]))
+    lineas, suyas, movida, leidas = _sin_propias(cadena, lineas)
     por_ide = {ls.ide: ls for ls in lineas}
     rachas = emparejar(leidas)
     avisos: list[str] = []
@@ -693,6 +707,9 @@ class CierreRacha:
     paride: int | None = None
     caaide: int | None = None
     hmores_ide: int | None = None
+    # La hora `CIZ` del recurso y su precio (los pone el pipeline).
+    hora_ide: int | None = None
+    pre: float = 0.0
 
 
 def synckey_de_cierre(inicio: LineaIncidenciaSigrid
@@ -910,3 +927,109 @@ def ventana(ano: int, mes: int, meses_atras: int) -> tuple[int, int]:
     s = m + 1
     return ((a // 12) * 10000 + (a % 12 + 1) * 100 + 1,
             ultimo_dia(s // 12, s % 12 + 1))
+
+
+# ==================== La petición entera (design §7) ===================== #
+
+MOTIVO_DEVUELTO = "el CIZ (línea {ide}) ya está en su día original, el {dia}"
+
+
+def previas_de(cadena: Cadena, lineas: Iterable[LineaIncidenciaSigrid], *,
+               est: int, obride_pruebas: int | None = None) -> set[int]:
+    """R30: los `ide` de la previa que la cadena continúa (R1, R10), con
+    lo leído sin sus propias y el `CIZ` ajeno movido en su día original.
+    Vacío si no hay previa o si la dueña tiene inicio propio (R11)."""
+    _, suyas, _, leidas = _sin_propias(cadena, lineas)
+    if "ini" in suyas:
+        return set()
+    r, _ = previa(emparejar(leidas), cadena, est=est,
+                  obride_pruebas=obride_pruebas)
+    if r is None:
+        return set()
+    return {r.inicio.ide, *([r.cierre.ide] if r.cierre is not None else [])}
+
+
+@dataclass
+class PlanPeticion:
+    """Lo que decide una petición: las acciones de sus incidencias (y el
+    `devolver` de sus quitadas), su resumen por incidencia (R22) y los
+    `ide` de las previas que continúan las cadenas del mes (R30)."""
+    acciones: list[AccionIncidencia]
+    rachas: list[RachaResumen]
+    previas: set[int]
+
+
+def _por_mes(incs: Iterable[IncidenciaEntrada]
+             ) -> dict[tuple[int, int], list[IncidenciaEntrada]]:
+    out: dict[tuple[int, int], list[IncidenciaEntrada]] = {}
+    for i in incs:
+        out.setdefault((int(i.ano), int(i.mes)), []).append(i)
+    return out
+
+
+def _devolver_quitada(q: IncidenciaEntrada,
+                      lineas: list[LineaIncidenciaSigrid], usadas: set[int],
+                      est: int) -> AccionIncidencia | None:
+    """R17 (D10, D16): el `CIZ` ajeno que movió una quitada vuelve a su día
+    original; ya en él, `ya_registrado` (la api limpia la traza). Si una
+    cadena de la petición lo usa, ya es de esa cadena: no se toca."""
+    movida = movidas_de(q, lineas)
+    if movida is None or movida[0].ide in usadas:
+        return None
+    linea, original = movida
+    a = _devolver(q, linea, original, est)
+    if linea.fecha_int == original:
+        a.accion, a.fec_antes = "ya_registrado", None
+        a.motivo = MOTIVO_DEVUELTO.format(ide=linea.ide, dia=ddmm(original))
+    return a
+
+
+def decidir_peticion(incidencias: Iterable[IncidenciaEntrada],
+                     base: dict[int, list[AccionIncidencia]],
+                     incidencias_mes: Iterable[IncidenciaEntrada],
+                     quitadas: Iterable[IncidenciaEntrada],
+                     lineas: Iterable[LineaIncidenciaSigrid],
+                     horas: dict, *, est: int, empresa: int,
+                     obride_pruebas: int | None = None) -> PlanPeticion:
+    """Design §7: por cada cadena de `incidencias_mes` (por mes) con alguna
+    incidencia de esta petición, `decidir_cadena`; de la petición salen solo
+    las acciones y resúmenes de SUS incidencias (una cadena entre obras la
+    escribe la petición de su dueña, D11; las demás dicen `continua`).
+    `base`: las dos acciones de cada incidencia de la petición (con su
+    partida y su cuenta); la de una dueña de otra obra se decide aquí con
+    `horas`. Una incidencia que no forma cadena (sin recurso, días
+    imposibles) se queda con su `base`. Las quitadas, solo `devolver`."""
+    incidencias = list(incidencias)
+    lineas = list(lineas)
+    mias = {int(i.id) for i in incidencias}
+    vistas = {int(i.id) for i in incidencias_mes}
+    todas = [*incidencias_mes,
+             *(i for i in incidencias if int(i.id) not in vistas)]
+    acciones = {int(i): list(base[i]) for i in base}
+    resumenes: dict[int, RachaResumen] = {}
+    previas: set[int] = set()
+    for grupo in _por_mes(todas).values():
+        for c in cadenas(grupo):
+            previas |= previas_de(c, lineas, est=est,
+                                  obride_pruebas=obride_pruebas)
+            if not any(int(m.id) in mias for m in c.miembros):
+                continue
+            b = base.get(int(c.duena.id)) or decidir_incidencia(
+                c.duena, horas)
+            plan = decidir_cadena(c, lineas, b, est=est, empresa=empresa,
+                                  obride_pruebas=obride_pruebas)
+            nuevas: dict[int, list[AccionIncidencia]] = {}
+            for a in plan.acciones:
+                if int(a.id) in mias:
+                    nuevas.setdefault(int(a.id), []).append(a)
+            acciones.update(nuevas)
+            resumenes.update({r.id: r for r in plan.resumenes
+                              if r.id in mias})
+    salida = [a for i in incidencias for a in acciones.get(int(i.id), [])]
+    usadas = {a.hmores_ide for a in salida if a.hmores_ide}
+    for q in quitadas:
+        d = _devolver_quitada(q, lineas, usadas, est)
+        if d is not None:
+            salida.append(d)
+    return PlanPeticion(salida, [resumenes[int(i.id)] for i in incidencias
+                                 if int(i.id) in resumenes], previas)

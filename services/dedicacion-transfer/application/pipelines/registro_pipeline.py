@@ -50,9 +50,10 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
   se deciden tras el paso 4 con `reglas_incidencias` y comparten con las
   líneas la empresa (paso 0), las horas (paso 3), la validación de la
   partida, la cuenta analítica (4 bis), el parte (5), el modo pruebas y el
-  alta (9); NO entran en los pasos 6 bis, 7 ni 7 bis (R28). Tras el paso 5,
-  R27: UNA lectura de las líneas de incidencia del mes (`incidencias_del_mes`)
-  solo si alguna se va a escribir. Sin incidencias, todo es como antes.
+  alta (9); NO entran en los pasos 6 bis, 7 ni 7 bis (R28). Antes del
+  paso 5, F-062 (`rachas.py`): UNA lectura de las `CI*`/`CIZ` en ventana
+  (`incidencias_en_ventana`) y la racha de cada cadena del mes, los cierres
+  del mes anterior y «no coincide». Sin incidencias, todo es como antes.
   9. Crear los partes que falten (alta protegida, releer el periodo y,
      si no aparece uno En registro, UN reintento con otro código).
  10. EDITAR en su sitio la línea al 0 % de cada acción (`linea_cero`) y
@@ -80,9 +81,14 @@ from application.services.propuesta_partida import (
     MOTIVO_PARTIDA_NO_HOJA, Propuesta, catalogo, mayor_inicial,
     proponer_partida, ventana,
 )
+from application.services.rachas import (
+    cierres_mes_anterior, decidir_peticion, emparejar, mes_anterior,
+    no_coincide, obras_de_cierres,
+)
+from application.services.rachas import ventana as ventana_rachas
 from application.services.reglas_incidencias import (
-    MOTIVO_INC_CAMBIADA, decidir_incidencia, no_editar_el_par, reconciliar,
-    sigue_editable, synckey_incidencia,
+    CODIGO_FIN, MOTIVO_INC_CAMBIADA, MOTIVO_INC_SIN_CODIGO,
+    decidir_incidencia, no_editar_el_par, sigue_editable, synckey_incidencia,
 )
 from application.services.reglas_porcentajes import (
     AVISO_LINEA_CERO, AVISO_QUEDAN_A_CERO, AVISO_SIN_PARTIDA,
@@ -375,32 +381,97 @@ class RegistroPipeline:
         return p
 
     # ------------------------------------------------------------- #
-    def _reconciliar_incidencias(
-        self, inc_escribir: list[AccionIncidencia],
-        entradas: list[IncidenciaEntrada], destino: ObraEntrada,
-        forzada: bool, leidos: dict[tuple[int, int, int], ParteDestino],
-    ) -> None:
-        """R27, R33 y anexo R30 (R40-R44): las líneas de incidencia del mes
-        de esos recursos y las de la traza de la api (sus `hmores.ide`), en
-        UNA lectura por mes; en pruebas, solo en los partes del periodo de
-        la obra de pruebas (ese parte queda en `leidos` para el paso 5).
-        Luego `reconciliar`. Sin `try`: si falla o viene `truncated`, la
-        petición falla sin escribir nada."""
-        for ano, mes in sorted({(a.ano, a.mes) for a in inc_escribir}):
-            del_mes = [a for a in inc_escribir if (a.ano, a.mes) == (ano, mes)]
-            hmoides = None
-            if forzada:
-                clave = (int(destino.ide), ano, mes)
-                leidos[clave] = self._parte_del_periodo(destino, ano, mes)
-                hmoides = [int(ps.ide) for ps in leidos[clave].del_periodo]
-            ids = {a.id for a in del_mes}
-            propias = [e for e in entradas if int(e.id) in ids]
-            reconciliar(del_mes, propias, self._cli.incidencias_del_mes(
-                sorted({int(a.recurso_ide) for a in del_mes}), ano, mes,
-                hmoides=hmoides, ides=sorted({
-                    int(i) for e in propias
-                    for i in (e.hmores_ide_ini, e.hmores_ide_fin) if i})),
-                est=int(self._st.est_parte_activo))
+    def _decidir_rachas(
+        self, incidencias: list[IncidenciaEntrada],
+        acciones_inc: list[AccionIncidencia], lineas: list[LineaEntrada],
+        horas: dict, empresa: int, destino: ObraEntrada, forzada: bool,
+    ) -> tuple[list[AccionIncidencia], list, list, list]:
+        """F-062 (design §7; R1-R13, R17, R19, R30): UNA lectura de las
+        `CI*`/`CIZ` de los recursos de la petición y de los designados, de
+        M−`INCIDENCIAS_MESES_ATRAS` a M+1, más las de las trazas por `ide`
+        (en pruebas, solo de la obra de pruebas); luego las cadenas, los
+        cierres del mes anterior y «no coincide». Sin nada que escribir,
+        cerrar ni devolver, no se lee (R26). Devuelve las acciones, las
+        rachas, los cierres y «no coincide». Sin `try`: si la lectura falla
+        o viene `truncated`, la petición falla sin escribir nada."""
+        ctx = self._contexto or ContextoRachas()
+        base: dict[int, list[AccionIncidencia]] = {}
+        for a in acciones_inc:
+            base.setdefault(int(a.id), []).append(a)
+        escriben = any(a.accion == "escribir" for a in acciones_inc)
+        if not (escriben or ctx.cierres_recursos or ctx.quitadas):
+            return acciones_inc, [], [], []
+        vistas = {int(i.id) for i in ctx.incidencias_mes}
+        inc_mes = [*ctx.incidencias_mes,
+                   *(i for i in incidencias if int(i.id) not in vistas)]
+        periodos = {(int(x.ano), int(x.mes))
+                    for x in [*incidencias, *lineas, *inc_mes,
+                              *ctx.quitadas]}
+        ano, mes = max(periodos)
+        n = int(self._st.incidencias_meses_atras)
+        desde = ventana_rachas(*min(periodos), n)[0]
+        hasta = ventana_rachas(ano, mes, n)[1]
+        obride_pruebas = int(destino.ide) if forzada else None
+        designados = {int(r) for r in ctx.cierres_recursos if r}
+        recursos = {int(i.recurso_ide) for i in incidencias
+                    if i.recurso_ide} | designados
+        ides = {int(v) for i in [*inc_mes, *ctx.quitadas]
+                for v in (i.hmores_ide_ini, i.hmores_ide_fin) if v}
+        leidas = self._cli.incidencias_en_ventana(
+            sorted(recursos), desde, hasta, obride_pruebas=obride_pruebas,
+            ides=sorted(ides))
+        est = int(self._st.est_parte_activo)
+        plan = decidir_peticion(incidencias, base, inc_mes, ctx.quitadas,
+                                leidas, horas, est=est, empresa=empresa,
+                                obride_pruebas=obride_pruebas)
+        cierres = self._cierres_racha(sorted(designados), leidas, inc_mes,
+                                      horas, ano, mes, est, empresa,
+                                      obride_pruebas)
+        nc = []
+        for r in sorted(recursos | {int(q.recurso_ide) for q in ctx.quitadas
+                                    if q.recurso_ide}):
+            nc += no_coincide(leidas, r, ctx.quitadas, inc_mes, plan.previas,
+                              ano, mes, designado=r in designados)
+        logger.info(
+            "[registro] rachas obra=%s lineas_leidas=%s rachas=%s "
+            "cierres=%s no_coincide=%s", destino.codigo, len(leidas),
+            len(plan.rachas), len(cierres), len(nc))
+        return plan.acciones, plan.rachas, cierres, nc
+
+    # ------------------------------------------------------------- #
+    def _cierres_racha(self, designados: list[int], leidas: list,
+                       inc_mes: list[IncidenciaEntrada], horas: dict,
+                       ano: int, mes: int, est: int, empresa: int,
+                       obride_pruebas: int | None) -> list:
+        """R12-R13 (D14 = B): los cierres del mes anterior de los recursos
+        designados; los partes de M−1 de las obras de los inicios anteriores
+        a M−1, en UNA lectura y solo si hace falta (R20). Un cierre que se
+        escribiría sin `CIZ` en el `reshor` del recurso, solo avisa."""
+        if not designados:
+            return []
+        rachas = {r: emparejar([x for x in leidas if x.reside == r])
+                  for r in designados}
+        obras: set[int] = set()
+        for r, rs in rachas.items():
+            obras |= obras_de_cierres(rs, r, inc_mes, ano, mes, est=est,
+                                      obride_pruebas=obride_pruebas)
+        m1 = mes_anterior(int(ano) * 100 + int(mes))
+        partes_m1 = (self._cli.partes_de_periodos(
+            sorted(obras), [(m1 // 100, m1 % 100)]) if obras else {})
+        out = []
+        for r, rs in rachas.items():
+            ciz = next((h for h in horas.get(r, [])
+                        if (h.cod or "").strip() == CODIGO_FIN), None)
+            for c in cierres_mes_anterior(
+                    rs, r, inc_mes, partes_m1, ano, mes, est=est,
+                    empresa=empresa, obride_pruebas=obride_pruebas):
+                if c.accion == "escribir" and ciz is None:
+                    c.accion, c.hmoide = "aviso", None
+                    c.motivo = MOTIVO_INC_SIN_CODIGO.format(cod=CODIGO_FIN)
+                elif c.accion == "escribir":
+                    c.hora_ide, c.pre = ciz.horide, float(ciz.pre or 0.0)
+                out.append(c)
+        return out
 
     # ------------------------------------------------------------- #
     def _crear_parte(self, p: ParteDestino, d: ObraEntrada,
@@ -642,17 +713,15 @@ class RegistroPipeline:
         if escribir or inc_escribir:
             self._cuentas([*escribir, *inc_escribir], horas, obra_de)
 
-        # R27 y anexo R30 (F-030): una línea de incidencia que ya está en
-        # un parte del mes no se escribe: la nuestra con otra `fec` se
-        # edita (R41) y la de otro se omite. UNA lectura por mes (R33) y
-        # solo si alguna se escribiría; en pruebas, solo los partes de la
-        # obra de pruebas. ANTES del paso 5 (obs. 7): solo las que siguen
-        # `escribir` piden parte; `editar` va en el de su línea.
+        # F-062 (design §7): las rachas, tras la cuenta y ANTES del paso 5:
+        # solo piden parte las `escribir` sin parte del inicio (R5); las
+        # que editan o mueven van en el de su línea.
+        acciones_inc, rachas, cierres, no_coincide_ = self._decidir_rachas(
+            incidencias, acciones_inc, lineas, horas, empresa,
+            destino_normal, forzada)
+        inc_escribir = [a for a in acciones_inc if a.accion == "escribir"
+                        and a.hmoide_destino is None]
         leidos: dict[tuple[int, int, int], ParteDestino] = {}
-        if inc_escribir:
-            self._reconciliar_incidencias(inc_escribir, incidencias,
-                                          destino_normal, forzada, leidos)
-        inc_escribir = [a for a in inc_escribir if a.accion == "escribir"]
 
         # Paso 5: parte por DESTINO + periodo, entre TODOS los del periodo
         # (F-037 R9-R11, R15; ARCHITECTURE.md#regla-analitica).
@@ -859,7 +928,8 @@ class RegistroPipeline:
             obra_destino=destino_normal, obra_origen=obra,
             forzada_pruebas=forzada,
             partes=[partes[k] for k in sorted(partes)], acciones=acciones,
-            conflictos=conflictos, incidencias=acciones_inc)
+            conflictos=conflictos, incidencias=acciones_inc,
+            rachas=rachas, cierres_racha=cierres, no_coincide=no_coincide_)
         if acciones_inc:
             logger.info(
                 "[registro] incidencias obra=%s lineas=%s escribir=%s",

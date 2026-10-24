@@ -8,15 +8,19 @@ APROBADA por el humano el 2026-10-24 («ok a lo demas», «adelante, en d14
 b»): D1-D4 del 2026-10-23, D5-D13, D15 y D16 = A, D14 = B; está en
 `specs/F-062-rachas-incidencias/` (`60c7d04`). Rama
 `feature/F-062-rachas-incidencias`. Evidencia de Sigrid:
-`progress/explore_F-062_sigrid.md`. **Pregunta al humano pendiente** (no
-bloquea T1-T4): si los cierres de D14 de inicios viejos (E-11: 9 sin
-cerrar) piden confirmación por línea. La spec de F-054 está aprobada y en
+`progress/explore_F-062_sigrid.md`. **Enmienda D17** (humano, 2026-10-24,
+«si añade»): el cierre D14 de una racha con inicio anterior a M−1 pide
+confirmación por línea, como un pisado (casilla desmarcada por defecto); el
+de inicio en M−1 sigue solo. Spec-author enmendando R12-R13 (tarea T5c);
+el implementer la hace después de T9. La spec de F-054 está aprobada y en
 espera en la copia `porcentajes-f054`. **MANUAL del humano:** T19 (medir el
 preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T9 (hechas T1-T8).
+- **Tarea en curso:** T10, o antes T5c (D17) si ya está en `tasks.md`
+  (hechas T1-T9; T9 sin marcar `[x]` en `tasks.md` mientras el
+  spec-author enmienda `specs/`).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
@@ -56,6 +60,19 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   llamadores (luego se borra con sus tests de la lista cerrada);
   `ventana(ano, mes, n)` en `rachas.py`; `INCIDENCIAS_MESES_ATRAS` también
   en `.env.example`.
+  T9: `_decidir_rachas` y `_cierres_racha` sustituyen a
+  `_reconciliar_incidencias`; se borran `reconciliar` y sus ayudantes
+  (`MOTIVO_INC_DUPLICADA` queda hasta T11: lo importan sus tests). Un
+  cierre D14 sin `CIZ` en `reshor` del recurso, solo aviso. La hora y el
+  precio del `CIZ` del cierre (`hora_ide`, `pre`) no salen en la
+  respuesta. `LecturasDelLote` gana `incidencias_en_ventana` y
+  `partes_de_periodos` directos a Sigrid (la memoria y la ronda D, en
+  T12). Las fixtures de app de la lista cerrada (y la propia) añaden
+  `incidencias_meses_atras` a `AJUSTES`. **Rojo intermedio, previsto**:
+  37 tests de la lista cerrada (`test_f030_pipeline_incidencias.py`,
+  `test_f030_r30_editar.py`, `test_f030_r30_punta_a_punta.py`) fallan
+  porque sus dobles leen con `incidencias_del_mes` o fijan la semántica
+  de F-030; se reescriben en T10-T12 y T16.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

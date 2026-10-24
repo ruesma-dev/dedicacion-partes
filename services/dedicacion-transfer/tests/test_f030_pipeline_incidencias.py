@@ -609,7 +609,9 @@ def api(monkeypatch):
     def fabricar(cli, **ajustes):
         monkeypatch.setattr(modulo_app, "SigridWriteClient",
                             lambda **kw: cli)
+        # F-062 (lista cerrada): la ventana de las rachas.
         st = SimpleNamespace(**{**AJUSTES, "sigrid_lecturas_paralelas": 4,
+                                "incidencias_meses_atras": 12,
                                 **ajustes})
         return TestClient(modulo_app.build_app(st))
     return fabricar

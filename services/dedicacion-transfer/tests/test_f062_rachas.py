@@ -938,3 +938,98 @@ def test_f062_r9_decidir_una_linea_sin_codigo_de_incidencia_no_cuenta():
     plan = _decidir([_l(61, 20261007, None), _l(62, 20261007, "MENC")],
                     _inc(7, 5, 9))
     assert [a.accion for a in plan.acciones] == ["escribir", "escribir"]
+
+
+# ============== T9: la petición entera (design §7, D11, R17) ============= #
+from application.services.rachas import decidir_peticion, previas_de
+
+
+def _peticion(incs, lineas=(), mes_=None, quitadas=(), base=None):
+    """El plan de una petición con `incs`; `mes_`: `incidencias_mes`."""
+    base = base or {int(i.id): decidir_incidencia(i, HORAS) for i in incs}
+    return decidir_peticion(incs, base, mes_ if mes_ is not None else incs,
+                            quitadas, lineas, HORAS, est=EST, empresa=1)
+
+
+def test_f062_c6_peticion_continua_y_mueve_el_ciz_de_otra_obra():
+    adm = [_l(61, 20261005, parte="PT26/00040", obride=40),
+           _l(62, 20261007, "CIZ", parte="PT26/00040", obride=40, can=1.0)]
+    plan = _peticion([_inc(7, 5, 9, obra=60)], adm)
+    ini, fin = plan.acciones
+    assert (ini.accion, fin.accion, fin.hmores_ide, fin.fec_antes,
+            fin.fecha_int, fin.ajena, fin.can_leido) == (
+        "continua", "editar", 62, 20261007, 20261009, True, 1.0)
+    assert [(r.id, r.papel, r.cierre) for r in plan.rachas] == [
+        (7, "continua", "cierra")]
+    assert plan.previas == {61, 62}
+
+
+def test_f062_d11_peticion_de_otra_obra_solo_dice_continua():
+    duena, otra = _inc(7, 5, 9, obra=40), _inc(8, 12, 16, obra=60)
+    plan = _peticion([otra], mes_=[duena, otra])
+    assert [(a.id, a.rol, a.accion, a.motivo) for a in plan.acciones] == [
+        (8, "ini", "continua", "continúa (cadena de la incidencia 7)"),
+        (8, "fin", "continua", "continúa (cadena de la incidencia 7)")]
+    assert [(r.id, r.papel, r.cierre, r.duena_id) for r in plan.rachas] == [
+        (8, "continua", "cadena", 7)]
+    # La de la dueña escribe la cadena entera.
+    plan = _peticion([duena], mes_=[duena, otra])
+    assert [(a.id, a.rol, a.accion, a.fecha_int) for a in plan.acciones] == [
+        (7, "ini", "escribir", 20261005), (7, "fin", "escribir", 20261016)]
+
+
+def test_f062_r25_peticion_usa_la_base_de_la_peticion():
+    inc = _inc(7, 5, 9)
+    base = {7: decidir_incidencia(inc, HORAS)}
+    for a in base[7]:
+        a.paride, a.caa_ide = 80001, 640
+    ini, fin = _peticion([inc], base=base).acciones
+    assert (ini.paride, ini.caa_ide, fin.paride, fin.caa_ide) == (
+        80001, 640, 80001, 640)
+
+
+def test_f062_r23_peticion_sin_cadena_se_queda_con_su_base():
+    sin = _inc(7, 5, 9, recurso=None)
+    plan = _peticion([sin])
+    assert [a.accion for a in plan.acciones] == ["omitir", "omitir"]
+    assert plan.rachas == []
+
+
+def test_f062_d11_peticion_cada_mes_sus_cadenas():
+    septiembre = _inc(5, 28, 30, mes=9)
+    octubre = _inc(6, 1, 2, mes=10)
+    plan = _peticion([septiembre, octubre])
+    assert [(a.id, a.accion) for a in plan.acciones] == [
+        (5, "escribir"), (5, "abierta"), (6, "escribir"), (6, "escribir")]
+
+
+def test_f062_r17_peticion_la_quitada_devuelve_su_ciz():
+    quitada = _inc(9, 5, 9, hmores_ide_fin=62, dia_fin=9, dia_fin_antes=7)
+    lineas = [_l(61, 20261005), _l(62, 20261009, "CIZ", can=1.0)]
+    plan = _peticion([], lineas, quitadas=[quitada])
+    [d] = plan.acciones
+    assert (d.id, d.rol, d.accion, d.fecha_int, d.fec_antes, d.ajena) == (
+        9, "devolver", "editar", 20261007, 20261009, True)
+    # Ya en su día: ya registrado (la api limpia la traza).
+    lineas = [_l(61, 20261005), _l(62, 20261007, "CIZ", can=1.0)]
+    [d] = _peticion([], lineas, quitadas=[quitada]).acciones
+    assert (d.accion, d.fec_antes, d.motivo) == (
+        "ya_registrado", None,
+        "el CIZ (línea 62) ya está en su día original, el 07/10")
+    # Sin la línea, o si una cadena de la petición la usa: nada.
+    assert _peticion([], [], quitadas=[quitada]).acciones == []
+    lineas = [_l(61, 20261005), _l(62, 20261009, "CIZ", can=1.0)]
+    plan = _peticion([_inc(7, 5, 12)], lineas, quitadas=[quitada])
+    assert [a.rol for a in plan.acciones] == ["ini", "fin"]
+    assert plan.acciones[1].hmores_ide == 62
+
+
+def test_f062_r30_peticion_previas_de_todas_las_cadenas_del_mes():
+    adm = [_l(61, 20261005), _l(62, 20261007, "CIZ")]
+    [c] = cadenas([_inc(7, 5, 9)])
+    assert previas_de(c, adm, est=EST) == {61, 62}
+    [c] = cadenas([_inc(7, 5, 9, hmores_ide_ini=51)])
+    assert previas_de(c, [*adm, _l(51, 20261005, sk=SK_INI)],
+                      est=EST) == set()
+    plan = _peticion([], adm, mes_=[_inc(7, 5, 9)])
+    assert (plan.acciones, plan.previas) == ([], {61, 62})

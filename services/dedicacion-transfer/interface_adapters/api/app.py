@@ -201,7 +201,7 @@ def _con_incidencias(respuesta: dict, incidencias: list) -> dict:
 
 #: F-062 (R22): lo que no se publica de un `CierreRacha` (es para escribir).
 _CIERRE_PRIVADO = ("synckey", "hmoide", "obride", "cenide", "paride",
-                   "caaide")
+                   "caaide", "hora_ide", "pre")
 
 
 def _con_rachas(respuesta: dict, r) -> dict:

@@ -527,5 +527,17 @@ class LecturasDelLote:
         return self._cli.incidencias_del_mes(resides, ano, mes,
                                              hmoides=hmoides, ides=ides)
 
+    def incidencias_en_ventana(self, resides, desde, hasta, *,
+                               obride_pruebas=None, ides=()):
+        """F-062 (R19): de momento, directa a Sigrid (la memoria del lote,
+        en T12)."""
+        return self._cli.incidencias_en_ventana(
+            resides, desde, hasta, obride_pruebas=obride_pruebas, ides=ides)
+
+    def partes_de_periodos(self, obrides, periodos):
+        """F-062 (R12-R13): de momento, directa a Sigrid (la ronda D del
+        lote, en T12)."""
+        return self._cli.partes_de_periodos(obrides, periodos)
+
     def escribir(self, statements):
         raise RuntimeError("las lecturas de un lote no escriben en Sigrid")
