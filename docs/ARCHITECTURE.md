@@ -129,7 +129,7 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
   no lo elige: [`#regla-recurso`](#regla-recurso)), aplicar las reglas,
   resolver la cuenta analítica de cada línea, elegir el parte del periodo,
   comprobar idempotencia y detectar conflictos
-  ([`#regla-analitica`](#regla-analitica)); y decidir el par de líneas de
+  ([`#regla-analitica`](#regla-analitica)); y decidir la racha de
   cada incidencia ([`#regla-incidencia`](#regla-incidencia)). No escribe
   nada.
 - `POST /api/registro/ejecutar` — pasos 9-10: crear los partes que falten
@@ -915,7 +915,10 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       antes (`INCIDENCIAS_MESES_ATRAS`) al último del mes siguiente, de los
       recursos de las incidencias y de los designados, más las de las trazas
       (también de las quitadas) por `ide`; en pruebas, solo de la obra de
-      pruebas. Los partes del mes anterior se leen solo si hay que cerrar
+      pruebas, también la lectura por `ide`. Por eso no se mezclan los dos
+      modos sobre la misma base `dedicacion`: en pruebas, una quitada cuyas
+      líneas están en una obra real sale sin ninguna en Sigrid y la api la
+      borra (solo en PostgreSQL; Sigrid no se toca). Los partes del mes anterior se leen solo si hay que cerrar
       una racha más antigua. Sin nada que escribir, cerrar ni devolver, no
       se lee. Si falla o viene `truncated`, la petición falla sin escribir.
     - **Traza.** Preflight y `ejecutar` devuelven `incidencias` (una entrada
