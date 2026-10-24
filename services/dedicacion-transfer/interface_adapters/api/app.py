@@ -36,7 +36,7 @@ from application.services.universo_postventa import UniversoPostventa
 from application.services.universo_var import UniversoVar
 from domain.errores import EmpresasMezcladas
 from domain.models.registro_models import (
-    IncidenciaEntrada, LineaEntrada, ObraEntrada,
+    ContextoRachas, IncidenciaEntrada, LineaEntrada, ObraEntrada,
 )
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
 
@@ -102,6 +102,10 @@ class IncidenciaIn(BaseModel):
     hmores_ide_fin: int | None = None
     dia_ini: int | None = None
     dia_fin: int | None = None
+    # F-062 (R15, R24): la obra de la incidencia y, si su `fin` es un `CIZ`
+    # ajeno que movimos, su día original.
+    obra_ide: int | None = None
+    dia_fin_antes: int | None = None
 
 
 class PeticionIn(BaseModel):
@@ -109,6 +113,10 @@ class PeticionIn(BaseModel):
     lineas: list[LineaIn] = Field(default_factory=list)
     # F-030 (R23): por defecto vacía; sin ellas, la petición de siempre.
     incidencias: list[IncidenciaIn] = Field(default_factory=list)
+    # F-062 (R12, R17, R24): el contexto del mes; vacío, la de F-030.
+    incidencias_mes: list[IncidenciaIn] = Field(default_factory=list)
+    cierres_recursos: list[int] = Field(default_factory=list)
+    quitadas: list[IncidenciaIn] = Field(default_factory=list)
     pisar_claves: list[str] = Field(default_factory=list)
     usuario: Optional[str] = None
 
@@ -185,16 +193,35 @@ def _con_incidencias(respuesta: dict, incidencias: list) -> dict:
     if incidencias:
         respuesta["incidencias"] = [
             {**{k: getattr(a, k) for k in CLAVES_INCIDENCIA},
-             **({"fec_antes": a.fec_antes} if a.accion == "editar" else {})}
+             **({"fec_antes": a.fec_antes} if a.accion == "editar" else {}),
+             **({"ajena": True} if a.ajena else {})}
             for a in incidencias]
     return respuesta
 
 
-def _respuesta_preflight(pf) -> dict:
+#: F-062 (R22): lo que no se publica de un `CierreRacha` (es para escribir).
+_CIERRE_PRIVADO = ("synckey", "hmoide", "obride", "cenide", "paride",
+                   "caaide")
+
+
+def _con_rachas(respuesta: dict, r) -> dict:
+    """F-062 (R22): `rachas`, `cierres_racha` (sin lo que es para escribir)
+    y `no_coincide`, solo si la petición traía las claves nuevas."""
+    respuesta["rachas"] = [asdict(x) for x in getattr(r, "rachas", [])]
+    respuesta["cierres_racha"] = [
+        {k: v for k, v in asdict(x).items() if k not in _CIERRE_PRIVADO}
+        for x in getattr(r, "cierres_racha", [])]
+    respuesta["no_coincide"] = [asdict(x)
+                                for x in getattr(r, "no_coincide", [])]
+    return respuesta
+
+
+def _respuesta_preflight(pf, con_rachas: bool = False) -> dict:
     """La respuesta de `POST /api/registro/preflight` (y de cada obra de
-    `POST /api/registro/preflight-lote`) para un `Preflight`."""
+    `POST /api/registro/preflight-lote`) para un `Preflight`; con las
+    claves de F-062 si la petición traía su contexto (`con_rachas`)."""
     obra_pv = getattr(pf, "obra_postventa", None)
-    return _con_incidencias({
+    respuesta = _con_incidencias({
         "ok": True,
         "obra_destino": asdict(pf.obra_destino),
         "obra_postventa": asdict(obra_pv) if obra_pv else None,
@@ -210,6 +237,7 @@ def _respuesta_preflight(pf) -> dict:
                     "ya_registrado": pf.n_ya,
                     "conflictos": len(pf.conflictos)},
     }, pf.incidencias)
+    return _con_rachas(respuesta, pf) if con_rachas else respuesta
 
 
 def build_app(settings) -> FastAPI:
@@ -230,18 +258,39 @@ def build_app(settings) -> FastAPI:
     universo_var = UniversoVar(cliente=cliente, settings=settings)
 
     def _dominio(p: PeticionIn) -> tuple:
-        """`(obra, lineas)` y, si las trae, sus incidencias (F-030)."""
+        """`(obra, lineas)` y, si las trae, sus incidencias (F-030) y el
+        contexto del mes (F-062, `ContextoRachas`)."""
         obra = ObraEntrada(ide=p.obra.ide, codigo=p.obra.codigo,
                            nombre=p.obra.nombre)
         lineas = [LineaEntrada(**l.model_dump()) for l in p.lineas]
-        if not p.incidencias:
+        contexto = _contexto(p)
+        if not p.incidencias and contexto is None:
             return obra, lineas
-        return obra, lineas, [IncidenciaEntrada(**x.model_dump())
-                              for x in p.incidencias]
+        incidencias = [IncidenciaEntrada(**x.model_dump())
+                       for x in p.incidencias]
+        if contexto is None:
+            return obra, lineas, incidencias
+        return obra, lineas, incidencias, contexto
+
+    def _contexto(p: PeticionIn) -> ContextoRachas | None:
+        """F-062 (R24): el contexto del mes; sin ninguna clave nueva, None
+        (la petición y la respuesta de F-030)."""
+        if not (p.incidencias_mes or p.cierres_recursos or p.quitadas):
+            return None
+        return ContextoRachas(
+            incidencias_mes=[IncidenciaEntrada(**x.model_dump())
+                             for x in p.incidencias_mes],
+            cierres_recursos=[int(r) for r in p.cierres_recursos],
+            quitadas=[IncidenciaEntrada(**x.model_dump())
+                      for x in p.quitadas])
 
     def _kw_incidencias(resto: list) -> dict:
         """Sin incidencias, la llamada de siempre (R2)."""
         return {"incidencias": resto[0]} if resto else {}
+
+    def _pipeline(resto: list) -> RegistroPipeline:
+        """F-062 (R24): con el contexto del mes, el pipeline que lo lleva."""
+        return pipeline.con_contexto(resto[1]) if len(resto) > 1 else pipeline
 
     @app.get("/health")
     async def health() -> dict[str, Any]:
@@ -258,9 +307,9 @@ def build_app(settings) -> FastAPI:
     async def preflight(p: PeticionIn):
         try:
             obra, lineas, *resto = _dominio(p)
-            pf = pipeline.preflight(obra=obra, lineas=lineas,
-                                    **_kw_incidencias(resto))
-            return _respuesta_preflight(pf)
+            pf = _pipeline(resto).preflight(obra=obra, lineas=lineas,
+                                            **_kw_incidencias(resto))
+            return _respuesta_preflight(pf, len(resto) > 1)
         except EmpresasMezcladas as exc:
             return _empresas_mezcladas(exc)
         except Exception as exc:                # noqa: BLE001
@@ -282,23 +331,24 @@ def build_app(settings) -> FastAPI:
             return JSONResponse(status_code=502,
                                 content={"ok": False, "error": str(exc)})
         obras = []
-        for r in resultados:
+        for x, r in zip(p.peticiones, resultados):
             if isinstance(r, Exception):
                 logger.warning("preflight en lote: una obra falla: %s", r)
                 obras.append({"ok": False, "error": str(r)})
             else:
-                obras.append(_respuesta_preflight(r))
+                obras.append(_respuesta_preflight(
+                    r, _contexto(x) is not None))
         return {"ok": True, "obras": obras}
 
     @app.post("/api/registro/ejecutar")
     async def ejecutar(p: PeticionIn):
         try:
             obra, lineas, *resto = _dominio(p)
-            r = pipeline.ejecutar(obra=obra, lineas=lineas,
-                                  pisar_claves=set(p.pisar_claves),
-                                  usuario=p.usuario,
-                                  **_kw_incidencias(resto))
-            return _con_incidencias({
+            r = _pipeline(resto).ejecutar(obra=obra, lineas=lineas,
+                                          pisar_claves=set(p.pisar_claves),
+                                          usuario=p.usuario,
+                                          **_kw_incidencias(resto))
+            respuesta = _con_incidencias({
                 "ok": r.ok,
                 "obra_destino": asdict(r.obra_destino),
                 "forzada_pruebas": r.forzada_pruebas,
@@ -318,6 +368,7 @@ def build_app(settings) -> FastAPI:
                                             r.pendientes_confirmacion],
                 "error": r.error,
             }, r.incidencias)
+            return _con_rachas(respuesta, r) if len(resto) > 1 else respuesta
         except EmpresasMezcladas as exc:
             return _empresas_mezcladas(exc)
         except Exception as exc:                # noqa: BLE001

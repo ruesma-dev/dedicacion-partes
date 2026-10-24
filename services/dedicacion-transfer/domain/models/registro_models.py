@@ -100,6 +100,18 @@ class IncidenciaEntrada:
 
 
 @dataclass
+class ContextoRachas:
+    """F-062 (R12, R17, R24): lo que la api manda del mes, además de las
+    incidencias de la obra: las del mes de sus recursos en cualquier obra
+    (`incidencias_mes`, con su obra y su traza), los recursos de los que
+    esta petición cierra el mes anterior (`cierres_recursos`) y las
+    quitadas con traza (`quitadas`). Vacío, la petición es la de F-030."""
+    incidencias_mes: list[IncidenciaEntrada] = field(default_factory=list)
+    cierres_recursos: list[int] = field(default_factory=list)
+    quitadas: list[IncidenciaEntrada] = field(default_factory=list)
+
+
+@dataclass
 class ObraEntrada:
     ide: Optional[int] = None
     codigo: Optional[str] = None
@@ -406,6 +418,11 @@ class Preflight:
     conflictos: list[Conflicto] = field(default_factory=list)
     # F-030 (R31): las dos líneas de cada incidencia; vacía sin incidencias.
     incidencias: list[AccionIncidencia] = field(default_factory=list)
+    # F-062 (R22): `RachaResumen`, `CierreRacha` y `NoCoincide` de
+    # `application/services/rachas.py`; vacías sin las claves nuevas.
+    rachas: list = field(default_factory=list)
+    cierres_racha: list = field(default_factory=list)
+    no_coincide: list = field(default_factory=list)
 
     @property
     def n_escribir(self) -> int:
@@ -442,3 +459,8 @@ class ResultadoRegistro:
     # F-030 (R31): las líneas de las incidencias, con su `hmores_ide` si se
     # escribieron; vacía sin incidencias.
     incidencias: list[AccionIncidencia] = field(default_factory=list)
+    # F-062 (R22): como en `Preflight`; los cierres, con el `hmores_ide` de
+    # los escritos.
+    rachas: list = field(default_factory=list)
+    cierres_racha: list = field(default_factory=list)
+    no_coincide: list = field(default_factory=list)

@@ -16,7 +16,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T7 (hechas T1-T6).
+- **Tarea en curso:** T8 (hechas T1-T7).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
@@ -45,6 +45,13 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   ya iba «por cadena»: todas las `editar`/`devolver` de una cadena llevan
   el `id` de la dueña; cambian su docstring y `MOTIVO_INC_PAR`. La guarda
   R9 solo cuenta líneas `CI*`/`CIZ`.
+  T7: el contexto del mes (`ContextoRachas`) viaja en el pipeline
+  (`RegistroPipeline(contexto=…)` / `con_contexto`), no como parámetro de
+  `ejecutar`: `test_f013_sin_partida.py` (R3) fija su firma y no está en
+  la lista cerrada. La respuesta lleva `rachas`, `cierres_racha` y
+  `no_coincide` solo si la petición traía alguna clave nueva; `ajena`
+  solo cuando es cierta; los cierres, sin `synckey`, `hmoide`, `obride`,
+  `cenide`, `paride` ni `caaide`.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

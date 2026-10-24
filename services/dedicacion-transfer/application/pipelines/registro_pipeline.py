@@ -99,7 +99,8 @@ from application.services.universo_var import (
     MOTIVO_VAR_POSTVENTA, cargar_catalogo_var, partida_var_de,
 )
 from domain.models.registro_models import (
-    AccionIncidencia, AccionLinea, Conflicto, IncidenciaEntrada, LineaEntrada,
+    AccionIncidencia, AccionLinea, Conflicto, ContextoRachas,
+    IncidenciaEntrada, LineaEntrada,
     ObraEntrada, ParteDestino, Preflight, ResultadoRegistro,
 )
 from infrastructure.sigrid.sigrid_write_client import (
@@ -166,9 +167,20 @@ def _nueva(a: AccionLinea) -> dict:
 
 
 class RegistroPipeline:
-    def __init__(self, *, cliente, settings) -> None:
+    def __init__(self, *, cliente, settings,
+                 contexto: ContextoRachas | None = None) -> None:
         self._cli = cliente
         self._st = settings
+        # F-062 (R24): el contexto del mes de la petición; None, la de F-030.
+        self._contexto = contexto
+
+    def con_contexto(self, contexto: ContextoRachas | None
+                     ) -> RegistroPipeline:
+        """F-062 (R24): el mismo pipeline para una petición con el contexto
+        del mes. Viaja aquí y no como parámetro de `ejecutar`, que no gana
+        ninguno (F-013 R3)."""
+        return RegistroPipeline(cliente=self._cli, settings=self._st,
+                                contexto=contexto)
 
     # ------------------------------------------------------------- #
     def _obra_origen(self, obra: ObraEntrada, empresa: int) -> ObraEntrada:
@@ -962,6 +974,8 @@ class RegistroPipeline:
                                 for a in pf.acciones
                                 if a.accion == "ya_registrado"},
             incidencias=pf.incidencias,
+            rachas=pf.rachas, cierres_racha=pf.cierres_racha,
+            no_coincide=pf.no_coincide,
         )
         inc_escribir = [a for a in pf.incidencias if a.accion == "escribir"]
         inc_editar = [a for a in pf.incidencias if a.accion == "editar"]
