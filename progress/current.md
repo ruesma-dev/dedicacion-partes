@@ -16,7 +16,7 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T5b (hechas T1-T5).
+- **Tarea en curso:** T6 (hechas T1-T5b).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
   `IncidenciaEntrada` (los necesita `propias`); T3, los de
@@ -33,6 +33,11 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
   cadena de M continúa según `previa` no se cierra aunque la cadena omita;
   `ya_registrado` = cerrada el último día de M−1 con la `synckey` de
   cierre. `PREFIJO_CIERRE` se adelanta de T6.
+  T5b: `no_coincide` da un elemento `quitada` por quitada, también sin
+  líneas (`en_sigrid` vacío: la api la borra; el front no lo pinta, «sin
+  aviso»); una racha con alguna línea explicada (propia, de quitada o de
+  la previa) no sale entera como `solo_sigrid`; `PlanCadena.previas` da
+  los `ide` de la previa que la cadena continúa.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

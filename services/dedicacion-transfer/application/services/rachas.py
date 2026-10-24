@@ -353,9 +353,11 @@ class RachaResumen:
 @dataclass
 class PlanCadena:
     """Las acciones de cada incidencia de la cadena (`ini`, `fin` y, si la
-    dueña devuelve un `CIZ` ajeno, `devolver`) y su resumen."""
+    dueña devuelve un `CIZ` ajeno, `devolver`), su resumen y los `ide` de
+    las líneas de la previa que continúa (R30: no «solo en Sigrid»)."""
     acciones: list[AccionIncidencia]
     resumenes: list[RachaResumen]
+    previas: set[int] = field(default_factory=set)
 
 
 def _propia_cambiada(a: AccionIncidencia, linea: LineaIncidenciaSigrid,
@@ -626,7 +628,7 @@ def decidir_cadena(cadena: Cadena, lineas: Iterable[LineaIncidenciaSigrid],
         acciones += _continua(m, duena.id)
         resumenes.append(replace(resumen, id=int(m.id), papel="continua",
                                  cierre="cadena", avisos=[]))
-    return PlanCadena(acciones, resumenes)
+    return PlanCadena(acciones, resumenes, de_la_previa)
 
 
 def _ciz_posterior(r_previa: Racha | None,
@@ -817,4 +819,83 @@ def cierres_mes_anterior(rachas: Iterable[Racha], recurso: int,
         c.obride, c.cenide = ini.obride, ini.cenide
         c.paride, c.caaide = ini.paride, ini.caaide
         c.motivo = MOTIVO_CIERRE.format(**texto, destino=destino[1])
+    return out
+
+
+# ============ «No coincide con Sigrid» (R17, R30, D15, D16) ============== #
+
+MOTIVO_NC_QUITADA = "quitada en la plataforma; sigue en Sigrid"
+MOTIVO_NC_SOLO_SIGRID = "en Sigrid y no en la plataforma"
+
+
+@dataclass(frozen=True)
+class LineaVista:
+    """Una línea de Sigrid tal como se enseña para editarla a mano."""
+    ide: int
+    codigo: str
+    fecha_int: int
+    parte_cod: str | None
+
+
+@dataclass
+class NoCoincide:
+    """R17, R30, R22: lo que no coincide con Sigrid. `tipo` `quitada` (una
+    por quitada, con sus propias que siguen en Sigrid; `en_sigrid`, sus
+    `ide`: vacío, la api la borra y no hay aviso) o `solo_sigrid` (las de
+    una racha de M que nada de la plataforma explica)."""
+    tipo: str
+    recurso_ide: int
+    incidencia_id: int | None
+    lineas: list[LineaVista]
+    motivo: str
+    en_sigrid: list[int] = field(default_factory=list)
+
+
+def _vista(ls: LineaIncidenciaSigrid) -> LineaVista:
+    return LineaVista(ls.ide, codigo(ls), ls.fecha_int, ls.parte_cod)
+
+
+def no_coincide(lineas: Iterable[LineaIncidenciaSigrid], recurso: int,
+                quitadas: Iterable[IncidenciaEntrada],
+                incidencias_mes: Iterable[IncidenciaEntrada],
+                previas: set[int], ano: int, mes: int, *,
+                designado: bool = True) -> list[NoCoincide]:
+    """R17 (D16): por cada quitada del recurso, sus propias que siguen en
+    Sigrid, menos el `CIZ` ajeno que movió (se devuelve, R16). R30 (D15),
+    solo si el recurso es el designado: por racha, sus líneas del mes M
+    cuando ninguna de la racha es propia de una incidencia o quitada del
+    mes ni de una previa que continúa una cadena (`previas`, por `ide`)."""
+    lineas = [ls for ls in lineas if ls.reside == recurso]
+    m = int(ano) * 100 + int(mes)
+    out: list[NoCoincide] = []
+    explicadas = set(previas)
+    for inc in incidencias_mes:
+        if inc.recurso_ide == recurso:
+            explicadas |= {ls.ide for ls in propias_de(inc, lineas).values()}
+    for q in sorted((q for q in quitadas if q.recurso_ide == recurso),
+                    key=lambda q: int(q.id)):
+        suyas = propias_de(q, lineas)
+        explicadas |= {ls.ide for ls in suyas.values()}
+        movida = movidas_de(q, lineas)
+        siguen = sorted((ls for ls in suyas.values()
+                         if movida is None or ls is not movida[0]),
+                        key=lambda x: (x.fecha_int, x.ide))
+        out.append(NoCoincide("quitada", int(recurso), int(q.id),
+                              [_vista(ls) for ls in siguen],
+                              MOTIVO_NC_QUITADA, [ls.ide for ls in siguen]))
+    if not designado:
+        return out
+    grupos = [[x for x in (r.inicio, r.cierre) if x is not None]
+              for r in emparejar(lineas)]
+    en_racha = {ls.ide for g in grupos for ls in g}
+    grupos += [[ls] for ls in lineas if ls.ide not in en_racha]
+    solo: list[list[LineaIncidenciaSigrid]] = []
+    for g in grupos:
+        del_mes = [ls for ls in g if _mes(ls.fecha_int) == m]
+        if del_mes and not any(ls.ide in explicadas for ls in g):
+            solo.append(del_mes)
+    for g in sorted(solo, key=lambda g: (g[0].fecha_int, g[0].ide)):
+        out.append(NoCoincide("solo_sigrid", int(recurso), None,
+                              [_vista(ls) for ls in g],
+                              MOTIVO_NC_SOLO_SIGRID))
     return out

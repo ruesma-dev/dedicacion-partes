@@ -771,3 +771,101 @@ def test_f062_r12_cierres_en_enero_cierra_el_31_de_diciembre():
 def test_f062_r9_cierres_origen_de_una_synckey_de_cierre():
     assert origen_de(_l(1, 20261005, sk="porcentajes:inc:cierre:51")) == (
         "de un cierre de racha de porcentajes")
+
+
+# ============= T5b: «no coincide con Sigrid» (R17, R30, D15, D16) ========= #
+from application.services.rachas import no_coincide
+
+MOTIVO_QUITADA = "quitada en la plataforma; sigue en Sigrid"
+MOTIVO_SOLO_SIGRID = "en Sigrid y no en la plataforma"
+
+
+def _nc(lineas, quitadas=(), incs=(), previas=(), designado=True):
+    """«No coincide» del recurso 200 al registrar octubre de 2026."""
+    return no_coincide(lineas, 200, list(quitadas), list(incs), set(previas),
+                       2026, 10, designado=designado)
+
+
+def _vista(nc):
+    return (nc.tipo, nc.recurso_ide, nc.incidencia_id,
+            [(x.ide, x.codigo, x.fecha_int, x.parte_cod) for x in nc.lineas],
+            nc.motivo, nc.en_sigrid)
+
+
+def test_f062_c10_no_coincide_quitada_con_sus_lineas_en_sigrid():
+    quitada = _inc(7, 5, 9, hmores_ide_ini=51, dia_ini=5, hmores_ide_fin=52,
+                   dia_fin=9)
+    lineas = [_l(51, 20261005, sk=SK_INI), _l(52, 20261009, "CIZ", sk=SK_FIN)]
+    assert [_vista(x) for x in _nc(lineas, [quitada])] == [
+        ("quitada", 200, 7, [(51, "CIV", 20261005, "PT26/00100"),
+                             (52, "CIZ", 20261009, "PT26/00100")],
+         MOTIVO_QUITADA, [51, 52])]
+    # Sin designar también: la quitada viaja en la petición de su obra.
+    assert len(_nc(lineas, [quitada], designado=False)) == 1
+
+
+def test_f062_c10_no_coincide_quitada_borrada_a_mano_sin_lineas_ni_aviso():
+    quitada = _inc(7, 5, 9, hmores_ide_ini=51, dia_ini=5, hmores_ide_fin=52,
+                   dia_fin=9)
+    [nc] = _nc([], [quitada])
+    assert (nc.tipo, nc.incidencia_id, nc.lineas, nc.en_sigrid) == (
+        "quitada", 7, [], [])
+    # Solo una de las dos sigue: esa.
+    [nc] = _nc([_l(52, 20261009, "CIZ", sk=SK_FIN)], [quitada])
+    assert [x.ide for x in nc.lineas] == nc.en_sigrid == [52]
+
+
+def test_f062_c9_no_coincide_quitada_que_movio_un_ciz_ajeno_no_lo_lista():
+    # C6 quitada: continuó la racha de Administración (61, 62) y movió su
+    # CIZ del 7 al 9; el CIZ se devuelve (R16) y no sale, ni la racha.
+    quitada = _inc(7, 5, 9, obra=60, hmores_ide_fin=62, dia_fin=9,
+                   dia_fin_antes=7)
+    lineas = [_l(61, 20261005, parte="PT26/00040"),
+              _l(62, 20261009, "CIZ", parte="PT26/00040")]
+    [nc] = _nc(lineas, [quitada])
+    assert (nc.tipo, nc.lineas, nc.en_sigrid) == ("quitada", [], [])
+
+
+def test_f062_c11_no_coincide_solo_en_sigrid_por_racha_y_solo_designados():
+    lineas = [_l(61, 20261020, "CIE", parte="PT26/00040"),
+              _l(62, 20261022, "CIZ", parte="PT26/00040"),
+              _l(63, 20261026, "CIB", parte="PT26/00040")]
+    assert [_vista(x) for x in _nc(lineas)] == [
+        ("solo_sigrid", 200, None, [(61, "CIE", 20261020, "PT26/00040"),
+                                    (62, "CIZ", 20261022, "PT26/00040")],
+         MOTIVO_SOLO_SIGRID, []),
+        ("solo_sigrid", 200, None, [(63, "CIB", 20261026, "PT26/00040")],
+         MOTIVO_SOLO_SIGRID, [])]
+    assert _nc(lineas, designado=False) == []
+
+
+def test_f062_c11_no_coincide_lo_que_explica_una_incidencia_no_sale():
+    # C6: la previa de Administración que la incidencia continúa.
+    previa_adm = [_l(61, 20261005, parte="PT26/00040"),
+                  _l(62, 20261007, "CIZ", parte="PT26/00040")]
+    assert _nc(previa_adm, incs=[_inc(7, 5, 9, obra=60)],
+               previas={61, 62}) == []
+    # Una racha con una línea propia (por synckey o por traza) no sale.
+    propia = [_l(51, 20261005, sk=SK_INI), _l(62, 20261012, "CIZ")]
+    assert _nc(propia, incs=[_inc(7, 5, 9)]) == []
+    # La propia de una quitada tampoco sale como «solo en Sigrid».
+    quitada = _inc(7, 5, 9, hmores_ide_ini=51, dia_ini=5)
+    assert [x.tipo for x in _nc(propia, [quitada])] == ["quitada"]
+
+
+def test_f062_r30_no_coincide_solo_lineas_del_mes_y_del_recurso():
+    lineas = [_l(61, 20260915, "CIE"), _l(62, 20261007, "CIZ"),
+              _l(63, 20261028, "CIV"), _l(64, 20261104, "CIZ"),
+              _l(65, 20261012, "CIV", reside=201),
+              _l(66, 20261014, "CIZ")]
+    assert [[x.ide for x in nc.lineas] for nc in _nc(lineas)] == [
+        [62], [66], [63]]
+
+
+def test_f062_r30_decidir_dice_que_lineas_son_de_la_previa():
+    adm = [_l(61, 20261005, parte="PT26/00040"),
+           _l(62, 20261007, "CIZ", parte="PT26/00040")]
+    assert _decidir(adm, _inc(7, 5, 9, obra=60)).previas == {61, 62}
+    assert _decidir([], _inc(7, 5, 9)).previas == set()
+    abierta = [_l(61, 20261001, parte="PT26/00040")]
+    assert _decidir(abierta, _inc(7, 5, 9)).previas == {61}
