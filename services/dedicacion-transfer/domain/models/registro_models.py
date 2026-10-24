@@ -319,6 +319,13 @@ class LineaIncidenciaSigrid:
     can: float | None = None
     hmoide: int | None = None
     parte_est: int | None = None
+    # F-062 (R5, R10, R12, design §6): la obra del parte, el centro, la
+    # partida y la cuenta de la línea y la empresa del parte (`con.emp`).
+    obride: int | None = None
+    cenide: int | None = None
+    paride: int | None = None
+    caaide: int | None = None
+    parte_emp: int | None = None
 
 
 @dataclass

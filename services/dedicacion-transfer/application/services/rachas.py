@@ -199,3 +199,90 @@ def propias(cadena: Cadena, lineas: Iterable[LineaIncidenciaSigrid]
             ) -> dict[str, LineaIncidenciaSigrid]:
     """Las líneas propias de la DUEÑA de la cadena (las que escribe)."""
     return propias_de(cadena.duena, lineas)
+
+
+#: R10 (D8): la racha pegada que no es previa, con su `CIZ`.
+AVISO_R10_MES_ANTERIOR = (
+    "la racha {cod} del {ini} se cerró el {dia} en el parte {parte} (línea "
+    "{ide}), del mes anterior: se abre otra")
+AVISO_R10_NO_MOVIBLE = (
+    "la racha {cod} del {ini} se cierra el {dia} en el parte {parte} (línea "
+    "{ide}), que no se puede mover: se abre otra")
+
+
+def ddmm(f: int) -> str:
+    """AAAAMMDD → «dd/mm»."""
+    return f"{f % 100:02d}/{f // 100 % 100:02d}"
+
+
+def _mes(f: int) -> int:
+    return f // 100
+
+
+def mes_anterior(mes: int) -> int:
+    """AAAAMM del mes anterior a AAAAMM."""
+    return mes - 1 if mes % 100 > 1 else (mes // 100 - 1) * 100 + 12
+
+
+def abierta_en(r: Racha, mes: int) -> bool:
+    """¿La racha sigue abierta al acabar el mes AAAAMM? Sin `CIZ`, o con su
+    `CIZ` en un mes posterior (R21)."""
+    return r.cierre is None or _mes(r.cierre.fecha_int) > mes
+
+
+def destino_del_cierre(cadena: Cadena) -> int:
+    """Dónde acaba el `CIZ` de la cadena si se mueve: el último día del mes
+    si llega a fin de mes (R11), si no su último día (R4)."""
+    if llega_a_fin(cadena.hasta):
+        return ultimo_dia(cadena.hasta // 10000, cadena.hasta // 100 % 100)
+    return cadena.hasta
+
+
+def movible(linea: LineaIncidenciaSigrid, *, est: int,
+            obride_pruebas: int | None = None) -> bool:
+    """R10, R14: un `CIZ` ajeno se puede mover si su parte está En registro
+    y, en pruebas, es de la obra de pruebas (los enlaces se miran al
+    releer, en `ejecutar`)."""
+    return linea.parte_est == est and (obride_pruebas is None
+                                       or linea.obride == obride_pruebas)
+
+
+def previa(rachas: Iterable[Racha], cadena: Cadena, *, est: int,
+           obride_pruebas: int | None = None
+           ) -> tuple[Racha | None, list[str]]:
+    """R1 y R10: la racha del mismo código con inicio en `d` o antes que la
+    cadena continúa, de las leídas (sin las propias de la cadena y con los
+    `CIZ` ajenos movidos en su día original): (a) abierta con inicio en M;
+    (b) abierta con inicio anterior a M y `d` pegado al último día de M−1
+    (D4); (c) con su `CIZ` en M, en `d` o después o pegado a `d`. De
+    varias, la de inicio más reciente.
+
+    R10 (D8): no es previa la pegada cuyo `CIZ` es de M−1, ni la de (c)
+    cuyo `CIZ` habría que mover y no se puede; cada una, con su aviso."""
+    d, mes = cadena.desde, _mes(cadena.desde)
+    fin_m1 = ultimo_dia(mes_anterior(mes) // 100, mes_anterior(mes) % 100)
+    validas: list[Racha] = []
+    avisos: list[str] = []
+    for r in rachas:
+        if r.codigo != cadena.codigo or r.inicio.fecha_int > d                 or r.inicio.reside != cadena.recurso:
+            continue
+        ini = _mes(r.inicio.fecha_int)
+        if abierta_en(r, mes):
+            if ini == mes or pegado(fin_m1, d):
+                validas.append(r)
+            continue
+        f = r.cierre.fecha_int
+        if not (f >= d or pegado(f, d)):
+            continue
+        texto = dict(cod=r.codigo, ini=ddmm(r.inicio.fecha_int), dia=ddmm(f),
+                     parte=r.cierre.parte_cod, ide=r.cierre.ide)
+        if _mes(f) < mes:
+            avisos.append(AVISO_R10_MES_ANTERIOR.format(**texto))
+        elif f < destino_del_cierre(cadena) and not movible(
+                r.cierre, est=est, obride_pruebas=obride_pruebas):
+            avisos.append(AVISO_R10_NO_MOVIBLE.format(**texto))
+        else:
+            validas.append(r)
+    if not validas:
+        return None, avisos
+    return max(validas, key=lambda r: (r.inicio.fecha_int, r.inicio.ide)),         avisos

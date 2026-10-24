@@ -16,10 +16,12 @@ preflight) y T20 (escritura en modo pruebas sobre la 0404).
 
 ## F-062 · implementación (implementer, 2026-10-24)
 
-- **Tarea en curso:** T3 (hechas T1 y T2).
+- **Tarea en curso:** T4 (hechas T1-T3).
 - **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
   T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
-  `IncidenciaEntrada` (los necesita `propias`).
+  `IncidenciaEntrada` (los necesita `propias`); T3, los de
+  `LineaIncidenciaSigrid` (`obride`, `cenide`, `paride`, `caaide`,
+  `parte_emp`), que necesita R10.
 
 ## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
 

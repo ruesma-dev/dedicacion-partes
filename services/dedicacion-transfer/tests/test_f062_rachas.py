@@ -219,3 +219,99 @@ def test_f062_r15_propias_solo_las_de_la_duena():
     lineas = [_l(51, 20261012, sk="porcentajes:inc:8:ini")]
     [c] = cadenas([_inc(7, 5, 9), _inc(8, 12, 16)])
     assert propias(c, lineas) == {}
+
+
+# ========================= T3: previa (R1, R10) ========================== #
+from application.services.rachas import previa  # noqa: E402
+
+EST = 1
+
+
+def _previa(lineas, *incs, pruebas=None):
+    [c] = cadenas(list(incs))
+    r, avisos = previa(emparejar(lineas), c, est=EST, obride_pruebas=pruebas)
+    return (r.inicio.ide if r else None), avisos
+
+
+def test_f062_r1c_c2_previa_con_su_ciz_pegado_a_d():
+    lineas = [_l(1, 20261005), _l(2, 20261009, "CIZ")]
+    assert _previa(lineas, _inc(8, 12, 16)) == (1, [])     # 10-11, fin de semana
+    assert _previa(lineas, _inc(8, 13, 16)) == (None, [])  # el lunes 12 corta
+
+
+def test_f062_r1c_c6_previa_con_su_ciz_en_d_o_despues():
+    lineas = [_l(1, 20261005, obride=40), _l(2, 20261007, "CIZ", obride=40)]
+    assert _previa(lineas, _inc(7, 5, 9, obra=60)) == (1, [])
+    lineas = [_l(1, 20261005), _l(2, 20261005, "CIZ")]
+    assert _previa(lineas, _inc(7, 5, 9)) == (1, [])
+
+
+def test_f062_r1a_previa_abierta_con_inicio_en_m():
+    assert _previa([_l(1, 20261001)], _inc(7, 20, 23)) == (1, [])
+    # Su CIZ en M+1 no la cierra en M (R21 avisará).
+    lineas = [_l(1, 20261027), _l(2, 20261106, "CIZ")]
+    assert _previa(lineas, _inc(7, 27, 30)) == (1, [])
+
+
+def test_f062_r1b_c3_c5_previa_abierta_de_antes_pegada_al_fin_de_m1():
+    # C3: CIV el 27-oct abierta; noviembre del 2 (el 1 es domingo).
+    assert _previa([_l(1, 20261027)], _inc(8, 2, 6, mes=11)) == (1, [])
+    # C5: CIE el 15-sep; octubre del 1 y noviembre del 1.
+    cie = [_l(1, 20260915, "CIE")]
+    assert _previa(cie, _inc(8, 1, 31, "CIE")) == (1, [])
+    assert _previa(cie, _inc(9, 1, 10, "CIE", mes=11)) == (1, [])
+    # Abierta de antes pero el tramo empieza a mitad de mes: no.
+    assert _previa(cie, _inc(8, 5, 9, "CIE")) == (None, [])
+
+
+def test_f062_r1_previa_del_mismo_codigo_e_inicio_no_posterior():
+    lineas = [_l(1, 20261005, "CIB"), _l(2, 20261007, "CIZ")]
+    assert _previa(lineas, _inc(7, 5, 9)) == (None, [])
+    lineas = [_l(1, 20261007), _l(2, 20261009, "CIZ")]
+    assert _previa(lineas, _inc(7, 5, 9)) == (None, [])
+    # Un CIZ de M anterior a `d` y no pegado no la hace previa.
+    lineas = [_l(1, 20261001), _l(2, 20261002, "CIZ")]
+    assert _previa(lineas, _inc(7, 6, 9)) == (None, [])
+
+
+def test_f062_r1_previa_de_varias_la_de_inicio_mas_reciente():
+    lineas = [_l(1, 20261001), _l(3, 20261005), _l(4, 20261007, "CIZ")]
+    assert _previa(lineas, _inc(7, 5, 9)) == (3, [])
+    lineas = [_l(3, 20261002), _l(4, 20261006, "CIZ"), _l(1, 20261003)]
+    # Pila: el CIZ del 6 cierra el del 3; el del 2 sigue abierto.
+    assert _previa(lineas, _inc(7, 7, 9)) == (1, [])
+
+
+def test_f062_r10_c8_previa_no_con_ciz_del_mes_anterior_y_avisa():
+    lineas = [_l(1, 20260920), _l(2, 20260930, "CIZ", parte="PT26/00090")]
+    ide, avisos = _previa(lineas, _inc(7, 1, 9))
+    assert ide is None
+    assert avisos == ["la racha CIV del 20/09 se cerró el 30/09 en el parte "
+                      "PT26/00090 (línea 2), del mes anterior: se abre otra"]
+    # Sin pegar (el 1 de octubre es jueves; del 2 ya no): sin aviso.
+    assert _previa(lineas, _inc(7, 2, 9)) == (None, [])
+
+
+def test_f062_r10_previa_no_si_su_ciz_no_se_puede_mover():
+    cerrado = [_l(1, 20261005), _l(2, 20261007, "CIZ", est=3,
+                                     parte="PT26/00041")]
+    ide, avisos = _previa(cerrado, _inc(7, 5, 9))
+    assert ide is None
+    assert avisos == ["la racha CIV del 05/10 se cierra el 07/10 en el parte "
+                      "PT26/00041 (línea 2), que no se puede mover: se abre "
+                      "otra"]
+    # Si no hay que moverlo (ya está en `h` o después), vale aunque esté
+    # cerrado: la cubre.
+    cubre = [_l(1, 20261005), _l(2, 20261009, "CIZ", est=3)]
+    assert _previa(cubre, _inc(7, 5, 9)) == (1, [])
+    # Llega a fin de mes: su CIZ iría al último día (R11), así que se mueve.
+    lineas = [_l(1, 20261026), _l(2, 20261028, "CIZ", est=3)]
+    assert _previa(lineas, _inc(7, 26, 30))[0] is None
+
+
+def test_f062_r10_previa_no_en_pruebas_fuera_de_la_obra_de_pruebas():
+    lineas = [_l(1, 20261005, obride=828942),
+              _l(2, 20261007, "CIZ", obride=555001)]
+    assert _previa(lineas, _inc(7, 5, 9), pruebas=828942)[0] is None
+    lineas[1] = _l(2, 20261007, "CIZ", obride=828942)
+    assert _previa(lineas, _inc(7, 5, 9), pruebas=828942) == (1, [])
