@@ -4,9 +4,11 @@
 `sdd: true`, rigor **crítico**. Rama `feature/F-062-rachas-incidencias`
 (copia principal). Spec `specs/F-062-rachas-incidencias/` (R1-R31, D1-D18).
 Hechas T1-T18 y T5c, un commit por tarea; **T19 y T20 son MANUAL del humano**
-(preparadas, sin ejecutar); T21 es del líder. Nadie escribió ni leyó en
+(preparadas, sin ejecutar); T21 la hizo el líder. Nadie escribió ni leyó en
 Sigrid: todo es con dobles, sin red ni BBDD. Decisiones tarea a tarea, con
-su porqué: `progress/current.md` (sección «F-062 · implementación»).
+su porqué: `progress/current.md` («F-062 · implementación» y «F-062 ·
+review 1»). **Review 1 RECHAZADA**: B1-B6, O2 (aprobada) y O3 arreglados
+(tabla, «Review 1» y RED de abajo); campaña repetida sobre el `HEAD` nuevo.
 
 ## Qué cambió
 
@@ -28,6 +30,11 @@ su porqué: `progress/current.md` (sección «F-062 · implementación»).
 | T18 | `553709b` | script `--cierres` y salida RACHA/CIERRE/NO COINCIDE; `#regla-incidencia`, `INTEGRACION.md`, `test_f002` |
 | T5c | `69c23a1` | R31 (D17): `requiere_confirmar` y `clave` `cierre:{ide}`; `pendiente` sin la clave; casilla, aviso y script |
 | T22 | `30ef3b4` `3e2cee8` `6266a9f` | `current.md` sin la ruta del scratchpad (la tomaba por GUID `test_f008` R21); 19 tests nuevos (21 casos) por los supervivientes de la mutación |
+| B1 | `453f870` `441e6a3` | R5 literal (`rachas.py`, `==`); script: id `990101 + (mes−1)·100 + n`, `verificar --mes` |
+| B2, O2 | `441e6a3` | `medir --cierres` designa en la primera obra; `ejecutar`/`limpiar --confirmar` en modo real: código 1 |
+| B5, B6, O3 | `743923b` `77bf5d6` | paréntesis en `_cierres_a_escribir`; «decidir la racha»; no mezclar modos (`#regla-incidencia`) |
+| Campaña 2 | `2f04d28` `8bc1fc0` | 4 tests por los supervivientes del script; `mutacion_F-062.md` analizado |
+| B3, B4 | `44841b8` | `current.md`: T19/T20 con su comando exacto y el primer paso del modo; `tasks.md` T21 `[x]` |
 
 Ficheros de producción (39 en total con tests y docs; `git diff --stat d900f34..HEAD`):
 
@@ -76,6 +83,14 @@ Ficheros de producción (39 en total con tests y docs; `git diff --stat d900f34.
   (corrección del líder). El aviso de `registroEjecutar` lo suma a `pend`.
 - Lectura de tasks T16 «6-9 y 12-14 = una cadena»: cada caso del contrato es
   una cadena de una sola incidencia (la 7).
+- **Review 1, B2**: `medir` designa solo con `--cierres` (no siempre): siempre
+  cambiaría la forma `(obra, lineas)` del lote que fija `test_f055_medicion.py`,
+  fuera de la lista cerrada (la review admitía «o `--cierres` en lote»).
+- **Desviación aprobada O2** (humano, 2026-10-24, «ok a 1 y 2»): el script no
+  escribe en modo real salvo con `--permitir-modo-real`. Ningún test ajeno
+  fijaba lo anterior (el aviso sin abortar).
+- Ids esperados del script cambiados en `test_f030_pipeline_incidencias.py`
+  (lista cerrada): julio → 9907xx; sus `verificar` llevan `--mes 7`.
 
 ## Fase RED (requisitos centrales)
 
@@ -148,56 +163,53 @@ selección en verde (las suites completas, abajo).
   casilla `chk-pisar`) y `- … 3 pendient / + … 1 pendient` · `2 failed, 5 deselected in 0.40s`.
   La api (`test_f062_payload_rachas.py -k r31`) pasó a la primera: desde T15 solo
   un `escribir` toca el `fin`; sin RED propia.
+- **Review 1, B1 (R5)** `.venv/Scripts/python -m pytest -q -p no:cacheprovider tests/test_f062_rachas.py -k "solo_va_al_parte_de_un_inicio_de_m"`:
+  `E AssertionError: assert ('escribir', 20261106, 100) == ('escribir', 20261106, None)` ·
+  `1 failed, 122 deselected in 1.49s` → verde (transfer 1416 passed).
+- **Review 1, B1/B2/O2** (script) `.venv/Scripts/python -m pytest -q -p no:cacheprovider tests/test_f062_pipeline_rachas.py -k "ids_de_prueba or verificar_pide or o2_ or medir"`:
+  `E AttributeError: module 'prueba_escritura_porcentajes' has no attribute '_id_de_prueba'` ·
+  `E AssertionError: assert {'porcentajes...c:990101:ini'} == {'porcentajes...c:991101:ini'}` ·
+  `E Failed: DID NOT RAISE SystemExit` (ejecutar en modo real) · `E AttributeError: 'ClienteRachas' object has no attribute '_read'`
+  (limpiar en modo real llega a leer) · `E SystemExit: 2` (`--permitir-modo-real` desconocido) ·
+  `E ValueError: not enough values to unpack (expected 4, got 2)` (medir sin designar) ·
+  `7 failed, 44 deselected in 4.56s` → `7 passed`.
 
 ## Verificaciones MANUAL pendientes (del humano; NO ejecutadas)
 
-**T19** (solo lectura, R20). Transfer local en modo pruebas; antes
-`curl -s http://localhost:8006/health` debe decir `"modo_pruebas": true` (si
-no, PARAR). Medir el preflight del mes como F-055 T18, en Git Bash, en `dev`
-y en la rama: `cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036`;
-≤ 15 % más y **una** lectura de incidencias por lote en el log (si no, PARAR).
+Comandos exactos, uno por línea, en `progress/current.md` («F-062 · T19 y
+T20»), corregidos en la review 1. **Primer paso de las dos**, desde
+`services/dedicacion-transfer`:
+`python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`
+→ `True 0404`, si no PARAR (el `curl …/health`, solo para el navegador de T20 (5)).
 
-**T20** (escritura en modo pruebas, obra `0404`). Transfer LOCAL con
-`OBRA_PRUEBAS_FORZAR=true`, desde `services/dedicacion-transfer`, `RECURSO`
-con `CIV` y `CIZ` en `reshor`. Resultado en `progress/manual_F-062.md`.
-
-1. C1 y C2: `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9`;
-   luego `python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9 --incidencia RECURSO:CIV:12:16`
-   y `python prueba_escritura_porcentajes.py verificar`: el **mismo** `ide` del `CIZ`, ahora el 16, sin inicio nuevo.
-2. C3: `… ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:27:31` (`CIV` el 27 sin `CIZ`) y
-   `… --mes 11 --incidencia RECURSO:CIV:2:6` (`CIZ` el 6 en el parte de noviembre de la `0404`, sin inicio).
-3. C4: `python prueba_escritura_porcentajes.py limpiar --confirmar`; `… --mes 10 --incidencia RECURSO:CIV:27:31`
-   y `… --mes 11 --cierres RECURSO` (`CIZ` el 31 en el parte de octubre, sin `--pisar`: inicio en M−1).
-   Repetir cada `ejecutar`: nada nuevo.
-4. C12/C13: `limpiar --confirmar`; `… --mes 9 --incidencia RECURSO:CIV:15:30`, `… --mes 10 --incidencia RECURSO:CIV:1:31`
-   (nada escrito) y `… --mes 11 --cierres RECURSO` (nada escrito y `PENDIENTE cierre:{ide}: relanza con --pisar cierre:{ide}`);
-   repetir con `--pisar cierre:{ide}` (`CIZ` el 31 de octubre en el parte de octubre de la `0404`).
-5. C10, navegador local (modo pruebas): registrar 5-9, quitarla del cuadrante,
-   abrir Registrar: «No coincide con Sigrid» con las dos líneas; Cancelar. Al final, `limpiar --confirmar`.
+- **T19** (R20): `python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036`
+  en `dev`, y en la rama lo mismo con `--cierres 1705036`: ≤ 15 % más y **una**
+  `lectura incidencias_en_ventana:` (en seco con los dobles: 0 sin `--cierres`, 1 con él).
+- **T20** (0404): C1-C2 (`--mes 10`, 5-9 y luego 5-9 + 12-16, `verificar --ano 2026 --mes 10 …`),
+  C3 (27-31 de octubre y 2-6 de noviembre: `CIZ` el 6 en el parte de noviembre),
+  C4 (`--mes 11 --cierres RECURSO`: `CIZ` el 31 en el de octubre), C12-C13 (`PENDIENTE
+  cierre:{ide}` y luego `--pisar`) y C10 en el navegador, con `limpiar --confirmar` entre casos.
+  Ensayado en seco contra las funciones puras con los ids nuevos (`991001`, `991101`,
+  `990901`): lo esperado sale tal cual, repeticiones incluidas (`ya_registrado`).
 
 ## Fuera del alcance y lo que falta
 
-- T21 (líder): `azure-apps/dedicacion.md` y el aviso a `partes` (R27). No se tocó
-  ni `azure-apps` ni `partes`.
+- T21, hecha por el líder (`ff0acb4` en `azure-apps`, `fb351e0`): el implementer
+  no tocó ni `azure-apps` ni `partes`. Faltan T19 y T20 (MANUAL) y la review 2.
 - Sin push. La feature no se marca `done` aquí (reviewer).
 
 ## Evidencias
 
 | Evidencia | Valor real |
 |---|---|
-| Tests (suites de `bash harness/init.sh`, 2026-10-24, tras `6266a9f`) | raíz **418 passed, 1 skipped** (45.20 s); api **1164 passed** (73.05 s); front **376 passed** (52.61 s); transfer **1415 passed** (47.31 s). Cero fallos |
-| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 99.8% de 898 líneas cambiadas cubiertas (896/898, umbral 80%, nivel critico)` |
-| Mutación (`python -m harness.mutacion --feature F-062`, completa, 4 workers, HEAD `30ef3b4`) | **591** generados y evaluados, **560** muertos, **31** supervivientes, 0 timeouts, 0 sin veredicto, 3322.3 s |
-| Supervivientes tras el análisis (`progress/mutacion_F-062.md`) | **0 sin cubrir**: 28 caen con un test nuevo, 1 era falso (cae con los tests de antes) y **2 equivalentes justificados** (`rachas.py:113`, orden 1→2 en la clave; `rachas.py:528`, las dos de la base omiten con el mismo motivo). Reverificados uno a uno, en serie, en un worktree de `6266a9f` |
-| `bash harness/init.sh` | `ENTORNO LISTO` (tras borrar `.arnes_cache/suite_*.ok`); `PUERTA TAMAÑO … impl 203/220`; ruff 277 avisos, deuda previa: los ficheros tocados tienen los mismos que en `dev` |
+| Tests (suites de `bash harness/init.sh`, 2026-10-25, tras `8bc1fc0`) | raíz **418 passed, 1 skipped** (67.86 s); api **1164 passed** (83.80 s); front **376 passed** (55.35 s); transfer **1425 passed** (32.79 s). Cero fallos |
+| Cobertura de las líneas cambiadas | `PUERTA COBERTURA: 99.8% de 923 líneas cambiadas cubiertas (921/923, umbral 80%, nivel critico)` |
+| Mutación, campaña 2 (`python -m harness.mutacion --feature F-062`, completa, 4 workers, HEAD `44841b8`) | **609** generados y evaluados, **598** muertos, **11** supervivientes, 0 timeouts, 0 sin veredicto, 4819.9 s. (Campaña 1, HEAD `30ef3b4`: 591/560/31) |
+| Supervivientes tras el análisis (`progress/mutacion_F-062.md`) | **0 sin cubrir**: 5 falsos de la api (caen en serie con tests que ya había, O1), 4 del script con test nuevo (`2f04d28`) y **2 equivalentes aceptados por el humano** (2026-10-24, «ok a 1 y 2»): `rachas.py:113` y `rachas.py:528`, los mismos de la campaña 1, con demostración ejecutable original == mutado. Ningún equivalente nuevo |
+| `bash harness/init.sh` | `ENTORNO LISTO` (tras borrar `.arnes_cache/suite_*.ok`); ruff 277 avisos, deuda previa: los 3 de `prueba_escritura_porcentajes.py` ya estaban en `HEAD` antes del arreglo |
 
-Notas de la campaña, para el líder:
-
-- **Posible defecto del arnés**: el nº 1 (`traza_incidencias.py:103`, `and`→`or`)
-  salió vivo en la campaña paralela y, reaplicado en serie en un worktree del
-  mismo HEAD, la suite de la api cae (15 fallos). No toqué `harness/`.
-- La campaña paralela exige el árbol limpio y `BACKLOG.md` estaba modificado
-  (no es mío y no se commitea): lo aparté con `git stash` solo mientras se
-  creaban los worktrees y lo devolví al instante (idéntico, comprobado con `cmp`).
-- Los 19 tests nuevos de T22 se escribieron después del código (los pide la
-  mutación): sin fase RED; su «rojo» es el mutante que matan.
+Notas para el líder: la campaña paralela exige el árbol limpio y `BACKLOG.md`
+(no es mío) estaba modificado: lo aparté con `git stash` solo mientras se creaban
+los worktrees y lo devolví (idéntico, `cmp`). Los tests de `2f04d28` y los de T22
+se escribieron después del código (los pide la mutación): su «rojo» es el mutante.
+**O1 (arnés)**: 5 falsos supervivientes de la api en la campaña 2; no toqué `harness/`.
