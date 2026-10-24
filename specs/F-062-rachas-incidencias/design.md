@@ -1,14 +1,12 @@
 # F-062 · Diseño técnico
-
-Requisitos: `requirements.md` (R1-R30, casos C1-C12 en `tasks.md`; D5-D16
-decididas el 2026-10-24: A salvo D14 = B). La base es el diseño de F-030
-(`specs/F-030-dias-bajas-incidencias/design.md`) salvo lo dicho aquí.
+Requisitos: `requirements.md` (R1-R31; D5-D17 en su §10) y casos C1-C13 en
+`tasks.md`. Base: `specs/F-030-dias-bajas-incidencias/design.md`, salvo esto.
 ## 1. Servicios que toca y por qué (límite de servicio)
 | Servicio | Qué hace en F-062 | Por qué ahí |
 |---|---|---|
 | `dedicacion-transfer` | Lee las rachas del recurso en todos los partes (ventana), decide abrir, continuar o cerrar, escribe y mueve `CI*`/`CIZ` | Es la única pluma contra Sigrid, y la decisión depende de lo que hay en Sigrid |
 | `dedicacion-api` | Manda el contexto del mes (`incidencias_mes`, `cierres_recursos`, `quitadas`) y guarda la traza (`sigrid_dia_fin_antes`) | Es la dueña del cuadrante: solo ella ve las incidencias de todas las obras del recurso |
-| `dedicacion-front` | Pinta en el modal lo que responde el preflight (R25) | Captura y pintura; no decide nada |
+| `dedicacion-front` | Pinta en el modal lo que responde el preflight (R25) y la casilla de los cierres que la piden (R31) | Captura y pintura; no decide nada |
 
 Ni servicio nuevo ni nada de `partes`. «Pegado», «fin de mes» (D2, D7) y el
 emparejamiento (D5) viven **solo** en el transfer: la api no calcula pegadas
@@ -43,7 +41,8 @@ Sin I/O ni `settings`, como `reglas_incidencias.py`; fechas `int` AAAAMMDD.
   M−1; se elige el En registro de la empresa de mayor `ide`): `recurso_ide`,
   `codigo`, `inicio_ide`/`_fec`/`_parte`, `accion` (`escribir`|
   `ya_registrado`|`aviso`), `fecha_int`, `parte_cod`, `hmoide`, `obride`,
-  `cenide`, `paride`, `caaide`, `synckey`, `incidencia_id` o nulo, `motivo`.
+  `cenide`, `paride`, `caaide`, `synckey`, `incidencia_id` o nulo, `motivo`,
+  `requiere_confirmar` (inicio anterior a M−1) y `clave` (R31, D17, §13).
 - `no_coincide(lineas, recurso, quitadas, incidencias_mes, previas, ano, mes)
   -> list[NoCoincide]` (R17, R30): `tipo` `quitada` (sus propias aún en
   Sigrid, menos el `CIZ` ajeno que se devuelve) o `solo_sigrid` (las de M sin
@@ -53,8 +52,7 @@ Sin I/O ni `settings`, como `reglas_incidencias.py`; fechas `int` AAAAMMDD.
 Pasos de `decidir_cadena`, en orden:
 1. Quita de `lineas` las propias de la cadena y devuelve a su día
    (`dia_fin_antes`) el `CIZ` ajeno movido; empareja (D5).
-2. Guarda R9: una línea ajena en `[desde, hasta]` que no es de la previa ⇒
-   `omitir` todo.
+2. Guarda R9: ajena en `[desde, hasta]` que no es de la previa ⇒ `omitir` todo.
 3. La dueña con inicio propio ⇒ abre (R11) y su inicio se edita a `desde`
    como F-030 R41-R43. Si no, `previa` ⇒ `continua` o abre (R2-R3).
 4. Cierre: `llega_a_fin(hasta)` ⇒ `abierta`, salvo que ya haya un `CIZ` de
@@ -112,12 +110,12 @@ con `synckey_leida` y `can_leido` de la acción (no con nuestra `synckey` y
   `application/registro_sigrid.py`: `_sumar_incidencias` arma `incidencias_mes`
   y `quitadas`; `_designar_cierres(payloads)` tras el filtro `obra_ide` (R24).
 - **front** `static/js/app.js`: `pintarModalPreflight` + `pintarRachas`,
-  `pintarCierresRacha` y `pintarNoCoincide`, que sustituye a la lista de
-  quitadas de F-030 R38 (R25). Nada en la captura.
-- **docs**: `docs/ARCHITECTURE.md` (`#regla-incidencia` y la línea del
-  transfer «decidir el par» → «decidir la racha»), `docs/INTEGRACION.md` §5 y
-  su fila de `sigrid-api`, `test_f002_fuente_unica.py` si cambia el texto
-  vigilado.
+  `pintarCierresRacha` (casilla de R31) y `pintarNoCoincide` (sustituye a la
+  lista de quitadas de F-030 R38, R25); el aviso de `registroEjecutar` suma los
+  `pendiente`. Nada en la captura.
+- **docs**: `docs/ARCHITECTURE.md` (`#regla-incidencia` y la línea del transfer
+  «decidir el par» → «decidir la racha»), `docs/INTEGRACION.md` §5 y su fila de
+  `sigrid-api`, `test_f002_fuente_unica.py` si cambia el texto vigilado.
 ## 5. Ficheros que NO se tocan
 `reglas_porcentajes.py`, `domain/estados.py`, `estado_parte.py`,
 `cuenta_analitica.py`, `propuesta_partida.py`, `partida_*`, `universo_*`, la
@@ -134,12 +132,12 @@ desde, hasta, hmores_ide_ini, hmores_ide_fin, dia_ini, dia_fin,
 dia_fin_antes}]`, `cierres_recursos: [recurso_ide]` y `quitadas` (mismo
 elemento que `incidencias_mes`, de las quitadas con traza). `incidencias`
 (las de la obra) es un subconjunto de `incidencias_mes`. Respuesta: `rachas:
-[RachaResumen]`, `cierres_racha: [CierreRacha sin los campos de escritura]`,
-`no_coincide: [NoCoincide]` e `incidencias` con `rol` `devolver`, las
-acciones `continua`/`abierta`, `fec_antes` y `ajena`. Sin las claves nuevas,
-el transfer responde como F-030 (despliegue: transfer → api → front).
-Lectura (Sigrid, base `ruesma`, solo `SELECT`), en trozos de
-`LOTE_PARAMETROS`:
+[RachaResumen]`, `cierres_racha: [CierreRacha sin los campos de escritura]`
+(con `clave` y `requiere_confirmar`; `pendiente` en `ejecutar`, R31),
+`no_coincide: [NoCoincide]` e `incidencias` con `rol` `devolver`, las acciones
+`continua`/`abierta`, `fec_antes` y `ajena`. Sin las claves nuevas, el transfer
+responde como F-030 (despliegue: transfer → api → front).
+Lectura (Sigrid, base `ruesma`, solo `SELECT`), en trozos de `LOTE_PARAMETROS`:
 ```sql
 SELECT h.ide, h.reside, h.fec, a.cod, h.synckey, c.cod AS parte, h.can,
        h.hmoide, c.est, c.emp, m.obride, h.cenide, h.paride, h.caaide
@@ -155,23 +153,23 @@ M+1. Escrituras: el `INSERT` de siempre (`stmt_insert_linea`, con un
 inicio, R5) y el `UPDATE` de F-030 §13.5 con el `can` leído (R14). Sin DDL
 en Sigrid; en PostgreSQL, una columna por `alters_faltantes`.
 ## 7. Pipeline: dónde encaja
-En el preflight, tras el paso 4 bis (cuentas) y antes del paso 5, como
-F-030: `_decidir_rachas` hace **una** lectura (R19) con los recursos de
-`incidencias` y `cierres_recursos` y los `ide` de las trazas de
-`incidencias_mes` y `quitadas`. Después: `cadenas(incidencias_mes)` → por
-cada cadena con alguna incidencia de esta petición, `decidir_cadena` (si la
-dueña es de otra obra, solo los `continua` de las suyas) →
-`cierres_mes_anterior` (antes, si algún cierre es D14, **una** lectura
-`partes_de_periodos` de F-055 con esas obras y M−1) y `no_coincide` (R17,
-R30). Las acciones `escribir` sin
-`hmoide_destino` piden parte en el paso 5 como hoy. Las que lo tienen
-(R5, R12) no lo piden, y su cuenta y su partida son las del inicio. En
-`ejecutar`, en este orden: los `UPDATE` de `editar`/`devolver` (releídos en
-la lectura de `_planear_ediciones`; si uno no cumple, `no_editar_el_par`
-por cadena), los `INSERT` de la petición y los de cierre (`max_pos` de su
-`hmoide`). `_comprobar_escrito` relee por `synckey`, también la de cierre.
-`ejecutar` va por obra y en serie: la cadena entre obras la escribe la
-petición de su dueña; las demás solo dicen `continua`.
+En el preflight, tras el paso 4 bis (cuentas) y antes del paso 5, como F-030:
+`_decidir_rachas` hace **una** lectura (R19) con los recursos de `incidencias`
+y `cierres_recursos` y los `ide` de las trazas de `incidencias_mes` y
+`quitadas`. Después: `cadenas(incidencias_mes)` → por cada cadena con alguna
+incidencia de esta petición, `decidir_cadena` (si la dueña es de otra obra,
+solo los `continua` de las suyas) → `cierres_mes_anterior` (antes, si algún
+cierre es D14, **una** lectura `partes_de_periodos` de F-055 con esas obras y
+M−1) y `no_coincide` (R17, R30). Las `escribir` sin `hmoide_destino` piden
+parte en el paso 5 como hoy; las que lo tienen (R5, R12), no, y llevan la
+cuenta y la partida del inicio. En `ejecutar`, en el bucle de `pf.conflictos`
+(antes del «nada que escribir»), un cierre `requiere_confirmar` sin su `clave`
+en `pisar_claves` queda `pendiente`, sin escribirse (R31). Luego, en este
+orden: los `UPDATE` de `editar`/`devolver` (releídos en `_planear_ediciones`;
+si uno no cumple, `no_editar_el_par` por cadena), los `INSERT` de la petición y
+los de cierre (`max_pos` de su `hmoide`). `_comprobar_escrito` relee por
+`synckey`, también la de cierre. `ejecutar` va por obra y en serie: la cadena
+entre obras la escribe la de su dueña; las demás, `continua`.
 ## 8. Lote (F-055) y coste
 `_por_leer_incidencias` agrupa por (año, mes, `obride` de pruebas o `None`)
 los recursos de las incidencias y de `cierres_recursos` y los `ide` de las
@@ -187,25 +185,26 @@ de M−1 de D14, una ronda D solo si hace falta (caso raro, E-11 y E-14).
 - `incidencias_mes`: las del periodo de sus recursos (no quitadas, visibles,
   vigentes) con `obra_ide` y traza. `quitadas`: las quitadas con algún `ide`,
   en el payload de su obra (si no existe, se crea).
-- Traza: `editar` de un `fin` `ajena` guarda `sigrid_dia_fin_antes =
-  fec_antes % 100` si estaba nulo; `devolver` hecho anula `sigrid_ide_fin`,
+- Traza: `editar` de un `fin` `ajena` guarda `sigrid_dia_fin_antes = fec_antes
+  % 100` si estaba nulo; `devolver` hecho anula `sigrid_ide_fin`,
   `sigrid_dia_fin` y `sigrid_dia_fin_antes` y borra la incidencia si está
   `quitada` y sin `ide`, igual que una quitada con `en_sigrid` vacío (R17);
-  `continua`/`abierta` cuentan como hechas sin `ide`;
-  un `cierres_racha` con `incidencia_id` escribe el `fin` de esa (por `id`).
+  `continua`/`abierta` cuentan como hechas sin `ide`; un `cierres_racha`
+  escrito con `incidencia_id`, el `fin` de esa (por `id`; `pendiente` no, R31).
 ## 10. Front
 `pintarModalPreflight` añade, por obra, una línea por elemento de `rachas`
 («abre» · «continúa la racha del dd/mm (parte X)» · «cierra el dd/mm en el
-parte Y» · «queda abierta» · «cadena de …» y sus avisos) y la sección
-«Cierres de rachas» (`cierres_racha`) y el bloque «No coincide con Sigrid»
-(`no_coincide`: por elemento, trabajador, motivo y sus líneas con código, día
-y parte, para editarlas a mano). Sin botones ni confirmaciones (F-030 R28).
+parte Y» · «queda abierta» · «cadena de …» y sus avisos), la sección «Cierres
+de rachas» (`cierres_racha`) y el bloque «No coincide con Sigrid»
+(`no_coincide`: por elemento, trabajador, motivo y sus líneas con código, día y
+parte, para editarlas a mano). Solo R31 se confirma: el cierre
+`requiere_confirmar` lleva una `.chk-pisar` con su `clave`, como un pisado.
 ## 11. Documentación y otros repositorios
 - `#regla-incidencia` se reescribe: «Qué se escribe» → «La racha» (R1-R11),
   «Sin duplicar» → «La previa y la guarda» (R1, R9), «Cambiar los días» y
   «Quitar» (aviso contra Sigrid) con R14-R18 y R30, «Una lectura» (R19) y
-  «Cierre del mes anterior» (R12-R13); pie «Decidido por Pablo Gris el
-  2026-10-23 (D1-D4) y el 2026-10-24 (D5-D16) · F-062». P2 no cambia.
+  «Cierre del mes anterior» (R12-R13, R31); pie «Decidido por Pablo Gris el
+  2026-10-23 (D1-D4) y el 2026-10-24 (D5-D17) · F-062». P2 no cambia.
 - `INTEGRACION.md` §5: los campos de §6 y la fila de `sigrid-api` (lectura
   en ventana; se mueven `CIZ` ajenos). `azure-apps/dedicacion.md` (§1, §5, §7
   y la variable `INCIDENCIAS_MESES_ATRAS`): el líder, en el mismo trabajo y
@@ -237,7 +236,8 @@ y parte, para editarlas a mano). Sin botones ni confirmaciones (F-030 R28).
 - **Lo que no se puede deshacer sin borrar** (D9): las líneas que F-030 ya
   escribió desde el 2026-10-22 con un `CIZ` por mes se quedan y avisan (R11).
 - **Inicios abiertos viejos** (E-11: 9): D14 = B los cierra el último día de
-  M−1, a la vista en «Cierres de rachas». Recurso sin registro en M: abierta.
+  M−1 solo con su casilla (D17), clave `cierre:{ide del inicio}` (estable, no
+  choca con las de `conflictos`, donde no va). Sin registro en M: abierta.
 - **Cadena entre obras con `ejecutar` a medias**: si falla la de la dueña, las
   otras quedan `continua` sin líneas; el registro siguiente lo completa (R18).
 - **Cuenta del `CIZ` en el parte del inicio** (R5): la del inicio (mismo

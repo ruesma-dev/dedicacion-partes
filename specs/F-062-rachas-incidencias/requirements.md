@@ -2,9 +2,8 @@
 
 Rigor **`critico`**; transfer (decide y escribe), api (contexto y traza),
 front (solo pinta): design §1. **Decididas** por el humano: D1-D4 (2026-10-23,
-«sí a las cuatro», `features.json`) y el aviso de las quitadas (2026-10-24,
-R17) y D5-D16 (2026-10-24, §10). Evidencia: `progress/explore_F-062_
-sigrid.md` (fila n = E-n). 2026: 1-oct jueves, 31-oct sábado, 1-nov domingo.
+«sí a las cuatro», `features.json`), R17 y D5-D17 (2026-10-24, §10). E-n: fila
+n de `progress/explore_F-062_sigrid.md`. 2026: 1-oct jue, 31-oct sáb, 1-nov dom.
 ## 1. Qué se conserva de F-030 y qué se reemplaza («→», números de esta spec)
 - **Se conservan de F-030**: catálogo y captura (R3-R16; el chip «del al» no
   cambia), PUT y validación (R17-R19), fuera del 100 % (R22), la línea (R24:
@@ -69,6 +68,10 @@ sigrid.md` (fila n = E-n). 2026: 1-oct jueves, 31-oct sábado, 1-nov domingo.
   inicio es nuestro y `porcentajes:inc:cierre:{ide del inicio}` si es ajeno.
 - **R13.** SI el parte del inicio no vale o la obra del inicio no tiene en M−1
   ningún parte que valga, ENTONCES nada se escribe y el preflight avisa.
+- **R31.** `[D17]` SI el inicio de un cierre de R12 es anterior a M−1, ENTONCES
+  lleva `requiere_confirmar` (clave `cierre:{ide del inicio}`) como un pisado:
+  `ejecutar` solo lo escribe si su clave viene en `pisar_claves`; si no, sale
+  `pendiente`, sin escribir ni tocar la traza. Con inicio en M−1, sin confirmar.
 ## 5. Cambiar, quitar, idempotencia y «no coincide con Sigrid»
 - **R14.** Mover un `CIZ` o editar una propia es el `UPDATE` de solo la `fec`
   de F-030 (R41, D16): mismo `ide` y recurso, su código, `can` y `synckey`
@@ -108,12 +111,13 @@ sigrid.md` (fila n = E-n). 2026: 1-oct jueves, 31-oct sábado, 1-nov domingo.
 ## 7. Contrato, api y front
 - **R22.** Preflight y `ejecutar` devuelven `rachas` (por incidencia: id,
   `papel` `abre`|`continua`, inicio, `cierre` `cierra`|`abierta`|`cubierta`|
-  `cadena` con día y parte, dueña, avisos), `cierres_racha` (R12-R13) y
+  `cadena` con día y parte, dueña, avisos), `cierres_racha` (R12-R13; con
+  `clave` y `requiere_confirmar`, R31; `accion` `pendiente` en `ejecutar`) y
   `no_coincide` (R17, R30: tipo `quitada`|`solo_sigrid`, recurso, incidencia
   o nulo, líneas, motivo). Las líneas, en `incidencias` (F-030 R31), con
   `rol` `ini`|`fin`|`devolver` y las acciones nuevas `continua`, `abierta`.
 - **R23.** Traza: la que solo continúa o queda abierta es `registrado` sin
-  `ide`; un `cierres_racha` con incidencia va al rol `fin` de esa (de M−1).
+  `ide`; un `cierres_racha` escrito con incidencia va al `fin` de esa (de M−1).
 - **R24.** La api añade a cada petición `incidencias_mes` (las del mes de sus
   recursos en cualquier obra, con obra y traza, sin quitadas), `quitadas`
   (R17) y `cierres_recursos` (los recursos cuya primera petición, en el
@@ -121,18 +125,16 @@ sigrid.md` (fila n = E-n). 2026: 1-oct jueves, 31-oct sábado, 1-nov domingo.
 - **R25.** El modal pinta por incidencia «abre», «continúa la del dd/mm (parte
   X)», «cierra el dd/mm en Y» o «queda abierta», «Cierres de rachas» y el
   bloque «No coincide con Sigrid» (sustituye a la lista de quitadas de F-030
-  R38), sin confirmar; el front lo toma de la respuesta, sin calcular.
+  R38), sin confirmar salvo R31; el front lo toma de la respuesta, sin calcular.
 - **R26.** Las líneas de % se deciden como hoy (F-030 R2): las `M*` no cambian.
 ## 8. Documentación y verificación
-- **R27.** [`#regla-incidencia`] se reescribe con R1-R26 y R30 (fuente única,
+- **R27.** [`#regla-incidencia`] se reescribe con R1-R26, R30-R31 (fuente única,
   `test_f002`) e `INTEGRACION.md` §5 y su tabla; el líder actualiza
   `azure-apps/dedicacion.md` y prepara el aviso a `partes` (lo da el humano).
 - **R28.** Tests sin red ni BBDD con §9. **R29.** MANUAL en la `0404` (T20).
 ## 9. Casos de test
-C1-C11, uno por línea en `tasks.md` §«Casos», cada uno con el R que fija: los
-ejemplos del humano (5-9 oct; 5-9 y 13-16; 27-oct a 6-nov; 27-31 sin
-continuación; baja 15-sep a 10-nov; dos obras 40/60), E-12 y E-15, quitar
-(C9, C10), lo que solo está en Sigrid (C11) y D14 (C12). En todos, las `M*` igual (R26).
+C1-C13 en `tasks.md` §«Casos», cada uno con su R (C1-C6, ejemplos del humano;
+D14 en C12, D17 en C13). En todos, las `M*` igual (R26).
 ## 10. Decisiones (DECIDIDAS por el humano el 2026-10-24)
 «ok a lo demas» (A en D5-D13, D15 y D16) y «adelante, en d14 b»:
 - **D5**: el `CIZ` cierra el inicio abierto más reciente. **D6**: 12 meses
@@ -144,4 +146,5 @@ continuación; baja 15-sep a 10-nov; dos obras 40/60), E-12 y E-15, quitar
   **D13**: ajena en el tramo ⇒ `omitir` (R9). **D14 = B**: la abierta desde
   antes de M−1 se cierra en un parte de M−1 de la obra del inicio (R12).
   **D15**: lo que solo está en Sigrid sale en `no_coincide` (R30). **D16**:
-  al quitar, solo `devolver` y aviso (R17).
+  al quitar, solo `devolver` y aviso (R17). **D17** («si añade»): el cierre D14
+  con inicio anterior a M−1 se confirma como un pisado (R31; E-11).
