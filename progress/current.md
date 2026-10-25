@@ -9,48 +9,49 @@ desplegable de incidencias; `sdd: false`, rigor estándar) **cerrada
 «Producción, hoy»); `azure-apps/dedicacion.md` `47c7c3c`. Api y front; ni
 transfer ni Sigrid. **Pendiente del humano:** el MANUAL de F-061 (abajo).
 **F-044** (recursos vinculados) **`spec_ready` el 2026-10-25** en el worktree
-`porcentajes-f044` (rama `feature/F-044-recursos-vinculados`): spec escrita,
-**pendiente de que el humano decida D1-D15** y apruebe (abajo).
+`porcentajes-f044` (rama `feature/F-044-recursos-vinculados`): spec revisada
+con las respuestas del humano; **quedan decisiones abiertas** (abajo).
 
-## F-044 · spec escrita (2026-10-25): decisiones abiertas para el humano
+## F-044 · spec revisada (2026-10-25): decididas y abiertas
 
 - **Spec:** `specs/F-044-recursos-vinculados/` (requirements 148 líneas,
-  design 248, tasks T1-T21). Rigor `critico`; toca **api** (vínculo en el
-  sync, contrato, traza), **transfer** (única pluma: decide y escribe) y
-  **front** (marca y modal). Evidencia de Sigrid, solo lectura y solo
-  agregados: `progress/explore_F-044_sigrid.md`.
-- **Lo que se ha visto en Sigrid:** no hay vínculo estructurado (`resres`
-  vacía): el vinculado se llama `<CONCEPTO> <nombre del trabajador>`.
-  Teléfono (`TF`/`OTEL`), gasoil (`CO`/`OGAS`) y vehículo (`VE`/`MESVE`)
-  llevan importe mensual en `reshor` y hoy se imputan como la persona: mismo
-  parte, mismo %, una línea por cada `M*`, cuenta de su `reshor`, partida de
-  su concepto (`CI.4.13`, `CI.4.1`, `CI.03P.9`) y, en postventa, la del
-  trabajador. Ninguna lleva `synckey` (todo a mano). En octubre ya hay
-  vinculados al 0 % copiados en partes En registro.
-- **Decisiones abiertas (design §9; recomendada entre paréntesis):** D1
-  tipos (TF, CO, VE; confirmar con Juan que «vehículo» es `VE` y no
-  `VP`/`KM`, y que `VIAJE` queda fuera aunque el humano lo nombró el 10-08);
-  D2 vínculo (por nombre y empresa; alternativa: que Administración rellene
-  `resres`); D3 importe (`reshor.pre`); D4 partida (propuesta del vinculado
-  en obra normal; la del trabajador en postventa y VAR); D5 cuenta
-  (`#regla-analitica`); D6 metido a mano (las reglas del trabajador: pisado a
-  confirmar, al 0 % se edita); D7 varias obras (mismo % en cada una); D8
-  vista (marca en el cuadrante + modal); D9 `synckey`
-  (`porcentajes:vin:{registro_id}:{recurso_ide}`); D10 titular omitido o ya
-  registrado (sigue / se decide solo); D11 capacidad del vinculado (sí); D12
-  incidencias (no le afectan); D13 desde 2026-10; D14 Excel (sin
-  vinculados); D15 una feature en dos bloques.
-- **Riesgos que conviene que el humano vea:** `MESVE` empieza por `M` (todo
-  filtro `LIKE 'M%'` que no vaya por el recurso lo cuenta: lo cubren R15 y
-  sus tests); el vínculo por nombre cae si Administración renombra (el
-  preview lo cuenta); **F-062 toca `registro_pipeline.py`**: implementar
-  F-044 sobre `dev` con F-062 ya unida.
+  design 250, tasks T1-T24). Rigor `critico`; toca **api** (vínculo en el sync,
+  subfilas, elegida, contrato, traza), **transfer** (propone, decide y escribe)
+  y **front** (columna, subfilas, selector, modal). Evidencia de Sigrid, solo
+  lectura y solo agregados, rondas 1 y 2: `progress/explore_F-044_sigrid.md`.
+- **Ronda 2 en Sigrid:** el campo del humano es `defext` 46 «Recurso
+  Asociado» (`conext.cod = '5'`, `valn` = `res.ide` del principal): 538
+  recursos no persona, siempre hacia una persona de su empresa (TF 156/162,
+  CO 89/95, VE 50/55 activos). La «CI de su tipo» es la **cuenta**: la hoja
+  cuya cuenta tiene la subcuenta del vinculado (`CICO13` ↔ `CI.4.13`; 1.948 de
+  1.975 líneas TF en CI); `auxhor.parcod` está vacío. En postventa (`POSTV2`),
+  VAR y `CP*`, el vinculado va a la partida del titular (676/676 y 377/377).
+- **Decididas (humano, 2026-10-25, citas en design §9.1):** D1 cualquier tipo
+  vinculado; D2 el campo (el spec-author descarta el casado por nombre incluso
+  como aviso, justificado en §9.1); D4 la CI del tipo y el %: «es la a.»
+  (mismo % del titular en cada obra, también postventa y VAR, sin normalizar);
+  D7 resuelta con D4; D8 columna «Tipo recurso» y subfila con partida editable.
+- **Abiertas (design §9.2, recomendada entre paréntesis):** D1b tipos sin
+  importe mensual (omitir con motivo y excluir `VP` por lo dicho por Juan); D3
+  importe (`reshor.pre`); D4b partida fuera de CI (postventa, VAR, `CP*` ⇒ la
+  del titular; obra sin CI del tipo o con varias ⇒ «sin partida» a confirmar,
+  elegible en la subfila); D5 cuenta (`#regla-analitica`); D6 metido a mano
+  (como el % normal); D9 `synckey` (`porcentajes:vin:{registro_id}:{recurso_ide}`);
+  D10 titular omitido / ya registrado (sigue / se decide solo); D11 capacidad
+  del vinculado (sí); D12 incidencias (no le afectan); D13 desde 2026-10; D14
+  Excel (sin vinculados); D15 una feature en dos bloques.
+- **F-054:** trae solo las `M*` de trabajadores (por recurso, no por prefijo);
+  los vinculados no son asignaciones; F-054 puede traer la partida de la línea
+  del vinculado como elegida de su subfila (design §10). Lo diseña F-054.
+- **Riesgos:** `MESVE` empieza por `M` (R19 y sus tests); la columna nueva
+  puede tocar tests del front (el implementer PARA y pide ampliar la lista
+  cerrada); **F-062 toca `registro_pipeline.py`**: implementar F-044 sobre
+  `dev` con F-062 ya unida.
 - **Aviso a `partes`** (lo transmite el humano, no se toca `partes`): desde
-  F-044 dedicación escribiría y editaría en los partes compartidos líneas
-  `OTEL`, `OGAS` y `MESVE` de recursos no persona (`synckey
-  porcentajes:vin:…`), sin borrar nunca.
-- **Siguiente paso:** el humano decide D1-D15 (D1, D3 y D4 conviene
-  cerrarlas con Juan/Administración) y aprueba la spec; después, implementer.
+  F-044 dedicación escribiría y editaría en los partes compartidos líneas de
+  recursos no persona (`synckey porcentajes:vin:…`), sin borrar nunca.
+- **Siguiente paso:** el humano cierra D1b, D3, D4b, D5, D6 y D9-D15 (D1b y
+  D4b conviene verlas con Juan/Administración) y aprueba; después, implementer.
 
 ## F-061 · decisiones del humano a los dos bloqueos del implementer
 

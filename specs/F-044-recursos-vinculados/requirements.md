@@ -2,147 +2,147 @@
 # F-044 · Registrar los recursos vinculados con el % del trabajador
 
 Rigor **`critico`** (escribe en Sigrid). Toca **los tres servicios**: la api
-casa y guarda el vínculo (es un maestro) y lo manda en el contrato; el
-transfer, única pluma, decide y escribe las líneas; el front las enseña
-(design §1). Pedida por el humano el 2026-10-07 y 2026-10-08; alcance de Juan
-Romero el 2026-10-08: «solo los recursos persona, gasoil, vehículo y
-teléfono» van por porcentaje. **Decisiones abiertas D1-D15 en design §9**:
-cada R marcado `[Dn]` está escrito con la opción recomendada y cambia si el
-humano elige otra. Fuera: kilómetros (`VP`/`KM`), cajas, viajes, mensajería
-(F-052), traer % de Sigrid (F-054), rachas de incidencia (F-062), deshacer en
-Sigrid (F-033) y el repositorio `partes`.
+trae el vínculo en el sync, guarda la partida elegida de cada vinculado y lo
+manda en el contrato; el transfer, única pluma, propone, decide y escribe; el
+front pinta subfilas y selector (design §1). **Decididas por el humano el
+2026-10-25** (design §9.1): D1 cualquier tipo vinculado, D2 el campo de
+Sigrid, D4 la CI de su tipo y el mismo % que el titular en cada obra (también
+postventa y VAR), D7 resuelta con D4, D8 columna «tipo recurso» y subfila con
+partida editable. **Abiertas** (design §9.2): D1b, D3, D4b, D5, D6, D9-D15;
+los R marcados `[Dn]` siguen la recomendada. Fuera: mensajería (F-052), traer
+% de Sigrid (F-054), rachas (F-062), deshacer en Sigrid (F-033) y `partes`.
 
 ## 0. Lo que hay en Sigrid (solo lectura)
 
-Detalle en `progress/explore_F-044_sigrid.md`. No hay vínculo estructurado
-(`resres` vacía, sin conductor, sin CIF): el vinculado se llama
-`<CONCEPTO> <nombre del recurso persona>`, y casado así cada vinculado activo
-da 0 o 1 mensual. Teléfono (`TF`, hora `OTEL`), gasoil (`CO`, `OGAS`) y
-vehículo (`VE`, `MESVE`) llevan importe mensual en `reshor` y hoy se
-imputan como la persona: mismo parte, `can` = su %, `pre` = `reshor.pre`,
-una línea por cada `M*` suya, la cuenta de su `reshor.caaide` y, en obra
-normal, la partida de su concepto (`CI.4.13`, `CI.4.1`, `CI.03P.9`…).
-Glosario: **vinculado** = recurso no persona casado con un trabajador;
-**titular** = la línea de % del trabajador de la que cuelga.
+Detalle en `progress/explore_F-044_sigrid.md`. El vínculo es el campo extendido
+**«Recurso Asociado»** (`defext` 46, `conext.cod = '5'`, `valn` = `res.ide` del
+principal): 538 recursos no persona lo tienen, siempre hacia una persona de su
+empresa. Teléfono, gasoil y vehículo se imputan hoy como la persona (mismo
+parte, mismo %, `pre` de `reshor`, cuenta de `reshor.caaide`); su partida es la
+hoja **CI cuya cuenta tiene la subcuenta del vinculado** (`CICO13` ↔ `CI.4.13`)
+y, si el titular va a postventa, VAR o `CP*`, la del titular. Glosario:
+**vinculado** = recurso no persona con el campo hacia un trabajador;
+**titular** = la línea de % de ese trabajador en una obra.
 
 ## 1. El vínculo (api, en el sync)
 
-- **R1.** `[D1]` El sync lee de Sigrid los recursos `res.cla = 0` cuya
-  clasificación (`auxrestip.cod`) esté en `sync.vinculados.tipos` de
-  `config.yaml` (`TF`, `CO`, `VE`), de todas las empresas, con su código,
-  descripción, empresa, baja y hora por defecto (`res.horide`).
-- **R2.** `[D2]` Un vinculado es de un trabajador si y solo si su
-  descripción, sin espacios en los extremos, **termina** en un espacio
-  seguido del nombre exacto del trabajador y los dos son de la **misma
-  empresa**. Lo decide **una** función pura de `dedicacion-api/domain/`.
-- **R3.** Si casa con ninguno o con varios trabajadores, no se vincula; si un
-  trabajador casa con dos vinculados del mismo tipo, no se vincula ninguno de
-  ese tipo. **Nunca se elige el primero.** El preview del sync publica
-  cuántos hay de cada caso y sus códigos.
-- **R4.** El vinculado cuenta en el mes M con la regla de vigencia del
-  trabajador (`vigente_en`, `#regla-recurso`) sobre su propia baja.
-- **R5.** El vínculo se guarda en la tabla `recurso_vinculado` (ORM). Un
-  vinculado que sale del sync o pierde su trabajador queda inactivo; no se
-  borra. Si el sync falla, no se persiste nada (como hoy).
+- **R1.** `[D1]` El sync de maestros lee de Sigrid los recursos no persona con
+  el campo de `sync.vinculados` de `config.yaml` (código del campo y tabla), de
+  **cualquier** clasificación, con tipo y su descripción (`auxrestip`),
+  código, descripción, empresa, baja y hora por defecto (`res.horide`).
+- **R2.** `[D2]` Un vinculado es del trabajador cuyo `ide` es el valor del
+  campo. Lo decide **una** función pura de `dedicacion-api/domain/`. Un
+  trabajador tiene **todos** sus vinculados.
+- **R3.** Con el campo vacío o hacia un recurso que no es trabajador de
+  dedicación, no se vincula; el preview del sync publica cuántos y sus códigos
+  (para que Administración rellene el campo). No se casa por nombre.
+- **R4.** El vinculado cuenta en el mes M con `vigente_en` sobre su propia
+  baja (`#regla-recurso`).
+- **R5.** El vínculo se guarda en `recurso_vinculado` (ORM). El que sale del
+  sync o pierde su trabajador queda inactivo; no se borra. Si el sync falla,
+  no se persiste nada.
 
-## 2. Contrato api → transfer
+## 2. Cuadrante (api y front)
 
-- **R6.** `[D13]` Cada línea de % de un periodo ≥ `sync.vinculados.desde`
-  lleva `vinculados`: los vigentes en el mes de su trabajador (`recurso_ide`,
-  `tipo`, descripción del tipo). La api manda; el transfer no los busca.
-- **R7.** Una línea sin `vinculados` (o con la lista vacía) se decide
-  **exactamente igual** que antes de F-044, con las mismas lecturas.
+- **R6.** `[D8]` El cuadrante gana la columna **«Tipo recurso»** (`Persona` en
+  la fila del trabajador) y, bajo cada línea (obra + modo) de un trabajador con
+  vinculados vigentes en el mes, **una subfila por vinculado** con su tipo, su
+  código y la partida a la que va. Sin vinculados, la fila es la de hoy.
+- **R7.** El % de la subfila es el de su titular y no se edita: el que se pone
+  al titular en una obra se aplica tal cual al titular y a sus vinculados.
+- **R8.** `[D8]` La partida de la subfila se **cambia** con el selector de
+  F-050 (`#regla-partida`: catálogo de la obra, botones CD · CI · CP, orden
+  natural). Se guarda como elegida en `asignacion_vinculado`; cambiarla deja
+  un evento que se deshace como cualquier otro (`#regla-deshacer`); guardar la
+  fila la conserva y copiar el mes la copia.
+- **R9.** Sin elegida, la subfila enseña la **propuesta** (R15-R17) en cursiva
+  con su método, calculada por el transfer con la misma función que el
+  preflight, y la api la guarda como en F-055. El front no calcula nada.
 
-## 3. Qué se escribe (transfer)
+## 3. Contrato api → transfer
 
-- **R8.** `[D3, D7]` Por cada titular que se escribe o se edita y cada
-  vinculado suyo, **una** línea en el **mismo parte** que el titular, con la
-  `fec` del titular, `can` = el del titular, la hora por defecto del vinculado,
-  `pre` = su `reshor.pre` para esa hora y `tot = round(can × pre, 2)`.
-- **R9.** La cuenta analítica sale de `#regla-analitica` con el recurso y la
-  hora del vinculado; el modo pruebas, la empresa y el alta protegida, como
-  cualquier línea (`#regla-pruebas`, `#regla-empresa`).
-- **R10.** `[D9]` Su `synckey` es `porcentajes:vin:{registro_id}:{recurso_ide}`;
+- **R10.** `[D13]` Cada línea de % de un periodo ≥ `sync.vinculados.desde`
+  lleva `vinculados` (`recurso_ide`, tipo, descripción del tipo, partida
+  elegida o propuesta guardada, `hmores_ide`). Lo manda la api; el transfer
+  no busca vínculos.
+- **R11.** Sin `vinculados`, una línea se decide **exactamente igual** que
+  antes de F-044, con las mismas lecturas.
+
+## 4. Qué se escribe (transfer)
+
+- **R12.** `[D4]` Por cada titular que se escribe o se edita y cada vinculado,
+  **una** línea en el mismo parte, con la `fec` y el `can` **del titular** en
+  esa obra (normal, postventa o VAR, sin normalizar), la hora por defecto del
+  vinculado, `pre` = su `reshor.pre` y `tot = round(can × pre, 2)`. Cuenta por
+  `#regla-analitica` con su recurso y hora; modo pruebas y empresa, como
+  cualquier línea.
+- **R13.** `[D9]` `synckey` `porcentajes:vin:{registro_id}:{recurso_ide}`;
   reejecutar no duplica (`ya_registrado`).
-- **R11.** Si el vinculado no tiene en `reshor` su hora por defecto, o su
-  `pre` es 0, se omite con un motivo que nombra el tipo y la hora; el titular
-  no cambia.
-- **R12.** `[D10]` Si el titular se omite o queda retenido por un aviso sin
-  confirmar, sus vinculados se omiten con «sigue al trabajador» y el motivo
-  del titular. Si el titular está **ya registrado**, cada vinculado se
-  decide solo (el que falta se escribe).
-- **R13.** `[D4]` Partida en obra normal: la propuesta de `#regla-partida`
-  calculada para el **recurso y la hora del vinculado** (parte anterior en
-  esa obra → casamiento con la descripción de su tipo como categoría →
-  último parte trasladado). Sin propuesta, `#regla-sin-partida` por línea.
-- **R14.** `[D4]` En postventa, la partida del titular (`#regla-p5`); en una
-  entrada VAR, la de la entrada (`#regla-var`). Sin ella, como el titular.
-- **R15.** Las líneas de vinculado **no suman** a la jornada del trabajador
-  (`#regla-capacidad`), ni son su pisado ni su línea al 0 %: una `MESVE`
-  (empieza por `M`) de su vehículo no cuenta como `M*` del trabajador.
+- **R14.** `[D1b, D3]` Sin su hora en `reshor` o con `pre` 0, el vinculado se
+  omite con un motivo que nombra tipo y hora; el titular no cambia.
+- **R15.** `[D4]` Partida si el titular va a una partida `CI*` de una obra
+  normal: la elegida si es hoja activa del presupuesto (si no, omitida con
+  motivo, como F-050); si no hay elegida, la **única** hoja activa de la obra
+  cuya cuenta tiene la subcuenta de la cuenta del vinculado (su «CI»).
+- **R16.** `[D4b]` Si esa hoja no existe o hay varias, `#regla-sin-partida`
+  por línea (nunca la primera); se elige en la subfila o en el modal.
+- **R17.** `[D4b]` Si el titular va a postventa, a una entrada VAR o a una
+  partida que no es `CI*` (`CP*`, `CD*`), el vinculado va a la **partida del
+  titular**, salvo elegida válida.
+- **R18.** `[D10]` Titular omitido o retenido por un aviso sin confirmar ⇒ sus
+  vinculados se omiten («sigue al trabajador» y su motivo). Titular **ya
+  registrado** ⇒ cada vinculado se decide solo.
+- **R19.** Las líneas de vinculado no suman a la jornada del trabajador
+  (`#regla-capacidad`) ni son su pisado ni su línea al 0 %: una `MESVE`
+  (empieza por `M`) no es `M*` del trabajador.
 
-## 4. Lo que ya está en el parte
+## 5. Lo que ya está en el parte (como el % normal)
 
-- **R16.** `[D6]` Identidad: la de `#regla-conflicto` (recurso vinculado,
-  mes, hora, partida) en todos los partes del periodo de la obra destino.
-  Un choque En registro es un **pisado a confirmar**, uno por vinculado, que
-  **edita** el de menor `ide` y pone a 0 los demás (`#regla-cero`).
-- **R17.** `[D6]` Una línea del vinculado con su hora y `can` 0 o nulo, en
-  un parte En registro del periodo, es **pisable sin confirmar** con el
-  emparejado de `#regla-cero` (misma partida > menor `ide`), y el preflight
-  lo avisa.
-- **R18.** Un choque en un parte cerrado omite la línea (`parte_cerrado`).
-  En un cerrado nunca se escribe ni se edita; ningún caso emite `DELETE`.
-- **R19.** `[D11]` Capacidad del vinculado: la suma de `can` de sus líneas
-  de esa hora en los partes de la obra y el mes (cerrados incluidos), más lo
-  nuevo y suponiendo confirmados los pisados, no pasa de 1 con la tolerancia
-  0,00005; si se pasa, **sobrecarga a confirmar** de ese vinculado.
-- **R20.** Cada `UPDATE` de una línea de vinculado lleva la guarda de
-  `#regla-cero` con **su** hora (no `M*`): mismo `ide`, recurso, `can` y
-  `synckey` leídos, sin enlaces y parte En registro.
+- **R20.** `[D6]` Identidad de `#regla-conflicto` (recurso vinculado, mes, hora,
+  partida) en todos los partes del periodo de la obra destino: un choque En
+  registro es un **pisado a confirmar** por vinculado, que **edita** el de
+  menor `ide` y pone a 0 los demás (`#regla-cero`).
+- **R21.** `[D6]` Una línea del vinculado con su hora y `can` 0 o nulo en un
+  parte En registro del periodo es **pisable sin confirmar** (emparejado de
+  `#regla-cero`) y el preflight lo avisa.
+- **R22.** Un choque en un parte cerrado omite la línea (`parte_cerrado`); en
+  un cerrado nunca se escribe ni se edita; nunca se emite `DELETE`.
+- **R23.** `[D11]` Capacidad del vinculado: la suma de `can` de sus líneas de
+  esa hora en los partes de la obra y el mes (cerrados incluidos), con lo
+  nuevo y los pisados confirmados, no pasa de 1 (tolerancia 0,00005); si se
+  pasa, **sobrecarga a confirmar** de ese vinculado.
+- **R24.** Cada `UPDATE` de una línea de vinculado lleva la guarda de
+  `#regla-cero` con **su** hora (no `M*`).
 
-## 5. Preflight, ejecutar, lecturas y traza
+## 6. Preflight, ejecutar, lecturas y traza
 
-- **R21.** Preflight y `ejecutar` devuelven `vinculados`: una entrada por
-  línea (`registro_id`, recurso, tipo, acción, hora, `can`, `pre`, `tot`,
-  partida y método, parte, `linea_cero`, `hmores_ide`, motivo y aviso), solo
-  si la petición trae vinculados. Sus conflictos van en `conflictos`, con su
-  propia clave y el tipo y código del vinculado.
-- **R22.** Los avisos se confirman como hoy (`pisar_claves`): confirmar el
-  del titular no confirma el de su vinculado ni al revés.
-- **R23.** Lecturas: las horas de los vinculados van en la **misma** lectura
-  de `reshor` que las de los trabajadores, y sus líneas en la misma de
-  líneas del periodo; el historial de sus partidas es **una** lectura más por
-  petición, solo si alguno necesita propuesta. Un fallo o un `truncated`:
-  la petición falla sin escribir nada.
-- **R24.** En `ejecutar`, la línea del vinculado se escribe después de la de
-  su titular, en el mismo parte; si el titular no queda escrito (guarda,
-  relectura), el vinculado no se escribe y sale en `omitidas`.
-- **R25.** Suelto y por lote (`registro/preflight-lote`) dan el mismo
-  resultado (F-055), con las lecturas de R23.
-- **R26.** La api guarda por asignación y vinculado su estado, parte, motivo
-  y `hmores.ide` (tabla `registro_vinculado`), y manda ese `hmores.ide` en el
-  siguiente registro para reconocer la línea (`#regla-cero`, localizar lo
-  nuestro).
+- **R25.** Preflight y `ejecutar` devuelven `vinculados` (una entrada por
+  línea: `registro_id`, recurso, tipo, acción, hora, `can`, `pre`, `tot`,
+  partida y método, parte, `linea_cero`, `hmores_ide`, motivo) solo si la
+  petición los trae; sus conflictos van en `conflictos` con su clave, tipo y
+  código.
+- **R26.** Se confirman como hoy (`pisar_claves`), cada uno por separado: el
+  del titular no confirma el del vinculado ni al revés.
+- **R27.** Lecturas: `reshor` de los vinculados en la misma lectura que la de
+  los trabajadores; sus líneas en la misma de líneas del periodo; las cuentas
+  de las hojas de la obra, **una** lectura más, solo si alguno necesita
+  propuesta. Un fallo o `truncated`: falla sin escribir.
+- **R28.** En `ejecutar` el vinculado se escribe después de su titular; si el
+  titular no queda escrito, el vinculado sale en `omitidas`.
+- **R29.** Suelto, por lote y en `partidas/propuesta(-lote)` el resultado es el
+  mismo (F-055).
+- **R30.** La api guarda por asignación y vinculado estado, parte, motivo y
+  `hmores.ide` en `asignacion_vinculado`, y manda ese `hmores.ide` después.
 
-## 6. Front (solo pinta)
+## 7. Modal, documentación y verificación
 
-- **R27.** `[D8]` El cuadrante marca en la fila del trabajador los tipos de
-  sus vinculados del mes (`TF · CO · VE`), con el código de cada uno en el
-  título; lo trae la api en el cuadrante. Sin vinculados, nada.
-- **R28.** `[D8]` El modal de registro enseña, bajo cada línea del
-  trabajador, sus vinculados con la acción, el % y la partida, y sus avisos
-  en la lista de siempre nombrando el tipo y el código. El front no calcula.
-
-## 7. Documentación y verificación
-
-- **R29.** `docs/ARCHITECTURE.md` gana `#regla-vinculado` (fuente única,
-  `ANCLAS` de `test_f002_fuente_unica.py`) y la remiten
-  `#regla-capacidad`, `#regla-cero` y `#regla-partida`; `docs/INTEGRACION.md`
-  §1, §5 y §7 (lectura nueva de `res`, contrato `vinculados`, salida).
-- **R30.** MANUAL del humano, en modo pruebas y con Administración: un
-  trabajador con teléfono, gasoil y vehículo, en una y en dos obras, con una
-  línea de vinculado al 0 % y otra metida a mano (tasks T19).
-- **R31.** Al desplegar: `azure-apps/dedicacion.md` y el **aviso a
-  `partes`** (lo transmite el humano): dedicación escribe y edita líneas
-  `OTEL`, `OGAS` y `MESVE` de recursos no persona en los partes compartidos.
+- **R31.** El modal de registro enseña los vinculados bajo cada línea del
+  trabajador (acción, %, partida con el selector de F-050) y sus avisos en la
+  lista de siempre, con tipo y código.
+- **R32.** `docs/ARCHITECTURE.md` gana `#regla-vinculado` (fuente única,
+  `ANCLAS`), remitida desde `#regla-capacidad`, `#regla-cero` y
+  `#regla-partida`; `docs/INTEGRACION.md` §1, §5 y §7.
+- **R33.** MANUAL del humano en modo pruebas con Administración (tasks T21).
+- **R34.** Al desplegar, `azure-apps/dedicacion.md` y el **aviso a `partes`**
+  (lo transmite el humano): dedicación escribe y edita líneas de recursos no
+  persona (`OTEL`, `OGAS`, `MESVE`…) en los partes compartidos.

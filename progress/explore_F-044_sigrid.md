@@ -5,26 +5,23 @@ Spec-author, 2026-10-25, rama `feature/F-044-recursos-vinculados`. **Solo
 lectura**: `POST /api/sql/read` de `sigrid-api` (base de la config del
 transfer) con el `SigridWriteClient._read` del transfer, que lanza ante
 `truncated`; todo agregado en SQL. Diccionario: `azure-apps/sigrid_tablas.md`
-(`res`, `resres`, `reshor`, `hmores`, `auxrestip`). Ni una escritura. **Sin
+(`res`, `resres`, `reshor`, `hmores`, `auxrestip`, `defext`, `conext`, `auxhor`, `obrparpar`). Ni una escritura. **Sin
 nombres, códigos de recurso, teléfonos, matrículas ni importes por
 persona.** Los scripts viven en el scratchpad del agente, no en el repo.
 Periodo medido: partes de 2026 (enero-octubre) salvo que se diga otra cosa.
 
 ## 0. Conclusión primera
 
-1. **No hay vínculo estructurado en Sigrid.** `resres` («Recursos de un
-   recurso»: padre, dependiente, `fecini`/`fecfin`) existe en el diccionario
-   pero tiene **0 filas**; `res.resconide` (conductor) está vacío en todos los
-   recursos; `hmores.resconide`/`resrspide` vacíos en las 32.596 líneas de
-   2026; `res.conide` (empleado) solo lo tienen recursos persona (`cla = 1`);
-   `res.cif` vacío en todos los vinculados. El código del vinculado no
-   comparte dígitos con el del trabajador (en ningún par casado).
-2. **El vínculo es el nombre.** La descripción del vinculado es
-   `<CONCEPTO> <nombre del recurso persona>` (`TELEFONO MOVIL …`,
-   `GASOIL …`, `VEHICULO …`, `KILOMETROS …`). Casando «la descripción
-   **termina** en espacio + el nombre exacto del recurso persona mensual, de
-   la misma empresa», **cada vinculado activo casa con 0 o 1 mensual**, y
-   cada mensual tiene como mucho **uno** de cada tipo (§2).
+1. **El vínculo es un campo extendido de Sigrid** (§6, ronda 2, a raíz de
+   la respuesta del humano a D2): `defext` 46 «Recurso Asociado» (`tip = 33`,
+   recursos; `cod = '5'`, `camtab = 'res'`), con su valor en `conext.valn` =
+   `res.ide` del recurso principal. Lo tienen **538** recursos no persona; en
+   los activos, TF 156 de 162, CO 89 de 95, VE 50 de 55, VP 55 de 56, CAJA
+   112 de 119, VIAJE 18 de 22. Las otras vías están vacías: `resres` (0
+   filas), `res.resconide`, `hmores.resconide`/`resrspide`, `res.cif`.
+2. **El nombre fue la primera pista** (ronda 1, §2): la descripción del
+   vinculado es `<CONCEPTO> <nombre del recurso persona>`, y casa con el campo
+   en 153 de 156 TF, 88 de 89 CO y 50 de 50 VE. Manda el campo.
 3. **Se imputan exactamente como la persona (P3).** `can` = el % del
    trabajador en ese parte, `pre` = `reshor.pre` del vinculado para su hora
    por defecto, `tot = can × pre`, `fec` = último día, en **el mismo parte**
@@ -52,7 +49,7 @@ por porcentaje; kilómetros y caja «de la manera habitual». **Ojo: `MESVE`
 empieza por `M`.** No es de una persona (`cla = 0`), pero cualquier filtro
 «hora `M*`» sobre líneas de **cualquier** recurso lo cuenta como mensual.
 
-## 2. El vínculo por nombre, medido (vinculados activos)
+## 2. El vínculo por nombre, medido (ronda 1; sustituido por el campo de §6)
 
 | Tipo | Casan con 1 mensual (misma empresa) | Con 0 | Con 2+ |
 |---|---|---|---|
@@ -119,11 +116,52 @@ de mensuales (17 a 0). Son las copias del mes anterior que ya vio F-051
 (0707, `PT26/00370`): **habrá vinculados al 0 % que pisar**. Septiembre:
 675 líneas de vinculados en 36 partes cerrados y 122 en 3 En registro.
 
-## 6. Consultas (resumen; las SQL están en el scratchpad del agente)
+## 6. Ronda 2 (2026-10-25): el campo «Recurso Asociado»
+
+- **Definición**: `defext` 46, `tip = 33`, `cod = '5'`, «Recurso Asociado»,
+  `camtip = 6` (índice), `camtab = 'res'`. Valores en `conext` (`conide` = el
+  vinculado, `valn` = el principal): 556 filas en recursos no persona (538 con
+  valor) y 1 vacía en una persona; **una fila por vinculado**, nunca dos.
+- **A quién apunta** (vinculados activos con valor): siempre a un recurso
+  persona (`cla = 1`) activo y de la **misma empresa**; a un **mensual** en TF
+  156/156, CO 88/89, VE 50/50, VIAJE 18/18, CAJA 104/112, VP 48/55 (el resto,
+  personas que van por horas: `partes`).
+- **Por principal mensual activo, como mucho uno de cada tipo**; 171
+  mensuales activos tienen al menos un vinculado.
+- **Tipos sin el campo**: los dos `VAR` (mensajería, F-052) y tres sueltos.
+
+## 7. Ronda 2: la «CI de su tipo» es la cuenta del recurso
+
+`auxrestip` no tiene partida y `auxhor.parcod` («Código partida obra») está
+**vacío** en todas las horas. Lo que da la CI es la **cuenta**: la subcuenta de
+`reshor.caaide` del vinculado (TF `CICO13`, CO `CICO01`, VE `CIMP09`, CAJA
+`CICO15`, VIAJE `CIIN10`, VP `CIMJ09`; las mismas en `auxhor.caacod`) se
+corresponde con la partida del presupuesto cuya cuenta (`obrparpar.caaide`)
+tiene esa subcuenta: `CICO13` ↔ `CI.4.13`, `CICO01` ↔ `CI.4.1`, `CIMP09` ↔
+`CI.03P.9`.
+
+| Líneas 2026 con partida `CI*` (vinculados por el campo) | TF | CO | VE |
+|---|---|---|---|
+| La cuenta de su partida tiene la subcuenta del vinculado | 1.948 | 906 | 687 |
+| Otra subcuenta | 18 | 113 | 6 |
+| Partida sin cuenta | 9 | 148 | 2 |
+
+Por obra con líneas del tipo, **hojas activas** con esa subcuenta: TF 1 en 45
+obras, 0 en 1, 2+ en 4; CO 1 en 44, 0 en 2, 2+ en 5; VE 1 en 41, 0 en 2, 2+
+en 4. **Cuando la partida del titular no es `CI*`**, el vinculado va a **la
+misma partida que el titular**: en `POSTV2` (761 líneas) y `VAR` (37), 676 de
+676 líneas TF/CO/VE en una partida-obra van a la de una `M*` de su titular; en
+las `CP*` («COSTES ESTRUCTURA. DELEGACIÓN», en obras normales: 0678, 0704,
+0713…), 377 de 377.
+
+## 8. Consultas (resumen; las SQL están en el scratchpad del agente)
 
 `res`×`auxrestip` por clase y tipo; `resres` y `res.resconide` (vacíos);
 `hmores.resconide/resrspide` en 2026; casado por cola de nombre con y sin
 empresa; `reshor` de los vinculados (hora, `pre`, `caaide`); líneas 2026 de
 vinculados frente a las `M*` de su mensual (mismo parte, `can`, `pre`,
 `tot`, `fec`, partida, subcuenta, nº de líneas por parte, suma por mes);
-octubre y septiembre por estado de parte. Ninguna respuesta `truncated`.
+octubre y septiembre por estado de parte; ronda 2: `defext`, `conext` sobre
+`res` (cobertura, destino, empresa, mensual, coincidencia con el nombre),
+`auxhor.parcod/caacod` y subcuenta de la partida frente a la del vinculado,
+por obra y por clase de partida. Ninguna respuesta `truncated`.
