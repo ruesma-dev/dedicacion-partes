@@ -36,7 +36,7 @@ titular → `_trazar` guarda en `asignacion_vinculado`.
 
 **api**
 - `config/config.yaml` — `sync.vinculados`: `campo: "5"`, `desde: "2026-10"`,
-  `tipos_excluidos: []` (D1b) y la SQL de §7.1.
+  `tipos_excluidos: [VP]` (D1b) y la SQL de §7.1.
 - `domain/models.py` — `RecursoVinculado`; `Linea` gana sus subfilas.
 - `infrastructure/db/orm_models.py` — `RecursoVinculadoORM`,
   `AsignacionVinculadoORM` (§7.2); `create_all` crea las tablas nuevas.
@@ -96,9 +96,10 @@ del titular no cambia); `reglas_incidencias.py` (D12); `universo_postventa.py`,
 
 ### 6.1 api · `domain/vinculados.py` (domain, sin dependencias)
 
-- `vincular(candidatos: list[RecursoVinculado], trabajadores: set[int]) ->
-  ResultadoVinculos` — R2-R3: vínculo = valor del campo; devuelve `vinculos`,
-  `sin_campo` y `hacia_no_trabajador` (con códigos, sin nombres).
+- `vincular(candidatos: list[RecursoVinculado], trabajadores: set[int],
+  tipos_excluidos: set[str]) -> ResultadoVinculos` — R2-R3: vínculo = valor
+  del campo; devuelve `vinculos`, `sin_campo`, `hacia_no_trabajador` y
+  `excluidos` (D1b; con códigos, sin nombres).
   Determinista; un trabajador se queda con **todos** los suyos.
 - Vigencia: `domain/vigencia.vigente_en` tal cual (R4).
 
@@ -200,32 +201,29 @@ se despliega transfer → api → front.
   porcentaje aplica tanto al recurso persona como a todos los asociados»; «si
   se pisa indicarlo igualmente, funciona como el porcentaje normal».
 
-### 9.2 Abiertas (recomendada en negrita)
+### 9.2 Aprobadas por el humano (2026-10-25, «ok a todo»: la opción A)
 
-- **D1b · Tipos sin importe mensual** (KM, caja, viaje tienen `pre` 0 en
-  `reshor`; un `VP` sí lo tiene). **A) se omiten con motivo visible «sin
-  importe mensual» y `tipos_excluidos: [VP]`** (Juan: los km «de la manera
-  habitual»); B) sin exclusión: solo cuenta el `pre`.
-- **D3 · Importe.** **A) `reshor.pre`** (99 % en 2026); B) el `pre` de su
-  línea del mes anterior.
-- **D4b · Sin CI y fuera de obra normal.** **A) postventa, VAR y partida no
-  `CI*` del titular ⇒ la partida del titular** (676/676 y 377/377 en 2026);
-  **sin CI o con varias ⇒ «sin partida» a confirmar, elegible en la subfila**;
-  B) postventa: la CI del tipo en el presupuesto de la obra de postventa; C)
-  sin CI ⇒ la del titular sin preguntar.
-- **D5 · Cuenta.** **A) `#regla-analitica`** con su hora (97-100 %).
-- **D6 · Ya metido a mano.** **A) como el % normal**: pisado a confirmar por
-  vinculado, al 0 % se edita sin confirmar, cerrado omitido; B) confirmar el
-  del titular confirma los de sus vinculados.
-- **D9 · `synckey`.** **A) `porcentajes:vin:{registro_id}:{recurso_ide}`**.
-- **D10 · Titular omitido o ya registrado.** **A) omitido ⇒ también;
-  ya registrado ⇒ se decide solo**; B) solo si el titular se escribe ahora.
-- **D11 · Capacidad del vinculado.** **A) sí, sobrecarga a confirmar**; B) no.
-- **D12 · Incidencias.** **A) no cambian a los vinculados.** **D13 · Desde
-  cuándo.** **A) desde 2026-10**; B) cualquier periodo.
-- **D14 · Excel.** **A) sin vinculados**; B) una fila por vinculado.
-- **D15 · Tamaño.** **A) dos bloques en una feature** (T1-T8 vínculo y
-  cuadrante, sin escribir en Sigrid; T9-T24 registro); B) partirla en dos.
+- **D1b · Tipos sin importe mensual** (KM, caja, viaje con `pre` 0 en
+  `reshor`; un `VP` sí lo tiene): se omiten con motivo visible «sin importe
+  mensual» y `tipos_excluidos: [VP]` en `config.yaml` (Juan: los km «de la
+  manera habitual»).
+- **D3 · Importe**: `reshor.pre` del vinculado (99 % en 2026).
+- **D4b · Partida fuera de la CI del tipo**: postventa, VAR y partida no `CI*`
+  del titular ⇒ la partida del titular (676/676 y 377/377 en 2026); obra sin
+  CI del tipo o con varias ⇒ «sin partida» a confirmar, elegible en la subfila
+  o en el modal (nunca la primera).
+- **D5 · Cuenta**: `#regla-analitica` con su recurso y su hora (97-100 %).
+- **D6 · Ya metido a mano**: como el % normal: pisado a confirmar por
+  vinculado, al 0 % se edita sin confirmar, en parte cerrado se omite.
+- **D9 · `synckey`**: `porcentajes:vin:{registro_id}:{recurso_ide}`.
+- **D10 · Titular**: omitido ⇒ sus vinculados también; ya registrado ⇒ cada
+  vinculado se decide solo.
+- **D11 · Capacidad del vinculado**: sí, sobrecarga a confirmar.
+- **D12 · Incidencias**: no cambian a los vinculados.
+- **D13 · Desde cuándo**: periodos ≥ 2026-10 (`sync.vinculados.desde`).
+- **D14 · Excel**: sin vinculados.
+- **D15 · Tamaño**: dos bloques en una feature (T1-T8 vínculo y cuadrante,
+  sin escribir en Sigrid; T9-T24 registro).
 
 ## 10. Riesgos, relaciones y avisos
 

@@ -8,38 +8,28 @@ desplegable de incidencias; `sdd: false`, rigor estándar) **cerrada
 **desplegada el 2026-10-23** (api → front, lo lanzó el humano; ver
 «Producción, hoy»); `azure-apps/dedicacion.md` `47c7c3c`. Api y front; ni
 transfer ni Sigrid. **Pendiente del humano:** el MANUAL de F-061 (abajo).
-**F-044** (recursos vinculados) **`spec_ready` el 2026-10-25** en el worktree
-`porcentajes-f044` (rama `feature/F-044-recursos-vinculados`): spec revisada
-con las respuestas del humano; **quedan decisiones abiertas** (abajo).
+**F-044** (recursos vinculados) **`spec_ready`, SPEC APROBADA por el humano el
+2026-10-25** («ok a todo») en el worktree `porcentajes-f044` (rama
+`feature/F-044-recursos-vinculados`): **en espera de que cierre F-062** (solo
+una `in_progress`; las dos tocan `registro_pipeline.py`).
 
-## F-044 · spec revisada (2026-10-25): decididas y abiertas
+## F-044 · spec aprobada (2026-10-25): en espera de F-062
 
-- **Spec:** `specs/F-044-recursos-vinculados/` (requirements 148 líneas,
-  design 250, tasks T1-T24). Rigor `critico`; toca **api** (vínculo en el sync,
+- **Spec:** `specs/F-044-recursos-vinculados/` (requirements 149 líneas,
+  design 248, tasks T1-T24). Rigor `critico`; toca **api** (vínculo en el sync,
   subfilas, elegida, contrato, traza), **transfer** (propone, decide y escribe)
   y **front** (columna, subfilas, selector, modal). Evidencia de Sigrid, solo
   lectura y solo agregados, rondas 1 y 2: `progress/explore_F-044_sigrid.md`.
-- **Ronda 2 en Sigrid:** el campo del humano es `defext` 46 «Recurso
-  Asociado» (`conext.cod = '5'`, `valn` = `res.ide` del principal): 538
-  recursos no persona, siempre hacia una persona de su empresa (TF 156/162,
-  CO 89/95, VE 50/55 activos). La «CI de su tipo» es la **cuenta**: la hoja
-  cuya cuenta tiene la subcuenta del vinculado (`CICO13` ↔ `CI.4.13`; 1.948 de
-  1.975 líneas TF en CI); `auxhor.parcod` está vacío. En postventa (`POSTV2`),
-  VAR y `CP*`, el vinculado va a la partida del titular (676/676 y 377/377).
-- **Decididas (humano, 2026-10-25, citas en design §9.1):** D1 cualquier tipo
-  vinculado; D2 el campo (el spec-author descarta el casado por nombre incluso
-  como aviso, justificado en §9.1); D4 la CI del tipo y el %: «es la a.»
-  (mismo % del titular en cada obra, también postventa y VAR, sin normalizar);
-  D7 resuelta con D4; D8 columna «Tipo recurso» y subfila con partida editable.
-- **Abiertas (design §9.2, recomendada entre paréntesis):** D1b tipos sin
-  importe mensual (omitir con motivo y excluir `VP` por lo dicho por Juan); D3
-  importe (`reshor.pre`); D4b partida fuera de CI (postventa, VAR, `CP*` ⇒ la
-  del titular; obra sin CI del tipo o con varias ⇒ «sin partida» a confirmar,
-  elegible en la subfila); D5 cuenta (`#regla-analitica`); D6 metido a mano
-  (como el % normal); D9 `synckey` (`porcentajes:vin:{registro_id}:{recurso_ide}`);
-  D10 titular omitido / ya registrado (sigue / se decide solo); D11 capacidad
-  del vinculado (sí); D12 incidencias (no le afectan); D13 desde 2026-10; D14
-  Excel (sin vinculados); D15 una feature en dos bloques.
+- **Vínculo:** campo extendido «Recurso Asociado» (`conext.cod = '5'`, `valn`
+  = `res.ide` del principal). **Partida:** la hoja CI cuya cuenta tiene la
+  subcuenta del vinculado; en postventa, VAR y `CP*`, la del titular.
+- **Todas las decisiones cerradas** (design §9.1 y §9.2): D1, D2, D4 («es la
+  a.»), D7 y D8 con sus citas; D1b, D3, D4b, D5, D6 y D9-D15 con la opción A
+  («ok a todo»). D1b se aplica en el sync: `tipos_excluidos: [VP]` no se
+  vincula y el preview lo cuenta (R3); con `pre` 0, omitido con motivo (R14).
+- **Siguiente paso:** cuando F-062 esté `done` y unida a `dev`, rebasar la
+  rama de F-044 sobre `dev`, pasarla a `in_progress` y lanzar el implementer
+  (empieza por T1). T21 es MANUAL del humano en modo pruebas.
 - **F-054:** trae solo las `M*` de trabajadores (por recurso, no por prefijo);
   los vinculados no son asignaciones; F-054 puede traer la partida de la línea
   del vinculado como elegida de su subfila (design §10). Lo diseña F-054.
@@ -48,10 +38,8 @@ con las respuestas del humano; **quedan decisiones abiertas** (abajo).
   cerrada); **F-062 toca `registro_pipeline.py`**: implementar F-044 sobre
   `dev` con F-062 ya unida.
 - **Aviso a `partes`** (lo transmite el humano, no se toca `partes`): desde
-  F-044 dedicación escribiría y editaría en los partes compartidos líneas de
+  F-044 dedicación escribe y edita en los partes compartidos líneas de
   recursos no persona (`synckey porcentajes:vin:…`), sin borrar nunca.
-- **Siguiente paso:** el humano cierra D1b, D3, D4b, D5, D6 y D9-D15 (D1b y
-  D4b conviene verlas con Juan/Administración) y aprueba; después, implementer.
 
 ## F-061 · decisiones del humano a los dos bloqueos del implementer
 

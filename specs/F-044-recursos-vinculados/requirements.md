@@ -4,12 +4,12 @@
 Rigor **`critico`** (escribe en Sigrid). Toca **los tres servicios**: la api
 trae el vínculo en el sync, guarda la partida elegida de cada vinculado y lo
 manda en el contrato; el transfer, única pluma, propone, decide y escribe; el
-front pinta subfilas y selector (design §1). **Decididas por el humano el
-2026-10-25** (design §9.1): D1 cualquier tipo vinculado, D2 el campo de
-Sigrid, D4 la CI de su tipo y el mismo % que el titular en cada obra (también
-postventa y VAR), D7 resuelta con D4, D8 columna «tipo recurso» y subfila con
-partida editable. **Abiertas** (design §9.2): D1b, D3, D4b, D5, D6, D9-D15;
-los R marcados `[Dn]` siguen la recomendada. Fuera: mensajería (F-052), traer
+front pinta subfilas y selector (design §1). **Todas las decisiones, cerradas
+por el humano el 2026-10-25** (design §9): D1 cualquier tipo vinculado, D2 el
+campo de Sigrid, D4 la CI de su tipo y el mismo % que el titular en cada obra
+(también postventa y VAR), D7 con D4, D8 columna «tipo recurso» y subfila con
+partida editable; D1b, D3, D4b, D5, D6 y D9-D15 con la opción A («ok a todo»).
+Cada `[Dn]` remite a su decisión. Fuera: mensajería (F-052), traer
 % de Sigrid (F-054), rachas (F-062), deshacer en Sigrid (F-033) y `partes`.
 
 ## 0. Lo que hay en Sigrid (solo lectura)
@@ -35,7 +35,8 @@ y, si el titular va a postventa, VAR o `CP*`, la del titular. Glosario:
   trabajador tiene **todos** sus vinculados.
 - **R3.** Con el campo vacío o hacia un recurso que no es trabajador de
   dedicación, no se vincula; el preview del sync publica cuántos y sus códigos
-  (para que Administración rellene el campo). No se casa por nombre.
+  (para que Administración rellene el campo). No se casa por nombre. `[D1b]`
+  Un tipo de `tipos_excluidos` (hoy `VP`) no se vincula y el preview lo cuenta.
 - **R4.** El vinculado cuenta en el mes M con `vigente_en` sobre su propia
   baja (`#regla-recurso`).
 - **R5.** El vínculo se guarda en `recurso_vinculado` (ORM). El que sale del
@@ -79,7 +80,7 @@ y, si el titular va a postventa, VAR o `CP*`, la del titular. Glosario:
 - **R13.** `[D9]` `synckey` `porcentajes:vin:{registro_id}:{recurso_ide}`;
   reejecutar no duplica (`ya_registrado`).
 - **R14.** `[D1b, D3]` Sin su hora en `reshor` o con `pre` 0, el vinculado se
-  omite con un motivo que nombra tipo y hora; el titular no cambia.
+  omite con motivo «sin importe mensual», tipo y hora; el titular no cambia.
 - **R15.** `[D4]` Partida si el titular va a una partida `CI*` de una obra
   normal: la elegida si es hoja activa del presupuesto (si no, omitida con
   motivo, como F-050); si no hay elegida, la **única** hoja activa de la obra
