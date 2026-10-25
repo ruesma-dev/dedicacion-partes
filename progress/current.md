@@ -8,6 +8,49 @@ desplegable de incidencias; `sdd: false`, rigor estándar) **cerrada
 **desplegada el 2026-10-23** (api → front, lo lanzó el humano; ver
 «Producción, hoy»); `azure-apps/dedicacion.md` `47c7c3c`. Api y front; ni
 transfer ni Sigrid. **Pendiente del humano:** el MANUAL de F-061 (abajo).
+**F-044** (recursos vinculados) **`spec_ready` el 2026-10-25** en el worktree
+`porcentajes-f044` (rama `feature/F-044-recursos-vinculados`): spec escrita,
+**pendiente de que el humano decida D1-D15** y apruebe (abajo).
+
+## F-044 · spec escrita (2026-10-25): decisiones abiertas para el humano
+
+- **Spec:** `specs/F-044-recursos-vinculados/` (requirements 148 líneas,
+  design 248, tasks T1-T21). Rigor `critico`; toca **api** (vínculo en el
+  sync, contrato, traza), **transfer** (única pluma: decide y escribe) y
+  **front** (marca y modal). Evidencia de Sigrid, solo lectura y solo
+  agregados: `progress/explore_F-044_sigrid.md`.
+- **Lo que se ha visto en Sigrid:** no hay vínculo estructurado (`resres`
+  vacía): el vinculado se llama `<CONCEPTO> <nombre del trabajador>`.
+  Teléfono (`TF`/`OTEL`), gasoil (`CO`/`OGAS`) y vehículo (`VE`/`MESVE`)
+  llevan importe mensual en `reshor` y hoy se imputan como la persona: mismo
+  parte, mismo %, una línea por cada `M*`, cuenta de su `reshor`, partida de
+  su concepto (`CI.4.13`, `CI.4.1`, `CI.03P.9`) y, en postventa, la del
+  trabajador. Ninguna lleva `synckey` (todo a mano). En octubre ya hay
+  vinculados al 0 % copiados en partes En registro.
+- **Decisiones abiertas (design §9; recomendada entre paréntesis):** D1
+  tipos (TF, CO, VE; confirmar con Juan que «vehículo» es `VE` y no
+  `VP`/`KM`, y que `VIAJE` queda fuera aunque el humano lo nombró el 10-08);
+  D2 vínculo (por nombre y empresa; alternativa: que Administración rellene
+  `resres`); D3 importe (`reshor.pre`); D4 partida (propuesta del vinculado
+  en obra normal; la del trabajador en postventa y VAR); D5 cuenta
+  (`#regla-analitica`); D6 metido a mano (las reglas del trabajador: pisado a
+  confirmar, al 0 % se edita); D7 varias obras (mismo % en cada una); D8
+  vista (marca en el cuadrante + modal); D9 `synckey`
+  (`porcentajes:vin:{registro_id}:{recurso_ide}`); D10 titular omitido o ya
+  registrado (sigue / se decide solo); D11 capacidad del vinculado (sí); D12
+  incidencias (no le afectan); D13 desde 2026-10; D14 Excel (sin
+  vinculados); D15 una feature en dos bloques.
+- **Riesgos que conviene que el humano vea:** `MESVE` empieza por `M` (todo
+  filtro `LIKE 'M%'` que no vaya por el recurso lo cuenta: lo cubren R15 y
+  sus tests); el vínculo por nombre cae si Administración renombra (el
+  preview lo cuenta); **F-062 toca `registro_pipeline.py`**: implementar
+  F-044 sobre `dev` con F-062 ya unida.
+- **Aviso a `partes`** (lo transmite el humano, no se toca `partes`): desde
+  F-044 dedicación escribiría y editaría en los partes compartidos líneas
+  `OTEL`, `OGAS` y `MESVE` de recursos no persona (`synckey
+  porcentajes:vin:…`), sin borrar nunca.
+- **Siguiente paso:** el humano decide D1-D15 (D1, D3 y D4 conviene
+  cerrarlas con Juan/Administración) y aprueba la spec; después, implementer.
 
 ## F-061 · decisiones del humano a los dos bloqueos del implementer
 
