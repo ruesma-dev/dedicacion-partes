@@ -77,3 +77,33 @@ Todas con `tex = "PRUEBA-PORC"`. `paride` 409303 = `CI.4.13`, 409291 =
    «Sincronizar Sigrid» no lo enseñará.
 2. El `resumen` de cada obra del preflight cuenta solo las líneas del
    titular (`escribir: 1` con tres vinculados a escribir).
+
+## Prueba 2 · pisado y arrastre de los vinculados (líder, 2026-10-26)
+
+A petición expresa del humano («despues haz una prueba tu de pisado y de
+arrastre de los recursos secundarios o derivados»), sobre `dev` con F-044
+unida (`019369b`), en local y modo pruebas. Antes de cada escritura: (a)
+`/health` ⇒ `modo_pruebas:true`, `0404`; (b) `transfer_base_url` ⇒
+`http://127.0.0.1:8006`; `get_settings` ⇒ `True 0404`. Trabajador 1972126,
+noviembre 2026, vehículo con `CI.4.4` elegida en la 0722.
+
+| Paso | Esperado (spec) | Resultado |
+|---|---|---|
+| 1. Base 60/40 | 8 líneas | CUMPLE: 412123-412130 |
+| 2. 70/30, ejecutar **sin confirmar nada** | R18: titular retenido ⇒ sus vinculados omitidos «sigue al trabajador» | CUMPLE: 6 vinculados `omitir` «sigue al trabajador: …pendiente de confirmar» (0646) y «…sobrecarga…» (0722); cada vinculado trae **su** conflicto de pisado (y de sobrecarga) con `vinculado: {tipo, cod}`; Sigrid sin cambios |
+| 3. Confirmar **solo** el titular | R18 2.ª parte y R20: titular editado; cada vinculado espera su propia confirmación | CUMPLE: `MENC` 412123 0,4→0,3 y 412127 0,6→0,7 editadas; los 6 vinculados `omitir` «pendiente de confirmar el pisado del recurso vinculado (clave …)», siguen al 40/60 |
+| 4. Confirmar los vinculados | R20: edita su línea, nunca `DELETE` | CUMPLE: 412124-412126 a 0,3 y 412128-412130 a 0,7, **mismas `ide`**, `synckey` al `registro_id` nuevo; 8 líneas en total |
+| 5. Titular con partida no CI (`01.01`, CD) en la 0722 | R17: el vinculado va a la partida del titular salvo elegida válida | CUMPLE (cuadrante y preflight, sin ejecutar): TF y CO ⇒ `01.01` (método `titular`); VE conserva su `CI.4.4` elegida |
+| Limpieza | | `limpiar` (en seco: 8) y `--confirmar` ⇒ 0 líneas; fila local vaciada; servicios parados |
+
+**Observaciones (no son defectos de F-044):**
+1. Confirmar solo al titular en el modal deja a sus vinculados con el % de
+   antes hasta confirmarlos (cada uno tiene su casilla). Es lo que dice R20;
+   si se quiere que confirmar al titular arrastre a sus vinculados, es un
+   cambio de spec.
+2. Cambiar la partida tras registrar escribe una línea nueva y deja la vieja
+   (la identidad incluye la partida); lo avisa la sobrecarga. Igual que el
+   titular desde F-050.
+3. Guardar el cuadrante rehace las asignaciones (`registro_id` nuevo): las
+   líneas ya escritas pasan a ser un **pisado a confirmar**, no «ya
+   registrada», hasta que se reescriben. También es así para el titular.
