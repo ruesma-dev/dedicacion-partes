@@ -5,8 +5,10 @@
 vinculados al trabajador; `sdd: true`, rigor crítico), **`in_progress`**
 (bloqueada antes de T7 el 2026-10-26 y **desbloqueada el mismo día**: el
 humano contestó «si a todo» a las tres preguntas, ver «F-044 · decisiones
-del humano al bloqueo de T7», justo debajo). T1-T6 hechas; implementer
-retomado en T7. Worktree `porcentajes-f044`, rama
+del humano al bloqueo de T7», justo debajo). T1-T20 hechas por el
+implementer (2026-10-26); **T21 MANUAL pendiente del humano** (comandos
+abajo, «F-044 · T21»); T22 campaña de mutación; T23 es del líder al
+desplegar. Worktree `porcentajes-f044`, rama
 `feature/F-044-recursos-vinculados`, con `dev` unido (F-062 incluida). Spec
 APROBADA por el humano el 2026-10-25 («ok a todo»), en
 `specs/F-044-recursos-vinculados/`. Informe del implementer:
@@ -96,6 +98,52 @@ anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
 - T8: las tres suites enteras en verde al cerrar el bloque 1 (api 1274,
   front 394, transfer 1478). La revisión intermedia es opcional (D15) y la
   decide el líder: el implementer no la lanza; sigue con el bloque 2.
+- T9-T20 hechas (bloque 2, el registro). Decisiones y desviaciones:
+  - **`omitidas` con `vinculado_ide`**: la entrada de un vinculado omitido
+    lleva su recurso; la api (T18) no la aplica a la asignación del titular.
+    Los vinculados escritos NO van a `escritas` ni `ya_registradas` (son por
+    asignación): solo en `vinculados`.
+  - **`PasoVinculados` en varios puntos del preflight** (R27: sus lecturas
+    con las de los titulares): `decidir` tras la partida del paso 4,
+    `_cuentas` del 4 bis, parte del 5, `registradas`/`idempotencia` en la
+    lectura del 6, `sin_partida` en el 6 bis, `conflictos_del_parte` dentro
+    del bucle del 7 (misma `lineas_del_parte`) y `cerrar` al final.
+    `ejecutar`: `EscrituraVinculados` tras los titulares y su relectura.
+  - **El titular no toma como suyo el pisado de un vinculado**
+    (`_planear_ediciones` salta `c.vinculado`): hallado en GREEN de T14.
+  - **Generalizados con el valor de hoy por defecto** (T11):
+    `evaluar_capacidad(es_jornada)`, `pisables_al_cero(hora)`,
+    `emparejar_ceros(clave, hora)`; `stmt_editar_linea`/`stmt_poner_a_cero`
+    con `hora` (T12: sin ella, el SQL de hoy carácter a carácter).
+  - **T12 → T15**: la precarga del lote para los vinculados se hizo en T15
+    (horas, líneas, `synckey`/`hmores.ide`, partidas válidas, también VAR).
+  - **Dobles cambiados (lista cerrada)**: `tests/conftest.py`
+    (`_aplicar_ediciones` respeta `hora`; `EdicionesFalsas` con
+    `cuentas_del_presupuesto` vacío), `test_f013_sin_partida.py::…r4…`
+    (admite el campo `vinculado`), ANCLAS de `test_f002_fuente_unica.py`.
+  - **T16**: desde T9 `asdict(Conflicto)` publicaba `"vinculado": null`;
+    `_conflicto` lo quita (sin vinculados, la respuesta de siempre).
+  - **T18**: la traza va en `application/traza_vinculados.py` (como
+    `traza_incidencias.py`: `test_f003` vigila los `sigrid_*` de
+    `registro_sigrid.py`); `subfilas_de` pasa a nivel de módulo
+    (cuadrante y registro); la asignación va por subconsulta (sin línea, no
+    inserta); en VAR la subfila no manda partida. `RegistroSigrid` gana
+    `vinculados_desde` (de `config.yaml`, cableado en `deps.py`).
+  - **T19**: `rotuloConflicto` sin `.filter(` (lo vigila `test_f049_r3`).
+
+### F-044 · T21: MANUAL del humano (ningún agente lo ejecuta)
+
+Git Bash, desde `services/dedicacion-transfer` y con su `.venv`. **Primer
+paso** (el modo del proceso que escribe):
+`.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`.
+Debe dar `True 0404`; si no, **PARAR**. Transfer, api y front locales con
+`OBRA_PRUEBAS_FORZAR=true`. Luego, el guion de `tasks.md` T21; los comandos
+del script, ensayados en seco (argumentos aceptados, sin leer ajustes ni
+Sigrid): `.venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`
+(solo lectura; ahora resume «Líneas de vinculados (porcentajes:vin:)») y,
+para limpiar, `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar`
+(en seco) y después `... limpiar --confirmar`. Ninguno lleva
+`--permitir-modo-real`. Resultado real en `progress/manual_F-044.md`.
 
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 
