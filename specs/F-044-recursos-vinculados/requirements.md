@@ -103,8 +103,6 @@ y, si el titular va a postventa, VAR o `CP*`, la del titular. Glosario:
   partida) en todos los partes del periodo de la obra destino: un choque En
   registro es un **pisado a confirmar** por vinculado, que **edita** el de
   menor `ide` y pone a 0 los demás (`#regla-cero`).
-  *Enmienda F-064 (2026-10-26): sigue pidiendo su clave en `pisar_claves`,
-  pero en el modal su casilla sale marcada por defecto (ver R31).*
 - **R21.** `[D6]` Una línea del vinculado con su hora y `can` 0 o nulo en un
   parte En registro del periodo es **pisable sin confirmar** (emparejado de
   `#regla-cero`) y el preflight lo avisa.
@@ -142,9 +140,7 @@ y, si el titular va a postventa, VAR o `CP*`, la del titular. Glosario:
 - **R31.** El modal de registro enseña los vinculados bajo cada línea del
   trabajador (acción, %, partida con el selector de F-050) y sus avisos en la
   lista de siempre, con tipo y código.
-  *Enmienda F-064 (2026-10-26): la casilla del pisado de un vinculado sale
-  marcada la primera vez que se enseña y el humano puede desmarcarla; las
-  demás, desmarcadas como siempre.*
+  *Enmienda F-064 (2026-10-26) de R20 y R31: su pisado sale marcado, desmarcable.*
 - **R32.** `docs/ARCHITECTURE.md` gana `#regla-vinculado` (fuente única,
   `ANCLAS`), remitida desde `#regla-capacidad`, `#regla-cero` y
   `#regla-partida`; `docs/INTEGRACION.md` §1, §5 y §7.

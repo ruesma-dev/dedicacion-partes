@@ -113,16 +113,17 @@ def _escenario(cuerpo: str, datos: dict) -> dict:
 # ------------------------------------------------------------- datos
 def _conflicto(clave: str, motivo: str | None = "pisado",
                vinculado: dict | None = None) -> dict:
-    c = {"clave": clave, "motivo": motivo, "recurso_ide": 77,
+    """Como lo serializa el transfer (`asdict` del `Conflicto`): la clave
+    `vinculado` va SIEMPRE, con `null` en el de un trabajador (review 1 de
+    F-064, B3: sin ella sobrevivía `c.vinculado !== undefined`)."""
+    return {"clave": clave, "motivo": motivo, "recurso_ide": 77,
          "nombre": "GONZALEZ PANIAGUA", "hora_codigo": "MADM",
          "parte_cod": "PT26/00251", "nuevas": [{"can": 0.6}],
          "lineas": [{"ide": 5702, "hora_codigo": "MADM", "can": 0.4,
                      "fecha_int": 20260930}],
          "edita_ide": 5702, "a_cero_ides": [], "contexto": [],
-         "suma_existente": 0.4, "suma_total": 1.0, "exceso": 0.0}
-    if vinculado is not None:
-        c["vinculado"] = vinculado
-    return c
+         "suma_existente": 0.4, "suma_total": 1.0, "exceso": 0.0,
+         "vinculado": vinculado}
 
 
 TF = {"tipo": "TF", "cod": "TF-10"}
@@ -180,6 +181,10 @@ def _marcada() -> str:
 
 
 def test_f064_marcada_por_defecto_solo_el_pisado_de_vinculado():
+    """El del trabajador llega con `"vinculado": null` (forma real) y, de un
+    transfer anterior a F-044, sin la clave (`{"clave": "z"}`): ninguno de
+    los dos sale marcado."""
+    assert _conflicto(PIS_TRAB)["vinculado"] is None
     casos = [_conflicto(PIS_TRAB), _conflicto(PIS_VIN, vinculado=TF),
              _conflicto(PIS_VIN_SIN_MOTIVO, motivo=None, vinculado=CO),
              _conflicto("x", motivo="", vinculado=CO),
@@ -329,7 +334,11 @@ def _requisito(texto: str, rid: str) -> str:
 
 
 def test_f064_enmienda_anotada_en_r20_y_r31_de_f044():
+    """Una sola nota (review 1, O2: el requirements de F-044 no pasa de su
+    tope de 150 líneas), bajo R31 y citando R20 y R31."""
     texto = (RAIZ_REPO / "specs" / "F-044-recursos-vinculados"
              / "requirements.md").read_text(encoding="utf-8")
-    for rid in ("R20", "R31"):
-        assert "Enmienda F-064 (2026-10-26)" in _requisito(texto, rid), rid
+    [nota] = [linea for linea in texto.splitlines()
+              if "Enmienda F-064 (2026-10-26)" in linea]
+    assert nota in _requisito(texto, "R31")
+    assert "R20" in nota and "R31" in nota and "marcad" in nota
