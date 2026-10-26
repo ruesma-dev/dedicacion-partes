@@ -2858,3 +2858,43 @@ MANUAL.
 y front `r20261023-1236`, en ese orden, lanzado por el humano; revisiones
 `Healthy` al 100 %; la api arrancó sin errores); `azure-apps/dedicacion.md`
 `47c7c3c`. MANUAL, del humano.
+
+## 2026-10-26 · F-062 · Rachas de incidencia como Administración
+
+Pedida por el humano el 2026-10-23. `sdd: true`, rigor crítico; los tres
+servicios. **Qué hace:** cada incidencia del cuadrante abre, continúa o
+cierra una **racha** (`CI*` + `CIZ`) como la lleva Administración, en vez del
+par por mes de F-030 D3. El transfer lee las `CI*`/`CIZ` del recurso en todas
+las obras, en una ventana de 12 meses (`INCIDENCIAS_MESES_ATRAS`) más el mes
+siguiente, una sola lectura por lote. Sábados y domingos no cortan la racha. A
+fin de mes queda abierta y la cierra el mes siguiente; si no la continúa, el
+`CIZ` va al último día de M−1 (D14 = B), y si el inicio es anterior a M−1
+pide confirmación por línea (D17). Mueve la `fec` de `CIZ` ajenos (de
+Administración o de `partes`) con `UPDATE` guardado y la devuelve a su día si
+deja de continuarla; nunca `DELETE`. El modal pinta «Rachas», «Cierres de
+rachas» y «No coincide con Sigrid». Columna nueva
+`incidencia.sigrid_dia_fin_antes`. Evidencia de Sigrid:
+`progress/explore_F-062_sigrid.md`.
+
+**Recorrido.** Spec aprobada el 2026-10-24 (D1-D16; D14 = B). Enmiendas del
+humano: D17 («si añade», cierre viejo con confirmación) y D18 («metelo», dos
+tests de la api a la lista cerrada, tras un `blocked` en T13). Review 1
+RECHAZADA con 6 bloqueos: el MANUAL T20 habría escrito el `CIZ` de noviembre
+en el parte de octubre (ids de prueba iguales en todos los meses y `<=` en
+`rachas.py`, contra R5), T19 no medía, ningún MANUAL comprobaba el modo del
+proceso que escribe, más rastro, formato y docs. Arreglados, con O2 aprobada
+por el humano (el script no escribe en modo real sin `--permitir-modo-real`)
+y los 2 equivalentes de mutación aceptados («ok a 1 y 2»). Review 2 APROBADA.
+
+**Verificado.** `init.sh` en verde (raíz 418 + 1 skipped, api 1164, front
+376, transfer 1425); cobertura de lo cambiado 99,8 % de 923; mutación 609
+mutantes, 2 equivalentes aceptados, el resto muertos (5 falsos supervivientes
+de la campaña paralela, que mueren en serie: defecto del arnés pendiente, O1).
+**MANUAL** (`progress/manual_F-062.md`): T19 una lectura más (~1 s) y dentro
+del 15 %; T20 (1)-(4) el humano con el script en la 0404 y (5) el líder en
+el navegador local a petición expresa del humano: todo cumple y se limpió.
+
+**Fuera / pendiente.** Desplegar (transfer → api → front);
+`azure-apps/dedicacion.md` `ff0acb4` pasa a «desplegada» al hacerlo; aviso a
+`partes` (lo transmite el humano). Observaciones: los contadores del script
+no cuentan incidencias; el preflight del script no imprime `requiere_confirmar`.

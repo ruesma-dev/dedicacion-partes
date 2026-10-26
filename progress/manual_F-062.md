@@ -27,7 +27,7 @@ Primer paso: `.venv/Scripts/python -c "from config.settings import get_settings 
   de Sigrid (`explore_F-062_sigrid.md`, 1.895 líneas `CI*` de mensuales
   desde 2025) son decenas de filas por recurso, no miles.
 
-## T20 · escritura en modo pruebas sobre la 0404 — EN CURSO
+## T20 · escritura en modo pruebas sobre la 0404 — HECHA (2026-10-25/26), CUMPLE
 
 Comandos exactos en `progress/current.md`, «F-062 · T19 y T20». Ejecutada
 por el humano en PowerShell, desde `services/dedicacion-transfer`, con el
@@ -101,3 +101,33 @@ por el humano en PowerShell, desde `services/dedicacion-transfer`, con el
   con `accion == "escribir" && requiere_confirmar` del preflight
   (`app.js:3003`). Mejora del script, si se quiere: imprimir
   `requiere_confirmar` y la `clave` también en el preflight.
+
+### (5) C10, navegador local — CUMPLE
+
+Ejecutada por el líder en el navegador **a petición expresa del humano**
+(2026-10-26, «haz tu t5 en el navegdor»), con los tres servicios locales de la
+rama (`1de1de5`+). Antes de escribir: `curl http://127.0.0.1:8006/health` ⇒
+`"modo_pruebas":true,"obra_pruebas":"0404","database":"ruesma"`, y el `python
+-c … get_settings` ⇒ `True 0404`.
+
+- El catálogo local de incidencias estaba vacío (nunca se había sincronizado
+  en local desde F-030): `POST /api/v1/sync` (lectura en Sigrid, escritura en
+  la base local) ⇒ `incidencias: recibidos 7, altas 7`.
+- Cuadrante 2026-10, recurso 1705036: línea nueva en la 0694 al 100 % y chip
+  «V Vacaciones del 5 al 9». Registrar (fila): el modal dice «MODO PRUEBAS: se
+  escribirá en la obra 0404», `MADM 100 % escribir`, «inicio CIV 05/10: se
+  escribe en el parte PT26/00373 · fin CIZ 09/10: se escribe en el parte
+  PT26/00373» y en «Rachas» «abre · cierra el 09/10 en el parte PT26/00373».
+  Registrado: la incidencia queda `sigrid_estado registrado`, parte PT26/00373.
+- Quitada del cuadrante: la celda dice «quitada · sigue en Sigrid». Registrar
+  otra vez: `MADM ya_registrado (línea 411938)` y el bloque **«No coincide con
+  Sigrid»**: «V del 5 al 9 · quitada en la plataforma; sigue en Sigrid · CIV
+  05/10 · parte PT26/00373 · línea 411939; CIZ 09/10 · parte PT26/00373 ·
+  línea 411940». **Cancelar** (no se ejecutó nada).
+- `limpiar --confirmar` (`True 0404` antes): 3 líneas `PRUEBA-PORC`
+  (`porcentajes:189` 411938, `porcentajes:inc:1:ini` 411939,
+  `porcentajes:inc:1:fin` 411940), borradas.
+- Base local: se quitó la línea de la 0694 del cuadrante; la incidencia
+  quitada `id 1` sigue en la base local con su traza (la api la borra en el
+  próximo preflight al ver que ya no tiene líneas en Sigrid, R17). Solo
+  PostgreSQL local; nada en Sigrid.

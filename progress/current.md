@@ -1,22 +1,17 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-062** (rachas de incidencia como Administración; `sdd: true`,
-rigor crítico), `in_progress` desde el 2026-10-24: **review 1 RECHAZADA (6 bloqueos), arreglados por el
-implementer; review 2 lanzada** (ver «F-062 · review 1»). Estuvo `blocked` en T13 y se desbloqueó el mismo día
-con D18 (humano, «metelo»): los dos tests de la api del esquema de
-`incidencia` entran en la lista cerrada (`ca6c4ef`). Spec
-APROBADA por el humano el 2026-10-24 («ok a lo demas», «adelante, en d14
-b»): D1-D4 del 2026-10-23, D5-D13, D15 y D16 = A, D14 = B; está en
-`specs/F-062-rachas-incidencias/` (`60c7d04`). Rama
-`feature/F-062-rachas-incidencias`. Evidencia de Sigrid:
-`progress/explore_F-062_sigrid.md`. **Enmienda D17** (humano, 2026-10-24,
-«si añade»): el cierre D14 de una racha con inicio anterior a M−1 pide
-confirmación por línea, como un pisado (casilla desmarcada por defecto); el
-de inicio en M−1 sigue solo (`a565823`, tarea T5c, después de T18). La spec de F-054 está aprobada y en
-espera en la copia `porcentajes-f054`. **MANUAL del humano:** T19 (medir el
-preflight) y T20 (escritura en modo pruebas sobre la 0404), con sus
-comandos exactos en «F-062 · T19 y T20» (abajo).
+**Ninguna feature en curso.** **F-062** (rachas de incidencia como
+Administración; `sdd: true`, rigor crítico) **cerrada (`done`) el
+2026-10-26**: review 2 APROBADA (`6e02d5c`), `bash harness/init.sh` en verde
+(raíz 418 + 1 skipped, api 1164, front 376, transfer 1425; cobertura 99.8 %
+de 923), T19 y T20 hechas y cumplen (`progress/manual_F-062.md`), rama unida
+a `dev`; resumen en `progress/history.md`. **Pendiente: desplegar**
+(transfer → api → front, lo lanza el humano con su permiso), luego
+`azure-apps/dedicacion.md` a «desplegada» y el **aviso a `partes`** (texto en
+«Riesgos para el humano», más abajo). **Siguiente:** F-044 (recursos
+vinculados), spec APROBADA el 2026-10-25 en el worktree `porcentajes-f044`
+(`768ec5e`); después F-054 (spec aprobada, worktree `porcentajes-f054`).
 
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 
@@ -51,7 +46,7 @@ Review 1 RECHAZADA (`progress/review_F-062.md`); los 6 bloqueos, arreglados:
   el líder), 4 del script con test nuevo (`2f04d28`) y los 2 equivalentes
   aceptados. Detalle en `progress/mutacion_F-062.md`.
 
-### F-062 · T19 y T20, MANUAL del humano (NO ejecutadas por ningún agente)
+### F-062 · T19 y T20: HECHAS, cumplen (resultado en `progress/manual_F-062.md`)
 
 Git Bash, desde `services/dedicacion-transfer`. **Primer paso de T19 y de
 T20** (el modo del proceso que escribe, el del script; siempre con el
