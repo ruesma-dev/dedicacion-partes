@@ -5,10 +5,11 @@
 vinculados al trabajador; `sdd: true`, rigor crítico), **`in_progress`**
 (bloqueada antes de T7 el 2026-10-26 y **desbloqueada el mismo día**: el
 humano contestó «si a todo» a las tres preguntas, ver «F-044 · decisiones
-del humano al bloqueo de T7», justo debajo). T1-T20 hechas por el
-implementer (2026-10-26); **T21 MANUAL pendiente del humano** (comandos
-abajo, «F-044 · T21»); T22 campaña de mutación; T23 es del líder al
-desplegar. Worktree `porcentajes-f044`, rama
+del humano al bloqueo de T7», justo debajo). T1-T20, T22 y T24
+hechas por el implementer (2026-10-26; informe en `progress/impl_F-044.md`);
+**T21 MANUAL pendiente del humano** (comandos abajo, «F-044 · T21»);
+**7 mutantes equivalentes pendientes de que el humano los acepte**
+(`progress/mutacion_F-044.md`); T23 es del líder al desplegar. Worktree `porcentajes-f044`, rama
 `feature/F-044-recursos-vinculados`, con `dev` unido (F-062 incluida). Spec
 APROBADA por el humano el 2026-10-25 («ok a todo»), en
 `specs/F-044-recursos-vinculados/`. Informe del implementer:
@@ -130,6 +131,16 @@ anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
     inserta); en VAR la subfila no manda partida. `RegistroSigrid` gana
     `vinculados_desde` (de `config.yaml`, cableado en `deps.py`).
   - **T19**: `rotuloConflicto` sin `.filter(` (lo vigila `test_f049_r3`).
+  - **T22**: 1.ª campaña (`bd38dc5`) con 81 supervivientes; 74 eran huecos
+    reales y los matan los tests nuevos `tests/test_f044_mutacion.py` (api
+    y transfer; comprobados uno a uno, anexo en
+    `progress/mutacion_F-044_pasada1.md`). Campaña final (`38a53d0`):
+    415/422, los 7 restantes equivalentes (tres `strict` de `zip`, una
+    condición redundante, dos valores que no se leen con `elegida=None` y
+    el invariante `existe` ⇔ `ide` de `ParteDestino`). La spec pide que el
+    humano acepte cada justificación: **pendiente, lo lleva el líder**.
+  - **T24**: `bash harness/init.sh` sin `[KO]` (cobertura 99,3 % de 1108
+    líneas cambiadas; api 1308, front 403, transfer 1585).
 
 ### F-044 · T21: MANUAL del humano (ningún agente lo ejecuta)
 

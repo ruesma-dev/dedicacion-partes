@@ -1,8 +1,8 @@
 <!-- progress/impl_F-044.md -->
-# F-044 · informe del implementer (T1-T20 hechas)
+# F-044 · informe del implementer (T1-T20, T22 y T24 hechas)
 
 Rama `feature/F-044-recursos-vinculados`, worktree `porcentajes-f044`.
-Rigor **crítico**. T1-T20 hechas, una por commit; **T21 es MANUAL del humano**
+Rigor **crítico**. T1-T20, T22 y T24 hechas, una por commit; **T21 es MANUAL del humano**
 (comandos en `progress/current.md`, «F-044 · T21»), T22 es la campaña de
 abajo, T23 es del líder al desplegar y T24 es `init.sh` (resultado al final).
 No se ha hecho ninguna escritura en Sigrid, ni real ni de pruebas.
@@ -32,16 +32,7 @@ No se ha hecho ninguna escritura en Sigrid, ni real ni de pruebas.
 | T19 | `86a5ada` | front: vinculados en el modal de registro con su selector; avisos con tipo y código |
 | T20 | `bd38dc5` | `#regla-vinculado` (ARCHITECTURE) y sus remisiones; INTEGRACION §1, §5 y §7; ANCLAS |
 
-Producción tocada (respecto de `dev`): api `domain/{models,ports,vinculados}.py`,
-`application/{partidas_linea,propuestas_mes,registro_sigrid,sync_pipeline,traza_vinculados,use_cases}.py`,
-`infrastructure/db/{orm_models,repositories}.py`, `infrastructure/sigrid/sigrid_client.py`,
-`interface_adapters/api/{deps,routes,schemas}.py`, `config/config.yaml`; front
-`static/js/app.js`, `static/css/styles.css`; transfer
-`application/pipelines/{registro_lote,registro_pipeline,registro_vinculados}.py`,
-`application/services/{lecturas_lote,reglas_porcentajes,reglas_vinculados}.py`,
-`domain/models/registro_models.py`, `infrastructure/sigrid/sigrid_write_client.py`,
-`interface_adapters/api/app.py`, `prueba_escritura_porcentajes.py`. Docs:
-`docs/ARCHITECTURE.md`, `docs/INTEGRACION.md`.
+Producción tocada: los tres servicios y `docs/` (`git diff dev --stat -- services docs`: 50 ficheros, tests incluidos).
 
 **Tests ajenos tocados, todos de la lista cerrada**: api `test_f023_sync_empresa.py`,
 `test_f026_vigencia.py`, `test_f030_catalogo.py`, `test_f032_empresas_sigrid.py`
@@ -155,13 +146,7 @@ E   assert 'OTEL de TF TF-10 de GONZALEZ PANIAGUA' in '<div class="conflicto">..
 E   assert 'vinculado_ide' in 'async function registroEjecutar() {...'             | 7 failed, 2 passed
 ```
 
-Verde tras cada tarea: el fichero de la tarea y la suite entera del
-servicio, con el número que va saliendo:
-
-- transfer: 1527 tras T13, 1540 tras T14, 1547 tras T15, 1551 tras T16 y
-  1554 tras T17;
-- api: 1289 tras T18;
-- front: 403 tras T19.
+Verde tras cada tarea (fichero de la tarea y suite del servicio): transfer 1527 (T13), 1540, 1547, 1551, 1554 (T17); api 1289 (T18); front 403 (T19).
 
 T8 y T20 no tienen RED. T8 cierra el bloque. T20 solo amplía ANCLAS: el
 ancla no existía, así que su test `r1` fallaba antes de escribir la regla.
@@ -183,7 +168,50 @@ ancla no existía, así que su test `r1` fallaba antes de escribir la regla.
   - el **aviso a `partes`** de design §10, que transmite el humano.
 - Fuera por spec: mensajería (F-052), traer % de Sigrid (F-054), deshacer en
   Sigrid (F-033), Excel con vinculados (D14) y tocar `partes`.
+- **Los 7 equivalentes de la mutación necesitan que el humano los acepte**
+  (rigor crítico); el análisis está en `progress/mutacion_F-044.md`.
 
-## Evidencias
+## Evidencias (medidas el 2026-10-26)
 
-PENDIENTE-CAMPAÑA
+| Evidencia | Valor real |
+|---|---|
+| Tests (`init.sh`, T24) | harness 418 + 1 skip (74,7 s) · api **1308** (97,7 s) · front **403** (63,7 s) · transfer **1585** (45,8 s); todo verde |
+| Cobertura de líneas cambiadas | `PUERTA COBERTURA: 99.3% de 1108 líneas cambiadas cubiertas (1100/1108, umbral 80%, nivel critico)` |
+| Mutación, 1.ª pasada (`bd38dc5`) | 422 generados · 341 muertos · **81 supervivientes** · 0 timeouts (3355 s) |
+| Mutación, final (`38a53d0`, 4 workers) | 422 · 415 muertos · **7 supervivientes, todos equivalentes** · 0 timeouts · 0 sin veredicto (3350,8 s) |
+
+**T22, los 81 de la primera pasada: 74 eran huecos reales y ya tienen test.**
+
+- **Tests nuevos**: `tests/test_f044_mutacion.py` de la api (19) y del
+  transfer (29). Cada uno nombra el fichero y la línea que caza.
+- **Comprobación**: cada mutante, aplicado en el worktree con solo ese
+  fichero de tests, cae; `git checkout` lo deshace. El anexo está en
+  `progress/mutacion_F-044_pasada1.md`.
+- **Qué cubren**:
+  - api: cola y `estado` de subfilas, `desde` AAAA-MM, `frozen`, DDL de las
+    dos tablas, subconsulta de la traza, `solo_si_vacia` y `gt=0`;
+  - transfer, `EscrituraVinculados`: partida, cuenta y `tex` de la edición;
+    parte y `pos` de la inserción; solo los pisados confirmados y suyos;
+    línea que ya no vale; relectura de lo editado y de lo puesto a 0;
+  - preflight: validar solo con titular vivo; titular sin partida; elegida
+    en postventa; propuesta guardada; `hmores_ide`; contexto del pisado;
+    cero de un omitido; redondeo de la sobrecarga; aviso de la línea al 0 %;
+  - alta del parte desde un vinculado.
+
+**Los 7 equivalentes:**
+
+- tres `strict` de `zip` sobre listas iguales por construcción
+  (`repositories.py:533`, `registro_pipeline.py:274`,
+  `registro_vinculados.py:223`);
+- `registro_pipeline.py:761`: `vin_escribir` no vacío implica `escribir` no
+  vacío;
+- `registro_vinculados.py:188` y `:252`: `elegida_valida` no se lee con
+  `elegida=None`;
+- `:604`: `existe` ⇔ `ide` en `ParteDestino`.
+
+**`bash harness/init.sh` (T24)**, con `.arnes_cache/suite_*.ok` borrados
+antes: ningún `[KO]`.
+
+- `PUERTA TAMAÑO` y `ENTORNO LISTO. Puedes trabajar.`
+- Único aviso: `ruff: 307 avisos (deuda previa)`. Los ficheros de F-044 no
+  añaden ninguno respecto de `dev`.
