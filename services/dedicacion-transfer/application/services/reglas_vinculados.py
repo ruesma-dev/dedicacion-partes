@@ -34,6 +34,7 @@ from dataclasses import dataclass
 
 from application.services.cuenta_analitica import subcuenta
 from application.services.partida_catalog import PartidaNodo
+from application.services.reglas_porcentajes import es_de_la_hora
 from domain.models.registro_models import (
     AccionLinea, AccionVinculado, HoraRecurso, LineaEntrada, LineaSigrid,
 )
@@ -188,8 +189,7 @@ def es_linea_de(hora_codigo: str) -> Callable[[LineaSigrid], bool]:
     """R19, R21, R23: ¿la línea es de la hora `hora_codigo` del vinculado?
     Su jornada, en vez de `es_linea_mensual` (la del trabajador): una
     `MESVE` empieza por `M` y no es `M*` del trabajador."""
-    buscada = (hora_codigo or "").strip().upper()
-    return lambda ls: (ls.hora_codigo or "").strip().upper() == buscada
+    return lambda ls: es_de_la_hora(ls, hora_codigo)
 
 
 def decidir_vinculados(titular: AccionLinea, linea: LineaEntrada,

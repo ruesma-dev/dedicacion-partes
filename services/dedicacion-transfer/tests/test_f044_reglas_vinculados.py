@@ -428,3 +428,113 @@ def test_f044_r19_es_linea_de_solo_su_hora():
     # La trampa: una MESVE empieza por M; la jornada del trabajador
     # (`es_linea_mensual`) la contaría si no fuera por el recurso.
     assert es_linea_mensual(_ls("MESVE"))
+
+
+# =============== T11 · identidad, pisables y capacidad (R19-R23) ========= #
+from application.services.reglas_porcentajes import (  # noqa: E402
+    clave_conflicto,
+    criterio_choque,
+    emparejar_ceros,
+    evaluar_capacidad,
+    pisables_al_cero,
+)
+
+
+def _vin(**kw) -> AccionVinculado:
+    datos = dict(registro_id=12, recurso_ide=11, accion="escribir", ano=2026,
+                 mes=10, fecha_int=20261031, hora_ide=33, hora_codigo="OGAS",
+                 can=0.6, pre=120.0, tot=72.0, paride=70002)
+    datos.update(kw)
+    return AccionVinculado(**datos)
+
+
+def _linea_sig(ide: int, hora: str, can: float | None, *, reside: int = 11,
+               horide: int = 33, paride: int = 70002,
+               synckey: str | None = None) -> LineaSigrid:
+    return LineaSigrid(ide=ide, reside=reside, fecha_int=20261031,
+                       horide=horide, hora_codigo=hora, can=can, tot=None,
+                       synckey=synckey, paride=paride)
+
+
+def test_f044_r20_la_identidad_del_vinculado_es_la_de_siempre():
+    av = _vin()
+    assert clave_conflicto(av) == "11|202610|33|70002"
+    assert criterio_choque(_linea_sig(1, "OGAS", 0.95), av, mias=set())
+    assert not criterio_choque(_linea_sig(2, "OGAS", 0.95, paride=70001), av,
+                               mias=set())
+    assert not criterio_choque(_linea_sig(3, "OGAS", 0.95, reside=200), av,
+                               mias=set())
+    assert not criterio_choque(
+        _linea_sig(4, "OGAS", 0.95, synckey="porcentajes:vin:12:11"), av,
+        mias={"porcentajes:vin:12:11"})
+
+
+def test_f044_r21_pisables_del_vinculado_con_su_hora():
+    existentes = [_linea_sig(5, "OGAS", 0.0), _linea_sig(6, "OGAS", None),
+                  _linea_sig(7, "OGAS", 0.95), _linea_sig(8, "MENC", 0.0),
+                  _linea_sig(9, "OGAS", 0.0, reside=200),
+                  _linea_sig(10, "OGAS", 0.0)]
+    r = pisables_al_cero(existentes, _vin(), en_cerrado={10}, mias=set(),
+                         hora="OGAS")
+    assert [ls.ide for ls in r] == [5, 6]
+
+
+def test_f044_r21_sin_hora_los_pisables_de_hoy():
+    """Sin `hora`, `M*`: la `MENC` al 0 % sí; la `OGAS`, no."""
+    existentes = [_linea_sig(5, "OGAS", 0.0), _linea_sig(8, "MENC", 0.0)]
+    assert [ls.ide for ls in pisables_al_cero(
+        existentes, _vin(), en_cerrado=set(), mias=set())] == [8]
+
+
+def test_f044_r21_emparejar_por_vinculado_y_hora():
+    """Dos acciones del mismo vinculado (normal y postventa en el mismo
+    parte, modo pruebas): cada una edita una pisable distinta; la clave es
+    (registro, recurso)."""
+    a = _vin(registro_id=12)
+    b = _vin(registro_id=13, paride=70001)
+    existentes = [_linea_sig(5, "OGAS", 0.0), _linea_sig(6, "OGAS", 0.0,
+                                                         paride=70001),
+                  _linea_sig(8, "MENC", 0.0)]
+    pares, sobran = emparejar_ceros(
+        [a, b], existentes, en_cerrado=set(), mias=set(),
+        clave=lambda x: (x.registro_id, x.recurso_ide),
+        hora=lambda x: x.hora_codigo)
+    assert {k: ls.ide for k, ls in pares.items()} == {(12, 11): 5,
+                                                      (13, 11): 6}
+    assert sobran == {11: 0}
+
+
+def test_f044_r21_emparejar_sin_parametros_el_de_hoy():
+    titular = _accion(recurso_ide=200, paride=80001)
+    pares, sobran = emparejar_ceros(
+        [titular], [_linea_sig(8, "MENC", 0.0, reside=200, horide=5)],
+        en_cerrado=set(), mias=set())
+    assert {k: ls.ide for k, ls in pares.items()} == {12: 8}
+    assert sobran == {200: 0}
+
+
+def test_f044_r23_capacidad_del_vinculado_con_su_hora():
+    existentes = [_linea_sig(5, "OGAS", 0.5), _linea_sig(6, "OGAS", 0.3),
+                  _linea_sig(7, "MENC", 0.9), _linea_sig(8, "OGAS", 0.2)]
+    cap = evaluar_capacidad(existentes, [_vin(can=0.6)], mias=set(),
+                            pisadas={8}, es_jornada=es_linea_de("OGAS"))
+    assert (round(cap.existente, 4), round(cap.total, 4), cap.sobrecarga) == (
+        0.8, 1.4, True)
+    assert [ls.ide for ls in cap.contadas] == [5, 6]
+
+
+def test_f044_r19_la_jornada_por_defecto_es_m_y_por_eso_se_filtra_por_recurso():
+    """Sin `es_jornada`, lo de hoy: cualquier `M*`, también una `MESVE`. El
+    pipeline solo le pasa las líneas del recurso de la acción; una `MESVE`
+    de otro recurso no llega a sumar a la jornada del trabajador."""
+    mesve = _linea_sig(5, "MESVE", 1.0, reside=12)
+    menc = _linea_sig(6, "MENC", 0.3, reside=200)
+    titular = _accion(recurso_ide=200, can=0.6)
+    hoy = evaluar_capacidad([mesve, menc], [titular], mias=set(),
+                            pisadas=set())
+    assert hoy.sobrecarga                       # la trampa de design §10
+    del_trabajador = evaluar_capacidad(
+        [ls for ls in (mesve, menc) if ls.reside == 200], [titular],
+        mias=set(), pisadas=set())
+    assert not del_trabajador.sobrecarga
+    assert round(del_trabajador.total, 4) == 0.9
