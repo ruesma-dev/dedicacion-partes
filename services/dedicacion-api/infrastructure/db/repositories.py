@@ -484,7 +484,7 @@ class PgAsignacionRepository:
     def _subfilas(self, periodo_id: int, asignaciones: list[AsignacionORM]):
         """F-044 (R6): la función que da, para cada asignación, las subfilas
         de los vinculados ACTIVOS de su trabajador vigentes en el mes (su
-        `fecha_baja_recurso`, R4), en el orden de `recurso_vinculado.ide`, con
+        `fecha_baja`, R4), en el orden de `recurso_vinculado.ide`, con
         lo que su fila de `asignacion_vinculado` guarde. Dos lecturas más en
         total (vinculados y filas) y ninguna si no hay asignaciones con `id`
         o ningún trabajador tiene vinculados: sin ellos, la línea de hoy."""
@@ -499,7 +499,7 @@ class PgAsignacionRepository:
                 .where(RecursoVinculadoORM.activo.is_(True),
                        RecursoVinculadoORM.trabajador_ide.in_(trabajadores))
                 .order_by(RecursoVinculadoORM.ide)).all():
-            if periodo is None or vigente_en(v.activo, v.fecha_baja_recurso,
+            if periodo is None or vigente_en(v.activo, v.fecha_baja,
                                              periodo.anio, periodo.mes):
                 por_trabajador.setdefault(v.trabajador_ide, []).append(v)
         if not por_trabajador:
@@ -704,8 +704,8 @@ class PgVinculadoRepository:
             valores = {
                 "trabajador_ide": trabajador, "tipo": v.tipo,
                 "tipo_res": v.tipo_res, "cod": v.cod,
-                "descripcion": v.descripcion, "empresa_recurso": v.empresa,
-                "fecha_baja_recurso": v.fecha_baja or None, "horide": v.horide,
+                "descripcion": v.descripcion, "empresa": v.empresa,
+                "fecha_baja": v.fecha_baja or None, "horide": v.horide,
                 "activo": trabajador is not None, "estado_vinculo": estado,
             }
             existente = actuales.get(v.ide)

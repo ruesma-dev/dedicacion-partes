@@ -206,7 +206,9 @@ def test_f023_r1_columna_empresa_integer_nulable_sin_default(modelo: Any) -> Non
 def test_f023_r1_empresa_solo_en_trabajador_y_obra() -> None:
     con_empresa = {t.name for t in Base.metadata.tables.values()
                    if "empresa" in t.columns}
-    assert con_empresa == {"trabajador", "obra"}
+    # F-044 (lista cerrada, decisión del humano del 2026-10-26): la empresa
+    # del recurso vinculado (design §7.2), admitida de forma explícita.
+    assert con_empresa == {"trabajador", "obra", "recurso_vinculado"}
 
 
 def test_f023_r2_alters_de_una_base_sin_empresa() -> None:

@@ -103,8 +103,8 @@ def _rv(ide: int, trabajador: int, tipo: str = "TF",
         cod: str | None = None) -> RecursoVinculadoORM:
     return RecursoVinculadoORM(
         ide=ide, trabajador_ide=trabajador, tipo=tipo, tipo_res=f"T {tipo}",
-        cod=cod or f"{tipo}-{ide}", descripcion="NO SALE", empresa_recurso=1,
-        fecha_baja_recurso=fecha_baja, horide=900, activo=activo,
+        cod=cod or f"{tipo}-{ide}", descripcion="NO SALE", empresa=1,
+        fecha_baja=fecha_baja, horide=900, activo=activo,
         estado_vinculo="vinculado")
 
 

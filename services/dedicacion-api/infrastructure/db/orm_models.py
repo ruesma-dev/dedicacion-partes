@@ -334,14 +334,9 @@ class RecursoVinculadoORM(Base):
     tipo_res: Mapped[str | None] = mapped_column(Text)    # su descripción
     cod: Mapped[str | None] = mapped_column(Text)
     descripcion: Mapped[str | None] = mapped_column(Text)
-    # `con.emp` y `con.fecbaj` (AAAAMMDD) del recurso. Llevan `_recurso`
-    # (design §7.2 dice `empresa` y `fecha_baja`) porque
-    # `test_f023_r1_empresa_solo_en_trabajador_y_obra` y
-    # `test_f026_r8_fecha_baja_solo_en_trabajador` aseveran que ninguna otra
-    # tabla tiene esas columnas y no están en la lista cerrada de F-044
-    # (desviación anotada en `progress/current.md`).
-    empresa_recurso: Mapped[int | None] = mapped_column(Integer)
-    fecha_baja_recurso: Mapped[int | None] = mapped_column(Integer)
+    # `con.emp` y `con.fecbaj` (AAAAMMDD) del recurso (design §7.2).
+    empresa: Mapped[int | None] = mapped_column(Integer)
+    fecha_baja: Mapped[int | None] = mapped_column(Integer)
     horide: Mapped[int | None] = mapped_column(BigInteger)  # `res.horide`
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     estado_vinculo: Mapped[str] = mapped_column(Text, nullable=False)

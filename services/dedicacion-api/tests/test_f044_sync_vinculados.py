@@ -72,8 +72,8 @@ def _previo(ide: int, trabajador: int | None, **kw: Any) -> RecursoVinculadoORM:
     base: dict[str, Any] = {
         "ide": ide, "trabajador_ide": trabajador, "tipo": "TF",
         "tipo_res": "TIPO TF", "cod": f"TF-{ide}",
-        "descripcion": f"CONSUMOS {ide}", "empresa_recurso": 1,
-        "fecha_baja_recurso": None, "horide": 901, "activo": True,
+        "descripcion": f"CONSUMOS {ide}", "empresa": 1,
+        "fecha_baja": None, "horide": 901, "activo": True,
         "estado_vinculo": "vinculado"}
     base.update(kw)
     return RecursoVinculadoORM(**base)
@@ -95,7 +95,7 @@ def test_f044_r5_las_tablas_salen_del_orm():
     rv = tablas["recurso_vinculado"].columns
     assert [c.name for c in rv] == [
         "ide", "trabajador_ide", "tipo", "tipo_res", "cod", "descripcion",
-        "empresa_recurso", "fecha_baja_recurso", "horide", "activo",
+        "empresa", "fecha_baja", "horide", "activo",
         "estado_vinculo", "sincronizado_en"]
     assert rv["ide"].primary_key and rv["ide"].autoincrement is False
     assert rv["trabajador_ide"].nullable is True
@@ -177,12 +177,12 @@ def test_f044_r5_el_que_sale_del_sync_queda_inactivo_sin_borrarse():
 
 def test_f044_r5_actualiza_lo_que_cambia_y_reactiva():
     previo = _previo(10, 7, activo=False, cod="VIEJO",
-                     fecha_baja_recurso=20250101,
+                     fecha_baja=20250101,
                      estado_vinculo="sin_campo", trabajador_ide=None)
     s = _SesionRepo([previo])
     r = PgVinculadoRepository(s).sincronizar(  # type: ignore[arg-type]
         vincular([_v(10, 7, fecha_baja=20261231)], {7}, set()))
-    assert (previo.cod, previo.fecha_baja_recurso, previo.activo,
+    assert (previo.cod, previo.fecha_baja, previo.activo,
             previo.trabajador_ide, previo.estado_vinculo) == (
         "TF-10", 20261231, True, 7, "vinculado")
     assert (r.altas, r.actualizados, r.desactivados) == (0, 1, 0)
@@ -199,7 +199,7 @@ def test_f044_r5_sin_cambios_no_cuenta_actualizado():
 
 @pytest.mark.parametrize("campo, valor", [
     ("tipo", "CO"), ("tipo_res", "OTRO"), ("descripcion", "X"),
-    ("empresa_recurso", 2), ("horide", 5)])
+    ("empresa", 2), ("horide", 5)])
 def test_f044_r5_cada_campo_cuenta_como_cambio(campo, valor):
     previo = _previo(10, 7, **{campo: valor})
     r = PgVinculadoRepository(_SesionRepo([previo])).sincronizar(  # type: ignore[arg-type]
