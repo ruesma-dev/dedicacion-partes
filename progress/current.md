@@ -1,7 +1,11 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-044** (aplicar los porcentajes también a
+**En curso: F-064** (el pisado de los recursos vinculados, confirmado por
+defecto en el modal; petición del humano del 2026-10-26, solo front, rigor
+estándar, `sdd: false`; rama `feature/F-064-pisado-vinculados-marcado`,
+worktree `porcentajes-f064`): implementer lanzado. Va **antes del
+despliegue de F-044**. **F-044** (aplicar los porcentajes también a
 los recursos vinculados al trabajador; `sdd: true`, rigor crítico) **cerrada
 (`done`) el 2026-10-26** por decisión del humano («cierra ya»): review 2
 APROBADA (`947c285`), `bash harness/init.sh` en verde, 7 mutantes
@@ -14,7 +18,7 @@ desplegar). **Pendiente del humano tras desplegar:** el resto de T21 (líneas
 ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
 validación de Administración) y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
-**Siguiente:** F-063 (filtro de trabajadores por tipo de incidencia, solo
+**Siguiente, tras F-064 y el despliegue de F-044:** F-063 (filtro de trabajadores por tipo de incidencia, solo
 front); después F-054 (spec aprobada, worktree `porcentajes-f054`).
 
 ## F-044 · decisiones del humano al bloqueo de T7 (2026-10-26, «si a todo»)
