@@ -60,6 +60,25 @@ class Trabajador:
 
 
 @dataclass(frozen=True)
+class RecursoVinculado:
+    """Recurso no persona de Sigrid (teléfono, gasoil, vehículo…) con el campo
+    extendido «Recurso Asociado» (F-044, R1, D2): `principal_ide` es el valor
+    del campo (`conext.valn`), el `res.ide` del trabajador al que se vincula,
+    o None si está vacío. El vínculo lo decide `domain.vinculados.vincular`
+    y la vigencia por mes, su propia `fecha_baja` (R4)."""
+
+    ide: int
+    principal_ide: int | None
+    cod: str | None
+    descripcion: str | None
+    empresa: int | None
+    fecha_baja: int | None
+    tipo: str | None            # `auxrestip.cod` (TF, CO, VE…)
+    tipo_res: str | None        # su descripción
+    horide: int | None          # hora por defecto (`res.horide`)
+
+
+@dataclass(frozen=True)
 class Obra:
     ide: int
     cod: str

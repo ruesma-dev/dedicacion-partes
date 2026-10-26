@@ -13,6 +13,15 @@ real. **Pendiente del humano (de F-062, ya desplegada el 2026-10-26):** el
 **aviso a `partes`** (texto en «Riesgos para el humano», más abajo).
 **Después:** F-054 (spec aprobada, worktree `porcentajes-f054`).
 
+## F-044 · implementer (en curso, 2026-10-26)
+
+Contraste del design con el código tras unir F-062: los puntos de enganche
+siguen (`_preflight`, `ejecutar`, `proponer`, `lecturas_lote`,
+`_payloads`/`_trazar`, rutas de partida). Tarea en curso y decisiones: se
+anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
+
+- T1 hecha (`domain/vinculados.py`).
+
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 
 Review 1 RECHAZADA (`progress/review_F-062.md`); los 6 bloqueos, arreglados:
