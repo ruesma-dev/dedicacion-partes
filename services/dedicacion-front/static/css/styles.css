@@ -572,6 +572,9 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
 .modal .tabla-reg th { text-align: left; color: var(--steel); font-size: .7rem;
   text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px;
   border-bottom: 1px solid var(--line-strong); }
+/* F-044 (R31): los recursos vinculados bajo la línea de su trabajador. */
+.modal .tabla-reg tr.fila-vinculado-reg td { background: var(--paper-soft);
+  font-size: .8rem; }
 .modal .tabla-reg td { padding: 6px 8px; border-bottom: 1px solid var(--line);
   vertical-align: middle; }
 .modal button.sel-partida { max-width: 340px; width: 100%; padding: 4px 6px;

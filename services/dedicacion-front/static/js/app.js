@@ -2994,7 +2994,12 @@ function pctNuevas(c) {
 }
 
 function rotuloConflicto(c) {
-  const quien = c.nombre || String(c.recurso_ide);
+  // F-044 (R31): el aviso de un vinculado lleva su tipo y su código y el
+  // trabajador al que sigue; el de un trabajador, el de siempre.
+  const quien = c.vinculado
+    ? `${`${c.vinculado.tipo || ""} ${c.vinculado.cod || ""}`.trim()} de ` +
+      `${c.nombre || "su trabajador"}`
+    : c.nombre || String(c.recurso_ide);
   const hora = c.hora_codigo || "";
   const enParte = c.parte_cod ? ` en el parte ${c.parte_cod}` : "";
   const nuevo = pctNuevas(c);
@@ -3215,6 +3220,36 @@ function pintarModalPreflight(pf) {
         `(${escapeHtml(p.obra_cod || "")}): ${p.existe ? "existe" : "se creará"} ` +
         `${escapeHtml(p.cod || "")}</div>`;
     });
+    // F-044 (R31): bajo cada línea, sus recursos vinculados con la acción,
+    // el % (el del trabajador), la hora y la partida con el MISMO selector
+    // de F-050 para esa subfila (`data-vinculado`); en VAR, fija. Solo
+    // pinta lo que manda el transfer. Sin vinculados, las filas de hoy.
+    const vinculados = o.vinculados || [];
+    const filaVinculado = (a, v) => {
+      const aviso = v.aviso ? `<div class="aviso">${escapeHtml(v.aviso)}</div>` : "";
+      let sel;
+      if (v.accion !== "escribir") {
+        sel = `<span class="motivo">${escapeHtml(v.motivo || "")}</span>`;
+      } else if (a.partida_metodo === "var") {
+        sel = `<span class="partida-fija">${escapeHtml(v.partida_cod || "")}</span>` + aviso;
+      } else {
+        registro.lineas[a.registro_id] = {
+          trabajador: a.recurso_ide, obra_ide: o.obra.ide,
+          es_postventa: a.es_postventa,
+        };
+        const origen = rotuloOrigen(v.partida_metodo, v.partida_origen);
+        sel = `<button type="button" class="sel-partida" data-reg="${a.registro_id}" ` +
+          `data-vinculado="${v.recurso_ide}">${escapeHtml(textoPartidaAccion(v))}</button>` +
+          (origen ? `<div class="origen-partida">${escapeHtml(origen)}</div>` : "") +
+          aviso;
+      }
+      return `<tr class="fila-vinculado-reg">` +
+        `<td>↳ ${escapeHtml(v.tipo_res || v.tipo || "")} ${escapeHtml(v.cod || "")}</td>` +
+        `<td>${v.destino === "postventa" ? "Postventa" : "Obra"}</td>` +
+        `<td>${escapeHtml(v.accion)}</td>` +
+        `<td class="num">${v.can != null ? fmtPct(v.can * 100) : ""}</td>` +
+        `<td>${escapeHtml(v.hora_codigo || "")}</td><td>${sel}</td></tr>`;
+    };
     const filas = (o.acciones || []).map((a) => {
       const aviso = a.aviso ? `<div class="aviso">${escapeHtml(a.aviso)}</div>` : "";
       // F-050 (R29): el botón con la partida de la línea; su clic abre el
@@ -3252,7 +3287,9 @@ function pintarModalPreflight(pf) {
         `<td>${a.destino === "postventa" ? "Postventa" : "Obra"}</td>` +
         `<td>${a.accion}</td>` +
         `<td class="num">${a.can != null ? fmtPct(a.can * 100) : ""}</td>` +
-        `<td>${escapeHtml(a.hora_codigo || "")}</td><td>${sel}</td></tr>`;
+        `<td>${escapeHtml(a.hora_codigo || "")}</td><td>${sel}</td></tr>` +
+        vinculados.filter((v) => v.registro_id === a.registro_id)
+          .map((v) => filaVinculado(a, v)).join("");
     }).join("");
     html += `<table class="tabla-reg"><thead><tr><th>Trabajador</th>` +
       `<th>Destino</th><th>Acción</th><th>%</th><th>Cód. hora</th>` +
@@ -3303,9 +3340,13 @@ async function registroEjecutar() {
       { method: "POST", body: JSON.stringify({
           pisar_claves: pisar, trabajador_ide: registro.trabajadorIde,
           usuario: document.body.dataset.usuario || "local" }) });
-    let esc = 0, omi = 0, pend = 0;
+    let esc = 0, omi = 0, pend = 0, vinOmi = 0;
     (r.obras || []).forEach((o) => {
-      esc += (o.escritas || []).length; omi += (o.omitidas || []).length;
+      esc += (o.escritas || []).length;
+      // F-044 (R31): un recurso vinculado omitido (`vinculado_ide`) no es
+      // una línea omitida: se cuenta aparte.
+      omi += (o.omitidas || []).filter((x) => x.vinculado_ide == null).length;
+      vinOmi += (o.omitidas || []).filter((x) => x.vinculado_ide != null).length;
       pend += (o.pendientes_confirmacion || []).length;
       // R31 (D17): el cierre sin confirmar tampoco se ha escrito.
       pend += (o.cierres_racha || [])
@@ -3313,7 +3354,8 @@ async function registroEjecutar() {
     });
     cerrarModal();
     toast(`Sigrid: ${esc} escritas · ${omi} omitidas · ` +
-      `${pend} pendientes de confirmar${pend ? " (repite y marca pisar)" : ""}`,
+      `${pend} pendientes de confirmar${pend ? " (repite y marca pisar)" : ""}` +
+      (vinOmi ? ` · ${vinOmi} recursos vinculados omitidos` : ""),
       !r.ok);
   } catch (err) { toast(err.message, true); }
 }

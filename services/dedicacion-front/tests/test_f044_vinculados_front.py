@@ -334,3 +334,189 @@ def test_f044_r6_rotulos_de_los_metodos_del_vinculado():
         ("process.stdout.write(JSON.stringify([rotuloOrigen('ci_tipo'),"
          " rotuloOrigen('titular')]));")]))
     assert r == ["CI del tipo", "la del trabajador"]
+
+
+# ====================== R31 · el modal de registro ======================= #
+def _modal_vin(obras: list[dict], escenario: str = "") -> dict:
+    """El `pintarModalPreflight` REAL con el arnés de F-050 (R29): cada
+    botón `.sel-partida` del HTML pintado, con su `data-reg` y su
+    `data-vinculado`; `abrirSelectorPartida` apunta con qué se abre."""
+    from tests.test_f050_modal_registro import MODAL, _registro
+    from tests.test_f050_modal_registro import _funcion as _funcion_modal
+    programa = "\n".join([
+        ("const MESES = ['ene','feb','mar','abr','may','jun','jul','ago',"
+         "'sep','oct','nov','dic'];"),
+        "const state = {anio: 2026, mes: 9};", _registro(), ESCAPE,
+        "let html = null; function abrirModal(h) { html = h; }",
+        "function registroEjecutar() {} function repreflightPartida() {}",
+        "const botones = []; const aperturas = [];",
+        ("function abrirSelectorPartida(t, o, pv, ancla, despues) {"
+         " aperturas.push([t, o, pv, ancla.dataset.reg,"
+         " ancla.dataset.vinculado || null, despues === repreflightPartida]); }"),
+        ("const document = {querySelectorAll: (s) =>"
+         " s === '.sel-partida' ? botones : []};"),
+        "const $ = () => ({addEventListener() {}});",
+        *(_funcion_modal(f) for f in MODAL),
+        "function pinta(pf) {",
+        "  pintarModalPreflight(pf);",
+        "}",
+        "const _pf = " + json.dumps({"obras": obras}, ensure_ascii=False) + ";",
+        # Los botones, los del HTML pintado (el arnés de F-050 los saca del
+        # JSON; aquí hacen falta sus `data-vinculado`).
+        "abrirModal = (h) => { html = h; botones.length = 0;",
+        ("  [...h.matchAll(/class=\"sel-partida\" data-reg=\"(\\d+)\""
+         "(?: data-vinculado=\"(\\d+)\")?/g)].forEach((m) => botones.push("),
+        ("    {dataset: m[2] ? {reg: m[1], vinculado: m[2]} : {reg: m[1]},"
+         " _h: {},"),
+        "     addEventListener(ev, fn) { this._h[ev] = fn; }})); };",
+        "pinta(_pf);",
+        "const obs = {};", escenario,
+        "obs.html = html; obs.lineas = registro.lineas;",
+        "process.stdout.write(JSON.stringify(obs));"])
+    return _node(programa)
+
+
+def _accion_reg(**cambios) -> dict:
+    base = {"registro_id": 3001, "nombre": "GONZALEZ PANIAGUA",
+            "recurso_ide": 77, "destino": "obra", "es_postventa": False,
+            "accion": "escribir", "can": 0.6, "hora_codigo": "MADM",
+            "paride": 80002, "partida_cod": "CI.1.20",
+            "partida_metodo": "manual", "partida_origen": None,
+            "aviso": None}
+    return base | cambios
+
+
+def _vin_reg(**cambios) -> dict:
+    base = {"registro_id": 3001, "recurso_ide": 10, "tipo": "TF",
+            "tipo_res": "TELEFONO", "cod": "TF-10", "accion": "escribir",
+            "can": 0.6, "hora_codigo": "OTEL", "paride": 81001,
+            "partida_cod": "CICO13", "partida_metodo": "ci_tipo",
+            "partida_origen": None, "destino": "obra", "aviso": None,
+            "motivo": None, "linea_cero": None}
+    return base | cambios
+
+
+def _obra_reg(acciones, vinculados=None, conflictos=()) -> dict:
+    o = {"obra": {"ide": 694, "codigo": "0694", "nombre": "Obra"},
+         "ok": True, "forzada_pruebas": False,
+         "obra_destino": {"codigo": "0694"}, "partes": [],
+         "acciones": acciones, "conflictos": list(conflictos)}
+    if vinculados is not None:
+        o["vinculados"] = vinculados
+    return o
+
+
+def _filas_tabla(html: str) -> list[str]:
+    cuerpo = re.search(r"<tbody>(.*?)</tbody>", html, re.DOTALL).group(1)
+    return re.findall(r"<tr[^>]*>.*?</tr>", cuerpo, re.DOTALL)
+
+
+def test_f044_r31_los_vinculados_bajo_la_linea_de_su_trabajador():
+    obs = _modal_vin([_obra_reg(
+        [_accion_reg(), _accion_reg(registro_id=3002, nombre="OTRO",
+                                    recurso_ide=78)],
+        [_vin_reg(), _vin_reg(recurso_ide=11, tipo="CO", tipo_res="GASOIL",
+                              cod="CO-11", hora_codigo="OGAS",
+                              paride=81002, partida_cod="CIGA14",
+                              partida_metodo="manual")])])
+    filas = _filas_tabla(obs["html"])
+    assert len(filas) == 4
+    assert "GONZALEZ PANIAGUA" in filas[0] and "OTRO" in filas[3]
+    tel, gas = filas[1], filas[2]
+    assert 'class="fila-vinculado-reg"' in tel
+    assert "TELEFONO" in tel and "TF-10" in tel and "OTEL" in tel
+    assert ">60<" in tel.replace("%", "")       # el % del titular
+    assert ('<button type="button" class="sel-partida" data-reg="3001" '
+            'data-vinculado="10">CICO13</button>') in tel
+    assert '<div class="origen-partida">CI del tipo</div>' in tel
+    assert "CO-11" in gas and 'data-vinculado="11">CIGA14</button>' in gas
+    assert '<div class="origen-partida">elegida</div>' in gas
+
+
+def test_f044_r31_el_clic_abre_el_selector_de_esa_subfila():
+    obs = _modal_vin([_obra_reg([_accion_reg()], [_vin_reg()])], """
+      botones.forEach((b) => b._h.click());
+      obs.aperturas = aperturas;
+    """)
+    assert obs["aperturas"] == [[77, 694, False, "3001", None, True],
+                                [77, 694, False, "3001", "10", True]]
+
+
+def test_f044_r31_titular_ya_registrado_su_vinculado_tambien_tiene_selector():
+    obs = _modal_vin([_obra_reg([_accion_reg(accion="ya_registrado")],
+                                [_vin_reg()])], """
+      botones.forEach((b) => b._h.click());
+      obs.aperturas = aperturas;
+    """)
+    assert obs["aperturas"] == [[77, 694, False, "3001", "10", True]]
+
+
+def test_f044_r31_omitido_con_su_motivo_y_aviso_escapados():
+    obs = _modal_vin([_obra_reg([_accion_reg()], [
+        _vin_reg(accion="omitir", motivo="el teléfono <TF-10> no tiene hora"),
+        _vin_reg(recurso_ide=11, cod="CO-11",
+                 aviso="la línea 5201 al 0 % se edita")])])
+    filas = _filas_tabla(obs["html"])
+    assert ('<span class="motivo">el teléfono &lt;TF-10&gt; no tiene '
+            'hora</span>') in filas[1]
+    assert 'data-vinculado="10"' not in filas[1]
+    assert '<div class="aviso">la línea 5201 al 0 % se edita</div>' in filas[2]
+
+
+def test_f044_r31_en_var_la_partida_del_vinculado_es_fija():
+    obs = _modal_vin([_obra_reg(
+        [_accion_reg(partida_metodo="var", partida_cod="29")],
+        [_vin_reg(partida_cod="29", partida_metodo="titular")])])
+    fila = _filas_tabla(obs["html"])[1]
+    assert '<span class="partida-fija">29</span>' in fila
+    assert "sel-partida" not in fila
+
+
+def test_f044_r31_sin_vinculados_el_modal_de_hoy():
+    sin = _modal_vin([_obra_reg([_accion_reg()])])
+    vacio = _modal_vin([_obra_reg([_accion_reg()], [])])
+    assert sin["html"] == vacio["html"]
+    assert "fila-vinculado-reg" not in sin["html"]
+
+
+def test_f044_r31_sus_avisos_en_la_lista_de_siempre_con_tipo_y_codigo():
+    pisado = {"clave": "10|202609|31|81001", "motivo": "pisado",
+              "recurso_ide": 10, "nombre": "GONZALEZ PANIAGUA",
+              "hora_codigo": "OTEL", "parte_cod": "PT26/00251",
+              "nuevas": [{"can": 0.6}], "lineas": [
+                  {"ide": 5702, "hora_codigo": "OTEL", "can": 0.4,
+                   "fecha_int": 20260930}],
+              "edita_ide": 5702, "a_cero_ides": [],
+              "vinculado": {"tipo": "TF", "cod": "TF-10"}}
+    sin_partida = {"clave": "sin_partida:3001:12", "motivo": "sin_partida",
+                   "recurso_ide": 12, "nombre": "GONZALEZ PANIAGUA",
+                   "hora_codigo": "MESVE", "nuevas": [{"can": 0.6}],
+                   "vinculado": {"tipo": "VE", "cod": "VE-12"}}
+    obs = _modal_vin([_obra_reg([_accion_reg()], [_vin_reg()],
+                                [pisado, sin_partida])])
+    avisos = re.findall(r'<div class="conflicto">.*?</div>', obs["html"],
+                        re.DOTALL)
+    assert len(avisos) == 2
+    assert 'value="10|202609|31|81001"' in avisos[0]
+    assert "OTEL de TF TF-10 de GONZALEZ PANIAGUA" in avisos[0]
+    assert "VE VE-12 de GONZALEZ PANIAGUA, MESVE" in avisos[1]
+
+
+def test_f044_r31_el_aviso_de_un_trabajador_no_cambia():
+    """Sin `vinculado`, el rótulo de siempre (la misma salida que antes)."""
+    from tests.test_f050_modal_registro import _funcion as _funcion_modal
+    c = {"clave": "x", "motivo": "sin_partida", "recurso_ide": 77,
+         "nombre": "GONZALEZ PANIAGUA", "hora_codigo": "MADM",
+         "nuevas": [{"can": 0.6}]}
+    r = _node("\n".join([
+        *(_funcion_modal(f) for f in ("fmtPct", "pctNuevas",
+                                      "rotuloConflicto")),
+        f"process.stdout.write(JSON.stringify(rotuloConflicto({json.dumps(c)})));"]))
+    assert r["detalle"].startswith("GONZALEZ PANIAGUA, MADM ")
+
+
+def test_f044_r31_el_toast_no_cuenta_un_vinculado_como_linea_omitida():
+    js = _funcion("registroEjecutar")
+    assert "vinculado_ide" in js
+    assert re.search(r"\(o\.omitidas \|\| \[\]\)\s*\.filter\(\(x\) => "
+                     r"x\.vinculado_ide == null\)", js)
