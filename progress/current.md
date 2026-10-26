@@ -4,7 +4,7 @@
 **En curso: F-064** (el pisado de los recursos vinculados, confirmado por
 defecto en el modal; petición del humano del 2026-10-26, solo front, rigor
 estándar, `sdd: false`; rama `feature/F-064-pisado-vinculados-marcado`,
-worktree `porcentajes-f064`): **implementada, pendiente de review**
+worktree `porcentajes-f064`): **implementada; review 1 lanzada**
 (`progress/impl_F-064.md`; `bash harness/init.sh` en verde). Desbloqueada
 por el humano con la opción 1 («F-064 · BLOQUEO», abajo). Va **antes del
 despliegue de F-044**. **F-044** (aplicar los porcentajes también a
