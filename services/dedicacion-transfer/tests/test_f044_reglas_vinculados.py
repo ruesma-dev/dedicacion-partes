@@ -269,3 +269,162 @@ def test_f044_r15_las_reglas_no_leen_nada():
                    if isinstance(n, ast.Import) for a in n.names}
     assert not any(i.startswith(("infrastructure", "httpx", "requests"))
                    for i in importados), importados
+
+
+# ========================= T10 · la línea del vinculado ================== #
+from application.services.reglas_porcentajes import (  # noqa: E402
+    es_linea_mensual,
+)
+from application.services.reglas_vinculados import (  # noqa: E402
+    MOTIVO_SIGUE_AL_TRABAJADOR,
+    MOTIVO_SIN_IMPORTE,
+    decidir_vinculados,
+    es_linea_de,
+    hora_del_vinculado,
+    synckey_vinculado,
+)
+from domain.models.registro_models import (  # noqa: E402
+    AccionLinea,
+    AccionVinculado,
+    HoraRecurso,
+    LineaSigrid,
+    ObraEntrada,
+)
+
+#: Horas de los vinculados (`ide` inventados): 10 teléfono, 11 gasoil (con
+#: otra hora que no es la suya), 12 vehículo `MESVE`, 13 km con `pre` 0, 14
+#: sin hora por defecto.
+HORAS = {
+    10: [HoraRecurso(31, "OTEL", None, 30.0, caa_cod="R.CI.4.13",
+                     defecto=True)],
+    11: [HoraRecurso(32, "HLPE", None, 1.0),
+         HoraRecurso(33, "OGAS", None, 120.0, defecto=True)],
+    12: [HoraRecurso(34, "MESVE", None, 300.0, defecto=True)],
+    13: [HoraRecurso(35, "OKM", None, 0.0, defecto=True)],
+    14: [HoraRecurso(36, "OTEL", None, 30.0)],
+}
+
+
+def _accion(**kw) -> AccionLinea:
+    datos = dict(registro_id=12, accion="escribir", ano=2026, mes=10,
+                 fecha_int=20261031, nombre="Acuna Mera, Antonio",
+                 recurso_ide=200, hora_ide=5, hora_codigo="MENC", can=0.6,
+                 pre=9000.0, tot=5400.0, destino="obra", paride=80001,
+                 partida_cod="CI.1.10")
+    datos.update(kw)
+    return AccionLinea(**datos)
+
+
+def _con(*ides: int) -> LineaEntrada:
+    return LineaEntrada(registro_id=12, ano=2026, mes=10, porcentaje=0.6,
+                        recurso_ide=200, vinculados=[
+                            VinculadoEntrada(recurso_ide=i, tipo="TF",
+                                             tipo_res="TELEFONO",
+                                             cod=f"TF-{i}") for i in ides])
+
+
+def test_f044_r13_synckey_exacta():
+    from infrastructure.sigrid.sigrid_write_client import (
+        PREFIJO_SYNCKEY,
+        synckey_de,
+    )
+    assert synckey_vinculado(12, 10) == "porcentajes:vin:12:10"
+    assert synckey_vinculado("12", "10") == "porcentajes:vin:12:10"
+    assert synckey_vinculado(12, 10).startswith(PREFIJO_SYNCKEY)
+    assert synckey_vinculado(12, 10) != synckey_de(12)
+
+
+@pytest.mark.parametrize("horas, esperada", [
+    (HORAS[10], 31), (HORAS[11], 33), (HORAS[12], 34)])
+def test_f044_r14_la_hora_por_defecto(horas, esperada):
+    assert hora_del_vinculado(horas).horide == esperada
+
+
+@pytest.mark.parametrize("horas", [HORAS[13], HORAS[14], []])
+def test_f044_r14_sin_hora_por_defecto_o_pre_cero_no_hay_hora(horas):
+    assert hora_del_vinculado(horas) is None
+
+
+def test_f044_r12_can_y_fec_del_titular_pre_y_tot_suyos():
+    [a, b, c] = decidir_vinculados(_accion(), _con(10, 11, 12), HORAS)
+    assert a == AccionVinculado(
+        registro_id=12, recurso_ide=10, accion="escribir", ano=2026, mes=10,
+        fecha_int=20261031, tipo="TF", tipo_res="TELEFONO", cod="TF-10",
+        nombre="Acuna Mera, Antonio", hora_ide=31, hora_codigo="OTEL",
+        can=0.6, pre=30.0, tot=18.0, destino="obra")
+    assert (b.hora_codigo, b.pre, b.tot) == ("OGAS", 120.0, 72.0)
+    assert (c.hora_codigo, c.pre, c.tot) == ("MESVE", 300.0, 180.0)
+    assert {x.can for x in (a, b, c)} == {0.6}
+
+
+@pytest.mark.parametrize("destino, metodo", [
+    ("obra", "auto_nombre"), ("postventa", "postventa"), ("obra", "var")])
+def test_f044_r12_sin_normalizar_en_normal_postventa_y_var(destino, metodo):
+    """60 % normal + 40 % en otra ⇒ el vinculado, 60 % y 40 %."""
+    normal = decidir_vinculados(_accion(can=0.6), _con(10), HORAS)
+    otra = decidir_vinculados(
+        _accion(registro_id=13, can=0.4, destino=destino,
+                partida_metodo=metodo), _con(10), HORAS)
+    assert [(v.can, v.destino) for v in normal + otra] == [
+        (0.6, "obra"), (0.4, destino)]
+    assert normal[0].fecha_int == otra[0].fecha_int == 20261031
+
+
+def test_f044_r12_tot_redondeado_como_stmt_insert_linea():
+    from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
+    cli = SigridWriteClient(base_url="http://x.invalid", function_key="k",
+                            database="ruesma")
+    [v] = decidir_vinculados(_accion(can=0.3333), _con(10), HORAS)
+    st = cli.stmt_insert_linea(
+        hmoide=1, obra=ObraEntrada(ide=1), reside=10, pos=1,
+        fecha_int=v.fecha_int,
+        horide=v.hora_ide, can=v.can, pre=v.pre, ano=2026, mes=10,
+        synckey="s", tex=None)
+    assert v.tot == st["parameters"][10] == 10.0       # el `tot` del INSERT
+
+
+@pytest.mark.parametrize("ide, hora", [(13, "OKM"), (14, "sin hora")])
+def test_f044_r14_omitido_sin_importe_mensual_con_tipo_y_hora(ide, hora):
+    titular = _accion()
+    [v] = decidir_vinculados(titular, _con(ide), HORAS)
+    assert v.accion == "omitir"
+    assert v.motivo == MOTIVO_SIN_IMPORTE.format(tipo="TF", cod=f"TF-{ide}",
+                                                 hora=hora)
+    assert "sin importe mensual" in v.motivo and "TF" in v.motivo
+    assert hora in v.motivo
+    assert titular == _accion()                     # el titular no cambia
+
+
+def test_f044_r18_titular_omitido_sus_vinculados_siguen_al_trabajador():
+    titular = _accion(accion="omitir", motivo="sin código mensual")
+    vs = decidir_vinculados(titular, _con(10, 11), HORAS)
+    assert [(v.accion, v.motivo) for v in vs] == [
+        ("omitir", MOTIVO_SIGUE_AL_TRABAJADOR.format(
+            motivo="sin código mensual"))] * 2
+    assert "sigue al trabajador" in vs[0].motivo
+
+
+def test_f044_r18_titular_ya_registrado_cada_vinculado_se_decide_solo():
+    vs = decidir_vinculados(_accion(accion="ya_registrado", hmores_ide=9),
+                            _con(10, 13), HORAS)
+    assert [v.accion for v in vs] == ["escribir", "omitir"]
+    assert vs[0].hmores_ide is None
+
+
+def test_f044_r12_sin_vinculados_nada():
+    assert decidir_vinculados(_accion(), _con(), HORAS) == []
+
+
+def _ls(hora: str, reside: int = 12) -> LineaSigrid:
+    return LineaSigrid(ide=1, reside=reside, fecha_int=20261031, horide=1,
+                       hora_codigo=hora, can=0.0, tot=0.0, synckey=None)
+
+
+def test_f044_r19_es_linea_de_solo_su_hora():
+    assert es_linea_de("MESVE")(_ls("MESVE"))
+    assert es_linea_de("mesve ")(_ls(" MESVE"))
+    assert not es_linea_de("MESVE")(_ls("MENC"))
+    assert not es_linea_de("OTEL")(_ls("OTELX"))
+    # La trampa: una MESVE empieza por M; la jornada del trabajador
+    # (`es_linea_mensual`) la contaría si no fuera por el recurso.
+    assert es_linea_mensual(_ls("MESVE"))

@@ -4,7 +4,16 @@ ARCHITECTURE.md#regla-vinculado).
 
 Un vinculado (teléfono, gasoil, vehículo… con el campo «Recurso Asociado»
 hacia el trabajador) se registra con el % de su titular en cada obra. Aquí
-se decide su PARTIDA, sin leer nada:
+se decide su LÍNEA y su PARTIDA, sin leer nada:
+
+  - `decidir_vinculados` (R12, R14, R18): una `AccionVinculado` por
+    vinculado de la línea, con el `can`, la `fec`, el destino y el periodo
+    del titular, sin normalizar, y la hora por defecto del vinculado
+    (`hora_del_vinculado`) con su `pre`; sin ella o con `pre` 0, omitido
+    («sin importe mensual»); titular omitido, omitido («sigue al
+    trabajador»); titular ya registrado, se decide solo.
+  - `synckey_vinculado` (R13) y `es_linea_de` (R19, R21, R23): la jornada
+    del vinculado es la de SU hora, no `M*`.
 
   - `partida_ci_del_tipo` (R15, R16): la única hoja activa del presupuesto
     de la obra cuya cuenta analítica tiene la subcuenta de la cuenta del
@@ -25,6 +34,9 @@ from dataclasses import dataclass
 
 from application.services.cuenta_analitica import subcuenta
 from application.services.partida_catalog import PartidaNodo
+from domain.models.registro_models import (
+    AccionLinea, AccionVinculado, HoraRecurso, LineaEntrada, LineaSigrid,
+)
 
 #: Métodos de la partida de un vinculado (`partida_metodo`).
 METODO_MANUAL = "manual"        # la elegida en su subfila
@@ -38,6 +50,18 @@ MOTIVO_VARIAS_CI = "varias_ci"
 MOTIVO_ELEGIDA_NO_VALIDA = (
     "la partida {cod} elegida para el recurso vinculado no es una partida "
     "hoja activa del presupuesto: no se escribe; elige otra partida")
+
+#: R14 (D1b): sin hora por defecto o con `pre` 0. Se formatea con tipo, cod
+#: y hora; cabe en los 300 caracteres de `sigrid_motivo` de la api.
+MOTIVO_SIN_IMPORTE = (
+    "sin importe mensual: el recurso vinculado {tipo} {cod} no tiene precio "
+    "en su hora por defecto ({hora}): no se registra")
+#: R18 (D10): el titular no se escribe; se formatea con su motivo.
+MOTIVO_SIGUE_AL_TRABAJADOR = "sigue al trabajador: {motivo}"
+#: R13 (D9): empieza por el prefijo de las nuestras (`PREFIJO_SYNCKEY`,
+#: `porcentajes:`), que no se importa aquí: este módulo no toca la
+#: infraestructura (lo vigila un test).
+PREFIJO_SYNCKEY_VINCULADO = "porcentajes:vin:"
 
 #: Destinos y métodos del titular con los que el vinculado va a su partida.
 _DESTINO_POSTVENTA = "postventa"
@@ -140,3 +164,68 @@ def partida_del_vinculado(
         return PartidaVinculado(motivo=motivo, sin_partida=True)
     return PartidaVinculado(paride=partida.paride, cod=partida.cod,
                             res=partida.res, metodo=METODO_CI_TIPO)
+
+
+# ------------------------------------------------------------------ #
+#  La línea del vinculado (R12-R14, R18, R19)
+# ------------------------------------------------------------------ #
+
+def synckey_vinculado(registro_id: int, recurso_ide: int) -> str:
+    """R13 (D9): `porcentajes:vin:{registro_id}:{recurso_ide}`."""
+    return f"{PREFIJO_SYNCKEY_VINCULADO}{int(registro_id)}:{int(recurso_ide)}"
+
+
+def hora_del_vinculado(horas: list[HoraRecurso]) -> HoraRecurso | None:
+    """R14 (D3): la hora por defecto del vinculado (`res.horide`, marcada
+    `defecto` en su `reshor`); sin ella o con `pre` 0, None."""
+    hora = next((h for h in horas if h.defecto), None)
+    if hora is None or not float(hora.pre or 0.0):
+        return None
+    return hora
+
+
+def es_linea_de(hora_codigo: str) -> Callable[[LineaSigrid], bool]:
+    """R19, R21, R23: ¿la línea es de la hora `hora_codigo` del vinculado?
+    Su jornada, en vez de `es_linea_mensual` (la del trabajador): una
+    `MESVE` empieza por `M` y no es `M*` del trabajador."""
+    buscada = (hora_codigo or "").strip().upper()
+    return lambda ls: (ls.hora_codigo or "").strip().upper() == buscada
+
+
+def decidir_vinculados(titular: AccionLinea, linea: LineaEntrada,
+                       horas: dict[int, list[HoraRecurso]]
+                       ) -> list[AccionVinculado]:
+    """R12, R14, R18: una acción por vinculado de `linea`, en su orden, con
+    el `can`, la `fec`, el destino y el periodo del titular (sin
+    normalizar), la hora por defecto del vinculado, su `pre` y `tot =
+    round(can × pre, 2)`, como `stmt_insert_linea`. La partida, la cuenta,
+    el parte y lo que ya hay en Sigrid los decide el paso del pipeline."""
+    out = []
+    for v in linea.vinculados:
+        base = dict(
+            registro_id=int(titular.registro_id),
+            recurso_ide=int(v.recurso_ide), ano=int(titular.ano),
+            mes=int(titular.mes), fecha_int=int(titular.fecha_int),
+            tipo=v.tipo, tipo_res=v.tipo_res, cod=v.cod,
+            nombre=titular.nombre, destino=titular.destino)
+        if titular.accion == "omitir":
+            out.append(AccionVinculado(
+                accion="omitir", motivo=MOTIVO_SIGUE_AL_TRABAJADOR.format(
+                    motivo=titular.motivo), **base))
+            continue
+        suyas = horas.get(int(v.recurso_ide), [])
+        hora = hora_del_vinculado(suyas)
+        if hora is None:
+            defecto = next((h for h in suyas if h.defecto), None)
+            out.append(AccionVinculado(
+                accion="omitir", motivo=MOTIVO_SIN_IMPORTE.format(
+                    tipo=v.tipo, cod=v.cod,
+                    hora=defecto.cod if defecto else "sin hora"), **base))
+            continue
+        can = float(titular.can)
+        pre = float(hora.pre)
+        out.append(AccionVinculado(
+            accion="escribir", hora_ide=int(hora.horide),
+            hora_codigo=hora.cod, can=can, pre=pre,
+            tot=round(can * pre, 2), **base))
+    return out
