@@ -130,8 +130,11 @@ class _SigridFalso:
         self._empleados = empleados
         self._obras = obras
 
-    def leer(self, sql: str) -> list[dict[str, Any]]:
+    def leer(self, sql: str, parametros: Any = None) -> list[dict[str, Any]]:
         if "dbo.auxemp" in sql:  # catálogo de empresas (F-032): fuera de F-023
+            return []
+        # F-044 (lista cerrada): los recursos vinculados, fuera de F-023.
+        if "dbo.conext" in sql:
             return []
         # F-030 (lista cerrada): el catálogo de incidencias, fuera de F-023.
         if "FROM dbo.auxhor AS aux" in sql:
@@ -157,12 +160,21 @@ class _PeriodosVacios:
         return []
 
 
+class _RepoVinculadosVacio:
+    """F-044 (lista cerrada): el paso de vinculados del sync real, fuera de
+    F-023; recibe un `ResultadoVinculos`, no filas."""
+
+    def sincronizar(self, resultado: Any) -> ResultadoSyncMaestro:
+        return ResultadoSyncMaestro(recibidos=len(resultado.vinculos))
+
+
 class _UowEspia:
     def __init__(self) -> None:
         self.trabajadores = _RepoEspia()
         self.obras = _RepoEspia()
         self.empresas = _RepoEspia()  # paso de empresas del sync (F-032)
         self.tipos_incidencia = _RepoEspia()  # F-030 (lista cerrada)
+        self.vinculados = _RepoVinculadosVacio()  # F-044 (lista cerrada)
         self.periodos = _PeriodosVacios()  # ventana de bajas (F-026)
         self.commits = 0
 
@@ -603,6 +615,9 @@ def _config_prueba(criterio: dict[str, Any]) -> dict[str, Any]:
             "empresas": {"sql": "SELECT ... FROM dbo.auxemp AS aux"},
             # F-030 (lista cerrada): obligatoria, catálogo de incidencias.
             "incidencias": {"sql": "SELECT ... FROM dbo.auxhor AS aux"},
+            # F-044 (lista cerrada): obligatoria, recursos vinculados.
+            "vinculados": {"campo": "5", "desde": "2026-10",
+                           "sql": "SELECT ... FROM dbo.conext x"},
         },
         "export": {"prefijo_postventa": "PV"},
     }

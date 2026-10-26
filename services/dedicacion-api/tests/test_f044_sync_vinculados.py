@@ -19,7 +19,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from domain.models import RecursoVinculado
+from domain.models import RecursoVinculado, ResultadoSyncMaestro
 from domain.vinculados import vincular
 from infrastructure.db.orm_models import (
     AsignacionVinculadoORM,
@@ -635,3 +635,41 @@ def test_f044_r3_preview_lee_antes_que_incidencias_y_empresas():
     assert [sql for sql, _ in sigrid.leidas][-3:] == [
         SQL_VIN, "SELECT ... FROM dbo.auxhor AS aux",
         "SELECT ... FROM dbo.auxemp"]
+
+
+# ===================== contenedor real (T3, cableado) ==================== #
+def test_f044_r1_el_contenedor_real_trae_los_vinculados(monkeypatch):
+    """`deps.construir_contenedor` cablea los pasos y el preview con la
+    sección `sync.vinculados` de `config.yaml`: la SQL va con el campo como
+    parámetro, el sync los guarda y el preview publica su bloque."""
+    from config.settings import cargar_config
+
+    from tests.test_f023_sync_empresa import _contenedor, _UowEspia
+
+    cfg = cargar_config()["sync"]["vinculados"]
+
+    class _Sigrid:
+        def __init__(self) -> None:
+            self.leidas: list[tuple] = []
+
+        def leer(self, sql, parametros=None):
+            self.leidas.append((sql, parametros))
+            return []
+
+    class _Vinculados:
+        def __init__(self) -> None:
+            self.recibido = None
+
+        def sincronizar(self, resultado):
+            self.recibido = resultado
+            return ResultadoSyncMaestro(recibidos=0)
+
+    sigrid, uow = _Sigrid(), _UowEspia()
+    uow.vinculados = _Vinculados()
+    contenedor = _contenedor(monkeypatch, sigrid)  # type: ignore[arg-type]
+    contenedor.sync_pipeline.ejecutar(uow)
+    assert (cfg["sql"].strip(), [cfg["campo"]]) in sigrid.leidas
+    assert uow.vinculados.recibido is not None
+    sigrid.leidas.clear()
+    assert "vinculados" in contenedor.preview_sync.ejecutar()
+    assert (cfg["sql"].strip(), [cfg["campo"]]) in sigrid.leidas

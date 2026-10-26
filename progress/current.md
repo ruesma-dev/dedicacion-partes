@@ -38,7 +38,7 @@ real. **Pendiente del humano (de F-062, ya desplegada el 2026-10-26):** el
    `test_f023_r1_empresa_solo_en_trabajador_y_obra` y
    `test_f026_r8_fecha_baja_solo_en_trabajador`: cambio permitido, **solo**
    admitir `recurso_vinculado` de forma explícita en su regla.
-## F-044 · implementer (T1-T6 hechas, 2026-10-26)
+## F-044 · implementer (T1-T6 hechas, retomado en T7, 2026-10-26)
 
 Contraste del design con el código tras unir F-062: los puntos de enganche
 siguen (`_preflight`, `ejecutar`, `proponer`, `lecturas_lote`,
@@ -47,24 +47,18 @@ anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
 
 - T1 hecha (`domain/vinculados.py`).
 - T2 hecha (ORM + `PgVinculadoRepository` + `upsert_asignacion_vinculado`).
-  **Desviación**: las columnas `empresa` y `fecha_baja` de
-  `recurso_vinculado` (design §7.2) se llaman `empresa_recurso` y
-  `fecha_baja_recurso`: `test_f023_r1_empresa_solo_en_trabajador_y_obra` y
-  `test_f026_r8_fecha_baja_solo_en_trabajador` aseveran que ninguna otra
-  tabla tiene esas columnas y no están en la lista cerrada. Se le pregunta
-  al humano en el bloqueo de T7 (mantener el nombre o ampliar la lista).
-- T3 hecha salvo el **cableado en `deps.py`** (`FetchVinculadosStep`,
-  `UpsertVinculadosStep` y `vinculados=` del preview): cableado, rompe 11
-  tests fuera de la lista cerrada, que construyen el contenedor real con un
-  Sigrid falso sin `parametros` y una UoW sin `vinculados`
-  (`test_f023_sync_empresa.py` ×5 `r18_*`, `test_f025_sync_postventa.py::
-  test_f025_r12_el_contenedor_comparte_un_solo_transfer`,
-  `test_f030_catalogo.py::test_f030_r3_el_sync_y_el_preview_reales_usan_la_consulta_de_config`,
-  `test_f032_empresas_sigrid.py` ×2 `r1_el_sync_real…`/`r4_el_preview_real…`,
-  `test_f039_sync_var.py::test_f039_r10_el_contenedor_pasa_el_numero…` ×2).
-  Revertido; va a la pregunta del bloqueo de T7. Además: `SigridGateway.leer`
-  gana `parametros` opcional (el `?` de design §7.1; antes mandaba `[]`
-  siempre) y la SQL lleva `dbo.` como las demás de `config.yaml`.
+  `recurso_vinculado` con `empresa` y `fecha_baja` del design §7.2
+  (decisión 3 del humano; `01827e2`): `test_f023_r1…` y `test_f026_r8…`
+  admiten `recurso_vinculado` de forma explícita (lista cerrada).
+- T3 hecha, con el sync de vinculados **cableado en `deps.py`** (decisión 2
+  del humano): pasos `FetchVinculadosStep`/`UpsertVinculadosStep` y
+  `vinculados=` del preview; test nuevo del contenedor real. Los 11 tests de
+  la lista cerrada solo cambian sus dobles: Sigrid falso con `parametros` y
+  que devuelve [] a la SQL de `dbo.conext`, UoW con un `vinculados` vacío
+  y, en `_config_prueba` de f023 (el doble de `cargar_config`), la sección
+  `vinculados`, como hicieron F-030 y F-032 con las suyas. Además:
+  `SigridGateway.leer` gana `parametros` opcional (el `?` de design §7.1) y
+  la SQL lleva `dbo.` como las demás de `config.yaml`.
 - T4 hecha: `VinculadoEntrada`, `LineaEntrada.vinculados`,
   `reglas_vinculados.py` (`partida_ci_del_tipo`, `partida_del_vinculado`
   con la CI como función perezosa y la validez de la elegida como dato) y

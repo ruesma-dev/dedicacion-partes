@@ -293,8 +293,11 @@ class _SigridFalso:
         self.empresas = empresas if empresas is not None else [_fila(1)]
         self.leidas: list[str] = []
 
-    def leer(self, sql: str) -> list[dict[str, Any]]:
+    def leer(self, sql: str, parametros: Any = None) -> list[dict[str, Any]]:
         self.leidas.append(sql)
+        # F-044 (lista cerrada): los recursos vinculados, fuera de F-032.
+        if "dbo.conext" in sql:
+            return []
         if "dbo.auxemp" in sql:
             return [dict(f) for f in self.empresas]
         # F-030 (lista cerrada): el catálogo de incidencias, fuera de F-032.
@@ -334,6 +337,9 @@ class _UowEspia:
         self.obras = _RepoEspia()
         self.empresas = _RepoEspia()
         self.tipos_incidencia = _RepoEspia()  # F-030 (lista cerrada)
+        # F-044 (lista cerrada): el paso de vinculados del sync real.
+        from tests.test_f023_sync_empresa import _RepoVinculadosVacio
+        self.vinculados = _RepoVinculadosVacio()
         self.periodos = _PeriodosVacios()  # ventana de bajas (F-026)
         self.commits = 0
 
