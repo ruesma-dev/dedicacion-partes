@@ -72,6 +72,9 @@ from config.settings import get_settings
 from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.reglas_incidencias import synckey_incidencia
+from application.services.reglas_vinculados import (
+    PREFIJO_SYNCKEY_VINCULADO,
+)
 from domain.models.registro_models import (
     ContextoRachas, IncidenciaEntrada, LineaEntrada, ObraEntrada,
 )
@@ -274,6 +277,20 @@ def fase_estado(cli: SigridWriteClient, st, ano: int, mes: int) -> None:
         for f in filas:
             print("  ", json.dumps(_no_vacio(f), ensure_ascii=False,
                                    default=str))
+        _imprimir_vinculados(filas)
+
+
+def _imprimir_vinculados(filas: list[dict]) -> None:
+    """F-044 (T17): las líneas de los recursos vinculados que escribimos
+    (`porcentajes:vin:{registro}:{recurso}`), con su titular y su hora."""
+    vin = [f for f in filas
+           if (f.get("synckey") or "").startswith(PREFIJO_SYNCKEY_VINCULADO)]
+    print(f"Líneas de vinculados ({PREFIJO_SYNCKEY_VINCULADO}): {len(vin)}")
+    for f in vin:
+        registro, _, recurso = f["synckey"][
+            len(PREFIJO_SYNCKEY_VINCULADO):].partition(":")
+        print(f"  titular {registro} · recurso {recurso} · "
+              f"hmores.ide={f['ide']} · {f.get('hora')} · can={f.get('can')}")
 
 
 def fase_preflight(pipeline: RegistroPipeline, st, ano: int, mes: int,
@@ -390,7 +407,8 @@ def fase_verificar(cli: SigridWriteClient, incidencias: list | None,
 def fase_limpiar(cli: SigridWriteClient, st, confirmar: bool,
                  permitir_modo_real: bool = False) -> None:
     """Borra las líneas de este script: por la marca y el prefijo de synckey,
-    de todos los meses (los `id` de incidencia de cualquier mes incluidos)."""
+    de todos los meses (los `id` de incidencia de cualquier mes incluidos
+    y, F-044, las `porcentajes:vin:` de los recursos vinculados)."""
     _solo_en_pruebas(st, confirmar, permitir_modo_real)
     filas = cli._read(
         "SELECT ide, hmoide, reside, fec, can, synckey FROM hmores "

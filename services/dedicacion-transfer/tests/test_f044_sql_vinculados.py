@@ -282,3 +282,90 @@ def test_f044_r25_respuesta_del_preflight_lote_con_vinculados(ruta_vin):
     con, sin = r.json()["obras"]
     assert [v["recurso_ide"] for v in con["vinculados"]] == [10]
     assert "vinculados" not in sin
+
+
+# ============== T17 · el script de pruebas con los vinculados ============= #
+class _ScriptFalso:
+    """Lo que leen `fase_estado` y `fase_limpiar`: la obra de pruebas, su
+    parte y las filas de `hmores` (cada consulta, apuntada)."""
+
+    def __init__(self, filas: list[dict]) -> None:
+        from domain.models.registro_models import ObraEntrada, ParteDestino
+        self.filas = filas
+        self.lecturas: list[tuple[str, list]] = []
+        self.escritos: list = []
+        self._obra = ObraEntrada(ide=828942, codigo="0404", nombre="PRUEBAS",
+                                 empresa=1)
+        self._parte = ParteDestino(ano=2026, mes=11, existe=True, ide=777,
+                                   cod="PT26/00251")
+
+    def obra_por_codigo(self, cod, empresa):
+        return self._obra
+
+    def partes_existentes(self, obra_ide, periodos):
+        return {p: self._parte for p in periodos}
+
+    def _read(self, sql, params):
+        self.lecturas.append((sql, list(params)))
+        return [dict(f) for f in self.filas]
+
+    def escribir(self, statements):
+        self.escritos.append(list(statements))
+        return len(statements)
+
+
+_FILAS_PARTE = [
+    {"ide": 5101, "pos": 128, "reside": 200, "fec": "2026-11-30",
+     "hora": "MENC", "can": 0.4, "synckey": "porcentajes:900001",
+     "tex": "PRUEBA-PORC"},
+    {"ide": 5201, "pos": 256, "reside": 10, "fec": "2026-11-30",
+     "hora": "OTEL", "can": 0.4, "synckey": "porcentajes:vin:900001:10",
+     "tex": "PRUEBA-PORC"},
+    {"ide": 5301, "pos": 384, "reside": 11, "fec": "2026-11-30",
+     "hora": "OGAS", "can": 0.95, "synckey": None, "tex": None},
+]
+
+
+def test_f044_script_estado_lista_las_lineas_de_los_vinculados(capsys):
+    import prueba_escritura_porcentajes as script
+
+    from tests.conftest import SettingsFalso
+
+    script.fase_estado(_ScriptFalso(_FILAS_PARTE), SettingsFalso(), 2026, 11)
+    salida = capsys.readouterr().out
+    assert "Líneas del parte: 3" in salida
+    assert "Líneas de vinculados (porcentajes:vin:): 1" in salida
+    assert ("  titular 900001 · recurso 10 · hmores.ide=5201 · OTEL · "
+            "can=0.4") in salida
+
+
+def test_f044_script_estado_sin_vinculados_lo_de_siempre(capsys):
+    import prueba_escritura_porcentajes as script
+
+    from tests.conftest import SettingsFalso
+
+    script.fase_estado(_ScriptFalso(_FILAS_PARTE[:1]), SettingsFalso(), 2026,
+                       11)
+    salida = capsys.readouterr().out
+    assert "Líneas de vinculados (porcentajes:vin:): 0" in salida
+
+
+def test_f044_script_limpiar_incluye_los_vinculados_con_la_marca(capsys):
+    """`limpiar` ya filtra por la marca `PRUEBA-PORC` y el prefijo
+    `porcentajes:`, que cubre `porcentajes:vin:`; en seco no escribe."""
+    import prueba_escritura_porcentajes as script
+
+    from tests.conftest import SettingsFalso
+
+    vin = [f for f in _FILAS_PARTE if f["synckey"]
+           and f["synckey"].startswith("porcentajes:vin:")]
+    cli = _ScriptFalso(vin)
+    script.fase_limpiar(cli, SettingsFalso(), False)
+    [(sql, params)] = cli.lecturas
+    assert "CAST(tex AS NVARCHAR(200)) = ?" in sql
+    assert "synckey LIKE ?" in sql
+    assert params == ["PRUEBA-PORC", "porcentajes:%"]
+    assert "porcentajes:vin:900001:10".startswith(params[1].rstrip("%"))
+    assert "Líneas marcadas 'PRUEBA-PORC' de este hilo: 1" in (
+        capsys.readouterr().out)
+    assert cli.escritos == []
