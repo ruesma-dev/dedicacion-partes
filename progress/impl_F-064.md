@@ -164,4 +164,4 @@ termina en «ENTORNO LISTO», sin [KO]:
 | Tests del transfer | 1585 passed en 44,24 s |
 | Cobertura de líneas cambiadas | `PUERTA COBERTURA: N/A` (F-064 no cambia líneas Python de producción; solo JS y tests) |
 | Mutantes | `harness.mutacion` no aplica: no hay Python de producción. Mutación manual del JS: 7 generados, 0 supervivientes |
-| Tamaño | `PUERTA TAMAÑO: impl 95/220` (medido con el borrador anterior) |
+| Tamaño | `PUERTA TAMAÑO: impl 167/220` (`python -m harness.tamano --feature F-064`, con este informe) |
