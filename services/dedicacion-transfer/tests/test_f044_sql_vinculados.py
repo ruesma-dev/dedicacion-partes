@@ -161,9 +161,10 @@ _GUARDA = ("WHERE ide = ? AND reside = ? AND ABS(ISNULL(can, 0) - ?) "
 _EDITAR = ("UPDATE hmores SET can = ?, pre = ?, tot = ?, horide = ?, "
            "paride = ?, caaide = ?, fec = ?, synckey = ? ")
 _A_CERO = "UPDATE hmores SET can = 0, tot = 0 "
-_EDICION = dict(ide=5, reside=11, can_leido=0.95, synckey_leida=None,
-                horide=33, can=0.6, pre=120.0, paride=7, caaide=0,
-                fecha_int=20261031, synckey="porcentajes:vin:12:11", tex=None)
+_EDICION = {"ide": 5, "reside": 11, "can_leido": 0.95,
+            "synckey_leida": None, "horide": 33, "can": 0.6, "pre": 120.0,
+            "paride": 7, "caaide": 0, "fecha_int": 20261031,
+            "synckey": "porcentajes:vin:12:11", "tex": None}
 
 
 def test_f044_r24_sin_hora_el_sql_de_hoy_caracter_a_caracter():
@@ -191,3 +192,93 @@ def test_f044_r24_con_hora_la_guarda_exige_esa_hora_como_parametro():
     for st in (e, z):
         assert "OGAS" not in st["sql"] and "OTEL" not in st["sql"]
         assert "DELETE" not in st["sql"].upper()
+
+
+# ================= R25 · la salida de preflight y ejecutar ================ #
+#: Lo que R25 publica de cada vinculado (además van su cuenta y su aviso).
+CLAVES_R25 = {"registro_id", "recurso_ide", "tipo", "cod", "accion",
+              "hora_codigo", "can", "pre", "tot", "paride", "partida_cod",
+              "partida_metodo", "parte_cod", "linea_cero", "hmores_ide",
+              "motivo"}
+
+
+@pytest.fixture
+def ruta_vin(monkeypatch):
+    """(TestClient, doble) con el `ClientePre` de los tests del pipeline:
+    un parte En registro con la línea del 200 que choca (5701) y la del
+    teléfono 10 que también (5702)."""
+    from types import SimpleNamespace
+
+    from fastapi.testclient import TestClient
+    from interface_adapters.api import app as modulo_app
+
+    from tests.conftest import linea_previa
+    from tests.test_f044_pipeline_vinculados import ClientePre, _ls_vin
+    from tests.test_f050_endpoint_propuesta import AJUSTES
+
+    cli = ClientePre(lineas_parte=[
+        linea_previa(ide=5701, can=0.4, paride=80001),
+        _ls_vin(5702, 10, 0.4, paride=81001)])
+    monkeypatch.setattr(modulo_app, "SigridWriteClient", lambda **kw: cli)
+    ajustes = SimpleNamespace(**AJUSTES, sigrid_lecturas_paralelas=4)
+    return TestClient(modulo_app.build_app(ajustes)), cli
+
+
+_TF10 = {"recurso_ide": 10, "tipo": "TF", "tipo_res": "TELEFONO",
+         "cod": "TF-10"}
+
+
+def _con_pisado(**extra) -> dict:
+    return _cuerpo_registro(paride=80001, partida_cod="CI.1.10", **extra)
+
+
+def test_f044_r25_respuesta_del_preflight_con_vinculados(ruta_vin):
+    cliente, _ = ruta_vin
+    r = cliente.post("/api/registro/preflight",
+                     json=_con_pisado(vinculados=[_TF10]))
+    assert r.status_code == 200
+    cuerpo = r.json()
+    [v] = cuerpo["vinculados"]
+    assert CLAVES_R25 <= set(v)
+    assert (v["registro_id"], v["recurso_ide"], v["accion"],
+            v["hora_codigo"], v["paride"], v["partida_metodo"]) == (
+        1, 10, "escribir", "OTEL", 81001, "ci_tipo")
+    claves = {c["clave"]: c.get("vinculado") for c in cuerpo["conflictos"]}
+    assert claves == {"200|202607|5|80001": None,
+                      "10|202607|31|81001": {"tipo": "TF", "cod": "TF-10"}}
+
+
+def test_f044_r25_respuesta_del_preflight_sin_vinculados_la_de_hoy(ruta_vin):
+    """Sin vinculados en la petición: ni la clave `vinculados` ni la clave
+    `vinculado` en los conflictos (la respuesta de siempre)."""
+    cliente, _ = ruta_vin
+    cuerpo = cliente.post("/api/registro/preflight",
+                          json=_con_pisado()).json()
+    assert "vinculados" not in cuerpo
+    [c] = cuerpo["conflictos"]
+    assert "vinculado" not in c and c["clave"] == "200|202607|5|80001"
+
+
+def test_f044_r25_respuesta_de_ejecutar_con_y_sin_vinculados(ruta_vin):
+    cliente, _ = ruta_vin
+    sin = cliente.post("/api/registro/ejecutar", json=_con_pisado()).json()
+    assert "vinculados" not in sin
+    assert all("vinculado" not in c for c in sin["pendientes_confirmacion"])
+    con = cliente.post("/api/registro/ejecutar", json={
+        **_con_pisado(vinculados=[_TF10]),
+        "pisar_claves": ["200|202607|5|80001"]}).json()
+    [v] = con["vinculados"]
+    # R26: confirmado el del titular, el del vinculado sigue pendiente.
+    assert (v["recurso_ide"], v["accion"]) == (10, "omitir")
+    assert [c["vinculado"] for c in con["pendientes_confirmacion"]] == [
+        {"tipo": "TF", "cod": "TF-10"}]
+    assert [e["registro_id"] for e in con["escritas"]] == [1]
+
+
+def test_f044_r25_respuesta_del_preflight_lote_con_vinculados(ruta_vin):
+    cliente, _ = ruta_vin
+    r = cliente.post("/api/registro/preflight-lote", json={"peticiones": [
+        _con_pisado(vinculados=[_TF10]), _con_pisado()]})
+    con, sin = r.json()["obras"]
+    assert [v["recurso_ide"] for v in con["vinculados"]] == [10]
+    assert "vinculados" not in sin
