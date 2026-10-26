@@ -43,22 +43,27 @@ class ClienteConElPar(ClienteEscribe):
                for rol in ("ini", "fin")]
         super().__init__(lineas_parte=par)
 
-    def incidencias_del_mes(self, resides, ano, mes, hmoides=None, ides=()):
-        self.leidas_inc.append((sorted(resides), ano, mes, hmoides))
-        base = int(ano) * 10000 + int(mes) * 100
+    def incidencias_en_ventana(self, resides, desde, hasta, *,
+                               obride_pruebas=None, ides=()):
+        """F-062 (lista cerrada): la lectura de R19 (ventana o `ide`) en
+        vez de la del mes; el parte es de la obra de pruebas."""
+        self.leidas_inc.append((sorted(resides), desde, hasta,
+                                obride_pruebas))
         out = []
         for ls in self.lineas_parte:
             if not ((ls.reside in set(resides)
-                     and base < ls.fecha_int <= base + 31)
+                     and desde <= ls.fecha_int <= hasta)
                     or ls.ide in set(ides)):
                 continue
             leida = LineaIncidenciaSigrid(
                 ide=ls.ide, reside=ls.reside, fecha_int=ls.fecha_int,
                 hora_codigo=ls.hora_codigo, synckey=ls.synckey,
                 parte_cod=self.parte.cod)
-            # Las columnas del anexo (design §13.5): `can`, parte y estado.
+            # Las columnas del anexo (design §13.5): `can`, parte y estado;
+            # las de F-062 (design §6): la obra y la empresa del parte.
             leida.can, leida.hmoide, leida.parte_est = (
                 ls.can, int(self.parte.ide), 1)
+            leida.obride, leida.parte_emp = self.obra.ide, 1
             out.append(leida)
         return out
 
@@ -101,7 +106,9 @@ def test_f030_r30_punta_a_punta_el_transfer_edita_el_par_en_su_sitio(
     peticion = caso["peticion"]
     cli = ClienteConElPar(peticion)
     monkeypatch.setattr(modulo_app, "SigridWriteClient", lambda **kw: cli)
-    http = TestClient(modulo_app.build_app(SimpleNamespace(**AJUSTES)))
+    # F-062 (lista cerrada): la ventana de R19.
+    http = TestClient(modulo_app.build_app(SimpleNamespace(
+        **AJUSTES, incidencias_meses_atras=12)))
     r = http.post("/api/registro/ejecutar", json=peticion)
     assert r.status_code == 200, r.text
     cuerpo = r.json()

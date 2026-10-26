@@ -232,7 +232,7 @@ class IncidenciaORM(Base):
     (sigue en Sigrid hasta retirarla a mano; nunca se borra la fila) y
     `sigrid_dia_ini`/`_fin`, el día de Sigrid de cada línea del par. Llegan
     a una base ya creada por `alters_faltantes` (`quitada` con
-    `server_default`)."""
+    `server_default`). F-062 (R15): `sigrid_dia_fin_antes`, igual."""
 
     __tablename__ = "incidencia"
 
@@ -267,6 +267,9 @@ class IncidenciaORM(Base):
     )
     sigrid_dia_ini: Mapped[int | None] = mapped_column(SmallInteger)
     sigrid_dia_fin: Mapped[int | None] = mapped_column(SmallInteger)
+    # F-062 (R15): el día original del `CIZ` ajeno que movió su `fin` (para
+    # devolverlo, R16-R17). Al final, por `alters_faltantes`.
+    sigrid_dia_fin_antes: Mapped[int | None] = mapped_column(SmallInteger)
 
     __table_args__ = (
         CheckConstraint(

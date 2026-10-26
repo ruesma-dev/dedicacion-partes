@@ -260,3 +260,27 @@ def test_f002_r5_el_valor_sigue_estando_donde_debe():
     ejemplo = RAIZ / "services" / "dedicacion-transfer" / ".env.example"
     assert "POSTVENTA_OBRA_COD" in _texto(ajustes)
     assert "POSTVENTA_OBRA_COD" in _texto(ejemplo)
+
+
+# --------- F-062 (R27) · la incidencia se cuenta como racha --------- #
+
+#: Los apartados de `#regla-incidencia` desde F-062 (design §11).
+APARTADOS_INCIDENCIA = ("La racha.", "La previa y la guarda.",
+                        "Cambiar los días.", "Quitar.",
+                        "Cierre del mes anterior.", "Una lectura.")
+
+
+def test_f062_r27_la_regla_incidencia_cuenta_la_racha():
+    """R27 · La fuente única de la incidencia es la de F-062: sus apartados
+    están y lo que reemplaza de F-030 (un `CIZ` por mes, no duplicar el
+    par) ya no se enuncia; el pie dice quién lo decidió y cuándo."""
+    bloque = _bloque("regla-incidencia")
+    for apartado in APARTADOS_INCIDENCIA:
+        assert f"**{apartado}**" in bloque, apartado
+    for frase in ("cada mes cierra el suyo con su `CIZ`",
+                  "**Qué se escribe.**", "**Sin duplicar lo que ya está.**",
+                  "**Nunca un inicio sin su fin.**"):
+        assert frase not in bloque, frase
+    assert "Decidido por Pablo Gris el 2026-10-23" in bloque
+    assert "· F-062, `specs/F-062-rachas-incidencias/requirements.md`" \
+        in bloque

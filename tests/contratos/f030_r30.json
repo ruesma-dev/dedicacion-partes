@@ -1,5 +1,5 @@
 {
-  "descripcion": "F-030 R30 (design §13.6): contrato entre las dos mitades del test de punta a punta. La incidencia 7 (trabajador y recurso 200, CIV, obra 0678, julio de 2026) se registró del 5 al 9: hmores.ide 9001 (CIV el 5) y 9002 (CIZ el 9) en el parte PT26/00251. Después se cambian sus días (cada caso parte de ese registro). La api (services/dedicacion-api/tests/test_f030_r30_punta_a_punta.py) tiene que mandar exactamente `peticion`; el transfer (services/dedicacion-transfer/tests/test_f030_r30_punta_a_punta.py), con esa petición y el par en Sigrid, tiene que editar en su sitio la fec de las líneas de `ediciones` y no insertar ni borrar nada.",
+  "descripcion": "F-030 R30 (design §13.6): contrato entre las dos mitades del test de punta a punta. La incidencia 7 (trabajador y recurso 200, CIV, obra 0678, julio de 2026) se registró del 5 al 9: hmores.ide 9001 (CIV el 5) y 9002 (CIZ el 9) en el parte PT26/00251. Después se cambian sus días (cada caso parte de ese registro). La api (services/dedicacion-api/tests/test_f030_r30_punta_a_punta.py) tiene que mandar exactamente `peticion`; el transfer (services/dedicacion-transfer/tests/test_f030_r30_punta_a_punta.py), con esa petición y el par en Sigrid, tiene que editar en su sitio la fec de las líneas de `ediciones` y no insertar ni borrar nada. F-062 (lista cerrada): la petición lleva además `incidencias_mes` (la 7 con su `obra_ide`) y `cierres_recursos` (el 200, designado en la única petición), y cada caso es una cadena de una sola incidencia: lo propio se edita en su sitio (R16, R18).",
   "periodo": {"ano": 2026, "mes": 7},
   "registro": {
     "ini": {"hmores_ide": 9001, "fecha_int": 20260705, "hora_codigo": "CIV", "parte_cod": "PT26/00251"},
@@ -13,7 +13,11 @@
         "lineas": [],
         "incidencias": [
           {"id": 7, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 7, "desde": 6, "hasta": 9, "paride": 0, "hmores_ide_ini": 9001, "hmores_ide_fin": 9002, "dia_ini": 5, "dia_fin": 9}
-        ]
+        ],
+        "incidencias_mes": [
+          {"id": 7, "obra_ide": 678, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 7, "desde": 6, "hasta": 9, "paride": 0, "hmores_ide_ini": 9001, "hmores_ide_fin": 9002, "dia_ini": 5, "dia_fin": 9}
+        ],
+        "cierres_recursos": [200]
       },
       "esperado": {
         "acciones": [["ini", "editar", 20260706, 20260705], ["fin", "ya_registrado", 20260709, null]],
@@ -27,7 +31,11 @@
         "lineas": [],
         "incidencias": [
           {"id": 7, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 7, "desde": 12, "hasta": 14, "paride": 0, "hmores_ide_ini": 9001, "hmores_ide_fin": 9002, "dia_ini": 5, "dia_fin": 9}
-        ]
+        ],
+        "incidencias_mes": [
+          {"id": 7, "obra_ide": 678, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 7, "desde": 12, "hasta": 14, "paride": 0, "hmores_ide_ini": 9001, "hmores_ide_fin": 9002, "dia_ini": 5, "dia_fin": 9}
+        ],
+        "cierres_recursos": [200]
       },
       "esperado": {
         "acciones": [["ini", "editar", 20260712, 20260705], ["fin", "editar", 20260714, 20260709]],

@@ -170,6 +170,8 @@ class Incidencia:
     sigrid_ide_fin: int | None = None
     sigrid_dia_ini: int | None = None
     sigrid_dia_fin: int | None = None
+    # F-062 (R15): el día original del `CIZ` ajeno que movió su `fin`.
+    sigrid_dia_fin_antes: int | None = None
 
 
 @dataclass(frozen=True)

@@ -1,7 +1,8 @@
 # tests/test_f030_r30_front.py
 """F-030 · Anexo R30 en el front: la incidencia guardada viaja con su `id`
 (R37), la quitada se pinta tachada y queda fuera del editor (R38) y el modal
-de registro dice «se cambia del d al d» y lista las quitadas (R38, R46).
+de registro dice «se cambia del d al d» y lista las quitadas (R38, R46;
+F-062, lista cerrada: la lista la sustituye «No coincide con Sigrid», R25).
 
 Solo formatea y lleva la identidad: qué se edita, qué se quita y qué se
 escribe lo deciden la api y el transfer. Se ejecuta el código REAL de
@@ -138,42 +139,12 @@ def test_f030_r38_la_quitada_en_la_tabla_tachada_y_sigue_en_sigrid():
     assert "line-through" in _regla_css(".inc-quitada .inc")
 
 
-def _quitadas(pf: dict) -> str:
-    programa = "\n".join([
-        DOM_TEXTO, *[_funcion(f) for f in ("escapeHtml", "seccionQuitadas")],
-        "process.stdout.write(JSON.stringify(seccionQuitadas(" +
-        json.dumps(pf, ensure_ascii=False) + ")));"])
-    return _node(programa)
-
-
-QUITADA = {"id": 8, "trabajador_ide": 10, "trabajador": "Ana Ruiz", "obra_ide": 678,
-           "obra_cod": "0678", "obra_nombre": "OBRA", "codigo": "CIV", "letra": "V",
-           "desde": 5, "hasta": 9, "parte_cod": "PT26/00251",
-           "hmores_ide_ini": 9001, "hmores_ide_fin": 9002}
-
-
-def test_f030_r38_el_modal_lista_las_quitadas_para_retirarlas_a_mano():
-    html = _quitadas({"obras": [], "incidencias_quitadas": [
-        QUITADA, {**QUITADA, "id": 9, "trabajador": "<Benito>", "parte_cod": None,
-                  "hmores_ide_ini": None, "desde": 12, "hasta": 12}]})
-    assert html.startswith("<h4>Quitadas del cuadrante: siguen en Sigrid</h4>")
-    assert ("<th>Trabajador</th><th>Obra</th><th>Incidencia</th><th>Días</th>"
-            "<th>Retirar a mano en Sigrid</th>") in html
-    assert _celdas(html) == [
-        ["Ana Ruiz", "0678", "V (CIV)", "del 5 al 9",
-         "parte PT26/00251 · líneas 9001 y 9002"],
-        ["&lt;Benito&gt;", "0678", "V (CIV)", "del 12 al 12", "línea 9002"]]
-    assert "checkbox" not in html
-    assert _quitadas({"obras": []}) == ""
-    assert _quitadas({"incidencias_quitadas": []}) == ""
-
-
-def test_f030_r38_pintar_modal_pinta_las_quitadas_tras_las_obras():
-    cuerpo = _funcion("pintarModalPreflight")
-    assert ("if ((pf.incidencias_quitadas || []).length) html += seccionQuitadas(pf);"
-            in cuerpo)
-    assert cuerpo.index("seccionQuitadas(pf)") > cuerpo.index("seccionIncidencias(o)")
-    assert cuerpo.index("seccionQuitadas(pf)") < cuerpo.index("pie-modal")
+# F-062 (lista cerrada; R25): el modal ya no lista las quitadas
+# (`seccionQuitadas`, `incidencias_quitadas`): las sustituye el bloque «No
+# coincide con Sigrid», con las líneas que el transfer lee en Sigrid. Sus
+# tests: `test_f062_r25_modal_no_coincide_con_sigrid` y
+# `test_f062_r25_modal_pintar_las_pinta_y_no_calcula`
+# (`tests/test_f062_modal_rachas.py`).
 
 
 # ================================ R46 ==================================== #

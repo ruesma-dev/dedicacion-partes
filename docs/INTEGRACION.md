@@ -82,7 +82,7 @@
 | Recurso | Compartido con | Qué hacemos | Desde |
 |---|---|---|---|
 | PostgreSQL `psql-albaranes-rs9k2` | `albaranes`, `partes`, `datamart-seg-anual`, `postventa-incidencias` | Base propia `dedicacion`: periodos, cuadrante, asignaciones y auditoría | **F-008** |
-| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna**. Desde F-030 la api lee en cada sync el catálogo de incidencias (`auxhor`, códigos `CI*`), y el transfer **escribe** por cada incidencia un par de líneas `CI*`/`CIZ` con `can = 0` y `synckey` `porcentajes:inc:{id}:ini|fin`, tras **una** lectura de las líneas `CI*` del mes de esos recursos en cualquier parte (`hmores` + `auxhor` + `hmo` + `con`) para no duplicar; si la incidencia ya registrada cambia de días, **edita la `fec`** de su par (`UPDATE` con guarda, anexo R30) | F-001, F-002, F-037, F-051, F-030 |
+| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna**. Desde F-030 la api lee en cada sync el catálogo de incidencias (`auxhor`, códigos `CI*`), y el transfer **escribe** por cada incidencia un par de líneas `CI*`/`CIZ` con `can = 0` y `synckey` `porcentajes:inc:{id}:ini|fin`, tras **una** lectura de las líneas `CI*` del mes de esos recursos en cualquier parte (`hmores` + `auxhor` + `hmo` + `con`) para no duplicar; si la incidencia ya registrada cambia de días, **edita la `fec`** de su par (`UPDATE` con guarda, anexo R30). Desde F-062 las incidencias son **rachas** como las de Administración: esa lectura es **una** por petición o lote **en ventana** (de 12 meses antes, `INCIDENCIAS_MESES_ATRAS`, al mes siguiente, en cualquier parte y también por `ide` de las trazas), el transfer continúa la racha de quien sea, **mueve la `fec`** de `CIZ` ajenos (de Administración o de `partes`, con su `can` y sin cambiar su `synckey`) y la devuelve a su día si deja de continuarla, escribe un `CIZ` en el parte del inicio (también ajeno) y cierra el último día del mes anterior las rachas que quedaron abiertas, en un parte de ese mes; nunca borra | F-001, F-002, F-037, F-051, F-030, F-062 |
 | `acralbaranesdev` | `albaranes`, `partes` | Publicar y tirar las tres imágenes, por identidad gestionada | **F-008** |
 | Entra ID | todo el ecosistema | Autenticación del front (Easy Auth) y grupo de acceso | **F-008** |
 
@@ -103,8 +103,12 @@ Desde F-030 este proyecto escribe además en ese parte compartido líneas de
 **incidencia** (`CI*`/`CIZ`, `can = 0`), las mismas que escribe `partes`:
 antes de escribir mira las de ese recurso, código y día en todos los partes
 del mes, y lo que ya está (de `partes` o de Administración) no se duplica
-(`docs/ARCHITECTURE.md#regla-incidencia`). `azure-apps/partes.md` debería
-decirlo en su «qué se rompe»; es de `partes`.
+(`docs/ARCHITECTURE.md#regla-incidencia`). Desde F-062, además, **mueve la
+`fec`** de `CIZ` que no son suyos (también con `synckey` `partes:…`) para
+continuar una racha, **añade** `CIZ` en partes de otros (el del inicio de la
+racha, y en el mes anterior para cerrarla) y deja rachas **abiertas** a fin
+de mes; nunca borra. `azure-apps/partes.md` debería decirlo en su «qué se
+rompe»; es de `partes`.
 
 **Lo nuevo de F-008 son tres de esas cuatro filas.** La primera es la que
 convierte a este proyecto en **quinto inquilino** de un servidor que ya usaban
@@ -212,6 +216,7 @@ despliegue no tenga que aprender dos vocabularios.
 | `VAR_OBRA_COD`, `VAR_PARTIDA_DESDE` | Obra de obras varias y número inicial desde el que sus partidas se ofrecen como obras propias (F-039, `docs/ARCHITECTURE.md#regla-var`). Con defecto en el código (`VAR`, `29`): no hace falta declararlas al desplegar. `VAR_OBRA_COD` vacío = sin entradas VAR |
 | `SIGRID_LECTURAS_PARALELAS` | Lecturas a la vez contra `sigrid-api` en un lote (F-055): **4 por defecto en el código**, de 1 a 8 (fuera de ese rango el transfer no arranca); 1 = en serie, como antes de F-055. El límite es **por lote** (por llamada a `…/preflight-lote` o `…/propuesta-lote`), **no por proceso**: dos lotes a la vez —p. ej. un preflight y las propuestas del mes en segundo plano— suman sus lecturas contra `sigrid-api` |
 | `PROPUESTA_MESES_ATRAS` | Meses hacia atrás, desde el del cuadrante incluido, en los que se busca la partida propuesta (F-050, `docs/ARCHITECTURE.md#regla-partida`). Con defecto en el código (`24`): no hace falta declararla al desplegar |
+| `INCIDENCIAS_MESES_ATRAS` | Meses hacia atrás de la lectura en ventana de las rachas de incidencia (F-062, `docs/ARCHITECTURE.md#regla-incidencia`): del día 1 de esos meses antes al último del mes siguiente. Con defecto en el código (`12`, mínimo 1): no hace falta declararla al desplegar |
 | `LOG_DIR` | `/tmp/logs` en el contenedor: `/app` no tiene por qué ser escribible |
 
 Secretos en el Key Vault propio, por su clave: `PG-PASSWORD`,
@@ -422,6 +427,38 @@ Desde F-030 (incidencias en el cuadrante;
   `INSERT`, ni `DELETE`, ni parte
   nuevo. La lectura de las líneas `CI*` del mes trae además `h.can`,
   `h.hmoide` y `con.est`, y busca también por `h.ide` las de la traza.
+
+Desde F-062 (rachas de incidencia como Administración;
+`docs/ARCHITECTURE.md#regla-incidencia`):
+
+- Cada petición de `registro/preflight`, `registro/preflight-lote` y
+  `registro/ejecutar` puede llevar además, si no están vacías,
+  `incidencias_mes` (las del mes de sus recursos en cualquier obra:
+  `{id, obra_ide, recurso_ide, empresa, codigo, ano, mes, desde, hasta,
+  paride}` y la traza, con `dia_fin_antes`, el día original del `CIZ` ajeno
+  que movió), `quitadas` (las quitadas de la obra con algún `ide` en su
+  traza, mismo elemento) y `cierres_recursos` (los recursos cuya primera
+  petición es esa: se les cierran las rachas del mes anterior). La api crea
+  la petición de una obra que solo tiene quitadas. Con alguna de las tres,
+  la respuesta gana `rachas` (por incidencia: `papel` `abre`|`continua`,
+  inicio, `cierre` `cierra`|`abierta`|`cubierta`|`cadena` con día y parte,
+  dueña y avisos), `cierres_racha` (recurso, código, inicio, `accion`
+  `escribir`|`ya_registrado`|`aviso`|`pendiente`, `fecha_int`, parte,
+  `incidencia_id`, `hmores_ide`, `requiere_confirmar` y `clave`: la racha
+  con inicio anterior a M−1 solo se cierra con `cierre:{ide del inicio}` en
+  `pisar_claves`; sin ella, `ejecutar` la devuelve `pendiente`, sin
+  escribir y fuera de `pendientes_confirmacion`) y `no_coincide` (`tipo`
+  `quitada`|`solo_sigrid`, recurso,
+  incidencia, líneas con `ide`, código, día y parte, motivo y `en_sigrid`);
+  las de `incidencias` ganan el rol `devolver`, las acciones `continua` y
+  `abierta` y `ajena`. Sin ninguna, petición y respuesta son las de F-030.
+- La api guarda `sigrid_dia_fin_antes` en `incidencia` (columna nueva, por
+  `alters_faltantes`), traza la que solo continúa o queda abierta como
+  registrada sin `ide`, anula la del `fin` al devolver el `CIZ` y borra la
+  quitada que ya no tiene líneas en Sigrid. `incidencias_quitadas` sigue en
+  la respuesta del preflight, pero el modal pinta «No coincide con Sigrid».
+- En Sigrid: la lectura es en ventana (arriba, §1) y mover un `CIZ` ajeno es
+  el mismo `UPDATE` de solo la `fec`, con su `can` leído en la guarda.
 
 Desde F-061 (búsqueda predictiva en el desplegable de incidencias), cada
 incidencia de `GET /api/v1/incidencias` trae dos campos más, compatibles
