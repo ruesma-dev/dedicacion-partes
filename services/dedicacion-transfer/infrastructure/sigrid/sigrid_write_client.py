@@ -318,6 +318,21 @@ class SigridWriteClient:
             "cosindide, unimed FROM obrparpar WHERE obride = ? "
             "ORDER BY pos, ide", [int(obride)])
 
+    def cuentas_del_presupuesto(self, obra_ide: int) -> dict[int, str | None]:
+        """F-044 (R15, R27; design §7.1): el código de la cuenta analítica
+        (`con.cod` de `obrparpar.caaide`) de cada partida del presupuesto de
+        la obra que la tiene, por `ide` de partida. UNA lectura
+        parametrizada; hoja y alta las da el presupuesto que ya se lee. Un
+        fallo o un `truncated` sube como excepción."""
+        filas = self._lectura(
+            "cuentas_del_presupuesto",
+            "SELECT p.ide AS ide, cc.cod AS cod FROM obrparpar p "
+            "JOIN con cc ON cc.ide = p.caaide "
+            "WHERE p.obride = ? AND ISNULL(p.caaide,0) <> 0",
+            [int(obra_ide)])
+        return {int(f["ide"]): (f["cod"] or "").strip() or None
+                for f in filas}
+
     def horas_de_recursos(
         self, resides: Iterable[int]
     ) -> dict[int, list[HoraRecurso]]:
@@ -947,13 +962,18 @@ class SigridWriteClient:
         self, *, ide: int, reside: int, can_leido: float | None,
         synckey_leida: str | None, horide: int, can: float, pre: float,
         paride: int, caaide: int, fecha_int: int, synckey: str,
-        tex: str | None,
+        tex: str | None, hora: str | None = None,
     ) -> dict:
         """F-051 (R8-R11): la línea pasa a ser la que habríamos insertado
         (mismos valores y redondeos que `stmt_insert_linea`), en su sitio:
         no cambian `ide`, `pos`, parte, obra, centro ni periodo. `tex` solo
-        se escribe si viene (modo pruebas, R10)."""
-        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida)
+        se escribe si viene (modo pruebas, R10).
+
+        F-044 (R24): con `hora` (la de un recurso vinculado), la guarda
+        exige ese código en vez de `M*` (`_guarda`); sin ella, el SQL de
+        F-051 sin cambiar ni un carácter."""
+        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida,
+                                      hora)
         con_tex = tex is not None
         return {"sql": (
             "UPDATE hmores SET can = ?, pre = ?, tot = ?, horide = ?, "
@@ -967,10 +987,12 @@ class SigridWriteClient:
 
     def stmt_poner_a_cero(self, *, ide: int, reside: int,
                           can_leido: float | None,
-                          synckey_leida: str | None) -> dict:
+                          synckey_leida: str | None,
+                          hora: str | None = None) -> dict:
         """F-051 (R5, D14 = A): `can` y `tot` a 0, nada más, con la misma
-        guarda que la edición."""
-        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida)
+        guarda que la edición (F-044 R24: con `hora`, la de un vinculado)."""
+        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida,
+                                      hora)
         return {"sql": f"UPDATE hmores SET can = 0, tot = 0 {guarda}",
                 "parameters": params}
 

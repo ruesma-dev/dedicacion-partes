@@ -70,6 +70,10 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Optional
 
+from application.pipelines.registro_vinculados import (
+    EscrituraVinculados, PasoVinculados, motivo_de_conflicto,
+)
+from application.services.reglas_vinculados import decidir_vinculados
 from application.services.cuenta_analitica import (
     origen_subcuenta, resolver_cuenta, subcuenta_de_linea,
 )
@@ -108,6 +112,7 @@ from domain.models.registro_models import (
     AccionIncidencia, AccionLinea, Conflicto, ContextoRachas,
     IncidenciaEntrada, LineaEntrada,
     ObraEntrada, ParteDestino, Preflight, ResultadoRegistro,
+    VinculadoEntrada,
 )
 from infrastructure.sigrid.sigrid_write_client import (
     medir_lecturas, synckey_de,
@@ -258,12 +263,16 @@ class RegistroPipeline:
         línea por su empresa antes de mirar horas o recursos; las de las
         incidencias, del mismo `decidir_incidencia` (F-030)."""
         reglas = ReglasPorcentajes({}, motivo_empresa=motivo_empresa)
+        acciones = [reglas.decidir(l) for l in lineas]
         return Preflight(
             obra_destino=obra, obra_origen=obra,
             forzada_pruebas=self._st.obra_pruebas_forzar,
-            acciones=[reglas.decidir(l) for l in lineas],
+            acciones=acciones,
             incidencias=[a for i in incidencias for a in decidir_incidencia(
-                i, {}, motivo_empresa=motivo_empresa)])
+                i, {}, motivo_empresa=motivo_empresa)],
+            # F-044 (R18): sus vinculados le siguen.
+            vinculados=[av for a, l in zip(acciones, lineas, strict=True)
+                        for av in decidir_vinculados(a, l, {})])
 
     # ------------------------------------------------------------- #
     def _destino_postventa(
@@ -310,14 +319,19 @@ class RegistroPipeline:
 
     # ------------------------------------------------------------- #
     def _validas(self, normales: list[LineaEntrada],
-                 incidencias: list[AccionIncidencia]) -> dict:
+                 incidencias: list[AccionIncidencia],
+                 vinculados: list[VinculadoEntrada] | None = None) -> dict:
         """F-055 (R3): UNA lectura de `validar_partidas` con la elegida de
         cada línea de obra normal o, sin ella, su propuesta guardada, y la
         partida de cada incidencia que se escribe (F-030 R25). Sin ninguna
-        no se lee. Sin `try`: si falla, la petición falla."""
+        no se lee. Sin `try`: si falla, la petición falla. F-044 (R15): en
+        la misma, la elegida o la propuesta guardada de cada vinculado de
+        una línea que no va a postventa."""
         parides = ({int(l.paride or l.propuesta_paride or 0)
                     for l in normales}
-                   | {a.paride for a in incidencias}) - {0}
+                   | {a.paride for a in incidencias}
+                   | {int(v.paride or v.propuesta_paride or 0)
+                      for v in vinculados or []}) - {0}
         return self._cli.validar_partidas(sorted(parides)) if parides else {}
 
     # ------------------------------------------------------------- #
@@ -325,6 +339,9 @@ class RegistroPipeline:
         """Pasos 2-3: horas de los recursos que traen las líneas, sin tocar
         las líneas ni leer `res` (F-026 R19)."""
         todos = {int(l.recurso_ide) for l in lineas if l.recurso_ide}
+        # F-044 (R27): y las de sus vinculados, en la misma lectura.
+        todos |= {int(v.recurso_ide) for l in lineas
+                  for v in getattr(l, "vinculados", ())}
         return self._cli.horas_de_recursos(sorted(todos)) if todos else {}
 
     # ------------------------------------------------------------- #
@@ -623,7 +640,10 @@ class RegistroPipeline:
             l for a in acciones
             if a.accion == "escribir" and a.destino != "postventa"
             for l in [por_id[a.registro_id]] if l.var_paride is None]
-        validas = self._validas(normales, inc_escribir)
+        validas = self._validas(normales, inc_escribir, [
+            v for a in acciones
+            if a.accion == "escribir" and a.destino != "postventa"
+            for v in por_id[a.registro_id].vinculados])
 
         def vale(paride) -> bool:
             v = validas.get(int(paride or 0))
@@ -720,13 +740,27 @@ class RegistroPipeline:
 
         escribir = [a for a in acciones if a.accion == "escribir"]
 
+        # F-044 (R12-R18; ARCHITECTURE.md#regla-vinculado): la línea y la
+        # partida de cada vinculado, con la de su titular ya decidida. Sin
+        # vinculados, ninguna lectura más.
+        paso = PasoVinculados(self._cli)
+        nodos_ya = nodos_origen
+        vinculados = paso.decidir(
+            acciones, lineas, horas, origen_ide=int(origen.ide),
+            validas=validas, nodos_pv=nodos_pv,
+            nodos=lambda: nodos_ya if nodos_ya is not None else
+            construir_catalogo(self._cli.capitulos_de_obra(int(origen.ide))))
+        vin_escribir = [v for v in vinculados if v.accion == "escribir"]
+
         def obra_de(a: AccionLinea) -> ObraEntrada:
             return destino_pv if a.destino == "postventa" else destino_normal
 
         # Paso 4 bis: cuenta analítica (ARCHITECTURE.md#regla-analitica),
-        # con las incidencias (van a la obra normal) en las mismas lecturas.
-        if escribir or inc_escribir:
-            self._cuentas([*escribir, *inc_escribir], horas, obra_de)
+        # con las incidencias (van a la obra normal) y los vinculados (su
+        # recurso y su hora, R12) en las mismas lecturas.
+        if escribir or inc_escribir or vin_escribir:
+            self._cuentas([*escribir, *inc_escribir, *vin_escribir], horas,
+                          obra_de)
 
         # F-062 (design §7): las rachas, tras la cuenta y ANTES del paso 5:
         # solo piden parte las `escribir` sin parte del inicio (R5); las
@@ -748,6 +782,14 @@ class RegistroPipeline:
                 partes[clave] = self._parte_nuevo_o_del_periodo(
                     d, a.ano, a.mes, leidos.get(clave))
             _sumar_aviso(a, partes[clave].aviso)
+        # F-044 (R12): el vinculado, en el parte de su titular.
+        for v in vin_escribir:
+            d = obra_de(v)
+            clave = (int(d.ide), v.ano, v.mes)
+            if clave not in partes:
+                partes[clave] = self._parte_nuevo_o_del_periodo(
+                    d, v.ano, v.mes, leidos.get(clave))
+            v.parte_cod = partes[clave].cod
         for a in inc_escribir:
             clave = (int(destino_normal.ide), a.ano, a.mes)
             if clave not in partes:
@@ -759,9 +801,12 @@ class RegistroPipeline:
         # de su recurso, es `M*` (T18: un `ide` reutilizado puede caer en
         # una `H*`/`C*` de `partes`) y no es nuestra de otra asignación; si
         # no, la de su `synckey`, como siempre. Las dos en UNA lectura.
+        # F-044 (R13, R30): con los de los vinculados, en la misma lectura.
+        claves_vin, ides_vin = paso.registradas(vinculados)
         por_sk, por_ide = self._cli.lineas_registradas(
-            [synckey_de(a.registro_id) for a in escribir],
-            [por_id[a.registro_id].hmores_ide for a in escribir])
+            [synckey_de(a.registro_id) for a in escribir] + claves_vin,
+            [por_id[a.registro_id].hmores_ide for a in escribir] + ides_vin)
+        paso.idempotencia(vinculados, por_sk, por_ide)
         for a in escribir:
             propia = synckey_de(a.registro_id)
             hit = por_ide.get(int(por_id[a.registro_id].hmores_ide or 0))
@@ -811,23 +856,32 @@ class RegistroPipeline:
                 "no se escribe sin confirmar", a.recurso_ide, a.registro_id,
                 a.ano, a.mes)
 
+        # F-044 (R16): los vinculados sin partida, cada uno con su clave.
+        conflictos.extend(paso.sin_partida(vinculados))
+
         # Paso 7: conflictos (ver ARCHITECTURE `#regla-conflicto`) contra
         # las líneas de TODOS los partes del periodo, aunque el elegido sea
         # nuevo (F-037 R13): un choque con un parte CERRADO omite la acción
         # (en un cerrado no se escribe ni se borra) y prevalece; con uno En
         # registro es el conflicto de siempre, con el parte donde vive.
         pendientes = [a for a in acciones if a.accion == "escribir"]
+        vin_pendientes = [v for v in vinculados if v.accion == "escribir"]
         en_cerrado: set[int] = set()
         for clave_p, parte in sorted(partes.items()):
             grupo = [a for a in pendientes
                      if (int(obra_de(a).ide), a.ano, a.mes) == clave_p]
-            if not grupo or not parte.del_periodo:
+            # F-044 (R20-R23): y los vinculados de ese parte, con sus
+            # líneas en la MISMA lectura (R27).
+            vin_grupo = [v for v in vin_pendientes
+                         if (int(obra_de(v).ide), v.ano, v.mes) == clave_p]
+            if not (grupo or vin_grupo) or not parte.del_periodo:
                 continue            # sin partes en el periodo: nada choca
             existentes = []
             donde = {}
             for ps in parte.del_periodo:
                 for ls in self._cli.lineas_del_parte(
-                        int(ps.ide), [a.recurso_ide for a in grupo]):
+                        int(ps.ide), [a.recurso_ide for a in grupo]
+                        + [v.recurso_ide for v in vin_grupo]):
                     existentes.append(ls)
                     donde[ls.ide] = ps
             mias = {synckey_de(a.registro_id) for a in grupo}
@@ -932,12 +986,17 @@ class RegistroPipeline:
                     "[registro] sobrecarga recurso=%s parte=%s existente=%s "
                     "nueva=%s total=%s", recurso, parte.cod,
                     cap.existente, cap.nueva, cap.total)
+            conflictos.extend(paso.conflictos_del_parte(
+                vin_grupo, existentes, donde, parte, lineas_cerradas,
+                self._nombre_estado))
 
         # Una línea omitida por un parte cerrado ya no se escribe: su aviso
         # de «sin partida» del paso 6 bis no tiene nada que confirmar.
         conflictos = [c for c in conflictos
                       if not (c.motivo == "sin_partida"
                               and set(c.registros) <= en_cerrado)]
+        # F-044 (R18): titular omitido ⇒ sus vinculados también.
+        conflictos = paso.cerrar(acciones, vinculados, conflictos)
 
         _partes_de_rachas(rachas, acciones_inc)
         pf = Preflight(
@@ -945,7 +1004,8 @@ class RegistroPipeline:
             forzada_pruebas=forzada,
             partes=[partes[k] for k in sorted(partes)], acciones=acciones,
             conflictos=conflictos, incidencias=acciones_inc,
-            rachas=rachas, cierres_racha=cierres, no_coincide=no_coincide_)
+            rachas=rachas, cierres_racha=cierres, no_coincide=no_coincide_,
+            vinculados=vinculados)
         if acciones_inc:
             logger.info(
                 "[registro] incidencias obra=%s lineas=%s escribir=%s",
@@ -982,9 +1042,12 @@ class RegistroPipeline:
         """F-050 (R8, R11): catálogo y propuesta de cada línea, SOLO
         LECTURA, con la misma `proponer_partida` que el preflight (R9).
 
-        `lineas`: `{clave, recurso_ide, nombre, categoria, es_postventa}`.
-        La obra de otra empresa devuelve `ok` falso con el motivo (422 en
-        la API); un fallo de lectura sube tal cual (502)."""
+        `lineas`: `{clave, recurso_ide, nombre, categoria, es_postventa}`
+        y, F-044 (R9), opcionales `paride` (la elegida del titular) y
+        `vinculados` (`[{recurso_ide, tipo, categoria, cod}]`): con alguno,
+        la salida gana `vinculados` (`PasoVinculados.proponer`); sin ellos,
+        la de siempre. La obra de otra empresa devuelve `ok` falso con el
+        motivo (422 en la API); un fallo de lectura sube tal cual (502)."""
         origen = self._obra_origen(obra, empresa)
         if origen.empresa != empresa:
             return {"ok": False, "error": MOTIVO_EMPRESA_OBRA.format(
@@ -1010,6 +1073,7 @@ class RegistroPipeline:
             nodos_pv = catalogo_pv.nodos
         propuestas: dict = {}
         mayores: dict = {}
+        objetos: dict = {}
         for l in lineas:
             if l["es_postventa"]:
                 p = (Propuesta(partida_pv["ide"], partida_pv["cod"],
@@ -1021,11 +1085,18 @@ class RegistroPipeline:
                                      int(origen.ide), l["categoria"],
                                      l["nombre"])
                 de = nodos
+            objetos[l["clave"]] = p
             propuestas[l["clave"]] = asdict(p) if p else None
             mayores[l["clave"]] = mayor_inicial(p, de, l["categoria"])
-        return {"ok": True, "partidas_obra": catalogo(nodos),
-                "partidas_postventa": catalogo(nodos_pv),
-                "propuestas": propuestas, "mayor_inicial": mayores}
+        salida = {"ok": True, "partidas_obra": catalogo(nodos),
+                  "partidas_postventa": catalogo(nodos_pv),
+                  "propuestas": propuestas, "mayor_inicial": mayores}
+        vinculados = PasoVinculados(self._cli).proponer(
+            origen_ide=int(origen.ide), nodos=nodos, nodos_pv=nodos_pv,
+            lineas=lineas, propuestas=objetos)
+        if vinculados:
+            salida["vinculados"] = vinculados
+        return salida
 
     # ------------------------------------------------------------- #
     def ejecutar(self, *, obra: ObraEntrada, lineas: list[LineaEntrada],
@@ -1081,11 +1152,19 @@ class RegistroPipeline:
         # construcción y sembrarlo sería una guarda que ningún test podría
         # ejercitar.
         omitidas_ya: set[int] = set()
+        # F-044 (R26, R28): el aviso de un vinculado retiene SOLO a ese
+        # vinculado (por titular y recurso), nunca al titular.
+        vin_bloqueados: dict[tuple[int, int], tuple[str, bool]] = {}
         for c in pf.conflictos:
             if c.clave in pisar:
                 res.pisadas.append(c.clave)
                 continue
             res.pendientes_confirmacion.append(c)
+            if c.vinculado:
+                for r in c.registros:
+                    vin_bloqueados.setdefault((r, c.recurso_ide),
+                                              motivo_de_conflicto(c))
+                continue
             bloqueadas.update(c.registros)
             # Un conflicto sin confirmar deja rastro en `omitidas`, salvo el
             # pisado: un pisado sin confirmar es un paso normal del flujo
@@ -1125,7 +1204,7 @@ class RegistroPipeline:
         if not (a_escribir or inc_escribir or inc_editar or cierres):
             logger.info("[registro] nada que escribir (bloqueadas=%s)",
                         len(bloqueadas))
-            return res
+            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
 
         # Paso 9 bis (F-051 R4, R5, R12): qué edita cada acción y qué se
         # pone a 0, comprobado contra Sigrid justo antes de escribir. Va
@@ -1152,7 +1231,7 @@ class RegistroPipeline:
         if not (a_escribir or inc_escribir or inc_editar or cierres):
             logger.info("[registro] nada que escribir (cambiadas=%s)",
                         len(cambiadas))
-            return res
+            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
         a_insertar = [a for a in a_escribir if a.registro_id not in edita]
 
         # Paso 9: crear los partes que falten (por destino), solo para lo
@@ -1306,6 +1385,34 @@ class RegistroPipeline:
                     res.borradas, afectadas, usuario,
                     datetime.now(timezone.utc).isoformat())
         self._comprobar_escrito(res, inc_escribir, inc_editar, cierres)
+        return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
+
+    # ------------------------------------------------------------- #
+    def _ejecutar_vinculados(self, res: ResultadoRegistro, pf: Preflight,
+                             pisar: set[str], bloqueados: dict
+                             ) -> ResultadoRegistro:
+        """F-044 (R24, R28): los vinculados, DESPUÉS de los titulares y de
+        su relectura (`EscrituraVinculados`). Sin vinculados, nada."""
+        if not pf.vinculados:
+            return res
+        destino_normal = pf.obra_destino
+        destino_pv = getattr(pf, "obra_postventa", None)
+        marca = (f" ({self._st.marca_pruebas})" if pf.forzada_pruebas
+                 else "")
+
+        def obra_de(a) -> ObraEntrada:
+            return destino_pv if a.destino == "postventa" else destino_normal
+
+        EscrituraVinculados(
+            self._cli, est=int(self._st.est_parte_activo),
+            paso_pos=int(self._st.paso_pos),
+            tex=self._st.marca_pruebas if pf.forzada_pruebas else None,
+            obra_de=obra_de,
+            crear_parte=lambda p, d: self._crear_parte(
+                p, d, f"Parte {d.nombre or d.codigo}{marca}"),
+            traza=_traza,
+        ).ejecutar(res, pf.partes, pf.vinculados, pf.conflictos, pisar,
+                   bloqueados)
         return res
 
     # ------------------------------------------------------------- #
@@ -1348,7 +1455,9 @@ class RegistroPipeline:
             regs = sorted(r for r in c.registros if r in escribibles)
             # R32 de hoy: un pisado confirmado solo toca algo si al menos
             # uno de sus registros llega a escribirse.
-            if c.clave not in pisar or not regs:
+            # F-044 (R26): el pisado de un vinculado lo edita su paso
+            # (`EscrituraVinculados`), nunca el titular.
+            if c.clave not in pisar or not regs or c.vinculado:
                 continue
             libres = [ls for ls in c.lineas if ls.ide not in usadas]
             usadas.update(ls.ide for ls in libres)

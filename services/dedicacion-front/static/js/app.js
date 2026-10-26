@@ -32,6 +32,14 @@ const COLUMNAS = {
     ordenable: false,
     placeholder: "Filtrar obra…",
   },
+  // F-044 (R6): «Persona» en la fila de la línea y el tipo y código de
+  // cada vinculado en su subfila.
+  tipo: {
+    titulo: "Tipo recurso",
+    ancho: 170,
+    ordenable: false,
+    placeholder: "Filtrar tipo…",
+  },
   // F-050 (R23): la partida de cada línea, a la derecha de su obra.
   partida: {
     titulo: "Partida",
@@ -47,15 +55,16 @@ const COLUMNAS = {
     placeholder: "ok / falta / sobra…",
   },
 };
-const ORDEN_COLUMNAS_DEFECTO = ["nombre", "categoria", "asignaciones", "partida", "total"];
+const ORDEN_COLUMNAS_DEFECTO = ["nombre", "categoria", "asignaciones", "tipo", "partida", "total"];
 // F-050 (R22): columnas con una celda por línea (subfila); las demás son
-// del trabajador y ocupan todas sus subfilas (`rowSpan`).
-const COLUMNAS_POR_LINEA = ["asignaciones", "partida"];
+// del trabajador y ocupan todas sus subfilas (`rowSpan`). F-044 (R6): y por
+// subfila de vinculado.
+const COLUMNAS_POR_LINEA = ["asignaciones", "tipo", "partida"];
 const CLAVE_TABLA = "dedicacion:tabla:v1";
 // F-050 (M2, punto 1): hasta dónde encoge cada columna para que la tabla
 // quepa en la ventana (Total no encoge: su contenido no se parte). Por debajo
 // de esto, scroll horizontal. Las preferencias del usuario no se tocan.
-const MINIMO_COLUMNA = { nombre: 160, categoria: 100, asignaciones: 150, partida: 150, total: 190 };
+const MINIMO_COLUMNA = { nombre: 160, categoria: 100, asignaciones: 150, tipo: 110, partida: 150, total: 190 };
 
 const state = {
   anio: 0,
@@ -205,6 +214,9 @@ function rotuloOrigen(metodo, origen) {
     postventa: "obra de postventa",
     var: "partida fija",
     manual: "elegida",
+    // F-044 (R9): las de una subfila de vinculado.
+    ci_tipo: "CI del tipo",
+    titular: "la del trabajador",
   };
   if (!metodo) return "";
   const texto = textos[metodo] || metodo;
@@ -262,8 +274,13 @@ function cargarPrefsTabla() {
       ORDEN_COLUMNAS_DEFECTO.forEach((c) => {
         if (validas.includes(c)) return;
         // F-050 (R23): la columna Partida entra justo a la derecha de la de
-        // obras en unas preferencias guardadas sin ella.
-        const tras = c === "partida" ? validas.indexOf("asignaciones") : -1;
+        // obras en unas preferencias guardadas sin ella. F-044 (R6): Tipo
+        // recurso, también a la derecha de la de obras, y Partida tras ella.
+        const tras = c === "tipo" ? validas.indexOf("asignaciones")
+          : c === "partida"
+            ? (validas.includes("tipo") ? validas.indexOf("tipo")
+              : validas.indexOf("asignaciones"))
+            : -1;
         if (tras >= 0) validas.splice(tras + 1, 0, c);
         else validas.push(c);
       });
@@ -384,7 +401,8 @@ function aplicarCuadrante(datos) {
 // ---------------------------------------------------------------- propuestas
 // F-055 (R36): copia las propuestas guardadas de `GET …/propuestas` a las
 // líneas que siguen sin elegida. Solo datos: el repintado va aparte.
-function aplicarPropuestas(lineas) {
+// F-044 (R9): y las de las subfilas de vinculado (`subfilas`), igual.
+function aplicarPropuestas(lineas, subfilas = []) {
   lineas.forEach((p) => {
     const t = state.trabajadores.find((x) => x.ide === p.trabajador_ide);
     const l = t && t.lineas.find((x) => x.obra_ide === p.obra_ide &&
@@ -393,6 +411,17 @@ function aplicarPropuestas(lineas) {
     l.propuesta_cod = p.propuesta_cod;
     l.propuesta_res = p.propuesta_res;
     l.propuesta_metodo = p.propuesta_metodo;
+  });
+  subfilas.forEach((p) => {
+    const t = state.trabajadores.find((x) => x.ide === p.trabajador_ide);
+    const l = t && t.lineas.find((x) => x.obra_ide === p.obra_ide &&
+      x.es_postventa === p.es_postventa);
+    const v = l && (l.vinculados || []).find((x) =>
+      x.vinculado_ide === p.vinculado_ide && x.partida_ide == null);
+    if (!v) return;
+    v.propuesta_cod = p.propuesta_cod;
+    v.propuesta_res = p.propuesta_res;
+    v.propuesta_metodo = p.propuesta_metodo;
   });
 }
 
@@ -447,7 +476,7 @@ async function consultarPropuestas(generacion, ruta) {
     datos = null;
   }
   if (generacion !== propuestas.generacion) return;
-  if (datos) aplicarPropuestas(datos.lineas || []);
+  if (datos) aplicarPropuestas(datos.lineas || [], datos.subfilas || []);
   aplicarPendientes((datos && datos.pendientes) || []);
   state.propuestasEnCurso = !!(datos && datos.en_curso);
   repintarCeldasPartida();
@@ -463,6 +492,13 @@ function repintarCeldasPartida() {
     const t = state.trabajadores.find((x) => x.ide === ide);
     const l = t && t.lineas[Number(td.dataset.linea)];
     if (!l || l.partida_fija) return;
+    // F-044 (R9): la celda de una subfila, con lo de su vinculado.
+    if (td.dataset.vinculado) {
+      const v = (l.vinculados || []).find(
+        (x) => String(x.vinculado_ide) === String(td.dataset.vinculado));
+      if (v) td.innerHTML = htmlPartida(v);
+      return;
+    }
     td.innerHTML = htmlPartida(l);
   });
 }
@@ -758,6 +794,11 @@ function textoColumna(t, clave) {
   if (clave === "nombre") return t.nombre;
   if (clave === "categoria") return t.categoria || "";
   // La columna de obras no pasa por aquí: casa línea a línea (F-041, R4).
+  // F-044 (R6): «Persona» y el tipo y código de cada vinculado.
+  if (clave === "tipo") {
+    return ["Persona"].concat(t.lineas.flatMap((l) => (l.vinculados || [])
+      .map((v) => `${v.tipo_res || v.tipo || ""} ${v.cod || ""}`))).join(" ");
+  }
   if (clave === "total") {
     const partes = [fmtPct(t.total), String(Math.round(t.total))];
     if (t.estado === "OK") partes.push("ok 100");
@@ -786,7 +827,10 @@ function trabajadoresVisibles() {
           l.partida_fija ? l.descripcion
             : l.partida_ide != null
               ? `${l.partida_cod || ""} ${l.partida_res || ""}`
-              : "automática").includes(filtro));
+              : "automática").includes(filtro) ||
+          // F-044 (R6): o la elegida de alguna de sus subfilas.
+          (l.vinculados || []).some((v) => v.partida_ide != null && normalizar(
+            `${v.partida_cod || ""} ${v.partida_res || ""}`).includes(filtro)));
         if (!casaPartida) return false;
         continue;
       }
@@ -934,10 +978,17 @@ function construirFila(t) {
       else renderTabla();
     });
     frag.appendChild(tr);
+    // F-044 (R6): bajo la línea, una subfila por vinculado.
+    const vinculados = (idx < n && t.lineas[idx] && t.lineas[idx].vinculados) || [];
+    vinculados.forEach((v) => frag.appendChild(construirFilaVinculado(t, idx, v, trs)));
   }
   // F-030 (R16): las columnas del trabajador abarcan también sus incidencias.
   if (filas > n) {
     trs[0].querySelectorAll("td[rowspan]").forEach((td) => { td.rowSpan = filas; });
+  }
+  // F-044 (R6): y las subfilas de sus vinculados.
+  if (trs.length > filas) {
+    trs[0].querySelectorAll("td[rowspan]").forEach((td) => { td.rowSpan = trs.length; });
   }
   // T15e (obs. 1 de la review 5): repintado con el ratón quieto encima, sale
   // ya sombreado (el navegador no le manda `mouseenter` hasta que se mueve).
@@ -946,6 +997,98 @@ function construirFila(t) {
     state.resaltadas = trs;
   }
   return frag;
+}
+
+// La subfila de un vinculado bajo la línea `idx` (F-044, R6): solo las
+// columnas por línea (obra con el % de la línea, tipo y partida); las del
+// trabajador ya la abarcan. Cursor, sombreado y clic, los de su bloque
+// (`trs`), como las demás subfilas de `construirFila`.
+function construirFilaVinculado(t, idx, v, trs) {
+  const tr = document.createElement("tr");
+  tr.className = "fila subfila fila-vin";
+  tr.dataset.ide = t.ide;
+  tr.dataset.linea = idx;
+  tr.dataset.vinculado = v.vinculado_ide;
+  if (!t.activo) tr.classList.add("inactivo");
+  if (t.ide === state.seleccionIde) tr.classList.add("seleccionada");
+  if (state.seleccion.has(t.ide)) tr.classList.add("multi");
+  if (t.ide === state.editandoIde) tr.classList.add("editando");
+  state.columnas.forEach((clave, c) => {
+    if (!COLUMNAS_POR_LINEA.includes(clave)) return;
+    const td = construirCeldaVinculado(t, idx, v, clave);
+    if (c === 0) td.classList.add("col-primera");
+    if (c === state.columnas.length - 1) td.classList.add("col-ultima");
+    tr.appendChild(td);
+  });
+  tr.addEventListener("mouseenter", () => {
+    (state.resaltadas || []).forEach((x) => x.classList.remove("resaltada"));
+    state.ratonIde = t.ide;
+    state.resaltadas = trs;
+    trs.forEach((x) => x.classList.add("resaltada"));
+  });
+  tr.addEventListener("mouseleave", () => {
+    (state.resaltadas || []).forEach((x) => x.classList.remove("resaltada"));
+    state.ratonIde = null;
+    state.resaltadas = [];
+  });
+  tr.addEventListener("mousedown", (ev) => {
+    if (ev.shiftKey) ev.preventDefault();
+  });
+  tr.addEventListener("click", (ev) => {
+    if (ev.ctrlKey || ev.metaKey || ev.shiftKey) {
+      marcarSeleccion(t.ide, ev.shiftKey);
+      return;
+    }
+    state.seleccionIde = t.ide;
+    state.ancla = t.ide;
+    fijarSeleccion([]);
+    if (state.periodoEstado === "ABIERTO") abrirEditor(t.ide);
+    else renderTabla();
+  });
+  trs.push(tr);
+  return tr;
+}
+
+// Las celdas de la subfila del vinculado `v` bajo la línea `idx` (F-044,
+// R6-R9). Solo pinta lo que manda la API: el % es el de la línea y no se
+// edita (R7); la partida, la elegida o la propuesta guardada en cursiva con
+// su método (`htmlPartida`, R9), o la fija de la línea VAR; con el periodo
+// abierto, el clic abre el selector de F-050 de ESA subfila (R8).
+function construirCeldaVinculado(t, idx, v, clave) {
+  const l = t.lineas[idx];
+  const td = document.createElement("td");
+  if (clave === "asignaciones") {
+    td.className = "celda-vin";
+    td.innerHTML =
+      '<span class="chip-linea chip-vin" title="El % del trabajador en esta obra: ' +
+      'se aplica tal cual a sus recursos y no se edita aquí">' +
+      `<span class="cod">${escapeHtml(etiquetaObra(l.cod, l.es_postventa))}</span>` +
+      `<span class="pct pct-heredado">${fmtPct(l.porcentaje)}</span></span>`;
+  } else if (clave === "tipo") {
+    td.className = "celda-tipo";
+    td.innerHTML =
+      `<span class="tipo-vin">${escapeHtml(v.tipo_res || v.tipo || "")}</span>` +
+      `<span class="cod-vin">${escapeHtml(v.cod || "")}</span>`;
+  } else if (clave === "partida") {
+    td.className = "celda-partida celda-partida-vin";
+    td.dataset.ide = t.ide;
+    td.dataset.linea = idx;
+    td.dataset.vinculado = v.vinculado_ide;
+    if (l.partida_fija) {
+      td.classList.add("fija");
+      td.innerHTML = `<span class="partida-fija" title="Partida fija de la entrada">${escapeHtml(l.descripcion)}</span>`;
+      return td;
+    }
+    td.innerHTML = htmlPartida(v);
+    if (state.periodoEstado === "ABIERTO") {
+      td.classList.add("editable");
+      td.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        abrirSelectorPartida(t.ide, l.obra_ide, l.es_postventa, td);
+      });
+    }
+  }
+  return td;
 }
 
 // ------------------------------------------- selección múltiple (F-029)
@@ -1207,6 +1350,11 @@ function construirCelda(t, clave, idx) {
   } else if (clave === "categoria") {
     td.className = "celda-categoria";
     td.textContent = t.categoria || "—";
+  } else if (clave === "tipo") {
+    // F-044 (R6): la fila de la línea es la del trabajador; las de
+    // incidencia no llevan tipo.
+    td.className = "celda-tipo";
+    td.textContent = incidenciaDeSubfila(t, idx) ? "" : "Persona";
   } else if (clave === "asignaciones") {
     // F-050 (R22): solo la línea de esta subfila.
     const chips = document.createElement("div");
@@ -2117,12 +2265,17 @@ function cerrarSelectorPartida() {
 // clic en la misma línea con su panel abierto (cargando o no) no abre otro,
 // y solo pinta la respuesta del último pedido (la de un panel ya cerrado o
 // sustituido se descarta, también su error).
+// F-044 (R8): un ancla con `data-vinculado` (la celda de una subfila o su
+// botón del modal) abre el selector de ESA subfila: su propia clave, la
+// consulta con `vinculado_ide` y el `PUT` con él.
 async function abrirSelectorPartida(trabajadorIde, obraIde, esPostventa, ancla, despues) {
-  const clave = clavePartidas(trabajadorIde, obraIde, esPostventa);
+  const vinculadoIde = (ancla.dataset && ancla.dataset.vinculado) || null;
+  const clave = clavePartidas(trabajadorIde, obraIde, esPostventa) +
+    (vinculadoIde ? `|v${vinculadoIde}` : "");
   if (selector.abierto === clave) return;
   const rect = ancla.getBoundingClientRect();
   const llenar = montarSelectorPartida({
-    trabajadorIde, obraIde, esPostventa, ancla, rect, despues, clave,
+    trabajadorIde, obraIde, esPostventa, ancla, rect, despues, clave, vinculadoIde,
   });
   const vivo = selector.cerrar;
   selector.abierto = clave;
@@ -2130,7 +2283,8 @@ async function abrirSelectorPartida(trabajadorIde, obraIde, esPostventa, ancla, 
   let resp = selector.cache.get(clave);
   if (!resp) {
     try {
-      resp = await api(`/periodos/${state.anio}/${state.mes}/trabajadores/${trabajadorIde}/partidas?obra_ide=${obraIde}&es_postventa=${esPostventa}`);
+      resp = await api(`/periodos/${state.anio}/${state.mes}/trabajadores/${trabajadorIde}/partidas?obra_ide=${obraIde}&es_postventa=${esPostventa}` +
+        (vinculadoIde ? `&vinculado_ide=${vinculadoIde}` : ""));
     } catch (err) {
       if (selector.cerrar !== vivo) return;
       cerrarSelectorPartida();
@@ -2220,9 +2374,18 @@ function montarSelectorPartida(ctx) {
       try {
         const datos = await api(
           `/periodos/${state.anio}/${state.mes}/trabajadores/${ctx.trabajadorIde}/partida`,
-          { method: "PUT", body: JSON.stringify({ obra_ide: ctx.obraIde,
-            es_postventa: ctx.esPostventa, partida }) });
+          ctx.vinculadoIde
+            ? { method: "PUT", body: JSON.stringify({ obra_ide: ctx.obraIde,
+              es_postventa: ctx.esPostventa, vinculado_ide: Number(ctx.vinculadoIde),
+              partida }) }
+            : { method: "PUT", body: JSON.stringify({ obra_ide: ctx.obraIde,
+              es_postventa: ctx.esPostventa, partida }) });
         selector.cache.delete(ctx.clave);
+        // F-044 (R9): la propuesta de sus subfilas sale de la partida de la
+        // línea: sus selectores se vuelven a pedir.
+        selector.cache.forEach((_, k) => {
+          if (k.startsWith(`${ctx.clave}|v`)) selector.cache.delete(k);
+        });
         aplicarFila(datos);
         if (ctx.despues) ctx.despues(ctx.obraIde);
       } catch (err) {
@@ -2831,7 +2994,12 @@ function pctNuevas(c) {
 }
 
 function rotuloConflicto(c) {
-  const quien = c.nombre || String(c.recurso_ide);
+  // F-044 (R31): el aviso de un vinculado lleva su tipo y su código y el
+  // trabajador al que sigue; el de un trabajador, el de siempre.
+  const quien = c.vinculado
+    ? `${`${c.vinculado.tipo || ""} ${c.vinculado.cod || ""}`.trim()} de ` +
+      `${c.nombre || "su trabajador"}`
+    : c.nombre || String(c.recurso_ide);
   const hora = c.hora_codigo || "";
   const enParte = c.parte_cod ? ` en el parte ${c.parte_cod}` : "";
   const nuevo = pctNuevas(c);
@@ -3052,6 +3220,36 @@ function pintarModalPreflight(pf) {
         `(${escapeHtml(p.obra_cod || "")}): ${p.existe ? "existe" : "se creará"} ` +
         `${escapeHtml(p.cod || "")}</div>`;
     });
+    // F-044 (R31): bajo cada línea, sus recursos vinculados con la acción,
+    // el % (el del trabajador), la hora y la partida con el MISMO selector
+    // de F-050 para esa subfila (`data-vinculado`); en VAR, fija. Solo
+    // pinta lo que manda el transfer. Sin vinculados, las filas de hoy.
+    const vinculados = o.vinculados || [];
+    const filaVinculado = (a, v) => {
+      const aviso = v.aviso ? `<div class="aviso">${escapeHtml(v.aviso)}</div>` : "";
+      let sel;
+      if (v.accion !== "escribir") {
+        sel = `<span class="motivo">${escapeHtml(v.motivo || "")}</span>`;
+      } else if (a.partida_metodo === "var") {
+        sel = `<span class="partida-fija">${escapeHtml(v.partida_cod || "")}</span>` + aviso;
+      } else {
+        registro.lineas[a.registro_id] = {
+          trabajador: a.recurso_ide, obra_ide: o.obra.ide,
+          es_postventa: a.es_postventa,
+        };
+        const origen = rotuloOrigen(v.partida_metodo, v.partida_origen);
+        sel = `<button type="button" class="sel-partida" data-reg="${a.registro_id}" ` +
+          `data-vinculado="${v.recurso_ide}">${escapeHtml(textoPartidaAccion(v))}</button>` +
+          (origen ? `<div class="origen-partida">${escapeHtml(origen)}</div>` : "") +
+          aviso;
+      }
+      return `<tr class="fila-vinculado-reg">` +
+        `<td>↳ ${escapeHtml(v.tipo_res || v.tipo || "")} ${escapeHtml(v.cod || "")}</td>` +
+        `<td>${v.destino === "postventa" ? "Postventa" : "Obra"}</td>` +
+        `<td>${escapeHtml(v.accion)}</td>` +
+        `<td class="num">${v.can != null ? fmtPct(v.can * 100) : ""}</td>` +
+        `<td>${escapeHtml(v.hora_codigo || "")}</td><td>${sel}</td></tr>`;
+    };
     const filas = (o.acciones || []).map((a) => {
       const aviso = a.aviso ? `<div class="aviso">${escapeHtml(a.aviso)}</div>` : "";
       // F-050 (R29): el botón con la partida de la línea; su clic abre el
@@ -3089,7 +3287,9 @@ function pintarModalPreflight(pf) {
         `<td>${a.destino === "postventa" ? "Postventa" : "Obra"}</td>` +
         `<td>${a.accion}</td>` +
         `<td class="num">${a.can != null ? fmtPct(a.can * 100) : ""}</td>` +
-        `<td>${escapeHtml(a.hora_codigo || "")}</td><td>${sel}</td></tr>`;
+        `<td>${escapeHtml(a.hora_codigo || "")}</td><td>${sel}</td></tr>` +
+        vinculados.filter((v) => v.registro_id === a.registro_id)
+          .map((v) => filaVinculado(a, v)).join("");
     }).join("");
     html += `<table class="tabla-reg"><thead><tr><th>Trabajador</th>` +
       `<th>Destino</th><th>Acción</th><th>%</th><th>Cód. hora</th>` +
@@ -3140,9 +3340,13 @@ async function registroEjecutar() {
       { method: "POST", body: JSON.stringify({
           pisar_claves: pisar, trabajador_ide: registro.trabajadorIde,
           usuario: document.body.dataset.usuario || "local" }) });
-    let esc = 0, omi = 0, pend = 0;
+    let esc = 0, omi = 0, pend = 0, vinOmi = 0;
     (r.obras || []).forEach((o) => {
-      esc += (o.escritas || []).length; omi += (o.omitidas || []).length;
+      esc += (o.escritas || []).length;
+      // F-044 (R31): un recurso vinculado omitido (`vinculado_ide`) no es
+      // una línea omitida: se cuenta aparte.
+      omi += (o.omitidas || []).filter((x) => x.vinculado_ide == null).length;
+      vinOmi += (o.omitidas || []).filter((x) => x.vinculado_ide != null).length;
       pend += (o.pendientes_confirmacion || []).length;
       // R31 (D17): el cierre sin confirmar tampoco se ha escrito.
       pend += (o.cierres_racha || [])
@@ -3150,7 +3354,8 @@ async function registroEjecutar() {
     });
     cerrarModal();
     toast(`Sigrid: ${esc} escritas · ${omi} omitidas · ` +
-      `${pend} pendientes de confirmar${pend ? " (repite y marca pisar)" : ""}`,
+      `${pend} pendientes de confirmar${pend ? " (repite y marca pisar)" : ""}` +
+      (vinOmi ? ` · ${vinOmi} recursos vinculados omitidos` : ""),
       !r.ok);
   } catch (err) { toast(err.message, true); }
 }

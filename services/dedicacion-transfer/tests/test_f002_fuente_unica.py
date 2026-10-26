@@ -39,7 +39,9 @@ ANCLAS = ("regla-p1", "regla-p2", "regla-p3", "regla-p4", "regla-p5",
           # F-051: las líneas se editan, nunca se borran.
           "regla-cero",
           # F-030: la incidencia, un par CI*/CIZ sin importe.
-          "regla-incidencia")
+          "regla-incidencia",
+          # F-044: los recursos vinculados van con el % de su trabajador.
+          "regla-vinculado")
 
 #: Ficheros de producción donde vive el código de la obra de postventa como
 #: literal. Fuera de aquí se cita el ajuste, no el valor (R5).

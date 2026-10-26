@@ -268,12 +268,17 @@ class EdicionesFalsas:
             if st["sql"] not in ("editar", "a_cero"):
                 continue
             kw = st["parameters"]
+            # F-044 (R24, lista cerrada): con `hora`, la guarda exige ese
+            # código (un recurso vinculado) en vez de `M*`.
+            hora = (kw.get("hora") or "").strip()
             for _, _, est, lista in self._partes_de_lineas():
                 for i, ls in enumerate(lista):
+                    codigo = (ls.hora_codigo or "").strip()
                     if (ls.ide != kw["ide"] or ls.ide in self.guarda_falla
                             or ls.ide in self.enlazadas or est != 1
                             or ls.reside != kw["reside"]
-                            or not (ls.hora_codigo or "").startswith("M")
+                            or not (codigo == hora if hora
+                                    else codigo.startswith("M"))
                             or abs(float(ls.can or 0)
                                    - float(kw["can_leido"] or 0)) >= 0.000001
                             or (ls.synckey or "").strip()
@@ -288,6 +293,11 @@ class EdicionesFalsas:
                             horide=kw["horide"], paride=kw["paride"],
                             fecha_int=kw["fecha_int"], synckey=kw["synckey"],
                             nuestra=kw["synckey"].startswith("porcentajes:"))
+
+    def cuentas_del_presupuesto(self, obra_ide):
+        """F-044 (R15, lista cerrada): las partidas del doble no tienen
+        cuenta."""
+        return {}
 
     # --- ayudas de aserción --- #
     def ediciones(self) -> list[dict]:

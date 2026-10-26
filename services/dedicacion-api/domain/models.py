@@ -29,6 +29,9 @@ class TipoEvento(str, Enum):
     COPIA = "COPIA"
     COMPLETAR = "COMPLETAR"  # lote «completar al 100 %» (F-029)
     PARTIDA = "PARTIDA"  # cambio de la partida elegida de una línea (F-050)
+    # Cambio de la partida elegida de una subfila de vinculado (F-044, R8);
+    # su snapshot es el de líneas, con las elegidas de las subfilas.
+    PARTIDA_VINCULADO = "PARTIDA_VINCULADO"
     # Sustitución de las incidencias del trabajador (F-030, R17); su
     # snapshot es de incidencias, no de líneas (R20).
     INCIDENCIAS = "INCIDENCIAS"
@@ -57,6 +60,52 @@ class Trabajador:
     # Fecha de baja del recurso, AAAAMMDD o None (F-026): la vigencia por mes
     # la decide `domain.vigencia.vigente_en`.
     fecha_baja: int | None = None
+
+
+@dataclass(frozen=True)
+class RecursoVinculado:
+    """Recurso no persona de Sigrid (teléfono, gasoil, vehículo…) con el campo
+    extendido «Recurso Asociado» (F-044, R1, D2): `principal_ide` es el valor
+    del campo (`conext.valn`), el `res.ide` del trabajador al que se vincula,
+    o None si está vacío. El vínculo lo decide `domain.vinculados.vincular`
+    y la vigencia por mes, su propia `fecha_baja` (R4)."""
+
+    ide: int
+    principal_ide: int | None
+    cod: str | None
+    descripcion: str | None
+    empresa: int | None
+    fecha_baja: int | None
+    tipo: str | None            # `auxrestip.cod` (TF, CO, VE…)
+    tipo_res: str | None        # su descripción
+    horide: int | None          # hora por defecto (`res.horide`)
+
+
+@dataclass(frozen=True)
+class SubfilaVinculado:
+    """La subfila de un vinculado bajo una línea del cuadrante (F-044, R6):
+    el vinculado vigente en el mes (`tipo`, `tipo_res`, `cod`, de
+    `recurso_vinculado`) y lo suyo en esa línea (`asignacion_vinculado`):
+    partida ELEGIDA (las tres None = automática, R8), propuesta GUARDADA
+    (R9, como la de F-055) y traza del último registro (R21). Sin
+    porcentaje: es el del titular (R7)."""
+
+    vinculado_ide: int
+    tipo: str | None = None
+    tipo_res: str | None = None
+    cod: str | None = None
+    partida_ide: int | None = None
+    partida_cod: str | None = None
+    partida_res: str | None = None
+    propuesta_ide: int | None = None
+    propuesta_cod: str | None = None
+    propuesta_res: str | None = None
+    propuesta_metodo: str | None = None
+    propuesta_origen: str | None = None
+    sigrid_estado: str | None = None
+    sigrid_motivo: str | None = None
+    sigrid_parte: str | None = None
+    sigrid_hmores_ide: int | None = None
 
 
 @dataclass(frozen=True)
@@ -103,6 +152,9 @@ class Linea:
     partida_cod: str | None = None
     partida_res: str | None = None
     partida_fija: bool = False
+    # Subfilas de los vinculados del trabajador vigentes en el mes (F-044,
+    # R6); vacío = la línea de siempre. No entran en `clave()`.
+    vinculados: tuple[SubfilaVinculado, ...] = ()
     # Propuesta GUARDADA (F-055, R13): la del transfer para una línea sin
     # elegida; todas None = sin propuesta. No entra en `clave()` ni en los
     # eventos (R17).
@@ -314,6 +366,9 @@ class ResultadoSync:
     empresas: ResultadoSyncMaestro = field(default_factory=ResultadoSyncMaestro)
     # Catálogo de incidencias de `auxhor` (F-030, R3), igual que empresas.
     incidencias: ResultadoSyncMaestro = field(
+        default_factory=ResultadoSyncMaestro)
+    # Recursos vinculados (F-044, R5), igual: sin sus pasos, a cero.
+    vinculados: ResultadoSyncMaestro = field(
         default_factory=ResultadoSyncMaestro)
 
 

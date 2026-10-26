@@ -10,15 +10,18 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from application.filtros_maestros import CriterioActivoRecurso
 from application.sync_pipeline import (
+    ConfigVinculados,
     FetchEmpleadosStep,
     FetchEmpresasStep,
     FetchObrasStep,
     FetchTiposIncidenciaStep,
+    FetchVinculadosStep,
     SyncMaestrosPipeline,
     UpsertEmpresasStep,
     UpsertObrasStep,
     UpsertTiposIncidenciaStep,
     UpsertTrabajadoresStep,
+    UpsertVinculadosStep,
 )
 from application.palabras_incidencia import palabras_por_codigo
 from application.partidas_linea import PartidasDeLinea
@@ -65,6 +68,9 @@ def construir_contenedor(
     # F-061: las palabras extra las lee la ruta en cada petición; aquí solo
     # se validan, para que una lista mal escrita no deje arrancar la api.
     palabras_por_codigo(config["sync"]["incidencias"].get("palabras_extra"))
+    # Recursos vinculados (F-044, R1). Obligatoria, como las anteriores: mal
+    # escrita, la api no arranca. La misma para el step y el preview.
+    cfg_vinculados = ConfigVinculados.desde_config(config["sync"]["vinculados"])
     categorias = cfg_emp.get("categorias_incluidas", [])
     filtro_cat = bool(cfg_emp.get("filtro_categorias", False))
     exigir_mes = bool(cfg_emp.get("filtro_codigo_mes", True))
@@ -100,10 +106,14 @@ def construir_contenedor(
                            digitos_excluidos=digitos_exc),
             FetchTiposIncidenciaStep(sigrid, sql_incidencias),
             FetchEmpresasStep(sigrid, sql_empresas),
+            # Tras los empleados: los trabajadores son los que se guardan.
+            FetchVinculadosStep(sigrid, cfg_vinculados),
             UpsertTrabajadoresStep(),
             UpsertObrasStep(),
             UpsertTiposIncidenciaStep(),
             UpsertEmpresasStep(),
+            # Tras los trabajadores: su clave ajena.
+            UpsertVinculadosStep(),
         ]
     )
     exporter = OpenpyxlExcelExporter(
@@ -132,10 +142,13 @@ def construir_contenedor(
             empresa_obras=empresa_obras,
             digitos_excluidos=digitos_exc,
             sql_incidencias=sql_incidencias,
+            vinculados=cfg_vinculados,
         ),
         exporter=exporter,
-        registro_sigrid=RegistroSigrid(session_factory, transfer,
-                                       settings.empresa_imputacion),
+        registro_sigrid=RegistroSigrid(
+            session_factory, transfer, settings.empresa_imputacion,
+            # F-044 (R10): desde qué periodo viajan los vinculados.
+            vinculados_desde=cfg_vinculados.desde),
         partidas_linea=PartidasDeLinea(transfer),
         # F-055 (R30): UN hilo, cola por orden de llegada; estado de una
         # réplica (ARCHITECTURE «Topología»).

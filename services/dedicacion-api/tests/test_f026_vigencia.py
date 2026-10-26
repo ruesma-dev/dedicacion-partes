@@ -165,8 +165,10 @@ def test_f026_r8_alters_de_una_base_sin_la_columna_solo_la_anaden() -> None:
 def test_f026_r8_fecha_baja_solo_en_trabajador() -> None:
     from infrastructure.db.orm_models import Base
 
+    # F-044 (lista cerrada, decisión del humano del 2026-10-26): la baja del
+    # recurso vinculado (design §7.2), admitida de forma explícita.
     assert {t.name for t in Base.metadata.tables.values()
-            if "fecha_baja" in t.columns} == {"trabajador"}
+            if "fecha_baja" in t.columns} == {"trabajador", "recurso_vinculado"}
 
 
 def test_f026_r7_alta_con_el_ide_del_recurso_y_su_baja() -> None:

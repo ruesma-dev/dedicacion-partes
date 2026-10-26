@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **60 features**, 25 abiertas, 35 terminadas.
+Resumen: **60 features**, 24 abiertas, 36 terminadas.
 
 ## Trabajo abierto
 
@@ -13,7 +13,6 @@ Resumen: **60 features**, 25 abiertas, 35 terminadas.
 | F-063 | Filtrar trabajadores por tipo de incidencia con fichas como las de estado | 2 | pendiente | estandar | `feature/F-063-filtro-por-incidencia` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
-| F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | pendiente | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
 | F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | pendiente | critico | `feature/F-053-delegados-parte-unico` |
 | F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 8 | pendiente | critico | `feature/F-054-sync-trae-porcentajes` |
@@ -72,6 +71,7 @@ Resumen: **60 features**, 25 abiertas, 35 terminadas.
 | F-051 | Al registrar, pisar las líneas del parte al 0 % que ya existan para ese recurso | 4 | critico |
 | F-027 | Deshacer solo lo propio: nadie deshace lo de otro usuario | 5 | estandar |
 | F-043 | Partida del modal de registro: buscador predictivo, ordenada y con selector CI/CD como en partes | 5 | estandar |
+| F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | critico |
 | F-009 | Higiene: los artefactos de cobertura no se versionan | 9 | estandar |
 | F-030 | Incidencias en el cuadrante: texto en lugar del % con desplegable de las de partes (y dedicación por días) | 14 | critico |
 
@@ -100,12 +100,6 @@ Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21
 estado **pendiente** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-060-bandeja-partes`
 
 Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21). Si `partes` enciende su interruptor `MENSUALES_A_DEDICACION` (su F-019), las incidencias de los trabajadores mensuales que se apuntan en sus partes diarios dejan de ir a Sigrid y se quedan en `dedicacion_bandeja`. Esta feature es el espejo: dedicación lee esa bandeja y las convierte en incidencias de F-030 en el cuadrante (sin duplicar las que ya estén, R27 de F-030), para que se registren por la vía de F-030. **Mientras no exista, `MENSUALES_A_DEDICACION` de `partes` debe seguir apagado.** Cruza la frontera del proyecto: leer antes `azure-apps/partes.md` y el contrato de la bandeja; el documento de `partes` lo mantiene `partes`. Servicio previsto: api (lectura de la bandeja y alta de incidencias); el front solo pinta.
-
-### F-044 · Aplicar los porcentajes también a los recursos vinculados al trabajador
-
-estado **pendiente** · prioridad 5 · rigor `critico` · SDD sí · rama `feature/F-044-recursos-vinculados`
-
-Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). 2026-10-08: el humano lo vuelve a pedir («que no genere solo el parte del recurso sino de los recursos vinculados en el mismo %: vehículo, viaje, teléfono, gasoil...»); sube de prioridad. Ejemplo real: GONZALEZ PANIAGUA tiene en PT26/00319 (0694, 2026-09) junto a su MADM 95 % las líneas OTEL y KM al 95 %, metidas a mano. ALCANCE PRECISADO por Juan Romero el 2026-10-08 (hilo «RE: Porcentajes Septiembre 2026»): «solo los recursos persona, gasoil, vehículo y teléfono» van por porcentaje; gastos de caja, kilómetros y mensajería se siguen metiendo «de la manera habitual» (la mensajería pasa a F-052). Por tanto KM NO se reparte aunque esté vinculado. Desde octubre Juan quiere el volcado completo desde la app y ha pedido a Administración dejar los partes de octubre limpios salvo el personal operario con horas: F-044 hace falta para registrar octubre.
 
 ### F-052 · Mensajería: una línea mensual de «consumos de mensajería» por obra en curso
 
@@ -424,6 +418,12 @@ Salida de la revisión de negocio del 2026-09-29. Hoy el deshacer es por trabaja
 estado **terminada** · prioridad 5 · rigor `estandar` · SDD sí · rama `feature/F-043-partida-predictiva-ci-cd`
 
 Pedida por el humano el 2026-10-07: «cuando registro y me sale el modal de registrar, quiero que el desplegable de partida no solo sea desplegable, sino que pueda escribir con predictivo. Además la lista debe estar ordenada y, como en partes, que tenga un selector CI CD para que filtre (en partes está muy bien eso)». Mirar cómo lo hace el front de `partes` (C:/Users/pgris/PycharmProjects/partes, sv4) y llevarlo aquí. Presentación: la lista de partidas viene del preflight; el front no decide qué partida se registra salvo lo que elija el usuario. ABSORBIDA por F-050 el 2026-10-08 (decisión del humano: la partida se elige en una columna del cuadrante; el selector predictivo con CI/CD es el de esa columna). Se cierra sin implementación propia.
+
+### F-044 · Aplicar los porcentajes también a los recursos vinculados al trabajador
+
+estado **terminada** · prioridad 5 · rigor `critico` · SDD sí · rama `feature/F-044-recursos-vinculados`
+
+Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). 2026-10-08: el humano lo vuelve a pedir («que no genere solo el parte del recurso sino de los recursos vinculados en el mismo %: vehículo, viaje, teléfono, gasoil...»); sube de prioridad. Ejemplo real: GONZALEZ PANIAGUA tiene en PT26/00319 (0694, 2026-09) junto a su MADM 95 % las líneas OTEL y KM al 95 %, metidas a mano. ALCANCE PRECISADO por Juan Romero el 2026-10-08 (hilo «RE: Porcentajes Septiembre 2026»): «solo los recursos persona, gasoil, vehículo y teléfono» van por porcentaje; gastos de caja, kilómetros y mensajería se siguen metiendo «de la manera habitual» (la mensajería pasa a F-052). Por tanto KM NO se reparte aunque esté vinculado. Desde octubre Juan quiere el volcado completo desde la app y ha pedido a Administración dejar los partes de octubre limpios salvo el personal operario con horas: F-044 hace falta para registrar octubre. SPEC APROBADA por el humano el 2026-10-25 («ok a todo»: todas las decisiones abiertas con la opción A recomendada); in_progress desde el 2026-10-26, tras cerrar y desplegar F-062; CERRADA (done) el 2026-10-26 por decisión del humano («cierra ya»), review 2 APROBADA; el resto de T21 (líneas ajenas hechas a mano y validación de Administración) queda del humano tras desplegar.
 
 ### F-009 · Higiene: los artefactos de cobertura no se versionan
 

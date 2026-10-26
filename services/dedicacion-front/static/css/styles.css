@@ -280,6 +280,13 @@ tr.fila.subfila td { border-top: 1px dashed var(--line); }
 .partida-propuesta .partida-metodo { color: var(--steel); font-size: 0.9em; }
 .partida-auto.buscando { opacity: 0.8; }
 .partida-fija { color: var(--ink-soft); }
+/* F-044 (R6, R7): la columna «Tipo recurso» y las subfilas de los
+   vinculados: más bajas y en gris, con el % de su línea sin editar. */
+td.celda-tipo { font-size: 0.84rem; color: var(--ink-soft); }
+td.celda-tipo .cod-vin { margin-left: 6px; color: var(--steel); }
+tr.fila-vin td { background: var(--paper-soft); font-size: 0.84rem; }
+tr.fila-vin .chip-vin { opacity: 0.75; }
+.pct-heredado { font-weight: 400; color: var(--steel); }
 
 /* F-050 (R26): selector de partida. Cuelga de <body> y es fijo, como el
    panel de F-042, y va POR ENCIMA del modal de registro (60). */
@@ -565,6 +572,9 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
 .modal .tabla-reg th { text-align: left; color: var(--steel); font-size: .7rem;
   text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px;
   border-bottom: 1px solid var(--line-strong); }
+/* F-044 (R31): los recursos vinculados bajo la línea de su trabajador. */
+.modal .tabla-reg tr.fila-vinculado-reg td { background: var(--paper-soft);
+  font-size: .8rem; }
 .modal .tabla-reg td { padding: 6px 8px; border-bottom: 1px solid var(--line);
   vertical-align: middle; }
 .modal button.sel-partida { max-width: 340px; width: 100%; padding: 4px 6px;
