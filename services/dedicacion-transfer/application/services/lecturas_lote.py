@@ -13,6 +13,10 @@ métodos de lectura, así que el pipeline de registro no cambia: un
   de los periodos, validación de partidas, historial, presupuestos y
   cuentas de partida; C) líneas de esos partes y (F-062) las líneas de
   incidencia en ventana; D) solo con cierres D14, los partes de M−1.
+  F-044 (R27, R29): los recursos vinculados de cada línea van en las
+  mismas lecturas que su titular (horas, líneas de los partes, `synckey` y
+  `hmores.ide`, partidas); las cuentas del presupuesto, una vez por obra y
+  solo si alguna subfila las pide.
   Validación e historial no dependen de A: van en B para que una obra con
   elegidas quepa en una tanda de `limite` (4) por ronda (C2).
 - Una lectura del pipeline se responde de lo precargado SOLO si la consulta
@@ -47,6 +51,7 @@ from application.services.reglas_incidencias import (
     CODIGO_FIN, decidir_incidencia,
 )
 from application.services.reglas_porcentajes import empresa_de_peticion
+from application.services.reglas_vinculados import synckey_vinculado
 from domain.models.registro_models import ContextoRachas, ObraEntrada
 from infrastructure.sigrid.sigrid_write_client import synckey_de
 
@@ -185,12 +190,18 @@ class LecturasDelLote:
                 if var:
                     tareas.append(self._codigo(var, emp))
                     compartidas.add(var)
-        resides = _ides(l.recurso_ide for l in todas)
+        # F-044 (R27): cada vinculado con la línea de su titular.
+        vins = [(l, v) for l in todas for v in l.vinculados]
+        resides = _ides([*(l.recurso_ide for l in todas),
+                         *(v.recurso_ide for _, v in vins)])
         con_inc = resides | _ides(x.recurso_ide for x in todas_inc)
         if con_inc:
             tareas.append(lambda: self._cargar_horas(con_inc))
         claves = {synckey_de(l.registro_id) for l in todas}
-        hmores = _ides(l.hmores_ide for l in todas)
+        claves |= {synckey_vinculado(l.registro_id, v.recurso_ide)
+                   for l, v in vins}
+        hmores = _ides([*(l.hmores_ide for l in todas),
+                        *(v.hmores_ide for _, v in vins)])
         if claves:
             tareas.append(lambda: self._cargar_registradas(claves, hmores))
         self._ronda(tareas)
@@ -241,6 +252,10 @@ class LecturasDelLote:
                     if not l.es_postventa and l.var_paride is None]
         parides = _ides(l.paride or l.propuesta_paride for l in normales)
         parides |= _ides(x.paride for x in todas_inc)
+        # F-044 (R15): la elegida o la propuesta guardada de cada vinculado
+        # de una línea que no va a postventa (ni a VAR: superconjunto).
+        parides |= _ides(v.paride or v.propuesta_paride for l, v in vins
+                         if not l.es_postventa and l.var_paride is None)
         if parides:
             tareas.append(lambda: self._cargar_validas(parides))
         for (desde, hasta), recursos in self._ventanas(
@@ -251,6 +266,13 @@ class LecturasDelLote:
             if self._sin_subcuenta(l.recurso_ide))
         sin_sub |= _ides(x.paride for x in todas_inc
                          if self._inc_sin_subcuenta(x))
+        # F-044 (R12): la del vinculado sin subcuenta, que puede ser la
+        # suya o la de su titular (superconjunto; la CI de su tipo, que
+        # sale de las cuentas del presupuesto, no se conoce aquí).
+        sin_sub |= _ides(p for l, v in vins
+                         if self._sin_subcuenta(v.recurso_ide)
+                         for p in (v.paride, v.propuesta_paride, l.paride,
+                                   l.propuesta_paride, l.var_paride))
         if sin_sub:
             tareas.append(lambda: self._cargar_partidas(sin_sub))
         self._ronda(tareas)
