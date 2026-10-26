@@ -3,12 +3,10 @@
 
 **Ninguna feature en curso.** **F-062** (rachas de incidencia como
 Administración; `sdd: true`, rigor crítico) **cerrada (`done`) el
-2026-10-26**: review 2 APROBADA (`6e02d5c`), `bash harness/init.sh` en verde
+2026-10-26** y **desplegada el mismo día** (ver «Producción, hoy»): review 2 APROBADA (`6e02d5c`), `bash harness/init.sh` en verde
 (raíz 418 + 1 skipped, api 1164, front 376, transfer 1425; cobertura 99.8 %
 de 923), T19 y T20 hechas y cumplen (`progress/manual_F-062.md`), rama unida
-a `dev`; resumen en `progress/history.md`. **Pendiente: desplegar**
-(transfer → api → front, lo lanza el humano con su permiso), luego
-`azure-apps/dedicacion.md` a «desplegada» y el **aviso a `partes`** (texto en
+a `dev`; resumen en `progress/history.md`. **Pendiente del humano:** el **aviso a `partes`** (texto en
 «Riesgos para el humano», más abajo). **Siguiente:** F-044 (recursos
 vinculados), spec APROBADA el 2026-10-25 en el worktree `porcentajes-f044`
 (`768ec5e`); después F-054 (spec aprobada, worktree `porcentajes-f054`).
@@ -413,6 +411,20 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés es la **1.7.3**.
 ## Producción, hoy
 
+- **Desplegado el 2026-10-26: F-062**, los tres servicios en orden, uno a
+  uno, lanzados por el humano con `infra/d.local.ps1 transfer|api|front`
+  (envoltorio no versionado, `*.local.ps1`, que carga las variables y llama
+  a `redeploy_dedicacion.ps1 -Solo …`): transfer `r20261026-0950`, api
+  `r20261026-0955` y front `r20261026-1000`; revisiones
+  `ca-dedicacion-transfer--r20261026095009`, `ca-dedicacion-api--r20261026095513`
+  y `ca-dedicacion-front--r20261026100012`, las tres `RunningAtMaxScale`,
+  `Healthy` y con el 100 % del tráfico. Transfer y api arrancaron sin
+  errores; la api aplicó `ALTER TABLE incidencia ADD COLUMN IF NOT EXISTS
+  sigrid_dia_fin_antes SMALLINT` (1 sentencia DDL). El transfer sigue en
+  **modo real** (`OBRA_PRUEBAS_FORZAR=false`). `infra/imagenes.json` al día
+  en este commit. **Pendiente del humano:** Ctrl+F5 en el front; lanzar un
+  «Sincronizar Sigrid» si el desplegable de incidencias sale vacío; y el
+  **aviso a `partes`** (texto en «Riesgos para el humano»).
 - **Desplegado el 2026-10-23: F-061**, api y front en ese orden con
   `redeploy_dedicacion.ps1 -Solo api,front` (lo lanzó el humano): api
   `r20261023-1235` y front `r20261023-1236`, revisiones

@@ -2898,3 +2898,9 @@ el navegador local a petición expresa del humano: todo cumple y se limpió.
 `azure-apps/dedicacion.md` `ff0acb4` pasa a «desplegada» al hacerlo; aviso a
 `partes` (lo transmite el humano). Observaciones: los contadores del script
 no cuentan incidencias; el preflight del script no imprime `requiere_confirmar`.
+
+**Desplegada el 2026-10-26** con permiso del humano (transfer
+`r20261026-0950`, api `r20261026-0955` y front `r20261026-1000`, en ese orden,
+lanzado por el humano; revisiones `Healthy` al 100 %; la api añadió
+`incidencia.sigrid_dia_fin_antes`); transfer en modo real.
+`azure-apps/dedicacion.md` a «desplegada». Aviso a `partes`, del humano.
