@@ -7,8 +7,8 @@ vinculados al trabajador; `sdd: true`, rigor crítico), **`in_progress`**
 humano contestó «si a todo» a las tres preguntas, ver «F-044 · decisiones
 del humano al bloqueo de T7», justo debajo). T1-T20, T22 y T24
 hechas por el implementer (2026-10-26; informe en `progress/impl_F-044.md`);
-**T21 MANUAL pendiente del humano** (comandos abajo, «F-044 · T21»);
-**7 mutantes equivalentes pendientes de que el humano los acepte**
+**T21 MANUAL: la hace el líder a petición expresa del humano** (2026-10-26, «haz tu la prueba»; en modo pruebas sobre la 0404, comandos abajo, «F-044 · T21»);
+**7 mutantes equivalentes ACEPTADOS por el humano el 2026-10-26** («1 ok»;
 (`progress/mutacion_F-044.md`); T23 es del líder al desplegar. Worktree `porcentajes-f044`, rama
 `feature/F-044-recursos-vinculados`, con `dev` unido (F-062 incluida). Spec
 APROBADA por el humano el 2026-10-25 («ok a todo»), en
@@ -138,7 +138,7 @@ anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
     415/422, los 7 restantes equivalentes (tres `strict` de `zip`, una
     condición redundante, dos valores que no se leen con `elegida=None` y
     el invariante `existe` ⇔ `ide` de `ParteDestino`). La spec pide que el
-    humano acepte cada justificación: **pendiente, lo lleva el líder**.
+    humano acepte cada justificación: **aceptadas las 7 el 2026-10-26 («1 ok»)**.
   - **T24**: `bash harness/init.sh` sin `[KO]` (cobertura 99,3 % de 1108
     líneas cambiadas; api 1308, front 403, transfer 1585).
 

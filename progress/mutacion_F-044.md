@@ -74,7 +74,7 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 #### Análisis (implementer)
 
 > Por qué ningún test lo caza: `creadas` se llena en el bucle de justo encima con un `AsignacionORM` por cada `linea`, en su orden: las dos listas tienen siempre la misma longitud y `strict` solo vigila un error de programación que no puede darse.
-> Decisión: mutante equivalente (`strict` de un `zip` de longitudes iguales por construcción). Pendiente de que el humano la acepte (rigor crítico, `tasks.md`).
+> Decisión: mutante equivalente (`strict` de un `zip` de longitudes iguales por construcción). **Aceptada por el humano el 2026-10-26** («1 ok», a los 7 equivalentes; rigor crítico, `tasks.md`).
 
 ### 2. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:274` [booleano]
 
@@ -84,7 +84,7 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 #### Análisis (implementer)
 
 > Por qué ningún test lo caza: `acciones = [reglas.decidir(l) for l in lineas]`, dos líneas más arriba: una acción por línea, en su orden. El `zip` nunca recibe listas de distinta longitud.
-> Decisión: mutante equivalente (`strict` de un `zip` de longitudes iguales por construcción). Pendiente de que el humano la acepte (rigor crítico, `tasks.md`).
+> Decisión: mutante equivalente (`strict` de un `zip` de longitudes iguales por construcción). **Aceptada por el humano el 2026-10-26** («1 ok», a los 7 equivalentes; rigor crítico, `tasks.md`).
 
 ### 3. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:761` [logico]
 
@@ -94,7 +94,7 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 #### Análisis (implementer)
 
 > Por qué ningún test lo caza: el mutante solo cambia algo si `escribir` está vacío y `vin_escribir` no. No puede darse: en el paso 4 bis las acciones de los titulares solo son `escribir` u `omitir` (el «ya registrado» se decide en el paso 6), y `decidir_vinculados` omite todos los vinculados de un titular omitido (R18). Por tanto, `vin_escribir` no vacío implica `escribir` no vacío, y con ambas expresiones se entra.
-> Decisión: mutante equivalente (`vin_escribir` no vacío ⇒ `escribir` no vacío). Pendiente de que el humano la acepte (rigor crítico, `tasks.md`).
+> Decisión: mutante equivalente (`vin_escribir` no vacío ⇒ `escribir` no vacío). **Aceptada por el humano el 2026-10-26** («1 ok», a los 7 equivalentes; rigor crítico, `tasks.md`).
 
 ### 4. `services/dedicacion-transfer/application/pipelines/registro_vinculados.py:188` [booleano]
 
@@ -104,7 +104,7 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 #### Análisis (implementer)
 
 > Por qué ningún test lo caza: `partida_del_vinculado` solo lee `elegida_valida` dentro de `if elegida is not None`, y aquí `elegida` es `None` (la propuesta no tiene elegida). El valor es indiferente.
-> Decisión: mutante equivalente (argumento no leído con `elegida=None`). Pendiente de que el humano la acepte (rigor crítico, `tasks.md`).
+> Decisión: mutante equivalente (argumento no leído con `elegida=None`). **Aceptada por el humano el 2026-10-26** («1 ok», a los 7 equivalentes; rigor crítico, `tasks.md`).
 
 ### 5. `services/dedicacion-transfer/application/pipelines/registro_vinculados.py:223` [booleano]
 
@@ -114,7 +114,7 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 #### Análisis (implementer)
 
 > Por qué ningún test lo caza: `decidir_vinculados(a, linea, horas)` devuelve exactamente una acción por cada `linea.vinculados`, en su orden (un `append` por vuelta del bucle, con `continue` tras cada uno). Las longitudes son siempre iguales.
-> Decisión: mutante equivalente (`strict` de un `zip` de longitudes iguales por construcción). Pendiente de que el humano la acepte (rigor crítico, `tasks.md`).
+> Decisión: mutante equivalente (`strict` de un `zip` de longitudes iguales por construcción). **Aceptada por el humano el 2026-10-26** («1 ok», a los 7 equivalentes; rigor crítico, `tasks.md`).
 
 ### 6. `services/dedicacion-transfer/application/pipelines/registro_vinculados.py:252` [booleano]
 
@@ -124,7 +124,7 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 #### Análisis (implementer)
 
 > Por qué ningún test lo caza: `valida` solo llega a `partida_del_vinculado`, que la lee únicamente si `elegida` no es `None`, y en esta rama queda en `None` (solo la rama `if v.paride` asigna `elegida` y `valida` a la vez).
-> Decisión: mutante equivalente (valor inicial que solo se lee junto con una `elegida` que lo sustituye). Pendiente de que el humano la acepte (rigor crítico, `tasks.md`).
+> Decisión: mutante equivalente (valor inicial que solo se lee junto con una `elegida` que lo sustituye). **Aceptada por el humano el 2026-10-26** («1 ok», a los 7 equivalentes; rigor crítico, `tasks.md`).
 
 ### 7. `services/dedicacion-transfer/application/pipelines/registro_vinculados.py:604` [logico]
 
@@ -134,7 +134,7 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 #### Análisis (implementer)
 
 > Por qué ningún test lo caza: `and` y `or` solo difieren cuando uno de los dos, `existe` o `ide`, es verdadero y el otro no. `ParteDestino` los pone siempre a la vez: `estado_parte.elegir_parte` da `existe=True` junto con el `ide` del parte leído (o deja `False`/`None`), y `_crear_parte` los fija juntos tras el alta. El `ide` de Sigrid nunca es 0.
-> Decisión: mutante equivalente (invariante `existe` ⇔ `ide` de `ParteDestino`). Pendiente de que el humano la acepte (rigor crítico, `tasks.md`).
+> Decisión: mutante equivalente (invariante `existe` ⇔ `ide` de `ParteDestino`). **Aceptada por el humano el 2026-10-26** («1 ok», a los 7 equivalentes; rigor crítico, `tasks.md`).
 
 ## Pasadas (implementer, 2026-10-26)
 

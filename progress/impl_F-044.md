@@ -168,8 +168,8 @@ ancla no existía, así que su test `r1` fallaba antes de escribir la regla.
   - el **aviso a `partes`** de design §10, que transmite el humano.
 - Fuera por spec: mensajería (F-052), traer % de Sigrid (F-054), deshacer en
   Sigrid (F-033), Excel con vinculados (D14) y tocar `partes`.
-- **Los 7 equivalentes de la mutación necesitan que el humano los acepte**
-  (rigor crítico); el análisis está en `progress/mutacion_F-044.md`.
+- **Los 7 equivalentes de la mutación, ACEPTADOS por el humano el 2026-10-26** («1 ok»;
+  rigor crítico); el análisis está en `progress/mutacion_F-044.md`.
 
 ## Evidencias (medidas el 2026-10-26)
 
