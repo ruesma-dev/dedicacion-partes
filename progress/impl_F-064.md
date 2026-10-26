@@ -1,45 +1,68 @@
 <!-- progress/impl_F-064.md -->
-# F-064 · informe del implementer (BORRADOR: feature `blocked`)
+# F-064 · informe del implementer
 
-> La feature está **bloqueada**: motivo y opciones en `progress/current.md`
-> («F-064 · BLOQUEO»). Este borrador guarda lo hecho y la fase RED para
-> retomarla; se completa (sección «Evidencias» con `init.sh` en verde) al
-> desbloquear.
+El pisado de los recursos vinculados sale confirmado por defecto en el modal
+de registro. `sdd: false`, rigor estándar, solo front (más un cambio en un
+test del transfer, opción 1 del humano). Rama
+`feature/F-064-pisado-vinculados-marcado`, worktree `porcentajes-f064`.
 
-## Qué cambió (rama `feature/F-064-pisado-vinculados-marcado`)
+## Qué cambió
 
-- `services/dedicacion-front/static/js/app.js` (T1, `fef5ec4`):
-  - `registro` gana `vistas: new Set()` (claves de pisado de vinculado ya
-    enseñadas en este modal).
-  - `registroPreflight`: con el preflight nuevo vacía `pisar` **y** `vistas`.
-  - `pintarModalPreflight`, en el bucle de conflictos: si `c.vinculado` y el
-    motivo es «pisado» (o falta, como en `rotuloConflicto`) y la clave no
-    está en `vistas`, se añade a `vistas` y a `pisar` (sale `checked`).
-  - `repreflightPartida` **no cambia**: sigue releyendo del DOM las marcadas
-    antes de repintar; una desmarcada ya está en `vistas` y no se vuelve a
-    marcar; una clave nueva sale marcada.
-  - `registroEjecutar` **no cambia**: `pisar_claves` = casillas marcadas.
-- `services/dedicacion-front/tests/test_f064_pisado_vinculados.py` (T1,
-  nuevo, 9 tests): código real en node con DOM y api de mentira.
-- `specs/F-044-recursos-vinculados/requirements.md` (T2, `9062a9b`): nota
-  «Enmienda F-064 (2026-10-26): …» en R20 y R31.
-- Transfer y api: sin cambios.
+| Commit | Tarea | Ficheros |
+|---|---|---|
+| `fef5ec4` | T1 · casilla marcada por defecto + tests | `services/dedicacion-front/static/js/app.js`, `services/dedicacion-front/tests/test_f064_pisado_vinculados.py` (nuevo) |
+| `9062a9b` | T2 · enmienda de F-044 | `specs/F-044-recursos-vinculados/requirements.md` (nota en R20 y R31) |
+| `0360ed8` | bloqueo (choque con F-013 R4) | `harness/features.json`, `BACKLOG.md`, `progress/` |
+| `3afebc1` | T3 · opción 1: `marcadaPorDefecto` | `app.js`, `test_f064_pisado_vinculados.py`, `services/dedicacion-transfer/tests/test_f013_sin_partida.py`, `features.json`, `BACKLOG.md` |
+
+En `app.js`:
+
+- `registro` gana `vistas: new Set()`, las claves que `marcadaPorDefecto`
+  señala y ya se han enseñado en este modal.
+- `registroPreflight`: un preflight nuevo vacía `pisar` **y** `vistas`, así
+  que al abrir el modal otra vez se vuelve al valor por defecto.
+- `const marcadaPorDefecto = (c) => {…}`, una función pura: devuelve
+  `Boolean(c.vinculado) && (c.motivo || "pisado") === "pisado"`.
+- `pintarModalPreflight`, en el bucle de conflictos: si
+  `marcadaPorDefecto(c)` es cierto y la clave no está en `vistas`, la clave
+  se añade a `vistas` y a `pisar`, y la casilla sale `checked`.
+- `repreflightPartida` y `registroEjecutar` **no cambian**. El primero
+  sigue releyendo del DOM las casillas marcadas antes de repintar, y el
+  segundo manda en `pisar_claves` las casillas marcadas.
+
+En `test_f013_sin_partida.py` (transfer) el **único** cambio es que el cuerpo
+de `marcadaPorDefecto` también se excluye de lo que se comprueba «fuera»,
+igual que `rotuloConflicto`. Lleva un comentario que cita F-064. Las demás
+aserciones siguen igual.
+
+El código del transfer y el de la api no cambian, y no cambia ningún otro
+test existente.
 
 ## Decisiones
 
-- **Sin motivo = pisado**, igual que `rotuloConflicto` (que lo rotula
-  «Pisar»): lo que el humano ve como «Pisar» de un vinculado sale marcado.
-- Un motivo que el front no conoce (rotulado «Confirmar») **no** se marca.
-- `vistas` solo guarda claves de pisado de vinculado: los arneses de tests
-  antiguos que montan su propio `registro` sin `vistas` (p. ej.
-  `test_f049_avisos_registro.py`) no tienen vinculados y siguen igual.
-- Una clave de vinculado que desaparece y reaparece al repetir el preflight
-  ya está vista: sale como la dejó el humano la última vez (desmarcada si
-  la desmarcó), no se vuelve a marcar.
+- **Sin motivo cuenta como pisado**, igual que en `rotuloConflicto`, que lo
+  rotula «Pisar». Un motivo vacío (`""`) también cuenta como pisado. Un motivo
+  que el front no conoce (rotulado «Confirmar») **no** se marca.
+- **`const` en vez de `function`, justo detrás de `pintarModalPreflight`.**
+  Los arneses antiguos (`test_f049_avisos_registro`,
+  `test_f049_ampliacion_registro`, y `test_f044_vinculados_front` a través
+  de `test_f050_modal_registro.MODAL`) extraen `pintarModalPreflight` por
+  nombre hasta la siguiente `function` de primer nivel. Con una `function`
+  aparte, esos arneses darían `ReferenceError` y habría que tocarlos. La
+  `const` va dentro de esa extracción, así que ningún arnés cambia. Sigue
+  siendo una función pura y con nombre.
+- **Los comentarios no usan la palabra «pisado»** fuera de `rotuloConflicto`
+  y `marcadaPorDefecto`, porque el test de F-013 R4 también lee los
+  comentarios.
+- `vistas` solo guarda claves de `marcadaPorDefecto`. Una clave de vinculado
+  que desaparece y vuelve al repetir el preflight ya cuenta como vista: sale
+  como la dejó el humano, sin volver a marcarse.
+- Repetir el preflight de una obra no toca las casillas de las demás obras,
+  porque su estado se relee del DOM.
 
-## Fase RED (antes del cambio en `app.js`)
+## Fase RED (T1, antes de tocar `app.js`)
 
-Comando (desde `services/dedicacion-front`):
+Comando, desde `services/dedicacion-front`:
 `.venv/Scripts/python.exe -m pytest tests/test_f064_pisado_vinculados.py -q --tb=line`
 
 ```
@@ -68,28 +91,77 @@ E   AssertionError: R20
 8 failed, 1 passed in 2.73s
 ```
 
-(El que pasa en RED es `test_f064_sin_vinculados_el_modal_de_hoy_todo_desmarcado`:
-fija que sin vinculados nada cambia.)
+En RED pasa `test_f064_sin_vinculados_el_modal_de_hoy_todo_desmarcado`, que
+fija que sin vinculados no cambia nada. En la fase RED el test de F-013 R4
+daba `AssertionError: pisado` (el detalle del bloqueo está en
+`progress/current.md`). Tras T3 pasa: `42 passed` en `test_f013_sin_partida.py`.
 
-GREEN tras el cambio: `9 passed in 2.61s`; suite del front `412 passed`.
+## Tests (`test_f064_pisado_vinculados.py`, 11; sin red ni BBDD)
 
-## Mutación manual del cambio en JS (la herramienta solo cubre Python)
+Usan el código real en node: `registroPreflight`, `repreflightPartida`,
+`pintarModalPreflight` (con `marcadaPorDefecto`), `unirPreflight` y
+`registroEjecutar`, con un DOM y una api de mentira. Las casillas se leen del
+HTML pintado y el escenario las marca o desmarca como lo haría el humano.
 
-Seis mutantes aplicados a `app.js` y revertidos, contra el fichero de F-064:
+| Acceptance | Tests |
+|---|---|
+| 1 · al abrir, solo sale marcado el pisado de vinculado | `al_abrir_solo_el_pisado_de_vinculado_sale_marcado` (trabajador, sobrecarga y sin partida de los dos, motivo desconocido y cierre de racha F-062 desmarcados), `sin_vinculados_el_modal_de_hoy_todo_desmarcado`, `la_casilla_marcada_lleva_checked_en_el_html`, `marcada_por_defecto_solo_el_pisado_de_vinculado` (11 casos), `marcada_por_defecto_es_pura_y_la_usa_el_modal` |
+| 2 · desmarcada al repetir; la nueva sale marcada; un preflight nuevo vuelve al valor por defecto | `desmarcada_sigue_desmarcada_al_repetir_el_preflight` (dos repeticiones y una clave nueva), `repetir_una_obra_no_toca_lo_desmarcado_en_otra`, `un_preflight_nuevo_vuelve_al_valor_por_defecto` |
+| 3 · `pisar_claves` lleva exactamente las marcadas | `registrar_por_defecto_manda_los_pisados_de_vinculado`, `registrar_manda_exactamente_las_marcadas` (cuerpo real de `/registro/ejecutar`) |
+| 4 · enmienda en R20 y R31 | `enmienda_anotada_en_r20_y_r31_de_f044` |
+| 5 · `init.sh` en verde | ver abajo |
+
+## Mutación manual del JS
+
+La herramienta de mutación solo cubre Python. Apliqué a mano siete mutantes
+sobre la versión final de `app.js`, los pasé contra el fichero de F-064 y
+revertí cada uno:
 
 | Mutante | Resultado |
 |---|---|
-| M1 quitar `c.vinculado &&` | 5 failed |
-| M2 sin motivo deja de contar como pisado | 4 failed |
-| M3 no mirar `vistas` | 4 failed |
-| M4 no anotar en `vistas` | 4 failed |
+| M1 quitar `Boolean(c.vinculado) &&` | 6 failed |
+| M2 un conflicto sin motivo deja de contar como pisado | 5 failed |
+| M3 no mirar `vistas` | 5 failed |
+| M4 no anotar la clave en `vistas` | 4 failed |
 | M5 el preflight nuevo no vacía `vistas` | 1 failed |
-| M6 no marcar | 7 failed |
+| M6 no marcar la casilla | 7 failed |
+| M7 `marcadaPorDefecto` siempre devuelve true | 8 failed |
 
-Ningún superviviente.
+No sobrevive ningún mutante.
 
-## `bash harness/init.sh` (tras borrar `.arnes_cache/suite_*.ok`)
+## Pendiente (MANUAL)
 
-**[KO]**: raíz 418 passed / 1 skipped; api 1308 passed; front 412 passed;
-transfer **1 failed** (`test_f013_sin_partida.py::test_f013_r4_el_front_rotula_por_motivo_y_degrada`;
-sin `-x`: 1 failed, 1584 passed). Motivo y opciones: `progress/current.md`.
+- Verlo en el navegador al desplegar F-044: abrir el modal con un pisado de
+  vinculado y comprobar que sale marcado, desmarcarlo, cambiar una partida y
+  comprobar que sigue desmarcado. No lo he probado en el navegador.
+
+## Fuera del alcance
+
+- El transfer y la api (cada vinculado sigue necesitando su clave, R20; R18
+  sin cambios) y `azure-apps` (no cambia lo que se expone ni lo que se
+  consume).
+- `specs/F-044-recursos-vinculados/requirements.md` pasa a 154 líneas (tope
+  de 150). La puerta solo mide la feature en curso y F-044 está `done`, así
+  que no bloquea; lo dejo anotado.
+
+## Entorno
+
+El worktree no traía los `.venv` de los servicios y `init.sh` daba [KO] de
+entrada. Los enlacé con *junction* a los de la copia principal, como en los
+demás worktrees. No se versionan (`.gitignore`). No he leído ni copiado
+ningún `.env`.
+
+## Evidencias
+
+`bash harness/init.sh` tal cual, tras borrar `.arnes_cache/suite_*.ok`,
+termina en «ENTORNO LISTO», sin [KO]:
+
+| Evidencia | Valor real |
+|---|---|
+| Tests de la raíz | 418 passed, 1 skipped en 66,34 s |
+| Tests de la api | 1308 passed en 126,40 s |
+| Tests del front | 414 passed en 86,31 s (11 de F-064) |
+| Tests del transfer | 1585 passed en 44,24 s |
+| Cobertura de líneas cambiadas | `PUERTA COBERTURA: N/A` (F-064 no cambia líneas Python de producción; solo JS y tests) |
+| Mutantes | `harness.mutacion` no aplica: no hay Python de producción. Mutación manual del JS: 7 generados, 0 supervivientes |
+| Tamaño | `PUERTA TAMAÑO: impl 95/220` (medido con el borrador anterior) |

@@ -4,8 +4,9 @@
 **En curso: F-064** (el pisado de los recursos vinculados, confirmado por
 defecto en el modal; petición del humano del 2026-10-26, solo front, rigor
 estándar, `sdd: false`; rama `feature/F-064-pisado-vinculados-marcado`,
-worktree `porcentajes-f064`): desbloqueada por el humano (opción 1, «F-064 ·
-BLOQUEO», abajo); implementer relanzado. Va **antes del
+worktree `porcentajes-f064`): **implementada, pendiente de review**
+(`progress/impl_F-064.md`; `bash harness/init.sh` en verde). Desbloqueada
+por el humano con la opción 1 («F-064 · BLOQUEO», abajo). Va **antes del
 despliegue de F-044**. **F-044** (aplicar los porcentajes también a
 los recursos vinculados al trabajador; `sdd: true`, rigor crítico) **cerrada
 (`done`) el 2026-10-26** por decisión del humano («cierra ya»): review 2
@@ -63,6 +64,13 @@ de `rotuloConflicto`. Cambio permitido en
 **solo** excluir también el cuerpo de `marcadaPorDefecto` de lo que se
 comprueba «fuera»; el resto de aserciones igual. Código del transfer, sin
 cambios.
+
+**Hecho (T3, `3afebc1`):** `const marcadaPorDefecto = (c) => {…}` en
+`app.js`, justo detrás de `pintarModalPreflight`, que la usa. Es `const` y
+no `function` para que los arneses antiguos, que extraen
+`pintarModalPreflight` por nombre, la lleven consigo sin cambiar. En el test
+de F-013 R4 solo se ha añadido la exclusión de su cuerpo, con un comentario
+que cita F-064. `init.sh` en verde, sin [KO].
 
 Entorno: el worktree no traía los `.venv` de los servicios (init.sh en [KO]
 de entrada); se enlazaron con *junction* a los de la copia principal, como
