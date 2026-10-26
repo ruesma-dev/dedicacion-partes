@@ -37,6 +37,7 @@ from application.services.universo_var import UniversoVar
 from domain.errores import EmpresasMezcladas
 from domain.models.registro_models import (
     ContextoRachas, IncidenciaEntrada, LineaEntrada, ObraEntrada,
+    VinculadoEntrada,
 )
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
 
@@ -49,6 +50,24 @@ class ObraIn(BaseModel):
     ide: Optional[int] = None
     codigo: Optional[str] = None
     nombre: Optional[str] = None
+
+
+class VinculadoIn(BaseModel):
+    """F-044 (R10, design §8): un recurso vinculado de la línea; solo el
+    recurso es obligatorio (lo demás llega al pipeline y decide allí)."""
+    recurso_ide: int
+    tipo: Optional[str] = None
+    tipo_res: Optional[str] = None
+    cod: Optional[str] = None
+    categoria: Optional[str] = None
+    paride: Optional[int] = None
+    partida_cod: Optional[str] = None
+    propuesta_paride: Optional[int] = None
+    propuesta_cod: Optional[str] = None
+    propuesta_res: Optional[str] = None
+    propuesta_metodo: Optional[str] = None
+    propuesta_origen: Optional[str] = None
+    hmores_ide: Optional[int] = None
 
 
 class LineaIn(BaseModel):
@@ -82,6 +101,16 @@ class LineaIn(BaseModel):
     # F-051 (R14): `hmores.ide` de lo ya registrado (opcional: sin él, como
     # hasta ahora, por `synckey`).
     hmores_ide: Optional[int] = None
+    # F-044 (R10, R11): los recursos vinculados; vacía, la línea de hoy.
+    vinculados: list[VinculadoIn] = Field(default_factory=list)
+
+    def para_pipeline(self) -> LineaEntrada:
+        """La `LineaEntrada` de la línea, con sus vinculados como
+        `VinculadoEntrada` (R10)."""
+        return LineaEntrada(
+            **self.model_dump(exclude={"vinculados"}),
+            vinculados=[VinculadoEntrada(**v.model_dump())
+                        for v in self.vinculados])
 
 
 class IncidenciaIn(BaseModel):
@@ -286,7 +315,7 @@ def build_app(settings) -> FastAPI:
         contexto del mes (F-062, `ContextoRachas`)."""
         obra = ObraEntrada(ide=p.obra.ide, codigo=p.obra.codigo,
                            nombre=p.obra.nombre)
-        lineas = [LineaEntrada(**l.model_dump()) for l in p.lineas]
+        lineas = [l.para_pipeline() for l in p.lineas]
         contexto = _contexto(p)
         if not p.incidencias and contexto is None:
             return obra, lineas

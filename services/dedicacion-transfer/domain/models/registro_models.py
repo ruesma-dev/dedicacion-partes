@@ -309,6 +309,49 @@ class AccionLinea:
 
 
 @dataclass
+class AccionVinculado:
+    """F-044 (R12-R25, design §6.2): qué se hará con la línea de UN recurso
+    vinculado de una línea de % (su titular, `registro_id`). Lleva los campos
+    que la identidad (`criterio_choque`, `clave_conflicto`), los pisables y
+    la cuenta analítica comparten con `AccionLinea` (`recurso_ide`, `ano`,
+    `mes`, `hora_ide`, `paride`, `destino`, `aviso` y `caa_*`): el `can` y
+    la `fec` son los del titular; la hora, el `pre` y el `tot`, los suyos.
+    Ver ARCHITECTURE.md#regla-vinculado."""
+    registro_id: int
+    recurso_ide: int
+    accion: str                         # escribir | omitir | ya_registrado
+    ano: int
+    mes: int
+    fecha_int: int
+    tipo: Optional[str] = None
+    tipo_res: Optional[str] = None
+    cod: Optional[str] = None
+    nombre: Optional[str] = None        # el del titular, para los avisos
+    motivo: Optional[str] = None
+    hora_ide: Optional[int] = None
+    hora_codigo: Optional[str] = None
+    can: Optional[float] = None
+    pre: Optional[float] = None
+    tot: Optional[float] = None
+    destino: str = "obra"               # obra | postventa (el del titular)
+    paride: int = 0
+    partida_cod: Optional[str] = None
+    partida_res: Optional[str] = None
+    partida_metodo: Optional[str] = None  # manual | titular | ci_tipo
+    partida_origen: Optional[str] = None
+    parte_cod: Optional[str] = None
+    aviso: Optional[str] = None
+    hmores_ide: Optional[int] = None
+    linea_cero: Optional[dict] = None   # como `AccionLinea.linea_cero`
+    caa_ide: int = 0
+    caa_cod: Optional[str] = None
+    caa_motivo: Optional[str] = None
+    caa_aviso: Optional[str] = None
+    caa_origen: Optional[str] = None
+    caa_nota: Optional[str] = None
+
+
+@dataclass
 class AccionIncidencia:
     """F-030 (R24, R31): qué se hará con UNA de las dos líneas de una
     incidencia (`rol` `ini`: su `CI*` el día `desde`; `fin`: `CIZ` el día
@@ -428,6 +471,9 @@ class Conflicto:
     # F-051 (R4, R5): solo en el pisado.
     edita_ide: Optional[int] = None
     a_cero_ides: list[int] = field(default_factory=list)
+    # F-044 (R25, design §8): el de un recurso vinculado lleva su tipo y su
+    # código (`{tipo, cod}`); None en el de un trabajador.
+    vinculado: Optional[dict] = None
 
     @property
     def nueva_can(self) -> float:
@@ -450,6 +496,9 @@ class Preflight:
     rachas: list = field(default_factory=list)
     cierres_racha: list = field(default_factory=list)
     no_coincide: list = field(default_factory=list)
+    # F-044 (R25): una `AccionVinculado` por (titular, vinculado); vacía si
+    # ninguna línea los trae.
+    vinculados: list[AccionVinculado] = field(default_factory=list)
 
     @property
     def n_escribir(self) -> int:
@@ -491,3 +540,6 @@ class ResultadoRegistro:
     rachas: list = field(default_factory=list)
     cierres_racha: list = field(default_factory=list)
     no_coincide: list = field(default_factory=list)
+    # F-044 (R25, R28): las de `Preflight.vinculados` tras escribir, con su
+    # `hmores_ide` o, si no se escribieron, `omitir` y el motivo.
+    vinculados: list[AccionVinculado] = field(default_factory=list)

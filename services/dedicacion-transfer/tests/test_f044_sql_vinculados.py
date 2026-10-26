@@ -71,3 +71,78 @@ def test_f044_r27_un_fallo_sube():
         "sigrid-api devolvio una respuesta truncada"))
     with pytest.raises(RuntimeError, match="truncada"):
         _cliente(falso).cuentas_del_presupuesto(5)
+
+
+# ===================== R10, R25 · modelos y contrato ===================== #
+def test_f044_r25_modelos_sin_vinculados_por_defecto():
+    from domain.models.registro_models import (
+        AccionVinculado,
+        Conflicto,
+        ObraEntrada,
+        Preflight,
+        ResultadoRegistro,
+    )
+    obra = ObraEntrada(ide=1, codigo="0404")
+    assert Preflight(obra_destino=obra, obra_origen=obra,
+                     forzada_pruebas=True).vinculados == []
+    assert ResultadoRegistro(ok=True, obra_destino=obra,
+                             forzada_pruebas=True).vinculados == []
+    assert Conflicto(clave="k", recurso_ide=1, nombre=None, ano=2026,
+                     mes=7, parte_cod=None).vinculado is None
+    a = AccionVinculado(registro_id=1, recurso_ide=10, accion="escribir",
+                        ano=2026, mes=7, fecha_int=20260731)
+    assert (a.destino, a.paride, a.caa_ide, a.linea_cero, a.hmores_ide,
+            a.motivo, a.aviso) == ("obra", 0, 0, None, None, None, None)
+
+
+@pytest.fixture
+def ruta_espiada(monkeypatch):
+    """(TestClient, lineas recibidas por `RegistroPipeline.preflight`)."""
+    from types import SimpleNamespace
+
+    from application.pipelines.registro_pipeline import RegistroPipeline
+    from fastapi.testclient import TestClient
+    from interface_adapters.api import app as modulo_app
+
+    from tests.conftest import ClienteFalso
+    from tests.test_f050_endpoint_propuesta import AJUSTES
+
+    recibidas: list = []
+    original = RegistroPipeline.preflight
+
+    def espia(self, **kw):
+        recibidas.append(kw["lineas"])
+        return original(self, **kw)
+
+    monkeypatch.setattr(RegistroPipeline, "preflight", espia)
+    monkeypatch.setattr(modulo_app, "SigridWriteClient",
+                        lambda **kw: ClienteFalso())
+    ajustes = SimpleNamespace(**AJUSTES, sigrid_lecturas_paralelas=4)
+    return TestClient(modulo_app.build_app(ajustes)), recibidas
+
+
+def _cuerpo_registro(**extra) -> dict:
+    return {"obra": {"codigo": "0678"}, "lineas": [{
+        "registro_id": 1, "ano": 2026, "mes": 7, "porcentaje": 0.4,
+        "recurso_ide": 200, "empresa": 1, **extra}]}
+
+
+def test_f044_r10_la_ruta_convierte_los_vinculados(ruta_espiada):
+    from domain.models.registro_models import VinculadoEntrada
+    cliente, recibidas = ruta_espiada
+    r = cliente.post("/api/registro/preflight", json=_cuerpo_registro(
+        vinculados=[{"recurso_ide": 10, "tipo": "TF", "tipo_res": "TELEFONO",
+                     "cod": "TF-10", "paride": 81001,
+                     "partida_cod": "CICO13", "hmores_ide": 77}]))
+    assert r.status_code == 200
+    [[l]] = recibidas
+    assert l.vinculados == [VinculadoEntrada(
+        recurso_ide=10, tipo="TF", tipo_res="TELEFONO", cod="TF-10",
+        paride=81001, partida_cod="CICO13", hmores_ide=77)]
+
+
+def test_f044_r11_la_ruta_sin_vinculados_la_linea_de_hoy(ruta_espiada):
+    cliente, recibidas = ruta_espiada
+    cliente.post("/api/registro/preflight", json=_cuerpo_registro())
+    [[l]] = recibidas
+    assert l.vinculados == []
