@@ -146,3 +146,48 @@ def test_f044_r11_la_ruta_sin_vinculados_la_linea_de_hoy(ruta_espiada):
     cliente.post("/api/registro/preflight", json=_cuerpo_registro())
     [[l]] = recibidas
     assert l.vinculados == []
+
+
+# ============ R24 · la guarda de la edición con la hora del vinculado ===== #
+_SIN_ENLACES = ("AND ISNULL(dvaproide, 0) = 0 AND ISNULL(dvfproide, 0) = 0 "
+                "AND ISNULL(hdereside, 0) = 0 AND ISNULL(empdpreide, 0) = 0 "
+                "AND ISNULL(empabside, 0) = 0 AND ISNULL(emprccide, 0) = 0 ")
+#: La guarda de F-051 tal cual, con el hueco del código de hora.
+_GUARDA = ("WHERE ide = ? AND reside = ? AND ABS(ISNULL(can, 0) - ?) "
+           "< 0.000001 AND LTRIM(RTRIM(ISNULL(synckey, ''))) = ? "
+           + _SIN_ENLACES + "AND EXISTS (SELECT 1 FROM auxhor a WHERE "
+           "a.ide = hmores.horide AND {codigo}) AND EXISTS (SELECT 1 FROM "
+           "con c WHERE c.ide = hmores.hmoide AND c.est = ?)")
+_EDITAR = ("UPDATE hmores SET can = ?, pre = ?, tot = ?, horide = ?, "
+           "paride = ?, caaide = ?, fec = ?, synckey = ? ")
+_A_CERO = "UPDATE hmores SET can = 0, tot = 0 "
+_EDICION = dict(ide=5, reside=11, can_leido=0.95, synckey_leida=None,
+                horide=33, can=0.6, pre=120.0, paride=7, caaide=0,
+                fecha_int=20261031, synckey="porcentajes:vin:12:11", tex=None)
+
+
+def test_f044_r24_sin_hora_el_sql_de_hoy_caracter_a_caracter():
+    cli = _cliente(_Falso())
+    e = cli.stmt_editar_linea(**_EDICION)
+    z = cli.stmt_poner_a_cero(ide=6, reside=11, can_leido=0.3,
+                              synckey_leida="x")
+    assert e["sql"] == _EDITAR + _GUARDA.format(codigo="a.cod LIKE 'M%'")
+    assert z["sql"] == _A_CERO + _GUARDA.format(codigo="a.cod LIKE 'M%'")
+    assert e["parameters"] == [0.6, 120.0, 72.0, 33, 7, 0, 20261031,
+                               "porcentajes:vin:12:11", 5, 11, 0.95, "", 1]
+    assert z["parameters"] == [6, 11, 0.3, "x", 1]
+    assert cli.stmt_editar_linea(**_EDICION, hora=None) == e
+
+
+def test_f044_r24_con_hora_la_guarda_exige_esa_hora_como_parametro():
+    cli = _cliente(_Falso())
+    e = cli.stmt_editar_linea(**_EDICION, hora=" OGAS ")
+    z = cli.stmt_poner_a_cero(ide=6, reside=11, can_leido=0.3,
+                              synckey_leida="x", hora="OTEL")
+    assert e["sql"] == _EDITAR + _GUARDA.format(codigo="a.cod = ?")
+    assert z["sql"] == _A_CERO + _GUARDA.format(codigo="a.cod = ?")
+    assert e["parameters"][-2:] == ["OGAS", 1]
+    assert z["parameters"] == [6, 11, 0.3, "x", "OTEL", 1]
+    for st in (e, z):
+        assert "OGAS" not in st["sql"] and "OTEL" not in st["sql"]
+        assert "DELETE" not in st["sql"].upper()
