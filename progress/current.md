@@ -93,6 +93,9 @@ anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
   De la lista cerrada del front solo cambian `test_f050_subfilas.py` y
   `test_f050_m2_arreglos.py` (la columna nueva); los otros cinco no lo
   necesitaron.
+- T8: las tres suites enteras en verde al cerrar el bloque 1 (api 1274,
+  front 394, transfer 1478). La revisión intermedia es opcional (D15) y la
+  decide el líder: el implementer no la lanza; sigue con el bloque 2.
 
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 
