@@ -63,7 +63,10 @@ class RegistroLote:
                                  settings=self._st).proponer(**p)
             if not r["ok"]:
                 return r
-            return {"ok": True, "propuestas": r["propuestas"]}
+            # F-044 (R29): los vinculados, solo si la petición los trae.
+            return {"ok": True, "propuestas": r["propuestas"],
+                    **({"vinculados": r["vinculados"]}
+                       if "vinculados" in r else {})}
         return self._por_obra(memoria, [(lambda p=p: una(p))
                                         for p in peticiones])
 

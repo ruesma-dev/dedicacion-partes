@@ -70,6 +70,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Optional
 
+from application.pipelines.registro_vinculados import PasoVinculados
 from application.services.cuenta_analitica import (
     origen_subcuenta, resolver_cuenta, subcuenta_de_linea,
 )
@@ -982,9 +983,12 @@ class RegistroPipeline:
         """F-050 (R8, R11): catálogo y propuesta de cada línea, SOLO
         LECTURA, con la misma `proponer_partida` que el preflight (R9).
 
-        `lineas`: `{clave, recurso_ide, nombre, categoria, es_postventa}`.
-        La obra de otra empresa devuelve `ok` falso con el motivo (422 en
-        la API); un fallo de lectura sube tal cual (502)."""
+        `lineas`: `{clave, recurso_ide, nombre, categoria, es_postventa}`
+        y, F-044 (R9), opcionales `paride` (la elegida del titular) y
+        `vinculados` (`[{recurso_ide, tipo, categoria, cod}]`): con alguno,
+        la salida gana `vinculados` (`PasoVinculados.proponer`); sin ellos,
+        la de siempre. La obra de otra empresa devuelve `ok` falso con el
+        motivo (422 en la API); un fallo de lectura sube tal cual (502)."""
         origen = self._obra_origen(obra, empresa)
         if origen.empresa != empresa:
             return {"ok": False, "error": MOTIVO_EMPRESA_OBRA.format(
@@ -1010,6 +1014,7 @@ class RegistroPipeline:
             nodos_pv = catalogo_pv.nodos
         propuestas: dict = {}
         mayores: dict = {}
+        objetos: dict = {}
         for l in lineas:
             if l["es_postventa"]:
                 p = (Propuesta(partida_pv["ide"], partida_pv["cod"],
@@ -1021,11 +1026,18 @@ class RegistroPipeline:
                                      int(origen.ide), l["categoria"],
                                      l["nombre"])
                 de = nodos
+            objetos[l["clave"]] = p
             propuestas[l["clave"]] = asdict(p) if p else None
             mayores[l["clave"]] = mayor_inicial(p, de, l["categoria"])
-        return {"ok": True, "partidas_obra": catalogo(nodos),
-                "partidas_postventa": catalogo(nodos_pv),
-                "propuestas": propuestas, "mayor_inicial": mayores}
+        salida = {"ok": True, "partidas_obra": catalogo(nodos),
+                  "partidas_postventa": catalogo(nodos_pv),
+                  "propuestas": propuestas, "mayor_inicial": mayores}
+        vinculados = PasoVinculados(self._cli).proponer(
+            origen_ide=int(origen.ide), nodos=nodos, nodos_pv=nodos_pv,
+            lineas=lineas, propuestas=objetos)
+        if vinculados:
+            salida["vinculados"] = vinculados
+        return salida
 
     # ------------------------------------------------------------- #
     def ejecutar(self, *, obra: ObraEntrada, lineas: list[LineaEntrada],

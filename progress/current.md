@@ -45,6 +45,12 @@ anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
   con la CI como función perezosa y la validez de la elegida como dato) y
   `cuentas_del_presupuesto`. «`CI*`» del titular = el código empieza por
   `CI` (no `clasifica_categoria`, que da `OTRO` a `CICO13`).
+- T5 hecha: `PasoVinculados.proponer` (`registro_vinculados.py`), salida
+  `vinculados` solo si la petición los trae; `LineaPropuestaIn` gana
+  `paride` y `vinculados` y `para_pipeline()` deja la línea de siempre sin
+  ellos; el lote precarga las horas de los vinculados y comparte
+  `cuentas_del_presupuesto` por obra. Titular con elegida que no es hoja
+  activa ⇒ subfilas sin propuesta (en el preflight se omitiría con él).
 
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 

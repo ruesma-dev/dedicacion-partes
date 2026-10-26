@@ -145,14 +145,38 @@ class UniversoVarIn(BaseModel):
     empresa: int | None = None
 
 
+class VinculadoPropuestaIn(BaseModel):
+    """F-044 (R9): un recurso vinculado de la línea cuya partida se
+    propone (su subfila del cuadrante)."""
+
+    recurso_ide: int
+    tipo: str | None = None
+    categoria: str | None = None
+    cod: str | None = None
+
+
 class LineaPropuestaIn(BaseModel):
-    """Una línea del cuadrante cuya partida se propone (F-050, R8)."""
+    """Una línea del cuadrante cuya partida se propone (F-050, R8). F-044
+    (R9): `paride`, la elegida del titular, y `vinculados`, sus subfilas;
+    opcionales: sin ellos, la línea de siempre."""
 
     clave: str
     recurso_ide: int | None = None
     nombre: str | None = None
     categoria: str | None = None
     es_postventa: bool = False
+    paride: int | None = None
+    vinculados: list[VinculadoPropuestaIn] = Field(default_factory=list)
+
+    def para_pipeline(self) -> dict:
+        """El dict de `RegistroPipeline.proponer`: las cinco claves de
+        siempre y `paride`/`vinculados` solo si vienen (R11)."""
+        d = self.model_dump(exclude={"paride", "vinculados"})
+        if self.paride:
+            d["paride"] = self.paride
+        if self.vinculados:
+            d["vinculados"] = [v.model_dump() for v in self.vinculados]
+        return d
 
 
 class PropuestaIn(BaseModel):
@@ -407,7 +431,7 @@ def build_app(settings) -> FastAPI:
                 obra=ObraEntrada(ide=p.obra.ide, codigo=p.obra.codigo,
                                  nombre=p.obra.nombre),
                 ano=p.ano, mes=p.mes,
-                lineas=[l.model_dump() for l in p.lineas])
+                lineas=[l.para_pipeline() for l in p.lineas])
         except Exception as exc:
             logger.exception("propuesta de partidas fallo")
             return JSONResponse(status_code=502,
@@ -437,7 +461,7 @@ def build_app(settings) -> FastAPI:
                      "obra": ObraEntrada(ide=x.obra.ide, codigo=x.obra.codigo,
                                          nombre=x.obra.nombre),
                      "ano": x.ano, "mes": x.mes,
-                     "lineas": [l.model_dump() for l in x.lineas]}
+                     "lineas": [l.para_pipeline() for l in x.lineas]}
                     for x in validas]))
         except Exception as exc:                # noqa: BLE001
             logger.exception("propuesta en lote fallo")

@@ -297,6 +297,14 @@ class LecturasDelLote:
                 por_ventana.setdefault(clave, set()).update(recursos)
         for (desde, hasta), recursos in por_ventana.items():
             tareas.append(self._historial_de(desde, hasta, recursos))
+        # F-044 (R27, R29): las horas de TODOS los vinculados del lote, en
+        # una lectura; las cuentas del presupuesto, por obra y solo si
+        # alguna subfila las pide (`cuentas_del_presupuesto`, una vez).
+        vinculados = _ides(v["recurso_ide"] for p in peticiones
+                           for l in p["lineas"]
+                           for v in l.get("vinculados") or [])
+        if vinculados:
+            tareas.append(lambda: self._cargar_horas(vinculados))
         self._ronda(tareas)
         origenes = set()
         for p in peticiones:
@@ -477,6 +485,12 @@ class LecturasDelLote:
     def capitulos_de_obra(self, obride):
         return self._una_vez(("capitulos_de_obra", int(obride)),
                              lambda: self._cli.capitulos_de_obra(obride))
+
+    def cuentas_del_presupuesto(self, obra_ide):
+        """F-044 (R29): una lectura por obra en todo el lote."""
+        return self._una_vez(
+            ("cuentas_del_presupuesto", int(obra_ide)),
+            lambda: self._cli.cuentas_del_presupuesto(obra_ide))
 
     def cuentas_de_centro(self, cenide, empresa, subcuentas):
         subs = tuple(sorted({s for s in subcuentas if s}))
