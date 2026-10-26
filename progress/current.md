@@ -17,7 +17,7 @@ APROBADA por el humano el 2026-10-25 («ok a todo»), en
 transfer y **solo en modo pruebas** (0404, `PRUEBA-PORC`); ninguna escritura
 real. **Pendiente del humano (de F-062, ya desplegada el 2026-10-26):** el
 **aviso a `partes`** (texto en «Riesgos para el humano», más abajo).
-**Después:** F-054 (spec aprobada, worktree `porcentajes-f054`).
+**Después:** F-063 (filtro por tipo de incidencia, dada de alta en `dev` el 2026-10-26, solo front) y F-054 (spec aprobada, worktree `porcentajes-f054`).
 
 ## F-044 · decisiones del humano al bloqueo de T7 (2026-10-26, «si a todo»)
 
@@ -156,326 +156,21 @@ para limpiar, `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar`
 (en seco) y después `... limpiar --confirmar`. Ninguno lleva
 `--permitir-modo-real`. Resultado real en `progress/manual_F-044.md`.
 
-## F-062 · review 1: arreglos (implementer, 2026-10-24)
+## F-062 · CERRADA y DESPLEGADA (2026-10-26): aviso a `partes` pendiente
 
-Review 1 RECHAZADA (`progress/review_F-062.md`); los 6 bloqueos, arreglados:
-- **B1** (`453f870`, `441e6a3`): R5 literal también para el inicio propio
-  (`rachas.py`, `==` y no `<=`; test RED). El script da a la n-ésima
-  `--incidencia` el id `990101 + (mes−1)·100 + n` (julio 9907xx, octubre
-  9910xx): estable en el mes, distinto entre meses; `verificar` pide los
-  del mes (`--mes`); `limpiar` ya borraba por marca y prefijo, de todos los
-  meses. Ids esperados al día en `test_f030_pipeline_incidencias.py` (lista
-  cerrada; sus `verificar` llevan `--mes 7`) y en los de F-062.
-- **B2** (`441e6a3`): `medir --cierres R` designa R en la **primera** obra
-  (como `_designar_cierres`), en lote y obra a obra; sin `--cierres`, las
-  peticiones de siempre. **Decisión**: designar solo con `--cierres` y no
-  siempre, porque `test_f055_medicion.py` (fuera de la lista cerrada) fija
-  la forma `(obra, lineas)` del lote; la review admitía «o `--cierres` en
-  lote». Un `--cierres` que no es `--recurso` es error de argumentos.
-- **O2** (`441e6a3`; aprobada por el humano el 2026-10-24, «ok a 1 y 2»):
-  `ejecutar`/`limpiar --confirmar` con `OBRA_PRUEBAS_FORZAR=false` salen con
-  código 1 y sin escribir (ni leer, en `limpiar`), salvo
-  `--permitir-modo-real`. Desviación aprobada. Ningún test ajeno la fijaba.
-- **B3/B4**: T19 y T20 con el primer paso del modo y sus comandos exactos
-  (abajo); `tasks.md` T21 `[x]` (`ff0acb4` en `azure-apps`, `fb351e0`).
-  Ensayados en seco contra las funciones puras con los ids nuevos: lo
-  esperado de (1)-(4) sale tal cual.
-- **B5** (`743923b`): la condición de `_cierres_a_escribir`, entre paréntesis.
-- **B6 y O3** (`77bf5d6`): «decidir la racha»; `#regla-incidencia` dice que
-  en pruebas también la lectura por `ide` es de la 0404 y que no se mezclan
-  modos sobre la misma base (una quitada se borraría en PostgreSQL).
-- **Campaña 2** (RM1, HEAD `44841b8`): 609 / 598 muertos / 11 vivos. En
-  serie: 5 falsos de la api (caen con tests que ya había: O1 otra vez, para
-  el líder), 4 del script con test nuevo (`2f04d28`) y los 2 equivalentes
-  aceptados. Detalle en `progress/mutacion_F-062.md`.
+Detalle de la implementación, las reviews y el MANUAL: `progress/history.md`,
+`progress/impl_F-062.md`, `progress/review_F-062.md` y
+`progress/manual_F-062.md` (secciones de F-062 retiradas de aquí al lanzar
+la review de F-044). `azure-apps/dedicacion.md` `ff0acb4` y `64486fc`.
 
-### F-062 · T19 y T20: HECHAS, cumplen (resultado en `progress/manual_F-062.md`)
-
-Git Bash, desde `services/dedicacion-transfer`. **Primer paso de T19 y de
-T20** (el modo del proceso que escribe, el del script; siempre con el
-`.venv` del transfer, nunca el `python` del PATH):
-`.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`.
-Debe dar `True 0404`; si no, **PARAR**. Ningún comando lleva
-`--permitir-modo-real`.
-
-**T19** (solo lectura, R20) — **HECHA el 2026-10-25 por el humano, cumple** (`progress/manual_F-062.md`):
-1. En `dev` (allí no hay `--cierres`): `.venv/Scripts/python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036`
-2. En la rama: `.venv/Scripts/python prueba_escritura_porcentajes.py medir --lote --ano 2026 --mes 9 --obra 0694 --obra 0696 --recurso 1705036 --cierres 1705036`
-3. Esperado: el `TOTAL … s en total` de la rama ≤ 1,15 × el de `dev`, y en
-   la rama **una** línea `lectura incidencias_en_ventana:` en el lote (en
-   seco, con los dobles: sin `--cierres`, cero lecturas; con él, una). Si
-   no, **PARAR**.
-
-**T20** (escritura en modo pruebas, obra `0404`, transfer LOCAL; `RECURSO`
-con `CIV` y `CIZ` en `reshor`). Resultado real en `progress/manual_F-062.md`.
-1. C1 y C2.
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9`: `CIV` el 5 y `CIZ` el 9 (`porcentajes:inc:991001:ini|fin`).
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9 --incidencia RECURSO:CIV:12:16`: `fin editar` del mismo `CIZ` al 16; la 991002 `continua`; ningún inicio nuevo.
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py verificar --ano 2026 --mes 10 --incidencia RECURSO:CIV:5:9 --incidencia RECURSO:CIV:12:16`: `porcentajes:inc:991001:fin` con el **mismo** `hmores.ide` y `fec=20261016`.
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar`
-2. C3.
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:27:31`: `CIV` el 27; `fin abierta`, sin `CIZ`.
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --incidencia RECURSO:CIV:2:6`: `ini continua`, sin inicio, y `CIZ` el 6 en el parte de **noviembre** de la `0404` (`porcentajes:inc:991101:fin`).
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar`
-3. C4.
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:27:31`
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO`: `CIERRE … escribir`, `CIZ` el 31 en el parte de octubre, sin `--pisar` (inicio en M−1), `porcentajes:inc:991001:fin`.
-   - Repetir los dos: nada nuevo (`ya_registrado`). Luego `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar`
-4. C12 y C13.
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 9 --incidencia RECURSO:CIV:15:30`: `CIV` el 15 de septiembre, abierta.
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 10 --incidencia RECURSO:CIV:1:31`: `continua` y `abierta`, nada escrito.
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO`: nada escrito y `PENDIENTE cierre:{ide}: relanza con --pisar cierre:{ide}` (`{ide}`, el del `CIV` del 15).
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py ejecutar --confirmar --ano 2026 --mes 11 --cierres RECURSO --pisar cierre:{ide}`: `CIZ` el 31 de octubre en el parte de octubre de la `0404` (`porcentajes:inc:990901:fin`).
-   - `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar`
-5. C10, navegador local. Aquí escribe el transfer servidor (otro proceso):
-   antes, `curl -s http://localhost:8006/health` debe decir
-   `"modo_pruebas": true`; si no, **PARAR**. Registrar 5-9, quitarla del
-   cuadrante y abrir Registrar: «No coincide con Sigrid» con las dos
-   líneas; Cancelar. Al final, `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --confirmar`
-
-## F-062 · implementación (implementer, 2026-10-24)
-
-- **Implementación terminada** (T1-T18, T5c y T22; informe en
-  `progress/impl_F-062.md`). T21 la hizo el líder (`ff0acb4` en
-  `azure-apps`, ver «Riesgos para el humano»).
-- Historia: el bloqueo de T13 se resolvió con D18 (`ca6c4ef`).
-- **Decisiones y desviaciones** (detalle en `progress/impl_F-062.md`):
-  T2 adelanta de T7 los campos `obra_ide` y `dia_fin_antes` de
-  `IncidenciaEntrada` (los necesita `propias`); T3, los de
-  `LineaIncidenciaSigrid` (`obride`, `cenide`, `paride`, `caaide`,
-  `parte_emp`), que necesita R10; T4, los de `AccionIncidencia`
-  (`synckey_leida`, `can_leido`, `ajena`, `hmoide_destino`, `obride`,
-  `cenide`) y las acciones `continua`/`abierta` y el rol `devolver`.
-  T4: la «cubierta» es `ya_registrado` con la `fec` del `CIZ` ajeno; el
-  aviso R21 deja el `fin` en `abierta`; si la guarda R9 o la base (R26)
-  omiten, no hay resumen de racha.
-  T5 (D14 = B; no llegó enmienda del líder, se implementa la spec): la
-  empresa y la obra de pruebas del parte de M−1 se miran en el parte del
-  inicio (misma obra; `ParteSigrid` no trae `emp`); una racha que una
-  cadena de M continúa según `previa` no se cierra aunque la cadena omita;
-  `ya_registrado` = cerrada el último día de M−1 con la `synckey` de
-  cierre. `PREFIJO_CIERRE` se adelanta de T6.
-  T5b: `no_coincide` da un elemento `quitada` por quitada, también sin
-  líneas (`en_sigrid` vacío: la api la borra; el front no lo pinta, «sin
-  aviso»); una racha con alguna línea explicada (propia, de quitada o de
-  la previa) no sale entera como `solo_sigrid`; `PlanCadena.previas` da
-  los `ide` de la previa que la cadena continúa.
-  **Desviación T6**: `reconciliar` se borra en T9, no en T6: su único
-  llamador es `_reconciliar_incidencias` del pipeline, que sustituye T9;
-  borrarlo antes deja la suite del transfer en rojo entre commits. Sus
-  tests ya están reescritos a F-062 (lista cerrada). `no_editar_el_par`
-  ya iba «por cadena»: todas las `editar`/`devolver` de una cadena llevan
-  el `id` de la dueña; cambian su docstring y `MOTIVO_INC_PAR`. La guarda
-  R9 solo cuenta líneas `CI*`/`CIZ`.
-  T7: el contexto del mes (`ContextoRachas`) viaja en el pipeline
-  (`RegistroPipeline(contexto=…)` / `con_contexto`), no como parámetro de
-  `ejecutar`: `test_f013_sin_partida.py` (R3) fija su firma y no está en
-  la lista cerrada. La respuesta lleva `rachas`, `cierres_racha` y
-  `no_coincide` solo si la petición traía alguna clave nueva; `ajena`
-  solo cuando es cierta; los cierres, sin `synckey`, `hmoide`, `obride`,
-  `cenide`, `paride` ni `caaide`.
-  T8: `incidencias_del_mes` sigue hasta que T9 y T12 quiten sus
-  llamadores (luego se borra con sus tests de la lista cerrada);
-  `ventana(ano, mes, n)` en `rachas.py`; `INCIDENCIAS_MESES_ATRAS` también
-  en `.env.example`.
-  T9: `_decidir_rachas` y `_cierres_racha` sustituyen a
-  `_reconciliar_incidencias`; se borran `reconciliar` y sus ayudantes
-  (`MOTIVO_INC_DUPLICADA` queda hasta T11: lo importan sus tests). Un
-  cierre D14 sin `CIZ` en `reshor` del recurso, solo aviso. La hora y el
-  precio del `CIZ` del cierre (`hora_ide`, `pre`) no salen en la
-  respuesta. `LecturasDelLote` gana `incidencias_en_ventana` y
-  `partes_de_periodos` directos a Sigrid (la memoria y la ronda D, en
-  T12). Las fixtures de app de la lista cerrada (y la propia) añaden
-  `incidencias_meses_atras` a `AJUSTES`. **Rojo intermedio, previsto**:
-  37 tests de la lista cerrada (`test_f030_pipeline_incidencias.py`,
-  `test_f030_r30_editar.py`, `test_f030_r30_punta_a_punta.py`) fallan
-  porque sus dobles leen con `incidencias_del_mes` o fijan la semántica
-  de F-030; se reescriben en T10-T12 y T16.
-  **T12 antes que T10-T11** (orden cambiado): se hizo mientras el
-  spec-author escribía D17, porque el lote no toca `ejecutar`. Lo que lee
-  una petición sale de `rachas.lectura_de_peticion`, el mismo en suelto y
-  en lote, y así la memoria lo sirve entero. En el lote hay una lectura por
-  obra de pruebas (o ninguna), con la unión de recursos, de `ide` y de
-  ventanas; la memoria filtra como el SQL (recurso, ventana y `CI*`, o
-  `ide`). La ronda D lee `partes_de_periodos` de M−1 solo si hay cierres
-  D14. Para no pedir de más, el lote decide si lee con
-  `decidir_incidencia`, que da un superconjunto de lo que lee el pipeline.
-  Se quita `incidencias_del_mes` del lote. El del cliente, con sus tests,
-  se va en T11, junto con los de la memoria del lote de F-030 en
-  `test_f030_pipeline_incidencias.py` y `test_f030_r30_editar.py`, que
-  fallan hasta entonces: ahora son 42 en rojo, todos de la lista cerrada.
-  El `incidencias_en_ventana` falso de `conftest.py` devuelve en el orden
-  de la consulta (`fec`, `ide`).
-  T10: el `INSERT` de un `CIZ` en el parte del inicio (R5) y el de un
-  cierre (R12) llevan una `ObraEntrada` con el `obride` y el `cenide` de
-  la línea leída (`_obra_de_linea`), y `ano`/`mes` del día que se escribe.
-  El cierre lleva `can = 0` y el `pre` de la hora `CIZ` del recurso. Se
-  escriben después de los `INSERT` de la petición, con el `max_pos` de su
-  parte. `_cierres_a_escribir(pf, pisar)` hoy devuelve los `escribir`;
-  queda preparado para el filtro de `pisar_claves` de T5c (R31), que no
-  se hace aquí. Un cierre que no se encuentra al releer se queda sin
-  `hmores_ide`, igual que una incidencia (F-030).
-  T11: `ClienteInc` lee con `incidencias_en_ventana` (sobre
-  `existentes`) y anota `(recursos, desde, hasta, obra de pruebas)`. Las
-  líneas de los dobles en pruebas llevan `obride` 828942. Se reescriben,
-  citando su R de F-062, los de R27 (ahora R9 y R19), la de 1-31 (R7,
-  `abierta`) y los de ejecutar y lote. Los de cliente y memoria de
-  `incidencias_del_mes` se sustituyen por un puntero a
-  `test_f062_cliente_ventana.py` y `test_f062_lote.py`, y la lectura se
-  borra del cliente. Se hace también en `test_f030_r30_editar.py` (está
-  en la lista cerrada), donde el `UPDATE` esperado lleva `can_leido`. En
-  rojo solo quedan los dos de `test_f030_r30_punta_a_punta.py` (T16).
-  T13: `campos_de_traza` manda `dia_fin_antes` solo si lo hay y lo lee con
-  `getattr`. Sin día original, la traza es la de F-030 tal cual. Así los
-  dobles `SimpleNamespace` de `test_f030_registro.py`,
-  `test_f030_r30_identidad.py` y `test_f030_r30_punta_a_punta.py` no
-  cambian: los dos últimos no están en la lista cerrada para eso. En la
-  api, 1149 en verde.
-  T14: la respuesta de la api conserva `incidencias_quitadas` (el front
-  deja de pintarla en T17). La quitada con traza que crea la petición de
-  su obra (R24) la deja sin líneas ni incidencias: el transfer saca la
-  empresa también de `quitadas` (`_preflight` y precarga del lote), si no
-  la omitiría entera y no devolvería el `CIZ` (R17; test propio). La
-  condición de «tiene algún `ide`» mira la traza ya calculada
-  (`hmores_ide_*`), no las columnas: `test_f003_esquema.py` R17 fija los
-  `sigrid_*` que nombra `registro_sigrid.py`. Ajeno cambiado: solo
-  `test_f030_r23_sin_incidencias_la_peticion_de_siempre` (+`cierres_recursos`).
-  T15: `continua`/`abierta` son `registrado` sin tocar el `ide` ni el día
-  de su rol (no los anulan) y sin quién/cuándo (solo `escribir`/`editar`);
-  el parte, el de la primera con línea. `devolver` hecho = `editar` o
-  `ya_registrado`; omitido no toca nada. La quitada con `en_sigrid` vacío
-  NO se borra si le queda un `devolver` sin hacer (su traza hace falta
-  para devolverlo la próxima vez). El cierre `ya_registrado` no toca la
-  traza (la spec dice «escrito»). Ningún test ajeno cambia: los de la lista
-  cerrada de `test_f030_registro.py` siguen en verde tal cual, y el de «la
-  quitada no va al transfer» (está en `test_f030_r30_identidad.py`, fuera
-  de la lista) también: sigue sin ir en `incidencias`.
-  T16: `f062_rachas.json` en tres escenarios encadenados en la api (c2;
-  c6 y c9; c10 y borradas a mano); el transfer ejecuta cada paso por HTTP
-  sin modo pruebas, desde el Sigrid del contrato. En las `escribir`, el
-  contrato fija el `hmores_ide` que traza la api y el transfer solo exige
-  que no sea nulo. `f030_r30.json`: la petición gana `incidencias_mes` y
-  `cierres_recursos` (la api llama a `_designar_cierres`, como `ejecutar`)
-  y el doble del transfer lee la ventana; lo esperado no cambia. Lectura
-  de «6-9 y 12-14 = una cadena» (tasks T16): cada caso es una cadena de
-  una sola incidencia (la 7); en el contrato no hay una 8. Ambos pasan a
-  la primera: prueban T9-T15 ya hechos (sin fase RED propia); comprobado
-  que fallan al cambiar un dato del contrato (`dia_fin_antes` 7 → 8).
-  T17: `seccionQuitadas` se borra de `app.js` (R25: la sustituye
-  `pintarNoCoincide`, tras las obras, solo con elementos con líneas). En
-  `test_f030_r30_front.py` salen los dos tests de esa lista (el de su
-  contenido y el de su sitio en `pintarModalPreflight`) y su ayudante,
-  con un puntero a los de F-062: los dos son «el de la lista de quitadas
-  del modal» de la lista cerrada. `textoLineaIncidencia` aprende
-  `continua`, `abierta` y el rol `devolver` («se devuelve»).
-  T18: el script ya admitía varias `--incidencia`; ahora lleva el
-  contexto (`--cierres`, repetible, a `cierres_recursos`) e imprime RACHA,
-  CIERRE y NO COINCIDE. **Decisión**: una petición con solo
-  `cierres_recursos` no tiene periodo ni empresa (`lectura_de_peticion`
-  los saca de líneas e incidencias), así que `--cierres` sin
-  `--incidencia` manda por recurso una línea testigo al 0 % (P3 la omite
-  siempre; nunca se escribe), como las que el recurso tendría en el
-  cuadrante. **Arreglo de T9** visto en el script: la racha que abre o
-  cierra con una línea nueva no llevaba parte (`rachas.py` solo ve los de
-  Sigrid); `_partes_de_rachas` le pone, tras el paso 5, el de su línea
-  (test propio con fase RED). Docs: `#regla-incidencia` reescrita (los
-  textos que fija `test_f030_r34_la_regla_dice_cambiar_los_dias_y_quitar`
-  siguen, sin tocar ese test) e `INTEGRACION.md` §1 (fila de `sigrid-api` y
-  parte compartido), §3 (`INCIDENCIAS_MESES_ATRAS`) y §5;
-  `test_f002_fuente_unica.py` gana `test_f062_r27_…` (tarea T18).
-  T5c (R31, D17): `CierreRacha` gana `requiere_confirmar` (inicio anterior
-  al día 1 de M−1) y `clave` (`cierre:{ide del inicio}`); `ejecutar` deja
-  `pendiente` el que no trae su clave (motivo con la clave, sin escribir,
-  fuera de `pendientes_confirmacion`). La api ya no tocaba el `fin` con un
-  `pendiente` desde T15 (solo `escribir`): su test r31 pasó a la primera,
-  sin fase RED (dicho en el informe). Front: casilla `chk-pisar` en el
-  `escribir` que pide confirmar y el aviso de `registroEjecutar` cuenta los
-  `pendiente`; script: `PENDIENTE cierre:{ide}: relanza con --pisar …`.
-  El comentario del front no dice «pisado»: `test_f013_r4_…` prohíbe esa
-  palabra fuera de `rotuloConflicto`.
-
-## F-062 · spec escrita (spec-author, 2026-10-24; revisada el mismo día)
-
-Spec en `specs/F-062-rachas-incidencias/` (requirements 150/150, design
-250/250, tasks T1-T22 + T5b; `python -m harness.tamano --feature F-062` en
-verde). **Revisión del 2026-10-24** por la decisión del humano («si las
-quite de la plataforma y al registrar me debe avisar de que no coincide con
-sigrid para editarlo»): F-030 D11/R38 pasan a R17. La quitada sigue
-`quitada`, pero viaja al transfer en `quitadas`, y el preflight devuelve el
-bloque `no_coincide` con las líneas que siguen en Sigrid (código, día,
-parte, `ide`), sin escribir nada, para que el humano las edite a mano. El
-`CIZ` ajeno que movió se sigue devolviendo solo (D10), y cuando ya no queda
-ninguna línea en Sigrid, la api borra la quitada. Los casos C1-C11 viven
-ahora en `tasks.md` §Casos, por el tope de líneas.
-El estado en `features.json` **no** se ha tocado: lo cambia el líder.
-Qué hace: el transfer decide por **cadena** (incidencias pegadas del mismo
-recurso y código en el mes) si abre, continúa o cierra una racha, mirando
-las `CI*`/`CIZ` del recurso en todos los partes. La api le manda el
-contexto del mes (`incidencias_mes`, `cierres_recursos`, `quitadas`) y el
-front solo pinta. Qué de F-030 se conserva y qué se reemplaza: requirements
-§1. Los casos C1-C11 son los ejemplos del humano y de la evidencia.
-
-**Decisiones DECIDIDAS por el humano el 2026-10-24** («ok a lo demas»;
-«adelante, en d14 b»; requirements §10). Todas A salvo D14 = B, ya aplicadas
-en requirements, design y tasks:
-- **D5**: cada `CIZ` cierra el inicio abierto más reciente.
-- **D6**: ventana de 12 meses hacia atrás (configurable,
-  `INCIDENCIAS_MESES_ATRAS`) y el mes siguiente solo para avisar.
-- **D7**: un tramo al que solo le quedan sábados y domingos llega a fin de
-  mes (27-30 de octubre queda abierta).
-- **D8**: una racha pegada cuyo `CIZ` es del mes anterior: se abre otra y se
-  avisa.
-- **D9**: si la regla pidiera quitar una línea ya escrita, no se une y se
-  avisa.
-- **D10**: quitar o recortar una incidencia que movió un `CIZ` ajeno se lo
-  devuelve con un `UPDATE` (columna nueva `sigrid_dia_fin_antes`).
-- **D11**: incidencias pegadas en obras distintas forman una cadena, en la
-  obra de la primera (sin 422 en la api).
-- **D12**: un `CIZ` ajeno con `can = 1` se mueve igual.
-- **D13**: una línea ajena dentro del tramo ⇒ `omitir`.
-- **D14 = B**: una racha abierta desde antes del mes anterior que M no
-  continúa se cierra con un `CIZ` el último día de M−1, en el parte de M−1
-  de la obra del inicio (En registro, de la empresa y, en pruebas, la 0404,
-  el de mayor `ide`, sin crear ninguno), con el centro, la partida y la
-  cuenta del inicio y `can = tot = 0`. Sin parte válido, solo aviso (R12,
-  R13, caso C12). Cuesta una lectura de partes de M−1, solo en ese caso.
-  **Ojo**: también cierra los inicios viejos que nunca se cerraron (E-11: 9),
-  y se ve en «Cierres de rachas» antes de ejecutar.
-- **D15** (nueva): las `CI*`/`CIZ` del mes que están en Sigrid pero no en la
-  plataforma también salen en `no_coincide` (`solo_sigrid`). Solo salen en la
-  petición designada del recurso, sin escribir y sin lecturas nuevas.
-- **D16** (nueva): al quitar una incidencia no hay más edición automática que
-  el `devolver` de D10; lo demás es solo aviso. La B sería mover el inicio de
-  la dueña de una cadena al día de la siguiente.
-
-Riesgos para el humano: hay escritura nueva en partes ajenos (mover la `fec`
-de un `CIZ` de Administración o de `partes`, y añadir uno en su parte),
-siempre con la guarda de F-051/D16. Sale **una lectura más por lote** en el
-preflight, que se mide en T19 (≤ 15 %). T19 y T20 son MANUAL del humano.
-**T21 hecha por el líder** (2026-10-24): `azure-apps/dedicacion.md`
-`ff0acb4` (cabecera «pendiente de despliegue», §1, §3
-`INCIDENCIAS_MESES_ATRAS`, §5 contrato y columna
-`incidencia.sigrid_dia_fin_antes`, §7 orden transfer → api → front y
-rachas compartidas con `partes`). **Aviso a `partes`** de F-062 (lo
-transmite el humano; aquí no se toca `partes`): desde F-062 dedicación
-**mueve la `fec`** de `CIZ` que no son suyos (también con `synckey
-partes:…`, sin cambiarla y con guarda) para continuar una racha y la
-devuelve a su día si deja de continuarla; **añade** `CIZ` en sus partes
-(el del inicio de la racha y, para cerrarla, uno de M−1); y deja rachas
-**abiertas** a fin de mes, que el papel de sv4 verá. Nunca borra. Su
-`partes.md` debería decirlo en su «qué se rompe».
-
-## Antes de F-062
-
-**F-061** (búsqueda predictiva en el
-desplegable de incidencias; `sdd: false`, rigor estándar) **cerrada
-(`done`) el 2026-10-23**, review 2 APROBADA (`3a55dfb`), rama
-`feature/F-061-busqueda-predictiva-incidencias` unida a `dev`;
-**desplegada el 2026-10-23** (api → front, lo lanzó el humano; ver
-«Producción, hoy»); `azure-apps/dedicacion.md` `47c7c3c`. Api y front; ni
-transfer ni Sigrid. **Pendiente del humano:** el MANUAL de F-061 (abajo).
-**F-044** (recursos vinculados): spec aprobada el 2026-10-25; hoy
-**`blocked`** antes de T7 (ver la cabecera y «F-044 · BLOQUEO»).
+**Riesgos para el humano · aviso a `partes`** de F-062 (lo transmite el
+humano; aquí no se toca `partes`): desde F-062 dedicación **mueve la `fec`**
+de `CIZ` que no son suyos (también con `synckey partes:…`, sin cambiarla y
+con guarda) para continuar una racha y la devuelve a su día si deja de
+continuarla; **añade** `CIZ` en sus partes (el del inicio de la racha y,
+para cerrarla, uno de M−1); y deja rachas **abiertas** a fin de mes, que el
+papel de sv4 verá. Nunca borra. Su `partes.md` debería decirlo en su «qué
+se rompe».
 
 ## F-044 · spec aprobada (2026-10-25)
 
@@ -492,7 +187,7 @@ transfer ni Sigrid. **Pendiente del humano:** el MANUAL de F-061 (abajo).
   («ok a todo»). D1b se aplica en el sync: `tipos_excluidos: [VP]` no se
   vincula y el preview lo cuenta (R3); con `pre` 0, omitido con motivo (R14).
 - **Hecho el 2026-10-26:** `dev` (con F-062) unido a la rama, `in_progress`
-  e implementer lanzado; T1-T6 hechas y `blocked` antes de T7. T21 es MANUAL
+  e implementer lanzado; bloqueo antes de T7 resuelto («si a todo»); T1-T20, T22 y T24 hechas. T21 es MANUAL
   del humano en modo pruebas.
 - **F-054:** trae solo las `M*` de trabajadores (por recurso, no por prefijo);
   los vinculados no son asignaciones; F-054 puede traer la partida de la línea
