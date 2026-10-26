@@ -1083,7 +1083,7 @@
         "Nota de enmienda en R20 y R31 de `specs/F-044-recursos-vinculados/requirements.md`.",
         "Tests del front sin red ni BBDD que fijan lo anterior; `bash harness/init.sh` en verde."
       ],
-      "status": "blocked",
+      "status": "in_progress",
       "sdd": false,
       "rigor": "estandar",
       "priority": 1,

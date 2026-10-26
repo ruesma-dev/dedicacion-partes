@@ -2880,8 +2880,8 @@ document.addEventListener("DOMContentLoaded", init);
 // modal se GUARDA en el cuadrante: no viaja en el cuerpo del registro.
 // `pf`: lo pintado en el modal; `analizando`: por obra, el `seq` del último
 // preflight repetido aún en vuelo (F-050, M2 punto 5).
-// `vistas` (F-064): las claves de pisado de vinculado ya enseñadas en este
-// modal; la que no está sale marcada una sola vez (ver `pintarModalPreflight`).
+// `vistas` (F-064): las claves que `marcadaPorDefecto` señala y ya se han
+// enseñado en este modal; la que no está sale marcada una sola vez.
 const registro = { pisar: new Set(), vistas: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map() };
 
 // Abrir o repintar el modal cierra el selector de partida que hubiera,
@@ -2923,8 +2923,8 @@ async function registroPreflight(trabajadorIde = null) {
   try {
     const pf = await pedirPreflight();
     if (seq !== registro.seq) return;
-    // Modal nuevo: nada marcado ni visto; los pisados de vinculado vuelven
-    // a salir marcados (F-064).
+    // Modal nuevo: nada marcado ni visto; las casillas de
+    // `marcadaPorDefecto` vuelven a salir marcadas (F-064).
     registro.pisar = new Set();
     registro.vistas = new Set();
     registro.pf = pf;
@@ -3301,13 +3301,11 @@ function pintarModalPreflight(pf) {
       `<th>Partida de imputación (clic para cambiarla)</th></tr></thead>` +
       `<tbody>${filas}</tbody></table>`;
     (o.conflictos || []).forEach((c) => {
-      // F-064 (enmienda de F-044 R20/R31): el pisado de un vinculado (sin
-      // motivo cuenta como pisado, igual que en `rotuloConflicto`) sale
-      // MARCADO la primera vez que se enseña en este modal; luego manda lo
-      // que el humano deje en la casilla, que se relee del DOM antes de
-      // repintar. El resto de casillas, desmarcadas como siempre.
-      if (c.vinculado && (c.motivo || "pisado") === "pisado" &&
-          !registro.vistas.has(c.clave)) {
+      // F-064 (enmienda de F-044 R20/R31): la casilla que `marcadaPorDefecto`
+      // señala sale MARCADA la primera vez que se enseña en este modal;
+      // luego manda lo que el humano deje en ella, que se relee del DOM
+      // antes de repintar. El resto, desmarcadas como siempre.
+      if (marcadaPorDefecto(c) && !registro.vistas.has(c.clave)) {
         registro.vistas.add(c.clave);
         registro.pisar.add(c.clave);
       }
@@ -3343,6 +3341,16 @@ function pintarModalPreflight(pf) {
   });
   $("#btn-ejecutar-registro").addEventListener("click", registroEjecutar);
 }
+
+// F-064: qué casilla del modal sale marcada por defecto. Función pura y
+// nombrada; va justo detrás de `pintarModalPreflight`, su único usuario.
+const marcadaPorDefecto = (c) => {
+  // La de un conflicto de recurso vinculado con motivo «pisado» o sin
+  // motivo (que `rotuloConflicto` también rotula «Pisar»). Solo mira el
+  // conflicto que manda el transfer; junto a `rotuloConflicto`, es el único
+  // sitio del front que mira el `motivo` (test de F-013 R4 del transfer).
+  return Boolean(c.vinculado) && (c.motivo || "pisado") === "pisado";
+};
 
 async function registroEjecutar() {
   const pisar = [...document.querySelectorAll(".chk-pisar:checked")]

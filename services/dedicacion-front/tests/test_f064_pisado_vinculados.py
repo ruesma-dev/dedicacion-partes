@@ -22,7 +22,13 @@ import json
 import re
 from pathlib import Path
 
-from tests.test_f050_modal_registro import ESCAPE, _funcion, _node, _registro
+from tests.test_f050_modal_registro import (
+    ESCAPE,
+    JS,
+    _funcion,
+    _node,
+    _registro,
+)
 
 RAIZ_REPO = Path(__file__).resolve().parents[3]
 
@@ -162,6 +168,45 @@ def _pf(*obras: dict) -> dict:
 
 
 TODAS = _pf(_obra(694, CONFLICTOS, [CIERRE_RACHA]))
+
+
+# ================ marcadaPorDefecto · la función pura ===================== #
+def _marcada() -> str:
+    """El cuerpo de `const marcadaPorDefecto = (c) => {…};` en `app.js`."""
+    m = re.search(r"^const marcadaPorDefecto = \(c\) => \{.*?^\};$", JS,
+                  re.DOTALL | re.MULTILINE)
+    assert m, "no está `const marcadaPorDefecto = (c) => {...};` en app.js"
+    return m.group(0)
+
+
+def test_f064_marcada_por_defecto_solo_el_pisado_de_vinculado():
+    casos = [_conflicto(PIS_TRAB), _conflicto(PIS_VIN, vinculado=TF),
+             _conflicto(PIS_VIN_SIN_MOTIVO, motivo=None, vinculado=CO),
+             _conflicto("x", motivo="", vinculado=CO),
+             _conflicto(SOB_TRAB, "sobrecarga"),
+             _conflicto(SOB_VIN, "sobrecarga", vinculado=VE),
+             _conflicto(SINP_TRAB, "sin_partida"),
+             _conflicto(SINP_VIN, "sin_partida", vinculado=VE),
+             _conflicto(OTRO_VIN, "otra_cosa", vinculado=TF),
+             _conflicto("y", vinculado=None), {"clave": "z"}]
+    r = _node("\n".join([
+        _marcada(),
+        "process.stdout.write(JSON.stringify(" + json.dumps(casos)
+        + ".map(marcadaPorDefecto)));"]))
+    assert r == [False, True, True, True, False, False, False, False, False,
+                 False, False]
+
+
+def test_f064_marcada_por_defecto_es_pura_y_la_usa_el_modal():
+    cuerpo = _marcada()
+    for prohibido in ("registro", "document", "state", "$("):
+        assert prohibido not in cuerpo, prohibido
+    modal = " ".join(_funcion("pintarModalPreflight").split())
+    propia = modal.split("const marcadaPorDefecto")[0]
+    assert ("if (marcadaPorDefecto(c) && !registro.vistas.has(c.clave)) {"
+            in propia)
+    # El modal ya no mira el motivo por su cuenta (test de F-013 R4).
+    assert "c.motivo" not in propia
 
 
 # ======================= criterio 1 · al abrir el modal ================== #
