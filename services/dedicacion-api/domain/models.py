@@ -334,6 +334,9 @@ class ResultadoSync:
     # Catálogo de incidencias de `auxhor` (F-030, R3), igual que empresas.
     incidencias: ResultadoSyncMaestro = field(
         default_factory=ResultadoSyncMaestro)
+    # Recursos vinculados (F-044, R5), igual: sin sus pasos, a cero.
+    vinculados: ResultadoSyncMaestro = field(
+        default_factory=ResultadoSyncMaestro)
 
 
 @dataclass(frozen=True)

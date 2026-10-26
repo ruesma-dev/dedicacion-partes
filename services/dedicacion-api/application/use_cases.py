@@ -49,8 +49,10 @@ from domain.models import (
     Trabajador,
 )
 from domain.ports import SigridGateway, UnitOfWork, UniversosGateway
+from domain.vinculados import ResultadoVinculos, codigos
 
 from application.filtros_maestros import CRITERIO_VACIO, CriterioActivoRecurso
+from application.sync_pipeline import ConfigVinculados
 
 logger = logging.getLogger(__name__)
 
@@ -745,8 +747,12 @@ class PreviewSync:
         empresa_obras: int,
         digitos_excluidos: int = 0,
         sql_incidencias: str | None = None,
+        vinculados: ConfigVinculados | None = None,
     ) -> None:
         self._sigrid = sigrid
+        # Recursos vinculados (F-044, R3): sin configuración, el preview no
+        # los lee ni publica la sección.
+        self._vinculados = vinculados
         self._sql_empleados = sql_empleados
         self._sql_obras = sql_obras
         # Catálogo `auxemp` (F-032). Sin consulta, el preview no lo lee ni
@@ -787,6 +793,7 @@ class PreviewSync:
             COLUMNAS_INCIDENCIAS,
             COLUMNAS_OBRAS,
             _validar_columnas,
+            decidir_vinculos,
             preparar_obras,
         )
 
@@ -856,6 +863,10 @@ class PreviewSync:
                 "motivo_var": uvar.motivo,
             },
         }
+        if self._vinculados is not None:
+            # Antes que incidencias y empresas, que siguen siendo las últimas.
+            salida["vinculados"] = resumir_vinculos(decidir_vinculos(
+                self._sigrid, self._vinculados, emp.filas))
         if self._sql_incidencias is not None:
             # Antes que las empresas, en el mismo orden que el sync.
             brutas_inc = self._sigrid.leer(self._sql_incidencias)
@@ -868,6 +879,30 @@ class PreviewSync:
                               "sync.empresas.sql")
             salida["empresas"] = resumir_empresas(brutas_empresas)
         return salida
+
+
+def resumir_vinculos(r: ResultadoVinculos) -> dict[str, Any]:
+    """Bloque `vinculados` del preview (F-044, R3): contadores y códigos,
+    nunca nombres ni descripciones (para que Administración rellene el
+    campo). Los de tipo excluido, solo contados por tipo."""
+    def por_tipo(recursos: Any) -> dict[str, int]:
+        return dict(Counter(v.tipo or "(sin tipo)" for v in recursos)
+                    .most_common())
+
+    vinculados = [v for v, _ in r.vinculos]
+    return {
+        "leidos": (len(vinculados) + len(r.sin_campo)
+                   + len(r.hacia_no_trabajador) + len(r.excluidos)),
+        "vinculados": len(vinculados),
+        "trabajadores": len(r.por_trabajador()),
+        "por_tipo": por_tipo(vinculados),
+        "sin_campo": {"total": len(r.sin_campo),
+                      "codigos": codigos(r.sin_campo)},
+        "hacia_no_trabajador": {"total": len(r.hacia_no_trabajador),
+                                "codigos": codigos(r.hacia_no_trabajador)},
+        "excluidos": {"total": len(r.excluidos),
+                      "por_tipo": por_tipo(r.excluidos)},
+    }
 
 
 def _por_empresa(filas: list[dict[str, Any]]) -> dict[str, int]:

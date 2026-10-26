@@ -249,6 +249,37 @@ sync:
       - codigo: CIH     # H · Huelga
         palabras: []
 
+  vinculados:
+    # Recursos no persona vinculados a un trabajador (F-044, R1-R5, D1, D2;
+    # docs/ARCHITECTURE.md#regla-vinculado): teléfono, gasoil, vehículo…
+    # El vínculo es el campo extendido «Recurso Asociado» de Sigrid
+    # (`defext` 46): su `conext.valn` es el `res.ide` del trabajador. Se lee
+    # de CUALQUIER clasificación salvo persona (`r.cla <> 1`).
+    # `campo`: el `conext.cod` del campo; viaja como el parámetro `?` de la
+    #          SQL, nunca concatenado.
+    # `desde`: primer periodo (AAAA-MM) cuyas líneas llevan sus vinculados al
+    #          registrar (D13); los meses anteriores se registran como antes.
+    # `tipos_excluidos`: tipos de recurso (`auxrestip.cod`) que no se
+    #          vinculan aunque tengan el campo (D1b: `VP`, kilómetros); el
+    #          preview los cuenta.
+    # Alias obligatorios (sin uno, el sync falla sin persistir nada): ide,
+    # principal_ide, cod, descripcion, empresa, fecbaj (0 = sin baja), tipo,
+    # tipo_res, horide (hora por defecto del recurso). Unas 560 filas: sin
+    # paginar; `truncated` es error.
+    campo: "5"
+    desde: "2026-10"
+    tipos_excluidos: [VP]
+    sql: |
+      SELECT r.ide AS ide, x.valn AS principal_ide, c.cod AS cod,
+             CAST(c.res AS NVARCHAR(255)) AS descripcion, c.emp AS empresa,
+             c.fecbaj AS fecbaj, t.cod AS tipo,
+             CAST(t.res AS NVARCHAR(80)) AS tipo_res, r.horide AS horide
+      FROM dbo.conext x
+      JOIN dbo.res r ON r.ide = x.conide
+      JOIN dbo.con c ON c.ide = r.ide
+      LEFT JOIN dbo.auxrestip t ON t.ide = r.restipide
+      WHERE RTRIM(x.cod) = ? AND RTRIM(x.camtab) = 'res' AND r.cla <> 1
+
 export:
   # Prefijo con el que se exportan las líneas de postventa, para mantener
   # la compatibilidad con la plantilla Excel actual (códigos "Postv-XXX").

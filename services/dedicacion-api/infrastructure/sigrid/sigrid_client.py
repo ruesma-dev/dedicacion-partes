@@ -24,7 +24,10 @@ class SigridApiClient:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
-    def leer(self, sql: str) -> list[dict[str, Any]]:
+    def leer(self, sql: str, parametros: list[Any] | None = None
+             ) -> list[dict[str, Any]]:
+        """`parametros`: los valores de los `?`, en orden (F-044: el código
+        del campo de `sync.vinculados`). Nunca se concatenan en `sql`."""
         cfg = self._settings
         if not cfg.sigrid_configurado:
             raise SigridNoConfigurado(
@@ -34,7 +37,7 @@ class SigridApiClient:
         payload = {
             "database": cfg.sigrid_api_database,
             "sql": sql,
-            "parameters": [],
+            "parameters": list(parametros or []),
             "max_rows": cfg.sigrid_max_rows,
             "timeout_seconds": int(cfg.sigrid_api_timeout_s),
         }

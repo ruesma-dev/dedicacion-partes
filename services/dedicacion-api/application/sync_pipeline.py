@@ -1,5 +1,6 @@
 # application/sync_pipeline.py
-"""Pipeline de sincronización de maestros (empleados, obras y empresas).
+"""Pipeline de sincronización de maestros (empleados, obras, empresas,
+incidencias y, desde F-044, recursos vinculados).
 
 Patrón Pipeline + Steps con objeto de contexto, como en el resto de
 microservicios: cada paso recibe/enriquece el SyncContext y el pipeline
@@ -26,6 +27,7 @@ from application.filtros_maestros import (
 from domain.models import (
     EstadoPeriodo,
     Periodo,
+    RecursoVinculado,
     ResultadoSync,
     ResultadoSyncMaestro,
     ResultadoUniverso,
@@ -39,6 +41,7 @@ from domain.ports import (
     UnitOfWork,
 )
 from domain.vigencia import inicio_ventana_baja
+from domain.vinculados import ResultadoVinculos, vincular
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +56,11 @@ COLUMNAS_EMPRESAS = frozenset({"numemp", "nombre"})
 #: clave, sin `cod`/`res` no hay letra ni nombre y sin `fecbaj` no se sabe
 #: si sigue activa.
 COLUMNAS_INCIDENCIAS = frozenset({"ide", "cod", "res", "fecbaj"})
+#: Recursos vinculados (F-044, R1, design §7.1): los alias exactos de
+#: `sync.vinculados.sql`; sin uno de ellos el sync falla sin persistir.
+COLUMNAS_VINCULADOS = frozenset({
+    "ide", "principal_ide", "cod", "descripcion", "empresa", "fecbaj",
+    "tipo", "tipo_res", "horide"})
 
 
 @dataclass
@@ -65,6 +73,76 @@ class SyncContext:
     resultado_obras: ResultadoSyncMaestro | None = None
     resultado_empresas: ResultadoSyncMaestro | None = None
     resultado_incidencias: ResultadoSyncMaestro | None = None
+    # F-044: lo que decide `vincular` y lo que guarda el repositorio.
+    vinculos: ResultadoVinculos | None = None
+    resultado_vinculados: ResultadoSyncMaestro | None = None
+
+
+@dataclass(frozen=True)
+class ConfigVinculados:
+    """`sync.vinculados` de `config.yaml` (F-044, R1, R3, R10): el código
+    del campo extendido «Recurso Asociado» (va como parámetro de la SQL, no
+    concatenado), el primer periodo cuyas líneas llevan vinculados al
+    registrar (`desde`, AAAA-MM), los tipos que no se vinculan (D1b) y la
+    SQL. Mal escrita, la api no arranca."""
+
+    campo: str
+    desde: tuple[int, int]
+    tipos_excluidos: frozenset[str]
+    sql: str
+
+    @classmethod
+    def desde_config(cls, cfg: dict[str, Any]) -> ConfigVinculados:
+        campo = texto_o_none(cfg.get("campo"))
+        if campo is None:
+            raise ValueError("Falta sync.vinculados.campo en config.yaml")
+        sql = texto_o_none(cfg.get("sql"))
+        if sql is None:
+            raise ValueError("Falta sync.vinculados.sql en config.yaml")
+        return cls(campo=campo, desde=_anio_mes(cfg.get("desde")),
+                   tipos_excluidos=frozenset(
+                       str(t).strip().upper()
+                       for t in cfg.get("tipos_excluidos") or []),
+                   sql=sql)
+
+
+def _anio_mes(valor: Any) -> tuple[int, int]:
+    """AAAA-MM como `(anio, mes)`; cualquier otra forma, `ValueError`."""
+    partes = str(valor or "").strip().split("-")
+    if (len(partes) == 2 and len(partes[0]) == 4 and partes[0].isdigit()
+            and partes[1].isdigit() and 1 <= int(partes[1]) <= 12):
+        return int(partes[0]), int(partes[1])
+    raise ValueError(
+        f"sync.vinculados.desde debe ser AAAA-MM; recibido {valor!r}")
+
+
+def fila_a_vinculado(fila: dict[str, Any]) -> RecursoVinculado:
+    """Una fila de `sync.vinculados.sql` como `RecursoVinculado`: textos
+    sin espacios en los bordes (vacío = None) y baja 0 = sin baja."""
+    return RecursoVinculado(
+        ide=int(fila["ide"]),
+        principal_ide=entero_o_none(fila.get("principal_ide")),
+        cod=texto_o_none(fila.get("cod")),
+        descripcion=texto_o_none(fila.get("descripcion")),
+        empresa=entero_o_none(fila.get("empresa")),
+        fecha_baja=entero_o_none(fila.get("fecbaj")) or None,
+        tipo=texto_o_none(fila.get("tipo")),
+        tipo_res=texto_o_none(fila.get("tipo_res")),
+        horide=entero_o_none(fila.get("horide")),
+    )
+
+
+def decidir_vinculos(sigrid: SigridGateway, cfg: ConfigVinculados,
+                     filas_empleados: list[dict[str, Any]]) -> ResultadoVinculos:
+    """Lee los vinculados (el campo, como parámetro) y los vincula con los
+    trabajadores que guarda el sync (`filas_empleados`, ya depuradas). UNA
+    función para el step y el preview: lo que enseña el preview es lo que
+    se guarda. `truncated` lo convierte el cliente en `SigridError`."""
+    filas = sigrid.leer(cfg.sql, [cfg.campo])
+    _validar_columnas(filas, COLUMNAS_VINCULADOS, "sync.vinculados.sql")
+    trabajadores = {int(f["ide"]) for f in filas_empleados}
+    return vincular([fila_a_vinculado(f) for f in filas], trabajadores,
+                    cfg.tipos_excluidos)
 
 
 def ventana_de_bajas(periodos: Iterable[Periodo], hoy: date) -> int:
@@ -290,6 +368,28 @@ class FetchTiposIncidenciaStep:
         ctx.filas_incidencias = filas
 
 
+class FetchVinculadosStep:
+    """Lee los recursos con el campo «Recurso Asociado» y decide su vínculo
+    (F-044, R1-R3). Va DESPUÉS de `FetchEmpleadosStep`: los trabajadores
+    son los que el sync va a guardar. Si la lectura falla o viene truncada,
+    el sync falla entero antes de persistir nada (R5)."""
+
+    nombre = "fetch_vinculados"
+
+    def __init__(self, sigrid: SigridGateway, cfg: ConfigVinculados) -> None:
+        self._sigrid = sigrid
+        self._cfg = cfg
+
+    def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
+        r = decidir_vinculos(self._sigrid, self._cfg, ctx.filas_empleados)
+        logger.info(
+            "sync vinculados: %d vinculados, %d sin campo, %d hacia un no "
+            "trabajador, %d de un tipo excluido",
+            len(r.vinculos), len(r.sin_campo), len(r.hacia_no_trabajador),
+            len(r.excluidos))
+        ctx.vinculos = r
+
+
 class UpsertTrabajadoresStep:
     nombre = "upsert_trabajadores"
 
@@ -319,6 +419,18 @@ class UpsertTiposIncidenciaStep:
             ctx.filas_incidencias)
 
 
+class UpsertVinculadosStep:
+    """Guarda el vínculo (F-044, R5). Va DESPUÉS de `UpsertTrabajadoresStep`
+    (la clave ajena es el trabajador). Sin `FetchVinculadosStep`, nada."""
+
+    nombre = "upsert_vinculados"
+
+    def ejecutar(self, ctx: SyncContext, uow: UnitOfWork) -> None:
+        if ctx.vinculos is None:
+            return
+        ctx.resultado_vinculados = uow.vinculados.sincronizar(ctx.vinculos)
+
+
 # ----------------------------------------------------------------------
 # Pipeline
 # ----------------------------------------------------------------------
@@ -343,15 +455,17 @@ class SyncMaestrosPipeline:
             duracion_s=duracion,
             empresas=ctx.resultado_empresas or ResultadoSyncMaestro(),
             incidencias=ctx.resultado_incidencias or ResultadoSyncMaestro(),
+            vinculados=ctx.resultado_vinculados or ResultadoSyncMaestro(),
         )
         logger.info(
             "sync completado en %.2fs: empleados=%s obras=%s empresas=%s "
-            "incidencias=%s",
+            "incidencias=%s vinculados=%s",
             duracion,
             resultado.empleados,
             resultado.obras,
             resultado.empresas,
             resultado.incidencias,
+            resultado.vinculados,
         )
         return resultado
 

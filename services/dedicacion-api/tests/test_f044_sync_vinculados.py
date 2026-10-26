@@ -281,3 +281,357 @@ def test_f044_r5_el_uow_expone_el_repositorio():
         lambda: SimpleNamespace(close=lambda: None))
     with uow as u:
         assert isinstance(u.vinculados, PgVinculadoRepository)
+
+
+# ============================ T3: el sync ================================= #
+def _fila(ide: int, principal: int | None, tipo: str = "TF",
+          fecbaj: int | None = 0, cod: str | None = None) -> dict[str, Any]:
+    """Una fila de la consulta de `sync.vinculados` (alias de design §7.1)."""
+    return {"ide": ide, "principal_ide": principal, "cod": cod or f"TF-{ide}",
+            "descripcion": f" CONSUMOS PEPE {ide} ", "empresa": 1,
+            "fecbaj": fecbaj, "tipo": tipo, "tipo_res": " TELEFONO ",
+            "horide": 901}
+
+
+def _emp(ide: int) -> dict[str, Any]:
+    return {"ide": ide, "cod": f"E{ide}", "nombre": f"Persona {ide}",
+            "dni": None, "empresa": 1, "categoria": "Técnico",
+            "estado_recurso": "1", "fecha_baja": None, "baja_laboral": 0,
+            "cod_hora_mes": "MENC", "importe_mes": 1}
+
+
+SQL_EMP = "SELECT ... FROM dbo.emp"
+SQL_VIN = "SELECT ... FROM conext x WHERE RTRIM(x.cod) = ?"
+
+
+class _SigridVin:
+    """Empleados para cualquier consulta salvo la de vinculados y la de
+    obras (por su texto); apunta cada lectura con sus parámetros."""
+
+    def __init__(self, vinculados: list[dict[str, Any]],
+                 empleados: list[dict[str, Any]] | None = None,
+                 fallo: Exception | None = None) -> None:
+        self.vinculados = vinculados
+        self.empleados = [_emp(7), _emp(8)] if empleados is None else empleados
+        self.fallo = fallo
+        self.leidas: list[tuple[str, list[Any] | None]] = []
+
+    def leer(self, sql: str, parametros: list[Any] | None = None
+             ) -> list[dict[str, Any]]:
+        self.leidas.append((sql, parametros))
+        if "conext" in sql:
+            if self.fallo is not None:
+                raise self.fallo
+            return [dict(f) for f in self.vinculados]
+        if "dbo.obr" in sql:
+            return [{"ide": 70, "cod": "0070", "empresa": 1,
+                     "descripcion": "OBRA", "estado_sigrid": "En curso"}]
+        if "dbo.aux" in sql:
+            return []
+        return [dict(f) for f in self.empleados]
+
+
+def _cfg(**kw: Any) -> Any:
+    from application.sync_pipeline import ConfigVinculados
+
+    base = {"campo": "5", "desde": "2026-10", "tipos_excluidos": ["VP"],
+            "sql": SQL_VIN}
+    base.update(kw)
+    return ConfigVinculados.desde_config(base)
+
+
+class _RepoVin:
+    def __init__(self) -> None:
+        self.recibido: Any = None
+
+    def sincronizar(self, resultado: Any) -> Any:
+        from domain.models import ResultadoSyncMaestro
+
+        self.recibido = resultado
+        return ResultadoSyncMaestro(recibidos=len(resultado.vinculos),
+                                    altas=len(resultado.vinculos))
+
+
+class _RepoEmp:
+    def __init__(self) -> None:
+        self.recibido: list[dict[str, Any]] | None = None
+
+    def sincronizar(self, filas: list[dict[str, Any]]) -> Any:
+        from domain.models import ResultadoSyncMaestro
+
+        self.recibido = filas
+        return ResultadoSyncMaestro(recibidos=len(filas))
+
+
+class _UowVin:
+    def __init__(self) -> None:
+        self.trabajadores = _RepoEmp()
+        self.obras = _RepoEmp()
+        self.vinculados = _RepoVin()
+        self.periodos = SimpleNamespace(listar=list)
+        self.commits = 0
+
+    def commit(self) -> None:
+        self.commits += 1
+
+
+def _pipeline(sigrid: _SigridVin, cfg: Any = None) -> Any:
+    from application import sync_pipeline as sp
+
+    from tests.conftest import UniversoFalso
+    return sp.SyncMaestrosPipeline([
+        sp.FetchEmpleadosStep(sigrid, SQL_EMP),
+        sp.FetchObrasStep(sigrid, "SELECT ... FROM dbo.obr",
+                          universo=UniversoFalso(), empresa_obras=1),
+        sp.FetchVinculadosStep(sigrid, cfg or _cfg()),
+        sp.UpsertTrabajadoresStep(),
+        sp.UpsertObrasStep(),
+        sp.UpsertVinculadosStep(),
+    ])
+
+
+def _alias(sql: str) -> set[str]:
+    import re
+    return set(re.findall(r"\bAS\s+([a-z_]+)\b", sql))
+
+
+# ================================ R1 ===================================== #
+def test_f044_r1_config_versionada():
+    from application.sync_pipeline import COLUMNAS_VINCULADOS
+    from config.settings import cargar_config
+
+    cfg = cargar_config()["sync"]["vinculados"]
+    assert (cfg["campo"], cfg["desde"], cfg["tipos_excluidos"]) == (
+        "5", "2026-10", ["VP"])
+    sql = cfg["sql"]
+    assert sql.count("?") == 1
+    assert _alias(sql) == set(COLUMNAS_VINCULADOS)
+    assert frozenset({
+        "ide", "principal_ide", "cod", "descripcion", "empresa", "fecbaj",
+        "tipo", "tipo_res", "horide"}) == COLUMNAS_VINCULADOS
+    plano = " ".join(sql.split())
+    for trozo in ("FROM dbo.conext x", "RTRIM(x.cod) = ?",
+                  "RTRIM(x.camtab) = 'res'", "r.cla <> 1",
+                  "LEFT JOIN dbo.auxrestip t ON t.ide = r.restipide",
+                  "x.valn AS principal_ide", "r.horide AS horide"):
+        assert trozo in plano, trozo
+    assert "'5'" not in sql  # el código del campo va como parámetro
+    _cfg(**cfg)  # la versionada se lee sin error
+
+
+def test_f044_r1_config_se_lee_entera():
+    c = _cfg(tipos_excluidos=[" vp ", "Co"])
+    assert (c.campo, c.desde, c.tipos_excluidos, c.sql) == (
+        "5", (2026, 10), frozenset({"VP", "CO"}), SQL_VIN)
+    assert _cfg(tipos_excluidos=None).tipos_excluidos == frozenset()
+    assert _cfg(campo=" 5 ").campo == "5"
+
+
+@pytest.mark.parametrize("desde", ["2026", "2026-13", "2026-00", "x-10", "",
+                                   None, "2026-1-1"])
+def test_f044_r1_desde_mal_escrito_no_arranca(desde):
+    with pytest.raises(ValueError, match=r"sync\.vinculados\.desde"):
+        _cfg(desde=desde)
+
+
+@pytest.mark.parametrize("falta", ["campo", "sql"])
+@pytest.mark.parametrize("valor", [" ", None])
+def test_f044_r1_sin_campo_o_sin_sql_no_arranca(falta, valor):
+    from application.sync_pipeline import ConfigVinculados
+
+    base = {"campo": "5", "desde": "2026-10", "sql": "SELECT 1"}
+    base[falta] = valor
+    with pytest.raises(ValueError, match=rf"sync\.vinculados\.{falta}"):
+        ConfigVinculados.desde_config(base)
+
+
+def test_f044_r1_el_step_lee_con_el_campo_como_parametro():
+    from application.sync_pipeline import FetchVinculadosStep, SyncContext
+
+    sigrid = _SigridVin([_fila(10, 7)])
+    ctx = SyncContext(filas_empleados=[_emp(7)])
+    FetchVinculadosStep(sigrid, _cfg(campo="5")).ejecutar(ctx, _UowVin())
+    assert sigrid.leidas == [(SQL_VIN, ["5"])]
+    assert ctx.vinculos is not None
+    [(v, trabajador)] = ctx.vinculos.vinculos
+    assert trabajador == 7
+    assert v == RecursoVinculado(
+        ide=10, principal_ide=7, cod="TF-10", descripcion="CONSUMOS PEPE 10",
+        empresa=1, fecha_baja=None, tipo="TF", tipo_res="TELEFONO",
+        horide=901)
+
+
+def test_f044_r1_fila_a_recurso_con_baja_y_nulos():
+    from application.sync_pipeline import fila_a_vinculado
+
+    v = fila_a_vinculado({**_fila(10, None, fecbaj=20261015), "cod": "  ",
+                          "horide": None, "empresa": None, "tipo": None})
+    assert (v.principal_ide, v.fecha_baja, v.cod, v.horide, v.empresa,
+            v.tipo) == (None, 20261015, None, None, None, None)
+    assert fila_a_vinculado(_fila(10, "7")).principal_ide == 7  # type: ignore[arg-type]
+    assert fila_a_vinculado(_fila(10, 7, fecbaj=None)).fecha_baja is None
+
+
+def test_f044_r1_sin_columnas_el_sync_falla():
+    from application.sync_pipeline import FetchVinculadosStep, SyncContext
+
+    fila = {k: v for k, v in _fila(10, 7).items() if k != "principal_ide"}
+    with pytest.raises(ValueError,
+                       match=r"sync\.vinculados\.sql.*principal_ide"):
+        FetchVinculadosStep(_SigridVin([fila]), _cfg()).ejecutar(
+            SyncContext(filas_empleados=[_emp(7)]), _UowVin())
+
+
+def test_f044_r1_el_cliente_manda_los_parametros(monkeypatch):
+    from config.settings import Settings
+    from infrastructure.sigrid import sigrid_client
+
+    enviados: list[dict[str, Any]] = []
+
+    class _Resp:
+        status_code = 200
+        text = ""
+
+        def json(self) -> dict[str, Any]:
+            return {"ok": True, "columns": ["ide"], "rows": [[1]]}
+
+    def post(_url: str, json: dict[str, Any], **_k: Any) -> _Resp:
+        enviados.append(json)
+        return _Resp()
+
+    monkeypatch.setattr(sigrid_client.httpx, "post", post)
+    cliente = sigrid_client.SigridApiClient(Settings(
+        _env_file=None, sigrid_api_base_url="http://x",
+        sigrid_api_function_key="k"))
+    assert cliente.leer("SELECT ? AS ide", ["5"]) == [{"ide": 1}]
+    assert cliente.leer("SELECT 1 AS ide") == [{"ide": 1}]
+    assert [e["parameters"] for e in enviados] == [["5"], []]
+
+
+# ================================ R5 (sync) ============================== #
+def test_f044_r5_el_sync_guarda_el_vinculo_de_los_trabajadores_leidos():
+    sigrid = _SigridVin([_fila(10, 7), _fila(11, 8, tipo="CO"),
+                         _fila(12, 999), _fila(13, None),
+                         _fila(14, 7, tipo="VP")])
+    uow = _UowVin()
+    resultado = _pipeline(sigrid).ejecutar(uow)
+    r = uow.vinculados.recibido
+    assert [(v.ide, t) for v, t in r.vinculos] == [(10, 7), (11, 8)]
+    assert [v.ide for v in r.hacia_no_trabajador] == [12]
+    assert [v.ide for v in r.sin_campo] == [13]
+    assert [v.ide for v in r.excluidos] == [14]
+    assert uow.commits == 1
+    assert resultado.vinculados.recibidos == 2
+
+
+def test_f044_r5_los_trabajadores_son_los_que_guarda_el_sync():
+    """El que apunta a un recurso que el sync de empleados descarta (sin
+    código de hora mensual) no se vincula."""
+    sin_mes = {**_emp(8), "cod_hora_mes": None}
+    sigrid = _SigridVin([_fila(10, 7), _fila(11, 8)],
+                        empleados=[_emp(7), sin_mes])
+    uow = _UowVin()
+    _pipeline(sigrid).ejecutar(uow)
+    r = uow.vinculados.recibido
+    assert [v.ide for v, _ in r.vinculos] == [10]
+    assert [v.ide for v in r.hacia_no_trabajador] == [11]
+
+
+def test_f044_r5_truncated_el_sync_falla_sin_persistir():
+    from domain.errors import SigridError
+
+    uow = _UowVin()
+    sigrid = _SigridVin([_fila(10, 7)], fallo=SigridError("truncado"))
+    with pytest.raises(SigridError, match="truncado"):
+        _pipeline(sigrid).ejecutar(uow)
+    assert uow.vinculados.recibido is None
+    assert uow.trabajadores.recibido is None
+    assert uow.commits == 0
+
+
+def test_f044_r5_sin_los_pasos_el_resultado_queda_a_cero():
+    from application import sync_pipeline as sp
+    from domain.models import ResultadoSyncMaestro
+
+    from tests.conftest import UniversoFalso
+    sigrid = _SigridVin([_fila(10, 7)])
+    resultado = sp.SyncMaestrosPipeline([
+        sp.FetchEmpleadosStep(sigrid, SQL_EMP),
+        sp.FetchObrasStep(sigrid, "SELECT ... FROM dbo.obr",
+                          universo=UniversoFalso(), empresa_obras=1),
+        sp.UpsertTrabajadoresStep(), sp.UpsertObrasStep(),
+    ]).ejecutar(_UowVin())
+    assert resultado.vinculados == ResultadoSyncMaestro()
+    assert not any("conext" in sql for sql, _ in sigrid.leidas)
+
+
+def test_f044_r5_upsert_sin_fetch_no_guarda_nada():
+    from application.sync_pipeline import SyncContext, UpsertVinculadosStep
+
+    uow = _UowVin()
+    ctx = SyncContext()
+    UpsertVinculadosStep().ejecutar(ctx, uow)
+    assert uow.vinculados.recibido is None
+    assert ctx.resultado_vinculados is None
+
+
+# ================================ R3 (preview) =========================== #
+def _preview(sigrid: _SigridVin, cfg: Any = "defecto", **kw: Any) -> Any:
+    from application.use_cases import PreviewSync
+
+    from tests.conftest import UniversoFalso
+    return PreviewSync(sigrid, SQL_EMP, "SELECT ... FROM dbo.obr",
+                       universo=UniversoFalso(), empresa_obras=1,
+                       vinculados=_cfg() if cfg == "defecto" else cfg, **kw)
+
+
+def test_f044_r3_preview_publica_contadores_y_codigos_sin_nombres():
+    sigrid = _SigridVin([
+        _fila(10, 7), _fila(11, 7, tipo="CO"), _fila(15, 8),
+        _fila(12, 999, cod="TF-B"), _fila(16, 555, cod="TF-A"),
+        _fila(13, None, cod="GA-1"), _fila(14, 7, tipo="VP"),
+        _fila(17, 8, tipo="VP"), _fila(18, 8, tipo=None)])
+    salida = _preview(sigrid).ejecutar()
+    assert salida["vinculados"] == {
+        "leidos": 9,
+        "vinculados": 4,
+        "trabajadores": 2,
+        "por_tipo": {"TF": 2, "CO": 1, "(sin tipo)": 1},
+        "sin_campo": {"total": 1, "codigos": ["GA-1"]},
+        "hacia_no_trabajador": {"total": 2, "codigos": ["TF-A", "TF-B"]},
+        "excluidos": {"total": 2, "por_tipo": {"VP": 2}},
+    }
+    assert "PEPE" not in repr(salida["vinculados"])
+    assert (SQL_VIN, ["5"]) in sigrid.leidas
+
+
+def test_f044_r3_preview_y_sync_deciden_lo_mismo():
+    filas = [_fila(10, 7), _fila(12, 999), _fila(13, None),
+             _fila(14, 7, tipo="VP")]
+    uow = _UowVin()
+    _pipeline(_SigridVin(filas)).ejecutar(uow)
+    r = uow.vinculados.recibido
+    salida = _preview(_SigridVin(filas)).ejecutar()["vinculados"]
+    assert (salida["vinculados"], salida["sin_campo"]["total"],
+            salida["hacia_no_trabajador"]["total"],
+            salida["excluidos"]["total"]) == (
+        len(r.vinculos), len(r.sin_campo), len(r.hacia_no_trabajador),
+        len(r.excluidos)) == (1, 1, 1, 1)
+
+
+def test_f044_r3_preview_sin_config_no_lee_ni_publica():
+    sigrid = _SigridVin([_fila(10, 7)])
+    salida = _preview(sigrid, cfg=None).ejecutar()
+    assert "vinculados" not in salida
+    assert not any("conext" in sql for sql, _ in sigrid.leidas)
+
+
+def test_f044_r3_preview_lee_antes_que_incidencias_y_empresas():
+    """El orden de lecturas de antes se conserva al final: incidencias y
+    empresas siguen siendo las dos últimas."""
+    sigrid = _SigridVin([_fila(10, 7)])
+    _preview(sigrid, sql_empresas="SELECT ... FROM dbo.auxemp",
+             sql_incidencias="SELECT ... FROM dbo.auxhor AS aux").ejecutar()
+    assert [sql for sql, _ in sigrid.leidas][-3:] == [
+        SQL_VIN, "SELECT ... FROM dbo.auxhor AS aux",
+        "SELECT ... FROM dbo.auxemp"]
