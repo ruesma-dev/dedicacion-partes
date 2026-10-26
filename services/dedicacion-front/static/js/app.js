@@ -2880,7 +2880,9 @@ document.addEventListener("DOMContentLoaded", init);
 // modal se GUARDA en el cuadrante: no viaja en el cuerpo del registro.
 // `pf`: lo pintado en el modal; `analizando`: por obra, el `seq` del último
 // preflight repetido aún en vuelo (F-050, M2 punto 5).
-const registro = { pisar: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map() };
+// `vistas` (F-064): las claves de pisado de vinculado ya enseñadas en este
+// modal; la que no está sale marcada una sola vez (ver `pintarModalPreflight`).
+const registro = { pisar: new Set(), vistas: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map() };
 
 // Abrir o repintar el modal cierra el selector de partida que hubiera,
 // también uno que aún cargaba (F-050, M2 punto 4): no puede quedar colgando
@@ -2921,7 +2923,10 @@ async function registroPreflight(trabajadorIde = null) {
   try {
     const pf = await pedirPreflight();
     if (seq !== registro.seq) return;
+    // Modal nuevo: nada marcado ni visto; los pisados de vinculado vuelven
+    // a salir marcados (F-064).
     registro.pisar = new Set();
+    registro.vistas = new Set();
     registro.pf = pf;
     pintarModalPreflight(pf);
   } catch (err) { toast(err.message, true); }
@@ -3296,6 +3301,16 @@ function pintarModalPreflight(pf) {
       `<th>Partida de imputación (clic para cambiarla)</th></tr></thead>` +
       `<tbody>${filas}</tbody></table>`;
     (o.conflictos || []).forEach((c) => {
+      // F-064 (enmienda de F-044 R20/R31): el pisado de un vinculado (sin
+      // motivo cuenta como pisado, igual que en `rotuloConflicto`) sale
+      // MARCADO la primera vez que se enseña en este modal; luego manda lo
+      // que el humano deje en la casilla, que se relee del DOM antes de
+      // repintar. El resto de casillas, desmarcadas como siempre.
+      if (c.vinculado && (c.motivo || "pisado") === "pisado" &&
+          !registro.vistas.has(c.clave)) {
+        registro.vistas.add(c.clave);
+        registro.pisar.add(c.clave);
+      }
       // F-049: rótulo por tipo; la casilla sigue llevando la misma `clave`.
       const r = rotuloConflicto(c);
       html += `<div class="conflicto"><label class="check">` +
