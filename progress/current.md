@@ -1,15 +1,17 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-062** (rachas de incidencia como
-Administración; `sdd: true`, rigor crítico) **cerrada (`done`) el
-2026-10-26** y **desplegada el mismo día** (ver «Producción, hoy»): review 2 APROBADA (`6e02d5c`), `bash harness/init.sh` en verde
-(raíz 418 + 1 skipped, api 1164, front 376, transfer 1425; cobertura 99.8 %
-de 923), T19 y T20 hechas y cumplen (`progress/manual_F-062.md`), rama unida
-a `dev`; resumen en `progress/history.md`. **Pendiente del humano:** el **aviso a `partes`** (texto en
-«Riesgos para el humano», más abajo). **Siguiente:** F-044 (recursos
-vinculados), spec APROBADA el 2026-10-25 en el worktree `porcentajes-f044`
-(`768ec5e`); después F-054 (spec aprobada, worktree `porcentajes-f054`).
+**En curso: F-044** (aplicar los porcentajes también a los recursos
+vinculados al trabajador; `sdd: true`, rigor crítico), **`in_progress` desde
+el 2026-10-26**, en el worktree `porcentajes-f044`, rama
+`feature/F-044-recursos-vinculados`, con `dev` unido (F-062 incluida). Spec
+APROBADA por el humano el 2026-10-25 («ok a todo»), en
+`specs/F-044-recursos-vinculados/`. Implementer lanzado el 2026-10-26; su
+informe irá en `progress/impl_F-044.md`. Escribe en Sigrid solo vía el
+transfer y **solo en modo pruebas** (0404, `PRUEBA-PORC`); ninguna escritura
+real. **Pendiente del humano (de F-062, ya desplegada el 2026-10-26):** el
+**aviso a `partes`** (texto en «Riesgos para el humano», más abajo).
+**Después:** F-054 (spec aprobada, worktree `porcentajes-f054`).
 
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 
