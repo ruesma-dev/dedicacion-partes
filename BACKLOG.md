@@ -5,7 +5,7 @@
 
 Resumen: **59 features**, 24 abiertas, 35 terminadas.
 
-Bloqueadas: **F-044**.
+En curso: **F-044**.
 
 ## Trabajo abierto
 
@@ -14,7 +14,7 @@ Bloqueadas: **F-044**.
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
-| F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | bloqueada | critico | `feature/F-044-recursos-vinculados` |
+| F-044 | Aplicar los porcentajes también a los recursos vinculados al trabajador | 5 | en curso | critico | `feature/F-044-recursos-vinculados` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
 | F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | pendiente | critico | `feature/F-053-delegados-parte-unico` |
 | F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 8 | pendiente | critico | `feature/F-054-sync-trae-porcentajes` |
@@ -98,7 +98,7 @@ Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21
 
 ### F-044 · Aplicar los porcentajes también a los recursos vinculados al trabajador
 
-estado **bloqueada** · prioridad 5 · rigor `critico` · SDD sí · rama `feature/F-044-recursos-vinculados`
+estado **en curso** · prioridad 5 · rigor `critico` · SDD sí · rama `feature/F-044-recursos-vinculados`
 
 Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). 2026-10-08: el humano lo vuelve a pedir («que no genere solo el parte del recurso sino de los recursos vinculados en el mismo %: vehículo, viaje, teléfono, gasoil...»); sube de prioridad. Ejemplo real: GONZALEZ PANIAGUA tiene en PT26/00319 (0694, 2026-09) junto a su MADM 95 % las líneas OTEL y KM al 95 %, metidas a mano. ALCANCE PRECISADO por Juan Romero el 2026-10-08 (hilo «RE: Porcentajes Septiembre 2026»): «solo los recursos persona, gasoil, vehículo y teléfono» van por porcentaje; gastos de caja, kilómetros y mensajería se siguen metiendo «de la manera habitual» (la mensajería pasa a F-052). Por tanto KM NO se reparte aunque esté vinculado. Desde octubre Juan quiere el volcado completo desde la app y ha pedido a Administración dejar los partes de octubre limpios salvo el personal operario con horas: F-044 hace falta para registrar octubre. SPEC APROBADA por el humano el 2026-10-25 («ok a todo»: todas las decisiones abiertas con la opción A recomendada); in_progress desde el 2026-10-26, tras cerrar y desplegar F-062.
 

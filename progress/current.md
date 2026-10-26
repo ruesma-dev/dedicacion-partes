@@ -1,47 +1,43 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Bloqueada: F-044** (aplicar los porcentajes también a los recursos
-vinculados al trabajador; `sdd: true`, rigor crítico), **`blocked` desde el
-2026-10-26** (antes `in_progress` desde ese mismo día): T1-T6 hechas, parada
-prevista antes de T7 con tres preguntas al humano (sección «F-044 · BLOQUEO»,
-justo debajo). Worktree `porcentajes-f044`, rama
+**En curso: F-044** (aplicar los porcentajes también a los recursos
+vinculados al trabajador; `sdd: true`, rigor crítico), **`in_progress`**
+(bloqueada antes de T7 el 2026-10-26 y **desbloqueada el mismo día**: el
+humano contestó «si a todo» a las tres preguntas, ver «F-044 · decisiones
+del humano al bloqueo de T7», justo debajo). T1-T6 hechas; implementer
+retomado en T7. Worktree `porcentajes-f044`, rama
 `feature/F-044-recursos-vinculados`, con `dev` unido (F-062 incluida). Spec
 APROBADA por el humano el 2026-10-25 («ok a todo»), en
-`specs/F-044-recursos-vinculados/`. Informe parcial del implementer:
+`specs/F-044-recursos-vinculados/`. Informe del implementer:
 `progress/impl_F-044.md`. Escribe en Sigrid solo vía el
 transfer y **solo en modo pruebas** (0404, `PRUEBA-PORC`); ninguna escritura
 real. **Pendiente del humano (de F-062, ya desplegada el 2026-10-26):** el
 **aviso a `partes`** (texto en «Riesgos para el humano», más abajo).
 **Después:** F-054 (spec aprobada, worktree `porcentajes-f054`).
 
-## F-044 · BLOQUEO antes de T7 (implementer, 2026-10-26)
+## F-044 · decisiones del humano al bloqueo de T7 (2026-10-26, «si a todo»)
 
-Motivo: tasks.md manda parar antes de T7 y listar los tests del front que
-aseveran las columnas del cuadrante; por el camino han salido dos preguntas
-más que el implementer no puede decidir (tests fuera de la lista cerrada).
-Detalle y líneas exactas en `progress/impl_F-044.md` («Por qué paro»).
-Para retomar, el humano contesta:
-
-1. **Lista cerrada del front para T7** (columna «Tipo recurso»): ¿se añaden
-   `test_f050_subfilas.py` y `test_f050_m2_arreglos.py` (rompen seguro:
-   literales de `ORDEN_COLUMNAS_DEFECTO`, `COLUMNAS_POR_LINEA` y las 5 claves
-   de `COLUMNAS`), y `test_f050_t15f_total.py`, `test_f050_t15d_sombreado.py`,
+1. **Sí:** lista cerrada del front ampliada para T7 con
+   `test_f050_subfilas.py`, `test_f050_m2_arreglos.py`,
+   `test_f050_t15f_total.py`, `test_f050_t15d_sombreado.py`,
    `test_f050_t15e_sombreado.py`, `test_f030_tabla_incidencias.py` y
-   `test_f041_filtro_obra.py` (pueden romper)? Ninguno asevera `colspan`.
-2. **Cablear el sync de vinculados en `deps.py`** (T3): rompe 11 tests de la
-   api fuera de la lista cerrada (`test_f023_sync_empresa.py` ×5 `r18_*`,
-   `test_f025_…r12_el_contenedor_comparte_un_solo_transfer`,
-   `test_f030_…r3_el_sync_y_el_preview_reales…`, `test_f032_…` ×2,
-   `test_f039_…r10…` ×2): sus Sigrid falsos no aceptan `parametros` y sus
-   UoW no tienen `vinculados`. ¿Se añaden a la lista cerrada? Sin esto el
-   sync real no trae vinculados.
-3. **Nombres de columna de `recurso_vinculado`**: ¿se quedan
-   `empresa_recurso`/`fecha_baja_recurso` (desviación hecha) o se añaden
+   `test_f041_filtro_obra.py`. Cambio permitido: **solo** añadir la columna
+   «Tipo recurso» donde aparezcan las columnas; nada más de lo que aseveran.
+2. **Sí:** cablear el sync de vinculados en `deps.py`. Lista cerrada de la
+   api ampliada con los 11 tests: `test_f023_sync_empresa.py` ×5 `r18_*`,
+   `test_f025_sync_postventa.py::test_f025_r12_el_contenedor_comparte_un_solo_transfer`,
+   `test_f030_catalogo.py::test_f030_r3_el_sync_y_el_preview_reales_usan_la_consulta_de_config`,
+   `test_f032_empresas_sigrid.py` ×2 (`r1_el_sync_real…`, `r4_el_preview_real…`),
+   `test_f039_sync_var.py::test_f039_r10_el_contenedor_pasa_el_numero…` ×2.
+   Cambio permitido: **solo** sus dobles (Sigrid falso que acepte
+   `parametros`, UoW con `vinculados`); ninguna aserción cambia.
+3. **Nombres del design §7.2:** `recurso_vinculado` usa `empresa` y
+   `fecha_baja`; se deshace la desviación `empresa_recurso`/`fecha_baja_recurso`.
+   Lista cerrada ampliada con
    `test_f023_r1_empresa_solo_en_trabajador_y_obra` y
-   `test_f026_r8_fecha_baja_solo_en_trabajador` a la lista cerrada para usar
-   `empresa`/`fecha_baja` del design §7.2?
-
+   `test_f026_r8_fecha_baja_solo_en_trabajador`: cambio permitido, **solo**
+   admitir `recurso_vinculado` de forma explícita en su regla.
 ## F-044 · implementer (T1-T6 hechas, 2026-10-26)
 
 Contraste del design con el código tras unir F-062: los puntos de enganche
