@@ -1,23 +1,21 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-044** (aplicar los porcentajes también a los recursos
-vinculados al trabajador; `sdd: true`, rigor crítico), **`in_progress`**
-(bloqueada antes de T7 el 2026-10-26 y **desbloqueada el mismo día**: el
-humano contestó «si a todo» a las tres preguntas, ver «F-044 · decisiones
-del humano al bloqueo de T7», justo debajo). T1-T20, T22 y T24
-hechas por el implementer (2026-10-26; informe en `progress/impl_F-044.md`);
-**T21 MANUAL: la hizo el líder a petición expresa del humano** (2026-10-26, «haz tu la prueba»; modo pruebas, 0404): **CUMPLE** salvo las líneas ajenas hechas a mano y la validación de Administración, que quedan del humano (`progress/manual_F-044.md`; guion abajo, «F-044 · T21»); **review 1 RECHAZADA** solo por el rastro de T21 (`progress/review_F-044.md`), corregido por el líder;
-**7 mutantes equivalentes ACEPTADOS por el humano el 2026-10-26** («1 ok»)
-(`progress/mutacion_F-044.md`); T23 es del líder al desplegar. Worktree `porcentajes-f044`, rama
-`feature/F-044-recursos-vinculados`, con `dev` unido (F-062 incluida). Spec
-APROBADA por el humano el 2026-10-25 («ok a todo»), en
-`specs/F-044-recursos-vinculados/`. Informe del implementer:
-`progress/impl_F-044.md`. Escribe en Sigrid solo vía el
-transfer y **solo en modo pruebas** (0404, `PRUEBA-PORC`); ninguna escritura
-real. **Pendiente del humano (de F-062, ya desplegada el 2026-10-26):** el
-**aviso a `partes`** (texto en «Riesgos para el humano», más abajo).
-**Después:** F-063 (filtro por tipo de incidencia, dada de alta en `dev` el 2026-10-26, solo front) y F-054 (spec aprobada, worktree `porcentajes-f054`).
+**Ninguna feature en curso.** **F-044** (aplicar los porcentajes también a
+los recursos vinculados al trabajador; `sdd: true`, rigor crítico) **cerrada
+(`done`) el 2026-10-26** por decisión del humano («cierra ya»): review 2
+APROBADA (`947c285`), `bash harness/init.sh` en verde, 7 mutantes
+equivalentes aceptados («1 ok»), T21 hecha por el líder a petición del humano
+en modo pruebas (`progress/manual_F-044.md`, CUMPLE); resumen en
+`progress/history.md`. **Pendiente de desplegar** (transfer → api → front,
+lo lanza el humano; la api crea `recurso_vinculado` y `asignacion_vinculado`)
+y de T23 (`azure-apps/dedicacion.md` y aviso a `partes`, del líder al
+desplegar). **Pendiente del humano tras desplegar:** el resto de T21 (líneas
+ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
+validación de Administración) y los **avisos a `partes`** de F-062 y F-044
+(«Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
+**Siguiente:** F-063 (filtro de trabajadores por tipo de incidencia, solo
+front); después F-054 (spec aprobada, worktree `porcentajes-f054`).
 
 ## F-044 · decisiones del humano al bloqueo de T7 (2026-10-26, «si a todo»)
 

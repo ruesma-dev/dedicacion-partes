@@ -2904,3 +2904,50 @@ no cuentan incidencias; el preflight del script no imprime `requiere_confirmar`.
 lanzado por el humano; revisiones `Healthy` al 100 %; la api añadió
 `incidencia.sigrid_dia_fin_antes`); transfer en modo real.
 `azure-apps/dedicacion.md` a «desplegada». Aviso a `partes`, del humano.
+
+## 2026-10-26 · F-044 · Los porcentajes también a los recursos vinculados
+
+Pedida por el humano el 2026-10-07 y repetida el 2026-10-08; alcance de
+Juan Romero (persona, gasoil, vehículo y teléfono por porcentaje). `sdd:
+true`, rigor crítico; los tres servicios. **Qué hace:** el sync trae de
+Sigrid el vínculo de cada recurso no persona con su trabajador (campo
+extendido «Recurso Asociado», `conext.cod = '5'`; `VP` excluido, D1b) a
+`recurso_vinculado`. El cuadrante pinta la columna «Tipo recurso» y una
+subfila por vinculado bajo cada línea, con su partida: la hoja CI cuya
+cuenta tiene la subcuenta del vinculado (`CI.4.13` teléfono, `CI.4.1`
+gasoil, `CI.03P.9` vehículo), o la del trabajador en postventa, VAR y
+`CP*`; se puede elegir otra (`PARTIDA_VINCULADO`). Al registrar (desde
+2026-10, `sync.vinculados.desde`), cada vinculado va con el mismo % que su
+trabajador sobre su importe mensual (`pre` de `reshor`), después de él y en
+su parte, con `synckey porcentajes:vin:{registro}:{recurso}`; edita la
+línea que ya exista y pide confirmar el pisado como el trabajador (F-051);
+nunca `DELETE`. El modal los enseña bajo el trabajador. Evidencia de
+Sigrid: `progress/explore_F-044_sigrid.md`.
+
+**Recorrido.** Spec aprobada el 2026-10-25 («ok a todo»; D2 y D4 del
+humano). Implementación sobre `dev` con F-062 unida; `blocked` antes de T7
+por tres preguntas de tests ajenos, contestadas «si a todo» (lista cerrada
+del front y de la api ampliada; nombres `empresa`/`fecha_baja` del design).
+Review 1 RECHAZADA solo por el guion y el rastro de T21 (comprobar el
+proceso que escribe, quién ejecuta); corregido por el líder. Review 2
+APROBADA (`947c285`).
+
+**Verificado.** `init.sh` en verde (api 1308, front 403, transfer 1585);
+cobertura de lo cambiado 99,3 % de 1108; mutación 422 mutantes, 415
+muertos y 7 equivalentes aceptados por el humano («1 ok»). **T21**
+(`progress/manual_F-044.md`) la hizo el líder a petición del humano («haz
+tu la prueba»), en local y modo pruebas (0404): sync con 496 vinculados;
+trabajador 1972126 al 60/40 con teléfono, gasoil y vehículo ⇒ 8 líneas con
+los importes y partidas esperados; repetir ⇒ «ya registrada»; 70/30 ⇒
+confirma el pisado y edita las mismas 8 líneas; modal comprobado en el
+navegador; limpiado.
+
+**Fuera / pendiente.** Desplegar (transfer → api → front; la api crea
+`recurso_vinculado` y `asignacion_vinculado`); T23: `azure-apps/dedicacion.md`
+y aviso a `partes` (dedicación escribe y edita líneas de recursos no persona
+en los partes compartidos, `synckey porcentajes:vin:…`, sin borrar).
+Cerrada por decisión del humano («cierra ya») con el resto de T21 para
+después de desplegar: líneas ajenas hechas a mano (`OTEL` con `can = 0`,
+`OGAS` al 95 %) y validación de Administración. Observaciones: la respuesta
+de `POST /sync` no trae el conteo de vinculados (sí el log); el `resumen` del
+preflight cuenta solo las líneas del titular.

@@ -728,7 +728,7 @@
     {
       "id": "F-044",
       "title": "Aplicar los porcentajes también a los recursos vinculados al trabajador",
-      "description": "Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). 2026-10-08: el humano lo vuelve a pedir («que no genere solo el parte del recurso sino de los recursos vinculados en el mismo %: vehículo, viaje, teléfono, gasoil...»); sube de prioridad. Ejemplo real: GONZALEZ PANIAGUA tiene en PT26/00319 (0694, 2026-09) junto a su MADM 95 % las líneas OTEL y KM al 95 %, metidas a mano. ALCANCE PRECISADO por Juan Romero el 2026-10-08 (hilo «RE: Porcentajes Septiembre 2026»): «solo los recursos persona, gasoil, vehículo y teléfono» van por porcentaje; gastos de caja, kilómetros y mensajería se siguen metiendo «de la manera habitual» (la mensajería pasa a F-052). Por tanto KM NO se reparte aunque esté vinculado. Desde octubre Juan quiere el volcado completo desde la app y ha pedido a Administración dejar los partes de octubre limpios salvo el personal operario con horas: F-044 hace falta para registrar octubre. SPEC APROBADA por el humano el 2026-10-25 («ok a todo»: todas las decisiones abiertas con la opción A recomendada); in_progress desde el 2026-10-26, tras cerrar y desplegar F-062.",
+      "description": "Pedida por el humano el 2026-10-07: «hay que aplicar también los porcentajes a los recursos vinculados». En los partes reales (captura de Juan Romero, PT26/00316) cada trabajador lleva recursos asociados con su nombre: teléfono móvil (TF…), vehículo propio / kilómetros (VP…, matrículas), gasoil (CO…), cajas de obra (CA…), imputados a partidas CI.4.x / CI.03P.9 y cuentas CICOxx / CIMPxx. Hay que explorar en Sigrid cómo se vincula un recurso a un trabajador y con qué importe mensual, y repartirlos con los mismos porcentajes del trabajador al registrar. Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. Coordinar con `partes` (mismo parte). 2026-10-08: el humano lo vuelve a pedir («que no genere solo el parte del recurso sino de los recursos vinculados en el mismo %: vehículo, viaje, teléfono, gasoil...»); sube de prioridad. Ejemplo real: GONZALEZ PANIAGUA tiene en PT26/00319 (0694, 2026-09) junto a su MADM 95 % las líneas OTEL y KM al 95 %, metidas a mano. ALCANCE PRECISADO por Juan Romero el 2026-10-08 (hilo «RE: Porcentajes Septiembre 2026»): «solo los recursos persona, gasoil, vehículo y teléfono» van por porcentaje; gastos de caja, kilómetros y mensajería se siguen metiendo «de la manera habitual» (la mensajería pasa a F-052). Por tanto KM NO se reparte aunque esté vinculado. Desde octubre Juan quiere el volcado completo desde la app y ha pedido a Administración dejar los partes de octubre limpios salvo el personal operario con horas: F-044 hace falta para registrar octubre. SPEC APROBADA por el humano el 2026-10-25 («ok a todo»: todas las decisiones abiertas con la opción A recomendada); in_progress desde el 2026-10-26, tras cerrar y desplegar F-062; CERRADA (done) el 2026-10-26 por decisión del humano («cierra ya»), review 2 APROBADA; el resto de T21 (líneas ajenas hechas a mano y validación de Administración) queda del humano tras desplegar.",
       "acceptance": [
         "Exploración escrita: cómo se vincula en Sigrid un recurso a un trabajador, sus tipos de hora/importe y cómo se imputan hoy en los partes reales",
         "Al registrar un trabajador, sus recursos vinculados se registran en las mismas obras con los mismos porcentajes (decisiones de importe, partida y cuenta validadas por el humano/Administración)",
@@ -737,7 +737,7 @@
         "Verificado en modo pruebas con Administración",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "in_progress",
+      "status": "done",
       "sdd": true,
       "rigor": "critico",
       "priority": 5,
@@ -1055,6 +1055,22 @@
       "rigor": "critico",
       "priority": 1,
       "branch": "feature/F-062-rachas-incidencias"
+    },
+    {
+      "id": "F-063",
+      "title": "Filtrar trabajadores por tipo de incidencia con fichas como las de estado",
+      "description": "Pedida por el humano el 2026-10-26: «hay que poner otro filtro como el ok trabajadores etc, que sea para cada incidencia para filtrar trabajadores por tipo de incidencia». Propuesta aprobada el 2026-10-26 («ok, dala de alta»): en la fila de fichas del resumen («N trabajadores · OK · sin carga · falta · exceso», `renderCabecera` de `app.js`) sale una ficha más por cada tipo de incidencia presente en el cuadrante del mes, con letra, nombre y nº de trabajadores (p. ej. «V Vacaciones 3»). Un clic filtra a los trabajadores con al menos una incidencia de ese tipo; otro clic lo quita. UNA ficha de incidencia activa a la vez (como las de estado). Se combina (Y) con la ficha de estado, el buscador y los filtros de columna. Cuenta solo las incidencias del cuadrante del mes (no las rachas abiertas de meses anteriores) y NO las quitadas («quitada · sigue en Sigrid»). Sin incidencias en el mes no sale ninguna ficha nueva. Solo front (`app.js` y sus tests): la api ya devuelve `incidencias` por trabajador (F-030 R21); es un filtro de pantalla que no decide nada de lo que se registra, sin Sigrid. Va DESPUÉS de F-044 (las dos tocan `app.js`; una sola in_progress).",
+      "acceptance": [
+        "Con incidencias en el mes, la fila de fichas muestra una por tipo presente (letra, nombre y nº de trabajadores con ese tipo, sin contar las quitadas); sin incidencias no sale ninguna nueva.",
+        "Clic en una ficha de incidencia deja visibles solo los trabajadores con al menos una incidencia no quitada de ese tipo y la marca activa; otro clic, o «N trabajadores», quita el filtro; elegir otra sustituye a la anterior.",
+        "El filtro de incidencia se combina con la ficha de estado, el buscador y los filtros de columna (todas las condiciones a la vez).",
+        "Tests del front sin red ni BBDD que fijan conteo, filtrado, combinación y que una quitada no cuenta; `bash harness/init.sh` en verde."
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 2,
+      "branch": "feature/F-063-filtro-por-incidencia"
     }
   ]
 }
