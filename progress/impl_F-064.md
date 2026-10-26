@@ -14,6 +14,8 @@ test del transfer, opción 1 del humano). Rama
 | `9062a9b` | T2 · enmienda de F-044 | `specs/F-044-recursos-vinculados/requirements.md` (nota en R20 y R31) |
 | `0360ed8` | bloqueo (choque con F-013 R4) | `harness/features.json`, `BACKLOG.md`, `progress/` |
 | `3afebc1` | T3 · opción 1: `marcadaPorDefecto` | `app.js`, `test_f064_pisado_vinculados.py`, `services/dedicacion-transfer/tests/test_f013_sin_partida.py`, `features.json`, `BACKLOG.md` |
+| `d54bd3f` | review 1: B3 y O2 | `test_f064_pisado_vinculados.py`, `specs/F-044-recursos-vinculados/requirements.md` |
+| (este) | review 1: B1, B2, O1 | `progress/mutacion_manual_F-064.md` (nuevo), `progress/current.md`, este informe |
 
 En `app.js`:
 
@@ -108,41 +110,55 @@ HTML pintado y el escenario las marca o desmarca como lo haría el humano.
 | 1 · al abrir, solo sale marcado el pisado de vinculado | `al_abrir_solo_el_pisado_de_vinculado_sale_marcado` (trabajador, sobrecarga y sin partida de los dos, motivo desconocido y cierre de racha F-062 desmarcados), `sin_vinculados_el_modal_de_hoy_todo_desmarcado`, `la_casilla_marcada_lleva_checked_en_el_html`, `marcada_por_defecto_solo_el_pisado_de_vinculado` (11 casos), `marcada_por_defecto_es_pura_y_la_usa_el_modal` |
 | 2 · desmarcada al repetir; la nueva sale marcada; un preflight nuevo vuelve al valor por defecto | `desmarcada_sigue_desmarcada_al_repetir_el_preflight` (dos repeticiones y una clave nueva), `repetir_una_obra_no_toca_lo_desmarcado_en_otra`, `un_preflight_nuevo_vuelve_al_valor_por_defecto` |
 | 3 · `pisar_claves` lleva exactamente las marcadas | `registrar_por_defecto_manda_los_pisados_de_vinculado`, `registrar_manda_exactamente_las_marcadas` (cuerpo real de `/registro/ejecutar`) |
-| 4 · enmienda en R20 y R31 | `enmienda_anotada_en_r20_y_r31_de_f044` |
+| 4 · enmienda en R20 y R31 | `enmienda_anotada_en_r20_y_r31_de_f044` (una sola nota bajo R31 que cita R20 y R31) |
 | 5 · `init.sh` en verde | ver abajo |
 
 ## Mutación manual del JS
 
-La herramienta de mutación solo cubre Python. Apliqué a mano siete mutantes
-sobre la versión final de `app.js`, los pasé contra el fichero de F-064 y
-revertí cada uno:
+`harness.mutacion` solo muta Python. La campaña reproducible está en
+**`progress/mutacion_manual_F-064.md`**: medida sobre `d54bd3f`, con la
+versión final de `app.js`, sobre copias y en serie (1 worker), con línea base
+`38 passed` y 214,6 s. Trae una fila por mutante con `app.js:línea`, el texto
+exacto original → mutado y el nº de fallos, más el script que la reproduce.
+Resultado: **15 mutantes, 15 muertos, 0 supervivientes**, incluidos el R1 y el
+R2 de la review (M9 y M3). M15 solo lo mata
+`test_f044_r31_sus_avisos_en_la_lista_de_siempre_con_tipo_y_codigo`; el
+análisis está en ese fichero.
 
-| Mutante | Resultado |
-|---|---|
-| M1 quitar `Boolean(c.vinculado) &&` | 6 failed |
-| M2 un conflicto sin motivo deja de contar como pisado | 5 failed |
-| M3 no mirar `vistas` | 5 failed |
-| M4 no anotar la clave en `vistas` | 4 failed |
-| M5 el preflight nuevo no vacía `vistas` | 1 failed |
-| M6 no marcar la casilla | 7 failed |
-| M7 `marcadaPorDefecto` siempre devuelve true | 8 failed |
+## Arreglos de la review 1 (`progress/review_F-064.md`, 2026-10-27)
 
-No sobrevive ningún mutante.
+- **B3** (`d54bd3f`): `_conflicto` pone siempre la clave `vinculado`, con
+  `null` en el conflicto de un trabajador, igual que el `asdict` real del
+  transfer. Antes la omitía y sobrevivía `c.vinculado !== undefined`, que
+  marcaría por defecto el pisado del trabajador. Ahora lo matan seis tests.
+  En el unitario hay dos casos: el trabajador con `null` y el conflicto sin
+  la clave (`{"clave": "z"}`, transfer anterior a F-044).
+- **B1**: `progress/mutacion_manual_F-064.md`, en el formato de F-042 (ver
+  arriba).
+- **B2**: la MANUAL del navegador está en «⚠ Lo que espera al humano» de
+  `progress/current.md`, con dos caminos: (A) en local y en modo pruebas,
+  con las comprobaciones previas `/health`, `transfer_base_url`,
+  `True 0404` y «MODO PRUEBAS», y los pasos de qué sale marcado, que lo
+  desmarcado sigue así tras cambiar una partida y que `pisar_claves` lo
+  respeta; (B) tras desplegar, solo mirar el modal y pulsar Cancelar.
+- **O1**: la sección de `current.md` se titula ahora «F-064 · bloqueo
+  resuelto (opción 1) e implementación» y la cabecera la cita.
+- **O2** (`d54bd3f`): las dos notas de enmienda de F-044 pasan a una sola
+  línea bajo R31 que cita R20 y R31. El texto de F-044 no cambia y su
+  requirements queda en **150/150** (`python -m harness.tamano --feature
+  F-044`). El test de la enmienda comprueba esa única nota.
+- `app.js` y el test de F-013 no cambian en esta vuelta (O3 de la review).
 
 ## Pendiente (MANUAL)
 
-- Verlo en el navegador al desplegar F-044: abrir el modal con un pisado de
-  vinculado y comprobar que sale marcado, desmarcarlo, cambiar una partida y
-  comprobar que sigue desmarcado. No lo he probado en el navegador.
+- La comprobación en el navegador, en `progress/current.md` («⚠ Lo que
+  espera al humano», F-064). Nadie la ha ejecutado.
 
 ## Fuera del alcance
 
 - El transfer y la api (cada vinculado sigue necesitando su clave, R20; R18
   sin cambios) y `azure-apps` (no cambia lo que se expone ni lo que se
   consume).
-- `specs/F-044-recursos-vinculados/requirements.md` pasa a 154 líneas (tope
-  de 150). La puerta solo mide la feature en curso y F-044 está `done`, así
-  que no bloquea; lo dejo anotado.
 
 ## Entorno
 
@@ -153,15 +169,16 @@ ningún `.env`.
 
 ## Evidencias
 
-`bash harness/init.sh` tal cual, tras borrar `.arnes_cache/suite_*.ok`,
-termina en «ENTORNO LISTO», sin [KO]:
+`bash harness/init.sh` tal cual, tras borrar `.arnes_cache/suite_*.ok`
+(2026-10-27, tras los arreglos de la review 1), termina en «ENTORNO LISTO»,
+sin [KO]:
 
 | Evidencia | Valor real |
 |---|---|
-| Tests de la raíz | 418 passed, 1 skipped en 66,34 s |
-| Tests de la api | 1308 passed en 126,40 s |
-| Tests del front | 414 passed en 86,31 s (11 de F-064) |
-| Tests del transfer | 1585 passed en 44,24 s |
+| Tests de la raíz | 418 passed, 1 skipped en 67,56 s |
+| Tests de la api | 1308 passed en 128,65 s |
+| Tests del front | 414 passed en 74,48 s (11 de F-064) |
+| Tests del transfer | 1585 passed en 43,43 s |
 | Cobertura de líneas cambiadas | `PUERTA COBERTURA: N/A` (F-064 no cambia líneas Python de producción; solo JS y tests) |
-| Mutantes | `harness.mutacion` no aplica: no hay Python de producción. Mutación manual del JS: 7 generados, 0 supervivientes |
-| Tamaño | `PUERTA TAMAÑO: impl 167/220` (`python -m harness.tamano --feature F-064`, con este informe) |
+| Mutantes | `harness.mutacion` no aplica: no hay Python de producción. Campaña manual del JS (`progress/mutacion_manual_F-064.md`, `d54bd3f`, 1 worker, 214,6 s): 15 generados, 0 supervivientes |
+| Tamaño | `PUERTA TAMAÑO: impl 184/220` (`python -m harness.tamano --feature F-064`, con este informe) |

@@ -4,9 +4,12 @@
 **En curso: F-064** (el pisado de los recursos vinculados, confirmado por
 defecto en el modal; petición del humano del 2026-10-26, solo front, rigor
 estándar, `sdd: false`; rama `feature/F-064-pisado-vinculados-marcado`,
-worktree `porcentajes-f064`): **implementada; review 1 lanzada**
-(`progress/impl_F-064.md`; `bash harness/init.sh` en verde). Desbloqueada
-por el humano con la opción 1 («F-064 · BLOQUEO», abajo). Va **antes del
+worktree `porcentajes-f064`): **review 1 rechazada; arreglos hechos,
+pendiente de review 2** (`progress/review_F-064.md`, `progress/impl_F-064.md`,
+`progress/mutacion_manual_F-064.md`; `bash harness/init.sh` en verde).
+Desbloqueada por el humano con la opción 1 («F-064 · bloqueo resuelto
+(opción 1) e implementación», abajo). MANUAL del navegador en «⚠ Lo que
+espera al humano». Va **antes del
 despliegue de F-044**. **F-044** (aplicar los porcentajes también a
 los recursos vinculados al trabajador; `sdd: true`, rigor crítico) **cerrada
 (`done`) el 2026-10-26** por decisión del humano («cierra ya»): review 2
@@ -23,7 +26,7 @@ validación de Administración) y los **avisos a `partes`** de F-062 y F-044
 **Siguiente, tras F-064 y el despliegue de F-044:** F-063 (filtro de trabajadores por tipo de incidencia, solo
 front); después F-054 (spec aprobada, worktree `porcentajes-f054`).
 
-## F-064 · BLOQUEO (2026-10-26, implementer)
+## F-064 · bloqueo resuelto (opción 1) e implementación (2026-10-26)
 
 **Hecho y commiteado en la rama:** T1 `fef5ec4` (`app.js` +
 `services/dedicacion-front/tests/test_f064_pisado_vinculados.py`, 9 tests,
@@ -71,6 +74,14 @@ no `function` para que los arneses antiguos, que extraen
 `pintarModalPreflight` por nombre, la lleven consigo sin cambiar. En el test
 de F-013 R4 solo se ha añadido la exclusión de su cuerpo, con un comentario
 que cita F-064. `init.sh` en verde, sin [KO].
+
+**Review 1 rechazada (`0d08c91`); arreglos (2026-10-27):** B3, el doble del
+conflicto de un trabajador lleva `"vinculado": null` como el `asdict` real
+(muere el R2, `c.vinculado !== undefined`); B1, campaña manual reproducible
+en `progress/mutacion_manual_F-064.md` (15 mutantes, 15 muertos); B2, la
+MANUAL del navegador en «⚠ Lo que espera al humano»; O1, este título; O2,
+una sola nota de enmienda en F-044 (requirements en 150/150). Detalle:
+`progress/impl_F-064.md`.
 
 Entorno: el worktree no traía los `.venv` de los servicios (init.sh en [KO]
 de entrada); se enlazaron con *junction* a los de la copia principal, como
@@ -545,6 +556,43 @@ que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-0
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
+
+- **F-064: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Los
+  tests la cubren en node; en un navegador no se ha visto. **Dos maneras:**
+  - **(A) En local y en modo pruebas** (la completa). Antes de nada, y
+    PARAR si falla cualquiera: (a) `curl http://127.0.0.1:8006/health` ⇒
+    `"modo_pruebas":true`, `"obra_pruebas":"0404"`, `"database":"ruesma"`;
+    (b) desde `services/dedicacion-api`:
+    `.venv/Scripts/python -c "from config.settings import get_settings as g; print(g().transfer_base_url)"`
+    ⇒ `http://127.0.0.1:8006`; (c) desde `services/dedicacion-transfer`:
+    `.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`
+    ⇒ `True 0404`; (d) el modal dice «MODO PRUEBAS: se escribirá en la
+    obra 0404». Hace falta un trabajador con un recurso vinculado cuya línea
+    ya esté en el parte con otro % (p. ej. el de la prueba de F-044,
+    `progress/manual_F-044.md`, cambiando su %). Pasos:
+    1. «Registrar en Sigrid»: la casilla «Pisar» de cada vinculado
+       («<hora> de <tipo> <código> de <trabajador>…») sale **marcada**; la
+       del pisado del trabajador, las de sobrecarga y sin partida (de
+       trabajador o de vinculado) y las de cierre de racha salen
+       **desmarcadas**.
+    2. Desmarcar el pisado de un vinculado y cambiar en el modal la partida
+       de una línea de esa obra (botón de la columna Partida). Al acabar
+       «Analizando…», la casilla desmarcada **sigue desmarcada** y las demás
+       como estaban. Cerrar y volver a abrir el modal: vuelve el valor por
+       defecto (marcada).
+    3. Desmarcar uno otra vez y pulsar «Registrar», con DevTools › Red
+       abierto: el cuerpo de `POST …/registro/ejecutar` lleva en
+       `pisar_claves` **exactamente** las casillas marcadas (la desmarcada
+       no). En Sigrid (0404) ese vinculado queda con su % viejo y el resto
+       se escribe: `.venv/Scripts/python prueba_escritura_porcentajes.py
+       estado --ano <año> --mes <mes>` desde `services/dedicacion-transfer`
+       (solo lectura).
+    4. Limpiar como en F-044 (`… limpiar` en seco y `… limpiar --confirmar`,
+       sin `--permitir-modo-real`). Ojo: borra también las líneas hechas a
+       mano con la marca (aviso O1 de F-044, arriba).
+  - **(B) Tras desplegar el front (transfer en modo REAL):** solo el paso 1,
+    mirando el modal, y **Cancelar**. Ni cambiar partidas (se guardan en el
+    cuadrante) ni «Registrar» (escribe en la obra real).
 
 - **F-062: T19 y T20, MANUAL**, con sus comandos exactos en «F-062 · T19 y
   T20» (arriba), primer paso incluido (`True 0404` o PARAR).
