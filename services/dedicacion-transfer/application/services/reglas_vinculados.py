@@ -34,7 +34,9 @@ from dataclasses import dataclass
 
 from application.services.cuenta_analitica import subcuenta
 from application.services.partida_catalog import PartidaNodo
-from application.services.reglas_porcentajes import es_de_la_hora
+from application.services.reglas_porcentajes import (
+    PREFIJO_CLAVE_SIN_PARTIDA, es_de_la_hora,
+)
 from domain.models.registro_models import (
     AccionLinea, AccionVinculado, HoraRecurso, LineaEntrada, LineaSigrid,
 )
@@ -229,3 +231,42 @@ def decidir_vinculados(titular: AccionLinea, linea: LineaEntrada,
             hora_codigo=hora.cod, can=can, pre=pre,
             tot=round(can * pre, 2), **base))
     return out
+
+
+# ------------------------------------------------------------------ #
+#  Avisos y claves del vinculado (R16, R23, R26)
+# ------------------------------------------------------------------ #
+
+#: R16: por qué no hay CI del tipo, en palabras.
+_POR_QUE_SIN_CI = {
+    MOTIVO_SIN_CI: "ninguna partida del presupuesto tiene la cuenta de su tipo",
+    MOTIVO_VARIAS_CI: "varias partidas del presupuesto tienen la cuenta de "
+                      "su tipo",
+}
+#: R16: aviso de la acción (lo pinta el modal) y motivo de la omisión si
+#: nadie confirma; se formatean con tipo, cod y por_que. Caben en los 300
+#: caracteres de `sigrid_motivo`.
+AVISO_SIN_PARTIDA_VINCULADO = (
+    "sin partida para el recurso vinculado {tipo} {cod} ({por_que}): no se "
+    "escribe sin confirmarlo — elige una partida o marca la confirmación")
+MOTIVO_SIN_PARTIDA_VINCULADO = (
+    "sin partida para el recurso vinculado {tipo} {cod}: elige una partida o "
+    "confirma para imputarlo SIN partida")
+#: R23 (D11): se formatea con tipo, cod, hora, total, existente y nueva.
+MOTIVO_SOBRECARGA_VINCULADO = (
+    "sobrecarga del recurso vinculado {tipo} {cod}: sumaría {total:.2%} de "
+    "{hora} en el parte (ya tiene {existente:.2%}, se añade {nueva:.2%}); "
+    "confirma para escribirlo igualmente")
+
+
+def por_que_sin_ci(motivo: str | None) -> str:
+    """R16: el motivo de `partida_ci_del_tipo` en palabras."""
+    return _POR_QUE_SIN_CI.get(motivo or "", motivo or "")
+
+
+def clave_sin_partida_vinculado(registro_id: int, recurso_ide: int) -> str:
+    """R16, R26: la clave con la que se confirma un vinculado sin partida.
+    Por línea Y recurso: la del titular (`sin_partida:{registro_id}`) no lo
+    confirma ni al revés."""
+    return (f"{PREFIJO_CLAVE_SIN_PARTIDA}{int(registro_id)}:"
+            f"{int(recurso_ide)}")

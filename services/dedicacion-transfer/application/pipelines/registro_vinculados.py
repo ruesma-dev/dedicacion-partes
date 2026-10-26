@@ -2,16 +2,25 @@
 """F-044 · `PasoVinculados`: los recursos vinculados dentro del pipeline de
 registro (design §6.3; ARCHITECTURE.md#regla-vinculado).
 
-Aparte de `registro_pipeline.py` para no engordarlo. Hoy hace la propuesta
-de partida de cada subfila (`proponer`, R9 y R29) con la misma regla que
-usará el preflight (`reglas_vinculados.partida_del_vinculado`): la partida
-del titular en postventa, VAR o partida no `CI*`; si no, la CI del tipo
-del vinculado, buscada por la subcuenta de la cuenta de su hora por
-defecto (`reshor.caaide`) entre las cuentas del presupuesto de la obra.
+Aparte de `registro_pipeline.py` para no engordarlo:
 
-Lecturas (R27): las horas de los vinculados y las cuentas del presupuesto,
-UNA vez por petición cada una y solo si alguna subfila las necesita. Sin
-vinculados no se lee nada más que antes.
+- `proponer` (R9, R29): la propuesta de partida de cada subfila con la
+  misma regla que el preflight (`reglas_vinculados.partida_del_vinculado`):
+  la partida del titular en postventa, VAR o partida no `CI*`; si no, la CI
+  del tipo del vinculado, buscada por la subcuenta de la cuenta de su hora
+  por defecto (`reshor.caaide`) entre las cuentas del presupuesto de la
+  obra.
+- El preflight (R12-R26), en los puntos del pipeline donde sus lecturas
+  van JUNTO a las de los titulares (R27): `decidir` tras la partida del
+  titular (paso 4), la cuenta en el paso 4 bis, el parte en el 5,
+  `idempotencia` con la lectura del paso 6, `sin_partida` en el 6 bis,
+  `conflictos_del_parte` con las líneas del paso 7 y `cerrar` al final
+  (titular omitido ⇒ sus vinculados también, sin sus avisos).
+
+Lecturas (R27): las horas de los vinculados y sus líneas, en las mismas
+lecturas que las de los trabajadores; las cuentas del presupuesto, UNA vez
+por petición y solo si alguna subfila las necesita. Sin vinculados no se
+lee nada más que antes.
 """
 from __future__ import annotations
 
@@ -20,13 +29,33 @@ from dataclasses import asdict
 from typing import Any
 
 from application.services.cuenta_analitica import subcuenta_de_linea
+from application.services.estado_parte import motivo_choque
 from application.services.partida_catalog import PartidaNodo
 from application.services.propuesta_partida import Propuesta
+from application.services.reglas_porcentajes import (
+    AVISO_LINEA_CERO, AVISO_QUEDAN_A_CERO, clave_conflicto, clave_sobrecarga,
+    criterio_choque, emparejar_ceros, es_de_la_hora, es_nuestra_de_otra,
+    evaluar_capacidad, pisables_al_cero, repartir_choques,
+)
 from application.services.reglas_vinculados import (
+    AVISO_SIN_PARTIDA_VINCULADO,
+    METODO_CI_TIPO,
     METODO_MANUAL,
+    MOTIVO_SIGUE_AL_TRABAJADOR,
+    PartidaElegida,
     PartidaTitular,
+    clave_sin_partida_vinculado,
+    decidir_vinculados,
+    es_linea_de,
     partida_ci_del_tipo,
     partida_del_vinculado,
+    por_que_sin_ci,
+    synckey_vinculado,
+    va_con_el_titular,
+)
+from domain.models.registro_models import (
+    AccionLinea, AccionVinculado, Conflicto, HoraRecurso, LineaEntrada,
+    ParteDestino, VinculadoEntrada,
 )
 
 
@@ -67,13 +96,40 @@ def _titular_de_propuesta(linea: dict, catalogo: dict[int, PartidaNodo],
                           metodo=propuesta.metodo)
 
 
+def clave_de(av: AccionVinculado) -> tuple[int, int]:
+    """Un vinculado de una línea: (titular, recurso)."""
+    return int(av.registro_id), int(av.recurso_ide)
+
+
+def nueva_de(av: AccionVinculado) -> dict:
+    """Lo que se escribiría, dentro de un `Conflicto`: las claves de las de
+    un trabajador (`_nueva` del pipeline) más su recurso."""
+    return {"registro_id": av.registro_id, "recurso_ide": av.recurso_ide,
+            "can": av.can, "tot": av.tot, "hora_codigo": av.hora_codigo,
+            "fecha_int": av.fecha_int, "partida_cod": av.partida_cod}
+
+
+def _sumar_aviso(av: AccionVinculado, *textos: str | None) -> None:
+    partes = [x for x in (av.aviso, *textos) if x]
+    av.aviso = " · ".join(partes) if partes else None
+
+
+def _sin_cuenta(av: AccionVinculado) -> None:
+    """Una acción que ya no se escribe no lleva cuenta (como el titular)."""
+    av.caa_ide, av.caa_cod, av.caa_motivo = 0, None, None
+    av.caa_aviso, av.caa_origen, av.caa_nota = None, None, None
+
+
 class PasoVinculados:
     """Los vinculados de una petición sobre el mismo cliente (o la memoria
-    del lote) que el pipeline."""
+    del lote) que el pipeline. Uno por petición: guarda las entradas de la
+    api (`hmores_ide` y la partida guardada de cada vinculado)."""
 
     def __init__(self, cliente) -> None:
         self._cli = cliente
+        self._entradas: dict[tuple[int, int], VinculadoEntrada] = {}
 
+    # ------------------------------------------------------------- #
     def proponer(self, *, origen_ide: int, nodos: dict[int, PartidaNodo],
                  nodos_pv: dict[int, PartidaNodo], lineas: list[dict],
                  propuestas: dict[str, Propuesta | None]
@@ -110,3 +166,273 @@ class PasoVinculados:
                     if p.paride else None)
             out[l["clave"]] = por_recurso
         return out
+
+    # ------------------------------------------------------------- #
+    #  Preflight
+    # ------------------------------------------------------------- #
+    def decidir(self, acciones: list[AccionLinea], lineas: list[LineaEntrada],
+                horas: dict[int, list[HoraRecurso]], *, origen_ide: int,
+                validas: dict, nodos_pv: dict[int, PartidaNodo],
+                nodos: Callable[[], dict[int, PartidaNodo]]
+                ) -> list[AccionVinculado]:
+        """Tras la partida de los titulares (paso 4): la línea de cada
+        vinculado (`decidir_vinculados`, R12, R14, R18) y su partida (R15-R17)
+        con la elegida (validada en `validas`, la lectura del pipeline, o en
+        el presupuesto de la postventa), la propuesta guardada de su CI o la
+        regla. Las cuentas del presupuesto, una vez y solo si alguna CI del
+        tipo se calcula; el presupuesto, el del pipeline si ya se leyó."""
+        por_id = {l.registro_id: l for l in lineas}
+        cuentas = _UnaVez(
+            lambda: self._cli.cuentas_del_presupuesto(int(origen_ide)))
+        presupuesto = _UnaVez(nodos)
+        out: list[AccionVinculado] = []
+        for a in acciones:
+            linea = por_id[a.registro_id]
+            if not linea.vinculados:
+                continue
+            titular = PartidaTitular(
+                destino=a.destino, paride=int(a.paride or 0),
+                cod=a.partida_cod, res=a.partida_res, metodo=a.partida_metodo)
+            for v, av in zip(linea.vinculados,
+                             decidir_vinculados(a, linea, horas),
+                             strict=True):
+                self._entradas[clave_de(av)] = v
+                if av.accion == "escribir":
+                    self._partida(av, v, titular, horas, int(origen_ide),
+                                  validas, nodos_pv, presupuesto, cuentas)
+                out.append(av)
+        return out
+
+    @staticmethod
+    def _valida(paride: int, destino: str, origen_ide: int, validas: dict,
+                nodos_pv: dict[int, PartidaNodo]) -> tuple[bool, str | None]:
+        """¿`paride` es hoja activa del presupuesto de su destino? Con su
+        descripción. La de la obra, por `validar_partidas` (F-055); la de la
+        postventa, en su presupuesto (`#regla-p5`)."""
+        if destino == "postventa":
+            nodo = nodos_pv.get(int(paride))
+            return (bool(nodo and nodo.es_hoja and nodo.activa),
+                    nodo.res if nodo else None)
+        v = validas.get(int(paride))
+        return (v is not None and v.vale_en(origen_ide),
+                v.res if v else None)
+
+    def _partida(self, av: AccionVinculado, v: VinculadoEntrada,
+                 titular: PartidaTitular, horas: dict, origen_ide: int,
+                 validas: dict, nodos_pv: dict, presupuesto: Callable,
+                 cuentas: Callable) -> None:
+        """R15-R17 sobre `av`: elegida (si no vale, omitida); sin ella, si
+        no va con el titular, la propuesta guardada de su CI que vale (F-055:
+        se escribe lo que enseña el cuadrante); si no, la regla."""
+        elegida, valida = None, True
+        if v.paride:
+            valida, res = self._valida(int(v.paride), av.destino, origen_ide,
+                                       validas, nodos_pv)
+            elegida = PartidaElegida(int(v.paride), v.partida_cod, res)
+        elif (v.propuesta_paride and v.propuesta_metodo == METODO_CI_TIPO
+              and not va_con_el_titular(titular)):
+            vale, res = self._valida(int(v.propuesta_paride), av.destino,
+                                     origen_ide, validas, nodos_pv)
+            if vale:
+                av.paride = int(v.propuesta_paride)
+                av.partida_cod = v.propuesta_cod
+                av.partida_res = v.propuesta_res or res
+                av.partida_metodo = METODO_CI_TIPO
+                av.partida_origen = v.propuesta_origen
+                return
+
+        def ci():
+            sub = subcuenta_de_linea(horas.get(int(av.recurso_ide), []),
+                                     av.hora_ide)
+            return partida_ci_del_tipo(presupuesto(), cuentas(), sub)
+
+        p = partida_del_vinculado(titular, elegida, valida, ci)
+        if p.omitir:
+            av.accion, av.motivo = "omitir", p.motivo
+            return
+        av.paride, av.partida_cod, av.partida_res = p.paride, p.cod, p.res
+        av.partida_metodo = p.metodo
+        if p.sin_partida:
+            _sumar_aviso(av, AVISO_SIN_PARTIDA_VINCULADO.format(
+                tipo=av.tipo, cod=av.cod, por_que=por_que_sin_ci(p.motivo)))
+
+    # ------------------------------------------------------------- #
+    def registradas(self, vinculados: list[AccionVinculado]
+                    ) -> tuple[list[str], list[int]]:
+        """Paso 6 (R13, R30): las `synckey` y los `hmores.ide` de los
+        vinculados que se escriben, para la MISMA lectura de los titulares."""
+        escribir = [av for av in vinculados if av.accion == "escribir"]
+        return ([synckey_vinculado(*clave_de(av)) for av in escribir],
+                [self._entradas[clave_de(av)].hmores_ide for av in escribir])
+
+    def idempotencia(self, vinculados: list[AccionVinculado], por_sk: dict,
+                     por_ide: dict) -> None:
+        """Paso 6 (R13, R30): ya registrado si la línea de su `hmores_ide`
+        es de su recurso, de su hora y no es nuestra de otra; si no, la de
+        su `synckey`. Cada vinculado se decide solo (R18)."""
+        for av in vinculados:
+            if av.accion != "escribir":
+                continue
+            propia = synckey_vinculado(*clave_de(av))
+            hit = por_ide.get(int(self._entradas[clave_de(av)].hmores_ide
+                                  or 0))
+            if (hit is None or hit.reside != av.recurso_ide
+                    or not es_de_la_hora(hit, av.hora_codigo)
+                    or es_nuestra_de_otra(hit.synckey, propia)):
+                hit = por_sk.get(propia)
+            if hit is not None:
+                av.accion, av.hmores_ide = "ya_registrado", hit.ide
+                av.motivo = (f"ya registrada en Sigrid (línea {hit.ide}); "
+                             f"no se duplica")
+
+    @staticmethod
+    def sin_partida(vinculados: list[AccionVinculado]) -> list[Conflicto]:
+        """Paso 6 bis (R16): un aviso por vinculado sin partida, con su
+        clave (no la del titular, R26)."""
+        return [Conflicto(
+            clave=clave_sin_partida_vinculado(*clave_de(av)),
+            recurso_ide=int(av.recurso_ide), nombre=av.nombre, ano=av.ano,
+            mes=av.mes, parte_cod=av.parte_cod, horide=av.hora_ide,
+            hora_codigo=av.hora_codigo, lineas=[], nuevas=[nueva_de(av)],
+            registros=[av.registro_id], motivo="sin_partida",
+            vinculado={"tipo": av.tipo, "cod": av.cod})
+            for av in vinculados
+            if av.accion == "escribir" and not int(av.paride or 0)]
+
+    def conflictos_del_parte(
+        self, grupo: list[AccionVinculado], existentes: list, donde: dict,
+        parte: ParteDestino, lineas_cerradas: set[int],
+        estado_de: Callable[[int | None], str],
+    ) -> list[Conflicto]:
+        """Paso 7 (R19-R23) para los vinculados de un parte, con las líneas
+        que el pipeline ya leyó de todos los partes del periodo: choque en
+        un cerrado ⇒ omitido (R22); choque En registro ⇒ pisado a confirmar
+        por vinculado (R20); línea suya al 0 % ⇒ se edita (R21); y la
+        capacidad de su hora (R23), con los pisados dados por confirmados."""
+        mias = {synckey_vinculado(*clave_de(av)) for av in grupo}
+        pisables: dict[int, set[int]] = {}
+        for av in grupo:
+            pisables.setdefault(int(av.recurso_ide), set()).update(
+                ls.ide for ls in pisables_al_cero(
+                    existentes, av, en_cerrado=lineas_cerradas, mias=mias,
+                    hora=av.hora_codigo))
+        por_clave: dict[str, Conflicto] = {}
+        for av in grupo:
+            suyas = pisables[int(av.recurso_ide)]
+            choques = [ls for ls in existentes
+                       if criterio_choque(ls, av, mias=mias)
+                       and ls.ide not in suyas]
+            if not choques:
+                continue
+            cerrado = next((donde[ls.ide] for ls in choques
+                            if donde[ls.ide].cod in parte.cerrados), None)
+            if cerrado is not None:
+                av.accion = "omitir"
+                av.motivo = motivo_choque(cerrado.cod, estado_de(cerrado.est))
+                _sin_cuenta(av)
+                continue
+            k = clave_conflicto(av)
+            c = por_clave.get(k)
+            if c is None:
+                c = Conflicto(
+                    clave=k, recurso_ide=int(av.recurso_ide),
+                    ano=parte.ano, mes=parte.mes,
+                    parte_cod=donde[choques[0].ide].cod, nombre=av.nombre,
+                    horide=av.hora_ide, hora_codigo=av.hora_codigo,
+                    lineas=choques,
+                    contexto=[ls for ls in existentes
+                              if ls.reside == av.recurso_ide
+                              and ls not in choques
+                              and es_de_la_hora(ls, av.hora_codigo)
+                              and ls.ide not in suyas],
+                    vinculado={"tipo": av.tipo, "cod": av.cod})
+                por_clave[k] = c
+            c.registros.append(av.registro_id)
+            c.nuevas.append(nueva_de(av))
+        for c in por_clave.values():
+            edita, c.a_cero_ides = repartir_choques(c.registros, c.lineas)
+            c.edita_ide = min(edita.values())
+        conflictos = list(por_clave.values())
+        en_pisado = {(r, c.recurso_ide) for c in conflictos
+                     for r in c.registros}
+        self._emparejar_ceros(
+            [av for av in grupo if av.accion == "escribir"
+             and clave_de(av) not in en_pisado],
+            existentes, donde, lineas_cerradas, mias)
+
+        vivos = [av for av in grupo if av.accion == "escribir"]
+        pisadas: dict[int, set[int]] = {}
+        for c in conflictos:
+            pisadas.setdefault(c.recurso_ide, set()).update(
+                ls.ide for ls in c.lineas)
+        for recurso, ides in pisables.items():
+            pisadas.setdefault(recurso, set()).update(ides)
+        for recurso in sorted({int(av.recurso_ide) for av in vivos}):
+            suyas_ = [av for av in vivos if int(av.recurso_ide) == recurso]
+            cabeza = suyas_[0]
+            cap = evaluar_capacidad(
+                [ls for ls in existentes if int(ls.reside) == recurso],
+                suyas_, mias=mias, pisadas=pisadas.get(recurso, set()),
+                es_jornada=es_linea_de(cabeza.hora_codigo))
+            if not cap.sobrecarga:
+                continue
+            conflictos.append(Conflicto(
+                clave=clave_sobrecarga(cabeza), recurso_ide=recurso,
+                ano=parte.ano, mes=parte.mes, parte_cod=parte.cod,
+                nombre=cabeza.nombre, horide=cabeza.hora_ide,
+                hora_codigo=cabeza.hora_codigo, lineas=[],
+                contexto=list(cap.contadas),
+                nuevas=[nueva_de(av) for av in suyas_],
+                registros=[av.registro_id for av in suyas_],
+                motivo="sobrecarga", suma_existente=round(cap.existente, 4),
+                suma_total=round(cap.total, 4), exceso=round(cap.exceso, 4),
+                vinculado={"tipo": cabeza.tipo, "cod": cabeza.cod}))
+        return conflictos
+
+    @staticmethod
+    def _emparejar_ceros(libres: list[AccionVinculado], existentes: list,
+                         donde: dict, en_cerrado: set[int],
+                         mias: set[str]) -> None:
+        """R21 (`#regla-cero`): cada vinculado sin choque edita como mucho
+        una línea suya al 0 % de su hora, con su aviso."""
+        pares, sobran = emparejar_ceros(
+            libres, existentes, en_cerrado=en_cerrado, mias=mias,
+            clave=clave_de, hora=lambda av: av.hora_codigo)
+        for av in libres:
+            ls = pares.get(clave_de(av))
+            if ls is None:
+                continue
+            ps = donde[ls.ide]
+            av.linea_cero = {
+                "ide": ls.ide, "hmoide": int(ps.ide), "parte_cod": ps.cod,
+                "horide": ls.horide, "hora_codigo": ls.hora_codigo,
+                "paride": ls.paride, "can": ls.can,
+                "fecha_int": ls.fecha_int, "synckey": ls.synckey}
+            partida = (av.partida_cod if ls.paride == av.paride
+                       else ls.paride)
+            n = sobran[int(av.recurso_ide)]
+            _sumar_aviso(av, AVISO_LINEA_CERO.format(
+                ide=ls.ide, parte=ps.cod, hora=ls.hora_codigo,
+                partida=partida),
+                AVISO_QUEDAN_A_CERO.format(n=n) if n else None)
+
+    @staticmethod
+    def cerrar(acciones: list[AccionLinea], vinculados: list[AccionVinculado],
+               conflictos: list[Conflicto]) -> list[Conflicto]:
+        """Fin del preflight (R18): el vinculado de un titular que acabó
+        omitido (p. ej. por un choque en un parte cerrado) se omite con su
+        motivo; los avisos de los vinculados omitidos se retiran."""
+        titulares = {a.registro_id: a for a in acciones}
+        for av in vinculados:
+            t = titulares[av.registro_id]
+            if av.accion != "omitir" and t.accion == "omitir":
+                av.accion = "omitir"
+                av.motivo = MOTIVO_SIGUE_AL_TRABAJADOR.format(
+                    motivo=t.motivo)
+                av.linea_cero = None
+                _sin_cuenta(av)
+        omitidos = {clave_de(av) for av in vinculados
+                    if av.accion == "omitir"}
+        return [c for c in conflictos
+                if not (c.vinculado and all(
+                    (r, c.recurso_ide) in omitidos for r in c.registros))]
