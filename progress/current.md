@@ -9,7 +9,7 @@ de 923), T19 y T20 hechas y cumplen (`progress/manual_F-062.md`), rama unida
 a `dev`; resumen en `progress/history.md`. **Pendiente del humano:** el **aviso a `partes`** (texto en
 «Riesgos para el humano», más abajo). **Siguiente:** F-044 (recursos
 vinculados), spec APROBADA el 2026-10-25 en el worktree `porcentajes-f044`
-(`768ec5e`); después F-054 (spec aprobada, worktree `porcentajes-f054`).
+(`768ec5e`); después F-063 (filtro de trabajadores por tipo de incidencia, dada de alta el 2026-10-26, solo front) y F-054 (spec aprobada, worktree `porcentajes-f054`).
 
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 
