@@ -29,6 +29,9 @@ class TipoEvento(str, Enum):
     COPIA = "COPIA"
     COMPLETAR = "COMPLETAR"  # lote «completar al 100 %» (F-029)
     PARTIDA = "PARTIDA"  # cambio de la partida elegida de una línea (F-050)
+    # Cambio de la partida elegida de una subfila de vinculado (F-044, R8);
+    # su snapshot es el de líneas, con las elegidas de las subfilas.
+    PARTIDA_VINCULADO = "PARTIDA_VINCULADO"
     # Sustitución de las incidencias del trabajador (F-030, R17); su
     # snapshot es de incidencias, no de líneas (R20).
     INCIDENCIAS = "INCIDENCIAS"
@@ -79,6 +82,33 @@ class RecursoVinculado:
 
 
 @dataclass(frozen=True)
+class SubfilaVinculado:
+    """La subfila de un vinculado bajo una línea del cuadrante (F-044, R6):
+    el vinculado vigente en el mes (`tipo`, `tipo_res`, `cod`, de
+    `recurso_vinculado`) y lo suyo en esa línea (`asignacion_vinculado`):
+    partida ELEGIDA (las tres None = automática, R8), propuesta GUARDADA
+    (R9, como la de F-055) y traza del último registro (R21). Sin
+    porcentaje: es el del titular (R7)."""
+
+    vinculado_ide: int
+    tipo: str | None = None
+    tipo_res: str | None = None
+    cod: str | None = None
+    partida_ide: int | None = None
+    partida_cod: str | None = None
+    partida_res: str | None = None
+    propuesta_ide: int | None = None
+    propuesta_cod: str | None = None
+    propuesta_res: str | None = None
+    propuesta_metodo: str | None = None
+    propuesta_origen: str | None = None
+    sigrid_estado: str | None = None
+    sigrid_motivo: str | None = None
+    sigrid_parte: str | None = None
+    sigrid_hmores_ide: int | None = None
+
+
+@dataclass(frozen=True)
 class Obra:
     ide: int
     cod: str
@@ -122,6 +152,9 @@ class Linea:
     partida_cod: str | None = None
     partida_res: str | None = None
     partida_fija: bool = False
+    # Subfilas de los vinculados del trabajador vigentes en el mes (F-044,
+    # R6); vacío = la línea de siempre. No entran en `clave()`.
+    vinculados: tuple[SubfilaVinculado, ...] = ()
     # Propuesta GUARDADA (F-055, R13): la del transfer para una línea sin
     # elegida; todas None = sin propuesta. No entra en `clave()` ni en los
     # eventos (R17).

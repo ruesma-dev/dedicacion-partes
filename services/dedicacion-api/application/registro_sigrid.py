@@ -64,14 +64,15 @@ from domain.incidencias import letra_y_nombre
 from domain.models import FiltroEmpresa
 from domain.vigencia import vigente_en
 from infrastructure.db.orm_models import (
-    AsignacionORM, IncidenciaORM, ObraORM, PeriodoORM, TipoIncidenciaORM,
-    TrabajadorORM,
+    AsignacionORM, AsignacionVinculadoORM, IncidenciaORM, ObraORM, PeriodoORM,
+    TipoIncidenciaORM, TrabajadorORM,
 )
 from application.traza_incidencias import (
     campos_de_traza,
     quitada_para_el_modal,
     trazar_incidencias,
 )
+from infrastructure.db.repositories import upsert_asignacion_vinculado
 from infrastructure.transfer.transfer_client import TransferClient
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,16 @@ def es_metodo_de_propuesta(metodo: str | None) -> bool:
     parte o casamiento `auto_*`)? Solo esas se guardan (F-055, R14, R15)."""
     return metodo in ("parte_anterior", "ultimo_parte") or \
         (metodo or "").startswith("auto_")
+
+
+#: Métodos de la PROPUESTA de una subfila de vinculado (F-044, R9): la CI de
+#: su tipo o la partida del titular. `manual` es una elegida: no se guarda.
+METODOS_PROPUESTA_VINCULADO = ("ci_tipo", "titular")
+
+
+def es_metodo_de_propuesta_vinculado(metodo: str | None) -> bool:
+    """¿El método es de una propuesta de subfila? (F-044, R9)."""
+    return metodo in METODOS_PROPUESTA_VINCULADO
 
 
 class RegistroSigrid:
@@ -351,9 +362,25 @@ class RegistroSigrid:
                       for a in r.get("acciones", [])
                       if a.get("paride")
                       and es_metodo_de_propuesta(a.get("partida_metodo"))]
-        if not propuestas:
+        # F-044 (R9): igual la de cada subfila (`vinculados` del preflight:
+        # `{registro_id, recurso_ide, paride, partida_*}`), en su fila de
+        # `asignacion_vinculado` y solo si sigue sin elegida.
+        de_subfilas = [v for r in resultados if r.get("ok")
+                       for v in r.get("vinculados") or []
+                       if v.get("paride") and es_metodo_de_propuesta_vinculado(
+                           v.get("partida_metodo"))]
+        if not propuestas and not de_subfilas:
             return
         with self._sf() as s:
+            for v in de_subfilas:
+                s.execute(upsert_asignacion_vinculado(
+                    int(v["registro_id"]), int(v["recurso_ide"]),
+                    {"propuesta_ide": v["paride"],
+                     "propuesta_cod": v.get("partida_cod"),
+                     "propuesta_res": v.get("partida_res"),
+                     "propuesta_metodo": v.get("partida_metodo"),
+                     "propuesta_origen": v.get("partida_origen")},
+                    donde=AsignacionVinculadoORM.partida_ide.is_(None)))
             for a in propuestas:
                 s.execute(
                     update(AsignacionORM)

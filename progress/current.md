@@ -51,6 +51,19 @@ anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
   ellos; el lote precarga las horas de los vinculados y comparte
   `cuentas_del_presupuesto` por obra. Titular con elegida que no es hoja
   activa ⇒ subfilas sin propuesta (en el preflight se omitiría con él).
+- T6 hecha: `SubfilaVinculado` y `Linea.vinculados` (tras `partida_fija`:
+  `test_f055_r13` fija los 5 últimos campos); el repositorio lee las
+  subfilas de los vinculados activos y vigentes en el mes (2 lecturas más,
+  ninguna sin vinculados) y `reemplazar` guarda las que tienen elegida o
+  propuesta (la traza, como la del titular, no sobrevive a guardar).
+  `CambiarPartida(vinculado_ide)` con evento `PARTIDA_VINCULADO`; cambiar la
+  partida del titular borra las propuestas de sus subfilas (dependen de
+  ella). Selector, preflight (`_guardar_propuestas` lee `vinculados` del
+  preflight con `{registro_id, recurso_ide, paride, partida_*}`: **T13 debe
+  devolver esa forma**) y cola del mes (cola aparte para subfilas, también
+  bajo líneas de postventa; `estado` gana `subfilas` solo si hay). Salida:
+  `LineaOut.vinculados` con `exclude_if` vacío (la línea de siempre sin
+  vinculados: `CAMPOS_LINEA` de `test_f034_rutas` intacto).
 
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 

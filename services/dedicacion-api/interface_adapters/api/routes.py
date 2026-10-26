@@ -354,15 +354,18 @@ def partidas_de_linea(
     contenedor: Cont,
     es_postventa: bool = False,
     empresa: EmpresaQ = None,
+    vinculado_ide: Annotated[int | None, Query(gt=0)] = None,
 ) -> dict[str, Any]:
     """Catálogo con el mayor de cada partida, propuesta, elegida y botón
     preelegido (`ambito`) de UNA línea (F-050, R17). Lo calcula el
-    transfer; si no responde, 502 y el cuadrante sigue igual."""
+    transfer; si no responde, 502 y el cuadrante sigue igual. F-044 (R8):
+    con `vinculado_ide`, los de la subfila de ese vinculado."""
     filtro = _filtro(contenedor, empresa)
+    extra = {} if vinculado_ide is None else {"vinculado_ide": vinculado_ide}
     with contenedor.uow() as uow:
         return contenedor.partidas_linea.ejecutar(
             uow, anio, mes, trabajador_ide, obra_ide, es_postventa,
-            empresa_obras=filtro.empresa_obras,
+            empresa_obras=filtro.empresa_obras, **extra,
         )
 
 
@@ -381,14 +384,15 @@ def cambiar_partida(
     empresa: EmpresaQ = None,
 ) -> FilaOut:
     """Cambia la partida elegida de UNA línea y deja un evento `PARTIDA`
-    (F-050, R13). `partida` nula = automática."""
+    (F-050, R13). `partida` nula = automática. F-044 (R8): con
+    `vinculado_ide`, la de esa subfila (evento `PARTIDA_VINCULADO`)."""
     filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
         fila, resumen = CambiarPartida().ejecutar(
             uow, anio, mes, trabajador_ide, payload.obra_ide,
             payload.es_postventa,
             payload.partida.model_dump() if payload.partida else None,
-            usuario, filtro=filtro,
+            usuario, filtro=filtro, vinculado_ide=payload.vinculado_ide,
         )
     en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
