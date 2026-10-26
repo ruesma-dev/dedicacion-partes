@@ -145,8 +145,10 @@ def construir_contenedor(
             vinculados=cfg_vinculados,
         ),
         exporter=exporter,
-        registro_sigrid=RegistroSigrid(session_factory, transfer,
-                                       settings.empresa_imputacion),
+        registro_sigrid=RegistroSigrid(
+            session_factory, transfer, settings.empresa_imputacion,
+            # F-044 (R10): desde qué periodo viajan los vinculados.
+            vinculados_desde=cfg_vinculados.desde),
         partidas_linea=PartidasDeLinea(transfer),
         # F-055 (R30): UN hilo, cola por orden de llegada; estado de una
         # réplica (ARCHITECTURE «Topología»).

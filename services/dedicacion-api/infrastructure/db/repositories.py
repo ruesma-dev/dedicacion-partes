@@ -482,37 +482,12 @@ class PgAsignacionRepository:
         return resultado
 
     def _subfilas(self, periodo_id: int, asignaciones: list[AsignacionORM]):
-        """F-044 (R6): la función que da, para cada asignación, las subfilas
-        de los vinculados ACTIVOS de su trabajador vigentes en el mes (su
-        `fecha_baja`, R4), en el orden de `recurso_vinculado.ide`, con
-        lo que su fila de `asignacion_vinculado` guarde. Dos lecturas más en
-        total (vinculados y filas) y ninguna si no hay asignaciones con `id`
-        o ningún trabajador tiene vinculados: sin ellos, la línea de hoy."""
-        ids = [a.id for a in asignaciones if getattr(a, "id", None) is not None]
-        if not ids:
+        """F-044 (R6): `subfilas_de` con el mes del periodo."""
+        if not any(getattr(a, "id", None) is not None for a in asignaciones):
             return lambda a: ()
         periodo = self._s.get(PeriodoORM, periodo_id)
-        trabajadores = sorted({a.trabajador_ide for a in asignaciones})
-        por_trabajador: dict[int, list[RecursoVinculadoORM]] = {}
-        for v in self._s.scalars(
-                select(RecursoVinculadoORM)
-                .where(RecursoVinculadoORM.activo.is_(True),
-                       RecursoVinculadoORM.trabajador_ide.in_(trabajadores))
-                .order_by(RecursoVinculadoORM.ide)).all():
-            if periodo is None or vigente_en(v.activo, v.fecha_baja,
-                                             periodo.anio, periodo.mes):
-                por_trabajador.setdefault(v.trabajador_ide, []).append(v)
-        if not por_trabajador:
-            return lambda a: ()
-        guardadas = {(f.asignacion_id, f.vinculado_ide): f for f in
-                     self._s.scalars(select(AsignacionVinculadoORM).where(
-                         AsignacionVinculadoORM.asignacion_id.in_(ids))).all()}
-
-        def de(a: AsignacionORM) -> tuple[SubfilaVinculado, ...]:
-            ide = getattr(a, "id", None)
-            return tuple(_a_subfila(v, guardadas.get((ide, v.ide)))
-                         for v in por_trabajador.get(a.trabajador_ide, []))
-        return de
+        return subfilas_de(self._s, asignaciones,
+                           (periodo.anio, periodo.mes) if periodo else None)
 
     def reemplazar(
         self,
@@ -1046,6 +1021,40 @@ def _a_subfila(v: RecursoVinculadoORM,
         base, **{c: getattr(f, c) for c in _GUARDADO_SUBFILA},
         sigrid_estado=f.sigrid_estado, sigrid_motivo=f.sigrid_motivo,
         sigrid_parte=f.sigrid_parte, sigrid_hmores_ide=f.sigrid_hmores_ide)
+
+
+def subfilas_de(s: Session, asignaciones: list[AsignacionORM],
+                anio_mes: tuple[int, int] | None):
+    """F-044 (R6, R10): la función que da, para cada asignación, las
+    subfilas de los vinculados ACTIVOS de su trabajador vigentes en el mes
+    `anio_mes` (su `fecha_baja`, R4; sin mes, todos los activos), en el orden
+    de `recurso_vinculado.ide`, con lo que su fila de `asignacion_vinculado`
+    guarde. Dos lecturas más en total (vinculados y filas) y ninguna si no
+    hay asignaciones con `id` o ningún trabajador tiene vinculados: sin
+    ellos, la línea de hoy. La usan el cuadrante y el registro."""
+    ids = [a.id for a in asignaciones if getattr(a, "id", None) is not None]
+    if not ids:
+        return lambda a: ()
+    trabajadores = sorted({a.trabajador_ide for a in asignaciones})
+    por_trabajador: dict[int, list[RecursoVinculadoORM]] = {}
+    for v in s.scalars(
+            select(RecursoVinculadoORM)
+            .where(RecursoVinculadoORM.activo.is_(True),
+                   RecursoVinculadoORM.trabajador_ide.in_(trabajadores))
+            .order_by(RecursoVinculadoORM.ide)).all():
+        if anio_mes is None or vigente_en(v.activo, v.fecha_baja, *anio_mes):
+            por_trabajador.setdefault(v.trabajador_ide, []).append(v)
+    if not por_trabajador:
+        return lambda a: ()
+    guardadas = {(f.asignacion_id, f.vinculado_ide): f for f in
+                 s.scalars(select(AsignacionVinculadoORM).where(
+                     AsignacionVinculadoORM.asignacion_id.in_(ids))).all()}
+
+    def de(a: AsignacionORM) -> tuple[SubfilaVinculado, ...]:
+        ide = getattr(a, "id", None)
+        return tuple(_a_subfila(v, guardadas.get((ide, v.ide)))
+                     for v in por_trabajador.get(a.trabajador_ide, []))
+    return de
 
 
 def _a_linea_con_partida(a: AsignacionORM, o: ObraORM,

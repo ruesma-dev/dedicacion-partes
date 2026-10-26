@@ -49,11 +49,20 @@ con algún `ide` de Sigrid; si no hay petición de esa obra, se crea) y
 `cierres_recursos` (los recursos cuya primera petición, en este orden y
 tras el filtro `obra_ide`, es esa: el transfer les cierra las rachas del
 mes anterior, R12).
+
+F-044 (R10, R30; docs/ARCHITECTURE.md#regla-vinculado): desde el periodo
+`sync.vinculados.desde`, cada línea de un trabajador con vinculados
+vigentes en el mes lleva `vinculados` (recurso, tipo, código, la partida
+elegida o la propuesta guardada de su subfila y su `hmores_ide`; en una
+entrada VAR, sin partida: es la del titular). Al volver de `ejecutar`, la
+traza de cada vinculado va a su fila de `asignacion_vinculado`; su entrada
+de `omitidas` (con `vinculado_ide`) no toca la asignación del titular.
 """
 from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from collections.abc import Callable
 from typing import Any, Optional
 
 from sqlalchemy import select, update
@@ -72,7 +81,11 @@ from application.traza_incidencias import (
     quitada_para_el_modal,
     trazar_incidencias,
 )
-from infrastructure.db.repositories import upsert_asignacion_vinculado
+from application.traza_vinculados import trazar_vinculados
+from infrastructure.db.repositories import (
+    subfilas_de,
+    upsert_asignacion_vinculado,
+)
 from infrastructure.transfer.transfer_client import TransferClient
 
 logger = logging.getLogger(__name__)
@@ -101,11 +114,41 @@ def es_metodo_de_propuesta_vinculado(metodo: str | None) -> bool:
     return metodo in METODOS_PROPUESTA_VINCULADO
 
 
+def _vinculado(v: Any, es_var: bool) -> dict[str, Any]:
+    """F-044 (R10): un vinculado como viaja al transfer: su recurso, tipo
+    y código, la elegida de su subfila o, sin ella, la propuesta guardada
+    (en una entrada VAR, ninguna: va con la del titular) y el `hmores.ide`
+    del último registro (R30). Sin elegida ni propuesta, el transfer
+    propone."""
+    out: dict[str, Any] = {"recurso_ide": int(v.vinculado_ide),
+                           "tipo": v.tipo, "tipo_res": v.tipo_res,
+                           "cod": v.cod}
+    if es_var:
+        pass
+    elif v.partida_ide:
+        out.update(paride=int(v.partida_ide), partida_cod=v.partida_cod)
+    elif v.propuesta_ide:
+        out.update(propuesta_paride=int(v.propuesta_ide),
+                   propuesta_cod=v.propuesta_cod,
+                   propuesta_res=v.propuesta_res,
+                   propuesta_metodo=v.propuesta_metodo,
+                   propuesta_origen=v.propuesta_origen)
+    if v.sigrid_hmores_ide:
+        out["hmores_ide"] = int(v.sigrid_hmores_ide)
+    return out
+
+
 class RegistroSigrid:
     def __init__(self, session_factory: sessionmaker[Session],
-                 transfer: TransferClient, empresa_imputacion: int) -> None:
+                 transfer: TransferClient, empresa_imputacion: int, *,
+                 vinculados_desde: tuple[int, int] | None = None,
+                 subfilas: Callable = subfilas_de) -> None:
         self._sf = session_factory
         self._transfer = transfer
+        # F-044 (R10): primer periodo (anio, mes) cuyas líneas llevan sus
+        # vinculados (`sync.vinculados.desde`); sin él, ninguno.
+        self._vinculados_desde = vinculados_desde
+        self._subfilas = subfilas
         # EMPRESA_IMPUTACION hace dos papeles (D1 de F-034): es la empresa
         # POR DEFECTO, que se usa si la petición no trae la elegida, y la
         # EMPRESA DE LAS OBRAS, la que viaja en cada línea sea cual sea la
@@ -148,6 +191,8 @@ class RegistroSigrid:
         # asignación.
         por_obra: dict[int, dict[str, Any]] = {}
         no_vigentes: list[int] = []
+        # F-044 (R10): las líneas que se mandan, para sus vinculados.
+        mandadas: list[tuple[Any, dict[str, Any], bool]] = []
         # F-030 (R25): partida de la asignación de cada (trabajador, obra).
         partidas: dict[tuple[int, int], int] = {}
         for a, t, o in filas:
@@ -199,6 +244,8 @@ class RegistroSigrid:
             if hmores_ide:
                 linea["hmores_ide"] = int(hmores_ide)
             grupo["lineas"].append(linea)
+            mandadas.append((a, linea, bool(o.registro_paride)))
+        self._sumar_vinculados(s, anio, mes, mandadas)
         del_mes = self._sumar_incidencias(s, anio, mes, trabajador_ide,
                                           filtro, por_obra, partidas,
                                           quitadas)
@@ -210,6 +257,21 @@ class RegistroSigrid:
             if mias:
                 p["incidencias_mes"] = mias
         return payloads, sorted(no_vigentes)
+
+    def _sumar_vinculados(self, s: Session, anio: int, mes: int,
+                          mandadas: list[tuple[Any, dict[str, Any], bool]]
+                          ) -> None:
+        """F-044 (R10): `vinculados` en cada línea mandada de un periodo
+        ≥ `desde` cuyo trabajador tenga alguno vigente en el mes. Antes de
+        `desde`, sin él o sin líneas, no se lee nada."""
+        desde = self._vinculados_desde
+        if desde is None or (anio, mes) < tuple(desde) or not mandadas:
+            return
+        de = self._subfilas(s, [a for a, _, _ in mandadas], (anio, mes))
+        for a, linea, es_var in mandadas:
+            suyas = de(a)
+            if suyas:
+                linea["vinculados"] = [_vinculado(v, es_var) for v in suyas]
 
     @staticmethod
     def _designar_cierres(payloads: list[dict[str, Any]]) -> None:
@@ -453,11 +515,14 @@ class RegistroSigrid:
                         .where(AsignacionORM.id == int(rid))
                         .values(sigrid_hmores_ide=int(ide)))
             for o in r.get("omitidas", []):
+                if "vinculado_ide" in o:
+                    continue            # F-044 (R30): la de su subfila
                 s.execute(
                     update(AsignacionORM)
                     .where(AsignacionORM.id == o["registro_id"])
                     .values(sigrid_estado="omitido",
                             sigrid_motivo=(o.get("motivo") or "")[:_MAX_MOTIVO]))
+            trazar_vinculados(s, r)
             # F-030 (R31): la de cada incidencia, en la misma sesión.
             trazar_incidencias(s, r.get("incidencias") or [], ahora, quien,
                                cierres=r.get("cierres_racha") or [],

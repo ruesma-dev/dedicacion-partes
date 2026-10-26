@@ -253,9 +253,10 @@ class LecturasDelLote:
         parides = _ides(l.paride or l.propuesta_paride for l in normales)
         parides |= _ides(x.paride for x in todas_inc)
         # F-044 (R15): la elegida o la propuesta guardada de cada vinculado
-        # de una línea que no va a postventa (ni a VAR: superconjunto).
+        # de una línea que no va a postventa (como `_validas` del pipeline,
+        # que no excluye las VAR).
         parides |= _ides(v.paride or v.propuesta_paride for l, v in vins
-                         if not l.es_postventa and l.var_paride is None)
+                         if not l.es_postventa)
         if parides:
             tareas.append(lambda: self._cargar_validas(parides))
         for (desde, hasta), recursos in self._ventanas(
