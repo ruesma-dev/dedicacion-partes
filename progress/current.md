@@ -1,12 +1,11 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Bloqueada: F-064** (el pisado de los recursos vinculados, confirmado por
+**En curso: F-064** (el pisado de los recursos vinculados, confirmado por
 defecto en el modal; petición del humano del 2026-10-26, solo front, rigor
 estándar, `sdd: false`; rama `feature/F-064-pisado-vinculados-marcado`,
-worktree `porcentajes-f064`): el implementer **paró** porque el nuevo valor
-por defecto rompe un test existente del transfer (motivo y opciones en
-«F-064 · BLOQUEO», abajo); decide el humano. Va **antes del
+worktree `porcentajes-f064`): desbloqueada por el humano (opción 1, «F-064 ·
+BLOQUEO», abajo); implementer relanzado. Va **antes del
 despliegue de F-044**. **F-044** (aplicar los porcentajes también a
 los recursos vinculados al trabajador; `sdd: true`, rigor crítico) **cerrada
 (`done`) el 2026-10-26** por decisión del humano («cierra ya»): review 2
@@ -56,6 +55,14 @@ su intención). Opciones para el humano:
    (docstring de `test_f049_r3_el_rotulo_no_decide_nada`).
 3. **Que lo publique el transfer** (un campo en el `Conflicto`): reabre el
    alcance (hoy «transfer y api no se tocan»).
+
+**Decisión del humano (2026-10-26, «1»): opción 1.** Una función pura y
+nombrada del front, `marcadaPorDefecto(c)`, puede mirar el `motivo` además
+de `rotuloConflicto`. Cambio permitido en
+`test_f013_sin_partida.py::test_f013_r4_el_front_rotula_por_motivo_y_degrada`:
+**solo** excluir también el cuerpo de `marcadaPorDefecto` de lo que se
+comprueba «fuera»; el resto de aserciones igual. Código del transfer, sin
+cambios.
 
 Entorno: el worktree no traía los `.venv` de los servicios (init.sh en [KO]
 de entrada); se enlazaron con *junction* a los de la copia principal, como
