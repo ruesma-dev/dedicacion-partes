@@ -7,7 +7,7 @@ vinculados al trabajador; `sdd: true`, rigor crítico), **`in_progress`**
 humano contestó «si a todo» a las tres preguntas, ver «F-044 · decisiones
 del humano al bloqueo de T7», justo debajo). T1-T20, T22 y T24
 hechas por el implementer (2026-10-26; informe en `progress/impl_F-044.md`);
-**T21 MANUAL: la hace el líder a petición expresa del humano** (2026-10-26, «haz tu la prueba»; en modo pruebas sobre la 0404, comandos abajo, «F-044 · T21»);
+**T21 MANUAL: la hizo el líder a petición expresa del humano** (2026-10-26, «haz tu la prueba»; modo pruebas, 0404): **CUMPLE** salvo las líneas ajenas hechas a mano y la validación de Administración, que quedan del humano (`progress/manual_F-044.md`; guion abajo, «F-044 · T21»); **review 1 RECHAZADA** solo por el rastro de T21 (`progress/review_F-044.md`), corregido por el líder;
 **7 mutantes equivalentes ACEPTADOS por el humano el 2026-10-26** («1 ok»)
 (`progress/mutacion_F-044.md`); T23 es del líder al desplegar. Worktree `porcentajes-f044`, rama
 `feature/F-044-recursos-vinculados`, con `dev` unido (F-062 incluida). Spec
@@ -41,7 +41,7 @@ real. **Pendiente del humano (de F-062, ya desplegada el 2026-10-26):** el
    `test_f023_r1_empresa_solo_en_trabajador_y_obra` y
    `test_f026_r8_fecha_baja_solo_en_trabajador`: cambio permitido, **solo**
    admitir `recurso_vinculado` de forma explícita en su regla.
-## F-044 · implementer (T1-T6 hechas, retomado en T7, 2026-10-26)
+## F-044 · implementer (T1-T20, T22 y T24 hechas, 2026-10-26)
 
 Contraste del design con el código tras unir F-062: los puntos de enganche
 siguen (`_preflight`, `ejecutar`, `proponer`, `lecturas_lote`,
@@ -142,19 +142,35 @@ anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
   - **T24**: `bash harness/init.sh` sin `[KO]` (cobertura 99,3 % de 1108
     líneas cambiadas; api 1308, front 403, transfer 1585).
 
-### F-044 · T21: MANUAL del humano (ningún agente lo ejecuta)
+### F-044 · T21: MANUAL en modo pruebas, hecha por el líder (2026-10-26)
 
-Git Bash, desde `services/dedicacion-transfer` y con su `.venv`. **Primer
-paso** (el modo del proceso que escribe):
-`.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`.
-Debe dar `True 0404`; si no, **PARAR**. Transfer, api y front locales con
-`OBRA_PRUEBAS_FORZAR=true`. Luego, el guion de `tasks.md` T21; los comandos
-del script, ensayados en seco (argumentos aceptados, sin leer ajustes ni
-Sigrid): `.venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`
-(solo lectura; ahora resume «Líneas de vinculados (porcentajes:vin:)») y,
-para limpiar, `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar`
-(en seco) y después `... limpiar --confirmar`. Ninguno lleva
-`--permitir-modo-real`. Resultado real en `progress/manual_F-044.md`.
+**Quién:** el **líder, a petición expresa del humano** (2026-10-26, «haz tu
+la prueba»), no el humano como decía la spec (enmienda en `tasks.md` T21).
+Resultado real: `progress/manual_F-044.md`. Todo CUMPLE salvo lo que no se
+pudo probar: las líneas **ajenas hechas a mano** (`OTEL` con `can = 0` y
+`OGAS` al 95 %, que solo puede crear una persona en Sigrid) y la
+**validación de Administración**; quedan del humano.
+
+**Guion (corregido en la review 1, B1).** Antes de escribir nada, y PARAR si
+falla cualquiera:
+- (a) el proceso que escribe: `curl http://127.0.0.1:8006/health` ⇒
+  `"modo_pruebas":true`, `"obra_pruebas":"0404"`, `"database":"ruesma"`;
+- (b) adónde apunta la api, desde `services/dedicacion-api`:
+  `.venv/Scripts/python -c "from config.settings import get_settings as g; print(g().transfer_base_url)"`
+  ⇒ `http://127.0.0.1:8006`;
+- (c) el modal dice «MODO PRUEBAS: se escribirá en la obra 0404» antes de
+  confirmar;
+- y además, desde `services/dedicacion-transfer`:
+  `.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"` ⇒ `True 0404`.
+
+Luego el guion de `tasks.md` T21. Script (Git Bash, desde
+`services/dedicacion-transfer`, con su `.venv`):
+`.venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`
+(solo lectura), `… limpiar` (en seco) y `… limpiar --confirmar`. Ninguno
+lleva `--permitir-modo-real`. **Aviso (O1 de la review):** `limpiar
+--confirmar` filtra por marca `PRUEBA-PORC` y prefijo `porcentajes:`, no
+por obra, y **borra también** la `OTEL` y la `OGAS` hechas a mano, porque al
+editarlas pasan a llevar `PRUEBA-PORC` y `porcentajes:vin:…`.
 
 ## F-062 · CERRADA y DESPLEGADA (2026-10-26): aviso a `partes` pendiente
 

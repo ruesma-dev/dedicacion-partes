@@ -2,8 +2,8 @@
 # F-044 · informe del implementer (T1-T20, T22 y T24 hechas)
 
 Rama `feature/F-044-recursos-vinculados`, worktree `porcentajes-f044`.
-Rigor **crítico**. T1-T20, T22 y T24 hechas, una por commit; **T21 es MANUAL del humano**
-(comandos en `progress/current.md`, «F-044 · T21»), T22 es la campaña de
+Rigor **crítico**. T1-T20, T22 y T24 hechas, una por commit; **T21 es MANUAL; la hizo el líder a petición
+expresa del humano el 2026-10-26** («haz tu la prueba»; `progress/manual_F-044.md`), T22 es la campaña de
 abajo, T23 es del líder al desplegar y T24 es `init.sh` (resultado al final).
 No se ha hecho ninguna escritura en Sigrid, ni real ni de pruebas.
 
@@ -153,7 +153,10 @@ ancla no existía, así que su test `r1` fallaba antes de escribir la regla.
 
 ## Qué quedó fuera y qué falta
 
-- **T21 (MANUAL, humano)**: el guion de `tasks.md` T21, en modo pruebas.
+- **T21 (MANUAL)**: la hizo el **líder a petición expresa del humano**
+  (2026-10-26, «haz tu la prueba»); resultado en `progress/manual_F-044.md` y
+  guion corregido (review 1, B1: `/health`, `transfer_base_url` y el modal)
+  en `progress/current.md`, «F-044 · T21». Lo de abajo es el guion original.
   - **Primer paso**:
     `.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`
     tiene que dar `True 0404`; si no, PARAR.
