@@ -40,6 +40,11 @@ anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
   Revertido; va a la pregunta del bloqueo de T7. Además: `SigridGateway.leer`
   gana `parametros` opcional (el `?` de design §7.1; antes mandaba `[]`
   siempre) y la SQL lleva `dbo.` como las demás de `config.yaml`.
+- T4 hecha: `VinculadoEntrada`, `LineaEntrada.vinculados`,
+  `reglas_vinculados.py` (`partida_ci_del_tipo`, `partida_del_vinculado`
+  con la CI como función perezosa y la validez de la elegida como dato) y
+  `cuentas_del_presupuesto`. «`CI*`» del titular = el código empieza por
+  `CI` (no `clasifica_categoria`, que da `OTRO` a `CICO13`).
 
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 

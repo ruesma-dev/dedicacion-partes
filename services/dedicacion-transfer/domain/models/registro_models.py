@@ -26,6 +26,29 @@ from typing import Optional
 # ----------------------------- entrada ----------------------------- #
 
 @dataclass
+class VinculadoEntrada:
+    """F-044 (R10, design §8): un recurso no persona vinculado al trabajador
+    (teléfono, gasoil, vehículo…) que va con una línea de %. Lo manda la
+    api: su recurso, su tipo (`auxrestip`), su código (para los avisos), su
+    categoría, la partida ELEGIDA en su subfila (`paride`), la propuesta
+    GUARDADA (`propuesta_*`) y el `hmores.ide` que ya escribimos para él.
+    Ver ARCHITECTURE.md#regla-vinculado."""
+    recurso_ide: int
+    tipo: str | None = None
+    tipo_res: str | None = None
+    cod: str | None = None
+    categoria: str | None = None
+    paride: int | None = None
+    partida_cod: str | None = None
+    propuesta_paride: int | None = None
+    propuesta_cod: str | None = None
+    propuesta_res: str | None = None
+    propuesta_metodo: str | None = None
+    propuesta_origen: str | None = None
+    hmores_ide: int | None = None
+
+
+@dataclass
 class LineaEntrada:
     """Una asignación de dedicación (trabajador/obra/mes) a registrar."""
     registro_id: int                    # id de la asignación en PostgreSQL
@@ -62,6 +85,10 @@ class LineaEntrada:
     # asignación (`asignacion.sigrid_hmores_ide`); None si la api no lo
     # tiene. Localiza lo nuestro aunque su `synckey` sea de otro sistema.
     hmores_ide: Optional[int] = None
+    # F-044 (R10, R11): los recursos vinculados al trabajador que van con
+    # esta línea (los manda la api; el transfer no busca vínculos). Vacía,
+    # la línea se decide exactamente como antes de F-044.
+    vinculados: list[VinculadoEntrada] = field(default_factory=list)
 
     @property
     def fecha_int(self) -> int:

@@ -318,6 +318,21 @@ class SigridWriteClient:
             "cosindide, unimed FROM obrparpar WHERE obride = ? "
             "ORDER BY pos, ide", [int(obride)])
 
+    def cuentas_del_presupuesto(self, obra_ide: int) -> dict[int, str | None]:
+        """F-044 (R15, R27; design §7.1): el código de la cuenta analítica
+        (`con.cod` de `obrparpar.caaide`) de cada partida del presupuesto de
+        la obra que la tiene, por `ide` de partida. UNA lectura
+        parametrizada; hoja y alta las da el presupuesto que ya se lee. Un
+        fallo o un `truncated` sube como excepción."""
+        filas = self._lectura(
+            "cuentas_del_presupuesto",
+            "SELECT p.ide AS ide, cc.cod AS cod FROM obrparpar p "
+            "JOIN con cc ON cc.ide = p.caaide "
+            "WHERE p.obride = ? AND ISNULL(p.caaide,0) <> 0",
+            [int(obra_ide)])
+        return {int(f["ide"]): (f["cod"] or "").strip() or None
+                for f in filas}
+
     def horas_de_recursos(
         self, resides: Iterable[int]
     ) -> dict[int, list[HoraRecurso]]:
