@@ -62,9 +62,10 @@ def test_f050_r23_columna_partida_a_la_derecha_de_obras():
     columnas = _plano(_const("COLUMNAS"))
     assert ('partida: { titulo: "Partida", ancho: 320, ordenable: false, '
             'placeholder: "Filtrar partida…", },') in columnas
+    # F-044 (lista cerrada): con «Tipo recurso» entre obras y partida.
     assert _plano(_const("ORDEN_COLUMNAS_DEFECTO")) == (
         'const ORDEN_COLUMNAS_DEFECTO = ["nombre", "categoria", '
-        '"asignaciones", "partida", "total"];')
+        '"asignaciones", "tipo", "partida", "total"];')
 
 
 
@@ -78,15 +79,16 @@ def _prefs(guardadas) -> list[str]:
                  consts=("COLUMNAS", "ORDEN_COLUMNAS_DEFECTO", "CLAVE_TABLA"))
 
 
+# F-044 (lista cerrada): «Tipo recurso» entra tras la de obras, como Partida.
 @pytest.mark.parametrize("guardadas, esperado", [
     ({"orden": ["total", "asignaciones", "nombre", "categoria"]},
-     ["total", "asignaciones", "partida", "nombre", "categoria"]),
+     ["total", "asignaciones", "tipo", "partida", "nombre", "categoria"]),
     ({"orden": ["nombre", "categoria", "asignaciones", "total"]},
-     ["nombre", "categoria", "asignaciones", "partida", "total"]),
+     ["nombre", "categoria", "asignaciones", "tipo", "partida", "total"]),
     ({"orden": ["partida", "total", "nombre", "categoria", "asignaciones"]},
-     ["partida", "total", "nombre", "categoria", "asignaciones"]),
+     ["partida", "total", "nombre", "categoria", "asignaciones", "tipo"]),
     ({"orden": ["nombre", "total"]},
-     ["nombre", "total", "categoria", "asignaciones", "partida"]),
+     ["nombre", "total", "categoria", "asignaciones", "tipo", "partida"]),
 ])
 def test_f050_r23_preferencias_viejas_meten_partida_tras_obras(guardadas,
                                                                esperado):
@@ -106,8 +108,9 @@ def test_f050_r22_una_subfila_por_linea_con_rowspan():
     assert ("else if (!idx) { td = construirCelda(t, clave, idx); "
             "td.rowSpan = n; tr.appendChild(td); }") in fila
     assert "return frag;" in fila
+    # F-044 (lista cerrada): y «Tipo recurso».
     assert _plano(_const("COLUMNAS_POR_LINEA")) == (
-        'const COLUMNAS_POR_LINEA = ["asignaciones", "partida"];')
+        'const COLUMNAS_POR_LINEA = ["asignaciones", "tipo", "partida"];')
 
 
 def test_f050_r22_la_celda_de_obras_pinta_solo_su_linea():

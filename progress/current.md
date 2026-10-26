@@ -83,6 +83,16 @@ anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
   bajo líneas de postventa; `estado` gana `subfilas` solo si hay). Salida:
   `LineaOut.vinculados` con `exclude_if` vacío (la línea de siempre sin
   vinculados: `CAMPOS_LINEA` de `test_f034_rutas` intacto).
+- T7 hecha: columna «Tipo recurso» (`tipo`, entre Asignaciones y Partida;
+  «Persona» en la fila de la línea) y una subfila por vinculado bajo su línea
+  (`construirFilaVinculado`/`construirCeldaVinculado`: obra con el % de la
+  línea sin editar, tipo y código, partida con `htmlPartida`). El selector de
+  F-050 sirve a la subfila sin cambiar su firma: el ancla lleva
+  `data-vinculado` y con él la clave, la consulta y el `PUT` llevan
+  `vinculado_ide`. La cola del mes pasa `subfilas` a `aplicarPropuestas`.
+  De la lista cerrada del front solo cambian `test_f050_subfilas.py` y
+  `test_f050_m2_arreglos.py` (la columna nueva); los otros cinco no lo
+  necesitaron.
 
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 
