@@ -32,13 +32,19 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from domain.models.registro_models import (
+    AccionLinea,
+    AccionVinculado,
+    HoraRecurso,
+    LineaEntrada,
+    LineaSigrid,
+)
+
 from application.services.cuenta_analitica import subcuenta
 from application.services.partida_catalog import PartidaNodo
 from application.services.reglas_porcentajes import (
-    PREFIJO_CLAVE_SIN_PARTIDA, es_de_la_hora,
-)
-from domain.models.registro_models import (
-    AccionLinea, AccionVinculado, HoraRecurso, LineaEntrada, LineaSigrid,
+    PREFIJO_CLAVE_SIN_PARTIDA,
+    es_de_la_hora,
 )
 
 #: Métodos de la partida de un vinculado (`partida_metodo`).
@@ -61,6 +67,14 @@ MOTIVO_SIN_IMPORTE = (
     "en su hora por defecto ({hora}): no se registra")
 #: R18 (D10): el titular no se escribe; se formatea con su motivo.
 MOTIVO_SIGUE_AL_TRABAJADOR = "sigue al trabajador: {motivo}"
+#: R28: el titular no quedó escrito sin estar en `omitidas` (su pisado sin
+#: confirmar, que no deja rastro allí).
+MOTIVO_TITULAR_SIN_ESCRIBIR = (
+    "el trabajador no se ha escrito en esta ejecución (pendiente de "
+    "confirmar)")
+#: R26: el pisado del vinculado sin confirmar; se formatea con la clave.
+MOTIVO_PISADO_PENDIENTE = (
+    "pendiente de confirmar el pisado del recurso vinculado (clave {clave})")
 #: R13 (D9): empieza por el prefijo de las nuestras (`PREFIJO_SYNCKEY`,
 #: `porcentajes:`), que no se importa aquí: este módulo no toca la
 #: infraestructura (lo vigila un test).
@@ -204,12 +218,12 @@ def decidir_vinculados(titular: AccionLinea, linea: LineaEntrada,
     el parte y lo que ya hay en Sigrid los decide el paso del pipeline."""
     out = []
     for v in linea.vinculados:
-        base = dict(
-            registro_id=int(titular.registro_id),
-            recurso_ide=int(v.recurso_ide), ano=int(titular.ano),
-            mes=int(titular.mes), fecha_int=int(titular.fecha_int),
-            tipo=v.tipo, tipo_res=v.tipo_res, cod=v.cod,
-            nombre=titular.nombre, destino=titular.destino)
+        base = {
+            "registro_id": int(titular.registro_id),
+            "recurso_ide": int(v.recurso_ide), "ano": int(titular.ano),
+            "mes": int(titular.mes), "fecha_int": int(titular.fecha_int),
+            "tipo": v.tipo, "tipo_res": v.tipo_res, "cod": v.cod,
+            "nombre": titular.nombre, "destino": titular.destino}
         if titular.accion == "omitir":
             out.append(AccionVinculado(
                 accion="omitir", motivo=MOTIVO_SIGUE_AL_TRABAJADOR.format(

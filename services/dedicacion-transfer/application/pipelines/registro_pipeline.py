@@ -70,7 +70,9 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Optional
 
-from application.pipelines.registro_vinculados import PasoVinculados
+from application.pipelines.registro_vinculados import (
+    EscrituraVinculados, PasoVinculados, motivo_de_conflicto,
+)
 from application.services.reglas_vinculados import decidir_vinculados
 from application.services.cuenta_analitica import (
     origen_subcuenta, resolver_cuenta, subcuenta_de_linea,
@@ -1150,11 +1152,19 @@ class RegistroPipeline:
         # construcción y sembrarlo sería una guarda que ningún test podría
         # ejercitar.
         omitidas_ya: set[int] = set()
+        # F-044 (R26, R28): el aviso de un vinculado retiene SOLO a ese
+        # vinculado (por titular y recurso), nunca al titular.
+        vin_bloqueados: dict[tuple[int, int], tuple[str, bool]] = {}
         for c in pf.conflictos:
             if c.clave in pisar:
                 res.pisadas.append(c.clave)
                 continue
             res.pendientes_confirmacion.append(c)
+            if c.vinculado:
+                for r in c.registros:
+                    vin_bloqueados.setdefault((r, c.recurso_ide),
+                                              motivo_de_conflicto(c))
+                continue
             bloqueadas.update(c.registros)
             # Un conflicto sin confirmar deja rastro en `omitidas`, salvo el
             # pisado: un pisado sin confirmar es un paso normal del flujo
@@ -1194,7 +1204,7 @@ class RegistroPipeline:
         if not (a_escribir or inc_escribir or inc_editar or cierres):
             logger.info("[registro] nada que escribir (bloqueadas=%s)",
                         len(bloqueadas))
-            return res
+            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
 
         # Paso 9 bis (F-051 R4, R5, R12): qué edita cada acción y qué se
         # pone a 0, comprobado contra Sigrid justo antes de escribir. Va
@@ -1221,7 +1231,7 @@ class RegistroPipeline:
         if not (a_escribir or inc_escribir or inc_editar or cierres):
             logger.info("[registro] nada que escribir (cambiadas=%s)",
                         len(cambiadas))
-            return res
+            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
         a_insertar = [a for a in a_escribir if a.registro_id not in edita]
 
         # Paso 9: crear los partes que falten (por destino), solo para lo
@@ -1375,6 +1385,34 @@ class RegistroPipeline:
                     res.borradas, afectadas, usuario,
                     datetime.now(timezone.utc).isoformat())
         self._comprobar_escrito(res, inc_escribir, inc_editar, cierres)
+        return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
+
+    # ------------------------------------------------------------- #
+    def _ejecutar_vinculados(self, res: ResultadoRegistro, pf: Preflight,
+                             pisar: set[str], bloqueados: dict
+                             ) -> ResultadoRegistro:
+        """F-044 (R24, R28): los vinculados, DESPUÉS de los titulares y de
+        su relectura (`EscrituraVinculados`). Sin vinculados, nada."""
+        if not pf.vinculados:
+            return res
+        destino_normal = pf.obra_destino
+        destino_pv = getattr(pf, "obra_postventa", None)
+        marca = (f" ({self._st.marca_pruebas})" if pf.forzada_pruebas
+                 else "")
+
+        def obra_de(a) -> ObraEntrada:
+            return destino_pv if a.destino == "postventa" else destino_normal
+
+        EscrituraVinculados(
+            self._cli, est=int(self._st.est_parte_activo),
+            paso_pos=int(self._st.paso_pos),
+            tex=self._st.marca_pruebas if pf.forzada_pruebas else None,
+            obra_de=obra_de,
+            crear_parte=lambda p, d: self._crear_parte(
+                p, d, f"Parte {d.nombre or d.codigo}{marca}"),
+            traza=_traza,
+        ).ejecutar(res, pf.partes, pf.vinculados, pf.conflictos, pisar,
+                   bloqueados)
         return res
 
     # ------------------------------------------------------------- #
@@ -1417,7 +1455,9 @@ class RegistroPipeline:
             regs = sorted(r for r in c.registros if r in escribibles)
             # R32 de hoy: un pisado confirmado solo toca algo si al menos
             # uno de sus registros llega a escribirse.
-            if c.clave not in pisar or not regs:
+            # F-044 (R26): el pisado de un vinculado lo edita su paso
+            # (`EscrituraVinculados`), nunca el titular.
+            if c.clave not in pisar or not regs or c.vinculado:
                 continue
             libres = [ls for ls in c.lineas if ls.ide not in usadas]
             usadas.update(ls.ide for ls in libres)

@@ -316,23 +316,23 @@ def test_f044_r29_la_ruta_del_lote_devuelve_los_vinculados(api):
 # teléfono 10 (OTEL), su gasoil 11 (OGAS), su vehículo 12 (MESVE, dos hojas
 # con su cuenta: sin partida) y unos km 13 (`pre` 0). En pruebas todo va al
 # parte 777 de la 0404; el 778 es un parte cerrado del mismo periodo.
-from application.services.reglas_porcentajes import (  # noqa: E402
+from application.services.reglas_porcentajes import (
     clave_conflicto,
     clave_sin_partida,
 )
-from application.services.reglas_vinculados import (  # noqa: E402
+from application.services.reglas_vinculados import (
     MOTIVO_ELEGIDA_NO_VALIDA,
     MOTIVO_SIGUE_AL_TRABAJADOR,
     MOTIVO_SIN_IMPORTE,
     synckey_vinculado,
 )
-from domain.models.registro_models import (  # noqa: E402
+from domain.models.registro_models import (
     LineaSigrid,
     ParteSigrid,
     VinculadoEntrada,
 )
 
-from tests.conftest import OBRA_PRUEBAS, linea, linea_previa  # noqa: E402
+from tests.conftest import OBRA_PRUEBAS, linea, linea_previa
 
 PT_REG = ParteSigrid(777, "PT26/00251", 1)
 PT_CER = ParteSigrid(778, "PT26/00200", 3)
@@ -420,7 +420,7 @@ def test_f044_r27_horas_y_lineas_en_las_mismas_lecturas():
     _pf(cli, linea(vinculados=_v(10, 11)))
     assert cli.horas_leidas == [[10, 11, 200]]
     assert cli.lecturas_lineas == [(777, [10, 11, 200])]
-    [(claves, ides)] = cli.registradas
+    [(claves, _ides)] = cli.registradas
     assert claves == sorted(["porcentajes:1", synckey_vinculado(1, 10),
                              synckey_vinculado(1, 11)])
 
@@ -607,3 +607,216 @@ def test_f044_r18_sin_empresa_todo_omitido_y_sus_vinculados_tambien():
     assert (t.accion, v.accion) == ("omitir", "omitir")
     assert v.motivo == MOTIVO_SIGUE_AL_TRABAJADOR.format(motivo=t.motivo)
     assert cli.horas_leidas == [] and cli.cuentas_leidas == []
+
+
+# ======================== T14 · ejecutar con vinculados ================== #
+from application.services.reglas_porcentajes import (
+    MOTIVO_LINEA_CAMBIADA,
+)
+
+
+class ClienteEje(ClientePre):
+    """`ClientePre` que anota cada llamada a `escribir` por separado."""
+
+    def __init__(self, **kw: Any) -> None:
+        super().__init__(**kw)
+        self.llamadas: list[list[dict]] = []
+
+    def escribir(self, statements):
+        self.llamadas.append(list(statements))
+        return super().escribir(statements)
+
+
+def _eje(cli: ClienteFalso, *lineas_, pisar: set[str] | None = None):
+    return RegistroPipeline(cliente=cli, settings=SettingsFalso()).ejecutar(
+        obra=ObraEntrada(codigo=OBRA_ORIGEN), lineas=list(lineas_),
+        pisar_claves=pisar or set())
+
+
+def _vin_res(res) -> dict:
+    return {(v.registro_id, v.recurso_ide): v for v in res.vinculados}
+
+
+def test_f044_r28_el_vinculado_se_escribe_despues_de_su_titular():
+    cli = ClienteEje()
+    res = _eje(cli, linea(paride=80001, partida_cod="CI.1.10",
+                          vinculados=_v(10, 11)))
+    titular, vinculados = cli.llamadas
+    assert [s["parameters"]["synckey"] for s in titular] == ["porcentajes:1"]
+    assert [(s["sql"], s["parameters"]["synckey"], s["parameters"]["reside"],
+             s["parameters"]["horide"], s["parameters"]["can"],
+             s["parameters"]["pre"], s["parameters"]["paride"],
+             s["parameters"]["hmoide"], s["parameters"]["tex"])
+            for s in vinculados] == [
+        ("insert", "porcentajes:vin:1:10", 10, 31, 0.4, 30.0, 81001, 777,
+         "PRUEBA-PORC"),
+        ("insert", "porcentajes:vin:1:11", 11, 33, 0.4, 120.0, 81002, 777,
+         "PRUEBA-PORC")]
+    assert [s["parameters"]["caaide"] for s in vinculados] == [90001, 90002]
+    assert {v.accion for v in res.vinculados} == {"escribir"}
+    assert [e["registro_id"] for e in res.escritas] == [1]   # solo el titular
+    assert res.omitidas == []
+
+
+def test_f044_r28_titular_retenido_el_vinculado_sale_en_omitidas():
+    """Titular sin partida sin confirmar: no se escribe, y su vinculado
+    tampoco; el vinculado sale en `omitidas` con su recurso, y en
+    `vinculados` como omitido."""
+    cli = ClienteEje()
+    res = _eje(cli, linea(categoria="X", nombre="Nadie",
+                          vinculados=_v(10)))
+    assert cli.llamadas == []
+    [v] = res.vinculados
+    assert v.accion == "omitir" and v.motivo.startswith("sigue al trabajador")
+    assert {"registro_id": 1, "vinculado_ide": 10,
+            "motivo": v.motivo} in res.omitidas
+
+
+def test_f044_r28_titular_con_pisado_sin_confirmar_tampoco_escribe_el_suyo():
+    cli = ClienteEje(lineas_parte=[linea_previa(ide=5701, can=0.4,
+                                                paride=80001)])
+    res = _eje(cli, linea(paride=80001, partida_cod="CI.1.10",
+                          vinculados=_v(10)))
+    assert cli.llamadas == []
+    assert res.vinculados[0].accion == "omitir"
+    assert [o.get("vinculado_ide") for o in res.omitidas] == [10]
+
+
+def test_f044_r28_titular_que_la_guarda_no_deja_editar_arrastra_al_suyo():
+    cli = ClienteEje(lineas_parte=[linea_previa(ide=5301, can=0.0)])
+    cli.guarda_falla = frozenset({5301})
+    res = _eje(cli, linea(paride=80001, partida_cod="CI.1.10",
+                          vinculados=_v(10)))
+    assert len(cli.llamadas) == 1                   # solo la del titular
+    [v] = res.vinculados
+    assert v.accion == "omitir"
+    assert MOTIVO_LINEA_CAMBIADA.format(ide=5301) in v.motivo
+
+
+def test_f044_r28_reejecutar_no_duplica():
+    previa = _ls_vin(5901, 10, 0.4, paride=81001,
+                     synckey="porcentajes:vin:1:10")
+    cli = ClienteEje(synckeys={"porcentajes:vin:1:10": previa})
+    res = _eje(cli, linea(paride=80001, partida_cod="CI.1.10",
+                          vinculados=_v(10)))
+    [v] = res.vinculados
+    assert (v.accion, v.hmores_ide) == ("ya_registrado", 5901)
+    assert [s["parameters"]["synckey"] for x in cli.llamadas for s in x] == [
+        "porcentajes:1"]
+
+
+def test_f044_r18_titular_ya_registrado_su_vinculado_se_escribe_solo():
+    previa = linea_previa(ide=6001, can=0.4, paride=80001,
+                          synckey="porcentajes:1")
+    cli = ClienteEje(synckeys={"porcentajes:1": previa})
+    res = _eje(cli, linea(paride=80001, partida_cod="CI.1.10",
+                          vinculados=_v(10)))
+    [llamada] = cli.llamadas
+    assert [s["parameters"]["synckey"] for s in llamada] == [
+        "porcentajes:vin:1:10"]
+    assert res.ya_registradas == [1]
+    assert res.vinculados[0].accion == "escribir"
+
+
+def test_f044_r24_linea_al_cero_del_vinculado_se_edita_con_su_hora():
+    cli = ClienteEje(lineas_parte=[_ls_vin(5201, 10, 0.0, paride=81001)])
+    res = _eje(cli, linea(paride=80001, partida_cod="CI.1.10",
+                          vinculados=_v(10)))
+    [e] = [s["parameters"] for s in cli.llamadas[-1]]
+    assert (e["ide"], e["hora"], e["can"], e["synckey"], e["horide"]) == (
+        5201, "OTEL", 0.4, "porcentajes:vin:1:10", 31)
+    assert cli.lineas_parte[0].can == 0.4           # la guarda la dejó
+    [v] = res.vinculados
+    assert (v.accion, v.hmores_ide, v.parte_cod) == ("escribir", 5201,
+                                                      "PT26/00251")
+    [t] = [t for t in res.editadas if t.get("vinculado_ide")]
+    assert (t["ide"], t["registro_id"], t["vinculado_ide"]) == (5201, 1, 10)
+    assert cli.borrados() == []
+
+
+def test_f044_r24_pisado_confirmado_edita_el_menor_y_pone_a_cero_el_otro():
+    cli = ClienteEje(lineas_parte=[_ls_vin(5102, 11, 0.5, paride=81002),
+                                   _ls_vin(5101, 11, 0.45, paride=81002)])
+    res = _eje(cli, linea(paride=80001, partida_cod="CI.1.10",
+                          vinculados=_v(11)),
+               pisar={"11|202607|33|81002"})
+    sts = cli.llamadas[-1]
+    assert [(s["sql"], s["parameters"]["ide"], s["parameters"]["hora"])
+            for s in sts] == [("editar", 5101, "OGAS"),
+                              ("a_cero", 5102, "OGAS")]
+    assert res.pisadas == ["11|202607|33|81002"]
+    assert [ls.can for ls in cli.lineas_parte] == [0.0, 0.4]
+    assert [t["ide"] for t in res.a_cero] == [5102]
+    assert cli.borrados() == []
+
+
+def test_f044_r26_confirmar_el_titular_no_confirma_el_vinculado():
+    cli = ClienteEje(lineas_parte=[
+        linea_previa(ide=5701, can=0.4, paride=80001),
+        _ls_vin(5702, 10, 0.4, paride=81001)])
+    res = _eje(cli, linea(paride=80001, partida_cod="CI.1.10",
+                          vinculados=_v(10)),
+               pisar={"200|202607|5|80001"})
+    assert [s["parameters"]["ide"] for s in cli.llamadas[0]] == [5701]
+    assert len(cli.llamadas) == 1
+    [v] = res.vinculados
+    assert v.accion == "omitir" and "10|202607|31|81001" in v.motivo
+    assert [c.clave for c in res.pendientes_confirmacion] == [
+        "10|202607|31|81001"]
+    assert not [o for o in res.omitidas if o.get("vinculado_ide")]
+
+
+def test_f044_r26_confirmar_el_vinculado_no_confirma_el_titular():
+    cli = ClienteEje(lineas_parte=[
+        linea_previa(ide=5701, can=0.4, paride=80001),
+        _ls_vin(5702, 10, 0.4, paride=81001)])
+    res = _eje(cli, linea(paride=80001, partida_cod="CI.1.10",
+                          vinculados=_v(10)),
+               pisar={"10|202607|31|81001"})
+    assert cli.llamadas == []           # el titular no se escribe: tampoco él
+    assert [c.clave for c in res.pendientes_confirmacion] == [
+        "200|202607|5|80001"]
+    assert res.vinculados[0].accion == "omitir"
+
+
+def test_f044_r16_sin_partida_sin_confirmar_omitido_y_confirmado_se_escribe():
+    sin = _eje(ClienteEje(), linea(paride=80001, partida_cod="CI.1.10",
+                                   vinculados=_v(12)))
+    assert sin.vinculados[0].accion == "omitir"
+    assert [o["vinculado_ide"] for o in sin.omitidas] == [12]
+    cli = ClienteEje()
+    con = _eje(cli, linea(paride=80001, partida_cod="CI.1.10",
+                          vinculados=_v(12)), pisar={"sin_partida:1:12"})
+    assert con.vinculados[0].accion == "escribir"
+    assert cli.llamadas[-1][0]["parameters"]["paride"] == 0
+
+
+def test_f044_r24_los_vinculados_van_en_lotes_de_15(monkeypatch):
+    """`escribir` del cliente real parte en lotes de `max_statements`."""
+    import httpx
+    from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
+
+    lotes: list[int] = []
+
+    class _R:
+        status_code = 200
+
+        def __init__(self, n):
+            self.n = n
+
+        def json(self):
+            return {"ok": True, "committed": True,
+                    "total_affected_rows": self.n}
+
+    def post(url, **kw):
+        lotes.append(len(kw["json"]["statements"]))
+        return _R(lotes[-1])
+
+    monkeypatch.setattr(httpx, "post", post)
+    cli = SigridWriteClient(base_url="http://x.invalid", function_key="k",
+                            database="ruesma", max_statements=15)
+    sts = [cli.stmt_poner_a_cero(ide=i, reside=10, can_leido=0.0,
+                                 synckey_leida=None, hora="OTEL")
+           for i in range(20)]
+    assert cli.escribir(sts) == 20
+    assert lotes == [15, 5]
