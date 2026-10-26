@@ -21,6 +21,13 @@ siguen (`_preflight`, `ejecutar`, `proponer`, `lecturas_lote`,
 anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
 
 - T1 hecha (`domain/vinculados.py`).
+- T2 hecha (ORM + `PgVinculadoRepository` + `upsert_asignacion_vinculado`).
+  **Desviación**: las columnas `empresa` y `fecha_baja` de
+  `recurso_vinculado` (design §7.2) se llaman `empresa_recurso` y
+  `fecha_baja_recurso`: `test_f023_r1_empresa_solo_en_trabajador_y_obra` y
+  `test_f026_r8_fecha_baja_solo_en_trabajador` aseveran que ninguna otra
+  tabla tiene esas columnas y no están en la lista cerrada. Se le pregunta
+  al humano en el bloqueo de T7 (mantener el nombre o ampliar la lista).
 
 ## F-062 · review 1: arreglos (implementer, 2026-10-24)
 

@@ -11,13 +11,15 @@ import logging
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import delete, distinct, func, select, update
+from sqlalchemy import Select, delete, distinct, func, literal, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session, sessionmaker
 
 from domain.empresas import empresa_de_baja
 from domain.incidencias import letra_y_nombre
 from domain.normalizacion import texto_o_none as _texto
 from domain.vigencia import vigente_en
+from domain.vinculados import ESTADO_VINCULADO, ResultadoVinculos
 from domain.models import (
     Empresa,
     EstadoPeriodo,
@@ -26,6 +28,7 @@ from domain.models import (
     Linea,
     Obra,
     Periodo,
+    RecursoVinculado,
     ResultadoSyncMaestro,
     TipoEvento,
     TipoIncidencia,
@@ -33,11 +36,13 @@ from domain.models import (
 )
 from infrastructure.db.orm_models import (
     AsignacionORM,
+    AsignacionVinculadoORM,
     EmpresaORM,
     EventoORM,
     IncidenciaORM,
     ObraORM,
     PeriodoORM,
+    RecursoVinculadoORM,
     TipoIncidenciaORM,
     TrabajadorORM,
 )
@@ -543,6 +548,117 @@ class PgAsignacionRepository:
 
 
 # ----------------------------------------------------------------------
+# Recursos vinculados (F-044)
+# ----------------------------------------------------------------------
+#: Columnas de `asignacion_vinculado` que escribe `upsert_asignacion_vinculado`
+#: (las de datos: la pareja la pone la propia función).
+_COLUMNAS_SUBFILA = tuple(
+    c.name for c in AsignacionVinculadoORM.__table__.columns
+    if c.name not in ("id", "asignacion_id", "vinculado_ide"))
+#: Longitud del motivo de la traza (`String(300)`, como en `asignacion`).
+_MOTIVO_MAX = 300
+
+
+def id_de_asignacion(periodo_id: int, trabajador_ide: int,
+                     clave: tuple[int, bool]) -> Select[Any]:
+    """`SELECT asignacion.id` de la línea `clave` (obra, postventa) del
+    trabajador en el periodo: para guardar una subfila sin conocer el `id`
+    (selector y cola de propuestas), en la misma sentencia."""
+    obra_ide, es_postventa = clave
+    return select(AsignacionORM.id).where(
+        AsignacionORM.periodo_id == periodo_id,
+        AsignacionORM.trabajador_ide == trabajador_ide,
+        AsignacionORM.obra_ide == obra_ide,
+        AsignacionORM.es_postventa == bool(es_postventa),
+    )
+
+
+def upsert_asignacion_vinculado(asignacion: int | Select[Any],
+                                vinculado_ide: int,
+                                valores: dict[str, Any],
+                                *, donde: Any = None) -> Any:
+    """`INSERT … ON CONFLICT (asignacion_id, vinculado_ide) DO UPDATE` de la
+    fila de una subfila (F-044, R8, R9, R30): solo actualiza las columnas de
+    `valores` y, con `donde`, solo si la fila existente lo cumple (la
+    propuesta no pisa una elegida). `asignacion` es el `id` o la subconsulta
+    de `id_de_asignacion` (sin línea, no inserta nada). El motivo se corta a
+    300. Columnas ajenas a la subfila o ninguna ⇒ `ValueError`."""
+    if not valores or set(valores) - set(_COLUMNAS_SUBFILA):
+        raise ValueError(f"columnas no válidas para la subfila: {sorted(valores)}")
+    datos = dict(valores)
+    if datos.get("sigrid_motivo") is not None:
+        datos["sigrid_motivo"] = str(datos["sigrid_motivo"])[:_MOTIVO_MAX]
+    tabla = AsignacionVinculadoORM.__table__
+    if isinstance(asignacion, Select):
+        columnas = ["asignacion_id", "vinculado_ide", *datos]
+        origen = asignacion.add_columns(
+            literal(vinculado_ide), *(literal(v, tabla.c[k].type)
+                                      for k, v in datos.items()))
+        stmt = pg_insert(tabla).from_select(columnas, origen)
+    else:
+        stmt = pg_insert(tabla).values(asignacion_id=asignacion,
+                                       vinculado_ide=vinculado_ide, **datos)
+    return stmt.on_conflict_do_update(
+        index_elements=["asignacion_id", "vinculado_ide"],
+        set_={k: stmt.excluded[k] for k in datos},
+        where=donde,
+    )
+
+
+class PgVinculadoRepository:
+    def __init__(self, session: Session) -> None:
+        self._s = session
+
+    def sincronizar(self, resultado: ResultadoVinculos) -> ResultadoSyncMaestro:
+        """Upsert por `res.ide` de lo que decide `vincular` (R3, R5). Los de
+        tipo excluido no se guardan; sin campo o hacia un no trabajador se
+        guardan sin trabajador e inactivos. El que deja de llegar queda
+        inactivo y conserva lo demás: nunca se borra (sus subfilas lo
+        nombran). `desactivados` cuenta los activos que dejan de serlo."""
+        actuales = {v.ide: v for v in
+                    self._s.scalars(select(RecursoVinculadoORM)).all()}
+        recibidos: list[tuple[RecursoVinculado, int | None, str]] = [
+            (v, t, ESTADO_VINCULADO) for v, t in resultado.vinculos]
+        for v in (*resultado.sin_campo, *resultado.hacia_no_trabajador):
+            recibidos.append((v, None, resultado.estado(v.ide) or ""))
+        altas = actualizados = desactivados = 0
+        for v, trabajador, estado in recibidos:
+            valores = {
+                "trabajador_ide": trabajador, "tipo": v.tipo,
+                "tipo_res": v.tipo_res, "cod": v.cod,
+                "descripcion": v.descripcion, "empresa_recurso": v.empresa,
+                "fecha_baja_recurso": v.fecha_baja or None, "horide": v.horide,
+                "activo": trabajador is not None, "estado_vinculo": estado,
+            }
+            existente = actuales.get(v.ide)
+            if existente is None:
+                self._s.add(RecursoVinculadoORM(ide=v.ide, **valores))
+                altas += 1
+                continue
+            if existente.activo and not valores["activo"]:
+                desactivados += 1
+            if any(getattr(existente, k) != x for k, x in valores.items()):
+                actualizados += 1
+            for campo, valor in valores.items():
+                setattr(existente, campo, valor)
+        llegados = {v.ide for v, _, _ in recibidos}
+        for ide, orm in actuales.items():
+            if ide not in llegados and orm.activo:
+                orm.activo = False
+                desactivados += 1
+        return ResultadoSyncMaestro(recibidos=len(recibidos), altas=altas,
+                                    actualizados=actualizados,
+                                    desactivados=desactivados)
+
+    def guardar_subfila(self, asignacion: int | Select[Any], vinculado_ide: int,
+                        valores: dict[str, Any], *, donde: Any = None) -> bool:
+        """Ejecuta `upsert_asignacion_vinculado`; devuelve si tocó una fila."""
+        r = self._s.execute(upsert_asignacion_vinculado(
+            asignacion, vinculado_ide, valores, donde=donde))
+        return bool(r.rowcount)
+
+
+# ----------------------------------------------------------------------
 # Incidencias (F-030)
 # ----------------------------------------------------------------------
 def _consulta_incidencias(periodo_id: int) -> Any:
@@ -715,6 +831,7 @@ class SqlAlchemyUnitOfWork:
         self.asignaciones = PgAsignacionRepository(s)
         self.incidencias = PgIncidenciaRepository(s)
         self.eventos = PgEventoRepository(s)
+        self.vinculados = PgVinculadoRepository(s)
         return self
 
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
