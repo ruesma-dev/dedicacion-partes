@@ -93,6 +93,22 @@ class IncidenciaEntrada:
     hmores_ide_fin: int | None = None
     dia_ini: int | None = None
     dia_fin: int | None = None
+    # F-062 (R15, R24): la obra de la incidencia (para la cadena entre obras,
+    # D11) y, si su `fin` es un `CIZ` ajeno que movimos, su día original.
+    obra_ide: int | None = None
+    dia_fin_antes: int | None = None
+
+
+@dataclass
+class ContextoRachas:
+    """F-062 (R12, R17, R24): lo que la api manda del mes, además de las
+    incidencias de la obra: las del mes de sus recursos en cualquier obra
+    (`incidencias_mes`, con su obra y su traza), los recursos de los que
+    esta petición cierra el mes anterior (`cierres_recursos`) y las
+    quitadas con traza (`quitadas`). Vacío, la petición es la de F-030."""
+    incidencias_mes: list[IncidenciaEntrada] = field(default_factory=list)
+    cierres_recursos: list[int] = field(default_factory=list)
+    quitadas: list[IncidenciaEntrada] = field(default_factory=list)
 
 
 @dataclass
@@ -276,8 +292,10 @@ class AccionIncidencia:
     Anexo R30 (R41, R46): `editar` cambia SOLO la `fec` de la línea
     `hmores_ide` (en el parte `hmoide`) de `fec_antes` a `fecha_int`."""
     id: int
-    rol: str                            # ini | fin
-    accion: str                         # escribir | editar | omitir | ya_registrado
+    rol: str                            # ini | fin | devolver (F-062 R16)
+    # escribir | editar | omitir | ya_registrado; F-062 (R8, R23): continua
+    # (la racha ya está abierta) | abierta (llega a fin de mes, sin CIZ)
+    accion: str
     fecha_int: int
     recurso_ide: int | None = None
     ano: int = 0
@@ -299,6 +317,16 @@ class AccionIncidencia:
     caa_nota: str | None = None
     fec_antes: int | None = None
     hmoide: int | None = None
+    # F-062 (R14, D12): la `synckey` y el `can` leídos de la línea que se
+    # edita (nuestra: la nuestra y 0; un `CIZ` ajeno: los suyos) y si es
+    # ajena. R5 y R12: el parte, la obra y el centro donde va un `CIZ` que
+    # se escribe en el parte del inicio (None: el parte del paso 5).
+    synckey_leida: str | None = None
+    can_leido: float | None = None
+    ajena: bool = False
+    hmoide_destino: int | None = None
+    obride: int | None = None
+    cenide: int | None = None
 
 
 @dataclass
@@ -315,6 +343,13 @@ class LineaIncidenciaSigrid:
     can: float | None = None
     hmoide: int | None = None
     parte_est: int | None = None
+    # F-062 (R5, R10, R12, design §6): la obra del parte, el centro, la
+    # partida y la cuenta de la línea y la empresa del parte (`con.emp`).
+    obride: int | None = None
+    cenide: int | None = None
+    paride: int | None = None
+    caaide: int | None = None
+    parte_emp: int | None = None
 
 
 @dataclass
@@ -383,6 +418,11 @@ class Preflight:
     conflictos: list[Conflicto] = field(default_factory=list)
     # F-030 (R31): las dos líneas de cada incidencia; vacía sin incidencias.
     incidencias: list[AccionIncidencia] = field(default_factory=list)
+    # F-062 (R22): `RachaResumen`, `CierreRacha` y `NoCoincide` de
+    # `application/services/rachas.py`; vacías sin las claves nuevas.
+    rachas: list = field(default_factory=list)
+    cierres_racha: list = field(default_factory=list)
+    no_coincide: list = field(default_factory=list)
 
     @property
     def n_escribir(self) -> int:
@@ -419,3 +459,8 @@ class ResultadoRegistro:
     # F-030 (R31): las líneas de las incidencias, con su `hmores_ide` si se
     # escribieron; vacía sin incidencias.
     incidencias: list[AccionIncidencia] = field(default_factory=list)
+    # F-062 (R22): como en `Preflight`; los cierres, con el `hmores_ide` de
+    # los escritos.
+    rachas: list = field(default_factory=list)
+    cierres_racha: list = field(default_factory=list)
+    no_coincide: list = field(default_factory=list)

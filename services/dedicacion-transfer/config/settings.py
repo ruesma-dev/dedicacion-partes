@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     # cuadrante (incluido), en los que se busca la partida del parte anterior
     # y del último parte del recurso.
     propuesta_meses_atras: int = Field(24, alias="PROPUESTA_MESES_ATRAS")
+    # F-062 (R19, D6): meses hacia atrás, desde el del cuadrante, en los que
+    # se leen las rachas de incidencia (`CI*`/`CIZ`); al menos 1 (M−1).
+    incidencias_meses_atras: int = Field(12, alias="INCIDENCIAS_MESES_ATRAS",
+                                         ge=1)
 
     # --- Constantes del modelo Sigrid (confirmadas con datos reales) --- #
     tip_parte_trabajo: int = Field(35, alias="TIP_PARTE_TRABAJO")

@@ -1,0 +1,225 @@
+{
+  "descripcion": "F-062 (design §3, como F-030 §13.6): contrato entre las dos mitades del test de punta a punta de las rachas. Recurso y trabajador 200, CIV, obra 0678 (ide 678 en la api; en el Sigrid falso del transfer es la 555001, con su parte de octubre PT26/00251, hmoide 777), octubre de 2026. Cada escenario encadena sus pasos en la api (services/dedicacion-api/tests/test_f062_punta_a_punta.py): guarda `plataforma` en el cuadrante, registra y tiene que mandar exactamente `peticion`; con `respuesta` deja la `traza`. El transfer (services/dedicacion-transfer/tests/test_f062_punta_a_punta.py), con esa `peticion` y `sigrid` (lo que hay en Sigrid antes del paso), tiene que contestar `respuesta` (en las `escribir`, cualquier `hmores_ide`) y escribir solo `ediciones` (ide, fec leída, fec nueva) e `inserciones` (fec, código), sin ningún DELETE. c2: C2 en dos registros (5-9 y luego 5-9 y 12-16: una cadena, el CIZ del 9 pasa al 16). c6_c9: C6 (CIV 5 y CIZ 7 de Administración en la obra 40: se continúa y su CIZ pasa al 9) y C9 (quitarla devuelve el CIZ al 7 y la api la borra). c10: C10 (quitar la de C1 registrada: no_coincide con sus dos líneas, sin escribir; borradas a mano, sin líneas y la api borra la quitada).",
+  "periodo": {"ano": 2026, "mes": 10},
+  "escenarios": [
+    {
+      "nombre": "c2",
+      "pasos": [
+        {
+          "nombre": "registra_5_9",
+          "plataforma": [{"id": null, "codigo": "CIV", "desde": 5, "hasta": 9}],
+          "sigrid": [],
+          "peticion": {
+            "obra": {"ide": 678, "codigo": "0678", "nombre": "OBRA"},
+            "lineas": [],
+            "incidencias": [
+              {"id": 7, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0}
+            ],
+            "incidencias_mes": [
+              {"id": 7, "obra_ide": 678, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0}
+            ],
+            "cierres_recursos": [200]
+          },
+          "respuesta": {
+            "incidencias": [
+              {"id": 7, "rol": "ini", "accion": "escribir", "fecha_int": 20261005, "parte_cod": "PT26/00251", "hmores_ide": 9001},
+              {"id": 7, "rol": "fin", "accion": "escribir", "fecha_int": 20261009, "parte_cod": "PT26/00251", "hmores_ide": 9002}
+            ],
+            "cierres_racha": [],
+            "no_coincide": []
+          },
+          "ediciones": [],
+          "inserciones": [[20261005, "CIV"], [20261009, "CIZ"]],
+          "traza": [
+            {"id": 7, "quitada": false, "estado": "registrado", "ide_ini": 9001, "dia_ini": 5, "ide_fin": 9002, "dia_fin": 9, "dia_fin_antes": null}
+          ]
+        },
+        {
+          "nombre": "anade_12_16",
+          "plataforma": [{"id": 7, "codigo": "CIV", "desde": 5, "hasta": 9}, {"id": null, "codigo": "CIV", "desde": 12, "hasta": 16}],
+          "sigrid": [
+            {"ide": 9001, "fecha_int": 20261005, "codigo": "CIV", "synckey": "porcentajes:inc:7:ini", "obride": 555001, "hmoide": 777, "parte_cod": "PT26/00251", "can": 0.0},
+            {"ide": 9002, "fecha_int": 20261009, "codigo": "CIZ", "synckey": "porcentajes:inc:7:fin", "obride": 555001, "hmoide": 777, "parte_cod": "PT26/00251", "can": 0.0}
+          ],
+          "peticion": {
+            "obra": {"ide": 678, "codigo": "0678", "nombre": "OBRA"},
+            "lineas": [],
+            "incidencias": [
+              {"id": 7, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0, "hmores_ide_ini": 9001, "hmores_ide_fin": 9002, "dia_ini": 5, "dia_fin": 9},
+              {"id": 8, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 12, "hasta": 16, "paride": 0}
+            ],
+            "incidencias_mes": [
+              {"id": 7, "obra_ide": 678, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0, "hmores_ide_ini": 9001, "hmores_ide_fin": 9002, "dia_ini": 5, "dia_fin": 9},
+              {"id": 8, "obra_ide": 678, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 12, "hasta": 16, "paride": 0}
+            ],
+            "cierres_recursos": [200]
+          },
+          "respuesta": {
+            "incidencias": [
+              {"id": 7, "rol": "ini", "accion": "ya_registrado", "fecha_int": 20261005, "parte_cod": "PT26/00251", "hmores_ide": 9001},
+              {"id": 7, "rol": "fin", "accion": "editar", "fecha_int": 20261016, "parte_cod": "PT26/00251", "hmores_ide": 9002, "fec_antes": 20261009},
+              {"id": 8, "rol": "ini", "accion": "continua", "fecha_int": 20261012, "parte_cod": null, "hmores_ide": null},
+              {"id": 8, "rol": "fin", "accion": "continua", "fecha_int": 20261016, "parte_cod": null, "hmores_ide": null}
+            ],
+            "cierres_racha": [],
+            "no_coincide": []
+          },
+          "ediciones": [[9002, 20261009, 20261016]],
+          "inserciones": [],
+          "traza": [
+            {"id": 7, "quitada": false, "estado": "registrado", "ide_ini": 9001, "dia_ini": 5, "ide_fin": 9002, "dia_fin": 16, "dia_fin_antes": null},
+            {"id": 8, "quitada": false, "estado": "registrado", "ide_ini": null, "dia_ini": null, "ide_fin": null, "dia_fin": null, "dia_fin_antes": null}
+          ]
+        }
+      ]
+    },
+    {
+      "nombre": "c6_c9",
+      "pasos": [
+        {
+          "nombre": "continua_la_de_administracion",
+          "plataforma": [{"id": null, "codigo": "CIV", "desde": 5, "hasta": 9}],
+          "sigrid": [
+            {"ide": 61, "fecha_int": 20261005, "codigo": "CIV", "synckey": null, "obride": 40, "hmoide": 640, "parte_cod": "PT26/00040", "can": 0.0},
+            {"ide": 62, "fecha_int": 20261007, "codigo": "CIZ", "synckey": null, "obride": 40, "hmoide": 640, "parte_cod": "PT26/00040", "can": 1.0}
+          ],
+          "peticion": {
+            "obra": {"ide": 678, "codigo": "0678", "nombre": "OBRA"},
+            "lineas": [],
+            "incidencias": [
+              {"id": 7, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0}
+            ],
+            "incidencias_mes": [
+              {"id": 7, "obra_ide": 678, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0}
+            ],
+            "cierres_recursos": [200]
+          },
+          "respuesta": {
+            "incidencias": [
+              {"id": 7, "rol": "ini", "accion": "continua", "fecha_int": 20261005, "parte_cod": "PT26/00040", "hmores_ide": null},
+              {"id": 7, "rol": "fin", "accion": "editar", "fecha_int": 20261009, "parte_cod": "PT26/00040", "hmores_ide": 62, "fec_antes": 20261007, "ajena": true}
+            ],
+            "cierres_racha": [],
+            "no_coincide": []
+          },
+          "ediciones": [[62, 20261007, 20261009]],
+          "inserciones": [],
+          "traza": [
+            {"id": 7, "quitada": false, "estado": "registrado", "ide_ini": null, "dia_ini": null, "ide_fin": 62, "dia_fin": 9, "dia_fin_antes": 7}
+          ]
+        },
+        {
+          "nombre": "quitarla_devuelve_el_ciz",
+          "plataforma": [],
+          "sigrid": [
+            {"ide": 61, "fecha_int": 20261005, "codigo": "CIV", "synckey": null, "obride": 40, "hmoide": 640, "parte_cod": "PT26/00040", "can": 0.0},
+            {"ide": 62, "fecha_int": 20261009, "codigo": "CIZ", "synckey": null, "obride": 40, "hmoide": 640, "parte_cod": "PT26/00040", "can": 1.0}
+          ],
+          "peticion": {
+            "obra": {"ide": 678, "codigo": "0678", "nombre": "OBRA"},
+            "lineas": [],
+            "quitadas": [
+              {"id": 7, "obra_ide": 678, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0, "hmores_ide_ini": null, "hmores_ide_fin": 62, "dia_ini": null, "dia_fin": 9, "dia_fin_antes": 7}
+            ]
+          },
+          "respuesta": {
+            "incidencias": [
+              {"id": 7, "rol": "devolver", "accion": "editar", "fecha_int": 20261007, "parte_cod": "PT26/00040", "hmores_ide": 62, "fec_antes": 20261009, "ajena": true}
+            ],
+            "cierres_racha": [],
+            "no_coincide": [
+              {"tipo": "quitada", "recurso_ide": 200, "incidencia_id": 7, "lineas": [], "motivo": "quitada en la plataforma; sigue en Sigrid", "en_sigrid": []}
+            ]
+          },
+          "ediciones": [[62, 20261009, 20261007]],
+          "inserciones": [],
+          "traza": []
+        }
+      ]
+    },
+    {
+      "nombre": "c10",
+      "pasos": [
+        {
+          "nombre": "registra_5_9",
+          "plataforma": [{"id": null, "codigo": "CIV", "desde": 5, "hasta": 9}],
+          "sigrid": [],
+          "peticion": {
+            "obra": {"ide": 678, "codigo": "0678", "nombre": "OBRA"},
+            "lineas": [],
+            "incidencias": [
+              {"id": 7, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0}
+            ],
+            "incidencias_mes": [
+              {"id": 7, "obra_ide": 678, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0}
+            ],
+            "cierres_recursos": [200]
+          },
+          "respuesta": {
+            "incidencias": [
+              {"id": 7, "rol": "ini", "accion": "escribir", "fecha_int": 20261005, "parte_cod": "PT26/00251", "hmores_ide": 9001},
+              {"id": 7, "rol": "fin", "accion": "escribir", "fecha_int": 20261009, "parte_cod": "PT26/00251", "hmores_ide": 9002}
+            ],
+            "cierres_racha": [],
+            "no_coincide": []
+          },
+          "ediciones": [],
+          "inserciones": [[20261005, "CIV"], [20261009, "CIZ"]],
+          "traza": [
+            {"id": 7, "quitada": false, "estado": "registrado", "ide_ini": 9001, "dia_ini": 5, "ide_fin": 9002, "dia_fin": 9, "dia_fin_antes": null}
+          ]
+        },
+        {
+          "nombre": "quitarla_avisa_sin_escribir",
+          "plataforma": [],
+          "sigrid": [
+            {"ide": 9001, "fecha_int": 20261005, "codigo": "CIV", "synckey": "porcentajes:inc:7:ini", "obride": 555001, "hmoide": 777, "parte_cod": "PT26/00251", "can": 0.0},
+            {"ide": 9002, "fecha_int": 20261009, "codigo": "CIZ", "synckey": "porcentajes:inc:7:fin", "obride": 555001, "hmoide": 777, "parte_cod": "PT26/00251", "can": 0.0}
+          ],
+          "peticion": {
+            "obra": {"ide": 678, "codigo": "0678", "nombre": "OBRA"},
+            "lineas": [],
+            "quitadas": [
+              {"id": 7, "obra_ide": 678, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0, "hmores_ide_ini": 9001, "hmores_ide_fin": 9002, "dia_ini": 5, "dia_fin": 9}
+            ]
+          },
+          "respuesta": {
+            "cierres_racha": [],
+            "no_coincide": [
+              {"tipo": "quitada", "recurso_ide": 200, "incidencia_id": 7, "lineas": [
+                {"ide": 9001, "codigo": "CIV", "fecha_int": 20261005, "parte_cod": "PT26/00251"},
+                {"ide": 9002, "codigo": "CIZ", "fecha_int": 20261009, "parte_cod": "PT26/00251"}
+              ], "motivo": "quitada en la plataforma; sigue en Sigrid", "en_sigrid": [9001, 9002]}
+            ]
+          },
+          "ediciones": [],
+          "inserciones": [],
+          "traza": [
+            {"id": 7, "quitada": true, "estado": "registrado", "ide_ini": 9001, "dia_ini": 5, "ide_fin": 9002, "dia_fin": 9, "dia_fin_antes": null}
+          ]
+        },
+        {
+          "nombre": "borradas_a_mano",
+          "plataforma": [],
+          "sigrid": [],
+          "peticion": {
+            "obra": {"ide": 678, "codigo": "0678", "nombre": "OBRA"},
+            "lineas": [],
+            "quitadas": [
+              {"id": 7, "obra_ide": 678, "recurso_ide": 200, "empresa": 1, "codigo": "CIV", "ano": 2026, "mes": 10, "desde": 5, "hasta": 9, "paride": 0, "hmores_ide_ini": 9001, "hmores_ide_fin": 9002, "dia_ini": 5, "dia_fin": 9}
+            ]
+          },
+          "respuesta": {
+            "cierres_racha": [],
+            "no_coincide": [
+              {"tipo": "quitada", "recurso_ide": 200, "incidencia_id": 7, "lineas": [], "motivo": "quitada en la plataforma; sigue en Sigrid", "en_sigrid": []}
+            ]
+          },
+          "ediciones": [],
+          "inserciones": [],
+          "traza": []
+        }
+      ]
+    }
+  ]
+}

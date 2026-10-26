@@ -14,7 +14,8 @@ es el de su petición suelta con los mismos datos de Sigrid (R21).
 - Sin estado entre llamadas: memoria y pipelines son de cada llamada
   (F-025 R9, D4). `ejecutar` no va en lote (D6).
 - F-030: una petición puede traer, en tercer lugar, sus incidencias; sin
-  ellas, la petición de siempre `(obra, lineas)`.
+  ellas, la petición de siempre `(obra, lineas)`. F-062: en cuarto lugar,
+  su `ContextoRachas` (el pipeline de esa obra lo lleva, como en suelto).
 """
 from __future__ import annotations
 
@@ -69,14 +70,16 @@ class RegistroLote:
     def preflight(self, peticiones: list[tuple]
                   ) -> list[Preflight | Exception]:
         """R19: un resultado por petición, en su orden. Cada petición es
-        `(obra, lineas)` o `(obra, lineas, incidencias)` (F-030)."""
+        `(obra, lineas)`, `(obra, lineas, incidencias)` (F-030) o `(obra,
+        lineas, incidencias, contexto)` (F-062)."""
         memoria = LecturasDelLote(self._cli, self._limite)
         memoria.precargar(peticiones, self._st)
 
-        def una(obra: ObraEntrada, lineas: list[LineaEntrada], *inc):
-            kw = {"incidencias": inc[0]} if inc and inc[0] else {}
-            return RegistroPipeline(cliente=memoria,
-                                    settings=self._st).preflight(
+        def una(obra: ObraEntrada, lineas: list[LineaEntrada], *resto):
+            kw = {"incidencias": resto[0]} if resto and resto[0] else {}
+            contexto = resto[1] if len(resto) > 1 else None
+            return RegistroPipeline(cliente=memoria, settings=self._st,
+                                    contexto=contexto).preflight(
                 obra=obra, lineas=lineas, **kw)
         return self._por_obra(memoria, [(lambda p=p: una(*p))
                                         for p in peticiones])
