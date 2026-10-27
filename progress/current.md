@@ -1,11 +1,13 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-065** (la ficha de incidencia activa a 0 se queda en su
-sitio por letra; O1 de la review de F-063, petición del humano del
-2026-10-27; solo front, rigor estándar; rama
+**F-065 implementada, pendiente de review** (la ficha de incidencia activa
+a 0 se queda en su sitio por letra; O1 de la review de F-063, petición del
+humano del 2026-10-27; solo front, rigor estándar; rama
 `feature/F-065-ficha-activa-en-su-sitio`, worktree `porcentajes-f065`):
-implementer lanzado. **F-063** (filtrar trabajadores por tipo
+informe en `progress/impl_F-065.md`, campaña en
+`progress/mutacion_manual_F-065.md`; su MANUAL del navegador, en «⚠ Lo que
+espera al humano» (entrada F-065). **F-063** (filtrar trabajadores por tipo
 de incidencia con fichas como las de estado; solo front) **cerrada (`done`)
 el 2026-10-27**: review 1 APROBADA (`e035123`), `bash harness/init.sh` en
 verde; resumen en `progress/history.md`. **Desplegándose el 2026-10-27** (solo el
@@ -376,6 +378,23 @@ F-033 y, detrás, F-017, F-018…
      estado.
   5. Con una activa, «›» (mes siguiente): el filtro se quita. Un mes sin incidencias:
      ninguna ficha nueva.
+
+- **F-065: MANUAL en el navegador (pendiente, nadie la ha ejecutado; tras la
+  de F-063).** Los tests la cubren en node; en un navegador no se ha visto.
+  **En local** (front + api contra la BBDD local `dedicacion`), no en
+  producción: llevar una ficha a 0 exige quitar una incidencia en el editor,
+  y eso escribe en la BBDD de la app (a Sigrid no va nada). Pasos:
+  1. Un mes abierto con incidencias de al menos dos letras. En el editor de
+     un trabajador, añadir una incidencia de un tipo que el mes no tenga y
+     cuya letra quede **entre** las presentes o delante (p. ej. «B» si hay
+     «P» y «V»), y guardar: sale su ficha «B … 1» en su sitio por letra.
+  2. Clic en esa ficha: queda recuadrada y la tabla enseña solo a ese
+     trabajador.
+  3. En el editor, quitar esa incidencia y guardar. La ficha sigue
+     recuadrada, ahora «B … 0», **en el mismo sitio** (delante de «P» y
+     «V»), no al final de la fila; la tabla, vacía.
+  4. Otro clic en «B … 0»: desaparece, vuelve la tabla entera y las demás
+     fichas siguen en el mismo orden.
 
 - **F-064: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Los
   tests la cubren en node; en un navegador no se ha visto. **Dos maneras:**
