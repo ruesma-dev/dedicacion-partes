@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-065 implementada, pendiente de review** (la ficha de incidencia activa
+**En curso: F-065, implementada; review 1 lanzada** (la ficha de incidencia activa
 a 0 se queda en su sitio por letra; O1 de la review de F-063, petición del
 humano del 2026-10-27; solo front, rigor estándar; rama
 `feature/F-065-ficha-activa-en-su-sitio`, worktree `porcentajes-f065`):
