@@ -3025,3 +3025,27 @@ en su sitio por letra (cosmético, a decidir por el humano); la regla «baja
 sin carga» está en tres sitios (una función común, fuera de alcance); el SHA
 de la campaña manual, completo la próxima vez. Podadas de `current.md` las
 secciones de F-044 ya cerradas (O2).
+
+## 2026-10-27 · F-065 · La ficha de incidencia activa a 0, en su sitio por letra
+
+Rama `feature/F-065-ficha-activa-en-su-sitio` · `sdd: false` · rigor
+`estandar` · **APROBADO** por el reviewer en la review 1 (`0f56ac8`), sin
+cambios requeridos.
+
+**Qué cambió.** Petición del humano (O1 de la review de F-063): la ficha de
+incidencia activa que se queda a 0 entra en `tiposIncidenciaDelMes` antes de
+ordenar, así que sale en su sitio por letra y nombre y no al final; el
+comparador sigue en un solo sitio. Solo `app.js` y sus tests.
+
+**Verificado.** RED con 3 en rojo; 4 tests nuevos y los 16 de F-063 sin tocar;
+`init.sh` en verde (front 434); campaña manual de 12 mutantes, 11 muertos y 1
+equivalente (N10: la clave interna del mapa; los códigos del catálogo son
+`CI%`, nunca una letra), aceptado por el reviewer. Observaciones recogidas por
+el líder antes de cerrar: el doble usa un código del dominio (`CIVA`) y el
+análisis de N10 cita el invariante (`config.yaml`, `letra_y_nombre`). F-066
+queda con prioridad 8, como F-054: el orden del backlog desempata por id, así
+que va justo después (O3).
+
+**Fuera / pendiente.** Desplegar el front; MANUAL del humano en el navegador.
+También da de alta **F-066** (la regla «baja sin carga» en una sola función,
+pendiente, después de F-054).

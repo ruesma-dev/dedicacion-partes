@@ -568,13 +568,9 @@ function renderCabecera() {
 
   // F-063: una ficha por tipo de incidencia del mes («V Vacaciones 3»); una
   // sola activa, y se combina con la de estado. La activa sigue aunque el mes
-  // se quede sin ese tipo (con 0), para poder quitarla.
+  // se quede sin ese tipo (con 0), para poder quitarla, y en su sitio (F-065).
   const activa = state.filtroIncidencia;
-  const tipos = tiposIncidenciaDelMes(state.trabajadores);
-  if (activa && !tipos.some((x) => x.codigo === activa.codigo)) {
-    tipos.push({ ...activa, n: 0 });
-  }
-  tipos.forEach((x) => {
+  tiposIncidenciaDelMes(state.trabajadores, activa).forEach((x) => {
     const el = document.createElement("span");
     el.className = "badge chip-inc" +
       (activa && activa.codigo === x.codigo ? " filtro-activo" : "");
@@ -593,8 +589,10 @@ function renderCabecera() {
 // F-063: los tipos de incidencia del cuadrante del mes, para sus fichas: uno
 // por `codigo`, ordenados por letra, con cuántos trabajadores (no cuántas
 // incidencias) tienen alguna no quitada. Las bajas sin carga no cuentan: la
-// tabla no las enseña (`trabajadoresVisibles`).
-function tiposIncidenciaDelMes(trabajadores) {
+// tabla no las enseña (`trabajadoresVisibles`). F-065: el tipo `activo` (el de
+// la ficha activa, opcional) entra con 0 si el mes ya no lo tiene, ANTES de
+// ordenar, para que salga en su sitio y no al final.
+function tiposIncidenciaDelMes(trabajadores, activo) {
   const tipos = new Map();
   trabajadores.forEach((t) => {
     if (!t.activo && !t.lineas.length) return;
@@ -608,6 +606,9 @@ function tiposIncidenciaDelMes(trabajadores) {
       tipos.set(i.codigo, tipo);
     });
   });
+  if (activo && !tipos.has(activo.codigo)) {
+    tipos.set(activo.codigo, { ...activo, n: 0 });
+  }
   return [...tipos.values()].sort((a, b) =>
     a.letra.localeCompare(b.letra, "es") || a.nombre.localeCompare(b.nombre, "es"));
 }

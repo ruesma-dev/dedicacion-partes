@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **61 features**, 23 abiertas, 38 terminadas.
+Resumen: **63 features**, 24 abiertas, 39 terminadas.
 
 ## Trabajo abierto
 
@@ -15,6 +15,7 @@ Resumen: **61 features**, 23 abiertas, 38 terminadas.
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
 | F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | pendiente | critico | `feature/F-053-delegados-parte-unico` |
 | F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 8 | pendiente | critico | `feature/F-054-sync-trae-porcentajes` |
+| F-066 | Una sola función para la regla «baja sin carga» del front | 8 | pendiente | estandar | `feature/F-066-baja-sin-carga-una-funcion` |
 | F-021 | Filtro por obra: velar las etiquetas de las demás obras del recurso | 9 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-048 | Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas») | 10 | pendiente | estandar | `feature/F-048-aviso-obra-fallida` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 11 | pendiente | estandar | `feature/F-046-permiso-cerrar-periodo` |
@@ -50,6 +51,7 @@ Resumen: **61 features**, 23 abiertas, 38 terminadas.
 | F-061 | Búsqueda predictiva en el desplegable de incidencias (nombre, palabras extra, letra y código) | 1 | estandar |
 | F-062 | Rachas de incidencia como Administración: abrir, alargar o cerrar la de cualquier parte en vez de un par por mes | 1 | critico |
 | F-064 | El pisado de los recursos vinculados, confirmado por defecto en el modal | 1 | estandar |
+| F-065 | La ficha de incidencia activa a 0 se queda en su sitio por letra | 1 | estandar |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | critico |
@@ -113,6 +115,12 @@ Pedida por el humano el 2026-10-08 (mismo encargo que F-052). Hilo «RE: Porcent
 estado **pendiente** · prioridad 8 · rigor `critico` · SDD sí · rama `feature/F-054-sync-trae-porcentajes`
 
 Pedida por el humano el 2026-10-08: «al sincronizar debería traer los % ya existentes en Sigrid». Hoy el sync solo trae maestros (recursos, obras, partidas); el cuadrante no sabe lo que Administración ya metió a mano en los partes (ejemplo real: GONZALEZ PANIAGUA tiene MADM 95 % en PT26/00319 de la 0694, 2026-09, sin synckey, y el cuadrante no lo enseñaba: salió como sobrecarga al registrar). Se trata de LEER (solo lectura, vía sigrid-api) las líneas mensuales (horas M*) de los partes de obra del periodo y cargarlas como asignaciones del trabajador en la base `dedicacion`. Lectura en Sigrid (transfer o api según el límite de servicio: el transfer ya tiene la lectura de líneas y el casado de postventa/VAR) y escritura solo en la base local de la app. DECISIONES PARA LA SPEC: qué periodo (el del cuadrante abierto, al pulsar sync o con botón aparte); qué líneas cuentan (horas mensuales M*, can = %; las nuestras con synckey vs las manuales); cómo se traduce la partida a la entrada del cuadrante (obra normal, `Postv-` por partida de POSTV2, `VAR-NN`); qué pasa si el cuadrante ya tiene algo para ese trabajador (no pisar lo editado, avisar, o Sigrid manda); si se marcan como «ya registradas» para no volver a escribirlas; partes cerrados; meses cerrados en la app; deshacer. Relación: F-051 (pisar líneas al 0 %), F-044 (vinculados), F-050 (partida por línea).
+
+### F-066 · Una sola función para la regla «baja sin carga» del front
+
+estado **pendiente** · prioridad 8 · rigor `estandar` · SDD no · rama `feature/F-066-baja-sin-carga-una-funcion`
+
+Petición del humano del 2026-10-27 («da de alta la feature de mejora de código. será la siguiente después de f54»), a partir de la O4 de la review 1 de F-063 (`progress/review_F-063.md`): la regla «un trabajador de baja sin carga no se enseña ni cuenta» (`!t.activo && !t.lineas.length`) está repetida en tres sitios de `app.js` (`trabajadoresVisibles`, `renderTabla` y `tiposIncidenciaDelMes`). Hoy coinciden; si uno cambia y los otros no, el número de una ficha dejaría de cuadrar con lo que se ve al pulsarla. Mejora de código sin cambio de comportamiento: una función pura con nombre (p. ej. `ocultoPorBaja(t)`) usada en los tres sitios. Solo front (`app.js` y sus tests). Va DESPUÉS de F-054.
 
 ### F-021 · Filtro por obra: velar las etiquetas de las demás obras del recurso
 
@@ -293,6 +301,12 @@ Pedida por el humano el 2026-10-23: «el primer dia de unas vacaciones siempre d
 estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-064-pisado-vinculados-marcado`
 
 Petición del humano del 2026-10-26, tras la segunda prueba del líder de F-044 (pisado y arrastre, `progress/manual_F-044.md`): confirmar solo el pisado del trabajador dejaba a sus vinculados con el % viejo, porque cada uno pide su propia casilla (F-044 R20). El humano: «haz el cambio del punto 1 antes de desplegar. que queden confirmados por defecto y se puedan desmarcar»; plan aprobado («en el arnes como peticion, lo demas ok»). En el modal de registro, la casilla de un conflicto de un recurso vinculado (`c.vinculado`) con `motivo` «pisado» sale MARCADA la primera vez que se enseña, y el humano puede desmarcarla. NO cambia: la casilla del pisado del trabajador (desmarcada, F-051), las de sobrecarga y sin partida de los vinculados (desmarcadas), los cierres de racha (F-062) ni el transfer ni la api: cada vinculado sigue necesitando su clave en `pisar_claves` (R20) y, sin confirmar al trabajador, sus vinculados se omiten «sigue al trabajador» (R18). El modal recuerda las claves ya enseñadas: una casilla desmarcada sigue desmarcada al repetir el preflight de una obra (cambio de partida, F-049/F-050); un pisado de vinculado que aparece nuevo tras repetirlo sale marcado. Solo front (`app.js` y sus tests): es el valor de partida de una casilla visible que el humano confirma al pulsar «Registrar», no decide nada que el humano no vea. Enmienda R20/R31 de F-044 (anotada en su requirements.md). Va antes del despliegue de F-044 y antes de F-063. CERRADA (done) el 2026-10-27: review 2 APROBADA (4144ab8), init.sh en verde; MANUAL del navegador pendiente del humano. El humano acepta (2026-10-27, «1, si me vale») la nota de enmienda única bajo R31 de F-044 (O1 de la review 2): no se añade referencia en R20.
+
+### F-065 · La ficha de incidencia activa a 0 se queda en su sitio por letra
+
+estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-065-ficha-activa-en-su-sitio`
+
+Petición del humano del 2026-10-27 («si, hazlo de la ficha activa»), a partir de la O1 de la review 1 de F-063 (`progress/review_F-063.md`): cuando la ficha de incidencia activa se queda sin trabajadores (p. ej. se quita en el editor la única incidencia de ese tipo), sigue en la fila con 0 para poder quitarla (F-063), pero sale AL FINAL porque se añade después de ordenar (`renderCabecera` de `app.js`, `tipos.push` tras el `sort` de `tiposIncidenciaDelMes`). Debe salir en su sitio, con el mismo orden que las demás (letra con `localeCompare` «es», desempate por nombre). Solo front (`app.js` y sus tests); no cambia nada más del filtro. Se despliega en el siguiente despliegue del front. CERRADA (done) el 2026-10-27: review 1 APROBADA (0f56ac8), init.sh en verde; pendiente de desplegar el front y MANUAL del navegador.
 
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 

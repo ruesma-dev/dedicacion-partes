@@ -1,11 +1,15 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-063** (filtrar trabajadores por tipo
+**Ninguna feature en curso.** **F-065** (la ficha de incidencia activa a 0
+se queda en su sitio por letra; solo front) **cerrada (`done`) el
+2026-10-27**: review 1 APROBADA (`0f56ac8`), `bash harness/init.sh` en verde;
+resumen en `progress/history.md`. **Pendiente de desplegar** (solo el front)
+y de su MANUAL («⚠ Lo que espera al humano», entrada F-065). **F-063** (filtrar trabajadores por tipo
 de incidencia con fichas como las de estado; solo front) **cerrada (`done`)
 el 2026-10-27**: review 1 APROBADA (`e035123`), `bash harness/init.sh` en
-verde; resumen en `progress/history.md`. **Pendiente de desplegar** (solo el
-front) y de su MANUAL del navegador («⚠ Lo que espera al humano»). **F-044** (los porcentajes también a los
+verde; resumen en `progress/history.md`. **Desplegada el 2026-10-27** (solo el
+front, `r20261027-1202`); pendiente su MANUAL del navegador («⚠ Lo que espera al humano»). **F-044** (los porcentajes también a los
 recursos vinculados) y **F-064** (su pisado, marcado por defecto en el modal)
 **cerradas y DESPLEGADAS el 2026-10-27** (transfer `r20261027-0742`, api
 `r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). T23 hecha:
@@ -16,7 +20,8 @@ Cancelar («⚠ Lo que espera al humano», manera B); el resto de T21 de F-044
 (líneas ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
 validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
-**Siguiente:** F-054 (spec aprobada, worktree `porcentajes-f054`).
+**Siguiente:** F-054 (spec aprobada, worktree `porcentajes-f054`); después
+F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
 ## F-062 · CERRADA y DESPLEGADA (2026-10-26): aviso a `partes` pendiente
 
@@ -371,6 +376,23 @@ F-033 y, detrás, F-017, F-018…
      estado.
   5. Con una activa, «›» (mes siguiente): el filtro se quita. Un mes sin incidencias:
      ninguna ficha nueva.
+
+- **F-065: MANUAL en el navegador (pendiente, nadie la ha ejecutado; tras la
+  de F-063).** Los tests la cubren en node; en un navegador no se ha visto.
+  **En local** (front + api contra la BBDD local `dedicacion`), no en
+  producción: llevar una ficha a 0 exige quitar una incidencia en el editor,
+  y eso escribe en la BBDD de la app (a Sigrid no va nada). Pasos:
+  1. Un mes abierto con incidencias de al menos dos letras. En el editor de
+     un trabajador, añadir una incidencia de un tipo que el mes no tenga y
+     cuya letra quede **entre** las presentes o delante (p. ej. «B» si hay
+     «P» y «V»), y guardar: sale su ficha «B … 1» en su sitio por letra.
+  2. Clic en esa ficha: queda recuadrada y la tabla enseña solo a ese
+     trabajador.
+  3. En el editor, quitar esa incidencia y guardar. La ficha sigue
+     recuadrada, ahora «B … 0», **en el mismo sitio** (delante de «P» y
+     «V»), no al final de la fila; la tabla, vacía.
+  4. Otro clic en «B … 0»: desaparece, vuelve la tabla entera y las demás
+     fichas siguen en el mismo orden.
 
 - **F-064: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Los
   tests la cubren en node; en un navegador no se ha visto. **Dos maneras:**
