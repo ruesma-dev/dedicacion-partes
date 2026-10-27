@@ -4,7 +4,7 @@
 **En curso: F-063** (filtrar trabajadores por tipo de incidencia con
 fichas como las de estado; solo front, rigor estándar, `sdd: false`; rama
 `feature/F-063-filtro-por-incidencia`, worktree `porcentajes-f063`):
-**implementada, pendiente de review** (2026-10-27; informe
+**implementada; review 1 lanzada** (2026-10-27; informe
 `progress/impl_F-063.md`, campaña manual del JS
 `progress/mutacion_manual_F-063.md`: 25 mutantes, 1 superviviente
 equivalente; MANUAL del navegador en «⚠ Lo que espera al humano»). **F-044** (los porcentajes también a los
