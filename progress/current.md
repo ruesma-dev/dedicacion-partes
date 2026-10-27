@@ -1,19 +1,21 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-044** (los porcentajes también a los
+**En curso: F-063** (filtrar trabajadores por tipo de incidencia con
+fichas como las de estado; solo front, rigor estándar, `sdd: false`; rama
+`feature/F-063-filtro-por-incidencia`, worktree `porcentajes-f063`):
+implementer lanzado el 2026-10-27 («lanza f63»). **F-044** (los porcentajes también a los
 recursos vinculados) y **F-064** (su pisado, marcado por defecto en el modal)
 **cerradas y DESPLEGADAS el 2026-10-27** (transfer `r20261027-0742`, api
 `r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). T23 hecha:
 `azure-apps/dedicacion.md` al día (`29321e1`). **Pendiente del humano:**
-pulsar **«Sincronizar Sigrid»** en producción (trae los vínculos a
-`recurso_vinculado`); la MANUAL de F-064 en el navegador, solo mirar y
+(«Sincronizar Sigrid» ya hecho: el humano confirma el 2026-10-27 que
+salen las subfilas de teléfono y demás, «esta bien»); la MANUAL de F-064 en el navegador, solo mirar y
 Cancelar («⚠ Lo que espera al humano», manera B); el resto de T21 de F-044
 (líneas ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
 validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
-**Siguiente:** F-063 (filtro de trabajadores por tipo de incidencia, solo
-front); después F-054 (spec aprobada, worktree `porcentajes-f054`).
+**Siguiente:** F-054 (spec aprobada, worktree `porcentajes-f054`).
 
 ## F-044 · decisiones del humano al bloqueo de T7 (2026-10-26, «si a todo»)
 

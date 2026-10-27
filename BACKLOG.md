@@ -5,12 +5,14 @@
 
 Resumen: **61 features**, 24 abiertas, 37 terminadas.
 
+En curso: **F-063**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
-| F-063 | Filtrar trabajadores por tipo de incidencia con fichas como las de estado | 2 | pendiente | estandar | `feature/F-063-filtro-por-incidencia` |
+| F-063 | Filtrar trabajadores por tipo de incidencia con fichas como las de estado | 2 | en curso | estandar | `feature/F-063-filtro-por-incidencia` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
@@ -86,7 +88,7 @@ O4 de la review de F-051 (2026-10-21): un porcentaje menor de 0,00005 (en fracci
 
 ### F-063 · Filtrar trabajadores por tipo de incidencia con fichas como las de estado
 
-estado **pendiente** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-063-filtro-por-incidencia`
+estado **en curso** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-063-filtro-por-incidencia`
 
 Pedida por el humano el 2026-10-26: «hay que poner otro filtro como el ok trabajadores etc, que sea para cada incidencia para filtrar trabajadores por tipo de incidencia». Propuesta aprobada el 2026-10-26 («ok, dala de alta»): en la fila de fichas del resumen («N trabajadores · OK · sin carga · falta · exceso», `renderCabecera` de `app.js`) sale una ficha más por cada tipo de incidencia presente en el cuadrante del mes, con letra, nombre y nº de trabajadores (p. ej. «V Vacaciones 3»). Un clic filtra a los trabajadores con al menos una incidencia de ese tipo; otro clic lo quita. UNA ficha de incidencia activa a la vez (como las de estado). Se combina (Y) con la ficha de estado, el buscador y los filtros de columna. Cuenta solo las incidencias del cuadrante del mes (no las rachas abiertas de meses anteriores) y NO las quitadas («quitada · sigue en Sigrid»). Sin incidencias en el mes no sale ninguna ficha nueva. Solo front (`app.js` y sus tests): la api ya devuelve `incidencias` por trabajador (F-030 R21); es un filtro de pantalla que no decide nada de lo que se registra, sin Sigrid. Va DESPUÉS de F-044 (las dos tocan `app.js`; una sola in_progress).
 

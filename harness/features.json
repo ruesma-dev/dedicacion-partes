@@ -1066,7 +1066,7 @@
         "El filtro de incidencia se combina con la ficha de estado, el buscador y los filtros de columna (todas las condiciones a la vez).",
         "Tests del front sin red ni BBDD que fijan conteo, filtrado, combinación y que una quitada no cuenta; `bash harness/init.sh` en verde."
       ],
-      "status": "pending",
+      "status": "in_progress",
       "sdd": false,
       "rigor": "estandar",
       "priority": 2,
