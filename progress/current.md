@@ -1,17 +1,15 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-065, implementada; review 1 lanzada** (la ficha de incidencia activa
-a 0 se queda en su sitio por letra; O1 de la review de F-063, petición del
-humano del 2026-10-27; solo front, rigor estándar; rama
-`feature/F-065-ficha-activa-en-su-sitio`, worktree `porcentajes-f065`):
-informe en `progress/impl_F-065.md`, campaña en
-`progress/mutacion_manual_F-065.md`; su MANUAL del navegador, en «⚠ Lo que
-espera al humano» (entrada F-065). **F-063** (filtrar trabajadores por tipo
+**Ninguna feature en curso.** **F-065** (la ficha de incidencia activa a 0
+se queda en su sitio por letra; solo front) **cerrada (`done`) el
+2026-10-27**: review 1 APROBADA (`0f56ac8`), `bash harness/init.sh` en verde;
+resumen en `progress/history.md`. **Pendiente de desplegar** (solo el front)
+y de su MANUAL («⚠ Lo que espera al humano», entrada F-065). **F-063** (filtrar trabajadores por tipo
 de incidencia con fichas como las de estado; solo front) **cerrada (`done`)
 el 2026-10-27**: review 1 APROBADA (`e035123`), `bash harness/init.sh` en
-verde; resumen en `progress/history.md`. **Desplegándose el 2026-10-27** (solo el
-front, lo lanza el humano) y de su MANUAL del navegador («⚠ Lo que espera al humano»). **F-044** (los porcentajes también a los
+verde; resumen en `progress/history.md`. **Desplegada el 2026-10-27** (solo el
+front, `r20261027-1202`); pendiente su MANUAL del navegador («⚠ Lo que espera al humano»). **F-044** (los porcentajes también a los
 recursos vinculados) y **F-064** (su pisado, marcado por defecto en el modal)
 **cerradas y DESPLEGADAS el 2026-10-27** (transfer `r20261027-0742`, api
 `r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). T23 hecha:

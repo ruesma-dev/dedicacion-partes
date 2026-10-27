@@ -70,7 +70,11 @@ PYTHONIOENCODING=utf-8 services/dedicacion-front/.venv/Scripts/python.exe <ruta>
   mismo orden. Solo cambiaría si un tipo presente tuviera como `codigo` la
   letra de la activa (un código de una sola letra igual a la letra de otro
   tipo): la activa pisaría a ese tipo. Los códigos de la api son los del
-  catálogo (`IncidenciaOut.codigo`, p. ej. `CIV`, `CIE`), no letras; matarlo
+  catálogo (`IncidenciaOut.codigo`, p. ej. `CIV`, `CIE`), no letras: el sync
+  solo trae códigos `CI%` distintos de `CIZ` (`services/dedicacion-api/config/config.yaml`,
+  `sync.incidencias`, `WHERE aux.cod LIKE 'CI%' AND aux.cod <> 'CIZ'`) y la
+  letra sale aparte (`domain/incidencias.py::letra_y_nombre`), así que ningún
+  código mide una letra (O2 de la review 1, añadido por el líder); matarlo
   exigiría un doble con un código de una letra inventado, fuera de la forma
   real.
 - **N2** (el fallo de antes, dentro de la función) lo matan solo los dos

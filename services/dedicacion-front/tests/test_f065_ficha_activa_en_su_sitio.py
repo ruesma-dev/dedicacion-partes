@@ -59,7 +59,7 @@ def test_f065_r1_la_activa_a_0_desempata_por_nombre_con_la_misma_letra():
     """«V Vacaciones» activa y a 0, con «V Vacaciones año anterior» (otro
     código, misma letra) presente: a igual letra, por nombre, así que la
     activa va delante de la otra V y detrás de la P."""
-    otra = {**_inc("CIV", 1, 2, id_=20), "codigo": "CVA",
+    otra = {**_inc("CIV", 1, 2, id_=20), "codigo": "CIVA",
             "nombre": "Vacaciones año anterior"}
     trabajadores = [
         _trab(1, "Ana", "OK", [_linea(1, 100)], [otra]),
