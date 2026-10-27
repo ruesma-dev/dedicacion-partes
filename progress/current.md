@@ -1,25 +1,18 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-064** (el pisado de los recursos
-vinculados, confirmado por defecto en el modal; petición del humano, solo
-front) **cerrada (`done`) el 2026-10-27**: review 2 APROBADA (`4144ab8`),
-`bash harness/init.sh` en verde; resumen en `progress/history.md`. Se
-despliega con el front de F-044. Pendiente del humano: su MANUAL del
-navegador («⚠ Lo que espera al humano»). **F-044** (aplicar los porcentajes también a
-los recursos vinculados al trabajador; `sdd: true`, rigor crítico) **cerrada
-(`done`) el 2026-10-26** por decisión del humano («cierra ya»): review 2
-APROBADA (`947c285`), `bash harness/init.sh` en verde, 7 mutantes
-equivalentes aceptados («1 ok»), T21 hecha por el líder a petición del humano
-en modo pruebas (`progress/manual_F-044.md`, CUMPLE); resumen en
-`progress/history.md`. **Pendiente de desplegar** (transfer → api → front,
-lo lanza el humano; la api crea `recurso_vinculado` y `asignacion_vinculado`)
-y de T23 (`azure-apps/dedicacion.md` y aviso a `partes`, del líder al
-desplegar). **Pendiente del humano tras desplegar:** el resto de T21 (líneas
-ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
-validación de Administración) y los **avisos a `partes`** de F-062 y F-044
+**Ninguna feature en curso.** **F-044** (los porcentajes también a los
+recursos vinculados) y **F-064** (su pisado, marcado por defecto en el modal)
+**cerradas y DESPLEGADAS el 2026-10-27** (transfer `r20261027-0742`, api
+`r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). T23 hecha:
+`azure-apps/dedicacion.md` al día (`29321e1`). **Pendiente del humano:**
+pulsar **«Sincronizar Sigrid»** en producción (trae los vínculos a
+`recurso_vinculado`); la MANUAL de F-064 en el navegador, solo mirar y
+Cancelar («⚠ Lo que espera al humano», manera B); el resto de T21 de F-044
+(líneas ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
+validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
-**Siguiente, tras el despliegue de F-044:** F-063 (filtro de trabajadores por tipo de incidencia, solo
+**Siguiente:** F-063 (filtro de trabajadores por tipo de incidencia, solo
 front); después F-054 (spec aprobada, worktree `porcentajes-f054`).
 
 ## F-044 · decisiones del humano al bloqueo de T7 (2026-10-26, «si a todo»)
@@ -300,6 +293,20 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés es la **1.7.3**.
 ## Producción, hoy
 
+- **Desplegado el 2026-10-27: F-044 y F-064**, los tres servicios en orden,
+  uno a uno, lanzados por el humano con `infra/d.local.ps1
+  transfer|api|front`: transfer `r20261027-0742`, api `r20261027-0844` y
+  front `r20261027-0846`; revisiones `ca-dedicacion-transfer--r20261027074159`,
+  `ca-dedicacion-api--r20261027084418` y `ca-dedicacion-front--r20261027084619`,
+  las tres `Healthy`, `RunningAtMaxScale` y con el 100 % del tráfico
+  (comprobado por el líder con `az containerapp revision list`, solo
+  lectura). La api arrancó sin errores («Application startup complete»;
+  `recurso_vinculado` y `asignacion_vinculado` por `create_all`). El
+  transfer sigue en **modo real**. `infra/imagenes.json` al día en este
+  commit; `azure-apps/dedicacion.md` `29321e1`. **Pendiente del humano:**
+  Ctrl+F5 en el front, **«Sincronizar Sigrid»** (sin él no hay vínculos ni
+  subfilas), la MANUAL B de F-064 y el **aviso a `partes`** de F-044
+  («F-044 · spec aprobada»).
 - **Desplegado el 2026-10-26: F-062**, los tres servicios en orden, uno a
   uno, lanzados por el humano con `infra/d.local.ps1 transfer|api|front`
   (envoltorio no versionado, `*.local.ps1`, que carga las variables y llama
