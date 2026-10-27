@@ -2987,3 +2987,14 @@ en el navegador (`current.md`, «⚠ Lo que espera al humano»). Propuesta de
 automejora del reviewer, a decidir por el humano: en `docs/CONVENTIONS.md`
 (y en `arnes-base`), «un doble que imita la respuesta de otro servicio lleva
 su forma serializada real, opcionales a `null` incluidos».
+
+## 2026-10-27 · Despliegue de F-044 y F-064
+
+Lanzado por el humano, uno a uno y en orden transfer → api → front
+(`infra/d.local.ps1`): transfer `r20261027-0742`, api `r20261027-0844`, front
+`r20261027-0846`; las tres revisiones `Healthy` con el 100 % del tráfico; la
+api arrancó sin errores y crea `recurso_vinculado` y `asignacion_vinculado`.
+Transfer en modo real. T23 de F-044: `azure-apps/dedicacion.md` (§1, §5, §7 y
+cabecera, `29321e1`). Pendiente del humano: «Sincronizar Sigrid» en
+producción, la MANUAL B de F-064 (mirar el modal y Cancelar), el resto de
+T21 de F-044 y los avisos a `partes` de F-062 y F-044.
