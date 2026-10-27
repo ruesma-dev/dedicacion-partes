@@ -1,16 +1,12 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-064** (el pisado de los recursos vinculados, confirmado por
-defecto en el modal; petición del humano del 2026-10-26, solo front, rigor
-estándar, `sdd: false`; rama `feature/F-064-pisado-vinculados-marcado`,
-worktree `porcentajes-f064`): **review 1 rechazada; arreglos hechos,
-pendiente de review 2** (`progress/review_F-064.md`, `progress/impl_F-064.md`,
-`progress/mutacion_manual_F-064.md`; `bash harness/init.sh` en verde).
-Desbloqueada por el humano con la opción 1 («F-064 · bloqueo resuelto
-(opción 1) e implementación», abajo). MANUAL del navegador en «⚠ Lo que
-espera al humano». Va **antes del
-despliegue de F-044**. **F-044** (aplicar los porcentajes también a
+**Ninguna feature en curso.** **F-064** (el pisado de los recursos
+vinculados, confirmado por defecto en el modal; petición del humano, solo
+front) **cerrada (`done`) el 2026-10-27**: review 2 APROBADA (`4144ab8`),
+`bash harness/init.sh` en verde; resumen en `progress/history.md`. Se
+despliega con el front de F-044. Pendiente del humano: su MANUAL del
+navegador («⚠ Lo que espera al humano»). **F-044** (aplicar los porcentajes también a
 los recursos vinculados al trabajador; `sdd: true`, rigor crítico) **cerrada
 (`done`) el 2026-10-26** por decisión del humano («cierra ya»): review 2
 APROBADA (`947c285`), `bash harness/init.sh` en verde, 7 mutantes
@@ -23,69 +19,8 @@ desplegar). **Pendiente del humano tras desplegar:** el resto de T21 (líneas
 ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
 validación de Administración) y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
-**Siguiente, tras F-064 y el despliegue de F-044:** F-063 (filtro de trabajadores por tipo de incidencia, solo
+**Siguiente, tras el despliegue de F-044:** F-063 (filtro de trabajadores por tipo de incidencia, solo
 front); después F-054 (spec aprobada, worktree `porcentajes-f054`).
-
-## F-064 · bloqueo resuelto (opción 1) e implementación (2026-10-26)
-
-**Hecho y commiteado en la rama:** T1 `fef5ec4` (`app.js` +
-`services/dedicacion-front/tests/test_f064_pisado_vinculados.py`, 9 tests,
-los del front 412/412 en verde, ningún test del front cambia ni se rompe) y
-T2 `9062a9b` (enmienda en R20/R31 de F-044). Decisiones: un conflicto de
-vinculado **sin motivo** cuenta como pisado (como `rotuloConflicto`, que lo
-rotula «Pisar»); un motivo desconocido no se marca; `registro.vistas` solo
-guarda claves de pisado de vinculado.
-
-**Qué se rompe:** `bash harness/init.sh` en [KO] por un único test del
-**transfer**, `services/dedicacion-transfer/tests/test_f013_sin_partida.py::test_f013_r4_el_front_rotula_por_motivo_y_degrada`
-(1 failed, 1584 passed). Exige que, **fuera de `rotuloConflicto`**, `app.js`
-no nombre ningún motivo (`"pisado"`, `"sobrecarga"`, `"sin_partida"`) ni
-compare un `motivo` (review 3 de F-049, contrato de F-013 R4). F-064 decide
-el valor de partida de la casilla según `motivo` «pisado», en
-`pintarModalPreflight`: choca con esa aserción por diseño, no por un
-descuido (no basta con reescribir el comentario).
-
-**No se ha tocado el test** (no se cambian aserciones existentes) **ni se ha
-esquivado** (p. ej. comparar `r.titulo === "Pisar"` lo pasaría sin cumplir
-su intención). Opciones para el humano:
-
-1. **Ampliar la excepción del test de F-013 R4**: además de
-   `rotuloConflicto`, una función pura y nombrada del front (p. ej.
-   `marcadaPorDefecto(c)`) puede mirar el motivo. Cambia una aserción de un
-   test del transfer (solo el test, no código del transfer).
-2. **Que lo diga `rotuloConflicto`**: devuelve además un campo (p. ej.
-   `marcada: true`) solo para el pisado de un vinculado, y el modal lo lee.
-   Ningún test cambia, pero `rotuloConflicto` deja de «solo formatear»
-   (docstring de `test_f049_r3_el_rotulo_no_decide_nada`).
-3. **Que lo publique el transfer** (un campo en el `Conflicto`): reabre el
-   alcance (hoy «transfer y api no se tocan»).
-
-**Decisión del humano (2026-10-26, «1»): opción 1.** Una función pura y
-nombrada del front, `marcadaPorDefecto(c)`, puede mirar el `motivo` además
-de `rotuloConflicto`. Cambio permitido en
-`test_f013_sin_partida.py::test_f013_r4_el_front_rotula_por_motivo_y_degrada`:
-**solo** excluir también el cuerpo de `marcadaPorDefecto` de lo que se
-comprueba «fuera»; el resto de aserciones igual. Código del transfer, sin
-cambios.
-
-**Hecho (T3, `3afebc1`):** `const marcadaPorDefecto = (c) => {…}` en
-`app.js`, justo detrás de `pintarModalPreflight`, que la usa. Es `const` y
-no `function` para que los arneses antiguos, que extraen
-`pintarModalPreflight` por nombre, la lleven consigo sin cambiar. En el test
-de F-013 R4 solo se ha añadido la exclusión de su cuerpo, con un comentario
-que cita F-064. `init.sh` en verde, sin [KO].
-
-**Review 1 rechazada (`0d08c91`); arreglos (2026-10-27):** B3, el doble del
-conflicto de un trabajador lleva `"vinculado": null` como el `asdict` real
-(muere el R2, `c.vinculado !== undefined`); B1, campaña manual reproducible
-en `progress/mutacion_manual_F-064.md` (15 mutantes, 15 muertos); B2, la
-MANUAL del navegador en «⚠ Lo que espera al humano»; O1, este título; O2,
-una sola nota de enmienda en F-044 (requirements en 150/150). Detalle:
-`progress/impl_F-064.md`.
-
-Entorno: el worktree no traía los `.venv` de los servicios (init.sh en [KO]
-de entrada); se enlazaron con *junction* a los de la copia principal, como
-en los demás worktrees (sin versionar, `.gitignore`).
 
 ## F-044 · decisiones del humano al bloqueo de T7 (2026-10-26, «si a todo»)
 
