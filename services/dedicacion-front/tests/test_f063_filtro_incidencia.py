@@ -253,6 +253,23 @@ def test_f063_r1_tipos_del_mes_cuenta_trabajadores_por_codigo():
     ]
 
 
+def test_f063_r1_misma_letra_dos_tipos_por_codigo_y_por_nombre():
+    """Dos códigos con la misma letra: dos fichas, por `codigo`, ordenadas por
+    nombre (desempate; añadido por el superviviente M14 de la campaña manual),
+    y cada una filtra lo suyo, no lo de la letra."""
+    otra = {**_inc("CIV", 1, 2, id_=20), "codigo": "CVA",
+            "nombre": "Vacaciones año anterior"}
+    trabajadores = [
+        _trab(1, "Ana", "OK", [_linea(1, 100)], [otra]),
+        _trab(2, "Benito", "OK", [_linea(1, 100)], [_inc("CIV", 3, 4, id_=21)]),
+    ]
+    fotos = _escena(['pulsar("V Vacaciones 1")'], _estado(trabajadores))
+    assert _textos(fotos[0])[len(FICHAS_ESTADO):] == [
+        "V Vacaciones 1", "V Vacaciones año anterior 1"]
+    assert fotos[1]["visibles"] == ["Benito"]
+    assert fotos[1]["activas"] == ["V Vacaciones 1"]
+
+
 # ================================== R2 ================================== #
 def test_f063_r2_un_clic_filtra_y_marca_la_ficha():
     antes, despues = _escena(['pulsar("V Vacaciones 2")'])
