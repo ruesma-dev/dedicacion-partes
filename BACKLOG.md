@@ -3,16 +3,13 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **61 features**, 24 abiertas, 37 terminadas.
-
-En curso: **F-063**.
+Resumen: **61 features**, 23 abiertas, 38 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
-| F-063 | Filtrar trabajadores por tipo de incidencia con fichas como las de estado | 2 | en curso | estandar | `feature/F-063-filtro-por-incidencia` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
@@ -61,6 +58,7 @@ En curso: **F-063**.
 | F-032 | Nombres de empresa sincronizados desde Sigrid | 2 | estandar |
 | F-055 | La previsualización del registro tarda demasiado (medir y acelerar) | 2 | critico |
 | F-056 | Validar trabajador_ide en preflight y ejecutar (un valor falso registra el mes entero) | 2 | critico |
+| F-063 | Filtrar trabajadores por tipo de incidencia con fichas como las de estado | 2 | estandar |
 | F-003 | Las columnas sigrid_* de asignacion no están en el ORM | 3 | critico |
 | F-008 | Infraestructura y despliegue en Azure | 3 | critico |
 | F-029 | Selección múltiple con Ctrl/Shift y completar hasta el 100 % en la obra filtrada | 3 | estandar |
@@ -85,12 +83,6 @@ En curso: **F-063**.
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-058-porcentaje-cero-no-registra`
 
 O4 de la review de F-051 (2026-10-21): un porcentaje menor de 0,00005 (en fracción) se redondea a `can` 0,0 en `reglas_porcentajes.py` (`can = round(porcentaje, 4)`) y sale una acción `escribir` con cantidad 0. Hueco anterior a F-051, pero con F-051 esa acción podría editar una línea al 0 % dejándola a 0 con nuestra `synckey` (o insertar una línea a 0). Decisión del humano el 2026-10-21 («ok o2 y o4»: feature aparte, como recomendó el líder): esas líneas NO se registran; salen como omitidas con un aviso legible en el preflight y en `ejecutar`. Servicio: transfer (la regla que construye la cantidad); el front solo enseña el aviso que ya pinta para las omitidas. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
-
-### F-063 · Filtrar trabajadores por tipo de incidencia con fichas como las de estado
-
-estado **en curso** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-063-filtro-por-incidencia`
-
-Pedida por el humano el 2026-10-26: «hay que poner otro filtro como el ok trabajadores etc, que sea para cada incidencia para filtrar trabajadores por tipo de incidencia». Propuesta aprobada el 2026-10-26 («ok, dala de alta»): en la fila de fichas del resumen («N trabajadores · OK · sin carga · falta · exceso», `renderCabecera` de `app.js`) sale una ficha más por cada tipo de incidencia presente en el cuadrante del mes, con letra, nombre y nº de trabajadores (p. ej. «V Vacaciones 3»). Un clic filtra a los trabajadores con al menos una incidencia de ese tipo; otro clic lo quita. UNA ficha de incidencia activa a la vez (como las de estado). Se combina (Y) con la ficha de estado, el buscador y los filtros de columna. Cuenta solo las incidencias del cuadrante del mes (no las rachas abiertas de meses anteriores) y NO las quitadas («quitada · sigue en Sigrid»). Sin incidencias en el mes no sale ninguna ficha nueva. Solo front (`app.js` y sus tests): la api ya devuelve `incidencias` por trabajador (F-030 R21); es un filtro de pantalla que no decide nada de lo que se registra, sin Sigrid. Va DESPUÉS de F-044 (las dos tocan `app.js`; una sola in_progress).
 
 ### F-059 · El % de cada obra por días trabajados, con el calendario del convenio
 
@@ -349,6 +341,12 @@ Pedida por el humano el 2026-10-08 («añade una feature para revisar que tarde 
 estado **terminada** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-056-validar-trabajador-ide`
 
 Observación de la review 4 de F-050 (2026-10-11), recogida por el líder: en la api, `trabajador_ide` llega crudo del cuerpo de `POST …/registro/preflight` y `…/registro/ejecutar` (`routes.py` ~393 y ~409) y `registro_sigrid.py` (~81) filtra con `if trabajador_ide`: un valor falso (`0`, `""`, `false`) QUITA el filtro y `ejecutar` registraría el mes entero en vez de un trabajador; un texto llega a PostgreSQL y da 500 en vez de 422. Hoy el front manda un número o null, así que no ocurre, pero es la ruta que escribe en Sigrid. Arreglo: validarlo como `obra_ide` (F-050: entero, 422 si no lo es, sin analizar) en las dos rutas y filtrar con `is not None`. Solo api; rigor crítico.
+
+### F-063 · Filtrar trabajadores por tipo de incidencia con fichas como las de estado
+
+estado **terminada** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-063-filtro-por-incidencia`
+
+Pedida por el humano el 2026-10-26: «hay que poner otro filtro como el ok trabajadores etc, que sea para cada incidencia para filtrar trabajadores por tipo de incidencia». Propuesta aprobada el 2026-10-26 («ok, dala de alta»): en la fila de fichas del resumen («N trabajadores · OK · sin carga · falta · exceso», `renderCabecera` de `app.js`) sale una ficha más por cada tipo de incidencia presente en el cuadrante del mes, con letra, nombre y nº de trabajadores (p. ej. «V Vacaciones 3»). Un clic filtra a los trabajadores con al menos una incidencia de ese tipo; otro clic lo quita. UNA ficha de incidencia activa a la vez (como las de estado). Se combina (Y) con la ficha de estado, el buscador y los filtros de columna. Cuenta solo las incidencias del cuadrante del mes (no las rachas abiertas de meses anteriores) y NO las quitadas («quitada · sigue en Sigrid»). Sin incidencias en el mes no sale ninguna ficha nueva. Solo front (`app.js` y sus tests): la api ya devuelve `incidencias` por trabajador (F-030 R21); es un filtro de pantalla que no decide nada de lo que se registra, sin Sigrid. Va DESPUÉS de F-044 (las dos tocan `app.js`; una sola in_progress). CERRADA (done) el 2026-10-27: review 1 APROBADA (e035123), init.sh en verde; pendiente de desplegar el front y MANUAL del navegador.
 
 ### F-003 · Las columnas sigrid_* de asignacion no están en el ORM
 
