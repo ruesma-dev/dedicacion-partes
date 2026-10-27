@@ -327,6 +327,18 @@ def test_f067_r2_con_la_preferencia_desmarcada_la_casilla_sale_desmarcada():
     assert foto["casilla"]["marcada"] is False
 
 
+def test_f067_r5_basta_un_vinculado_bajo_cualquier_linea_del_mes():
+    """El único vinculado del mes, bajo la SEGUNDA línea de Carla, y todos
+    con líneas: la casilla sale (añadido por N9 de la campaña manual, que
+    solo mataban de rebote los trabajadores sin líneas de F-063)."""
+    trabajadores = [_trab(1, "Ana", "OK", [_linea(1, 100)], []),
+                    _trab(3, "Carla", "OK", [_linea(1, 50),
+                                             _con_vin(_linea(2, 50), GAS)],
+                          [])]
+    foto = _escena([], _estado(trabajadores))[0]
+    assert foto["casilla"]["marcada"] is True
+
+
 def test_f067_r5_sin_vinculados_en_el_mes_no_sale_la_casilla():
     sin = [_trab(1, "Ana", "OK", [_linea(1, 100)], []),
            _trab(2, "Benito", "FALTA", [_linea(2, 60)],
