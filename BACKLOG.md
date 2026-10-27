@@ -3,18 +3,22 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **61 features**, 23 abiertas, 38 terminadas.
+Resumen: **63 features**, 25 abiertas, 38 terminadas.
+
+En curso: **F-065**.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
+| F-065 | La ficha de incidencia activa a 0 se queda en su sitio por letra | 1 | en curso | estandar | `feature/F-065-ficha-activa-en-su-sitio` |
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
 | F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | pendiente | critico | `feature/F-053-delegados-parte-unico` |
 | F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 8 | pendiente | critico | `feature/F-054-sync-trae-porcentajes` |
+| F-066 | Una sola función para la regla «baja sin carga» del front | 8 | pendiente | estandar | `feature/F-066-baja-sin-carga-una-funcion` |
 | F-021 | Filtro por obra: velar las etiquetas de las demás obras del recurso | 9 | pendiente | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-048 | Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas») | 10 | pendiente | estandar | `feature/F-048-aviso-obra-fallida` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 11 | pendiente | estandar | `feature/F-046-permiso-cerrar-periodo` |
@@ -78,6 +82,12 @@ Resumen: **61 features**, 23 abiertas, 38 terminadas.
 
 ## Detalle
 
+### F-065 · La ficha de incidencia activa a 0 se queda en su sitio por letra
+
+estado **en curso** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-065-ficha-activa-en-su-sitio`
+
+Petición del humano del 2026-10-27 («si, hazlo de la ficha activa»), a partir de la O1 de la review 1 de F-063 (`progress/review_F-063.md`): cuando la ficha de incidencia activa se queda sin trabajadores (p. ej. se quita en el editor la única incidencia de ese tipo), sigue en la fila con 0 para poder quitarla (F-063), pero sale AL FINAL porque se añade después de ordenar (`renderCabecera` de `app.js`, `tipos.push` tras el `sort` de `tiposIncidenciaDelMes`). Debe salir en su sitio, con el mismo orden que las demás (letra con `localeCompare` «es», desempate por nombre). Solo front (`app.js` y sus tests); no cambia nada más del filtro. Se despliega en el siguiente despliegue del front.
+
 ### F-058 · Un porcentaje que redondea a cantidad 0 no se registra en Sigrid
 
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-058-porcentaje-cero-no-registra`
@@ -113,6 +123,12 @@ Pedida por el humano el 2026-10-08 (mismo encargo que F-052). Hilo «RE: Porcent
 estado **pendiente** · prioridad 8 · rigor `critico` · SDD sí · rama `feature/F-054-sync-trae-porcentajes`
 
 Pedida por el humano el 2026-10-08: «al sincronizar debería traer los % ya existentes en Sigrid». Hoy el sync solo trae maestros (recursos, obras, partidas); el cuadrante no sabe lo que Administración ya metió a mano en los partes (ejemplo real: GONZALEZ PANIAGUA tiene MADM 95 % en PT26/00319 de la 0694, 2026-09, sin synckey, y el cuadrante no lo enseñaba: salió como sobrecarga al registrar). Se trata de LEER (solo lectura, vía sigrid-api) las líneas mensuales (horas M*) de los partes de obra del periodo y cargarlas como asignaciones del trabajador en la base `dedicacion`. Lectura en Sigrid (transfer o api según el límite de servicio: el transfer ya tiene la lectura de líneas y el casado de postventa/VAR) y escritura solo en la base local de la app. DECISIONES PARA LA SPEC: qué periodo (el del cuadrante abierto, al pulsar sync o con botón aparte); qué líneas cuentan (horas mensuales M*, can = %; las nuestras con synckey vs las manuales); cómo se traduce la partida a la entrada del cuadrante (obra normal, `Postv-` por partida de POSTV2, `VAR-NN`); qué pasa si el cuadrante ya tiene algo para ese trabajador (no pisar lo editado, avisar, o Sigrid manda); si se marcan como «ya registradas» para no volver a escribirlas; partes cerrados; meses cerrados en la app; deshacer. Relación: F-051 (pisar líneas al 0 %), F-044 (vinculados), F-050 (partida por línea).
+
+### F-066 · Una sola función para la regla «baja sin carga» del front
+
+estado **pendiente** · prioridad 8 · rigor `estandar` · SDD no · rama `feature/F-066-baja-sin-carga-una-funcion`
+
+Petición del humano del 2026-10-27 («da de alta la feature de mejora de código. será la siguiente después de f54»), a partir de la O4 de la review 1 de F-063 (`progress/review_F-063.md`): la regla «un trabajador de baja sin carga no se enseña ni cuenta» (`!t.activo && !t.lineas.length`) está repetida en tres sitios de `app.js` (`trabajadoresVisibles`, `renderTabla` y `tiposIncidenciaDelMes`). Hoy coinciden; si uno cambia y los otros no, el número de una ficha dejaría de cuadrar con lo que se ve al pulsarla. Mejora de código sin cambio de comportamiento: una función pura con nombre (p. ej. `ocultoPorBaja(t)`) usada en los tres sitios. Solo front (`app.js` y sus tests). Va DESPUÉS de F-054.
 
 ### F-021 · Filtro por obra: velar las etiquetas de las demás obras del recurso
 

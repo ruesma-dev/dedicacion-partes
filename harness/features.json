@@ -1088,6 +1088,34 @@
       "rigor": "estandar",
       "priority": 1,
       "branch": "feature/F-064-pisado-vinculados-marcado"
+    },
+    {
+      "id": "F-065",
+      "title": "La ficha de incidencia activa a 0 se queda en su sitio por letra",
+      "description": "Petición del humano del 2026-10-27 («si, hazlo de la ficha activa»), a partir de la O1 de la review 1 de F-063 (`progress/review_F-063.md`): cuando la ficha de incidencia activa se queda sin trabajadores (p. ej. se quita en el editor la única incidencia de ese tipo), sigue en la fila con 0 para poder quitarla (F-063), pero sale AL FINAL porque se añade después de ordenar (`renderCabecera` de `app.js`, `tipos.push` tras el `sort` de `tiposIncidenciaDelMes`). Debe salir en su sitio, con el mismo orden que las demás (letra con `localeCompare` «es», desempate por nombre). Solo front (`app.js` y sus tests); no cambia nada más del filtro. Se despliega en el siguiente despliegue del front.",
+      "acceptance": [
+        "Con una ficha de incidencia activa que se queda a 0, la fila de fichas la enseña en su posición por letra (y nombre) entre las presentes, no al final; con los demás casos, el orden y el contenido de las fichas no cambian.",
+        "Test del front sin red ni BBDD que falla con el código de antes (RED) y fija la posición; los tests de F-063 siguen en verde sin cambiar sus aserciones; `bash harness/init.sh` en verde."
+      ],
+      "status": "in_progress",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 1,
+      "branch": "feature/F-065-ficha-activa-en-su-sitio"
+    },
+    {
+      "id": "F-066",
+      "title": "Una sola función para la regla «baja sin carga» del front",
+      "description": "Petición del humano del 2026-10-27 («da de alta la feature de mejora de código. será la siguiente después de f54»), a partir de la O4 de la review 1 de F-063 (`progress/review_F-063.md`): la regla «un trabajador de baja sin carga no se enseña ni cuenta» (`!t.activo && !t.lineas.length`) está repetida en tres sitios de `app.js` (`trabajadoresVisibles`, `renderTabla` y `tiposIncidenciaDelMes`). Hoy coinciden; si uno cambia y los otros no, el número de una ficha dejaría de cuadrar con lo que se ve al pulsarla. Mejora de código sin cambio de comportamiento: una función pura con nombre (p. ej. `ocultoPorBaja(t)`) usada en los tres sitios. Solo front (`app.js` y sus tests). Va DESPUÉS de F-054.",
+      "acceptance": [
+        "La condición «baja sin carga» vive en una sola función pura y nombrada de `app.js`, usada por `trabajadoresVisibles`, `renderTabla` y `tiposIncidenciaDelMes`; no queda repetida en ningún otro sitio.",
+        "Sin cambio de comportamiento: la suite del front pasa sin cambiar aserciones; un test fija que los tres usos dan el mismo resultado para un trabajador de baja sin carga, de baja con carga y activo; `bash harness/init.sh` en verde."
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 8,
+      "branch": "feature/F-066-baja-sin-carga-una-funcion"
     }
   ]
 }
