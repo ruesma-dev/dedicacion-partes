@@ -2951,3 +2951,39 @@ después de desplegar: líneas ajenas hechas a mano (`OTEL` con `can = 0`,
 `OGAS` al 95 %) y validación de Administración. Observaciones: la respuesta
 de `POST /sync` no trae el conteo de vinculados (sí el log); el `resumen` del
 preflight cuenta solo las líneas del titular.
+
+## 2026-10-27 · F-064 · El pisado de los vinculados, confirmado por defecto en el modal
+
+Rama `feature/F-064-pisado-vinculados-marcado` · `sdd: false` · rigor
+`estandar` · **APROBADO** por el reviewer en la review 2 (`4144ab8`).
+
+**Qué cambió.** Petición del humano tras la segunda prueba de F-044
+(«que queden confirmados por defecto y se puedan desmarcar»): en el modal de
+registro, la casilla del pisado de cada recurso vinculado sale marcada la
+primera vez que se enseña; el humano puede desmarcarla y sigue desmarcada al
+repetir el preflight de una obra (cambio de partida); un preflight nuevo
+vuelve al valor por defecto. El pisado del trabajador, la sobrecarga, el sin
+partida y los cierres de racha siguen desmarcados. Solo `app.js`
+(`marcadaPorDefecto(c)`, `registro.vistas`) y tests; transfer y api sin
+cambios (cada vinculado sigue necesitando su clave, R20; sin confirmar al
+trabajador, sus vinculados se omiten, R18). Nota de enmienda en R31 de F-044
+(cita R20 y R31, para no pasar del tope de 150 líneas).
+
+**Recorrido.** `blocked` en la primera vuelta: el valor por defecto mira el
+`motivo` y choca con `test_f013_sin_partida.py::test_f013_r4_…` (el front
+solo mira el motivo para rotular). El humano eligió la opción 1 («1»):
+`marcadaPorDefecto` es la segunda excepción de ese test; único cambio en él.
+Review 1 RECHAZADA: campaña manual irreproducible (B1), MANUAL fuera de
+`current.md` (B2) y un mutante vivo porque el doble del conflicto del
+trabajador no traía `"vinculado": null` como el `asdict` real (B3). Review 2
+APROBADA.
+
+**Verificado.** `init.sh` en verde (raíz 418, api 1308, front 414, transfer
+1585); campaña manual de 15 mutantes en `app.js`, 15 muertos, reproducida
+entera por el reviewer (`progress/mutacion_manual_F-064.md`).
+
+**Fuera / pendiente.** Se despliega con el front de F-044. MANUAL del humano
+en el navegador (`current.md`, «⚠ Lo que espera al humano»). Propuesta de
+automejora del reviewer, a decidir por el humano: en `docs/CONVENTIONS.md`
+(y en `arnes-base`), «un doble que imita la respuesta de otro servicio lleva
+su forma serializada real, opcionales a `null` incluidos».

@@ -1071,6 +1071,23 @@
       "rigor": "estandar",
       "priority": 2,
       "branch": "feature/F-063-filtro-por-incidencia"
+    },
+    {
+      "id": "F-064",
+      "title": "El pisado de los recursos vinculados, confirmado por defecto en el modal",
+      "description": "Petición del humano del 2026-10-26, tras la segunda prueba del líder de F-044 (pisado y arrastre, `progress/manual_F-044.md`): confirmar solo el pisado del trabajador dejaba a sus vinculados con el % viejo, porque cada uno pide su propia casilla (F-044 R20). El humano: «haz el cambio del punto 1 antes de desplegar. que queden confirmados por defecto y se puedan desmarcar»; plan aprobado («en el arnes como peticion, lo demas ok»). En el modal de registro, la casilla de un conflicto de un recurso vinculado (`c.vinculado`) con `motivo` «pisado» sale MARCADA la primera vez que se enseña, y el humano puede desmarcarla. NO cambia: la casilla del pisado del trabajador (desmarcada, F-051), las de sobrecarga y sin partida de los vinculados (desmarcadas), los cierres de racha (F-062) ni el transfer ni la api: cada vinculado sigue necesitando su clave en `pisar_claves` (R20) y, sin confirmar al trabajador, sus vinculados se omiten «sigue al trabajador» (R18). El modal recuerda las claves ya enseñadas: una casilla desmarcada sigue desmarcada al repetir el preflight de una obra (cambio de partida, F-049/F-050); un pisado de vinculado que aparece nuevo tras repetirlo sale marcado. Solo front (`app.js` y sus tests): es el valor de partida de una casilla visible que el humano confirma al pulsar «Registrar», no decide nada que el humano no vea. Enmienda R20/R31 de F-044 (anotada en su requirements.md). Va antes del despliegue de F-044 y antes de F-063. CERRADA (done) el 2026-10-27: review 2 APROBADA (4144ab8), init.sh en verde; MANUAL del navegador pendiente del humano.",
+      "acceptance": [
+        "Al abrir el modal, la casilla de cada conflicto de vinculado con motivo «pisado» sale marcada; la del pisado del trabajador, las de sobrecarga y sin partida (de trabajador o de vinculado) y las de cierre de racha salen desmarcadas, como hoy.",
+        "Una casilla de pisado de vinculado desmarcada por el humano sigue desmarcada cuando el modal se repinta al repetir el preflight de una obra (cambio de partida); un pisado de vinculado que aparece por primera vez tras repetirlo sale marcado; al abrir de nuevo el modal (preflight nuevo) se vuelve al valor por defecto.",
+        "«Registrar» manda en `pisar_claves` exactamente las claves de las casillas marcadas (las de vinculados por defecto incluidas, las desmarcadas no); transfer y api sin cambios.",
+        "Nota de enmienda en R20 y R31 de `specs/F-044-recursos-vinculados/requirements.md`.",
+        "Tests del front sin red ni BBDD que fijan lo anterior; `bash harness/init.sh` en verde."
+      ],
+      "status": "done",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 1,
+      "branch": "feature/F-064-pisado-vinculados-marcado"
     }
   ]
 }

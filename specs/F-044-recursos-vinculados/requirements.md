@@ -140,6 +140,7 @@ y, si el titular va a postventa, VAR o `CP*`, la del titular. Glosario:
 - **R31.** El modal de registro enseña los vinculados bajo cada línea del
   trabajador (acción, %, partida con el selector de F-050) y sus avisos en la
   lista de siempre, con tipo y código.
+  *Enmienda F-064 (2026-10-26) de R20 y R31: su pisado sale marcado, desmarcable.*
 - **R32.** `docs/ARCHITECTURE.md` gana `#regla-vinculado` (fuente única,
   `ANCLAS`), remitida desde `#regla-capacidad`, `#regla-cero` y
   `#regla-partida`; `docs/INTEGRACION.md` §1, §5 y §7.

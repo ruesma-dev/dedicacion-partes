@@ -426,7 +426,12 @@ def test_f013_r4_el_front_rotula_por_motivo_y_degrada():
     assert 'titulo: "Confirmar"' in rotulo
     # Fuera del rotulado, el front sigue sin mirar el motivo: ni nombra
     # ninguno de los tres ni compara un `motivo` con nada (review 3 de F-049).
-    fuera = js.replace(rotulo, "")
+    # F-064 (opción 1 del humano, 2026-10-26): `marcadaPorDefecto`, la función
+    # pura que decide qué casilla del modal sale marcada, puede mirarlo igual
+    # que `rotuloConflicto`: su cuerpo tampoco cuenta como «fuera».
+    inicio_marcada = js.index("const marcadaPorDefecto = ")
+    marcada = js[inicio_marcada:js.index("\n};", inicio_marcada) + 3]
+    fuera = js.replace(rotulo, "").replace(marcada, "")
     for motivo in ("sobrecarga", "sin_partida", "pisado"):
         assert motivo not in fuera, motivo
     assert not re.search(r"motivo\s*[!=]==?", fuera), "compara un motivo"
