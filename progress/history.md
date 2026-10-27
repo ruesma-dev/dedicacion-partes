@@ -3049,3 +3049,10 @@ que va justo después (O3).
 **Fuera / pendiente.** Desplegar el front; MANUAL del humano en el navegador.
 También da de alta **F-066** (la regla «baja sin carga» en una sola función,
 pendiente, después de F-054).
+
+## 2026-10-27 · Despliegue de F-063 (solo el front)
+
+Lanzado por el humano (`infra/d.local.ps1 front`): front `r20261027-1202`,
+revisión `Healthy` con el 100 % del tráfico. Sin cambio de contrato
+(`azure-apps` no se toca). F-065, unida a `dev` después de publicar la
+imagen, no va dentro: espera al siguiente despliegue del front.

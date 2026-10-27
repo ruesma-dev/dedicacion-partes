@@ -148,6 +148,14 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés es la **1.7.3**.
 ## Producción, hoy
 
+- **Desplegado el 2026-10-27: F-063**, solo el front, lanzado por el humano
+  con `infra/d.local.ps1 front`: `r20261027-1202`, revisión
+  `ca-dedicacion-front--r20261027120237`, `Healthy`, `RunningAtMaxScale` y
+  con el 100 % del tráfico (comprobado por el líder, solo lectura). Api y
+  transfer sin cambios. `infra/imagenes.json` al día en este commit.
+  Contrato sin cambios: `azure-apps/dedicacion.md` no se toca. F-065 (ya en
+  `dev`) espera al siguiente despliegue del front. **Pendiente del humano:**
+  Ctrl+F5 y la MANUAL de F-063.
 - **Desplegado el 2026-10-27: F-044 y F-064**, los tres servicios en orden,
   uno a uno, lanzados por el humano con `infra/d.local.ps1
   transfer|api|front`: transfer `r20261027-0742`, api `r20261027-0844` y
