@@ -1,172 +1,22 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-044** (los porcentajes también a los
+**Ninguna feature en curso.** **F-063** (filtrar trabajadores por tipo
+de incidencia con fichas como las de estado; solo front) **cerrada (`done`)
+el 2026-10-27**: review 1 APROBADA (`e035123`), `bash harness/init.sh` en
+verde; resumen en `progress/history.md`. **Pendiente de desplegar** (solo el
+front) y de su MANUAL del navegador («⚠ Lo que espera al humano»). **F-044** (los porcentajes también a los
 recursos vinculados) y **F-064** (su pisado, marcado por defecto en el modal)
 **cerradas y DESPLEGADAS el 2026-10-27** (transfer `r20261027-0742`, api
 `r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). T23 hecha:
 `azure-apps/dedicacion.md` al día (`29321e1`). **Pendiente del humano:**
-pulsar **«Sincronizar Sigrid»** en producción (trae los vínculos a
-`recurso_vinculado`); la MANUAL de F-064 en el navegador, solo mirar y
+(«Sincronizar Sigrid» ya hecho: el humano confirma el 2026-10-27 que
+salen las subfilas de teléfono y demás, «esta bien»); la MANUAL de F-064 en el navegador, solo mirar y
 Cancelar («⚠ Lo que espera al humano», manera B); el resto de T21 de F-044
 (líneas ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
 validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
-**Siguiente:** F-063 (filtro de trabajadores por tipo de incidencia, solo
-front); después F-054 (spec aprobada, worktree `porcentajes-f054`).
-
-## F-044 · decisiones del humano al bloqueo de T7 (2026-10-26, «si a todo»)
-
-1. **Sí:** lista cerrada del front ampliada para T7 con
-   `test_f050_subfilas.py`, `test_f050_m2_arreglos.py`,
-   `test_f050_t15f_total.py`, `test_f050_t15d_sombreado.py`,
-   `test_f050_t15e_sombreado.py`, `test_f030_tabla_incidencias.py` y
-   `test_f041_filtro_obra.py`. Cambio permitido: **solo** añadir la columna
-   «Tipo recurso» donde aparezcan las columnas; nada más de lo que aseveran.
-2. **Sí:** cablear el sync de vinculados en `deps.py`. Lista cerrada de la
-   api ampliada con los 11 tests: `test_f023_sync_empresa.py` ×5 `r18_*`,
-   `test_f025_sync_postventa.py::test_f025_r12_el_contenedor_comparte_un_solo_transfer`,
-   `test_f030_catalogo.py::test_f030_r3_el_sync_y_el_preview_reales_usan_la_consulta_de_config`,
-   `test_f032_empresas_sigrid.py` ×2 (`r1_el_sync_real…`, `r4_el_preview_real…`),
-   `test_f039_sync_var.py::test_f039_r10_el_contenedor_pasa_el_numero…` ×2.
-   Cambio permitido: **solo** sus dobles (Sigrid falso que acepte
-   `parametros`, UoW con `vinculados`); ninguna aserción cambia.
-3. **Nombres del design §7.2:** `recurso_vinculado` usa `empresa` y
-   `fecha_baja`; se deshace la desviación `empresa_recurso`/`fecha_baja_recurso`.
-   Lista cerrada ampliada con
-   `test_f023_r1_empresa_solo_en_trabajador_y_obra` y
-   `test_f026_r8_fecha_baja_solo_en_trabajador`: cambio permitido, **solo**
-   admitir `recurso_vinculado` de forma explícita en su regla.
-## F-044 · implementer (T1-T20, T22 y T24 hechas, 2026-10-26)
-
-Contraste del design con el código tras unir F-062: los puntos de enganche
-siguen (`_preflight`, `ejecutar`, `proponer`, `lecturas_lote`,
-`_payloads`/`_trazar`, rutas de partida). Tarea en curso y decisiones: se
-anotan aquí al cerrar cada tarea; detalle en `progress/impl_F-044.md`.
-
-- T1 hecha (`domain/vinculados.py`).
-- T2 hecha (ORM + `PgVinculadoRepository` + `upsert_asignacion_vinculado`).
-  `recurso_vinculado` con `empresa` y `fecha_baja` del design §7.2
-  (decisión 3 del humano; `01827e2`): `test_f023_r1…` y `test_f026_r8…`
-  admiten `recurso_vinculado` de forma explícita (lista cerrada).
-- T3 hecha, con el sync de vinculados **cableado en `deps.py`** (decisión 2
-  del humano): pasos `FetchVinculadosStep`/`UpsertVinculadosStep` y
-  `vinculados=` del preview; test nuevo del contenedor real. Los 11 tests de
-  la lista cerrada solo cambian sus dobles: Sigrid falso con `parametros` y
-  que devuelve [] a la SQL de `dbo.conext`, UoW con un `vinculados` vacío
-  y, en `_config_prueba` de f023 (el doble de `cargar_config`), la sección
-  `vinculados`, como hicieron F-030 y F-032 con las suyas. Además:
-  `SigridGateway.leer` gana `parametros` opcional (el `?` de design §7.1) y
-  la SQL lleva `dbo.` como las demás de `config.yaml`.
-- T4 hecha: `VinculadoEntrada`, `LineaEntrada.vinculados`,
-  `reglas_vinculados.py` (`partida_ci_del_tipo`, `partida_del_vinculado`
-  con la CI como función perezosa y la validez de la elegida como dato) y
-  `cuentas_del_presupuesto`. «`CI*`» del titular = el código empieza por
-  `CI` (no `clasifica_categoria`, que da `OTRO` a `CICO13`).
-- T5 hecha: `PasoVinculados.proponer` (`registro_vinculados.py`), salida
-  `vinculados` solo si la petición los trae; `LineaPropuestaIn` gana
-  `paride` y `vinculados` y `para_pipeline()` deja la línea de siempre sin
-  ellos; el lote precarga las horas de los vinculados y comparte
-  `cuentas_del_presupuesto` por obra. Titular con elegida que no es hoja
-  activa ⇒ subfilas sin propuesta (en el preflight se omitiría con él).
-- T6 hecha: `SubfilaVinculado` y `Linea.vinculados` (tras `partida_fija`:
-  `test_f055_r13` fija los 5 últimos campos); el repositorio lee las
-  subfilas de los vinculados activos y vigentes en el mes (2 lecturas más,
-  ninguna sin vinculados) y `reemplazar` guarda las que tienen elegida o
-  propuesta (la traza, como la del titular, no sobrevive a guardar).
-  `CambiarPartida(vinculado_ide)` con evento `PARTIDA_VINCULADO`; cambiar la
-  partida del titular borra las propuestas de sus subfilas (dependen de
-  ella). Selector, preflight (`_guardar_propuestas` lee `vinculados` del
-  preflight con `{registro_id, recurso_ide, paride, partida_*}`: **T13 debe
-  devolver esa forma**) y cola del mes (cola aparte para subfilas, también
-  bajo líneas de postventa; `estado` gana `subfilas` solo si hay). Salida:
-  `LineaOut.vinculados` con `exclude_if` vacío (la línea de siempre sin
-  vinculados: `CAMPOS_LINEA` de `test_f034_rutas` intacto).
-- T7 hecha: columna «Tipo recurso» (`tipo`, entre Asignaciones y Partida;
-  «Persona» en la fila de la línea) y una subfila por vinculado bajo su línea
-  (`construirFilaVinculado`/`construirCeldaVinculado`: obra con el % de la
-  línea sin editar, tipo y código, partida con `htmlPartida`). El selector de
-  F-050 sirve a la subfila sin cambiar su firma: el ancla lleva
-  `data-vinculado` y con él la clave, la consulta y el `PUT` llevan
-  `vinculado_ide`. La cola del mes pasa `subfilas` a `aplicarPropuestas`.
-  De la lista cerrada del front solo cambian `test_f050_subfilas.py` y
-  `test_f050_m2_arreglos.py` (la columna nueva); los otros cinco no lo
-  necesitaron.
-- T8: las tres suites enteras en verde al cerrar el bloque 1 (api 1274,
-  front 394, transfer 1478). La revisión intermedia es opcional (D15) y la
-  decide el líder: el implementer no la lanza; sigue con el bloque 2.
-- T9-T20 hechas (bloque 2, el registro). Decisiones y desviaciones:
-  - **`omitidas` con `vinculado_ide`**: la entrada de un vinculado omitido
-    lleva su recurso; la api (T18) no la aplica a la asignación del titular.
-    Los vinculados escritos NO van a `escritas` ni `ya_registradas` (son por
-    asignación): solo en `vinculados`.
-  - **`PasoVinculados` en varios puntos del preflight** (R27: sus lecturas
-    con las de los titulares): `decidir` tras la partida del paso 4,
-    `_cuentas` del 4 bis, parte del 5, `registradas`/`idempotencia` en la
-    lectura del 6, `sin_partida` en el 6 bis, `conflictos_del_parte` dentro
-    del bucle del 7 (misma `lineas_del_parte`) y `cerrar` al final.
-    `ejecutar`: `EscrituraVinculados` tras los titulares y su relectura.
-  - **El titular no toma como suyo el pisado de un vinculado**
-    (`_planear_ediciones` salta `c.vinculado`): hallado en GREEN de T14.
-  - **Generalizados con el valor de hoy por defecto** (T11):
-    `evaluar_capacidad(es_jornada)`, `pisables_al_cero(hora)`,
-    `emparejar_ceros(clave, hora)`; `stmt_editar_linea`/`stmt_poner_a_cero`
-    con `hora` (T12: sin ella, el SQL de hoy carácter a carácter).
-  - **T12 → T15**: la precarga del lote para los vinculados se hizo en T15
-    (horas, líneas, `synckey`/`hmores.ide`, partidas válidas, también VAR).
-  - **Dobles cambiados (lista cerrada)**: `tests/conftest.py`
-    (`_aplicar_ediciones` respeta `hora`; `EdicionesFalsas` con
-    `cuentas_del_presupuesto` vacío), `test_f013_sin_partida.py::…r4…`
-    (admite el campo `vinculado`), ANCLAS de `test_f002_fuente_unica.py`.
-  - **T16**: desde T9 `asdict(Conflicto)` publicaba `"vinculado": null`;
-    `_conflicto` lo quita (sin vinculados, la respuesta de siempre).
-  - **T18**: la traza va en `application/traza_vinculados.py` (como
-    `traza_incidencias.py`: `test_f003` vigila los `sigrid_*` de
-    `registro_sigrid.py`); `subfilas_de` pasa a nivel de módulo
-    (cuadrante y registro); la asignación va por subconsulta (sin línea, no
-    inserta); en VAR la subfila no manda partida. `RegistroSigrid` gana
-    `vinculados_desde` (de `config.yaml`, cableado en `deps.py`).
-  - **T19**: `rotuloConflicto` sin `.filter(` (lo vigila `test_f049_r3`).
-  - **T22**: 1.ª campaña (`bd38dc5`) con 81 supervivientes; 74 eran huecos
-    reales y los matan los tests nuevos `tests/test_f044_mutacion.py` (api
-    y transfer; comprobados uno a uno, anexo en
-    `progress/mutacion_F-044_pasada1.md`). Campaña final (`38a53d0`):
-    415/422, los 7 restantes equivalentes (tres `strict` de `zip`, una
-    condición redundante, dos valores que no se leen con `elegida=None` y
-    el invariante `existe` ⇔ `ide` de `ParteDestino`). La spec pide que el
-    humano acepte cada justificación: **aceptadas las 7 el 2026-10-26 («1 ok»)**.
-  - **T24**: `bash harness/init.sh` sin `[KO]` (cobertura 99,3 % de 1108
-    líneas cambiadas; api 1308, front 403, transfer 1585).
-
-### F-044 · T21: MANUAL en modo pruebas, hecha por el líder (2026-10-26)
-
-**Quién:** el **líder, a petición expresa del humano** (2026-10-26, «haz tu
-la prueba»), no el humano como decía la spec (enmienda en `tasks.md` T21).
-Resultado real: `progress/manual_F-044.md`. Todo CUMPLE salvo lo que no se
-pudo probar: las líneas **ajenas hechas a mano** (`OTEL` con `can = 0` y
-`OGAS` al 95 %, que solo puede crear una persona en Sigrid) y la
-**validación de Administración**; quedan del humano.
-
-**Guion (corregido en la review 1, B1).** Antes de escribir nada, y PARAR si
-falla cualquiera:
-- (a) el proceso que escribe: `curl http://127.0.0.1:8006/health` ⇒
-  `"modo_pruebas":true`, `"obra_pruebas":"0404"`, `"database":"ruesma"`;
-- (b) adónde apunta la api, desde `services/dedicacion-api`:
-  `.venv/Scripts/python -c "from config.settings import get_settings as g; print(g().transfer_base_url)"`
-  ⇒ `http://127.0.0.1:8006`;
-- (c) el modal dice «MODO PRUEBAS: se escribirá en la obra 0404» antes de
-  confirmar;
-- y además, desde `services/dedicacion-transfer`:
-  `.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"` ⇒ `True 0404`.
-
-Luego el guion de `tasks.md` T21. Script (Git Bash, desde
-`services/dedicacion-transfer`, con su `.venv`):
-`.venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`
-(solo lectura), `… limpiar` (en seco) y `… limpiar --confirmar`. Ninguno
-lleva `--permitir-modo-real`. **Aviso (O1 de la review):** `limpiar
---confirmar` filtra por marca `PRUEBA-PORC` y prefijo `porcentajes:`, no
-por obra, y **borra también** la `OTEL` y la `OGAS` hechas a mano, porque al
-editarlas pasan a llevar `PRUEBA-PORC` y `porcentajes:vin:…`.
+**Siguiente:** F-054 (spec aprobada, worktree `porcentajes-f054`).
 
 ## F-062 · CERRADA y DESPLEGADA (2026-10-26): aviso a `partes` pendiente
 
@@ -498,6 +348,29 @@ que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-0
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
+
+- **F-063: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Solo
+  mirar la pantalla y pulsar fichas: no escribe nada (vale en producción tras
+  desplegar el front, o en local). Los tests la cubren en node; en un
+  navegador no se ha visto. Pasos, en un mes con incidencias (p. ej. con
+  vacaciones):
+  1. En la fila de fichas del resumen, detrás de «N exceso», sale una ficha
+     por tipo de incidencia del mes, con borde discontinuo: «letra nombre nº»
+     (p. ej. «V Vacaciones 3»), ordenadas por letra. Para una de ellas, contar
+     a mano en la columna Obras los trabajadores con alguna subfila de esa
+     letra **sin tachar** (las «quitada · sigue en Sigrid» no cuentan; un
+     trabajador con dos de ese tipo cuenta una vez): coincide con el nº.
+  2. Clic en esa ficha: queda recuadrada (activa) y la tabla enseña solo esos
+     trabajadores («Mostrando nº de …» con el nº de la ficha). Otro clic en
+     ella: vuelve todo.
+  3. Con ella activa, clic en «N OK» (o «falta»…): las dos recuadradas y solo
+     los que cumplen las dos. Escribir un nombre en el buscador y luego un
+     código en «Filtrar obra…»: se siguen sumando las condiciones.
+  4. Clic en otra ficha de incidencia: sustituye a la anterior (una sola
+     recuadrada). Clic en «N trabajadores»: se quitan la de incidencia y la de
+     estado.
+  5. Con una activa, «›» (mes siguiente): el filtro se quita. Un mes sin incidencias:
+     ninguna ficha nueva.
 
 - **F-064: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Los
   tests la cubren en node; en un navegador no se ha visto. **Dos maneras:**

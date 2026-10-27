@@ -26,4 +26,7 @@ python main.py            (puerto 8080; requiere dedicacion-api en 8090)
 | / | Ir al buscador |
 
 Autoguardado con debounce (700 ms) en cada cambio; los chips del resumen
-superior filtran por estado (OK / sin carga / falta / exceso).
+superior filtran por estado (OK / sin carga / falta / exceso) y, si el mes
+trae incidencias, por tipo de incidencia (una ficha por tipo, p. ej.
+«V Vacaciones 3», sin contar las quitadas; F-063). Las dos se combinan con
+el buscador y los filtros de columna; «N trabajadores» las quita.

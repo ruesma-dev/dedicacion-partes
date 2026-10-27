@@ -2998,3 +2998,30 @@ Transfer en modo real. T23 de F-044: `azure-apps/dedicacion.md` (§1, §5, §7 y
 cabecera, `29321e1`). Pendiente del humano: «Sincronizar Sigrid» en
 producción, la MANUAL B de F-064 (mirar el modal y Cancelar), el resto de
 T21 de F-044 y los avisos a `partes` de F-062 y F-044.
+
+## 2026-10-27 · F-063 · Filtrar trabajadores por tipo de incidencia
+
+Rama `feature/F-063-filtro-por-incidencia` · `sdd: false` · rigor `estandar`
+· **APROBADO** por el reviewer en la review 1 (`e035123`), sin cambios
+requeridos.
+
+**Qué cambió.** Petición del humano del 2026-10-26: en la fila de fichas del
+resumen sale una por cada tipo de incidencia del cuadrante del mes (por
+código; letra, nombre y nº de trabajadores, sin contar las quitadas ni las
+bajas sin carga). Un clic filtra, otro clic o «N trabajadores» lo quita, una
+activa a la vez, combinada (Y) con la ficha de estado, el buscador y los
+filtros de columna; la activa que se queda sin trabajadores sigue con 0 para
+poder quitarla. Solo `app.js` (y el README del front) y sus tests.
+
+**Verificado.** RED con 13 en rojo; 16 tests nuevos; `init.sh` en verde;
+campaña manual de 25 mutantes en `app.js`, 24 muertos y 1 equivalente
+(M25, el respaldo `|| []` de `tieneIncidencia`: la api siempre serializa
+`incidencias`), aceptado por el reviewer
+(`progress/mutacion_manual_F-063.md`).
+
+**Fuera / pendiente.** Desplegar el front; MANUAL del humano en el
+navegador. Observaciones de la review: la ficha activa a 0 va al final y no
+en su sitio por letra (cosmético, a decidir por el humano); la regla «baja
+sin carga» está en tres sitios (una función común, fuera de alcance); el SHA
+de la campaña manual, completo la próxima vez. Podadas de `current.md` las
+secciones de F-044 ya cerradas (O2).

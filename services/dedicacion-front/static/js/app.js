@@ -76,6 +76,9 @@ const state = {
   resumen: null,
   filtroTexto: "",
   filtroEstado: null,          // OK | FALTA | EXCESO | SIN_CARGA | null
+  // F-063: el tipo de incidencia de la ficha activa, {codigo, letra, nombre}
+  // (la letra y el nombre pintan su ficha aunque el mes se quede sin él), o null.
+  filtroIncidencia: null,
   filtrosCol: {},              // clave de columna -> texto
   soloPendientes: false,
   orden: { campo: "pendientes", dir: 1 },
@@ -555,11 +558,64 @@ function renderCabecera() {
     el.title = c.clave ? "Filtrar por estado" : "Quitar filtro";
     el.addEventListener("click", () => {
       state.filtroEstado = state.filtroEstado === c.clave ? null : c.clave;
+      // F-063: «N trabajadores» quita también el filtro de incidencia.
+      if (!c.clave) state.filtroIncidencia = null;
       renderCabecera();
       renderTabla();
     });
     cont.appendChild(el);
   });
+
+  // F-063: una ficha por tipo de incidencia del mes («V Vacaciones 3»); una
+  // sola activa, y se combina con la de estado. La activa sigue aunque el mes
+  // se quede sin ese tipo (con 0), para poder quitarla.
+  const activa = state.filtroIncidencia;
+  const tipos = tiposIncidenciaDelMes(state.trabajadores);
+  if (activa && !tipos.some((x) => x.codigo === activa.codigo)) {
+    tipos.push({ ...activa, n: 0 });
+  }
+  tipos.forEach((x) => {
+    const el = document.createElement("span");
+    el.className = "badge chip-inc" +
+      (activa && activa.codigo === x.codigo ? " filtro-activo" : "");
+    el.textContent = `${x.letra} ${x.nombre} ${x.n}`;
+    el.title = "Filtrar por incidencia";
+    el.addEventListener("click", () => {
+      state.filtroIncidencia = activa && activa.codigo === x.codigo ? null
+        : { codigo: x.codigo, letra: x.letra, nombre: x.nombre };
+      renderCabecera();
+      renderTabla();
+    });
+    cont.appendChild(el);
+  });
+}
+
+// F-063: los tipos de incidencia del cuadrante del mes, para sus fichas: uno
+// por `codigo`, ordenados por letra, con cuántos trabajadores (no cuántas
+// incidencias) tienen alguna no quitada. Las bajas sin carga no cuentan: la
+// tabla no las enseña (`trabajadoresVisibles`).
+function tiposIncidenciaDelMes(trabajadores) {
+  const tipos = new Map();
+  trabajadores.forEach((t) => {
+    if (!t.activo && !t.lineas.length) return;
+    const contados = new Set();
+    (t.incidencias || []).forEach((i) => {
+      if (contados.has(i.codigo) || !tieneIncidencia(t, i.codigo)) return;
+      contados.add(i.codigo);
+      const tipo = tipos.get(i.codigo) ||
+        { codigo: i.codigo, letra: i.letra, nombre: i.nombre, n: 0 };
+      tipo.n += 1;
+      tipos.set(i.codigo, tipo);
+    });
+  });
+  return [...tipos.values()].sort((a, b) =>
+    a.letra.localeCompare(b.letra, "es") || a.nombre.localeCompare(b.nombre, "es"));
+}
+
+// F-063: ¿el trabajador tiene en el mes alguna incidencia de ese tipo? Las
+// quitadas («quitada · sigue en Sigrid») no cuentan.
+function tieneIncidencia(t, codigo) {
+  return (t.incidencias || []).some((i) => !i.quitada && i.codigo === codigo);
 }
 
 // ------------------------------------------------- cabecera de la tabla
@@ -816,6 +872,9 @@ function trabajadoresVisibles() {
     // Las bajas solo aparecen si tienen carga en el periodo.
     if (!t.activo && !t.lineas.length) return false;
     if (state.filtroEstado && t.estado !== state.filtroEstado) return false;
+    // F-063: la ficha de incidencia, a la vez que todo lo demás.
+    if (state.filtroIncidencia &&
+        !tieneIncidencia(t, state.filtroIncidencia.codigo)) return false;
     if (state.soloPendientes && t.estado === "OK") return false;
     for (const clave of state.columnas) {
       const filtro = normalizar(state.filtrosCol[clave] || "");
@@ -2795,6 +2854,7 @@ async function moverMes(delta) {
   if (mes > 12) { mes = 1; anio += 1; }
   state.seleccionIde = null;
   state.filtroEstado = null;
+  state.filtroIncidencia = null;   // F-063: otro mes, otros tipos
   fijarSeleccion([]);
   await cargarPeriodo(anio, mes);
 }
