@@ -182,6 +182,9 @@ h1 {
 .resumen { display: flex; gap: 6px; flex-wrap: wrap; }
 .resumen .badge { cursor: pointer; user-select: none; }
 .resumen .badge.filtro-activo { box-shadow: 0 0 0 2px var(--brand); }
+/* F-067: la casilla «Recursos vinculados», pequeña, junto a las fichas. */
+.resumen .chk-vinculados { font-size: 0.8rem; margin-left: 4px; }
+.resumen .chk-vinculados input { width: 13px; height: 13px; }
 
 .action-bar { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 

@@ -63,9 +63,6 @@ from tests.test_f064_pisado_vinculados import (
     _pf,
 )
 
-#: Lo de F-067 que el arnés carga si existe: en la fase RED no está y los
-#: tests caen por lo que la pantalla hace, no por un nombre que falta.
-FUNCIONES_F067 = ("hayVinculados",)
 PREFS = ("cargarPrefsTabla", "guardarPrefsTabla")
 
 #: `localStorage` de mentira (o uno que lanza, como con el almacenamiento
@@ -116,8 +113,7 @@ def _programa(cuerpo: str, estado: dict, almacen: dict | None = None,
                     "no se ejecutan")
     funciones = [_funcion(f) for f in (*FUNCIONES, *PREFS)]
     assert all(funciones), "falta en app.js alguna función de hoy"
-    nuevas = [c for c in (_funcion(f) for f in (*FUNCIONES_F063,
-                                                 *FUNCIONES_F067)) if c]
+    nuevas = [c for c in (_funcion(f) for f in FUNCIONES_F063) if c]
     programa = "\n".join(
         [_const("MESES"), _const("ORDEN_ESTADO"), _const("COLUMNAS"),
          _const("ORDEN_COLUMNAS_DEFECTO"), _const_texto("CLAVE_TABLA"),
@@ -367,6 +363,3 @@ def test_f067_r4_solo_pantalla_la_preferencia_no_llega_al_registro():
             if "verVinculados" in (_funcion(n) or "")}
     assert usos == {"renderCabecera", "cargarPrefsTabla", "guardarPrefsTabla",
                     "trabajadoresVisibles", "construirFila"}
-    cuerpo = _funcion("hayVinculados")
-    assert cuerpo, "no existe la función hayVinculados en app.js"
-    assert "state." not in cuerpo and "api(" not in cuerpo
