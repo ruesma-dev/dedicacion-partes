@@ -4,7 +4,10 @@
 **En curso: F-063** (filtrar trabajadores por tipo de incidencia con
 fichas como las de estado; solo front, rigor estándar, `sdd: false`; rama
 `feature/F-063-filtro-por-incidencia`, worktree `porcentajes-f063`):
-implementer lanzado el 2026-10-27 («lanza f63»). **F-044** (los porcentajes también a los
+**implementada, pendiente de review** (2026-10-27; informe
+`progress/impl_F-063.md`, campaña manual del JS
+`progress/mutacion_manual_F-063.md`: 25 mutantes, 1 superviviente
+equivalente; MANUAL del navegador en «⚠ Lo que espera al humano»). **F-044** (los porcentajes también a los
 recursos vinculados) y **F-064** (su pisado, marcado por defecto en el modal)
 **cerradas y DESPLEGADAS el 2026-10-27** (transfer `r20261027-0742`, api
 `r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). T23 hecha:
@@ -500,6 +503,29 @@ que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-0
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
+
+- **F-063: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Solo
+  mirar la pantalla y pulsar fichas: no escribe nada (vale en producción tras
+  desplegar el front, o en local). Los tests la cubren en node; en un
+  navegador no se ha visto. Pasos, en un mes con incidencias (p. ej. con
+  vacaciones):
+  1. En la fila de fichas del resumen, detrás de «N exceso», sale una ficha
+     por tipo de incidencia del mes, con borde discontinuo: «letra nombre nº»
+     (p. ej. «V Vacaciones 3»), ordenadas por letra. Para una de ellas, contar
+     a mano en la columna Obras los trabajadores con alguna subfila de esa
+     letra **sin tachar** (las «quitada · sigue en Sigrid» no cuentan; un
+     trabajador con dos de ese tipo cuenta una vez): coincide con el nº.
+  2. Clic en esa ficha: queda recuadrada (activa) y la tabla enseña solo esos
+     trabajadores («Mostrando nº de …» con el nº de la ficha). Otro clic en
+     ella: vuelve todo.
+  3. Con ella activa, clic en «N OK» (o «falta»…): las dos recuadradas y solo
+     los que cumplen las dos. Escribir un nombre en el buscador y luego un
+     código en «Filtrar obra…»: se siguen sumando las condiciones.
+  4. Clic en otra ficha de incidencia: sustituye a la anterior (una sola
+     recuadrada). Clic en «N trabajadores»: se quitan la de incidencia y la de
+     estado.
+  5. Con una activa, «›» (mes siguiente): el filtro se quita. Un mes sin incidencias:
+     ninguna ficha nueva.
 
 - **F-064: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Los
   tests la cubren en node; en un navegador no se ha visto. **Dos maneras:**
