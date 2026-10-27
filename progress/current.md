@@ -4,8 +4,8 @@
 **Ninguna feature en curso.** **F-065** (la ficha de incidencia activa a 0
 se queda en su sitio por letra; solo front) **cerrada (`done`) el
 2026-10-27**: review 1 APROBADA (`0f56ac8`), `bash harness/init.sh` en verde;
-resumen en `progress/history.md`. **Pendiente de desplegar** (solo el front)
-y de su MANUAL («⚠ Lo que espera al humano», entrada F-065). **F-063** (filtrar trabajadores por tipo
+resumen en `progress/history.md`. **Desplegada el 2026-10-27** (solo el
+front, `r20261027-1637`); pendiente su MANUAL («⚠ Lo que espera al humano», entrada F-065). **F-063** (filtrar trabajadores por tipo
 de incidencia con fichas como las de estado; solo front) **cerrada (`done`)
 el 2026-10-27**: review 1 APROBADA (`e035123`), `bash harness/init.sh` en
 verde; resumen en `progress/history.md`. **Desplegada el 2026-10-27** (solo el
@@ -148,13 +148,20 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés es la **1.7.3**.
 ## Producción, hoy
 
+- **Desplegado el 2026-10-27: F-065**, solo el front, lanzado por el humano
+  con `infra/d.local.ps1 front`: `r20261027-1637`, revisión
+  `ca-dedicacion-front--r20261027163730`, `Healthy` y con el 100 % del
+  tráfico (comprobado por el líder, solo lectura). Api y transfer sin
+  cambios. `infra/imagenes.json` al día en este commit. Contrato sin
+  cambios: `azure-apps/dedicacion.md` no se toca. **Pendiente del humano:**
+  Ctrl+F5 y la MANUAL de F-065 (en local).
 - **Desplegado el 2026-10-27: F-063**, solo el front, lanzado por el humano
   con `infra/d.local.ps1 front`: `r20261027-1202`, revisión
   `ca-dedicacion-front--r20261027120237`, `Healthy`, `RunningAtMaxScale` y
   con el 100 % del tráfico (comprobado por el líder, solo lectura). Api y
   transfer sin cambios. `infra/imagenes.json` al día en este commit.
-  Contrato sin cambios: `azure-apps/dedicacion.md` no se toca. F-065 (ya en
-  `dev`) espera al siguiente despliegue del front. **Pendiente del humano:**
+  Contrato sin cambios: `azure-apps/dedicacion.md` no se toca. F-065 salió
+  en el despliegue siguiente (`r20261027-1637`). **Pendiente del humano:**
   Ctrl+F5 y la MANUAL de F-063.
 - **Desplegado el 2026-10-27: F-044 y F-064**, los tres servicios en orden,
   uno a uno, lanzados por el humano con `infra/d.local.ps1
