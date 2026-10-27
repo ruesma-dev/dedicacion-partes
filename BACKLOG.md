@@ -3,12 +3,15 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **63 features**, 24 abiertas, 39 terminadas.
+Resumen: **64 features**, 25 abiertas, 39 terminadas.
+
+En curso: **F-067**.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
+| F-067 | Casilla para ver u ocultar los recursos vinculados en el cuadrante | 1 | en curso | estandar | `feature/F-067-ver-vinculados` |
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
@@ -79,6 +82,12 @@ Resumen: **63 features**, 24 abiertas, 39 terminadas.
 | F-030 | Incidencias en el cuadrante: texto en lugar del % con desplegable de las de partes (y dedicación por días) | 14 | critico |
 
 ## Detalle
+
+### F-067 · Casilla para ver u ocultar los recursos vinculados en el cuadrante
+
+estado **en curso** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-067-ver-vinculados`
+
+Petición del humano del 2026-10-27 («hay que añadir un check pequeño que me permita activar o desactivar la visualización de recursos derivados (Caja de obra etc...)»); propuesta aprobada el mismo día («si, esta bien»). Una casilla pequeña «Recursos vinculados» junto a las fichas del resumen (`renderCabecera` de `app.js`) enseña u oculta en el CUADRANTE las subfilas de vinculados de F-044 (teléfono, caja de obra, gasoil, vehículo…) bajo cada línea. Decisiones del humano: (1) por defecto MARCADA (se ven, como hoy) y la preferencia se recuerda en el navegador con las de la tabla (`cargarPrefsTabla`/`guardarPrefsTabla`, localStorage); (2) solo el cuadrante: el modal de registro sigue enseñando siempre los vinculados y su pisado (F-064), porque es lo que se escribe en Sigrid; (3) desmarcada, los filtros de columna «Tipo recurso» y «Partida» no miran los vinculados (no sale un trabajador por algo que no se ve); (4) va antes de F-054. La casilla solo sale si el mes tiene algún vinculado. Solo front (`app.js` y sus tests): es pantalla y no decide nada de lo que se registra. Fuera: ocultar por tipo de vinculado.
 
 ### F-058 · Un porcentaje que redondea a cantidad 0 no se registra en Sigrid
 
