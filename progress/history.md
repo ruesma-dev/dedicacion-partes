@@ -3056,3 +3056,10 @@ Lanzado por el humano (`infra/d.local.ps1 front`): front `r20261027-1202`,
 revisión `Healthy` con el 100 % del tráfico. Sin cambio de contrato
 (`azure-apps` no se toca). F-065, unida a `dev` después de publicar la
 imagen, no va dentro: espera al siguiente despliegue del front.
+
+## 2026-10-27 · Despliegue de F-065 (solo el front)
+
+Lanzado por el humano (`infra/d.local.ps1 front`): front `r20261027-1637`,
+revisión `ca-dedicacion-front--r20261027163730`, `Healthy` con el 100 % del
+tráfico. Sin cambio de contrato (`azure-apps` no se toca). Pendiente la
+MANUAL de F-065 (en local).
