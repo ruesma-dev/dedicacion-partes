@@ -993,11 +993,29 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     - **Partida.** La elegida de la subfila si es hoja activa del
       presupuesto (si no, se omite con motivo). Sin elegida: si el titular
       va a postventa, a una entrada VAR o a una partida que no es `CI*`,
-      **la del titular**; si va a una `CI*` de una obra normal, la **única**
-      hoja activa de la obra cuya cuenta tiene la subcuenta de la cuenta del
-      vinculado (la «CI de su tipo», `CICO13` ↔ `CI.4.13`). Sin esa hoja o
-      con varias, «sin partida» a confirmar por vinculado
-      ([`#regla-sin-partida`](#regla-sin-partida)), nunca la primera.
+      **la del titular**. Si va a una `CI*` de una obra normal, como la del
+      trabajador (F-068), la del **primer** paso que dé una:
+      1. **Historial** («parte anterior», `parte_anterior`): las líneas de
+         ese recurso en esa obra con partida `CI*`, en la ventana del
+         trabajador (`PROPUESTA_MESES_ATRAS` meses hacia atrás, con el
+         periodo); del último mes, la de más `can` sumado si es la única y
+         es hoja activa. Es la **misma** función que el «parte anterior» de
+         [`#regla-partida`](#regla-partida). Empate: este paso no propone.
+      2. **Su cuenta** (`ci_tipo`): la **única** hoja activa de la obra cuya
+         cuenta tiene la subcuenta de la cuenta del vinculado (la «CI de su
+         tipo», `CICO13` ↔ `CI.4.13`).
+      3. **Nombre**: con **varias** hojas con su cuenta, el casador del
+         trabajador (categoría = descripción del tipo; nombre = descripción
+         del recurso) puntúa cada una, la que no casa a 0; con **ninguna**,
+         entre las hojas activas `CI*` de la obra, solo las que casan. Gana
+         la única de puntuación máxima (`auto_nombre` o `auto_categoria`).
+      4. **Capítulo CI.4 en empate** (`capitulo_ci4`): la **única** empatada
+         cuyo código, normalizado y partido por puntos, empieza por `CI` y
+         un número igual a 4 (`CI.4.13`, `CI.04.13`; no `CI0.04.05`).
+      Si ninguno decide, «sin partida» a confirmar por vinculado
+      ([`#regla-sin-partida`](#regla-sin-partida)), nunca la primera. La
+      propuesta guardada en la subfila con uno de esos métodos se escribe
+      tal cual si sigue siendo hoja activa; la de `titular` se recalcula.
     - **Sigue al trabajador.** Titular omitido o retenido por un aviso sin
       confirmar ⇒ sus vinculados se omiten («sigue al trabajador» y su
       motivo); titular ya registrado ⇒ cada vinculado se decide solo. En
@@ -1019,10 +1037,14 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       `UPDATE` lleva la guarda de `#regla-cero` con **su** hora; nunca
       `DELETE`.
     - **Lecturas.** Sus horas, en la misma lectura que las de los
-      trabajadores; sus líneas, en la misma de líneas del periodo; las
-      cuentas del presupuesto de la obra, **una** lectura más y solo si
-      alguno necesita la CI de su tipo. Suelto, por lote y en
-      `partidas/propuesta(-lote)`, lo mismo. Sin vinculados, una línea se
+      trabajadores; sus líneas, en la misma de líneas del periodo; su
+      historial en la obra (líneas de partes de esos recursos en la obra de
+      origen, de cualquier hora, en la ventana), **una** lectura más con
+      todos los vinculados de la petición y solo si alguno llega a ese
+      paso; las cuentas del presupuesto de la obra, **una** lectura más y
+      solo si alguno llega al de su cuenta. Suelto, por lote (como mucho una
+      vez por obra) y en `partidas/propuesta(-lote)`, lo mismo. Sin
+      vinculados, o con todos resueltos antes del historial, una línea se
       decide exactamente igual que antes, con las mismas lecturas. Un fallo
       o `truncated`: falla sin escribir.
     - **Traza.** Preflight y `ejecutar` devuelven `vinculados` (una entrada
@@ -1039,14 +1061,17 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     mismo % del titular; D8: subfila con el tipo y su partida editable;
     «si se pisa indicarlo igualmente, funciona como el porcentaje normal»;
     D1b, D3, D4b, D5, D6 y D9-D15 con la opción A, «ok a todo») · F-044,
-    `specs/F-044-recursos-vinculados/requirements.md`.*
+    `specs/F-044-recursos-vinculados/requirements.md`. El orden de la
+    partida lo enmendó Pablo Gris el 2026-10-28 («el criterio debe ser
+    como el principal…»; «ok, preferir CI.4 en empate»; D1-D5 con la A) ·
+    F-068, `specs/F-068-propuesta-vinculado-como-titular/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 
 | Sistema | Quién | Modo | Notas |
 |---|---|---|---|
 | `sigrid-api` (Function App) | api | **solo lectura** (`POST /api/sql/read`) | maestros de empleados y obras y catálogo de empresas (`auxemp`, F-032); consultas parametrizadas en `config/config.yaml` |
-| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura). Inserta y edita líneas `M*` en su sitio, nunca las borra ([`#regla-cero`](#regla-cero)). Lee además partes del periodo con su estado, cuentas analíticas del centro y cuentas de partida ([`#regla-analitica`](#regla-analitica)) y el historial de partidas de los recursos ([`#regla-partida`](#regla-partida)); un `truncated` es error |
+| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura). Inserta y edita líneas `M*` en su sitio, nunca las borra ([`#regla-cero`](#regla-cero)). Lee además partes del periodo con su estado, cuentas analíticas del centro y cuentas de partida ([`#regla-analitica`](#regla-analitica)) y el historial de partidas de los recursos ([`#regla-partida`](#regla-partida)) y de los vinculados en la obra ([`#regla-vinculado`](#regla-vinculado)); un `truncated` es error |
 | PostgreSQL `dedicacion` | api | lectura y escritura | en local, `localhost`. Desplegado, **base propia dentro del servidor compartido `psql-albaranes-rs9k2`** (decisión del humano, 2026-08-20), esquema `public`, rol de aplicación propio y `PG_SSLMODE=require` |
 | `dedicacion-transfer` | api | HTTP interno | `TRANSFER_BASE_URL`, timeout 180 s |
 
