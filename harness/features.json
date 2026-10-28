@@ -1120,7 +1120,7 @@
     {
       "id": "F-067",
       "title": "Casilla para ver u ocultar los recursos vinculados en el cuadrante",
-      "description": "Petición del humano del 2026-10-27 («hay que añadir un check pequeño que me permita activar o desactivar la visualización de recursos derivados (Caja de obra etc...)»); propuesta aprobada el mismo día («si, esta bien»). Una casilla pequeña «Recursos vinculados» junto a las fichas del resumen (`renderCabecera` de `app.js`) enseña u oculta en el CUADRANTE las subfilas de vinculados de F-044 (teléfono, caja de obra, gasoil, vehículo…) bajo cada línea. Decisiones del humano: (1) por defecto MARCADA (se ven, como hoy) y la preferencia se recuerda en el navegador con las de la tabla (`cargarPrefsTabla`/`guardarPrefsTabla`, localStorage); (2) solo el cuadrante: el modal de registro sigue enseñando siempre los vinculados y su pisado (F-064), porque es lo que se escribe en Sigrid; (3) desmarcada, los filtros de columna «Tipo recurso» y «Partida» no miran los vinculados (no sale un trabajador por algo que no se ve); (4) va antes de F-054. La casilla solo sale si el mes tiene algún vinculado. Solo front (`app.js` y sus tests): es pantalla y no decide nada de lo que se registra. Fuera: ocultar por tipo de vinculado.",
+      "description": "Petición del humano del 2026-10-27 («hay que añadir un check pequeño que me permita activar o desactivar la visualización de recursos derivados (Caja de obra etc...)»); propuesta aprobada el mismo día («si, esta bien»). Una casilla pequeña «Recursos vinculados» junto a las fichas del resumen (`renderCabecera` de `app.js`) enseña u oculta en el CUADRANTE las subfilas de vinculados de F-044 (teléfono, caja de obra, gasoil, vehículo…) bajo cada línea. Decisiones del humano: (1) por defecto MARCADA (se ven, como hoy) y la preferencia se recuerda en el navegador con las de la tabla (`cargarPrefsTabla`/`guardarPrefsTabla`, localStorage); (2) solo el cuadrante: el modal de registro sigue enseñando siempre los vinculados y su pisado (F-064), porque es lo que se escribe en Sigrid; (3) desmarcada, los filtros de columna «Tipo recurso» y «Partida» no miran los vinculados (no sale un trabajador por algo que no se ve); (4) va antes de F-054. La casilla solo sale si el mes tiene algún vinculado. Solo front (`app.js` y sus tests): es pantalla y no decide nada de lo que se registra. Fuera: ocultar por tipo de vinculado. CERRADA (done) el 2026-10-28: review 1 APROBADA (8423a5a), init.sh en verde; pendiente de desplegar el front y MANUAL del navegador.",
       "acceptance": [
         "Con la casilla marcada (defecto, también con preferencias guardadas antiguas sin ella) el cuadrante es el de hoy; desmarcada, no se pinta ninguna subfila de vinculado y el `rowspan` de las columnas del trabajador cuadra con las filas que quedan (líneas e incidencias).",
         "La preferencia se guarda y se recupera con las de la tabla; sin localStorage la página funciona (marcada).",
@@ -1129,7 +1129,7 @@
         "La casilla no sale en un mes sin vinculados.",
         "Tests del front sin red ni BBDD que fallan con el código de antes (RED); los de F-044, F-063, F-064 y F-065 siguen en verde sin cambiar sus aserciones; `bash harness/init.sh` en verde."
       ],
-      "status": "in_progress",
+      "status": "done",
       "sdd": false,
       "rigor": "estandar",
       "priority": 1,

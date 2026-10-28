@@ -3063,3 +3063,35 @@ Lanzado por el humano (`infra/d.local.ps1 front`): front `r20261027-1637`,
 revisión `ca-dedicacion-front--r20261027163730`, `Healthy` con el 100 % del
 tráfico. Sin cambio de contrato (`azure-apps` no se toca). Pendiente la
 MANUAL de F-065 (en local).
+
+## 2026-10-28 · F-067 · Casilla para ver u ocultar los recursos vinculados
+
+Rama `feature/F-067-ver-vinculados` · `sdd: false` · rigor `estandar` ·
+**APROBADO** por el reviewer en la review 1 (`8423a5a`), sin bloqueos.
+Petición del humano del 2026-10-27, propuesta aprobada («si, esta bien»).
+
+**Qué cambió.** Casilla «Recursos vinculados» detrás de las fichas del
+resumen (solo si el mes tiene vinculados), marcada por defecto y recordada
+con las preferencias de la tabla. Desmarcada, el cuadrante no pinta las
+subfilas de vinculado (el `rowspan` cuadra con líneas e incidencias) y los
+filtros «Tipo recurso» y «Partida» no las miran. El modal de registro no
+cambia (vinculados y su pisado marcado, F-064). Solo `app.js`, `styles.css`
+y un test nuevo; ningún test existente cambia.
+
+**Verificado.** RED con 12 en rojo (13 con el de T3, reproducida por el
+reviewer); 17 tests nuevos; `init.sh` en verde (front 451). Campaña manual
+del JS sobre `7016870ad9b64deab5ae72ef55ef07511e39f8db`: 27 mutantes, 26
+muertos, 1 equivalente (N18: la preferencia es siempre booleana en la
+aplicación), aceptado por el reviewer.
+
+**Observaciones de la review, recogidas al cerrar.** O3: reescrito el paso 3
+de la MANUAL. O1 (N18 se mataría con un `state` sin la clave en
+`trabajadoresVisibles`) y O2 (`_filas` con líneas mínimas, suficiente para
+subfilas y `rowSpan`): el reviewer las da por buenas tal cual; sin cambio.
+O4 (el foco se queda en la casilla, como en «Solo pendientes»):
+comportamiento existente, se le cuenta al humano por si quiere otra feature.
+Automejora del reviewer (C4 bis: con 0 mutantes automáticos, la evidencia
+válida es `mutacion_manual_F-XXX.md` con SHA completo), pendiente de decisión
+del humano, junto a la del SHA completo de F-063.
+
+**Fuera / pendiente.** Desplegar el front; MANUAL del humano en el navegador.

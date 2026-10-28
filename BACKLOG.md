@@ -3,15 +3,12 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **64 features**, 25 abiertas, 39 terminadas.
-
-En curso: **F-067**.
+Resumen: **64 features**, 24 abiertas, 40 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-067 | Casilla para ver u ocultar los recursos vinculados en el cuadrante | 1 | en curso | estandar | `feature/F-067-ver-vinculados` |
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
@@ -55,6 +52,7 @@ En curso: **F-067**.
 | F-062 | Rachas de incidencia como Administración: abrir, alargar o cerrar la de cualquier parte en vez de un par por mes | 1 | critico |
 | F-064 | El pisado de los recursos vinculados, confirmado por defecto en el modal | 1 | estandar |
 | F-065 | La ficha de incidencia activa a 0 se queda en su sitio por letra | 1 | estandar |
+| F-067 | Casilla para ver u ocultar los recursos vinculados en el cuadrante | 1 | estandar |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | critico |
@@ -82,12 +80,6 @@ En curso: **F-067**.
 | F-030 | Incidencias en el cuadrante: texto en lugar del % con desplegable de las de partes (y dedicación por días) | 14 | critico |
 
 ## Detalle
-
-### F-067 · Casilla para ver u ocultar los recursos vinculados en el cuadrante
-
-estado **en curso** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-067-ver-vinculados`
-
-Petición del humano del 2026-10-27 («hay que añadir un check pequeño que me permita activar o desactivar la visualización de recursos derivados (Caja de obra etc...)»); propuesta aprobada el mismo día («si, esta bien»). Una casilla pequeña «Recursos vinculados» junto a las fichas del resumen (`renderCabecera` de `app.js`) enseña u oculta en el CUADRANTE las subfilas de vinculados de F-044 (teléfono, caja de obra, gasoil, vehículo…) bajo cada línea. Decisiones del humano: (1) por defecto MARCADA (se ven, como hoy) y la preferencia se recuerda en el navegador con las de la tabla (`cargarPrefsTabla`/`guardarPrefsTabla`, localStorage); (2) solo el cuadrante: el modal de registro sigue enseñando siempre los vinculados y su pisado (F-064), porque es lo que se escribe en Sigrid; (3) desmarcada, los filtros de columna «Tipo recurso» y «Partida» no miran los vinculados (no sale un trabajador por algo que no se ve); (4) va antes de F-054. La casilla solo sale si el mes tiene algún vinculado. Solo front (`app.js` y sus tests): es pantalla y no decide nada de lo que se registra. Fuera: ocultar por tipo de vinculado.
 
 ### F-058 · Un porcentaje que redondea a cantidad 0 no se registra en Sigrid
 
@@ -316,6 +308,12 @@ Petición del humano del 2026-10-26, tras la segunda prueba del líder de F-044 
 estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-065-ficha-activa-en-su-sitio`
 
 Petición del humano del 2026-10-27 («si, hazlo de la ficha activa»), a partir de la O1 de la review 1 de F-063 (`progress/review_F-063.md`): cuando la ficha de incidencia activa se queda sin trabajadores (p. ej. se quita en el editor la única incidencia de ese tipo), sigue en la fila con 0 para poder quitarla (F-063), pero sale AL FINAL porque se añade después de ordenar (`renderCabecera` de `app.js`, `tipos.push` tras el `sort` de `tiposIncidenciaDelMes`). Debe salir en su sitio, con el mismo orden que las demás (letra con `localeCompare` «es», desempate por nombre). Solo front (`app.js` y sus tests); no cambia nada más del filtro. Se despliega en el siguiente despliegue del front. CERRADA (done) el 2026-10-27: review 1 APROBADA (0f56ac8), init.sh en verde; pendiente MANUAL del navegador. DESPLEGADA el 2026-10-27 (solo el front, r20261027-1637).
+
+### F-067 · Casilla para ver u ocultar los recursos vinculados en el cuadrante
+
+estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-067-ver-vinculados`
+
+Petición del humano del 2026-10-27 («hay que añadir un check pequeño que me permita activar o desactivar la visualización de recursos derivados (Caja de obra etc...)»); propuesta aprobada el mismo día («si, esta bien»). Una casilla pequeña «Recursos vinculados» junto a las fichas del resumen (`renderCabecera` de `app.js`) enseña u oculta en el CUADRANTE las subfilas de vinculados de F-044 (teléfono, caja de obra, gasoil, vehículo…) bajo cada línea. Decisiones del humano: (1) por defecto MARCADA (se ven, como hoy) y la preferencia se recuerda en el navegador con las de la tabla (`cargarPrefsTabla`/`guardarPrefsTabla`, localStorage); (2) solo el cuadrante: el modal de registro sigue enseñando siempre los vinculados y su pisado (F-064), porque es lo que se escribe en Sigrid; (3) desmarcada, los filtros de columna «Tipo recurso» y «Partida» no miran los vinculados (no sale un trabajador por algo que no se ve); (4) va antes de F-054. La casilla solo sale si el mes tiene algún vinculado. Solo front (`app.js` y sus tests): es pantalla y no decide nada de lo que se registra. Fuera: ocultar por tipo de vinculado. CERRADA (done) el 2026-10-28: review 1 APROBADA (8423a5a), init.sh en verde; pendiente de desplegar el front y MANUAL del navegador.
 
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 
