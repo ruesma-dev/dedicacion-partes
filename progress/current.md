@@ -5,7 +5,7 @@
 trabajador: historial en la obra y, si no, por nombre, CI.4 en empate;
 transfer y api, rigor crítico, SDD; petición del humano del 2026-10-28, va
 antes de F-054), rama `feature/F-068-propuesta-vinculado-como-titular`,
-worktree `porcentajes-f068`: **spec-author lanzado** (`pending`). **F-067** (casilla «Recursos vinculados» para
+worktree `porcentajes-f068`: **spec escrita, pendiente de aprobación** (`pending`; sección «F-068 · spec escrita», más abajo). **F-067** (casilla «Recursos vinculados» para
 ver u ocultar sus subfilas en el cuadrante; solo front) **cerrada (`done`)
 el 2026-10-28**: review 1 APROBADA (`8423a5a`), `bash harness/init.sh` en
 verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (solo el
@@ -35,6 +35,26 @@ su `origin/main` (encargos pendientes; push del humano: `git -C
 ../arnes-base push origin main`). Peticiones de arnés pendientes de
 decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** tras F-068, F-054 (spec aprobada, worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
+
+## F-068 · spec escrita (2026-10-28), pendiente de aprobación
+
+- **Spec:** `specs/F-068-propuesta-vinculado-como-titular/` (requirements
+  R1-R23, design, tasks T1-T15). Enmienda de F-044 R15-R16 (anotada bajo su
+  R16). Toca **transfer** (regla, lectura `historial_de_vinculados`, propuesta
+  guardada con los métodos nuevos), **api** (`METODOS_PROPUESTA_VINCULADO` y
+  `descripcion`/`tipo_res` del vinculado en el contrato) y **front** (rótulo
+  `capitulo_ci4`). Evidencia, solo lectura y agregada:
+  `progress/explore_F-068.md` (solo 5 obras con la cuenta repetida; el
+  historial resuelve el 90-100 % de esos pares).
+- **Decisiones abiertas para el humano** (design §9, con recomendación):
+  D1 qué es «capítulo CI.4» (A por número, `CI.04` = `CI.4`; en la 0692 el
+  literal elegiría el capítulo abandonado); D2 historial solo en partidas
+  `CI*` (A sí); D3 ventana con el periodo incluido, como el trabajador (A);
+  D4 propuestas `ci_tipo` ya guardadas en octubre: se quedan (A) o limpieza
+  a mano (B); D5 «ninguna casa por nombre» con varias de su cuenta cuenta
+  como empate y decide el CI.4 (A).
+- **MANUAL** T13 (solo lectura: selector y preflight del caso de la 0678) y
+  T14 (despliegue y `azure-apps`).
 
 ## F-062 · CERRADA y DESPLEGADA (2026-10-26): aviso a `partes` pendiente
 
