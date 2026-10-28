@@ -1,7 +1,7 @@
 <!-- specs/F-068-propuesta-vinculado-como-titular/design.md -->
 # F-068 · Diseño: la partida del vinculado, como la del trabajador
 
-Evidencia en `progress/explore_F-068.md`; decisiones abiertas en §9. Es una
+Evidencia en `progress/explore_F-068.md`; decisiones en §9 (cerradas por el humano el 2026-10-28, la A en las cinco). Es una
 enmienda de F-044 (`specs/F-044-recursos-vinculados/design.md` §6.2, §6.3,
 §7.1): todo lo que aquí no se nombra sigue como allí.
 
