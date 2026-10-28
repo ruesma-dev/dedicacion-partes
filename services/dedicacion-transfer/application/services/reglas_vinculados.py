@@ -40,8 +40,10 @@ from domain.models.registro_models import (
     LineaSigrid,
 )
 
+from application.services import text_match as tm
 from application.services.cuenta_analitica import subcuenta
 from application.services.partida_catalog import PartidaNodo
+from application.services.partida_matcher import match_partida
 from application.services.reglas_porcentajes import (
     PREFIJO_CLAVE_SIN_PARTIDA,
     es_de_la_hora,
@@ -131,6 +133,58 @@ def va_con_el_titular(titular: PartidaTitular) -> bool:
     return bool(titular.paride) and not _es_ci(titular.cod)
 
 
+def hojas_con_subcuenta(hojas: dict[int, PartidaNodo],
+                        cuentas: dict[int, str | None],
+                        sub: str | None) -> list[PartidaNodo]:
+    """F-068 (R4-R6): las hojas activas de `hojas` (el presupuesto de la
+    obra) cuya cuenta (`cuentas`, por `ide` de partida) tiene la subcuenta
+    `sub` (comparada entera, sin espacios ni mayúsculas), por `ide`. Sin
+    `sub`, ninguna."""
+    buscada = (sub or "").strip().upper()
+    if not buscada:
+        return []
+    return [
+        n for ide, cod in sorted(cuentas.items())
+        for n in [hojas.get(ide)]
+        if n is not None and n.es_hoja and n.activa
+        and (subcuenta(cod) or "").upper() == buscada]
+
+
+def es_capitulo_ci4(cod: str | None) -> bool:
+    """F-068 (R8, D1): el código normalizado (mayúsculas, sin espacios ni
+    guiones), partido por puntos, tiene `CI` como primer trozo y como
+    segundo un número igual a 4 (`CI.4.13`, `CI.04.13`; no `CI0.04.05`)."""
+    trozos = tm.normalize_code(cod).split(".")
+    return (len(trozos) > 1 and trozos[0] == "CI"
+            and trozos[1].isascii() and trozos[1].isdigit()
+            and int(trozos[1]) == 4)
+
+
+def puntuar(candidatas: list[PartidaNodo], tipo_res: str | None,
+            descripcion: str | None, *, solo_casadas: bool
+            ) -> dict[int, tuple[float, str | None]]:
+    """F-068 (R5-R6): la puntuación del casador del trabajador
+    (`match_partida`, categoría = `tipo_res`, nombre = `descripcion`) de
+    cada candidata, UNA A UNA (el casador elige «la primera» en un empate y
+    aquí el empate se tiene que ver): `{ide: (puntuación, método)}`. La que
+    no casa, `(0.0, None)`, o fuera con `solo_casadas`."""
+    out: dict[int, tuple[float, str | None]] = {}
+    for n in candidatas:
+        m = match_partida(tipo_res, descripcion, [n])
+        if m is not None:
+            out[int(n.ide)] = (m.score, m.metodo)
+        elif not solo_casadas:
+            out[int(n.ide)] = (0.0, None)
+    return out
+
+
+def desempate_ci4(empatadas: list[PartidaNodo]) -> PartidaNodo | None:
+    """F-068 (R7, D1): la ÚNICA empatada del capítulo CI.4; con ninguna o
+    con varias, None (nunca «la primera»)."""
+    del_ci4 = [n for n in empatadas if es_capitulo_ci4(n.cod)]
+    return del_ci4[0] if len(del_ci4) == 1 else None
+
+
 def partida_ci_del_tipo(hojas: dict[int, PartidaNodo],
                         cuentas: dict[int, str | None],
                         sub: str | None) -> tuple[PartidaElegida | None, str]:
@@ -138,14 +192,7 @@ def partida_ci_del_tipo(hojas: dict[int, PartidaNodo],
     cuya cuenta (`cuentas`, por `ide` de partida) tiene la subcuenta `sub`
     (comparada entera, sin espacios ni mayúsculas). Devuelve la partida y
     `ci_tipo`, o None y el motivo: `sin_ci` (ninguna) o `varias_ci`."""
-    buscada = (sub or "").strip().upper()
-    if not buscada:
-        return None, MOTIVO_SIN_CI
-    candidatas = [
-        n for ide, cod in sorted(cuentas.items())
-        for n in [hojas.get(ide)]
-        if n is not None and n.es_hoja and n.activa
-        and (subcuenta(cod) or "").upper() == buscada]
+    candidatas = hojas_con_subcuenta(hojas, cuentas, sub)
     if not candidatas:
         return None, MOTIVO_SIN_CI
     if len(candidatas) > 1:
