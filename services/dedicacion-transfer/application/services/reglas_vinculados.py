@@ -44,6 +44,7 @@ from application.services import text_match as tm
 from application.services.cuenta_analitica import subcuenta
 from application.services.partida_catalog import PartidaNodo
 from application.services.partida_matcher import match_partida
+from application.services.propuesta_partida import _maximo_unico
 from application.services.reglas_porcentajes import (
     PREFIJO_CLAVE_SIN_PARTIDA,
     es_de_la_hora,
@@ -53,10 +54,16 @@ from application.services.reglas_porcentajes import (
 METODO_MANUAL = "manual"        # la elegida en su subfila
 METODO_TITULAR = "titular"      # la de su titular (R17)
 METODO_CI_TIPO = "ci_tipo"      # la CI de su tipo (R15)
+#: F-068 (R2): la del historial del vinculado en la obra, como el «parte
+#: anterior» del trabajador; (R7): la única del capítulo CI.4 en un empate.
+METODO_PARTE_ANTERIOR = "parte_anterior"
+METODO_CAPITULO_CI4 = "capitulo_ci4"
 
 #: Sin partida (R16): ninguna hoja activa con la subcuenta, o varias.
 MOTIVO_SIN_CI = "sin_ci"
 MOTIVO_VARIAS_CI = "varias_ci"
+#: F-068 (R9): sin su cuenta, varias casan por nombre y el CI.4 no desempata.
+MOTIVO_EMPATE_NOMBRE = "empate_nombre"
 #: R15: la elegida que no es hoja activa del presupuesto (como F-050).
 MOTIVO_ELEGIDA_NO_VALIDA = (
     "la partida {cod} elegida para el recurso vinculado no es una partida "
@@ -197,9 +204,48 @@ def partida_ci_del_tipo(hojas: dict[int, PartidaNodo],
         return None, MOTIVO_SIN_CI
     if len(candidatas) > 1:
         return None, MOTIVO_VARIAS_CI
-    n = candidatas[0]
-    return PartidaElegida(paride=int(n.ide), cod=n.cod, res=n.res), \
-        METODO_CI_TIPO
+    return _elegida(candidatas[0]), METODO_CI_TIPO
+
+
+def _elegida(n: PartidaNodo) -> PartidaElegida:
+    return PartidaElegida(paride=int(n.ide), cod=n.cod, res=n.res)
+
+
+def partida_por_cuenta_o_nombre(
+    hojas: dict[int, PartidaNodo], cuentas: dict[int, str | None],
+    sub: str | None, tipo_res: str | None, descripcion: str | None,
+) -> tuple[PartidaElegida | None, str]:
+    """F-068 (R4-R9): la partida por su cuenta y su nombre, sin historial.
+    UNA hoja activa con su cuenta ⇒ esa, `ci_tipo` (R4); VARIAS ⇒ las
+    puntúa el casador, la que no casa a 0 (R5); NINGUNA ⇒ el casador entre
+    las hojas activas `CI*`, solo las que casan (R6). Gana el máximo único
+    con el método del casador; en empate, la única del capítulo CI.4,
+    `capitulo_ci4` (R7). Si no, None y el motivo: `varias_ci`, `sin_ci` (no
+    casa ninguna) o `empate_nombre` (R9). Nunca «la primera»."""
+    con_cuenta = hojas_con_subcuenta(hojas, cuentas, sub)
+    if len(con_cuenta) == 1:
+        return _elegida(con_cuenta[0]), METODO_CI_TIPO
+    if con_cuenta:
+        candidatas, motivo = con_cuenta, MOTIVO_VARIAS_CI
+    else:
+        candidatas = [n for n in hojas.values()
+                      if n.es_hoja and n.activa and _es_ci(n.cod)]
+        motivo = MOTIVO_EMPATE_NOMBRE
+    puntos = puntuar(candidatas, tipo_res, descripcion,
+                     solo_casadas=not con_cuenta)
+    if not puntos:
+        return None, MOTIVO_SIN_CI
+    por_ide = {int(n.ide): n for n in candidatas}
+    sumas = {ide: score for ide, (score, _) in puntos.items()}
+    ganadora = _maximo_unico(sumas)
+    if ganadora is not None:
+        return _elegida(por_ide[ganadora]), puntos[ganadora][1]
+    mejor = max(round(v, 6) for v in sumas.values())
+    n = desempate_ci4([por_ide[ide] for ide, v in sumas.items()
+                       if round(v, 6) == mejor])
+    if n is not None:
+        return _elegida(n), METODO_CAPITULO_CI4
+    return None, motivo
 
 
 def partida_del_vinculado(
@@ -298,11 +344,17 @@ def decidir_vinculados(titular: AccionLinea, linea: LineaEntrada,
 #  Avisos y claves del vinculado (R16, R23, R26)
 # ------------------------------------------------------------------ #
 
-#: R16: por qué no hay CI del tipo, en palabras.
+#: R16: por qué no hay CI del tipo, en palabras; F-068 (R9): con el orden
+#: nuevo, también qué no decidió.
 _POR_QUE_SIN_CI = {
-    MOTIVO_SIN_CI: "ninguna partida del presupuesto tiene la cuenta de su tipo",
+    MOTIVO_SIN_CI: "ninguna partida del presupuesto tiene la cuenta de su "
+                   "tipo y ni el historial ni el nombre deciden",
     MOTIVO_VARIAS_CI: "varias partidas del presupuesto tienen la cuenta de "
-                      "su tipo",
+                      "su tipo y ni el historial, ni el nombre ni el "
+                      "capítulo CI.4 deciden",
+    MOTIVO_EMPATE_NOMBRE: "ninguna partida del presupuesto tiene la cuenta "
+                          "de su tipo y varias casan por nombre: ni el "
+                          "historial ni el capítulo CI.4 deciden",
 }
 #: R16: aviso de la acción (lo pinta el modal) y motivo de la omisión si
 #: nadie confirma; se formatean con tipo, cod y por_que. Caben en los 300

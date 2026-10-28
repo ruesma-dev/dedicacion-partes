@@ -294,8 +294,11 @@ def test_f044_r26_motivo_de_la_sobrecarga_y_del_sin_partida():
 
 # ---- reglas_vinculados.py:278, :88 -------------------------------------- #
 def test_f044_r16_por_que_sin_ci_en_palabras_o_tal_cual():
+    # F-068 (R9, R22): el texto dice también que ni el historial ni el
+    # nombre decidieron (orden nuevo de la enmienda).
     assert por_que_sin_ci(MOTIVO_SIN_CI) == (
-        "ninguna partida del presupuesto tiene la cuenta de su tipo")
+        "ninguna partida del presupuesto tiene la cuenta de su tipo y ni el "
+        "historial ni el nombre deciden")
     assert por_que_sin_ci("otro motivo") == "otro motivo"
     assert por_que_sin_ci(None) == ""
 

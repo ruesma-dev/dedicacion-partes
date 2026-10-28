@@ -6,6 +6,10 @@
   (`hojas_con_subcuenta`), el capítulo CI.4 por número (`es_capitulo_ci4`),
   la puntuación del casador una a una (`puntuar`) y el desempate por el
   capítulo CI.4 (`desempate_ci4`).
+- R4-R9 (T3): `partida_por_cuenta_o_nombre`: una con su cuenta ⇒
+  `ci_tipo`; varias ⇒ el nombre y, en empate (también a 0), el CI.4; ninguna
+  ⇒ el nombre entre las `CI*` que casan y, en empate, el CI.4; si no, sin
+  partida con `sin_ci`, `varias_ci` o `empate_nombre`.
 
 Fixture «de la 0678» con `ide` inventados: cada cuenta de los vinculados
 (`CICO13`, `CICO01`, `CICO15`, `CIMP09`) en dos hojas, una del capítulo
@@ -17,9 +21,18 @@ from __future__ import annotations
 import pytest
 from application.services.partida_resolver import construir_catalogo
 from application.services.reglas_vinculados import (
+    AVISO_SIN_PARTIDA_VINCULADO,
+    METODO_CAPITULO_CI4,
+    METODO_CI_TIPO,
+    MOTIVO_EMPATE_NOMBRE,
+    MOTIVO_SIN_CI,
+    MOTIVO_VARIAS_CI,
+    PartidaElegida,
     desempate_ci4,
     es_capitulo_ci4,
     hojas_con_subcuenta,
+    partida_por_cuenta_o_nombre,
+    por_que_sin_ci,
     puntuar,
 )
 
@@ -49,7 +62,7 @@ PRESUPUESTO = [
     _fila(60503, 60500, 3, "CI.5.3", "VEHICULO FURGONETA"),
     _fila(60504, 60500, 4, "CI.5.4", "GASOIL VEHICULOS"),
     _fila(60800, 0, 5, "CP", "COSTES PROPORCIONALES"),
-    _fila(60801, 60800, 1, "CP.1", "VARIOS CP"),
+    _fila(60801, 60800, 1, "CP.1", "SEGUROS DECENALES"),
     _fila(60900, 0, 6, "CD", "COSTES DIRECTOS"),
     _fila(60901, 60900, 1, "CD.1", "HORMIGON"),
 ]
@@ -154,3 +167,127 @@ def test_f068_r7_desempate_la_unica_del_ci4():
     (60103, 60301), (60405, 60406), (60401, 60402, 60101), (60101,), ()])
 def test_f068_r7_ninguna_o_varias_del_ci4_no_desempata(ides):
     assert desempate_ci4(_n(*ides)) is None
+
+
+# ============================== R4-R9 (T3) =============================== #
+def _pcn(sub, tipo_res=None, descripcion=None, cuentas=None):
+    return partida_por_cuenta_o_nombre(
+        _hojas(), CUENTAS if cuentas is None else cuentas, sub, tipo_res,
+        descripcion)
+
+
+def _e(ide: int) -> PartidaElegida:
+    n = _hojas()[ide]
+    return PartidaElegida(paride=ide, cod=n.cod, res=n.res)
+
+
+def test_f068_r4_una_sola_hoja_con_su_cuenta_es_ci_tipo():
+    """Aunque el nombre casara con otra: con UNA, esa (F-044 R15)."""
+    assert _pcn("CIMO01") == (_e(60501), METODO_CI_TIPO)
+    assert _pcn("CIMO01", "TELEFONO", "TELEFONO MOVIL 600") == (
+        _e(60501), METODO_CI_TIPO)
+
+
+def test_f068_r5_varias_con_su_cuenta_gana_el_nombre():
+    assert _pcn("CIVE20", "VEHICULO", "FURGONETA 1234ABC") == (
+        _e(60503), "auto_nombre")
+
+
+def test_f068_r5_varias_con_su_cuenta_gana_por_categoria():
+    cuentas = {**CUENTAS, 60502: "0678.CIVE20"}
+    assert _pcn("CIVE20", "GASOIL", None, cuentas) == (
+        _e(60504), "auto_categoria")
+
+
+@pytest.mark.parametrize("tipo_res, descripcion", [
+    (None, None), ("TELEFONIA", "MOVIL 600"), ("XXXX", "YYYY ZZZZ")])
+def test_f068_r7_varias_con_su_cuenta_empatadas_gana_el_ci4(tipo_res,
+                                                           descripcion):
+    """D5-A: con varias de su cuenta, «ninguna casa» es un empate a 0 y
+    decide el CI.4; con las dos iguales por nombre, también."""
+    assert _pcn("CICO13", tipo_res, descripcion) == (
+        _e(60401), METODO_CAPITULO_CI4)
+    assert _pcn("CICO01", tipo_res, descripcion) == (
+        _e(60402), METODO_CAPITULO_CI4)
+    assert _pcn("CICO15", tipo_res, descripcion) == (
+        _e(60403), METODO_CAPITULO_CI4)
+
+
+def test_f068_r7_el_ci4_solo_desempata_entre_las_del_maximo():
+    """La del CI.4 a 0 no gana a la que casa: el máximo único manda."""
+    cuentas = {**CUENTAS, 60502: "0678.CICO13"}
+    assert _pcn("CICO13", "TELEFONO", "TELEFONO MOVIL 600", cuentas) == (
+        _e(60502), "auto_nombre")
+
+
+def test_f068_r7_empate_entre_las_del_maximo_sin_la_de_abajo():
+    """Empatan a 0,9 dos `LIMPIEZA` que no son del CI.4; la del CI.4 a 0
+    (`COMBUSTIBLE`) no entra en el desempate: sin partida."""
+    cuentas = {60105: "0678.CIXX01", 60302: "0678.CIXX01",
+               60402: "0678.CIXX01"}
+    assert _pcn("CIXX01", "LIMPIEZA", None, cuentas) == (
+        None, MOTIVO_VARIAS_CI)
+
+
+@pytest.mark.parametrize("sub", ["CIMP09", "CIME20"])
+def test_f068_r9_varias_con_su_cuenta_sin_desempate_sin_partida(sub):
+    """`CIMP09`: `CI.0.06` / `CI.03P.9`, ninguna del CI.4; `CIME20`:
+    `CI.4.20` / `CI.04.21`, las dos."""
+    assert _pcn(sub) == (None, MOTIVO_VARIAS_CI)
+    assert _pcn(sub, "VEHICULOS", None) == (None, MOTIVO_VARIAS_CI)
+
+
+@pytest.mark.parametrize("sub", [None, "", "CIZZ99"])
+def test_f068_r6_sin_su_cuenta_casa_por_nombre_entre_las_ci(sub):
+    assert _pcn(sub, "TELEFONO", "TELEFONO MOVIL 600") == (
+        _e(60502), "auto_nombre")
+
+
+def test_f068_r6_sin_su_cuenta_empate_lo_decide_el_ci4():
+    assert _pcn(None, "TELEFONIA", "MOVIL 600") == (
+        _e(60401), METODO_CAPITULO_CI4)
+
+
+@pytest.mark.parametrize("tipo_res", ["LIMPIEZA", "MENSAJERIA"])
+def test_f068_r9_sin_su_cuenta_empate_sin_desempate(tipo_res):
+    """`LIMPIEZA`: `CI.0.20` / `CI.03P.20`, ninguna del CI.4;
+    `MENSAJERIA`: `CI.4.20` / `CI.04.21`, las dos."""
+    assert _pcn(None, tipo_res, None) == (None, MOTIVO_EMPATE_NOMBRE)
+
+
+@pytest.mark.parametrize("tipo_res, descripcion", [
+    (None, None), ("XXXX", "YYYY ZZZZ"),
+    # Solo casaría una hoja que no es CI* o un capítulo: no cuentan.
+    ("HORMIGON", None), ("SEGUROS DECENALES", None), ("PERSONAL", None),
+    ("CAPITULO", None)])
+def test_f068_r6_sin_su_cuenta_y_nada_casa_sin_partida(tipo_res,
+                                                       descripcion):
+    """Solo las que casan: sin ninguna, sin partida, aunque haya hojas del
+    CI.4 (el CI.4 a 0 solo decide entre las de su cuenta, D5)."""
+    assert _pcn("CIZZ99", tipo_res, descripcion) == (None, MOTIVO_SIN_CI)
+
+
+def test_f068_r6_sin_su_cuenta_no_cuenta_la_de_baja():
+    """Las dos `TELEFONIA` activas empatan; la de baja (`CI.4.99`) no entra:
+    si entrara, habría dos del CI.4 y no desempataría."""
+    assert _pcn(None, "TELEFONIA", None) == (_e(60401), METODO_CAPITULO_CI4)
+
+
+def test_f068_r9_textos_de_los_motivos():
+    assert por_que_sin_ci(MOTIVO_SIN_CI) == (
+        "ninguna partida del presupuesto tiene la cuenta de su tipo y ni el "
+        "historial ni el nombre deciden")
+    assert por_que_sin_ci(MOTIVO_VARIAS_CI) == (
+        "varias partidas del presupuesto tienen la cuenta de su tipo y ni el "
+        "historial, ni el nombre ni el capítulo CI.4 deciden")
+    assert por_que_sin_ci(MOTIVO_EMPATE_NOMBRE) == (
+        "ninguna partida del presupuesto tiene la cuenta de su tipo y varias "
+        "casan por nombre: ni el historial ni el capítulo CI.4 deciden")
+
+
+@pytest.mark.parametrize("motivo", [MOTIVO_SIN_CI, MOTIVO_VARIAS_CI,
+                                    MOTIVO_EMPATE_NOMBRE])
+def test_f068_r9_el_aviso_cabe_en_sigrid_motivo(motivo):
+    aviso = AVISO_SIN_PARTIDA_VINCULADO.format(
+        tipo="X" * 10, cod="Y" * 20, por_que=por_que_sin_ci(motivo))
+    assert len(aviso) <= 300
