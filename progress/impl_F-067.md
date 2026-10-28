@@ -213,4 +213,4 @@ corregido después con `check=False`, sin cambio de comportamiento).
 | Tests del transfer | 1585 passed en 55,98 s (F-013 R4 incluido) |
 | Cobertura de líneas cambiadas | `PUERTA COBERTURA: N/A (F-067 no cambia líneas Python de producción frente a dev)`; el JS no tiene medidor de cobertura |
 | Mutantes | `harness.mutacion` no aplica (no hay Python de producción). Campaña manual del JS (`progress/mutacion_manual_F-067.md`, `7016870ad9b64deab5ae72ef55ef07511e39f8db`, 1 worker, 917,7 s): **27 generados, 26 muertos, 1 superviviente** (N18, equivalente, analizado) |
-| Tamaño | `PUERTA TAMAÑO: F-067 dentro de los topes (impl 202/220)` antes de rellenar esta sección |
+| Pasada final | sobre `2a4fd90`, cachés borradas: sin [KO], ruff 309 (deuda previa), front 451 passed en 70,70 s, `PUERTA TAMAÑO: F-067 dentro de los topes (impl 216/220)` |
