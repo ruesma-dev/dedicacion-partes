@@ -12,6 +12,9 @@
   método propio.
 - R15 (T7): el selector y la cola (`partidas/propuesta`) dan a cada subfila
   lo mismo que el preflight, con su `origen`, en la misma ventana.
+- R15 (T8): en un lote (preflight y propuesta), cada subfila da lo mismo
+  que en suelto y el historial de los vinculados se lee como mucho una vez
+  por obra (`LecturasDelLote.historial_de_vinculados`, por `_una_vez`).
 
 Fixture «de la 0678» con `ide` inventados: el teléfono 20 (`CICO13`), el
 gasoil 21 (`CICO01`) y el vehículo 22 (`CIMP09`) tienen su cuenta en DOS
@@ -503,3 +506,95 @@ def test_f068_r15_la_ruta_devuelve_el_origen(api):  # noqa: F811
     assert r.json()["vinculados"] == {"a": {"20": {
         "paride": 82413, "cod": "CI.4.13", "res": "TELEFONIA",
         "metodo": "parte_anterior", "origen": ORIGEN}}}
+
+
+# ============================ R15 · el lote ============================== #
+from application.pipelines.registro_lote import RegistroLote  # noqa: E402
+from application.services.lecturas_lote import (  # noqa: E402
+    LecturasDelLote,
+)
+
+
+def _st_lote():
+    st = _st()
+    st.sigrid_lecturas_paralelas = 4
+    return st
+
+
+def _peticiones_68():
+    """Dos peticiones de la misma obra con los mismos vinculados (el lote
+    de la cola puede traer la obra dos veces) y una sin vinculados."""
+    obra = ObraEntrada(codigo=OBRA_ORIGEN)
+    return [
+        (obra, [linea(paride=80001, partida_cod="CI.1.10",
+                      vinculados=_v68(20, 21, 22))]),
+        (obra, [linea(registro_id=2, paride=80001, partida_cod="CI.1.10",
+                      vinculados=_v68(20, 21, 22))]),
+        (obra, [linea(registro_id=3, paride=80001, partida_cod="CI.1.10")]),
+    ]
+
+
+@pytest.mark.parametrize("historial", [HISTORIAL_0678, []])
+def test_f068_r15_lote_igual_que_suelto(historial):
+    lote = RegistroLote(cliente=Cliente68(historial=historial),
+                        settings=_st_lote()).preflight(_peticiones_68())
+    sueltos = [_pf(Cliente68(historial=historial), *lineas_)
+               for _, lineas_ in _peticiones_68()]
+    assert [_partidas(pf) for pf in lote] == [
+        _partidas(pf) for pf in sueltos]
+    esperado = (("parte_anterior", ORIGEN) if historial
+                else ("capitulo_ci4", None))
+    assert _partidas(lote[0])[20] == (82413, "CI.4.13", *esperado)
+
+
+def test_f068_r15_lote_una_lectura_por_obra():
+    cli = Cliente68()
+    RegistroLote(cliente=cli, settings=_st_lote()).preflight(
+        _peticiones_68())
+    assert cli.historial_leido == [([20, 21, 22], OBRA_IDE, *VENTANA)]
+    assert cli.cuentas_leidas == [OBRA_IDE]
+
+
+def test_f068_r15_memoria_del_lote_por_obra_ventana_y_recursos():
+    cli = Cliente68()
+    memoria = LecturasDelLote(cli, 2)
+    a = memoria.historial_de_vinculados([21, 20, 20], OBRA_IDE, *VENTANA)
+    b = memoria.historial_de_vinculados([20, 21], str(OBRA_IDE),
+                                        str(VENTANA[0]), VENTANA[1])
+    assert a == b == [l for l in HISTORIAL_0678]
+    assert cli.historial_leido == [([20, 21], OBRA_IDE, *VENTANA)]
+    memoria.historial_de_vinculados([20, 21], 999, *VENTANA)
+    memoria.historial_de_vinculados([20, 21], OBRA_IDE, 202401, VENTANA[1])
+    memoria.historial_de_vinculados([20, 21], OBRA_IDE, VENTANA[0], 202608)
+    memoria.historial_de_vinculados([20], OBRA_IDE, *VENTANA)
+    assert len(cli.historial_leido) == 5
+    assert memoria.fallos_de_memoria == {}
+
+
+def test_f068_r13_lote_si_el_historial_falla_esa_obra_falla():
+    cli = Cliente68(falla=RuntimeError("respuesta truncada"))
+    lote = RegistroLote(cliente=cli, settings=_st_lote()).preflight(
+        _peticiones_68())
+    assert isinstance(lote[0], RuntimeError)
+    assert isinstance(lote[1], RuntimeError)
+    assert not isinstance(lote[2], Exception)
+
+
+def _pet_sel(*lineas_: dict) -> dict:
+    return {"empresa": 1, "obra": ObraEntrada(codigo=OBRA_ORIGEN),
+            "ano": 2026, "mes": 7, "lineas": list(lineas_)}
+
+
+@pytest.mark.parametrize("historial", [HISTORIAL_0678, []])
+def test_f068_r15_propuesta_lote_igual_que_suelta(historial):
+    peticiones = [_pet_sel(_linea(vinculados=_vin_sel(20, 21, 22))),
+                  _pet_sel(_linea(vinculados=_vin_sel(20, 21, 22)),
+                           _linea("b", recurso=201))]
+    cli = Cliente68(historial=historial)
+    lote = RegistroLote(cliente=cli, settings=_st_lote()).proponer(
+        peticiones)
+    sueltas = [_sel(Cliente68(historial=historial), *p["lineas"])
+               for p in peticiones]
+    assert [r["vinculados"] for r in lote] == [
+        r["vinculados"] for r in sueltas]
+    assert cli.historial_leido == [([20, 21, 22], OBRA_IDE, *VENTANA)]

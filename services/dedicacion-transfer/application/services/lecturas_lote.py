@@ -523,8 +523,8 @@ class LecturasDelLote:
         return self._una_vez(
             ("historial_de_vinculados", int(obra_ide), int(desde),
              int(hasta), tuple(recursos)),
-            lambda: self._cli.historial_de_vinculados(recursos, obra_ide,
-                                                      desde, hasta))
+            lambda: self._cli.historial_de_vinculados(
+                recursos, int(obra_ide), int(desde), int(hasta)))
 
     def cuentas_de_centro(self, cenide, empresa, subcuentas):
         subs = tuple(sorted({s for s in subcuentas if s}))
