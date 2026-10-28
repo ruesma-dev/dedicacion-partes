@@ -4,8 +4,9 @@
 **Ninguna feature en curso.** **F-067** (casilla «Recursos vinculados» para
 ver u ocultar sus subfilas en el cuadrante; solo front) **cerrada (`done`)
 el 2026-10-28**: review 1 APROBADA (`8423a5a`), `bash harness/init.sh` en
-verde; resumen en `progress/history.md`. **Pendiente de desplegar** (solo el
-front) y de su MANUAL («⚠ Lo que espera al humano», entrada F-067). Sin
+verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (solo el
+front, `r20261028-1049`); **MANUAL hecha por el humano el 2026-10-28**
+(«sale y funciona bien»). Sin
 cambio de contrato: `azure-apps/dedicacion.md` no se toca. **F-065** (la ficha de incidencia activa a 0
 se queda en su sitio por letra; solo front) **cerrada (`done`) el
 2026-10-27**: review 1 APROBADA (`0f56ac8`), `bash harness/init.sh` en verde;
@@ -25,7 +26,10 @@ Cancelar («⚠ Lo que espera al humano», manera B); el resto de T21 de F-044
 (líneas ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
 validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
-**Siguiente:** F-054 (spec aprobada, worktree `porcentajes-f054`); después
+**Para retomar (sesión nueva):** `arnes-base` va 3 commits por delante de
+su `origin/main` (encargos pendientes; push del humano: `git -C
+../arnes-base push origin main`). Peticiones de arnés pendientes de
+decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** F-054 (spec aprobada, worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
 ## F-062 · CERRADA y DESPLEGADA (2026-10-26): aviso a `partes` pendiente
@@ -153,6 +157,13 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés es la **1.7.3**.
 ## Producción, hoy
 
+- **Desplegado el 2026-10-28: F-067**, solo el front, lanzado por el humano
+  con `infra/d.local.ps1 front`: `r20261028-1049`, revisión
+  `ca-dedicacion-front--r20261028104852`, `Healthy`, `RunningAtMaxScale` y
+  con el 100 % del tráfico (comprobado por el líder, solo lectura). Api y
+  transfer sin cambios. `infra/imagenes.json` al día en este commit.
+  Contrato sin cambios: `azure-apps/dedicacion.md` no se toca. **Pendiente
+  del humano:** nada (MANUAL hecha el 2026-10-28, «sale y funciona bien»).
 - **Desplegado el 2026-10-27: F-065**, solo el front, lanzado por el humano
   con `infra/d.local.ps1 front`: `r20261027-1637`, revisión
   `ca-dedicacion-front--r20261027163730`, `Healthy` y con el 100 % del
@@ -414,27 +425,8 @@ F-033 y, detrás, F-017, F-018…
   4. Otro clic en «B … 0»: desaparece, vuelve la tabla entera y las demás
      fichas siguen en el mismo orden.
 
-- **F-067: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Los
-  tests la cubren en node; en un navegador no se ha visto. Vale **en
-  producción** tras desplegar el front (o en local): solo mirar, marcar y
-  desmarcar; no escribe nada (la preferencia queda en el navegador). Pasos:
-  1. Ctrl+F5 y un mes con subfilas de vinculado (teléfono, caja de obra…).
-     Detrás de la última ficha del resumen sale la casilla «Recursos
-     vinculados», **marcada**, y el cuadrante es el de antes.
-  2. Desmarcarla: desaparecen todas las subfilas de vinculado; Nombre,
-     Categoría y Total de cada trabajador abarcan justo sus líneas e
-     incidencias (sin huecos ni celdas corridas).
-  3. Desmarcada, «Filtrar tipo…» con `telefono` ⇒ ningún trabajador; con
-     `persona` ⇒ todos. En «Partida», una partida elegida en una subfila de
-     vinculado y en ninguna línea de ese trabajador ⇒ ese trabajador no sale.
-     Marcarla: con `telefono` salen los del teléfono. «Limpiar».
-  4. Desmarcarla y F5: sigue desmarcada; «›» a otro mes con vinculados:
-     sigue desmarcada.
-  5. Desmarcada, «Registrar en Sigrid»: el modal enseña las filas de los
-     vinculados y su «Pisar» marcado, como siempre (F-064). **Cancelar**: el
-     transfer desplegado escribe de verdad.
-  6. Marcarla para dejarla como estaba. Si hay a mano un mes sin ninguna
-     subfila de vinculado (p. ej. uno futuro sin líneas), la casilla no sale.
+- **F-067: MANUAL HECHA por el humano el 2026-10-28** en producción
+  (front `r20261028-1049`): «sale y funciona bien».
 
 - **F-064: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Los
   tests la cubren en node; en un navegador no se ha visto. **Dos maneras:**
