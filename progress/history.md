@@ -3104,3 +3104,45 @@ tráfico. Sin cambio de contrato (`azure-apps` no se toca). MANUAL hecha
 por el humano en producción el mismo día: «sale y funciona bien». La
 automejora del reviewer (C4 bis) va a `arnes-base` como encargo pendiente
 (`de161b4`), por decisión del humano.
+
+## 2026-10-28 · F-068 · La partida del recurso vinculado se propone como la del trabajador
+
+Rama `feature/F-068-propuesta-vinculado-como-titular` · `sdd: true` · rigor
+`critico` · **APROBADO** por el reviewer en la review 1 (`0762c25`), sin
+bloqueos. Petición del humano del 2026-10-28 (caso de `MO/0601` en la 0678,
+subfilas «automática»), spec aprobada con la A en D1-D5. Enmienda de F-044
+R15-R16.
+
+**Qué cambió.** Orden nuevo para la partida de un vinculado sin elegida:
+la del titular (postventa, VAR, no CI*, como antes); el historial del
+vinculado en la obra (`previa_en_obra`, solo `CI*`, ventana del trabajador
+con el periodo); la única hoja con su cuenta; con varias, la que mejor case
+por nombre; sin ninguna con su cuenta, por nombre entre las `CI*`; en empate,
+el capítulo CI.4 (`capitulo_ci4`); si no, sin partida. Una sola regla para
+preflight, selector y lote. Transfer: `reglas_vinculados.py`, lectura
+`historial_de_vinculados` (una vez por petición y solo si hace falta),
+propuesta guardada con los métodos nuevos. Api: `METODOS_PROPUESTA_VINCULADO`
+ampliado y `descripcion`/`tipo_res` del vinculado en el contrato (opcionales;
+sin ellos, el payload es el de F-044). Front: rótulo `capitulo_ci4`. Cambian 4
+tests de F-044 (contrato viejo y texto de `sin_ci`), aceptados por el
+reviewer.
+
+**Verificado.** RED por tarea, incluido el caso de la 0678 (CI.4.13 y CI.4.1
+con «parte anterior»); `init.sh` en verde (raíz 418, api 1337, front 458,
+transfer 1737); cobertura de líneas cambiadas 100 % (126/126). Mutación
+Python 54 generados, 53 muertos y 1 equivalente (`registro_vinculados.py:202`,
+`elegida_valida` no se lee con `elegida=None`), demostrado por el reviewer en
+45 combinaciones y **aceptado por el humano** («acepto como equivalente»).
+JS manual sobre `e28dbd2ac4f827fdc870285ae39c5f2bd037bb4b`: 5/5 muertos (N2
+y N5 reproducidos por el reviewer).
+
+**Observaciones de la review, recogidas al cerrar.** O1 el visto bueno, dado.
+O2 (en rigor crítico el implementer debe traer la demostración ejecutable del
+equivalente; `implementer.md` no lo pide) al encargo RM5 de `arnes-base`
+(`e04abcf`). O3 precisada la frase de la api vieja con el transfer nuevo en
+design §8 e `INTEGRACION.md` (el preflight puede casar por categoría). O4
+`MO/0601` y sus vinculados en la MANUAL T13.
+
+**Fuera / pendiente.** Desplegar transfer → api → front; MANUAL T13 (solo
+lectura) y T14 (`azure-apps/dedicacion.md`). Las propuestas `ci_tipo` ya
+guardadas se quedan (D4-A).

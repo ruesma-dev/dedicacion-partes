@@ -1,11 +1,11 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**En curso: F-068** (la partida del recurso vinculado se propone como la del
+**F-068** (la partida del recurso vinculado se propone como la del
 trabajador: historial en la obra y, si no, por nombre, CI.4 en empate;
 transfer y api, rigor crítico, SDD; petición del humano del 2026-10-28, va
 antes de F-054), rama `feature/F-068-propuesta-vinculado-como-titular`,
-worktree `porcentajes-f068`: **spec APROBADA por el humano el 2026-10-28** (D1-D5 con la A), `in_progress`, **implementación terminada** (`36b5974`, `progress/impl_F-068.md`), **review 1 lanzada** (sección «F-068 · spec aprobada», más abajo). **F-067** (casilla «Recursos vinculados» para
+**cerrada (`done`) el 2026-10-28**: review 1 APROBADA (`0762c25`), observaciones recogidas, equivalente aceptado por el humano, `bash harness/init.sh` en verde; resumen en `progress/history.md`. **Pendiente: desplegar (transfer → api → front)**, la MANUAL T13 y T14 (`azure-apps`), en «⚠ Lo que espera al humano». Ninguna feature en curso. **F-067** (casilla «Recursos vinculados» para
 ver u ocultar sus subfilas en el cuadrante; solo front) **cerrada (`done`)
 el 2026-10-28**: review 1 APROBADA (`8423a5a`), `bash harness/init.sh` en
 verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (solo el
@@ -36,7 +36,7 @@ su `origin/main` (encargos pendientes; push del humano: `git -C
 decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** tras F-068, F-054 (spec aprobada, worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
-## F-068 · spec aprobada (2026-10-28), implementada, en review 1
+## F-068 · CERRADA (2026-10-28), pendiente de desplegar
 
 - **Spec:** `specs/F-068-propuesta-vinculado-como-titular/` (requirements
   R1-R23, design, tasks T1-T15). Enmienda de F-044 R15-R16 (anotada bajo su
@@ -61,8 +61,12 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 - **Mutación:** Python, campaña final 54/53/**1 superviviente equivalente**
   (`registro_vinculados.py:202`, `True` → `False` con `elegida=None`, el
   nº 4 que el humano aceptó en F-044); rigor crítico pide 0, así que
-  **espera el visto bueno del humano** (en «⚠ Lo que espera al humano»).
-  JS manual: 5/5 muertos. **Review 1 lanzada** el 2026-10-28.
+  **aceptado como equivalente por el humano el 2026-10-28** («acepto como
+  equivalente»). JS manual: 5/5 muertos.
+- **Review 1 APROBADA** (`0762c25`), sin bloqueos. Observaciones recogidas
+  (`3a66399`): O1 el visto bueno, dado; O2 al encargo RM5 de `arnes-base`
+  (`e04abcf`); O3 frase de la api vieja en design §8 e `INTEGRACION.md`;
+  O4 `MO/0601` en la MANUAL T13.
 
 ## F-062 · CERRADA y DESPLEGADA (2026-10-26): aviso a `partes` pendiente
 
@@ -417,10 +421,10 @@ F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
-- **F-068 · visto bueno al mutante equivalente (pendiente).** El
-  superviviente de `progress/mutacion_F-068.md` (`registro_vinculados.py:202`,
-  `True` → `False`): con `elegida=None`, `elegida_valida` no se lee. Mismo
-  argumento que el nº 4 de F-044, aceptado el 2026-10-26.
+- **F-068 · desplegar, en este orden: transfer → api → front.**
+  `infra/d.local.ps1 transfer`, luego `api`, luego `front`. Después, T13
+  (abajo, adaptable a producción solo mirando: el selector y el modal,
+  **Cancelar**, nunca «Registrar») y T14.
 
 - **F-068 · T13: MANUAL en local, SOLO LECTURA (pendiente, nadie la ha
   ejecutado).** Ni «Registrar» ni nada contra el transfer desplegado (está en

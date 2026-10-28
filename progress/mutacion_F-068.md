@@ -58,7 +58,7 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 #### Análisis (implementer)
 
 > Por qué ningún test lo caza: `partida_del_vinculado` solo lee `elegida_valida` dentro de `if elegida is not None`, y en `proponer` (el selector y la cola) `elegida` es siempre `None`: la propuesta no tiene elegida. El valor es indiferente. Es el MISMO mutante que el nº 4 de `progress/mutacion_F-044.md` (la línea solo gana el argumento `previa` de F-068).
-> Decisión: mutante equivalente (argumento no leído con `elegida=None`). Aceptado por el humano para F-044 el 2026-10-26 («1 ok»); **pendiente de su visto bueno para F-068** (rigor crítico: `supervivientes_maximos` 0).
+> Decisión: mutante equivalente (argumento no leído con `elegida=None`). Aceptado por el humano para F-044 el 2026-10-26 («1 ok»); **aceptado por el humano para F-068 el 2026-10-28** («acepto como equivalente»; rigor crítico: `supervivientes_maximos` 0).
 
 
 ## Campaña 1 (antes de esta)

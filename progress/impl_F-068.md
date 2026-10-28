@@ -168,7 +168,8 @@ muestreo, **4 workers**), informe `progress/mutacion_F-068.md`:
   `partida_del_vinculado(titular, None, True, ci, previa)`): equivalente,
   `elegida_valida` no se lee con `elegida=None`. Es el nº 4 de F-044, que el
   humano aceptó el 2026-10-26; **para F-068 necesita su visto bueno** (rigor
-  crítico, máximo 0 supervivientes).
+  crítico, máximo 0 supervivientes). *Líder: aceptado por el humano el
+  2026-10-28 («acepto como equivalente»).*
 
 **JS** (`progress/mutacion_manual_F-068.md`, sobre
 `e28dbd2ac4f827fdc870285ae39c5f2bd037bb4b`, 1 worker, 233,4 s): **5
