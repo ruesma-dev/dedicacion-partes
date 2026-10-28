@@ -1,7 +1,11 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-067** (casilla «Recursos vinculados» para
+**F-068** (la partida del recurso vinculado se propone como la del
+trabajador: historial en la obra y, si no, por nombre, CI.4 en empate;
+transfer y api, rigor crítico, SDD; petición del humano del 2026-10-28, va
+antes de F-054), rama `feature/F-068-propuesta-vinculado-como-titular`,
+**cerrada (`done`) el 2026-10-28**: review 1 APROBADA (`0762c25`), observaciones recogidas, equivalente aceptado por el humano, `bash harness/init.sh` en verde; resumen en `progress/history.md`. **Pendiente: desplegar (transfer → api → front)**, la MANUAL T13 y T14 (`azure-apps`), en «⚠ Lo que espera al humano». Ninguna feature en curso. **F-067** (casilla «Recursos vinculados» para
 ver u ocultar sus subfilas en el cuadrante; solo front) **cerrada (`done`)
 el 2026-10-28**: review 1 APROBADA (`8423a5a`), `bash harness/init.sh` en
 verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (solo el
@@ -29,8 +33,40 @@ validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 **Para retomar (sesión nueva):** `arnes-base` va 3 commits por delante de
 su `origin/main` (encargos pendientes; push del humano: `git -C
 ../arnes-base push origin main`). Peticiones de arnés pendientes de
-decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** F-054 (spec aprobada, worktree `porcentajes-f054`); después
+decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** tras F-068, F-054 (spec aprobada, worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
+
+## F-068 · CERRADA (2026-10-28), pendiente de desplegar
+
+- **Spec:** `specs/F-068-propuesta-vinculado-como-titular/` (requirements
+  R1-R23, design, tasks T1-T15). Enmienda de F-044 R15-R16 (anotada bajo su
+  R16). Toca **transfer** (regla, lectura `historial_de_vinculados`, propuesta
+  guardada con los métodos nuevos), **api** (`METODOS_PROPUESTA_VINCULADO` y
+  `descripcion`/`tipo_res` del vinculado en el contrato) y **front** (rótulo
+  `capitulo_ci4`). Evidencia, solo lectura y agregada:
+  `progress/explore_F-068.md` (solo 5 obras con la cuenta repetida; el
+  historial resuelve el 90-100 % de esos pares).
+- **Decisiones CERRADAS por el humano el 2026-10-28** («a»: la A en las
+  cinco, design §9): D1 capítulo CI.4 por número (`CI.04` = `CI.4`); D2
+  historial solo en partidas `CI*`; D3 ventana del trabajador con el periodo
+  incluido; D4 las propuestas `ci_tipo` ya guardadas se quedan; D5 con varias
+  de su cuenta y ninguna que case por nombre, decide el CI.4.
+- **MANUAL** T13 (solo lectura: selector y preflight del caso de la 0678) y
+  T14 (despliegue y `azure-apps`).
+- **Implementación (implementer, 2026-10-28):** T1-T12 hechas, un commit
+  por tarea en la rama; informe en `progress/impl_F-068.md` (RED, desvíos,
+  evidencias, mutación en `progress/mutacion_F-068.md` y
+  `progress/mutacion_manual_F-068.md`). Pendientes del humano: T13 y T14,
+  con sus comandos en «⚠ Lo que espera al humano» (entrada F-068).
+- **Mutación:** Python, campaña final 54/53/**1 superviviente equivalente**
+  (`registro_vinculados.py:202`, `True` → `False` con `elegida=None`, el
+  nº 4 que el humano aceptó en F-044); rigor crítico pide 0, así que
+  **aceptado como equivalente por el humano el 2026-10-28** («acepto como
+  equivalente»). JS manual: 5/5 muertos.
+- **Review 1 APROBADA** (`0762c25`), sin bloqueos. Observaciones recogidas
+  (`3a66399`): O1 el visto bueno, dado; O2 al encargo RM5 de `arnes-base`
+  (`e04abcf`); O3 frase de la api vieja en design §8 e `INTEGRACION.md`;
+  O4 `MO/0601` en la MANUAL T13.
 
 ## F-062 · CERRADA y DESPLEGADA (2026-10-26): aviso a `partes` pendiente
 
@@ -384,6 +420,50 @@ que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-0
 F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
+
+- **F-068 · desplegar, en este orden: transfer → api → front.**
+  `infra/d.local.ps1 transfer`, luego `api`, luego `front`. Después, T13
+  (abajo, adaptable a producción solo mirando: el selector y el modal,
+  **Cancelar**, nunca «Registrar») y T14.
+
+- **F-068 · T13: MANUAL en local, SOLO LECTURA (pendiente, nadie la ha
+  ejecutado).** Ni «Registrar» ni nada contra el transfer desplegado (está en
+  modo REAL). Con el transfer, la api y el front **de la rama**, desde el
+  worktree `porcentajes-f068` (cada servicio con su `.env`, que pone el
+  humano: los agentes no lo copian):
+  `cd services/dedicacion-transfer && .venv/Scripts/python main.py` (8006),
+  `cd services/dedicacion-api && .venv/Scripts/python main.py` (8090) y
+  `cd services/dedicacion-front && .venv/Scripts/python main.py` (8080).
+  Antes de nada, y PARAR si falla cualquiera: (a)
+  `curl http://127.0.0.1:8006/health` ⇒ `"modo_pruebas":true`,
+  `"obra_pruebas":"0404"`, `"database":"ruesma"`; (b) desde
+  `services/dedicacion-api`:
+  `.venv/Scripts/python -c "from config.settings import get_settings as g; print(g().transfer_base_url)"`
+  ⇒ `http://127.0.0.1:8006`; (c) desde `services/dedicacion-transfer`:
+  `.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`
+  ⇒ `True 0404`. Pasos (periodo **2026-10**, el trabajador del caso de la
+  **0678**, `MO/0601` (Ignacio Rafael), con sus vinculados de teléfono
+  `TF0243`, combustible `CO0116` y caja `CA0147`):
+  1. En el cuadrante, casilla «Recursos vinculados» marcada; en cada subfila
+     del trabajador en la 0678, botón de la columna Partida (selector). Lo
+     propuesto es `CI.4.13` (teléfono), `CI.4.1` (combustible) y `CI.4.15`
+     (caja), con el rótulo «parte anterior: parte … · MM/AAAA · obra 0678».
+     Ojo: el selector **guarda** esa propuesta en la BBDD local de la app
+     (`asignacion_vinculado`), no en Sigrid. Cerrar sin elegir.
+  2. «Registrar en Sigrid» de ese trabajador: el modal (el preflight) da a
+     esas subfilas las mismas partidas y el mismo rótulo, y dice «MODO
+     PRUEBAS: se escribirá en la obra 0404». **Cancelar**, nunca
+     «Registrar».
+  3. Si alguna subfila sale con otra partida o «sin partida», anotar cuál,
+     su método y su rótulo, y avisar al líder antes de cerrar F-068.
+
+- **F-068 · T14: al desplegar F-068 (orden transfer → api → front).** Mirar
+  si `azure-apps/dedicacion.md` lista las lecturas del transfer contra
+  `sigrid-api`; si las lista, añadir `historial_de_vinculados` (historial
+  de partidas de los vinculados en la obra de origen, `hmores` + `hmo` +
+  `con` + `obrparpar`, una vez por petición y solo si algún vinculado llega
+  a ese paso), con commit en ese repositorio. Con D4-A no hay limpieza de
+  propuestas guardadas.
 
 - **F-063: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Solo
   mirar la pantalla y pulsar fichas: no escribe nada (vale en producción tras

@@ -1014,7 +1014,8 @@ def _a_subfila(v: RecursoVinculadoORM,
                f: AsignacionVinculadoORM | None) -> SubfilaVinculado:
     """La subfila del vinculado `v` con lo que guarda su fila `f` (si hay)."""
     base = SubfilaVinculado(vinculado_ide=v.ide, tipo=v.tipo,
-                            tipo_res=v.tipo_res, cod=v.cod)
+                            tipo_res=v.tipo_res, cod=v.cod,
+                            descripcion=v.descripcion)
     if f is None:
         return base
     return dataclasses.replace(

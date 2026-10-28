@@ -87,6 +87,7 @@ y, si el titular va a postventa, VAR o `CP*`, la del titular. Glosario:
   cuya cuenta tiene la subcuenta de la cuenta del vinculado (su «CI»).
 - **R16.** `[D4b]` Si esa hoja no existe o hay varias, `#regla-sin-partida`
   por línea (nunca la primera); se elige en la subfila o en el modal.
+  *Enmienda F-068 (2026-10-28) de R15-R16: antes, historial en la obra; varias ⇒ nombre y CI.4.*
 - **R17.** `[D4b]` Si el titular va a postventa, a una entrada VAR o a una
   partida que no es `CI*` (`CP*`, `CD*`), el vinculado va a la **partida del
   titular**, salvo elegida válida.

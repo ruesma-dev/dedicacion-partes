@@ -160,6 +160,10 @@ class ClienteFalso(EdicionesFalsas):
     def historial_partidas(self, resides, desde, hasta):
         return []
 
+    # F-068 (R11): ni el de los vinculados.
+    def historial_de_vinculados(self, resides, obra_ide, desde, hasta):
+        return []
+
     def siguiente_cod_pt(self, ano, empresa=None):
         return "PT26/09999"
 

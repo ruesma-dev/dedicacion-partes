@@ -180,11 +180,21 @@ def peticion_de_subfilas(linea: Linea, subfilas: list[SubfilaVinculado]
                          ) -> dict[str, Any]:
     """Lo que una línea del transfer gana para proponer sus subfilas (R9,
     contrato de T5): la elegida del titular (`paride`, si la tiene) y los
-    vinculados. Lo usan el selector y la cola del mes."""
+    vinculados. Lo usan el selector y la cola del mes. F-068 (R18): con su
+    `tipo_res` y su `descripcion`, la categoría y el nombre con los que el
+    transfer casa por nombre; lo que no tiene valor no viaja."""
     extra: dict[str, Any] = {}
     if linea.partida_ide is not None:
         extra["paride"] = linea.partida_ide
-    extra["vinculados"] = [
-        {"recurso_ide": v.vinculado_ide, "tipo": v.tipo, "categoria": None,
-         "cod": v.cod} for v in subfilas]
+    extra["vinculados"] = [_vinculado_a_proponer(v) for v in subfilas]
     return extra
+
+
+def _vinculado_a_proponer(v: SubfilaVinculado) -> dict[str, Any]:
+    out: dict[str, Any] = {"recurso_ide": v.vinculado_ide, "tipo": v.tipo,
+                           "categoria": None, "cod": v.cod}
+    for clave, valor in (("tipo_res", v.tipo_res),
+                         ("descripcion", v.descripcion)):
+        if valor is not None:
+            out[clave] = valor
+    return out

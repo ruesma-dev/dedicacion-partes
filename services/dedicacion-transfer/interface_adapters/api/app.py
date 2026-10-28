@@ -54,12 +54,14 @@ class ObraIn(BaseModel):
 
 class VinculadoIn(BaseModel):
     """F-044 (R10, design §8): un recurso vinculado de la línea; solo el
-    recurso es obligatorio (lo demás llega al pipeline y decide allí)."""
+    recurso es obligatorio (lo demás llega al pipeline y decide allí).
+    F-068 (R18): `descripcion`, opcional."""
     recurso_ide: int
     tipo: str | None = None
     tipo_res: str | None = None
     cod: str | None = None
     categoria: str | None = None
+    descripcion: str | None = None
     paride: int | None = None
     partida_cod: str | None = None
     propuesta_paride: int | None = None
@@ -176,12 +178,25 @@ class UniversoVarIn(BaseModel):
 
 class VinculadoPropuestaIn(BaseModel):
     """F-044 (R9): un recurso vinculado de la línea cuya partida se
-    propone (su subfila del cuadrante)."""
+    propone (su subfila del cuadrante). F-068 (R18): `tipo_res` y
+    `descripcion`, opcionales: la categoría y el nombre con los que se casa
+    por nombre (R5-R6); sin ellos, la entrada de F-044."""
 
     recurso_ide: int
     tipo: str | None = None
     categoria: str | None = None
     cod: str | None = None
+    tipo_res: str | None = None
+    descripcion: str | None = None
+
+    def para_pipeline(self) -> dict:
+        """Lo de F-044 y, de `tipo_res` y `descripcion`, solo lo que llega
+        (sin ellos, la entrada de hoy)."""
+        d = self.model_dump(exclude={"tipo_res", "descripcion"})
+        for k in ("tipo_res", "descripcion"):
+            if getattr(self, k) is not None:
+                d[k] = getattr(self, k)
+        return d
 
 
 class LineaPropuestaIn(BaseModel):
@@ -204,7 +219,7 @@ class LineaPropuestaIn(BaseModel):
         if self.paride:
             d["paride"] = self.paride
         if self.vinculados:
-            d["vinculados"] = [v.model_dump() for v in self.vinculados]
+            d["vinculados"] = [v.para_pipeline() for v in self.vinculados]
         return d
 
 

@@ -225,6 +225,8 @@ function rotuloOrigen(metodo, origen) {
     // F-044 (R9): las de una subfila de vinculado.
     ci_tipo: "CI del tipo",
     titular: "la del trabajador",
+    // F-068 (R20): la del capítulo CI.4 cuando el nombre empata.
+    capitulo_ci4: "capítulo CI.4 en empate",
   };
   if (!metodo) return "";
   const texto = textos[metodo] || metodo;

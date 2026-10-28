@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **64 features**, 24 abiertas, 40 terminadas.
+Resumen: **65 features**, 24 abiertas, 41 terminadas.
 
 ## Trabajo abierto
 
@@ -53,6 +53,7 @@ Resumen: **64 features**, 24 abiertas, 40 terminadas.
 | F-064 | El pisado de los recursos vinculados, confirmado por defecto en el modal | 1 | estandar |
 | F-065 | La ficha de incidencia activa a 0 se queda en su sitio por letra | 1 | estandar |
 | F-067 | Casilla para ver u ocultar los recursos vinculados en el cuadrante | 1 | estandar |
+| F-068 | La partida del recurso vinculado se propone como la del trabajador: historial en la obra y, si no, por nombre | 1 | critico |
 | F-002 | Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones | 2 | critico |
 | F-022 | El transfer busca cada obra por código y empresa | 2 | critico |
 | F-023 | Sync de maestros: todas las empresas y activo según el estado del recurso | 2 | critico |
@@ -314,6 +315,12 @@ Petición del humano del 2026-10-27 («si, hazlo de la ficha activa»), a partir
 estado **terminada** · prioridad 1 · rigor `estandar` · SDD no · rama `feature/F-067-ver-vinculados`
 
 Petición del humano del 2026-10-27 («hay que añadir un check pequeño que me permita activar o desactivar la visualización de recursos derivados (Caja de obra etc...)»); propuesta aprobada el mismo día («si, esta bien»). Una casilla pequeña «Recursos vinculados» junto a las fichas del resumen (`renderCabecera` de `app.js`) enseña u oculta en el CUADRANTE las subfilas de vinculados de F-044 (teléfono, caja de obra, gasoil, vehículo…) bajo cada línea. Decisiones del humano: (1) por defecto MARCADA (se ven, como hoy) y la preferencia se recuerda en el navegador con las de la tabla (`cargarPrefsTabla`/`guardarPrefsTabla`, localStorage); (2) solo el cuadrante: el modal de registro sigue enseñando siempre los vinculados y su pisado (F-064), porque es lo que se escribe en Sigrid; (3) desmarcada, los filtros de columna «Tipo recurso» y «Partida» no miran los vinculados (no sale un trabajador por algo que no se ve); (4) va antes de F-054. La casilla solo sale si el mes tiene algún vinculado. Solo front (`app.js` y sus tests): es pantalla y no decide nada de lo que se registra. Fuera: ocultar por tipo de vinculado. CERRADA (done) el 2026-10-28: review 1 APROBADA (8423a5a), init.sh en verde; DESPLEGADA el 2026-10-28 (solo el front, r20261028-1049); MANUAL hecha por el humano en producción («sale y funciona bien»).
+
+### F-068 · La partida del recurso vinculado se propone como la del trabajador: historial en la obra y, si no, por nombre
+
+estado **terminada** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-068-propuesta-vinculado-como-titular`
+
+Petición del humano del 2026-10-28. Caso: Ignacio Rafael (MO/0601) va al 100 % a la 0678 en CI.1.2 y sus subfilas de vinculado salen «automática»: en la 0678 cada uno tiene DOS hojas CI con su cuenta (TF0243 CICO13: CI.0.17 y CI.4.13; CO0116 CICO01: CI.0.07 y CI.4.1; CA0147 CICO15: CI.0.15 y CI.4.15, con el mismo nombre por pareja), y F-044 R16 (D4b) no propone con varias; su historial en la obra es claro (CI.4.13, CI.4.1 y CI.4.15 de ene-2025 a sep-2026, salvo la caja feb-abr 2026 en CI.4.1). Lectura de solo lectura del líder del 2026-10-28. Decisión del humano («el criterio debe ser como el principal…»; «ok, preferir CI.4 en empate. antes de f54»), ENMIENDA de F-044 R15-R16 (D4b): orden para un vinculado sin elegida: (1) elegida (como hoy); (2) la del titular en postventa, VAR o partida no CI* (R17, como hoy); (3) HISTORIAL en la obra, como el `parte_anterior` del trabajador (F-055): el último mes anterior con líneas de ESE recurso en ESA obra, gana la partida con más `can` (la más usada), hoja activa; empate ⇒ no propone ese paso; (4) POR NOMBRE: entre las hojas activas con la cuenta del vinculado, una ⇒ esa; varias ⇒ la que más se parezca al nombre del recurso/tipo (el casador de textos del trabajador); empate ⇒ preferir el capítulo CI.4; ninguna con su cuenta ⇒ por nombre entre las CI de la obra; (5) nada o empate ⇒ sin partida (como hoy), nunca la primera. Transfer (regla y una lectura más del historial de los vinculados en la obra) y api (guardar los métodos nuevos de propuesta de vinculado; hoy solo `ci_tipo` y `titular`); front, lo que diga la spec. Fuera: el «último parte en otra obra» del trabajador. Va ANTES de F-054. CERRADA (done) el 2026-10-28: review 1 APROBADA (0762c25) con rigor crítico, init.sh en verde; mutación Python 54/53 con 1 equivalente aceptado por el humano («acepto como equivalente»), JS manual 5/5. Pendiente: desplegar (transfer → api → front), MANUAL T13 y T14 (azure-apps).
 
 ### F-002 · Fijar las reglas P4 y P5: postventa y conflicto tienen dos versiones
 

@@ -24,12 +24,19 @@ se decide su LÍNEA y su PARTIDA, sin leer nada:
     `CI*`, la del titular; si no, la CI del tipo, que llega como función
     para leer las cuentas solo si hace falta (R27).
 
+F-068 (enmienda de R15-R16; ARCHITECTURE.md#regla-vinculado): tras la
+elegida y el titular, el HISTORIAL del vinculado en la obra
+(`partida_por_historial`, la función del «parte anterior» del trabajador);
+si no, `partida_por_cuenta_o_nombre`: una hoja con su cuenta, el casador
+del trabajador entre varias (o entre las `CI*` si ninguna) y, en empate, la
+única del capítulo CI.4. Si nada decide, sin partida, nunca la primera.
+
 Las lecturas (presupuesto, cuentas, validez de la elegida) son del
 pipeline; este módulo no importa ningún cliente.
 """
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
 from domain.models.registro_models import (
@@ -40,8 +47,15 @@ from domain.models.registro_models import (
     LineaSigrid,
 )
 
+from application.services import text_match as tm
 from application.services.cuenta_analitica import subcuenta
 from application.services.partida_catalog import PartidaNodo
+from application.services.partida_matcher import match_partida
+from application.services.propuesta_partida import (
+    LineaHistorial,
+    _maximo_unico,
+    previa_en_obra,
+)
 from application.services.reglas_porcentajes import (
     PREFIJO_CLAVE_SIN_PARTIDA,
     es_de_la_hora,
@@ -51,10 +65,22 @@ from application.services.reglas_porcentajes import (
 METODO_MANUAL = "manual"        # la elegida en su subfila
 METODO_TITULAR = "titular"      # la de su titular (R17)
 METODO_CI_TIPO = "ci_tipo"      # la CI de su tipo (R15)
+#: F-068 (R2): la del historial del vinculado en la obra, como el «parte
+#: anterior» del trabajador; (R7): la única del capítulo CI.4 en un empate.
+METODO_PARTE_ANTERIOR = "parte_anterior"
+METODO_CAPITULO_CI4 = "capitulo_ci4"
+#: F-068 (R16): los métodos de una propuesta PROPIA del vinculado (la del
+#: historial, la de su cuenta, las del casador y la del CI.4): la guardada
+#: que vale se escribe tal cual. La de `titular` se recalcula.
+METODOS_PROPUESTA_PROPIA = (METODO_PARTE_ANTERIOR, METODO_CI_TIPO,
+                            "auto_nombre", "auto_categoria",
+                            METODO_CAPITULO_CI4)
 
 #: Sin partida (R16): ninguna hoja activa con la subcuenta, o varias.
 MOTIVO_SIN_CI = "sin_ci"
 MOTIVO_VARIAS_CI = "varias_ci"
+#: F-068 (R9): sin su cuenta, varias casan por nombre y el CI.4 no desempata.
+MOTIVO_EMPATE_NOMBRE = "empate_nombre"
 #: R15: la elegida que no es hoja activa del presupuesto (como F-050).
 MOTIVO_ELEGIDA_NO_VALIDA = (
     "la partida {cod} elegida para el recurso vinculado no es una partida "
@@ -87,10 +113,12 @@ _METODO_VAR = "var"
 
 @dataclass(frozen=True)
 class PartidaElegida:
-    """Una partida concreta: la elegida en la subfila o la CI del tipo."""
+    """Una partida concreta: la elegida en la subfila, la CI del tipo o,
+    F-068, la del historial (con su `origen`) o la del nombre."""
     paride: int
     cod: str | None = None
     res: str | None = None
+    origen: str | None = None
 
 
 @dataclass(frozen=True)
@@ -117,6 +145,7 @@ class PartidaVinculado:
     motivo: str | None = None
     sin_partida: bool = False
     omitir: bool = False
+    origen: str | None = None
 
 
 def _es_ci(cod: str | None) -> bool:
@@ -131,6 +160,58 @@ def va_con_el_titular(titular: PartidaTitular) -> bool:
     return bool(titular.paride) and not _es_ci(titular.cod)
 
 
+def hojas_con_subcuenta(hojas: dict[int, PartidaNodo],
+                        cuentas: dict[int, str | None],
+                        sub: str | None) -> list[PartidaNodo]:
+    """F-068 (R4-R6): las hojas activas de `hojas` (el presupuesto de la
+    obra) cuya cuenta (`cuentas`, por `ide` de partida) tiene la subcuenta
+    `sub` (comparada entera, sin espacios ni mayúsculas), por `ide`. Sin
+    `sub`, ninguna."""
+    buscada = (sub or "").strip().upper()
+    if not buscada:
+        return []
+    return [
+        n for ide, cod in sorted(cuentas.items())
+        for n in [hojas.get(ide)]
+        if n is not None and n.es_hoja and n.activa
+        and (subcuenta(cod) or "").upper() == buscada]
+
+
+def es_capitulo_ci4(cod: str | None) -> bool:
+    """F-068 (R8, D1): el código normalizado (mayúsculas, sin espacios ni
+    guiones), partido por puntos, tiene `CI` como primer trozo y como
+    segundo un número igual a 4 (`CI.4.13`, `CI.04.13`; no `CI0.04.05`)."""
+    trozos = tm.normalize_code(cod).split(".")
+    return (len(trozos) > 1 and trozos[0] == "CI"
+            and trozos[1].isascii() and trozos[1].isdigit()
+            and int(trozos[1]) == 4)
+
+
+def puntuar(candidatas: list[PartidaNodo], tipo_res: str | None,
+            descripcion: str | None, *, solo_casadas: bool
+            ) -> dict[int, tuple[float, str | None]]:
+    """F-068 (R5-R6): la puntuación del casador del trabajador
+    (`match_partida`, categoría = `tipo_res`, nombre = `descripcion`) de
+    cada candidata, UNA A UNA (el casador elige «la primera» en un empate y
+    aquí el empate se tiene que ver): `{ide: (puntuación, método)}`. La que
+    no casa, `(0.0, None)`, o fuera con `solo_casadas`."""
+    out: dict[int, tuple[float, str | None]] = {}
+    for n in candidatas:
+        m = match_partida(tipo_res, descripcion, [n])
+        if m is not None:
+            out[int(n.ide)] = (m.score, m.metodo)
+        elif not solo_casadas:
+            out[int(n.ide)] = (0.0, None)
+    return out
+
+
+def desempate_ci4(empatadas: list[PartidaNodo]) -> PartidaNodo | None:
+    """F-068 (R7, D1): la ÚNICA empatada del capítulo CI.4; con ninguna o
+    con varias, None (nunca «la primera»)."""
+    del_ci4 = [n for n in empatadas if es_capitulo_ci4(n.cod)]
+    return del_ci4[0] if len(del_ci4) == 1 else None
+
+
 def partida_ci_del_tipo(hojas: dict[int, PartidaNodo],
                         cuentas: dict[int, str | None],
                         sub: str | None) -> tuple[PartidaElegida | None, str]:
@@ -138,21 +219,72 @@ def partida_ci_del_tipo(hojas: dict[int, PartidaNodo],
     cuya cuenta (`cuentas`, por `ide` de partida) tiene la subcuenta `sub`
     (comparada entera, sin espacios ni mayúsculas). Devuelve la partida y
     `ci_tipo`, o None y el motivo: `sin_ci` (ninguna) o `varias_ci`."""
-    buscada = (sub or "").strip().upper()
-    if not buscada:
-        return None, MOTIVO_SIN_CI
-    candidatas = [
-        n for ide, cod in sorted(cuentas.items())
-        for n in [hojas.get(ide)]
-        if n is not None and n.es_hoja and n.activa
-        and (subcuenta(cod) or "").upper() == buscada]
+    candidatas = hojas_con_subcuenta(hojas, cuentas, sub)
     if not candidatas:
         return None, MOTIVO_SIN_CI
     if len(candidatas) > 1:
         return None, MOTIVO_VARIAS_CI
-    n = candidatas[0]
-    return PartidaElegida(paride=int(n.ide), cod=n.cod, res=n.res), \
-        METODO_CI_TIPO
+    return _elegida(candidatas[0]), METODO_CI_TIPO
+
+
+def _elegida(n: PartidaNodo) -> PartidaElegida:
+    return PartidaElegida(paride=int(n.ide), cod=n.cod, res=n.res)
+
+
+def partida_por_cuenta_o_nombre(
+    hojas: dict[int, PartidaNodo], cuentas: dict[int, str | None],
+    sub: str | None, tipo_res: str | None, descripcion: str | None,
+) -> tuple[PartidaElegida | None, str]:
+    """F-068 (R4-R9): la partida por su cuenta y su nombre, sin historial.
+    UNA hoja activa con su cuenta ⇒ esa, `ci_tipo` (R4); VARIAS ⇒ las
+    puntúa el casador, la que no casa a 0 (R5); NINGUNA ⇒ el casador entre
+    las hojas activas `CI*`, solo las que casan (R6). Gana el máximo único
+    con el método del casador; en empate, la única del capítulo CI.4,
+    `capitulo_ci4` (R7). Si no, None y el motivo: `varias_ci`, `sin_ci` (no
+    casa ninguna) o `empate_nombre` (R9). Nunca «la primera»."""
+    con_cuenta = hojas_con_subcuenta(hojas, cuentas, sub)
+    if len(con_cuenta) == 1:
+        return _elegida(con_cuenta[0]), METODO_CI_TIPO
+    if con_cuenta:
+        candidatas, motivo = con_cuenta, MOTIVO_VARIAS_CI
+    else:
+        candidatas = [n for n in hojas.values()
+                      if n.es_hoja and n.activa and _es_ci(n.cod)]
+        motivo = MOTIVO_EMPATE_NOMBRE
+    puntos = puntuar(candidatas, tipo_res, descripcion,
+                     solo_casadas=not con_cuenta)
+    if not puntos:
+        return None, MOTIVO_SIN_CI
+    por_ide = {int(n.ide): n for n in candidatas}
+    sumas = {ide: score for ide, (score, _) in puntos.items()}
+    ganadora = _maximo_unico(sumas)
+    if ganadora is not None:
+        return _elegida(por_ide[ganadora]), puntos[ganadora][1]
+    mejor = max(round(v, 6) for v in sumas.values())
+    n = desempate_ci4([por_ide[ide] for ide, v in sumas.items()
+                       if round(v, 6) == mejor])
+    if n is not None:
+        return _elegida(n), METODO_CAPITULO_CI4
+    return None, motivo
+
+
+def partida_por_historial(historial: Iterable[LineaHistorial],
+                          recurso: int, obra_ide: int,
+                          hojas: dict[int, PartidaNodo]
+                          ) -> PartidaElegida | None:
+    """F-068 (R2, R3, D2): el «parte anterior» del vinculado en la obra con
+    la MISMA función que el del trabajador (`previa_en_obra`), solo con sus
+    líneas en partidas `CI*` (por código, como R17 de F-044) y entre las
+    hojas activas de `hojas` (el presupuesto de la obra): la del último mes
+    con más `can` sumado, con su `origen`. Empate o ganadora que no es hoja
+    activa: None (este paso no propone)."""
+    p = previa_en_obra(
+        [l for l in historial if _es_ci(l.par_cod)], recurso, obra_ide,
+        {i: n for i, n in hojas.items() if n.es_hoja and n.activa})
+    if p is None:
+        return None
+    return PartidaElegida(paride=int(p.paride), cod=p.cod, res=p.res,
+                          origen=p.origen)
 
 
 def partida_del_vinculado(
@@ -160,10 +292,14 @@ def partida_del_vinculado(
     elegida: PartidaElegida | None,
     elegida_valida: bool,
     ci: Callable[[], tuple[PartidaElegida | None, str]],
+    historial: Callable[[], PartidaElegida | None] | None = None,
 ) -> PartidaVinculado:
-    """R15-R17, en este orden: la elegida (si no vale, se omite); la del
-    titular en postventa, VAR o partida no `CI*`; la CI del tipo (`ci`, que
-    solo se llama aquí); sin ella, sin partida con su motivo."""
+    """R15-R17 y F-068 (R1), en este orden: la elegida (si no vale, se
+    omite); la del titular en postventa, VAR o partida no `CI*`; la del
+    historial (`historial`, `parte_anterior`; sin él, este paso no existe);
+    la de la cuenta y el nombre (`ci`, que da la partida y su método o None
+    y el motivo); sin ninguna, sin partida con su motivo. Los pasos solo se
+    llaman aquí y si se llega a ellos."""
     if elegida is not None:
         if not elegida_valida:
             return PartidaVinculado(
@@ -176,11 +312,17 @@ def partida_del_vinculado(
         return PartidaVinculado(paride=int(titular.paride or 0),
                                 cod=titular.cod, res=titular.res,
                                 metodo=METODO_TITULAR)
-    partida, motivo = ci()
+    previa = historial() if historial is not None else None
+    if previa is not None:
+        return PartidaVinculado(paride=previa.paride, cod=previa.cod,
+                                res=previa.res, metodo=METODO_PARTE_ANTERIOR,
+                                origen=previa.origen)
+    partida, metodo = ci()
     if partida is None:
-        return PartidaVinculado(motivo=motivo, sin_partida=True)
+        return PartidaVinculado(motivo=metodo, sin_partida=True)
     return PartidaVinculado(paride=partida.paride, cod=partida.cod,
-                            res=partida.res, metodo=METODO_CI_TIPO)
+                            res=partida.res, metodo=metodo,
+                            origen=partida.origen)
 
 
 # ------------------------------------------------------------------ #
@@ -251,11 +393,17 @@ def decidir_vinculados(titular: AccionLinea, linea: LineaEntrada,
 #  Avisos y claves del vinculado (R16, R23, R26)
 # ------------------------------------------------------------------ #
 
-#: R16: por qué no hay CI del tipo, en palabras.
+#: R16: por qué no hay CI del tipo, en palabras; F-068 (R9): con el orden
+#: nuevo, también qué no decidió.
 _POR_QUE_SIN_CI = {
-    MOTIVO_SIN_CI: "ninguna partida del presupuesto tiene la cuenta de su tipo",
+    MOTIVO_SIN_CI: "ninguna partida del presupuesto tiene la cuenta de su "
+                   "tipo y ni el historial ni el nombre deciden",
     MOTIVO_VARIAS_CI: "varias partidas del presupuesto tienen la cuenta de "
-                      "su tipo",
+                      "su tipo y ni el historial, ni el nombre ni el "
+                      "capítulo CI.4 deciden",
+    MOTIVO_EMPATE_NOMBRE: "ninguna partida del presupuesto tiene la cuenta "
+                          "de su tipo y varias casan por nombre: ni el "
+                          "historial ni el capítulo CI.4 deciden",
 }
 #: R16: aviso de la acción (lo pinta el modal) y motivo de la omisión si
 #: nadie confirma; se formatean con tipo, cod y por_que. Caben en los 300

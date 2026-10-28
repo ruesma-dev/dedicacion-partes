@@ -106,7 +106,11 @@ def es_metodo_de_propuesta(metodo: str | None) -> bool:
 
 #: Métodos de la PROPUESTA de una subfila de vinculado (F-044, R9): la CI de
 #: su tipo o la partida del titular. `manual` es una elegida: no se guarda.
-METODOS_PROPUESTA_VINCULADO = ("ci_tipo", "titular")
+#: F-068 (R17): y los métodos propios del orden nuevo (historial, nombre y
+#: capítulo CI.4); `manual` (la elegida) no es una propuesta.
+METODOS_PROPUESTA_VINCULADO = ("ci_tipo", "titular", "parte_anterior",
+                               "auto_nombre", "auto_categoria",
+                               "capitulo_ci4")
 
 
 def es_metodo_de_propuesta_vinculado(metodo: str | None) -> bool:
@@ -119,10 +123,13 @@ def _vinculado(v: Any, es_var: bool) -> dict[str, Any]:
     y código, la elegida de su subfila o, sin ella, la propuesta guardada
     (en una entrada VAR, ninguna: va con la del titular) y el `hmores.ide`
     del último registro (R30). Sin elegida ni propuesta, el transfer
-    propone."""
+    propone. F-068 (R18): su `descripcion`, si la tiene (el nombre con el
+    que el transfer casa por nombre)."""
     out: dict[str, Any] = {"recurso_ide": int(v.vinculado_ide),
                            "tipo": v.tipo, "tipo_res": v.tipo_res,
                            "cod": v.cod}
+    if v.descripcion is not None:
+        out["descripcion"] = v.descripcion
     if es_var:
         pass
     elif v.partida_ide:
