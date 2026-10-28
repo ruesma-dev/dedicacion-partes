@@ -184,8 +184,8 @@ ficheros de F-068 son los mismos que en `dev`; los 6 de los tests nuevos se
 corrigieron en `ca11bc7`). Detalle: raíz `418 passed, 1 skipped`; api
 `1337 passed`; front `458 passed` (con `node`, sin saltos); transfer `1737
 passed`; `PUERTA COBERTURA: 100.0% de 126 líneas cambiadas cubiertas`;
-`PUERTA TAMAÑO` dentro de los topes. Repetido tras escribir este informe:
-ver «Evidencias».
+`PUERTA TAMAÑO` dentro de los topes. Repetido sobre `2a046e5` (con este
+informe): igual, exit 0, 0 `[KO]`, mismos recuentos, `impl 216/220`.
 
 ## Pendiente (MANUAL, del humano)
 
