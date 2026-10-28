@@ -5,11 +5,13 @@
 
 Resumen: **65 features**, 25 abiertas, 40 terminadas.
 
+En curso: **F-068**.
+
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-068 | La partida del recurso vinculado se propone como la del trabajador: historial en la obra y, si no, por nombre | 1 | spec lista | critico | `feature/F-068-propuesta-vinculado-como-titular` |
+| F-068 | La partida del recurso vinculado se propone como la del trabajador: historial en la obra y, si no, por nombre | 1 | en curso | critico | `feature/F-068-propuesta-vinculado-como-titular` |
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
@@ -84,7 +86,7 @@ Resumen: **65 features**, 25 abiertas, 40 terminadas.
 
 ### F-068 · La partida del recurso vinculado se propone como la del trabajador: historial en la obra y, si no, por nombre
 
-estado **spec lista** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-068-propuesta-vinculado-como-titular`
+estado **en curso** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-068-propuesta-vinculado-como-titular`
 
 Petición del humano del 2026-10-28. Caso: Ignacio Rafael (MO/0601) va al 100 % a la 0678 en CI.1.2 y sus subfilas de vinculado salen «automática»: en la 0678 cada uno tiene DOS hojas CI con su cuenta (TF0243 CICO13: CI.0.17 y CI.4.13; CO0116 CICO01: CI.0.07 y CI.4.1; CA0147 CICO15: CI.0.15 y CI.4.15, con el mismo nombre por pareja), y F-044 R16 (D4b) no propone con varias; su historial en la obra es claro (CI.4.13, CI.4.1 y CI.4.15 de ene-2025 a sep-2026, salvo la caja feb-abr 2026 en CI.4.1). Lectura de solo lectura del líder del 2026-10-28. Decisión del humano («el criterio debe ser como el principal…»; «ok, preferir CI.4 en empate. antes de f54»), ENMIENDA de F-044 R15-R16 (D4b): orden para un vinculado sin elegida: (1) elegida (como hoy); (2) la del titular en postventa, VAR o partida no CI* (R17, como hoy); (3) HISTORIAL en la obra, como el `parte_anterior` del trabajador (F-055): el último mes anterior con líneas de ESE recurso en ESA obra, gana la partida con más `can` (la más usada), hoja activa; empate ⇒ no propone ese paso; (4) POR NOMBRE: entre las hojas activas con la cuenta del vinculado, una ⇒ esa; varias ⇒ la que más se parezca al nombre del recurso/tipo (el casador de textos del trabajador); empate ⇒ preferir el capítulo CI.4; ninguna con su cuenta ⇒ por nombre entre las CI de la obra; (5) nada o empate ⇒ sin partida (como hoy), nunca la primera. Transfer (regla y una lectura más del historial de los vinculados en la obra) y api (guardar los métodos nuevos de propuesta de vinculado; hoy solo `ci_tipo` y `titular`); front, lo que diga la spec. Fuera: el «último parte en otra obra» del trabajador. Va ANTES de F-054.
 

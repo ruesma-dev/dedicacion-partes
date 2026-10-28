@@ -10,7 +10,7 @@ literal: «el criterio debe ser como el principal…»; «ok, preferir CI.4 en
 empate. antes de f54». Toca **transfer** (regla, una lectura más), **api**
 (guarda los métodos nuevos y manda la descripción del vinculado) y **front**
 (un rótulo); design §1. Evidencia de Sigrid: `progress/explore_F-068.md`.
-Decisiones abiertas `[Dn]`: design §9. Fuera: el «último parte en otra obra»
+Decisiones `[Dn]`: design §9, cerradas por el humano el 2026-10-28 con la A en las cinco («a»). Fuera: el «último parte en otra obra»
 del trabajador (paso b de `#regla-partida`), F-054, la regla del titular y
 todo lo que no es la partida del vinculado (hora, importe, cuenta, parte,
 identidad, capacidad: F-044 tal cual).
@@ -94,7 +94,7 @@ del trabajador, `partida_matcher.match_partida` (copia cerrada de `partes`).
   `tipo_res` también al proponer. El transfer los acepta opcionales: sin
   ellos, R5-R6 casan con lo que llegue (sin texto, nada casa).
 - **R19.** `[D4]` Las propuestas de subfila guardadas antes de F-068 se
-  tratan según D4 (recomendado: se quedan; R16 las escribe).
+  tratan según D4: se quedan; R16 las escribe.
 
 ## 4. Front, documentación y verificación
 

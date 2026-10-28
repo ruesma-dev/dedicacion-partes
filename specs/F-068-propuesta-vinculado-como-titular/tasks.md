@@ -2,7 +2,7 @@
 # F-068 · Tareas
 
 Orden de despliegue: transfer → api → front (design §8). Tests sin red ni BBDD.
-Antes de T1: las decisiones D1-D5 del design §9, cerradas por el humano.
+Las decisiones D1-D5 del design §9 están cerradas por el humano (2026-10-28, la A en las cinco).
 
 - [ ] T1: transfer, contrato de entrada: `VinculadoEntrada.descripcion`, `VinculadoIn.descripcion`, `VinculadoPropuestaIn.tipo_res`/`.descripcion` (opcionales; sin ellos, la entrada de hoy) (R18)  |  Verificación: `test_f068_pipeline.py::test_f068_r18_*` y `pytest services/dedicacion-transfer/tests/test_f044_*`
 - [ ] T2: transfer, piezas puras: `es_capitulo_ci4`, `hojas_con_subcuenta` (y `partida_ci_del_tipo` sobre ella), `puntuar`, `desempate_ci4` (R5-R8)  |  Verificación: `test_f068_reglas.py::test_f068_r5_*..r8_*` y `test_f044_reglas_vinculados.py` intacto

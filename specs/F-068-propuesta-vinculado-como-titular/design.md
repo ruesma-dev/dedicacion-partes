@@ -181,7 +181,7 @@ los métodos nuevos. Api vieja con transfer nuevo: sin textos, R5-R6 no casan
 partida inventada). Api nueva con transfer viejo: campos ignorados. Se
 despliega **transfer → api → front**.
 
-## 9. Decisiones abiertas (para el humano)
+## 9. Decisiones (CERRADAS por el humano el 2026-10-28: «a», la A en las cinco)
 
 - **D1 · Qué es «el capítulo CI.4»** (R8). (A) Por número: primer trozo `CI`
   y segundo `4` o `04` (`CI.4.13`, `CI.04.13`; no `CI0.04`, `CI_F1.04`).
