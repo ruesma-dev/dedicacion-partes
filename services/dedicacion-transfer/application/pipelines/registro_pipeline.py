@@ -749,17 +749,16 @@ class RegistroPipeline:
         # F-044 (R12-R18; ARCHITECTURE.md#regla-vinculado): la línea y la
         # partida de cada vinculado, con la de su titular ya decidida. Sin
         # vinculados, ninguna lectura más. F-068 (R2, D3): su historial, en
-        # la ventana del trabajador (sin vinculados no hace falta).
+        # la ventana del trabajador, que se calcula solo si alguno llega a
+        # ese paso.
         paso = PasoVinculados(self._cli)
         nodos_ya = nodos_origen
-        desde, hasta = (self._ventana(lineas)
-                        if any(l.vinculados for l in lineas) else (0, 0))
         vinculados = paso.decidir(
             acciones, lineas, horas, origen_ide=int(origen.ide),
             validas=validas, nodos_pv=nodos_pv,
             nodos=lambda: nodos_ya if nodos_ya is not None else
             construir_catalogo(self._cli.capitulos_de_obra(int(origen.ide))),
-            desde=desde, hasta=hasta)
+            ventana=lambda: self._ventana(lineas))
         vin_escribir = [v for v in vinculados if v.accion == "escribir"]
 
         def obra_de(a: AccionLinea) -> ObraEntrada:

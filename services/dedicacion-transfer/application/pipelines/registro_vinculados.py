@@ -214,20 +214,26 @@ class PasoVinculados:
                 horas: dict[int, list[HoraRecurso]], *, origen_ide: int,
                 validas: dict, nodos_pv: dict[int, PartidaNodo],
                 nodos: Callable[[], dict[int, PartidaNodo]],
-                desde: int, hasta: int) -> list[AccionVinculado]:
+                ventana: Callable[[], tuple[int, int]]
+                ) -> list[AccionVinculado]:
         """Tras la partida de los titulares (paso 4): la línea de cada
         vinculado (`decidir_vinculados`, R12, R14, R18) y su partida (R15-R17
         y F-068 R1) con la elegida (validada en `validas`, la lectura del
         pipeline, o en el presupuesto de la postventa), la propuesta guardada
         con un método propio o la regla. El historial de los vinculados en la
-        obra (ventana `desde`-`hasta`, la del trabajador) y las cuentas del
-        presupuesto, una vez y solo si alguna subfila llega a su paso; el
-        presupuesto, el del pipeline si ya se leyó."""
+        obra (en `ventana()`, `(desde, hasta)`: la del trabajador) y las
+        cuentas del presupuesto, una vez y solo si alguna subfila llega a su
+        paso; el presupuesto, el del pipeline si ya se leyó."""
         por_id = {l.registro_id: l for l in lineas}
         recursos = sorted({int(v.recurso_ide) for l in lineas
                            for v in l.vinculados})
-        historial = _UnaVez(lambda: self._cli.historial_de_vinculados(
-            recursos, int(origen_ide), int(desde), int(hasta)))
+
+        def leer_historial() -> list:
+            desde, hasta = ventana()
+            return self._cli.historial_de_vinculados(
+                recursos, int(origen_ide), int(desde), int(hasta))
+
+        historial = _UnaVez(leer_historial)
         cuentas = _UnaVez(
             lambda: self._cli.cuentas_del_presupuesto(int(origen_ide)))
         presupuesto = _UnaVez(nodos)

@@ -28,6 +28,7 @@ from pathlib import Path
 import pytest
 from application.services import propuesta_partida
 from application.services import reglas_vinculados as rv
+from application.services.partida_matcher import PartidaMatch
 from application.services.partida_resolver import construir_catalogo
 from application.services.propuesta_partida import LineaHistorial
 from application.services.reglas_vinculados import (
@@ -245,6 +246,19 @@ def test_f068_r7_empate_entre_las_del_maximo_sin_la_de_abajo():
                60402: "0678.CIXX01"}
     assert _pcn("CIXX01", "LIMPIEZA", None, cuentas) == (
         None, MOTIVO_VARIAS_CI)
+
+
+def test_f068_r7_el_empate_es_el_del_maximo_unico_a_6_decimales(monkeypatch):
+    """El empate que desempata el CI.4 es EL MISMO que ve el máximo único
+    (`_maximo_unico`, redondeo a 6 decimales): dos puntuaciones que solo
+    difieren en el 8º decimal empatan, y entran las dos en el desempate.
+    Puntuaciones forzadas con un casador falso con la forma del de verdad
+    (`PartidaMatch`): el casador real no da casi-empates a voluntad."""
+    puntos = {60101: 0.12345671, 60401: 0.12345674}
+    monkeypatch.setattr(rv, "match_partida", lambda cat, nom, nodos: (
+        PartidaMatch(nodos[0], puntos[int(nodos[0].ide)], "auto_nombre")))
+    assert _pcn("CICO13", "TELEFONIA", "MOVIL 600") == (
+        _e(60401), METODO_CAPITULO_CI4)
 
 
 @pytest.mark.parametrize("sub", ["CIMP09", "CIME20"])
