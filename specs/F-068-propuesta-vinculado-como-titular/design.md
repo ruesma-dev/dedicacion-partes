@@ -176,9 +176,10 @@ PostgreSQL: sin cambios de esquema.
 
 Entrada, por vinculado: `descripcion?` en registro y en propuesta; `tipo_res?`
 en propuesta. Salida: `partida_metodo` y `partida_origen` del vinculado con
-los métodos nuevos. Api vieja con transfer nuevo: sin textos, R5-R6 no casan
-⇒ como mucho «sin partida» o CI.4 en empate de todas a 0 (nunca una
-partida inventada). Api nueva con transfer viejo: campos ignorados. Se
+los métodos nuevos. Api vieja con transfer nuevo: sin `descripcion`, R5-R6
+solo casan por la categoría (`tipo_res` ya viaja en `registro/*` desde
+F-044, no en la propuesta) ⇒ como mucho `auto_categoria`, «sin partida» o
+CI.4 en empate (nunca una partida inventada; review 1, O3). Api nueva con transfer viejo: campos ignorados. Se
 despliega **transfer → api → front**.
 
 ## 9. Decisiones (CERRADAS por el humano el 2026-10-28: «a», la A en las cinco)

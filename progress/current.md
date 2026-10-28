@@ -438,7 +438,8 @@ F-033 y, detrás, F-017, F-018…
   ⇒ `http://127.0.0.1:8006`; (c) desde `services/dedicacion-transfer`:
   `.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`
   ⇒ `True 0404`. Pasos (periodo **2026-10**, el trabajador del caso de la
-  **0678** con sus vinculados de teléfono, combustible y caja):
+  **0678**, `MO/0601` (Ignacio Rafael), con sus vinculados de teléfono
+  `TF0243`, combustible `CO0116` y caja `CA0147`):
   1. En el cuadrante, casilla «Recursos vinculados» marcada; en cada subfila
      del trabajador en la 0678, botón de la columna Partida (selector). Lo
      propuesto es `CI.4.13` (teléfono), `CI.4.1` (combustible) y `CI.4.15`
