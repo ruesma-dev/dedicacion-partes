@@ -412,6 +412,28 @@ F-033 y, detrás, F-017, F-018…
   4. Otro clic en «B … 0»: desaparece, vuelve la tabla entera y las demás
      fichas siguen en el mismo orden.
 
+- **F-067: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Los
+  tests la cubren en node; en un navegador no se ha visto. Vale **en
+  producción** tras desplegar el front (o en local): solo mirar, marcar y
+  desmarcar; no escribe nada (la preferencia queda en el navegador). Pasos:
+  1. Ctrl+F5 y un mes con subfilas de vinculado (teléfono, caja de obra…).
+     Detrás de la última ficha del resumen sale la casilla «Recursos
+     vinculados», **marcada**, y el cuadrante es el de antes.
+  2. Desmarcarla: desaparecen todas las subfilas de vinculado; Nombre,
+     Categoría y Total de cada trabajador abarcan justo sus líneas e
+     incidencias (sin huecos ni celdas corridas).
+  3. Desmarcada, «Filtrar tipo…» con `telefono` ⇒ ningún trabajador; con
+     `persona` ⇒ todos. En «Partida», el código de la partida de una subfila
+     de vinculado que no tenga ninguna línea ⇒ ese trabajador no sale.
+     Marcarla: con `telefono` salen los del teléfono. «Limpiar».
+  4. Desmarcarla y F5: sigue desmarcada; «›» a otro mes con vinculados:
+     sigue desmarcada.
+  5. Desmarcada, «Registrar en Sigrid»: el modal enseña las filas de los
+     vinculados y su «Pisar» marcado, como siempre (F-064). **Cancelar**: el
+     transfer desplegado escribe de verdad.
+  6. Marcarla para dejarla como estaba. Si hay a mano un mes sin ninguna
+     subfila de vinculado (p. ej. uno futuro sin líneas), la casilla no sale.
+
 - **F-064: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Los
   tests la cubren en node; en un navegador no se ha visto. **Dos maneras:**
   - **(A) En local y en modo pruebas** (la completa). Antes de nada, y

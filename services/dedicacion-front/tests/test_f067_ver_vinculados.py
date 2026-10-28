@@ -124,7 +124,8 @@ def _programa(cuerpo: str, estado: dict, almacen: dict | None = None,
          "var resultado;", cuerpo,
          "process.stdout.write(JSON.stringify(resultado));"])
     salida = subprocess.run([node, "-"], input=programa, capture_output=True,
-                            text=True, encoding="utf-8", timeout=30)
+                            text=True, encoding="utf-8", timeout=30,
+                            check=False)
     assert salida.returncode == 0, salida.stderr
     return json.loads(salida.stdout)
 
