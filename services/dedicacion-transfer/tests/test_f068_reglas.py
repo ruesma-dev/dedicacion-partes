@@ -10,6 +10,10 @@
   `ci_tipo`; varias ⇒ el nombre y, en empate (también a 0), el CI.4; ninguna
   ⇒ el nombre entre las `CI*` que casan y, en empate, el CI.4; si no, sin
   partida con `sin_ci`, `varias_ci` o `empate_nombre`.
+- R1-R3, R10 (T4): el historial del vinculado en la obra (`partida_por_
+  historial`, sobre `previa_en_obra` del trabajador) va antes que la cuenta
+  y el nombre; `partida_del_vinculado` sigue el orden elegida → titular →
+  historial → cuenta y nombre → sin partida, sin leer nada.
 
 Fixture «de la 0678» con `ide` inventados: cada cuenta de los vinculados
 (`CICO13`, `CICO01`, `CICO15`, `CIMP09`) en dos hojas, una del capítulo
@@ -18,20 +22,34 @@ BBDD.
 """
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 import pytest
+from application.services import propuesta_partida
+from application.services import reglas_vinculados as rv
 from application.services.partida_resolver import construir_catalogo
+from application.services.propuesta_partida import LineaHistorial
 from application.services.reglas_vinculados import (
     AVISO_SIN_PARTIDA_VINCULADO,
     METODO_CAPITULO_CI4,
     METODO_CI_TIPO,
+    METODO_MANUAL,
+    METODO_PARTE_ANTERIOR,
+    METODO_TITULAR,
+    MOTIVO_ELEGIDA_NO_VALIDA,
     MOTIVO_EMPATE_NOMBRE,
     MOTIVO_SIN_CI,
     MOTIVO_VARIAS_CI,
     PartidaElegida,
+    PartidaTitular,
+    PartidaVinculado,
     desempate_ci4,
     es_capitulo_ci4,
     hojas_con_subcuenta,
+    partida_del_vinculado,
     partida_por_cuenta_o_nombre,
+    partida_por_historial,
     por_que_sin_ci,
     puntuar,
 )
@@ -291,3 +309,232 @@ def test_f068_r9_el_aviso_cabe_en_sigrid_motivo(motivo):
     aviso = AVISO_SIN_PARTIDA_VINCULADO.format(
         tipo="X" * 10, cod="Y" * 20, por_que=por_que_sin_ci(motivo))
     assert len(aviso) <= 300
+
+
+# ============================ R1-R3, R10 (T4) ============================ #
+OBRA = 678000
+OTRA = 692000
+
+
+def _l(mes: int, paride: int, can: float = 1.0, *, recurso: int = 10,
+       obra: int = OBRA, ano: int = 2026, parte: str = "PT26/00300",
+       obra_cod: str = "0678") -> LineaHistorial:
+    """Una línea del historial con la forma de `historial_de_vinculados`
+    (la de `LineaHistorial`): el código y la descripción de su partida,
+    los del presupuesto."""
+    n = _hojas().get(paride)
+    return LineaHistorial(
+        reside=recurso, obride=obra, obra_cod=obra_cod, parte_cod=parte,
+        ano=ano, mes=mes, can=can, paride=paride,
+        par_cod=n.cod if n else "CI.9.9", par_res=n.res if n else "OTRA")
+
+
+def _ph(historial, recurso=10, obra=OBRA):
+    return partida_por_historial(historial, recurso, obra, _hojas())
+
+
+def test_f068_r2_la_del_ultimo_mes_en_la_obra_con_su_origen():
+    """El caso de la 0678: el teléfono, siempre en `CI.4.13`."""
+    assert _ph([_l(8, 60401), _l(9, 60401, parte="PT26/00321"),
+                _l(7, 60101)]) == PartidaElegida(
+        paride=60401, cod="CI.4.13", res="TELEFONIA",
+        origen="parte PT26/00321 · 09/2026 · obra 0678")
+
+
+def test_f068_r2_ultimo_mes_aunque_antes_fuera_a_otra():
+    assert _ph([_l(3, 60401), _l(3, 60401), _l(4, 60101, 0.1)]).paride == (
+        60101)
+
+
+def test_f068_r2_ultimo_mes_cruza_el_ano():
+    assert _ph([_l(12, 60401, ano=2025), _l(1, 60101, ano=2026)]).paride == (
+        60101)
+
+
+def test_f068_r2_gana_la_de_mas_can_sumado():
+    assert _ph([_l(9, 60101, 0.5), _l(9, 60401, 0.3),
+                _l(9, 60401, 0.3)]).paride == 60401
+    assert _ph([_l(9, 60101, 0.7), _l(9, 60401, 0.3),
+                _l(9, 60401, 0.3)]).paride == 60101
+
+
+def test_f068_r2_empate_no_propone():
+    assert _ph([_l(9, 60101, 0.5), _l(9, 60401, 0.5)]) is None
+
+
+def test_f068_r2_la_ganadora_que_no_es_hoja_activa_no_propone():
+    """De baja (`CI.4.99`), un capítulo (`CI.4`) o fuera del presupuesto."""
+    for paride in (60404, 60400, 99999):
+        assert _ph([_l(9, paride), _l(8, 60401)]) is None
+
+
+def test_f068_r2_d2_solo_las_lineas_en_partidas_ci():
+    """D2-A: el mes en que fue a una `CP*` o una `CD*` no cuenta; se toma el
+    último mes de las `CI*`."""
+    assert _ph([_l(9, 60801), _l(9, 60901), _l(8, 60401)]).paride == 60401
+    assert _ph([_l(9, 60801), _l(9, 60401, 0.1)]).paride == 60401
+    assert _ph([_l(9, 60801)]) is None
+
+
+def test_f068_r2_d2_la_prueba_ci_es_por_codigo_de_la_linea():
+    linea = _l(9, 60401)
+    otra = LineaHistorial(**{**linea.__dict__, "par_cod": " ci.4.13 "})
+    sin = LineaHistorial(**{**linea.__dict__, "par_cod": None})
+    assert _ph([otra]).paride == 60401
+    assert _ph([sin]) is None
+
+
+def test_f068_r2_solo_ese_recurso_y_esa_obra():
+    assert _ph([_l(9, 60101, recurso=11), _l(9, 60101, obra=OTRA),
+                _l(5, 60401)]).paride == 60401
+    assert _ph([_l(9, 60101, recurso=11), _l(9, 60101, obra=OTRA)]) is None
+    assert _ph([]) is None
+
+
+def test_f068_r2_la_linea_sin_partida_no_cuenta():
+    assert _ph([_l(9, 0), _l(8, 60401)]).paride == 60401
+
+
+def test_f068_r3_la_misma_funcion_que_el_trabajador(monkeypatch):
+    """R3: el paso es `previa_en_obra` del trabajador, no una copia: se
+    llama con las líneas `CI*`, el recurso, la obra y las hojas activas."""
+    assert rv.previa_en_obra is propuesta_partida.previa_en_obra
+    llamadas = []
+
+    def espia(historial, recurso, obra_ide, hojas):
+        llamadas.append((list(historial), recurso, obra_ide, sorted(hojas)))
+        return propuesta_partida.previa_en_obra(historial, recurso,
+                                                obra_ide, hojas)
+
+    monkeypatch.setattr(rv, "previa_en_obra", espia)
+    ci, cp = _l(9, 60401), _l(9, 60801)
+    assert _ph([ci, cp]).paride == 60401
+    [(lineas, recurso, obra, hojas)] = llamadas
+    assert (lineas, recurso, obra) == ([ci], 10, OBRA)
+    activas = {i for i, n in _hojas().items() if n.es_hoja and n.activa}
+    assert set(hojas) == activas and 60404 not in hojas
+
+
+# ---- el orden (R1) ---- #
+def _titular(destino: str = "obra", paride: int = 60501,
+             cod: str | None = "CI.5.1", res: str | None = "JEFE DE OBRA",
+             metodo: str | None = "parte_anterior") -> PartidaTitular:
+    return PartidaTitular(destino=destino, paride=paride, cod=cod, res=res,
+                          metodo=metodo)
+
+
+class _Paso:
+    """Un paso de la regla como función: apunta si se ha pedido."""
+
+    def __init__(self, resultado) -> None:
+        self.llamadas = 0
+        self.resultado = resultado
+
+    def __call__(self):
+        self.llamadas += 1
+        return self.resultado
+
+
+PREVIA = PartidaElegida(paride=60401, cod="CI.4.13", res="TELEFONIA",
+                        origen="parte PT26/00321 · 09/2026 · obra 0678")
+
+
+def test_f068_r1_el_historial_va_antes_que_la_cuenta():
+    hist, ci = _Paso(PREVIA), _Paso((_e(60101), METODO_CI_TIPO))
+    r = partida_del_vinculado(_titular(), None, True, ci, hist)
+    assert r == PartidaVinculado(
+        paride=60401, cod="CI.4.13", res="TELEFONIA",
+        metodo=METODO_PARTE_ANTERIOR,
+        origen="parte PT26/00321 · 09/2026 · obra 0678")
+    assert (hist.llamadas, ci.llamadas) == (1, 0)
+
+
+@pytest.mark.parametrize("ide, metodo", [
+    (60501, METODO_CI_TIPO), (60502, "auto_nombre"),
+    (60401, METODO_CAPITULO_CI4)])
+def test_f068_r1_sin_historial_la_cuenta_y_el_nombre(ide, metodo):
+    """El método es el que da el paso (ya no siempre `ci_tipo`)."""
+    hist, ci = _Paso(None), _Paso((_e(ide), metodo))
+    r = partida_del_vinculado(_titular(), None, True, ci, hist)
+    n = _hojas()[ide]
+    assert r == PartidaVinculado(paride=ide, cod=n.cod, res=n.res,
+                                 metodo=metodo)
+    assert (hist.llamadas, ci.llamadas) == (1, 1)
+
+
+@pytest.mark.parametrize("motivo", [MOTIVO_SIN_CI, MOTIVO_VARIAS_CI,
+                                    MOTIVO_EMPATE_NOMBRE])
+def test_f068_r9_ningun_paso_sin_partida_con_su_motivo(motivo):
+    r = partida_del_vinculado(_titular(), None, True, _Paso((None, motivo)),
+                              _Paso(None))
+    assert r == PartidaVinculado(motivo=motivo, sin_partida=True)
+    assert not r.omitir and r.paride == 0
+
+
+def test_f068_r1_elegida_y_titular_antes_que_el_historial():
+    hist, ci = _Paso(PREVIA), _Paso((_e(60101), METODO_CI_TIPO))
+    elegida = PartidaElegida(paride=60402, cod="CI.4.1", res="COMBUSTIBLE")
+    assert partida_del_vinculado(_titular(), elegida, True, ci,
+                                 hist).metodo == METODO_MANUAL
+    assert partida_del_vinculado(_titular(), elegida, False, ci,
+                                 hist).motivo == (
+        MOTIVO_ELEGIDA_NO_VALIDA.format(cod="CI.4.1"))
+    t = _titular(paride=60801, cod="CP.1", res="SEGUROS DECENALES")
+    assert partida_del_vinculado(t, None, True, ci, hist).metodo == (
+        METODO_TITULAR)
+    assert (hist.llamadas, ci.llamadas) == (0, 0)
+
+
+def test_f068_r1_sin_paso_de_historial_el_orden_de_f044():
+    """`historial=None`: las llamadas de F-044 siguen valiendo."""
+    ci = _Paso((_e(60501), METODO_CI_TIPO))
+    r = partida_del_vinculado(_titular(), None, True, ci)
+    assert (r.paride, r.metodo, r.origen) == (60501, METODO_CI_TIPO, None)
+
+
+def test_f068_r1_titular_sin_partida_tambien_mira_el_historial():
+    hist = _Paso(PREVIA)
+    t = _titular(paride=0, cod=None, res=None, metodo=None)
+    assert partida_del_vinculado(t, None, True, _Paso((None, MOTIVO_SIN_CI)),
+                                 hist).paride == 60401
+
+
+def test_f068_r1_el_origen_de_la_cuenta_pasa_tal_cual():
+    con_origen = PartidaElegida(paride=60501, cod="CI.5.1", res="JEFE",
+                                origen="algo")
+    r = partida_del_vinculado(_titular(), None, True,
+                              _Paso((con_origen, METODO_CI_TIPO)),
+                              _Paso(None))
+    assert r.origen == "algo"
+
+
+def test_f068_r10_las_reglas_no_leen_nada():
+    """Sin I/O: el módulo no importa clientes, httpx ni infraestructura; el
+    historial y las cuentas llegan como funciones."""
+    arbol = ast.parse(Path(rv.__file__).read_text(encoding="utf-8"))
+    importados = {n.module or "" for n in ast.walk(arbol)
+                  if isinstance(n, ast.ImportFrom)}
+    importados |= {a.name for n in ast.walk(arbol)
+                   if isinstance(n, ast.Import) for a in n.names}
+    assert not any(i.startswith(("infrastructure", "httpx", "requests"))
+                   for i in importados), importados
+
+
+@pytest.mark.parametrize("historial, sub, tipo_res", [
+    ([_l(9, 60404)], "CICO13", None),
+    ([], None, "CAPITULO"),
+    ([], None, "PERSONAL"),
+    ([_l(9, 60400)], "CIZZ99", None),
+])
+def test_f068_r10_toda_propuesta_es_hoja_activa(historial, sub, tipo_res):
+    """Lo que no es hoja activa (de baja, capítulo) nunca sale: ni por el
+    historial ni por el nombre."""
+    hojas = _hojas()
+    r = partida_del_vinculado(
+        _titular(), None, True,
+        lambda: partida_por_cuenta_o_nombre(hojas, CUENTAS, sub, tipo_res,
+                                            None),
+        lambda: partida_por_historial(historial, 10, OBRA, hojas))
+    assert r.paride == 0 or (hojas[r.paride].es_hoja
+                             and hojas[r.paride].activa)
+    assert r.paride not in (60404, 60400, 60500)

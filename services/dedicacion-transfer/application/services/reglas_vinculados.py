@@ -29,7 +29,7 @@ pipeline; este módulo no importa ningún cliente.
 """
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
 from domain.models.registro_models import (
@@ -44,7 +44,11 @@ from application.services import text_match as tm
 from application.services.cuenta_analitica import subcuenta
 from application.services.partida_catalog import PartidaNodo
 from application.services.partida_matcher import match_partida
-from application.services.propuesta_partida import _maximo_unico
+from application.services.propuesta_partida import (
+    LineaHistorial,
+    _maximo_unico,
+    previa_en_obra,
+)
 from application.services.reglas_porcentajes import (
     PREFIJO_CLAVE_SIN_PARTIDA,
     es_de_la_hora,
@@ -96,10 +100,12 @@ _METODO_VAR = "var"
 
 @dataclass(frozen=True)
 class PartidaElegida:
-    """Una partida concreta: la elegida en la subfila o la CI del tipo."""
+    """Una partida concreta: la elegida en la subfila, la CI del tipo o,
+    F-068, la del historial (con su `origen`) o la del nombre."""
     paride: int
     cod: str | None = None
     res: str | None = None
+    origen: str | None = None
 
 
 @dataclass(frozen=True)
@@ -126,6 +132,7 @@ class PartidaVinculado:
     motivo: str | None = None
     sin_partida: bool = False
     omitir: bool = False
+    origen: str | None = None
 
 
 def _es_ci(cod: str | None) -> bool:
@@ -248,15 +255,38 @@ def partida_por_cuenta_o_nombre(
     return None, motivo
 
 
+def partida_por_historial(historial: Iterable[LineaHistorial],
+                          recurso: int, obra_ide: int,
+                          hojas: dict[int, PartidaNodo]
+                          ) -> PartidaElegida | None:
+    """F-068 (R2, R3, D2): el «parte anterior» del vinculado en la obra con
+    la MISMA función que el del trabajador (`previa_en_obra`), solo con sus
+    líneas en partidas `CI*` (por código, como R17 de F-044) y entre las
+    hojas activas de `hojas` (el presupuesto de la obra): la del último mes
+    con más `can` sumado, con su `origen`. Empate o ganadora que no es hoja
+    activa: None (este paso no propone)."""
+    p = previa_en_obra(
+        [l for l in historial if _es_ci(l.par_cod)], recurso, obra_ide,
+        {i: n for i, n in hojas.items() if n.es_hoja and n.activa})
+    if p is None:
+        return None
+    return PartidaElegida(paride=int(p.paride), cod=p.cod, res=p.res,
+                          origen=p.origen)
+
+
 def partida_del_vinculado(
     titular: PartidaTitular,
     elegida: PartidaElegida | None,
     elegida_valida: bool,
     ci: Callable[[], tuple[PartidaElegida | None, str]],
+    historial: Callable[[], PartidaElegida | None] | None = None,
 ) -> PartidaVinculado:
-    """R15-R17, en este orden: la elegida (si no vale, se omite); la del
-    titular en postventa, VAR o partida no `CI*`; la CI del tipo (`ci`, que
-    solo se llama aquí); sin ella, sin partida con su motivo."""
+    """R15-R17 y F-068 (R1), en este orden: la elegida (si no vale, se
+    omite); la del titular en postventa, VAR o partida no `CI*`; la del
+    historial (`historial`, `parte_anterior`; sin él, este paso no existe);
+    la de la cuenta y el nombre (`ci`, que da la partida y su método o None
+    y el motivo); sin ninguna, sin partida con su motivo. Los pasos solo se
+    llaman aquí y si se llega a ellos."""
     if elegida is not None:
         if not elegida_valida:
             return PartidaVinculado(
@@ -269,11 +299,17 @@ def partida_del_vinculado(
         return PartidaVinculado(paride=int(titular.paride or 0),
                                 cod=titular.cod, res=titular.res,
                                 metodo=METODO_TITULAR)
-    partida, motivo = ci()
+    previa = historial() if historial is not None else None
+    if previa is not None:
+        return PartidaVinculado(paride=previa.paride, cod=previa.cod,
+                                res=previa.res, metodo=METODO_PARTE_ANTERIOR,
+                                origen=previa.origen)
+    partida, metodo = ci()
     if partida is None:
-        return PartidaVinculado(motivo=motivo, sin_partida=True)
+        return PartidaVinculado(motivo=metodo, sin_partida=True)
     return PartidaVinculado(paride=partida.paride, cod=partida.cod,
-                            res=partida.res, metodo=METODO_CI_TIPO)
+                            res=partida.res, metodo=metodo,
+                            origen=partida.origen)
 
 
 # ------------------------------------------------------------------ #
