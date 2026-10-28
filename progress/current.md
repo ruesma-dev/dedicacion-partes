@@ -5,7 +5,7 @@
 trabajador: historial en la obra y, si no, por nombre, CI.4 en empate;
 transfer y api, rigor crítico, SDD; petición del humano del 2026-10-28, va
 antes de F-054), rama `feature/F-068-propuesta-vinculado-como-titular`,
-worktree `porcentajes-f068`: **spec escrita, pendiente de aprobación** (`pending`; sección «F-068 · spec escrita», más abajo). **F-067** (casilla «Recursos vinculados» para
+worktree `porcentajes-f068`: **spec escrita (`3fb6780`), `spec_ready`, esperando la aprobación del humano y sus D1-D5** ( sección «F-068 · spec escrita», más abajo). **F-067** (casilla «Recursos vinculados» para
 ver u ocultar sus subfilas en el cuadrante; solo front) **cerrada (`done`)
 el 2026-10-28**: review 1 APROBADA (`8423a5a`), `bash harness/init.sh` en
 verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (solo el

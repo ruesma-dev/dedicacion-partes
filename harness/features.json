@@ -1142,7 +1142,7 @@
       "acceptance": [
         "Spec SDD aprobada por el humano (`specs/F-068-*/`), con la enmienda anotada en F-044 R15-R16."
       ],
-      "status": "pending",
+      "status": "spec_ready",
       "sdd": true,
       "rigor": "critico",
       "priority": 1,
