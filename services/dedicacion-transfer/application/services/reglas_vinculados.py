@@ -69,6 +69,12 @@ METODO_CI_TIPO = "ci_tipo"      # la CI de su tipo (R15)
 #: anterior» del trabajador; (R7): la única del capítulo CI.4 en un empate.
 METODO_PARTE_ANTERIOR = "parte_anterior"
 METODO_CAPITULO_CI4 = "capitulo_ci4"
+#: F-068 (R16): los métodos de una propuesta PROPIA del vinculado (la del
+#: historial, la de su cuenta, las del casador y la del CI.4): la guardada
+#: que vale se escribe tal cual. La de `titular` se recalcula.
+METODOS_PROPUESTA_PROPIA = (METODO_PARTE_ANTERIOR, METODO_CI_TIPO,
+                            "auto_nombre", "auto_categoria",
+                            METODO_CAPITULO_CI4)
 
 #: Sin partida (R16): ninguna hoja activa con la subcuenta, o varias.
 MOTIVO_SIN_CI = "sin_ci"

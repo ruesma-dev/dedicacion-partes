@@ -515,6 +515,17 @@ class LecturasDelLote:
             ("cuentas_del_presupuesto", int(obra_ide)),
             lambda: self._cli.cuentas_del_presupuesto(obra_ide))
 
+    def historial_de_vinculados(self, resides, obra_ide, desde, hasta):
+        """F-068 (R15): una lectura por obra, ventana y recursos en todo el
+        lote (sin precarga: solo si alguna subfila llega al historial, como
+        `cuentas_del_presupuesto`)."""
+        recursos = sorted(_ides(resides))
+        return self._una_vez(
+            ("historial_de_vinculados", int(obra_ide), int(desde),
+             int(hasta), tuple(recursos)),
+            lambda: self._cli.historial_de_vinculados(recursos, obra_ide,
+                                                      desde, hasta))
+
     def cuentas_de_centro(self, cenide, empresa, subcuentas):
         subs = tuple(sorted({s for s in subcuentas if s}))
         return self._una_vez(

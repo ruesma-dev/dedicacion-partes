@@ -20,7 +20,9 @@ Aparte de `registro_pipeline.py` para no engordarlo:
 Lecturas (R27): las horas de los vinculados y sus líneas, en las mismas
 lecturas que las de los trabajadores; las cuentas del presupuesto, UNA vez
 por petición y solo si alguna subfila las necesita. Sin vinculados no se
-lee nada más que antes.
+lee nada más que antes. F-068 (R11, R12, R14): el historial de los
+vinculados en la obra, también UNA vez por petición (con los recursos de
+todos) y solo si alguna subfila llega a ese paso.
 """
 from __future__ import annotations
 
@@ -62,8 +64,8 @@ from application.services.reglas_porcentajes import (
 )
 from application.services.reglas_vinculados import (
     AVISO_SIN_PARTIDA_VINCULADO,
-    METODO_CI_TIPO,
     METODO_MANUAL,
+    METODOS_PROPUESTA_PROPIA,
     MOTIVO_PISADO_PENDIENTE,
     MOTIVO_SIGUE_AL_TRABAJADOR,
     MOTIVO_SIN_PARTIDA_VINCULADO,
@@ -76,6 +78,8 @@ from application.services.reglas_vinculados import (
     es_linea_de,
     partida_ci_del_tipo,
     partida_del_vinculado,
+    partida_por_cuenta_o_nombre,
+    partida_por_historial,
     por_que_sin_ci,
     synckey_vinculado,
     va_con_el_titular,
@@ -198,15 +202,21 @@ class PasoVinculados:
     def decidir(self, acciones: list[AccionLinea], lineas: list[LineaEntrada],
                 horas: dict[int, list[HoraRecurso]], *, origen_ide: int,
                 validas: dict, nodos_pv: dict[int, PartidaNodo],
-                nodos: Callable[[], dict[int, PartidaNodo]]
-                ) -> list[AccionVinculado]:
+                nodos: Callable[[], dict[int, PartidaNodo]],
+                desde: int, hasta: int) -> list[AccionVinculado]:
         """Tras la partida de los titulares (paso 4): la línea de cada
-        vinculado (`decidir_vinculados`, R12, R14, R18) y su partida (R15-R17)
-        con la elegida (validada en `validas`, la lectura del pipeline, o en
-        el presupuesto de la postventa), la propuesta guardada de su CI o la
-        regla. Las cuentas del presupuesto, una vez y solo si alguna CI del
-        tipo se calcula; el presupuesto, el del pipeline si ya se leyó."""
+        vinculado (`decidir_vinculados`, R12, R14, R18) y su partida (R15-R17
+        y F-068 R1) con la elegida (validada en `validas`, la lectura del
+        pipeline, o en el presupuesto de la postventa), la propuesta guardada
+        con un método propio o la regla. El historial de los vinculados en la
+        obra (ventana `desde`-`hasta`, la del trabajador) y las cuentas del
+        presupuesto, una vez y solo si alguna subfila llega a su paso; el
+        presupuesto, el del pipeline si ya se leyó."""
         por_id = {l.registro_id: l for l in lineas}
+        recursos = sorted({int(v.recurso_ide) for l in lineas
+                           for v in l.vinculados})
+        historial = _UnaVez(lambda: self._cli.historial_de_vinculados(
+            recursos, int(origen_ide), int(desde), int(hasta)))
         cuentas = _UnaVez(
             lambda: self._cli.cuentas_del_presupuesto(int(origen_ide)))
         presupuesto = _UnaVez(nodos)
@@ -224,7 +234,8 @@ class PasoVinculados:
                 self._entradas[clave_de(av)] = v
                 if av.accion == "escribir":
                     self._partida(av, v, titular, horas, int(origen_ide),
-                                  validas, nodos_pv, presupuesto, cuentas)
+                                  validas, nodos_pv, presupuesto, cuentas,
+                                  historial)
                 out.append(av)
         return out
 
@@ -245,16 +256,18 @@ class PasoVinculados:
     def _partida(self, av: AccionVinculado, v: VinculadoEntrada,
                  titular: PartidaTitular, horas: dict, origen_ide: int,
                  validas: dict, nodos_pv: dict, presupuesto: Callable,
-                 cuentas: Callable) -> None:
+                 cuentas: Callable, historial: Callable) -> None:
         """R15-R17 sobre `av`: elegida (si no vale, omitida); sin ella, si
-        no va con el titular, la propuesta guardada de su CI que vale (F-055:
-        se escribe lo que enseña el cuadrante); si no, la regla."""
+        no va con el titular, la propuesta guardada con un método propio que
+        vale (F-055: se escribe lo que enseña el cuadrante; F-068 R16); si
+        no, la regla: historial en la obra, cuenta y nombre (F-068 R1)."""
         elegida, valida = None, True
         if v.paride:
             valida, res = self._valida(int(v.paride), av.destino, origen_ide,
                                        validas, nodos_pv)
             elegida = PartidaElegida(int(v.paride), v.partida_cod, res)
-        elif (v.propuesta_paride and v.propuesta_metodo == METODO_CI_TIPO
+        elif (v.propuesta_paride
+              and v.propuesta_metodo in METODOS_PROPUESTA_PROPIA
               and not va_con_el_titular(titular)):
             vale, res = self._valida(int(v.propuesta_paride), av.destino,
                                      origen_ide, validas, nodos_pv)
@@ -262,21 +275,26 @@ class PasoVinculados:
                 av.paride = int(v.propuesta_paride)
                 av.partida_cod = v.propuesta_cod
                 av.partida_res = v.propuesta_res or res
-                av.partida_metodo = METODO_CI_TIPO
+                av.partida_metodo = v.propuesta_metodo
                 av.partida_origen = v.propuesta_origen
                 return
+
+        def previa():
+            return partida_por_historial(historial(), int(av.recurso_ide),
+                                         origen_ide, presupuesto())
 
         def ci():
             sub = subcuenta_de_linea(horas.get(int(av.recurso_ide), []),
                                      av.hora_ide)
-            return partida_ci_del_tipo(presupuesto(), cuentas(), sub)
+            return partida_por_cuenta_o_nombre(presupuesto(), cuentas(), sub,
+                                               v.tipo_res, v.descripcion)
 
-        p = partida_del_vinculado(titular, elegida, valida, ci)
+        p = partida_del_vinculado(titular, elegida, valida, ci, previa)
         if p.omitir:
             av.accion, av.motivo = "omitir", p.motivo
             return
         av.paride, av.partida_cod, av.partida_res = p.paride, p.cod, p.res
-        av.partida_metodo = p.metodo
+        av.partida_metodo, av.partida_origen = p.metodo, p.origen
         if p.sin_partida:
             _sumar_aviso(av, AVISO_SIN_PARTIDA_VINCULADO.format(
                 tipo=av.tipo, cod=av.cod, por_que=por_que_sin_ci(p.motivo)))

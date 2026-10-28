@@ -308,12 +308,18 @@ class RegistroPipeline:
         return bool(nodo and nodo.es_hoja and nodo.activa)
 
     # ------------------------------------------------------------- #
+    def _ventana(self, lineas: list[LineaEntrada]) -> tuple[int, int]:
+        """F-050 (R7): la ventana del historial, la que acaba en el periodo
+        más reciente de `lineas` (incluido). F-068 (D3): la misma para el
+        historial de los vinculados."""
+        ano, mes = max((l.ano, l.mes) for l in lineas)
+        return ventana(ano, mes, self._st.propuesta_meses_atras)
+
     def _historial(self, lineas: list[LineaEntrada]) -> list:
         """F-050 (R7): UNA lectura del historial de partidas de los recursos
         de las líneas automáticas, en la ventana que acaba en su periodo.
         Sin `try`: si falla, la petición falla sin proponer ni escribir."""
-        ano, mes = max((l.ano, l.mes) for l in lineas)
-        desde, hasta = ventana(ano, mes, self._st.propuesta_meses_atras)
+        desde, hasta = self._ventana(lineas)
         return self._cli.historial_partidas(
             sorted({l.recurso_ide for l in lineas}), desde, hasta)
 
@@ -742,14 +748,18 @@ class RegistroPipeline:
 
         # F-044 (R12-R18; ARCHITECTURE.md#regla-vinculado): la línea y la
         # partida de cada vinculado, con la de su titular ya decidida. Sin
-        # vinculados, ninguna lectura más.
+        # vinculados, ninguna lectura más. F-068 (R2, D3): su historial, en
+        # la ventana del trabajador (sin vinculados no hace falta).
         paso = PasoVinculados(self._cli)
         nodos_ya = nodos_origen
+        desde, hasta = (self._ventana(lineas)
+                        if any(l.vinculados for l in lineas) else (0, 0))
         vinculados = paso.decidir(
             acciones, lineas, horas, origen_ide=int(origen.ide),
             validas=validas, nodos_pv=nodos_pv,
             nodos=lambda: nodos_ya if nodos_ya is not None else
-            construir_catalogo(self._cli.capitulos_de_obra(int(origen.ide))))
+            construir_catalogo(self._cli.capitulos_de_obra(int(origen.ide))),
+            desde=desde, hasta=hasta)
         vin_escribir = [v for v in vinculados if v.accion == "escribir"]
 
         def obra_de(a: AccionLinea) -> ObraEntrada:
