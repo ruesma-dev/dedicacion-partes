@@ -32,12 +32,15 @@ class VinculadoEntrada:
     api: su recurso, su tipo (`auxrestip`), su código (para los avisos), su
     categoría, la partida ELEGIDA en su subfila (`paride`), la propuesta
     GUARDADA (`propuesta_*`) y el `hmores.ide` que ya escribimos para él.
+    F-068 (R18): su `descripcion` (`recurso_vinculado.descripcion`), el
+    «nombre» con el que se casa por nombre (R5-R6); sin ella, nada casa.
     Ver ARCHITECTURE.md#regla-vinculado."""
     recurso_ide: int
     tipo: str | None = None
     tipo_res: str | None = None
     cod: str | None = None
     categoria: str | None = None
+    descripcion: str | None = None
     paride: int | None = None
     partida_cod: str | None = None
     propuesta_paride: int | None = None
