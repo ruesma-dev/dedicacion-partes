@@ -1,7 +1,11 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Ninguna feature en curso.** **F-067** (casilla «Recursos vinculados» para
+**En curso: F-068** (la partida del recurso vinculado se propone como la del
+trabajador: historial en la obra y, si no, por nombre, CI.4 en empate;
+transfer y api, rigor crítico, SDD; petición del humano del 2026-10-28, va
+antes de F-054), rama `feature/F-068-propuesta-vinculado-como-titular`,
+worktree `porcentajes-f068`: **spec-author lanzado** (`pending`). **F-067** (casilla «Recursos vinculados» para
 ver u ocultar sus subfilas en el cuadrante; solo front) **cerrada (`done`)
 el 2026-10-28**: review 1 APROBADA (`8423a5a`), `bash harness/init.sh` en
 verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (solo el
@@ -29,7 +33,7 @@ validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 **Para retomar (sesión nueva):** `arnes-base` va 3 commits por delante de
 su `origin/main` (encargos pendientes; push del humano: `git -C
 ../arnes-base push origin main`). Peticiones de arnés pendientes de
-decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** F-054 (spec aprobada, worktree `porcentajes-f054`); después
+decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** tras F-068, F-054 (spec aprobada, worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
 ## F-062 · CERRADA y DESPLEGADA (2026-10-26): aviso a `partes` pendiente
