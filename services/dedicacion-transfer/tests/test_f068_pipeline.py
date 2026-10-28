@@ -10,6 +10,8 @@
   vinculados, solo si alguno llega a ese paso), las cuentas solo si alguno
   llega al de la cuenta, y escribe tal cual la propuesta guardada con un
   método propio.
+- R15 (T7): el selector y la cola (`partidas/propuesta`) dan a cada subfila
+  lo mismo que el preflight, con su `origen`, en la misma ventana.
 
 Fixture «de la 0678» con `ide` inventados: el teléfono 20 (`CICO13`), el
 gasoil 21 (`CICO01`) y el vehículo 22 (`CIMP09`) tienen su cuenta en DOS
@@ -28,7 +30,11 @@ from application.services.reglas_vinculados import (
     MOTIVO_VARIAS_CI,
     por_que_sin_ci,
 )
-from domain.models.registro_models import HoraRecurso, VinculadoEntrada
+from domain.models.registro_models import (
+    HoraRecurso,
+    ObraEntrada,
+    VinculadoEntrada,
+)
 from interface_adapters.api.app import (
     LineaPropuestaIn,
     VinculadoIn,
@@ -390,3 +396,110 @@ def test_f068_r16_sin_res_guardado_usa_el_validado():
                                                 propuesta_cod="CI.0.13",
                                                 propuesta_metodo="auto_nombre")))
     assert _por(pf)[(1, 20)].partida_res == "TELEFONIA"
+
+
+# ===================== R15 · selector igual que preflight ================ #
+def _vin_sel(*ides: int, con_textos: bool = True) -> list[dict]:
+    """Los vinculados de una línea del selector, como los manda la api
+    (`peticion_de_subfilas`, F-068): sus claves de F-044 y, si se mandan,
+    `tipo_res` y `descripcion`."""
+    out = []
+    for v in _v68(*ides):
+        d = {"recurso_ide": v.recurso_ide, "tipo": v.tipo, "categoria": None,
+             "cod": v.cod}
+        if con_textos:
+            d.update(tipo_res=v.tipo_res, descripcion=v.descripcion)
+        out.append(d)
+    return out
+
+
+def _sel(cli, *lineas_: dict) -> dict:
+    return RegistroPipeline(cliente=cli, settings=_st()).proponer(
+        empresa=1, obra=ObraEntrada(codigo=OBRA_ORIGEN), ano=2026, mes=7,
+        lineas=list(lineas_))
+
+
+def _st():
+    from tests.conftest import SettingsFalso
+    return SettingsFalso()
+
+
+def _como_selector(pf) -> dict:
+    """Lo que el preflight decidió, con la forma de la propuesta del
+    selector (`asdict(Propuesta)`; sin partida, None)."""
+    return {str(r): ({"paride": v.paride, "cod": v.partida_cod,
+                      "res": v.partida_res, "metodo": v.partida_metodo,
+                      "origen": v.partida_origen} if v.paride else None)
+            for (_, r), v in _por(pf).items()}
+
+
+@pytest.mark.parametrize("historial", [HISTORIAL_0678, []])
+def test_f068_r15_selector_igual_que_preflight(historial):
+    sel = _sel(Cliente68(historial=historial),
+               _linea(paride=80001, vinculados=_vin_sel(20, 21, 22)))
+    pf = _pf(Cliente68(historial=historial),
+             linea(paride=80001, partida_cod="CI.1.10",
+                   vinculados=_v68(20, 21, 22)))
+    assert sel["vinculados"] == {"a": _como_selector(pf)}
+
+
+def test_f068_r15_selector_el_caso_de_la_0678_con_su_origen():
+    sel = _sel(Cliente68(), _linea(vinculados=_vin_sel(20, 21, 22)))
+    assert sel["vinculados"] == {"a": {
+        "20": {"paride": 82413, "cod": "CI.4.13", "res": "TELEFONIA",
+               "metodo": "parte_anterior", "origen": ORIGEN},
+        "21": {"paride": 82401, "cod": "CI.4.1", "res": "COMBUSTIBLE",
+               "metodo": "parte_anterior", "origen": ORIGEN},
+        "22": None}}
+
+
+def test_f068_r15_selector_una_lectura_en_la_ventana_del_periodo():
+    cli = Cliente68()
+    _sel(cli, _linea(vinculados=_vin_sel(22, 20)),
+         _linea("b", recurso=201, vinculados=_vin_sel(21)),
+         _linea("c", recurso=202))
+    assert cli.historial_leido == [([20, 21, 22], OBRA_IDE, *VENTANA)]
+
+
+def test_f068_r15_selector_sin_llegar_al_historial_no_lo_lee():
+    """Titular en una `CD` (o sin vinculados): ni historial ni cuentas."""
+    cli = Cliente68()
+    sel = _sel(cli, _linea(paride=81101, vinculados=_vin_sel(20)),
+               _linea("b", recurso=201))
+    assert sel["vinculados"]["a"]["20"]["metodo"] == "titular"
+    assert (cli.historial_leido, cli.cuentas_leidas) == ([], [])
+
+
+def test_f068_r15_selector_cuentas_solo_si_hace_falta():
+    cli = Cliente68()
+    _sel(cli, _linea(vinculados=_vin_sel(20, 21)))
+    assert cli.cuentas_leidas == []
+    _sel(cli, _linea(vinculados=_vin_sel(22)))
+    assert cli.cuentas_leidas == [OBRA_IDE]
+
+
+def test_f068_r18_selector_casa_con_tipo_res_y_descripcion():
+    vin = [{"recurso_ide": 23, "tipo": "TF", "categoria": None,
+            "cod": "TF-23", "tipo_res": "TELEFONO",
+            "descripcion": "TELEFONO MOVIL ENCARGADO"}]
+    sel = _sel(Cliente68(historial=[]), _linea(vinculados=vin))
+    assert sel["vinculados"]["a"]["23"]["cod"] == "CI.5.2"
+    assert sel["vinculados"]["a"]["23"]["metodo"] == "auto_nombre"
+    sin = _sel(Cliente68(historial=[]),
+               _linea(vinculados=_vin_sel(23, con_textos=False)))
+    assert sin["vinculados"]["a"]["23"] is None
+
+
+def test_f068_r13_selector_si_el_historial_falla_falla():
+    cli = Cliente68(falla=RuntimeError("respuesta truncada"))
+    with pytest.raises(RuntimeError, match="truncada"):
+        _sel(cli, _linea(vinculados=_vin_sel(20)))
+
+
+def test_f068_r15_la_ruta_devuelve_el_origen(api):  # noqa: F811
+    r = api(Cliente68()).post("/api/partidas/propuesta", json=_cuerpo(
+        _linea(vinculados=_vin_sel(20))))
+    assert r.status_code == 200
+    assert r.json()["vinculados"] == {"a": {"20": {
+        "paride": 82413, "cod": "CI.4.13", "res": "TELEFONIA",
+        "metodo": "parte_anterior", "origen": ORIGEN}}}

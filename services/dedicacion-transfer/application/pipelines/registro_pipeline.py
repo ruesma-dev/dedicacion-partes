@@ -1067,8 +1067,8 @@ class RegistroPipeline:
             self._cli.capitulos_de_obra(int(origen.ide)))
         normales = [l for l in lineas if not l["es_postventa"]]
         historial = []
+        desde, hasta = ventana(ano, mes, self._st.propuesta_meses_atras)
         if normales:
-            desde, hasta = ventana(ano, mes, self._st.propuesta_meses_atras)
             historial = self._cli.historial_partidas(
                 sorted({l["recurso_ide"] for l in normales
                         if l["recurso_ide"]}), desde, hasta)
@@ -1101,9 +1101,10 @@ class RegistroPipeline:
         salida = {"ok": True, "partidas_obra": catalogo(nodos),
                   "partidas_postventa": catalogo(nodos_pv),
                   "propuestas": propuestas, "mayor_inicial": mayores}
+        # F-068 (R15): la ventana del historial de los vinculados, la misma.
         vinculados = PasoVinculados(self._cli).proponer(
             origen_ide=int(origen.ide), nodos=nodos, nodos_pv=nodos_pv,
-            lineas=lineas, propuestas=objetos)
+            lineas=lineas, propuestas=objetos, desde=desde, hasta=hasta)
         if vinculados:
             salida["vinculados"] = vinculados
         return salida

@@ -6,10 +6,10 @@ Aparte de `registro_pipeline.py` para no engordarlo:
 
 - `proponer` (R9, R29): la propuesta de partida de cada subfila con la
   misma regla que el preflight (`reglas_vinculados.partida_del_vinculado`):
-  la partida del titular en postventa, VAR o partida no `CI*`; si no, la CI
-  del tipo del vinculado, buscada por la subcuenta de la cuenta de su hora
-  por defecto (`reshor.caaide`) entre las cuentas del presupuesto de la
-  obra.
+  la partida del titular en postventa, VAR o partida no `CI*`; si no
+  (F-068), su historial en la obra y, sin él, su cuenta (la subcuenta de la
+  cuenta de su hora por defecto, `reshor.caaide`, entre las cuentas del
+  presupuesto de la obra) y su nombre.
 - El preflight (R12-R26), en los puntos del pipeline donde sus lecturas
   van JUNTO a las de los titulares (R27): `decidir` tras la partida del
   titular (paso 4), la cuenta en el paso 4 bis, el parte en el 5,
@@ -76,7 +76,6 @@ from application.services.reglas_vinculados import (
     clave_sin_partida_vinculado,
     decidir_vinculados,
     es_linea_de,
-    partida_ci_del_tipo,
     partida_del_vinculado,
     partida_por_cuenta_o_nombre,
     partida_por_historial,
@@ -161,16 +160,21 @@ class PasoVinculados:
     # ------------------------------------------------------------- #
     def proponer(self, *, origen_ide: int, nodos: dict[int, PartidaNodo],
                  nodos_pv: dict[int, PartidaNodo], lineas: list[dict],
-                 propuestas: dict[str, Propuesta | None]
-                 ) -> dict[str, dict[str, dict | None]]:
+                 propuestas: dict[str, Propuesta | None], desde: int,
+                 hasta: int) -> dict[str, dict[str, dict | None]]:
         """R9: por línea con `vinculados`, la propuesta de cada uno
         (`{paride, cod, res, metodo, origen}`, como la del titular) o None
-        (sin partida). Vacío si ninguna línea trae vinculados."""
+        (sin partida). Vacío si ninguna línea trae vinculados. F-068 (R15):
+        la misma regla que `_partida`, con el historial en la ventana
+        `desde`-`hasta` y las cuentas, una vez y solo si hacen falta."""
         con = [l for l in lineas if l.get("vinculados")]
         if not con:
             return {}
-        horas = _UnaVez(lambda: self._cli.horas_de_recursos(sorted({
-            int(v["recurso_ide"]) for l in con for v in l["vinculados"]})))
+        recursos = sorted({int(v["recurso_ide"]) for l in con
+                           for v in l["vinculados"]})
+        horas = _UnaVez(lambda: self._cli.horas_de_recursos(recursos))
+        historial = _UnaVez(lambda: self._cli.historial_de_vinculados(
+            recursos, int(origen_ide), int(desde), int(hasta)))
         cuentas = _UnaVez(
             lambda: self._cli.cuentas_del_presupuesto(int(origen_ide)))
         out: dict[str, dict[str, dict | None]] = {}
@@ -185,13 +189,20 @@ class PasoVinculados:
                     por_recurso[str(rid)] = None
                     continue
 
-                def ci(rid: int = rid):
-                    sub = subcuenta_de_linea(horas().get(rid, []), None)
-                    return partida_ci_del_tipo(nodos, cuentas(), sub)
+                def previa(rid: int = rid):
+                    return partida_por_historial(historial(), rid,
+                                                 int(origen_ide), nodos)
 
-                p = partida_del_vinculado(titular, None, True, ci)
+                def ci(rid: int = rid, v: dict = v):
+                    sub = subcuenta_de_linea(horas().get(rid, []), None)
+                    return partida_por_cuenta_o_nombre(
+                        nodos, cuentas(), sub, v.get("tipo_res"),
+                        v.get("descripcion"))
+
+                p = partida_del_vinculado(titular, None, True, ci, previa)
                 por_recurso[str(rid)] = (
-                    asdict(Propuesta(p.paride, p.cod, p.res, p.metodo))
+                    asdict(Propuesta(p.paride, p.cod, p.res, p.metodo,
+                                     p.origen))
                     if p.paride else None)
             out[l["clave"]] = por_recurso
         return out
