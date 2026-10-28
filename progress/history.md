@@ -3146,3 +3146,12 @@ design §8 e `INTEGRACION.md` (el preflight puede casar por categoría). O4
 **Fuera / pendiente.** Desplegar transfer → api → front; MANUAL T13 (solo
 lectura) y T14 (`azure-apps/dedicacion.md`). Las propuestas `ci_tipo` ya
 guardadas se quedan (D4-A).
+
+## 2026-10-28 · Despliegue de F-068 (transfer → api → front)
+
+Lanzado por el humano (`infra/d.local.ps1`, en orden): transfer
+`r20261028-1914`, api `r20261028-1918` y front `r20261028-1922`; las tres
+revisiones `Healthy` con el 100 % del tráfico (comprobado por el líder, solo
+lectura). El transfer sigue en modo real. T14: `azure-apps/dedicacion.md`
+al día (`bcc3f71`). MANUAL T13 hecha por el humano en producción el mismo
+día: «comprobado, sale bien».
