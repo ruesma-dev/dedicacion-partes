@@ -118,7 +118,7 @@ def test_f068_r13_truncado_es_error(monkeypatch):
 
 
 def test_f068_r13_un_fallo_sube():
-    cli, falso = _cliente_historial()
+    cli, _ = _cliente_historial()
 
     def falla(sql, params):
         raise RuntimeError("sigrid-api read HTTP 502")

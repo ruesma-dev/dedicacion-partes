@@ -26,7 +26,9 @@ Sin red ni BBDD; los `ide` son inventados.
 from __future__ import annotations
 
 import pytest
+from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
+from application.services.lecturas_lote import LecturasDelLote
 from application.services.propuesta_partida import LineaHistorial
 from application.services.reglas_vinculados import (
     AVISO_SIN_PARTIDA_VINCULADO,
@@ -44,11 +46,10 @@ from interface_adapters.api.app import (
     VinculadoPropuestaIn,
 )
 
-from tests.test_f044_pipeline_vinculados import api  # noqa: F401
+import tests.test_f044_sql_vinculados as sql_vin
 from tests.conftest import OBRA_ORIGEN, _fila, linea
 from tests.test_f044_pipeline_vinculados import (
     CUENTAS_VIN,
-    HORAS_VIN,
     PRESUPUESTO_VIN,
     ClientePre,
     ClienteVin,
@@ -56,11 +57,12 @@ from tests.test_f044_pipeline_vinculados import (
     _linea,
     _pf,
     _por,
+    api,  # noqa: F401  (fixture de la que cuelga `ruta_espiada`)
 )
-from tests.test_f044_sql_vinculados import (  # noqa: F401
-    _cuerpo_registro,
-    ruta_espiada,
-)
+from tests.test_f044_sql_vinculados import _cuerpo_registro
+
+#: La fixture de F-044 que espía la ruta (con el `api` de arriba).
+ruta_espiada = sql_vin.ruta_espiada
 
 
 # ================================ R18 ==================================== #
@@ -509,10 +511,6 @@ def test_f068_r15_la_ruta_devuelve_el_origen(api):  # noqa: F811
 
 
 # ============================ R15 · el lote ============================== #
-from application.pipelines.registro_lote import RegistroLote  # noqa: E402
-from application.services.lecturas_lote import (  # noqa: E402
-    LecturasDelLote,
-)
 
 
 def _st_lote():
