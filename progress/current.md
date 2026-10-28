@@ -4,7 +4,11 @@
 **En curso: F-067** (casilla «Recursos vinculados» para ver u ocultar sus
 subfilas en el cuadrante; solo front; petición del humano del 2026-10-27,
 propuesta aprobada «si, esta bien»), rama `feature/F-067-ver-vinculados`,
-worktree `porcentajes-f067`, implementer lanzado. **F-065** (la ficha de incidencia activa a 0
+worktree `porcentajes-f067`: implementación terminada (`1989b5d`,
+`progress/impl_F-067.md`, `init.sh` en verde), **review 1 lanzada**. Sin
+cambio de contrato: `azure-apps/dedicacion.md` no se toca. Pendiente del
+humano tras cerrar: desplegar el front y su MANUAL («⚠ Lo que espera al
+humano», entrada F-067). **F-065** (la ficha de incidencia activa a 0
 se queda en su sitio por letra; solo front) **cerrada (`done`) el
 2026-10-27**: review 1 APROBADA (`0f56ac8`), `bash harness/init.sh` en verde;
 resumen en `progress/history.md`. **Desplegada el 2026-10-27** (solo el
