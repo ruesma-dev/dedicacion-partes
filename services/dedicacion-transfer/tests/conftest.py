@@ -464,6 +464,11 @@ class ClienteFalso(EdicionesFalsas):
         """F-050: sin historial; la propuesta es el casamiento de siempre."""
         return []
 
+    def historial_de_vinculados(self, resides, obra_ide, desde, hasta):
+        """F-068 (R11): sin historial de los vinculados; su partida es la de
+        su cuenta y su nombre."""
+        return []
+
     def siguiente_cod_pt(self, ano, empresa=None):
         return "PT26/09999"
 

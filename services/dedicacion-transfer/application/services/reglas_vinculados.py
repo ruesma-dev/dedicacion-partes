@@ -24,6 +24,13 @@ se decide su LÍNEA y su PARTIDA, sin leer nada:
     `CI*`, la del titular; si no, la CI del tipo, que llega como función
     para leer las cuentas solo si hace falta (R27).
 
+F-068 (enmienda de R15-R16; ARCHITECTURE.md#regla-vinculado): tras la
+elegida y el titular, el HISTORIAL del vinculado en la obra
+(`partida_por_historial`, la función del «parte anterior» del trabajador);
+si no, `partida_por_cuenta_o_nombre`: una hoja con su cuenta, el casador
+del trabajador entre varias (o entre las `CI*` si ninguna) y, en empate, la
+única del capítulo CI.4. Si nada decide, sin partida, nunca la primera.
+
 Las lecturas (presupuesto, cuentas, validez de la elegida) son del
 pipeline; este módulo no importa ningún cliente.
 """

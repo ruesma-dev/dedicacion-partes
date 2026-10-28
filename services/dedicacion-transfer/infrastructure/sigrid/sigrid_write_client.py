@@ -89,6 +89,19 @@ def _entero(v) -> int | None:
     return None if v is None else int(v)
 
 
+def _linea_historial(f: dict) -> LineaHistorial:
+    """Una fila de `historial_partidas` o de `historial_de_vinculados`
+    (F-068: los mismos alias) como `LineaHistorial`."""
+    return LineaHistorial(
+        reside=int(f["reside"]), obride=int(f["obride"]),
+        obra_cod=(f["obra_cod"] or "").strip() or None,
+        parte_cod=(f["parte_cod"] or "").strip() or None,
+        ano=int(f["ano"]), mes=int(f["mes"]),
+        can=float(f["can"] or 0.0), paride=int(f["paride"]),
+        par_cod=(f["par_cod"] or "").strip() or None,
+        par_res=(f["par_res"] or "").strip() or None)
+
+
 def _trozos(valores: list, n: int = LOTE_PARAMETROS) -> Iterator[list]:
     """`valores` en trozos de como mucho `n` (F-055 R20)."""
     for i in range(0, len(valores), n):
@@ -467,15 +480,39 @@ class SigridWriteClient:
                 "AND a.cod LIKE 'M%' AND p.obride = m.obride "
                 "AND (m.ano * 100 + m.mes) BETWEEN ? AND ?",
                 lote + [self._tip, int(desde), int(hasta)])
-            out.extend(LineaHistorial(
-                reside=int(f["reside"]), obride=int(f["obride"]),
-                obra_cod=(f["obra_cod"] or "").strip() or None,
-                parte_cod=(f["parte_cod"] or "").strip() or None,
-                ano=int(f["ano"]), mes=int(f["mes"]),
-                can=float(f["can"] or 0.0), paride=int(f["paride"]),
-                par_cod=(f["par_cod"] or "").strip() or None,
-                par_res=(f["par_res"] or "").strip() or None)
-                for f in filas)
+            out.extend(_linea_historial(f) for f in filas)
+        return out
+
+    def historial_de_vinculados(
+        self, resides: Iterable[int | None], obra_ide: int, desde: int,
+        hasta: int
+    ) -> list[LineaHistorial]:
+        """F-068 (R11, R13; design §7): las líneas de partes de trabajo de
+        esos recursos (los vinculados de la petición) EN la obra `obra_ide`,
+        con el mes entre `desde` y `hasta` (AAAAMM, incluidos) y partida del
+        presupuesto de esa obra, de CUALQUIER hora (la del vinculado no es
+        `M*`: `OTEL`, `OGAS`, `MESVE`…). Mismos alias que
+        `historial_partidas`; en lotes de 500 recursos; sin recursos no se
+        lee. Un fallo o un `truncated` sube como excepción."""
+        ides = sorted({int(i) for i in resides if i})
+        out: list[LineaHistorial] = []
+        for i in range(0, len(ides), LOTE_RECURSOS_HISTORIAL):
+            lote = ides[i:i + LOTE_RECURSOS_HISTORIAL]
+            marcas = ",".join("?" for _ in lote)
+            filas = self._lectura(
+                "historial_de_vinculados",
+                "SELECT h.reside AS reside, m.obride AS obride, "
+                "co.cod AS obra_cod, c.cod AS parte_cod, m.ano AS ano, "
+                "m.mes AS mes, h.can AS can, h.paride AS paride, "
+                "p.cod AS par_cod, p.res AS par_res "
+                "FROM hmores h JOIN hmo m ON m.ide = h.hmoide "
+                "JOIN con c ON c.ide = m.ide JOIN con co ON co.ide = m.obride "
+                "JOIN obrparpar p ON p.ide = h.paride "
+                f"WHERE h.reside IN ({marcas}) AND m.obride = ? "
+                "AND c.tip = ? AND p.obride = m.obride "
+                "AND (m.ano * 100 + m.mes) BETWEEN ? AND ?",
+                lote + [int(obra_ide), self._tip, int(desde), int(hasta)])
+            out.extend(_linea_historial(f) for f in filas)
         return out
 
     def partes_del_periodo(self, obra_ide: int, ano: int,
