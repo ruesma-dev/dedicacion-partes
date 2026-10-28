@@ -589,8 +589,9 @@ def test_f044_r9_selector_de_la_subfila_propone_y_guarda():
     assert p["lineas"] == [{
         "clave": "linea", "recurso_ide": 10, "nombre": "Ana",
         "categoria": "Encargado", "es_postventa": False, "paride": 80002,
+        # F-068 (R18): con su `tipo_res`.
         "vinculados": [{"recurso_ide": 10, "tipo": "TF", "categoria": None,
-                        "cod": "TF-10"}]}]
+                        "cod": "TF-10", "tipo_res": "TELEFONO"}]}]
     assert r == {"partidas": CATALOGO, "partidas_postventa": [],
                  "ambito": "CI", "propuesta": PROP_TRANSFER,
                  "elegida": None, "fija": None}
@@ -687,9 +688,10 @@ def test_f044_r9_el_preflight_guarda_las_propuestas_de_las_subfilas():
 def test_f044_r9_metodos_de_propuesta_de_subfila():
     from application.registro_sigrid import es_metodo_de_propuesta_vinculado
 
+    # F-068 (R17): `auto_nombre` es ya un método propio del vinculado.
     assert [es_metodo_de_propuesta_vinculado(m) for m in (
         "ci_tipo", "titular", "manual", "auto_nombre", None)] == [
-        True, True, False, False, False]
+        True, True, False, True, False]
 
 
 # ========================= segundo plano (R9) ============================ #
@@ -750,12 +752,13 @@ def test_f044_r9_en_segundo_plano_se_proponen_las_subfilas():
     assert [p["lineas"] for p in peticiones] == [
         [{"clave": "10", "recurso_ide": 10, "nombre": "Ana",
           "categoria": "Encargado", "es_postventa": False,
+          # F-068 (R18): con su `tipo_res`.
           "vinculados": [{"recurso_ide": 10, "tipo": "TF", "categoria": None,
-                          "cod": "TF-10"}]}],
+                          "cod": "TF-10", "tipo_res": "TELEFONO"}]}],
         [{"clave": "10:pv", "recurso_ide": 10, "nombre": "Ana",
           "categoria": "Encargado", "es_postventa": True,
           "vinculados": [{"recurso_ide": 11, "tipo": "CO", "categoria": None,
-                          "cod": "CO-11"}]}]]
+                          "cod": "CO-11", "tipo_res": "GASOIL"}]}]]
     assert uow.asignaciones.guardadas == [
         ("vinculado", P_ACT, 10, (100, False), 10, PROP_TRANSFER, True),
         ("vinculado", P_ACT, 10, (101, True), 11, PROP_TRANSFER, True)]

@@ -88,12 +88,15 @@ class SubfilaVinculado:
     `recurso_vinculado`) y lo suyo en esa línea (`asignacion_vinculado`):
     partida ELEGIDA (las tres None = automática, R8), propuesta GUARDADA
     (R9, como la de F-055) y traza del último registro (R21). Sin
-    porcentaje: es el del titular (R7)."""
+    porcentaje: es el del titular (R7). F-068 (R18): su `descripcion`
+    (`recurso_vinculado`), que viaja al transfer y no sale en el
+    cuadrante."""
 
     vinculado_ide: int
     tipo: str | None = None
     tipo_res: str | None = None
     cod: str | None = None
+    descripcion: str | None = None
     partida_ide: int | None = None
     partida_cod: str | None = None
     partida_res: str | None = None
