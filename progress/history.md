@@ -3095,3 +3095,12 @@ válida es `mutacion_manual_F-XXX.md` con SHA completo), pendiente de decisión
 del humano, junto a la del SHA completo de F-063.
 
 **Fuera / pendiente.** Desplegar el front; MANUAL del humano en el navegador.
+
+## 2026-10-28 · Despliegue de F-067 (solo el front)
+
+Lanzado por el humano (`infra/d.local.ps1 front`): front `r20261028-1049`,
+revisión `ca-dedicacion-front--r20261028104852`, `Healthy` con el 100 % del
+tráfico. Sin cambio de contrato (`azure-apps` no se toca). MANUAL hecha
+por el humano en producción el mismo día: «sale y funciona bien». La
+automejora del reviewer (C4 bis) va a `arnes-base` como encargo pendiente
+(`de161b4`), por decisión del humano.
