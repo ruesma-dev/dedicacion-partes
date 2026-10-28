@@ -84,6 +84,11 @@ const state = {
   orden: { campo: "pendientes", dir: 1 },
   columnas: ORDEN_COLUMNAS_DEFECTO.slice(),
   anchos: {},
+  // F-067: la casilla «Recursos vinculados»: con `false`, el cuadrante no
+  // pinta las subfilas de vinculado ni los filtros de columna las miran. Solo
+  // pantalla (el modal de registro las enseña siempre). Se guarda con las
+  // preferencias de la tabla.
+  verVinculados: true,
   seleccionIde: null,          // cursor: la fila de las teclas (↑ ↓ Enter R F7 F8)
   // Selección múltiple (F-029): `ide` marcados con Ctrl/Shift+clic,
   // independiente de los filtros. Solo la escriben `marcarSeleccion` y
@@ -292,6 +297,9 @@ function cargarPrefsTabla() {
     if (datos.anchos && typeof datos.anchos === "object") {
       state.anchos = datos.anchos;
     }
+    // F-067: solo `false` la desmarca; unas preferencias guardadas antes de
+    // la casilla (sin la clave) la dejan marcada.
+    state.verVinculados = datos.verVinculados !== false;
   } catch (e) { /* sin persistencia */ }
 }
 
@@ -299,7 +307,8 @@ function guardarPrefsTabla() {
   try {
     localStorage.setItem(
       CLAVE_TABLA,
-      JSON.stringify({ orden: state.columnas, anchos: state.anchos })
+      JSON.stringify({ orden: state.columnas, anchos: state.anchos,
+        verVinculados: state.verVinculados })
     );
   } catch (e) { /* sin persistencia */ }
 }
@@ -584,6 +593,34 @@ function renderCabecera() {
     });
     cont.appendChild(el);
   });
+
+  // F-067: la casilla «Recursos vinculados», detrás de las fichas y solo si
+  // el mes tiene alguno (la api solo manda la clave `vinculados` si hay
+  // alguno, F-044 R6). Enseña u oculta sus subfilas en el cuadrante. En
+  // línea, no en una función aparte: el arnés node de F-063 carga
+  // `renderCabecera` con una lista cerrada de funciones.
+  const hayVinculados = state.trabajadores.some((t) =>
+    t.lineas.some((l) => (l.vinculados || []).length > 0));
+  if (hayVinculados) {
+    const casilla = document.createElement("label");
+    casilla.className = "check chk-vinculados";
+    casilla.title = "Ver u ocultar en el cuadrante las subfilas de los " +
+      "recursos vinculados (teléfono, caja de obra, gasoil, vehículo…). " +
+      "El registro en Sigrid no cambia.";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = state.verVinculados;
+    input.addEventListener("change", () => {
+      state.verVinculados = input.checked;
+      guardarPrefsTabla();
+      renderTabla();
+    });
+    const texto = document.createElement("span");
+    texto.textContent = "Recursos vinculados";
+    casilla.appendChild(input);
+    casilla.appendChild(texto);
+    cont.appendChild(casilla);
+  }
 }
 
 // F-063: los tipos de incidencia del cuadrante del mes, para sus fichas: uno
@@ -847,14 +884,16 @@ function montarArrastreColumna(th, clave) {
 // ---------------------------------------------------------------- filtrado
 const ORDEN_ESTADO = { SIN_CARGA: 0, FALTA: 1, EXCESO: 2, OK: 3 };
 
-function textoColumna(t, clave) {
+function textoColumna(t, clave, conVinculados = true) {
   if (clave === "nombre") return t.nombre;
   if (clave === "categoria") return t.categoria || "";
   // La columna de obras no pasa por aquí: casa línea a línea (F-041, R4).
-  // F-044 (R6): «Persona» y el tipo y código de cada vinculado.
+  // F-044 (R6): «Persona» y el tipo y código de cada vinculado; F-067: con
+  // la casilla desmarcada, solo «Persona» (lo que se ve).
   if (clave === "tipo") {
-    return ["Persona"].concat(t.lineas.flatMap((l) => (l.vinculados || [])
-      .map((v) => `${v.tipo_res || v.tipo || ""} ${v.cod || ""}`))).join(" ");
+    return ["Persona"].concat(conVinculados ? t.lineas.flatMap((l) =>
+      (l.vinculados || []).map((v) =>
+        `${v.tipo_res || v.tipo || ""} ${v.cod || ""}`)) : []).join(" ");
   }
   if (clave === "total") {
     const partes = [fmtPct(t.total), String(Math.round(t.total))];
@@ -869,6 +908,9 @@ function textoColumna(t, clave) {
 
 function trabajadoresVisibles() {
   const q = normalizar(state.filtroTexto);
+  // F-067: con la casilla desmarcada, «Tipo recurso» y «Partida» no miran
+  // los vinculados (no sale un trabajador por algo que no se ve).
+  const conVinculados = state.verVinculados !== false;
   let filas = state.trabajadores.filter((t) => {
     // Las bajas solo aparecen si tienen carga en el periodo.
     if (!t.activo && !t.lineas.length) return false;
@@ -888,10 +930,17 @@ function trabajadoresVisibles() {
             : l.partida_ide != null
               ? `${l.partida_cod || ""} ${l.partida_res || ""}`
               : "automática").includes(filtro) ||
-          // F-044 (R6): o la elegida de alguna de sus subfilas.
-          (l.vinculados || []).some((v) => v.partida_ide != null && normalizar(
-            `${v.partida_cod || ""} ${v.partida_res || ""}`).includes(filtro)));
+          // F-044 (R6): o la elegida de alguna de sus subfilas (F-067: si
+          // se ven).
+          (conVinculados && (l.vinculados || []).some((v) =>
+            v.partida_ide != null && normalizar(
+              `${v.partida_cod || ""} ${v.partida_res || ""}`).includes(filtro))));
         if (!casaPartida) return false;
+        continue;
+      }
+      // F-067: Tipo recurso con la casilla desmarcada, solo lo del trabajador.
+      if (clave === "tipo" && !conVinculados) {
+        if (!normalizar(textoColumna(t, clave, false)).includes(filtro)) return false;
         continue;
       }
       // Obras: alguna línea cuyo texto visible case, no todas juntas (D2).
@@ -1038,8 +1087,10 @@ function construirFila(t) {
       else renderTabla();
     });
     frag.appendChild(tr);
-    // F-044 (R6): bajo la línea, una subfila por vinculado.
-    const vinculados = (idx < n && t.lineas[idx] && t.lineas[idx].vinculados) || [];
+    // F-044 (R6): bajo la línea, una subfila por vinculado; F-067: ninguna
+    // con la casilla desmarcada (el `rowSpan` de abajo cuenta las que hay).
+    const vinculados = (state.verVinculados !== false && idx < n &&
+      t.lineas[idx] && t.lineas[idx].vinculados) || [];
     vinculados.forEach((v) => frag.appendChild(construirFilaVinculado(t, idx, v, trs)));
   }
   // F-030 (R16): las columnas del trabajador abarcan también sus incidencias.
