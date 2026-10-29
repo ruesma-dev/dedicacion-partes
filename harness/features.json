@@ -916,7 +916,7 @@
         "Solo lectura en Sigrid; probado por el humano en local con septiembre 2026",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "spec_ready",
+      "status": "in_progress",
       "sdd": true,
       "rigor": "critico",
       "priority": 8,

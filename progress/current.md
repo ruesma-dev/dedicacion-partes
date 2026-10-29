@@ -1,14 +1,14 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054** (al sincronizar, traer al cuadrante los % que ya existen en los
-partes de Sigrid; rigor crítico, SDD), `spec_ready`, rama
-`feature/F-054-sync-trae-porcentajes` en la copia `porcentajes-f054`:
-**spec aprobada el 2026-10-24 y EN REVISIÓN desde el 2026-10-29** porque
-se escribió antes de F-044, F-062, F-063-F-065, F-067 y F-068; `dev` unido
-a la rama el 2026-10-29 y spec-author lanzado para revisarla contra el
-código actual (vinculados: F-044 design §10). Vuelve a PARADA 1 antes de
-implementar. Ninguna feature `in_progress`. **F-068** (la partida del recurso vinculado se propone como la del
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29)** (al sincronizar,
+traer al cuadrante los % que ya existen en los partes de Sigrid, y al
+registrar preguntar si se ponen a 0 las obras sobrantes; rigor crítico,
+SDD), rama `feature/F-054-sync-trae-porcentajes` en la copia
+`porcentajes-f054` (con `dev` unido y sus tres `.venv` creados; init.sh en
+verde). Spec revisada contra F-044, F-062 y F-068 y **APROBADA el
+2026-10-29** con D16 = C, D17 = A y D18 = A («estoy de acuerdo»,
+`14d56ff`); implementer lanzado el 2026-10-29 («si»). **F-068** (la partida del recurso vinculado se propone como la del
 trabajador: historial en la obra y, si no, por nombre, CI.4 en empate;
 transfer y api, rigor crítico, SDD; petición del humano del 2026-10-28, va
 antes de F-054), rama `feature/F-068-propuesta-vinculado-como-titular`,
