@@ -425,6 +425,31 @@ class LineaIncidenciaSigrid:
     parte_emp: int | None = None
 
 
+@dataclass(frozen=True)
+class LineaMensualSigrid:
+    """F-054 (R4, R6; design §4.1): una línea de un parte de trabajo de obra
+    del periodo con `can` ≠ 0, tal como la lee
+    `lineas_mensuales_del_periodo`: su `hmores.ide`, recurso, obra, parte
+    (`ide`, código, `con.est` y si está En registro), hora, `can`, `fec`,
+    partida (0 si no tiene) y `synckey` (None si está vacía). Ver
+    ARCHITECTURE.md#regla-traer-sigrid y ARCHITECTURE.md#regla-obra-cero."""
+    hmores_ide: int
+    recurso_ide: int
+    obra_ide: int
+    obra_cod: str | None
+    parte_ide: int
+    parte_cod: str | None
+    parte_est: int | None
+    en_registro: bool
+    hora: str | None
+    can: float
+    fec: int
+    paride: int = 0
+    partida_cod: str | None = None
+    partida_res: str | None = None
+    synckey: str | None = None
+
+
 @dataclass
 class Conflicto:
     """Algo que el humano tiene que confirmar antes de que se escriba.
