@@ -51,11 +51,12 @@ informe en `progress/spec_F-054.md`. Cambios sin reabrir lo decidido: fuera
 `a_cero_hechos` (`registro_pipeline.py` ya no se toca), `sobrantes_a_cero`
 en vez de `a_cero` (choca con F-051), anclas en los puntos 23 y 24, B en la
 ronda A, `MESVE` de vinculados en `de_vinculados`, dobles de `test_f022`,
-`test_f024` y `test_f055` en la lista cerrada. **Decisiones NUEVAS
-pendientes del humano** (requirements §6, design §12): **D16** líneas de los
-vinculados en una obra sobrante (recomendada C: como las del trabajador);
-**D17** casilla de la sobrante (recomendada A: desmarcada); **D18** la parte
-A no trae nada de los vinculados (recomendada A). La copia no tiene `.venv`.
+`test_f024` y `test_f055` en la lista cerrada. **Decisiones nuevas
+CERRADAS por el humano el 2026-10-29** («estoy de acuerdo»; requirements §6,
+design §12): **D16 = C** (líneas de los vinculados en una obra sobrante, como
+las del trabajador), **D17 = A** (casilla desmarcada), **D18 = A** (la parte
+A no trae nada de los vinculados). **Spec APROBADA con todas las decisiones
+cerradas (D1-D18).** La copia no tiene `.venv`.
 
 `specs/F-054-sync-trae-porcentajes/` (requirements 149 líneas, design 250,
 tasks T1-T21). Revisión con las tres decisiones del humano del 2026-10-24

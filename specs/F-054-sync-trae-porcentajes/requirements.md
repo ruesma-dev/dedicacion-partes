@@ -7,7 +7,7 @@ sincronizar, el transfer lee y traduce y la api escribe en `dedicacion`
 registrar, una obra que la plataforma no le da es un 0 % y, si Sigrid tiene
 ahí una línea suya, se pregunta si se pone a 0, **editándola**. Pedida el
 2026-10-08, precisada el 2026-10-24, **revisada el 2026-10-29** contra F-044,
-F-062 y F-068 (D16-D18). Caso: la 0694, 2026-09 (`MADM` al 95 % a mano, sin
+F-062 y F-068 (D16-D18, cerradas). Caso: la 0694, 2026-09 (`MADM` al 95 % a mano, sin
 `synckey`: sobrecarga). Fuera: incidencias `CI*`/`CIZ` (D9) y `partes`.
 
 Lecturas del líder (2026-10-23): design §11. **Línea mensual**: `hmores`
@@ -123,7 +123,7 @@ de F-044 (`#regla-vinculado`); una `MESVE` empieza por `M` y es de vinculado.
   a 0: la puesta a 0 no suma y la omitida sí. El 100 % no cambia.
 - **R37.** Coste: el preflight del mes no sube más de un 15 % sobre el
   medido antes de B (método de F-055 T18). Sync y propuestas, sin lecturas.
-- **R38.** `[D16]` *(si D16 = C)* Con vinculados en la petición, otra
+- **R38.** `[D16]` Con vinculados en la petición, otra
   lectura en la ronda A: sus líneas de **cualquier** hora con `can` ≠ 0 del
   periodo; sobrante si ninguna acción de **ese** vinculado la cubre
   (R31-R32), y R33-R35 con **su** hora en la guarda (F-044 R24).
@@ -140,11 +140,7 @@ puede desmarcar. d13, metelo aqui. ok a lo demas» ⇒ **D12** (`solo_sigrid`
 marcadas, `distinta` desmarcadas), **D13 = B** (T19) y **D1-D3, D5-D8, D10,
 D11, D14, D15 = A**.
 
-**NUEVAS, pendientes del humano (2026-10-29)**; motivos en design §12:
-
-- **D16.** Líneas de los vinculados en una obra sobrante: A) fuera; B) aviso
-  sin escritura; **C) como las del trabajador (R38)**. *Recomendada C.*
-- **D17.** Casilla de la sobrante: **A) desmarcada siempre** (R33); B) la de
-  un vinculado, marcada si su titular tiene sobrante ahí. *Recomendada A.*
-- **D18.** Parte A y vinculados: **A) no se trae nada de ellos** (R14); B)
-  la partida de su línea, como elegida de su subfila. *Recomendada A.*
+**Cerradas por el humano el 2026-10-29** («estoy de acuerdo», con las
+recomendadas; motivos en design §12): **D16 = C**, las líneas de los
+vinculados en una obra sobrante, como las del trabajador (R38); **D17 = A**,
+casilla siempre desmarcada (R33); **D18 = A**, A no trae nada de ellos (R14).

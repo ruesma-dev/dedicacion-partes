@@ -117,3 +117,15 @@ Las tareas que dependen de D16 = C están marcadas *(D16 = C)* en `tasks.md`
   paralelo en la ronda A); el tope del 15 % de R37 sigue valiendo (T10/T19).
 - **Sin `.venv` en la copia:** el implementer tendrá que tenerlo para T1-T17
   y T21 (lo decide el líder; aquí no se ha creado).
+
+## 2026-10-29 · Decisiones D16-D18 cerradas: spec APROBADA
+
+El humano, el 2026-10-29, vía el líder: «estoy de acuerdo» con las tres
+recomendadas. **D16 = C** (líneas de los vinculados en una obra sobrante,
+como las del trabajador, confirmables por línea, R38), **D17 = A** (casilla
+de la sobrante siempre desmarcada, R33) y **D18 = A** (la parte A no trae
+nada de los vinculados, R14). Recogidas en requirements §6 y design §12 con
+la cita y la fecha; R38 y las tareas T11, T12, T13, T19 y T20 quedan firmes
+(sin marcadores condicionales). Tamaño: requirements 146/150, design 249/250.
+**Spec APROBADA, con todas las decisiones cerradas (D1-D18).** El estado en
+`features.json` lo pasa el líder.

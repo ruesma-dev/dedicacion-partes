@@ -3,7 +3,7 @@
 
 Decisiones del 2026-10-24 **cerradas** (requirements §6). **Revisado el
 2026-10-29** contra `dev` con F-044, F-062-F-065, F-067 y F-068 (merge
-`ac56e96`; cambios en `progress/spec_F-054.md`); **D16-D18 pendientes** (§12).
+`ac56e96`; cambios en `progress/spec_F-054.md`); **D16-D18 cerradas** (§12). **Spec aprobada.**
 
 ## 1. Servicios, límite y contrato
 
@@ -135,7 +135,7 @@ vinculados, *, ajustes) -> list[Sobrante]`.
   de postventa, si alguna de postventa resolvió esa partida; en la VAR, si
   alguna tiene ese `var_paride`. En pruebas (R32), solo la 0404: si su `ide`
   está en `reconocidas` (ya registrada, choque, `linea_cero`) o alguna
-  acción tiene su partida. **Vinculados** (R38, D16 = C): igual con las
+  acción tiene su partida. **Vinculados** (R38, D16): igual con las
   `AccionVinculado` de **ese** recurso (`Preflight.vinculados`: llevan
   `destino` y `paride`, también las omitidas «sigue al trabajador»).
 - `confirmable = False` con motivo si su parte no está En registro o su
@@ -147,7 +147,7 @@ vinculados, *, ajustes) -> list[Sobrante]`.
 
 `preflight_completo`: `precargar(…, mensuales=True)` pone en la **ronda A**
 (no depende de nada) la lectura de §4.1 con `solo_m` y los trabajadores y,
-con D16 = C y vinculados, la de `solo_m=False` con ellos, en paralelo; corre
+con vinculados (D16), la de `solo_m=False` con ellos, en paralelo; corre
 los preflights de siempre (también las peticiones de 4 elementos de F-062) y
 calcula `sobrantes`; con `completo = false`, nada. R36: la sobrante que
 comparte parte con una petición ya la lee `lineas_del_parte` y suma.
@@ -184,7 +184,7 @@ en local como F-055 T18 (2026-09, tres pasadas); más de un 15 % ⇒ **PARA**.
   (marcada, D12), y «Aceptar las marcadas» ⇒ `traerDeSigrid(aceptar)`.
 - B: `pintarModalPreflight` gana «En Sigrid, en obras que no tiene en la
   plataforma» (las de vinculado con tipo y código): `.chk-cero` por
-  confirmable, **desmarcada** (D17 A; sin `marcadaPorDefecto` ni `vistas` de
+  confirmable, **desmarcada** (D17; sin `marcadaPorDefecto` ni `vistas` de
   F-064), y las demás como aviso. `registroEjecutar` manda
   `sobrantes_a_cero`, aparte de `pisar_claves`. `unirPreflight` conserva las
   claves de arriba (`...previo`): el repreflight de una obra mantiene la
@@ -203,7 +203,7 @@ Transfer: `ClienteFalso` con `_read` doble y `TestClient`; A nunca
 `escribir` (R7); B: tres entradas y pruebas, omitida que cubre, cerrado,
 otro sistema, guardas, nunca `DELETE`, la `MESVE` de un vinculado en el
 parte del trabajador **no** es su sobrante, la obra sola no lee y el
-completo lee **una** más (dos con D16 = C) en la ronda A. Api: dominio puro,
+completo lee **una** más (dos con vinculados) en la ronda A. Api: dominio puro,
 UoW en memoria de `test_f024_cuadrante_empresa.py`, `registro_sigrid` con
 transfer doble (sin sobrantes, ni clave ni llamada); aceptar conserva
 `asignacion_vinculado`. Front: node con dobles. Sigrid: solo T18-T19.
@@ -234,17 +234,16 @@ copias de `partes`; api `sync_pipeline.py`, `propuestas_mes.py`,
 - **Descartado:** detectar desde la api; un `ejecutar` por obra para las
   sobrantes; A dentro de `POST /sync` (D1 C); `a_cero_hechos` (§6.4).
 
-## 12. Decisiones nuevas (2026-10-29), pendientes (detalle: `progress/spec_F-054.md`)
+## 12. Decisiones del 2026-10-29, cerradas (detalle: `progress/spec_F-054.md`)
 
-- **D16. Vinculados en una obra sobrante** (lo dejó aquí F-044 §10). A)
-  fuera: B solo `M*` del trabajador; quitar una obra deja vivas nuestras
-  `porcentajes:vin:` y las manuales, contra `#regla-vinculado`. B) aviso sin
-  escritura (la lectura de C). **C) como el trabajador (R38)**, con su hora
-  en la guarda. *Recomendada C*; solo periodos ≥ `sync.vinculados.desde`.
-- **D17. Casilla.** **A) desmarcada siempre**; B) la de un vinculado, marcada
-  si su titular tiene sobrante en esa obra (como F-064). *Recomendada A*:
-  poner a 0 una línea de otro no es seguir un cambio nuestro.
-- **D18. A y vinculados.** **A) no traer nada** (`de_vinculados`); B) su
-  partida como elegida de la subfila. *Recomendada A*: F-068 ya la propone
-  (historial con el periodo) y su choque se pisa; B lee horas no `M*` y
-  fija una elegida que ya no sigue al titular.
+El humano, el 2026-10-29: «estoy de acuerdo» con las tres recomendadas.
+
+- **D16 = C. Vinculados en una obra sobrante** (lo dejó aquí F-044 §10):
+  como el trabajador (R38), confirmables por línea con su hora en la guarda;
+  solo periodos ≥ `sync.vinculados.desde`. Descartadas: A) fuera (dejaba
+  vivas nuestras `porcentajes:vin:`, contra `#regla-vinculado`); B) aviso.
+- **D17 = A. Casilla** desmarcada siempre; descartada B) la del vinculado
+  marcada si su titular tiene sobrante (como F-064): poner a 0 una línea de
+  otro no es seguir un cambio nuestro.
+- **D18 = A. A y vinculados:** no se trae nada (`de_vinculados`); descartada
+  B) su partida como elegida: F-068 ya la propone y su choque se pisa.
