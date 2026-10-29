@@ -15,6 +15,9 @@
   POST /api/partidas/propuesta-lote -> las propuestas de varias obras de un
                                    periodo, con las lecturas agrupadas
                                    (F-055 R34; solo lee)
+  POST /api/porcentajes/existentes -> los % que ya hay en los partes del
+                                   periodo, traducidos a entradas del
+                                   cuadrante (F-054 R4-R12; solo lee)
   GET  /health
 """
 from __future__ import annotations
@@ -29,6 +32,9 @@ from pydantic import BaseModel, Field
 
 from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
+from application.services.porcentajes_existentes import (
+    PorcentajesExistentes,
+)
 from application.services.reglas_porcentajes import (
     clave_conflicto, empresa_valida,
 )
@@ -241,6 +247,18 @@ class PropuestaLoteIn(BaseModel):
     peticiones: list[PropuestaIn] = Field(default_factory=list)
 
 
+class ExistentesIn(BaseModel):
+    """`POST /api/porcentajes/existentes` (F-054, design §1): la empresa,
+    el periodo y las obras que admiten postventa (para el casado inverso,
+    R9). `empresa` sin tipo A PROPÓSITO: lo que no es una empresa es 422
+    con motivo (`empresa_valida`), sin leer nada."""
+
+    empresa: Any = None
+    ano: int
+    mes: int
+    obras: list[ObraIn] = Field(default_factory=list)
+
+
 def _empresas_mezcladas(exc: EmpresasMezcladas) -> JSONResponse:
     """Una petición con líneas de varias empresas es un dato de entrada
     inválido (422), no un fallo de Sigrid (502): no se ha leído nada."""
@@ -341,6 +359,7 @@ def build_app(settings) -> FastAPI:
         est_parte=settings.est_parte_activo,
     )
     pipeline = RegistroPipeline(cliente=cliente, settings=settings)
+    existentes = PorcentajesExistentes(cliente=cliente, settings=settings)
     universo = UniversoPostventa(cliente=cliente, settings=settings)
     universo_var = UniversoVar(cliente=cliente, settings=settings)
 
@@ -545,6 +564,26 @@ def build_app(settings) -> FastAPI:
                                r["error"])
             obras.append(r)
         return {"ok": True, "obras": obras}
+
+    @app.post("/api/porcentajes/existentes")
+    def porcentajes_existentes(p: ExistentesIn):
+        """F-054 (R3-R12): solo lee, nunca escribe (R7). Empresa no válida,
+        422 sin leer; una lectura que falla o viene truncada, 502 con el
+        motivo (R3). Síncrona, en el threadpool."""
+        if not empresa_valida(p.empresa):
+            logger.warning("existentes rechazado: empresa %r", p.empresa)
+            return JSONResponse(status_code=422, content={
+                "ok": False,
+                "error": f"empresa no válida: {p.empresa!r}"})
+        try:
+            obras = [ObraEntrada(ide=o.ide, codigo=o.codigo, nombre=o.nombre)
+                     for o in p.obras]
+            return {"ok": True, **existentes.calcular(p.empresa, p.ano,
+                                                      p.mes, obras)}
+        except Exception as exc:                # noqa: BLE001
+            logger.exception("porcentajes existentes fallo")
+            return JSONResponse(status_code=502,
+                                content={"ok": False, "error": str(exc)})
 
     @app.post("/api/var/universo")
     async def universo_de_var(p: UniversoVarIn):
