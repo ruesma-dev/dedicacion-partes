@@ -142,5 +142,7 @@ def test_f030_r30_punta_a_punta_la_api_manda_la_misma_con_su_traza(caso):
                                       id=7)], "ana")
     payloads, no_vigentes = reg._payloads(
         sesion, 2026, 7, {}, None, reg._filtro(None))  # type: ignore[arg-type]
+    # F-062 (lista cerrada): R24, el recurso designado, como en `ejecutar`.
+    reg._designar_cierres(payloads)
     assert no_vigentes == []
     assert payloads == [caso["peticion"]]

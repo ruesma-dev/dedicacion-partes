@@ -44,13 +44,16 @@ from domain.models import (
     ResultadoCompletarTrabajador,
     ResultadoCopia,
     ResumenPeriodo,
+    SubfilaVinculado,
     TipoEvento,
     TipoIncidencia,
     Trabajador,
 )
 from domain.ports import SigridGateway, UnitOfWork, UniversosGateway
+from domain.vinculados import ResultadoVinculos, codigos
 
 from application.filtros_maestros import CRITERIO_VACIO, CriterioActivoRecurso
+from application.sync_pipeline import ConfigVinculados
 
 logger = logging.getLogger(__name__)
 
@@ -292,7 +295,13 @@ class CambiarPartida:
     trabajador y deja un evento `PARTIDA`, deshacible como cualquier otro
     (F-050, R13, docs/ARCHITECTURE.md#regla-partida). `partida` es
     `{ide, cod, res}` o None (automática). Una línea VAR tiene la partida
-    fija: `ObraNoValida`. Si no cambia nada, ni escribe ni deja evento."""
+    fija: `ObraNoValida`. Si no cambia nada, ni escribe ni deja evento.
+
+    F-044 (R8): con `vinculado_ide`, la partida de ESA subfila de la línea
+    (evento `PARTIDA_VINCULADO`); el vinculado que no está bajo la línea,
+    `LineaNoEncontrada`; la de una línea VAR, fija como la suya. Al cambiar
+    la del titular, sus subfilas pierden la propuesta guardada (R9: se
+    calcula con la partida del titular) y conservan su elegida."""
 
     def ejecutar(
         self,
@@ -306,6 +315,7 @@ class CambiarPartida:
         usuario: str,
         *,
         filtro: FiltroEmpresa,
+        vinculado_ide: int | None = None,
     ) -> tuple[CuadranteTrabajador, ResumenPeriodo]:
         periodo_id, _ = _periodo_abierto_o_error(uow, anio, mes)
         _trabajador_o_error(uow, trabajador_ide)
@@ -317,29 +327,42 @@ class CambiarPartida:
                 f"El trabajador {trabajador_ide} no tiene la obra {obra_ide} "
                 f"(postventa={es_postventa}) en el periodo"
             )
+        if vinculado_ide is not None and not any(
+                v.vinculado_ide == vinculado_ide for v in linea.vinculados):
+            raise LineaNoEncontrada(
+                f"La línea de la obra {obra_ide} (postventa={es_postventa}) "
+                f"del trabajador {trabajador_ide} no tiene el vinculado "
+                f"{vinculado_ide}"
+            )
         if linea.partida_fija:
             raise ObraNoValida(
                 f"La línea de la obra {obra_ide} es una entrada VAR: su "
                 "partida es fija"
             )
         elegida = partida or {}
-        despues = [
-            dataclasses.replace(
-                ln,
-                partida_ide=elegida.get("ide"),
-                partida_cod=elegida.get("cod"),
-                partida_res=elegida.get("res"),
-            )
-            if ln is linea else ln
-            for ln in antes
-        ]
+        nueva = {"partida_ide": elegida.get("ide"),
+                 "partida_cod": elegida.get("cod"),
+                 "partida_res": elegida.get("res")}
+        if vinculado_ide is None:
+            cambiada = dataclasses.replace(
+                linea, **nueva, vinculados=tuple(
+                    dataclasses.replace(v, **dict.fromkeys(_CAMPOS_PROPUESTA))
+                    for v in linea.vinculados))
+            tipo = TipoEvento.PARTIDA
+        else:
+            cambiada = dataclasses.replace(linea, vinculados=tuple(
+                dataclasses.replace(v, **nueva)
+                if v.vinculado_ide == vinculado_ide else v
+                for v in linea.vinculados))
+            tipo = TipoEvento.PARTIDA_VINCULADO
+        despues = [cambiada if ln is linea else ln for ln in antes]
         if _snapshot(antes) != _snapshot(despues):
             uow.asignaciones.reemplazar(periodo_id, trabajador_ide, despues,
                                         usuario)
             uow.eventos.registrar(
                 periodo_id,
                 trabajador_ide,
-                TipoEvento.PARTIDA,
+                tipo,
                 usuario,
                 _snapshot(antes),
                 _snapshot(despues),
@@ -745,8 +768,12 @@ class PreviewSync:
         empresa_obras: int,
         digitos_excluidos: int = 0,
         sql_incidencias: str | None = None,
+        vinculados: ConfigVinculados | None = None,
     ) -> None:
         self._sigrid = sigrid
+        # Recursos vinculados (F-044, R3): sin configuración, el preview no
+        # los lee ni publica la sección.
+        self._vinculados = vinculados
         self._sql_empleados = sql_empleados
         self._sql_obras = sql_obras
         # Catálogo `auxemp` (F-032). Sin consulta, el preview no lo lee ni
@@ -787,6 +814,7 @@ class PreviewSync:
             COLUMNAS_INCIDENCIAS,
             COLUMNAS_OBRAS,
             _validar_columnas,
+            decidir_vinculos,
             preparar_obras,
         )
 
@@ -856,6 +884,10 @@ class PreviewSync:
                 "motivo_var": uvar.motivo,
             },
         }
+        if self._vinculados is not None:
+            # Antes que incidencias y empresas, que siguen siendo las últimas.
+            salida["vinculados"] = resumir_vinculos(decidir_vinculos(
+                self._sigrid, self._vinculados, emp.filas))
         if self._sql_incidencias is not None:
             # Antes que las empresas, en el mismo orden que el sync.
             brutas_inc = self._sigrid.leer(self._sql_incidencias)
@@ -868,6 +900,30 @@ class PreviewSync:
                               "sync.empresas.sql")
             salida["empresas"] = resumir_empresas(brutas_empresas)
         return salida
+
+
+def resumir_vinculos(r: ResultadoVinculos) -> dict[str, Any]:
+    """Bloque `vinculados` del preview (F-044, R3): contadores y códigos,
+    nunca nombres ni descripciones (para que Administración rellene el
+    campo). Los de tipo excluido, solo contados por tipo."""
+    def por_tipo(recursos: Any) -> dict[str, int]:
+        return dict(Counter(v.tipo or "(sin tipo)" for v in recursos)
+                    .most_common())
+
+    vinculados = [v for v, _ in r.vinculos]
+    return {
+        "leidos": (len(vinculados) + len(r.sin_campo)
+                   + len(r.hacia_no_trabajador) + len(r.excluidos)),
+        "vinculados": len(vinculados),
+        "trabajadores": len(r.por_trabajador()),
+        "por_tipo": por_tipo(vinculados),
+        "sin_campo": {"total": len(r.sin_campo),
+                      "codigos": codigos(r.sin_campo)},
+        "hacia_no_trabajador": {"total": len(r.hacia_no_trabajador),
+                                "codigos": codigos(r.hacia_no_trabajador)},
+        "excluidos": {"total": len(r.excluidos),
+                      "por_tipo": por_tipo(r.excluidos)},
+    }
 
 
 def _por_empresa(filas: list[dict[str, Any]]) -> dict[str, int]:
@@ -938,6 +994,8 @@ def _validar_lineas(
                 partida_ide=bruto.get("partida_ide"),
                 partida_cod=bruto.get("partida_cod"),
                 partida_res=bruto.get("partida_res"),
+                # F-044 (R8): y las elegidas de sus subfilas.
+                vinculados=_subfilas_de_snapshot(bruto),
             )
         )
     ides = {ln.obra_ide for ln in lineas}
@@ -948,6 +1006,20 @@ def _validar_lineas(
     if desconocidas:
         lineas = [ln for ln in lineas if ln.obra_ide in existentes]
     return lineas
+
+
+def _subfilas_de_snapshot(bruto: dict[str, Any]
+                          ) -> tuple[SubfilaVinculado, ...]:
+    """Las subfilas con elegida de una línea de snapshot (`_snapshot`)."""
+    try:
+        return tuple(
+            SubfilaVinculado(vinculado_ide=int(v["vinculado_ide"]),
+                             partida_ide=v.get("partida_ide"),
+                             partida_cod=v.get("partida_cod"),
+                             partida_res=v.get("partida_res"))
+            for v in bruto.get("vinculados") or [])
+    except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        raise LineasInvalidas(f"Línea inválida: {bruto}") from exc
 
 
 def _rechazar_nuevas_no_ofrecibles(
@@ -1005,8 +1077,8 @@ _CAMPOS_PROPUESTA = ("propuesta_ide", "propuesta_cod", "propuesta_res",
 
 def _conservar_partidas(lineas: list[Linea], antes: list[Linea]) -> list[Linea]:
     """Cada línea cuya clave (obra, postventa) estaba en `antes` recibe la
-    partida que tenía (F-050, R14) y su propuesta guardada (F-055, R17); las
-    demás quedan como vienen."""
+    partida que tenía (F-050, R14), su propuesta guardada (F-055, R17) y
+    sus subfilas (F-044, R8); las demás quedan como vienen."""
     previas = {ln.clave(): ln for ln in antes}
     return [
         dataclasses.replace(
@@ -1015,6 +1087,7 @@ def _conservar_partidas(lineas: list[Linea], antes: list[Linea]) -> list[Linea]:
             partida_cod=previas[ln.clave()].partida_cod,
             partida_res=previas[ln.clave()].partida_res,
             **{c: getattr(previas[ln.clave()], c) for c in _CAMPOS_PROPUESTA},
+            vinculados=previas[ln.clave()].vinculados,
         )
         if ln.clave() in previas else ln
         for ln in lineas
@@ -1024,14 +1097,18 @@ def _conservar_partidas(lineas: list[Linea], antes: list[Linea]) -> list[Linea]:
 def _sin_propuesta(lineas: list[Linea]) -> list[Linea]:
     """Las líneas copiadas de otro periodo, sin su propuesta guardada
     (F-055, R17: copiar el mes y F8 no la copian; la partida elegida sí,
-    F-050 R16)."""
-    return [dataclasses.replace(ln, **dict.fromkeys(_CAMPOS_PROPUESTA))
-            for ln in lineas]
+    F-050 R16). F-044 (R8): igual sus subfilas."""
+    return [dataclasses.replace(
+        ln, **dict.fromkeys(_CAMPOS_PROPUESTA), vinculados=tuple(
+            dataclasses.replace(v, **dict.fromkeys(_CAMPOS_PROPUESTA))
+            for v in ln.vinculados))
+        for ln in lineas]
 
 
 def _snapshot(lineas: list[Linea]) -> list[dict[str, Any]]:
     """Lo que guarda un evento. La partida, solo si la línea la tiene: los
-    eventos sin partida no cambian de forma (F-050, R15)."""
+    eventos sin partida no cambian de forma (F-050, R15). Igual las subfilas
+    con elegida (F-044, R8): sin ninguna, la línea de siempre."""
     return [
         {
             "obra_ide": ln.obra_ide,
@@ -1046,6 +1123,20 @@ def _snapshot(lineas: list[Linea]) -> list[dict[str, Any]]:
                 if ln.partida_ide is not None
                 else {}
             ),
+            **(
+                {"vinculados": elegidas}
+                if (elegidas := _elegidas_de_subfilas(ln)) else {}
+            ),
         }
         for ln in sorted(lineas, key=lambda x: (x.obra_ide, x.es_postventa))
+    ]
+
+
+def _elegidas_de_subfilas(ln: Linea) -> list[dict[str, Any]]:
+    """Las subfilas de `ln` con partida elegida, en orden de vinculado."""
+    return [
+        {"vinculado_ide": v.vinculado_ide, "partida_ide": v.partida_ide,
+         "partida_cod": v.partida_cod, "partida_res": v.partida_res}
+        for v in sorted(ln.vinculados, key=lambda v: v.vinculado_ide)
+        if v.partida_ide is not None
     ]

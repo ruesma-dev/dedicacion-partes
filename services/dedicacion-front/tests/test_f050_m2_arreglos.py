@@ -111,9 +111,10 @@ def test_f050_m2_1_cada_columna_tiene_su_minimo():
         ("process.stdout.write(JSON.stringify([Object.keys(COLUMNAS), "
          "Object.keys(MINIMO_COLUMNA), Object.keys(COLUMNAS).map((c) => "
          "MINIMO_COLUMNA[c] <= COLUMNAS[c].ancho)]));")])) == [
-        ["nombre", "categoria", "asignaciones", "partida", "total"],
-        ["nombre", "categoria", "asignaciones", "partida", "total"],
-        [True] * 5]
+        # F-044 (lista cerrada): y «Tipo recurso».
+        ["nombre", "categoria", "asignaciones", "tipo", "partida", "total"],
+        ["nombre", "categoria", "asignaciones", "tipo", "partida", "total"],
+        [True] * 6]
 
 
 def _sincronizar(anchos: dict, disponible: int, columnas=None) -> dict:

@@ -232,7 +232,7 @@ class IncidenciaORM(Base):
     (sigue en Sigrid hasta retirarla a mano; nunca se borra la fila) y
     `sigrid_dia_ini`/`_fin`, el día de Sigrid de cada línea del par. Llegan
     a una base ya creada por `alters_faltantes` (`quitada` con
-    `server_default`)."""
+    `server_default`). F-062 (R15): `sigrid_dia_fin_antes`, igual."""
 
     __tablename__ = "incidencia"
 
@@ -267,6 +267,9 @@ class IncidenciaORM(Base):
     )
     sigrid_dia_ini: Mapped[int | None] = mapped_column(SmallInteger)
     sigrid_dia_fin: Mapped[int | None] = mapped_column(SmallInteger)
+    # F-062 (R15): el día original del `CIZ` ajeno que movió su `fin` (para
+    # devolverlo, R16-R17). Al final, por `alters_faltantes`.
+    sigrid_dia_fin_antes: Mapped[int | None] = mapped_column(SmallInteger)
 
     __table_args__ = (
         CheckConstraint(
@@ -305,4 +308,85 @@ class EventoORM(Base):
             "trabajador_ide",
             "id",
         ),
+    )
+
+
+class RecursoVinculadoORM(Base):
+    """Recurso no persona de Sigrid (teléfono, gasoil, vehículo…) con el campo
+    «Recurso Asociado» y su vínculo (F-044, R5, docs/ARCHITECTURE.md
+    #regla-vinculado). Lo escribe solo el sync (`UpsertVinculadosStep`). La
+    clave es el `res.ide` de Sigrid: nunca la genera PostgreSQL.
+
+    `trabajador_ide` nulo cuando no hay vínculo (`estado_vinculo` lo dice:
+    `sin_campo` o `no_trabajador`); el que deja de llegar o pierde su
+    trabajador queda `activo = false` y no se borra: sus subfilas ya
+    guardadas lo siguen nombrando. Tabla NUEVA, por `create_all`."""
+
+    __tablename__ = "recurso_vinculado"
+
+    ide: Mapped[int] = mapped_column(
+        BigInteger, primary_key=True, autoincrement=False
+    )
+    trabajador_ide: Mapped[int | None] = mapped_column(
+        ForeignKey("trabajador.ide"), nullable=True
+    )
+    tipo: Mapped[str | None] = mapped_column(Text)        # `auxrestip.cod`
+    tipo_res: Mapped[str | None] = mapped_column(Text)    # su descripción
+    cod: Mapped[str | None] = mapped_column(Text)
+    descripcion: Mapped[str | None] = mapped_column(Text)
+    # `con.emp` y `con.fecbaj` (AAAAMMDD) del recurso (design §7.2).
+    empresa: Mapped[int | None] = mapped_column(Integer)
+    fecha_baja: Mapped[int | None] = mapped_column(Integer)
+    horide: Mapped[int | None] = mapped_column(BigInteger)  # `res.horide`
+    activo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    estado_vinculo: Mapped[str] = mapped_column(Text, nullable=False)
+    sincronizado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(),
+        onupdate=func.now()
+    )
+
+    __table_args__ = (
+        Index("ix_recurso_vinculado_trabajador", "trabajador_ide", "activo"),
+    )
+
+
+class AsignacionVinculadoORM(Base):
+    """Lo que se guarda de la subfila de un vinculado en una línea (F-044,
+    R5, R8, R9, R30): la partida ELEGIDA (`partida_*`), la propuesta GUARDADA
+    (`propuesta_*`, como en `asignacion`) y la traza del registro
+    (`sigrid_*`). Fila solo cuando hay algo que guardar: la subfila sin fila
+    es automática y sin registrar.
+
+    Cuelga de la asignación con `ON DELETE CASCADE`: `reemplazar` borra y
+    vuelve a insertar las líneas, y con ellas lo que la fila lleve. Todas las
+    columnas de datos son nulables y sin default. La escribe
+    `upsert_asignacion_vinculado` (`INSERT … ON CONFLICT` sobre la pareja).
+    Tabla NUEVA, por `create_all`."""
+
+    __tablename__ = "asignacion_vinculado"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    asignacion_id: Mapped[int] = mapped_column(
+        ForeignKey("asignacion.id", ondelete="CASCADE"), nullable=False
+    )
+    vinculado_ide: Mapped[int] = mapped_column(
+        ForeignKey("recurso_vinculado.ide"), nullable=False
+    )
+    partida_ide: Mapped[int | None] = mapped_column(BigInteger)
+    partida_cod: Mapped[str | None] = mapped_column(Text)
+    partida_res: Mapped[str | None] = mapped_column(Text)
+    propuesta_ide: Mapped[int | None] = mapped_column(BigInteger)
+    propuesta_cod: Mapped[str | None] = mapped_column(Text)
+    propuesta_res: Mapped[str | None] = mapped_column(Text)
+    propuesta_metodo: Mapped[str | None] = mapped_column(Text)
+    propuesta_origen: Mapped[str | None] = mapped_column(Text)
+    # Traza, con las longitudes de la de `asignacion`.
+    sigrid_estado: Mapped[str | None] = mapped_column(String(16))
+    sigrid_motivo: Mapped[str | None] = mapped_column(String(300))
+    sigrid_parte: Mapped[str | None] = mapped_column(String(24))
+    sigrid_hmores_ide: Mapped[int | None] = mapped_column(Integer)
+
+    __table_args__ = (
+        UniqueConstraint("asignacion_id", "vinculado_ide",
+                         name="uq_asignacion_vinculado"),
     )

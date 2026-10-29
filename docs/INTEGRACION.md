@@ -82,7 +82,7 @@
 | Recurso | Compartido con | Qué hacemos | Desde |
 |---|---|---|---|
 | PostgreSQL `psql-albaranes-rs9k2` | `albaranes`, `partes`, `datamart-seg-anual`, `postventa-incidencias` | Base propia `dedicacion`: periodos, cuadrante, asignaciones y auditoría | **F-008** |
-| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna**. Desde F-030 la api lee en cada sync el catálogo de incidencias (`auxhor`, códigos `CI*`), y el transfer **escribe** por cada incidencia un par de líneas `CI*`/`CIZ` con `can = 0` y `synckey` `porcentajes:inc:{id}:ini|fin`, tras **una** lectura de las líneas `CI*` del mes de esos recursos en cualquier parte (`hmores` + `auxhor` + `hmo` + `con`) para no duplicar; si la incidencia ya registrada cambia de días, **edita la `fec`** de su par (`UPDATE` con guarda, anexo R30) | F-001, F-002, F-037, F-051, F-030 |
+| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna**. Desde F-030 la api lee en cada sync el catálogo de incidencias (`auxhor`, códigos `CI*`), y el transfer **escribe** por cada incidencia un par de líneas `CI*`/`CIZ` con `can = 0` y `synckey` `porcentajes:inc:{id}:ini|fin`, tras **una** lectura de las líneas `CI*` del mes de esos recursos en cualquier parte (`hmores` + `auxhor` + `hmo` + `con`) para no duplicar; si la incidencia ya registrada cambia de días, **edita la `fec`** de su par (`UPDATE` con guarda, anexo R30). Desde F-062 las incidencias son **rachas** como las de Administración: esa lectura es **una** por petición o lote **en ventana** (de 12 meses antes, `INCIDENCIAS_MESES_ATRAS`, al mes siguiente, en cualquier parte y también por `ide` de las trazas), el transfer continúa la racha de quien sea, **mueve la `fec`** de `CIZ` ajenos (de Administración o de `partes`, con su `can` y sin cambiar su `synckey`) y la devuelve a su día si deja de continuarla, escribe un `CIZ` en el parte del inicio (también ajeno) y cierra el último día del mes anterior las rachas que quedaron abiertas, en un parte de ese mes; nunca borra. Desde F-044 la api lee en cada sync los recursos no persona con el campo extendido «Recurso Asociado» (`sync.vinculados` de `config.yaml`, el código del campo como parámetro), y el transfer lee **una** vez por obra las cuentas de las partidas del presupuesto (`obrparpar` + `con`) si algún vinculado necesita la CI de su tipo y **escribe o edita**, en el parte de su trabajador, una línea por recurso vinculado con **su** hora y `synckey` `porcentajes:vin:{registro_id}:{recurso_ide}`; nunca borra. Desde F-068 el transfer lee además, **una** vez por petición (y por obra en un lote) y solo si algún vinculado llega a ese paso, el historial de partidas de los vinculados en la obra de origen (`hmores` + `hmo` + `con` + `obrparpar`, cualquier hora) | F-001, F-002, F-037, F-051, F-030, F-062, F-044, F-068 |
 | `acralbaranesdev` | `albaranes`, `partes` | Publicar y tirar las tres imágenes, por identidad gestionada | **F-008** |
 | Entra ID | todo el ecosistema | Autenticación del front (Easy Auth) y grupo de acceso | **F-008** |
 
@@ -103,7 +103,16 @@ Desde F-030 este proyecto escribe además en ese parte compartido líneas de
 **incidencia** (`CI*`/`CIZ`, `can = 0`), las mismas que escribe `partes`:
 antes de escribir mira las de ese recurso, código y día en todos los partes
 del mes, y lo que ya está (de `partes` o de Administración) no se duplica
-(`docs/ARCHITECTURE.md#regla-incidencia`). `azure-apps/partes.md` debería
+(`docs/ARCHITECTURE.md#regla-incidencia`). Desde F-062, además, **mueve la
+`fec`** de `CIZ` que no son suyos (también con `synckey` `partes:…`) para
+continuar una racha, **añade** `CIZ` en partes de otros (el del inicio de la
+racha, y en el mes anterior para cerrarla) y deja rachas **abiertas** a fin
+de mes; nunca borra. Desde F-044 escribe además en ese parte compartido
+líneas de **recursos no persona** vinculados a sus trabajadores (teléfono,
+gasoil, vehículo…), con su hora (no `M*`, salvo `MESVE`) y `synckey`
+`porcentajes:vin:…`, y edita las de esos recursos al 0 % o pisadas
+confirmadas con la guarda de su hora; nunca borra
+(`docs/ARCHITECTURE.md#regla-vinculado`). `azure-apps/partes.md` debería
 decirlo en su «qué se rompe»; es de `partes`.
 
 **Lo nuevo de F-008 son tres de esas cuatro filas.** La primera es la que
@@ -212,6 +221,7 @@ despliegue no tenga que aprender dos vocabularios.
 | `VAR_OBRA_COD`, `VAR_PARTIDA_DESDE` | Obra de obras varias y número inicial desde el que sus partidas se ofrecen como obras propias (F-039, `docs/ARCHITECTURE.md#regla-var`). Con defecto en el código (`VAR`, `29`): no hace falta declararlas al desplegar. `VAR_OBRA_COD` vacío = sin entradas VAR |
 | `SIGRID_LECTURAS_PARALELAS` | Lecturas a la vez contra `sigrid-api` en un lote (F-055): **4 por defecto en el código**, de 1 a 8 (fuera de ese rango el transfer no arranca); 1 = en serie, como antes de F-055. El límite es **por lote** (por llamada a `…/preflight-lote` o `…/propuesta-lote`), **no por proceso**: dos lotes a la vez —p. ej. un preflight y las propuestas del mes en segundo plano— suman sus lecturas contra `sigrid-api` |
 | `PROPUESTA_MESES_ATRAS` | Meses hacia atrás, desde el del cuadrante incluido, en los que se busca la partida propuesta (F-050, `docs/ARCHITECTURE.md#regla-partida`). Con defecto en el código (`24`): no hace falta declararla al desplegar |
+| `INCIDENCIAS_MESES_ATRAS` | Meses hacia atrás de la lectura en ventana de las rachas de incidencia (F-062, `docs/ARCHITECTURE.md#regla-incidencia`): del día 1 de esos meses antes al último del mes siguiente. Con defecto en el código (`12`, mínimo 1): no hace falta declararla al desplegar |
 | `LOG_DIR` | `/tmp/logs` en el contenedor: `/app` no tiene por qué ser escribible |
 
 Secretos en el Key Vault propio, por su clave: `PG-PASSWORD`,
@@ -423,6 +433,72 @@ Desde F-030 (incidencias en el cuadrante;
   nuevo. La lectura de las líneas `CI*` del mes trae además `h.can`,
   `h.hmoide` y `con.est`, y busca también por `h.ide` las de la traza.
 
+Desde F-062 (rachas de incidencia como Administración;
+`docs/ARCHITECTURE.md#regla-incidencia`):
+
+- Cada petición de `registro/preflight`, `registro/preflight-lote` y
+  `registro/ejecutar` puede llevar además, si no están vacías,
+  `incidencias_mes` (las del mes de sus recursos en cualquier obra:
+  `{id, obra_ide, recurso_ide, empresa, codigo, ano, mes, desde, hasta,
+  paride}` y la traza, con `dia_fin_antes`, el día original del `CIZ` ajeno
+  que movió), `quitadas` (las quitadas de la obra con algún `ide` en su
+  traza, mismo elemento) y `cierres_recursos` (los recursos cuya primera
+  petición es esa: se les cierran las rachas del mes anterior). La api crea
+  la petición de una obra que solo tiene quitadas. Con alguna de las tres,
+  la respuesta gana `rachas` (por incidencia: `papel` `abre`|`continua`,
+  inicio, `cierre` `cierra`|`abierta`|`cubierta`|`cadena` con día y parte,
+  dueña y avisos), `cierres_racha` (recurso, código, inicio, `accion`
+  `escribir`|`ya_registrado`|`aviso`|`pendiente`, `fecha_int`, parte,
+  `incidencia_id`, `hmores_ide`, `requiere_confirmar` y `clave`: la racha
+  con inicio anterior a M−1 solo se cierra con `cierre:{ide del inicio}` en
+  `pisar_claves`; sin ella, `ejecutar` la devuelve `pendiente`, sin
+  escribir y fuera de `pendientes_confirmacion`) y `no_coincide` (`tipo`
+  `quitada`|`solo_sigrid`, recurso,
+  incidencia, líneas con `ide`, código, día y parte, motivo y `en_sigrid`);
+  las de `incidencias` ganan el rol `devolver`, las acciones `continua` y
+  `abierta` y `ajena`. Sin ninguna, petición y respuesta son las de F-030.
+- La api guarda `sigrid_dia_fin_antes` en `incidencia` (columna nueva, por
+  `alters_faltantes`), traza la que solo continúa o queda abierta como
+  registrada sin `ide`, anula la del `fin` al devolver el `CIZ` y borra la
+  quitada que ya no tiene líneas en Sigrid. `incidencias_quitadas` sigue en
+  la respuesta del preflight, pero el modal pinta «No coincide con Sigrid».
+- En Sigrid: la lectura es en ventana (arriba, §1) y mover un `CIZ` ajeno es
+  el mismo `UPDATE` de solo la `fec`, con su `can` leído en la guarda.
+
+Desde F-044 (recursos vinculados; `docs/ARCHITECTURE.md#regla-vinculado`):
+
+- Cada línea de `registro/preflight`, `registro/preflight-lote` y
+  `registro/ejecutar` de un periodo ≥ `sync.vinculados.desde` puede llevar
+  `vinculados`: `[{recurso_ide, tipo, tipo_res, cod, paride?, partida_cod?,
+  propuesta_*?, hmores_ide?}]` (la elegida de la subfila o su propuesta
+  guardada y la línea del último registro). Con alguno, la respuesta gana
+  `vinculados` (por vinculado de cada línea: `registro_id`, recurso, tipo,
+  código, acción, hora, `can`, `pre`, `tot`, partida y método, parte,
+  `linea_cero`, `hmores_ide`, aviso y motivo) y sus avisos van en
+  `conflictos` con `vinculado: {tipo, cod}` y su propia clave; en
+  `ejecutar`, la entrada de `omitidas` de un vinculado lleva
+  `vinculado_ide`. Sin vinculados, petición y respuesta son las de antes
+  (ni `vinculados` ni `vinculado`).
+- `partidas/propuesta(-lote)` admite los mismos `vinculados` por línea y
+  devuelve la propuesta de cada subfila (`vinculados: {clave: {recurso:
+  {paride, cod, res, metodo, origen}}}`).
+- Desde F-068 (la partida del vinculado como la del trabajador): cada
+  vinculado puede llevar `descripcion` (la de `recurso_vinculado`) en
+  `registro/*` y `tipo_res` y `descripcion` en `partidas/propuesta(-lote)`,
+  opcionales (la api solo los manda si tienen valor; sin ellos, el
+  transfer no casa por nombre). `partida_metodo` de un vinculado y el
+  `metodo` de su propuesta pueden ser además `parte_anterior` (con su
+  `origen`, «parte P · MM/AAAA · obra O»), `auto_nombre`, `auto_categoria`
+  y `capitulo_ci4`; la api guarda como propuesta de subfila esos, `ci_tipo`
+  y `titular`, y el transfer escribe tal cual la guardada con uno de los
+  cinco primeros si sigue siendo hoja activa.
+- La api sirve al front las subfilas en el cuadrante (`lineas[].vinculados`)
+  y `GET …/partidas` y `PUT …/partida` con `vinculado_ide`; guarda la
+  elegida, la propuesta y la traza de cada subfila en
+  `asignacion_vinculado` y el vínculo en `recurso_vinculado` (tablas
+  nuevas, por `create_all`). El preview del sync cuenta los vinculados sin
+  campo o hacia quien no es trabajador.
+
 Desde F-061 (búsqueda predictiva en el desplegable de incidencias), cada
 incidencia de `GET /api/v1/incidencias` trae dos campos más, compatibles
 hacia atrás: `{codigo, letra, nombre, palabras, orden_busqueda}`.
@@ -589,6 +665,9 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Subir `SIGRID_LECTURAS_PARALELAS` del transfer | Más lecturas a la vez contra `sigrid-api` (tope 8 **por lote**, no por proceso; dos lotes simultáneos suman las suyas); `sigrid-api` no documenta un tope de concurrencia (`azure-apps/sigrid_api.md` §3.4). 1 vuelve al serie de antes de F-055 |
 | Cambiar `PROPUESTA_MESES_ATRAS` del transfer | Cambia hasta dónde se mira atrás para proponer la partida del parte anterior y del último parte; cuantos más meses, más filas lee el historial (F-050) |
 | Publicar la api o el front de F-051 antes que el transfer | El transfer viejo ignora `hmores_ide` y sigue **borrando** al pisar mientras el front nuevo dice «se edita»: **orden de despliegue transfer → api → front** (F-051) |
+| Publicar la api de F-068 antes que el transfer | El transfer viejo ignora `descripcion` y `tipo_res` y propone como F-044. Al revés (transfer nuevo, api vieja): sin `descripcion` el nombre del vinculado no casa; en el preflight (`registro/*`, donde `tipo_res` ya viaja desde F-044) puede casar por la categoría (`auto_categoria`), y en el selector no. La subfila queda en el historial, su cuenta, la categoría, el CI.4 en empate o «sin partida» (nunca una partida inventada); la api vieja no guarda los métodos nuevos. **Orden: transfer → api → front** (F-068) |
+| Publicar la api o el front de F-044 antes que el transfer | El transfer viejo ignora `vinculados`: el registro sigue como antes pero **no escribe ningún vinculado**, y el modal no los enseña. **Orden de despliegue: transfer → api → front** (F-044) |
+| Cambiar `sync.vinculados` de `config.yaml` (`campo`, `desde`, `tipos_excluidos`, `sql`) | Mal escrito, la api no arranca. `desde` decide desde qué periodo viajan los vinculados; un tipo que sale de `tipos_excluidos` se vincula en el siguiente sync (F-044) |
 | Cambiar en el transfer la elección del parte o la regla de la cuenta (`estado_parte.py`, `cuenta_analitica.py`) sin cambiarla en `partes` | Los dos servicios dejan de caer en el mismo parte o de poner la misma cuenta: dos complementarios en un mes, o un asiento analítico (`ANA`) con cuentas distintas para la misma persona. Las copias se vigilan con `tests/test_f037_copias_partes.py` (F-037) |
 
 ### Si tocan algo de otros
@@ -610,6 +689,7 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Que Administración contabilice un parte («Contabiliza parte…») | Pasa a Imputado: el transfer ya no escribe ni edita en él; lo nuevo va a un complementario y lo que choque con sus líneas se omite (`parte_cerrado`). Corregirlo es de Administración (F-037) |
 | Que Administración o `partes` cambie una línea entre el preflight y el registro | El transfer relee lo que va a editar justo antes de escribir y cada `UPDATE` lleva guarda (`can` y `synckey` leídos, recurso, `M*`, sin enlaces, parte En registro): esa línea no se toca y su asignación sale omitida pidiendo volver a registrar (F-051) |
 | Cambiar `res` o `con` de Sigrid en lo que lee el sync de trabajadores (`res.cla`, `res.conide`, `res.cif`, `con.fecbaj`) | El sync parte de `res` (F-026): con `res.cla` cambiada entran o salen recursos del cuadrante; `res.conide` es lo único que une la ficha de empleado (solo da el DNI); `res.cif` es el documento del aviso de posible misma persona cuando no hay ficha; y `con.fecbaj` decide en qué meses está vigente cada trabajador |
+| Cambiar o vaciar en Sigrid el campo extendido «Recurso Asociado» de un recurso no persona, o su `reshor` | Sin campo (o hacia quien no es trabajador de dedicación) deja de vincularse en el siguiente sync y su línea no se escribe; sin su hora en `reshor` o con `pre` 0, se omite «sin importe mensual». Renombrar la cuenta de la partida CI de su tipo (`obrparpar.caaide`) le quita la propuesta: «sin partida» a confirmar (F-044) |
 | Cambiar `auxemp` de Sigrid (`numemp`, `res`, `fecbaj`, `desact`) | El sync de maestros falla entero (columnas obligatorias `numemp` y `nombre`) y el selector se queda con los nombres del último sync bueno |
 
 **Petición abierta al proyecto `sigrid-api`:** hoy la api y el transfer

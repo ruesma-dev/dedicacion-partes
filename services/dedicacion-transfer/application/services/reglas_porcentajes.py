@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Iterable
-from typing import NamedTuple, Optional
+from typing import Any, NamedTuple, Optional, Protocol
 
 from domain.errores import EmpresasMezcladas
 from domain.models.registro_models import (
@@ -121,8 +121,22 @@ def _entero(valor) -> int:
     return int(valor or 0)
 
 
+class LineaIdentificable(Protocol):
+    """F-044 (design §4): lo que la identidad, los pisables y la capacidad
+    leen de la línea que vamos a escribir: la de un trabajador
+    (`AccionLinea`) o la de un recurso vinculado (`AccionVinculado`). Los
+    campos son los de `campos_identidad()`, más el destino y el `can`."""
+    recurso_ide: Any
+    ano: Any
+    mes: Any
+    hora_ide: Any
+    paride: Any
+    destino: str
+    can: Any
+
+
 #: Cómo se lee cada campo de la identidad en la línea que vamos a escribir.
-_DE_ACCION: dict[str, Callable[[AccionLinea], object]] = {
+_DE_ACCION: dict[str, Callable[[LineaIdentificable], object]] = {
     "recurso": lambda a: _entero(a.recurso_ide),
     "periodo": lambda a: f"{int(a.ano)}{int(a.mes):02d}",
     "hora": lambda a: _entero(a.hora_ide),
@@ -153,7 +167,7 @@ def campos_identidad() -> tuple[str, ...]:
     return CAMPOS_CLAVE
 
 
-def clave_conflicto(accion: AccionLinea) -> str:
+def clave_conflicto(accion: LineaIdentificable) -> str:
     """Clave estable con la que se agrupa y se confirma un conflicto.
 
     Se construye SIEMPRE con `CAMPOS_CLAVE` completos, sea cual sea el
@@ -163,7 +177,7 @@ def clave_conflicto(accion: AccionLinea) -> str:
     return "|".join(str(_DE_ACCION[campo](accion)) for campo in CAMPOS_CLAVE)
 
 
-def criterio_choque(existente: LineaSigrid, accion: AccionLinea, *,
+def criterio_choque(existente: LineaSigrid, accion: LineaIdentificable, *,
                     mias: set[str]) -> bool:
     """¿`existente` es la misma línea lógica que `accion`?
 
@@ -237,6 +251,14 @@ def es_linea_mensual(linea: LineaSigrid) -> bool:
     return (linea.hora_codigo or "").upper().startswith("M")
 
 
+def es_de_la_hora(linea: LineaSigrid, hora: str) -> bool:
+    """F-044 (R19, R21, R23): ¿la línea es del código de hora `hora`? La
+    jornada de un recurso vinculado (su hora, no `M*`), sin espacios ni
+    mayúsculas."""
+    return ((linea.hora_codigo or "").strip().upper()
+            == (hora or "").strip().upper())
+
+
 def _can(valor) -> float:
     """`can` ausente vale 0, como en el resto del módulo."""
     return float(valor or 0.0)
@@ -244,10 +266,15 @@ def _can(valor) -> float:
 
 def evaluar_capacidad(
     existentes: list[LineaSigrid],
-    nuevas: list[AccionLinea],
+    nuevas: list[LineaIdentificable],
     *, mias: set[str], pisadas: set[int],
+    es_jornada: Callable[[LineaSigrid], bool] = es_linea_mensual,
 ) -> Capacidad:
     """Jornada del recurso en un parte. NO decide qué se escribe: informa.
+
+    `es_jornada` (F-044, R23): qué líneas son jornada; por defecto, las
+    mensuales del trabajador. La de un recurso vinculado es la de su hora
+    (`reglas_vinculados.es_linea_de`).
 
     De `existentes` suma las que cumplen LAS TRES condiciones: son mensuales,
     su `ide` **no** está en `pisadas` (van a ser sustituidas, así que no van
@@ -261,7 +288,7 @@ def evaluar_capacidad(
     """
     contadas = tuple(
         ls for ls in existentes
-        if es_linea_mensual(ls)
+        if es_jornada(ls)
         and ls.ide not in pisadas
         and not (ls.synckey and ls.synckey in mias)
     )
@@ -373,25 +400,32 @@ MOTIVO_LINEA_CAMBIADA = (
     "ha escrito nada en su lugar; vuelve a registrar")
 
 
-def es_linea_al_cero(ls: LineaSigrid) -> bool:
-    """¿Es una línea `M*` al 0 % de un recurso? `can` 0 exacto o nulo (D4)."""
-    return (bool(_entero(ls.reside)) and es_linea_mensual(ls)
+def es_linea_al_cero(ls: LineaSigrid, hora: str | None = None) -> bool:
+    """¿Es una línea `M*` al 0 % de un recurso? `can` 0 exacto o nulo (D4).
+    Con `hora` (F-044, R21), de ESE código en vez de `M*`."""
+    de_la_hora = (es_linea_mensual(ls) if hora is None else
+                  es_de_la_hora(ls, hora))
+    return (bool(_entero(ls.reside)) and de_la_hora
             and _can(ls.can) == 0.0)
 
 
-def pisables_al_cero(existentes: Iterable[LineaSigrid], accion: AccionLinea,
+def pisables_al_cero(existentes: Iterable[LineaSigrid],
+                     accion: LineaIdentificable,
                      *, en_cerrado: set[int],
-                     mias: set[str]) -> tuple[LineaSigrid, ...]:
+                     mias: set[str],
+                     hora: str | None = None) -> tuple[LineaSigrid, ...]:
     """R1: las líneas al 0 % que `accion` puede editar, por `ide`.
 
     Del mismo recurso, fuera de los partes cerrados (`en_cerrado`, `ide` de
     sus líneas) y de esta ejecución (`mias`, D5); en postventa, además, de
     la partida de la acción (D7). Cualquier `M*` y partida en la obra
-    normal (D3)."""
+    normal (D3). Con `hora` (F-044, R21: un recurso vinculado), las de ese
+    código en vez de `M*`."""
     recurso = _DE_ACCION["recurso"](accion)
     return tuple(sorted(
         (ls for ls in existentes
-         if es_linea_al_cero(ls) and _DE_LINEA["recurso"](ls) == recurso
+         if es_linea_al_cero(ls, hora)
+         and _DE_LINEA["recurso"](ls) == recurso
          and ls.ide not in en_cerrado and ls.synckey not in mias
          and (accion.destino != "postventa"
               or _DE_LINEA["paride"](ls) == _DE_ACCION["paride"](accion))),
@@ -399,19 +433,25 @@ def pisables_al_cero(existentes: Iterable[LineaSigrid], accion: AccionLinea,
 
 
 def emparejar_ceros(
-    acciones: Iterable[AccionLinea], existentes: list[LineaSigrid], *,
+    acciones: Iterable[LineaIdentificable], existentes: list[LineaSigrid], *,
     en_cerrado: set[int], mias: set[str],
-) -> tuple[dict[int, LineaSigrid], dict[int, int]]:
+    clave: Callable[[Any], Any] = lambda a: a.registro_id,
+    hora: Callable[[Any], str | None] = lambda a: None,
+) -> tuple[dict[Any, LineaSigrid], dict[int, int]]:
     """R2: `{registro_id: pisable}` y `{recurso: pisables que quedan a 0}`.
 
     Cada acción (por `registro_id`) edita como mucho una pisable libre: la
-    de su partida, después la de su hora, después la de menor `ide`."""
-    pares: dict[int, LineaSigrid] = {}
+    de su partida, después la de su hora, después la de menor `ide`.
+
+    F-044 (R21): para los recursos vinculados, `clave` (registro y
+    recurso: un titular tiene varios) y `hora` (la del vinculado, que pasa
+    a `pisables_al_cero`); por defecto, lo de hoy."""
+    pares: dict[Any, LineaSigrid] = {}
     tomadas: set[int] = set()
     vistas: dict[int, set[int]] = {}
-    for a in sorted(acciones, key=lambda x: x.registro_id):
+    for a in sorted(acciones, key=clave):
         pisables = pisables_al_cero(existentes, a, en_cerrado=en_cerrado,
-                                    mias=mias)
+                                    mias=mias, hora=hora(a))
         vistas.setdefault(_DE_ACCION["recurso"](a), set()).update(
             ls.ide for ls in pisables)
         libres = [ls for ls in pisables if ls.ide not in tomadas]
@@ -419,7 +459,7 @@ def emparejar_ceros(
             ls = min(libres, key=lambda x: (
                 _DE_LINEA["paride"](x) != _DE_ACCION["paride"](a),
                 _DE_LINEA["hora"](x) != _DE_ACCION["hora"](a), x.ide))
-            pares[a.registro_id] = ls
+            pares[clave(a)] = ls
             tomadas.add(ls.ide)
     return pares, {r: len(ides - tomadas) for r, ides in vistas.items()}
 

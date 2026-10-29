@@ -41,11 +41,28 @@ quitadas no viajan (el preflight las devuelve en `incidencias_quitadas`
 para retirarlas a mano) y una registrada lleva sus `hmores_ide_ini`/`_fin`
 y `dia_ini`/`_fin`: con ellos el transfer edita su par en vez de escribir
 otro.
+
+F-062 (R17, R24; design §9): cada petición lleva además, si no están
+vacías, `incidencias_mes` (las del mes de sus recursos en cualquier obra,
+con `obra_ide` y traza, sin quitadas), `quitadas` (las quitadas de su obra
+con algún `ide` de Sigrid; si no hay petición de esa obra, se crea) y
+`cierres_recursos` (los recursos cuya primera petición, en este orden y
+tras el filtro `obra_ide`, es esa: el transfer les cierra las rachas del
+mes anterior, R12).
+
+F-044 (R10, R30; docs/ARCHITECTURE.md#regla-vinculado): desde el periodo
+`sync.vinculados.desde`, cada línea de un trabajador con vinculados
+vigentes en el mes lleva `vinculados` (recurso, tipo, código, la partida
+elegida o la propuesta guardada de su subfila y su `hmores_ide`; en una
+entrada VAR, sin partida: es la del titular). Al volver de `ejecutar`, la
+traza de cada vinculado va a su fila de `asignacion_vinculado`; su entrada
+de `omitidas` (con `vinculado_ide`) no toca la asignación del titular.
 """
 from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from collections.abc import Callable
 from typing import Any, Optional
 
 from sqlalchemy import select, update
@@ -56,13 +73,18 @@ from domain.incidencias import letra_y_nombre
 from domain.models import FiltroEmpresa
 from domain.vigencia import vigente_en
 from infrastructure.db.orm_models import (
-    AsignacionORM, IncidenciaORM, ObraORM, PeriodoORM, TipoIncidenciaORM,
-    TrabajadorORM,
+    AsignacionORM, AsignacionVinculadoORM, IncidenciaORM, ObraORM, PeriodoORM,
+    TipoIncidenciaORM, TrabajadorORM,
 )
 from application.traza_incidencias import (
     campos_de_traza,
     quitada_para_el_modal,
     trazar_incidencias,
+)
+from application.traza_vinculados import trazar_vinculados
+from infrastructure.db.repositories import (
+    subfilas_de,
+    upsert_asignacion_vinculado,
 )
 from infrastructure.transfer.transfer_client import TransferClient
 
@@ -82,11 +104,58 @@ def es_metodo_de_propuesta(metodo: str | None) -> bool:
         (metodo or "").startswith("auto_")
 
 
+#: Métodos de la PROPUESTA de una subfila de vinculado (F-044, R9): la CI de
+#: su tipo o la partida del titular. `manual` es una elegida: no se guarda.
+#: F-068 (R17): y los métodos propios del orden nuevo (historial, nombre y
+#: capítulo CI.4); `manual` (la elegida) no es una propuesta.
+METODOS_PROPUESTA_VINCULADO = ("ci_tipo", "titular", "parte_anterior",
+                               "auto_nombre", "auto_categoria",
+                               "capitulo_ci4")
+
+
+def es_metodo_de_propuesta_vinculado(metodo: str | None) -> bool:
+    """¿El método es de una propuesta de subfila? (F-044, R9)."""
+    return metodo in METODOS_PROPUESTA_VINCULADO
+
+
+def _vinculado(v: Any, es_var: bool) -> dict[str, Any]:
+    """F-044 (R10): un vinculado como viaja al transfer: su recurso, tipo
+    y código, la elegida de su subfila o, sin ella, la propuesta guardada
+    (en una entrada VAR, ninguna: va con la del titular) y el `hmores.ide`
+    del último registro (R30). Sin elegida ni propuesta, el transfer
+    propone. F-068 (R18): su `descripcion`, si la tiene (el nombre con el
+    que el transfer casa por nombre)."""
+    out: dict[str, Any] = {"recurso_ide": int(v.vinculado_ide),
+                           "tipo": v.tipo, "tipo_res": v.tipo_res,
+                           "cod": v.cod}
+    if v.descripcion is not None:
+        out["descripcion"] = v.descripcion
+    if es_var:
+        pass
+    elif v.partida_ide:
+        out.update(paride=int(v.partida_ide), partida_cod=v.partida_cod)
+    elif v.propuesta_ide:
+        out.update(propuesta_paride=int(v.propuesta_ide),
+                   propuesta_cod=v.propuesta_cod,
+                   propuesta_res=v.propuesta_res,
+                   propuesta_metodo=v.propuesta_metodo,
+                   propuesta_origen=v.propuesta_origen)
+    if v.sigrid_hmores_ide:
+        out["hmores_ide"] = int(v.sigrid_hmores_ide)
+    return out
+
+
 class RegistroSigrid:
     def __init__(self, session_factory: sessionmaker[Session],
-                 transfer: TransferClient, empresa_imputacion: int) -> None:
+                 transfer: TransferClient, empresa_imputacion: int, *,
+                 vinculados_desde: tuple[int, int] | None = None,
+                 subfilas: Callable = subfilas_de) -> None:
         self._sf = session_factory
         self._transfer = transfer
+        # F-044 (R10): primer periodo (anio, mes) cuyas líneas llevan sus
+        # vinculados (`sync.vinculados.desde`); sin él, ninguno.
+        self._vinculados_desde = vinculados_desde
+        self._subfilas = subfilas
         # EMPRESA_IMPUTACION hace dos papeles (D1 de F-034): es la empresa
         # POR DEFECTO, que se usa si la petición no trae la elegida, y la
         # EMPRESA DE LAS OBRAS, la que viaja en cada línea sea cual sea la
@@ -129,6 +198,8 @@ class RegistroSigrid:
         # asignación.
         por_obra: dict[int, dict[str, Any]] = {}
         no_vigentes: list[int] = []
+        # F-044 (R10): las líneas que se mandan, para sus vinculados.
+        mandadas: list[tuple[Any, dict[str, Any], bool]] = []
         # F-030 (R25): partida de la asignación de cada (trabajador, obra).
         partidas: dict[tuple[int, int], int] = {}
         for a, t, o in filas:
@@ -180,16 +251,58 @@ class RegistroSigrid:
             if hmores_ide:
                 linea["hmores_ide"] = int(hmores_ide)
             grupo["lineas"].append(linea)
-        self._sumar_incidencias(s, anio, mes, trabajador_ide, filtro,
-                                por_obra, partidas, quitadas)
-        return list(por_obra.values()), sorted(no_vigentes)
+            mandadas.append((a, linea, bool(o.registro_paride)))
+        self._sumar_vinculados(s, anio, mes, mandadas)
+        del_mes = self._sumar_incidencias(s, anio, mes, trabajador_ide,
+                                          filtro, por_obra, partidas,
+                                          quitadas)
+        payloads = list(por_obra.values())
+        for p in payloads:
+            recursos = {x["recurso_ide"] for x in [
+                *p["lineas"], *p.get("incidencias", [])]}
+            mias = [x for x in del_mes if x["recurso_ide"] in recursos]
+            if mias:
+                p["incidencias_mes"] = mias
+        return payloads, sorted(no_vigentes)
+
+    def _sumar_vinculados(self, s: Session, anio: int, mes: int,
+                          mandadas: list[tuple[Any, dict[str, Any], bool]]
+                          ) -> None:
+        """F-044 (R10): `vinculados` en cada línea mandada de un periodo
+        ≥ `desde` cuyo trabajador tenga alguno vigente en el mes. Antes de
+        `desde`, sin él o sin líneas, no se lee nada."""
+        desde = self._vinculados_desde
+        if desde is None or (anio, mes) < tuple(desde) or not mandadas:
+            return
+        de = self._subfilas(s, [a for a, _, _ in mandadas], (anio, mes))
+        for a, linea, es_var in mandadas:
+            suyas = de(a)
+            if suyas:
+                linea["vinculados"] = [_vinculado(v, es_var) for v in suyas]
+
+    @staticmethod
+    def _designar_cierres(payloads: list[dict[str, Any]]) -> None:
+        """F-062 (R24, design §9): cada recurso (de líneas o incidencias)
+        va a `cierres_recursos` de la PRIMERA petición donde sale, en el
+        orden de los payloads; vacía, la clave no va."""
+        vistos: set[int] = set()
+        for p in payloads:
+            suyos = []
+            for x in [*p["lineas"], *p.get("incidencias", [])]:
+                r = x["recurso_ide"]
+                if r and r not in vistos:
+                    vistos.add(r)
+                    suyos.append(r)
+            if suyos:
+                p["cierres_recursos"] = suyos
 
     def _sumar_incidencias(self, s: Session, anio: int, mes: int,
                            trabajador_ide: int | None,
                            filtro: FiltroEmpresa,
                            por_obra: dict[int, dict[str, Any]],
                            partidas: dict[tuple[int, int], int],
-                           quitadas: list[tuple] | None = None) -> None:
+                           quitadas: list[tuple] | None = None,
+                           ) -> list[dict[str, Any]]:
         """F-030 (R23, R25): las incidencias del periodo, en la petición de
         su obra (nunca VAR ni postventa, R19), con la visibilidad y la
         vigencia de las líneas. Una obra solo con incidencias va al final,
@@ -197,7 +310,11 @@ class RegistroSigrid:
 
         Anexo R30: una quitada no va (a `quitadas`, si se pide; R38); una
         con traza lleva sus `hmores_ide_*` y `dia_*`, nulos los que falten
-        (R39). Sin traza, el elemento de siempre."""
+        (R39). Sin traza, el elemento de siempre.
+
+        F-062 (R17, R24): devuelve las del mes (no quitadas, con
+        `obra_ide`), para `incidencias_mes`; una quitada con algún `ide`
+        va además a `quitadas` de la petición de su obra."""
         filas = s.execute(
             select(IncidenciaORM, TrabajadorORM, ObraORM)
             .join(PeriodoORM, PeriodoORM.id == IncidenciaORM.periodo_id)
@@ -210,18 +327,11 @@ class RegistroSigrid:
             .order_by(ObraORM.cod, TrabajadorORM.nombre,
                       IncidenciaORM.dia_desde, IncidenciaORM.id)
         ).all()
+        del_mes: list[dict[str, Any]] = []
         for i, t, o in filas:
             if not visible_en_empresa(t.empresa, filtro) or \
                     not vigente_en(t.activo, t.fecha_baja, anio, mes):
                 continue
-            if i.quitada:
-                if quitadas is not None:
-                    quitadas.append((i, t, o))
-                continue
-            grupo = por_obra.setdefault(o.ide, {
-                "obra": {"ide": o.ide, "codigo": o.cod,
-                         "nombre": o.descripcion},
-                "lineas": []})
             item = {
                 "id": i.id, "recurso_ide": t.ide,
                 "empresa": filtro.empresa_obras, "codigo": i.codigo,
@@ -229,7 +339,25 @@ class RegistroSigrid:
                 "hasta": i.dia_hasta,
                 "paride": partidas.get((t.ide, o.ide), 0)}
             item.update(campos_de_traza(i))
-            grupo.setdefault("incidencias", []).append(item)
+            if i.quitada:
+                if quitadas is not None:
+                    quitadas.append((i, t, o))
+                if item.get("hmores_ide_ini") or item.get("hmores_ide_fin"):
+                    self._grupo(por_obra, o).setdefault(
+                        "quitadas", []).append({**item, "obra_ide": o.ide})
+                continue
+            self._grupo(por_obra, o).setdefault(
+                "incidencias", []).append(item)
+            del_mes.append({**item, "obra_ide": o.ide})
+        return del_mes
+
+    @staticmethod
+    def _grupo(por_obra: dict[int, dict[str, Any]], o: Any
+               ) -> dict[str, Any]:
+        """La petición de la obra `o`; si no la hay, una nueva al final."""
+        return por_obra.setdefault(o.ide, {
+            "obra": {"ide": o.ide, "codigo": o.cod, "nombre": o.descripcion},
+            "lineas": []})
 
     @staticmethod
     def _quitadas(s: Session, filas: list[tuple]) -> list[dict[str, Any]]:
@@ -270,6 +398,7 @@ class RegistroSigrid:
             quitadas = self._quitadas(s, filas_quitadas)
         if obra_ide is not None:
             payloads = [p for p in payloads if p["obra"]["ide"] == obra_ide]
+        self._designar_cierres(payloads)
         resultados = [{"obra": p["obra"], **r} for p, r in zip(
             payloads, self._preflight_lote(payloads))]
         self._guardar_propuestas(resultados)
@@ -302,9 +431,25 @@ class RegistroSigrid:
                       for a in r.get("acciones", [])
                       if a.get("paride")
                       and es_metodo_de_propuesta(a.get("partida_metodo"))]
-        if not propuestas:
+        # F-044 (R9): igual la de cada subfila (`vinculados` del preflight:
+        # `{registro_id, recurso_ide, paride, partida_*}`), en su fila de
+        # `asignacion_vinculado` y solo si sigue sin elegida.
+        de_subfilas = [v for r in resultados if r.get("ok")
+                       for v in r.get("vinculados") or []
+                       if v.get("paride") and es_metodo_de_propuesta_vinculado(
+                           v.get("partida_metodo"))]
+        if not propuestas and not de_subfilas:
             return
         with self._sf() as s:
+            for v in de_subfilas:
+                s.execute(upsert_asignacion_vinculado(
+                    int(v["registro_id"]), int(v["recurso_ide"]),
+                    {"propuesta_ide": v["paride"],
+                     "propuesta_cod": v.get("partida_cod"),
+                     "propuesta_res": v.get("partida_res"),
+                     "propuesta_metodo": v.get("partida_metodo"),
+                     "propuesta_origen": v.get("partida_origen")},
+                    donde=AsignacionVinculadoORM.partida_ide.is_(None)))
             for a in propuestas:
                 s.execute(
                     update(AsignacionORM)
@@ -327,6 +472,7 @@ class RegistroSigrid:
             payloads, no_vigentes = self._payloads(
                 s, anio, mes, overrides or {}, trabajador_ide,
                 self._filtro(empresa))
+        self._designar_cierres(payloads)
         resultados = []
         for p in payloads:
             r = self._transfer.ejecutar({**p, "pisar_claves": pisar_claves,
@@ -376,11 +522,16 @@ class RegistroSigrid:
                         .where(AsignacionORM.id == int(rid))
                         .values(sigrid_hmores_ide=int(ide)))
             for o in r.get("omitidas", []):
+                if "vinculado_ide" in o:
+                    continue            # F-044 (R30): la de su subfila
                 s.execute(
                     update(AsignacionORM)
                     .where(AsignacionORM.id == o["registro_id"])
                     .values(sigrid_estado="omitido",
                             sigrid_motivo=(o.get("motivo") or "")[:_MAX_MOTIVO]))
+            trazar_vinculados(s, r)
             # F-030 (R31): la de cada incidencia, en la misma sesión.
-            trazar_incidencias(s, r.get("incidencias") or [], ahora, quien)
+            trazar_incidencias(s, r.get("incidencias") or [], ahora, quien,
+                               cierres=r.get("cierres_racha") or [],
+                               no_coincide=r.get("no_coincide") or [])
             s.commit()

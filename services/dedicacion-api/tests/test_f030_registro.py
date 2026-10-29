@@ -124,8 +124,9 @@ def test_f030_r23_cada_obra_con_sus_incidencias(fase):
 def test_f030_r23_sin_incidencias_la_peticion_de_siempre():
     transfer = _Transfer()
     _registro(transfer, [_fila(1, (10, 1), (678, 1))]).preflight(2026, 7)
+    # F-062 (lista cerrada): R24, el recurso designado para los cierres.
     assert [set(p) for p in transfer.payloads] == [
-        {"obra", "lineas", "pisar_claves"}]
+        {"obra", "lineas", "pisar_claves", "cierres_recursos"}]
 
 
 def test_f030_r23_ni_invisibles_ni_no_vigentes():

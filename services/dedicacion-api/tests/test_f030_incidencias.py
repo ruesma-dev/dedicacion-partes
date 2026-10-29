@@ -175,7 +175,9 @@ def test_f030_r17_esquema_tabla_incidencia():
         "sigrid_registrado_by": "VARCHAR(64)",
         # Anexo R30 (R38, R39; T23, propio de F-030).
         "quitada": "BOOLEAN", "sigrid_dia_ini": "SMALLINT",
-        "sigrid_dia_fin": "SMALLINT"}
+        "sigrid_dia_fin": "SMALLINT",
+        # F-062 (lista cerrada, D18): R15.
+        "sigrid_dia_fin_antes": "SMALLINT"}
     fks = {fk.parent.name: (fk.column.table.name, fk.ondelete)
            for fk in tabla.foreign_keys}
     assert fks == {"periodo_id": ("periodo", "CASCADE"),
@@ -509,6 +511,8 @@ def test_f030_r21_cuadrante_repo_de_periodo_mapea_y_agrupa():
         "incidencia.sigrid_registrado_at_utc, incidencia.sigrid_registrado_by, "
         # Anexo R30 (T23, propio de F-030): las tres columnas nuevas.
         "incidencia.quitada, incidencia.sigrid_dia_ini, incidencia.sigrid_dia_fin, "
+        # F-062 (lista cerrada, D18): R15.
+        "incidencia.sigrid_dia_fin_antes, "
         "obra.cod, obra.descripcion, tipo_incidencia.letra, "
         "tipo_incidencia.nombre FROM incidencia "
         "JOIN obra ON obra.ide = incidencia.obra_ide "

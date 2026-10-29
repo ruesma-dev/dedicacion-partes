@@ -36,7 +36,8 @@ from application.services.universo_postventa import UniversoPostventa
 from application.services.universo_var import UniversoVar
 from domain.errores import EmpresasMezcladas
 from domain.models.registro_models import (
-    IncidenciaEntrada, LineaEntrada, ObraEntrada,
+    ContextoRachas, IncidenciaEntrada, LineaEntrada, ObraEntrada,
+    VinculadoEntrada,
 )
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
 
@@ -49,6 +50,26 @@ class ObraIn(BaseModel):
     ide: Optional[int] = None
     codigo: Optional[str] = None
     nombre: Optional[str] = None
+
+
+class VinculadoIn(BaseModel):
+    """F-044 (R10, design §8): un recurso vinculado de la línea; solo el
+    recurso es obligatorio (lo demás llega al pipeline y decide allí).
+    F-068 (R18): `descripcion`, opcional."""
+    recurso_ide: int
+    tipo: str | None = None
+    tipo_res: str | None = None
+    cod: str | None = None
+    categoria: str | None = None
+    descripcion: str | None = None
+    paride: int | None = None
+    partida_cod: str | None = None
+    propuesta_paride: int | None = None
+    propuesta_cod: str | None = None
+    propuesta_res: str | None = None
+    propuesta_metodo: str | None = None
+    propuesta_origen: str | None = None
+    hmores_ide: int | None = None
 
 
 class LineaIn(BaseModel):
@@ -82,6 +103,16 @@ class LineaIn(BaseModel):
     # F-051 (R14): `hmores.ide` de lo ya registrado (opcional: sin él, como
     # hasta ahora, por `synckey`).
     hmores_ide: Optional[int] = None
+    # F-044 (R10, R11): los recursos vinculados; vacía, la línea de hoy.
+    vinculados: list[VinculadoIn] = Field(default_factory=list)
+
+    def para_pipeline(self) -> LineaEntrada:
+        """La `LineaEntrada` de la línea, con sus vinculados como
+        `VinculadoEntrada` (R10)."""
+        return LineaEntrada(
+            **self.model_dump(exclude={"vinculados"}),
+            vinculados=[VinculadoEntrada(**v.model_dump())
+                        for v in self.vinculados])
 
 
 class IncidenciaIn(BaseModel):
@@ -102,6 +133,10 @@ class IncidenciaIn(BaseModel):
     hmores_ide_fin: int | None = None
     dia_ini: int | None = None
     dia_fin: int | None = None
+    # F-062 (R15, R24): la obra de la incidencia y, si su `fin` es un `CIZ`
+    # ajeno que movimos, su día original.
+    obra_ide: int | None = None
+    dia_fin_antes: int | None = None
 
 
 class PeticionIn(BaseModel):
@@ -109,6 +144,10 @@ class PeticionIn(BaseModel):
     lineas: list[LineaIn] = Field(default_factory=list)
     # F-030 (R23): por defecto vacía; sin ellas, la petición de siempre.
     incidencias: list[IncidenciaIn] = Field(default_factory=list)
+    # F-062 (R12, R17, R24): el contexto del mes; vacío, la de F-030.
+    incidencias_mes: list[IncidenciaIn] = Field(default_factory=list)
+    cierres_recursos: list[int] = Field(default_factory=list)
+    quitadas: list[IncidenciaIn] = Field(default_factory=list)
     pisar_claves: list[str] = Field(default_factory=list)
     usuario: Optional[str] = None
 
@@ -137,14 +176,51 @@ class UniversoVarIn(BaseModel):
     empresa: int | None = None
 
 
+class VinculadoPropuestaIn(BaseModel):
+    """F-044 (R9): un recurso vinculado de la línea cuya partida se
+    propone (su subfila del cuadrante). F-068 (R18): `tipo_res` y
+    `descripcion`, opcionales: la categoría y el nombre con los que se casa
+    por nombre (R5-R6); sin ellos, la entrada de F-044."""
+
+    recurso_ide: int
+    tipo: str | None = None
+    categoria: str | None = None
+    cod: str | None = None
+    tipo_res: str | None = None
+    descripcion: str | None = None
+
+    def para_pipeline(self) -> dict:
+        """Lo de F-044 y, de `tipo_res` y `descripcion`, solo lo que llega
+        (sin ellos, la entrada de hoy)."""
+        d = self.model_dump(exclude={"tipo_res", "descripcion"})
+        for k in ("tipo_res", "descripcion"):
+            if getattr(self, k) is not None:
+                d[k] = getattr(self, k)
+        return d
+
+
 class LineaPropuestaIn(BaseModel):
-    """Una línea del cuadrante cuya partida se propone (F-050, R8)."""
+    """Una línea del cuadrante cuya partida se propone (F-050, R8). F-044
+    (R9): `paride`, la elegida del titular, y `vinculados`, sus subfilas;
+    opcionales: sin ellos, la línea de siempre."""
 
     clave: str
     recurso_ide: int | None = None
     nombre: str | None = None
     categoria: str | None = None
     es_postventa: bool = False
+    paride: int | None = None
+    vinculados: list[VinculadoPropuestaIn] = Field(default_factory=list)
+
+    def para_pipeline(self) -> dict:
+        """El dict de `RegistroPipeline.proponer`: las cinco claves de
+        siempre y `paride`/`vinculados` solo si vienen (R11)."""
+        d = self.model_dump(exclude={"paride", "vinculados"})
+        if self.paride:
+            d["paride"] = self.paride
+        if self.vinculados:
+            d["vinculados"] = [v.para_pipeline() for v in self.vinculados]
+        return d
 
 
 class PropuestaIn(BaseModel):
@@ -185,16 +261,53 @@ def _con_incidencias(respuesta: dict, incidencias: list) -> dict:
     if incidencias:
         respuesta["incidencias"] = [
             {**{k: getattr(a, k) for k in CLAVES_INCIDENCIA},
-             **({"fec_antes": a.fec_antes} if a.accion == "editar" else {})}
+             **({"fec_antes": a.fec_antes} if a.accion == "editar" else {}),
+             **({"ajena": True} if a.ajena else {})}
             for a in incidencias]
     return respuesta
 
 
-def _respuesta_preflight(pf) -> dict:
+#: F-062 (R22): lo que no se publica de un `CierreRacha` (es para escribir).
+_CIERRE_PRIVADO = ("synckey", "hmoide", "obride", "cenide", "paride",
+                   "caaide", "hora_ide", "pre")
+
+
+def _con_rachas(respuesta: dict, r) -> dict:
+    """F-062 (R22): `rachas`, `cierres_racha` (sin lo que es para escribir)
+    y `no_coincide`, solo si la petición traía las claves nuevas."""
+    respuesta["rachas"] = [asdict(x) for x in getattr(r, "rachas", [])]
+    respuesta["cierres_racha"] = [
+        {k: v for k, v in asdict(x).items() if k not in _CIERRE_PRIVADO}
+        for x in getattr(r, "cierres_racha", [])]
+    respuesta["no_coincide"] = [asdict(x)
+                                for x in getattr(r, "no_coincide", [])]
+    return respuesta
+
+
+def _conflicto(c) -> dict:
+    """Un `Conflicto` publicado. F-044 (R25): `vinculado` (tipo y código)
+    solo en el de un vinculado; el del trabajador, el de siempre."""
+    d = asdict(c)
+    if d.get("vinculado") is None:
+        d.pop("vinculado", None)
+    return d
+
+
+def _con_vinculados(respuesta: dict, vinculados: list) -> dict:
+    """F-044 (R25): `vinculados` solo si la petición los traía (una
+    entrada por vinculado de cada línea); sin ellos, la respuesta de
+    siempre."""
+    if vinculados:
+        respuesta["vinculados"] = [asdict(v) for v in vinculados]
+    return respuesta
+
+
+def _respuesta_preflight(pf, con_rachas: bool = False) -> dict:
     """La respuesta de `POST /api/registro/preflight` (y de cada obra de
-    `POST /api/registro/preflight-lote`) para un `Preflight`."""
+    `POST /api/registro/preflight-lote`) para un `Preflight`; con las
+    claves de F-062 si la petición traía su contexto (`con_rachas`)."""
     obra_pv = getattr(pf, "obra_postventa", None)
-    return _con_incidencias({
+    respuesta = _con_incidencias({
         "ok": True,
         "obra_destino": asdict(pf.obra_destino),
         "obra_postventa": asdict(obra_pv) if obra_pv else None,
@@ -205,11 +318,13 @@ def _respuesta_preflight(pf) -> dict:
         "partes": [asdict(x) for x in pf.partes],
         "acciones": [asdict(a) | {"clave": clave_conflicto(a)}
                      for a in pf.acciones],
-        "conflictos": [asdict(c) for c in pf.conflictos],
+        "conflictos": [_conflicto(c) for c in pf.conflictos],
         "resumen": {"escribir": pf.n_escribir, "omitir": pf.n_omitir,
                     "ya_registrado": pf.n_ya,
                     "conflictos": len(pf.conflictos)},
     }, pf.incidencias)
+    _con_vinculados(respuesta, getattr(pf, "vinculados", []))
+    return _con_rachas(respuesta, pf) if con_rachas else respuesta
 
 
 def build_app(settings) -> FastAPI:
@@ -230,18 +345,39 @@ def build_app(settings) -> FastAPI:
     universo_var = UniversoVar(cliente=cliente, settings=settings)
 
     def _dominio(p: PeticionIn) -> tuple:
-        """`(obra, lineas)` y, si las trae, sus incidencias (F-030)."""
+        """`(obra, lineas)` y, si las trae, sus incidencias (F-030) y el
+        contexto del mes (F-062, `ContextoRachas`)."""
         obra = ObraEntrada(ide=p.obra.ide, codigo=p.obra.codigo,
                            nombre=p.obra.nombre)
-        lineas = [LineaEntrada(**l.model_dump()) for l in p.lineas]
-        if not p.incidencias:
+        lineas = [l.para_pipeline() for l in p.lineas]
+        contexto = _contexto(p)
+        if not p.incidencias and contexto is None:
             return obra, lineas
-        return obra, lineas, [IncidenciaEntrada(**x.model_dump())
-                              for x in p.incidencias]
+        incidencias = [IncidenciaEntrada(**x.model_dump())
+                       for x in p.incidencias]
+        if contexto is None:
+            return obra, lineas, incidencias
+        return obra, lineas, incidencias, contexto
+
+    def _contexto(p: PeticionIn) -> ContextoRachas | None:
+        """F-062 (R24): el contexto del mes; sin ninguna clave nueva, None
+        (la petición y la respuesta de F-030)."""
+        if not (p.incidencias_mes or p.cierres_recursos or p.quitadas):
+            return None
+        return ContextoRachas(
+            incidencias_mes=[IncidenciaEntrada(**x.model_dump())
+                             for x in p.incidencias_mes],
+            cierres_recursos=[int(r) for r in p.cierres_recursos],
+            quitadas=[IncidenciaEntrada(**x.model_dump())
+                      for x in p.quitadas])
 
     def _kw_incidencias(resto: list) -> dict:
         """Sin incidencias, la llamada de siempre (R2)."""
         return {"incidencias": resto[0]} if resto else {}
+
+    def _pipeline(resto: list) -> RegistroPipeline:
+        """F-062 (R24): con el contexto del mes, el pipeline que lo lleva."""
+        return pipeline.con_contexto(resto[1]) if len(resto) > 1 else pipeline
 
     @app.get("/health")
     async def health() -> dict[str, Any]:
@@ -258,9 +394,9 @@ def build_app(settings) -> FastAPI:
     async def preflight(p: PeticionIn):
         try:
             obra, lineas, *resto = _dominio(p)
-            pf = pipeline.preflight(obra=obra, lineas=lineas,
-                                    **_kw_incidencias(resto))
-            return _respuesta_preflight(pf)
+            pf = _pipeline(resto).preflight(obra=obra, lineas=lineas,
+                                            **_kw_incidencias(resto))
+            return _respuesta_preflight(pf, len(resto) > 1)
         except EmpresasMezcladas as exc:
             return _empresas_mezcladas(exc)
         except Exception as exc:                # noqa: BLE001
@@ -282,23 +418,24 @@ def build_app(settings) -> FastAPI:
             return JSONResponse(status_code=502,
                                 content={"ok": False, "error": str(exc)})
         obras = []
-        for r in resultados:
+        for x, r in zip(p.peticiones, resultados):
             if isinstance(r, Exception):
                 logger.warning("preflight en lote: una obra falla: %s", r)
                 obras.append({"ok": False, "error": str(r)})
             else:
-                obras.append(_respuesta_preflight(r))
+                obras.append(_respuesta_preflight(
+                    r, _contexto(x) is not None))
         return {"ok": True, "obras": obras}
 
     @app.post("/api/registro/ejecutar")
     async def ejecutar(p: PeticionIn):
         try:
             obra, lineas, *resto = _dominio(p)
-            r = pipeline.ejecutar(obra=obra, lineas=lineas,
-                                  pisar_claves=set(p.pisar_claves),
-                                  usuario=p.usuario,
-                                  **_kw_incidencias(resto))
-            return _con_incidencias({
+            r = _pipeline(resto).ejecutar(obra=obra, lineas=lineas,
+                                          pisar_claves=set(p.pisar_claves),
+                                          usuario=p.usuario,
+                                          **_kw_incidencias(resto))
+            respuesta = _con_incidencias({
                 "ok": r.ok,
                 "obra_destino": asdict(r.obra_destino),
                 "forzada_pruebas": r.forzada_pruebas,
@@ -314,10 +451,12 @@ def build_app(settings) -> FastAPI:
                 "editadas": r.editadas,
                 "a_cero": r.a_cero,
                 "ya_registradas_ide": r.ya_registradas_ide,
-                "pendientes_confirmacion": [asdict(c) for c in
+                "pendientes_confirmacion": [_conflicto(c) for c in
                                             r.pendientes_confirmacion],
                 "error": r.error,
             }, r.incidencias)
+            _con_vinculados(respuesta, r.vinculados)
+            return _con_rachas(respuesta, r) if len(resto) > 1 else respuesta
         except EmpresasMezcladas as exc:
             return _empresas_mezcladas(exc)
         except Exception as exc:                # noqa: BLE001
@@ -356,7 +495,7 @@ def build_app(settings) -> FastAPI:
                 obra=ObraEntrada(ide=p.obra.ide, codigo=p.obra.codigo,
                                  nombre=p.obra.nombre),
                 ano=p.ano, mes=p.mes,
-                lineas=[l.model_dump() for l in p.lineas])
+                lineas=[l.para_pipeline() for l in p.lineas])
         except Exception as exc:
             logger.exception("propuesta de partidas fallo")
             return JSONResponse(status_code=502,
@@ -386,7 +525,7 @@ def build_app(settings) -> FastAPI:
                      "obra": ObraEntrada(ide=x.obra.ide, codigo=x.obra.codigo,
                                          nombre=x.obra.nombre),
                      "ano": x.ano, "mes": x.mes,
-                     "lineas": [l.model_dump() for l in x.lineas]}
+                     "lineas": [l.para_pipeline() for l in x.lineas]}
                     for x in validas]))
         except Exception as exc:                # noqa: BLE001
             logger.exception("propuesta en lote fallo")

@@ -23,13 +23,16 @@ from domain.models import (
     TipoEvento,
     Trabajador,
 )
+from domain.vinculados import ResultadoVinculos
 
 
 class SigridGateway(Protocol):
     """Acceso de solo lectura a Sigrid vía sigrid-api."""
 
-    def leer(self, sql: str) -> list[dict[str, Any]]:
-        """Ejecuta la consulta y devuelve filas como dicts columna→valor."""
+    def leer(self, sql: str, parametros: list[Any] | None = None
+             ) -> list[dict[str, Any]]:
+        """Ejecuta la consulta y devuelve filas como dicts columna→valor.
+        `parametros`, los valores de los `?` en orden (F-044)."""
         ...
 
 
@@ -101,6 +104,15 @@ class EmpresaRepository(Protocol):
 
     def listar(self) -> list[Empresa]:
         """Todas las empresas de la tabla, por número."""
+        ...
+
+
+class VinculadoRepository(Protocol):
+    """Recursos vinculados y lo guardado de sus subfilas (F-044, R5)."""
+
+    def sincronizar(self, resultado: ResultadoVinculos) -> ResultadoSyncMaestro:
+        """Upsert por `res.ide` de lo que decide `vincular`; el que no llega
+        o pierde su trabajador queda inactivo (nunca se borra)."""
         ...
 
 
@@ -217,6 +229,7 @@ class UnitOfWork(Protocol):
     asignaciones: AsignacionRepository
     incidencias: IncidenciaRepository  # F-030
     eventos: EventoRepository
+    vinculados: VinculadoRepository  # F-044
 
     def __enter__(self) -> "UnitOfWork": ...
 

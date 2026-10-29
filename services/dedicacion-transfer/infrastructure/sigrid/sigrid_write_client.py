@@ -84,6 +84,24 @@ def synckey_de(registro_id: int) -> str:
     return f"{PREFIJO_SYNCKEY}{int(registro_id)}"
 
 
+def _entero(v) -> int | None:
+    """Un entero de una fila de Sigrid, o None si viene nulo."""
+    return None if v is None else int(v)
+
+
+def _linea_historial(f: dict) -> LineaHistorial:
+    """Una fila de `historial_partidas` o de `historial_de_vinculados`
+    (F-068: los mismos alias) como `LineaHistorial`."""
+    return LineaHistorial(
+        reside=int(f["reside"]), obride=int(f["obride"]),
+        obra_cod=(f["obra_cod"] or "").strip() or None,
+        parte_cod=(f["parte_cod"] or "").strip() or None,
+        ano=int(f["ano"]), mes=int(f["mes"]),
+        can=float(f["can"] or 0.0), paride=int(f["paride"]),
+        par_cod=(f["par_cod"] or "").strip() or None,
+        par_res=(f["par_res"] or "").strip() or None)
+
+
 def _trozos(valores: list, n: int = LOTE_PARAMETROS) -> Iterator[list]:
     """`valores` en trozos de como mucho `n` (F-055 R20)."""
     for i in range(0, len(valores), n):
@@ -313,6 +331,21 @@ class SigridWriteClient:
             "cosindide, unimed FROM obrparpar WHERE obride = ? "
             "ORDER BY pos, ide", [int(obride)])
 
+    def cuentas_del_presupuesto(self, obra_ide: int) -> dict[int, str | None]:
+        """F-044 (R15, R27; design §7.1): el código de la cuenta analítica
+        (`con.cod` de `obrparpar.caaide`) de cada partida del presupuesto de
+        la obra que la tiene, por `ide` de partida. UNA lectura
+        parametrizada; hoja y alta las da el presupuesto que ya se lee. Un
+        fallo o un `truncated` sube como excepción."""
+        filas = self._lectura(
+            "cuentas_del_presupuesto",
+            "SELECT p.ide AS ide, cc.cod AS cod FROM obrparpar p "
+            "JOIN con cc ON cc.ide = p.caaide "
+            "WHERE p.obride = ? AND ISNULL(p.caaide,0) <> 0",
+            [int(obra_ide)])
+        return {int(f["ide"]): (f["cod"] or "").strip() or None
+                for f in filas}
+
     def horas_de_recursos(
         self, resides: Iterable[int]
     ) -> dict[int, list[HoraRecurso]]:
@@ -447,15 +480,39 @@ class SigridWriteClient:
                 "AND a.cod LIKE 'M%' AND p.obride = m.obride "
                 "AND (m.ano * 100 + m.mes) BETWEEN ? AND ?",
                 lote + [self._tip, int(desde), int(hasta)])
-            out.extend(LineaHistorial(
-                reside=int(f["reside"]), obride=int(f["obride"]),
-                obra_cod=(f["obra_cod"] or "").strip() or None,
-                parte_cod=(f["parte_cod"] or "").strip() or None,
-                ano=int(f["ano"]), mes=int(f["mes"]),
-                can=float(f["can"] or 0.0), paride=int(f["paride"]),
-                par_cod=(f["par_cod"] or "").strip() or None,
-                par_res=(f["par_res"] or "").strip() or None)
-                for f in filas)
+            out.extend(_linea_historial(f) for f in filas)
+        return out
+
+    def historial_de_vinculados(
+        self, resides: Iterable[int | None], obra_ide: int, desde: int,
+        hasta: int
+    ) -> list[LineaHistorial]:
+        """F-068 (R11, R13; design §7): las líneas de partes de trabajo de
+        esos recursos (los vinculados de la petición) EN la obra `obra_ide`,
+        con el mes entre `desde` y `hasta` (AAAAMM, incluidos) y partida del
+        presupuesto de esa obra, de CUALQUIER hora (la del vinculado no es
+        `M*`: `OTEL`, `OGAS`, `MESVE`…). Mismos alias que
+        `historial_partidas`; en lotes de 500 recursos; sin recursos no se
+        lee. Un fallo o un `truncated` sube como excepción."""
+        ides = sorted({int(i) for i in resides if i})
+        out: list[LineaHistorial] = []
+        for i in range(0, len(ides), LOTE_RECURSOS_HISTORIAL):
+            lote = ides[i:i + LOTE_RECURSOS_HISTORIAL]
+            marcas = ",".join("?" for _ in lote)
+            filas = self._lectura(
+                "historial_de_vinculados",
+                "SELECT h.reside AS reside, m.obride AS obride, "
+                "co.cod AS obra_cod, c.cod AS parte_cod, m.ano AS ano, "
+                "m.mes AS mes, h.can AS can, h.paride AS paride, "
+                "p.cod AS par_cod, p.res AS par_res "
+                "FROM hmores h JOIN hmo m ON m.ide = h.hmoide "
+                "JOIN con c ON c.ide = m.ide JOIN con co ON co.ide = m.obride "
+                "JOIN obrparpar p ON p.ide = h.paride "
+                f"WHERE h.reside IN ({marcas}) AND m.obride = ? "
+                "AND c.tip = ? AND p.obride = m.obride "
+                "AND (m.ano * 100 + m.mes) BETWEEN ? AND ?",
+                lote + [int(obra_ide), self._tip, int(desde), int(hasta)])
+            out.extend(_linea_historial(f) for f in filas)
         return out
 
     def partes_del_periodo(self, obra_ide: int, ano: int,
@@ -660,35 +717,26 @@ class SigridWriteClient:
                 out[sk] = ls
         return out
 
-    def incidencias_del_mes(
-        self, resides: Iterable[int | None], ano: int, mes: int,
-        hmoides: Iterable[int | None] | None = None,
-        ides: Iterable[int | None] = (),
+    def incidencias_en_ventana(
+        self, resides: Iterable[int | None], desde: int, hasta: int, *,
+        obride_pruebas: int | None = None, ides: Iterable[int | None] = (),
     ) -> list[LineaIncidenciaSigrid]:
-        """F-030 (R27, R33): las líneas de incidencia (`CI*`, también
-        `CIZ`) de esos recursos con `fec` en el mes, en CUALQUIER parte, con
-        el código del parte. Con `hmoides` (modo pruebas), solo en esos
-        partes; una lista sin partes no lee. En trozos de `LOTE_PARAMETROS`
-        recursos; un fallo o un `truncated` sube como excepción.
-
-        Anexo R30 (R40, design §13.5): también las líneas `ides` (las de la
-        traza de la api), estén donde estén y tengan el código que tengan,
-        en la MISMA lectura (`OR h.ide IN`, con el filtro de partes de
-        pruebas a todo), y de cada una su `can`, su parte y el estado del
-        parte. Sin `ides`, el `WHERE` de siempre. Cada línea, una vez."""
+        """F-062 (R19, design §6): las líneas de incidencia (`CI*`, también
+        `CIZ`) de esos recursos con `fec` en [`desde`, `hasta`] (AAAAMMDD),
+        en CUALQUIER parte y obra, más las líneas `ides` (las de las trazas,
+        también de las quitadas) estén donde estén, en la MISMA lectura. De
+        cada una, su parte (código, `con.est` y `con.emp`), su obra, centro,
+        partida y cuenta. En pruebas (`obride_pruebas`), solo las de partes
+        de esa obra. En trozos de `LOTE_PARAMETROS` recursos e `ide`; un
+        fallo o un `truncated` sube como excepción. Cada línea, una vez,
+        por (`fec`, `ide`)."""
         recursos = sorted({int(i) for i in resides if i})
         lineas = sorted({int(i) for i in ides if i})
-        partes = (None if hmoides is None
-                  else sorted({int(h) for h in hmoides if h}))
-        if not (recursos or lineas) or partes == []:
+        if not (recursos or lineas):
             return []
-        ultimo = calendar.monthrange(int(ano), int(mes))[1]
-        base = int(ano) * 10000 + int(mes) * 100
-        filtro = ""
-        extra: list = []
-        if partes is not None:
-            filtro = f" AND h.hmoide IN ({','.join('?' for _ in partes)})"
-            extra = partes
+        filtro, extra = "", []
+        if obride_pruebas is not None:
+            filtro, extra = " AND m.obride = ?", [int(obride_pruebas)]
         out: dict[int, LineaIncidenciaSigrid] = {}
         pedidas = [("r", r) for r in recursos] + [("i", i) for i in lineas]
         for trozo in _trozos(pedidas):
@@ -698,19 +746,21 @@ class SigridWriteClient:
             if t_r:
                 conds.append(f"h.reside IN ({','.join('?' for _ in t_r)}) "
                              "AND h.fec BETWEEN ? AND ? AND a.cod LIKE ?")
-                params += t_r + [base + 1, base + ultimo, "CI%"]
+                params += t_r + [int(desde), int(hasta), "CI%"]
             if t_i:
                 conds.append(f"h.ide IN ({','.join('?' for _ in t_i)})")
                 params += t_i
             donde = (conds[0] if not t_i else f"({' OR '.join(conds)})")
             filas = self._lectura(
-                "incidencias_del_mes",
+                "incidencias_en_ventana",
                 "SELECT h.ide AS ide, h.reside AS reside, h.fec AS fec, "
                 "a.cod AS cod, h.synckey AS synckey, c.cod AS parte, "
-                "h.can AS can, h.hmoide AS hmoide, c.est AS est "
+                "h.can AS can, h.hmoide AS hmoide, c.est AS est, "
+                "c.emp AS emp, m.obride AS obride, h.cenide AS cenide, "
+                "h.paride AS paride, h.caaide AS caaide "
                 "FROM hmores h JOIN auxhor a ON a.ide = h.horide "
                 "JOIN hmo m ON m.ide = h.hmoide JOIN con c ON c.ide = m.ide "
-                f"WHERE {donde}{filtro} ORDER BY h.ide",
+                f"WHERE {donde}{filtro} ORDER BY h.fec, h.ide",
                 params + extra)
             for f in filas:
                 out.setdefault(int(f["ide"]), LineaIncidenciaSigrid(
@@ -720,9 +770,12 @@ class SigridWriteClient:
                     synckey=(f["synckey"] or "").strip() or None,
                     parte_cod=(f["parte"] or "").strip() or None,
                     can=None if f["can"] is None else float(f["can"]),
-                    hmoide=None if f["hmoide"] is None else int(f["hmoide"]),
-                    parte_est=None if f["est"] is None else int(f["est"])))
-        return list(out.values())
+                    hmoide=_entero(f["hmoide"]),
+                    parte_est=_entero(f["est"]),
+                    obride=_entero(f["obride"]), cenide=_entero(f["cenide"]),
+                    paride=_entero(f["paride"]), caaide=_entero(f["caaide"]),
+                    parte_emp=_entero(f["emp"])))
+        return sorted(out.values(), key=lambda x: (x.fecha_int, x.ide))
 
     def lineas_registradas(
         self, claves: Iterable[str], ides: Iterable[int | None]
@@ -924,6 +977,7 @@ class SigridWriteClient:
     def stmt_editar_fecha_incidencia(
         self, *, ide: int, reside: int, hora_codigo: str,
         synckey_leida: str | None, fecha_int: int, fec_leida: int,
+        can_leido: float | None = 0.0,
     ) -> dict:
         """Anexo R30 (R41, design §13.5): cambia SOLO la `fec` de una línea
         de incidencia nuestra, en su sitio (ni hora, `pre`, `can`, partida,
@@ -931,8 +985,12 @@ class SigridWriteClient:
         su código: mismo `ide` y recurso, `can` 0, la `synckey` leída, sin
         enlaces y en un parte En registro. D16 (design §11): y en la `fec`
         leída, `fec_leida`; si alguien la movió tras leer, no se pisa. Va
-        al final, fuera de `_guarda`: el texto de F-051 no cambia."""
-        guarda, params = self._guarda(ide, reside, 0.0, synckey_leida,
+        al final, fuera de `_guarda`: el texto de F-051 no cambia.
+
+        F-062 (R14, D12): un `CIZ` ajeno se mueve con SU `can` leído
+        (`can_leido`, 0 o 1); sin él, 0, como hasta ahora (el SQL no
+        cambia)."""
+        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida,
                                       hora_codigo)
         return {"sql": f"UPDATE hmores SET fec = ? {guarda} AND fec = ?",
                 "parameters": [int(fecha_int)] + params + [int(fec_leida)]}
@@ -941,13 +999,18 @@ class SigridWriteClient:
         self, *, ide: int, reside: int, can_leido: float | None,
         synckey_leida: str | None, horide: int, can: float, pre: float,
         paride: int, caaide: int, fecha_int: int, synckey: str,
-        tex: str | None,
+        tex: str | None, hora: str | None = None,
     ) -> dict:
         """F-051 (R8-R11): la línea pasa a ser la que habríamos insertado
         (mismos valores y redondeos que `stmt_insert_linea`), en su sitio:
         no cambian `ide`, `pos`, parte, obra, centro ni periodo. `tex` solo
-        se escribe si viene (modo pruebas, R10)."""
-        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida)
+        se escribe si viene (modo pruebas, R10).
+
+        F-044 (R24): con `hora` (la de un recurso vinculado), la guarda
+        exige ese código en vez de `M*` (`_guarda`); sin ella, el SQL de
+        F-051 sin cambiar ni un carácter."""
+        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida,
+                                      hora)
         con_tex = tex is not None
         return {"sql": (
             "UPDATE hmores SET can = ?, pre = ?, tot = ?, horide = ?, "
@@ -961,10 +1024,12 @@ class SigridWriteClient:
 
     def stmt_poner_a_cero(self, *, ide: int, reside: int,
                           can_leido: float | None,
-                          synckey_leida: str | None) -> dict:
+                          synckey_leida: str | None,
+                          hora: str | None = None) -> dict:
         """F-051 (R5, D14 = A): `can` y `tot` a 0, nada más, con la misma
-        guarda que la edición."""
-        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida)
+        guarda que la edición (F-044 R24: con `hora`, la de un vinculado)."""
+        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida,
+                                      hora)
         return {"sql": f"UPDATE hmores SET can = 0, tot = 0 {guarda}",
                 "parameters": params}
 

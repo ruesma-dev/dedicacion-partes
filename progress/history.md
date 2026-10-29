@@ -2858,3 +2858,300 @@ MANUAL.
 y front `r20261023-1236`, en ese orden, lanzado por el humano; revisiones
 `Healthy` al 100 %; la api arrancó sin errores); `azure-apps/dedicacion.md`
 `47c7c3c`. MANUAL, del humano.
+
+## 2026-10-26 · F-062 · Rachas de incidencia como Administración
+
+Pedida por el humano el 2026-10-23. `sdd: true`, rigor crítico; los tres
+servicios. **Qué hace:** cada incidencia del cuadrante abre, continúa o
+cierra una **racha** (`CI*` + `CIZ`) como la lleva Administración, en vez del
+par por mes de F-030 D3. El transfer lee las `CI*`/`CIZ` del recurso en todas
+las obras, en una ventana de 12 meses (`INCIDENCIAS_MESES_ATRAS`) más el mes
+siguiente, una sola lectura por lote. Sábados y domingos no cortan la racha. A
+fin de mes queda abierta y la cierra el mes siguiente; si no la continúa, el
+`CIZ` va al último día de M−1 (D14 = B), y si el inicio es anterior a M−1
+pide confirmación por línea (D17). Mueve la `fec` de `CIZ` ajenos (de
+Administración o de `partes`) con `UPDATE` guardado y la devuelve a su día si
+deja de continuarla; nunca `DELETE`. El modal pinta «Rachas», «Cierres de
+rachas» y «No coincide con Sigrid». Columna nueva
+`incidencia.sigrid_dia_fin_antes`. Evidencia de Sigrid:
+`progress/explore_F-062_sigrid.md`.
+
+**Recorrido.** Spec aprobada el 2026-10-24 (D1-D16; D14 = B). Enmiendas del
+humano: D17 («si añade», cierre viejo con confirmación) y D18 («metelo», dos
+tests de la api a la lista cerrada, tras un `blocked` en T13). Review 1
+RECHAZADA con 6 bloqueos: el MANUAL T20 habría escrito el `CIZ` de noviembre
+en el parte de octubre (ids de prueba iguales en todos los meses y `<=` en
+`rachas.py`, contra R5), T19 no medía, ningún MANUAL comprobaba el modo del
+proceso que escribe, más rastro, formato y docs. Arreglados, con O2 aprobada
+por el humano (el script no escribe en modo real sin `--permitir-modo-real`)
+y los 2 equivalentes de mutación aceptados («ok a 1 y 2»). Review 2 APROBADA.
+
+**Verificado.** `init.sh` en verde (raíz 418 + 1 skipped, api 1164, front
+376, transfer 1425); cobertura de lo cambiado 99,8 % de 923; mutación 609
+mutantes, 2 equivalentes aceptados, el resto muertos (5 falsos supervivientes
+de la campaña paralela, que mueren en serie: defecto del arnés pendiente, O1).
+**MANUAL** (`progress/manual_F-062.md`): T19 una lectura más (~1 s) y dentro
+del 15 %; T20 (1)-(4) el humano con el script en la 0404 y (5) el líder en
+el navegador local a petición expresa del humano: todo cumple y se limpió.
+
+**Fuera / pendiente.** Desplegar (transfer → api → front);
+`azure-apps/dedicacion.md` `ff0acb4` pasa a «desplegada» al hacerlo; aviso a
+`partes` (lo transmite el humano). Observaciones: los contadores del script
+no cuentan incidencias; el preflight del script no imprime `requiere_confirmar`.
+
+**Desplegada el 2026-10-26** con permiso del humano (transfer
+`r20261026-0950`, api `r20261026-0955` y front `r20261026-1000`, en ese orden,
+lanzado por el humano; revisiones `Healthy` al 100 %; la api añadió
+`incidencia.sigrid_dia_fin_antes`); transfer en modo real.
+`azure-apps/dedicacion.md` a «desplegada». Aviso a `partes`, del humano.
+
+## 2026-10-26 · F-044 · Los porcentajes también a los recursos vinculados
+
+Pedida por el humano el 2026-10-07 y repetida el 2026-10-08; alcance de
+Juan Romero (persona, gasoil, vehículo y teléfono por porcentaje). `sdd:
+true`, rigor crítico; los tres servicios. **Qué hace:** el sync trae de
+Sigrid el vínculo de cada recurso no persona con su trabajador (campo
+extendido «Recurso Asociado», `conext.cod = '5'`; `VP` excluido, D1b) a
+`recurso_vinculado`. El cuadrante pinta la columna «Tipo recurso» y una
+subfila por vinculado bajo cada línea, con su partida: la hoja CI cuya
+cuenta tiene la subcuenta del vinculado (`CI.4.13` teléfono, `CI.4.1`
+gasoil, `CI.03P.9` vehículo), o la del trabajador en postventa, VAR y
+`CP*`; se puede elegir otra (`PARTIDA_VINCULADO`). Al registrar (desde
+2026-10, `sync.vinculados.desde`), cada vinculado va con el mismo % que su
+trabajador sobre su importe mensual (`pre` de `reshor`), después de él y en
+su parte, con `synckey porcentajes:vin:{registro}:{recurso}`; edita la
+línea que ya exista y pide confirmar el pisado como el trabajador (F-051);
+nunca `DELETE`. El modal los enseña bajo el trabajador. Evidencia de
+Sigrid: `progress/explore_F-044_sigrid.md`.
+
+**Recorrido.** Spec aprobada el 2026-10-25 («ok a todo»; D2 y D4 del
+humano). Implementación sobre `dev` con F-062 unida; `blocked` antes de T7
+por tres preguntas de tests ajenos, contestadas «si a todo» (lista cerrada
+del front y de la api ampliada; nombres `empresa`/`fecha_baja` del design).
+Review 1 RECHAZADA solo por el guion y el rastro de T21 (comprobar el
+proceso que escribe, quién ejecuta); corregido por el líder. Review 2
+APROBADA (`947c285`).
+
+**Verificado.** `init.sh` en verde (api 1308, front 403, transfer 1585);
+cobertura de lo cambiado 99,3 % de 1108; mutación 422 mutantes, 415
+muertos y 7 equivalentes aceptados por el humano («1 ok»). **T21**
+(`progress/manual_F-044.md`) la hizo el líder a petición del humano («haz
+tu la prueba»), en local y modo pruebas (0404): sync con 496 vinculados;
+trabajador 1972126 al 60/40 con teléfono, gasoil y vehículo ⇒ 8 líneas con
+los importes y partidas esperados; repetir ⇒ «ya registrada»; 70/30 ⇒
+confirma el pisado y edita las mismas 8 líneas; modal comprobado en el
+navegador; limpiado.
+
+**Fuera / pendiente.** Desplegar (transfer → api → front; la api crea
+`recurso_vinculado` y `asignacion_vinculado`); T23: `azure-apps/dedicacion.md`
+y aviso a `partes` (dedicación escribe y edita líneas de recursos no persona
+en los partes compartidos, `synckey porcentajes:vin:…`, sin borrar).
+Cerrada por decisión del humano («cierra ya») con el resto de T21 para
+después de desplegar: líneas ajenas hechas a mano (`OTEL` con `can = 0`,
+`OGAS` al 95 %) y validación de Administración. Observaciones: la respuesta
+de `POST /sync` no trae el conteo de vinculados (sí el log); el `resumen` del
+preflight cuenta solo las líneas del titular.
+
+## 2026-10-27 · F-064 · El pisado de los vinculados, confirmado por defecto en el modal
+
+Rama `feature/F-064-pisado-vinculados-marcado` · `sdd: false` · rigor
+`estandar` · **APROBADO** por el reviewer en la review 2 (`4144ab8`).
+
+**Qué cambió.** Petición del humano tras la segunda prueba de F-044
+(«que queden confirmados por defecto y se puedan desmarcar»): en el modal de
+registro, la casilla del pisado de cada recurso vinculado sale marcada la
+primera vez que se enseña; el humano puede desmarcarla y sigue desmarcada al
+repetir el preflight de una obra (cambio de partida); un preflight nuevo
+vuelve al valor por defecto. El pisado del trabajador, la sobrecarga, el sin
+partida y los cierres de racha siguen desmarcados. Solo `app.js`
+(`marcadaPorDefecto(c)`, `registro.vistas`) y tests; transfer y api sin
+cambios (cada vinculado sigue necesitando su clave, R20; sin confirmar al
+trabajador, sus vinculados se omiten, R18). Nota de enmienda en R31 de F-044
+(cita R20 y R31, para no pasar del tope de 150 líneas).
+
+**Recorrido.** `blocked` en la primera vuelta: el valor por defecto mira el
+`motivo` y choca con `test_f013_sin_partida.py::test_f013_r4_…` (el front
+solo mira el motivo para rotular). El humano eligió la opción 1 («1»):
+`marcadaPorDefecto` es la segunda excepción de ese test; único cambio en él.
+Review 1 RECHAZADA: campaña manual irreproducible (B1), MANUAL fuera de
+`current.md` (B2) y un mutante vivo porque el doble del conflicto del
+trabajador no traía `"vinculado": null` como el `asdict` real (B3). Review 2
+APROBADA.
+
+**Verificado.** `init.sh` en verde (raíz 418, api 1308, front 414, transfer
+1585); campaña manual de 15 mutantes en `app.js`, 15 muertos, reproducida
+entera por el reviewer (`progress/mutacion_manual_F-064.md`).
+
+**Fuera / pendiente.** Se despliega con el front de F-044. MANUAL del humano
+en el navegador (`current.md`, «⚠ Lo que espera al humano»). Propuesta de
+automejora del reviewer, a decidir por el humano: en `docs/CONVENTIONS.md`
+(y en `arnes-base`), «un doble que imita la respuesta de otro servicio lleva
+su forma serializada real, opcionales a `null` incluidos».
+
+## 2026-10-27 · Despliegue de F-044 y F-064
+
+Lanzado por el humano, uno a uno y en orden transfer → api → front
+(`infra/d.local.ps1`): transfer `r20261027-0742`, api `r20261027-0844`, front
+`r20261027-0846`; las tres revisiones `Healthy` con el 100 % del tráfico; la
+api arrancó sin errores y crea `recurso_vinculado` y `asignacion_vinculado`.
+Transfer en modo real. T23 de F-044: `azure-apps/dedicacion.md` (§1, §5, §7 y
+cabecera, `29321e1`). Pendiente del humano: «Sincronizar Sigrid» en
+producción, la MANUAL B de F-064 (mirar el modal y Cancelar), el resto de
+T21 de F-044 y los avisos a `partes` de F-062 y F-044.
+
+## 2026-10-27 · F-063 · Filtrar trabajadores por tipo de incidencia
+
+Rama `feature/F-063-filtro-por-incidencia` · `sdd: false` · rigor `estandar`
+· **APROBADO** por el reviewer en la review 1 (`e035123`), sin cambios
+requeridos.
+
+**Qué cambió.** Petición del humano del 2026-10-26: en la fila de fichas del
+resumen sale una por cada tipo de incidencia del cuadrante del mes (por
+código; letra, nombre y nº de trabajadores, sin contar las quitadas ni las
+bajas sin carga). Un clic filtra, otro clic o «N trabajadores» lo quita, una
+activa a la vez, combinada (Y) con la ficha de estado, el buscador y los
+filtros de columna; la activa que se queda sin trabajadores sigue con 0 para
+poder quitarla. Solo `app.js` (y el README del front) y sus tests.
+
+**Verificado.** RED con 13 en rojo; 16 tests nuevos; `init.sh` en verde;
+campaña manual de 25 mutantes en `app.js`, 24 muertos y 1 equivalente
+(M25, el respaldo `|| []` de `tieneIncidencia`: la api siempre serializa
+`incidencias`), aceptado por el reviewer
+(`progress/mutacion_manual_F-063.md`).
+
+**Fuera / pendiente.** Desplegar el front; MANUAL del humano en el
+navegador. Observaciones de la review: la ficha activa a 0 va al final y no
+en su sitio por letra (cosmético, a decidir por el humano); la regla «baja
+sin carga» está en tres sitios (una función común, fuera de alcance); el SHA
+de la campaña manual, completo la próxima vez. Podadas de `current.md` las
+secciones de F-044 ya cerradas (O2).
+
+## 2026-10-27 · F-065 · La ficha de incidencia activa a 0, en su sitio por letra
+
+Rama `feature/F-065-ficha-activa-en-su-sitio` · `sdd: false` · rigor
+`estandar` · **APROBADO** por el reviewer en la review 1 (`0f56ac8`), sin
+cambios requeridos.
+
+**Qué cambió.** Petición del humano (O1 de la review de F-063): la ficha de
+incidencia activa que se queda a 0 entra en `tiposIncidenciaDelMes` antes de
+ordenar, así que sale en su sitio por letra y nombre y no al final; el
+comparador sigue en un solo sitio. Solo `app.js` y sus tests.
+
+**Verificado.** RED con 3 en rojo; 4 tests nuevos y los 16 de F-063 sin tocar;
+`init.sh` en verde (front 434); campaña manual de 12 mutantes, 11 muertos y 1
+equivalente (N10: la clave interna del mapa; los códigos del catálogo son
+`CI%`, nunca una letra), aceptado por el reviewer. Observaciones recogidas por
+el líder antes de cerrar: el doble usa un código del dominio (`CIVA`) y el
+análisis de N10 cita el invariante (`config.yaml`, `letra_y_nombre`). F-066
+queda con prioridad 8, como F-054: el orden del backlog desempata por id, así
+que va justo después (O3).
+
+**Fuera / pendiente.** Desplegar el front; MANUAL del humano en el navegador.
+También da de alta **F-066** (la regla «baja sin carga» en una sola función,
+pendiente, después de F-054).
+
+## 2026-10-27 · Despliegue de F-063 (solo el front)
+
+Lanzado por el humano (`infra/d.local.ps1 front`): front `r20261027-1202`,
+revisión `Healthy` con el 100 % del tráfico. Sin cambio de contrato
+(`azure-apps` no se toca). F-065, unida a `dev` después de publicar la
+imagen, no va dentro: espera al siguiente despliegue del front.
+
+## 2026-10-27 · Despliegue de F-065 (solo el front)
+
+Lanzado por el humano (`infra/d.local.ps1 front`): front `r20261027-1637`,
+revisión `ca-dedicacion-front--r20261027163730`, `Healthy` con el 100 % del
+tráfico. Sin cambio de contrato (`azure-apps` no se toca). Pendiente la
+MANUAL de F-065 (en local).
+
+## 2026-10-28 · F-067 · Casilla para ver u ocultar los recursos vinculados
+
+Rama `feature/F-067-ver-vinculados` · `sdd: false` · rigor `estandar` ·
+**APROBADO** por el reviewer en la review 1 (`8423a5a`), sin bloqueos.
+Petición del humano del 2026-10-27, propuesta aprobada («si, esta bien»).
+
+**Qué cambió.** Casilla «Recursos vinculados» detrás de las fichas del
+resumen (solo si el mes tiene vinculados), marcada por defecto y recordada
+con las preferencias de la tabla. Desmarcada, el cuadrante no pinta las
+subfilas de vinculado (el `rowspan` cuadra con líneas e incidencias) y los
+filtros «Tipo recurso» y «Partida» no las miran. El modal de registro no
+cambia (vinculados y su pisado marcado, F-064). Solo `app.js`, `styles.css`
+y un test nuevo; ningún test existente cambia.
+
+**Verificado.** RED con 12 en rojo (13 con el de T3, reproducida por el
+reviewer); 17 tests nuevos; `init.sh` en verde (front 451). Campaña manual
+del JS sobre `7016870ad9b64deab5ae72ef55ef07511e39f8db`: 27 mutantes, 26
+muertos, 1 equivalente (N18: la preferencia es siempre booleana en la
+aplicación), aceptado por el reviewer.
+
+**Observaciones de la review, recogidas al cerrar.** O3: reescrito el paso 3
+de la MANUAL. O1 (N18 se mataría con un `state` sin la clave en
+`trabajadoresVisibles`) y O2 (`_filas` con líneas mínimas, suficiente para
+subfilas y `rowSpan`): el reviewer las da por buenas tal cual; sin cambio.
+O4 (el foco se queda en la casilla, como en «Solo pendientes»):
+comportamiento existente, se le cuenta al humano por si quiere otra feature.
+Automejora del reviewer (C4 bis: con 0 mutantes automáticos, la evidencia
+válida es `mutacion_manual_F-XXX.md` con SHA completo), pendiente de decisión
+del humano, junto a la del SHA completo de F-063.
+
+**Fuera / pendiente.** Desplegar el front; MANUAL del humano en el navegador.
+
+## 2026-10-28 · Despliegue de F-067 (solo el front)
+
+Lanzado por el humano (`infra/d.local.ps1 front`): front `r20261028-1049`,
+revisión `ca-dedicacion-front--r20261028104852`, `Healthy` con el 100 % del
+tráfico. Sin cambio de contrato (`azure-apps` no se toca). MANUAL hecha
+por el humano en producción el mismo día: «sale y funciona bien». La
+automejora del reviewer (C4 bis) va a `arnes-base` como encargo pendiente
+(`de161b4`), por decisión del humano.
+
+## 2026-10-28 · F-068 · La partida del recurso vinculado se propone como la del trabajador
+
+Rama `feature/F-068-propuesta-vinculado-como-titular` · `sdd: true` · rigor
+`critico` · **APROBADO** por el reviewer en la review 1 (`0762c25`), sin
+bloqueos. Petición del humano del 2026-10-28 (caso de `MO/0601` en la 0678,
+subfilas «automática»), spec aprobada con la A en D1-D5. Enmienda de F-044
+R15-R16.
+
+**Qué cambió.** Orden nuevo para la partida de un vinculado sin elegida:
+la del titular (postventa, VAR, no CI*, como antes); el historial del
+vinculado en la obra (`previa_en_obra`, solo `CI*`, ventana del trabajador
+con el periodo); la única hoja con su cuenta; con varias, la que mejor case
+por nombre; sin ninguna con su cuenta, por nombre entre las `CI*`; en empate,
+el capítulo CI.4 (`capitulo_ci4`); si no, sin partida. Una sola regla para
+preflight, selector y lote. Transfer: `reglas_vinculados.py`, lectura
+`historial_de_vinculados` (una vez por petición y solo si hace falta),
+propuesta guardada con los métodos nuevos. Api: `METODOS_PROPUESTA_VINCULADO`
+ampliado y `descripcion`/`tipo_res` del vinculado en el contrato (opcionales;
+sin ellos, el payload es el de F-044). Front: rótulo `capitulo_ci4`. Cambian 4
+tests de F-044 (contrato viejo y texto de `sin_ci`), aceptados por el
+reviewer.
+
+**Verificado.** RED por tarea, incluido el caso de la 0678 (CI.4.13 y CI.4.1
+con «parte anterior»); `init.sh` en verde (raíz 418, api 1337, front 458,
+transfer 1737); cobertura de líneas cambiadas 100 % (126/126). Mutación
+Python 54 generados, 53 muertos y 1 equivalente (`registro_vinculados.py:202`,
+`elegida_valida` no se lee con `elegida=None`), demostrado por el reviewer en
+45 combinaciones y **aceptado por el humano** («acepto como equivalente»).
+JS manual sobre `e28dbd2ac4f827fdc870285ae39c5f2bd037bb4b`: 5/5 muertos (N2
+y N5 reproducidos por el reviewer).
+
+**Observaciones de la review, recogidas al cerrar.** O1 el visto bueno, dado.
+O2 (en rigor crítico el implementer debe traer la demostración ejecutable del
+equivalente; `implementer.md` no lo pide) al encargo RM5 de `arnes-base`
+(`e04abcf`). O3 precisada la frase de la api vieja con el transfer nuevo en
+design §8 e `INTEGRACION.md` (el preflight puede casar por categoría). O4
+`MO/0601` y sus vinculados en la MANUAL T13.
+
+**Fuera / pendiente.** Desplegar transfer → api → front; MANUAL T13 (solo
+lectura) y T14 (`azure-apps/dedicacion.md`). Las propuestas `ci_tipo` ya
+guardadas se quedan (D4-A).
+
+## 2026-10-28 · Despliegue de F-068 (transfer → api → front)
+
+Lanzado por el humano (`infra/d.local.ps1`, en orden): transfer
+`r20261028-1914`, api `r20261028-1918` y front `r20261028-1922`; las tres
+revisiones `Healthy` con el 100 % del tráfico (comprobado por el líder, solo
+lectura). El transfer sigue en modo real. T14: `azure-apps/dedicacion.md`
+al día (`bcc3f71`). MANUAL T13 hecha por el humano en producción el mismo
+día: «comprobado, sale bien».

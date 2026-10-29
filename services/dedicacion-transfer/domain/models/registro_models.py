@@ -26,6 +26,32 @@ from typing import Optional
 # ----------------------------- entrada ----------------------------- #
 
 @dataclass
+class VinculadoEntrada:
+    """F-044 (R10, design §8): un recurso no persona vinculado al trabajador
+    (teléfono, gasoil, vehículo…) que va con una línea de %. Lo manda la
+    api: su recurso, su tipo (`auxrestip`), su código (para los avisos), su
+    categoría, la partida ELEGIDA en su subfila (`paride`), la propuesta
+    GUARDADA (`propuesta_*`) y el `hmores.ide` que ya escribimos para él.
+    F-068 (R18): su `descripcion` (`recurso_vinculado.descripcion`), el
+    «nombre» con el que se casa por nombre (R5-R6); sin ella, nada casa.
+    Ver ARCHITECTURE.md#regla-vinculado."""
+    recurso_ide: int
+    tipo: str | None = None
+    tipo_res: str | None = None
+    cod: str | None = None
+    categoria: str | None = None
+    descripcion: str | None = None
+    paride: int | None = None
+    partida_cod: str | None = None
+    propuesta_paride: int | None = None
+    propuesta_cod: str | None = None
+    propuesta_res: str | None = None
+    propuesta_metodo: str | None = None
+    propuesta_origen: str | None = None
+    hmores_ide: int | None = None
+
+
+@dataclass
 class LineaEntrada:
     """Una asignación de dedicación (trabajador/obra/mes) a registrar."""
     registro_id: int                    # id de la asignación en PostgreSQL
@@ -62,6 +88,10 @@ class LineaEntrada:
     # asignación (`asignacion.sigrid_hmores_ide`); None si la api no lo
     # tiene. Localiza lo nuestro aunque su `synckey` sea de otro sistema.
     hmores_ide: Optional[int] = None
+    # F-044 (R10, R11): los recursos vinculados al trabajador que van con
+    # esta línea (los manda la api; el transfer no busca vínculos). Vacía,
+    # la línea se decide exactamente como antes de F-044.
+    vinculados: list[VinculadoEntrada] = field(default_factory=list)
 
     @property
     def fecha_int(self) -> int:
@@ -93,6 +123,22 @@ class IncidenciaEntrada:
     hmores_ide_fin: int | None = None
     dia_ini: int | None = None
     dia_fin: int | None = None
+    # F-062 (R15, R24): la obra de la incidencia (para la cadena entre obras,
+    # D11) y, si su `fin` es un `CIZ` ajeno que movimos, su día original.
+    obra_ide: int | None = None
+    dia_fin_antes: int | None = None
+
+
+@dataclass
+class ContextoRachas:
+    """F-062 (R12, R17, R24): lo que la api manda del mes, además de las
+    incidencias de la obra: las del mes de sus recursos en cualquier obra
+    (`incidencias_mes`, con su obra y su traza), los recursos de los que
+    esta petición cierra el mes anterior (`cierres_recursos`) y las
+    quitadas con traza (`quitadas`). Vacío, la petición es la de F-030."""
+    incidencias_mes: list[IncidenciaEntrada] = field(default_factory=list)
+    cierres_recursos: list[int] = field(default_factory=list)
+    quitadas: list[IncidenciaEntrada] = field(default_factory=list)
 
 
 @dataclass
@@ -266,6 +312,49 @@ class AccionLinea:
 
 
 @dataclass
+class AccionVinculado:
+    """F-044 (R12-R25, design §6.2): qué se hará con la línea de UN recurso
+    vinculado de una línea de % (su titular, `registro_id`). Lleva los campos
+    que la identidad (`criterio_choque`, `clave_conflicto`), los pisables y
+    la cuenta analítica comparten con `AccionLinea` (`recurso_ide`, `ano`,
+    `mes`, `hora_ide`, `paride`, `destino`, `aviso` y `caa_*`): el `can` y
+    la `fec` son los del titular; la hora, el `pre` y el `tot`, los suyos.
+    Ver ARCHITECTURE.md#regla-vinculado."""
+    registro_id: int
+    recurso_ide: int
+    accion: str                         # escribir | omitir | ya_registrado
+    ano: int
+    mes: int
+    fecha_int: int
+    tipo: Optional[str] = None
+    tipo_res: Optional[str] = None
+    cod: Optional[str] = None
+    nombre: Optional[str] = None        # el del titular, para los avisos
+    motivo: Optional[str] = None
+    hora_ide: Optional[int] = None
+    hora_codigo: Optional[str] = None
+    can: Optional[float] = None
+    pre: Optional[float] = None
+    tot: Optional[float] = None
+    destino: str = "obra"               # obra | postventa (el del titular)
+    paride: int = 0
+    partida_cod: Optional[str] = None
+    partida_res: Optional[str] = None
+    partida_metodo: Optional[str] = None  # manual | titular | ci_tipo
+    partida_origen: Optional[str] = None
+    parte_cod: Optional[str] = None
+    aviso: Optional[str] = None
+    hmores_ide: Optional[int] = None
+    linea_cero: Optional[dict] = None   # como `AccionLinea.linea_cero`
+    caa_ide: int = 0
+    caa_cod: Optional[str] = None
+    caa_motivo: Optional[str] = None
+    caa_aviso: Optional[str] = None
+    caa_origen: Optional[str] = None
+    caa_nota: Optional[str] = None
+
+
+@dataclass
 class AccionIncidencia:
     """F-030 (R24, R31): qué se hará con UNA de las dos líneas de una
     incidencia (`rol` `ini`: su `CI*` el día `desde`; `fin`: `CIZ` el día
@@ -276,8 +365,10 @@ class AccionIncidencia:
     Anexo R30 (R41, R46): `editar` cambia SOLO la `fec` de la línea
     `hmores_ide` (en el parte `hmoide`) de `fec_antes` a `fecha_int`."""
     id: int
-    rol: str                            # ini | fin
-    accion: str                         # escribir | editar | omitir | ya_registrado
+    rol: str                            # ini | fin | devolver (F-062 R16)
+    # escribir | editar | omitir | ya_registrado; F-062 (R8, R23): continua
+    # (la racha ya está abierta) | abierta (llega a fin de mes, sin CIZ)
+    accion: str
     fecha_int: int
     recurso_ide: int | None = None
     ano: int = 0
@@ -299,6 +390,16 @@ class AccionIncidencia:
     caa_nota: str | None = None
     fec_antes: int | None = None
     hmoide: int | None = None
+    # F-062 (R14, D12): la `synckey` y el `can` leídos de la línea que se
+    # edita (nuestra: la nuestra y 0; un `CIZ` ajeno: los suyos) y si es
+    # ajena. R5 y R12: el parte, la obra y el centro donde va un `CIZ` que
+    # se escribe en el parte del inicio (None: el parte del paso 5).
+    synckey_leida: str | None = None
+    can_leido: float | None = None
+    ajena: bool = False
+    hmoide_destino: int | None = None
+    obride: int | None = None
+    cenide: int | None = None
 
 
 @dataclass
@@ -315,6 +416,13 @@ class LineaIncidenciaSigrid:
     can: float | None = None
     hmoide: int | None = None
     parte_est: int | None = None
+    # F-062 (R5, R10, R12, design §6): la obra del parte, el centro, la
+    # partida y la cuenta de la línea y la empresa del parte (`con.emp`).
+    obride: int | None = None
+    cenide: int | None = None
+    paride: int | None = None
+    caaide: int | None = None
+    parte_emp: int | None = None
 
 
 @dataclass
@@ -366,6 +474,9 @@ class Conflicto:
     # F-051 (R4, R5): solo en el pisado.
     edita_ide: Optional[int] = None
     a_cero_ides: list[int] = field(default_factory=list)
+    # F-044 (R25, design §8): el de un recurso vinculado lleva su tipo y su
+    # código (`{tipo, cod}`); None en el de un trabajador.
+    vinculado: Optional[dict] = None
 
     @property
     def nueva_can(self) -> float:
@@ -383,6 +494,14 @@ class Preflight:
     conflictos: list[Conflicto] = field(default_factory=list)
     # F-030 (R31): las dos líneas de cada incidencia; vacía sin incidencias.
     incidencias: list[AccionIncidencia] = field(default_factory=list)
+    # F-062 (R22): `RachaResumen`, `CierreRacha` y `NoCoincide` de
+    # `application/services/rachas.py`; vacías sin las claves nuevas.
+    rachas: list = field(default_factory=list)
+    cierres_racha: list = field(default_factory=list)
+    no_coincide: list = field(default_factory=list)
+    # F-044 (R25): una `AccionVinculado` por (titular, vinculado); vacía si
+    # ninguna línea los trae.
+    vinculados: list[AccionVinculado] = field(default_factory=list)
 
     @property
     def n_escribir(self) -> int:
@@ -419,3 +538,11 @@ class ResultadoRegistro:
     # F-030 (R31): las líneas de las incidencias, con su `hmores_ide` si se
     # escribieron; vacía sin incidencias.
     incidencias: list[AccionIncidencia] = field(default_factory=list)
+    # F-062 (R22): como en `Preflight`; los cierres, con el `hmores_ide` de
+    # los escritos.
+    rachas: list = field(default_factory=list)
+    cierres_racha: list = field(default_factory=list)
+    no_coincide: list = field(default_factory=list)
+    # F-044 (R25, R28): las de `Preflight.vinculados` tras escribir, con su
+    # `hmores_ide` o, si no se escribieron, `omitir` y el motivo.
+    vinculados: list[AccionVinculado] = field(default_factory=list)

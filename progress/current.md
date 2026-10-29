@@ -1,19 +1,47 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**Spec APROBADA, en espera: F-054** (al sincronizar, traer al cuadrante
-los % que ya existen en los partes de Sigrid, y al registrar preguntar si
-se pone a 0 una obra que el trabajador ya no tiene; `sdd: true`, rigor
-crítico), `spec_ready`. El humano la aprobó el 2026-10-24 («d12, con la
-casilla marcada por defecto, aunque se puede desmarcar. d13, metelo aqui.
-ok a lo demas»). La spec está en `specs/F-054-sync-trae-porcentajes/`
-(`6981a05`, todas las decisiones cerradas). Rama
-`feature/F-054-sync-trae-porcentajes`, en la copia `porcentajes-f054`.
-**No pasa a `in_progress` hasta que se cierre F-062**, que va primero
-(recomendación del líder, aceptada en el «ok a lo demas»): una sola
-`in_progress` a la vez. **A esta copia le falta el `.venv` de la api**
-(`[KO]` de init.sh, según el spec-author); hay que crearlo antes de
-implementar aquí.
+**F-054** (al sincronizar, traer al cuadrante los % que ya existen en los
+partes de Sigrid; rigor crítico, SDD), `spec_ready`, rama
+`feature/F-054-sync-trae-porcentajes` en la copia `porcentajes-f054`:
+**spec aprobada el 2026-10-24 y EN REVISIÓN desde el 2026-10-29** porque
+se escribió antes de F-044, F-062, F-063-F-065, F-067 y F-068; `dev` unido
+a la rama el 2026-10-29 y spec-author lanzado para revisarla contra el
+código actual (vinculados: F-044 design §10). Vuelve a PARADA 1 antes de
+implementar. Ninguna feature `in_progress`. **F-068** (la partida del recurso vinculado se propone como la del
+trabajador: historial en la obra y, si no, por nombre, CI.4 en empate;
+transfer y api, rigor crítico, SDD; petición del humano del 2026-10-28, va
+antes de F-054), rama `feature/F-068-propuesta-vinculado-como-titular`,
+**cerrada (`done`) el 2026-10-28**: review 1 APROBADA (`0762c25`), observaciones recogidas, equivalente aceptado por el humano, `bash harness/init.sh` en verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (transfer `r20261028-1914`, api `r20261028-1918`, front `r20261028-1922`; «Producción, hoy»); T14 hecha (`azure-apps` `bcc3f71`). **MANUAL T13 hecha por el humano en producción el 2026-10-28** («comprobado, sale bien»): F-068 cerrada del todo. Después de F-054, F-066. **F-067** (casilla «Recursos vinculados» para
+ver u ocultar sus subfilas en el cuadrante; solo front) **cerrada (`done`)
+el 2026-10-28**: review 1 APROBADA (`8423a5a`), `bash harness/init.sh` en
+verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (solo el
+front, `r20261028-1049`); **MANUAL hecha por el humano el 2026-10-28**
+(«sale y funciona bien»). Sin
+cambio de contrato: `azure-apps/dedicacion.md` no se toca. **F-065** (la ficha de incidencia activa a 0
+se queda en su sitio por letra; solo front) **cerrada (`done`) el
+2026-10-27**: review 1 APROBADA (`0f56ac8`), `bash harness/init.sh` en verde;
+resumen en `progress/history.md`. **Desplegada el 2026-10-27** (solo el
+front, `r20261027-1637`); pendiente su MANUAL («⚠ Lo que espera al humano», entrada F-065). **F-063** (filtrar trabajadores por tipo
+de incidencia con fichas como las de estado; solo front) **cerrada (`done`)
+el 2026-10-27**: review 1 APROBADA (`e035123`), `bash harness/init.sh` en
+verde; resumen en `progress/history.md`. **Desplegada el 2026-10-27** (solo el
+front, `r20261027-1202`); pendiente su MANUAL del navegador («⚠ Lo que espera al humano»). **F-044** (los porcentajes también a los
+recursos vinculados) y **F-064** (su pisado, marcado por defecto en el modal)
+**cerradas y DESPLEGADAS el 2026-10-27** (transfer `r20261027-0742`, api
+`r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). T23 hecha:
+`azure-apps/dedicacion.md` al día (`29321e1`). **Pendiente del humano:**
+(«Sincronizar Sigrid» ya hecho: el humano confirma el 2026-10-27 que
+salen las subfilas de teléfono y demás, «esta bien»); la MANUAL de F-064 en el navegador, solo mirar y
+Cancelar («⚠ Lo que espera al humano», manera B); el resto de T21 de F-044
+(líneas ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
+validación de Administración); y los **avisos a `partes`** de F-062 y F-044
+(«Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
+**Para retomar (sesión nueva):** `arnes-base` va 3 commits por delante de
+su `origin/main` (encargos pendientes; push del humano: `git -C
+../arnes-base push origin main`). Peticiones de arnés pendientes de
+decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** tras F-068, F-054 (spec aprobada, worktree `porcentajes-f054`); después
+F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
 ## F-054 · spec REVISADA (spec-author, 2026-10-24) con las decisiones del humano
 
@@ -48,17 +76,82 @@ D1-D3, D5-D8, D10, D11, D14 y D15 = A; D9 = A. Spec aprobada en el texto; el
 estado en `features.json` lo pasa el líder. Riesgos (design §11): capacidad
 conservadora en la obra de postventa, la VAR y la 0404; una obra quitada
 del cuadrante deja su línea nuestra como sobrante (se pregunta). Test ajeno
-que cambia (lista cerrada): solo `ANCLAS` de `test_f002_fuente_unica.py`.
 
-## Antes de F-054
+## F-068 · CERRADA y DESPLEGADA (2026-10-28), MANUAL hecha
 
-**F-061** (búsqueda predictiva en el
-desplegable de incidencias; `sdd: false`, rigor estándar) **cerrada
-(`done`) el 2026-10-23**, review 2 APROBADA (`3a55dfb`), rama
-`feature/F-061-busqueda-predictiva-incidencias` unida a `dev`;
-**desplegada el 2026-10-23** (api → front, lo lanzó el humano; ver
-«Producción, hoy»); `azure-apps/dedicacion.md` `47c7c3c`. Api y front; ni
-transfer ni Sigrid. **Pendiente del humano:** el MANUAL de F-061 (abajo).
+- **Spec:** `specs/F-068-propuesta-vinculado-como-titular/` (requirements
+  R1-R23, design, tasks T1-T15). Enmienda de F-044 R15-R16 (anotada bajo su
+  R16). Toca **transfer** (regla, lectura `historial_de_vinculados`, propuesta
+  guardada con los métodos nuevos), **api** (`METODOS_PROPUESTA_VINCULADO` y
+  `descripcion`/`tipo_res` del vinculado en el contrato) y **front** (rótulo
+  `capitulo_ci4`). Evidencia, solo lectura y agregada:
+  `progress/explore_F-068.md` (solo 5 obras con la cuenta repetida; el
+  historial resuelve el 90-100 % de esos pares).
+- **Decisiones CERRADAS por el humano el 2026-10-28** («a»: la A en las
+  cinco, design §9): D1 capítulo CI.4 por número (`CI.04` = `CI.4`); D2
+  historial solo en partidas `CI*`; D3 ventana del trabajador con el periodo
+  incluido; D4 las propuestas `ci_tipo` ya guardadas se quedan; D5 con varias
+  de su cuenta y ninguna que case por nombre, decide el CI.4.
+- **MANUAL** T13 (solo lectura: selector y preflight del caso de la 0678) y
+  T14 (despliegue y `azure-apps`).
+- **Implementación (implementer, 2026-10-28):** T1-T12 hechas, un commit
+  por tarea en la rama; informe en `progress/impl_F-068.md` (RED, desvíos,
+  evidencias, mutación en `progress/mutacion_F-068.md` y
+  `progress/mutacion_manual_F-068.md`). T13 hecha por el humano en
+  producción y T14 hecha (`azure-apps` `bcc3f71`), el 2026-10-28.
+- **Mutación:** Python, campaña final 54/53/**1 superviviente equivalente**
+  (`registro_vinculados.py:202`, `True` → `False` con `elegida=None`, el
+  nº 4 que el humano aceptó en F-044); rigor crítico pide 0, así que
+  **aceptado como equivalente por el humano el 2026-10-28** («acepto como
+  equivalente»). JS manual: 5/5 muertos.
+- **Review 1 APROBADA** (`0762c25`), sin bloqueos. Observaciones recogidas
+  (`3a66399`): O1 el visto bueno, dado; O2 al encargo RM5 de `arnes-base`
+  (`e04abcf`); O3 frase de la api vieja en design §8 e `INTEGRACION.md`;
+  O4 `MO/0601` en la MANUAL T13.
+
+## F-062 · CERRADA y DESPLEGADA (2026-10-26): aviso a `partes` pendiente
+
+Detalle de la implementación, las reviews y el MANUAL: `progress/history.md`,
+`progress/impl_F-062.md`, `progress/review_F-062.md` y
+`progress/manual_F-062.md` (secciones de F-062 retiradas de aquí al lanzar
+la review de F-044). `azure-apps/dedicacion.md` `ff0acb4` y `64486fc`.
+
+**Riesgos para el humano · aviso a `partes`** de F-062 (lo transmite el
+humano; aquí no se toca `partes`): desde F-062 dedicación **mueve la `fec`**
+de `CIZ` que no son suyos (también con `synckey partes:…`, sin cambiarla y
+con guarda) para continuar una racha y la devuelve a su día si deja de
+continuarla; **añade** `CIZ` en sus partes (el del inicio de la racha y,
+para cerrarla, uno de M−1); y deja rachas **abiertas** a fin de mes, que el
+papel de sv4 verá. Nunca borra. Su `partes.md` debería decirlo en su «qué
+se rompe».
+
+## F-044 · spec aprobada (2026-10-25)
+
+- **Spec:** `specs/F-044-recursos-vinculados/` (requirements 149 líneas,
+  design 248, tasks T1-T24). Rigor `critico`; toca **api** (vínculo en el sync,
+  subfilas, elegida, contrato, traza), **transfer** (propone, decide y escribe)
+  y **front** (columna, subfilas, selector, modal). Evidencia de Sigrid, solo
+  lectura y solo agregados, rondas 1 y 2: `progress/explore_F-044_sigrid.md`.
+- **Vínculo:** campo extendido «Recurso Asociado» (`conext.cod = '5'`, `valn`
+  = `res.ide` del principal). **Partida:** la hoja CI cuya cuenta tiene la
+  subcuenta del vinculado; en postventa, VAR y `CP*`, la del titular.
+- **Todas las decisiones cerradas** (design §9.1 y §9.2): D1, D2, D4 («es la
+  a.»), D7 y D8 con sus citas; D1b, D3, D4b, D5, D6 y D9-D15 con la opción A
+  («ok a todo»). D1b se aplica en el sync: `tipos_excluidos: [VP]` no se
+  vincula y el preview lo cuenta (R3); con `pre` 0, omitido con motivo (R14).
+- **Hecho el 2026-10-26:** `dev` (con F-062) unido a la rama, `in_progress`
+  e implementer lanzado; bloqueo antes de T7 resuelto («si a todo»); T1-T20, T22 y T24 hechas. T21 es MANUAL
+  del humano en modo pruebas.
+- **F-054:** trae solo las `M*` de trabajadores (por recurso, no por prefijo);
+  los vinculados no son asignaciones; F-054 puede traer la partida de la línea
+  del vinculado como elegida de su subfila (design §10). Lo diseña F-054.
+- **Riesgos:** `MESVE` empieza por `M` (R19 y sus tests); la columna nueva
+  puede tocar tests del front (el implementer PARA y pide ampliar la lista
+  cerrada); **F-062 toca `registro_pipeline.py`**: implementar F-044 sobre
+  `dev` con F-062 ya unida.
+- **Aviso a `partes`** (lo transmite el humano, no se toca `partes`): desde
+  F-044 dedicación escribe y edita en los partes compartidos líneas de
+  recursos no persona (`synckey porcentajes:vin:…`), sin borrar nunca.
 
 ## F-061 · decisiones del humano a los dos bloqueos del implementer
 
@@ -141,6 +234,67 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés es la **1.7.3**.
 ## Producción, hoy
 
+- **Desplegado el 2026-10-28: F-068**, los tres servicios en orden, lanzado
+  por el humano con `infra/d.local.ps1`: transfer `r20261028-1914`
+  (`ca-dedicacion-transfer--r20261028191409`), api `r20261028-1918`
+  (`ca-dedicacion-api--r20261028191823`) y front `r20261028-1922`
+  (`ca-dedicacion-front--r20261028192153`); las tres `Healthy`,
+  `RunningAtMaxScale` y con el 100 % del tráfico (comprobado por el líder,
+  solo lectura). El transfer sigue en **modo real**. `infra/imagenes.json`
+  al día en este commit. T14: `azure-apps/dedicacion.md` al día (`bcc3f71`:
+  lectura del historial de vinculados, contrato y orden de despliegue).
+  **MANUAL T13 hecha por el humano** en producción el 2026-10-28
+  («comprobado, sale bien»).
+- **Desplegado el 2026-10-28: F-067**, solo el front, lanzado por el humano
+  con `infra/d.local.ps1 front`: `r20261028-1049`, revisión
+  `ca-dedicacion-front--r20261028104852`, `Healthy`, `RunningAtMaxScale` y
+  con el 100 % del tráfico (comprobado por el líder, solo lectura). Api y
+  transfer sin cambios. `infra/imagenes.json` al día en este commit.
+  Contrato sin cambios: `azure-apps/dedicacion.md` no se toca. **Pendiente
+  del humano:** nada (MANUAL hecha el 2026-10-28, «sale y funciona bien»).
+- **Desplegado el 2026-10-27: F-065**, solo el front, lanzado por el humano
+  con `infra/d.local.ps1 front`: `r20261027-1637`, revisión
+  `ca-dedicacion-front--r20261027163730`, `Healthy` y con el 100 % del
+  tráfico (comprobado por el líder, solo lectura). Api y transfer sin
+  cambios. `infra/imagenes.json` al día en este commit. Contrato sin
+  cambios: `azure-apps/dedicacion.md` no se toca. **Pendiente del humano:**
+  Ctrl+F5 y la MANUAL de F-065 (en local).
+- **Desplegado el 2026-10-27: F-063**, solo el front, lanzado por el humano
+  con `infra/d.local.ps1 front`: `r20261027-1202`, revisión
+  `ca-dedicacion-front--r20261027120237`, `Healthy`, `RunningAtMaxScale` y
+  con el 100 % del tráfico (comprobado por el líder, solo lectura). Api y
+  transfer sin cambios. `infra/imagenes.json` al día en este commit.
+  Contrato sin cambios: `azure-apps/dedicacion.md` no se toca. F-065 salió
+  en el despliegue siguiente (`r20261027-1637`). **Pendiente del humano:**
+  Ctrl+F5 y la MANUAL de F-063.
+- **Desplegado el 2026-10-27: F-044 y F-064**, los tres servicios en orden,
+  uno a uno, lanzados por el humano con `infra/d.local.ps1
+  transfer|api|front`: transfer `r20261027-0742`, api `r20261027-0844` y
+  front `r20261027-0846`; revisiones `ca-dedicacion-transfer--r20261027074159`,
+  `ca-dedicacion-api--r20261027084418` y `ca-dedicacion-front--r20261027084619`,
+  las tres `Healthy`, `RunningAtMaxScale` y con el 100 % del tráfico
+  (comprobado por el líder con `az containerapp revision list`, solo
+  lectura). La api arrancó sin errores («Application startup complete»;
+  `recurso_vinculado` y `asignacion_vinculado` por `create_all`). El
+  transfer sigue en **modo real**. `infra/imagenes.json` al día en este
+  commit; `azure-apps/dedicacion.md` `29321e1`. **Pendiente del humano:**
+  Ctrl+F5 en el front, **«Sincronizar Sigrid»** (sin él no hay vínculos ni
+  subfilas), la MANUAL B de F-064 y el **aviso a `partes`** de F-044
+  («F-044 · spec aprobada»).
+- **Desplegado el 2026-10-26: F-062**, los tres servicios en orden, uno a
+  uno, lanzados por el humano con `infra/d.local.ps1 transfer|api|front`
+  (envoltorio no versionado, `*.local.ps1`, que carga las variables y llama
+  a `redeploy_dedicacion.ps1 -Solo …`): transfer `r20261026-0950`, api
+  `r20261026-0955` y front `r20261026-1000`; revisiones
+  `ca-dedicacion-transfer--r20261026095009`, `ca-dedicacion-api--r20261026095513`
+  y `ca-dedicacion-front--r20261026100012`, las tres `RunningAtMaxScale`,
+  `Healthy` y con el 100 % del tráfico. Transfer y api arrancaron sin
+  errores; la api aplicó `ALTER TABLE incidencia ADD COLUMN IF NOT EXISTS
+  sigrid_dia_fin_antes SMALLINT` (1 sentencia DDL). El transfer sigue en
+  **modo real** (`OBRA_PRUEBAS_FORZAR=false`). `infra/imagenes.json` al día
+  en este commit. **Pendiente del humano:** Ctrl+F5 en el front; lanzar un
+  «Sincronizar Sigrid» si el desplegable de incidencias sale vacío; y el
+  **aviso a `partes`** (texto en «Riesgos para el humano»).
 - **Desplegado el 2026-10-23: F-061**, api y front en ese orden con
   `redeploy_dedicacion.ps1 -Solo api,front` (lo lanzó el humano): api
   `r20261023-1235` y front `r20261023-1236`, revisiones
@@ -319,6 +473,95 @@ F-033 y, detrás, F-017, F-018…
 
 ## ⚠ Lo que espera al humano
 
+- **F-063: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Solo
+  mirar la pantalla y pulsar fichas: no escribe nada (vale en producción tras
+  desplegar el front, o en local). Los tests la cubren en node; en un
+  navegador no se ha visto. Pasos, en un mes con incidencias (p. ej. con
+  vacaciones):
+  1. En la fila de fichas del resumen, detrás de «N exceso», sale una ficha
+     por tipo de incidencia del mes, con borde discontinuo: «letra nombre nº»
+     (p. ej. «V Vacaciones 3»), ordenadas por letra. Para una de ellas, contar
+     a mano en la columna Obras los trabajadores con alguna subfila de esa
+     letra **sin tachar** (las «quitada · sigue en Sigrid» no cuentan; un
+     trabajador con dos de ese tipo cuenta una vez): coincide con el nº.
+  2. Clic en esa ficha: queda recuadrada (activa) y la tabla enseña solo esos
+     trabajadores («Mostrando nº de …» con el nº de la ficha). Otro clic en
+     ella: vuelve todo.
+  3. Con ella activa, clic en «N OK» (o «falta»…): las dos recuadradas y solo
+     los que cumplen las dos. Escribir un nombre en el buscador y luego un
+     código en «Filtrar obra…»: se siguen sumando las condiciones.
+  4. Clic en otra ficha de incidencia: sustituye a la anterior (una sola
+     recuadrada). Clic en «N trabajadores»: se quitan la de incidencia y la de
+     estado.
+  5. Con una activa, «›» (mes siguiente): el filtro se quita. Un mes sin incidencias:
+     ninguna ficha nueva.
+
+- **F-065: MANUAL en el navegador (pendiente, nadie la ha ejecutado; tras la
+  de F-063).** Los tests la cubren en node; en un navegador no se ha visto.
+  **En local** (front + api contra la BBDD local `dedicacion`), no en
+  producción: llevar una ficha a 0 exige quitar una incidencia en el editor,
+  y eso escribe en la BBDD de la app (a Sigrid no va nada). Pasos:
+  1. Un mes abierto con incidencias de al menos dos letras. En el editor de
+     un trabajador, añadir una incidencia de un tipo que el mes no tenga y
+     cuya letra quede **entre** las presentes o delante (p. ej. «B» si hay
+     «P» y «V»), y guardar: sale su ficha «B … 1» en su sitio por letra.
+  2. Clic en esa ficha: queda recuadrada y la tabla enseña solo a ese
+     trabajador.
+  3. En el editor, quitar esa incidencia y guardar. La ficha sigue
+     recuadrada, ahora «B … 0», **en el mismo sitio** (delante de «P» y
+     «V»), no al final de la fila; la tabla, vacía.
+  4. Otro clic en «B … 0»: desaparece, vuelve la tabla entera y las demás
+     fichas siguen en el mismo orden.
+
+- **F-067: MANUAL HECHA por el humano el 2026-10-28** en producción
+  (front `r20261028-1049`): «sale y funciona bien».
+
+- **F-064: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Los
+  tests la cubren en node; en un navegador no se ha visto. **Dos maneras:**
+  - **(A) En local y en modo pruebas** (la completa). Antes de nada, y
+    PARAR si falla cualquiera: (a) `curl http://127.0.0.1:8006/health` ⇒
+    `"modo_pruebas":true`, `"obra_pruebas":"0404"`, `"database":"ruesma"`;
+    (b) desde `services/dedicacion-api`:
+    `.venv/Scripts/python -c "from config.settings import get_settings as g; print(g().transfer_base_url)"`
+    ⇒ `http://127.0.0.1:8006`; (c) desde `services/dedicacion-transfer`:
+    `.venv/Scripts/python -c "from config.settings import get_settings as g; s=g(); print(s.obra_pruebas_forzar, s.obra_pruebas_cod)"`
+    ⇒ `True 0404`; (d) el modal dice «MODO PRUEBAS: se escribirá en la
+    obra 0404». Hace falta un trabajador con un recurso vinculado cuya línea
+    ya esté en el parte con otro % (p. ej. el de la prueba de F-044,
+    `progress/manual_F-044.md`, cambiando su %). Pasos:
+    1. «Registrar en Sigrid»: la casilla «Pisar» de cada vinculado
+       («<hora> de <tipo> <código> de <trabajador>…») sale **marcada**; la
+       del pisado del trabajador, las de sobrecarga y sin partida (de
+       trabajador o de vinculado) y las de cierre de racha salen
+       **desmarcadas**.
+    2. Desmarcar el pisado de un vinculado y cambiar en el modal la partida
+       de una línea de esa obra (botón de la columna Partida). Al acabar
+       «Analizando…», la casilla desmarcada **sigue desmarcada** y las demás
+       como estaban. Cerrar y volver a abrir el modal: vuelve el valor por
+       defecto (marcada).
+    3. Desmarcar uno otra vez y pulsar «Registrar», con DevTools › Red
+       abierto: el cuerpo de `POST …/registro/ejecutar` lleva en
+       `pisar_claves` **exactamente** las casillas marcadas (la desmarcada
+       no). En Sigrid (0404) ese vinculado queda con su % viejo y el resto
+       se escribe: `.venv/Scripts/python prueba_escritura_porcentajes.py
+       estado --ano <año> --mes <mes>` desde `services/dedicacion-transfer`
+       (solo lectura).
+    4. Limpiar como en F-044 (`… limpiar` en seco y `… limpiar --confirmar`,
+       sin `--permitir-modo-real`). Ojo: borra también las líneas hechas a
+       mano con la marca (aviso O1 de F-044, arriba).
+  - **(B) Tras desplegar el front (transfer en modo REAL):** solo el paso 1,
+    mirando el modal, y **Cancelar**. Ni cambiar partidas (se guardan en el
+    cuadrante) ni «Registrar» (escribe en la obra real).
+
+- **F-062: T19 y T20, MANUAL**, con sus comandos exactos en «F-062 · T19 y
+  T20» (arriba), primer paso incluido (`True 0404` o PARAR).
+  **Equivalentes de la mutación nº 14 (`rachas.py:113`) y nº 23
+  (`rachas.py:528`): ACEPTADOS** por el humano el 2026-10-24 («ok a 1 y
+  2»), con la condición de que la campaña nueva los repita y sigan siendo
+  equivalentes: **se cumple** (campaña 2 sobre `44841b8`: los mismos dos, aquí
+  nº 6 y 7, vivos en serie y con demostración ejecutable original == mutado;
+  ningún equivalente nuevo; `progress/mutacion_F-062.md`).
+
 - **O1 de F-056: ¿feature propia para validar el resto del cuerpo del
   registro?** `overrides` no enteros dan 500 (`int(k)`, `int(v)` en
   `routes.py`, preflight y ejecutar); `pisar_claves` y `usuario` llegan crudos
@@ -346,7 +589,14 @@ F-033 y, detrás, F-017, F-018…
   Más el aviso del implementer de F-057: `harness/mutacion_paralela.py` con 4
   workers dio 4 supervivientes falsos (la 2.ª tanda de los workers; a mano y
   en serie mueren), detalle en `progress/mutacion_F-057.md`. Si es defecto de
-  la herramienta, vale para cualquier proyecto ⇒ `arnes-base`. Y la
+  la herramienta, vale para cualquier proyecto ⇒ `arnes-base`. **Se repite
+  en F-062** (O1 de su review 1): el nº 1 de la campaña 1 y 5 de la api en la
+  campaña 2 sobreviven en paralelo y mueren en serie; causa sin localizar,
+  podría dar también muertos falsos. Hasta arreglarlo, en `critico` los
+  supervivientes se reproducen en serie. Y la automejora de la review 1 de
+  F-062 para `reviewer.md`/C4: ejecutar en seco los MANUAL contra las
+  funciones puras o leer el script que invocan, y comprobar el modo en el
+  proceso que escribe, no en un `/health`. Y la
   automejora de la review de F-057: C4 dice «MANUAL … pendientes de que el
   humano las ejecute», pero aquí el líder las cumple a menudo antes de la
   review (F-055, F-056, F-057); propuesta: «listadas con su comando exacto y,

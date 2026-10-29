@@ -61,6 +61,15 @@
 - Un requisito EARS (o criterio `acceptance`) => al menos un test con nombre
   trazable (`test_fXXX_rN_...`).
 - Nada de credenciales en los tests, ni siquiera de entornos de desarrollo.
+- **Un doble que imita la respuesta de otro servicio lleva su forma
+  serializada real**: las mismas claves que manda ese servicio, las opcionales
+  vacías incluidas (`null`, `[]`), no un dict al que le faltan. Para el código
+  que lo lee, «falta la clave» y «la clave vale `null`» no son lo mismo
+  (`x !== undefined` frente a `Boolean(x)`), y un doble incompleto deja vivo
+  el mutante que confunde las dos. Toma la forma del productor (el `asdict`
+  del modelo del transfer, el esquema de la api), no de memoria. Origen:
+  review 1 de F-064 (2026-10-26), B3: el conflicto del trabajador llega con
+  `"vinculado": null` y los dobles omitían la clave.
 
 ## Git
 

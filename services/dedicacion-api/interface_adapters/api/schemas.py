@@ -73,6 +73,9 @@ class PartidaIn(_Base):
     obra_ide: int
     es_postventa: bool = False
     partida: PartidaElegidaIn | None
+    # F-044 (R8): la subfila de ese vinculado bajo la línea; sin él, la
+    # partida del titular (F-050, como hoy).
+    vinculado_ide: int | None = Field(default=None, gt=0)
 
 
 class CompletarIn(_Base):
@@ -85,6 +88,25 @@ class CompletarIn(_Base):
 
 
 # --------------------------- Salida -----------------------------------
+class SubfilaOut(_Base):
+    """La subfila de un vinculado bajo una línea (F-044, R6, R7): tipo y
+    código del recurso, su partida elegida (las tres nulas = automática),
+    si es fija (la de la línea VAR) y su propuesta guardada. Sin %: es el
+    de la línea (R7)."""
+
+    vinculado_ide: int
+    tipo: str | None
+    tipo_res: str | None
+    cod: str | None
+    partida_ide: int | None
+    partida_cod: str | None
+    partida_res: str | None
+    partida_fija: bool
+    propuesta_cod: str | None = None
+    propuesta_res: str | None = None
+    propuesta_metodo: str | None = None
+
+
 class LineaOut(_Base):
     obra_ide: int
     cod: str
@@ -112,6 +134,10 @@ class LineaOut(_Base):
     # F-057: la línea está en la cola de las propuestas del mes (en cola o
     # calculándose): el front dice «buscando partida…» solo en estas.
     propuesta_pendiente: bool = False
+    # F-044 (R6): las subfilas de los vinculados del trabajador; la clave
+    # solo sale si hay alguna (sin vinculados, la línea de siempre).
+    vinculados: list[SubfilaOut] = Field(default_factory=list,
+                                         exclude_if=lambda v: not v)
 
 
 class IncidenciaOut(_Base):
@@ -349,6 +375,17 @@ def a_trabajador_out(
                 propuesta_metodo=ln.propuesta_metodo,
                 propuesta_pendiente=(fila.trabajador.ide, ln.obra_ide,
                                      ln.es_postventa) in pendientes,
+                vinculados=[
+                    SubfilaOut(
+                        vinculado_ide=v.vinculado_ide, tipo=v.tipo,
+                        tipo_res=v.tipo_res, cod=v.cod,
+                        partida_ide=v.partida_ide, partida_cod=v.partida_cod,
+                        partida_res=v.partida_res,
+                        partida_fija=ln.partida_fija,
+                        propuesta_cod=v.propuesta_cod,
+                        propuesta_res=v.propuesta_res,
+                        propuesta_metodo=v.propuesta_metodo)
+                    for v in ln.vinculados],
             )
             for ln in fila.lineas
         ],
