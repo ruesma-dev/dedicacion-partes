@@ -205,3 +205,160 @@ def test_f054_r32_reglas_reconocidas_ya_registrada_cero_y_choque():
                             ide=16, reside=10, fecha_int=1, horide=None,
                             hora_codigo=None, can=0, tot=0, synckey=None)])])
     assert reconocidas_de(pf) == {11, 12, 13, 14, 15, 16}
+
+
+# ---------------------------------- lote --------------------------------- #
+from dataclasses import asdict  # noqa: E402
+
+from application.pipelines.registro_lote import RegistroLote  # noqa: E402
+from interface_adapters.api.app import _respuesta_preflight  # noqa: E402
+
+from tests.conftest import linea, linea_previa  # noqa: E402
+from tests.test_f055_lote import (  # noqa: E402,F401
+    ClienteObras,
+    _ajustes,
+    _con_partida,
+    _json_linea,
+    _obra,
+    api,
+)
+
+LECTURA = "lineas_mensuales_del_periodo"
+
+
+class ClienteMensual(ClienteObras):
+    """`ClienteObras` de F-055 con la lectura de §4.1, anotada y filtrada
+    por recurso (y `M*` si `solo_m`), como la real."""
+
+    def __init__(self, n: int = 2, mensuales=(), **kw) -> None:
+        self.lineas_mensuales = list(mensuales)
+        super().__init__(n, **kw)
+
+    def lineas_mensuales_del_periodo(self, empresa, ano, mes, resides=None,
+                                     solo_m=True):
+        self.llamadas.append((LECTURA, empresa, ano, mes,
+                              tuple(resides or ()), solo_m))
+        return [l for l in self.lineas_mensuales
+                if l.recurso_ide in set(resides or ())
+                and (not solo_m or (l.hora or "").startswith("M"))]
+
+
+def _mes(ide, obra, cod, paride=0, recurso=200, **kw):
+    return LineaMensualSigrid(
+        hmores_ide=ide, recurso_ide=recurso, obra_ide=obra, obra_cod=cod,
+        parte_ide=1, parte_cod="PT26/1", parte_est=1, en_registro=True,
+        hora=kw.pop("hora", "MENC"), can=kw.pop("can", 0.3), fec=20260731,
+        paride=paride, **kw)
+
+
+def _completo(cli, peticiones, **kw):
+    return RegistroLote(cliente=cli, settings=_ajustes(**kw)) \
+        .preflight_completo(peticiones)
+
+
+def test_f054_r31_lote_una_lectura_mas_y_en_la_ronda_a():
+    peticiones = [(_obra(1), [_con_partida(1)]),
+                  (_obra(2), [_con_partida(2, registro_id=2)])]
+    solo = ClienteMensual()
+    RegistroLote(cliente=solo, settings=_ajustes()).preflight(peticiones)
+    cli = ClienteMensual()
+    _completo(cli, peticiones)
+    assert LECTURA not in solo.nombres()
+    assert sorted(cli.nombres()) == sorted([*solo.nombres(), LECTURA])
+    assert [c for c in cli.llamadas if c[0] == LECTURA] == [
+        (LECTURA, 1, 2026, 7, (200,), True)]
+    nombres = cli.nombres()
+    ronda_b = [i for i, n in enumerate(nombres)
+               if n in ("partes_de_periodos", "validar_partidas")]
+    assert ronda_b and nombres.index(LECTURA) < min(ronda_b)
+
+
+def test_f054_r38_lote_con_vinculados_dos_lecturas_y_sin_ellos_ninguna():
+    con = [VinculadoEntrada(recurso_ide=5000, tipo="TF", cod="TEL1")]
+    cli = ClienteMensual()
+    _completo(cli, [(_obra(1), [_con_partida(1, vinculados=con)])])
+    assert [c for c in cli.llamadas if c[0] == LECTURA] == [
+        (LECTURA, 1, 2026, 7, (200,), True),
+        (LECTURA, 1, 2026, 7, (5000,), False)]
+    cli = ClienteMensual()
+    _completo(cli, [(_obra(1), [_con_partida(1)])])
+    assert all(c[5] is True for c in cli.llamadas if c[0] == LECTURA)
+
+
+def test_f054_r31_lote_mismos_preflights_tambien_con_cuatro_elementos():
+    peticiones = [(_obra(1), [_con_partida(1)], [], None),
+                  (_obra(2), [_con_partida(2, registro_id=2)])]
+    normal = RegistroLote(cliente=ClienteMensual(),
+                          settings=_ajustes()).preflight(peticiones)
+    completos, _ = _completo(ClienteMensual(), peticiones)
+    assert [_respuesta_preflight(r) for r in completos] == [
+        _respuesta_preflight(r) for r in normal]
+
+
+def test_f054_r32_r33_lote_en_pruebas_una_por_linea_con_su_clave():
+    cli = ClienteMensual(mensuales=[
+        _mes(7003, 828942, "0404", paride=700001),
+        _mes(7001, 828942, "0404", paride=9),
+        _mes(7002, 600002, "O002", paride=9)])
+    _, sob = _completo(cli, [(_obra(1), [_con_partida(1)])])
+    assert [s.clave for s in sob] == ["cero:7001"]
+    assert asdict(sob[0])["vinculado"] is None
+
+
+def test_f054_r31_lote_en_real_por_obra_y_el_que_falla_no_da():
+    cli = ClienteMensual(mensuales=[
+        _mes(7001, 600001, "O001"), _mes(7002, 600002, "O002"),
+        _mes(7003, 600002, "O002", recurso=400)])
+    _, sob = _completo(cli, [
+        (_obra(1), [_con_partida(1)]),
+        (ObraEntrada(ide=600099), [linea(registro_id=9, recurso_ide=400)])],
+        obra_pruebas_forzar=False)
+    assert [s.hmores_ide for s in sob] == [7002]
+
+
+def test_f054_r38_lote_sobrante_de_vinculado_con_su_dato():
+    con = [VinculadoEntrada(recurso_ide=5000, tipo="TF", cod="TEL1")]
+    cli = ClienteMensual(mensuales=[
+        _mes(7005, 600002, "O002", recurso=5000, hora="OTEL")])
+    _, sob = _completo(cli, [(_obra(1), [_con_partida(1, vinculados=con)])],
+                       obra_pruebas_forzar=False)
+    assert [(s.hmores_ide, s.vinculado, s.hora) for s in sob] == [
+        (7005, {"tipo": "TF", "cod": "TEL1", "titular_ide": 200}, "OTEL")]
+
+
+def test_f054_r36_lote_la_sobrante_suma_en_la_capacidad_del_parte():
+    """En pruebas todo va a la 0404: la sobrante de ese parte cuenta como
+    otra línea suya al medir la jornada (`#regla-capacidad`)."""
+    cli = ClienteMensual(mensuales=[_mes(7001, 828942, "0404", paride=9,
+                                         can=0.7)])
+    cli.lineas_parte = [linea_previa(ide=7001, reside=200, can=0.7,
+                                     paride=9, fecha_int=20260731)]
+    [pf], sob = _completo(cli, [(_obra(1), [_con_partida(
+        1, porcentaje=0.5)])])
+    [c] = [c for c in pf.conflictos if c.motivo == "sobrecarga"]
+    assert (c.suma_existente, c.suma_total) == (0.7, 1.2)
+    assert [s.hmores_ide for s in sob] == [7001]
+
+
+def test_f054_r31_lote_ruta_sin_completo_como_hoy_y_con_el_sobrantes(api):
+    peticiones = [{"obra": {"ide": 600001}, "lineas": [_json_linea(
+        1, paride=700001, partida_cod="CI.1")]}]
+    mensuales = [_mes(7001, 828942, "0404", paride=9)]
+    cli = ClienteMensual(mensuales=mensuales)
+    hoy = api(cli).post("/api/registro/preflight-lote",
+                        json={"peticiones": peticiones}).json()
+    assert "sobrantes" not in hoy and LECTURA not in cli.nombres()
+    sin = api(ClienteMensual(mensuales=mensuales)).post(
+        "/api/registro/preflight-lote",
+        json={"peticiones": peticiones, "completo": False}).json()
+    assert sin == hoy
+    con = api(ClienteMensual(mensuales=mensuales)).post(
+        "/api/registro/preflight-lote",
+        json={"peticiones": peticiones, "completo": True}).json()
+    assert con["obras"] == hoy["obras"]
+    assert con["sobrantes"] == [{
+        "clave": "cero:7001", "hmores_ide": 7001, "recurso_ide": 200,
+        "vinculado": None, "obra_ide": 828942, "obra_cod": "0404",
+        "parte_cod": "PT26/1", "parte_est": 1, "hora": "MENC",
+        "paride": 9, "partida_cod": None, "can": 0.3, "synckey": None,
+        "confirmable": True, "motivo": None}]

@@ -24,8 +24,11 @@ from concurrent.futures import ThreadPoolExecutor
 
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.lecturas_lote import LecturasDelLote
+from application.services.reglas_obra_cero import (
+    coberturas_de, reconocidas_de, sobrantes,
+)
 from domain.models.registro_models import (
-    LineaEntrada, ObraEntrada, Preflight,
+    LineaEntrada, ObraEntrada, Preflight, Sobrante,
 )
 
 
@@ -77,7 +80,54 @@ class RegistroLote:
         lineas, incidencias, contexto)` (F-062)."""
         memoria = LecturasDelLote(self._cli, self._limite)
         memoria.precargar(peticiones, self._st)
+        return self._preflights(memoria, peticiones)
 
+    def preflight_completo(self, peticiones: list[tuple]
+                           ) -> tuple[list[Preflight | Exception],
+                                      list[Sobrante]]:
+        """F-054 (R31-R34, R38; design §6.2): los mismos preflights que
+        `preflight` y, con una lectura más en la ronda A (dos con
+        vinculados), las sobrantes: líneas mensuales de los recursos de las
+        líneas que ninguna acción suya cubre. Los recursos de una petición
+        que falla no dan sobrantes (sin su preflight no se sabe qué los
+        cubre). Ver ARCHITECTURE.md#regla-obra-cero."""
+        memoria = LecturasDelLote(self._cli, self._limite)
+        memoria.precargar(peticiones, self._st, mensuales=True)
+        resultados = self._preflights(memoria, peticiones)
+        coberturas: dict[int, list] = {}
+        vinculados: dict[int, dict] = {}
+        excluidos: set[int] = set()
+        reconocidas: set[int] = set()
+        for p, r in zip(peticiones, resultados):
+            lineas = list(p[1])
+            recursos: set[int] = set()
+            for l in lineas:
+                if l.recurso_ide:
+                    recursos.add(int(l.recurso_ide))
+                for v in l.vinculados:
+                    recursos.add(int(v.recurso_ide))
+                    vinculados.setdefault(int(v.recurso_ide), {
+                        "tipo": v.tipo, "cod": v.cod,
+                        "titular_ide": l.recurso_ide})
+            for rec in recursos:
+                coberturas.setdefault(rec, [])
+            if isinstance(r, Exception):
+                excluidos |= recursos
+                continue
+            for rec, cob in coberturas_de(r, lineas).items():
+                coberturas.setdefault(rec, []).extend(cob)
+            reconocidas |= reconocidas_de(r)
+        return resultados, sobrantes(
+            memoria.mensuales(), coberturas, vinculados=vinculados,
+            reconocidas=reconocidas, excluidos=excluidos,
+            cod_pv=self._st.postventa_obra_cod,
+            cod_var=(getattr(self._st, "var_obra_cod", "") or "").strip(),
+            cod_pruebas=self._st.obra_pruebas_cod,
+            modo_pruebas=bool(self._st.obra_pruebas_forzar))
+
+    def _preflights(self, memoria: LecturasDelLote, peticiones: list[tuple]
+                    ) -> list[Preflight | Exception]:
+        """Cada petición con el pipeline de siempre sobre la memoria."""
         def una(obra: ObraEntrada, lineas: list[LineaEntrada], *resto):
             kw = {"incidencias": resto[0]} if resto and resto[0] else {}
             contexto = resto[1] if len(resto) > 1 else None

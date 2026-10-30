@@ -3,7 +3,8 @@
 
   POST /api/registro/preflight  -> analiza y devuelve qué se haría
   POST /api/registro/preflight-lote -> el preflight de varias obras con las
-                                   lecturas agrupadas (F-055 R19; solo lee)
+                                   lecturas agrupadas (F-055 R19; solo lee);
+                                   con `completo`, las sobrantes (F-054 R31)
   POST /api/registro/ejecutar   -> escribe en Sigrid (con pisar_claves)
   POST /api/postventa/universo  -> obras de una empresa que admiten postventa
                                    (ARCHITECTURE.md#regla-p5; solo lee)
@@ -163,6 +164,9 @@ class LoteIn(BaseModel):
     de preflight, una por obra."""
 
     peticiones: list[PeticionIn] = Field(default_factory=list)
+    # F-054 (R31, R33): el preflight del periodo o de un trabajador (no el
+    # de una obra sola) pide además las sobrantes; sin él, como hoy.
+    completo: bool = False
 
 
 class UniversoIn(BaseModel):
@@ -428,10 +432,14 @@ def build_app(settings) -> FastAPI:
         """F-055 (R19, R24, R25): síncrona, en el threadpool. Por petición,
         la forma de `/api/registro/preflight` o `{ok: false, error}`; una
         lectura agrupada que falla, 502."""
+        sobrantes = None
         try:
-            resultados = RegistroLote(cliente=cliente,
-                                      settings=settings).preflight(
-                [_dominio(x) for x in p.peticiones])
+            lote = RegistroLote(cliente=cliente, settings=settings)
+            peticiones = [_dominio(x) for x in p.peticiones]
+            if p.completo:
+                resultados, sobrantes = lote.preflight_completo(peticiones)
+            else:
+                resultados = lote.preflight(peticiones)
         except Exception as exc:                # noqa: BLE001
             logger.exception("preflight en lote fallo")
             return JSONResponse(status_code=502,
@@ -444,7 +452,10 @@ def build_app(settings) -> FastAPI:
             else:
                 obras.append(_respuesta_preflight(
                     r, _contexto(x) is not None))
-        return {"ok": True, "obras": obras}
+        # F-054 (R33): con `completo`, las sobrantes (lista, quizá vacía).
+        return {"ok": True, "obras": obras,
+                **({"sobrantes": [asdict(s) for s in sobrantes]}
+                   if sobrantes is not None else {})}
 
     @app.post("/api/registro/ejecutar")
     async def ejecutar(p: PeticionIn):
