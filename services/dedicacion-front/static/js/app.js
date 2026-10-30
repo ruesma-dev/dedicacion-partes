@@ -3130,7 +3130,8 @@ document.addEventListener("DOMContentLoaded", init);
 // preflight repetido aún en vuelo (F-050, M2 punto 5).
 // `vistas` (F-064): las claves que `marcadaPorDefecto` señala y ya se han
 // enseñado en este modal; la que no está sale marcada una sola vez.
-const registro = { pisar: new Set(), vistas: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map() };
+// `cero` (F-054): las claves `cero:` marcadas de las sobrantes.
+const registro = { pisar: new Set(), vistas: new Set(), cero: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map() };
 
 // Abrir o repintar el modal cierra el selector de partida que hubiera,
 // también uno que aún cargaba (F-050, M2 punto 4): no puede quedar colgando
@@ -3175,6 +3176,7 @@ async function registroPreflight(trabajadorIde = null) {
     // `marcadaPorDefecto` vuelven a salir marcadas (F-064).
     registro.pisar = new Set();
     registro.vistas = new Set();
+    registro.cero = new Set();      // F-054 (D17): las sobrantes, desmarcadas
     registro.pf = pf;
     pintarModalPreflight(pf);
   } catch (err) { toast(err.message, true); }
@@ -3214,6 +3216,9 @@ async function repreflightPartida(obraIde) {
     registro.analizando.delete(obraIde);
     if ($("#modal-registro").classList.contains("oculto")) return;
     registro.pisar = new Set([...document.querySelectorAll(".chk-pisar:checked")]
+      .map((c) => c.value));
+    // F-054: lo marcado de las sobrantes se conserva al repintar.
+    registro.cero = new Set([...document.querySelectorAll(".chk-cero:checked")]
       .map((c) => c.value));
     registro.pf = obraIde ? unirPreflight(registro.pf, pf, obraIde) : pf;
     pintarModalPreflight(registro.pf);
@@ -3577,6 +3582,8 @@ function pintarModalPreflight(pf) {
   if ((pf.obras || []).some((o) => (o.no_coincide || []).length)) {
     html += pintarNoCoincide(pf);
   }
+  // F-054 (R33): las sobrantes; sin ellas, como antes.
+  if ((pf.sobrantes || []).length) html += pintarSobrantes(pf);
   html += `<div class="pie-modal">` +
     `<button class="btn secondary" onclick="cerrarModal()">Cancelar</button>` +
     `<button class="btn primary" id="btn-ejecutar-registro">Registrar</button></div>`;
@@ -3600,9 +3607,43 @@ const marcadaPorDefecto = (c) => {
   return Boolean(c.vinculado) && (c.motivo || "pisado") === "pisado";
 };
 
+// F-054 (R33-R34, D17): líneas de Sigrid en obras que la plataforma no
+// tiene. Una casilla `.chk-cero` por confirmable, siempre desmarcada (sin
+// `marcadaPorDefecto`); las demás, aviso con su motivo. Solo pinta lo que
+// manda el transfer: ni calcula ni decide.
+function pintarSobrantes(pf) {
+  let html = "<h3>En Sigrid, en obras que no tiene en la plataforma</h3>" +
+    `<div class="motivo">Marca las que se ponen a 0 %: la línea sigue en su parte, a 0.</div>`;
+  pf.sobrantes.forEach((s) => {
+    const quien = s.vinculado
+      ? `${s.vinculado.tipo || ""} ${s.vinculado.cod || ""} de ` +
+        nombreTrabajador(s.vinculado.titular_ide)
+      : nombreTrabajador(s.recurso_ide);
+    const texto = `${quien} · obra ${s.obra_cod || s.obra_ide} · ` +
+      `parte ${s.parte_cod || "—"} · ${s.hora || ""} · ` +
+      `${s.partida_cod || "sin partida"} · ${fmtPct((s.can || 0) * 100)}`;
+    if (s.confirmable) {
+      html += `<div class="conflicto"><label class="check">` +
+        `<input type="checkbox" class="chk-cero" value="${escapeHtml(s.clave)}"` +
+        `${registro.cero.has(s.clave) ? " checked" : ""}> ` +
+        `<strong>Poner a 0</strong> · ${escapeHtml(texto)}</label></div>`;
+    } else {
+      html += `<div class="aviso">${escapeHtml(texto)}: ` +
+        `${escapeHtml(s.motivo || "")}</div>`;
+    }
+  });
+  return html;
+}
+
 async function registroEjecutar() {
   const pisar = [...document.querySelectorAll(".chk-pisar:checked")]
     .map((c) => c.value);
+  // F-054 (R35): las sobrantes marcadas, tal como las publicó el preflight;
+  // aparte de `pisar_claves` y solo si hay alguna.
+  const ceros = new Set([...document.querySelectorAll(".chk-cero:checked")]
+    .map((c) => c.value));
+  const sobrantes = ((registro.pf && registro.pf.sobrantes) || [])
+    .filter((x) => ceros.has(x.clave));
   const btn = $("#btn-ejecutar-registro");
   btn.disabled = true; btn.textContent = "Registrando…";
   try {
@@ -3610,7 +3651,8 @@ async function registroEjecutar() {
       `/periodos/${state.anio}/${state.mes}/registro/ejecutar`,
       { method: "POST", body: JSON.stringify({
           pisar_claves: pisar, trabajador_ide: registro.trabajadorIde,
-          usuario: document.body.dataset.usuario || "local" }) });
+          usuario: document.body.dataset.usuario || "local",
+          ...(sobrantes.length ? { sobrantes_a_cero: sobrantes } : {}) }) });
     let esc = 0, omi = 0, pend = 0, vinOmi = 0;
     (r.obras || []).forEach((o) => {
       esc += (o.escritas || []).length;
@@ -3626,7 +3668,13 @@ async function registroEjecutar() {
     cerrarModal();
     toast(`Sigrid: ${esc} escritas · ${omi} omitidas · ` +
       `${pend} pendientes de confirmar${pend ? " (repite y marca pisar)" : ""}` +
-      (vinOmi ? ` · ${vinOmi} recursos vinculados omitidos` : ""),
+      (vinOmi ? ` · ${vinOmi} recursos vinculados omitidos` : "") +
+      // F-054 (R35): lo puesto a 0 y lo que no se pudo.
+      (r.sobrantes_a_cero
+        ? ` · ${r.sobrantes_a_cero.puestas.length} puestas a 0` +
+          (r.sobrantes_a_cero.omitidas.length
+            ? ` · ${r.sobrantes_a_cero.omitidas.length} sin poner a 0` : "")
+        : ""),
       !r.ok);
   } catch (err) { toast(err.message, true); }
 }
