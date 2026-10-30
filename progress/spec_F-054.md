@@ -129,3 +129,49 @@ la cita y la fecha; R38 y las tareas T11, T12, T13, T19 y T20 quedan firmes
 (sin marcadores condicionales). Tamaño: requirements 146/150, design 249/250.
 **Spec APROBADA, con todas las decisiones cerradas (D1-D18).** El estado en
 `features.json` lo pasa el líder.
+
+## 2026-10-30 · Enmienda D19 (review 2, O7): la `Postv-` omitida tras resolver
+
+El humano eligió la opción **b** de O7 el 2026-10-30 («b», y «si» al plan).
+Hoy `omitir` de `ReglasPorcentajes.decidir` no lleva `destino` ni `paride`:
+toda `Postv-` omitida cubre todas las partidas de postventa de su recurso,
+no solo la omitida antes de resolver la partida. Con D19, la omitida
+**después** (sin recurso, porcentaje, sin `M*`) lleva `destino="postventa"`,
+`paride` y `partida_cod` resueltos y cubre solo esa; la omitida antes (P5
+desactivada, partida sin resolver) sigue con `paride` 0 y las cubre todas.
+`cubierta` y `_destino` no cambian. En Sigrid no cambia lo que se escribe.
+
+Cambios en la spec:
+
+- `requirements.md`: R31 nombra D19; cabecera y §6 con D19 (cita y fecha).
+  148/150.
+- `design.md`: §3 gana la fila de `reglas_porcentajes.py` (solo `omitir`);
+  §6.1 reescrito; §10 exceptúa `omitir` de `reglas_*.py`; §12 gana D19 con
+  el riesgo. Para seguir en 250/250 se condensaron §8, §9, §11 (F-068
+  dentro del punto de vinculados) y §12 (la cita de D16-D18 sube al título),
+  sin quitar contenido.
+- `docs/ARCHITECTURE.md#regla-obra-cero`: la frase «omitida antes de
+  resolverla» se amplía con las dos ramas, y la firma gana D19 (2026-10-30).
+- `tasks.md`: D19 en la cabecera y **T22** (RED primero, tests de las dos
+  ramas por cada motivo, efecto en `sobrantes`, mutación de lo cambiado,
+  revisión de consumidores con PARA, corrección de la frase de
+  `impl_F-054.md` l. 108, init.sh).
+
+Los docstrings de `reglas_obra_cero.py` (módulo y `_destino`) siguen siendo
+ciertos con D19 (hablan de la omitida antes de resolverse); no se tocan.
+
+### Riesgos y puntos para el humano
+
+- **Consumidores de la omitida.** Hasta hoy una omitida nunca llevaba
+  partida ni `destino="postventa"`. En `registro_pipeline.py` hay lecturas
+  de `a.destino` para repartir acciones entre la obra normal y la de
+  postventa (`destino_pv if a.destino == "postventa"`, l. ~765 y ~1137) y
+  varias de `a.paride`; si alguna no filtra por `accion`, una omitida de
+  postventa cambiaría de obra en la respuesta o el modal. T22 obliga a
+  comprobarlo y a PARAR si algo cambia (`registro_pipeline.py` no se toca).
+- **Vinculados**: si las `AccionVinculado` omitidas «sigue al trabajador»
+  copian `destino`/`paride` del titular, D19 también estrecha su cobertura.
+  Es coherente con la decisión, pero T22 lo hace constar.
+- **Mutación**: rigor crítico. La campaña completa tardó 4837 s; T22 pide
+  reejecutarla o, si el líder la acota, RM4 a mano sobre lo cambiado. Lo
+  decide el líder.

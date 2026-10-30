@@ -1131,9 +1131,11 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     - **Sobrante** es la línea de un recurso del lote que **ninguna** acción
       suya cubre, en cualquier estado (también omitida): normal, si ninguna
       va a esa obra; en la obra de postventa, si ninguna de postventa
-      resolvió esa partida ni se omitió antes de resolverla (no se sabe
-      cuál es: las cubre todas, y nunca una normal de su obra de origen);
-      en la VAR, si ninguna entrada suya es esa partida. En pruebas solo cuentan las de la obra de pruebas, cubiertas
+      tiene esa partida, también omitida después de resolverla (sin
+      recurso, porcentaje, sin código mensual: lleva su partida y cubre
+      solo esa), ni se omitió antes de resolverla (postventa desactivada o
+      partida sin resolver: no se sabe cuál es y las cubre todas); nunca
+      una normal de su obra de origen; en la VAR, si ninguna entrada suya es esa partida. En pruebas solo cuentan las de la obra de pruebas, cubiertas
       si una acción las reconoce (ya registrada, choque, al 0) o tiene su
       partida. Los vinculados, igual con sus acciones (la `MESVE` de un
       vinculado nunca es sobrante de su trabajador). Solo de trabajadores
@@ -1156,7 +1158,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     trabajador no tiene nada en una obra es como un 0%. si en sigrid si
     tiene debe preguntar si lo pisa (y lo deja a 0) o no») y revisado el
     2026-10-29 (D16 = C: también los vinculados; D17 = A: la casilla sale
-    desmarcada) · F-054, `specs/F-054-sync-trae-porcentajes/requirements.md`.*
+    desmarcada) y el 2026-10-30 (D19, «b»: la `Postv-` omitida tras
+    resolver su partida cubre solo esa) · F-054, `specs/F-054-sync-trae-porcentajes/requirements.md`.*
 
 ## Acceso a datos y sistemas externos
 

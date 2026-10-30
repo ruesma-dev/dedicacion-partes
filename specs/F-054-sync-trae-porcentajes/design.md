@@ -3,7 +3,7 @@
 
 Decisiones del 2026-10-24 **cerradas** (requirements §6). **Revisado el
 2026-10-29** contra `dev` con F-044, F-062-F-065, F-067 y F-068 (merge
-`ac56e96`; cambios en `progress/spec_F-054.md`); **D16-D18 cerradas** (§12). **Spec aprobada.**
+`ac56e96`; cambios en `progress/spec_F-054.md`); **D16-D19 cerradas** (§12). **Spec aprobada.**
 
 ## 1. Servicios, límite y contrato
 
@@ -54,6 +54,7 @@ Transfer `application/services/{porcentajes_existentes,reglas_obra_cero}.py`
 | transfer `sigrid_write_client.py` | `lineas_mensuales_del_periodo(empresa, ano, mes, resides=None, solo_m=True)` (§4.1) |
 | transfer `registro_models.py` · `lecturas_lote.py` · `registro_lote.py` | `LineaMensualSigrid`, `Sobrante` · `precargar(…, mensuales=False)`, ronda A · `preflight_completo` → `(resultados, sobrantes)` (§6.2) |
 | transfer `app.py` | `ExistentesIn`, `LoteIn.completo`, `PonerACeroIn` y rutas |
+| transfer `reglas_porcentajes.py` | solo `decidir`/`omitir`: la `Postv-` omitida tras resolver su partida la lleva (§6.1, D19; `cubierta` no cambia) |
 | api `domain/{models,ports,errors}.py` | `TipoEvento.SIGRID`, resultados, `PorcentajesSigridGateway`, `aceptar_entrada`, error ⇒ 502 |
 | api `transfer_client.py` | `porcentajes_existentes`, `poner_a_cero`; `preflight_lote(…, completo=False)`, en el cuerpo solo si es `true` |
 | api `repositories.py` · `orm_models.py` | `aceptar_entrada` (§5.3) · solo el comentario de la traza |
@@ -132,9 +133,11 @@ vinculados, *, ajustes) -> list[Sobrante]`.
 
 - **Cubierta** (R31) por **cualquier** acción del recurso, también omitida
   (la obra se la da la plataforma): normal, si alguna va a esa obra; en la
-  de postventa, si alguna de postventa resolvió esa partida o se omitió sin
-  resolverla (sin partida conocida, cubre todas; review 1, O2); esa no cubre
-  una normal de su obra de origen; en la VAR, si alguna tiene ese `var_paride`. En pruebas (R32), solo la 0404: si su `ide`
+  de postventa, si alguna de postventa tiene esa partida o se omitió antes de
+  resolverla (P5 off o sin partida: `paride` 0, cubre todas; O2); la omitida
+  después (sin recurso, %, sin `M*`) lleva `destino="postventa"`, `paride` y
+  `partida_cod` y cubre solo esa (D19); nunca una normal de su obra de origen.
+  En la VAR, si alguna tiene ese `var_paride`. En pruebas (R32), solo la 0404: si su `ide`
   está en `reconocidas` (ya registrada, choque, `linea_cero`) o alguna
   acción tiene su partida. **Vinculados** (R38, D16): igual con las
   `AccionVinculado` de **ese** recurso (`Preflight.vinculados`: llevan
@@ -193,28 +196,27 @@ en local como F-055 T18 (2026-09, tres pasadas); más de un 15 % ⇒ **PARA**.
 
 ## 8. Documentación
 
-`ARCHITECTURE.md` puntos **23** y **24** (el 22 es `#regla-vinculado`), con
-efecto en `#regla-capacidad` y remisión desde `#regla-vinculado`; anclas y
-tabla de acceso. `INTEGRACION.md` §1 (el transfer **pone a 0** líneas ajenas
-sin borrar), §5, §7. Al desplegar, `azure-apps/dedicacion.md` y aviso a `partes`.
+`ARCHITECTURE.md` puntos **23** y **24** (el 22 es `#regla-vinculado`), con efecto
+en `#regla-capacidad` y remisión desde `#regla-vinculado`; anclas y tabla de acceso.
+`INTEGRACION.md` §1 (el transfer **pone a 0** líneas ajenas sin borrar), §5, §7; al desplegar, `azure-apps/dedicacion.md` y aviso a `partes`.
 
 ## 9. Tests (sin red ni BBDD)
 
-Transfer: `ClienteFalso` con `_read` doble y `TestClient`; A nunca
-`escribir` (R7); B: tres entradas y pruebas, omitida que cubre, cerrado,
-otro sistema, guardas, nunca `DELETE`, la `MESVE` de un vinculado en el
-parte del trabajador **no** es su sobrante, la obra sola no lee y el
-completo lee **una** más (dos con vinculados) en la ronda A. Api: dominio puro,
-UoW en memoria de `test_f024_cuadrante_empresa.py`, `registro_sigrid` con
-transfer doble (sin sobrantes, ni clave ni llamada); aceptar conserva
-`asignacion_vinculado`. Front: node con dobles. Sigrid: solo T18-T19.
+Transfer: `ClienteFalso` con `_read` doble y `TestClient`; A nunca `escribir`
+(R7); B: tres entradas y pruebas, omitida que cubre (D19), cerrado, otro
+sistema, guardas, nunca `DELETE`, la `MESVE` de un vinculado no es sobrante de
+su trabajador, la obra sola no lee, el completo lee **una** más (dos con
+vinculados) en la ronda A. Api: dominio puro, UoW en memoria de `test_f024_cuadrante_empresa.py`,
+`registro_sigrid` con transfer doble (sin sobrantes, ni clave ni llamada);
+aceptar conserva `asignacion_vinculado`. Front: node con dobles. Sigrid: T18-T19.
 
 ## 10. Ficheros que NO se tocan
 
-Transfer `registro_pipeline.py`, `registro_vinculados.py`, `reglas_*.py`,
-`rachas.py`, `propuesta_partida.py`, `universo_{postventa,var}.py` y las
-copias de `partes`; api `sync_pipeline.py`, `propuestas_mes.py`,
-`reemplazar`, `esquema.py`, `traza_vinculados.py`; `test_f061_recarga.py`.
+Transfer `registro_pipeline.py`, `registro_vinculados.py`, `rachas.py`,
+`propuesta_partida.py`, `universo_{postventa,var}.py`, las copias de `partes`
+y `reglas_*.py` salvo `omitir` (D19); api `sync_pipeline.py`,
+`propuestas_mes.py`, `reemplazar`, `esquema.py`, `traza_vinculados.py`;
+`test_f061_recarga.py`.
 
 ## 11. Riesgos y alternativas descartadas
 
@@ -227,24 +229,22 @@ copias de `partes`; api `sync_pipeline.py`, `propuestas_mes.py`,
 - **Obra quitada:** su línea nuestra, sobrante (R34). **Traza perdida al
   guardar** (R24): pisado. **Otra hora `M*`** (F-011) y **capacidad
   conservadora** en postventa, VAR y 0404 (R36): sobrecarga a confirmar.
-- **Aceptar con vinculados (≥ 2026-10):** cada vinculado se decide solo
-  (F-044 R18): su línea en la partida que propone F-068 es un pisado
-  (marcado, F-064); en otra, la suya avisa de sobrecarga (F-044 R23).
-- **F-068** no cambia la partida traída (decide la del vinculado; la del
-  titular manda si no es `CI*`, F-044 R17).
+- **Aceptar con vinculados (≥ 2026-10):** cada uno se decide solo (F-044
+  R18): en la partida que propone F-068, pisado (marcado, F-064); en otra,
+  sobrecarga (F-044 R23). F-068 no cambia la partida traída (decide la del vinculado; la del titular manda si no es `CI*`, F-044 R17).
 - **Descartado:** detectar desde la api; un `ejecutar` por obra para las
   sobrantes; A dentro de `POST /sync` (D1 C); `a_cero_hechos` (§6.4).
 
-## 12. Decisiones del 2026-10-29, cerradas (detalle: `progress/spec_F-054.md`)
+## 12. Decisiones D16-D19, cerradas (D16-D18: «estoy de acuerdo», el humano, 2026-10-29; detalle: `progress/spec_F-054.md`)
 
-El humano, el 2026-10-29: «estoy de acuerdo» con las tres recomendadas.
-
-- **D16 = C. Vinculados en una obra sobrante** (lo dejó aquí F-044 §10):
-  como el trabajador (R38), confirmables por línea con su hora en la guarda;
-  solo periodos ≥ `sync.vinculados.desde`. Descartadas: A) fuera (dejaba
-  vivas nuestras `porcentajes:vin:`, contra `#regla-vinculado`); B) aviso.
-- **D17 = A. Casilla** desmarcada siempre; descartada B) la del vinculado
-  marcada si su titular tiene sobrante (como F-064): poner a 0 una línea de
-  otro no es seguir un cambio nuestro.
+- **D16 = C. Vinculados en una obra sobrante** (F-044 §10): como el trabajador
+  (R38), confirmables por línea con su hora en la guarda; solo periodos ≥ `sync.vinculados.desde`.
+  Descartadas A) fuera (dejaba vivas las `porcentajes:vin:`, contra `#regla-vinculado`) y B) aviso.
+- **D17 = A. Casilla** desmarcada siempre; descartada B) marcar la del vinculado
+  si su titular tiene sobrante (F-064): a 0 la de otro no sigue un cambio nuestro.
 - **D18 = A. A y vinculados:** no se trae nada (`de_vinculados`); descartada
   B) su partida como elegida: F-068 ya la propone y su choque se pisa.
+- **D19 = b. `Postv-` omitida tras resolver su partida** (review 2, O7; el
+  humano, 2026-10-30: «b», y «si» al plan): cubre solo esa partida (§6.1);
+  descartada a) que las cubra todas. En Sigrid no cambia lo que se escribe.
+  Riesgo: hasta hoy una omitida nunca llevaba partida; sus lectores, en T22.

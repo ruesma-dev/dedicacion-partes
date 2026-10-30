@@ -7,7 +7,7 @@ sincronizar, el transfer lee y traduce y la api escribe en `dedicacion`
 registrar, una obra que la plataforma no le da es un 0 % y, si Sigrid tiene
 ahí una línea suya, se pregunta si se pone a 0, **editándola**. Pedida el
 2026-10-08, precisada el 2026-10-24, **revisada el 2026-10-29** contra F-044,
-F-062 y F-068 (D16-D18, cerradas). Caso: la 0694, 2026-09 (`MADM` al 95 % a mano, sin
+F-062 y F-068 (D16-D18, cerradas); D19, 2026-10-30. Caso: la 0694, 2026-09 (`MADM` al 95 % a mano, sin
 `synckey`: sobrecarga). Fuera: incidencias `CI*`/`CIZ` (D9) y `partes`.
 
 Lecturas del líder (2026-10-23): design §11. **Línea mensual**: `hmores`
@@ -95,16 +95,16 @@ de F-044 (`#regla-vinculado`); una `MESVE` empieza por `M` y es de vinculado.
   `ANCLAS`; `INTEGRACION.md` §1, §5, §7; `azure-apps` al desplegar.
 - **R30.** MANUAL: A en local, 2026-09, solo lectura (T18); B en pruebas (T19).
 
-## 5. Parte B · Al registrar, obra sin nada = 0 % `[D13-D17]`
+## 5. Parte B · Al registrar, obra sin nada = 0 % `[D13-D17, D19]`
 
 - **R31.** CUANDO se pide el preflight del periodo o de un trabajador (no el
   de una obra sola), el transfer lee en **una** lectura más, en la ronda A
   de `precargar`, las líneas mensuales del periodo de los trabajadores del
   lote (R4 por recurso: la `MESVE` de un vinculado no entra); **sobrante**,
   la que no cubre ninguna acción de su recurso en cualquier estado: normal,
-  sin esa obra; postventa, si ningún `Postv-` suyo casa con esa partida;
-  VAR, si ninguna entrada suya es esa partida. `[D14]` Solo trabajadores
-  con alguna línea de %.
+  sin esa obra; postventa, si ningún `Postv-` suyo casa con esa partida
+  (`[D19]` también omitido tras resolverla; el omitido antes, todas); VAR,
+  si ninguna entrada suya es esa partida. `[D14]` Solo trabajadores con alguna línea de %.
 - **R32.** En pruebas solo cuentan las de la obra de pruebas: cubierta si una
   acción del recurso la reconoce (ya registrada, choque, al 0) o es su partida.
 - **R33.** Cada sobrante es un conflicto `a_cero`, **uno por línea**
@@ -144,3 +144,5 @@ D11, D14, D15 = A**.
 recomendadas; motivos en design §12): **D16 = C**, las líneas de los
 vinculados en una obra sobrante, como las del trabajador (R38); **D17 = A**,
 casilla siempre desmarcada (R33); **D18 = A**, A no trae nada de ellos (R14).
+**D19 = b**, el humano el 2026-10-30 («b»; review 2, O7): la `Postv-` omitida
+tras resolver su partida cubre solo esa (R31; design §6.1 y §12).
