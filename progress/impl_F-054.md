@@ -82,9 +82,8 @@ Sin escrituras en Sigrid ni llamadas a Azure: todo con dobles.
    antes con cada aceptada en su sitio y sus subfilas), no releído: la
    lectura ORM tras el `INSERT … ON CONFLICT` de núcleo podía devolver
    objetos del mapa de identidad sin refrescar.
-8. Aceptadas repetidas en la misma petición se cuentan una vez.
-9. Ruta: sin cuerpo = comparar; `propuestas_en_curso` solo se pide
-   (`_encolar`) si hay tocados; si no, `false`.
+8. Aceptadas repetidas en una petición cuentan una vez.
+9. Ruta: sin cuerpo = comparar; `_encolar` solo si hay tocados.
 10. Tests de T7 con UoW en memoria **propia**, no la de
     `test_f024_cuadrante_empresa.py` (design §9): esa no tiene transacción
     ni traza, y R19/R22/R23 no se podrían comprobar.
@@ -95,8 +94,7 @@ Sin escrituras en Sigrid ni llamadas a Azure: todo con dobles.
     definen `sincronizar`, y con la referencia directa el primero fallaba
     con `ReferenceError: sincronizarYTraer is not defined`. Con la flecha
     pasan sin tocarlos.
-12. La ventana usa el overlay `#modal-registro` (`abrirModal`), el único
-    modal genérico; sin casillas no se pinta «Aceptar las marcadas».
+12. La ventana usa `#modal-registro`; sin casillas, sin «Aceptar las marcadas».
 13. **B, la obra especial por código**: `cubierta` reconoce la obra de
     postventa, la VAR y la de pruebas por el `obra_cod` de la línea (la
     lectura va por empresa) en vez de por `ide` (design §6.1 dice
@@ -106,8 +104,7 @@ Sin escrituras en Sigrid ni llamadas a Azure: todo con dobles.
 14. En pruebas, «alguna acción tiene su partida» compara también la
     partida 0 (sin partida): conservador, una omitida sin partida cubre las
     líneas sin partida de la 0404 (menos sobrantes, nunca más).
-15. Los recursos de una petición del lote que falla no dan sobrantes: sin
-    su preflight no se sabe qué los cubre.
+15. Los recursos de una petición del lote que falla no dan sobrantes.
 16. `PonerACero` reutiliza `_fila` y `_traza` de `registro_pipeline.py`
     (importados, el fichero no cambia) para el log antes/después de F-051.
     En pruebas, «en la 0404» = el `hmoide` de la línea está entre los partes
