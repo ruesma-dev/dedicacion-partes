@@ -126,7 +126,7 @@ no se tocan: `reemplazar` borra y recrea sin traza. Sin ORM ni DDL nuevos.
 
 ### 6.1 Reglas puras (`reglas_obra_cero.py`)
 
-`cubierta(linea, acciones_del_recurso, *, pv_ide, var_ide, pruebas_ide,
+`cubierta(linea, acciones_del_recurso, *, pv_ide, var_ide,
 modo_pruebas, reconocidas) -> bool`; `sobrantes(lineas, acciones,
 vinculados, *, ajustes) -> list[Sobrante]`.
 

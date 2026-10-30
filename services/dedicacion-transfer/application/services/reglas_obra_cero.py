@@ -89,10 +89,10 @@ def reconocidas_de(pf: Preflight) -> set[int]:
 
 
 def cubierta(linea: LineaMensualSigrid, coberturas: Iterable[Cobertura], *,
-             cod_pv: str, cod_var: str, cod_pruebas: str, modo_pruebas: bool,
+             cod_pv: str, cod_var: str, modo_pruebas: bool,
              reconocidas: set[int]) -> bool:
-    """R31-R32: ¿alguna acción del recurso cubre la línea? (`cod_pruebas`
-    no decide aquí: `sobrantes` ya deja en pruebas solo las de esa obra.)"""
+    """R31-R32: ¿alguna acción del recurso cubre la línea? En pruebas,
+    `sobrantes` ya deja solo las de la obra de pruebas."""
     cob = list(coberturas)
     paride = int(linea.paride or 0)
     if modo_pruebas:
@@ -133,8 +133,8 @@ def sobrantes(mensuales: Iterable[LineaMensualSigrid],
         if modo_pruebas and l.obra_cod != cod_pruebas:
             continue
         if cubierta(l, coberturas[l.recurso_ide], cod_pv=cod_pv,
-                    cod_var=cod_var, cod_pruebas=cod_pruebas,
-                    modo_pruebas=modo_pruebas, reconocidas=reconocidas):
+                    cod_var=cod_var, modo_pruebas=modo_pruebas,
+                    reconocidas=reconocidas):
             continue
         ok, motivo = confirmable(l)
         out.append(Sobrante(

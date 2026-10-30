@@ -57,8 +57,8 @@ def _m(ide, recurso=10, obra=694, cod=None, *, paride=0, hora="MADM",
 
 
 def _cub(lineas, cob, *, pruebas=False, reconocidas=()):
-    return cubierta(lineas, cob, modo_pruebas=pruebas,
-                    reconocidas=set(reconocidas), **AJ)
+    return cubierta(lineas, cob, cod_pv=PV, cod_var=VAR,
+                    modo_pruebas=pruebas, reconocidas=set(reconocidas))
 
 
 # --------------------------------- reglas -------------------------------- #
