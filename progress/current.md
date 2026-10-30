@@ -11,15 +11,14 @@ el 2026-10-29** con D16 = C, D17 = A y D18 = A («estoy de acuerdo»,
 `progress/impl_F-054.md`). Review 1 RECHAZADA solo por el rastro
 (corregido en `f6f6904`); sus observaciones O1, O2, O4 y O5 recogidas y O3
 y O6 aceptadas sin cambio por el humano («sigue»). Tras ellas: mutación
-Python 266/266 en `c70eb61` y `app.js` 69 + 14 sin supervivientes; último
-commit `5ba183c`. Review 2 APROBADA (`0ddba84`) con una observación, O7;
+Python 266/266 en `c70eb61` y `app.js` 69 + 14 sin supervivientes.
+Review 2 APROBADA (`0ddba84`) con una observación, O7;
 el humano eligió la opción (b) el 2026-10-30 («b», «si» al plan): spec
 enmendada (D19, T22, `e1a1902` y `83811d9`) y T22 hecha (`abd5514`,
 `fd56da6`, `69647cf`, `84a99b3`; mutación 266/266 en `a781d25` y RM4 a mano
-8/8 en `reglas_porcentajes.py`). Review 3 CAMBIOS REQUERIDOS solo por este fichero
-(`f01d4f2`: la línea «Spec» sin T22 ni D19, corregida); review 4 CAMBIOS REQUERIDOS solo por las
-peticiones de arnés («ninguna» frente a dos; `167c63f`, corregido); **en
-review 5**.
+8/8 en `reglas_porcentajes.py`). Reviews 3, 4 y 5: código aprobado en
+`9334fd3`, CAMBIOS REQUERIDOS solo por este fichero, corregido; **en
+review 6**.
 **Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T10 (medida base del líder, solo lecturas,
 sobre `ccad4db`), T18 (humano, local, solo lecturas), T19 (humano, modo
 pruebas, única que escribe) y T20 (despliegue transfer → api → front,
@@ -55,11 +54,13 @@ validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
 **Para retomar (sesión nueva):** `arnes-base` va 3 commits por delante de
 su `origin/main` (encargos pendientes; push del humano: `git -C
-../arnes-base push origin main`). Peticiones de arnés pendientes de
-decisión: **dos, de la review 3 de F-054** (detalle en su sección y en
-`progress/review_F-054.md`, «Automejora»): el operador `not` de
-`harness/mutacion` y el «texto exacto» de la campaña manual en C4 bis (la
-nota anterior de C4 bis sigue en el encargo `de161b4`). **Siguiente:** F-054 en review 5 (worktree `porcentajes-f054`); después
+../arnes-base push origin main`). Las dos propuestas de arnés de la
+review 3 de F-054 no piden decisión nueva: ya tienen encargo en
+`arnes-base` (mutantes que no compilan: `e7a172b`; campaña manual de C4
+bis: `de161b4`). Otras propuestas de arnés pendientes, en sus secciones:
+F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
+tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
+`init.sh`). **Siguiente:** F-054 en review 6 (worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
 ## F-054 · en review (2026-10-30)
@@ -76,7 +77,8 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   en `POST /api/registro/poner-a-cero` antes del `ejecutar` por obra, con la
   guarda de F-051; nunca `DELETE`.
 - **Implementación:** `progress/impl_F-054.md`. **Review 1 RECHAZADA** solo
-  por este fichero (`progress/review_F-054.md`); código sin bloqueos.
+  por `progress/current.md` (veredicto en `progress/review_F-054.md`);
+  código sin bloqueos.
   Bloqueos del rastro corregidos en `f6f6904`. Observaciones, decididas por
   el humano el 2026-10-30 («sigue»): **recogidas** O1 (`e881a17`, y
   `c70eb61` por los dos mutantes que trajo), O4 (`56dd403`), O2 (`5d426b5`)
@@ -95,19 +97,16 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   «Aceptar» ese efecto como parte de D19, y «Dejarlo así» para el vinculado
   omitido, que sigue con `paride` 0 y cubriéndolas todas (asimetría
   documentada; `83811d9`). T22 hecha: `abd5514` (RED), `fd56da6`, `69647cf`
-  (tests del efecto aceptado), `84a99b3` (informe). Review 3 (`f01d4f2`):
-  código aprobado, CAMBIOS REQUERIDOS solo por la línea «Spec» de esta
-  sección, sin T22 ni D19, ya corregida. Review 4 (`167c63f`): CAMBIOS
-  REQUERIDOS solo por «Para retomar» («ninguna» petición de arnés) y la
-  segunda propuesta sin recoger; corregido. **Review 5 lanzada el
-  2026-10-30** (delta e `init.sh`); después T10/T18/T19. **Propuesta de arnés de la
-  review 3, a decidir por el humano:** el operador `not` de
-  `harness/mutacion` genera mutantes que no compilan en código entre
-  paréntesis (p. ej. `reglas_porcentajes.py:563`), que cuentan como muertos
-  en falso; no afecta a F-054 (ninguno de sus 266). **Segunda propuesta,
-  también a decidir:** C4 bis, si una fila de campaña manual que quita un
-  solo elemento nombrado (`sin **resuelta`) vale como «texto exacto»; hoy
-  no se distingue. Las dos, si se aceptan, van a `arnes-base`.
+  (tests del efecto aceptado), `84a99b3` (informe). Reviews 3 (`f01d4f2`), 4
+  (`167c63f`) y 5 (`10bcf85`): código aprobado en `9334fd3`, CAMBIOS
+  REQUERIDOS solo por `progress/current.md` (rangos T/D, peticiones de
+  arnés, un commit obsoleto, T20), corregido. **Review 6 lanzada el
+  2026-10-30**; después T10, T18 y T19, y T20 al desplegar. Las dos
+  automejoras de la review 3 (el operador `not` genera mutantes que no
+  compilan, p. ej. en `reglas_porcentajes.py:563`, y cuentan como muertos;
+  y si una fila manual que quita un solo elemento vale como «texto
+  exacto» en C4 bis) ya están en los encargos `e7a172b` y `de161b4` de
+  `arnes-base`; no afectan a F-054 (ninguno de sus 266 mutantes).
 
 ### MANUAL pendientes (comando exacto)
 
@@ -198,7 +197,7 @@ para cerrarla, uno de M−1); y deja rachas **abiertas** a fin de mes, que el
 papel de sv4 verá. Nunca borra. Su `partes.md` debería decirlo en su «qué
 se rompe».
 
-## F-044 · spec aprobada (2026-10-25)
+## F-044 · spec aprobada (2026-10-25); cerrada y desplegada el 2026-10-27
 
 - **Spec:** `specs/F-044-recursos-vinculados/` (requirements 149 líneas,
   design 248, tasks T1-T24). Rigor `critico`; toca **api** (vínculo en el sync,
@@ -213,7 +212,7 @@ se rompe».
   («ok a todo»). D1b se aplica en el sync: `tipos_excluidos: [VP]` no se
   vincula y el preview lo cuenta (R3); con `pre` 0, omitido con motivo (R14).
 - **Hecho el 2026-10-26:** `dev` (con F-062) unido a la rama, `in_progress`
-  e implementer lanzado; bloqueo antes de T7 resuelto («si a todo»); T1-T20, T22 y T24 hechas. T21 es MANUAL
+  e implementer lanzado (ya terminado: F-044 cerrada); bloqueo antes de T7 resuelto («si a todo»); T1-T20, T22 y T24 hechas. T21 es MANUAL
   del humano en modo pruebas.
 - **F-054:** trae solo las `M*` de trabajadores (por recurso, no por prefijo);
   los vinculados no son asignaciones. F-054 lo cerró con D18 = A
@@ -542,7 +541,7 @@ F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-10-30):** F-054 en review 5 (O7 = b, D19);
+F-033 y, detrás, F-017, F-018… **Hoy (2026-10-30):** F-054 en review 6 (O7 = b, D19);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
