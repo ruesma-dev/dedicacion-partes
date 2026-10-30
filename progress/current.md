@@ -19,8 +19,7 @@ enmendada (D19, T22, `e1a1902` y `83811d9`) y T22 hecha (`abd5514`,
 8/8 en `reglas_porcentajes.py`). Reviews 3, 4 y 5: código aprobado en
 `9334fd3`, CAMBIOS REQUERIDOS solo por este fichero, corregido; **review 6
 APROBADA** (`838b390`).
-**Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T10 (medida base del líder, solo lecturas,
-sobre `ccad4db`), T18 (humano, local, solo lecturas), T19 (humano, modo
+**T10 hecha** (2026-10-30, mediana 10,34 s). **Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T18 (humano, local, solo lecturas), T19 (humano, modo
 pruebas, única que escribe) y T20 (despliegue transfer → api → front,
 `azure-apps/dedicacion.md` y aviso a `partes`: el transfer pone a 0 líneas
 `M*` y de vinculados en partes compartidos, sin borrarlas). **`azure-apps`
@@ -60,7 +59,7 @@ review 3 de F-054 no piden decisión nueva: ya tienen encargo en
 bis: `de161b4`). Otras propuestas de arnés pendientes, en sus secciones:
 F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
 tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
-`init.sh`). **Siguiente:** F-054, review APROBADA, faltan T10/T18/T19 (worktree `porcentajes-f054`); después
+`init.sh`). **Siguiente:** F-054, review APROBADA, faltan T18/T19 del humano (worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
 ## F-054 · review APROBADA (2026-10-30), MANUAL pendientes
@@ -101,7 +100,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   (`167c63f`) y 5 (`10bcf85`): código aprobado en `9334fd3`, CAMBIOS
   REQUERIDOS solo por `progress/current.md` (rangos T/D, peticiones de
   arnés, un commit obsoleto, T20), corregido. **Review 6 APROBADA el
-  2026-10-30** (`838b390`). Falta: T10, T18 y T19 (abajo), y T20 al desplegar. Las dos
+  2026-10-30** (`838b390`). T10 hecha. Falta: T18 y T19 (abajo), y T20 al desplegar. Las dos
   automejoras de la review 3 (el operador `not` genera mutantes que no
   compilan, p. ej. en `reglas_porcentajes.py:563`, y cuentan como muertos;
   y si una fila manual que quita un solo elemento vale como «texto
@@ -110,7 +109,10 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
 ### MANUAL pendientes (comando exacto)
 
-- **T10 (líder, local, solo lecturas en Sigrid), antes de B.** Copia
+- **T10 HECHA el 2026-10-30 (líder):** 12,25 / 9,20 / 10,34 s, **mediana
+  10,34 s** ⇒ T19 debe dar ≤ 11,89 s. Copia `ccad4db` con los venvs de la
+  rama (mismas dependencias), modo pruebas comprobado; el log del transfer,
+  solo `preflight-lote` y `propuesta-lote`; copia borrada después. Cómo se hizo: copia
   temporal en el commit anterior a B: `git -C
   C:/Users/pgris/PycharmProjects/porcentajes-f054 worktree add
   ../porcentajes-f054-t10 ccad4db`, con sus `.venv`. Transfer, api y front
@@ -141,7 +143,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   sobrantes, desmarcadas; **sin marcarlas**, Registrar ⇒ `estado` igual.
   Otra vez, **marcándolas** ⇒ mismos `ide` y `pos` con `can` y `tot` a 0,
   ningún `DELETE` en el log del transfer. Preflight del mes como en T10: ≤
-  1,15 × la mediana de T10 (si no, PARA, design §6.4). Resultado en
+  1,15 × la mediana de T10, es decir **≤ 11,89 s** (si no, PARA, design §6.4). Resultado en
   `progress/manual_F-054.md`.
 - **T20 (líder, al desplegar).** Orden transfer → api → front. Refrescar
   `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` y comprobar con `git
@@ -541,7 +543,7 @@ F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-10-30):** F-054 aprobada, faltan sus MANUAL (O7 = b, D19);
+F-033 y, detrás, F-017, F-018… **Hoy (2026-10-30):** F-054 aprobada, T10 hecha, faltan T18 y T19 del humano (O7 = b, D19);
 después, F-066.
 
 ## ⚠ Lo que espera al humano

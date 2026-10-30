@@ -174,7 +174,9 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
 ## MANUAL pendientes (NO ejecutadas; comando exacto en `tasks.md`)
 
 - **T10** (líder, solo lecturas): preflight de 2026-09 desde el front, tres
-  pasadas (F-055 T18), en `ccad4db` (**antes de B**). Sin mediana todavía.
+  pasadas (F-055 T18), en `ccad4db` (**antes de B**). **Hecha el 2026-10-30**:
+  12,25 / 9,20 / 10,34 s, **mediana 10,34 s** (umbral de T19: ≤ 11,89 s); el
+  log del transfer, solo `preflight-lote` y `propuesta-lote`.
 - **T18** (humano, local, solo lecturas): `curl -s -X POST
   http://localhost:8006/api/porcentajes/existentes -H "Content-Type:
   application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'`; luego
