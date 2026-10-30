@@ -237,3 +237,37 @@ def test_f054_r28_el_front_no_compara():
     for f in ("pintarTraerSigrid", "filaEntradaSigrid", "traerDeSigrid"):
         assert not re.search(r"pct_\w+\s*[<>=!-]", _funcion(f)), f
     assert "function compararSigrid" not in JS
+
+
+# ---- T17: lo que la campaña de mutación de `app.js` dejó vivo ---- #
+def test_f054_r28_porcentaje_nulo_o_ausente_es_una_raya():
+    """Sin % (null en el JSON o la clave ausente), «—»; nunca `null` ni
+    `undefined` en la celda."""
+    sin_clave = _entrada(740, "solo_sigrid", sig=7)
+    del sin_clave["pct_cuadrante"]
+    datos = {**DATOS, "trabajadores": [{**DATOS["trabajadores"][0],
+                                        "entradas": [
+                                            _entrada(713, "solo_sigrid",
+                                                     sig=5),
+                                            sin_clave]}]}
+    r = _programa(_api(datos=datos), "await traerDeSigrid([]);")
+    html = r["modal"]["html"]
+    assert html.count("<td>—</td>") == 2
+    assert "null" not in html and "undefined" not in html
+
+
+def test_f054_r28_los_avisos_de_postventa_y_de_var():
+    datos = {**DATOS, "motivo_postventa": "pv sin catálogo",
+             "motivo_var": "var sin catálogo"}
+    r = _programa(_api(datos=datos), "await traerDeSigrid([]);")
+    html = r["modal"]["html"]
+    assert '<p class="aviso">pv sin catálogo</p>' in html
+    assert '<p class="aviso">var sin catálogo</p>' in html
+
+
+def test_f054_r28_el_texto_de_vacio_solo_sin_trabajadores():
+    vacio = _programa(_api(datos={**DATOS, "trabajadores": []}),
+                      "await traerDeSigrid([]);")["modal"]["html"]
+    lleno = _programa(_api(), "await traerDeSigrid([]);")["modal"]["html"]
+    texto = "Ningún trabajador del cuadrante tiene porcentajes en Sigrid"
+    assert texto in vacio and texto not in lleno

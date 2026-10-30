@@ -185,3 +185,20 @@ def test_f054_r33_repreflight_de_una_obra_conserva_seccion_y_marcadas():
     assert r["casillas"] == ["chk-cero cero:7001", "chk-cero cero:7002"]
     assert r["marcadas"] == ["chk-cero cero:7001"]
     assert r["nuevo"] == []
+
+
+# ---- T17: lo que la campaña de mutación de `app.js` dejó vivo ---- #
+def test_f054_r33_el_texto_de_cada_sobrante_en_su_seccion():
+    """Lo que dice cada sobrante, mirado SOLO en su sección (el pisado de
+    vinculado de F-064 repite nombre y hora fuera de ella): el vinculado
+    con su tipo, su código y el nombre de su trabajador; la hora."""
+    r = _escenario("await abrir(D.pf); obs.html = dom.html;",
+                   {"pf": _pf(conflictos=[_conflicto(PIS_VIN, vinculado=TF)])})
+    html = r["html"]
+    inicio = html.index("En Sigrid, en obras que no tiene en la plataforma")
+    seccion = html[inicio:html.index('class="pie-modal"', inicio)]
+    [v7001, v7002, v7003] = seccion.split("<div class=")[2:]
+    assert "GONZALEZ PANIAGUA · obra 0713" in v7001
+    assert "TF TF-10 de GONZALEZ PANIAGUA · obra 0713" in v7002
+    for bloque in (v7001, v7002, v7003):
+        assert "parte PT26/00300 · MADM · CI.1.5 · 20%" in bloque, bloque
