@@ -8,7 +8,7 @@ Sin escrituras en Sigrid ni llamadas a Azure: todo con dobles.
 
 ## Estado por tarea
 
-Hechas, un commit cada una: T1 `d12ec81`, T2 `bf2361a`, T3 `f99e0cd`, T4
+Commit por tarea: T1 `d12ec81`, T2 `bf2361a`, T3 `f99e0cd`, T4
 `3ba3f37`, T5 `50f5d2e`, T6 `69583c9`, T7 `ef06704`, T8 `1c8d4a5`, T9
 `ccad4db`, T11 `892d93f`, T12 `eaaca4b`, T13 `60a7dab`, T14 `d382ae7`, T15
 `f5a9bb8`, T16 `95cc089`, T17 `e72d22c`/`c614be3`/`1c16454`, T21. MANUAL:
@@ -117,6 +117,13 @@ T10, T18-T20 (abajo). Observaciones de la review 1: O1 `e881a17`, O4
   True]] == []` (×2), `['cerrado', None] == ['cerrado', 409]`, `'1 sin poner
   a 0: x' in '… · 1 sin poner a 0'`, `assert False is True` → `5 failed, 24
   passed`.
+- Mutación tras la review: la campaña de `6d23067` (267, 2 vivos, 4541 s)
+  dejó dos mutantes nuevos que trajo O1 al pasar `Decimal("0")` a
+  `Decimal(0)`, ambos reproducidos en serie: `Decimal(1) < pct` (hueco real,
+  nada probaba un % bajo el 1: test `0.50` y `1.00` en R16, RED `2 failed`)
+  y el % de la `Linea` de sondeo de `_motivo_obra` (equivalente: `ofrecible`
+  no lo mira; ahora `Decimal()`, sin literal). `c70eb61`: 0 vivos. En
+  `app.js`, la mini-campaña de O5 dejó C7 vivo: test nuevo (`870e585`).
 
 ## Fase RED (trazas reales; comando y salida)
 
@@ -187,20 +194,18 @@ Cada tarea y observación en verde antes de su commit; final en «Evidencias».
   a `partes` de que el transfer pone a 0 líneas `M*` y de vinculados de
   partes compartidos, sin borrarlas.
 
-**Fuera del alcance**: `features.json` y el cierre (líder). `registro_pipeline.py`
-y los tests ajenos fuera de la lista cerrada, sin tocar.
+**Fuera del alcance**: `features.json` y el cierre (líder); `registro_pipeline.py`.
 
 ## Evidencias
 
-Medido en `c614be3`/`1c16454` con `bash harness/init.sh` (código 0, sin
-`[KO]`, «ENTORNO LISTO»; `ruff`: 309 avisos, los de `dev`; ninguno entra con la feature (O1)):
+`bash harness/init.sh` en MEDIDO_EN: código 0, sin `[KO]`; `ruff` sin avisos nuevos (O1).
 
 | Evidencia | Resultado real |
 |---|---|
 | Tests | api `1467 passed` (179,77 s); transfer `1845 passed` (60,66 s); front `479 passed` (379,40 s, con la máquina ocupada; 49,51 s antes); raíz `418 passed, 1 skipped` (116,73 s) |
 | Cobertura de líneas cambiadas | **99,5 %** (744/748, umbral 80 %). No mide JS |
-| Mutación Python | 262 generados, **262 muertos, 0 supervivientes**, 0 timeouts, 4 workers, 3767 s, SHA `c614be3`: `progress/mutacion_F-054.md` |
-| Mutación `app.js` | manual, **69 mutantes, 0 supervivientes**: `progress/mutacion_manual_F-054.md` |
+| Mutación Python | tras la review: 266 generados, **266 muertos, 0 supervivientes**, 0 timeouts, 4 workers, 4837 s, SHA `c70eb61`: `progress/mutacion_F-054.md` (antes: `c614be3`, 262/262) |
+| Mutación `app.js` | manual, **69 + 14 (O5) mutantes, 0 supervivientes**: `progress/mutacion_manual_F-054.md` |
 
 **Análisis de supervivientes.** Ningún equivalente: nada queda para que lo
 acepte el humano. La campaña 1 (`95cc089`, 207/262,
