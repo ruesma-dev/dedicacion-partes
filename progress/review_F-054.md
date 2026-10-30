@@ -1,93 +1,94 @@
 <!-- progress/review_F-054.md -->
-Revisión incremental desde 0ddba84 (pasada 3), HEAD `9334fd3`; CHECKPOINTS entero sobre el estado actual.
+Revisión incremental desde f01d4f2 (pasada 4), HEAD `56c0078`; CHECKPOINTS entero sobre el estado actual.
 
-# F-054 · Review 3
+# F-054 · Review 4
 
 **Veredicto: CAMBIOS REQUERIDOS (CHANGES_REQUESTED), solo por el rastro.**
-El código de T22 (D19) es correcto, con tests, RED, consumidores verificados
-uno a uno y RM4 reproducido 8/8. Bloquea una línea obsoleta de `current.md` (C2).
+El bloqueo de la review 3 está corregido, pero el arreglo deja otra
+contradicción dentro de `current.md` (C2). El código sigue aprobado en `9334fd3`
+y el delta no lo toca.
 
 **Rigor:** `critico`, declarado en `features.json`. Exige RED, cobertura,
 mutación completa con 0 supervivientes, RM5 y MANUAL con comando exacto.
 
-## Delta revisado (`git diff 0ddba84..HEAD`, 12 ficheros)
+## Delta revisado (`git diff f01d4f2..HEAD`: `976eb29`, `56c0078`)
 
-- **Código** (`reglas_porcentajes.py:528-573`): `omitir(motivo, **resuelta)`;
-  `resuelta = {destino, paride, partida_cod}` se fija tras P5 y va solo en los
-  cuatro `omitir` posteriores (sin recurso, % no numérico, fuera de rango, sin
-  `M*`). Los anteriores (empresa, motivo de empresa, P5 off, partida sin
-  resolver) siguen con los valores por defecto. `base` no lleva esas claves:
-  no hay `TypeError` por clave duplicada. `escribir` sin cambios. Coincide con
-  T22 y design §6.1.
-- **Tests** `test_f054_obra_cero.py -k d19` (14) y
-  `test_f054_d19_modal_destino_*` (front): cada motivo posterior → `postventa`/33/`P33`;
-  cada anterior y la no `Postv-` → `obra`/0/`None`; `sobrantes` (la otra
-  partida sí, la suya no; la omitida antes, ninguna); la respuesta HTTP con
-  clave `|70001` y el vinculado `postventa`/0; el modal `Postventa`×2/`Obra`×2.
-  RED real en `impl_F-054.md` (`6 failed, 8 passed`; respuesta `1 failed`).
-- **D19 coherente** en requirements (cabecera, §5 R31, §6), design (§3, §6.1,
-  §10, §12), tasks (cabecera, T22), `ARCHITECTURE.md#regla-obra-cero` (texto y
-  firma), `spec_F-054.md` e `impl_F-054.md` (frase de T22 (5) corregida, l. 83).
-  **Salvo `current.md`** (cambio requerido 1).
-- **Consumidores, lector por lector contra el código** (grep de `.destino`,
-  `.paride`, `.partida_cod` en los tres servicios):
-  `registro_pipeline.py` `normales`/`validas` (647, 651) y el bucle de partida
-  (666) filtran `escribir`; `obra_de` (764, 1136, 1413) solo sobre `escribir`,
-  `vin_escribir`, `pendientes`; `clave_conflicto` (910) sobre `grupo` ⊂
-  `pendientes`; `omitidas` (1142) solo `registro_id` y `motivo`.
-  `registro_vinculados.py:245` construye `PartidaTitular` también con la
-  omitida, pero solo la usa `_partida` tras `av.accion == "escribir"` (252).
-  `reglas_vinculados.py:368` copia `destino` y no `paride` (asimetría aceptada).
-  `registro_lote.py`: no los lee. `app.py:365` publica `asdict(a)` y la clave
-  (aceptado). api `_guardar_propuestas` (`registro_sigrid.py:447`) exige
-  `paride` y método de propuesta: la omitida lleva `partida_metodo=None`.
-  `app.js` 3510/3549 pintan Destino (aceptado); la celda Partida de una
-  omitida solo pinta el motivo (3537-3544, 3493), y `.clave` de acción no la
-  lee el front (solo la de conflicto). `prueba_escritura_porcentajes.py:312`
-  (aceptado). **Ningún lector fuera de lo aceptado cambia.**
+Solo `progress/current.md` (+18/−9); no toca código, spec, tests ni el
+alcance de la campaña, así que no invalida nada de lo aprobado.
+
+- [x] **Bloqueo de la review 3 resuelto**: la línea «Spec» dice (T1-T22) y
+  D1-D19, con D19 = b del 2026-10-30, el efecto en el modal aceptado y el
+  vinculado omitido «Dejarlo así». `grep "T1-T21\|D1-D18"`: nada.
+- [x] Cabecera: implementación con T22, review 3 con su motivo, «en review 4».
+  «Siguiente» y «Hoy (2026-10-30)»: review 4. Sección F-054: review 3
+  resumida y review 4 lanzada; MANUAL T10, T18-T20 con su comando, intactas.
+- [ ] **Nueva contradicción** (l. 56-57, «Para retomar»): «Peticiones de arnés
+  pendientes de decisión: **ninguna** (la de C4 bis, al encargo `de161b4`)».
+  En el mismo fichero, l. 96-101, se anota como «a decidir por el humano» la
+  propuesta del operador `not`. Quien retome una sesión nueva lee «ninguna».
+- [ ] **Una propuesta de la review 3 no está recogida**: de las dos de
+  «Automejora» (abajo), `current.md` lleva la del operador `not` y no la de
+  C4 bis (si una fila de campaña manual que quita un solo elemento nombrado
+  vale como «texto exacto»). Hay que anotarla como pendiente o decir que se descarta.
 
 ## Checkpoints
 
-- **C1** [x] `init.sh` (`suite_*.ok` borrados) código 0, sin `[KO]`; antes, dos
-  `[KO]` por el borrador de ESTE informe (145 líneas, y un falso positivo
-  de credencial de `test_f008_r21` por una palabra), corregidos · [x] ficheros.
-- **C2** [x] una `in_progress` · [x] rama (comprobada con `git -C`) ·
-  **[ ] `current.md`**: l. 61-62 dice «(T1-T21), todas las decisiones cerradas
-  (D1-D18; las últimas, D16 = C, D17 = A y D18 = A …)»; hoy son T1-T22 y
-  D1-D19 (D19 = b, 2026-10-30). El resto de la sección y la cabecera sí lo
-  recogen: queda una contradicción dentro del propio fichero · [x] history.
-- **C3** [x] hexagonal · [x] primera línea · [x] sin `print`/TODO/secretos ·
-  [x] escala intacta · [x] postventa: la omitida no se escribe, solo cambia su
-  cobertura · [x] solo escribe el transfer; nada cambia en lo que se escribe.
+- **C1** [x] `init.sh` (`suite_*.ok` borrados) código 0, sin `[KO]`, cobertura `[OK]` 99,5 %, tamaño 127/140 · [x] ficheros.
+- **C2** [x] una `in_progress` · [x] rama `feature/F-054-sync-trae-porcentajes`
+  (con `git -C`) · **[ ] `current.md`**: ver las dos casillas de arriba · [x] history.
+- **C3** [x] sin cambios desde la pasada 3 (el delta no toca código).
 - **C3 bis** N/A: no toca `docs/referencia/`.
-- **C4** [x] trazables (D19 → `test_f054_d19_*`) · [x] sin red ni BBDD
-  (`ClienteFalso`, node con dobles) · [x] MANUAL con comando exacto (T10, T18-T20).
-- **C4 bis** [x] rigor declarado · [x] RED de T22 pegado · [x] cobertura
-  `[OK]` 99,5 % (755/759) · [x] **totales recalculados** con `alcance_de_feature` y
-  `generar_mutantes`: 22 ficheros, 1651 líneas, **266 mutantes**, coinciden ·
-  [x] sin «CAMPAÑA NO VÁLIDA», sin veredicto 0 · [x] **campaña no
-  reejecutada: 3696 s según el informe** · [x] coste por mutante 3696 × 4 /
-  266 = 55,6 s · [x] 0 supervivientes · [x] Evidencias con los cuatro números y workers.
-- **RM1** [x] SHA `a781d25…`; `a781d25..HEAD` solo toca `progress/` y `tasks.md`.
-  **RM2** [x] 266 × 13,9 = 3697 ≈ 3696 s; 13,9 × 4 = 55,6 s frente a bases de
-  66-105 s, coherente con `-x`. **RM3** [x] ningún equivalente. **RM5** N/A:
-  ningún equivalente declarado. **RM6** [x] no se quitó ninguna guarda.
-- **Cero mutantes en `reglas_porcentajes.py`** [x] legítimo. Sus 12 líneas en
-  alcance (528-532, 552-553, 556, 562, 564-565, 573) son `def omitir`, el
-  `dict` y los `**resuelta`: ningún operador del generador (comparación,
-  entero, booleano, lógico, `not`, aritmético) tiene objetivo ahí. Prueba de
-  control: el mismo fichero sin exclusión de alcance da **70** mutantes; el
-  generador funciona y el cero es por diseño.
-- **RM4 manual** [x] la tabla trae una fila por mutante con su número de
-  fallos; reproducidas **las 8**, copia `git archive HEAD` en el scratchpad,
-  base `40 passed`: `omitir` sin `**resuelta` 7; sin recurso 1; % no numérico
-  1; fuera de rango 4; sin `M*` 2; `destino="obra"` 6; `paride=0` 7;
-  `partida_cod=None` 6. Coinciden fila por fila. La tabla describe el cambio
-  con palabras, pero cada fila quita o fija un único elemento; reproducible sin
-  ambigüedad, se acepta (ver automejora).
+- **C4** [x] trazables · [x] sin red ni BBDD · [x] MANUAL con comando exacto
+  en `current.md` (T10 `worktree add … ccad4db`; T18 el `curl` de
+  `existentes`; T19 `prueba_escritura_porcentajes.py estado --ano 2026 --mes
+  11`; T20 `git -C … log -1 -- dedicacion.md`), sin cambios.
+- **C4 bis** [x] todo como en la pasada 3 (abajo): el delta no toca ningún
+  fichero del alcance, así que la campaña de `a781d25` y el RM4 siguen valiendo
+  (RM1: `a781d25..HEAD` solo toca `progress/` y `tasks.md`).
 - **C4 ter** N/A: sin `harness/rutas_sensibles.json`.
-- **C5** [x] T22 `[x]`, commits `F-054 T22:` · T10, T18-T20 `[ ]` por MANUAL,
-  legítimo · [x] árbol limpio · [x] `in_progress`.
+- **C5** [x] tareas no MANUAL `[x]` · T10, T18-T20 `[ ]` por MANUAL, legítimo ·
+  [x] árbol limpio · [x] `in_progress`.
+
+## Cambios requeridos
+
+1. `progress/current.md` l. 56-57: cambiar «Peticiones de arnés pendientes de
+   decisión: ninguna (…)» para que diga las que hay. Hoy son las dos de la
+   review 3: el operador `not` de `harness/mutacion` y la del «texto exacto»
+   de la campaña manual en C4 bis. Mantener la nota de C4 bis de `de161b4`
+   si sigue siendo cierta. O, si el líder descarta la segunda, decirlo ahí
+   mismo. Antes, `grep -n "arnés\|ninguna"` en `current.md`: que no quede
+   ninguna otra línea que diga lo contrario.
+
+Pasada 5: ese delta más `init.sh`.
+
+## Review 3 (`f01d4f2`, incremental desde `0ddba84`): CAMBIOS REQUERIDOS, resumen
+
+Solo por `current.md` (línea «Spec» con T1-T21 y D1-D18; corregido en `976eb29`).
+**Código de T22 (D19) aprobado** en `9334fd3`:
+
+- `reglas_porcentajes.py:528-573`: `omitir(motivo, **resuelta)`. Los cuatro
+  `omitir` de después de P5 llevan `destino`/`paride`/`partida_cod`; los de
+  antes y las no `Postv-`, `obra`/0/`None`. Sin choque de claves con `base`.
+- Tests `test_f054_*d19*` (transfer 14, respuesta HTTP 2, front 1) y RED real
+  (`6 failed, 8 passed`; respuesta `1 failed`). D19 coherente en requirements,
+  design §3/§6.1/§10/§12, tasks, `ARCHITECTURE.md#regla-obra-cero`,
+  `spec_F-054.md` e `impl_F-054.md`.
+- **Consumidores**, contra el código: `registro_pipeline.py` (647, 651, 666,
+  764, 910, 1136, 1142, 1413) solo sobre `escribir`; `PartidaTitular`
+  (`registro_vinculados.py:245`) solo lo usa `_partida` con `escribir`;
+  `registro_lote.py` no los lee; api `_guardar_propuestas` exige método de
+  propuesta; `app.js` solo cambia Destino (aceptado). Nada fuera de lo aceptado.
+- **Mutación**: recálculo de 22 ficheros, 1651 líneas y **266 mutantes**,
+  coincide. Campaña no reejecutada: 3696 s según el informe. RM2 66-105 s de
+  base contra 13,9 × 4 = 55,6 s, coherente con `-x`. 0 supervivientes. RM3, RM6
+  [x], RM5 N/A (sin equivalentes). Cobertura `[OK]` 99,5 % (755/759).
+- **Cero mutantes en `reglas_porcentajes.py`, legítimo**: sus 12 líneas en
+  alcance no tienen ningún objetivo de operador. Control sin exclusión de
+  alcance: 70 mutantes en el fichero.
+- **RM4 manual reproducido 8/8** (copia `git archive` en el scratchpad, base 40
+  passed): sin `**resuelta` en `omitir` 7 fallos; sin recurso 1; % no numérico 1;
+  fuera de rango 4; sin `M*` 2; `destino="obra"` 6; `paride=0` 7;
+  `partida_cod=None` 6. Coinciden con la tabla.
 
 ## Cobertura
 
@@ -104,36 +105,23 @@ mutación completa con 0 supervivientes, RM5 y MANUAL con comando exacto.
 
 Suites: api 1469, transfer 1865, front 489, raíz 418 (1 skipped). **R37 sin cifra** hasta T10/T19.
 
-## Cambios requeridos
-
-1. `progress/current.md` l. 61-62 (sección «F-054 · en review»): «(T1-T21)»
-   → «(T1-T22)» y «D1-D18; las últimas, D16 = C, D17 = A y D18 = A, el
-   2026-10-29» → D1-D19 con D19 = b del 2026-10-30. Antes, `grep -n "D1-D18\|T1-T21\|D16-D18"`
-   en `current.md`: es el cuarto sitio de una decisión que se cierra.
-
-Pasada 4: ese delta más `init.sh`; el código de T22 queda aprobado en `9334fd3`.
-
-## Automejora (propuesta, no aplicada)
+## Automejora (review 3; propuesta, no aplicada)
 
 - **Generador de mutantes**: el operador `not` sobre una expresión entre
-  paréntesis quita `not (` y deja el `)` (p. ej. `reglas_porcentajes.py:563`
-  → `if 0.0 < porcentaje <= 1.0):`; también l. 293). Un mutante que no
-  compila muere siempre: es una muerte falsa. En el alcance de F-054 no hay
-  ninguno (comprobado con `ast.parse` sobre los 266), pero conviene que
-  `generar_mutantes` descarte lo que no parsea. Para `arnes-base`.
+  paréntesis quita `not (` y deja el `)` (`reglas_porcentajes.py:563` →
+  `if 0.0 < porcentaje <= 1.0):`; también l. 293). Un mutante que no compila
+  muere siempre: es una muerte falsa. En F-054, ninguno (`ast.parse` sobre los
+  266). Que `generar_mutantes` descarte lo que no parsea. Para `arnes-base`.
 - **C4 bis, campaña manual**: decidir si una fila que quita un solo elemento
   nombrado (`sin **resuelta`) vale como «texto exacto». Hoy no se distingue.
 
-## Review 2 (`0ddba84`, incremental desde `e005e34`): APROBADA, resumen
+## Reviews 1 y 2, resumen
 
-Bloqueos de la review 1 corregidos; O1, O2, O4 y O5 con test, O3 y O6
-aceptadas. Mutación 266/266 en `c70eb61` (4837 s), `app.js` 69 + 14. Dejó
-**O7** (toda `Postv-` omitida cubría todas): el humano eligió (b) → D19 y
-T22, revisadas aquí. Detalle: `git show 0ddba84:progress/review_F-054.md`.
-
-## Review 1 (pasada completa, `560c10a`): RECHAZADA, resumen
-
-Solo por el rastro (C4 MANUAL sin comando; C2 sección obsoleta). Sin bloqueos
-en la parte B (guarda doble, solo `UPDATE … can = 0, tot = 0`, sin `DELETE`)
-ni en las desviaciones 1, 6, 13, 14 y 16. Campaña 1 262/262 en `c614be3`.
-Detalle: `git show e005e34:progress/review_F-054.md`.
+- **Review 2** (`0ddba84`, incremental desde `e005e34`): **APROBADA**.
+  Bloqueos de la 1 corregidos. O1, O2, O4 y O5 recogidas con test; O3 y O6
+  aceptadas. Mutación 266/266 en `c70eb61`; `app.js` 69 + 14. Dejó O7 →
+  D19/T22. Detalle: `git show 0ddba84:progress/review_F-054.md`.
+- **Review 1** (completa, `560c10a`): **RECHAZADA** solo por el rastro (C4
+  MANUAL sin comando; C2 sección obsoleta). Sin bloqueos en la parte B (guarda
+  doble, solo `UPDATE … can = 0, tot = 0`, sin `DELETE`). Campaña 1 262/262 en
+  `c614be3`. Detalle: `git show e005e34:progress/review_F-054.md`.
