@@ -450,6 +450,32 @@ class LineaMensualSigrid:
     synckey: str | None = None
 
 
+@dataclass(frozen=True)
+class Sobrante:
+    """F-054 (R31-R34, R38; design §6.1): una línea mensual de Sigrid de un
+    recurso del lote que ninguna acción suya cubre: la plataforma no tiene
+    nada en esa obra, que es un 0 %. Se confirma por línea (`clave` =
+    `cero:{hmores_ide}`); `confirmable` False con `motivo` si su parte no
+    está En registro o es de otro sistema. `vinculado`: `{tipo, cod,
+    titular_ide}` si el recurso es un vinculado; None si es trabajador. Ver
+    ARCHITECTURE.md#regla-obra-cero."""
+    clave: str
+    hmores_ide: int
+    recurso_ide: int
+    vinculado: Optional[dict]
+    obra_ide: int
+    obra_cod: Optional[str]
+    parte_cod: Optional[str]
+    parte_est: Optional[int]
+    hora: Optional[str]
+    paride: int
+    partida_cod: Optional[str]
+    can: float
+    synckey: Optional[str]
+    confirmable: bool
+    motivo: Optional[str] = None
+
+
 @dataclass
 class Conflicto:
     """Algo que el humano tiene que confirmar antes de que se escriba.
