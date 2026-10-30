@@ -177,6 +177,21 @@ class AsignacionRepository(Protocol):
         """Sustituye en bloque las líneas del trabajador (transaccional)."""
         ...
 
+    def aceptar_entrada(
+        self,
+        periodo_id: int,
+        trabajador_ide: int,
+        linea: Linea,
+        *,
+        hmores_ide: int,
+        parte_cod: str | None,
+        usuario: str,
+    ) -> None:
+        """F-054 (R19, R23): la entrada aceptada de Sigrid en la línea de su
+        clave, en su sitio (mismo `id` y subfilas) o nueva, con la traza de
+        «ya registrada». Las demás líneas del trabajador no cambian."""
+        ...
+
     def guardar_propuesta(
         self,
         periodo_id: int,

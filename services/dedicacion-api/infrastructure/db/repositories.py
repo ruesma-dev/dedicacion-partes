@@ -50,6 +50,11 @@ from infrastructure.db.orm_models import (
 
 logger = logging.getLogger(__name__)
 
+#: F-054 (R23): el motivo de la traza de una entrada aceptada de Sigrid.
+MOTIVO_TRAIDA_DE_SIGRID = "traída de Sigrid"
+#: Longitud de `asignacion.sigrid_parte_cod` (`String(24)`, `orm_models.py`).
+_PARTE_COD_MAX = 24
+
 
 # ----------------------------------------------------------------------
 # Trabajadores
@@ -537,6 +542,52 @@ class PgAsignacionRepository:
             for o in subfilas:
                 self._s.add(o)
             self._s.flush()
+
+    def aceptar_entrada(
+        self,
+        periodo_id: int,
+        trabajador_ide: int,
+        linea: Linea,
+        *,
+        hmores_ide: int,
+        parte_cod: str | None,
+        usuario: str,
+    ) -> None:
+        """F-054 (R19, R23; design §5.3): la entrada aceptada de Sigrid en
+        la línea de su clave (obra, postventa), en UNA sentencia `INSERT …
+        ON CONFLICT (uq_asignacion_linea) DO UPDATE`: si la línea existe se
+        actualiza en su sitio (mismo `id`; sus filas de
+        `asignacion_vinculado` no se tocan) y, si no, se crea (sus subfilas,
+        automáticas). Porcentaje y partida elegida de `linea`, propuesta a
+        nulo y la traza de «ya registrada» (`#regla-cero`): su
+        `hmores.ide`, su parte, `registrado` y el motivo, sin fecha ni autor
+        de registro. Las demás líneas del trabajador no se tocan
+        (`reemplazar` las borraría y recrearía sin traza)."""
+        valores = {
+            "porcentaje": linea.porcentaje,
+            "partida_ide": linea.partida_ide,
+            "partida_cod": linea.partida_cod,
+            "partida_res": linea.partida_res,
+            "propuesta_ide": None, "propuesta_cod": None,
+            "propuesta_res": None, "propuesta_metodo": None,
+            "propuesta_origen": None,
+            "actualizado_por": usuario,
+            "sigrid_estado": "registrado",
+            "sigrid_parte_cod": (parte_cod or None) and parte_cod[
+                :_PARTE_COD_MAX],
+            "sigrid_hmores_ide": int(hmores_ide),
+            "sigrid_motivo": MOTIVO_TRAIDA_DE_SIGRID,
+            "sigrid_registrado_at_utc": None,
+            "sigrid_registrado_by": None,
+        }
+        stmt = pg_insert(AsignacionORM).values(
+            periodo_id=periodo_id, trabajador_ide=trabajador_ide,
+            obra_ide=linea.obra_ide, es_postventa=bool(linea.es_postventa),
+            **valores)
+        self._s.execute(stmt.on_conflict_do_update(
+            constraint="uq_asignacion_linea",
+            set_={**{k: stmt.excluded[k] for k in valores},
+                  "actualizado_en": func.now()}))
 
     def guardar_propuesta_vinculado(
         self,

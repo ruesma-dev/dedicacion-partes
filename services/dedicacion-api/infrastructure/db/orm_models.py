@@ -151,7 +151,9 @@ class AsignacionORM(Base):
     actualizado_por: Mapped[str] = mapped_column(Text, nullable=False, default="local")
 
     # Traza del registro en Sigrid, escrita por `application/registro_sigrid.py`
-    # y por nadie más (ningún endpoint ni esquema Pydantic la expone). Las seis
+    # y, desde F-054 (R23), por `aceptar_entrada` del repositorio al aceptar
+    # una entrada traída de Sigrid (motivo «traída de Sigrid»); por nadie más
+    # (ningún endpoint ni esquema Pydantic la expone). Las seis
     # son NULABLES y sin default a propósito: una asignación recién creada aún
     # no está registrada, y esa ausencia de valor es su estado inicial legítimo.
     # `String(N)` en vez del `Text` del resto del fichero porque son las
