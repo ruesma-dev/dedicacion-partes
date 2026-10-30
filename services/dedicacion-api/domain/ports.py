@@ -130,6 +130,11 @@ class VinculadoRepository(Protocol):
         o pierde su trabajador queda inactivo (nunca se borra)."""
         ...
 
+    def ides(self) -> set[int]:
+        """Los `ide` de todo `recurso_vinculado`, activo o no (F-054, R14:
+        sus líneas de Sigrid solo cuentan en `de_vinculados`)."""
+        ...
+
 
 class TipoIncidenciaRepository(Protocol):
     """Catálogo de incidencias copiado de `auxhor` (F-030, R3-R6)."""

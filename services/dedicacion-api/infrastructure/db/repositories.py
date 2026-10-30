@@ -405,9 +405,11 @@ class PgPeriodoRepository:
         return [_a_periodo(p) for p in self._s.scalars(stmt).all()]
 
     def obtener(self, anio: int, mes: int) -> tuple[int, Periodo] | None:
+        # F-054 (R22): siempre de la base, no del mapa de identidad de la
+        # sesión, para que releerlo vea el cierre hecho entre medias.
         stmt = select(PeriodoORM).where(
             PeriodoORM.anio == anio, PeriodoORM.mes == mes
-        )
+        ).execution_options(populate_existing=True)
         orm = self._s.scalars(stmt).first()
         return (orm.id, _a_periodo(orm)) if orm else None
 
@@ -712,6 +714,10 @@ def upsert_asignacion_vinculado(asignacion: int | Select[Any],
 class PgVinculadoRepository:
     def __init__(self, session: Session) -> None:
         self._s = session
+
+    def ides(self) -> set[int]:
+        """Los `ide` de todo `recurso_vinculado`, activo o no (F-054, R14)."""
+        return set(self._s.scalars(select(RecursoVinculadoORM.ide)).all())
 
     def sincronizar(self, resultado: ResultadoVinculos) -> ResultadoSyncMaestro:
         """Upsert por `res.ide` de lo que decide `vincular` (R3, R5). Los de
