@@ -1,72 +1,59 @@
 <!-- progress/review_F-054.md -->
-Revisión incremental desde 167c63f (pasada 5), HEAD `dd9a471`; `current.md` releído entero (761 líneas); CHECKPOINTS entero.
+Revisión incremental desde 10bcf85 (pasada 6), HEAD `90c3e4f`; CHECKPOINTS entero sobre el estado actual.
 
-# F-054 · Review 5
+# F-054 · Review 6
 
-**Veredicto: CAMBIOS REQUERIDOS (CHANGES_REQUESTED), solo por el rastro.**
-El bloqueo de la pasada 4 está corregido tal como lo pedí. Pero mi petición
-estaba mal medida: «son las dos de la review 3» no miraba el resto del
-fichero. Esta vez está la lista **completa** (abajo). Código aprobado en
-`9334fd3`; el delta (`dd9a471`, solo `current.md`) no lo toca.
+**Veredicto: APROBADO (APPROVED).** Los cuatro cambios de la pasada 5 están
+hechos y el arreglo no mete nada nuevo. El código sigue aprobado en `9334fd3`;
+el delta (`90c3e4f`, solo `progress/current.md`, +27/−28) no lo toca.
 
 **Rigor:** `critico` (`features.json`): RED, cobertura, mutación con 0
 supervivientes, RM5 y MANUAL con comando exacto.
 
-## Delta y relectura entera de `current.md`
+## Delta revisado (`git diff 10bcf85..HEAD`)
 
-- [x] Bloqueo de la pasada 4: «Para retomar» y la sección de F-054 nombran las
-  dos propuestas de la review 3; cabecera, «Siguiente» y «Hoy»: review 5.
-- [x] Sin cambios: T1-T22 y D1-D19 con D19 = b y sus dos decisiones; MANUAL
-  T10, T18-T20 con su comando; `azure-apps` pendiente (T20); límite de servicio.
-- [ ] **A. «Peticiones de arnés pendientes de decisión: dos» (l. 58-62) no es
-  verdad.** (1) La del operador `not` **ya es un encargo** de `arnes-base`:
-  `e7a172b` «mutantes que no compilan cuentan como muertos» (origen
-  datamart-seg-anual F-148). No es una decisión nueva, es un segundo origen
-  del mismo encargo. (2) La del «texto exacto» cae en el tema del encargo
-  `de161b4` (C4 bis, campaña manual). (3) El mismo fichero trae más
-  propuestas de arnés **pendientes**: l. 248-251 (F-061, «pendiente de PARADA 1
-  con el humano, no aplicada»), l. 656-677 («Trabajo del arnés tras F-055 (…
-  a proponer)», con F-056, F-057 y F-062) y l. 753-756 («Dos defectos del
-  arnés, anotados para `arnes-base`»). Lo de «dos» contradice las tres.
-- [ ] **B. l. 14-15: «último commit `5ba183c`»**, y hoy es `dd9a471`. Si es
-  historia (el último de la ronda de O1-O5), hay que decirlo. Si no, sobra.
-- [ ] **C. l. 103: «después T10/T18/T19»** deja fuera T20 (despliegue,
-  `azure-apps`, aviso a `partes`), que la cabecera (l. 25-28) sí lista.
-- [ ] **D. l. 78-79: «Review 1 RECHAZADA solo por este fichero
-  (`progress/review_F-054.md`)»**: «este fichero» es `current.md` y el
-  paréntesis nombra otro. Quien lo lea entiende que la culpa fue del informe de review.
-- Resto que no toca a F-054 (no bloquea esta feature; lo dejo dicho para que
-  no vuelva luego como bloqueo): la sección «F-044 · spec aprobada
-  (2026-10-25)» (l. 201-227) habla de «implementer lanzado», pero F-044 está
-  cerrada y desplegada (l. 45-48). Se puede retitular o resumir.
-  Fuera de esto, en las 761 líneas no hay otra incoherencia con el estado de F-054.
+- [x] **A** «Para retomar»: ya no dice «dos» pendientes. Las dos automejoras de
+  la review 3 constan en encargos de `arnes-base`, sin decisión nueva. Lo
+  comprobé contra `arnes-base`: `e7a172b` trae «P-1 · El operador `not` genera
+  código inválido» y la solución (compilar y apartar). `de161b4` exige en la
+  campaña manual «una fila por mutante (texto original y mutado…)». Remite a
+  las demás pendientes y están donde dice: F-061 (l. 247), «⚠ Lo que espera
+  al humano» (l. 547; «Trabajo del arnés tras F-055», l. 655) y «Hechos que no
+  conviene volver a descubrir» (l. 742; «Dos defectos del arnés», l. 752).
+- [x] **B** Fuera «último commit `5ba183c`».
+- [x] **C** Sección de F-054: «después T10, T18 y T19, y T20 al desplegar».
+- [x] **D** Review 1 «solo por `progress/current.md` (veredicto en
+  `progress/review_F-054.md`)».
+- [x] F-044: el título dice «cerrada y desplegada el 2026-10-27» y el
+  implementer, «ya terminado». La remisión de l. 55 («F-044 · spec aprobada»,
+  más abajo) sigue encontrando la sección.
+- [x] **Nada nuevo.** Cabecera: «Reviews 3, 4 y 5 … solo por este fichero»
+  (aquí «este fichero» sí es `current.md`), «en review 6». «Siguiente» y
+  «Hoy»: review 6. Intactos: T1-T22, D1-D19 con D19 = b y sus dos decisiones,
+  MANUAL T10, T18-T20 con su comando y `azure-apps` pendiente (T20).
 
 ## Checkpoints
 
-- **C1** [x] `init.sh` (`suite_*.ok` borrados) código 0, sin `[KO]`, cobertura `[OK]` 99,5 %, tamaño en tope · [x] ficheros.
-- **C2** [x] una `in_progress` · [x] rama (`git -C`) · **[ ] `current.md`**:
-  A-D · [x] history.
-- **C3** [x] sin cambios desde la pasada 3. **C3 bis** N/A: sin `docs/referencia/`.
-- **C4** [x] trazables · [x] sin red ni BBDD · [x] MANUAL con comando exacto.
-- **C4 bis** [x] como en la pasada 3: `a781d25..HEAD` solo toca `progress/` y
-  `tasks.md`, así que la campaña y el RM4 siguen valiendo. **C4 ter** N/A: sin
-  `rutas_sensibles.json`.
-- **C5** [x] tareas no MANUAL `[x]` · T10, T18-T20 `[ ]` por MANUAL · [x]
-  árbol limpio · [x] `in_progress`.
+- **C1** [x] `init.sh` (`suite_*.ok` borrados) código 0, sin `[KO]`, cobertura `[OK]` 99,5 % (755/759), tamaño dentro · [x] ficheros.
+- **C2** [x] una `in_progress` · [x] rama `feature/F-054-sync-trae-porcentajes`
+  (con `git -C`) · [x] `current.md` coherente con F-054 (relectura entera de la
+  pasada 5 más este delta) · [x] history.
+- **C3** [x] hexagonal, primera línea, sin `print`/secretos, escala,
+  postventa, solo escribe el transfer: sin cambios desde la pasada 3.
+- **C3 bis** N/A: no toca `docs/referencia/`.
+- **C4** [x] trazables (D19 → `test_f054_d19_*`) · [x] sin red ni BBDD ·
+  [x] MANUAL con comando exacto en `current.md` (T10, T18, T19, T20).
+- **C4 bis** [x] como en la pasada 3 (abajo). RM1: `a781d25..HEAD` solo toca
+  `progress/` y `tasks.md`, así que la campaña 266/266 y el RM4 8/8 siguen valiendo.
+- **C4 ter** N/A: sin `harness/rutas_sensibles.json`.
+- **C5** [x] tareas no MANUAL `[x]` y commits `F-054 Tn:` · T10, T18-T20 `[ ]`
+  por MANUAL, legítimo (rigor `critico`) · [x] árbol limpio · [x] `in_progress`.
 
-## Cambios requeridos (todos en `progress/current.md`)
+## Cambios requeridos
 
-1. l. 58-62: quitar el «dos». Decir que la del `not` es un segundo origen del
-   encargo `e7a172b` y que la del «texto exacto» se suma a `de161b4`, o que
-   queda como decisión nueva. Y remitir a las demás pendientes (l. 248, 656,
-   753), o retirar las que ya estén en `arnes-base`.
-2. l. 14-15: quitar «último commit `5ba183c`» o fecharlo como historia.
-3. l. 103: «después T10/T18/T19» → T10, T18-T20.
-4. l. 78-79: «solo por este fichero (`progress/review_F-054.md`)» → por
-   `current.md` (informe en `progress/review_F-054.md`).
-
-Pasada 6: ese delta más `init.sh`. No pediré nada fuera de esta lista salvo
-que el arreglo introduzca algo nuevo.
+Ninguno. Para cerrar faltan las MANUAL T10, T18 y T19 (resultado en
+`progress/manual_F-054.md`) y T20 al desplegar (`azure-apps/dedicacion.md` y
+aviso a `partes`). **R37 sin cifra** hasta T10 y T19: si pasa del 15 %, PARA.
 
 ## Review 3 (`f01d4f2`, incremental desde `0ddba84`): CAMBIOS REQUERIDOS, resumen
 
@@ -110,9 +97,9 @@ Solo por `current.md` (línea «Spec» con T1-T21 y D1-D18; corregido en `976eb2
 | R31 (D19), R32-R34, R38 | `test_f054_obra_cero` (`r31_o2_*`, `d19_*`), `modal_cero` (`d19_*`) |
 | R35-R36 | `test_f054_poner_a_cero`, `registro_cero`, `modal_cero` (`r35_o5_*`) |
 
-Suites: api 1469, transfer 1865, front 489, raíz 418 (1 skipped). **R37 sin cifra** hasta T10/T19.
+Suites: api 1469, transfer 1865, front 489, raíz 418 (1 skipped).
 
-## Automejora (review 3; propuesta, no aplicada)
+## Automejora (review 3; ya en los encargos `e7a172b` y `de161b4` de `arnes-base`)
 
 - **Generador de mutantes** (ya es encargo `e7a172b` de `arnes-base`): el operador `not` sobre una expresión entre
   paréntesis quita `not (` y deja el `)` (`reglas_porcentajes.py:563` →
@@ -122,8 +109,10 @@ Suites: api 1469, transfer 1865, front 489, raíz 418 (1 skipped). **R37 sin cif
 - **C4 bis, campaña manual**: decidir si una fila que quita un solo elemento
   nombrado (`sin **resuelta`) vale como «texto exacto». Hoy no se distingue.
 
-## Reviews 1, 2 y 4, resumen
+## Reviews 1, 2, 4 y 5, resumen
 
+- **Review 5** (`10bcf85`, desde `167c63f`): **CAMBIOS REQUERIDOS** solo por
+  `current.md` (A-D: peticiones de arnés, commit obsoleto, T20, referencia).
 - **Review 4** (`167c63f`, desde `f01d4f2`): **CAMBIOS REQUERIDOS** solo por
   `current.md` («ninguna» petición de arnés y la 2.ª propuesta sin recoger).
 - **Review 2** (`0ddba84`, desde `e005e34`): **APROBADA**. O1, O2, O4 y O5
