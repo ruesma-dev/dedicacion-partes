@@ -22,9 +22,14 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
 | T11 `reglas_obra_cero.py` y `Sobrante` | `892d93f` | hecha |
 | T12 `preflight_completo`, ronda A, `completo`/`sobrantes` | `eaaca4b` | hecha |
 | T13 `PonerACero` y `POST /api/registro/poner-a-cero` | `60a7dab` | hecha |
-| T14-T21 | — | pendientes |
+| T14 api B (`preflight` completo, `ejecutar` con `sobrantes_a_cero`) | `d382ae7` | hecha |
+| T15 front B (sección de sobrantes, `sobrantes_a_cero`) | `f5a9bb8` | hecha |
+| T16 documentación y `ANCLAS` | `95cc089` | hecha |
+| T17 cobertura y mutación | — | en curso |
+| T18-T20 | — | MANUAL (ver abajo) |
+| T21 `init.sh` en verde | — | pendiente |
 
-## Ficheros tocados (hasta T8)
+## Ficheros tocados
 
 - transfer: `infrastructure/sigrid/sigrid_write_client.py`,
   `domain/models/registro_models.py` (`LineaMensualSigrid`),
@@ -36,8 +41,23 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
   `infrastructure/db/{repositories,orm_models}.py` (`aceptar_entrada`,
   `PgVinculadoRepository.ides`, relectura del periodo; el ORM solo el
   comentario de la traza), `interface_adapters/api/{app,routes,schemas,deps}.py`.
-- tests nuevos: transfer `test_f054_{lectura_mensuales,traduccion,endpoint}.py`;
-  api `test_f054_{comparar,rutas,aceptar}.py`.
+- B, transfer: `application/services/reglas_obra_cero.py` (nuevo),
+  `application/services/lecturas_lote.py` (ronda A `mensuales`),
+  `application/pipelines/registro_lote.py` (`preflight_completo`),
+  `application/pipelines/poner_a_cero.py` (nuevo), `app.py` (`completo`,
+  `poner-a-cero`). `registro_pipeline.py` NO se toca.
+- B, api: `application/registro_sigrid.py`, `transfer_client.py`, `routes.py`.
+- front: `static/js/app.js` (T9 y T15).
+- docs: `ARCHITECTURE.md` (puntos 23 y 24, remisión en 22, capacidad,
+  tabla de acceso), `INTEGRACION.md` (§1, §5, §7).
+- tests nuevos: transfer `test_f054_{lectura_mensuales,traduccion,endpoint,
+  obra_cero,poner_a_cero}.py`; api `test_f054_{comparar,rutas,aceptar,
+  registro_cero}.py`; front `test_f054_{traer_front,modal_cero}.py`.
+- ajenos, solo los de la lista cerrada: `ANCLAS` de
+  `test_f002_fuente_unica.py`; los dobles `preflight_lote` de
+  `test_f022_empresa_en_linea.py`, `test_f024_registro_empresa.py` y
+  `test_f055_registro_lote.py` aceptan `completo=False` (ninguna aserción
+  cambia).
 
 ## Decisiones de diseño y desviaciones (justificadas)
 
@@ -78,6 +98,8 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
     definen `sincronizar`, y con la referencia directa el primero fallaba
     con `ReferenceError: sincronizarYTraer is not defined`. Con la flecha
     pasan sin tocarlos.
+12. La ventana usa el overlay `#modal-registro` (`abrirModal`), el único
+    modal genérico; sin casillas no se pinta «Aceptar las marcadas».
 13. **B, la obra especial por código**: `cubierta` reconoce la obra de
     postventa, la VAR y la de pruebas por el `obra_cod` de la línea (la
     lectura va por empresa) en vez de por `ide` (design §6.1 dice
@@ -94,8 +116,17 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
     En pruebas, «en la 0404» = el `hmoide` de la línea está entre los partes
     del periodo de la obra de pruebas (`partes_del_periodo`). Los lotes de
     15 son los de `escribir` (`SIGRID_MAX_STATEMENTS`).
-12. La ventana usa el overlay `#modal-registro` (`abrirModal`), el único
-    modal genérico; sin casillas no se pinta «Aceptar las marcadas».
+17. T14: `poner_a_cero` va con la empresa por defecto de la api
+    (`self._por_defecto`), la misma con que el preflight lee las líneas
+    mensuales; los campos que viajan son los que relee la guarda
+    (`hmores_ide, recurso_ide, hora, vinculado, can, synckey`). Un
+    `sobrantes_a_cero` que no es lista de objetos con `hmores_ide` entero es
+    422 sin escribir. Si poner a 0 falla, no se escribe nada por obra.
+18. T15: el texto de la sección dice «la línea sigue en su parte, a 0» y no
+    «no se borran»: un test ajeno prohíbe «se borran» en `app.js`.
+19. T16: la remisión de `#regla-vinculado` es un párrafo al final del
+    punto 22 (tras su firma), no una viñeta entre las suyas, para no tocar
+    el texto aprobado de F-044.
 
 ## Fase RED (trazas reales; comando y salida)
 
@@ -134,6 +165,15 @@ se apartó temporalmente para la RED (error de recogida real).
   'sobrantes'` (ruta) → `8 failed, 1 passed, 11 deselected`.
 - T13 `test_f054_poner_a_cero.py`: `E ModuleNotFoundError: No module named
   'application.pipelines.poner_a_cero'` → `1 error in 0.37s`.
+- T14 api `test_f054_registro_cero.py`: `E AssertionError: assert
+  [('preflight_lote', False)] == [('preflight_lote', True)]` (4), `E
+  TypeError: RegistroSigrid.ejecutar() got an unexpected keyword argument
+  'sobrantes_a_cero'` (4), `E AttributeError: 'TransferClient' object has
+  no attribute 'poner_a_cero'` (2), `E TypeError:
+  TransferClient.preflight_lote() got an unexpected keyword argument
+  'completo'` → `11 failed, 1 passed in 3.05s`.
+- T15 front `test_f054_modal_cero.py`: `E AssertionError: no existe la
+  función pintarSobrantes en app.js` → `5 failed in 0.33s`.
 
 ## Resultados (GREEN)
 
@@ -145,7 +185,11 @@ se apartó temporalmente para la RED (error de recogida real).
   or f044 or f062 or f054"` 655 passed; T13 16 passed; suite transfer
   entera tras T13: `1821 passed in 23.66s`.
 - Suite api entera tras T5: `1381 passed in 140.12s`; tras T7: `1406 passed
-  in 113.38s`; tras T8: `1420 passed in 108.99s`.
+  in 113.38s`; tras T8: `1420 passed in 108.99s`; tras T14: `1432 passed`.
+- T14 `test_f054_registro_cero.py` 12 passed. T15 `test_f054_modal_cero.py`
+  5 passed; con los del modal de F-064/F-050/F-051/F-062, 45 passed; suite
+  front entera `475 passed, 19 warnings in 49.51s`.
+- T16 `test_f002_fuente_unica.py` (transfer): `86 passed in 0.21s`.
 
 ## MANUAL pendientes (no ejecutadas por el implementer)
 
