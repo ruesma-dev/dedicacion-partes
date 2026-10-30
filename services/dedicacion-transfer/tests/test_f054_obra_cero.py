@@ -491,3 +491,38 @@ def test_f054_d19_sobrantes_omitida_despues_cubre_solo_su_partida():
 def test_f054_d19_sobrantes_omitida_antes_cubre_todas():
     assert _sob_d19(_d19(postventa_registrar=False), _lpv()) == []
     assert _sob_d19(_d19(partida_postventa=None), _lpv()) == []
+
+
+def _pf_ruta(api, ajustes=None, **kw) -> dict:
+    """El preflight publicado (`asdict(a)` y su clave) de una `Postv-` con
+    un vinculado, en el doble de `conftest` (partida de postventa 70001)."""
+    from tests.conftest import ClienteFalso
+    lin = {"registro_id": 1, "ano": 2026, "mes": 7, "porcentaje": 0.4,
+           "recurso_ide": 200, "empresa": 1, "es_postventa": True,
+           "vinculados": [{"recurso_ide": 300, "tipo": "TF", "cod": "TEL1"}],
+           **kw}
+    r = api(ClienteFalso(), **(ajustes or {})).post(
+        "/api/registro/preflight",
+        json={"obra": {"codigo": "0678"}, "lineas": [lin]})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def _publicada(cuerpo):
+    a, v = cuerpo["acciones"][0], cuerpo["vinculados"][0]
+    return ((a["accion"], a["destino"], a["paride"], a["partida_cod"],
+             a["clave"]), (v["accion"], v["destino"], v["paride"]))
+
+
+def test_f054_d19_respuesta_omitida_despues_publica_postventa(api):
+    """Efecto aceptado de D19 (design §12): la omitida tras resolver publica
+    su destino, su partida y la clave `|<paride>`; su vinculado omitido,
+    `postventa` con `paride` 0 (la asimetría que se deja así)."""
+    assert _publicada(_pf_ruta(api, porcentaje=1.5)) == (
+        ("omitir", "postventa", 70001, "0678", "200|202607|0|70001"),
+        ("omitir", "postventa", 0))
+
+
+def test_f054_d19_respuesta_omitida_antes_como_hoy(api):
+    assert _publicada(_pf_ruta(api, {"postventa_registrar": False})) == (
+        ("omitir", "obra", 0, None, "200|202607|0|0"), ("omitir", "obra", 0))

@@ -235,3 +235,35 @@ def test_f054_r35_o5_sin_sobrantes_a_cero_el_aviso_de_siempre():
     """, {"pf": _pf()})
     assert r["toast"] == ["Sigrid: 0 escritas · 0 omitidas · 0 pendientes "
                           "de confirmar", False]
+
+
+# ---- D19 (efecto aceptado el 2026-10-30, design §12): la columna Destino -- #
+def _omitida(rid, destino, paride=0, cod=None):
+    return {"registro_id": rid, "accion": "omitir", "nombre": f"T{rid}",
+            "recurso_ide": 70 + rid, "es_postventa": True, "destino": destino,
+            "paride": paride, "partida_cod": cod, "can": None,
+            "hora_codigo": None, "motivo": f"motivo {rid}"}
+
+
+def _vin_omitido(rid, destino):
+    return {"registro_id": rid, "recurso_ide": 500 + rid, "accion": "omitir",
+            "destino": destino, "paride": 0, "tipo": "TF", "cod": f"TF-{rid}",
+            "motivo": f"sigue al trabajador {rid}", "can": None}
+
+
+def test_f054_d19_modal_destino_de_la_omitida_y_su_vinculado():
+    """El front pinta el `destino` que publica el transfer, también en una
+    omitida: «Postventa» para la `Postv-` omitida tras resolver su partida
+    (y su vinculado omitido), «Obra» para la omitida antes de resolverla."""
+    obra = _obra(694, [])
+    obra["acciones"] = [_omitida(1, "postventa", 70001, "0678"),
+                        _omitida(2, "obra")]
+    obra["vinculados"] = [_vin_omitido(1, "postventa"),
+                          _vin_omitido(2, "obra")]
+    r = _escenario("await abrir(D.pf); obs.html = dom.html;",
+                   {"pf": _pf(sobrantes=None) | {"obras": [obra]}})
+    filas = [f for f in r["html"].split("<tr") if "motivo " in f
+             or "sigue al trabajador" in f]
+    destinos = [("Postventa" if "<td>Postventa</td>" in f else
+                 "Obra" if "<td>Obra</td>" in f else None) for f in filas]
+    assert destinos == ["Postventa", "Postventa", "Obra", "Obra"], filas
