@@ -223,3 +223,15 @@ def test_f054_r35_o5_sin_omitidas_es_exito_y_los_motivos_se_unen():
     assert r["bien"][1] is False and "sin poner a 0" not in r["bien"][0]
     assert r["mal"][1] is True
     assert "2 sin poner a 0: cambió; cerrado" in r["mal"][0]
+
+
+def test_f054_r35_o5_sin_sobrantes_a_cero_el_aviso_de_siempre():
+    """Una respuesta sin `sobrantes_a_cero` (no se marcó ninguna, o un
+    transfer viejo) da el aviso de hoy, en verde."""
+    r = _escenario("""
+      await abrir(D.pf);
+      await registrar({ok: true, obras: []});
+      obs.toast = toasts[toasts.length - 1];
+    """, {"pf": _pf()})
+    assert r["toast"] == ["Sigrid: 0 escritas · 0 omitidas · 0 pendientes "
+                          "de confirmar", False]
