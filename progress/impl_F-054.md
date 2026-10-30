@@ -4,6 +4,7 @@
 Rama `feature/F-054-sync-trae-porcentajes`, copia `porcentajes-f054`. Rigor
 **crítico**. Spec `specs/F-054-sync-trae-porcentajes/` (T1-T21). Informe
 escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
+Sin escrituras en Sigrid ni llamadas a Azure: todo con dobles.
 
 ## Estado por tarea
 
@@ -25,9 +26,9 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
 | T14 api B (`preflight` completo, `ejecutar` con `sobrantes_a_cero`) | `d382ae7` | hecha |
 | T15 front B (sección de sobrantes, `sobrantes_a_cero`) | `f5a9bb8` | hecha |
 | T16 documentación y `ANCLAS` | `95cc089` | hecha |
-| T17 cobertura y mutación | — | en curso |
+| T17 cobertura y mutación (55 + 9 supervivientes matados con tests) | `e72d22c`, `c614be3`, `1c16454` | hecha |
 | T18-T20 | — | MANUAL (ver abajo) |
-| T21 `init.sh` en verde | — | pendiente |
+| T21 `init.sh` en verde | ver «Evidencias» | hecha |
 
 ## Ficheros tocados
 
@@ -53,11 +54,9 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
 - tests nuevos: transfer `test_f054_{lectura_mensuales,traduccion,endpoint,
   obra_cero,poner_a_cero}.py`; api `test_f054_{comparar,rutas,aceptar,
   registro_cero}.py`; front `test_f054_{traer_front,modal_cero}.py`.
-- ajenos, solo los de la lista cerrada: `ANCLAS` de
-  `test_f002_fuente_unica.py`; los dobles `preflight_lote` de
-  `test_f022_empresa_en_linea.py`, `test_f024_registro_empresa.py` y
-  `test_f055_registro_lote.py` aceptan `completo=False` (ninguna aserción
-  cambia).
+- ajenos, solo la lista cerrada: `ANCLAS` de `test_f002_fuente_unica.py`;
+  dobles `preflight_lote` de `test_f022_…`, `test_f024_…` y `test_f055_…`
+  (aceptan `completo=False`; ninguna aserción cambia).
 
 ## Decisiones de diseño y desviaciones (justificadas)
 
@@ -69,9 +68,8 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
    vigente» y no «fuera del maestro».
 2. `ExistentesIn.empresa` sin tipo: cualquier valor no válido da 422 con
    motivo `{ok:false,error}` sin leer Sigrid.
-3. Las líneas de la obra de pruebas siempre se excluyen en A (R5);
-   `lineas_leidas` cuenta todas.
-4. La comparación solo saca a los trabajadores con alguna entrada de Sigrid.
+3. La obra de pruebas siempre se excluye en A (R5); `lineas_leidas` cuenta todas.
+4. La comparación solo saca a trabajadores con alguna entrada de Sigrid.
 5. Obra que está en la base pero no en el listado del periodo (inactiva, sin
    postventa): se completa como inactiva para que el motivo sea «no se
    ofrece», no «no está en la base».
@@ -87,10 +85,9 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
 8. Aceptadas repetidas en la misma petición se cuentan una vez.
 9. Ruta: sin cuerpo = comparar; `propuestas_en_curso` solo se pide
    (`_encolar`) si hay tocados; si no, `false`.
-10. Tests de T7 con una UoW en memoria **propia** (con transacción por copia,
-    `id` y traza por fila) en vez de la de `test_f024_cuadrante_empresa.py`
-    (design §9): la de F-024 no tiene transacción ni traza, y R19/R22/R23 no
-    se podrían comprobar con ella.
+10. Tests de T7 con UoW en memoria **propia**, no la de
+    `test_f024_cuadrante_empresa.py` (design §9): esa no tiene transacción
+    ni traza, y R19/R22/R23 no se podrían comprobar.
 11. Front: `#btn-sync` se enlaza con `() => sincronizarYTraer()` (no con la
     función directa): los arneses de `enlazarEventos` de
     `test_f050_t15e_sombreado.py`, `test_f029_seleccion.py` y
@@ -124,15 +121,13 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
     422 sin escribir. Si poner a 0 falla, no se escribe nada por obra.
 18. T15: el texto de la sección dice «la línea sigue en su parte, a 0» y no
     «no se borran»: un test ajeno prohíbe «se borran» en `app.js`.
-19. T16: la remisión de `#regla-vinculado` es un párrafo al final del
-    punto 22 (tras su firma), no una viñeta entre las suyas, para no tocar
-    el texto aprobado de F-044.
+19. T16: la remisión de `#regla-vinculado` es un párrafo tras la firma del
+    punto 22, no una viñeta, para no tocar el texto de F-044.
 
 ## Fase RED (trazas reales; comando y salida)
 
-Todas desde la carpeta del servicio: `.venv/Scripts/python -m pytest
-tests/<fichero> -q -p no:cacheprovider`. Cuando el módulo ya estaba escrito
-se apartó temporalmente para la RED (error de recogida real).
+Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
+-q -p no:cacheprovider`. Módulo ya escrito: apartado para la RED (error real).
 
 - T1 `test_f054_lectura_mensuales.py`: `E AttributeError: 'SigridWriteClient'
   object has no attribute 'lineas_mensuales_del_periodo'` → `16 failed in 4.11s`.
@@ -177,24 +172,51 @@ se apartó temporalmente para la RED (error de recogida real).
 
 ## Resultados (GREEN)
 
-- T1-T3 transfer: 48 passed. T4 36 passed. T7 `test_f054_aceptar.py` 25
-  passed. T8 `test_f054_rutas.py` 22 passed. T9 front 12 passed (+
-  `test_f061_recarga.py` sin cambios, 3 passed); suite front entera
-  `470 passed` tras el arreglo del punto 11.
-- T11 12 passed; T12 `test_f054_obra_cero.py` 20 passed y `-k "lote or f055
-  or f044 or f062 or f054"` 655 passed; T13 16 passed; suite transfer
-  entera tras T13: `1821 passed in 23.66s`.
-- Suite api entera tras T5: `1381 passed in 140.12s`; tras T7: `1406 passed
-  in 113.38s`; tras T8: `1420 passed in 108.99s`; tras T14: `1432 passed`.
-- T14 `test_f054_registro_cero.py` 12 passed. T15 `test_f054_modal_cero.py`
-  5 passed; con los del modal de F-064/F-050/F-051/F-062, 45 passed; suite
-  front entera `475 passed, 19 warnings in 49.51s`.
-- T16 `test_f002_fuente_unica.py` (transfer): `86 passed in 0.21s`.
+Cada tarea en verde antes de su commit; suites enteras tras T14 (api, 1432)
+y T15 (front, 475). Resultado final en «Evidencias».
 
-## MANUAL pendientes (no ejecutadas por el implementer)
+## MANUAL pendientes (NO ejecutadas; comando exacto en `tasks.md`)
 
-(se completa al final)
+- **T10** (líder, solo lecturas): preflight del mes 2026-09 desde el front,
+  tres pasadas, método de F-055 T18, sobre un commit **anterior a B**
+  (`ccad4db`, sin T11+). Anotar la mediana: no hay cifra todavía.
+- **T18** (humano, local, solo lecturas): `curl -s -X POST
+  http://localhost:8006/api/porcentajes/existentes -H "Content-Type:
+  application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'`; luego
+  los pasos 2-4 de T18 en el front → `progress/manual_F-054.md`.
+- **T19** (humano, `OBRA_PRUEBAS_FORZAR=true`): líneas a mano en la 0404;
+  `cd services/dedicacion-transfer && .venv/Scripts/python
+  prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`; registrar sin
+  marcar y marcando; preflight ≤ 1,15 × mediana de T10. **Es la única prueba
+  que escribe y no la ha lanzado ningún agente.**
+- **T20** (líder, al desplegar): orden **transfer → api → front**; refrescar
+  `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` (`git -C`) y avisar
+  a `partes` de que el transfer pone a 0 líneas `M*` y de vinculados de
+  partes compartidos, sin borrarlas.
+
+**Fuera del alcance**: `features.json` y el cierre (líder). `registro_pipeline.py`
+y los tests ajenos fuera de la lista cerrada, sin tocar.
 
 ## Evidencias
 
-(se completa al final)
+Medido en `c614be3`/`1c16454` con `bash harness/init.sh` (código 0, sin
+`[KO]`, «ENTORNO LISTO»; `ruff`: 363 avisos de deuda previa, no bloquea):
+
+| Evidencia | Resultado real |
+|---|---|
+| Tests | api `1467 passed` (179,77 s); transfer `1845 passed` (60,66 s); front `479 passed` (379,40 s, con la máquina ocupada; 49,51 s antes); raíz `418 passed, 1 skipped` (116,73 s) |
+| Cobertura de líneas cambiadas | **99,5 %** (744/748, umbral 80 %). No mide JS |
+| Mutación Python | 262 generados, **262 muertos, 0 supervivientes**, 0 timeouts, 4 workers, 3767 s, SHA `c614be3`: `progress/mutacion_F-054.md` |
+| Mutación `app.js` | manual, **69 mutantes, 0 supervivientes**: `progress/mutacion_manual_F-054.md` |
+
+**Análisis de supervivientes.** Ningún equivalente: nada queda para que lo
+acepte el humano. La campaña 1 (`95cc089`, 207/262,
+`progress/mutacion_F-054_campana1.md`) dejó 55 vivos y la de `app.js`, 9;
+todos se matan con tests, **sin cambiar código de producción**:
+`test_f054_mutacion.py` (api 35, transfer 20) y 4 en el front. Huecos reales:
+validación de `sobrantes_a_cero` en `routes.py` (6, sin ningún test); guarda
+de `can` y `_EPS` exacto; `ok: true` con todo omitido (la api lo tomaría por
+fallo); 502 de la ruta; pruebas sin 0404; partida 0 frente a 1 (6); `cod_var`
+y `desde`; textos de la sobrante (el test miraba todo el modal y el pisado de
+F-064 los repetía). De poco riesgo: `frozen` (11) y defectos (10). La campaña
+final entera no deja vivos, así que no hubo nada que reproducir en serie.
