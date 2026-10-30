@@ -2821,12 +2821,143 @@ async function sincronizar() {
     // F-061: el sync puede traer tipos de incidencia nuevos; el desplegable
     // usa ya el catálogo nuevo. Si falla, avisa y se queda el que había.
     await cargarTiposIncidencia();
+    return true;    // F-054 (R1): con éxito, se compara con Sigrid
   } catch (err) {
     toast(err.message, true);
+    return false;
   } finally {
     boton.disabled = false;
     boton.textContent = "Sincronizar Sigrid";
   }
+}
+
+// ------------------------------------ traer de Sigrid (F-054, parte A)
+// Tras un sync con éxito se compara el cuadrante con los partes de Sigrid
+// (R1). El front no compara ni decide: pinta lo que manda la API y envía
+// las entradas marcadas (R28).
+async function sincronizarYTraer() {
+  if (await sincronizar()) await traerDeSigrid([]);
+}
+
+// `aceptar` vacío = solo comparar (abre la ventana); con entradas, las
+// escribe la API, se cierra la ventana y se recarga el periodo.
+async function traerDeSigrid(aceptar) {
+  let datos;
+  try {
+    datos = await api(`/periodos/${state.anio}/${state.mes}/traer-sigrid`, {
+      method: "POST", body: JSON.stringify({ aceptar }),
+    });
+  } catch (err) {
+    toast(`No se pudo comparar con Sigrid: ${err.message}`, true);
+    return;
+  }
+  if (!aceptar.length) { abrirTraerSigrid(datos); return; }
+  cerrarModal();
+  const rechazadas = datos.rechazadas || [];
+  toast(`Traídas de Sigrid: ${datos.aceptadas}` + (rechazadas.length
+    ? ` · ${rechazadas.length} sin traer: ` +
+      rechazadas.map((r) => r.motivo).join("; ")
+    : ""), rechazadas.length > 0);
+  marcarPropuestas(datos.propuestas_en_curso);    // F-055 (R26)
+  await cargarPeriodo(state.anio, state.mes);
+}
+
+function textoEstadoSigrid(estado) {
+  const textos = {
+    igual: "igual", distinta: "distinta", solo_sigrid: "solo en Sigrid",
+    solo_cuadrante: "solo en el cuadrante", no_traducible: "no se puede traer",
+  };
+  return textos[estado] || estado;
+}
+
+// R28: casilla solo en `distinta` (sale desmarcada) y `solo_sigrid` (sale
+// marcada, D12); las dos se pueden desmarcar.
+function filaEntradaSigrid(t, e) {
+  const conCasilla = e.estado === "distinta" || e.estado === "solo_sigrid";
+  const casilla = conCasilla
+    ? `<input type="checkbox" class="chk-traer" ` +
+      `data-trabajador="${escapeHtml(t.trabajador_ide)}" ` +
+      `data-obra="${escapeHtml(e.obra_ide)}" ` +
+      `data-postventa="${e.es_postventa ? 1 : 0}"` +
+      `${e.estado === "solo_sigrid" ? " checked" : ""}>`
+    : "";
+  const pct = (v) => (v === null || v === undefined ? "—" : fmtPct(v));
+  const obra = `${e.cod} ${e.descripcion}${e.es_postventa ? " (postventa)" : ""}`;
+  const detalle = [e.parte_cod ? `parte ${e.parte_cod}` : "",
+    e.partida_cod ? `partida ${e.partida_cod}` : "", e.motivo || ""]
+    .filter(Boolean).join(" · ");
+  return `<tr><td>${casilla}</td><td>${escapeHtml(obra)}</td>` +
+    `<td>${escapeHtml(textoEstadoSigrid(e.estado))}</td>` +
+    `<td>${pct(e.pct_cuadrante)}</td><td>${pct(e.pct_sigrid)}</td>` +
+    `<td>${escapeHtml(detalle)}</td></tr>`;
+}
+
+function pintarTraerSigrid(datos) {
+  const resumen = [
+    `${datos.lineas_leidas} líneas leídas en los partes`,
+    `${datos.excluidas_pruebas} de la obra de pruebas`,
+    `${datos.de_vinculados} de recursos vinculados`,
+    `${datos.fuera_maestro} de recursos fuera del maestro`,
+  ].join(" · ");
+  let html = `<h2>Porcentajes en Sigrid · ${String(state.mes).padStart(2, "0")}/${state.anio}</h2>` +
+    `<p>${escapeHtml(resumen)}</p>`;
+  [datos.motivo_postventa, datos.motivo_var].filter(Boolean).forEach((m) => {
+    html += `<p class="aviso">${escapeHtml(m)}</p>`;
+  });
+  const trabajadores = datos.trabajadores || [];
+  if (!trabajadores.length) {
+    html += "<p>Ningún trabajador del cuadrante tiene porcentajes en Sigrid este mes.</p>";
+  }
+  let casillas = 0;
+  trabajadores.forEach((t) => {
+    html += `<h3>${escapeHtml(`${t.cod} · ${t.nombre}`)}</h3>` +
+      `<table class="tabla-reg"><thead><tr><th></th><th>Obra</th>` +
+      `<th>Estado</th><th>Cuadrante</th><th>Sigrid</th><th>Detalle</th>` +
+      `</tr></thead><tbody>`;
+    t.entradas.forEach((e) => {
+      if (e.estado === "distinta" || e.estado === "solo_sigrid") casillas += 1;
+      html += filaEntradaSigrid(t, e);
+    });
+    html += "</tbody></table>";
+  });
+  const noTraidas = datos.no_traidas || [];
+  if (noTraidas.length) {
+    html += `<h3>No se traen (${noTraidas.length})</h3><ul>` +
+      noTraidas.map((n) => `<li>${escapeHtml(
+        `parte ${n.parte_cod || "—"} · obra ${n.obra_cod || "—"} · recurso ` +
+        `${n.recurso_ide}: ${n.motivo}`)}</li>`).join("") + "</ul>";
+  }
+  html += `<div class="pie-modal">` +
+    `<button class="btn secondary" id="btn-traer-cerrar">Cerrar</button>` +
+    (casillas ? `<button class="btn primary" id="btn-traer-aceptar">Aceptar las marcadas</button>` : "") +
+    "</div>";
+  return html;
+}
+
+function aceptadasMarcadas() {
+  return Array.from(document.querySelectorAll("#modal-registro .chk-traer:checked"))
+    .map((c) => ({
+      trabajador_ide: Number(c.dataset.trabajador),
+      obra_ide: Number(c.dataset.obra),
+      es_postventa: c.dataset.postventa === "1",
+    }));
+}
+
+// Sin pulsar «Aceptar las marcadas» no se manda nada (R21, R28).
+function abrirTraerSigrid(datos) {
+  abrirModal(pintarTraerSigrid(datos));
+  const aceptar = $("#btn-traer-aceptar");
+  if (aceptar) {
+    aceptar.addEventListener("click", () => {
+      const marcadas = aceptadasMarcadas();
+      if (!marcadas.length) {
+        toast("No hay ninguna entrada marcada", true);
+        return undefined;
+      }
+      return traerDeSigrid(marcadas);
+    });
+  }
+  $("#btn-traer-cerrar").addEventListener("click", cerrarModal);
 }
 
 async function cambiarEstadoPeriodo(accion) {
@@ -2845,7 +2976,10 @@ async function cambiarEstadoPeriodo(accion) {
 function enlazarEventos() {
   $("#btn-mes-prev").addEventListener("click", () => moverMes(-1));
   $("#btn-mes-next").addEventListener("click", () => moverMes(1));
-  $("#btn-sync").addEventListener("click", sincronizar);
+  // F-054 (R1): tras un sync con éxito, se compara con Sigrid. La flecha
+  // resuelve la función al pulsar (los arneses de `enlazarEventos` no la
+  // cargan).
+  $("#btn-sync").addEventListener("click", () => sincronizarYTraer());
   $("#btn-copiar-mes").addEventListener("click", copiarMesAnterior);
   $("#btn-completar").addEventListener("click", abrirCompletar);
   $("#btn-export").addEventListener("click", () => {

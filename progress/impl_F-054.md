@@ -17,7 +17,9 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
 | T6 `aceptar_entrada` (upsert de la clave) | `69583c9` | hecha |
 | T7 caso de uso `TraerDeSigrid` | `ef06704` | hecha |
 | T8 ruta `POST …/traer-sigrid` | ver git log | hecha |
-| T9-T21 | — | pendientes |
+| T9 front A (`sincronizarYTraer`, ventana) | ver git log | hecha |
+| T10 | — | MANUAL del líder (ver abajo) |
+| T11-T21 | — | pendientes |
 
 ## Ficheros tocados (hasta T8)
 
@@ -66,6 +68,15 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
     `id` y traza por fila) en vez de la de `test_f024_cuadrante_empresa.py`
     (design §9): la de F-024 no tiene transacción ni traza, y R19/R22/R23 no
     se podrían comprobar con ella.
+11. Front: `#btn-sync` se enlaza con `() => sincronizarYTraer()` (no con la
+    función directa): los arneses de `enlazarEventos` de
+    `test_f050_t15e_sombreado.py`, `test_f029_seleccion.py` y
+    `test_f050_m2_arreglos.py` (ajenos, fuera de la lista cerrada) solo
+    definen `sincronizar`, y con la referencia directa el primero fallaba
+    con `ReferenceError: sincronizarYTraer is not defined`. Con la flecha
+    pasan sin tocarlos.
+12. La ventana usa el overlay `#modal-registro` (`abrirModal`), el único
+    modal genérico; sin casillas no se pinta «Aceptar las marcadas».
 
 ## Fase RED (trazas reales; comando y salida)
 
@@ -93,11 +104,17 @@ se apartó temporalmente para la RED (error de recogida real).
   `E assert 404 == 200` / `E AttributeError: 'Contenedor' object has no
   attribute 'traer_sigrid'` → `14 failed, 8 passed, 1 warning in 29.07s`
   (los 8 que pasan son los de T5).
+- T9 front `test_f054_traer_front.py` (`.venv/Scripts/python -m pytest
+  tests/test_f054_traer_front.py -q -p no:cacheprovider` desde el front):
+  `E AssertionError: no existe la función sincronizarYTraer en app.js` (10),
+  `… pintarTraerSigrid …` (1) y el enlace de `#btn-sync` → `12 failed in 0.84s`.
 
 ## Resultados (GREEN)
 
 - T1-T3 transfer: 48 passed. T4 36 passed. T7 `test_f054_aceptar.py` 25
-  passed. T8 `test_f054_rutas.py` 22 passed.
+  passed. T8 `test_f054_rutas.py` 22 passed. T9 front 12 passed (+
+  `test_f061_recarga.py` sin cambios, 3 passed); suite front entera
+  `470 passed` tras el arreglo del punto 11.
 - Suite api entera tras T5: `1381 passed in 140.12s`; tras T7: `1406 passed
   in 113.38s`; tras T8: `1420 passed in 108.99s`.
 
