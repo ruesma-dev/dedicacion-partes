@@ -19,6 +19,8 @@ from __future__ import annotations
 import json
 import re
 
+import pytest
+
 from tests.test_f030_tabla_incidencias import DOM_TEXTO
 from tests.test_f042_sugerencias import JS, _funcion, _node
 
@@ -98,7 +100,7 @@ def _programa(api: str, cuerpo: str) -> object:
         "})();"]))
 
 
-def _api(sync="ok", traer="ok", datos=DATOS) -> str:
+def _api(sync="ok", traer="ok", datos=DATOS, estado=0) -> str:
     return "\n".join([
         "async function api(ruta, op) {",
         "  pedidas.push([ruta, op && op.body ? JSON.parse(op.body) : null]);",
@@ -106,6 +108,8 @@ def _api(sync="ok", traer="ok", datos=DATOS) -> str:
          "throw new Error('sin sigrid');"),
         f"    return {SYNC_OK}; }}",
         f"  if ('{traer}' === 'falla') throw new Error('transfer caido');",
+        f"  if ({estado}) throw Object.assign(new Error('periodo'),",
+        f"    {{ status: {estado} }});",
         "  const d = " + json.dumps(datos, ensure_ascii=False) + ";",
         "  return op && JSON.parse(op.body).aceptar.length ? Object.assign(d,",
         "    { aceptadas: 1, rechazadas: [{ trabajador_ide: 10, obra_ide: 678,",
@@ -271,3 +275,36 @@ def test_f054_r28_el_texto_de_vacio_solo_sin_trabajadores():
     lleno = _programa(_api(), "await traerDeSigrid([]);")["modal"]["html"]
     texto = "Ningún trabajador del cuadrante tiene porcentajes en Sigrid"
     assert texto in vacio and texto not in lleno
+
+
+# ---- O5 (review 1): mes cerrado o sin periodo, sin aviso rojo ---- #
+@pytest.mark.parametrize("estado", [404, 409])
+def test_f054_o5_comparar_en_mes_cerrado_o_sin_periodo_no_avisa(estado):
+    r = _programa(_api(estado=estado), "await traerDeSigrid([]);")
+    assert r["avisos"] == []
+    assert r["modal"]["abierto"] is False
+
+
+@pytest.mark.parametrize("estado", [404, 409, 502])
+def test_f054_o5_aceptar_si_avisa_del_error(estado):
+    """El 409 al aceptar es un cierre entre medias: no se ha guardado."""
+    r = _programa(_api(estado=estado), """
+        await traerDeSigrid([{ trabajador_ide: 10, obra_ide: 713,
+                               es_postventa: false }]);""")
+    assert r["avisos"] == [["No se pudo comparar con Sigrid: periodo", True]]
+
+
+def test_f054_o5_comparar_con_otro_error_si_avisa():
+    r = _programa(_api(estado=502), "await traerDeSigrid([]);")
+    assert r["avisos"] == [["No se pudo comparar con Sigrid: periodo", True]]
+
+
+def test_f054_o5_api_deja_el_codigo_http_en_el_error():
+    programa = "\n".join([
+        "function conEmpresa(r) { return r; }",
+        "async function fetch() { return { ok: false, status: 409,",
+        "  json: async () => ({ error: 'cerrado' }) }; }",
+        _funcion("api"),
+        "api('/x').catch((e) => process.stdout.write(JSON.stringify(",
+        "  [e.message, e.status])));"])
+    assert _node(programa) == ["cerrado", 409]

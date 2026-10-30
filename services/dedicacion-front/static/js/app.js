@@ -271,7 +271,8 @@ async function api(ruta, opciones = {}) {
   try { cuerpo = await respuesta.json(); } catch (e) { cuerpo = null; }
   if (!respuesta.ok) {
     const mensaje = (cuerpo && cuerpo.error) || `Error HTTP ${respuesta.status}`;
-    throw new Error(mensaje);
+    // F-054: el código, para quien distinga el motivo (`traerDeSigrid`).
+    throw Object.assign(new Error(mensaje), { status: respuesta.status });
   }
   return cuerpo;
 }
@@ -2848,6 +2849,9 @@ async function traerDeSigrid(aceptar) {
       method: "POST", body: JSON.stringify({ aceptar }),
     });
   } catch (err) {
+    // R2: mes cerrado (409) o sin periodo (404): nada que comparar, no es
+    // un error. Al aceptar sí: es un cierre entre medias, no se guardó.
+    if (!aceptar.length && [404, 409].includes(err.status)) return;
     toast(`No se pudo comparar con Sigrid: ${err.message}`, true);
     return;
   }
@@ -3666,16 +3670,19 @@ async function registroEjecutar() {
         .filter((c) => c.accion === "pendiente").length;
     });
     cerrarModal();
+    // F-054 (R35): una sobrante sin poner a 0 no sale como éxito.
+    const ceroOmitidas = r.sobrantes_a_cero ? r.sobrantes_a_cero.omitidas : [];
     toast(`Sigrid: ${esc} escritas · ${omi} omitidas · ` +
       `${pend} pendientes de confirmar${pend ? " (repite y marca pisar)" : ""}` +
       (vinOmi ? ` · ${vinOmi} recursos vinculados omitidos` : "") +
       // F-054 (R35): lo puesto a 0 y lo que no se pudo.
       (r.sobrantes_a_cero
         ? ` · ${r.sobrantes_a_cero.puestas.length} puestas a 0` +
-          (r.sobrantes_a_cero.omitidas.length
-            ? ` · ${r.sobrantes_a_cero.omitidas.length} sin poner a 0` : "")
+          (ceroOmitidas.length
+            ? ` · ${ceroOmitidas.length} sin poner a 0: ` +
+              ceroOmitidas.map((x) => x.motivo).join("; ") : "")
         : ""),
-      !r.ok);
+      !r.ok || ceroOmitidas.length > 0);
   } catch (err) { toast(err.message, true); }
 }
 

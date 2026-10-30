@@ -170,7 +170,8 @@ def test_f054_r35_marcadas_van_en_sobrantes_a_cero_y_no_en_pisar():
     assert r["body"]["sobrantes_a_cero"] == [SOBRANTES[1]]
     assert not any(k.startswith("cero:") for k in r["body"]["pisar_claves"])
     assert "1 puestas a 0" in r["toasts"][-1][0]
-    assert "1 sin poner a 0" in r["toasts"][-1][0]
+    assert "1 sin poner a 0: x" in r["toasts"][-1][0]
+    assert r["toasts"][-1][1] is True       # O5: no sale como éxito
 
 
 def test_f054_r33_repreflight_de_una_obra_conserva_seccion_y_marcadas():
@@ -202,3 +203,23 @@ def test_f054_r33_el_texto_de_cada_sobrante_en_su_seccion():
     assert "TF TF-10 de GONZALEZ PANIAGUA · obra 0713" in v7002
     for bloque in (v7001, v7002, v7003):
         assert "parte PT26/00300 · MADM · CI.1.5 · 20%" in bloque, bloque
+
+
+def test_f054_r35_o5_sin_omitidas_es_exito_y_los_motivos_se_unen():
+    r = _escenario("""
+      await abrir(D.pf);
+      poner("chk-cero cero:7001", true);
+      await registrar({ok: true, obras: [],
+        sobrantes_a_cero: {puestas: [{hmores_ide: 7001}], omitidas: []}});
+      obs.bien = toasts[toasts.length - 1];
+      await abrir(D.pf);
+      poner("chk-cero cero:7001", true);
+      await registrar({ok: true, obras: [],
+        sobrantes_a_cero: {puestas: [], omitidas: [
+          {hmores_ide: 1, motivo: "cambió"},
+          {hmores_ide: 2, motivo: "cerrado"}]}});
+      obs.mal = toasts[toasts.length - 1];
+    """, {"pf": _pf()})
+    assert r["bien"][1] is False and "sin poner a 0" not in r["bien"][0]
+    assert r["mal"][1] is True
+    assert "2 sin poner a 0: cambió; cerrado" in r["mal"][0]
