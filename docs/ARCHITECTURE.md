@@ -331,6 +331,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
    - **Recursos vinculados:** sus líneas no suman a la jornada del
      trabajador; cada vinculado tiene su propia capacidad, por su hora
      ([`#regla-vinculado`](#regla-vinculado)).
+   - **Sobrantes:** una línea del parte en una obra que la plataforma no
+     tiene suma como cualquier otra hasta que se pone a 0
+     ([`#regla-obra-cero`](#regla-obra-cero)).
 
    *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
    decisión D2, `specs/F-002-reglas-postventa-conflicto/requirements.md` §2.*
@@ -1066,12 +1069,100 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     como el principal…»; «ok, preferir CI.4 en empate»; D1-D5 con la A) ·
     F-068, `specs/F-068-propuesta-vinculado-como-titular/requirements.md`.*
 
+    Al sincronizar, de sus líneas en Sigrid no se trae nada
+    ([`#regla-traer-sigrid`](#regla-traer-sigrid)); al registrar, la suya
+    en una obra que la plataforma no le da es una sobrante como la de su
+    trabajador ([`#regla-obra-cero`](#regla-obra-cero)).
+
+23. <a id="regla-traer-sigrid"></a>**Al sincronizar, lo que ya hay en los
+    partes de Sigrid se compara con el cuadrante y solo entra lo que el
+    usuario acepta.** Tras un «Sincronizar Sigrid» con éxito, el front pide
+    `POST /api/v1/periodos/{a}/{m}/traer-sigrid` (sin `aceptar`, solo
+    compara; nada se escribe).
+
+    - **Lee el transfer, decide la api.** El transfer
+      (`POST /api/porcentajes/existentes`) hace **una** lectura de las
+      líneas mensuales (`M*`, `can` ≠ 0) de los partes de trabajo de obra
+      del periodo y de la empresa de las obras, con su parte y su estado, y
+      las traduce a su entrada del cuadrante: normal (la obra), postventa
+      (la obra de origen que casa con la partida, con el casado de
+      [`#regla-p5`](#regla-p5)) o VAR (`obra.ide` = −`var_paride`,
+      [`#regla-var`](#regla-var)); las de la obra de pruebas solo se
+      cuentan. Los catálogos de postventa y VAR, solo si alguna línea es
+      de esa obra. La api (`domain/traer_sigrid.py`, puro) decide **por
+      recurso**: un trabajador visible y vigente en el mes da entradas; un
+      recurso de `recurso_vinculado` solo cuenta (`de_vinculados`, nunca es
+      asignación ni subfila); el resto, `fuera_maestro`.
+    - **Una entrada por trabajador y clave** (obra, modo): suma sus líneas;
+      % = suma de `can` × 100 a centésimas. Con partidas distintas (normal)
+      o fuera de (0, 100], `no_traducible`. Estado: `igual` (la épsilon de
+      la regla 4; la partida no cuenta), `distinta`, `solo_sigrid`,
+      `solo_cuadrante` o `no_traducible`.
+    - **Aceptar es por entrada.** Cada aceptada `distinta` o `solo_sigrid`
+      pisa **solo esa** línea, en su sitio (mismo `id`, sus subfilas de
+      vinculado no cambian) o la crea; las demás vuelven con su motivo. La
+      partida: normal, la de sus líneas como elegida; postventa,
+      automática; VAR, la fija. Sin propuesta guardada. Guarda la traza de
+      ya registrada (`sigrid_hmores_ide` = el menor `ide` de sus líneas,
+      parte, «traída de Sigrid»): al registrar sale **ya registrada**
+      ([`#regla-cero`](#regla-cero)). Guardar luego la fila pierde la traza
+      y el registro pide un pisado que edita (nunca duplica). Una
+      transacción; un evento `SIGRID` por trabajador con su usuario, que se
+      deshace como los demás ([`#regla-deshacer`](#regla-deshacer)). Tras
+      aceptar se encolan las propuestas de los escritos.
+    - En el front, una ventana por trabajador: casilla en las `distinta`
+      (desmarcada) y en las `solo_sigrid` (marcada, desmarcable); «Aceptar
+      las marcadas» repite la petición con `aceptar`. El front no compara.
+
+    *Decidido por Pablo Gris el 2026-10-24 («al sincronizar, puedo querer
+    trarme algunas laineas(obras) de sigrid y otras no. si acepto en la
+    plataforma piso solo esas lineas del trabjador»; «d12, con la casilla
+    marcada por defecto, aunque se puede desmarcar») y revisado el
+    2026-10-29 (D18 = A: de los vinculados no se trae nada) · F-054,
+    `specs/F-054-sync-trae-porcentajes/requirements.md`.*
+
+24. <a id="regla-obra-cero"></a>**Al registrar, una obra en la que la
+    plataforma no tiene nada es un 0 %.** El preflight del periodo o de un
+    trabajador (no el de una obra sola) lee además, en la primera ronda
+    del lote, las líneas mensuales del periodo de los trabajadores de las
+    líneas (`M*`) y, si las traen, de sus vinculados (cualquier hora): una
+    lectura más, dos con vinculados.
+
+    - **Sobrante** es la línea de un recurso del lote que **ninguna** acción
+      suya cubre, en cualquier estado (también omitida): normal, si ninguna
+      va a esa obra; en la obra de postventa, si ninguna de postventa
+      resolvió esa partida; en la VAR, si ninguna entrada suya es esa
+      partida. En pruebas solo cuentan las de la obra de pruebas, cubiertas
+      si una acción las reconoce (ya registrada, choque, al 0) o tiene su
+      partida. Los vinculados, igual con sus acciones (la `MESVE` de un
+      vinculado nunca es sobrante de su trabajador). Solo de trabajadores
+      con alguna línea de %.
+    - **Se pregunta por línea** (`cero:{hmores_ide}`), desmarcada. La de un
+      parte que no está En registro o con `synckey` de otro sistema es un
+      aviso sin casilla; la nuestra huérfana y la `porcentajes:vin:`, sí.
+    - **Confirmada, se pone a 0 en su sitio** (`can` y `tot`), **antes** de
+      las escrituras por obra, con la relectura y la guarda de
+      [`#regla-cero`](#regla-cero) (recurso, hora —`M*` o la del
+      vinculado—, `can` y `synckey` del preflight, sin enlaces, En
+      registro; en pruebas, solo en la obra de pruebas). La que no la
+      cumple vuelve omitida con su motivo. Nunca `DELETE`; log antes y
+      después. Es aparte del `a_cero` por obra de la regla 20.
+    - **Capacidad** ([`#regla-capacidad`](#regla-capacidad)): en el
+      preflight una sobrante suma como otra línea del parte; `ejecutar`
+      relee tras ponerlas a 0: la puesta a 0 no suma y la omitida sí.
+
+    *Decidido por Pablo Gris el 2026-10-24 («al registrar, si el
+    trabajador no tiene nada en una obra es como un 0%. si en sigrid si
+    tiene debe preguntar si lo pisa (y lo deja a 0) o no») y revisado el
+    2026-10-29 (D16 = C: también los vinculados; D17 = A: la casilla sale
+    desmarcada) · F-054, `specs/F-054-sync-trae-porcentajes/requirements.md`.*
+
 ## Acceso a datos y sistemas externos
 
 | Sistema | Quién | Modo | Notas |
 |---|---|---|---|
 | `sigrid-api` (Function App) | api | **solo lectura** (`POST /api/sql/read`) | maestros de empleados y obras y catálogo de empresas (`auxemp`, F-032); consultas parametrizadas en `config/config.yaml` |
-| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura). Inserta y edita líneas `M*` en su sitio, nunca las borra ([`#regla-cero`](#regla-cero)). Lee además partes del periodo con su estado, cuentas analíticas del centro y cuentas de partida ([`#regla-analitica`](#regla-analitica)) y el historial de partidas de los recursos ([`#regla-partida`](#regla-partida)) y de los vinculados en la obra ([`#regla-vinculado`](#regla-vinculado)); un `truncated` es error |
+| `sigrid-api` | transfer | **escritura** | único punto de escritura del sistema; base `ruesma` siempre (`ruesma_rep` es réplica de solo lectura). Inserta y edita líneas `M*` en su sitio, nunca las borra ([`#regla-cero`](#regla-cero)). Lee además partes del periodo con su estado, cuentas analíticas del centro y cuentas de partida ([`#regla-analitica`](#regla-analitica)) y el historial de partidas de los recursos ([`#regla-partida`](#regla-partida)) y de los vinculados en la obra ([`#regla-vinculado`](#regla-vinculado)). Lee las líneas mensuales del periodo para traerlas al cuadrante ([`#regla-traer-sigrid`](#regla-traer-sigrid)) y para las sobrantes del registro, que **pone a 0** en su sitio sin borrar ([`#regla-obra-cero`](#regla-obra-cero)); un `truncated` es error |
 | PostgreSQL `dedicacion` | api | lectura y escritura | en local, `localhost`. Desplegado, **base propia dentro del servidor compartido `psql-albaranes-rs9k2`** (decisión del humano, 2026-08-20), esquema `public`, rol de aplicación propio y `PG_SSLMODE=require` |
 | `dedicacion-transfer` | api | HTTP interno | `TRANSFER_BASE_URL`, timeout 180 s |
 
