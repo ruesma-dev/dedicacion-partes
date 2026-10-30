@@ -131,15 +131,8 @@ cifra**: T10 no medido; si T19 supera el 15 %, PARA (design §6.4).
 - **O6. Deshacer un `SIGRID`** va por `reemplazar`, que recrea toda la fila sin traza:
   la otra línea del trabajador pierde `sigrid_hmores_ide` y pasa a pisado (R24), sin
   duplicar. Comprobarlo en T18, paso 2.
-- **O7.** La relectura del periodo antes del `commit` no bloquea la fila: queda una
-  ventana mínima entre comprobar y confirmar.
 
 ## Cambios requeridos
 
 1. `progress/current.md`: bloqueo 1.
 2. `progress/current.md`: bloqueo 2.
-
-## Automejora (propuesta, no aplicada)
-
-C4 pide los MANUAL en `current.md` y las tasks ya los llevan: valdría exigir allí un
-enlace a la tarea, para no mantener dos copias. Lo decide el humano.
