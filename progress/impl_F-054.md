@@ -198,12 +198,12 @@ Cada tarea y observación en verde antes de su commit; final en «Evidencias».
 
 ## Evidencias
 
-`bash harness/init.sh` en MEDIDO_EN: código 0, sin `[KO]`; `ruff` sin avisos nuevos (O1).
+`bash harness/init.sh` en `36a7d4b`: código 0, sin `[KO]`; `ruff` sin avisos nuevos (O1).
 
 | Evidencia | Resultado real |
 |---|---|
-| Tests | api `1467 passed` (179,77 s); transfer `1845 passed` (60,66 s); front `479 passed` (379,40 s, con la máquina ocupada; 49,51 s antes); raíz `418 passed, 1 skipped` (116,73 s) |
-| Cobertura de líneas cambiadas | **99,5 %** (744/748, umbral 80 %). No mide JS |
+| Tests | api `1469 passed` (154,78 s); transfer `1849 passed` (64,92 s); front `488 passed` (196,17 s); raíz `418 passed, 1 skipped` (202,70 s) |
+| Cobertura de líneas cambiadas | **99,5 %** (748/752, umbral 80 %). No mide JS |
 | Mutación Python | tras la review: 266 generados, **266 muertos, 0 supervivientes**, 0 timeouts, 4 workers, 4837 s, SHA `c70eb61`: `progress/mutacion_F-054.md` (antes: `c614be3`, 262/262) |
 | Mutación `app.js` | manual, **69 + 14 (O5) mutantes, 0 supervivientes**: `progress/mutacion_manual_F-054.md` |
 
