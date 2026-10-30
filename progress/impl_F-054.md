@@ -8,55 +8,26 @@ Sin escrituras en Sigrid ni llamadas a Azure: todo con dobles.
 
 ## Estado por tarea
 
-| Tarea | Commit | Estado |
-|---|---|---|
-| T1 lectura `lineas_mensuales_del_periodo` (transfer) | `d12ec81` | hecha |
-| T2 `porcentajes_existentes.py` (traducción) | `bf2361a` | hecha |
-| T3 `POST /api/porcentajes/existentes` | `f99e0cd` | hecha |
-| T4 dominio puro `domain/traer_sigrid.py` (api) | `3ba3f37` | hecha |
-| T5 puerto, error 502, `TransferClient.porcentajes_existentes`, `TipoEvento.SIGRID` | `50f5d2e` | hecha |
-| T6 `aceptar_entrada` (upsert de la clave) | `69583c9` | hecha |
-| T7 caso de uso `TraerDeSigrid` | `ef06704` | hecha |
-| T8 ruta `POST …/traer-sigrid` | `1c8d4a5` | hecha |
-| T9 front A (`sincronizarYTraer`, ventana) | `ccad4db` | hecha |
-| T10 | — | MANUAL del líder (ver abajo) |
-| T11 `reglas_obra_cero.py` y `Sobrante` | `892d93f` | hecha |
-| T12 `preflight_completo`, ronda A, `completo`/`sobrantes` | `eaaca4b` | hecha |
-| T13 `PonerACero` y `POST /api/registro/poner-a-cero` | `60a7dab` | hecha |
-| T14 api B (`preflight` completo, `ejecutar` con `sobrantes_a_cero`) | `d382ae7` | hecha |
-| T15 front B (sección de sobrantes, `sobrantes_a_cero`) | `f5a9bb8` | hecha |
-| T16 documentación y `ANCLAS` | `95cc089` | hecha |
-| T17 cobertura y mutación (55 + 9 supervivientes matados con tests) | `e72d22c`, `c614be3`, `1c16454` | hecha |
-| T18-T20 | — | MANUAL (ver abajo) |
-| T21 `init.sh` en verde | ver «Evidencias» | hecha |
+Hechas, un commit cada una: T1 `d12ec81`, T2 `bf2361a`, T3 `f99e0cd`, T4
+`3ba3f37`, T5 `50f5d2e`, T6 `69583c9`, T7 `ef06704`, T8 `1c8d4a5`, T9
+`ccad4db`, T11 `892d93f`, T12 `eaaca4b`, T13 `60a7dab`, T14 `d382ae7`, T15
+`f5a9bb8`, T16 `95cc089`, T17 `e72d22c`/`c614be3`/`1c16454`, T21. MANUAL:
+T10, T18-T20 (abajo). Observaciones de la review 1: O1 `e881a17`, O4
+`56dd403`, O2 `5d426b5`, O5 `97e5fed` (sección propia).
 
 ## Ficheros tocados
 
-- transfer: `infrastructure/sigrid/sigrid_write_client.py`,
-  `domain/models/registro_models.py` (`LineaMensualSigrid`),
-  `application/services/porcentajes_existentes.py` (nuevo),
-  `interface_adapters/api/app.py` (`ExistentesIn` y ruta).
+- transfer: `sigrid_write_client.py`, `registro_models.py`, `app.py`;
+  nuevos `porcentajes_existentes.py`, `reglas_obra_cero.py`,
+  `poner_a_cero.py`; `lecturas_lote.py` y `registro_lote.py` (ronda A,
+  `preflight_completo`). `registro_pipeline.py` NO se toca.
 - api: `domain/{models,errors,ports,traer_sigrid}.py`,
-  `application/traer_sigrid.py` (nuevo),
-  `infrastructure/transfer/transfer_client.py`,
-  `infrastructure/db/{repositories,orm_models}.py` (`aceptar_entrada`,
-  `PgVinculadoRepository.ides`, relectura del periodo; el ORM solo el
-  comentario de la traza), `interface_adapters/api/{app,routes,schemas,deps}.py`.
-- B, transfer: `application/services/reglas_obra_cero.py` (nuevo),
-  `application/services/lecturas_lote.py` (ronda A `mensuales`),
-  `application/pipelines/registro_lote.py` (`preflight_completo`),
-  `application/pipelines/poner_a_cero.py` (nuevo), `app.py` (`completo`,
-  `poner-a-cero`). `registro_pipeline.py` NO se toca.
-- B, api: `application/registro_sigrid.py`, `transfer_client.py`, `routes.py`.
-- front: `static/js/app.js` (T9 y T15).
-- docs: `ARCHITECTURE.md` (puntos 23 y 24, remisión en 22, capacidad,
-  tabla de acceso), `INTEGRACION.md` (§1, §5, §7).
-- tests nuevos: transfer `test_f054_{lectura_mensuales,traduccion,endpoint,
-  obra_cero,poner_a_cero}.py`; api `test_f054_{comparar,rutas,aceptar,
-  registro_cero}.py`; front `test_f054_{traer_front,modal_cero}.py`.
-- ajenos, solo la lista cerrada: `ANCLAS` de `test_f002_fuente_unica.py`;
-  dobles `preflight_lote` de `test_f022_…`, `test_f024_…` y `test_f055_…`
-  (aceptan `completo=False`; ninguna aserción cambia).
+  `application/{traer_sigrid,registro_sigrid}.py`, `transfer_client.py`,
+  `db/{repositories,orm_models}.py`, `api/{app,routes,schemas,deps}.py`.
+- front `app.js`; docs `ARCHITECTURE.md` (puntos 23-24) e `INTEGRACION.md`.
+- tests nuevos `test_f054_*` en los tres servicios; ajenos, solo la lista
+  cerrada (`ANCLAS`; dobles `preflight_lote` de F-022/F-024/F-055 con
+  `completo=False`, sin cambiar aserciones).
 
 ## Decisiones de diseño y desviaciones (justificadas)
 
@@ -121,6 +92,32 @@ Sin escrituras en Sigrid ni llamadas a Azure: todo con dobles.
 19. T16: la remisión de `#regla-vinculado` es un párrafo tras la firma del
     punto 22, no una viñeta, para no tocar el texto de F-044.
 
+## Review 1: observaciones recogidas (O3 y O6, aceptadas sin cambio)
+
+- **O1** (`e881a17`): los 54 avisos de `ruff` de la feature, corregidos
+  (comparado por fichero, regla y línea contra `1ed18be`: 309 → 308).
+  `--fix` en los ficheros nuevos, `X | None`, paréntesis en concatenaciones,
+  `noqa` sobrantes fuera; la fixture `api` de F-055 se reexporta con nombre.
+- **O4** (`56dd403`): `cubierta` sin `cod_pruebas` (y la firma del design).
+- **O2** (`5d426b5`): `coberturas_de` marca de postventa la acción (y sus
+  vinculados) de una `Postv-` aunque `omitir` la dejara `destino="obra"`;
+  en la obra de postventa cubre si su partida es la de la línea **o 0** (sin
+  resolver: no se sabe cuál, cubre todas). Así la línea real no sale
+  sobrante y la `Postv-` ya no cubre una normal de su origen. Sin tocar
+  `registro_pipeline.py` ni `reglas_porcentajes.py`; design §6.1 y
+  ARCHITECTURE punto 24 ajustados. Coste: en real una `Postv-` resuelta a 0
+  no existe (sin partida no se resuelve).
+- **O5** (`97e5fed`): `api()` deja `status` en el error; comparar con 404/409
+  no avisa (aceptar sí, es un cierre entre medias); el aviso de registrar da
+  el motivo de cada sobrante omitida y sale en rojo si hay alguna.
+- RED (`pytest tests/test_f054_{obra_cero,traer_front,modal_cero}.py`): O4 `TypeError: cubierta() missing 1 required keyword-only argument:
+  'cod_pruebas'` → `4 failed, 16 passed`. O2 `-k o2`: `AssertionError`
+  (coberturas `obra` ≠ `postventa`), `assert False` y `assert [7001] ==
+  [7002]` → `3 failed, 1 passed`. O5: `assert [['No se pudo...riodo',
+  True]] == []` (×2), `['cerrado', None] == ['cerrado', 409]`, `'1 sin poner
+  a 0: x' in '… · 1 sin poner a 0'`, `assert False is True` → `5 failed, 24
+  passed`.
+
 ## Fase RED (trazas reales; comando y salida)
 
 Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
@@ -169,8 +166,7 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
 
 ## Resultados (GREEN)
 
-Cada tarea en verde antes de su commit; suites enteras tras T14 (api, 1432)
-y T15 (front, 475). Resultado final en «Evidencias».
+Cada tarea y observación en verde antes de su commit; final en «Evidencias».
 
 ## MANUAL pendientes (NO ejecutadas; comando exacto en `tasks.md`)
 

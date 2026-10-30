@@ -132,6 +132,48 @@ Línea base (sin mutar, en verde): 55 passed in 8.98s · Tiempo: 102.5 s
 **Total: 69 mutantes, 69 muertos, 0 supervivientes.** Coste: 806.5 s
 y 102.5 s de reloj.
 
+## Campaña 3 (`97e5fed`, review 1, O5): 14 mutantes, 12 muertos, 1 vivo, 1 dudoso
+
+Las líneas de `app.js` que cambia O5: `api()` deja `status` en el error,
+`traerDeSigrid` calla el 404/409 al comparar y el aviso de registrar da el
+motivo de las omitidas y sale en rojo. Mismo script con la lista de abajo y
+`test_f024_selector.py` añadido a los tests. Línea base `71 passed`.
+
+| Mutante | Fichero:línea | Texto exacto original → mutado | Resultado | Fallos (sin `-x`) | Tests que lo matan |
+|---|---|---|---|---|---|
+| C1 api sin el código en el error | `app.js:275` | `throw Object.assign(new Error(mensaje), { status: respuesta.status });` → `throw new Error(mensaje);` | MUERTO | 1 | test_f054_o5_api_deja_el_codigo_http_en_el_erro
+| C2 se calla también al aceptar | `app.js:2854` | `if (!aceptar.length && [404, 409].includes(err.status)) return;` → `if ([404, 409].includes(err.status)) return;` | MUERTO | 1 | test_f054_o5_aceptar_si_avisa_del_er
+| C3 se calla ante cualquier error al comparar | `app.js:2854` | `if (!aceptar.length && [404, 409].includes(err.status)) return;` → `if (!aceptar.length) return;` | MUERTO | 1 | test_f054_o5_comparar_con_otro_error_si
+| C4 el 404 sí avisa | `app.js:2854` | `if (!aceptar.length && [404, 409].includes(err.status)) return;` → `if (!aceptar.length && [409].includes(err.status)) return;` | MUERTO | 1 | test_f054_o5_comparar_en_mes_cerra
+| C5 el 409 sí avisa | `app.js:2854` | `if (!aceptar.length && [404, 409].includes(err.status)) return;` → `if (!aceptar.length && [404].includes(err.status)) return;` | MUERTO | 1 | test_f054_o5_comparar_en_mes_cerra
+| C6 condición negada | `app.js:2854` | `if (!aceptar.length && [404, 409].includes(err.status)) return;` → `if (aceptar.length && [404, 409].includes(err.status)) return;` | MUERTO | 2 | test_f054_o5_aceptar_si_avisa
+| C7 sin sobrantes_a_cero revienta | `app.js:3674` | `const ceroOmitidas = r.sobrantes_a_cero ? r.sobrantes_a_cero.omitidas : [];` → `const ceroOmitidas = r.sobrantes_a_cero.omitidas;` | SUPERVIVIENTE | 0 | — |
+| C8 sin omitidas siempre | `app.js:3674` | `const ceroOmitidas = r.sobrantes_a_cero ? r.sobrantes_a_cero.omitidas : [];` → `const ceroOmitidas = [];` | MUERTO | 2 | test_f054_r35_marcadas_van_en_sobrantes_a_cero_y_no_
+| C9 sin los motivos | `app.js:3683` | `ceroOmitidas.map((x) => x.motivo).join("; ") : "")` → `"" : "")` | MUERTO | 2 | test_f054_r35_marcadas_van_en_sobrantes_a_cero_y_no_en_pisar, test_f054_r35_o5_sin_omitidas_es_exi
+| C10 motivos sin separar | `app.js:3683` | `ceroOmitidas.map((x) => x.motivo).join("; ") : "")` → `ceroOmitidas.map((x) => x.motivo).join("") : "")` | MUERTO | 1 | test_f054_r35_o5_sin_omitidas_es_exito_y_los_motivos_
+| C11 con omitidas sale como éxito | `app.js:3685` | `!r.ok \|\| ceroOmitidas.length > 0);` → `!r.ok);` | MUERTO | 2 | test_f054_r35_marcadas_van_en_sobrantes_a_cero_y_no_en_pisar, test_f054_r35_o5_sin_omitidas_es_exi
+| C12 siempre como error | `app.js:3685` | `!r.ok \|\| ceroOmitidas.length > 0);` → `true);` | MUERTO | 1 | test_f054_r35_o5_sin_omitidas_es_exito_y_los_motivos_se_unen |
+| C13 un fallo de registro no es error (&&) | `app.js:3685` | `!r.ok \|\| ceroOmitidas.length > 0);` → `!r.ok && ceroOmitidas.length > 0);` | MUERTO | 2 | test_f054_r35_marcadas_van_en_sobrantes_a_cero_y_no_en_pisar, t
+| C14 el borde de omitidas (> 1) | `app.js:3685` | `!r.ok \|\| ceroOmitidas.length > 0);` → `!r.ok \|\| ceroOmitidas.length > 1);` | MUERTO | 0 | — |
+
+- **C7** vivo: ningún test registraba con una respuesta **sin**
+  `sobrantes_a_cero` mirando el aviso (el mutante revienta y sale el
+  `TypeError` en rojo). Test nuevo
+  `test_f054_r35_o5_sin_sobrantes_a_cero_el_aviso_de_siempre` (`870e585`).
+- **C14** salió «MUERTO» con 0 fallos: la campaña llegó al `timeout 590` de
+  la orden y el proceso se cortó. No cuenta; se repite.
+
+## Campaña 4 (`870e585`): C7 y C14, en serie, 2 muertos
+
+Línea base `72 passed`; 103,7 s.
+
+| Mutante | Fichero:línea | Texto exacto original → mutado | Resultado | Fallos (sin `-x`) | Tests que lo matan |
+|---|---|---|---|---|---|
+| C7 sin sobrantes_a_cero revienta | `app.js:3674` | `const ceroOmitidas = r.sobrantes_a_cero ? r.sobrantes_a_cero.omitidas : [];` → `const ceroOmitidas = r.sobrantes_a_cero.omitidas;` | MUERTO | 1 | test_f054_r35_o5_sin_sobrantes_a_cero_el_aviso_de_siempre |
+| C14 el borde de omitidas (> 1) | `app.js:3685` | `!r.ok \|\| ceroOmitidas.length > 0);` → `!r.ok \|\| ceroOmitidas.length > 1);` | MUERTO | 1 | test_f054_r35_marcadas_van_en_sobrantes_a_cero_y_no_en_pisar |
+
+**Total de `app.js`: 69 + 14 mutantes, 0 supervivientes.**
+
 ## Reproducir
 
 Guardar el bloque como `mutacion_manual_f054.py` **fuera del repo** y, desde
@@ -417,4 +459,61 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+```
+
+Campañas 3 y 4 (importa el script de arriba como `mutacion_manual_f054`):
+
+```python
+# mutacion_manual_f054_c3.py (fuera del repo, a propósito)
+"""Mini-campaña de F-054 (O5): las líneas de `app.js` que cambian tras la
+review 1. Mismo mecanismo que `mutacion_manual_f054.py`: reutiliza su
+`correr`, `esc` y `main` con otra lista `M` y sus tests."""
+import mutacion_manual_f054 as base
+
+base.TESTS.append("tests/test_f024_selector.py")
+base.M[:] = [
+    ("C1", "api sin el código en el error",
+     "throw Object.assign(new Error(mensaje), { status: respuesta.status });",
+     "throw new Error(mensaje);"),
+    ("C2", "se calla también al aceptar",
+     "if (!aceptar.length && [404, 409].includes(err.status)) return;",
+     "if ([404, 409].includes(err.status)) return;"),
+    ("C3", "se calla ante cualquier error al comparar",
+     "if (!aceptar.length && [404, 409].includes(err.status)) return;",
+     "if (!aceptar.length) return;"),
+    ("C4", "el 404 sí avisa",
+     "if (!aceptar.length && [404, 409].includes(err.status)) return;",
+     "if (!aceptar.length && [409].includes(err.status)) return;"),
+    ("C5", "el 409 sí avisa",
+     "if (!aceptar.length && [404, 409].includes(err.status)) return;",
+     "if (!aceptar.length && [404].includes(err.status)) return;"),
+    ("C6", "condición negada",
+     "if (!aceptar.length && [404, 409].includes(err.status)) return;",
+     "if (aceptar.length && [404, 409].includes(err.status)) return;"),
+    ("C7", "sin sobrantes_a_cero revienta",
+     "const ceroOmitidas = r.sobrantes_a_cero ? r.sobrantes_a_cero.omitidas : [];",
+     "const ceroOmitidas = r.sobrantes_a_cero.omitidas;"),
+    ("C8", "sin omitidas siempre",
+     "const ceroOmitidas = r.sobrantes_a_cero ? r.sobrantes_a_cero.omitidas : [];",
+     "const ceroOmitidas = [];"),
+    ("C9", "sin los motivos",
+     'ceroOmitidas.map((x) => x.motivo).join("; ") : "")',
+     '"" : "")'),
+    ("C10", "motivos sin separar",
+     'ceroOmitidas.map((x) => x.motivo).join("; ") : "")',
+     'ceroOmitidas.map((x) => x.motivo).join("") : "")'),
+    ("C11", "con omitidas sale como éxito",
+     "!r.ok || ceroOmitidas.length > 0);", "!r.ok);"),
+    ("C12", "siempre como error",
+     "!r.ok || ceroOmitidas.length > 0);", "true);"),
+    ("C13", "un fallo de registro no es error (&&)",
+     "!r.ok || ceroOmitidas.length > 0);",
+     "!r.ok && ceroOmitidas.length > 0);"),
+    ("C14", "el borde de omitidas (> 1)",
+     "!r.ok || ceroOmitidas.length > 0);",
+     "!r.ok || ceroOmitidas.length > 1);"),
+]
+
+if __name__ == "__main__":
+    base.main()
 ```
