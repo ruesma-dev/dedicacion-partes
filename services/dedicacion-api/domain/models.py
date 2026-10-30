@@ -384,3 +384,46 @@ class ResultadoCopia:
     con_carga_previa: int = 0
     sin_datos_origen: int = 0
     lineas_omitidas_obra_inactiva: int = 0
+
+
+@dataclass(frozen=True)
+class LineaSigridTraida:
+    """F-054 (R6, R8-R10): una línea mensual de un parte de Sigrid tal como
+    la devuelve `POST /api/porcentajes/existentes` del transfer: su
+    `hmores.ide`, recurso, obra, parte, hora, `can` (sobre 1), partida y
+    `synckey`, y su entrada ya traducida: `destino` (`normal`, `postventa`
+    o `var`), la obra de origen de la postventa, la partida VAR y, si no se
+    puede traer, el `motivo`. Ver docs/ARCHITECTURE.md#regla-traer-sigrid."""
+
+    hmores_ide: int
+    recurso_ide: int
+    obra_ide: int
+    obra_cod: str | None = None
+    parte_ide: int | None = None
+    parte_cod: str | None = None
+    parte_est: int | None = None
+    en_registro: bool = False
+    hora: str | None = None
+    can: float = 0.0
+    fec: int | None = None
+    paride: int = 0
+    partida_cod: str | None = None
+    partida_res: str | None = None
+    synckey: str | None = None
+    destino: str = "normal"
+    obra_origen_ide: int | None = None
+    var_paride: int | None = None
+    motivo: str | None = None
+
+
+@dataclass(frozen=True)
+class ResultadoExistentes:
+    """F-054 (R27): lo que devuelve el transfer de las líneas del periodo:
+    cuántas leyó, cuántas eran de la obra de pruebas (R5), los motivos de
+    los catálogos de postventa y VAR y las líneas traducidas."""
+
+    lineas_leidas: int = 0
+    excluidas_pruebas: int = 0
+    motivo_postventa: str | None = None
+    motivo_var: str | None = None
+    lineas: tuple[LineaSigridTraida, ...] = ()
