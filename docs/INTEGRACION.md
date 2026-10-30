@@ -535,7 +535,7 @@ Desde F-054 (traer de Sigrid al sincronizar y la obra sin nada = 0 %;
 - La api sirve, **solo para el front**, `POST
   /api/v1/periodos/{anio}/{mes}/traer-sigrid` (sin cuerpo o sin `aceptar`,
   compara y no escribe; con `aceptar: [{trabajador_ide, obra_ide,
-  modo}]`, pisa solo esas entradas y deja un evento `SIGRID` por
+  es_postventa}]`, pisa solo esas entradas y deja un evento `SIGRID` por
   trabajador). `registro/preflight` gana `sobrantes` (solo si hay alguna) y
   `registro/ejecutar` acepta `sobrantes_a_cero` (las sobrantes marcadas,
   tal como las publicó el preflight; otro valor es 422), que se ponen a 0
