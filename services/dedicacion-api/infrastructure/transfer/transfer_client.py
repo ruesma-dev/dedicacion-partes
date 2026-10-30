@@ -52,11 +52,28 @@ class TransferClient:
     def preflight(self, payload: dict) -> dict[str, Any]:
         return self._post("/api/registro/preflight", payload)
 
-    def preflight_lote(self, peticiones: list[dict]) -> dict[str, Any]:
+    def preflight_lote(self, peticiones: list[dict], completo: bool = False
+                       ) -> dict[str, Any]:
         """F-055 (R26): el preflight de varias obras en una llamada
-        (`POST /api/registro/preflight-lote`): `{ok, obras}`."""
+        (`POST /api/registro/preflight-lote`): `{ok, obras}`. F-054 (R31):
+        con `completo`, también `sobrantes`; la clave solo viaja si es
+        `true` (un transfer viejo la ignora y responde como hoy)."""
         return self._post("/api/registro/preflight-lote",
-                          {"peticiones": peticiones})
+                          {"peticiones": peticiones,
+                           **({"completo": True} if completo else {})})
+
+    def poner_a_cero(self, empresa: int, ano: int, mes: int,
+                     lineas: list[dict]) -> dict[str, Any]:
+        """F-054 (R35): pone a 0 las sobrantes confirmadas (`POST
+        /api/registro/poner-a-cero`): `{ok, puestas, omitidas}`. Sin `ok:
+        true`, `RuntimeError` con el motivo: no se sigue escribiendo."""
+        r = self._post("/api/registro/poner-a-cero",
+                       {"empresa": empresa, "ano": ano, "mes": mes,
+                        "lineas": lineas})
+        if r.get("ok") is not True:
+            raise RuntimeError("no se pudieron poner a 0 las líneas "
+                               f"sobrantes: {r.get('error') or r}")
+        return r
 
     def ejecutar(self, payload: dict) -> dict[str, Any]:
         return self._post("/api/registro/ejecutar", payload)

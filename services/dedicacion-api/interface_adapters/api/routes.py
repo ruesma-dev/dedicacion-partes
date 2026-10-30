@@ -27,7 +27,12 @@ from application.use_cases import (
 from application.palabras_incidencia import palabras_por_codigo
 from application.traer_sigrid import TraerDeSigrid
 from config.settings import cargar_config
-from domain.errors import ErrorDominio, ObraNoValida, TrabajadorNoValido
+from domain.errors import (
+    ErrorDominio,
+    LineasInvalidas,
+    ObraNoValida,
+    TrabajadorNoValido,
+)
 from domain.models import EstadoPeriodo, FiltroEmpresa
 from interface_adapters.api.deps import (
     Contenedor,
@@ -571,4 +576,20 @@ def registro_ejecutar(anio: int, mes: int, contenedor: Cont,
         anio, mes, pisar_claves=list(payload.get("pisar_claves") or []),
         overrides=overrides, usuario=str(payload.get("usuario") or "local"),
         trabajador_ide=trabajador_ide,
-        empresa=filtro.empresa)
+        empresa=filtro.empresa,
+        # F-054 (R35): las sobrantes confirmadas, tal como las publicó el
+        # preflight; sin ellas, como hoy.
+        sobrantes_a_cero=_sobrantes_a_cero(payload.get("sobrantes_a_cero")))
+
+
+def _sobrantes_a_cero(valor: Any) -> list[dict] | None:
+    """F-054 (R35): una lista de objetos con su `hmores_ide` entero; otra
+    cosa es 422 sin escribir nada."""
+    if valor is None:
+        return None
+    if not isinstance(valor, list) or not all(
+            isinstance(x, dict) and isinstance(x.get("hmores_ide"), int)
+            and not isinstance(x.get("hmores_ide"), bool) for x in valor):
+        raise LineasInvalidas(
+            "sobrantes_a_cero debe ser una lista de líneas con hmores_ide")
+    return valor

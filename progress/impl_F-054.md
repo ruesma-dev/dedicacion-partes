@@ -16,10 +16,13 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
 | T5 puerto, error 502, `TransferClient.porcentajes_existentes`, `TipoEvento.SIGRID` | `50f5d2e` | hecha |
 | T6 `aceptar_entrada` (upsert de la clave) | `69583c9` | hecha |
 | T7 caso de uso `TraerDeSigrid` | `ef06704` | hecha |
-| T8 ruta `POST …/traer-sigrid` | ver git log | hecha |
-| T9 front A (`sincronizarYTraer`, ventana) | ver git log | hecha |
+| T8 ruta `POST …/traer-sigrid` | `1c8d4a5` | hecha |
+| T9 front A (`sincronizarYTraer`, ventana) | `ccad4db` | hecha |
 | T10 | — | MANUAL del líder (ver abajo) |
-| T11-T21 | — | pendientes |
+| T11 `reglas_obra_cero.py` y `Sobrante` | `892d93f` | hecha |
+| T12 `preflight_completo`, ronda A, `completo`/`sobrantes` | `eaaca4b` | hecha |
+| T13 `PonerACero` y `POST /api/registro/poner-a-cero` | `60a7dab` | hecha |
+| T14-T21 | — | pendientes |
 
 ## Ficheros tocados (hasta T8)
 
@@ -75,6 +78,22 @@ escrito a medida que avanza (dos cortes del entorno: tras T3 y tras T7).
     definen `sincronizar`, y con la referencia directa el primero fallaba
     con `ReferenceError: sincronizarYTraer is not defined`. Con la flecha
     pasan sin tocarlos.
+13. **B, la obra especial por código**: `cubierta` reconoce la obra de
+    postventa, la VAR y la de pruebas por el `obra_cod` de la línea (la
+    lectura va por empresa) en vez de por `ide` (design §6.1 dice
+    `pv_ide, var_ide, pruebas_ide`): el preflight no siempre las resuelve
+    (sin acciones de postventa no lee esa obra) y por código no hace falta
+    ninguna lectura más.
+14. En pruebas, «alguna acción tiene su partida» compara también la
+    partida 0 (sin partida): conservador, una omitida sin partida cubre las
+    líneas sin partida de la 0404 (menos sobrantes, nunca más).
+15. Los recursos de una petición del lote que falla no dan sobrantes: sin
+    su preflight no se sabe qué los cubre.
+16. `PonerACero` reutiliza `_fila` y `_traza` de `registro_pipeline.py`
+    (importados, el fichero no cambia) para el log antes/después de F-051.
+    En pruebas, «en la 0404» = el `hmoide` de la línea está entre los partes
+    del periodo de la obra de pruebas (`partes_del_periodo`). Los lotes de
+    15 son los de `escribir` (`SIGRID_MAX_STATEMENTS`).
 12. La ventana usa el overlay `#modal-registro` (`abrirModal`), el único
     modal genérico; sin casillas no se pinta «Aceptar las marcadas».
 
@@ -108,6 +127,13 @@ se apartó temporalmente para la RED (error de recogida real).
   tests/test_f054_traer_front.py -q -p no:cacheprovider` desde el front):
   `E AssertionError: no existe la función sincronizarYTraer en app.js` (10),
   `… pintarTraerSigrid …` (1) y el enlace de `#btn-sync` → `12 failed in 0.84s`.
+- T11 `test_f054_obra_cero.py` (transfer): `E ModuleNotFoundError: No module
+  named 'application.services.reglas_obra_cero'` → `1 error in 0.49s`.
+- T12 `test_f054_obra_cero.py -k lote`: `E AttributeError: 'RegistroLote'
+  object has no attribute 'preflight_completo'` (7) y `E KeyError:
+  'sobrantes'` (ruta) → `8 failed, 1 passed, 11 deselected`.
+- T13 `test_f054_poner_a_cero.py`: `E ModuleNotFoundError: No module named
+  'application.pipelines.poner_a_cero'` → `1 error in 0.37s`.
 
 ## Resultados (GREEN)
 
@@ -115,6 +141,9 @@ se apartó temporalmente para la RED (error de recogida real).
   passed. T8 `test_f054_rutas.py` 22 passed. T9 front 12 passed (+
   `test_f061_recarga.py` sin cambios, 3 passed); suite front entera
   `470 passed` tras el arreglo del punto 11.
+- T11 12 passed; T12 `test_f054_obra_cero.py` 20 passed y `-k "lote or f055
+  or f044 or f062 or f054"` 655 passed; T13 16 passed; suite transfer
+  entera tras T13: `1821 passed in 23.66s`.
 - Suite api entera tras T5: `1381 passed in 140.12s`; tras T7: `1406 passed
   in 113.38s`; tras T8: `1420 passed in 108.99s`.
 

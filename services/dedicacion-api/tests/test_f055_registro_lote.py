@@ -60,7 +60,7 @@ class _TransferLote(_Transfer):
     def preflight(self, payload):
         raise AssertionError("el preflight va en lote (R26)")
 
-    def preflight_lote(self, peticiones):
+    def preflight_lote(self, peticiones, completo=False):
         self.lotes.append(peticiones)
         if self.lote is not None:
             return self.lote
