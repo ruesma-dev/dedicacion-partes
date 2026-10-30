@@ -409,3 +409,85 @@ def test_f054_r31_o2_lote_postventa_apagada_de_punta_a_punta():
         cli, [(_obra(1), [linea(es_postventa=True)])],
         obra_pruebas_forzar=False, postventa_registrar=False)
     assert [s.hmores_ide for s in sob] == [7002]
+
+
+# ---- D19 (review 2, O7): la `Postv-` omitida tras resolver su partida ---- #
+from application.services.reglas_porcentajes import (  # noqa: E402
+    MOTIVO_POSTVENTA_OFF,
+    ReglasPorcentajes,
+)
+import pytest  # noqa: E402
+
+from domain.models.registro_models import HoraRecurso  # noqa: E402
+
+#: Recurso 10 con `M*`; el 30, solo horas de convenio.
+_HORAS_D19 = {10: [HoraRecurso(5, "MADM", None, 9000.0)],
+              30: [HoraRecurso(1, "HLPE", None, 20.0)]}
+_PARTIDA_D19 = {"ide": 33, "cod": "P33"}
+
+
+def _d19(**kw) -> ReglasPorcentajes:
+    kw.setdefault("partida_postventa", _PARTIDA_D19)
+    return ReglasPorcentajes(_HORAS_D19, **kw)
+
+
+def _lpv(**kw) -> LineaEntrada:
+    return linea(**{"recurso_ide": 10, "es_postventa": True, **kw})
+
+
+def _dpo(a: AccionLinea):
+    return a.accion, a.destino, a.paride, a.partida_cod
+
+
+#: Motivos posteriores a resolver la partida (sin recurso, porcentaje no
+#: numérico o fuera de rango, sin código mensual).
+_DESPUES = [dict(recurso_ide=None), dict(porcentaje="x"),
+            dict(porcentaje=1.5), dict(porcentaje=0), dict(recurso_ide=30)]
+
+
+@pytest.mark.parametrize("kw", _DESPUES)
+def test_f054_d19_decidir_omitida_despues_lleva_su_partida(kw):
+    assert _dpo(_d19().decidir(_lpv(**kw))) == (
+        "omitir", "postventa", 33, "P33")
+
+
+def test_f054_d19_decidir_omitida_antes_sin_partida():
+    casos = [(_d19(), _lpv(empresa=None)),
+             (_d19(motivo_empresa="obra de otra empresa"), _lpv()),
+             (_d19(postventa_registrar=False), _lpv()),
+             (_d19(partida_postventa=None, motivo_postventa="sin hoja"),
+              _lpv()),
+             (_d19(partida_postventa=None), _lpv())]
+    for reglas, lin in casos:
+        assert _dpo(reglas.decidir(lin)) == ("omitir", "obra", 0, None), lin
+    a = _d19(postventa_registrar=False).decidir(_lpv())
+    assert a.motivo == MOTIVO_POSTVENTA_OFF
+
+
+@pytest.mark.parametrize("kw", _DESPUES)
+def test_f054_d19_decidir_omitida_no_postventa_como_hoy(kw):
+    a = _d19().decidir(_lpv(es_postventa=False, **kw))
+    assert _dpo(a) == ("omitir", "obra", 0, None)
+
+
+def test_f054_d19_decidir_escribir_sigue_igual():
+    assert _dpo(_d19().decidir(_lpv())) == ("escribir", "postventa", 33,
+                                            "P33")
+
+
+def _sob_d19(reglas, lin):
+    pf, r = _pf([reglas.decidir(lin)]), lin.recurso_ide
+    return [s.hmores_ide for s in _sob(
+        [_m(1, recurso=r, obra=999, cod=PV, paride=33),
+         _m(2, recurso=r, obra=999, cod=PV, paride=34)],
+        coberturas_de(pf, [lin]))]
+
+
+def test_f054_d19_sobrantes_omitida_despues_cubre_solo_su_partida():
+    assert _sob_d19(_d19(), _lpv(porcentaje=1.5)) == [2]
+    assert _sob_d19(_d19(), _lpv(recurso_ide=30)) == [2]
+
+
+def test_f054_d19_sobrantes_omitida_antes_cubre_todas():
+    assert _sob_d19(_d19(postventa_registrar=False), _lpv()) == []
+    assert _sob_d19(_d19(partida_postventa=None), _lpv()) == []
