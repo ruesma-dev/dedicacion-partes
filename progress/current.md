@@ -14,7 +14,9 @@ y O6 aceptadas sin cambio por el humano («sigue»). Tras ellas: mutación
 Python 266/266 en `c70eb61` y `app.js` 69 + 14 sin supervivientes; último
 commit `5ba183c`. Review 2 APROBADA (`0ddba84`) con una observación, O7;
 el humano eligió la opción (b) el 2026-10-30 («b», «si» al plan): spec
-enmendada (D19, T22, `e1a1902`); **implementer en T22**; después review 3.
+enmendada (D19, T22, `e1a1902` y `83811d9`) y T22 hecha (`abd5514`,
+`fd56da6`, `69647cf`, `84a99b3`; mutación 266/266 en `a781d25` y RM4 a mano
+8/8 en `reglas_porcentajes.py`). **En review 3.**
 **Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T10 (medida base del líder, solo lecturas,
 sobre `ccad4db`), T18 (humano, local, solo lecturas), T19 (humano, modo
 pruebas, única que escribe) y T20 (despliegue transfer → api → front,
@@ -51,7 +53,7 @@ validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 **Para retomar (sesión nueva):** `arnes-base` va 3 commits por delante de
 su `origin/main` (encargos pendientes; push del humano: `git -C
 ../arnes-base push origin main`). Peticiones de arnés pendientes de
-decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** F-054, enmienda O7 (b) (worktree `porcentajes-f054`); después
+decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** F-054 en review 3 (worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
 ## F-054 · en review (2026-10-30)
@@ -80,8 +82,14 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   de resolver la partida (dirección segura, design §6.1 lo describía más
   estrecho). **Decisión del humano, 2026-10-30: opción (b)** («b», y «si»
   al plan): la omitida tras resolver la partida lleva esa partida y cubre
-  solo ella. Spec enmendada (D19, T22; `e1a1902`, `progress/spec_F-054.md`);
-  implementer en T22; luego review 3 antes de T10/T18/T19.
+  solo ella. Spec enmendada (D19, T22; `e1a1902`, `progress/spec_F-054.md`).
+  El implementer paró en T22 (4): el modal pintaría «Postventa» en esa
+  omitida y el preflight publicaría su partida. **El humano, 2026-10-30:**
+  «Aceptar» ese efecto como parte de D19, y «Dejarlo así» para el vinculado
+  omitido, que sigue con `paride` 0 y cubriéndolas todas (asimetría
+  documentada; `83811d9`). T22 hecha: `abd5514` (RED), `fd56da6`, `69647cf`
+  (tests del efecto aceptado), `84a99b3` (informe). **Review 3 lanzada el
+  2026-10-30**; después T10/T18/T19.
 
 ### MANUAL pendientes (comando exacto)
 
@@ -516,7 +524,7 @@ F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-10-30):** F-054, enmienda O7 (b) y review 3;
+F-033 y, detrás, F-017, F-018… **Hoy (2026-10-30):** F-054 en review 3 (O7 = b, D19);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
