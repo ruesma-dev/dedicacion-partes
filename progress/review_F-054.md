@@ -1,80 +1,93 @@
 <!-- progress/review_F-054.md -->
-Revisión incremental desde e005e34 (pasada 2), HEAD `e65194e`; CHECKPOINTS entero sobre el estado actual.
+Revisión incremental desde 0ddba84 (pasada 3), HEAD `9334fd3`; CHECKPOINTS entero sobre el estado actual.
 
-# F-054 · Review 2
+# F-054 · Review 3
 
-**Veredicto: APROBADO (APPROVED).** Los dos bloqueos de la review 1 están
-corregidos y las observaciones recogidas lo están de verdad, cada una con test.
+**Veredicto: CAMBIOS REQUERIDOS (CHANGES_REQUESTED), solo por el rastro.**
+El código de T22 (D19) es correcto, con tests, RED, consumidores verificados
+uno a uno y RM4 reproducido 8/8. Bloquea una línea obsoleta de `current.md` (C2).
 
 **Rigor:** `critico`, declarado en `features.json`. Exige RED, cobertura,
 mutación completa con 0 supervivientes, RM5 y MANUAL con comando exacto.
 
-## Delta revisado (`git diff e005e34..HEAD`, 25 ficheros)
+## Delta revisado (`git diff 0ddba84..HEAD`, 12 ficheros)
 
-- **Bloqueo 1 (C4)** resuelto: `current.md` §«MANUAL pendientes (comando
-  exacto)» trae T10 (`worktree add … ccad4db`, `curl …/health` con
-  `modo_pruebas`, tres pasadas, Cancelar), T18 (el `curl` de `existentes` y
-  los pasos, con O6 en el paso 2), T19 (`prueba_escritura_porcentajes.py
-  estado --ano 2026 --mes 11`, sin marcar / marcando, ≤ 1,15 × T10) y T20
-  (orden, `azure-apps` con `git -C … log -1 -- dedicacion.md`, aviso a `partes`).
-- **Bloqueo 2 (C2)** resuelto: la sección de F-054 es la vigente (en review,
-  O1-O6 decididas, mutación nueva); la de «spec REVISADA» y el `.venv` ya no
-  están. Cabecera: F-054 `in_progress`, en review 2, MANUAL y `azure-apps`
-  pendiente (T20) listados.
-- **O1** recogida: `noqa` sobrantes fuera, `X | None`, imports ordenados, la
-  fixture `api` reexportada con nombre (F811), `PonerACero` sin usar fuera
-  (F401). `init.sh`: ruff 309, igual que `dev` (la review 1 midió 363).
-  `impl_F-054.md` ya no dice «deuda previa». `Decimal("0")` → `Decimal(0)`
-  trajo dos mutantes; uno era hueco real (test de R16 con `0.005` y `0.01`) y
-  el otro se quitó al dejar `Decimal()` en la `Linea` de sondeo (no es guarda
-  defensiva: RM6 no aplica).
-- **O2** recogida (`reglas_obra_cero.py:52-56, 71, 76, 110`): la cobertura de
-  una `Postv-` omitida es de postventa aunque `omitir` deje `destino="obra"`,
-  también la de sus vinculados; en la obra de postventa cubre si su partida es
-  la de la línea o 0. Tests: `test_f054_r31_o2_*` (4), incluido el lote de
-  punta a punta con `POSTVENTA_REGISTRAR=false` (sale 7002, no 7001). Design
-  §6.1 y ARCHITECTURE ajustados. Ver O7.
-- **O4** recogida: `cubierta` sin `cod_pruebas`, firma del design igual.
-- **O5** recogida: `api()` deja `status` en el error; comparar con 404/409 no
-  avisa y aceptar sí; el aviso de registrar une los motivos y sale en rojo si
-  hay omitidas. Tests `test_f054_o5_*` (front) y dos nuevos en `modal_cero`.
-- **O3 y O6** aceptadas sin cambio por el humano; O6 queda en el paso 2 de T18.
-- Hexagonal intacta: `_destino` vive en `application/services`; sin `print`,
-  sin secretos, primera línea con ruta en todo lo tocado.
+- **Código** (`reglas_porcentajes.py:528-573`): `omitir(motivo, **resuelta)`;
+  `resuelta = {destino, paride, partida_cod}` se fija tras P5 y va solo en los
+  cuatro `omitir` posteriores (sin recurso, % no numérico, fuera de rango, sin
+  `M*`). Los anteriores (empresa, motivo de empresa, P5 off, partida sin
+  resolver) siguen con los valores por defecto. `base` no lleva esas claves:
+  no hay `TypeError` por clave duplicada. `escribir` sin cambios. Coincide con
+  T22 y design §6.1.
+- **Tests** `test_f054_obra_cero.py -k d19` (14) y
+  `test_f054_d19_modal_destino_*` (front): cada motivo posterior → `postventa`/33/`P33`;
+  cada anterior y la no `Postv-` → `obra`/0/`None`; `sobrantes` (la otra
+  partida sí, la suya no; la omitida antes, ninguna); la respuesta HTTP con
+  clave `|70001` y el vinculado `postventa`/0; el modal `Postventa`×2/`Obra`×2.
+  RED real en `impl_F-054.md` (`6 failed, 8 passed`; respuesta `1 failed`).
+- **D19 coherente** en requirements (cabecera, §5 R31, §6), design (§3, §6.1,
+  §10, §12), tasks (cabecera, T22), `ARCHITECTURE.md#regla-obra-cero` (texto y
+  firma), `spec_F-054.md` e `impl_F-054.md` (frase de T22 (5) corregida, l. 83).
+  **Salvo `current.md`** (cambio requerido 1).
+- **Consumidores, lector por lector contra el código** (grep de `.destino`,
+  `.paride`, `.partida_cod` en los tres servicios):
+  `registro_pipeline.py` `normales`/`validas` (647, 651) y el bucle de partida
+  (666) filtran `escribir`; `obra_de` (764, 1136, 1413) solo sobre `escribir`,
+  `vin_escribir`, `pendientes`; `clave_conflicto` (910) sobre `grupo` ⊂
+  `pendientes`; `omitidas` (1142) solo `registro_id` y `motivo`.
+  `registro_vinculados.py:245` construye `PartidaTitular` también con la
+  omitida, pero solo la usa `_partida` tras `av.accion == "escribir"` (252).
+  `reglas_vinculados.py:368` copia `destino` y no `paride` (asimetría aceptada).
+  `registro_lote.py`: no los lee. `app.py:365` publica `asdict(a)` y la clave
+  (aceptado). api `_guardar_propuestas` (`registro_sigrid.py:447`) exige
+  `paride` y método de propuesta: la omitida lleva `partida_metodo=None`.
+  `app.js` 3510/3549 pintan Destino (aceptado); la celda Partida de una
+  omitida solo pinta el motivo (3537-3544, 3493), y `.clave` de acción no la
+  lee el front (solo la de conflicto). `prueba_escritura_porcentajes.py:312`
+  (aceptado). **Ningún lector fuera de lo aceptado cambia.**
 
 ## Checkpoints
 
-- **C1** [x] `init.sh` código 0, sin `[KO]`, con `suite_*.ok` borrados antes ·
-  [x] ficheros previstos (más `mutacion_manual_F-054.md`, del rastro).
-- **C2** [x] una `in_progress` · [x] rama `feature/F-054-sync-trae-porcentajes`
-  (comprobada con `git -C`) · [x] `current.md` (bloqueo 2) · [x] history.
+- **C1** [x] `init.sh` (`suite_*.ok` borrados) código 0, sin `[KO]`; antes, dos
+  `[KO]` por el borrador de ESTE informe (145 líneas, y un falso positivo
+  de credencial de `test_f008_r21` por una palabra), corregidos · [x] ficheros.
+- **C2** [x] una `in_progress` · [x] rama (comprobada con `git -C`) ·
+  **[ ] `current.md`**: l. 61-62 dice «(T1-T21), todas las decisiones cerradas
+  (D1-D18; las últimas, D16 = C, D17 = A y D18 = A …)»; hoy son T1-T22 y
+  D1-D19 (D19 = b, 2026-10-30). El resto de la sección y la cabecera sí lo
+  recogen: queda una contradicción dentro del propio fichero · [x] history.
 - **C3** [x] hexagonal · [x] primera línea · [x] sin `print`/TODO/secretos ·
-  [x] escala sin cambios · [x] postventa con `es_postventa` · [x] solo escribe
-  el transfer, `UPDATE` sin `DELETE` (delta no toca `poner_a_cero` salvo imports).
+  [x] escala intacta · [x] postventa: la omitida no se escribe, solo cambia su
+  cobertura · [x] solo escribe el transfer; nada cambia en lo que se escribe.
 - **C3 bis** N/A: no toca `docs/referencia/`.
-- **C4** [x] trazables · [x] sin red ni BBDD · [x] MANUAL con comando exacto.
-- **C4 bis** [x] rigor declarado · [x] RED real de O2, O4 y O5 en
-  `impl_F-054.md` · [x] cobertura `[OK]` 99,5 % (748/752) · [x] totales
-  recalculados: 21 ficheros, 1639 líneas, **266 mutantes**, coinciden ·
+- **C4** [x] trazables (D19 → `test_f054_d19_*`) · [x] sin red ni BBDD
+  (`ClienteFalso`, node con dobles) · [x] MANUAL con comando exacto (T10, T18-T20).
+- **C4 bis** [x] rigor declarado · [x] RED de T22 pegado · [x] cobertura
+  `[OK]` 99,5 % (755/759) · [x] **totales recalculados** con `alcance_de_feature` y
+  `generar_mutantes`: 22 ficheros, 1651 líneas, **266 mutantes**, coinciden ·
   [x] sin «CAMPAÑA NO VÁLIDA», sin veredicto 0 · [x] **campaña no
-  reejecutada: 4837 s según el informe**; recálculo puro más RM y RM4 ·
-  [x] 0 supervivientes, nada PENDIENTE · [x] Evidencias con los cuatro números.
-- **RM1** [x] SHA `c70eb61`; `c70eb61..HEAD` solo toca `progress/`.
-  **RM2** [x] 266 × 18,2 = 4841 ≈ 4837 s; 18,2 × 4 workers = 73 s frente a
-  bases de 91-137 s, coherente con `-x`. **RM3** [x] ninguno de los muestreados
-  es equivalente. **RM4** usada, copia `git archive` en el scratchpad, base
-  60 passed: `frozen=True→False` 1 fallo; `(0, paride)→(1, paride)` 2;
-  `titular and→or` 2; `"postventa" and→or c.paride` 2; `_destino(a.destino,
-  a.es_postventa)→False` 2. Todos muertos. **RM5** N/A: no hay equivalentes
-  declarados (el de `Decimal("0")` se eliminó del código, no se declaró).
-  **RM6** [x] no se quitó ninguna guarda.
-- **Manual `app.js`** [x] tabla por fila con texto exacto (campañas 3 y 4).
-  Reproducidas en copia, base 30 passed: C4 (`[404, 409]→[409]`, 1 fallo,
-  declara 1), C14 (`> 0→> 1`, 1, declara 1 en la campaña 4) y C7 (sin
-  `sobrantes_a_cero`, 1, declara 1).
+  reejecutada: 3696 s según el informe** · [x] coste por mutante 3696 × 4 /
+  266 = 55,6 s · [x] 0 supervivientes · [x] Evidencias con los cuatro números y workers.
+- **RM1** [x] SHA `a781d25…`; `a781d25..HEAD` solo toca `progress/` y `tasks.md`.
+  **RM2** [x] 266 × 13,9 = 3697 ≈ 3696 s; 13,9 × 4 = 55,6 s frente a bases de
+  66-105 s, coherente con `-x`. **RM3** [x] ningún equivalente. **RM5** N/A:
+  ningún equivalente declarado. **RM6** [x] no se quitó ninguna guarda.
+- **Cero mutantes en `reglas_porcentajes.py`** [x] legítimo. Sus 12 líneas en
+  alcance (528-532, 552-553, 556, 562, 564-565, 573) son `def omitir`, el
+  `dict` y los `**resuelta`: ningún operador del generador (comparación,
+  entero, booleano, lógico, `not`, aritmético) tiene objetivo ahí. Prueba de
+  control: el mismo fichero sin exclusión de alcance da **70** mutantes; el
+  generador funciona y el cero es por diseño.
+- **RM4 manual** [x] la tabla trae una fila por mutante con su número de
+  fallos; reproducidas **las 8**, copia `git archive HEAD` en el scratchpad,
+  base `40 passed`: `omitir` sin `**resuelta` 7; sin recurso 1; % no numérico
+  1; fuera de rango 4; sin `M*` 2; `destino="obra"` 6; `paride=0` 7;
+  `partida_cod=None` 6. Coinciden fila por fila. La tabla describe el cambio
+  con palabras, pero cada fila quita o fija un único elemento; reproducible sin
+  ambigüedad, se acepta (ver automejora).
 - **C4 ter** N/A: sin `harness/rutas_sensibles.json`.
-- **C5** [x] tareas no MANUAL `[x]`, commits `F-054 Tn:`/`F-054 On:` · T10,
-  T18-T20 `[ ]` por MANUAL, legítimo · [x] árbol limpio · [x] `in_progress`.
+- **C5** [x] T22 `[x]`, commits `F-054 T22:` · T10, T18-T20 `[ ]` por MANUAL,
+  legítimo · [x] árbol limpio · [x] `in_progress`.
 
 ## Cobertura
 
@@ -86,41 +99,41 @@ mutación completa con 0 supervivientes, RM5 y MANUAL con comando exacto.
 | R19-R28 | `test_f054_aceptar`, `rutas`, `traer_front` |
 | R29 | `test_f002_fuente_unica` y grep; `azure-apps`, T20 |
 | R30, R37 | MANUAL T10, T18, T19 |
-| R31-R34, R38 | `test_f054_obra_cero` (con `r31_o2_*`), `modal_cero` |
+| R31 (D19), R32-R34, R38 | `test_f054_obra_cero` (`r31_o2_*`, `d19_*`), `modal_cero` (`d19_*`) |
 | R35-R36 | `test_f054_poner_a_cero`, `registro_cero`, `modal_cero` (`r35_o5_*`) |
 
-Suites: api 1469, transfer 1849, front 488, raíz 418 (1 skipped).
-**R37 sigue sin cifra** hasta T10/T19; si T19 supera el 15 %, PARA (§6.4).
-
-## Observación para decidir (no bloquea; decidir, no dejar en «anotado»)
-
-- **O7. Alcance real de O2.** `omitir` (`reglas_porcentajes.py:528`) no lleva
-  `destino` ni `paride`, así que **cualquier** `Postv-` omitida tiene `paride
-  = 0`, no solo la omitida antes de resolver la partida: también la omitida
-  después (porcentaje fuera de rango, sin código mensual). Esa cubre todas las
-  líneas de su recurso en la obra de postventa, no solo su partida. El error
-  va en la dirección segura (menos sobrantes propuestas, nunca una escritura
-  de más) y el caso es raro. Pero el texto de ARCHITECTURE y design §6.1
-  («omitida antes de resolverla») y la frase «en real una `Postv-` resuelta a
-  0 no existe» del informe lo describen más estrecho de lo que es. Opciones:
-  (a) aceptarlo y corregir esa frase en los dos documentos; (b) que la
-  cobertura de una omitida use la partida de postventa resuelta, si la hay.
-  Decide el humano.
-
-## Review 1 (pasada completa, `560c10a`): RECHAZADA, resumen
-
-Solo por el rastro: bloqueo 1 (C4, MANUAL sin comando exacto en
-`current.md`) y bloqueo 2 (C2, sección obsoleta). Juzgado sin bloqueos: la
-parte B (guarda doble en `poner_a_cero.py` y en el SQL, solo `UPDATE … can =
-0, tot = 0`, solo lo confirmado, fallo ⇒ sin `ejecutar`) y las desviaciones
-nº 1, 6, 13, 14 y 16, aceptadas. Campaña 1 de mutación 262/262 en `c614be3`
-(3767 s). Observaciones O1-O6, decididas por el humano el 2026-10-30:
-recoger O1, O2, O4 y O5; aceptar O3 (la 0404 en modo real es sobrante
-normal) y O6 (deshacer un `SIGRID` va por `reemplazar`; mirarlo en T18). El
-detalle está en el historial de git de este fichero (`git show
-e005e34:progress/review_F-054.md`).
+Suites: api 1469, transfer 1865, front 489, raíz 418 (1 skipped). **R37 sin cifra** hasta T10/T19.
 
 ## Cambios requeridos
 
-Ninguno. Pendiente para cerrar: MANUAL T10, T18, T19 y T20 (con
-`azure-apps/dedicacion.md` y el aviso a `partes`) y la decisión sobre O7.
+1. `progress/current.md` l. 61-62 (sección «F-054 · en review»): «(T1-T21)»
+   → «(T1-T22)» y «D1-D18; las últimas, D16 = C, D17 = A y D18 = A, el
+   2026-10-29» → D1-D19 con D19 = b del 2026-10-30. Antes, `grep -n "D1-D18\|T1-T21\|D16-D18"`
+   en `current.md`: es el cuarto sitio de una decisión que se cierra.
+
+Pasada 4: ese delta más `init.sh`; el código de T22 queda aprobado en `9334fd3`.
+
+## Automejora (propuesta, no aplicada)
+
+- **Generador de mutantes**: el operador `not` sobre una expresión entre
+  paréntesis quita `not (` y deja el `)` (p. ej. `reglas_porcentajes.py:563`
+  → `if 0.0 < porcentaje <= 1.0):`; también l. 293). Un mutante que no
+  compila muere siempre: es una muerte falsa. En el alcance de F-054 no hay
+  ninguno (comprobado con `ast.parse` sobre los 266), pero conviene que
+  `generar_mutantes` descarte lo que no parsea. Para `arnes-base`.
+- **C4 bis, campaña manual**: decidir si una fila que quita un solo elemento
+  nombrado (`sin **resuelta`) vale como «texto exacto». Hoy no se distingue.
+
+## Review 2 (`0ddba84`, incremental desde `e005e34`): APROBADA, resumen
+
+Bloqueos de la review 1 corregidos; O1, O2, O4 y O5 con test, O3 y O6
+aceptadas. Mutación 266/266 en `c70eb61` (4837 s), `app.js` 69 + 14. Dejó
+**O7** (toda `Postv-` omitida cubría todas): el humano eligió (b) → D19 y
+T22, revisadas aquí. Detalle: `git show 0ddba84:progress/review_F-054.md`.
+
+## Review 1 (pasada completa, `560c10a`): RECHAZADA, resumen
+
+Solo por el rastro (C4 MANUAL sin comando; C2 sección obsoleta). Sin bloqueos
+en la parte B (guarda doble, solo `UPDATE … can = 0, tot = 0`, sin `DELETE`)
+ni en las desviaciones 1, 6, 13, 14 y 16. Campaña 1 262/262 en `c614be3`.
+Detalle: `git show e005e34:progress/review_F-054.md`.
