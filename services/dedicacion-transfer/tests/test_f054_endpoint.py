@@ -21,6 +21,7 @@ from fastapi.testclient import TestClient
 from interface_adapters.api import app as modulo_app
 
 from tests.conftest import OBRA_POSTVENTA, OBRA_PRUEBAS
+from tests.test_f039_universo_var import OBRA_VAR, VAR_IDE
 from tests.test_f050_endpoint_propuesta import AJUSTES
 from tests.test_f054_traduccion import (
     P29,
@@ -28,7 +29,6 @@ from tests.test_f054_traduccion import (
     ClienteExistentes,
     _l,
 )
-from tests.test_f039_universo_var import OBRA_VAR, VAR_IDE
 
 RUTA = "/api/porcentajes/existentes"
 

@@ -33,7 +33,6 @@ from domain.traer_sigrid import (
     EntradaSigrid,
     NoTraida,
 )
-
 from infrastructure.db.repositories import PgPeriodoRepository
 from interface_adapters.api.routes import _sobrantes_a_cero
 from interface_adapters.api.schemas import TraerSigridIn, TraerSigridOut
@@ -120,7 +119,7 @@ def test_f054_r15_sin_partida_y_con_partida_son_partidas_distintas():
 def test_f054_r31_el_lote_sin_decir_nada_no_es_completo():
     """Mata `completo: bool = True` en `RegistroSigrid._preflight_lote`."""
     t = _TransferCero([{"clave": "cero:1"}])
-    obras, sobrantes = _registro(t)._preflight_lote(
+    _, sobrantes = _registro(t)._preflight_lote(
         [{"obra": {"ide": 678}}])
     assert t.llamadas == [("preflight_lote", False)]
     assert sobrantes == []

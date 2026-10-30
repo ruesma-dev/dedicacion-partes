@@ -483,7 +483,7 @@ class RegistroSigrid:
                  usuario: str = "local",
                  trabajador_ide: Optional[int] = None,
                  empresa: int | None = None,
-                 sobrantes_a_cero: Optional[list[dict]] = None) -> dict:
+                 sobrantes_a_cero: list[dict] | None = None) -> dict:
         """F-054 (R35; design §6.4): si trae `sobrantes_a_cero` (las que
         el usuario confirmó del preflight), PRIMERO se ponen a 0 y después
         van las peticiones por obra de siempre, que releen. Si poner a 0

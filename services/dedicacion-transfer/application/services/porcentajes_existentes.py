@@ -20,6 +20,8 @@ from __future__ import annotations
 
 from dataclasses import asdict
 
+from domain.models.registro_models import LineaMensualSigrid, ObraEntrada
+
 from application.services.universo_postventa import (
     CatalogoPostventa,
     cargar_catalogo_postventa,
@@ -30,7 +32,6 @@ from application.services.universo_var import (
     cargar_catalogo_var,
     partida_var_de,
 )
-from domain.models.registro_models import LineaMensualSigrid, ObraEntrada
 
 #: R9: la partida de la línea de postventa no casa con ninguna obra de las
 #: que admiten postventa, o casa con varias.

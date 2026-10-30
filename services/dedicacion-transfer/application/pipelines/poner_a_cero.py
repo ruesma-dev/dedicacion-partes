@@ -24,8 +24,9 @@ from __future__ import annotations
 
 import logging
 
-from application.pipelines.registro_pipeline import _fila, _traza
 from infrastructure.sigrid.sigrid_write_client import PREFIJO_SYNCKEY
+
+from application.pipelines.registro_pipeline import _fila, _traza
 
 logger = logging.getLogger(__name__)
 

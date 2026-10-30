@@ -28,7 +28,7 @@ from domain.models import (
 from domain.obras import ide_entrada
 from domain.vigencia import vigente_en
 
-_CIEN = Decimal("100")
+_CIEN = Decimal(100)
 _CENTIMO = Decimal("0.01")
 
 #: R14: por qué una línea de Sigrid no se trae.
@@ -142,7 +142,7 @@ def _motivo_obra(l: LineaSigridTraida, clave: tuple[int, bool],
         return MOTIVO_OTRA_EMPRESA.format(obra=nombre, emp=obra.empresa,
                                           empresa=empresa_obras)
     linea = Linea(obra_ide=obra.ide, es_postventa=clave[1],
-                  porcentaje=Decimal("0"), obra_activa=obra.activa,
+                  porcentaje=Decimal(0), obra_activa=obra.activa,
                   obra_admite_postventa=obra.admite_postventa)
     if not linea.ofrecible:
         return MOTIVO_NO_OFRECIBLE.format(
@@ -153,7 +153,7 @@ def _motivo_obra(l: LineaSigridTraida, clave: tuple[int, bool],
 def _entrada(clave: tuple[int, bool],
              lineas: list[LineaSigridTraida]) -> EntradaSigrid:
     """R15-R17: las líneas de un trabajador en una entrada, sumadas."""
-    pct = (sum((Decimal(str(l.can)) for l in lineas), Decimal("0"))
+    pct = (sum((Decimal(str(l.can)) for l in lineas), Decimal(0))
            * _CIEN).quantize(_CENTIMO, rounding=ROUND_HALF_UP)
     primera = min(lineas, key=lambda l: l.hmores_ide)
     destino = primera.destino
@@ -161,7 +161,7 @@ def _entrada(clave: tuple[int, bool],
     motivo = None
     if destino == "normal" and len(parides) > 1:
         motivo = MOTIVO_PARTIDAS_DISTINTAS
-    elif not Decimal("0") < pct <= _CIEN:
+    elif not Decimal(0) < pct <= _CIEN:
         motivo = MOTIVO_PORCENTAJE_FUERA.format(pct=pct)
     elegida = destino == "normal" and primera.paride
     return EntradaSigrid(

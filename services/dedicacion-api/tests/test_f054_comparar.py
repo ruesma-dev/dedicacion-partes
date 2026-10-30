@@ -253,7 +253,7 @@ def test_f054_r18_los_cinco_estados():
         (4, False): EstadoEntrada.SOLO_CUADRANTE,
         (5, False): EstadoEntrada.NO_TRADUCIBLE}
     assert (out[(2, False)].pct_sigrid, out[(2, False)].pct_cuadrante) == (
-        Decimal("35"), Decimal("30"))
+        Decimal(35), Decimal(30))
     assert out[(3, False)].pct_cuadrante is None
     assert out[(4, False)].pct_sigrid is None and out[(4, False)].entrada \
         is None

@@ -545,8 +545,8 @@ class SigridWriteClient:
             consultas = [(f"{sql} ORDER BY h.ide", base)]
         else:
             consultas = [
-                (f"{sql} AND h.reside IN ({','.join('?' for _ in t)}) "
-                 "ORDER BY h.ide", base + t)
+                ((f"{sql} AND h.reside IN ({','.join('?' for _ in t)}) "
+                  "ORDER BY h.ide"), base + t)
                 for t in _trozos(sorted({int(r) for r in resides if r}))]
         out: list[LineaMensualSigrid] = []
         for texto, params in consultas:

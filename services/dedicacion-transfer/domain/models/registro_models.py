@@ -462,18 +462,18 @@ class Sobrante:
     clave: str
     hmores_ide: int
     recurso_ide: int
-    vinculado: Optional[dict]
+    vinculado: dict | None
     obra_ide: int
-    obra_cod: Optional[str]
-    parte_cod: Optional[str]
-    parte_est: Optional[int]
-    hora: Optional[str]
+    obra_cod: str | None
+    parte_cod: str | None
+    parte_est: int | None
+    hora: str | None
     paride: int
-    partida_cod: Optional[str]
+    partida_cod: str | None
     can: float
-    synckey: Optional[str]
+    synckey: str | None
     confirmable: bool
-    motivo: Optional[str] = None
+    motivo: str | None = None
 
 
 @dataclass
@@ -511,7 +511,7 @@ class Conflicto:
     nombre: Optional[str]
     ano: int
     mes: int
-    parte_cod: Optional[str]
+    parte_cod: str | None
     horide: Optional[int] = None
     hora_codigo: Optional[str] = None
     lineas: list[LineaSigrid] = field(default_factory=list)

@@ -594,7 +594,7 @@ def build_app(settings) -> FastAPI:
                      "ano": x.ano, "mes": x.mes,
                      "lineas": [l.para_pipeline() for l in x.lineas]}
                     for x in validas]))
-        except Exception as exc:                # noqa: BLE001
+        except Exception as exc:
             logger.exception("propuesta en lote fallo")
             return JSONResponse(status_code=502,
                                 content={"ok": False, "error": str(exc)})
@@ -628,7 +628,7 @@ def build_app(settings) -> FastAPI:
                      for o in p.obras]
             return {"ok": True, **existentes.calcular(p.empresa, p.ano,
                                                       p.mes, obras)}
-        except Exception as exc:                # noqa: BLE001
+        except Exception as exc:
             logger.exception("porcentajes existentes fallo")
             return JSONResponse(status_code=502,
                                 content={"ok": False, "error": str(exc)})

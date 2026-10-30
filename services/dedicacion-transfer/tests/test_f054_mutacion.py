@@ -27,7 +27,6 @@ from application.pipelines.poner_a_cero import (
     MOTIVO_FUERA_PRUEBAS,
     MOTIVO_NO_ESTA,
     MOTIVO_NO_QUEDO,
-    PonerACero,
 )
 from application.services import porcentajes_existentes as modulo_pe
 from application.services.porcentajes_existentes import (

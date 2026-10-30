@@ -115,7 +115,7 @@ def test_f054_r23_repositorio_traza_y_valores():
 
 
 def test_f054_r17_repositorio_postventa_automatica_y_cortes():
-    linea = Linea(obra_ide=678, es_postventa=True, porcentaje=Decimal("10"))
+    linea = Linea(obra_ide=678, es_postventa=True, porcentaje=Decimal(10))
     [stmt] = _aceptar(linea, parte_cod="P" * 40, usuario="u" * 90)
     p = _compilada(stmt).params
     assert p["es_postventa"] is True and p["partida_ide"] is None
@@ -128,28 +128,28 @@ def test_f054_r17_repositorio_postventa_automatica_y_cortes():
 # guardado y solo `commit` la deja; sin `commit`, nada (como el rollback).
 # Cada fila guarda su `id` y su traza: así se ve qué fila se pisa en su
 # sitio y qué traza sobrevive.
-import copy  # noqa: E402
-from dataclasses import replace  # noqa: E402
-from types import SimpleNamespace  # noqa: E402
+import copy
+from dataclasses import replace
+from types import SimpleNamespace
 
-import pytest  # noqa: E402
-from application.traer_sigrid import (  # noqa: E402
+import pytest
+from application.traer_sigrid import (
     MOTIVO_NO_ACEPTABLE,
     MOTIVO_SIN_ENTRADA,
     MOTIVO_SOLO_CUADRANTE,
     TraerDeSigrid,
 )
-from application.use_cases import (  # noqa: E402
+from application.use_cases import (
     DeshacerUltimaModificacion,
     GuardarAsignaciones,
 )
-from domain.errors import (  # noqa: E402
+from domain.errors import (
     DeshacerAjeno,
     PeriodoCerrado,
     PeriodoNoEncontrado,
     PorcentajesSigridNoDisponible,
 )
-from domain.models import (  # noqa: E402
+from domain.models import (
     EstadoPeriodo,
     EventoPendiente,
     FiltroEmpresa,
@@ -161,10 +161,10 @@ from domain.models import (  # noqa: E402
     TipoEvento,
     Trabajador,
 )
-from domain.traer_sigrid import EstadoEntrada  # noqa: E402
+from domain.traer_sigrid import EstadoEntrada
 
-from tests.test_f051_hmores_ide import _fila as _fila_registro  # noqa: E402
-from tests.test_f051_hmores_ide import _lineas as _payload  # noqa: E402
+from tests.test_f051_hmores_ide import _fila as _fila_registro
+from tests.test_f051_hmores_ide import _lineas as _payload
 
 PID = 3
 FILTRO = FiltroEmpresa(empresa=1, por_defecto=1, empresa_obras=1)

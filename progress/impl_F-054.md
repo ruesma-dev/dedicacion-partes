@@ -197,7 +197,7 @@ y los tests ajenos fuera de la lista cerrada, sin tocar.
 ## Evidencias
 
 Medido en `c614be3`/`1c16454` con `bash harness/init.sh` (código 0, sin
-`[KO]`, «ENTORNO LISTO»; `ruff`: 363 avisos de deuda previa, no bloquea):
+`[KO]`, «ENTORNO LISTO»; `ruff`: 309 avisos, los de `dev`; ninguno entra con la feature (O1)):
 
 | Evidencia | Resultado real |
 |---|---|

@@ -102,8 +102,8 @@ def _api(sync="ok", traer="ok", datos=DATOS) -> str:
     return "\n".join([
         "async function api(ruta, op) {",
         "  pedidas.push([ruta, op && op.body ? JSON.parse(op.body) : null]);",
-        f"  if (ruta === '/sync') {{ if ('{sync}' === 'falla') "
-        "throw new Error('sin sigrid');",
+        (f"  if (ruta === '/sync') {{ if ('{sync}' === 'falla') "
+         "throw new Error('sin sigrid');"),
         f"    return {SYNC_OK}; }}",
         f"  if ('{traer}' === 'falla') throw new Error('transfer caido');",
         "  const d = " + json.dumps(datos, ensure_ascii=False) + ";",
@@ -197,12 +197,12 @@ def test_f054_r28_sin_pulsar_no_se_manda_nada():
 
 
 def test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga():
-    r = _programa(_api(), "\n".join([
-        "await traerDeSigrid([]);",
-        "marcadas = [{ trabajador: '10', obra: '713', postventa: '0' },",
-        "            { trabajador: '10', obra: '678', postventa: '1' }];",
-        "await botones['#btn-traer-aceptar'].escuchas.click();",
-        "await new Promise((ok) => setTimeout(ok, 0));"]))
+    r = _programa(_api(), """
+        await traerDeSigrid([]);
+        marcadas = [{ trabajador: '10', obra: '713', postventa: '0' },
+                    { trabajador: '10', obra: '678', postventa: '1' }];
+        await botones['#btn-traer-aceptar'].escuchas.click();
+        await new Promise((ok) => setTimeout(ok, 0));""")
     assert r["pedidas"] == [
         [RUTA, {"aceptar": []}],
         ["querySelectorAll", "#modal-registro .chk-traer:checked"],
@@ -215,9 +215,9 @@ def test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga():
 
 
 def test_f054_r28_aceptar_sin_ninguna_marcada_avisa_y_no_manda():
-    r = _programa(_api(), "\n".join([
-        "await traerDeSigrid([]);",
-        "await botones['#btn-traer-aceptar'].escuchas.click();"]))
+    r = _programa(_api(), """
+        await traerDeSigrid([]);
+        await botones['#btn-traer-aceptar'].escuchas.click();""")
     assert [p for p in r["pedidas"] if p and p[0] == RUTA] == [
         [RUTA, {"aceptar": []}]]
     assert r["avisos"] == [["No hay ninguna entrada marcada", True]]

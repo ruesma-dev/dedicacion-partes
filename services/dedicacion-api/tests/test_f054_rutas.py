@@ -103,15 +103,15 @@ def test_f054_cliente_el_error_es_502_y_hay_evento_sigrid():
 # `TestClient` sobre la app real con el contenedor sustituido: la UoW en
 # memoria con transacción de `test_f054_aceptar.py`, el caso de uso con un
 # transfer falso y las propuestas falsas de F-055.
-from application.traer_sigrid import TraerDeSigrid  # noqa: E402
-from config.settings import Settings  # noqa: E402
-from domain.models import EstadoPeriodo  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-from interface_adapters.api.app import build_app  # noqa: E402
-from interface_adapters.api.deps import obtener_contenedor  # noqa: E402
+from application.traer_sigrid import TraerDeSigrid
+from config.settings import Settings
+from domain.models import EstadoPeriodo
+from fastapi.testclient import TestClient
+from interface_adapters.api.app import build_app
+from interface_adapters.api.deps import obtener_contenedor
 
-from tests.test_f024_rutas_empresa import _PropuestasFalsas  # noqa: E402
-from tests.test_f054_aceptar import (  # noqa: E402
+from tests.test_f024_rutas_empresa import _PropuestasFalsas
+from tests.test_f054_aceptar import (
     SIGRID,
     _datos,
     _Gateway,

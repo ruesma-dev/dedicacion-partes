@@ -208,20 +208,23 @@ def test_f054_r32_reglas_reconocidas_ya_registrada_cero_y_choque():
 
 
 # ---------------------------------- lote --------------------------------- #
-from dataclasses import asdict  # noqa: E402
+from dataclasses import asdict
 
-from application.pipelines.registro_lote import RegistroLote  # noqa: E402
-from interface_adapters.api.app import _respuesta_preflight  # noqa: E402
+from application.pipelines.registro_lote import RegistroLote
+from interface_adapters.api.app import _respuesta_preflight
 
-from tests.conftest import linea, linea_previa  # noqa: E402
-from tests.test_f055_lote import (  # noqa: E402,F401
+from tests import test_f055_lote as lote_f055
+from tests.conftest import linea, linea_previa
+from tests.test_f055_lote import (
     ClienteObras,
     _ajustes,
     _con_partida,
     _json_linea,
     _obra,
-    api,
 )
+
+#: La fixture de F-055, aquí con el mismo nombre.
+api = lote_f055.api
 
 LECTURA = "lineas_mensuales_del_periodo"
 

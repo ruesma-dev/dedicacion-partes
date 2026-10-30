@@ -19,6 +19,7 @@ from types import SimpleNamespace
 
 import pytest
 from application.pipelines.poner_a_cero import (
+    MOTIVO_CAMBIADA,
     MOTIVO_ENLAZADA,
     MOTIVO_FUERA_PRUEBAS,
     MOTIVO_NO_ESTA,
@@ -27,7 +28,6 @@ from application.pipelines.poner_a_cero import (
     MOTIVO_OTRO_RECURSO,
     MOTIVO_OTRO_SISTEMA,
     MOTIVO_PARTE_CERRADO,
-    MOTIVO_CAMBIADA,
     PonerACero,
 )
 from application.pipelines.registro_pipeline import RegistroPipeline
