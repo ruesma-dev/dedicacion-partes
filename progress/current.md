@@ -17,7 +17,7 @@ el humano eligió la opción (b) el 2026-10-30 («b», «si» al plan): spec
 enmendada (D19, T22, `e1a1902` y `83811d9`) y T22 hecha (`abd5514`,
 `fd56da6`, `69647cf`, `84a99b3`; mutación 266/266 en `a781d25` y RM4 a mano
 8/8 en `reglas_porcentajes.py`). Review 3 CAMBIOS REQUERIDOS solo por este fichero
-(`f01d4f2`: T1-T21/D1-D18 obsoletos, corregido); **en review 4**.
+(`f01d4f2`: la línea «Spec» sin T22 ni D19, corregida); **en review 4**.
 **Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T10 (medida base del líder, solo lecturas,
 sobre `ccad4db`), T18 (humano, local, solo lecturas), T19 (humano, modo
 pruebas, única que escribe) y T20 (despliegue transfer → api → front,
@@ -92,7 +92,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   documentada; `83811d9`). T22 hecha: `abd5514` (RED), `fd56da6`, `69647cf`
   (tests del efecto aceptado), `84a99b3` (informe). Review 3 (`f01d4f2`):
   código aprobado, CAMBIOS REQUERIDOS solo por la línea «Spec» de esta
-  sección (T1-T21/D1-D18), corregida. **Review 4 lanzada el 2026-10-30**
+  sección, sin T22 ni D19, ya corregida. **Review 4 lanzada el 2026-10-30**
   (delta e `init.sh`); después T10/T18/T19. **Propuesta de arnés de la
   review 3, a decidir por el humano:** el operador `not` de
   `harness/mutacion` genera mutantes que no compilan en código entre
