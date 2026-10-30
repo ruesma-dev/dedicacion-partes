@@ -7,7 +7,7 @@ Sigrid, y al registrar preguntar si se ponen a 0 las obras sobrantes;
 rigor crítico, SDD), rama `feature/F-054-sync-trae-porcentajes` en la copia
 `porcentajes-f054`. Spec revisada contra F-044, F-062 y F-068 y **APROBADA
 el 2026-10-29** con D16 = C, D17 = A y D18 = A («estoy de acuerdo»,
-`14d56ff`). Implementación terminada el 2026-10-30 (T1-T9, T11-T17 y T21;
+`14d56ff`). Implementación terminada el 2026-10-30 (T1-T9, T11-T17, T21 y T22;
 `progress/impl_F-054.md`). Review 1 RECHAZADA solo por el rastro
 (corregido en `f6f6904`); sus observaciones O1, O2, O4 y O5 recogidas y O3
 y O6 aceptadas sin cambio por el humano («sigue»). Tras ellas: mutación
@@ -16,7 +16,8 @@ commit `5ba183c`. Review 2 APROBADA (`0ddba84`) con una observación, O7;
 el humano eligió la opción (b) el 2026-10-30 («b», «si» al plan): spec
 enmendada (D19, T22, `e1a1902` y `83811d9`) y T22 hecha (`abd5514`,
 `fd56da6`, `69647cf`, `84a99b3`; mutación 266/266 en `a781d25` y RM4 a mano
-8/8 en `reglas_porcentajes.py`). **En review 3.**
+8/8 en `reglas_porcentajes.py`). Review 3 CAMBIOS REQUERIDOS solo por este fichero
+(`f01d4f2`: T1-T21/D1-D18 obsoletos, corregido); **en review 4**.
 **Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T10 (medida base del líder, solo lecturas,
 sobre `ccad4db`), T18 (humano, local, solo lecturas), T19 (humano, modo
 pruebas, única que escribe) y T20 (despliegue transfer → api → front,
@@ -53,14 +54,15 @@ validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 **Para retomar (sesión nueva):** `arnes-base` va 3 commits por delante de
 su `origin/main` (encargos pendientes; push del humano: `git -C
 ../arnes-base push origin main`). Peticiones de arnés pendientes de
-decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** F-054 en review 3 (worktree `porcentajes-f054`); después
+decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** F-054 en review 4 (worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
 ## F-054 · en review (2026-10-30)
 
-- **Spec:** `specs/F-054-sync-trae-porcentajes/` (T1-T21), todas las
-  decisiones cerradas (D1-D18; las últimas, D16 = C, D17 = A y D18 = A, el
-  2026-10-29, «estoy de acuerdo»). Revisión contra F-044, F-062 y F-068 en
+- **Spec:** `specs/F-054-sync-trae-porcentajes/` (T1-T22), todas las
+  decisiones cerradas (D1-D19; D16 = C, D17 = A y D18 = A, el 2026-10-29,
+  «estoy de acuerdo»; D19 = b, el 2026-10-30, «b», con su efecto en el
+  modal aceptado y el vinculado omitido «Dejarlo así»). Revisión contra F-044, F-062 y F-068 en
   `progress/spec_F-054.md`.
 - **Límite de servicio.** A: el transfer lee (`POST
   /api/porcentajes/existentes`) y la api compara y escribe en `dedicacion`
@@ -88,8 +90,15 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   «Aceptar» ese efecto como parte de D19, y «Dejarlo así» para el vinculado
   omitido, que sigue con `paride` 0 y cubriéndolas todas (asimetría
   documentada; `83811d9`). T22 hecha: `abd5514` (RED), `fd56da6`, `69647cf`
-  (tests del efecto aceptado), `84a99b3` (informe). **Review 3 lanzada el
-  2026-10-30**; después T10/T18/T19.
+  (tests del efecto aceptado), `84a99b3` (informe). Review 3 (`f01d4f2`):
+  código aprobado, CAMBIOS REQUERIDOS solo por la línea «Spec» de esta
+  sección (T1-T21/D1-D18), corregida. **Review 4 lanzada el 2026-10-30**
+  (delta e `init.sh`); después T10/T18/T19. **Propuesta de arnés de la
+  review 3, a decidir por el humano:** el operador `not` de
+  `harness/mutacion` genera mutantes que no compilan en código entre
+  paréntesis (p. ej. `reglas_porcentajes.py:563`), que cuentan como muertos
+  en falso; no afecta a F-054 (ninguno de sus 266). Si se acepta, va a
+  `arnes-base`.
 
 ### MANUAL pendientes (comando exacto)
 
@@ -524,7 +533,7 @@ F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-10-30):** F-054 en review 3 (O7 = b, D19);
+F-033 y, detrás, F-017, F-018… **Hoy (2026-10-30):** F-054 en review 4 (O7 = b, D19);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
