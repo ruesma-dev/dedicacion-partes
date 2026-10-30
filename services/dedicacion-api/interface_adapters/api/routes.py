@@ -25,6 +25,7 @@ from application.use_cases import (
     ObtenerFilaTrabajador,
 )
 from application.palabras_incidencia import palabras_por_codigo
+from application.traer_sigrid import TraerDeSigrid
 from config.settings import cargar_config
 from domain.errors import ErrorDominio, ObraNoValida, TrabajadorNoValido
 from domain.models import EstadoPeriodo, FiltroEmpresa
@@ -51,6 +52,8 @@ from interface_adapters.api.schemas import (
     PropuestasOut,
     SyncOut,
     TipoIncidenciaOut,
+    TraerSigridIn,
+    TraerSigridOut,
     TiposIncidenciaOut,
     a_completar_out,
     a_copia_periodo_out,
@@ -59,6 +62,7 @@ from interface_adapters.api.schemas import (
     a_resumen_out,
     a_sync_out,
     a_trabajador_out,
+    a_traer_sigrid_out,
     lineas_a_dicts,
 )
 
@@ -473,6 +477,37 @@ def completar_lote(
     return a_completar_out(resultados, resumen).model_copy(update={
         "propuestas_en_curso": _encolar(contenedor, anio, mes,
                                         payload.trabajadores)[0]})
+
+
+# ------------------- Traer de Sigrid (F-054, parte A) -----------------
+@router.post(
+    "/periodos/{anio}/{mes}/traer-sigrid",
+    response_model=TraerSigridOut,
+    tags=["sigrid"],
+)
+def traer_sigrid(
+    anio: int,
+    mes: int,
+    contenedor: Cont,
+    usuario: Usuario,
+    payload: TraerSigridIn | None = None,
+    empresa: EmpresaQ = None,
+) -> TraerSigridOut:
+    """Compara el cuadrante con lo que ya hay en los partes de Sigrid y
+    escribe solo las entradas de `aceptar` (F-054, R18-R27;
+    docs/ARCHITECTURE.md#regla-traer-sigrid). Sin `aceptar`, nada se
+    escribe. Lee Sigrid a través del transfer; no escribe en Sigrid."""
+    filtro = _filtro(contenedor, empresa)
+    aceptar = [a.model_dump() for a in (payload.aceptar if payload else [])]
+    caso: TraerDeSigrid = contenedor.traer_sigrid
+    with contenedor.uow() as uow:
+        resultado = caso.ejecutar(uow, anio, mes, usuario, filtro=filtro,
+                                  aceptar=aceptar)
+    # R26: las propuestas, solo de los trabajadores escritos.
+    en_curso = (_encolar(contenedor, anio, mes, resultado.tocados)[0]
+                if resultado.tocados else False)
+    return a_traer_sigrid_out(resultado).model_copy(
+        update={"propuestas_en_curso": en_curso})
 
 
 # --------------------------- Export -----------------------------------

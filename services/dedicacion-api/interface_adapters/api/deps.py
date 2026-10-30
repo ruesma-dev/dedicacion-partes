@@ -26,6 +26,7 @@ from application.sync_pipeline import (
 from application.palabras_incidencia import palabras_por_codigo
 from application.partidas_linea import PartidasDeLinea
 from application.propuestas_mes import PropuestasDelMes
+from application.traer_sigrid import TraerDeSigrid
 from application.use_cases import PreviewSync
 from config.settings import Settings, cargar_config
 from infrastructure.db.repositories import SqlAlchemyUnitOfWork
@@ -47,6 +48,8 @@ class Contenedor:
     partidas_linea: PartidasDeLinea   # selector de partida (F-050, R17)
     # Propuestas del mes en segundo plano (F-055, R29-R33): un hilo.
     propuestas_mes: PropuestasDelMes
+    # F-054 (parte A): traer al cuadrante los porcentajes de Sigrid.
+    traer_sigrid: TraerDeSigrid
 
     def uow(self) -> SqlAlchemyUnitOfWork:
         return SqlAlchemyUnitOfWork(self.session_factory)
@@ -157,6 +160,8 @@ def construir_contenedor(
             ThreadPoolExecutor(max_workers=1,
                                thread_name_prefix="propuestas"),
             empresa_obras=empresa_obras),
+        # F-054: lee Sigrid por el MISMO cliente del transfer.
+        traer_sigrid=TraerDeSigrid(transfer),
     )
 
 
