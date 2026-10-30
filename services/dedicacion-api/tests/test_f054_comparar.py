@@ -195,6 +195,8 @@ def test_f054_r15_postventa_con_partidas_iguales_se_suma():
     ([0.00004], "0.00", False), ([0.5, -0.5], "0.00", False),
     ([-0.1], "-10.00", False), ([1.0], "100.00", True),
     ([0.6, 0.40001], "100.00", True), ([0.6, 0.4001], "100.01", False),
+    # Por debajo del 1 % también vale (mata `Decimal(1) < pct`).
+    ([0.005], "0.50", True), ([0.01], "1.00", True),
 ])
 def test_f054_r16_centesimas_y_rango(cans, pct, valida):
     por, _, _ = _entradas([_s(i + 1, can=c) for i, c in enumerate(cans)])

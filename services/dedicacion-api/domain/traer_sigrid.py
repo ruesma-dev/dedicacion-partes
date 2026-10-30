@@ -141,8 +141,9 @@ def _motivo_obra(l: LineaSigridTraida, clave: tuple[int, bool],
     if linea_de_otra_empresa(obra.empresa, empresa_obras):
         return MOTIVO_OTRA_EMPRESA.format(obra=nombre, emp=obra.empresa,
                                           empresa=empresa_obras)
+    # El % no cuenta para `ofrecible`: un cero cualquiera.
     linea = Linea(obra_ide=obra.ide, es_postventa=clave[1],
-                  porcentaje=Decimal(0), obra_activa=obra.activa,
+                  porcentaje=Decimal(), obra_activa=obra.activa,
                   obra_admite_postventa=obra.admite_postventa)
     if not linea.ofrecible:
         return MOTIVO_NO_OFRECIBLE.format(
