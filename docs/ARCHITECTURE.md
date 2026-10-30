@@ -1138,7 +1138,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       una normal de su obra de origen; en la VAR, si ninguna entrada suya es esa partida. En pruebas solo cuentan las de la obra de pruebas, cubiertas
       si una acción las reconoce (ya registrada, choque, al 0) o tiene su
       partida. Los vinculados, igual con sus acciones (la `MESVE` de un
-      vinculado nunca es sobrante de su trabajador). Solo de trabajadores
+      vinculado nunca es sobrante de su trabajador; su acción omitida no
+      lleva partida y en postventa las cubre todas). Solo de trabajadores
       con alguna línea de %.
     - **Se pregunta por línea** (`cero:{hmores_ide}`), desmarcada. La de un
       parte que no está En registro o con `synckey` de otro sistema es un

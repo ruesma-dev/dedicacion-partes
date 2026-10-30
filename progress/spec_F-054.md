@@ -175,3 +175,26 @@ ciertos con D19 (hablan de la omitida antes de resolverse); no se tocan.
 - **Mutación**: rigor crítico. La campaña completa tardó 4837 s; T22 pide
   reejecutarla o, si el líder la acota, RM4 a mano sobre lo cambiado. Lo
   decide el líder.
+
+## 2026-10-30 · D19 ampliada tras la parada del implementer en T22 (4)
+
+El humano, vía el líder, el 2026-10-30:
+
+1. **Aceptado** como parte de D19 («Aceptar»): con una `Postv-` omitida tras
+   resolver su partida, el modal (`pintarModalPreflight`, también sus
+   vinculados omitidos «sigue al trabajador») muestra «Postventa» en
+   Destino; la respuesta del preflight (`asdict(a)`) publica `destino`,
+   `paride` y `partida_cod`, y `clave_conflicto` lleva `|<paride>` en vez de
+   `|0`; también cambia el `print` de `prueba_escritura_porcentajes.py`.
+2. **Asimetría aceptada** sin cambio de código («Dejarlo así»): el
+   `AccionVinculado` omitido copia `destino` del titular pero no `paride`
+   (0), así que sigue cubriendo todas las partidas de postventa (dirección
+   segura). `reglas_vinculados.py` no se toca.
+
+Recogido en design §6.1 (vinculados) y §12 D19 (efectos y citas),
+requirements §6 (D19), `ARCHITECTURE.md#regla-obra-cero` (vinculado omitido)
+y T22: en el punto (4) esos lectores ya no paran (cualquier otro sí) y el
+nuevo (4 bis) pide un test que fije «Postventa» para la omitida tras
+resolver y «Obra» para la omitida antes. Para seguir en 250/250 se
+reenvolvieron §6.2, §6.4, §7 y §12 D19 a líneas más largas, sin quitar
+texto. Tamaños: requirements 149/150, design 250/250.

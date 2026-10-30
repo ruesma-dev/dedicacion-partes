@@ -141,7 +141,8 @@ vinculados, *, ajustes) -> list[Sobrante]`.
   está en `reconocidas` (ya registrada, choque, `linea_cero`) o alguna
   acción tiene su partida. **Vinculados** (R38, D16): igual con las
   `AccionVinculado` de **ese** recurso (`Preflight.vinculados`: llevan
-  `destino` y `paride`, también las omitidas «sigue al trabajador»).
+  `destino` y `paride`; la omitida «sigue al trabajador» copia `destino` pero
+  no `paride` (0): cubre todas, asimetría aceptada en D19).
 - `confirmable = False` con motivo si su parte no está En registro o su
   `synckey` es de otro sistema (no vacía y sin `porcentajes:`; las
   `porcentajes:vin:` son nuestras). Orden por `hmores_ide`. Recursos: los de
@@ -149,12 +150,11 @@ vinculados, *, ajustes) -> list[Sobrante]`.
 
 ### 6.2 Detección en el lote
 
-`preflight_completo`: `precargar(…, mensuales=True)` pone en la **ronda A**
-(no depende de nada) la lectura de §4.1 con `solo_m` y los trabajadores y,
-con vinculados (D16), la de `solo_m=False` con ellos, en paralelo; corre
-los preflights de siempre (también las peticiones de 4 elementos de F-062) y
-calcula `sobrantes`; con `completo = false`, nada. R36: la sobrante que
-comparte parte con una petición ya la lee `lineas_del_parte` y suma.
+`preflight_completo`: `precargar(…, mensuales=True)` pone en la **ronda A** (no depende de
+nada) la lectura de §4.1 con `solo_m` y los trabajadores y, con vinculados (D16), la de
+`solo_m=False` con ellos, en paralelo; corre los preflights de siempre (también las
+peticiones de 4 elementos de F-062) y calcula `sobrantes`; con `completo = false`, nada.
+R36: la sobrante que comparte parte con una petición ya la lee `lineas_del_parte` y suma.
 
 ### 6.3 `PonerACero.ejecutar(empresa, ano, mes, lineas)`
 
@@ -168,31 +168,28 @@ comparte parte con una petición ya la lee `lineas_del_parte` y suma.
 
 ### 6.4 Api y orden en `ejecutar`
 
-`RegistroSigrid.ejecutar(…, sobrantes_a_cero)`: si trae alguna, **primero**
-`poner_a_cero`; después las peticiones por obra de siempre, sin cambio. El
-`ejecutar` del transfer repite su preflight releyendo del cliente real: la
-puesta a 0 ya no suma y la omitida sí (R36). Por eso sobra el `a_cero_hechos`
-de la versión del 2026-10-24 y `registro_pipeline.py` (con F-044 y F-062) no
-se toca. En un parte compartido (postventa, VAR, 0404), la puesta a 0 puede
-ser la línea al 0 % que `_emparejar_ceros` reutiliza para otra acción del
-recurso: `#regla-cero` de hoy. **Coste (R37):** una lectura más por
-preflight completo (dos con vinculados, en paralelo) en la ronda A; se mide
-en local como F-055 T18 (2026-09, tres pasadas); más de un 15 % ⇒ **PARA**.
+`RegistroSigrid.ejecutar(…, sobrantes_a_cero)`: si trae alguna, **primero** `poner_a_cero`;
+después las peticiones por obra de siempre, sin cambio. El `ejecutar` del transfer repite su
+preflight releyendo del cliente real: la puesta a 0 ya no suma y la omitida sí (R36). Por
+eso sobra el `a_cero_hechos` de la versión del 2026-10-24 y `registro_pipeline.py` (con
+F-044 y F-062) no se toca. En un parte compartido (postventa, VAR, 0404), la puesta a 0
+puede ser la línea al 0 % que `_emparejar_ceros` reutiliza para otra acción del recurso:
+`#regla-cero` de hoy. **Coste (R37):** una lectura más por preflight completo (dos con
+vinculados, en paralelo) en la ronda A; se mide en local como F-055 T18 (2026-09, tres
+pasadas); más de un 15 % ⇒ **PARA**.
 
 ## 7. Front (`app.js`)
 
-- A: `sincronizar()` devuelve `true`/`false`; `#btn-sync` pasa a
-  `sincronizarYTraer()` (`test_f061_recarga.py` no cambia), que llama a
-  `traerDeSigrid([])`; la ventana lista por trabajador sus entradas (estado,
-  los dos %), con casilla en las `distinta` (desmarcada) y `solo_sigrid`
-  (marcada, D12), y «Aceptar las marcadas» ⇒ `traerDeSigrid(aceptar)`.
-- B: `pintarModalPreflight` gana «En Sigrid, en obras que no tiene en la
-  plataforma» (las de vinculado con tipo y código): `.chk-cero` por
-  confirmable, **desmarcada** (D17; sin `marcadaPorDefecto` ni `vistas` de
-  F-064), y las demás como aviso. `registroEjecutar` manda
-  `sobrantes_a_cero`, aparte de `pisar_claves`. `unirPreflight` conserva las
-  claves de arriba (`...previo`): el repreflight de una obra mantiene la
-  sección y sus casillas; un preflight nuevo las desmarca.
+- A: `sincronizar()` devuelve `true`/`false`; `#btn-sync` pasa a `sincronizarYTraer()`
+  (`test_f061_recarga.py` no cambia), que llama a `traerDeSigrid([])`; la ventana lista por
+  trabajador sus entradas (estado, los dos %), con casilla en las `distinta` (desmarcada) y
+  `solo_sigrid` (marcada, D12), y «Aceptar las marcadas» ⇒ `traerDeSigrid(aceptar)`.
+- B: `pintarModalPreflight` gana «En Sigrid, en obras que no tiene en la plataforma» (las de
+  vinculado con tipo y código): `.chk-cero` por confirmable, **desmarcada** (D17; sin
+  `marcadaPorDefecto` ni `vistas` de F-064), y las demás como aviso. `registroEjecutar`
+  manda `sobrantes_a_cero`, aparte de `pisar_claves`. `unirPreflight` conserva las claves de
+  arriba (`...previo`): el repreflight de una obra mantiene la sección y sus casillas; un
+  preflight nuevo las desmarca.
 
 ## 8. Documentación
 
@@ -244,7 +241,10 @@ y `reglas_*.py` salvo `omitir` (D19); api `sync_pipeline.py`,
   si su titular tiene sobrante (F-064): a 0 la de otro no sigue un cambio nuestro.
 - **D18 = A. A y vinculados:** no se trae nada (`de_vinculados`); descartada
   B) su partida como elegida: F-068 ya la propone y su choque se pisa.
-- **D19 = b. `Postv-` omitida tras resolver su partida** (review 2, O7; el
-  humano, 2026-10-30: «b», y «si» al plan): cubre solo esa partida (§6.1);
-  descartada a) que las cubra todas. En Sigrid no cambia lo que se escribe.
-  Riesgo: hasta hoy una omitida nunca llevaba partida; sus lectores, en T22.
+- **D19 = b. `Postv-` omitida tras resolver su partida** (review 2, O7; el humano, 2026-10-30:
+  «b», y «si» al plan): cubre solo esa partida (§6.1); descartada a) que las cubra todas. En
+  Sigrid no cambia lo que se escribe. Efectos aceptados el 2026-10-30 tras T22 (4): el modal
+  (`pintarModalPreflight`, también sus vinculados omitidos) muestra «Postventa» en Destino;
+  el preflight (y el `print` de `prueba_escritura_porcentajes.py`) publica `destino`/`paride`/`partida_cod` y `clave_conflicto` lleva
+  `|<paride>` («Aceptar»). El `AccionVinculado` omitido no copia `paride`: cubre todas,
+  dirección segura; `reglas_vinculados.py` no se toca («Dejarlo así»).

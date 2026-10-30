@@ -145,4 +145,5 @@ recomendadas; motivos en design §12): **D16 = C**, las líneas de los
 vinculados en una obra sobrante, como las del trabajador (R38); **D17 = A**,
 casilla siempre desmarcada (R33); **D18 = A**, A no trae nada de ellos (R14).
 **D19 = b**, el humano el 2026-10-30 («b»; review 2, O7): la `Postv-` omitida
-tras resolver su partida cubre solo esa (R31; design §6.1 y §12).
+tras resolver su partida cubre solo esa (R31; design §6.1 y §12); el modal la
+muestra en «Postventa» («Aceptar»); el vinculado omitido sigue cubriendo todas («Dejarlo así»).
