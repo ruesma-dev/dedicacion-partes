@@ -9,8 +9,8 @@ rigor crítico, SDD), rama `feature/F-054-sync-trae-porcentajes` en la copia
 el 2026-10-29** con D16 = C, D17 = A y D18 = A («estoy de acuerdo»,
 `14d56ff`). Implementación terminada el 2026-10-30 (T1-T9, T11-T17 y T21;
 `progress/impl_F-054.md`, último commit `5db4d76`): mutación Python 262/262
-y `app.js` 69/69, sin equivalentes. **Pendientes MANUAL**, con sus comandos
-en `tasks.md` e `impl_F-054.md`: T10 (medida base del líder, solo lecturas,
+y `app.js` 69/69, sin equivalentes. Review 1 RECHAZADA solo por el rastro.
+**Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T10 (medida base del líder, solo lecturas,
 sobre `ccad4db`), T18 (humano, local, solo lecturas), T19 (humano, modo
 pruebas, única que escribe) y T20 (despliegue transfer → api → front,
 `azure-apps/dedicacion.md` y aviso a `partes`: el transfer pone a 0 líneas
@@ -49,52 +49,62 @@ su `origin/main` (encargos pendientes; push del humano: `git -C
 decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** tras F-068, F-054 (spec aprobada, worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
-## F-054 · spec REVISADA (spec-author, 2026-10-24) con las decisiones del humano
+## F-054 · en review (2026-10-30)
 
-**Revisión del 2026-10-29 (spec-author) contra `dev` con F-044, F-062 y
-F-068:** spec al día (requirements 150/150, design 250/250, tasks T1-T21);
-informe en `progress/spec_F-054.md`. Cambios sin reabrir lo decidido: fuera
-`a_cero_hechos` (`registro_pipeline.py` ya no se toca), `sobrantes_a_cero`
-en vez de `a_cero` (choca con F-051), anclas en los puntos 23 y 24, B en la
-ronda A, `MESVE` de vinculados en `de_vinculados`, dobles de `test_f022`,
-`test_f024` y `test_f055` en la lista cerrada. **Decisiones nuevas
-CERRADAS por el humano el 2026-10-29** («estoy de acuerdo»; requirements §6,
-design §12): **D16 = C** (líneas de los vinculados en una obra sobrante, como
-las del trabajador), **D17 = A** (casilla desmarcada), **D18 = A** (la parte
-A no trae nada de los vinculados). **Spec APROBADA con todas las decisiones
-cerradas (D1-D18).** La copia no tiene `.venv`.
+- **Spec:** `specs/F-054-sync-trae-porcentajes/` (T1-T21), todas las
+  decisiones cerradas (D1-D18; las últimas, D16 = C, D17 = A y D18 = A, el
+  2026-10-29, «estoy de acuerdo»). Revisión contra F-044, F-062 y F-068 en
+  `progress/spec_F-054.md`.
+- **Límite de servicio.** A: el transfer lee (`POST
+  /api/porcentajes/existentes`) y la api compara y escribe en `dedicacion`
+  solo lo aceptado (`POST /api/v1/periodos/{a}/{m}/traer-sigrid`). B: el
+  transfer detecta las sobrantes en el preflight-lote completo y las pone a 0
+  en `POST /api/registro/poner-a-cero` antes del `ejecutar` por obra, con la
+  guarda de F-051; nunca `DELETE`.
+- **Implementación:** `progress/impl_F-054.md`. **Review 1 RECHAZADA** solo
+  por este fichero (`progress/review_F-054.md`); código sin bloqueos.
+  Observaciones O1-O6 de esa review: a decidir con el humano.
 
-`specs/F-054-sync-trae-porcentajes/` (requirements 149 líneas, design 250,
-tasks T1-T21). Revisión con las tres decisiones del humano del 2026-10-24
-(«al sincronizar, puedo querer trarme algunas laineas(obras) de sigrid y
-otras no…»): **D4** = aceptar **por entrada** (sustituye a «solo los
-trabajadores sin líneas» y a `sustituir: [ide]`); **parte B** nueva: al
-registrar, una obra que la plataforma no le da al trabajador es un 0 % y, si
-Sigrid tiene ahí una `M*` suya, el preflight pregunta por línea si la pone a
-0 (editándola, `can`/`tot` a 0, nunca `DELETE`); **D9** = A (incidencias
-fuera, vía el líder). El estado en `features.json` no lo toca el
-spec-author.
+### MANUAL pendientes (comando exacto)
 
-**Límite de servicio.** A: el transfer **lee** (`POST
-/api/porcentajes/existentes`, solo lectura) y traduce a obra normal,
-`Postv-X` o `VAR-NN`; la api compara por entrada y escribe en `dedicacion`
-solo lo aceptado (`POST /api/v1/periodos/{a}/{m}/traer-sigrid`, `aceptar`).
-B: el transfer detecta las sobrantes en el **preflight-lote completo** (una
-lectura más, en la primera ronda paralela; no en el de una obra sola,
-porque solo el pipeline tiene la partida resuelta de cada acción) y las pone
-a 0 en `POST /api/registro/poner-a-cero`, **antes** del `ejecutar` por
-obra, con la guarda de F-051; la api solo encamina las confirmaciones.
-Coste medido antes (T10) y después (T19): ≤ +15 %.
-
-**Decisiones: TODAS CERRADAS por el humano el 2026-10-24** («d12, con la
-casilla marcada por defecto, aunque se puede desmarcar. d13, metelo aqui. ok
-a lo demas»; requirements §6): D12, las `solo_sigrid` con casilla
-**marcada** por defecto y desmarcable (las `distinta`, desmarcadas); D13 = B,
-la parte B se queda en F-054 (MANUAL en modo pruebas sobre la 0404, T19);
-D1-D3, D5-D8, D10, D11, D14 y D15 = A; D9 = A. Spec aprobada en el texto; el
-estado en `features.json` lo pasa el líder. Riesgos (design §11): capacidad
-conservadora en la obra de postventa, la VAR y la 0404; una obra quitada
-del cuadrante deja su línea nuestra como sobrante (se pregunta). Test ajeno
+- **T10 (líder, local, solo lecturas en Sigrid), antes de B.** Copia
+  temporal en el commit anterior a B: `git -C
+  C:/Users/pgris/PycharmProjects/porcentajes-f054 worktree add
+  ../porcentajes-f054-t10 ccad4db`, con sus `.venv`. Transfer, api y front
+  locales desde esa copia; `curl -s http://localhost:8006/health` con
+  `"modo_pruebas":true`, si no PARAR. Front, cuadrante 2026-09: cronometrar
+  «Registrar en Sigrid» hasta que el modal salga con todo el mes, tres
+  pasadas (método de F-055 T18), **Cancelar, sin Registrar**. Anotar la
+  mediana en `progress/impl_F-054.md`.
+- **T18 (humano, local, solo lecturas en Sigrid).** Transfer, api y front
+  locales. En Git Bash: `curl -s -X POST
+  http://localhost:8006/api/porcentajes/existentes -H "Content-Type:
+  application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'` ⇒ `ok`,
+  `lineas_leidas` > 0 y la `MADM` al 95 % de la 0694 con `destino = normal`.
+  Front, cuadrante 2026-09: «Sincronizar Sigrid» ⇒ la ventana lista al
+  trabajador del caso de la 0694; aceptar esa entrada sola ⇒ su otra línea
+  sigue igual; «Deshacer» la devuelve (O6: mirar que no pase a pisado).
+  Aceptarla otra vez y abrir el registro solo hasta el **preflight** ⇒ ya
+  registrada, sin pisado ni sobrecarga. Sincronizar de nuevo ⇒ `igual`.
+  Resultado en `progress/manual_F-054.md`.
+- **T19 (humano, `OBRA_PRUEBAS_FORZAR=true`; la única que escribe).** Crear
+  a mano en el parte En registro de la 0404, 2026-11, una línea `M*` con
+  `can = 0,2`, sin `synckey`, del recurso de prueba y con una partida que no
+  use su línea del cuadrante; y otra de uno de sus vinculados, con su hora,
+  en otra partida que no use su subfila. En Git Bash: `cd
+  services/dedicacion-transfer && .venv/Scripts/python
+  prueba_escritura_porcentajes.py estado --ano 2026 --mes 11` (solo lectura;
+  anotar `ide` y `pos`). Front: registrar al trabajador ⇒ salen como
+  sobrantes, desmarcadas; **sin marcarlas**, Registrar ⇒ `estado` igual.
+  Otra vez, **marcándolas** ⇒ mismos `ide` y `pos` con `can` y `tot` a 0,
+  ningún `DELETE` en el log del transfer. Preflight del mes como en T10: ≤
+  1,15 × la mediana de T10 (si no, PARA, design §6.4). Resultado en
+  `progress/manual_F-054.md`.
+- **T20 (líder, al desplegar).** Orden transfer → api → front. Refrescar
+  `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` y comprobar con `git
+  -C C:/Users/pgris/PycharmProjects/azure-apps log -1 -- dedicacion.md`.
+  **Aviso a `partes`**: el transfer pone a 0 líneas `M*` y de vinculados de
+  los partes compartidos, sin borrarlas.
 
 ## F-068 · CERRADA y DESPLEGADA (2026-10-28), MANUAL hecha
 
