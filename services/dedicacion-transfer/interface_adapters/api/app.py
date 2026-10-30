@@ -6,6 +6,8 @@
                                    lecturas agrupadas (F-055 R19; solo lee);
                                    con `completo`, las sobrantes (F-054 R31)
   POST /api/registro/ejecutar   -> escribe en Sigrid (con pisar_claves)
+  POST /api/registro/poner-a-cero -> pone a 0 las sobrantes confirmadas,
+                                   sin borrar (F-054 R35; escribe)
   POST /api/postventa/universo  -> obras de una empresa que admiten postventa
                                    (ARCHITECTURE.md#regla-p5; solo lee)
   POST /api/var/universo        -> obra VAR de una empresa y sus partidas VAR
@@ -31,6 +33,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from application.pipelines.poner_a_cero import PonerACero
 from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.porcentajes_existentes import (
@@ -167,6 +170,27 @@ class LoteIn(BaseModel):
     # F-054 (R31, R33): el preflight del periodo o de un trabajador (no el
     # de una obra sola) pide además las sobrantes; sin él, como hoy.
     completo: bool = False
+
+
+class LineaCeroIn(BaseModel):
+    """F-054 (R35): una sobrante confirmada, tal como la publicó el
+    preflight (lo que la guarda compara al releer)."""
+
+    hmores_ide: int
+    recurso_ide: int
+    hora: str | None = None
+    vinculado: dict | None = None
+    can: float
+    synckey: str | None = None
+
+
+class PonerACeroIn(BaseModel):
+    """`POST /api/registro/poner-a-cero` (F-054, R35)."""
+
+    empresa: int
+    ano: int
+    mes: int
+    lineas: list[LineaCeroIn] = Field(default_factory=list)
 
 
 class UniversoIn(BaseModel):
@@ -456,6 +480,19 @@ def build_app(settings) -> FastAPI:
         return {"ok": True, "obras": obras,
                 **({"sobrantes": [asdict(s) for s in sobrantes]}
                    if sobrantes is not None else {})}
+
+    @app.post("/api/registro/poner-a-cero")
+    def poner_a_cero(p: PonerACeroIn):
+        """F-054 (R35): pone a 0 (`can` y `tot`) las sobrantes confirmadas,
+        con la guarda de F-051; las que no la cumplen vuelven en `omitidas`.
+        Ningún `DELETE`. La api la llama ANTES de las escrituras por obra."""
+        try:
+            return PonerACero(cliente=cliente, settings=settings).ejecutar(
+                p.empresa, p.ano, p.mes, [x.model_dump() for x in p.lineas])
+        except Exception as exc:                # noqa: BLE001
+            logger.exception("poner a 0 fallo")
+            return JSONResponse(status_code=502,
+                                content={"ok": False, "error": str(exc)})
 
     @app.post("/api/registro/ejecutar")
     async def ejecutar(p: PeticionIn):
