@@ -35,6 +35,9 @@ class TipoEvento(str, Enum):
     # Sustitución de las incidencias del trabajador (F-030, R17); su
     # snapshot es de incidencias, no de líneas (R20).
     INCIDENCIAS = "INCIDENCIAS"
+    # Entradas aceptadas de Sigrid (F-054, R25); su snapshot es el de
+    # líneas con las subfilas, como el de `PARTIDA_VINCULADO`.
+    SIGRID = "SIGRID"
 
 
 class ResultadoCompletado(str, Enum):

@@ -18,6 +18,7 @@ from domain.models import (
     Periodo,
     ResultadoSyncMaestro,
     TipoIncidencia,
+    ResultadoExistentes,
     ResultadoUniverso,
     ResultadoUniversoVar,
     TipoEvento,
@@ -59,6 +60,20 @@ class UniversoVarGateway(Protocol):
 
 class UniversosGateway(UniversoPostventaGateway, UniversoVarGateway, Protocol):
     """Los dos universos que el sync pide al transfer (un solo cliente)."""
+
+
+class PorcentajesSigridGateway(Protocol):
+    """Las líneas mensuales del periodo en los partes de Sigrid, leídas y
+    traducidas a entradas por el transfer (F-054, R4-R12,
+    docs/ARCHITECTURE.md#regla-traer-sigrid). Solo lectura."""
+
+    def porcentajes_existentes(
+        self, empresa: int, anio: int, mes: int, obras: list[dict[str, Any]]
+    ) -> ResultadoExistentes:
+        """Las de `empresa` en el periodo; `obras` (`ide`, `codigo`,
+        `nombre`), las que admiten postventa. Lanza
+        `PorcentajesSigridNoDisponible` si el transfer no las da."""
+        ...
 
 
 class TrabajadorRepository(Protocol):
