@@ -8,7 +8,8 @@ cubre, en cualquier estado (también omitida: la obra se la da la
 plataforma):
 
 - normal: alguna acción no de postventa ni VAR va a esa obra;
-- en la obra de postventa: alguna de postventa resolvió esa partida;
+- en la obra de postventa: alguna de postventa con esa partida, o una
+  omitida antes de resolverla, que no se sabe cuál es y las cubre todas;
 - en la VAR: alguna viene de una entrada VAR con ese `var_paride`;
 - en pruebas (R32) solo cuentan las de la obra de pruebas: cubierta si una
   acción la reconoce (ya registrada, choque, al 0) o tiene su partida.
@@ -48,6 +49,12 @@ class Cobertura:
     var_paride: int | None
 
 
+def _destino(destino: str, es_postventa: bool) -> str:
+    """La `Postv-` omitida antes de resolverse lleva `destino="obra"` y
+    `paride=0` (`ReglasPorcentajes.decidir`), pero sigue siendo de postventa."""
+    return "postventa" if es_postventa else destino
+
+
 def coberturas_de(pf: Preflight, lineas: Iterable[LineaEntrada]
                   ) -> dict[int, list[Cobertura]]:
     """Por recurso, las coberturas de todas las acciones de un preflight (de
@@ -61,12 +68,13 @@ def coberturas_de(pf: Preflight, lineas: Iterable[LineaEntrada]
         if recurso is None:
             continue
         out.setdefault(int(recurso), []).append(Cobertura(
-            obra, a.destino, int(a.paride or 0),
+            obra, _destino(a.destino, a.es_postventa), int(a.paride or 0),
             linea.var_paride if linea else None))
     for v in pf.vinculados:
         titular = por_id.get(v.registro_id)
         out.setdefault(int(v.recurso_ide), []).append(Cobertura(
-            obra, v.destino, int(v.paride or 0),
+            obra, _destino(v.destino, bool(titular and titular.es_postventa)),
+            int(v.paride or 0),
             titular.var_paride if titular else None))
     return out
 
@@ -99,7 +107,7 @@ def cubierta(linea: LineaMensualSigrid, coberturas: Iterable[Cobertura], *,
         return linea.hmores_ide in reconocidas or any(
             c.paride == paride for c in cob)
     if linea.obra_cod == cod_pv:
-        return any(c.destino == "postventa" and c.paride == paride
+        return any(c.destino == "postventa" and c.paride in (0, paride)
                    for c in cob)
     if linea.obra_cod == cod_var:
         return any(c.var_paride == paride for c in cob)

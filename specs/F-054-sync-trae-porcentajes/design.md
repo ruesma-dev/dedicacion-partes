@@ -132,8 +132,9 @@ vinculados, *, ajustes) -> list[Sobrante]`.
 
 - **Cubierta** (R31) por **cualquier** acción del recurso, también omitida
   (la obra se la da la plataforma): normal, si alguna va a esa obra; en la
-  de postventa, si alguna de postventa resolvió esa partida; en la VAR, si
-  alguna tiene ese `var_paride`. En pruebas (R32), solo la 0404: si su `ide`
+  de postventa, si alguna de postventa resolvió esa partida o se omitió sin
+  resolverla (sin partida conocida, cubre todas; review 1, O2); esa no cubre
+  una normal de su obra de origen; en la VAR, si alguna tiene ese `var_paride`. En pruebas (R32), solo la 0404: si su `ide`
   está en `reconocidas` (ya registrada, choque, `linea_cero`) o alguna
   acción tiene su partida. **Vinculados** (R38, D16): igual con las
   `AccionVinculado` de **ese** recurso (`Preflight.vinculados`: llevan

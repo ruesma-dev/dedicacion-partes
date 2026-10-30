@@ -365,3 +365,47 @@ def test_f054_r31_lote_ruta_sin_completo_como_hoy_y_con_el_sobrantes(api):
         "parte_cod": "PT26/1", "parte_est": 1, "hora": "MENC",
         "paride": 9, "partida_cod": None, "can": 0.3, "synckey": None,
         "confirmable": True, "motivo": None}]
+
+
+# ---------- O2: la postventa omitida antes de resolverse (review 1) -------- #
+def _postv(rid, recurso=10, **kw):
+    return LineaEntrada(registro_id=rid, ano=2026, mes=9, porcentaje=0.5,
+                        recurso_ide=recurso, es_postventa=True, **kw)
+
+
+def test_f054_r31_o2_postventa_omitida_sigue_siendo_de_postventa():
+    """`omitir` deja `destino="obra"` y `paride=0` en una `Postv-` sin
+    partida: la cobertura es de postventa, también la de su vinculado."""
+    lineas = [_postv(1, vinculados=[VinculadoEntrada(recurso_ide=5000)])]
+    pf = _pf([_a(1, 10, "omitir", motivo="postventa off", es_postventa=True)],
+             [AccionVinculado(registro_id=1, recurso_ide=5000,
+                              accion="omitir", ano=2026, mes=9,
+                              fecha_int=20260930, destino="obra")])
+    assert coberturas_de(pf, lineas) == {
+        10: [Cobertura(694, "postventa", 0, None)],
+        5000: [Cobertura(694, "postventa", 0, None)]}
+
+
+def test_f054_r31_o2_sin_resolver_cubre_la_obra_de_postventa_sin_la_de_origen():
+    cob = [Cobertura(694, "postventa", 0, None)]
+    assert _cub(_m(1, obra=999, cod=PV, paride=33), cob)
+    assert _cub(_m(2, obra=999, cod=PV, paride=0), cob)
+    assert not _cub(_m(3, obra=694), cob)
+
+
+def test_f054_r31_o2_resuelta_solo_cubre_su_partida():
+    cob = [Cobertura(694, "postventa", 33, None)]
+    assert _cub(_m(1, obra=999, cod=PV, paride=33), cob)
+    assert not _cub(_m(2, obra=999, cod=PV, paride=34), cob)
+    assert not _cub(_m(3, obra=999, cod=PV, paride=0), cob)
+
+
+def test_f054_r31_o2_lote_postventa_apagada_de_punta_a_punta():
+    """Con `POSTVENTA_REGISTRAR=false`: la línea real de postventa no sale
+    y la normal de la obra de origen, que la plataforma no da, sí."""
+    cli = ClienteMensual(mensuales=[
+        _mes(7001, 999, "POSTV2", paride=9), _mes(7002, 600001, "O001")])
+    _, sob = _completo(
+        cli, [(_obra(1), [linea(es_postventa=True)])],
+        obra_pruebas_forzar=False, postventa_registrar=False)
+    assert [s.hmores_ide for s in sob] == [7002]
