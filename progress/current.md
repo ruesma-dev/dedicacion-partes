@@ -1,18 +1,24 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 EN CURSO (`in_progress` desde el 2026-10-29)** (al sincronizar,
-traer al cuadrante los % que ya existen en los partes de Sigrid, y al
-registrar preguntar si se ponen a 0 las obras sobrantes; rigor crítico,
-SDD), rama `feature/F-054-sync-trae-porcentajes` en la copia
-`porcentajes-f054` (con `dev` unido y sus tres `.venv` creados; init.sh en
-verde). Spec revisada contra F-044, F-062 y F-068 y **APROBADA el
-2026-10-29** con D16 = C, D17 = A y D18 = A («estoy de acuerdo»,
-`14d56ff`); implementer lanzado el 2026-10-29 («si»). **F-068** (la partida del recurso vinculado se propone como la del
-trabajador: historial en la obra y, si no, por nombre, CI.4 en empate;
-transfer y api, rigor crítico, SDD; petición del humano del 2026-10-28, va
-antes de F-054), rama `feature/F-068-propuesta-vinculado-como-titular`,
-**cerrada (`done`) el 2026-10-28**: review 1 APROBADA (`0762c25`), observaciones recogidas, equivalente aceptado por el humano, `bash harness/init.sh` en verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (transfer `r20261028-1914`, api `r20261028-1918`, front `r20261028-1922`; «Producción, hoy»); T14 hecha (`azure-apps` `bcc3f71`). **MANUAL T13 hecha por el humano en producción el 2026-10-28** («comprobado, sale bien»): F-068 cerrada del todo. Después de F-054, F-066. **F-067** (casilla «Recursos vinculados» para
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29), EN REVIEW**
+(al sincronizar, traer al cuadrante los % que ya existen en los partes de
+Sigrid, y al registrar preguntar si se ponen a 0 las obras sobrantes;
+rigor crítico, SDD), rama `feature/F-054-sync-trae-porcentajes` en la copia
+`porcentajes-f054`. Spec revisada contra F-044, F-062 y F-068 y **APROBADA
+el 2026-10-29** con D16 = C, D17 = A y D18 = A («estoy de acuerdo»,
+`14d56ff`). Implementación terminada el 2026-10-30 (T1-T9, T11-T17 y T21;
+`progress/impl_F-054.md`, último commit `5db4d76`): mutación Python 262/262
+y `app.js` 69/69, sin equivalentes. **Pendientes MANUAL**, con sus comandos
+en `tasks.md` e `impl_F-054.md`: T10 (medida base del líder, solo lecturas,
+sobre `ccad4db`), T18 (humano, local, solo lecturas), T19 (humano, modo
+pruebas, única que escribe) y T20 (despliegue transfer → api → front,
+`azure-apps/dedicacion.md` y aviso a `partes`: el transfer pone a 0 líneas
+`M*` y de vinculados en partes compartidos, sin borrarlas). **`azure-apps`
+pendiente:** T20. **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la
+api (`990e264`), porque la 2.1 rompía F-003 R14. Después de F-054, F-066. 
+
+**F-068** cerrada, desplegada y con su MANUAL hecha el 2026-10-28 (sección propia, abajo). **F-067** (casilla «Recursos vinculados» para
 ver u ocultar sus subfilas en el cuadrante; solo front) **cerrada (`done`)
 el 2026-10-28**: review 1 APROBADA (`8423a5a`), `bash harness/init.sh` en
 verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (solo el
