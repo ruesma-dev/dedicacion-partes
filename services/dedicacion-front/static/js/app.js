@@ -2894,7 +2894,7 @@ function modeloTraerSigrid(datos) {
       },
     });
   }));
-  return { filas, orden: { col: null, asc: true },
+  return { filas, orden: { col: null },
     filtros: { trabajador: "", obra: "", estado: "", detalle: "" } };
 }
 

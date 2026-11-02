@@ -607,3 +607,28 @@ def test_f054_r42_texto_del_boton_de_aceptar():
         "Aceptar 0 marcadas", "Aceptar 4 marcadas",
         "Aceptar 4 marcadas (1 ocultas por el filtro)",
         "Aceptar 4 marcadas (4 ocultas por el filtro)"]
+
+
+# ---- T23, campaña 5 de mutación manual: D11 y D51 vivos ---- #
+def test_f054_r41_al_abrir_ningun_filtro_esta_puesto():
+    """Ningún filtro viene puesto: tras ordenar se ven todas las filas
+    (descripciones sin letras comunes, para que ningún texto inicial las
+    deje pasar por casualidad) y los campos de filtro salen vacíos."""
+    datos = {**DATOS, "trabajadores": [{**DATOS["trabajadores"][0],
+                                        "entradas": [
+                                            {**_entrada(713, "solo_sigrid",
+                                                        sig=5),
+                                             "descripcion": "1"},
+                                            {**_entrada(720, "igual", sig=20,
+                                                        cua=20),
+                                             "descripcion": "2"}]}]}
+    r = _programa(_api(datos=datos), 'await traerDeSigrid([]); ordenar("obra");')
+    assert _ides(r, datos) == [0, 1]
+    assert "value=" not in r["modal"]["html"].split('id="traer-filtros"')[1]         .split("</tr>")[0].replace('<option value="', "")
+
+
+def test_f054_r39_sin_entradas_no_hay_tabla():
+    r = _programa(_api(datos={**DATOS, "trabajadores": []}),
+                  "await traerDeSigrid([]);")
+    assert "<table" not in r["modal"]["html"]
+    assert r["escuchas"] == {"#btn-traer-cerrar": ["click"]}
