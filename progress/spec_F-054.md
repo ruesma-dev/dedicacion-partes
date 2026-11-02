@@ -198,3 +198,49 @@ nuevo (4 bis) pide un test que fije «Postventa» para la omitida tras
 resolver y «Obra» para la omitida antes. Para seguir en 250/250 se
 reenvolvieron §6.2, §6.4, §7 y §12 D19 a líneas más largas, sin quitar
 texto. Tamaños: requirements 149/150, design 250/250.
+
+## 2026-11-02 · Enmienda tras la MANUAL T18: ventana de una tabla y D12 revisada
+
+Pedida y aprobada por el humano vía el líder (MANUAL T18, ventana «Sincronizar Sigrid»: aceptó
+de más porque `solo_sigrid` salía marcada y quitarlas de una en una era inviable).
+
+**Qué cambia en la spec**
+
+- **D12 revisada** («2, ok», 2026-11-02): `solo_sigrid` sale **desmarcada**, como `distinta`;
+  las dos se pueden marcar. Reescrita en todos sus sitios: requirements R21, R28, §4 (`[D12]`)
+  y §6 (párrafo propio, con la cita antigua «d12, con la casilla marcada por defecto, aunque se
+  puede desmarcar» como sustituida); design cabecera y §7; tasks T9 (anotado que T23 la cambia)
+  y T18. El «déjalo así» sobre lo ya aceptado en el cuadrante local de 2026-09 consta en §6.
+- **R39-R42 nuevos** (requirements §4): una sola tabla (casilla, Trabajador, Obra, Estado,
+  Cuadrante, Sigrid, Detalle); orden por cabecera con segunda pulsación que invierte (texto sin
+  mayúsculas, numérico con la raya al final, empate estable); filtros de texto en Trabajador,
+  Obra y Detalle y desplegable en Estado, combinados, que no tocan casillas; «Desmarcar todas»
+  (también las ocultas), «Marcar las visibles» y el botón «Aceptar N marcadas (K ocultas por
+  el filtro)». R28: aceptar manda **exactamente** las marcadas, visibles u ocultas, con el
+  cuerpo de hoy. Fuera: guardar los filtros al cerrar (cabecera de requirements).
+- **design §7 A**: modelo `{filas, orden, filtros}` con `marcada` por fila; se repinta solo el
+  `<tbody>` y el botón con dos funciones puras (`filasTraerVisibles`, `textoAceptarTraer`);
+  `aceptadasMarcadas()` lee el modelo y no el DOM, porque una fila oculta no se pinta. §3 suma
+  `static/css/styles.css`. Api, transfer y contrato no cambian: es presentación (sin cálculo
+  de qué se registra en el front).
+- **tasks**: **T23** nueva (front, tests primero en `test_f054_traer_front.py`, siete puntos de
+  verificación, y `ARCHITECTURE.md` punto 23, que hoy dice «ventana por trabajador» y
+  «`solo_sigrid` (marcada, desmarcable)»). **T18** paso 2 rehecho para después de T23: ninguna
+  casilla marcada, filtro `0694`, «Marcar las visibles», contador con ocultas, «Desmarcar
+  todas», orden invertido y, luego, aceptar solo la entrada de la `MADM`.
+
+**Tamaños.** requirements 150/150, design 250/250. Para caber se reenvolvieron los párrafos a
+~96 columnas (sin cambiar texto) y se compactó redacción: en requirements §6, la D19 remite sus
+efectos (modal, vinculado omitido) a design §12, donde siguen enteros; en design se acortaron
+expresiones sin contenido normativo («No es otro servicio», «> 15 % ⇒ PARA», etc.).
+
+**Puntos para el humano / el líder**
+
+1. **T18 con lo ya aceptado.** Si la entrada de la `MADM` de la 0694 sale `igual` por lo
+   aceptado el 2026-11-02 («déjalo así»), el paso de aceptar y «Deshacer» de T18 no se puede
+   hacer con ella: T18 dice usar otra `distinta` o `solo_sigrid` y anotarlo. Si el humano
+   prefiere deshacer antes ese evento `SIGRID`, que lo diga.
+2. **Mutación en rigor crítico.** T23 es solo JS del front; si la campaña de
+   `harness.mutacion` no cubre JS, el líder decide si basta con los tests de las dos puras.
+3. Detalles que la spec deja al implementer y no cambian el comportamiento: dónde vive el
+   modelo (`state` o cierre de `abrirTraerSigrid`) y el marcador visual del orden (▲/▼).
