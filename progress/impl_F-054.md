@@ -12,7 +12,7 @@ Commit por tarea: T1 `d12ec81`, T2 `bf2361a`, T3 `f99e0cd`, T4
 `ccad4db`, T11 `892d93f`, T12 `eaaca4b`, T13 `60a7dab`, T14 `d382ae7`, T15
 `f5a9bb8`, T16 `95cc089`, T17 `e72d22c`/`c614be3`/`1c16454`, T21. Review 1:
 O1 `e881a17`, O4 `56dd403`, O2 `5d426b5`, O5 `97e5fed`. T22 (D19): `abd5514`
-(RED), `fd56da6` (código), `69647cf` (4 bis), `a781d25`. MANUAL: T10, T18-T20.
+(RED), `fd56da6` (código), `69647cf` (4 bis), `a781d25`. T23: `828b393` (RED) … `b660091` (ver su sección). MANUAL: T10, T18-T20.
 
 ## Ficheros tocados
 
@@ -164,7 +164,7 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
   pasadas (F-055 T18), en `ccad4db` (**antes de B**). **Hecha el 2026-10-30**:
   12,25 / 9,20 / 10,34 s, **mediana 10,34 s** (umbral de T19: ≤ 11,89 s); el
   log del transfer, solo `preflight-lote` y `propuesta-lote`.
-- **T18** (humano, local, solo lecturas; **tras cerrar T23**): 1) Git Bash: `curl -s -X POST http://localhost:8006/api/porcentajes/existentes -H "Content-Type: application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'`. 2) **Nuevo**: front, 2026-09, «Sincronizar Sigrid» → una sola tabla, **ninguna** casilla marcada; `0694` en Obra → solo sus filas y «Aceptar 0 marcadas»; «Marcar las visibles» → «Aceptar N marcadas»; otra obra en el filtro → «(N ocultas por el filtro)»; «Desmarcar todas» y vaciar el filtro → «Aceptar 0 marcadas»; dos clics en Obra → orden invertido; con `0694`, marcar solo la `MADM`, aceptar y «Deshacer» (si sale `igual`, otra `distinta`/`solo_sigrid`, y anotarlo). 3) y 4) como en `tasks.md` → `progress/manual_F-054.md`.
+- **T18** (humano, local, solo lecturas; T23 ya cerrada): 1) Git Bash: `curl -s -X POST http://localhost:8006/api/porcentajes/existentes -H "Content-Type: application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'`. 2) **Nuevo**: front, 2026-09, «Sincronizar Sigrid» → una sola tabla, **ninguna** casilla marcada; `0694` en Obra → solo sus filas y «Aceptar 0 marcadas»; «Marcar las visibles» → «Aceptar N marcadas»; otra obra en el filtro → «(N ocultas por el filtro)»; «Desmarcar todas» y vaciar el filtro → «Aceptar 0 marcadas»; dos clics en Obra → orden invertido; con `0694`, marcar solo la `MADM`, aceptar y «Deshacer» (si sale `igual`, otra `distinta`/`solo_sigrid`, y anotarlo). 3) y 4) como en `tasks.md` → `progress/manual_F-054.md`.
 - **T19** (humano, `OBRA_PRUEBAS_FORZAR=true`): líneas a mano en la 0404;
   `cd services/dedicacion-transfer && .venv/Scripts/python
   prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`; registrar sin
@@ -175,15 +175,17 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
   a `partes`: el transfer pone a 0 (sin borrar) `M*` y de vinculados en
   partes compartidos. **Fuera**: `features.json` y el cierre (líder).
 
-## T23 · 2026-11-02 (enmienda tras T18): PARADA, falta una decisión
+## T23 · 2026-11-02 (enmienda tras T18): ventana de una tabla, D12 desmarcada
 
-- **Hecho**: RED `828b393` (`test_f054_traer_front.py`: 18 tests nuevos de R39-R42; de T9 cambian, sin borrarse, el de la casilla, que ahora fija **ninguna** `checked` (D12), el de las escuchas, sin casillas, sin pulsar y aceptar, que lee el modelo). Código `8c83473`, **sin cerrar T23**: en `app.js` las puras `filasTraerVisibles` y `textoAceptarTraer` y `modeloTraerSigrid`, `textoBotonTraer`, `cuerpoTraerSigrid`, `titulosTraerSigrid` (▲/▼); `filaEntradaSigrid(f)`, `pintarTraerSigrid(datos, modelo)`, `aceptadasMarcadas(modelo)` y `abrirTraerSigrid` (modelo en su cierre; escuchas en `#traer-titulos`, `#traer-filtros` y `#traer-cuerpo`; repinta títulos, `<tbody>` y botón, nunca los filtros). CSS `.acciones-traer`, `.tabla-traer`. Api, transfer y contrato, intactos.
+- **Commits**: RED `828b393`; código `8c83473`; parada e informe `d883019`/`68fa411`; opción «a» `8d997dd`; `ARCHITECTURE.md` punto 23 `488d423`; mutación y tests nuevos `2af8177`; campañas y T23 `[x]` `b660091`.
+- **Código** (`app.js`): las puras `filasTraerVisibles` (filtros «contiene» sin mayúsculas sobre lo pintado y estado exacto; `sort` estable, raya al final en los dos sentidos) y `textoAceptarTraer`; `modeloTraerSigrid` (filas en el orden de la respuesta, `marcada = false`, D12), `textoBotonTraer`, `cuerpoTraerSigrid`, `titulosTraerSigrid` (▲/▼); `filaEntradaSigrid(f)`, `pintarTraerSigrid(datos, modelo)`, `aceptadasMarcadas(modelo)` (lee el modelo, ocultas incluidas; cuerpo de hoy) y `abrirTraerSigrid` (modelo en su cierre; escuchas en `#traer-titulos`, `#traer-filtros` y `#traer-cuerpo`; repinta títulos, `<tbody>` y botón, nunca los filtros). CSS `.acciones-traer` y `.tabla-traer`. Api, transfer y contrato, intactos. El botón dice «Aceptar N marcadas», como la spec (el singular no está decidido).
+- **Tests** (`test_f054_traer_front.py`): 20 nuevos (R39-R42 y los dos de la campaña 5); de T9 cambian sin borrarse el de la casilla (ahora **ninguna** `checked`), escuchas, sin casillas, sin pulsar y aceptar (desde el modelo). Fichero: `40 passed`.
 - **RED** (desde el front, `.venv/Scripts/python -m pytest tests/test_f054_traer_front.py -q -p no:cacheprovider`, antes del código): `E AssertionError: no existe la función modeloTraerSigrid en app.js` (35) y `… textoAceptarTraer …` (1) → `36 failed, 2 passed in 2.77s`. Tras `8c83473`: `38 passed in 9.62s`.
-- **Motivo de la parada**: front entero `1 failed, 504 passed in 74.79s`. Cae `test_f050_modal_registro.py::test_f050_r29_el_front_ya_no_manda_overrides_ni_lee_catalogos`, que exige `"<select" not in JS` en **todo** `app.js` (F-050 T12, `46b393a`: el modal de registro elige la partida sin `<select>`). El desplegable de Estado de R41 es un `<select>`. El test **no** está en la lista cerrada de `tasks.md` ⇒ no se toca; tampoco se esquiva (un `createElement("select")` cumpliría la letra y no la intención).
-- **Opciones para el humano**: (a) **recomendada**: acotar esa aserción a lo que protege F-050 (`"<select" not in _funcion("pintarModalPreflight")`, o ningún `select` de partida) y sumar el fichero a la lista cerrada; el `<select>` de T23 filtra estados, no elige partida. (b) Estado como filtro de texto, como los otros (cambia R41). (c) Desplegable sin `<select>` (botón y panel, como el selector de partida): más código y más mutantes.
-- `bash harness/init.sh` tras `d883019` (caché `suite_*.ok` borrada): código 1, **un solo `[KO]`**, el front (`1 failed, 250 passed`, el mismo test de F-050, con `-x`); api `1469 passed`, transfer `1865 passed`, raíz `418 passed, 1 skipped`, cobertura 99,5 % y tamaño (impl 209/220) en `[OK]`.
-- **Pendiente tras decidir**: `ARCHITECTURE.md` punto 23, mutación manual de `app.js` (mecanismo de `progress/mutacion_manual_F-054.md`), `bash harness/init.sh` sin `[KO]`, T23 `[x]` y la MANUAL T18 paso 2. Sin tocar: `current.md`, `features.json`, los `.env`.
-- Detalle a confirmar: el rótulo sigue la spec al pie de la letra, «Aceptar 1 marcadas» incluido; se puede poner en singular si se quiere.
+- **Parada y decisión**: el `<select>` de Estado (R41) tumbaba `test_f050_r29_el_front_ya_no_manda_overrides_ni_lee_catalogos` (`"<select" not in JS`, fuera de la lista cerrada). El humano eligió **«a»** (2026-11-02): la aserción se acota a la elección de partida (ningún `<select` en `pintarModalPreflight`, `montarSelectorPartida`, `listaSelector` ni `htmlPartida`, y en todo `app.js` solo los de `pintarTraerSigrid`); el resto del test, igual. `test_f050_modal_registro.py` entra en la lista cerrada (tasks, design §3 y T23). Comprobado con 5 mutantes a mano (un `<select>` al principio de cada una de esas cuatro funciones y de `textoPartidaAccion`): **5/5 muertos**, base `1 passed`.
+- **Mutación manual de `app.js`** (`progress/mutacion_manual_F-054.md`, campañas 5 y 6): 81 mutantes sobre las funciones nuevas, 78 muertos y 3 vivos. D10, equivalente (`asc` inicial sin leer), se quita del código; D11 (filtro inicial) y D51 (tabla sin filas), huecos reales con test nuevo; la campaña 6 los mata (3/3, más D10b). **Total: 84 mutantes, 0 supervivientes.**
+- **Docs**: `ARCHITECTURE.md` punto 23 (`#regla-traer-sigrid`): tabla única, las dos desmarcadas, orden, filtros, botones y la D12 revisada con su cita. `INTEGRACION.md` no la describía: sin cambio.
+- **`bash harness/init.sh`** tras `b660091` (caché `suite_*.ok` borrada, sin pipes): código 0, **sin `[KO]`**: api `1469 passed` (110,67 s), front `507 passed` (97,94 s), transfer `1865 passed` (42,41 s), raíz `418 passed, 1 skipped` (74,03 s); cobertura 99,5 % (755/759; no mide JS) y tamaño (impl 210/220) en `[OK]`.
+- **Pendiente** (humano): MANUAL T18 paso 2 (comando y pasos abajo), T19; T20 al desplegar (líder).
 
 ## Evidencias
 
@@ -191,10 +193,10 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
 
 | Evidencia | Resultado real |
 |---|---|
-| Tests | api `1469 passed` (152,47 s); transfer `1865 passed` (69,40 s); front `489 passed` (241,96 s); raíz `418 passed, 1 skipped` (72,71 s). Antes de T22 (`36a7d4b`): 1469 / 1849 / 488 / 418+1 |
+| Tests | api `1469 passed` (152,47 s); transfer `1865 passed` (69,40 s); front `489 passed` (241,96 s); tras T23 (`b660091`), front `507 passed` (97,94 s) y el resto igual; raíz `418 passed, 1 skipped` (72,71 s). Antes de T22 (`36a7d4b`): 1469 / 1849 / 488 / 418+1 |
 | Cobertura de líneas cambiadas | **99,5 %** (755/759, umbral 80 %; antes 748/752). No mide JS |
 | Mutación Python | T22: 266 generados, **266 muertos, 0 supervivientes**, 0 timeouts, 4 workers, 3696 s, SHA `a781d25`; `reglas_porcentajes.py` no genera ninguno: RM4 a mano, **8/8 muertos** (`progress/mutacion_F-054.md`). Antes: `c70eb61` 266/266 (4837 s), `c614be3` 262/262 |
-| Mutación `app.js` | manual, **69 + 14 (O5) mutantes, 0 supervivientes**: `progress/mutacion_manual_F-054.md`; T22 no toca `app.js` |
+| Mutación `app.js` | manual, **69 + 14 (O5) mutantes, 0 supervivientes**: `progress/mutacion_manual_F-054.md`; T22 no toca `app.js`; T23: **81 + 3, 0 supervivientes** (campañas 5 y 6; D10 equivalente, quitado del código) |
 
 **Análisis de supervivientes.** Ningún equivalente: nada queda para que lo
 acepte el humano. La campaña 1 (`95cc089`, 207/262,
