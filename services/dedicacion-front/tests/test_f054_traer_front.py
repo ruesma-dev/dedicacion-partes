@@ -1,13 +1,16 @@
 # tests/test_f054_traer_front.py
-"""F-054 · T9: el front de «traer de Sigrid» (R1, R28; design §7).
+"""F-054 · T9 y T23: el front de «traer de Sigrid» (R1, R28, R39-R42; §7).
 
 Tras un sync con éxito, `sincronizarYTraer` pide comparar (`traerDeSigrid`
 con `aceptar` vacío); tras uno fallido, no (R1). La ventana pinta lo que
-manda la API: por trabajador, sus entradas con estado y los dos %, y una
-casilla solo en las `distinta` (desmarcada) y las `solo_sigrid` (marcada,
-D12). «Aceptar las marcadas» manda justo las marcadas y recarga; sin
-pulsarlo no se manda nada; un error se avisa (R28). El front no compara ni
-decide.
+manda la API en **una sola tabla** (T23, R39): una fila por entrada con
+estado y los dos %, y una casilla solo en las `distinta` y las
+`solo_sigrid`, las dos **desmarcadas** (D12 revisada el 2026-11-02). Se
+ordena por cabecera (R40) y se filtra (R41) sin tocar las casillas;
+«Desmarcar todas», «Marcar las visibles» y «Aceptar N marcadas (K ocultas
+por el filtro)» (R42). Aceptar manda exactamente las marcadas, también las
+ocultas, y recarga; sin pulsarlo no se manda nada; un error se avisa (R28).
+El front no compara ni decide.
 
 Se ejecutan las funciones REALES de `app.js` en node con dobles de `api`,
 `toast`, `$`, `document` y `cargarPeriodo`; sin `node` se saltan con su
@@ -16,6 +19,7 @@ gana su `true` / `false`. Sin red ni BBDD.
 """
 from __future__ import annotations
 
+import html
 import json
 import re
 
@@ -37,6 +41,8 @@ def _entrada(obra, estado, *, pv=False, sig=None, cua=None, motivo=None):
             "n_lineas": 1 if sig else 0, "motivo": motivo}
 
 
+#: Índice de cada entrada en la respuesta (el `data-fila` de su casilla):
+#: Ana 0-5, Bea 6-7. Casilla en 1, 2, 3, 6 y 7.
 DATOS = {
     "trabajadores": [
         {"trabajador_ide": 10, "cod": "10", "nombre": "Ana", "aceptadas": [],
@@ -48,7 +54,11 @@ DATOS = {
              _entrada(720, "igual", sig=20, cua=20),
              _entrada(730, "no_traducible", sig=120,
                       motivo="el porcentaje de Sigrid (120.00) no está en "
-                             "(0, 100]")]}],
+                             "(0, 100]")]},
+        {"trabajador_ide": 20, "cod": "7", "nombre": "Bea <B>",
+         "aceptadas": [], "entradas": [
+             _entrada(694, "solo_sigrid", sig=30),
+             _entrada(801, "distinta", sig=50, cua=10, motivo="ojo <m>")]}],
     "aceptadas": 0, "rechazadas": [],
     "no_traidas": [{"hmores_ide": 1, "recurso_ide": 30, "obra_cod": "0694",
                     "parte_cod": "PT26/1", "can": 0.5,
@@ -58,14 +68,29 @@ DATOS = {
     "motivo_var": None, "propuestas_en_curso": False}
 
 #: Dobles comunes: lo que se pide a la api, los avisos, el modal y sus
-#: botones (con sus escuchas) y las casillas marcadas.
+#: elementos (con sus escuchas y lo que se repinta en ellos). `ordenar`,
+#: `filtrar`, `casilla` y `pulsar` mandan los eventos que daría el
+#: navegador (también los que la ventana debe ignorar); `anota` guarda el
+#: texto del botón de aceptar.
 DOBLES = r"""
 var state = { anio: 2026, mes: 9 };
 var pedidas = []; var avisos = []; var modal = { abierto: false, html: "" };
 var boton = { disabled: false, textContent: "" };
-var botones = {};
-function El() { this.escuchas = {}; }
+var botones = {}; var textos = [];
+function El() { this.escuchas = {}; this.innerHTML = null; this.textContent = null; }
 El.prototype.addEventListener = function (t, f) { this.escuchas[t] = f; };
+function evento(sel, tipo, target) { botones[sel].escuchas[tipo]({ target }); }
+function ordenar(col) {
+  evento("#traer-titulos", "click", { dataset: col ? { orden: col } : {} });
+}
+function filtrar(k, v) {
+  evento("#traer-filtros", "input", { dataset: { filtro: k }, value: v });
+}
+function casilla(i, v) {
+  evento("#traer-cuerpo", "change", { dataset: { fila: String(i) }, checked: v });
+}
+function pulsar(sel) { return botones[sel].escuchas.click(); }
+function anota() { textos.push(botones["#btn-traer-aceptar"].textContent); }
 function $(sel) {
   if (sel === "#btn-sync") return boton;
   if (!modal.abierto || !modal.html.includes(sel.slice(1))) return null;
@@ -77,16 +102,13 @@ async function cargarTiposIncidencia() { pedidas.push("tipos"); }
 function marcarPropuestas(x) { pedidas.push(["propuestas", !!x]); }
 function abrirModal(html) { modal.abierto = true; modal.html = html; }
 function cerrarModal() { modal.abierto = false; pedidas.push("cerrarModal"); }
-var marcadas = [];
-document.querySelectorAll = function (sel) {
-  pedidas.push(["querySelectorAll", sel]);
-  return marcadas.map((d) => ({ dataset: d }));
-};
 function fmtPct(v) { return String(v).replace(".", ",") + "%"; }
 """
 
 FUNCIONES = ("escapeHtml", "sincronizar", "sincronizarYTraer",
-             "traerDeSigrid", "textoEstadoSigrid", "filaEntradaSigrid",
+             "traerDeSigrid", "textoEstadoSigrid", "modeloTraerSigrid",
+             "filasTraerVisibles", "textoAceptarTraer", "textoBotonTraer",
+             "filaEntradaSigrid", "cuerpoTraerSigrid", "titulosTraerSigrid",
              "pintarTraerSigrid", "aceptadasMarcadas", "abrirTraerSigrid")
 
 
@@ -95,8 +117,11 @@ def _programa(api: str, cuerpo: str) -> object:
         DOM_TEXTO, DOBLES, api, *[_funcion(f) for f in FUNCIONES],
         "(async () => {", cuerpo,
         "process.stdout.write(JSON.stringify({ pedidas, avisos, modal,",
-        "  escuchas: Object.fromEntries(Object.entries(botones).map(",
-        "    ([k, v]) => [k, Object.keys(v.escuchas)])) }));",
+        "  textos, escuchas: Object.fromEntries(Object.entries(botones)",
+        "    .filter(([k, v]) => Object.keys(v.escuchas).length)",
+        "    .map(([k, v]) => [k, Object.keys(v.escuchas)])),",
+        "  els: Object.fromEntries(Object.entries(botones).map(([k, v]) =>",
+        "    [k, { innerHTML: v.innerHTML, textContent: v.textContent }])) }));",
         "})();"]))
 
 
@@ -146,22 +171,23 @@ def test_f054_r1_el_boton_de_sync_llama_a_sincronizar_y_traer():
             'sincronizarYTraer());' in cuerpo)
 
 
-def _casillas(html: str) -> list[tuple[str, str, str, bool]]:
-    return [(m.group(1), m.group(2), m.group(3), m.group(4) is not None)
+def _casillas(html: str) -> list[tuple[str, bool]]:
+    return [(m.group(1), m.group(2) is not None)
             for m in re.finditer(
                 r'<input type="checkbox" class="chk-traer" '
-                r'data-trabajador="(\d+)" data-obra="(\d+)" '
-                r'data-postventa="([01])"( checked)?>', html)]
+                r'data-fila="(\d+)"( checked)?>', html)]
 
 
 def test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid():
+    """T9 cambiado por T23 (D12 revisada el 2026-11-02): la `solo_sigrid`
+    sale desmarcada, como la `distinta`; ninguna `checked` al abrir."""
     r = _programa(_api(), "await traerDeSigrid([]);")
     html = r["modal"]["html"]
-    assert _casillas(html) == [("10", "694", "0", False),
-                               ("10", "713", "0", True),
-                               ("10", "678", "1", True)]
-    assert html.count('class="chk-traer"') == 3
-    assert "Aceptar las marcadas" in html
+    assert _casillas(html) == [("1", False), ("2", False), ("3", False),
+                               ("6", False), ("7", False)]
+    assert html.count('class="chk-traer"') == 5
+    assert "checked" not in html
+    assert ">Aceptar 0 marcadas</button>" in html
 
 
 def test_f054_r28_la_ventana_pinta_lo_que_manda_la_api():
@@ -180,6 +206,11 @@ def test_f054_r28_la_ventana_pinta_lo_que_manda_la_api():
                   "el trabajador no está vigente en 09/2026"):
         assert texto in html, texto
     assert r["escuchas"] == {"#btn-traer-aceptar": ["click"],
+                             "#btn-traer-desmarcar": ["click"],
+                             "#btn-traer-marcar": ["click"],
+                             "#traer-titulos": ["click"],
+                             "#traer-filtros": ["input"],
+                             "#traer-cuerpo": ["change"],
                              "#btn-traer-cerrar": ["click"]}
 
 
@@ -189,30 +220,45 @@ def test_f054_r28_sin_entradas_aceptables_no_hay_boton_de_aceptar():
                                                               sig=20,
                                                               cua=20)]}]}
     r = _programa(_api(datos=datos), "await traerDeSigrid([]);")
-    assert "chk-traer" not in r["modal"]["html"]
-    assert "btn-traer-aceptar" not in r["modal"]["html"]
-    assert r["escuchas"] == {"#btn-traer-cerrar": ["click"]}
+    html = r["modal"]["html"]
+    assert "chk-traer" not in html
+    for boton in ("btn-traer-aceptar", "btn-traer-desmarcar",
+                  "btn-traer-marcar"):
+        assert boton not in html, boton
+    assert "Aceptar" not in html and "Marcar" not in html
+    assert r["escuchas"] == {"#traer-titulos": ["click"],
+                             "#traer-filtros": ["input"],
+                             "#traer-cuerpo": ["change"],
+                             "#btn-traer-cerrar": ["click"]}
 
 
 def test_f054_r28_sin_pulsar_no_se_manda_nada():
-    r = _programa(_api(), "await traerDeSigrid([]);")
+    """Ni al abrir ni al marcar, filtrar, ordenar o (des)marcar en bloque."""
+    r = _programa(_api(), """
+        await traerDeSigrid([]);
+        casilla(2, true); filtrar("obra", "07"); ordenar("obra");
+        pulsar("#btn-traer-marcar"); pulsar("#btn-traer-desmarcar");""")
     assert r["pedidas"] == [[RUTA, {"aceptar": []}]]
     assert r["avisos"] == []
 
 
 def test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga():
+    """T9 cambiado por T23: se manda lo marcado en el modelo, en el orden
+    de la respuesta y con el cuerpo de hoy, también lo oculto por el
+    filtro (la 678 postventa y la 801 de Bea) y sin lo desmarcado."""
     r = _programa(_api(), """
         await traerDeSigrid([]);
-        marcadas = [{ trabajador: '10', obra: '713', postventa: '0' },
-                    { trabajador: '10', obra: '678', postventa: '1' }];
-        await botones['#btn-traer-aceptar'].escuchas.click();
+        casilla(2, true); casilla(7, true); casilla(3, true);
+        casilla(1, true); casilla(1, false);
+        filtrar("obra", "0713"); ordenar("sigrid");
+        await pulsar("#btn-traer-aceptar");
         await new Promise((ok) => setTimeout(ok, 0));""")
     assert r["pedidas"] == [
         [RUTA, {"aceptar": []}],
-        ["querySelectorAll", "#modal-registro .chk-traer:checked"],
         [RUTA, {"aceptar": [
             {"trabajador_ide": 10, "obra_ide": 713, "es_postventa": False},
-            {"trabajador_ide": 10, "obra_ide": 678, "es_postventa": True}]}],
+            {"trabajador_ide": 10, "obra_ide": 678, "es_postventa": True},
+            {"trabajador_ide": 20, "obra_ide": 801, "es_postventa": False}]}],
         "cerrarModal", ["propuestas", True], "cargarPeriodo"]
     assert r["avisos"] == [
         ["Traídas de Sigrid: 1 · 1 sin traer: solo en el cuadrante", True]]
@@ -237,8 +283,11 @@ def test_f054_r28_un_error_se_avisa_sin_recargar():
 
 
 def test_f054_r28_el_front_no_compara():
-    """El estado sale de la API: ninguna función de F-054 mira los %."""
-    for f in ("pintarTraerSigrid", "filaEntradaSigrid", "traerDeSigrid"):
+    """El estado sale de la API: ninguna función de F-054 mira los % (solo
+    `filasTraerVisibles` los ordena, R40)."""
+    for f in ("pintarTraerSigrid", "filaEntradaSigrid", "traerDeSigrid",
+              "modeloTraerSigrid", "cuerpoTraerSigrid", "filasTraerVisibles",
+              "abrirTraerSigrid"):
         assert not re.search(r"pct_\w+\s*[<>=!-]", _funcion(f)), f
     assert "function compararSigrid" not in JS
 
@@ -308,3 +357,253 @@ def test_f054_o5_api_deja_el_codigo_http_en_el_error():
         "api('/x').catch((e) => process.stdout.write(JSON.stringify(",
         "  [e.message, e.status])));"])
     assert _node(programa) == ["cerrado", 409]
+
+
+# ---- T23: una sola tabla, orden, filtros y marcado en bloque ---- #
+ESTADOS = {"igual": "igual", "distinta": "distinta",
+           "solo_sigrid": "solo en Sigrid",
+           "solo_cuadrante": "solo en el cuadrante",
+           "no_traducible": "no se puede traer"}
+
+
+def _cuerpo(r: dict) -> str:
+    """El `<tbody>` repintado o, si no se ha repintado, el de la ventana."""
+    el = r["els"].get("#traer-cuerpo")
+    if el and el["innerHTML"] is not None:
+        return el["innerHTML"]
+    return (r["modal"]["html"].split('<tbody id="traer-cuerpo">')[1]
+            .split("</tbody>")[0])
+
+
+def _filas(r: dict) -> list[list[str]]:
+    return [re.findall(r"<td[^>]*>(.*?)</td>", f)
+            for f in re.findall(r"<tr>(.*?)</tr>", _cuerpo(r))]
+
+
+def _ides(r: dict, datos: dict = DATOS) -> list[int]:
+    """Cada fila pintada, por su índice en la respuesta (por Trabajador,
+    Obra y Estado, que no se repiten en los datos de prueba)."""
+    claves = {}
+    for t in datos["trabajadores"]:
+        for e in t["entradas"]:
+            obra = (f"{e['cod']} {e['descripcion']}"
+                    f"{' (postventa)' if e['es_postventa'] else ''}")
+            claves[(html.escape(f"{t['cod']} · {t['nombre']}", quote=False),
+                    html.escape(obra, quote=False),
+                    ESTADOS[e["estado"]])] = len(claves)
+    return [claves[tuple(f[1:4])] for f in _filas(r) if len(f) == 7]
+
+
+def _orden(cuerpo: str, datos: dict = DATOS) -> list[int]:
+    r = _programa(_api(datos=datos), "await traerDeSigrid([]);\n" + cuerpo)
+    return _ides(r, datos)
+
+
+def _marcadas(r: dict) -> list[str]:
+    return [i for i, marcada in _casillas(_cuerpo(r)) if marcada]
+
+
+def test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos():
+    r = _programa(_api(), "await traerDeSigrid([]);")
+    pagina = r["modal"]["html"]
+    assert pagina.count("<table") == 1
+    assert '<table class="tabla-reg tabla-traer"' in pagina
+    assert re.findall(r'<th class="ordenable" data-orden="(\w+)">([^<]*)</th>',
+                      pagina) == [
+        ("trabajador", "Trabajador"), ("obra", "Obra"), ("estado", "Estado"),
+        ("cuadrante", "Cuadrante"), ("sigrid", "Sigrid"),
+        ("detalle", "Detalle")]
+    assert not re.search(r"<h3>[^<]*(Ana|Bea)", pagina)
+    assert _ides(r) == list(range(8))
+    filas = _filas(r)
+    assert filas[0] == ["", "10 · Ana", "0678 OBRA &lt;X&gt;",
+                        "solo en el cuadrante", "40%", "—", ""]
+    assert filas[3][2] == "0678 OBRA &lt;X&gt; (postventa)"
+    assert filas[7][1:] == ["7 · Bea &lt;B&gt;", "0801 OBRA &lt;X&gt;",
+                            "distinta", "10%", "50%",
+                            "parte PT26/9 · partida CI.1.5 · ojo &lt;m&gt;"]
+    assert "<B>" not in pagina and "<m>" not in pagina
+
+
+def test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte():
+    assert _orden('ordenar("obra");') == [0, 3, 1, 6, 2, 4, 5, 7]
+    # descendente; el empate de la 0694 (1 y 6) sigue en el de la respuesta
+    assert _orden('ordenar("obra"); ordenar("obra");') == [
+        7, 5, 4, 2, 1, 6, 3, 0]
+    assert _orden('ordenar("obra"); ordenar("obra"); ordenar("obra");') == [
+        0, 3, 1, 6, 2, 4, 5, 7]
+    # otra columna empieza siempre ascendente
+    assert _orden('ordenar("obra"); ordenar("trabajador");') == list(range(8))
+    assert _orden('ordenar("trabajador"); ordenar("trabajador");') == [
+        6, 7, 0, 1, 2, 3, 4, 5]
+
+
+def test_f054_r40_la_cabecera_de_la_casilla_no_ordena():
+    assert _orden('ordenar("sigrid"); ordenar();') == [2, 3, 4, 6, 7, 1, 5, 0]
+
+
+def test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final():
+    assert _orden('ordenar("sigrid");') == [2, 3, 4, 6, 7, 1, 5, 0]
+    assert _orden('ordenar("sigrid"); ordenar("sigrid");') == [
+        5, 1, 7, 6, 4, 3, 2, 0]
+    assert _orden('ordenar("cuadrante");') == [7, 4, 0, 1, 2, 3, 5, 6]
+    assert _orden('ordenar("cuadrante"); ordenar("cuadrante");') == [
+        1, 0, 4, 7, 2, 3, 5, 6]
+    # el orden anterior no se queda en el modelo: el empate, el de la respuesta
+    assert _orden('ordenar("sigrid"); ordenar("sigrid"); '
+                  'ordenar("cuadrante");') == [7, 4, 0, 1, 2, 3, 5, 6]
+
+
+def test_f054_r40_la_raya_tambien_si_falta_el_porcentaje():
+    sin_clave = _entrada(740, "solo_sigrid", sig=7)
+    del sin_clave["pct_sigrid"]
+    datos = {**DATOS, "trabajadores": [{**DATOS["trabajadores"][0],
+                                        "entradas": [
+                                            sin_clave,
+                                            _entrada(713, "solo_sigrid",
+                                                     sig=5),
+                                            _entrada(720, "igual", sig=20,
+                                                     cua=20)]}]}
+    assert _orden('ordenar("sigrid");', datos) == [1, 2, 0]
+    assert _orden('ordenar("sigrid"); ordenar("sigrid");', datos) == [2, 1, 0]
+
+
+def test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable():
+    datos = {**DATOS, "trabajadores": [{**DATOS["trabajadores"][0],
+                                        "entradas": [
+                                            _entrada(901, "no_traducible",
+                                                     motivo="Zeta"),
+                                            _entrada(902, "no_traducible",
+                                                     motivo="ALFA"),
+                                            _entrada(903, "no_traducible",
+                                                     motivo="alfa")]}]}
+    assert _orden('ordenar("detalle");', datos) == [1, 2, 0]
+    assert _orden('ordenar("detalle"); ordenar("detalle");', datos) == [
+        0, 1, 2]
+
+
+def test_f054_r40_la_columna_ordenada_lleva_su_marca():
+    r = _programa(_api(), """
+        await traerDeSigrid([]);
+        ordenar("obra"); textos.push(botones["#traer-titulos"].innerHTML);
+        ordenar("obra"); textos.push(botones["#traer-titulos"].innerHTML);
+        ordenar("estado"); textos.push(botones["#traer-titulos"].innerHTML);""")
+    assert "▲" not in r["modal"]["html"] and "▼" not in r["modal"]["html"]
+    asc, desc, estado = r["textos"]
+    assert 'data-orden="obra">Obra ▲</th>' in asc and "▼" not in asc
+    assert 'data-orden="obra">Obra ▼</th>' in desc and "▲" not in desc
+    assert 'data-orden="estado">Estado ▲</th>' in estado
+    assert 'data-orden="obra">Obra</th>' in estado
+    assert asc.startswith("<th></th>")
+
+
+def test_f054_r41_filtro_de_obra_deja_solo_esa_obra():
+    r = _programa(_api(), """
+        await traerDeSigrid([]); filtrar("obra", "0694"); anota();""")
+    assert _ides(r) == [1, 6]
+    assert r["textos"] == ["Aceptar 0 marcadas"]
+
+
+def test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado():
+    assert _orden('filtrar("trabajador", "7 · bEA");') == [6, 7]
+    assert _orden('filtrar("obra", "(POSTVENTA)");') == [3]
+    assert _orden('filtrar("detalle", "NO ESTÁ EN");') == [5]
+    assert _orden('filtrar("detalle", "PT26/9 · PARTIDA");') == [
+        1, 2, 3, 4, 5, 6, 7]
+
+
+def test_f054_r41_desplegable_de_estado_y_filtros_combinados():
+    pagina = _programa(_api(), "await traerDeSigrid([]);")["modal"]["html"]
+    assert re.findall(r'<input type="search" class="filtro-traer" '
+                      r'data-filtro="(\w+)"', pagina) == [
+        "trabajador", "obra", "detalle"]
+    assert '<select class="filtro-traer" data-filtro="estado">' in pagina
+    assert re.findall(r'<option value="(\w*)">([^<]*)</option>', pagina) == [
+        ("", "Todos"), ("distinta", "distinta"),
+        ("solo_sigrid", "solo en Sigrid"), ("igual", "igual"),
+        ("solo_cuadrante", "solo en el cuadrante"),
+        ("no_traducible", "no se puede traer")]
+    assert _orden('filtrar("estado", "solo_sigrid");') == [2, 3, 6]
+    assert _orden('filtrar("estado", "solo_sigrid"); '
+                  'filtrar("trabajador", "ana");') == [2, 3]
+    assert _orden('filtrar("estado", "solo_sigrid"); '
+                  'filtrar("trabajador", "ana"); filtrar("estado", "");') == [
+        0, 1, 2, 3, 4, 5]
+    assert _orden('filtrar("estado", "distinta"); filtrar("obra", "08"); '
+                  'filtrar("detalle", "ojo");') == [7]
+
+
+def test_f054_r41_sin_filas_visibles_lo_dice():
+    r = _programa(_api(), 'await traerDeSigrid([]); filtrar("obra", "9999");')
+    assert _cuerpo(r) == ('<tr><td colspan="7" class="motivo">Ninguna '
+                          'entrada con estos filtros.</td></tr>')
+    assert "Ninguna entrada" not in r["modal"]["html"]
+
+
+def test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas():
+    r = _programa(_api(), """
+        await traerDeSigrid([]);
+        casilla(1, true); casilla(6, true);
+        filtrar("obra", "0713"); ordenar("sigrid"); filtrar("obra", "");
+        casilla(2, true); casilla(2, false); anota();""")
+    assert _ides(r) == [2, 3, 4, 6, 7, 1, 5, 0]
+    assert _marcadas(r) == ["6", "1"]
+    assert r["textos"] == ["Aceptar 2 marcadas"]
+
+
+def test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas():
+    r = _programa(_api(), """
+        await traerDeSigrid([]);
+        casilla(1, true); casilla(7, true); filtrar("obra", "0694"); anota();
+        pulsar("#btn-traer-desmarcar"); anota();
+        filtrar("obra", ""); anota();
+        await pulsar("#btn-traer-aceptar");""")
+    assert r["textos"] == ["Aceptar 2 marcadas (1 ocultas por el filtro)",
+                           "Aceptar 0 marcadas", "Aceptar 0 marcadas"]
+    assert len(_casillas(_cuerpo(r))) == 5 and _marcadas(r) == []
+    assert r["avisos"] == [["No hay ninguna entrada marcada", True]]
+    assert [p for p in r["pedidas"] if p and p[0] == RUTA] == [
+        [RUTA, {"aceptar": []}]]
+
+
+def test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla():
+    r = _programa(_api(), """
+        await traerDeSigrid([]);
+        filtrar("trabajador", "ana"); pulsar("#btn-traer-marcar"); anota();
+        filtrar("trabajador", ""); anota();
+        await pulsar("#btn-traer-aceptar");
+        await new Promise((ok) => setTimeout(ok, 0));""")
+    assert r["textos"] == ["Aceptar 3 marcadas", "Aceptar 3 marcadas"]
+    assert _marcadas(r) == ["1", "2", "3"]
+    assert r["pedidas"][1] == [RUTA, {"aceptar": [
+        {"trabajador_ide": 10, "obra_ide": 694, "es_postventa": False},
+        {"trabajador_ide": 10, "obra_ide": 713, "es_postventa": False},
+        {"trabajador_ide": 10, "obra_ide": 678, "es_postventa": True}]}]
+
+
+def test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas():
+    r = _programa(_api(), """
+        await traerDeSigrid([]);
+        casilla(1, true); anota(); casilla(7, true); anota();
+        filtrar("obra", "0694"); anota();
+        casilla(6, true); anota(); casilla(1, false); anota();
+        ordenar("obra"); anota(); filtrar("obra", ""); anota();""")
+    assert r["textos"] == [
+        "Aceptar 1 marcadas", "Aceptar 2 marcadas",
+        "Aceptar 2 marcadas (1 ocultas por el filtro)",
+        "Aceptar 3 marcadas (1 ocultas por el filtro)",
+        "Aceptar 2 marcadas (1 ocultas por el filtro)",
+        "Aceptar 2 marcadas (1 ocultas por el filtro)",
+        "Aceptar 2 marcadas"]
+
+
+def test_f054_r42_texto_del_boton_de_aceptar():
+    programa = "\n".join([
+        _funcion("textoAceptarTraer"),
+        "process.stdout.write(JSON.stringify([textoAceptarTraer(0, 0),",
+        "  textoAceptarTraer(4, 0), textoAceptarTraer(4, 1),",
+        "  textoAceptarTraer(4, 4)]));"])
+    assert _node(programa) == [
+        "Aceptar 0 marcadas", "Aceptar 4 marcadas",
+        "Aceptar 4 marcadas (1 ocultas por el filtro)",
+        "Aceptar 4 marcadas (4 ocultas por el filtro)"]
