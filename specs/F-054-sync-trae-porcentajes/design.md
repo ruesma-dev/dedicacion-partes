@@ -57,7 +57,7 @@ Tests `test_f054_*.py`: transfer
 | api `repositories.py` · `orm_models.py` | `aceptar_entrada` (§5.3) · solo el comentario de la traza |
 | api `registro_sigrid.py` · `{routes,schemas,deps}.py` | `completo`, `sobrantes`, `sobrantes_a_cero` (§6.4) · ruta A |
 | front `app.js` y `static/css/styles.css` · `docs/{ARCHITECTURE,INTEGRACION}.md` | §7 · R29 (§8) |
-| tests ajenos (lista cerrada) | `test_f002_fuente_unica.py` (`ANCLAS`); dobles `preflight_lote` de api `test_f0{22,24,55}_*.py` aceptan `completo` |
+| tests ajenos (lista cerrada) | `test_f002_fuente_unica.py` (`ANCLAS`); dobles `preflight_lote` de api `test_f0{22,24,55}_*.py` aceptan `completo`; front `test_f050_modal_registro.py`, el `<select` de `test_f050_r29_…` acotado a la partida (T23; el humano, «a», 2026-11-02) |
 
 ## 4. Transfer, parte A
 
