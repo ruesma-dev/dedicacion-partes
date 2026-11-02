@@ -1,7 +1,12 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 EN CURSO (`in_progress` desde el 2026-10-29), REVIEW APROBADA; faltan las MANUAL**
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 EN SPEC (spec-author, 2026-11-02)**
+(en T18 el humano pidió, para poder desplegar, que la ventana de «Sincronizar Sigrid» sea una tabla
+única ordenable y filtrable por columna, con «Desmarcar todas» y «Marcar las visibles», y que
+`solo_sigrid` salga **desmarcada**: cambia D12, «2, ok»; el cuadrante local de 2026-09 se deja
+con lo ya aceptado, «1, déjalo así». La consulta de T18 salió bien: 429 líneas, MADM 0694 al 95 % `normal`).
+Antes de la enmienda: review APROBADA y faltaban las MANUAL
 (al sincronizar, traer al cuadrante los % que ya existen en los partes de
 Sigrid, y al registrar preguntar si se ponen a 0 las obras sobrantes;
 rigor crítico, SDD), rama `feature/F-054-sync-trae-porcentajes` en la copia
