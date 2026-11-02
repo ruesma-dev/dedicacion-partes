@@ -1,7 +1,9 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23: spec hecha (`2f3c8bd`, R39-R42, D12 revisada), IMPLEMENTER EN MARCHA (2026-11-02, «si»)**
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23: spec hecha (`2f3c8bd`, R39-R42, D12 revisada), T23 PARADA a la espera del humano (2026-11-02)**: el `<select>` del filtro de Estado (R41) rompe
+`test_f050_r29_el_front_ya_no_manda_overrides_ni_lee_catalogos` (prohíbe `<select` en todo `app.js`);
+opciones (a)/(b)/(c) en `progress/impl_F-054.md`, sección T23; código en `8c83473`, 38 tests en verde
 (en T18 el humano pidió, para poder desplegar, que la ventana de «Sincronizar Sigrid» sea una tabla
 única ordenable y filtrable por columna, con «Desmarcar todas» y «Marcar las visibles», y que
 `solo_sigrid` salga **desmarcada**: cambia D12, «2, ok»; el cuadrante local de 2026-09 se deja
