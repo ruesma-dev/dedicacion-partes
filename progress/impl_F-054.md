@@ -142,16 +142,8 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
 
 - T1 `test_f054_lectura_mensuales.py`: `E AttributeError: 'SigridWriteClient'
   object has no attribute 'lineas_mensuales_del_periodo'` → `16 failed in 4.11s`.
-- `1 error` con `E ModuleNotFoundError: No module named …`: T2 `test_f054_traduccion.py`
-  (`'application.services.porcentajes_existentes'`, `1 error in 1.14s`), T4
-  `test_f054_comparar.py` (`'domain.traer_sigrid'`, `1.82s`), T7
-  `test_f054_aceptar.py` (`'application.traer_sigrid'`, `5.39s`), T11
-  `test_f054_obra_cero.py` (`'application.services.reglas_obra_cero'`,
-  `0.49s`), T13 `test_f054_poner_a_cero.py` (`'application.pipelines.poner_a_cero'`, `0.37s`).
-- `E ImportError: cannot import name …`: T5 `test_f054_rutas.py`
-  (`'PorcentajesSigridNoDisponible' from 'domain.errors'`, `1 error in
-  1.26s`), T6 `test_f054_aceptar.py` (`'MOTIVO_TRAIDA_DE_SIGRID' from
-  'infrastructure.db.repositories'`, `6.03s`).
+- `1 error`, `E ModuleNotFoundError: No module named …`: T2 `test_f054_traduccion.py` (`'application.services.porcentajes_existentes'`, `1.14s`), T4 `test_f054_comparar.py` (`'domain.traer_sigrid'`, `1.82s`), T7 `test_f054_aceptar.py` (`'application.traer_sigrid'`, `5.39s`), T11 `test_f054_obra_cero.py` (`'application.services.reglas_obra_cero'`, `0.49s`), T13 `test_f054_poner_a_cero.py` (`'application.pipelines.poner_a_cero'`, `0.37s`).
+- `E ImportError: cannot import name …`: T5 `test_f054_rutas.py` (`'PorcentajesSigridNoDisponible' from 'domain.errors'`, `1 error in 1.26s`), T6 `test_f054_aceptar.py` (`'MOTIVO_TRAIDA_DE_SIGRID' from 'infrastructure.db.repositories'`, `6.03s`).
 - T3 `test_f054_endpoint.py`: `FAILED …test_f054_contrato_de_la_respuesta`,
   `…empresa_no_valida_422_sin_leer[None|0|-1|True|x]`,
   `…test_f054_r3_lectura_que_falla_502` → `11 failed, 1 warning in 12.56s`.
@@ -164,12 +156,7 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
   `… pintarSobrantes en app.js` → `5 failed in 0.33s`.
 - T12 `-k lote`: `E AttributeError: 'RegistroLote' object has no attribute
   'preflight_completo'` (7) y `E KeyError: 'sobrantes'` → `8 failed, 1 passed, 11 deselected`.
-- T14 api `test_f054_registro_cero.py`: `E AssertionError: assert
-  [('preflight_lote', False)] == [('preflight_lote', True)]` (4), `E
-  TypeError: RegistroSigrid.ejecutar() got an unexpected keyword argument
-  'sobrantes_a_cero'` (4), `E AttributeError: 'TransferClient' object has no
-  attribute 'poner_a_cero'` (2), `E TypeError: TransferClient.preflight_lote()
-  got an unexpected keyword argument 'completo'` → `11 failed, 1 passed in 3.05s`.
+- T14 api `test_f054_registro_cero.py`: `E AssertionError: assert [('preflight_lote', False)] == [('preflight_lote', True)]` (4), `E TypeError: RegistroSigrid.ejecutar() got an unexpected keyword argument 'sobrantes_a_cero'` (4), `E AttributeError: 'TransferClient' object has no attribute 'poner_a_cero'` (2), `E TypeError: TransferClient.preflight_lote() got an unexpected keyword argument 'completo'` → `11 failed, 1 passed in 3.05s`.
 
 ## MANUAL pendientes (NO ejecutadas; comando exacto en `tasks.md`)
 
@@ -177,10 +164,7 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
   pasadas (F-055 T18), en `ccad4db` (**antes de B**). **Hecha el 2026-10-30**:
   12,25 / 9,20 / 10,34 s, **mediana 10,34 s** (umbral de T19: ≤ 11,89 s); el
   log del transfer, solo `preflight-lote` y `propuesta-lote`.
-- **T18** (humano, local, solo lecturas): `curl -s -X POST
-  http://localhost:8006/api/porcentajes/existentes -H "Content-Type:
-  application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'`; luego
-  los pasos 2-4 de T18 en el front → `progress/manual_F-054.md`.
+- **T18** (humano, local, solo lecturas; **tras cerrar T23**): 1) Git Bash: `curl -s -X POST http://localhost:8006/api/porcentajes/existentes -H "Content-Type: application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'`. 2) **Nuevo**: front, 2026-09, «Sincronizar Sigrid» → una sola tabla, **ninguna** casilla marcada; `0694` en Obra → solo sus filas y «Aceptar 0 marcadas»; «Marcar las visibles» → «Aceptar N marcadas»; otra obra en el filtro → «(N ocultas por el filtro)»; «Desmarcar todas» y vaciar el filtro → «Aceptar 0 marcadas»; dos clics en Obra → orden invertido; con `0694`, marcar solo la `MADM`, aceptar y «Deshacer» (si sale `igual`, otra `distinta`/`solo_sigrid`, y anotarlo). 3) y 4) como en `tasks.md` → `progress/manual_F-054.md`.
 - **T19** (humano, `OBRA_PRUEBAS_FORZAR=true`): líneas a mano en la 0404;
   `cd services/dedicacion-transfer && .venv/Scripts/python
   prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`; registrar sin
@@ -190,6 +174,15 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
   `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` (`git -C`) y avisar
   a `partes`: el transfer pone a 0 (sin borrar) `M*` y de vinculados en
   partes compartidos. **Fuera**: `features.json` y el cierre (líder).
+
+## T23 · 2026-11-02 (enmienda tras T18): PARADA, falta una decisión
+
+- **Hecho**: RED `828b393` (`test_f054_traer_front.py`: 18 tests nuevos de R39-R42; de T9 cambian, sin borrarse, el de la casilla, que ahora fija **ninguna** `checked` (D12), el de las escuchas, sin casillas, sin pulsar y aceptar, que lee el modelo). Código `8c83473`, **sin cerrar T23**: en `app.js` las puras `filasTraerVisibles` y `textoAceptarTraer` y `modeloTraerSigrid`, `textoBotonTraer`, `cuerpoTraerSigrid`, `titulosTraerSigrid` (▲/▼); `filaEntradaSigrid(f)`, `pintarTraerSigrid(datos, modelo)`, `aceptadasMarcadas(modelo)` y `abrirTraerSigrid` (modelo en su cierre; escuchas en `#traer-titulos`, `#traer-filtros` y `#traer-cuerpo`; repinta títulos, `<tbody>` y botón, nunca los filtros). CSS `.acciones-traer`, `.tabla-traer`. Api, transfer y contrato, intactos.
+- **RED** (desde el front, `.venv/Scripts/python -m pytest tests/test_f054_traer_front.py -q -p no:cacheprovider`, antes del código): `E AssertionError: no existe la función modeloTraerSigrid en app.js` (35) y `… textoAceptarTraer …` (1) → `36 failed, 2 passed in 2.77s`. Tras `8c83473`: `38 passed in 9.62s`.
+- **Motivo de la parada**: front entero `1 failed, 504 passed in 74.79s`. Cae `test_f050_modal_registro.py::test_f050_r29_el_front_ya_no_manda_overrides_ni_lee_catalogos`, que exige `"<select" not in JS` en **todo** `app.js` (F-050 T12, `46b393a`: el modal de registro elige la partida sin `<select>`). El desplegable de Estado de R41 es un `<select>`. El test **no** está en la lista cerrada de `tasks.md` ⇒ no se toca; tampoco se esquiva (un `createElement("select")` cumpliría la letra y no la intención).
+- **Opciones para el humano**: (a) **recomendada**: acotar esa aserción a lo que protege F-050 (`"<select" not in _funcion("pintarModalPreflight")`, o ningún `select` de partida) y sumar el fichero a la lista cerrada; el `<select>` de T23 filtra estados, no elige partida. (b) Estado como filtro de texto, como los otros (cambia R41). (c) Desplegable sin `<select>` (botón y panel, como el selector de partida): más código y más mutantes.
+- **Pendiente tras decidir**: `ARCHITECTURE.md` punto 23, mutación manual de `app.js` (mecanismo de `progress/mutacion_manual_F-054.md`), `bash harness/init.sh` sin `[KO]`, T23 `[x]` y la MANUAL T18 paso 2. Sin tocar: `current.md`, `features.json`, los `.env`.
+- Detalle a confirmar: el rótulo sigue la spec al pie de la letra, «Aceptar 1 marcadas» incluido; se puede poner en singular si se quiere.
 
 ## Evidencias
 
