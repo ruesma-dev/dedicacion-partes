@@ -556,7 +556,7 @@ F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-10-30):** F-054 aprobada, T10 hecha, faltan T18 y T19 del humano (O7 = b, D19);
+F-033 y, detrás, F-017, F-018… **Hoy (2026-11-02):** F-054, enmienda T23 hecha y en review 7; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
