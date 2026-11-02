@@ -517,3 +517,358 @@ base.M[:] = [
 if __name__ == "__main__":
     base.main()
 ```
+
+## Campaña 5 (`488d423`, T23): 81 mutantes, 78 muertos, 3 supervivientes
+
+Las funciones nuevas o reescritas de la ventana de «Sincronizar Sigrid»
+(T23, R28 y R39-R42): `modeloTraerSigrid`, `filasTraerVisibles`,
+`textoAceptarTraer`, `textoBotonTraer`, `filaEntradaSigrid`,
+`cuerpoTraerSigrid`, `titulosTraerSigrid`, `pintarTraerSigrid`,
+`aceptadasMarcadas` y `abrirTraerSigrid`. Mismo script (tests y mecanismo
+de arriba) con la lista `M` de `mutacion_manual_f054_c5.py`, abajo.
+
+Línea base (sin mutar, en verde): 81 passed in 20.60s · Tiempo: 1613.0 s
+
+| Mutante | Fichero:línea | Texto exacto original → mutado | Resultado | Fallos (sin `-x`) | Tests que lo matan |
+|---|---|---|---|---|---|
+| D1 sale marcada (D12 antigua) | `app.js:2885` | `t, e, i: filas.length, marcada: false,` → `t, e, i: filas.length, marcada: true,` | MUERTO | 8 | test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga, test_f054_r28_aceptar_sin_ninguna_marcada_avisa_y_no_manda, test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D2 casilla solo si las dos (&&) | `app.js:2886` | `casilla: e.estado === "distinta" \|\| e.estado === "solo_sigrid",` → `casilla: e.estado === "distinta" && e.estado === "solo_sigrid",` | MUERTO | 10 | test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga, test_f054_r28_aceptar_sin_ninguna_marcada_avisa_y_no_manda, test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid, test_f054_r28_la_ventana_pinta_lo_que_manda_la_api, test_f054_r28_sin_pulsar_no_se_manda_nada, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D3 casilla también en igual y solo_cuadrante | `app.js:2886` | `casilla: e.estado === "distinta" \|\| e.estado === "solo_sigrid",` → `casilla: e.estado !== "no_traducible",` | MUERTO | 5 | test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid, test_f054_r28_sin_entradas_aceptables_no_hay_boton_de_aceptar, test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D4 trabajador sin código | `app.js:2888` | `trabajador: `${t.cod} · ${t.nombre}`,` → `trabajador: `${t.nombre}`,` | MUERTO | 11 | test_f054_r28_la_ventana_pinta_lo_que_manda_la_api, test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable, test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado |
+| D5 obra sin «(postventa)» | `app.js:2889` | `obra: `${e.cod} ${e.descripcion}${e.es_postventa ? " (postventa)" : ""}`,` → `obra: `${e.cod} ${e.descripcion}`,` | MUERTO | 8 | test_f054_r28_la_ventana_pinta_lo_que_manda_la_api, test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado |
+| D6 estado con el código crudo | `app.js:2890` | `estado: textoEstadoSigrid(e.estado),` → `estado: e.estado,` | MUERTO | 10 | test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable, test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado |
+| D7 detalle sin el parte | `app.js:2891` | `detalle: [e.parte_cod ? `parte ${e.parte_cod}` : "",` → `detalle: ["",` | MUERTO | 3 | test_f054_r28_la_ventana_pinta_lo_que_manda_la_api, test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado |
+| D8 detalle sin la partida | `app.js:2892` | `e.partida_cod ? `partida ${e.partida_cod}` : "", e.motivo \|\| ""]` → `"", e.motivo \|\| ""]` | MUERTO | 3 | test_f054_r28_la_ventana_pinta_lo_que_manda_la_api, test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado |
+| D9 detalle sin el motivo | `app.js:2892` | `: "", e.motivo \|\| ""]` → `: "", ""]` | MUERTO | 5 | test_f054_r28_la_ventana_pinta_lo_que_manda_la_api, test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable, test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado |
+| D10 orden inicial descendente | `app.js:2897` | `orden: { col: null, asc: true },` → `orden: { col: null, asc: false },` | SUPERVIVIENTE | 0 | — |
+| D11 filtro inicial no vacío | `app.js:2898` | `filtros: { trabajador: "", obra: "", estado: "", detalle: "" } };` → `filtros: { trabajador: "", obra: "x", estado: "", detalle: "" } };` | SUPERVIVIENTE | 0 | — |
+| D12 texto pintado con mayúsculas | `app.js:2907` | `texto.toLowerCase().includes(filtro.toLowerCase());` → `texto.includes(filtro.toLowerCase());` | MUERTO | 3 | test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D13 filtro con mayúsculas | `app.js:2907` | `texto.toLowerCase().includes(filtro.toLowerCase());` → `texto.toLowerCase().includes(filtro);` | MUERTO | 1 | test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado |
+| D14 sin filtro de trabajador | `app.js:2909` | `contiene(f.textos.trabajador, filtros.trabajador) &&` → `true &&` | MUERTO | 3 | test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D15 sin filtro de obra | `app.js:2910` | `contiene(f.textos.obra, filtros.obra) &&` → `true &&` | MUERTO | 5 | test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_sin_filas_visibles_lo_dice, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas |
+| D16 sin filtro de detalle | `app.js:2911` | `contiene(f.textos.detalle, filtros.detalle) &&` → `true &&` | MUERTO | 1 | test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado |
+| D17 sin filtro de estado | `app.js:2912` | `(!filtros.estado \|\| f.e.estado === filtros.estado));` → `true);` | MUERTO | 1 | test_f054_r41_desplegable_de_estado_y_filtros_combinados |
+| D18 estado sin «Todos» | `app.js:2912` | `(!filtros.estado \|\| f.e.estado === filtros.estado));` → `(f.e.estado === filtros.estado));` | MUERTO | 12 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable, test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D19 filtros con || (no se combinan) | `app.js:2909` | `contiene(f.textos.trabajador, filtros.trabajador) &&` → `contiene(f.textos.trabajador, filtros.trabajador) \|\|` | MUERTO | 7 | test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_sin_filas_visibles_lo_dice, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D20 nunca ordena | `app.js:2913` | `if (!orden.col) return visibles;` → `return visibles;` | MUERTO | 6 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas |
+| D21 Sigrid no es numérica | `app.js:2914` | `const numerica = orden.col === "cuadrante" \|\| orden.col === "sigrid";` → `const numerica = orden.col === "cuadrante";` | MUERTO | 4 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas |
+| D22 Cuadrante no es numérica | `app.js:2914` | `const numerica = orden.col === "cuadrante" \|\| orden.col === "sigrid";` → `const numerica = orden.col === "sigrid";` | MUERTO | 1 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final |
+| D23 raya solo si null | `app.js:2916` | `const raya = (v) => v === null \|\| v === undefined;` → `const raya = (v) => v === null;` | MUERTO | 1 | test_f054_r40_la_raya_tambien_si_falta_el_porcentaje |
+| D24 raya solo si undefined | `app.js:2916` | `const raya = (v) => v === null \|\| v === undefined;` → `const raya = (v) => v === undefined;` | MUERTO | 3 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas |
+| D25 raya al principio | `app.js:2920` | `if (raya(va) \|\| raya(vb)) return raya(va) - raya(vb);` → `if (raya(va) \|\| raya(vb)) return raya(vb) - raya(va);` | MUERTO | 4 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas |
+| D26 la raya sigue al sentido | `app.js:2920` | `if (raya(va) \|\| raya(vb)) return raya(va) - raya(vb);` → `if (raya(va) \|\| raya(vb)) return (raya(va) - raya(vb)) * (orden.asc ? 1 : -1);` | MUERTO | 2 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje |
+| D27 sin la rama de la raya | `app.js:2920` | `if (raya(va) \|\| raya(vb)) return raya(va) - raya(vb);` → `(nada)` | MUERTO | 4 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas |
+| D28 texto distinguiendo mayúsculas | `app.js:2922` | `: va.toLowerCase().localeCompare(vb.toLowerCase(), "es");` → `: va.localeCompare(vb, "es");` | MUERTO | 1 | test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable |
+| D29 numérico al revés | `app.js:2921` | `const c = numerica ? va - vb` → `const c = numerica ? vb - va` | MUERTO | 4 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas |
+| D30 no invierte | `app.js:2923` | `return orden.asc ? c : -c;` → `return c;` | MUERTO | 4 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable |
+| D31 siempre invierte | `app.js:2923` | `return orden.asc ? c : -c;` → `return -c;` | MUERTO | 6 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas |
+| D32 ocultas también con 0 | `app.js:2930` | `(ocultas > 0 ?` → `(ocultas >= 0 ?` | MUERTO | 7 | test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla, test_f054_r42_texto_del_boton_de_aceptar |
+| D33 nunca dice las ocultas | `app.js:2930` | `(ocultas > 0 ?` → `(false ?` | MUERTO | 3 | test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_texto_del_boton_de_aceptar |
+| D34 sin el número | `app.js:2929` | `return `Aceptar ${n} marcadas` +` → `return `Aceptar marcadas` +` | MUERTO | 7 | test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla, test_f054_r42_texto_del_boton_de_aceptar |
+| D35 cuenta las casillas, no las marcadas | `app.js:2934` | `const marcadas = modelo.filas.filter((f) => f.marcada);` → `const marcadas = modelo.filas.filter((f) => f.casilla);` | MUERTO | 6 | test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D36 ocultas = todas las marcadas | `app.js:2936` | `marcadas.filter((f) => !visibles.includes(f)).length);` → `marcadas.length);` | MUERTO | 4 | test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D37 ocultas = las visibles | `app.js:2936` | `marcadas.filter((f) => !visibles.includes(f)).length);` → `marcadas.filter((f) => visibles.includes(f)).length);` | MUERTO | 3 | test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D38 la casilla no refleja marcada | `app.js:2944` | ``${f.marcada ? " checked" : ""}>`` → ``${""}>`` | MUERTO | 2 | test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D39 casilla siempre marcada | `app.js:2944` | ``${f.marcada ? " checked" : ""}>`` → ``${" checked"}>`` | MUERTO | 4 | test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D40 data-fila fijo | `app.js:2943` | `data-fila="${f.i}"` → `data-fila="0"` | MUERTO | 3 | test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D41 casilla en todas las filas | `app.js:2942` | `const casilla = f.casilla` → `const casilla = true` | MUERTO | 4 | test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid, test_f054_r28_sin_entradas_aceptables_no_hay_boton_de_aceptar, test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas |
+| D42 trabajador sin escapar | `app.js:2947` | `<td>${escapeHtml(f.textos.trabajador)}</td>` → `<td>${f.textos.trabajador}</td>` | MUERTO | 8 | test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado |
+| D43 obra sin escapar | `app.js:2948` | ``<td>${escapeHtml(f.textos.obra)}</td>`` → ``<td>${f.textos.obra}</td>`` | MUERTO | 11 | test_f054_r28_la_ventana_pinta_lo_que_manda_la_api, test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable, test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado |
+| D44 detalle sin escapar | `app.js:2951` | ``<td>${escapeHtml(f.textos.detalle)}</td></tr>`` → ``<td>${f.textos.detalle}</td></tr>`` | MUERTO | 1 | test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos |
+| D45 cuadrante y Sigrid cruzados | `app.js:2950` | ``<td>${pct(f.e.pct_cuadrante)}</td><td>${pct(f.e.pct_sigrid)}</td>` + `<td>${escapeHtml(f.textos.detalle)}` → ``<td>${pct(f.e.pct_sigrid)}</td><td>${pct(f.e.pct_cuadrante)}</td>` + `<td>${escapeHtml(f.textos.detalle)}` | MUERTO | 1 | test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos |
+| D46 sin la fila de «ninguna» | `app.js:2955` | `return visibles.length ? visibles.map(filaEntradaSigrid).join("")` → `return true ? visibles.map(filaEntradaSigrid).join("")` | MUERTO | 1 | test_f054_r41_sin_filas_visibles_lo_dice |
+| D47 ▲/▼ cruzados | `app.js:2965` | `(orden.asc ? " ▲" : " ▼")` → `(orden.asc ? " ▼" : " ▲")` | MUERTO | 1 | test_f054_r40_la_columna_ordenada_lleva_su_marca |
+| D48 marca en todas las columnas | `app.js:2965` | `${col === orden.col ?` → `${true ?` | MUERTO | 2 | test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r40_la_columna_ordenada_lleva_su_marca |
+| D49 sin la cabecera de la casilla | `app.js:2961` | `return "<th></th>" + [["trabajador", "Trabajador"]` → `return "" + [["trabajador", "Trabajador"]` | MUERTO | 1 | test_f054_r40_la_columna_ordenada_lleva_su_marca |
+| D50 sin la columna Detalle | `app.js:2962` | `["sigrid", "Sigrid"], ["detalle", "Detalle"]]` → `["sigrid", "Sigrid"]]` | MUERTO | 1 | test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos |
+| D51 tabla aunque no haya filas | `app.js:2984` | `if (modelo.filas.length) { // R39-R42` → `if (true) { // R39-R42` | SUPERVIVIENTE | 0 | — |
+| D52 botones de marcado sin casillas | `app.js:2990` | `if (casillas) { html += `<div class="acciones-traer">`` → `if (true) { html += `<div class="acciones-traer">`` | MUERTO | 1 | test_f054_r28_sin_entradas_aceptables_no_hay_boton_de_aceptar |
+| D53 casillas = todas (every) | `app.js:2983` | `const casillas = modelo.filas.some((f) => f.casilla);` → `const casillas = modelo.filas.every((f) => f.casilla);` | MUERTO | 11 | test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga, test_f054_r28_aceptar_sin_ninguna_marcada_avisa_y_no_manda, test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid, test_f054_r28_el_texto_de_vacio_solo_sin_trabajadores, test_f054_r28_la_ventana_pinta_lo_que_manda_la_api, test_f054_r28_sin_pulsar_no_se_manda_nada, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D54 opción de estado con el código | `app.js:2999` | ``<option value="${s}">${escapeHtml(textoEstadoSigrid(s))}</option>`` → ``<option value="${s}">${escapeHtml(s)}</option>`` | MUERTO | 1 | test_f054_r41_desplegable_de_estado_y_filtros_combinados |
+| D55 sin la opción igual | `app.js:2988` | `const estados = ["distinta", "solo_sigrid", "igual", "solo_cuadrante",` → `const estados = ["distinta", "solo_sigrid", "solo_cuadrante",` | MUERTO | 1 | test_f054_r41_desplegable_de_estado_y_filtros_combinados |
+| D56 rótulo inicial antiguo | `app.js:3013` | ``${textoBotonTraer(modelo, modelo.filas)}</button>`` → ``Aceptar las marcadas</button>`` | MUERTO | 1 | test_f054_r28_casilla_solo_en_distinta_y_solo_sigrid |
+| D57 sin el filtro de detalle | `app.js:3000` | ``</select></th><th></th><th></th>${texto("detalle")}</tr></thead>`` → ``</select></th><th></th><th></th><th></th></tr></thead>`` | MUERTO | 1 | test_f054_r41_desplegable_de_estado_y_filtros_combinados |
+| D58 manda las de casilla, no las marcadas | `app.js:3021` | `return modelo.filas.filter((f) => f.marcada).map((f) => ({` → `return modelo.filas.filter((f) => f.casilla).map((f) => ({` | MUERTO | 4 | test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga, test_f054_r28_aceptar_sin_ninguna_marcada_avisa_y_no_manda, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D59 trabajador_ide equivocado | `app.js:3022` | `trabajador_ide: f.t.trabajador_ide,` → `trabajador_ide: f.i,` | MUERTO | 2 | test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D60 obra_ide equivocado | `app.js:3023` | `obra_ide: f.e.obra_ide, es_postventa` → `obra_ide: f.i, es_postventa` | MUERTO | 2 | test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D61 es_postventa siempre false | `app.js:3024` | `es_postventa: f.e.es_postventa, }));` → `es_postventa: false, }));` | MUERTO | 2 | test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D62 visibles sin filtrar ni ordenar | `app.js:3036` | `filasTraerVisibles(modelo.filas, modelo.filtros, modelo.orden); const repintarBoton` → `modelo.filas; const repintarBoton` | MUERTO | 13 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable, test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_sin_filas_visibles_lo_dice, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D63 botón sin guarda | `app.js:3038` | `if (aceptar) aceptar.textContent` → `aceptar.textContent` | MUERTO | 1 | test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable |
+| D64 repintar sin títulos | `app.js:3042` | `$("#traer-titulos").innerHTML = titulosTraerSigrid(modelo.orden);` → `(nada)` | MUERTO | 1 | test_f054_r40_la_columna_ordenada_lleva_su_marca |
+| D65 repintar sin cuerpo | `app.js:3043` | `$("#traer-cuerpo").innerHTML = cuerpoTraerSigrid(v);` → `(nada)` | MUERTO | 11 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable, test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_sin_filas_visibles_lo_dice, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D66 repintar sin botón | `app.js:3044` | `repintarBoton(v); };` → `};` | MUERTO | 4 | test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D67 escuchas aunque no haya filas | `app.js:3046` | `if (modelo.filas.length) { $("#traer-titulos")` → `if (true) { $("#traer-titulos")` | MUERTO | 1 | test_f054_r28_el_texto_de_vacio_solo_sin_trabajadores |
+| D68 la cabecera de la casilla ordena | `app.js:3049` | `if (!col) return;` → `(nada)` | MUERTO | 1 | test_f054_r40_la_cabecera_de_la_casilla_no_ordena |
+| D69 otra columna sigue el sentido | `app.js:3050` | `asc: modelo.orden.col !== col \|\| !modelo.orden.asc` → `asc: !modelo.orden.asc` | MUERTO | 7 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_cabecera_de_la_casilla_no_ordena, test_f054_r40_la_columna_ordenada_lleva_su_marca, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas |
+| D70 nunca invierte (siempre asc) | `app.js:3050` | `asc: modelo.orden.col !== col \|\| !modelo.orden.asc` → `asc: true` | MUERTO | 5 | test_f054_r40_cuadrante_y_sigrid_numericos_con_la_raya_al_final, test_f054_r40_la_columna_ordenada_lleva_su_marca, test_f054_r40_la_raya_tambien_si_falta_el_porcentaje, test_f054_r40_ordena_por_texto_y_la_segunda_pulsacion_invierte, test_f054_r40_texto_sin_distinguir_mayusculas_y_empate_estable |
+| D71 el filtro no repinta | `app.js:3054` | `modelo.filtros[ev.target.dataset.filtro] = ev.target.value; repintar();` → `modelo.filtros[ev.target.dataset.filtro] = ev.target.value;` | MUERTO | 7 | test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_sin_filas_visibles_lo_dice, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas |
+| D72 el filtro no se guarda | `app.js:3054` | `modelo.filtros[ev.target.dataset.filtro] = ev.target.value;` → `(nada)` | MUERTO | 7 | test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_filtro_de_obra_deja_solo_esa_obra, test_f054_r41_sin_filas_visibles_lo_dice, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D73 la casilla siempre marca | `app.js:3058` | `modelo.filas[Number(ev.target.dataset.fila)].marcada = ev.target.checked;` → `modelo.filas[Number(ev.target.dataset.fila)].marcada = true;` | MUERTO | 3 | test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga, test_f054_r41_filtrar_u_ordenar_no_toca_las_casillas, test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas |
+| D74 la casilla no rehace el botón | `app.js:3059` | `repintarBoton(visibles());` → `(nada)` | MUERTO | 1 | test_f054_r42_el_boton_cuenta_las_marcadas_y_las_ocultas |
+| D75 con 0 marcadas también manda | `app.js:3065` | `if (!marcadas.length) { toast("No hay ninguna entrada marcada", true);` → `if (false) { toast("No hay ninguna entrada marcada", true);` | MUERTO | 2 | test_f054_r28_aceptar_sin_ninguna_marcada_avisa_y_no_manda, test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas |
+| D76 acepta mandando nada | `app.js:3069` | `return traerDeSigrid(marcadas);` → `return traerDeSigrid([]);` | MUERTO | 2 | test_f054_r28_aceptar_manda_justo_las_marcadas_y_recarga, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D77 desmarcar no hace nada | `app.js:3072` | `modelo.filas.forEach((f) => { f.marcada = false; });` → `(nada)` | MUERTO | 1 | test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas |
+| D78 desmarcar no repinta | `app.js:3072` | `modelo.filas.forEach((f) => { f.marcada = false; }); repintar();` → `modelo.filas.forEach((f) => { f.marcada = false; });` | MUERTO | 1 | test_f054_r42_desmarcar_todas_quita_tambien_las_ocultas |
+| D79 marcar todas, no las visibles | `app.js:3076` | `visibles().forEach((f) => { if (f.casilla) f.marcada = true; });` → `modelo.filas.forEach((f) => { if (f.casilla) f.marcada = true; });` | MUERTO | 1 | test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D80 marcar también sin casilla | `app.js:3076` | `visibles().forEach((f) => { if (f.casilla) f.marcada = true; });` → `visibles().forEach((f) => { f.marcada = true; });` | MUERTO | 1 | test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D81 marcar no repinta | `app.js:3076` | `visibles().forEach((f) => { if (f.casilla) f.marcada = true; }); repintar();` → `visibles().forEach((f) => { if (f.casilla) f.marcada = true; });` | MUERTO | 1 | test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+
+**Análisis de los 3 supervivientes:**
+
+- **D10** (`asc: true` → `false` en el orden inicial): **equivalente**. Con
+  `col: null` nadie lee `asc`; el primer clic pone `asc = true` porque la
+  columna cambia. Se quita el campo (`orden: { col: null }`, `2af8177`) en
+  vez de pedir al humano que acepte un equivalente; el mutante que queda en
+  esa línea (D10b, `col: "obra"`) muere.
+- **D11** (filtro de Obra inicial `"x"`): **hueco real**. Los datos de
+  prueba decían «OBRA <X>», que contiene la x. Test nuevo
+  `test_f054_r41_al_abrir_ningun_filtro_esta_puesto`.
+- **D51** (la tabla se pinta sin filas): **hueco real**. Ningún test miraba
+  que sin entradas no hubiera tabla. Test nuevo
+  `test_f054_r39_sin_entradas_no_hay_tabla`.
+
+## Campaña 6 (`2af8177`): los vivos de la 5, 3 muertos, 0 supervivientes
+
+Línea base (sin mutar, en verde): 83 passed in 21.09s · Tiempo: 86.8 s
+
+| Mutante | Fichero:línea | Texto exacto original → mutado | Resultado | Fallos (sin `-x`) | Tests que lo matan |
+|---|---|---|---|---|---|
+| D10b orden inicial por una columna | `app.js:2897` | `orden: { col: null },` → `orden: { col: "obra" },` | MUERTO | 5 | test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos, test_f054_r40_la_columna_ordenada_lleva_su_marca, test_f054_r41_desplegable_de_estado_y_filtros_combinados, test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado, test_f054_r42_marcar_las_visibles_solo_las_visibles_con_casilla |
+| D11 filtro inicial no vacío | `app.js:2898` | `filtros: { trabajador: "", obra: "", estado: "", detalle: "" } };` → `filtros: { trabajador: "", obra: "x", estado: "", detalle: "" } };` | MUERTO | 1 | test_f054_r41_al_abrir_ningun_filtro_esta_puesto |
+| D51 tabla aunque no haya filas | `app.js:2984` | `if (modelo.filas.length) { // R39-R42` → `if (true) { // R39-R42` | MUERTO | 1 | test_f054_r39_sin_entradas_no_hay_tabla |
+
+**Total T23: 81 + 3 mutantes, 0 supervivientes** (D10 equivalente,
+eliminado del código). Además, el `<select` acotado de
+`test_f050_r29_el_front_ya_no_manda_overrides_ni_lee_catalogos` (opción «a»
+del humano, 2026-11-02) se probó con 5 mutantes a mano, un
+`const sel = "<select>";` al principio de `pintarModalPreflight`,
+`montarSelectorPartida`, `listaSelector`, `htmlPartida` y
+`textoPartidaAccion` (este último lo caza el recuento global): **5/5
+muertos** (`1 failed` cada uno; base `1 passed`).
+
+Campañas 5 y 6 (importan `mutacion_manual_f054.py` de arriba):
+
+```python
+# mutacion_manual_f054_c5.py (fuera del repo, a propósito)
+"""Campaña 5 de F-054 (T23): las funciones nuevas o reescritas de la
+ventana de «Sincronizar Sigrid» en `app.js`. Mismo mecanismo que
+`mutacion_manual_f054.py` (copia con `git archive` de HEAD, original único,
+`node --check`, tests sin `-x`, en serie): reutiliza su `correr`, `esc` y
+`main` con otra lista `M`."""
+import mutacion_manual_f054 as base
+
+base.M[:] = [
+    # ---- modeloTraerSigrid ----
+    ("D1", "sale marcada (D12 antigua)", "t, e, i: filas.length, marcada: false,",
+     "t, e, i: filas.length, marcada: true,"),
+    ("D2", "casilla solo si las dos (&&)",
+     'casilla: e.estado === "distinta" || e.estado === "solo_sigrid",',
+     'casilla: e.estado === "distinta" && e.estado === "solo_sigrid",'),
+    ("D3", "casilla también en igual y solo_cuadrante",
+     'casilla: e.estado === "distinta" || e.estado === "solo_sigrid",',
+     'casilla: e.estado !== "no_traducible",'),
+    ("D4", "trabajador sin código", "trabajador: `${t.cod} · ${t.nombre}`,",
+     "trabajador: `${t.nombre}`,"),
+    ("D5", "obra sin «(postventa)»",
+     'obra: `${e.cod} ${e.descripcion}${e.es_postventa ? " (postventa)" : ""}`,',
+     "obra: `${e.cod} ${e.descripcion}`,"),
+    ("D6", "estado con el código crudo", "estado: textoEstadoSigrid(e.estado),",
+     "estado: e.estado,"),
+    ("D7", "detalle sin el parte",
+     'detalle: [e.parte_cod ? `parte ${e.parte_cod}` : "",', 'detalle: ["",'),
+    ("D8", "detalle sin la partida",
+     'e.partida_cod ? `partida ${e.partida_cod}` : "", e.motivo || ""]',
+     '"", e.motivo || ""]'),
+    ("D9", "detalle sin el motivo", ': "", e.motivo || ""]', ': "", ""]'),
+    ("D10", "orden inicial descendente", "orden: { col: null, asc: true },",
+     "orden: { col: null, asc: false },"),
+    ("D11", "filtro inicial no vacío",
+     'filtros: { trabajador: "", obra: "", estado: "", detalle: "" } };',
+     'filtros: { trabajador: "", obra: "x", estado: "", detalle: "" } };'),
+    # ---- filasTraerVisibles ----
+    ("D12", "texto pintado con mayúsculas",
+     "texto.toLowerCase().includes(filtro.toLowerCase());",
+     "texto.includes(filtro.toLowerCase());"),
+    ("D13", "filtro con mayúsculas",
+     "texto.toLowerCase().includes(filtro.toLowerCase());",
+     "texto.toLowerCase().includes(filtro);"),
+    ("D14", "sin filtro de trabajador",
+     "contiene(f.textos.trabajador, filtros.trabajador) &&", "true &&"),
+    ("D15", "sin filtro de obra", "contiene(f.textos.obra, filtros.obra) &&",
+     "true &&"),
+    ("D16", "sin filtro de detalle",
+     "contiene(f.textos.detalle, filtros.detalle) &&", "true &&"),
+    ("D17", "sin filtro de estado",
+     "(!filtros.estado || f.e.estado === filtros.estado));", "true);"),
+    ("D18", "estado sin «Todos»",
+     "(!filtros.estado || f.e.estado === filtros.estado));",
+     "(f.e.estado === filtros.estado));"),
+    ("D19", "filtros con || (no se combinan)",
+     "contiene(f.textos.trabajador, filtros.trabajador) &&",
+     "contiene(f.textos.trabajador, filtros.trabajador) ||"),
+    ("D20", "nunca ordena", "if (!orden.col) return visibles;",
+     "return visibles;"),
+    ("D21", "Sigrid no es numérica",
+     'const numerica = orden.col === "cuadrante" || orden.col === "sigrid";',
+     'const numerica = orden.col === "cuadrante";'),
+    ("D22", "Cuadrante no es numérica",
+     'const numerica = orden.col === "cuadrante" || orden.col === "sigrid";',
+     'const numerica = orden.col === "sigrid";'),
+    ("D23", "raya solo si null",
+     "const raya = (v) => v === null || v === undefined;",
+     "const raya = (v) => v === null;"),
+    ("D24", "raya solo si undefined",
+     "const raya = (v) => v === null || v === undefined;",
+     "const raya = (v) => v === undefined;"),
+    ("D25", "raya al principio",
+     "if (raya(va) || raya(vb)) return raya(va) - raya(vb);",
+     "if (raya(va) || raya(vb)) return raya(vb) - raya(va);"),
+    ("D26", "la raya sigue al sentido",
+     "if (raya(va) || raya(vb)) return raya(va) - raya(vb);",
+     "if (raya(va) || raya(vb)) return (raya(va) - raya(vb)) * (orden.asc ? 1 : -1);"),
+    ("D27", "sin la rama de la raya",
+     "if (raya(va) || raya(vb)) return raya(va) - raya(vb);", ""),
+    ("D28", "texto distinguiendo mayúsculas",
+     ': va.toLowerCase().localeCompare(vb.toLowerCase(), "es");',
+     ': va.localeCompare(vb, "es");'),
+    ("D29", "numérico al revés", "const c = numerica ? va - vb",
+     "const c = numerica ? vb - va"),
+    ("D30", "no invierte", "return orden.asc ? c : -c;", "return c;"),
+    ("D31", "siempre invierte", "return orden.asc ? c : -c;", "return -c;"),
+    # ---- textoAceptarTraer / textoBotonTraer ----
+    ("D32", "ocultas también con 0", "(ocultas > 0 ?", "(ocultas >= 0 ?"),
+    ("D33", "nunca dice las ocultas", "(ocultas > 0 ?", "(false ?"),
+    ("D34", "sin el número", "return `Aceptar ${n} marcadas` +",
+     "return `Aceptar marcadas` +"),
+    ("D35", "cuenta las casillas, no las marcadas",
+     "const marcadas = modelo.filas.filter((f) => f.marcada);",
+     "const marcadas = modelo.filas.filter((f) => f.casilla);"),
+    ("D36", "ocultas = todas las marcadas",
+     "marcadas.filter((f) => !visibles.includes(f)).length);",
+     "marcadas.length);"),
+    ("D37", "ocultas = las visibles",
+     "marcadas.filter((f) => !visibles.includes(f)).length);",
+     "marcadas.filter((f) => visibles.includes(f)).length);"),
+    # ---- filaEntradaSigrid / cuerpo / títulos ----
+    ("D38", "la casilla no refleja marcada", '`${f.marcada ? " checked" : ""}>`',
+     '`${""}>`'),
+    ("D39", "casilla siempre marcada", '`${f.marcada ? " checked" : ""}>`',
+     '`${" checked"}>`'),
+    ("D40", "data-fila fijo", 'data-fila="${f.i}"', 'data-fila="0"'),
+    ("D41", "casilla en todas las filas", "const casilla = f.casilla\n",
+     "const casilla = true\n"),
+    ("D42", "trabajador sin escapar", "<td>${escapeHtml(f.textos.trabajador)}</td>",
+     "<td>${f.textos.trabajador}</td>"),
+    ("D43", "obra sin escapar", "`<td>${escapeHtml(f.textos.obra)}</td>`",
+     "`<td>${f.textos.obra}</td>`"),
+    ("D44", "detalle sin escapar", "`<td>${escapeHtml(f.textos.detalle)}</td></tr>`",
+     "`<td>${f.textos.detalle}</td></tr>`"),
+    ("D45", "cuadrante y Sigrid cruzados",
+     "`<td>${pct(f.e.pct_cuadrante)}</td><td>${pct(f.e.pct_sigrid)}</td>` +\n    `<td>${escapeHtml(f.textos.detalle)}",
+     "`<td>${pct(f.e.pct_sigrid)}</td><td>${pct(f.e.pct_cuadrante)}</td>` +\n    `<td>${escapeHtml(f.textos.detalle)}"),
+    ("D46", "sin la fila de «ninguna»",
+     'return visibles.length ? visibles.map(filaEntradaSigrid).join("")',
+     'return true ? visibles.map(filaEntradaSigrid).join("")'),
+    ("D47", "▲/▼ cruzados", '(orden.asc ? " ▲" : " ▼")', '(orden.asc ? " ▼" : " ▲")'),
+    ("D48", "marca en todas las columnas", "${col === orden.col ?", "${true ?"),
+    ("D49", "sin la cabecera de la casilla",
+     'return "<th></th>" + [["trabajador", "Trabajador"]',
+     'return "" + [["trabajador", "Trabajador"]'),
+    ("D50", "sin la columna Detalle", '["sigrid", "Sigrid"],\n    ["detalle", "Detalle"]]',
+     '["sigrid", "Sigrid"]]'),
+    # ---- pintarTraerSigrid ----
+    ("D51", "tabla aunque no haya filas", "if (modelo.filas.length) {\n    // R39-R42",
+     "if (true) {\n    // R39-R42"),
+    ("D52", "botones de marcado sin casillas",
+     "if (casillas) {\n      html += `<div class=\"acciones-traer\">`",
+     "if (true) {\n      html += `<div class=\"acciones-traer\">`"),
+    ("D53", "casillas = todas (every)", "const casillas = modelo.filas.some((f) => f.casilla);",
+     "const casillas = modelo.filas.every((f) => f.casilla);"),
+    ("D54", "opción de estado con el código",
+     "`<option value=\"${s}\">${escapeHtml(textoEstadoSigrid(s))}</option>`",
+     "`<option value=\"${s}\">${escapeHtml(s)}</option>`"),
+    ("D55", "sin la opción igual",
+     'const estados = ["distinta", "solo_sigrid", "igual", "solo_cuadrante",',
+     'const estados = ["distinta", "solo_sigrid", "solo_cuadrante",'),
+    ("D56", "rótulo inicial antiguo", "`${textoBotonTraer(modelo, modelo.filas)}</button>`",
+     "`Aceptar las marcadas</button>`"),
+    ("D57", "sin el filtro de detalle",
+     "`</select></th><th></th><th></th>${texto(\"detalle\")}</tr></thead>`",
+     "`</select></th><th></th><th></th><th></th></tr></thead>`"),
+    # ---- aceptadasMarcadas ----
+    ("D58", "manda las de casilla, no las marcadas",
+     "return modelo.filas.filter((f) => f.marcada).map((f) => ({",
+     "return modelo.filas.filter((f) => f.casilla).map((f) => ({"),
+    ("D59", "trabajador_ide equivocado", "trabajador_ide: f.t.trabajador_ide,",
+     "trabajador_ide: f.i,"),
+    ("D60", "obra_ide equivocado", "obra_ide: f.e.obra_ide,\n    es_postventa",
+     "obra_ide: f.i,\n    es_postventa"),
+    ("D61", "es_postventa siempre false", "es_postventa: f.e.es_postventa,\n  }));",
+     "es_postventa: false,\n  }));"),
+    # ---- abrirTraerSigrid ----
+    ("D62", "visibles sin filtrar ni ordenar",
+     "filasTraerVisibles(modelo.filas, modelo.filtros, modelo.orden);\n  const repintarBoton",
+     "modelo.filas;\n  const repintarBoton"),
+    ("D63", "botón sin guarda", "if (aceptar) aceptar.textContent",
+     "aceptar.textContent"),
+    ("D64", "repintar sin títulos",
+     '$("#traer-titulos").innerHTML = titulosTraerSigrid(modelo.orden);', ""),
+    ("D65", "repintar sin cuerpo", '$("#traer-cuerpo").innerHTML = cuerpoTraerSigrid(v);', ""),
+    ("D66", "repintar sin botón", "    repintarBoton(v);\n  };", "  };"),
+    ("D67", "escuchas aunque no haya filas",
+     'if (modelo.filas.length) {\n    $("#traer-titulos")',
+     'if (true) {\n    $("#traer-titulos")'),
+    ("D68", "la cabecera de la casilla ordena", "      if (!col) return;\n", ""),
+    ("D69", "otra columna sigue el sentido",
+     "asc: modelo.orden.col !== col || !modelo.orden.asc", "asc: !modelo.orden.asc"),
+    ("D70", "nunca invierte (siempre asc)",
+     "asc: modelo.orden.col !== col || !modelo.orden.asc", "asc: true"),
+    ("D71", "el filtro no repinta",
+     "modelo.filtros[ev.target.dataset.filtro] = ev.target.value;\n      repintar();",
+     "modelo.filtros[ev.target.dataset.filtro] = ev.target.value;"),
+    ("D72", "el filtro no se guarda",
+     "modelo.filtros[ev.target.dataset.filtro] = ev.target.value;", ""),
+    ("D73", "la casilla siempre marca",
+     "modelo.filas[Number(ev.target.dataset.fila)].marcada = ev.target.checked;",
+     "modelo.filas[Number(ev.target.dataset.fila)].marcada = true;"),
+    ("D74", "la casilla no rehace el botón", "      repintarBoton(visibles());\n", ""),
+    ("D75", "con 0 marcadas también manda",
+     'if (!marcadas.length) {\n        toast("No hay ninguna entrada marcada", true);',
+     'if (false) {\n        toast("No hay ninguna entrada marcada", true);'),
+    ("D76", "acepta mandando nada", "return traerDeSigrid(marcadas);",
+     "return traerDeSigrid([]);"),
+    ("D77", "desmarcar no hace nada",
+     "modelo.filas.forEach((f) => { f.marcada = false; });", ""),
+    ("D78", "desmarcar no repinta",
+     "modelo.filas.forEach((f) => { f.marcada = false; });\n      repintar();",
+     "modelo.filas.forEach((f) => { f.marcada = false; });"),
+    ("D79", "marcar todas, no las visibles",
+     "visibles().forEach((f) => { if (f.casilla) f.marcada = true; });",
+     "modelo.filas.forEach((f) => { if (f.casilla) f.marcada = true; });"),
+    ("D80", "marcar también sin casilla",
+     "visibles().forEach((f) => { if (f.casilla) f.marcada = true; });",
+     "visibles().forEach((f) => { f.marcada = true; });"),
+    ("D81", "marcar no repinta",
+     "visibles().forEach((f) => { if (f.casilla) f.marcada = true; });\n      repintar();",
+     "visibles().forEach((f) => { if (f.casilla) f.marcada = true; });"),
+]
+
+if __name__ == "__main__":
+    base.main()
+```
+
+```python
+# mutacion_manual_f054_c6.py (fuera del repo): los vivos de la campaña 5.
+import mutacion_manual_f054 as base
+base.M[:] = [
+    ("D10b", "orden inicial por una columna", "orden: { col: null },",
+     'orden: { col: "obra" },'),
+    ("D11", "filtro inicial no vacío",
+     'filtros: { trabajador: "", obra: "", estado: "", detalle: "" } };',
+     'filtros: { trabajador: "", obra: "x", estado: "", detalle: "" } };'),
+    ("D51", "tabla aunque no haya filas", "if (modelo.filas.length) {\n    // R39-R42",
+     "if (true) {\n    // R39-R42"),
+]
+if __name__ == "__main__":
+    base.main()
+```
