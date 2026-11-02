@@ -2874,29 +2874,98 @@ function textoEstadoSigrid(estado) {
   return textos[estado] || estado;
 }
 
-// R28: casilla solo en `distinta` (sale desmarcada) y `solo_sigrid` (sale
-// marcada, D12); las dos se pueden desmarcar.
-function filaEntradaSigrid(t, e) {
-  const conCasilla = e.estado === "distinta" || e.estado === "solo_sigrid";
-  const casilla = conCasilla
-    ? `<input type="checkbox" class="chk-traer" ` +
-      `data-trabajador="${escapeHtml(t.trabajador_ide)}" ` +
-      `data-obra="${escapeHtml(e.obra_ide)}" ` +
-      `data-postventa="${e.es_postventa ? 1 : 0}"` +
-      `${e.estado === "solo_sigrid" ? " checked" : ""}>`
-    : "";
-  const pct = (v) => (v === null || v === undefined ? "—" : fmtPct(v));
-  const obra = `${e.cod} ${e.descripcion}${e.es_postventa ? " (postventa)" : ""}`;
-  const detalle = [e.parte_cod ? `parte ${e.parte_cod}` : "",
-    e.partida_cod ? `partida ${e.partida_cod}` : "", e.motivo || ""]
-    .filter(Boolean).join(" · ");
-  return `<tr><td>${casilla}</td><td>${escapeHtml(obra)}</td>` +
-    `<td>${escapeHtml(textoEstadoSigrid(e.estado))}</td>` +
-    `<td>${pct(e.pct_cuadrante)}</td><td>${pct(e.pct_sigrid)}</td>` +
-    `<td>${escapeHtml(detalle)}</td></tr>`;
+// T23 (R39-R42): el modelo de la ventana. Una fila por entrada, en el
+// orden de la respuesta (`i`, también su `data-fila`), con los textos que
+// se pintan (sobre ellos se filtra y se ordena) y `marcada = false`: la
+// `distinta` y la `solo_sigrid` salen desmarcadas (D12, 2026-11-02).
+function modeloTraerSigrid(datos) {
+  const filas = [];
+  (datos.trabajadores || []).forEach((t) => t.entradas.forEach((e) => {
+    filas.push({
+      t, e, i: filas.length, marcada: false,
+      casilla: e.estado === "distinta" || e.estado === "solo_sigrid",
+      textos: {
+        trabajador: `${t.cod} · ${t.nombre}`,
+        obra: `${e.cod} ${e.descripcion}${e.es_postventa ? " (postventa)" : ""}`,
+        estado: textoEstadoSigrid(e.estado),
+        detalle: [e.parte_cod ? `parte ${e.parte_cod}` : "",
+          e.partida_cod ? `partida ${e.partida_cod}` : "", e.motivo || ""]
+          .filter(Boolean).join(" · "),
+      },
+    });
+  }));
+  return { filas, orden: { col: null, asc: true },
+    filtros: { trabajador: "", obra: "", estado: "", detalle: "" } };
 }
 
-function pintarTraerSigrid(datos) {
+// Pura (R40, R41): las filas que se ven. Texto «contiene» sin distinguir
+// mayúsculas sobre lo pintado y estado exacto; luego el orden de la
+// columna, con la raya al final en los dos sentidos. `sort` es estable: en
+// empate, el orden de la respuesta. No cambia `filas` ni ninguna `marcada`.
+function filasTraerVisibles(filas, filtros, orden) {
+  const contiene = (texto, filtro) =>
+    texto.toLowerCase().includes(filtro.toLowerCase());
+  const visibles = filas.filter((f) =>
+    contiene(f.textos.trabajador, filtros.trabajador) &&
+    contiene(f.textos.obra, filtros.obra) &&
+    contiene(f.textos.detalle, filtros.detalle) &&
+    (!filtros.estado || f.e.estado === filtros.estado));
+  if (!orden.col) return visibles;
+  const numerica = orden.col === "cuadrante" || orden.col === "sigrid";
+  const valor = (f) => (numerica ? f.e[`pct_${orden.col}`] : f.textos[orden.col]);
+  const raya = (v) => v === null || v === undefined;
+  return visibles.sort((a, b) => {
+    const va = valor(a);
+    const vb = valor(b);
+    if (raya(va) || raya(vb)) return raya(va) - raya(vb);
+    const c = numerica ? va - vb
+      : va.toLowerCase().localeCompare(vb.toLowerCase(), "es");
+    return orden.asc ? c : -c;
+  });
+}
+
+// Pura (R42): el rótulo del botón de aceptar.
+function textoAceptarTraer(n, ocultas) {
+  return `Aceptar ${n} marcadas` +
+    (ocultas > 0 ? ` (${ocultas} ocultas por el filtro)` : "");
+}
+
+function textoBotonTraer(modelo, visibles) {
+  const marcadas = modelo.filas.filter((f) => f.marcada);
+  return textoAceptarTraer(marcadas.length,
+    marcadas.filter((f) => !visibles.includes(f)).length);
+}
+
+// R28: casilla solo en `distinta` y `solo_sigrid`, con lo que diga el
+// modelo (al abrir, desmarcadas).
+function filaEntradaSigrid(f) {
+  const casilla = f.casilla
+    ? `<input type="checkbox" class="chk-traer" data-fila="${f.i}"` +
+      `${f.marcada ? " checked" : ""}>`
+    : "";
+  const pct = (v) => (v === null || v === undefined ? "—" : fmtPct(v));
+  return `<tr><td>${casilla}</td><td>${escapeHtml(f.textos.trabajador)}</td>` +
+    `<td>${escapeHtml(f.textos.obra)}</td>` +
+    `<td>${escapeHtml(f.textos.estado)}</td>` +
+    `<td>${pct(f.e.pct_cuadrante)}</td><td>${pct(f.e.pct_sigrid)}</td>` +
+    `<td>${escapeHtml(f.textos.detalle)}</td></tr>`;
+}
+
+function cuerpoTraerSigrid(visibles) {
+  return visibles.length ? visibles.map(filaEntradaSigrid).join("")
+    : '<tr><td colspan="7" class="motivo">Ninguna entrada con estos filtros.</td></tr>';
+}
+
+// R40: los títulos ordenables; la columna ordenada lleva ▲ o ▼.
+function titulosTraerSigrid(orden) {
+  return "<th></th>" + [["trabajador", "Trabajador"], ["obra", "Obra"],
+    ["estado", "Estado"], ["cuadrante", "Cuadrante"], ["sigrid", "Sigrid"],
+    ["detalle", "Detalle"]].map(([col, titulo]) =>
+    `<th class="ordenable" data-orden="${col}">${titulo}` +
+    `${col === orden.col ? (orden.asc ? " ▲" : " ▼") : ""}</th>`).join("");
+}
+
+function pintarTraerSigrid(datos, modelo) {
   const resumen = [
     `${datos.lineas_leidas} líneas leídas en los partes`,
     `${datos.excluidas_pruebas} de la obra de pruebas`,
@@ -2908,22 +2977,29 @@ function pintarTraerSigrid(datos) {
   [datos.motivo_postventa, datos.motivo_var].filter(Boolean).forEach((m) => {
     html += `<p class="aviso">${escapeHtml(m)}</p>`;
   });
-  const trabajadores = datos.trabajadores || [];
-  if (!trabajadores.length) {
+  if (!(datos.trabajadores || []).length) {
     html += "<p>Ningún trabajador del cuadrante tiene porcentajes en Sigrid este mes.</p>";
   }
-  let casillas = 0;
-  trabajadores.forEach((t) => {
-    html += `<h3>${escapeHtml(`${t.cod} · ${t.nombre}`)}</h3>` +
-      `<table class="tabla-reg"><thead><tr><th></th><th>Obra</th>` +
-      `<th>Estado</th><th>Cuadrante</th><th>Sigrid</th><th>Detalle</th>` +
-      `</tr></thead><tbody>`;
-    t.entradas.forEach((e) => {
-      if (e.estado === "distinta" || e.estado === "solo_sigrid") casillas += 1;
-      html += filaEntradaSigrid(t, e);
-    });
-    html += "</tbody></table>";
-  });
+  const casillas = modelo.filas.some((f) => f.casilla);
+  if (modelo.filas.length) {
+    // R39-R42: una sola tabla; títulos ordenables y, debajo, los filtros.
+    const texto = (k) =>
+      `<th><input type="search" class="filtro-traer" data-filtro="${k}" placeholder="Contiene…"></th>`;
+    const estados = ["distinta", "solo_sigrid", "igual", "solo_cuadrante",
+      "no_traducible"];
+    if (casillas) {
+      html += `<div class="acciones-traer">` +
+        `<button class="btn secondary" id="btn-traer-desmarcar">Desmarcar todas</button>` +
+        `<button class="btn secondary" id="btn-traer-marcar">Marcar las visibles</button></div>`;
+    }
+    html += `<table class="tabla-reg tabla-traer"><thead>` +
+      `<tr id="traer-titulos">${titulosTraerSigrid(modelo.orden)}</tr>` +
+      `<tr id="traer-filtros"><th></th>${texto("trabajador")}${texto("obra")}` +
+      `<th><select class="filtro-traer" data-filtro="estado"><option value="">Todos</option>` +
+      estados.map((s) => `<option value="${s}">${escapeHtml(textoEstadoSigrid(s))}</option>`).join("") +
+      `</select></th><th></th><th></th>${texto("detalle")}</tr></thead>` +
+      `<tbody id="traer-cuerpo">${cuerpoTraerSigrid(modelo.filas)}</tbody></table>`;
+  }
   const noTraidas = datos.no_traidas || [];
   if (noTraidas.length) {
     html += `<h3>No se traen (${noTraidas.length})</h3><ul>` +
@@ -2933,32 +3009,72 @@ function pintarTraerSigrid(datos) {
   }
   html += `<div class="pie-modal">` +
     `<button class="btn secondary" id="btn-traer-cerrar">Cerrar</button>` +
-    (casillas ? `<button class="btn primary" id="btn-traer-aceptar">Aceptar las marcadas</button>` : "") +
+    (casillas ? `<button class="btn primary" id="btn-traer-aceptar">` +
+      `${textoBotonTraer(modelo, modelo.filas)}</button>` : "") +
     "</div>";
   return html;
 }
 
-function aceptadasMarcadas() {
-  return Array.from(document.querySelectorAll("#modal-registro .chk-traer:checked"))
-    .map((c) => ({
-      trabajador_ide: Number(c.dataset.trabajador),
-      obra_ide: Number(c.dataset.obra),
-      es_postventa: c.dataset.postventa === "1",
-    }));
+// Lee el modelo, no el DOM: la marcada oculta por el filtro no se pinta y
+// también se manda (R28). El cuerpo, el de hoy.
+function aceptadasMarcadas(modelo) {
+  return modelo.filas.filter((f) => f.marcada).map((f) => ({
+    trabajador_ide: f.t.trabajador_ide,
+    obra_ide: f.e.obra_ide,
+    es_postventa: f.e.es_postventa,
+  }));
 }
 
-// Sin pulsar «Aceptar las marcadas» no se manda nada (R21, R28).
+// Sin pulsar «Aceptar N marcadas» no se manda nada (R21, R28). Ordenar y
+// filtrar repintan solo los títulos, el `<tbody>` y el botón (los filtros
+// no se repintan: no pierden el foco); la casilla cambia su `marcada`.
 function abrirTraerSigrid(datos) {
-  abrirModal(pintarTraerSigrid(datos));
+  const modelo = modeloTraerSigrid(datos);
+  abrirModal(pintarTraerSigrid(datos, modelo));
   const aceptar = $("#btn-traer-aceptar");
+  const visibles = () =>
+    filasTraerVisibles(modelo.filas, modelo.filtros, modelo.orden);
+  const repintarBoton = (v) => {
+    if (aceptar) aceptar.textContent = textoBotonTraer(modelo, v);
+  };
+  const repintar = () => {
+    const v = visibles();
+    $("#traer-titulos").innerHTML = titulosTraerSigrid(modelo.orden);
+    $("#traer-cuerpo").innerHTML = cuerpoTraerSigrid(v);
+    repintarBoton(v);
+  };
+  if (modelo.filas.length) {
+    $("#traer-titulos").addEventListener("click", (ev) => {
+      const col = ev.target.dataset.orden;
+      if (!col) return;
+      modelo.orden = { col, asc: modelo.orden.col !== col || !modelo.orden.asc };
+      repintar();
+    });
+    $("#traer-filtros").addEventListener("input", (ev) => {
+      modelo.filtros[ev.target.dataset.filtro] = ev.target.value;
+      repintar();
+    });
+    $("#traer-cuerpo").addEventListener("change", (ev) => {
+      modelo.filas[Number(ev.target.dataset.fila)].marcada = ev.target.checked;
+      repintarBoton(visibles());
+    });
+  }
   if (aceptar) {
     aceptar.addEventListener("click", () => {
-      const marcadas = aceptadasMarcadas();
+      const marcadas = aceptadasMarcadas(modelo);
       if (!marcadas.length) {
         toast("No hay ninguna entrada marcada", true);
         return undefined;
       }
       return traerDeSigrid(marcadas);
+    });
+    $("#btn-traer-desmarcar").addEventListener("click", () => {
+      modelo.filas.forEach((f) => { f.marcada = false; });
+      repintar();
+    });
+    $("#btn-traer-marcar").addEventListener("click", () => {
+      visibles().forEach((f) => { if (f.casilla) f.marcada = true; });
+      repintar();
     });
   }
   $("#btn-traer-cerrar").addEventListener("click", cerrarModal);

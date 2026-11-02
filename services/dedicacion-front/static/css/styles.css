@@ -603,6 +603,18 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
   border: 1px solid var(--warn-border); color: var(--warn);
   border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: .84rem; }
 
+/* F-054 (T23, R39-R42): la ventana de «Sincronizar Sigrid», una sola tabla
+   con títulos ordenables y una fila de filtros debajo. */
+.modal .acciones-traer { display: flex; gap: 8px; margin: 10px 0 6px; }
+.modal .tabla-traer th.ordenable { cursor: pointer; user-select: none;
+  white-space: nowrap; border-bottom: none; }
+.modal .tabla-traer th.ordenable:hover { color: var(--brand); }
+.modal .tabla-traer #traer-filtros th { padding-top: 0; }
+.modal .tabla-traer .filtro-traer { width: 100%; min-width: 64px;
+  padding: 3px 6px; border: 1px solid var(--line-strong); border-radius: 6px;
+  font: inherit; font-size: .78rem; text-transform: none;
+  letter-spacing: normal; background: var(--paper); }
+
 /* ---------- Diálogo «Completar al 100 %» (F-029) ---------- */
 .modal #completar-obra { width: 100%; }
 .modal .completar-candidatas { max-height: 220px; overflow-y: auto;
