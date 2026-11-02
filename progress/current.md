@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 EN SPEC (spec-author, 2026-11-02)**
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23: spec hecha (`2f3c8bd`, R39-R42, D12 revisada), IMPLEMENTER EN MARCHA (2026-11-02, «si»)**
 (en T18 el humano pidió, para poder desplegar, que la ventana de «Sincronizar Sigrid» sea una tabla
 única ordenable y filtrable por columna, con «Desmarcar todas» y «Marcar las visibles», y que
 `solo_sigrid` salga **desmarcada**: cambia D12, «2, ok»; el cuadrante local de 2026-09 se deja
