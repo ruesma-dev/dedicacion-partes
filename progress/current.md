@@ -1,21 +1,24 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23: spec hecha (`2f3c8bd`, R39-R42, D12 revisada), T23 PARADA a la espera del humano (2026-11-02)**: el `<select>` del filtro de Estado (R41) rompe
-`test_f050_r29_el_front_ya_no_manda_overrides_ni_lee_catalogos` (prohíbe `<select` en todo `app.js`);
-opciones (a)/(b)/(c) en `progress/impl_F-054.md`, sección T23; código en `8c83473`, 38 tests en verde
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), en REVIEW 7**
 (en T18 el humano pidió, para poder desplegar, que la ventana de «Sincronizar Sigrid» sea una tabla
 única ordenable y filtrable por columna, con «Desmarcar todas» y «Marcar las visibles», y que
-`solo_sigrid` salga **desmarcada**: cambia D12, «2, ok»; el cuadrante local de 2026-09 se deja
-con lo ya aceptado, «1, déjalo así». La consulta de T18 salió bien: 429 líneas, MADM 0694 al 95 % `normal`).
-Antes de la enmienda: review APROBADA y faltaban las MANUAL
+`solo_sigrid` salga **desmarcada**: D12 revisada, «2, ok»; el cuadrante local de 2026-09 se deja
+con lo ya aceptado, «1, déjalo así»). Spec `2f3c8bd` (R39-R42); T23 hecha (`828b393` RED a
+`82caaa5`): el `<select>` del filtro de Estado chocaba con `test_f050_r29`, el humano eligió «a»
+(acotar esa aserción a la elección de partida, `8d997dd`; el fichero entra en la lista cerrada);
+mutación manual de `app.js` campañas 5 y 6, 84 mutantes, 0 vivos; `init.sh` sin [KO]. El botón dice
+«Aceptar N marcadas» (el singular no está decidido). T18 paso 1 (la consulta) HECHO el 2026-11-02: 429
+líneas, MADM 0694 al 95 % `normal`.
+Antes de la enmienda: review 6 APROBADA y faltaban las MANUAL
 (al sincronizar, traer al cuadrante los % que ya existen en los partes de
 Sigrid, y al registrar preguntar si se ponen a 0 las obras sobrantes;
 rigor crítico, SDD), rama `feature/F-054-sync-trae-porcentajes` en la copia
 `porcentajes-f054`. Spec revisada contra F-044, F-062 y F-068 y **APROBADA
 el 2026-10-29** con D16 = C, D17 = A y D18 = A («estoy de acuerdo»,
 `14d56ff`). Implementación terminada el 2026-10-30 (T1-T9, T11-T17, T21 y T22;
-`progress/impl_F-054.md`). Review 1 RECHAZADA solo por el rastro
+T23 el 2026-11-02; `progress/impl_F-054.md`). Review 1 RECHAZADA solo por el rastro
 (corregido en `f6f6904`); sus observaciones O1, O2, O4 y O5 recogidas y O3
 y O6 aceptadas sin cambio por el humano («sigue»). Tras ellas: mutación
 Python 266/266 en `c70eb61` y `app.js` 69 + 14 sin supervivientes.
@@ -26,7 +29,7 @@ enmendada (D19, T22, `e1a1902` y `83811d9`) y T22 hecha (`abd5514`,
 8/8 en `reglas_porcentajes.py`). Reviews 3, 4 y 5: código aprobado en
 `9334fd3`, CAMBIOS REQUERIDOS solo por este fichero, corregido; **review 6
 APROBADA** (`838b390`).
-**T10 hecha** (2026-10-30, mediana 10,34 s). **Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T18 (humano, local, solo lecturas), T19 (humano, modo
+**T10 hecha** (2026-10-30, mediana 10,34 s). **Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T18 (humano, local, solo lecturas; paso 1 hecho, faltan los pasos 2 a 4 sobre la ventana nueva), T19 (humano, modo
 pruebas, única que escribe) y T20 (despliegue transfer → api → front,
 `azure-apps/dedicacion.md` y aviso a `partes`: el transfer pone a 0 líneas
 `M*` y de vinculados en partes compartidos, sin borrarlas). **`azure-apps`
@@ -66,13 +69,13 @@ review 3 de F-054 no piden decisión nueva: ya tienen encargo en
 bis: `de161b4`). Otras propuestas de arnés pendientes, en sus secciones:
 F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
 tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
-`init.sh`). **Siguiente:** F-054, review APROBADA, faltan T18/T19 del humano (worktree `porcentajes-f054`); después
+`init.sh`). **Siguiente:** F-054, review 7 (T23), luego T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
-## F-054 · review APROBADA (2026-10-30), MANUAL pendientes
+## F-054 · enmienda T23 en review 7 (2026-11-02), MANUAL pendientes
 
-- **Spec:** `specs/F-054-sync-trae-porcentajes/` (T1-T22), todas las
-  decisiones cerradas (D1-D19; D16 = C, D17 = A y D18 = A, el 2026-10-29,
+- **Spec:** `specs/F-054-sync-trae-porcentajes/` (T1-T23, R1-R42), todas las
+  decisiones cerradas (D1-D19; D12 revisada el 2026-11-02, «2, ok», `solo_sigrid` desmarcada; D16 = C, D17 = A y D18 = A, el 2026-10-29,
   «estoy de acuerdo»; D19 = b, el 2026-10-30, «b», con su efecto en el
   modal aceptado y el vinculado omitido «Dejarlo así»). Revisión contra F-044, F-062 y F-068 en
   `progress/spec_F-054.md`.
@@ -107,7 +110,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   (`167c63f`) y 5 (`10bcf85`): código aprobado en `9334fd3`, CAMBIOS
   REQUERIDOS solo por `progress/current.md` (rangos T/D, peticiones de
   arnés, un commit obsoleto, T20), corregido. **Review 6 APROBADA el
-  2026-10-30** (`838b390`). T10 hecha. Falta: T18 y T19 (abajo), y T20 al desplegar. Las dos
+  2026-10-30** (`838b390`). T10 hecha. **Enmienda T23 (2026-11-02)**, pedida por el humano en T18: spec `2f3c8bd`, código `828b393`-`82caaa5`, opción «a» con `test_f050_r29` (`8d997dd`), mutación manual de `app.js` 84/84 (campañas 5 y 6, `progress/mutacion_manual_F-054.md`); **review 7 pendiente**. Falta: T18 (pasos 2 a 4) y T19 (abajo), y T20 al desplegar. Las dos
   automejoras de la review 3 (el operador `not` genera mutantes que no
   compilan, p. ej. en `reglas_porcentajes.py:563`, y cuentan como muertos;
   y si una fila manual que quita un solo elemento vale como «texto
@@ -129,16 +132,19 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   pasadas (método de F-055 T18), **Cancelar, sin Registrar**. Anotar la
   mediana en `progress/impl_F-054.md`.
 - **T18 (humano, local, solo lecturas en Sigrid).** Transfer, api y front
-  locales. En Git Bash: `curl -s -X POST
-  http://localhost:8006/api/porcentajes/existentes -H "Content-Type:
-  application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'` ⇒ `ok`,
-  `lineas_leidas` > 0 y la `MADM` al 95 % de la 0694 con `destino = normal`.
-  Front, cuadrante 2026-09: «Sincronizar Sigrid» ⇒ la ventana lista al
-  trabajador del caso de la 0694; aceptar esa entrada sola ⇒ su otra línea
-  sigue igual; «Deshacer» la devuelve (O6: mirar que no pase a pisado).
-  Aceptarla otra vez y abrir el registro solo hasta el **preflight** ⇒ ya
-  registrada, sin pisado ni sobrecarga. Sincronizar de nuevo ⇒ `igual`.
-  Resultado en `progress/manual_F-054.md`.
+  locales desde `porcentajes-f054` (sus `.env` copiados por el líder el 2026-11-02, «si copia tu los env»).
+  1) **HECHO el 2026-11-02** (PowerShell): `Invoke-RestMethod -Method Post -Uri
+  http://localhost:8006/api/porcentajes/existentes -ContentType 'application/json' -Body
+  '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'` ⇒ `ok`, 429 líneas (353 `normal`, 72 `postventa`, 4 `var`),
+  `MADM` 0694 al 95 % `normal` (partida CI.1.5). 2) Tras T23, front, cuadrante 2026-09, «Sincronizar
+  Sigrid» ⇒ una sola tabla y **ninguna** casilla marcada. `0694` en Obra ⇒ solo sus filas y «Aceptar 0
+  marcadas»; «Marcar las visibles» ⇒ «Aceptar N marcadas»; filtro a otra obra ⇒ «Aceptar N marcadas (N
+  ocultas por el filtro)»; «Desmarcar todas» y vaciar el filtro ⇒ «Aceptar 0 marcadas»; dos pulsaciones en
+  la cabecera Obra ⇒ orden invertido. Con `0694` en Obra, marcar **solo** esa entrada y aceptar ⇒ su otra
+  línea sigue igual; «Deshacer» la devuelve (O6: que no pase a pisado). Si ya sale `igual` por lo aceptado
+  el 2026-11-02, usar otra `distinta` o `solo_sigrid` y anotarlo. 3) Aceptarla otra vez y abrir el
+  registro solo hasta el **preflight** ⇒ ya registrada, sin pisado ni sobrecarga. 4) Sincronizar de nuevo
+  ⇒ `igual`. Resultado en `progress/manual_F-054.md`.
 - **T19 (humano, `OBRA_PRUEBAS_FORZAR=true`; la única que escribe).** Crear
   a mano en el parte En registro de la 0404, 2026-11, una línea `M*` con
   `can = 0,2`, sin `synckey`, del recurso de prueba y con una partida que no
