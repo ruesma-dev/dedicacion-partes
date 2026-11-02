@@ -1110,16 +1110,27 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       transacción; un evento `SIGRID` por trabajador con su usuario, que se
       deshace como los demás ([`#regla-deshacer`](#regla-deshacer)). Tras
       aceptar se encolan las propuestas de los escritos.
-    - En el front, una ventana por trabajador: casilla en las `distinta`
-      (desmarcada) y en las `solo_sigrid` (marcada, desmarcable); «Aceptar
-      las marcadas» repite la petición con `aceptar`. El front no compara.
+    - En el front, **una sola tabla** con una fila por entrada (Trabajador,
+      Obra, Estado, Cuadrante, Sigrid, Detalle) y casilla en las `distinta`
+      y las `solo_sigrid`, **las dos desmarcadas** al abrir. Se ordena
+      pulsando la cabecera (la segunda pulsación invierte; texto sin
+      distinguir mayúsculas, los % numéricos con la raya al final; en
+      empate, el orden de la respuesta) y se filtra en la cabecera (texto
+      «contiene» en Trabajador, Obra y Detalle; desplegable en Estado);
+      filtrar u ordenar no toca las casillas. «Desmarcar todas» (también
+      las ocultas), «Marcar las visibles» y «Aceptar N marcadas (K ocultas
+      por el filtro)», que repite la petición con `aceptar` = exactamente
+      las marcadas, visibles u ocultas. Sin marcadas, solo avisa. El front
+      no compara: es presentación.
 
     *Decidido por Pablo Gris el 2026-10-24 («al sincronizar, puedo querer
     trarme algunas laineas(obras) de sigrid y otras no. si acepto en la
-    plataforma piso solo esas lineas del trabjador»; «d12, con la casilla
-    marcada por defecto, aunque se puede desmarcar») y revisado el
-    2026-10-29 (D18 = A: de los vinculados no se trae nada) · F-054,
-    `specs/F-054-sync-trae-porcentajes/requirements.md`.*
+    plataforma piso solo esas lineas del trabjador») y revisado el
+    2026-10-29 (D18 = A: de los vinculados no se trae nada) y el 2026-11-02
+    tras la prueba manual (D12 revisada, «2, ok»: aceptó de más porque las
+    `solo_sigrid` salían marcadas; sustituye a «d12, con la casilla marcada
+    por defecto, aunque se puede desmarcar») · F-054,
+    `specs/F-054-sync-trae-porcentajes/requirements.md` (R28, R39-R42).*
 
 24. <a id="regla-obra-cero"></a>**Al registrar, una obra en la que la
     plataforma no tiene nada es un 0 %.** El preflight del periodo o de un
