@@ -391,3 +391,57 @@ entrada de «Contratos», frases de §1, §5.4, §6.3, §9-§11 acortadas; sin q
    partida por `ide`) y por eso entran en la lista cerrada `test_f002_postventa.py` y
    `test_f025_universo_postventa.py`. Si el humano lo quiere limitado a los `MOTIVO_VAR_*`, se
    quita de T26 y esos dos tests salen de la lista.
+
+### 2026-11-03 ter · «si» a los dos puntos: `partida_cod` en la línea VAR y la postventa no hoja en T26
+
+Cita (vía el líder): «si» a los puntos 1 y 2 de la subsección «bis». Recogido en D21
+(requirements §6) y en R47.
+
+**Qué cambia**
+
+- **R47**: el preflight también nombra por código las de `MOTIVO_VAR_POSTVENTA` y
+  `MOTIVO_VAR_SIN_UNIVERSO`, porque la api manda en la línea VAR el `partida_cod` (campo que ya
+  existe en la línea de la petición) sacado del `cod` de la entrada; sin lecturas ni campos nuevos.
+- **design** §1 (T26: la api, el `partida_cod` de la línea VAR), §3 (fila T25-T26 con api
+  `registro_sigrid.py` y `domain/obras.py`; tests ajenos de la api), §4.2 (fórmula
+  `codigos.get(var_paride) or partida_cod or var_paride`; `partida_de_entrada`; lectores).
+- **tasks**: T26 pasa a **api y transfer** con su límite de servicio; lista CERRADA con los dos
+  tests de la api y la cita; T20 con la nota para `azure-apps/dedicacion.md` (la api manda algo
+  que antes no mandaba).
+
+**Casos de la derivación** (`partida_de_entrada(cod, obra_cod)`, pura, en `domain/obras.py`,
+inversa de `codigo_entrada`): `VAR-29` con obra `VAR` → `29`; si el `cod` no empieza por
+`<obra>-`, queda vacío o falta `registro_obra_cod` → `None` y la línea va **sin** la clave
+(reserva: el transfer nombra el `ide`). La línea VAR hoy **nunca** lleva `partida_cod` (la rama
+`o.registro_paride` va antes que la de la elegida en `registro_sigrid.py` l. ~236): el de la
+entrada no compite con nada y la elegida de la fila sigue sin mandarse (F-050 R19). En el
+transfer, si llegasen los dos, manda el código del presupuesto (`codigos`) y el `partida_cod` es
+la reserva.
+
+**Lectores del `partida_cod` de la petición en el transfer** (grep en `application/`,
+`interface_adapters/`, `domain/`): solo `registro_pipeline.py` l. ~705 (motivo de
+`MOTIVO_PARTIDA_NO_HOJA`) y l. ~711 (`a.partida_cod = linea.partida_cod`), los dos **bajo `if
+linea.paride`**, que se evalúa después del `continue` de la rama VAR (l. ~669-688) y que una
+línea VAR no trae. El modelo `LineaIn` de `app.py` solo declara el campo opcional, sin
+validación cruzada. Los demás `partida_cod` del transfer son de acciones, vinculados
+(`registro_vinculados.py`), del catálogo (`reglas_porcentajes.py` l. ~551) o de las líneas
+leídas de Sigrid (`reglas_obra_cero.py` l. ~154). **Nada que hoy lo ignore lo usaría para
+decidir**: no hay motivo para parar.
+
+**Tests ajenos que cambian** (añadidos a la lista cerrada con la cita «si»):
+`services/dedicacion-api/tests/test_f039_registro_var.py::test_f039_r20_la_entrada_lleva_lo_mismo_que_una_linea_normal`
+(dict exacto de la línea VAR) y
+`services/dedicacion-api/tests/test_f050_partida_linea.py::test_f050_r19_var_igual_aunque_tenga_elegida`
+(`"partida_cod" not in ln`). Revisados sin cambio: `test_f055_registro_lote.py::test_f055_r16_var_como_hoy`
+(solo `var_paride` y ninguna `propuesta_*`), los asserts de `test_f039_registro_var.py` l. ~82-104
+y ~142 (presencia de `var_paride`/`paride`), los de `test_f044_cuadrante_vinculados.py` con dict
+exacto (líneas no VAR, de `propuestas_mes`), y los de F-022, F-024, F-026, F-030, F-051 que usan
+entradas VAR sin comparar la línea entera. En el transfer, `test_f039_preflight_var.py` ya
+estaba en la lista; sus asserts de `SIN_UNIVERSO` y `POSTVENTA` no cambian porque sus líneas no
+traen `partida_cod` (los casos con él son tests nuevos).
+
+**Tamaños.** requirements 149/150, design 243/250 (para caber se quitó la línea en blanco tras
+los `##`, como ya se hizo con los `###`; R43 y R47 reescritos más cortos, sin quitar contenido).
+
+**Puntos para el humano / el líder**: ninguno nuevo. Recordatorio para T20: la api manda desde
+T26 `partida_cod` en las líneas VAR al transfer; contrato de campos igual.

@@ -7,10 +7,10 @@ traduce y la api escribe en `dedicacion` **solo lo que el usuario acepta**; en S
 línea suya, se pregunta si se pone a 0, **editándola**. Pedida el 2026-10-08; fechas y decisiones en
 §6 (enmiendas tras T18: R39-R42 y R43-R47); revisada contra F-044, F-062 y F-068 (design). Caso: la
 0694, 2026-09 (`MADM` al 95 % a mano, sin `synckey`: sobrecarga). Fuera: incidencias `CI*`/`CIZ` (D9),
-`partes` y guardar los filtros (R41) al cerrar. Lecturas del líder: design §11. **Línea mensual**:
+`partes` y guardar los filtros (R41) al cerrar. Lecturas del líder, design §11. **Línea mensual**:
 `hmores` `M*` con `can` ≠ 0 en un parte de trabajo de obra. **Entrada**: obra + modo (normal,
-`Postv-X`, `VAR-NN`). **Sobrante**: línea de un recurso del registro en una entrada que la plataforma
-no le da. **Vinculado** y **titular**: los de F-044 (`#regla-vinculado`); una `MESVE` (`M…`), de
+`Postv-X`, `VAR-NN`). **Sobrante**: línea de un recurso del registro en una entrada que no le da la
+plataforma. **Vinculado** y **titular**: los de F-044 (`#regla-vinculado`); `MESVE` (`M…`), de
 vinculado.
 
 ## 1. Disparador y lectura (A) `[D1, D2, D6, D7]`
@@ -45,7 +45,7 @@ vinculado.
   entrada es `no_traducible`. **R16.** % = suma de `can` × 100 a centésimas; ≤ 0 o > 100 ⇒
   `no_traducible`. **R17.** Partida: normal, la de sus líneas como **elegida** (0 ⇒ automática);
   postventa, automática; VAR, la fija. Sin propuesta guardada.
-- **R18.** Cada entrada sale con su estado: `igual` (% con la épsilon 0,005 de `domain/estados.py`; la
+- **R18.** Cada entrada, con su estado: `igual` (% con la épsilon 0,005 de `domain/estados.py`; la
   partida no cuenta), `distinta`, `solo_sigrid`, `solo_cuadrante` o `no_traducible`. Sin `aceptar`,
   nada se escribe.
 
@@ -70,8 +70,8 @@ vinculado.
 
 ## 4. Resultado, front y documentación `[D12, D20]`
 
-- **R27.** Por trabajador, sus entradas con estado, los dos %, parte y motivo; y `aceptadas`,
-  `no_traidas`, `fuera_maestro`, `de_vinculados`, `lineas_leidas`, `excluidas_pruebas` y motivos de
+- **R27.** Por trabajador, sus entradas (estado, los dos %, parte, motivo); y `aceptadas`,
+  `no_traidas`, `fuera_maestro`, `de_vinculados`, `lineas_leidas`, `excluidas_pruebas`, motivos de
   catálogo.
 - **R28.** El front enseña el resumen y la tabla de R39, con casilla en cada entrada `distinta` o
   `solo_sigrid`, las dos **desmarcadas** al abrir `[D12]`; el botón de aceptar repite la petición con
@@ -88,19 +88,18 @@ vinculado.
 - **R42.** «Desmarcar todas» quita todas, también las ocultas; «Marcar las visibles», solo las
   visibles. El botón de aceptar dice «Aceptar N marcadas» y, SI K > 0 de ellas están ocultas, «(K
   ocultas por el filtro)»; se rehace a cada cambio. SI N = 0, ENTONCES pulsarlo solo avisa.
-- **R43.** `[D20]` Las dos tablas (R39, R44) llevan la **cabecera estándar** (`.filterable`, la del
-  cuadrante): títulos ordenables con flecha y, debajo, los filtros, con «Limpiar» en la última
-  columna, que vacía los de **esa** tabla (Estado, «Todos») sin tocar orden ni casillas. Escape vacía
-  el filtro de texto. R40-R42, igual.
+- **R43.** `[D20]` Las dos tablas (R39, R44), con la cabecera estándar (`.filterable`): títulos
+  ordenables con flecha, filtros debajo y «Limpiar» en la última columna, que vacía los de **esa**
+  tabla (Estado, «Todos») sin tocar orden ni casillas; Escape vacía el filtro (R40-R42 igual).
 - **R44.** `[D20]` «No se traen (N)», N = filas `[D21]`: una **tabla** sin casillas con Parte, Obra,
   Recurso (`cod · nombre`), Líneas y Motivo; orden (R40) y filtros de texto (R41) salvo en Líneas.
   Igual parte, obra, recurso y motivo ⇒ **una** fila, «×K» en Líneas si K > 1, en orden de la primera.
   **R45.** `no_traidas` gana `recurso_cod` y `recurso_nombre` (del maestro); si no, el `recurso_ide`.
 - **R46.** `[D20]` Los motivos nombran **códigos** (el `ide`, solo sin código): la obra de la base
   fuera del periodo, su `cod`; la entrada VAR fuera de la base, `<obra>-<partida>`; en postventa (R9),
-  la partida y las obras que casan; en VAR (R10), la partida y la obra. **R47.** `[D21]` También el
-  preflight del registro: `MOTIVO_VAR_*` (F-039 R6) y la partida de postventa no hoja (F-002 R16) por
-  código, sin lecturas nuevas; ningún contrato cambia de campos, solo el texto del motivo.
+  la partida y las obras que casan; en VAR (R10), la partida y la obra. **R47.** `[D21]` Y el
+  preflight, igual: `MOTIVO_VAR_*` (F-039 R6) y la partida de postventa no hoja (F-002 R16); la api
+  manda en la línea VAR el `partida_cod` (ya existe) de su `cod`, sin lecturas ni campos nuevos.
 - **R29.** `ARCHITECTURE.md` puntos 23 `#regla-traer-sigrid` (con R39-R47) y 24 `#regla-obra-cero`
   (remitidos desde `#regla-vinculado`), tabla de acceso, `ANCLAS`; `INTEGRACION.md` §1, §5, §7;
   `azure-apps` al desplegar. **R30.** MANUAL: A en local, solo lectura (T18); B en pruebas (T19).
@@ -142,9 +141,9 @@ MANUAL T18: aceptó de más porque salían marcadas): `solo_sigrid` y `distinta`
 R39-R42); sustituye a «d12, con la casilla marcada por defecto, aunque se puede desmarcar»
 (2026-10-24). Lo ya aceptado en local: «déjalo así». **D20** (el humano, 2026-11-03, MANUAL T18 con
 01/2026: «hazlo todo dentro de la feature»): R43-R46. **D21** (el humano, 2026-11-03): «trasladalo a
-codigos legibles, no numeros internos» (R47), «filas de tabla» (N de R44), «ok» (columna Líneas).
-**Del humano, 2026-10-29** («estoy de acuerdo», las recomendadas; motivos en design §12): **D16 = C**,
-vinculados en obra sobrante como el trabajador (R38); **D17 = A**, casilla siempre desmarcada (R33);
-**D18 = A**, A no trae nada de ellos (R14). **D19 = b**, 2026-10-30 («b»; review 2, O7): la `Postv-`
-omitida tras resolver su partida cubre solo esa (R31); efectos en el modal y el vinculado omitido,
-design §12.
+codigos legibles, no numeros internos» (R47), «filas de tabla» (N de R44), «ok» (columna Líneas) y
+«si» (el `partida_cod` VAR y la postventa no hoja, R47). **Del humano, 2026-10-29** («estoy de
+acuerdo», las recomendadas; motivos en design §12): **D16 = C**, vinculados en obra sobrante como el
+trabajador (R38); **D17 = A**, casilla siempre desmarcada (R33); **D18 = A**, A no trae nada de ellos
+(R14). **D19 = b**, 2026-10-30 («b»; review 2, O7): la `Postv-` omitida tras resolver su partida cubre
+solo esa (R31); efectos en el modal y el vinculado omitido, design §12.

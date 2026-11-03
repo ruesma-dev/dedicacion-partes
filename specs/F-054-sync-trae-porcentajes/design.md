@@ -6,7 +6,6 @@ Decisiones cerradas: D1-D15 el 2026-10-24 (requirements §6; D12 revisada el 202
 `progress/spec_F-054.md`). **Aprobada**; enmiendas T23 (2026-11-02) y T24-T26 (2026-11-03, D20-D21).
 
 ## 1. Servicios, límite y contrato
-
 **A: el transfer lee y traduce; la api compara y escribe; el front pinta.** El transfer tiene la lectura
 `M*` con parte y estado, el casado de postventa, el universo VAR y los ajustes de su `.env`
 (`POSTVENTA_OBRA_COD`, `VAR_OBRA_COD`, `OBRA_PRUEBAS_COD`): leer desde la api copiaría el casado. La
@@ -14,7 +13,8 @@ api, dueña del dato, decide **por recurso** quién es trabajador, vinculado o a
 escribe el transfer; la api encamina**: «cubierta» exige la partida resuelta de cada acción y los `ide`
 que reconoce el preflight, que solo tiene el pipeline. **No es otro servicio.** **T24-T26 (D20-D21):**
 el front pinta (presentación); la api, los de obra (su base) y trabajador; el transfer, los de partida y
-obras en sus motivos (`partida_cod` de §4.1, `codigo` de la api). Sin lecturas nuevas (R47).
+obras en sus motivos (`partida_cod` de §4.1, `codigo` de la api); T26: la api, el `partida_cod` de la
+línea VAR. Sin lecturas nuevas (R47).
 
 **Contratos** (despliegue **transfer → api → front**; con el transfer viejo, A da 502 con motivo y B no
 sale: ignora `completo`, sin `sobrantes`; T25-T26 cambian solo el texto de los motivos):
@@ -37,14 +37,12 @@ sale: ignora `completo`, sin `sobrantes`; T25-T26 cambian solo el texto de los m
   `a_cero`: ya es, por obra, lo que F-051 pone a 0 al pisar. El del transfer, **igual**.
 
 ## 2. Ficheros a crear
-
 Transfer `application/services/{porcentajes_existentes,reglas_obra_cero}.py` (§4, §6.1) y
 `application/pipelines/poner_a_cero.py` (§6.3); api `{domain,application}/traer_sigrid.py` (§5). Tests
 `test_f054_*.py`: transfer `{lectura_mensuales,traduccion,endpoint,obra_cero,poner_a_cero}`, api
 `{comparar,aceptar,rutas,registro_cero}`, front `{traer_front,modal_cero}`.
 
 ## 3. Ficheros a modificar
-
 | Fichero | Qué cambia |
 |---|---|
 | transfer `sigrid_write_client.py` | `lineas_mensuales_del_periodo(empresa, ano, mes, resides=None, solo_m=True)` (§4.1) |
@@ -56,11 +54,10 @@ Transfer `application/services/{porcentajes_existentes,reglas_obra_cero}.py` (§
 | api `repositories.py` · `orm_models.py` | `aceptar_entrada` (§5.3) · solo el comentario de la traza |
 | api `registro_sigrid.py` · `{routes,schemas,deps}.py` | `completo`, `sobrantes`, `sobrantes_a_cero` (§6.4) · ruta A |
 | front `app.js` y `static/css/styles.css` · `docs/{ARCHITECTURE,INTEGRACION}.md` | §7 (T9, T15, T23, T24) · R29 (§8) |
-| T25-T26: transfer `universo_var.py`, `registro_pipeline.py` (solo dos motivos, T26) · api `domain/{ports,traer_sigrid}.py`, `repositories.py`, `application/traer_sigrid.py`, `schemas.py` | solo `partida_var_de(…, *, partida_cod=None, obra_cod=None)` (§4.2) · `ObraRepository.codigos`, `NoTraida`/`NoTraidaOut` con `recurso_*`, `_obras`, `_nombre_obra` (§5.4) |
-| tests ajenos (lista cerrada) | `test_f002_fuente_unica.py` (`ANCLAS`); dobles `preflight_lote` de api `test_f0{22,24,55}_*.py` aceptan `completo`; front `test_f050_modal_registro.py`, el `<select` de `test_f050_r29_…` acotado a la partida (T23; el humano, «a», 2026-11-02); T26 (D21): `test_f039_preflight_var.py`, `test_f002_postventa.py` y `test_f025_universo_postventa.py`, solo el texto esperado |
+| T25-T26: transfer `universo_var.py`, `registro_pipeline.py` (solo dos motivos, T26) · api `registro_sigrid.py`, `domain/obras.py` (T26) · api `domain/{ports,traer_sigrid}.py`, `repositories.py`, `application/traer_sigrid.py`, `schemas.py` | solo `partida_var_de(…, *, partida_cod=None, obra_cod=None)` (§4.2) · `ObraRepository.codigos`, `NoTraida`/`NoTraidaOut` con `recurso_*`, `_obras`, `_nombre_obra` (§5.4) |
+| tests ajenos (lista cerrada) | `test_f002_fuente_unica.py` (`ANCLAS`); dobles `preflight_lote` de api `test_f0{22,24,55}_*.py` aceptan `completo`; front `test_f050_modal_registro.py`, el `<select` de `test_f050_r29_…` acotado a la partida (T23; el humano, «a», 2026-11-02); T26 (D21): `test_f039_preflight_var.py`, `test_f002_postventa.py` y `test_f025_universo_postventa.py`, solo el texto esperado; api `test_f039_registro_var.py` y `test_f050_partida_linea.py`, la línea VAR con `partida_cod` |
 
 ## 4. Transfer, parte A
-
 ### 4.1 La lectura (base `ruesma`)
 ```sql
 SELECT h.ide, h.reside, m.obride, co.cod AS obra_cod, m.ide AS parte_ide,
@@ -86,14 +83,17 @@ cod_pruebas, cod_postventa, cod_var, inverso, catalogo_var, desde)` (`None` = pr
 **T25 (R46):** `MOTIVO_PV_*` con `partida_cod or paride` y el `codigo or ide` de las obras;
 `partida_var_de(…, *, partida_cod=None, obra_cod=None)` pone en `{paride}` y `{obra}` el código
 (`traducir` pasa los de la línea). **T26 (R47, D21):** `CatalogoVar.codigos` (`{ide: cod}` de **todo**
-el presupuesto que `cargar_catalogo_var` ya lee; vacío sin obra) y `partida_var_de` con `partida_cod or
-codigos.get(var_paride) or var_paride`; el preflight (`registro_pipeline.py` l. ~680) pasa
-`obra_cod=origen.codigo` y a `MOTIVO_PARTIDA_PV_NO_HOJA` (l. ~694), `linea.partida_cod`, el `cod` de
-`nodos_pv` o el `paride`. `MOTIVO_VAR_POSTVENTA`/`_SIN_UNIVERSO`, sin presupuesto: el `ide`. Marcadores
-iguales (`test_f050_modal_registro.py` sigue).
+el presupuesto que `cargar_catalogo_var` ya lee; vacío sin obra) y `partida_var_de` con
+`codigos.get(var_paride) or partida_cod or var_paride`; el preflight (`registro_pipeline.py` l. ~680)
+pasa `obra_cod=origen.codigo` y a `MOTIVO_PARTIDA_PV_NO_HOJA` (l. ~694), `linea.partida_cod`, el `cod`
+de `nodos_pv` o el `paride`. `MOTIVO_VAR_POSTVENTA`/`_SIN_UNIVERSO`, el `linea.partida_cod` o el `ide`.
+La api (`registro_sigrid.py`) pone en la línea VAR `partida_cod = partida_de_entrada(o.cod,
+o.registro_obra_cod)` (`domain/obras.py`, inversa de `codigo_entrada`; si el `cod` no es
+`<obra>-<partida>`, sin clave), nunca la elegida (F-050 R19). El transfer lee el `partida_cod` de la
+petición solo bajo `if linea.paride` (l. ~705-711), que la VAR no trae: no decide nada. Marcadores
+iguales (`test_f050_modal_registro.py`, igual).
 
 ## 5. Api, parte A
-
 ### 5.1 Dominio puro (`domain/traer_sigrid.py`)
 `entradas_por_trabajador(lineas, obras, *, empresa_obras, vinculados: set[int]) -> (entradas por
 trabajador, no_traidas, contadores)`; `comparar (lineas, entradas)` (R18); `a_linea(entrada, obra) ->
@@ -121,10 +121,9 @@ otras filas no se tocan: `reemplazar` borra y recrea sin traza. Sin ORM ni DDL n
 sustituye a `existen` en `_obras`: su `cod`, no `str(ide)` (`existen` sigue, `use_cases.py`).
 `_nombre_obra`, VAR fuera de la base: `codigo_entrada(obra_cod, partida_cod)` con los dos, si no
 `VAR-<var_paride>`; postventa sin origen en la base, su `ide` (reserva). `NoTraida`/`NoTraidaOut` +
-`recurso_cod`, `recurso_nombre` (de `t`).
+`recurso_cod`, `recurso_nombre`.
 
 ## 6. Parte B
-
 ### 6.1 Reglas puras (`reglas_obra_cero.py`)
 `cubierta(linea, acciones_del_recurso, *, pv_ide, var_ide, modo_pruebas, reconocidas) -> bool`;
 `sobrantes(lineas, acciones, vinculados, *, ajustes) -> list[Sobrante]`.
@@ -166,17 +165,16 @@ recurso: `#regla-cero` de hoy. **Coste (R37):** una lectura más por preflight c
 vinculados, en paralelo) en la ronda A; como F-055 T18 (local, 2026-09, 3 pasadas); > 15 % ⇒ **PARA**.
 
 ## 7. Front (`app.js`)
-
-- A: `sincronizar()` devuelve `true`/`false`; `#btn-sync` pasa a `sincronizarYTraer()`
-  (`test_f061_recarga.py` no cambia), que llama a `traerDeSigrid([])`. **Ventana** (T23, R39-R42):
-  `pintarTraerSigrid` pinta el resumen, los avisos, «No se traen» y **una** tabla con dos filas de
-  cabecera (títulos ordenables y filtros); `abrirTraerSigrid` guarda el modelo `{filas, orden, filtros}`
-  (fila: `t`, `e`, su índice en la respuesta, los textos pintados y `marcada = false`, D12) y repinta
-  solo el `<tbody>` y el botón con dos puras: `filasTraerVisibles(filas, filtros, orden)` («contiene» en
-  minúsculas y estado; orden estable, la raya al final en los dos sentidos) y `textoAceptarTraer(n,
-  ocultas)`. La casilla cambia su `marcada`; «Desmarcar todas», todas; «Marcar las visibles», las del
-  resultado con casilla; `aceptadasMarcadas()` lee **el modelo**, no el DOM (la oculta no se pinta) y
-  manda como hoy. CSS en `styles.css`. Api, transfer y contrato no cambian; nada se guarda al cerrar.
+- A: `sincronizar()` devuelve `true`/`false`; `#btn-sync` pasa a `sincronizarYTraer()`, que llama a
+  `traerDeSigrid([])`. **Ventana** (T23, R39-R42): `pintarTraerSigrid` pinta el resumen, los avisos, «No
+  se traen» y **una** tabla con dos filas de cabecera (títulos ordenables y filtros); `abrirTraerSigrid`
+  guarda el modelo `{filas, orden, filtros}` (fila: `t`, `e`, su índice en la respuesta, los textos
+  pintados y `marcada = false`, D12) y repinta solo el `<tbody>` y el botón con dos puras:
+  `filasTraerVisibles(filas, filtros, orden)` («contiene» en minúsculas y estado; orden estable, la raya
+  al final en los dos sentidos) y `textoAceptarTraer(n, ocultas)`. La casilla cambia su `marcada`;
+  «Desmarcar todas», todas; «Marcar las visibles», las del resultado con casilla; `aceptadasMarcadas()`
+  lee **el modelo**, no el DOM (la oculta no se pinta) y manda como hoy. CSS en `styles.css`. Api,
+  transfer y contrato no cambian; nada se guarda al cerrar.
 - A, **T24** (R43-R45): las dos tablas, `tabla-reg filterable`, con el marcado de
   `renderCabeceraTabla()`: `th.th-sort` + `span.sort-arrow` (▲/▼); `tr.filter-row` con
   `div.filtro-celda` + `input.col-filter` («Contiene…»; Estado, `<select class="col-filter">`) y
@@ -194,13 +192,11 @@ vinculados, en paralelo) en la ronda A; como F-055 T18 (local, 2026-09, 3 pasada
   obra mantiene la sección y sus casillas; uno nuevo las desmarca.
 
 ## 8. Documentación
-
 `ARCHITECTURE.md` puntos **23** y **24** (el 22 es `#regla-vinculado`), con efecto en `#regla-capacidad`
 y remisión desde `#regla-vinculado`; anclas y tabla de acceso. `INTEGRACION.md` §1 (el transfer **pone a
 0** líneas ajenas sin borrar), §5, §7; al desplegar, `azure-apps/dedicacion.md` y aviso a `partes`.
 
 ## 9. Tests (sin red ni BBDD)
-
 Transfer: `ClienteFalso` con `_read` doble y `TestClient`; A nunca `escribir` (R7); B: tres entradas y
 pruebas, omitida que cubre (D19), cerrado, otro sistema, guardas, nunca `DELETE`, la `MESVE` de un
 vinculado no es sobrante de su trabajador, la obra sola no lee, el completo lee **una** más (dos con
@@ -210,14 +206,12 @@ vinculados) en la ronda A. Api: dominio puro, UoW en memoria de `test_f024_cuadr
 agrupada; T25-T26: motivos con código y reserva, `codigos`, `recurso_*`. Sigrid: T18-T19.
 
 ## 10. Ficheros que NO se tocan
-
 Transfer `registro_pipeline.py` (salvo T26), `registro_vinculados.py`, `rachas.py`,
 `propuesta_partida.py`, `universo_postventa.py`, `universo_var.py` (salvo T25-T26), las copias de
 `partes` y `reglas_*.py` salvo `omitir` (D19); api `sync_pipeline.py`, `propuestas_mes.py`,
 `reemplazar`, `esquema.py`, `traza_vinculados.py`; `test_f061_recarga.py`, `use_cases.py`.
 
 ## 11. Riesgos y alternativas descartadas
-
 - Líder, 2026-10-23: `M*` al 100 % por recurso y mes en 730 de 756 meses con incidencia; `fec` el último
   día en el 94 %; `CI*`/`CIZ` con `can = tot = 0`.
 - **B escribe en producción** líneas de Administración: solo `can`/`tot` a 0, confirmada por línea,
@@ -235,7 +229,6 @@ Transfer `registro_pipeline.py` (salvo T26), `registro_vinculados.py`, `rachas.p
 - **Descartado:** detectar en la api; un `ejecutar` por obra; A en `POST /sync` (D1 C); `a_cero_hechos`.
 
 ## 12. Decisiones D16-D19, cerradas (D16-D18: «estoy de acuerdo», el humano, 2026-10-29; detalle: `progress/spec_F-054.md`)
-
 - **D16 = C** (F-044 §10): vinculados como el trabajador (R38), confirmables por línea con su hora en la
   guarda; periodos ≥ `sync.vinculados.desde`. Descartadas A) fuera (dejaba vivas las `porcentajes:vin:`,
   contra `#regla-vinculado`), B) aviso. **D17 = A:** casilla desmarcada siempre; descartada B) marcar la
