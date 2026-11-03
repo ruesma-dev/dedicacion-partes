@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), en REVIEW 7**
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), **REVIEW 7 APROBADA** (`5c42b61`; O8-O10 del rastro recogidas)**
 (en T18 el humano pidió, para poder desplegar, que la ventana de «Sincronizar Sigrid» sea una tabla
 única ordenable y filtrable por columna, con «Desmarcar todas» y «Marcar las visibles», y que
 `solo_sigrid` salga **desmarcada**: D12 revisada, «2, ok»; el cuadrante local de 2026-09 se deja
@@ -53,7 +53,7 @@ verde; resumen en `progress/history.md`. **Desplegada el 2026-10-27** (solo el
 front, `r20261027-1202`); pendiente su MANUAL del navegador («⚠ Lo que espera al humano»). **F-044** (los porcentajes también a los
 recursos vinculados) y **F-064** (su pisado, marcado por defecto en el modal)
 **cerradas y DESPLEGADAS el 2026-10-27** (transfer `r20261027-0742`, api
-`r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). T23 hecha:
+`r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). F-044 T23 hecha:
 `azure-apps/dedicacion.md` al día (`29321e1`). **Pendiente del humano:**
 («Sincronizar Sigrid» ya hecho: el humano confirma el 2026-10-27 que
 salen las subfilas de teléfono y demás, «esta bien»); la MANUAL de F-064 en el navegador, solo mirar y
@@ -66,13 +66,15 @@ su `origin/main` (encargos pendientes; push del humano: `git -C
 ../arnes-base push origin main`). Las dos propuestas de arnés de la
 review 3 de F-054 no piden decisión nueva: ya tienen encargo en
 `arnes-base` (mutantes que no compilan: `e7a172b`; campaña manual de C4
-bis: `de161b4`). Otras propuestas de arnés pendientes, en sus secciones:
+bis: `de161b4`). La automejora de la review 7 (que el reviewer reproduzca
+las filas de una campaña manual sobre el SHA que declara la campaña, o sobre HEAD solo si el texto
+original sigue igual) amplía ese mismo encargo `de161b4`: pendiente de añadirla allí, sin decisión nueva. Otras propuestas de arnés pendientes, en sus secciones:
 F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
 tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
-`init.sh`). **Siguiente:** F-054, review 7 (T23), luego T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
+`init.sh`). **Siguiente:** F-054, review 7 APROBADA; faltan T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
-## F-054 · enmienda T23 en review 7 (2026-11-02), MANUAL pendientes
+## F-054 · review 7 APROBADA (2026-11-03, enmienda T23), MANUAL pendientes
 
 - **Spec:** `specs/F-054-sync-trae-porcentajes/` (T1-T23, R1-R42), todas las
   decisiones cerradas (D1-D19; D12 revisada el 2026-11-02, «2, ok», `solo_sigrid` desmarcada; D16 = C, D17 = A y D18 = A, el 2026-10-29,
@@ -110,7 +112,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   (`167c63f`) y 5 (`10bcf85`): código aprobado en `9334fd3`, CAMBIOS
   REQUERIDOS solo por `progress/current.md` (rangos T/D, peticiones de
   arnés, un commit obsoleto, T20), corregido. **Review 6 APROBADA el
-  2026-10-30** (`838b390`). T10 hecha. **Enmienda T23 (2026-11-02)**, pedida por el humano en T18: spec `2f3c8bd`, código `828b393`-`82caaa5`, opción «a» con `test_f050_r29` (`8d997dd`), mutación manual de `app.js` 84/84 (campañas 5 y 6, `progress/mutacion_manual_F-054.md`); **review 7 pendiente**. Falta: T18 (pasos 2 a 4) y T19 (abajo), y T20 al desplegar. Las dos
+  2026-10-30** (`838b390`). T10 hecha. **Enmienda T23 (2026-11-02)**, pedida por el humano en T18: spec `2f3c8bd`, código `828b393`-`82caaa5`, opción «a» con `test_f050_r29` (`8d997dd`), mutación manual de `app.js` 84/84 (campañas 5 y 6, `progress/mutacion_manual_F-054.md`); **review 7 APROBADA** (`5c42b61`), O8-O10 recogidas. Falta: T18 (pasos 2 a 4) y T19 (abajo), y T20 al desplegar. Las dos
   automejoras de la review 3 (el operador `not` genera mutantes que no
   compilan, p. ej. en `reglas_porcentajes.py:563`, y cuentan como muertos;
   y si una fila manual que quita un solo elemento vale como «texto
@@ -144,7 +146,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   línea sigue igual; «Deshacer» la devuelve (O6: que no pase a pisado). Si ya sale `igual` por lo aceptado
   el 2026-11-02, usar otra `distinta` o `solo_sigrid` y anotarlo. 3) Aceptarla otra vez y abrir el
   registro solo hasta el **preflight** ⇒ ya registrada, sin pisado ni sobrecarga. 4) Sincronizar de nuevo
-  ⇒ `igual`. Resultado en `progress/manual_F-054.md`.
+  ⇒ `igual`. Resultado en `progress/manual_F-054.md` (paso 1 ya copiado ahí).
 - **T19 (humano, `OBRA_PRUEBAS_FORZAR=true`; la única que escribe).** Crear
   a mano en el parte En registro de la 0404, 2026-11, una línea `M*` con
   `can = 0,2`, sin `synckey`, del recurso de prueba y con una partida que no
@@ -556,7 +558,7 @@ F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-11-02):** F-054, enmienda T23 hecha y en review 7; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
+F-033 y, detrás, F-017, F-018… **Hoy (2026-11-02):** F-054, enmienda T23 hecha y review 7 APROBADA; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
