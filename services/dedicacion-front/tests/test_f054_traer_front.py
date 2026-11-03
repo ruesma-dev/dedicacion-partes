@@ -62,7 +62,8 @@ DATOS = {
     "aceptadas": 0, "rechazadas": [],
     "no_traidas": [{"hmores_ide": 1, "recurso_ide": 30, "obra_cod": "0694",
                     "parte_cod": "PT26/1", "can": 0.5,
-                    "motivo": "el trabajador no está vigente en 09/2026"}],
+                    "motivo": "el trabajador no está vigente en 09/2026",
+                    "recurso_cod": "30", "recurso_nombre": "Carla"}],
     "fuera_maestro": 2, "de_vinculados": 3, "lineas_leidas": 12,
     "excluidas_pruebas": 1, "motivo_postventa": "pv sin catálogo",
     "motivo_var": None, "propuestas_en_curso": False}
@@ -77,14 +78,32 @@ var state = { anio: 2026, mes: 9 };
 var pedidas = []; var avisos = []; var modal = { abierto: false, html: "" };
 var boton = { disabled: false, textContent: "" };
 var botones = {}; var textos = [];
-function El() { this.escuchas = {}; this.innerHTML = null; this.textContent = null; }
-El.prototype.addEventListener = function (t, f) { this.escuchas[t] = f; };
-function evento(sel, tipo, target) { botones[sel].escuchas[tipo]({ target }); }
-function ordenar(col) {
-  evento("#traer-titulos", "click", { dataset: col ? { orden: col } : {} });
+function El() {
+  this.escuchas = {}; this.innerHTML = null; this.textContent = null;
+  this.campos = [{ value: "x" }, { value: "distinta" }]; this.consulta = null;
 }
-function filtrar(k, v) {
-  evento("#traer-filtros", "input", { dataset: { filtro: k }, value: v });
+El.prototype.addEventListener = function (t, f) { this.escuchas[t] = f; };
+El.prototype.querySelectorAll = function (sel) {
+  this.consulta = sel; return this.campos;
+};
+function evento(sel, tipo, target, extra) {
+  botones[sel].escuchas[tipo](Object.assign({ target }, extra));
+}
+// T24: el título lleva su flecha en un `span`: el clic se busca en su `th`.
+function ordenarEn(tabla, col) {
+  evento(tabla + "-titulos", "click", { closest: (s) =>
+    (col && s === "[data-orden]" ? { dataset: { orden: col } } : null) });
+}
+function ordenar(col) { ordenarEn("#traer", col); }
+function filtrarEn(tabla, k, v) {
+  evento(tabla + "-filtros", "input", { dataset: { filtro: k }, value: v });
+}
+function filtrar(k, v) { filtrarEn("#traer", k, v); }
+// T24 (R43): una tecla en un filtro; devuelve cómo queda su valor.
+function teclear(tabla, key, k, v, tag) {
+  const t = { dataset: { filtro: k }, value: v, tagName: tag || "INPUT" };
+  evento(tabla + "-filtros", "keydown", t, { key });
+  return t.value;
 }
 function casilla(i, v) {
   evento("#traer-cuerpo", "change", { dataset: { fila: String(i) }, checked: v });
@@ -108,7 +127,10 @@ function fmtPct(v) { return String(v).replace(".", ",") + "%"; }
 FUNCIONES = ("escapeHtml", "sincronizar", "sincronizarYTraer",
              "traerDeSigrid", "textoEstadoSigrid", "modeloTraerSigrid",
              "filasTraerVisibles", "textoAceptarTraer", "textoBotonTraer",
-             "filaEntradaSigrid", "cuerpoTraerSigrid", "titulosTraerSigrid",
+             "filaEntradaSigrid", "cuerpoTraerSigrid", "titulosOrdenables",
+             "titulosTraerSigrid", "titulosNoTraidas", "celdaFiltroTraer",
+             "agruparNoTraidas", "noTraidasVisibles", "filaNoTraida",
+             "cuerpoNoTraidas", "enlazarCabeceraTraer",
              "pintarTraerSigrid", "aceptadasMarcadas", "abrirTraerSigrid")
 
 
@@ -121,7 +143,9 @@ def _programa(api: str, cuerpo: str) -> object:
         "    .filter(([k, v]) => Object.keys(v.escuchas).length)",
         "    .map(([k, v]) => [k, Object.keys(v.escuchas)])),",
         "  els: Object.fromEntries(Object.entries(botones).map(([k, v]) =>",
-        "    [k, { innerHTML: v.innerHTML, textContent: v.textContent }])) }));",
+        "    [k, { innerHTML: v.innerHTML, textContent: v.textContent,",
+        "      campos: v.campos.map((c) => c.value), consulta: v.consulta }]))",
+        "}));",
         "})();"]))
 
 
@@ -144,6 +168,14 @@ def _api(sync="ok", traer="ok", datos=DATOS, estado=0) -> str:
 
 
 RUTA = "/periodos/2026/9/traer-sigrid"
+
+#: T24 (R43): las escuchas de la cabecera de cada tabla de la ventana.
+ESCUCHAS_TABLA = {"#traer-titulos": ["click"],
+                  "#traer-filtros": ["input", "keydown"],
+                  "#traer-limpiar": ["click"]}
+ESCUCHAS_NO_TRAIDAS = {"#no-traidas-titulos": ["click"],
+                       "#no-traidas-filtros": ["input", "keydown"],
+                       "#no-traidas-limpiar": ["click"]}
 
 
 def test_f054_r1_tras_un_sync_con_exito_se_pide_comparar():
@@ -205,11 +237,12 @@ def test_f054_r28_la_ventana_pinta_lo_que_manda_la_api():
                   "pv sin catálogo",
                   "el trabajador no está vigente en 09/2026"):
         assert texto in html, texto
+    # T24 cambia este test de T9/T23: los filtros ganan Escape y las dos
+    # tablas, su «Limpiar»; «No se traen» es una tabla con sus escuchas.
     assert r["escuchas"] == {"#btn-traer-aceptar": ["click"],
                              "#btn-traer-desmarcar": ["click"],
                              "#btn-traer-marcar": ["click"],
-                             "#traer-titulos": ["click"],
-                             "#traer-filtros": ["input"],
+                             **ESCUCHAS_TABLA, **ESCUCHAS_NO_TRAIDAS,
                              "#traer-cuerpo": ["change"],
                              "#btn-traer-cerrar": ["click"]}
 
@@ -226,8 +259,7 @@ def test_f054_r28_sin_entradas_aceptables_no_hay_boton_de_aceptar():
                   "btn-traer-marcar"):
         assert boton not in html, boton
     assert "Aceptar" not in html and "Marcar" not in html
-    assert r["escuchas"] == {"#traer-titulos": ["click"],
-                             "#traer-filtros": ["input"],
+    assert r["escuchas"] == {**ESCUCHAS_TABLA, **ESCUCHAS_NO_TRAIDAS,
                              "#traer-cuerpo": ["change"],
                              "#btn-traer-cerrar": ["click"]}
 
@@ -404,12 +436,16 @@ def _marcadas(r: dict) -> list[str]:
 
 
 def test_f054_r39_una_sola_tabla_con_las_entradas_de_los_dos():
+    """T24 cambia este test de T23: la cabecera estándar (`th-sort`) y, con
+    `no_traidas`, la segunda tabla, la de «No se traen» (R44)."""
     r = _programa(_api(), "await traerDeSigrid([]);")
     pagina = r["modal"]["html"]
-    assert pagina.count("<table") == 1
-    assert '<table class="tabla-reg tabla-traer"' in pagina
-    assert re.findall(r'<th class="ordenable" data-orden="(\w+)">([^<]*)</th>',
-                      pagina) == [
+    assert pagina.count("<table") == 2
+    assert pagina.count('<tbody id="traer-cuerpo">') == 1
+    entradas = pagina.split('<tbody id="traer-cuerpo">')[0].rsplit("<table", 1)[1]
+    assert entradas.startswith(' class="tabla-reg filterable"')
+    assert re.findall(r'<th class="th-sort" data-orden="(\w+)">([^<]*)<span',
+                      entradas) == [
         ("trabajador", "Trabajador"), ("obra", "Obra"), ("estado", "Estado"),
         ("cuadrante", "Cuadrante"), ("sigrid", "Sigrid"),
         ("detalle", "Detalle")]
@@ -490,10 +526,13 @@ def test_f054_r40_la_columna_ordenada_lleva_su_marca():
         ordenar("estado"); textos.push(botones["#traer-titulos"].innerHTML);""")
     assert "▲" not in r["modal"]["html"] and "▼" not in r["modal"]["html"]
     asc, desc, estado = r["textos"]
-    assert 'data-orden="obra">Obra ▲</th>' in asc and "▼" not in asc
-    assert 'data-orden="obra">Obra ▼</th>' in desc and "▲" not in desc
-    assert 'data-orden="estado">Estado ▲</th>' in estado
-    assert 'data-orden="obra">Obra</th>' in estado
+    flecha = '<span class="sort-arrow">{}</span></th>'
+    assert 'data-orden="obra">Obra' + flecha.format(" ▲") in asc
+    assert "▼" not in asc
+    assert 'data-orden="obra">Obra' + flecha.format(" ▼") in desc
+    assert "▲" not in desc
+    assert 'data-orden="estado">Estado' + flecha.format(" ▲") in estado
+    assert 'data-orden="obra">Obra' + flecha.format("") in estado
     assert asc.startswith("<th></th>")
 
 
@@ -514,10 +553,11 @@ def test_f054_r41_texto_sin_distinguir_mayusculas_sobre_lo_pintado():
 
 def test_f054_r41_desplegable_de_estado_y_filtros_combinados():
     pagina = _programa(_api(), "await traerDeSigrid([]);")["modal"]["html"]
-    assert re.findall(r'<input type="search" class="filtro-traer" '
-                      r'data-filtro="(\w+)"', pagina) == [
+    filtros = pagina.split('id="traer-filtros"')[1].split("</tr>")[0]
+    assert re.findall(r'<input class="col-filter" type="text" '
+                      r'data-filtro="(\w+)"', filtros) == [
         "trabajador", "obra", "detalle"]
-    assert '<select class="filtro-traer" data-filtro="estado">' in pagina
+    assert '<select class="col-filter" data-filtro="estado">' in filtros
     assert re.findall(r'<option value="(\w*)">([^<]*)</option>', pagina) == [
         ("", "Todos"), ("distinta", "distinta"),
         ("solo_sigrid", "solo en Sigrid"), ("igual", "igual"),
@@ -628,7 +668,361 @@ def test_f054_r41_al_abrir_ningun_filtro_esta_puesto():
 
 
 def test_f054_r39_sin_entradas_no_hay_tabla():
-    r = _programa(_api(datos={**DATOS, "trabajadores": []}),
+    """T24 cambia este test de T23: «No se traen» es una tabla aparte."""
+    r = _programa(_api(datos={**DATOS, "trabajadores": [], "no_traidas": []}),
                   "await traerDeSigrid([]);")
     assert "<table" not in r["modal"]["html"]
     assert r["escuchas"] == {"#btn-traer-cerrar": ["click"]}
+    r = _programa(_api(datos={**DATOS, "trabajadores": []}),
+                  "await traerDeSigrid([]);")
+    assert r["modal"]["html"].count("<table") == 1
+    assert "traer-cuerpo" not in r["modal"]["html"]
+    assert r["escuchas"] == {**ESCUCHAS_NO_TRAIDAS,
+                             "#btn-traer-cerrar": ["click"]}
+
+
+# ---- T24 (R43-R45, D20-D21): cabecera estándar y «No se traen» en tabla ---- #
+def _no_traida(hmores, recurso, obra, parte, motivo, *, cod="", nombre=""):
+    """La forma de `NoTraidaOut` (api, T25): `recurso_cod` y
+    `recurso_nombre` nulos si el recurso no está en el maestro."""
+    return {"hmores_ide": hmores, "recurso_ide": recurso, "obra_cod": obra,
+            "parte_cod": parte, "can": 0.5, "motivo": motivo,
+            "recurso_cod": cod or None, "recurso_nombre": nombre or None}
+
+
+#: Tres líneas iguales (parte, obra, recurso y motivo) y otras que difieren
+#: en una sola de esas claves cada una, más una sin parte ni obra.
+NO_TRAIDAS = [
+    _no_traida(1, 1671338, "POSTV2", "PT26/00028",
+               "la partida 11 casa con 0708 y 0713", cod="1671", nombre="Pía"),
+    _no_traida(2, 30, "0708", "PT26/00030", "la obra 0708 no se ofrece normal",
+               cod="30", nombre="Carla <C>"),
+    _no_traida(3, 1671338, "POSTV2", "PT26/00028",
+               "la partida 11 casa con 0708 y 0713", cod="1671", nombre="Pía"),
+    _no_traida(4, 1671338, "POSTV2", "PT26/00029",
+               "la partida 11 casa con 0708 y 0713", cod="1671", nombre="Pía"),
+    _no_traida(5, 77, None, None, "Zeta <z>"),
+    _no_traida(6, 1671338, "POSTV2", "PT26/00028",
+               "la partida 11 casa con 0708 y 0713", cod="1671", nombre="Pía"),
+    _no_traida(7, 1671338, "POSTV2", "PT26/00028", "otro motivo",
+               cod="1671", nombre="Pía"),
+]
+DATOS_NT = {**DATOS, "no_traidas": NO_TRAIDAS}
+
+
+def _cuerpo_nt(r: dict) -> str:
+    el = r["els"].get("#no-traidas-cuerpo")
+    if el and el["innerHTML"] is not None:
+        return el["innerHTML"]
+    return (r["modal"]["html"].split('<tbody id="no-traidas-cuerpo">')[1]
+            .split("</tbody>")[0])
+
+
+def _filas_nt(r: dict) -> list[list[str]]:
+    return [re.findall(r"<td[^>]*>(.*?)</td>", f)
+            for f in re.findall(r"<tr>(.*?)</tr>", _cuerpo_nt(r))]
+
+
+def _partes_nt(cuerpo: str) -> list[tuple[str, str]]:
+    """(Parte, Motivo) de cada fila, en el orden pintado."""
+    r = _programa(_api(datos=DATOS_NT), "await traerDeSigrid([]);\n" + cuerpo)
+    return [(f[0], f[4]) for f in _filas_nt(r)]
+
+
+def _tabla(pagina: str, cuerpo: str) -> str:
+    """La `<table>` cuyo `<tbody>` tiene ese `id`."""
+    antes, despues = pagina.split(f'<tbody id="{cuerpo}">')
+    return ("<table" + antes.rsplit("<table", 1)[1] + f'<tbody id="{cuerpo}">'
+            + despues.split("</table>")[0])
+
+
+def test_f054_r43_las_dos_tablas_con_la_cabecera_estandar():
+    pagina = _programa(_api(), "await traerDeSigrid([]);")["modal"]["html"]
+    entradas = _tabla(pagina, "traer-cuerpo")
+    no_traidas = _tabla(pagina, "no-traidas-cuerpo")
+    for tabla, titulos, ids in (
+            (entradas, [("trabajador", "Trabajador"), ("obra", "Obra"),
+                        ("estado", "Estado"), ("cuadrante", "Cuadrante"),
+                        ("sigrid", "Sigrid"), ("detalle", "Detalle")],
+             "traer"),
+            (no_traidas, [("parte", "Parte"), ("obra", "Obra"),
+                          ("recurso", "Recurso"), ("lineas", "Líneas"),
+                          ("motivo", "Motivo")], "no-traidas")):
+        assert tabla.startswith('<table class="tabla-reg filterable"><thead>')
+        assert re.findall(r'<th class="th-sort" data-orden="(\w+)">([^<]*)'
+                          r'<span class="sort-arrow"></span></th>',
+                          tabla) == titulos
+        assert tabla.count("th-sort") == len(titulos)
+        assert f'<tr id="{ids}-titulos">' in tabla
+        filtros = (tabla.split(f'<tr id="{ids}-filtros" class="filter-row">')[1]
+                   .split("</tr>")[0])
+        assert filtros.count("<th") == len(titulos) + (ids == "traer")
+        assert filtros.count('<div class="filtro-celda">') == (
+            filtros.count('class="col-filter"'))
+        assert filtros.count('<button type="button" class="filter-clear" '
+                             f'id="{ids}-limpiar">Limpiar</button>') == 1
+        assert filtros.count("filter-clear") == 1
+        # «Limpiar», en la última columna, junto a su filtro
+        ultima = filtros.split("<th")[-1]
+        assert 'class="col-filter"' in ultima and "Limpiar" in ultima
+    # la casilla no ordena: su título va vacío, sin `th-sort`
+    assert entradas.split('<tr id="traer-titulos">')[1].startswith("<th></th>")
+    filtros = entradas.split('class="filter-row">')[1].split("</tr>")[0]
+    assert re.findall(r'<th>(<div class="filtro-celda">)<(input|select) '
+                      r'class="col-filter"(?: type="text")? '
+                      r'data-filtro="(\w+)"', filtros) == [
+        ('<div class="filtro-celda">', "input", "trabajador"),
+        ('<div class="filtro-celda">', "input", "obra"),
+        ('<div class="filtro-celda">', "select", "estado"),
+        ('<div class="filtro-celda">', "input", "detalle")]
+    assert filtros.count("<th></th>") == 3
+    assert re.findall(r'<input class="col-filter" type="text" '
+                      r'data-filtro="(\w+)" placeholder="Contiene…">',
+                      no_traidas) == ["parte", "obra", "recurso", "motivo"]
+    filtros_nt = no_traidas.split('class="filter-row">')[1].split("</tr>")[0]
+    assert filtros_nt.split("<th")[4] == "></th>"   # Líneas, sin filtro
+
+
+def test_f054_r43_fuera_los_selectores_de_t23():
+    """Ni las clases de T23 en `app.js` ni sus reglas en `styles.css`
+    (`ordenable` sigue en `COLUMNAS`: es la propiedad de la tabla principal,
+    no una clase); las reglas estándar, intactas."""
+    from tests.test_f042_sugerencias import CSS
+    for viejo in ("filtro-traer", 'class="ordenable"', 'type="search"',
+                  "tabla-traer"):
+        assert viejo not in JS, viejo
+    for viejo in (".ordenable", ".filtro-traer", "#traer-filtros",
+                  ".tabla-traer"):
+        assert viejo not in CSS, viejo
+    for estandar in (".filterable thead tr:first-child th.th-sort",
+                     ".filterable thead tr:first-child th .sort-arrow",
+                     ".filter-row .col-filter {", ".filtro-celda {",
+                     ".filter-clear {", ".modal .acciones-traer {"):
+        assert estandar in CSS, estandar
+
+
+def test_f054_r43_el_clic_en_la_flecha_ordena_por_su_columna():
+    """El clic se busca con `closest("[data-orden]")`: en el `span` de la
+    flecha ordena por su `th`; en la casilla (sin `data-orden`), nada."""
+    assert 'ev.target.closest("[data-orden]")' in _funcion(
+        "enlazarCabeceraTraer")
+    assert _orden('ordenar("sigrid"); ordenar();') == [2, 3, 4, 6, 7, 1, 5, 0]
+
+
+def test_f054_r43_limpiar_vacia_los_filtros_de_esa_tabla():
+    r = _programa(_api(datos=DATOS_NT), """
+        await traerDeSigrid([]);
+        casilla(1, true); casilla(7, true); ordenar("sigrid");
+        filtrar("obra", "0694"); filtrar("estado", "distinta");
+        filtrarEn("#no-traidas", "parte", "00028"); anota();
+        pulsar("#traer-limpiar"); anota();""")
+    assert r["textos"] == ["Aceptar 2 marcadas (1 ocultas por el filtro)",
+                           "Aceptar 2 marcadas"]
+    # todas las filas, con el orden de antes y las casillas como estaban
+    assert _ides(r) == [2, 3, 4, 6, 7, 1, 5, 0]
+    assert _marcadas(r) == ["7", "1"]
+    assert r["els"]["#traer-titulos"]["innerHTML"].count(" ▲") == 1
+    # los campos de esa fila de filtros, vacíos (Estado, «Todos»)
+    assert r["els"]["#traer-filtros"]["consulta"] == ".col-filter"
+    assert r["els"]["#traer-filtros"]["campos"] == ["", ""]
+    # la otra tabla, ni tocada
+    assert r["els"]["#no-traidas-filtros"]["campos"] == ["x", "distinta"]
+    assert r["els"]["#no-traidas-filtros"]["consulta"] is None
+    assert len(_filas_nt(r)) == 2
+    assert r["pedidas"] == [[RUTA, {"aceptar": []}]]
+
+
+def test_f054_r43_limpiar_vacia_todos_los_filtros_de_la_tabla():
+    """Cada filtro de la tabla, también los que no se han tocado."""
+    r = _programa(_api(datos=DATOS_NT), """
+        await traerDeSigrid([]);
+        filtrar("trabajador", "ana"); filtrar("detalle", "zz");
+        pulsar("#traer-limpiar");""")
+    assert _ides(r) == list(range(8))
+    r = _programa(_api(datos=DATOS_NT), """
+        await traerDeSigrid([]);
+        filtrarEn("#no-traidas", "obra", "zz");
+        filtrarEn("#no-traidas", "recurso", "zz");
+        pulsar("#no-traidas-limpiar");""")
+    assert len(_filas_nt(r)) == 5
+
+
+def test_f054_r43_limpiar_de_no_se_traen_no_toca_la_otra():
+    r = _programa(_api(datos=DATOS_NT), """
+        await traerDeSigrid([]);
+        filtrar("obra", "0694"); ordenarEn("#no-traidas", "parte");
+        filtrarEn("#no-traidas", "parte", "00028");
+        filtrarEn("#no-traidas", "motivo", "OTRO"); anota();
+        pulsar("#no-traidas-limpiar");""")
+    assert [f[0] for f in _filas_nt(r)] == [
+        "—", "PT26/00028", "PT26/00028", "PT26/00029", "PT26/00030"]
+    assert r["els"]["#no-traidas-filtros"]["campos"] == ["", ""]
+    assert r["els"]["#no-traidas-filtros"]["consulta"] == ".col-filter"
+    assert r["els"]["#traer-filtros"]["consulta"] is None
+    assert _ides(r) == [1, 6]
+    assert r["textos"] == ["Aceptar 0 marcadas"]
+
+
+def test_f054_r43_escape_vacia_el_filtro_de_texto_y_repinta():
+    r = _programa(_api(datos=DATOS_NT), """
+        await traerDeSigrid([]);
+        filtrar("obra", "0694"); casilla(1, true); casilla(7, true); anota();
+        textos.push(teclear("#traer", "Enter", "obra", "0694"));
+        textos.push(teclear("#traer", "Escape", "estado", "distinta", "SELECT"));
+        anota();
+        textos.push(teclear("#traer", "Escape", "obra", "0694")); anota();
+        filtrarEn("#no-traidas", "motivo", "otro");
+        textos.push(teclear("#no-traidas", "Escape", "motivo", "otro"));""")
+    assert r["textos"] == [
+        "Aceptar 2 marcadas (1 ocultas por el filtro)", "0694", "distinta",
+        "Aceptar 2 marcadas (1 ocultas por el filtro)", "",
+        "Aceptar 2 marcadas", ""]
+    assert _ides(r) == list(range(8))
+    assert len(_filas_nt(r)) == 5
+    assert r["modal"]["abierto"] is True
+    assert "cerrarModal" not in r["pedidas"]
+
+
+def test_f054_r44_agrupar_no_traidas():
+    programa = "\n".join([
+        DOM_TEXTO, _funcion("agruparNoTraidas"),
+        "process.stdout.write(JSON.stringify(agruparNoTraidas(" +
+        json.dumps(NO_TRAIDAS, ensure_ascii=False) + ")));"])
+    assert _node(programa) == [
+        {"i": 0, "n": 3, "textos": {
+            "parte": "PT26/00028", "obra": "POSTV2", "recurso": "1671 · Pía",
+            "motivo": "la partida 11 casa con 0708 y 0713"}},
+        {"i": 1, "n": 1, "textos": {
+            "parte": "PT26/00030", "obra": "0708", "recurso": "30 · Carla <C>",
+            "motivo": "la obra 0708 no se ofrece normal"}},
+        {"i": 2, "n": 1, "textos": {
+            "parte": "PT26/00029", "obra": "POSTV2", "recurso": "1671 · Pía",
+            "motivo": "la partida 11 casa con 0708 y 0713"}},
+        {"i": 3, "n": 1, "textos": {
+            "parte": "—", "obra": "—", "recurso": "77", "motivo": "Zeta <z>"}},
+        {"i": 4, "n": 1, "textos": {
+            "parte": "PT26/00028", "obra": "POSTV2", "recurso": "1671 · Pía",
+            "motivo": "otro motivo"}}]
+
+
+def test_f054_r44_el_recurso_distingue_por_su_ide():
+    """Mismo parte, obra y motivo, y otro recurso con el mismo código: dos
+    filas (la clave es el `recurso_ide`, no lo pintado)."""
+    nt = [_no_traida(1, 5, "0708", "P", "m", cod="9", nombre="X"),
+          _no_traida(2, 6, "0708", "P", "m", cod="9", nombre="X"),
+          _no_traida(3, 5, "0708", "P", "m", cod="9", nombre="X")]
+    r = _programa(_api(datos={**DATOS, "no_traidas": nt}),
+                  "await traerDeSigrid([]);")
+    assert [f[3] for f in _filas_nt(r)] == ["×2", ""]
+    assert "<h3>No se traen (2)</h3>" in r["modal"]["html"]
+
+
+def test_f054_r44_no_se_traen_en_una_tabla_agrupada():
+    r = _programa(_api(datos=DATOS_NT), "await traerDeSigrid([]);")
+    pagina = r["modal"]["html"]
+    assert "<h3>No se traen (5)</h3>" in pagina
+    assert "<ul>" not in pagina and "<li>" not in pagina
+    assert _filas_nt(r) == [
+        ["PT26/00028", "POSTV2", "1671 · Pía", "×3",
+         "la partida 11 casa con 0708 y 0713"],
+        ["PT26/00030", "0708", "30 · Carla &lt;C&gt;", "",
+         "la obra 0708 no se ofrece normal"],
+        ["PT26/00029", "POSTV2", "1671 · Pía", "",
+         "la partida 11 casa con 0708 y 0713"],
+        ["—", "—", "77", "", "Zeta &lt;z&gt;"],
+        ["PT26/00028", "POSTV2", "1671 · Pía", "", "otro motivo"]]
+    tabla = _tabla(pagina, "no-traidas-cuerpo")
+    assert "checkbox" not in tabla and "<C>" not in pagina
+    assert "<z>" not in pagina
+
+
+def test_f054_r44_dos_iguales_y_una_distinta_dos_filas():
+    nt = [_no_traida(1, 30, "0708", "P1", "m", cod="30", nombre="C"),
+          _no_traida(2, 30, "0708", "P1", "m", cod="30", nombre="C"),
+          _no_traida(3, 30, "0708", "P1", "n", cod="30", nombre="C")]
+    r = _programa(_api(datos={**DATOS, "no_traidas": nt}),
+                  "await traerDeSigrid([]);")
+    assert "<h3>No se traen (2)</h3>" in r["modal"]["html"]
+    assert [(f[3], f[4]) for f in _filas_nt(r)] == [("×2", "m"), ("", "n")]
+
+
+def test_f054_r44_sin_no_traidas_ni_la_seccion():
+    for datos in ({**DATOS, "no_traidas": []},
+                  {k: v for k, v in DATOS.items() if k != "no_traidas"}):
+        pagina = _programa(_api(datos=datos),
+                           "await traerDeSigrid([]);")["modal"]["html"]
+        assert "No se traen" not in pagina
+        assert "no-traidas" not in pagina
+        assert pagina.count("<table") == 1
+
+
+def test_f054_r44_ordena_cada_columna_y_la_segunda_invierte():
+    ab = [("PT26/00028", "la partida 11 casa con 0708 y 0713"),
+          ("PT26/00030", "la obra 0708 no se ofrece normal"),
+          ("PT26/00029", "la partida 11 casa con 0708 y 0713"),
+          ("—", "Zeta &lt;z&gt;"), ("PT26/00028", "otro motivo")]
+    g0, g1, g2, g3, g4 = ab
+    o = 'ordenarEn("#no-traidas", "{}"); '
+    assert _partes_nt("") == ab
+    assert _partes_nt(o.format("parte")) == [g3, g0, g4, g2, g1]
+    assert _partes_nt(o.format("parte") * 2) == [g1, g2, g0, g4, g3]
+    assert _partes_nt(o.format("obra")) == [g3, g1, g0, g2, g4]
+    assert _partes_nt(o.format("recurso")) == [g0, g2, g4, g1, g3]
+    # Motivo sin distinguir mayúsculas: «Zeta» al final
+    assert _partes_nt(o.format("motivo")) == [g1, g0, g2, g4, g3]
+    assert _partes_nt(o.format("motivo") * 2) == [g3, g4, g0, g2, g1]
+    # Líneas, numérica; el empate, en el orden de la primera línea
+    assert _partes_nt(o.format("lineas")) == [g1, g2, g3, g4, g0]
+    assert _partes_nt(o.format("lineas") * 2) == [g0, g1, g2, g3, g4]
+    # otra columna empieza ascendente; el orden no toca la otra tabla
+    assert _partes_nt(o.format("lineas") * 2 + o.format("parte")) == [
+        g3, g0, g4, g2, g1]
+    assert _orden(o.format("parte")) == list(range(8))
+
+
+def test_f054_r44_la_columna_ordenada_lleva_su_marca():
+    r = _programa(_api(datos=DATOS_NT), """
+        await traerDeSigrid([]); ordenarEn("#no-traidas", "lineas");
+        textos.push(botones["#no-traidas-titulos"].innerHTML);
+        ordenarEn("#no-traidas", "lineas");
+        textos.push(botones["#no-traidas-titulos"].innerHTML);""")
+    asc, desc = r["textos"]
+    assert ('data-orden="lineas">Líneas<span class="sort-arrow"> ▲</span>'
+            in asc) and "▼" not in asc
+    assert ('data-orden="lineas">Líneas<span class="sort-arrow"> ▼</span>'
+            in desc) and "▲" not in desc
+    assert asc.startswith('<th class="th-sort" data-orden="parte">')
+    assert r["els"]["#traer-titulos"]["innerHTML"] is None
+
+
+def test_f054_r44_filtros_contiene_sin_mayusculas_y_combinados():
+    def partes(cuerpo):
+        return [p for p, _ in _partes_nt(cuerpo)]
+    f = 'filtrarEn("#no-traidas", '
+    assert partes(f + '"parte", "pt26/0002");') == [
+        "PT26/00028", "PT26/00029", "PT26/00028"]
+    assert partes(f + '"obra", "postv");') == [
+        "PT26/00028", "PT26/00029", "PT26/00028"]
+    assert partes(f + '"recurso", "CARLA <c");') == ["PT26/00030"]
+    assert partes(f + '"motivo", "ZETA");') == ["—"]
+    assert partes(f + '"parte", "00028"); ' + f + '"motivo", "OTRO");') == [
+        "PT26/00028"]
+    assert partes(f + '"parte", "00028"); ' + f + '"motivo", "OTRO"); ' +
+                  f + '"parte", "");') == ["PT26/00028"]
+    assert partes(f + '"obra", "99");') == []
+    r = _programa(_api(datos=DATOS_NT), "await traerDeSigrid([]);\n" +
+                  f + '"obra", "99");')
+    assert _cuerpo_nt(r) == ('<tr><td colspan="5" class="motivo">Ninguna '
+                             'línea con estos filtros.</td></tr>')
+    # filtrar «No se traen» no toca la tabla de entradas ni su botón
+    r = _programa(_api(datos=DATOS_NT), "await traerDeSigrid([]);\n" +
+                  'casilla(1, true); ' + f + '"obra", "99"); anota();')
+    assert _ides(r) == list(range(8)) and r["textos"] == ["Aceptar 1 marcadas"]
+
+
+def test_f054_r45_recurso_con_codigo_y_nombre_o_su_ide():
+    nt = [_no_traida(1, 30, "0708", "P", "m", cod="30", nombre="Carla <C>"),
+          _no_traida(2, 1671338, "0708", "P", "m")]
+    r = _programa(_api(datos={**DATOS, "no_traidas": nt}),
+                  "await traerDeSigrid([]);")
+    assert [f[2] for f in _filas_nt(r)] == ["30 · Carla &lt;C&gt;", "1671338"]
