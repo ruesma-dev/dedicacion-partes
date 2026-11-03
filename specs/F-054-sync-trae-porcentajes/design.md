@@ -3,8 +3,7 @@
 
 Decisiones cerradas: D1-D15 el 2026-10-24 (requirements §6; D12 revisada el 2026-11-02) y D16-D19 (§12).
 **Revisado el 2026-10-29** contra `dev` con F-044, F-062-F-065, F-067 y F-068 (`ac56e96`;
-`progress/spec_F-054.md`). **Aprobada**; enmiendas T23 (2026-11-02) y T24-T25 (2026-11-03, D20: §4.2,
-§5.4, §7).
+`progress/spec_F-054.md`). **Aprobada**; enmiendas T23 (2026-11-02) y T24-T26 (2026-11-03, D20-D21).
 
 ## 1. Servicios, límite y contrato
 
@@ -13,20 +12,18 @@ Decisiones cerradas: D1-D15 el 2026-10-24 (requirements §6; D12 revisada el 202
 (`POSTVENTA_OBRA_COD`, `VAR_OBRA_COD`, `OBRA_PRUEBAS_COD`): leer desde la api copiaría el casado. La
 api, dueña del dato, decide **por recurso** quién es trabajador, vinculado o ajeno. **B: detecta y
 escribe el transfer; la api encamina**: «cubierta» exige la partida resuelta de cada acción y los `ide`
-que reconoce el preflight, que solo tiene el pipeline. **No es otro servicio.** **T24-T25 (D20):** el
-front pinta (presentación); la api da los códigos de obra (su base) y de trabajador; el transfer, los de
-partida y obras en sus motivos (`partida_cod` de §4.1, `codigo` de la api). Sin lecturas nuevas;
-preflight igual (R47).
+que reconoce el preflight, que solo tiene el pipeline. **No es otro servicio.** **T24-T26 (D20-D21):**
+el front pinta (presentación); la api, los de obra (su base) y trabajador; el transfer, los de partida y
+obras en sus motivos (`partida_cod` de §4.1, `codigo` de la api). Sin lecturas nuevas (R47).
 
 **Contratos** (despliegue **transfer → api → front**; con el transfer viejo, A da 502 con motivo y B no
-sale: ignora `completo`, sin `sobrantes`):
+sale: ignora `completo`, sin `sobrantes`; T25-T26 cambian solo el texto de los motivos):
 
 - `POST /api/porcentajes/existentes` (transfer, A): `{empresa, ano, mes, obras}` (las de
   `admite_postventa`) → `{ok, lineas_leidas, excluidas_pruebas, obra_postventa, motivo_postventa,
-  obra_var, motivo_var, lineas: [R6 + destino, obra_origen_ide, var_paride, motivo]}`; 422/502; `motivo`
-  con códigos (T25).
-- `POST /api/v1/periodos/{a}/{m}/traer-sigrid?empresa=` (api, A): `{aceptar: [{trabajador_ide, obra_ide,
-  es_postventa}]}` (vacío = comparar) → R27 y `propuestas_en_curso`; `no_traidas[]` suma `recurso_cod` y
+  obra_var, motivo_var, lineas: [R6 + destino, obra_origen_ide, var_paride, motivo]}`; 422/502.
+- `POST /api/v1/periodos/{a}/{m}/traer-sigrid?empresa=` (api): `{aceptar: [{trabajador_ide, obra_ide,
+  es_postventa}]}` (vacío = comparar) → R27 y `propuestas_en_curso`; `no_traidas[]` + `recurso_cod`,
   `recurso_nombre` (T25); 404/409/422/502.
 - `POST /api/registro/preflight-lote` (B): `LoteIn.completo = false`; con `true`, la respuesta gana
   `sobrantes: [{clave = "cero:{hmores_ide}", hmores_ide, recurso_ide, vinculado (null o {tipo, cod,
@@ -59,8 +56,8 @@ Transfer `application/services/{porcentajes_existentes,reglas_obra_cero}.py` (§
 | api `repositories.py` · `orm_models.py` | `aceptar_entrada` (§5.3) · solo el comentario de la traza |
 | api `registro_sigrid.py` · `{routes,schemas,deps}.py` | `completo`, `sobrantes`, `sobrantes_a_cero` (§6.4) · ruta A |
 | front `app.js` y `static/css/styles.css` · `docs/{ARCHITECTURE,INTEGRACION}.md` | §7 (T9, T15, T23, T24) · R29 (§8) |
-| T25: transfer `universo_var.py` · api `domain/{ports,traer_sigrid}.py`, `repositories.py`, `application/traer_sigrid.py`, `schemas.py` | solo `partida_var_de(…, *, partida_cod=None, obra_cod=None)` (§4.2) · `ObraRepository.codigos`, `NoTraida`/`NoTraidaOut` con `recurso_*`, `_obras`, `_nombre_obra` (§5.4) |
-| tests ajenos (lista cerrada) | `test_f002_fuente_unica.py` (`ANCLAS`); dobles `preflight_lote` de api `test_f0{22,24,55}_*.py` aceptan `completo`; front `test_f050_modal_registro.py`, el `<select` de `test_f050_r29_…` acotado a la partida (T23; el humano, «a», 2026-11-02). T24-T25: ninguno (lo que cambia solo lo fijan tests de F-054) |
+| T25-T26: transfer `universo_var.py`, `registro_pipeline.py` (solo dos motivos, T26) · api `domain/{ports,traer_sigrid}.py`, `repositories.py`, `application/traer_sigrid.py`, `schemas.py` | solo `partida_var_de(…, *, partida_cod=None, obra_cod=None)` (§4.2) · `ObraRepository.codigos`, `NoTraida`/`NoTraidaOut` con `recurso_*`, `_obras`, `_nombre_obra` (§5.4) |
+| tests ajenos (lista cerrada) | `test_f002_fuente_unica.py` (`ANCLAS`); dobles `preflight_lote` de api `test_f0{22,24,55}_*.py` aceptan `completo`; front `test_f050_modal_registro.py`, el `<select` de `test_f050_r29_…` acotado a la partida (T23; el humano, «a», 2026-11-02); T26 (D21): `test_f039_preflight_var.py`, `test_f002_postventa.py` y `test_f025_universo_postventa.py`, solo el texto esperado |
 
 ## 4. Transfer, parte A
 
@@ -87,8 +84,13 @@ sin `resides`: la api aparta las `MESVE` (R14).
 cod_pruebas, cod_postventa, cod_var, inverso, catalogo_var, desde)` (`None` = pruebas) y
 `PorcentajesExistentes.calcular (empresa, ano, mes, obras)`. Catálogos solo si alguna línea es suya.
 **T25 (R46):** `MOTIVO_PV_*` con `partida_cod or paride` y el `codigo or ide` de las obras;
-`partida_var_de(…, *, partida_cod=None, obra_cod=None)` pone en `{paride}` y `{obra}` el código si llega
-(`traducir` pasa los de la línea); el preflight no: texto de hoy, `test_f039_preflight_var.py` igual.
+`partida_var_de(…, *, partida_cod=None, obra_cod=None)` pone en `{paride}` y `{obra}` el código
+(`traducir` pasa los de la línea). **T26 (R47, D21):** `CatalogoVar.codigos` (`{ide: cod}` de **todo**
+el presupuesto que `cargar_catalogo_var` ya lee; vacío sin obra) y `partida_var_de` con `partida_cod or
+codigos.get(var_paride) or var_paride`; el preflight (`registro_pipeline.py` l. ~680) pasa
+`obra_cod=origen.codigo` y a `MOTIVO_PARTIDA_PV_NO_HOJA` (l. ~694), `linea.partida_cod`, el `cod` de
+`nodos_pv` o el `paride`. `MOTIVO_VAR_POSTVENTA`/`_SIN_UNIVERSO`, sin presupuesto: el `ide`. Marcadores
+iguales (`test_f050_modal_registro.py` sigue).
 
 ## 5. Api, parte A
 
@@ -116,10 +118,10 @@ otras filas no se tocan: `reemplazar` borra y recrea sin traza. Sin ORM ni DDL n
 
 ### 5.4 Códigos en los motivos y en `no_traidas` (T25, R45-R46)
 `ObraRepository.codigos(ides) -> dict[int, str]` (port y `PgObraRepository`, `SELECT ide, cod`)
-sustituye a `existen` en `_obras`: su `cod`, no `str(ide)` (`existen` sigue para `use_cases.py`).
-`_nombre_obra`, VAR fuera de la base: `codigo_entrada(obra_cod, partida_cod)` si la línea trae los dos,
-si no `VAR-<var_paride>`; postventa sin origen en la base, su `ide` (reserva). `NoTraida`/`NoTraidaOut`
-+ `recurso_cod`, `recurso_nombre` (de `t`, en `no()`).
+sustituye a `existen` en `_obras`: su `cod`, no `str(ide)` (`existen` sigue, `use_cases.py`).
+`_nombre_obra`, VAR fuera de la base: `codigo_entrada(obra_cod, partida_cod)` con los dos, si no
+`VAR-<var_paride>`; postventa sin origen en la base, su `ide` (reserva). `NoTraida`/`NoTraidaOut` +
+`recurso_cod`, `recurso_nombre` (de `t`).
 
 ## 6. Parte B
 
@@ -149,8 +151,8 @@ en paralelo; corre los preflights de siempre (también las peticiones de 4 eleme
 ### 6.3 `PonerACero.ejecutar(empresa, ano, mes, lineas)`
 1. `lineas_para_editar(ides)` (F-051 R12); en pruebas, además, la 0404.
 2. Guarda previa: mismo recurso, `can`, `synckey` y hora (`M*`; la del vinculado, F-044 R24) = los
-   enviados, sin enlaces, En registro, no de otro sistema y, en pruebas, en la 0404; si no, `omitidas`
-   con motivo.
+   enviados, sin enlaces, En registro, no de otro sistema, en pruebas en la 0404 (si no, `omitidas` con
+   motivo).
 3. `stmt_poner_a_cero` de F-051 (`hora` si es de vinculado), lotes de 15; relectura
    (`lineas_registradas`): sin el 0 ⇒ `omitidas`. Log antes/después por línea (F-051 R18); sin `DELETE`.
 
@@ -158,11 +160,10 @@ en paralelo; corre los preflights de siempre (también las peticiones de 4 eleme
 `RegistroSigrid.ejecutar(…, sobrantes_a_cero)`: si trae alguna, **primero** `poner_a_cero`; después las
 peticiones por obra de siempre, sin cambio. El `ejecutar` del transfer repite su preflight releyendo del
 cliente real: la puesta a 0 ya no suma y la omitida sí (R36). Por eso sobra el `a_cero_hechos` de la
-versión del 2026-10-24 y `registro_pipeline.py` (con F-044 y F-062) no se toca. En un parte compartido
-(postventa, VAR, 0404), la puesta a 0 puede ser la línea al 0 % que `_emparejar_ceros` reutiliza para
-otra acción del recurso: `#regla-cero` de hoy. **Coste (R37):** una lectura más por preflight completo
-(dos con vinculados, en paralelo) en la ronda A; como F-055 T18 (local, 2026-09, 3 pasadas); > 15 % ⇒
-**PARA**.
+versión del 2026-10-24 y B no toca `registro_pipeline.py`. En un parte compartido (postventa, VAR,
+0404), la puesta a 0 puede ser la línea al 0 % que `_emparejar_ceros` reutiliza para otra acción del
+recurso: `#regla-cero` de hoy. **Coste (R37):** una lectura más por preflight completo (dos con
+vinculados, en paralelo) en la ronda A; como F-055 T18 (local, 2026-09, 3 pasadas); > 15 % ⇒ **PARA**.
 
 ## 7. Front (`app.js`)
 
@@ -205,16 +206,15 @@ pruebas, omitida que cubre (D19), cerrado, otro sistema, guardas, nunca `DELETE`
 vinculado no es sobrante de su trabajador, la obra sola no lee, el completo lee **una** más (dos con
 vinculados) en la ronda A. Api: dominio puro, UoW en memoria de `test_f024_cuadrante_empresa.py`,
 `registro_sigrid` con transfer doble (sin sobrantes, ni clave ni llamada); aceptar conserva
-`asignacion_vinculado`. Front: node con dobles. T24: marcado estándar, «Limpiar», Escape, agrupado,
-orden y filtros de «No se traen»; T25: motivos con código y su reserva, `codigos`, `recurso_*`. Sigrid:
-T18-T19.
+`asignacion_vinculado`. Front: node con dobles. T24: cabecera estándar, «Limpiar», Escape, tabla
+agrupada; T25-T26: motivos con código y reserva, `codigos`, `recurso_*`. Sigrid: T18-T19.
 
 ## 10. Ficheros que NO se tocan
 
-Transfer `registro_pipeline.py`, `registro_vinculados.py`, `rachas.py`, `propuesta_partida.py`,
-`universo_postventa.py` y de `universo_var.py` todo salvo `partida_var_de` (T25), las copias de `partes`
-y `reglas_*.py` salvo `omitir` (D19); api `sync_pipeline.py`, `propuestas_mes.py`, `reemplazar`,
-`esquema.py`, `traza_vinculados.py`; `test_f061_recarga.py`; T25: `use_cases.py`, `test_f039_*`.
+Transfer `registro_pipeline.py` (salvo T26), `registro_vinculados.py`, `rachas.py`,
+`propuesta_partida.py`, `universo_postventa.py`, `universo_var.py` (salvo T25-T26), las copias de
+`partes` y `reglas_*.py` salvo `omitir` (D19); api `sync_pipeline.py`, `propuestas_mes.py`,
+`reemplazar`, `esquema.py`, `traza_vinculados.py`; `test_f061_recarga.py`, `use_cases.py`.
 
 ## 11. Riesgos y alternativas descartadas
 
@@ -226,13 +226,13 @@ y `reglas_*.py` salvo `omitir` (D19); api `sync_pipeline.py`, `propuestas_mes.py
   parte el `CI*`/`CIZ` y las rachas intactos.
 - **Obra quitada:** su línea nuestra, sobrante (R34). **Traza perdida al guardar** (R24): pisado. **Otra
   hora `M*`** (F-011) y **capacidad conservadora** en postventa, VAR y 0404 (R36): sobrecarga.
-- **Aceptar con vinculados (≥ 2026-10):** cada uno se decide solo (F-044 R18): en la partida que propone
-  F-068, pisado (marcado, F-064); en otra, sobrecarga (F-044 R23). F-068 no cambia la partida traída (la
-  del titular manda si no es `CI*`, F-044 R17).
-- **T25 fuera de la ventana** (R47): con los códigos también en el preflight cambiarían los motivos VAR
-  del modal del registro y `test_f039_preflight_var.py`: punto para el humano. Agrupar es presentación.
-- **Descartado:** detectar desde la api; un `ejecutar` por obra para las sobrantes; A dentro de `POST
-  /sync` (D1 C); `a_cero_hechos` (§6.4).
+- **Aceptar con vinculados (≥ 2026-10):** cada uno, solo (F-044 R18): en la partida que propone F-068,
+  pisado (marcado, F-064); en otra, sobrecarga (F-044 R23). F-068 no cambia la partida traída (la del
+  titular manda si no es `CI*`, F-044 R17).
+- **D21, fuera de la ventana:** el modal del registro (y la omitida «sigue al trabajador» de F-044, que
+  copia el motivo) nombra la partida por código; ninguno de estos textos se compara ni entra en
+  `clave_conflicto` (solo `pisado`/`sobrecarga`/`sin_partida`). Agrupar es presentación.
+- **Descartado:** detectar en la api; un `ejecutar` por obra; A en `POST /sync` (D1 C); `a_cero_hechos`.
 
 ## 12. Decisiones D16-D19, cerradas (D16-D18: «estoy de acuerdo», el humano, 2026-10-29; detalle: `progress/spec_F-054.md`)
 

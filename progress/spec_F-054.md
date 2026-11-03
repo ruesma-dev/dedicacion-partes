@@ -326,3 +326,68 @@ En R30 se quitó «2026-09» (el mes de la prueba lo fija T18, que ahora admite 
    `harness.mutacion` (api y transfer). El líder decide si la acota.
 5. Lo ya aceptado en local el 2026-11-02 sigue con «déjalo así»; T18 paso 2 admite el mes de
    la prueba (01/2026) y cita sus casos (`PT26/00028`, `POSTV2`, `0708`/`2565541`).
+
+### 2026-11-03 bis · Decisiones del humano sobre los puntos 1-3 (D21) y T26
+
+Citas (vía el líder): punto 1 «trasladalo a codigos legibles, no numeros internos»; punto 2
+«filas de tabla»; punto 3 «ok». Recogidas como **D21** (requirements §6).
+
+**Qué cambia**
+
+- **R47** reescrito: el preflight del registro también nombra por código (`MOTIVO_VAR_*`, F-039
+  R6, y la partida de postventa no hoja, F-002 R16), sin lecturas nuevas; ningún contrato cambia
+  de campos, solo el texto. **R44**: N = filas (grupos). Columna «Líneas»: se queda.
+- **design**: §1 (T24-T26, D20-D21; nota de contrato en la entrada de «Contratos»), §3 (fila
+  T25-T26 con `registro_pipeline.py`, solo dos motivos; tests ajenos de T26), §4.2 (T26), §6.4
+  («B no toca `registro_pipeline.py`»), §10 (`registro_pipeline.py` y `universo_var.py` salvo
+  T25-T26; `test_f039_*` ya no está entre los intocables), §11 (D21 fuera de la ventana).
+- **tasks**: **T26** nueva (transfer, preflight); lista CERRADA con `test_f039_preflight_var.py`
+  citando D21; T24 con «No se traen (2)»; T25 (2) y (5) remiten el preflight a T26; T18 paso 3
+  (el modal con motivos por código); T20 (ningún contrato cambia de campos).
+
+**Diseño del código de la partida VAR, sin lectura nueva.** `cargar_catalogo_var` ya lee el
+presupuesto entero de la obra VAR (`capitulos_de_obra` → `construir_catalogo`) y se queda solo
+con las partidas VAR. T26 guarda además `CatalogoVar.codigos = {ide: cod}` de **todos** los nodos
+de esa misma lectura, así `MOTIVO_VAR_FUERA` (y `_OTRA_OBRA`) nombran la partida aunque esté
+fuera del universo. La obra, con `origen.codigo`, que el preflight ya tiene.
+
+**Consumidores revisados (preflight)**
+
+- Front: `pintarModalPreflight` pinta el `motivo` tal cual. `app.js` solo compara motivos de
+  **conflicto** (`sin_partida`, `sobrecarga`, `pisado`, l. ~3385-3401), que son tipos, no estos
+  textos.
+- Transfer: `registro_pipeline.py` l. ~1005, ~1189, ~1195 y `registro_vinculados.py` l. ~507-509
+  comparan solo esos tipos de conflicto. `clave_conflicto` se construye con `CAMPOS_CLAVE`
+  (campos de la acción), **no** con el motivo. **Ningún texto de motivo se usa como clave ni se
+  compara.** `MOTIVO_SIGUE_AL_TRABAJADOR.format(motivo=t.motivo)` (F-044, l. ~491) copia el
+  motivo del titular al vinculado omitido: el modal lo verá también con código; los tests de
+  F-044 (`test_f044_pipeline_vinculados.py` l. ~478, ~544, ~608; `test_f044_reglas_vinculados.py`
+  l. ~402) comparan contra `t.motivo` y no cambian.
+- Api: guarda el motivo en `sigrid_motivo` (recortado a 300); los códigos no alargan el texto de
+  forma relevante.
+- Tests: `MOTIVO_VAR_*` solo en `test_f039_preflight_var.py` (cambian los de `FUERA` y
+  `OTRA_OBRA`; `SIN_UNIVERSO`, `POSTVENTA` y `OFF` no) y `test_f039_universo_var.py` l. ~253
+  (`MOTIVO_VAR_OFF`, sin cambio). `MOTIVO_PARTIDA_PV_NO_HOJA`: `test_f002_postventa.py` l. ~157 y
+  `test_f025_universo_postventa.py` l. ~88 (mandan `partida_cod` `11` y `0713`: su texto
+  esperado cambia) y `test_f050_modal_registro.py` l. ~379/414 (formatea la constante con
+  `paride=…` y la pinta: **no cambia** porque los marcadores se mantienen). F-062, F-064 y F-068:
+  ningún test usa estos motivos (grep sin resultados).
+- Otros motivos del preflight con `ide`: `MOTIVO_LINEA_CAMBIADA` y `MOTIVO_INC_CAMBIADA`
+  («línea {ide}») nombran una línea de Sigrid, que no tiene código: fuera. `MOTIVO_PARTIDA_NO_HOJA`
+  y `MOTIVO_ELEGIDA_NO_VALIDA` ya usan código; `MOTIVO_EMPRESA_OBRA`, el `cod` de la obra.
+
+**Tamaños.** requirements 150/150, design 250/250 (compactado: notas de contrato juntas en la
+entrada de «Contratos», frases de §1, §5.4, §6.3, §9-§11 acortadas; sin quitar requisitos).
+
+**Puntos para el humano / el líder**
+
+1. **Dos motivos VAR siguen con `ide`** en el preflight: `MOTIVO_VAR_POSTVENTA` (línea de
+   postventa con `var_paride`: el preflight la omite sin leer la obra VAR, y `test_f039` exige que
+   no la lea) y `MOTIVO_VAR_SIN_UNIVERSO` (no hay obra VAR ni presupuesto). Sin lectura nueva, la
+   única vía sería que la api rellene el `partida_cod` (campo que ya existe en la línea de la
+   petición) en las líneas VAR, sacándolo del `cod` de la entrada (`VAR-29` → `29`): no cambia
+   campos, pero sí lo que manda la api. No se ha diseñado; si se quiere, se añade a T26.
+2. **`MOTIVO_PARTIDA_PV_NO_HOJA` dentro de T26**: lo he metido por «códigos legibles» (nombra la
+   partida por `ide`) y por eso entran en la lista cerrada `test_f002_postventa.py` y
+   `test_f025_universo_postventa.py`. Si el humano lo quiere limitado a los `MOTIVO_VAR_*`, se
+   quita de T26 y esos dos tests salen de la lista.
