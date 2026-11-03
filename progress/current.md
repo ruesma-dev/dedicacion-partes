@@ -7,7 +7,7 @@ funciona exactamente igual que el resto de recursos asociados. se reparten porce
 revisada, `sync.vinculados.tipos_excluidos` de `[VP]` a `[]` en la api; test `test_f044_r1_config_versionada`
 (RED antes del cambio) y `docs/ARCHITECTURE.md`. `bash harness/init.sh` en verde. **Pendiente del humano:**
 merge a `dev`, despliegue SOLO de la api y «Sincronizar Sigrid» para que los `VP` salgan como subfilas.
-`azure-apps/dedicacion.md` no describe `tipos_excluidos`: no se toca. F-054 sigue en su copia `porcentajes-f054`.
+`azure-apps/dedicacion.md` (l. ~706) solo describe el efecto genérico de cambiar `tipos_excluidos`, sin su valor: no se toca. F-054 sigue en su copia `porcentajes-f054`.
 
 **F-068** (la partida del recurso vinculado se propone como la del
 trabajador: historial en la obra y, si no, por nombre, CI.4 en empate;
