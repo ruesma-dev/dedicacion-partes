@@ -401,8 +401,10 @@ def test_f044_r1_config_versionada():
     from config.settings import cargar_config
 
     cfg = cargar_config()["sync"]["vinculados"]
+    # Hotfix del 2026-11-03: los `VP` (km) se reparten como los demás
+    # vinculados; ya no hay tipos excluidos (D1b revisada por el humano).
     assert (cfg["campo"], cfg["desde"], cfg["tipos_excluidos"]) == (
-        "5", "2026-10", ["VP"])
+        "5", "2026-10", [])
     sql = cfg["sql"]
     assert sql.count("?") == 1
     assert _alias(sql) == set(COLUMNAS_VINCULADOS)
