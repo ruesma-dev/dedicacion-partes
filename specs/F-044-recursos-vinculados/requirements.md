@@ -36,7 +36,7 @@ y, si el titular va a postventa, VAR o `CP*`, la del titular. Glosario:
 - **R3.** Con el campo vacío o hacia un recurso que no es trabajador de
   dedicación, no se vincula; el preview del sync publica cuántos y sus códigos
   (para que Administración rellene el campo). No se casa por nombre. `[D1b]`
-  Un tipo de `tipos_excluidos` (hoy `VP`) no se vincula y el preview lo cuenta.
+  Un tipo de `tipos_excluidos` (hoy ninguno; `VP` hasta el hotfix del 2026-11-03) no se vincula y el preview lo cuenta.
 - **R4.** El vinculado cuenta en el mes M con `vigente_en` sobre su propia
   baja (`#regla-recurso`).
 - **R5.** El vínculo se guarda en `recurso_vinculado` (ORM). El que sale del

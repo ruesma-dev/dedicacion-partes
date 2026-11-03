@@ -967,7 +967,8 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       hacia quien no es trabajador de dedicación: no se vincula y el
       preview lo cuenta, con sus códigos, para que Administración lo
       corrija; nunca se casa por nombre. Los tipos de `tipos_excluidos`
-      (hoy `VP`) no se vinculan. Se guarda en `recurso_vinculado`; el que
+      no se vinculan (hoy ninguno: los `VP`, km, se reparten como los
+      demás desde el hotfix del 2026-11-03). Se guarda en `recurso_vinculado`; el que
       deja de llegar o pierde su trabajador queda inactivo, no se borra.
       Cuenta en el mes con `vigente_en` sobre su propia baja
       ([`#regla-recurso`](#regla-recurso)).
