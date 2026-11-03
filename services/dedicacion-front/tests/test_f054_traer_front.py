@@ -1072,3 +1072,12 @@ def test_f054_r44_el_filtro_de_recurso_existe_desde_el_principio():
         "trabajadores: [], no_traidas: [] }).noTraidas.filtros));"])
     assert _node(programa) == {"parte": "", "obra": "", "recurso": "",
                                "motivo": ""}
+
+
+def test_f054_r44_parte_y_obra_escapadas():
+    """E46 y E49: todos los textos de la fila se escapan."""
+    nt = [_no_traida(1, 30, "O<b>", "P<a>", "m", cod="30", nombre="C")]
+    r = _programa(_api(datos={**DATOS, "no_traidas": nt}),
+                  "await traerDeSigrid([]);")
+    assert _filas_nt(r)[0][:2] == ["P&lt;a&gt;", "O&lt;b&gt;"]
+    assert "<a>" not in r["modal"]["html"] and "<b>" not in r["modal"]["html"]
