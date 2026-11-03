@@ -2894,8 +2894,49 @@ function modeloTraerSigrid(datos) {
       },
     });
   }));
+  // T24 (R44): «No se traen», agrupadas, con su orden y sus filtros.
+  const noTraidas = { filas: agruparNoTraidas(datos.no_traidas || []),
+    orden: { col: null },
+    filtros: { parte: "", obra: "", recurso: "", motivo: "" } };
   return { filas, orden: { col: null },
-    filtros: { trabajador: "", obra: "", estado: "", detalle: "" } };
+    filtros: { trabajador: "", obra: "", estado: "", detalle: "" },
+    noTraidas };
+}
+
+// Pura (T24, R44-R45): una fila por grupo de líneas con igual parte, obra,
+// recurso (`recurso_ide`) y motivo, en el orden de la primera; `n`, cuántas.
+// El recurso, `cod · nombre` del maestro o, sin él, su `recurso_ide`.
+function agruparNoTraidas(noTraidas) {
+  const grupos = new Map();
+  noTraidas.forEach((n) => {
+    const clave = JSON.stringify([n.parte_cod, n.obra_cod, n.recurso_ide,
+      n.motivo]);
+    const grupo = grupos.get(clave);
+    if (grupo) { grupo.n += 1; return; }
+    grupos.set(clave, { i: grupos.size, n: 1, textos: {
+      parte: n.parte_cod || "—",
+      obra: n.obra_cod || "—",
+      recurso: n.recurso_cod ? `${n.recurso_cod} · ${n.recurso_nombre}`
+        : String(n.recurso_ide),
+      motivo: n.motivo,
+    } });
+  });
+  return [...grupos.values()];
+}
+
+// Pura (T24, R44 con R40-R41): las filas de «No se traen» que se ven.
+// Filtros «contiene» sin distinguir mayúsculas sobre lo pintado; Líneas,
+// numérica; `sort` estable sobre una copia: en empate, el de la primera.
+function noTraidasVisibles(filas, filtros, orden) {
+  const visibles = filas.filter((f) => Object.keys(filtros).every((k) =>
+    f.textos[k].toLowerCase().includes(filtros[k].toLowerCase())));
+  if (!orden.col) return visibles;
+  return visibles.sort((a, b) => {
+    const c = orden.col === "lineas" ? a.n - b.n
+      : a.textos[orden.col].toLowerCase()
+        .localeCompare(b.textos[orden.col].toLowerCase(), "es");
+    return orden.asc ? c : -c;
+  });
 }
 
 // Pura (R40, R41): las filas que se ven. Texto «contiene» sin distinguir
@@ -2956,13 +2997,79 @@ function cuerpoTraerSigrid(visibles) {
     : '<tr><td colspan="7" class="motivo">Ninguna entrada con estos filtros.</td></tr>';
 }
 
-// R40: los títulos ordenables; la columna ordenada lleva ▲ o ▼.
+// R40, T24 (R43): títulos ordenables con el marcado de la cabecera
+// estándar (`renderCabeceraTabla`): `th-sort` y la flecha en `sort-arrow`,
+// ▲ o ▼ solo en la columna ordenada. Sin mover ni redimensionar columnas.
+function titulosOrdenables(orden, columnas) {
+  return columnas.map(([col, titulo]) =>
+    `<th class="th-sort" data-orden="${col}">${titulo}<span class="sort-arrow">` +
+    `${col === orden.col ? (orden.asc ? " ▲" : " ▼") : ""}</span></th>`).join("");
+}
+
+// La casilla, sin título ni orden.
 function titulosTraerSigrid(orden) {
-  return "<th></th>" + [["trabajador", "Trabajador"], ["obra", "Obra"],
-    ["estado", "Estado"], ["cuadrante", "Cuadrante"], ["sigrid", "Sigrid"],
-    ["detalle", "Detalle"]].map(([col, titulo]) =>
-    `<th class="ordenable" data-orden="${col}">${titulo}` +
-    `${col === orden.col ? (orden.asc ? " ▲" : " ▼") : ""}</th>`).join("");
+  return "<th></th>" + titulosOrdenables(orden, [["trabajador", "Trabajador"],
+    ["obra", "Obra"], ["estado", "Estado"], ["cuadrante", "Cuadrante"],
+    ["sigrid", "Sigrid"], ["detalle", "Detalle"]]);
+}
+
+function titulosNoTraidas(orden) {
+  return titulosOrdenables(orden, [["parte", "Parte"], ["obra", "Obra"],
+    ["recurso", "Recurso"], ["lineas", "Líneas"], ["motivo", "Motivo"]]);
+}
+
+// T24 (R43): la celda de un filtro de texto; en la última columna, con
+// «Limpiar» (`limpiar`, el `id` del botón).
+function celdaFiltroTraer(clave, limpiar) {
+  return `<th><div class="filtro-celda"><input class="col-filter" type="text" ` +
+    `data-filtro="${clave}" placeholder="Contiene…">` +
+    (limpiar ? `<button type="button" class="filter-clear" id="${limpiar}">` +
+      "Limpiar</button>" : "") + "</div></th>";
+}
+
+function filaNoTraida(f) {
+  return `<tr><td>${escapeHtml(f.textos.parte)}</td>` +
+    `<td>${escapeHtml(f.textos.obra)}</td>` +
+    `<td>${escapeHtml(f.textos.recurso)}</td>` +
+    `<td>${f.n > 1 ? `×${f.n}` : ""}</td>` +
+    `<td>${escapeHtml(f.textos.motivo)}</td></tr>`;
+}
+
+function cuerpoNoTraidas(visibles) {
+  return visibles.length ? visibles.map(filaNoTraida).join("")
+    : '<tr><td colspan="5" class="motivo">Ninguna línea con estos filtros.</td></tr>';
+}
+
+// T24 (R43): las escuchas de la cabecera de una tabla de la ventana (`id`
+// `<tabla>-titulos`, `-filtros` y `-limpiar`) sobre su parte del modelo
+// (`orden`, `filtros`). El clic en la flecha ordena por su `th`; Escape en
+// un filtro de texto lo vacía (la ventana sigue abierta); «Limpiar» vacía
+// los filtros y los campos de esa tabla, sin tocar orden ni casillas, y
+// sin repintar la cabecera.
+function enlazarCabeceraTraer(tabla, parte, repintar) {
+  $(`#${tabla}-titulos`).addEventListener("click", (ev) => {
+    const th = ev.target.closest("[data-orden]");
+    if (!th) return;
+    const col = th.dataset.orden;
+    parte.orden = { col, asc: parte.orden.col !== col || !parte.orden.asc };
+    repintar();
+  });
+  const filtros = $(`#${tabla}-filtros`);
+  filtros.addEventListener("input", (ev) => {
+    parte.filtros[ev.target.dataset.filtro] = ev.target.value;
+    repintar();
+  });
+  filtros.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape" || ev.target.tagName !== "INPUT") return;
+    ev.target.value = "";
+    parte.filtros[ev.target.dataset.filtro] = "";
+    repintar();
+  });
+  $(`#${tabla}-limpiar`).addEventListener("click", () => {
+    Object.keys(parte.filtros).forEach((k) => { parte.filtros[k] = ""; });
+    filtros.querySelectorAll(".col-filter").forEach((c) => { c.value = ""; });
+    repintar();
+  });
 }
 
 function pintarTraerSigrid(datos, modelo) {
@@ -2982,9 +3089,9 @@ function pintarTraerSigrid(datos, modelo) {
   }
   const casillas = modelo.filas.some((f) => f.casilla);
   if (modelo.filas.length) {
-    // R39-R42: una sola tabla; títulos ordenables y, debajo, los filtros.
-    const texto = (k) =>
-      `<th><input type="search" class="filtro-traer" data-filtro="${k}" placeholder="Contiene…"></th>`;
+    // R39-R43: una sola tabla con la cabecera estándar: títulos ordenables
+    // y, debajo, los filtros, con «Limpiar» en la última columna. El
+    // `<select` de Estado vive aquí (F-050 R29, acotado por T23).
     const estados = ["distinta", "solo_sigrid", "igual", "solo_cuadrante",
       "no_traducible"];
     if (casillas) {
@@ -2992,20 +3099,28 @@ function pintarTraerSigrid(datos, modelo) {
         `<button class="btn secondary" id="btn-traer-desmarcar">Desmarcar todas</button>` +
         `<button class="btn secondary" id="btn-traer-marcar">Marcar las visibles</button></div>`;
     }
-    html += `<table class="tabla-reg tabla-traer"><thead>` +
+    html += `<table class="tabla-reg filterable"><thead>` +
       `<tr id="traer-titulos">${titulosTraerSigrid(modelo.orden)}</tr>` +
-      `<tr id="traer-filtros"><th></th>${texto("trabajador")}${texto("obra")}` +
-      `<th><select class="filtro-traer" data-filtro="estado"><option value="">Todos</option>` +
+      `<tr id="traer-filtros" class="filter-row"><th></th>` +
+      `${celdaFiltroTraer("trabajador")}${celdaFiltroTraer("obra")}` +
+      `<th><div class="filtro-celda"><select class="col-filter" data-filtro="estado">` +
+      `<option value="">Todos</option>` +
       estados.map((s) => `<option value="${s}">${escapeHtml(textoEstadoSigrid(s))}</option>`).join("") +
-      `</select></th><th></th><th></th>${texto("detalle")}</tr></thead>` +
+      `</select></div></th><th></th><th></th>` +
+      `${celdaFiltroTraer("detalle", "traer-limpiar")}</tr></thead>` +
       `<tbody id="traer-cuerpo">${cuerpoTraerSigrid(modelo.filas)}</tbody></table>`;
   }
-  const noTraidas = datos.no_traidas || [];
-  if (noTraidas.length) {
-    html += `<h3>No se traen (${noTraidas.length})</h3><ul>` +
-      noTraidas.map((n) => `<li>${escapeHtml(
-        `parte ${n.parte_cod || "—"} · obra ${n.obra_cod || "—"} · recurso ` +
-        `${n.recurso_ide}: ${n.motivo}`)}</li>`).join("") + "</ul>";
+  // T24 (R44): «No se traen (N)», N = filas; tabla sin casillas.
+  const nt = modelo.noTraidas;
+  if (nt.filas.length) {
+    html += `<h3>No se traen (${nt.filas.length})</h3>` +
+      `<table class="tabla-reg filterable"><thead>` +
+      `<tr id="no-traidas-titulos">${titulosNoTraidas(nt.orden)}</tr>` +
+      `<tr id="no-traidas-filtros" class="filter-row">` +
+      `${celdaFiltroTraer("parte")}${celdaFiltroTraer("obra")}` +
+      `${celdaFiltroTraer("recurso")}<th></th>` +
+      `${celdaFiltroTraer("motivo", "no-traidas-limpiar")}</tr></thead>` +
+      `<tbody id="no-traidas-cuerpo">${cuerpoNoTraidas(nt.filas)}</tbody></table>`;
   }
   html += `<div class="pie-modal">` +
     `<button class="btn secondary" id="btn-traer-cerrar">Cerrar</button>` +
@@ -3028,6 +3143,7 @@ function aceptadasMarcadas(modelo) {
 // Sin pulsar «Aceptar N marcadas» no se manda nada (R21, R28). Ordenar y
 // filtrar repintan solo los títulos, el `<tbody>` y el botón (los filtros
 // no se repintan: no pierden el foco); la casilla cambia su `marcada`.
+// T24: «No se traen» tiene su propio orden y sus filtros (`noTraidas`).
 function abrirTraerSigrid(datos) {
   const modelo = modeloTraerSigrid(datos);
   abrirModal(pintarTraerSigrid(datos, modelo));
@@ -3043,17 +3159,16 @@ function abrirTraerSigrid(datos) {
     $("#traer-cuerpo").innerHTML = cuerpoTraerSigrid(v);
     repintarBoton(v);
   };
+  const nt = modelo.noTraidas;
+  if (nt.filas.length) {
+    enlazarCabeceraTraer("no-traidas", nt, () => {
+      $("#no-traidas-titulos").innerHTML = titulosNoTraidas(nt.orden);
+      $("#no-traidas-cuerpo").innerHTML =
+        cuerpoNoTraidas(noTraidasVisibles(nt.filas, nt.filtros, nt.orden));
+    });
+  }
   if (modelo.filas.length) {
-    $("#traer-titulos").addEventListener("click", (ev) => {
-      const col = ev.target.dataset.orden;
-      if (!col) return;
-      modelo.orden = { col, asc: modelo.orden.col !== col || !modelo.orden.asc };
-      repintar();
-    });
-    $("#traer-filtros").addEventListener("input", (ev) => {
-      modelo.filtros[ev.target.dataset.filtro] = ev.target.value;
-      repintar();
-    });
+    enlazarCabeceraTraer("traer", modelo, repintar);
     $("#traer-cuerpo").addEventListener("change", (ev) => {
       modelo.filas[Number(ev.target.dataset.fila)].marcada = ev.target.checked;
       repintarBoton(visibles());

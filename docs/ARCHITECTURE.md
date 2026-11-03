@@ -1117,11 +1117,19 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       distinguir mayúsculas, los % numéricos con la raya al final; en
       empate, el orden de la respuesta) y se filtra en la cabecera (texto
       «contiene» en Trabajador, Obra y Detalle; desplegable en Estado);
-      filtrar u ordenar no toca las casillas. «Desmarcar todas» (también
-      las ocultas), «Marcar las visibles» y «Aceptar N marcadas (K ocultas
-      por el filtro)», que repite la petición con `aceptar` = exactamente
-      las marcadas, visibles u ocultas. Sin marcadas, solo avisa. El front
-      no compara: es presentación.
+      filtrar u ordenar no toca las casillas. La cabecera es la **estándar**
+      del cuadrante (`.filterable`: títulos en burdeos con la flecha en la
+      columna ordenada, filtros debajo y «Limpiar» en la última columna,
+      que vacía los filtros de **esa** tabla sin tocar orden ni casillas;
+      Escape vacía el filtro de texto y la ventana sigue abierta).
+      «Desmarcar todas» (también las ocultas), «Marcar las visibles» y
+      «Aceptar N marcadas (K ocultas por el filtro)», que repite la
+      petición con `aceptar` = exactamente las marcadas, visibles u
+      ocultas. Sin marcadas, solo avisa. Debajo, «No se traen (N)», otra
+      tabla con la misma cabecera y sin casillas (Parte, Obra, Recurso
+      `cod · nombre`, Líneas, Motivo): las líneas con igual parte, obra,
+      recurso y motivo van en **una** fila con «×K» en Líneas (N = filas).
+      El front no compara: agrupar y ordenar es presentación.
 
     *Decidido por Pablo Gris el 2026-10-24 («al sincronizar, puedo querer
     trarme algunas laineas(obras) de sigrid y otras no. si acepto en la

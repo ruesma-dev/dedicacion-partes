@@ -726,7 +726,7 @@ def _filas_nt(r: dict) -> list[list[str]]:
 def _partes_nt(cuerpo: str) -> list[tuple[str, str]]:
     """(Parte, Motivo) de cada fila, en el orden pintado."""
     r = _programa(_api(datos=DATOS_NT), "await traerDeSigrid([]);\n" + cuerpo)
-    return [(f[0], f[4]) for f in _filas_nt(r)]
+    return [(f[0], f[4]) for f in _filas_nt(r) if len(f) == 5]
 
 
 def _tabla(pagina: str, cuerpo: str) -> str:
