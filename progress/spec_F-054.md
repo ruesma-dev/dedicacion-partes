@@ -244,3 +244,85 @@ expresiones sin contenido normativo («No es otro servicio», «> 15 % ⇒ PARA�
    `harness.mutacion` no cubre JS, el líder decide si basta con los tests de las dos puras.
 3. Detalles que la spec deja al implementer y no cambian el comportamiento: dónde vive el
    modelo (`state` o cierre de `abrirTraerSigrid`) y el marcador visual del orden (▲/▼).
+
+## 2026-11-03 · Segunda enmienda tras la MANUAL T18: cabecera estándar, «No se traen» en tabla y motivos con códigos (T24-T25, D20)
+
+Pedida por el humano vía el líder al probar T18 paso 2 (mes 01/2026): tres cosas, y «hazlo
+todo dentro de la feature» (D20). Solo lectura de código; ninguna lectura contra Sigrid. Sin
+tocar `progress/current.md`, `harness/features.json` ni los `.env`.
+
+**Qué cambia en la spec**
+
+- **requirements**: R43 (cabecera estándar `.filterable` en las dos tablas, «Limpiar» por
+  tabla, Escape vacía el filtro de texto; R40-R42 igual), R44 («No se traen (N)», N = líneas,
+  tabla Parte/Obra/Recurso/Líneas/Motivo con orden y filtros; iguales agrupadas con «×K»), R45
+  (`no_traidas` gana `recurso_cod`/`recurso_nombre`; sin ellos, el `recurso_ide`), R46 (motivos
+  con códigos, `ide` de reserva), R47 (el preflight del registro y su contrato no cambian). §6:
+  D20 con la cita. R29 remite a R39-R46.
+- **design**: §1 límite de T24-T25; contratos (`motivo` con códigos; `no_traidas` + `recurso_*`);
+  §3 fila T25; §4.2 (motivos de postventa y argumentos opcionales de `partida_var_de`); §5.4
+  nuevo (`ObraRepository.codigos`, `_obras`, `_nombre_obra`, `NoTraida`); §7 bullet T24; §9, §10
+  (`universo_var.py` solo `partida_var_de`; `use_cases.py` y `test_f039_*` no se tocan), §11.
+- **tasks**: T24 (front) y T25 (api y transfer), tests primero; T18 paso 2 al día (cabecera
+  estándar, Escape, «Limpiar», tabla «No se traen» con «×K» y códigos, con los casos de
+  01/2026); T20 con la nota de contrato; cabecera de la lista cerrada (no crece).
+
+**Límite de servicio.** Front: presentación (cabecera, agrupar idénticas, pintar el código del
+trabajador): no decide qué se registra. Api: el `cod` de las obras de su base (hoy pone
+`str(ide)` en `_obras` a las que existen sin salir en el periodo: de ahí «la obra 2565541 no se
+ofrece normal»), `<obra>-<partida>` para la VAR fuera de la base y el código y nombre del
+trabajador (toda `no_traida` tiene uno del maestro: R14). Transfer: los códigos de partida
+(`partida_cod`, ya en la lectura de §4.1) y de obras (`codigo`, ya en el cuerpo que manda la
+api) en los motivos que construye. Ninguna lectura nueva en ningún servicio.
+
+**Consumidores revisados** (grep en los tres servicios):
+
+- `MOTIVO_NO_OFRECIBLE`, `MOTIVO_NO_EN_BASE`, `MOTIVO_OTRA_EMPRESA`, `_nombre_obra`, `NoTraida`:
+  solo `domain/traer_sigrid.py` y tests de F-054 (`test_f054_comparar.py`). Los textos «no se
+  ofrece como normal» de `test_f029_completar.py` son de otro mensaje (F-029), no cambian.
+- `ObraRepository.existen`: también `use_cases.py` (l. ~1002) ⇒ no se cambia; se añade
+  `codigos`. Dobles afectados: solo los `SimpleNamespace` de `test_f054_aceptar.py` (l. ~293 y
+  ~599) y `test_f054_mutacion.py` (l. ~89); los `_Obras` de `test_f024`/`test_f025` no pasan por
+  `TraerDeSigrid`.
+- `MOTIVO_PV_NINGUNA`/`_VARIAS`: solo `porcentajes_existentes.py` y tests de F-054
+  (`test_f054_traduccion.py`, `test_f054_mutacion.py` del transfer).
+- `partida_var_de` y `MOTIVO_VAR_*`: también **`registro_pipeline.py` l. ~680 (preflight VAR,
+  F-039 R6)**, que llega al **modal del registro**, y `test_f039_preflight_var.py` (cuatro
+  asserts con `MOTIVO_VAR_*.format(paride=<ide>, obra=<ide>…)`). Por eso los argumentos nuevos
+  son **opcionales**: sin ellos, el texto de hoy; el preflight no los pasa (R47) y
+  `test_f039_preflight_var.py` no cambia. `test_f054_mutacion.py` espía `partida_var_de`: si el
+  espía no acepta los `kwargs` nuevos, se ajusta (es de F-054).
+- Front: `no_traidas` solo lo pinta `pintarTraerSigrid`. Los selectores de T23 (`ordenable`,
+  `filtro-traer`, `type="search"`, `#traer-titulos`/`#traer-filtros`) solo los fija
+  `test_f054_traer_front.py`. **Ojo**: `test_f050_r29_…` exige que todos los `<select` de
+  `app.js` estén en `pintarTraerSigrid`: el de Estado no se puede sacar a una función auxiliar
+  (anotado en T24 y en la cabecera de tasks).
+- Contrato: `/api/porcentajes/existentes` mismos campos (solo cambia el texto de `motivo`);
+  `traer-sigrid` gana dos campos en `no_traidas`, consumidos solo por el front. `azure-apps/
+  dedicacion.md` hoy no describe ninguno de los dos (grep sin resultados): T20 lo deja anotado.
+
+**Tamaños.** requirements 150/150, design 250/250. Para caber, sin quitar contenido normativo:
+reenvuelto a ~102-104 columnas; requisitos cortos unidos en el mismo punto (R3, R5, R14, R16,
+R17, R20, R22, R24, R26, R30, R32, R34, R37, R45, R47, como ya estaban R7, R9, R11, R12);
+historia de la cabecera de requirements remitida a §6 (las fechas siguen allí); en design, sin
+línea en blanco tras los `###`, §12 D16-D18 en un párrafo con las razones largas resumidas
+(detalle: la sección del 2026-10-29 de este fichero) y frases acortadas en §5.2, §6.2-§6.4, §9-§11.
+En R30 se quitó «2026-09» (el mes de la prueba lo fija T18, que ahora admite el de la prueba).
+
+**Puntos para el humano / el líder**
+
+1. **Motivos del preflight del registro (fuera de la ventana).** Con R47 el modal del registro
+   sigue diciendo «partida VAR 417002 …» (el `ide`). Llevar los códigos también ahí es pasar
+   `partida_cod`/`obra_cod` desde `registro_pipeline.py` (el código de la partida VAR no está en
+   `CatalogoVar` si queda fuera del universo: habría que guardar los códigos de todo el
+   presupuesto ya leído) y cambiaría `test_f039_preflight_var.py`. No se ha diseñado: si el
+   humano lo quiere, es otra enmienda (o feature) y ese test entra en la lista cerrada.
+2. **N de «No se traen (N)».** Se ha mantenido N = líneas de Sigrid (como hoy); las filas son
+   grupos. Si el humano prefiere N = filas, es un cambio de una palabra en R44 y en T24.
+3. **Columna «Líneas».** «×K» va en una columna propia (vacía si K = 1, ordenable, sin filtro),
+   antes de Motivo, para que «Limpiar» quede junto al filtro de Motivo. Alternativa: pegarlo al
+   final del motivo; se descartó porque mezclaría el «×K» con el filtro de texto.
+4. **Mutación.** T24 es JS: como en T23, mutación manual de `app.js`; T25 entra en la campaña de
+   `harness.mutacion` (api y transfer). El líder decide si la acota.
+5. Lo ya aceptado en local el 2026-11-02 sigue con «déjalo así»; T18 paso 2 admite el mes de
+   la prueba (01/2026) y cita sus casos (`PT26/00028`, `POSTV2`, `0708`/`2565541`).
