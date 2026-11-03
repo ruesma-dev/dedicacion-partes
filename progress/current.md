@@ -1,6 +1,18 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
+**HOTFIX 2026-11-03 `hotfix/propuestas-subfilas`** («si, haz el hotfix A»): tras el hotfix VP las subfilas
+salían «automática» aunque el transfer sí proponía (Lourdes García VP0065 → CI.03P.9 `parte_anterior`; David
+Silva, todo con propuesta; 73/80 pares VP-obra). Causa (logs de la api): `GET …/propuestas` daba **500**
+porque `PropuestasOut` no declaraba `subfilas` (F-044 R9) y `extra="forbid"` la rechazaba; el front lo trata
+como «sin datos». Arreglo: `PropuestaSubfilaOut` y `subfilas` en `PropuestasOut`, ruta con
+`response_model_exclude_unset` (sin subfilas, la respuesta de siempre); test
+`tests/test_hotfix_propuestas_subfilas.py` (RED: 2 failed antes del arreglo). **Pendiente del humano:**
+desplegar SOLO la api. Además, altas en el backlog: **F-069** (importe mensual de caja y km con casilla:
+44 de 45 VP tienen `pre` 0 en `KM` y el registro los omite, «sin importe mensual»; bloquea los km de
+octubre) y **F-070** (cabecera fija al hacer scroll). Fuera del hotfix, para otra feature: subfilas en cola
+como «buscando partida…» y aviso del front si `…/propuestas` falla.
+
 **HOTFIX 2026-11-03 `hotfix/vinculados-incluye-vp`** (petición del humano al registrar el mes: «no esta
 trayendo el recurso kms hechos (VPXXX)… hay que incluirlo. esto es un hotfix»; «los km son un recursos que
 funciona exactamente igual que el resto de recursos asociados. se reparten porcentualmente»): F-044 D1b
