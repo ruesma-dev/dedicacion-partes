@@ -17,7 +17,7 @@ divergir. Ningún catálogo se guarda en una instancia.
 from __future__ import annotations
 
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 from domain.errores import ObraAmbigua
 from domain.models.registro_models import ObraEntrada
@@ -45,11 +45,15 @@ class CatalogoVar:
     """Obra VAR resuelta en la empresa y SOLO sus partidas VAR, por `ide`.
 
     Sin obra (`obra is None`), `partidas` está vacío y `motivo` dice por qué.
+    F-054 T26 (R47): `codigos`, el `cod` de TODO el presupuesto leído (no
+    solo de las VAR), para que los motivos nombren la partida por su código
+    aunque quede fuera del universo; vacío sin obra.
     """
 
     obra: ObraEntrada | None
     partidas: dict[int, PartidaNodo]
     motivo: str | None
+    codigos: dict[int, str | None] = field(default_factory=dict)
 
 
 def numero_inicial(cod: str | None) -> int | None:
@@ -92,7 +96,8 @@ def cargar_catalogo_var(cliente, settings, empresa: int) -> CatalogoVar:
     return CatalogoVar(
         obra=obra, motivo=None,
         partidas={ide: n for ide, n in nodos.items()
-                  if es_partida_var(n, desde)})
+                  if es_partida_var(n, desde)},
+        codigos={ide: n.cod for ide, n in nodos.items()})
 
 
 def partida_var_de(catalogo: CatalogoVar, obra_ide: int | None,
@@ -102,10 +107,11 @@ def partida_var_de(catalogo: CatalogoVar, obra_ide: int | None,
                    ) -> tuple[PartidaNodo | None, str | None]:
     """(partida, motivo) de una línea con `var_paride` de la obra
     `obra_ide`, contra el catálogo ya cargado: la partida solo vale si está
-    en el universo y la obra es la obra VAR. F-054 T25 (R46): el motivo
-    nombra la partida por `partida_cod` y la obra por `obra_cod` si llegan;
-    sin ellos, por su `ide` (el texto de siempre)."""
-    paride = partida_cod or var_paride
+    en el universo y la obra es la obra VAR. F-054 T25-T26 (R46-R47): el
+    motivo nombra la partida por su código en el presupuesto VAR leído, si
+    no por `partida_cod`, y la obra por `obra_cod`; sin ellos, por su `ide`
+    (el texto de siempre)."""
+    paride = catalogo.codigos.get(var_paride) or partida_cod or var_paride
     if catalogo.obra is None:
         return None, MOTIVO_VAR_SIN_UNIVERSO.format(paride=paride,
                                                     motivo=catalogo.motivo)

@@ -310,7 +310,10 @@ VAR, `{ide, cod, res}` por `ide`, con el umbral y el motivo si no hay obra;
 La api lo llama **una vez** en cada `POST /api/v1/sync` y en cada `GET
 /api/v1/sync/preview`, con la empresa de las obras: dos lecturas de Sigrid
 (la obra VAR y su presupuesto). Las líneas del registro ganan un campo
-opcional, `var_paride`. En el mismo sync la api descarta las obras cuyo
+opcional, `var_paride`. Desde F-054 (T26), la línea VAR lleva además el
+`partida_cod` de su entrada (`VAR-29` → `29`; campo opcional que ya
+existía): solo sirve para que los motivos del preflight nombren la partida
+por su código; no decide nada. En el mismo sync la api descarta las obras cuyo
 código contiene 6 o más dígitos seguidos (`sync.obras.digitos_seguidos_excluidos`
 de `config.yaml`). Las reglas están en `docs/ARCHITECTURE.md#regla-var` y
 `#regla-seis-digitos`.

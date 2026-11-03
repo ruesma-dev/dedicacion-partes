@@ -645,8 +645,10 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       (`partida_metodo = "var"`; el front la pinta sin desplegable), si y
       solo si está en el universo VAR de la empresa de la línea y la obra
       de la petición es la obra VAR; si no, o si la línea es de postventa,
-      la omite con un motivo que nombra la partida o la obra, sin aviso de
-      «sin partida». Lo demás, como cualquier línea: modo pruebas
+      la omite con un motivo que nombra la partida o la obra **por su
+      código** (F-054 R47: el del presupuesto VAR, si no el `partida_cod`
+      que la api saca del código de la entrada, si no el `ide`), sin aviso
+      de «sin partida». Lo demás, como cualquier línea: modo pruebas
       ([`#regla-pruebas`](#regla-pruebas)), cuenta del centro de la obra
       destino ([`#regla-analitica`](#regla-analitica)), parte del periodo,
       `synckey`, identidad con su partida
@@ -1137,7 +1139,11 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       partida (`partida_cod` de la línea) y las obras con las que casa (su
       `codigo`), y en VAR, la partida y la obra (el transfer, con lo que ya
       lee). Cada línea que no se trae lleva el código y el nombre de su
-      trabajador (`recurso_cod`, `recurso_nombre`). Sin lecturas nuevas.
+      trabajador (`recurso_cod`, `recurso_nombre`). Igual en el preflight
+      del registro: los motivos VAR ([`#regla-var`](#regla-var)) y la
+      partida de postventa que no es hoja nombran la partida (y la obra)
+      por su código; para ello la api manda en la línea VAR el
+      `partida_cod` de su entrada, que no decide nada. Sin lecturas nuevas.
 
     *Decidido por Pablo Gris el 2026-10-24 («al sincronizar, puedo querer
     trarme algunas laineas(obras) de sigrid y otras no. si acepto en la

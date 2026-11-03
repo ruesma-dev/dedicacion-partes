@@ -71,6 +71,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from domain.empresas import visible_en_empresa
 from domain.incidencias import letra_y_nombre
 from domain.models import FiltroEmpresa
+from domain.obras import partida_de_entrada
 from domain.vigencia import vigente_en
 from infrastructure.db.orm_models import (
     AsignacionORM, AsignacionVinculadoORM, IncidenciaORM, ObraORM, PeriodoORM,
@@ -236,6 +237,12 @@ class RegistroSigrid:
             if o.registro_paride:
                 # Su partida es la de la entrada; un override no la cambia.
                 linea["var_paride"] = int(o.registro_paride)
+                # F-054 T26 (R47): su código, sacado del de la entrada, para
+                # los motivos del transfer; nunca la elegida (F-050 R19).
+                # Sin él, sin la clave: el transfer nombra el `ide`.
+                partida_cod = partida_de_entrada(o.cod, o.registro_obra_cod)
+                if partida_cod is not None:
+                    linea["partida_cod"] = partida_cod
             elif overrides.get(a.id):
                 linea["paride"] = int(overrides[a.id])
             elif a.partida_ide:

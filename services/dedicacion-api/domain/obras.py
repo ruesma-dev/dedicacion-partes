@@ -26,6 +26,17 @@ def codigo_entrada(obra_cod: str, partida_cod: str) -> str:
     return f"{obra_cod.strip()}-{partida_cod.strip()}"
 
 
+def partida_de_entrada(cod: str | None, obra_cod: str | None) -> str | None:
+    """La inversa de `codigo_entrada` (F-054 T26, R47): `VAR-29` con obra
+    `VAR` da `29`. `None` si falta el código de la obra, si `cod` no empieza
+    por `<obra>-` o si no queda partida."""
+    obra = (obra_cod or "").strip()
+    texto = (cod or "").strip()
+    if not obra or not texto.startswith(f"{obra}-"):
+        return None
+    return texto[len(obra) + 1:].strip() or None
+
+
 def ide_entrada(paride: int) -> int:
     """`ide` de la entrada VAR en la tabla `obra`: el de la partida en
     negativo, que no choca con ninguna obra de Sigrid (D6)."""

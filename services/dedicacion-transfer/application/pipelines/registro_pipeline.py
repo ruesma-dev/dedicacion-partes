@@ -670,16 +670,18 @@ class RegistroPipeline:
                 # Entrada VAR (ARCHITECTURE.md#regla-var): su partida o nada,
                 # sin casado ni override. El catálogo, una vez por petición.
                 if a.destino == "postventa":
+                    # F-054 T26 (R47): el código que manda la api, si lo hay.
                     a.accion = "omitir"
                     a.motivo = MOTIVO_VAR_POSTVENTA.format(
-                        paride=linea.var_paride)
+                        paride=linea.partida_cod or linea.var_paride)
                     continue
                 if catalogo_var is None:
                     catalogo_var = cargar_catalogo_var(self._cli, self._st,
                                                        empresa)
                 nodo, motivo = partida_var_de(
                     catalogo_var, origen.ide, int(linea.var_paride),
-                    int(self._st.var_partida_desde))
+                    int(self._st.var_partida_desde),
+                    partida_cod=linea.partida_cod, obra_cod=origen.codigo)
                 if nodo is None:
                     a.accion, a.motivo = "omitir", motivo
                     continue
@@ -692,9 +694,13 @@ class RegistroPipeline:
                 # de baja). Ahí no se escribe: ver ARCHITECTURE #regla-p5.
                 if a.destino == "postventa":
                     if not self._es_hoja_activa_pv(nodos_pv, linea.paride):
+                        # F-054 T26 (R47): la partida por su código.
+                        nodo_pv = nodos_pv.get(int(linea.paride))
                         a.accion = "omitir"
                         a.motivo = MOTIVO_PARTIDA_PV_NO_HOJA.format(
-                            paride=int(linea.paride))
+                            paride=linea.partida_cod
+                            or (nodo_pv.cod if nodo_pv else None)
+                            or int(linea.paride))
                         continue
                     a.partida_res = nodos_pv[int(linea.paride)].res
                 elif not vale(linea.paride):

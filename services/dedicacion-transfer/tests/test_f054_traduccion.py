@@ -23,6 +23,7 @@ líneas mensuales en memoria. Los `ide` son inventados.
 """
 from __future__ import annotations
 
+import dataclasses
 import random
 
 import pytest
@@ -193,10 +194,12 @@ def test_f054_r10_var_dentro_del_universo():
 
 
 def test_f054_r10_var_fuera_del_universo_es_motivo():
+    """T26 cambia este test de T2 (R47): la partida, por su código en el
+    presupuesto VAR leído (`28`), aunque la línea no traiga `partida_cod`."""
     r, _ = _calcular([_l(4, VAR_IDE, OBRA_VAR, paride=417002)])
     [x] = r["lineas"]
     assert (x["destino"], x["var_paride"]) == ("var", None)
-    assert x["motivo"] == MOTIVO_VAR_FUERA.format(paride=417002,
+    assert x["motivo"] == MOTIVO_VAR_FUERA.format(paride="28",
                                                   var=OBRA_VAR, desde=DESDE)
 
 
@@ -338,7 +341,11 @@ def test_f054_r46_var_de_otra_obra_nombra_partida_y_obra_por_codigo():
 
 
 def test_f054_r46_partida_var_de_con_codigos_y_su_reserva():
-    cat = cargar_catalogo_var(ClienteVar(), ajustes_var(), 1)
+    """Con un catálogo sin `codigos` (T26 los añade: ahí mandan ellos,
+    `test_f054_motivos_preflight.py`), el `partida_cod` y el `obra_cod` que
+    llegan y, sin ellos, los `ide`."""
+    cat = dataclasses.replace(
+        cargar_catalogo_var(ClienteVar(), ajustes_var(), 1), codigos={})
     sin = CatalogoVar(obra=None, partidas={}, motivo="sin obra VAR")
     casos = [
         ((sin, VAR_IDE, 417002, DESDE), {"partida_cod": "28"},

@@ -88,11 +88,14 @@ def test_f054_r47_otra_obra_por_los_codigos():
         paride=999999, obra=OBRA_ORIGEN, var=OBRA_VAR)
 
 
-def test_f054_r47_otra_obra_sin_codigo_de_obra_su_ide():
+def test_f054_r47_otra_obra_por_el_codigo_de_la_obra_resuelta():
+    """La obra, por el `codigo` de la obra resuelta en Sigrid (`origen`),
+    aunque la petición no lo traiga (la reserva al `ide` de
+    `partida_var_de`, en `test_f054_traduccion.py`)."""
     cli = ClienteVar()
     pf = _pf(cli, obra=ObraEntrada(ide=cli.obra_origen.ide, codigo=None))
     assert pf.acciones[0].motivo == MOTIVO_VAR_OTRA_OBRA.format(
-        paride="29", obra=cli.obra_origen.ide, var=OBRA_VAR)
+        paride="29", obra=OBRA_ORIGEN, var=OBRA_VAR)
 
 
 def test_f054_r47_sin_universo_con_el_codigo_de_la_api():
