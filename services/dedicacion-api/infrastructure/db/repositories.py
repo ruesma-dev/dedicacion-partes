@@ -256,6 +256,13 @@ class PgObraRepository:
         stmt = select(ObraORM.ide).where(ObraORM.ide.in_(ides))
         return set(self._s.scalars(stmt).all())
 
+    def codigos(self, ides: set[int]) -> dict[int, str]:
+        """`{ide: cod}` de las de `ides` que existen (F-054 T25, R46)."""
+        if not ides:
+            return {}
+        stmt = select(ObraORM.ide, ObraORM.cod).where(ObraORM.ide.in_(ides))
+        return {int(ide): cod for ide, cod in self._s.execute(stmt).all()}
+
     def modos_ofrecibles(self, ides: set[int]) -> dict[int, tuple[bool, bool]]:
         """(activa, admite_postventa) de cada obra de `ides` (F-025, R20)."""
         if not ides:

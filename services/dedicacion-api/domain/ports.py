@@ -101,6 +101,11 @@ class ObraRepository(Protocol):
         """Subconjunto de `ides` que existen en el maestro."""
         ...
 
+    def codigos(self, ides: set[int]) -> dict[int, str]:
+        """`{ide: cod}` de las de `ides` que existen en el maestro (F-054
+        T25, R46: los motivos de «Sincronizar Sigrid» nombran el código)."""
+        ...
+
     def modos_ofrecibles(self, ides: set[int]) -> dict[int, tuple[bool, bool]]:
         """(activa, admite_postventa) de cada obra de `ides` (F-025, R20)."""
         ...

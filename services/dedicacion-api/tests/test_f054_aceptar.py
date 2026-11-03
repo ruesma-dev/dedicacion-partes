@@ -290,6 +290,7 @@ class _Uow:
             obtener=lambda ide: TRAB.get(ide))
         self.obras = SimpleNamespace(
             listar_para_periodo=lambda pid: list(OBRAS.values()),
+            existen=lambda ides: set(ides) & set(OBRAS),   # use_cases.py
             codigos=lambda ides: {i: OBRAS[i].cod
                                   for i in set(ides) & set(OBRAS)},
             modos_ofrecibles=lambda ides: {

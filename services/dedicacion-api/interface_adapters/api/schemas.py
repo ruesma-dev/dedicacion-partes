@@ -530,6 +530,9 @@ class NoTraidaOut(_Base):
     parte_cod: str | None
     can: float
     motivo: str
+    # F-054 T25 (R45): el trabajador del maestro, para pintarlo `cod · nombre`.
+    recurso_cod: str | None
+    recurso_nombre: str
 
 
 class TraerSigridOut(_Base):
@@ -580,7 +583,8 @@ def a_traer_sigrid_out(r: Any) -> TraerSigridOut:
         no_traidas=[NoTraidaOut(
             hmores_ide=n.hmores_ide, recurso_ide=n.recurso_ide,
             obra_cod=n.obra_cod, parte_cod=n.parte_cod, can=n.can,
-            motivo=n.motivo) for n in r.no_traidas],
+            motivo=n.motivo, recurso_cod=n.recurso_cod,
+            recurso_nombre=n.recurso_nombre) for n in r.no_traidas],
         fuera_maestro=r.contadores.fuera_maestro,
         de_vinculados=r.contadores.de_vinculados,
         lineas_leidas=r.lineas_leidas,

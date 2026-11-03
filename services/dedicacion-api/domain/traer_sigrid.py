@@ -25,7 +25,7 @@ from domain.models import (
     Obra,
     Trabajador,
 )
-from domain.obras import ide_entrada
+from domain.obras import codigo_entrada, ide_entrada
 from domain.vigencia import vigente_en
 
 _CIEN = Decimal(100)
@@ -76,7 +76,8 @@ class EntradaSigrid:
 
 @dataclass(frozen=True)
 class NoTraida:
-    """R14: una línea de Sigrid que no se trae, con su motivo."""
+    """R14: una línea de Sigrid que no se trae, con su motivo. T25 (R45):
+    con el código y el nombre del trabajador del maestro."""
 
     hmores_ide: int
     recurso_ide: int
@@ -84,6 +85,8 @@ class NoTraida:
     parte_cod: str | None
     can: float
     motivo: str
+    recurso_cod: str | None
+    recurso_nombre: str
 
 
 @dataclass(frozen=True)
@@ -120,10 +123,16 @@ def _clave(l: LineaSigridTraida) -> tuple[int, bool] | None:
 
 def _nombre_obra(l: LineaSigridTraida, clave: tuple[int, bool],
                  obras: dict[int, Obra]) -> str:
+    """T25 (R46): el código de la obra; la VAR fuera de la base, el de su
+    entrada (`<obra>-<partida>`) con los dos códigos de la línea y, si
+    falta alguno, `VAR-<var_paride>`; la postventa sin origen en la base,
+    su `ide` (reserva)."""
     obra = obras.get(clave[0])
     if obra is not None:
         return obra.cod
     if l.destino == "var":
+        if (l.obra_cod or "").strip() and (l.partida_cod or "").strip():
+            return codigo_entrada(l.obra_cod, l.partida_cod)
         return f"VAR-{l.var_paride}"
     if l.destino == "postventa":
         return str(l.obra_origen_ide)
@@ -189,11 +198,11 @@ def entradas_por_trabajador(
     no_traidas: list[NoTraida] = []
     fuera = vin = 0
 
-    def no(l: LineaSigridTraida, motivo: str) -> None:
+    def no(l: LineaSigridTraida, t: Trabajador, motivo: str) -> None:
         no_traidas.append(NoTraida(
             hmores_ide=l.hmores_ide, recurso_ide=l.recurso_ide,
             obra_cod=l.obra_cod, parte_cod=l.parte_cod, can=l.can,
-            motivo=motivo))
+            motivo=motivo, recurso_cod=t.cod, recurso_nombre=t.nombre))
 
     for l in lineas:
         if l.recurso_ide in vinculados:
@@ -204,19 +213,19 @@ def entradas_por_trabajador(
             fuera += 1
             continue
         if not visible_en_empresa(t.empresa, filtro):
-            no(l, MOTIVO_NO_VISIBLE.format(empresa=filtro.empresa))
+            no(l, t, MOTIVO_NO_VISIBLE.format(empresa=filtro.empresa))
             continue
         if not vigente_en(t.activo, t.fecha_baja, anio, mes):
-            no(l, MOTIVO_NO_VIGENTE.format(mes=mes, anio=anio))
+            no(l, t, MOTIVO_NO_VIGENTE.format(mes=mes, anio=anio))
             continue
         if l.motivo:
-            no(l, l.motivo)
+            no(l, t, l.motivo)
             continue
         clave = _clave(l)
         motivo = (None if clave is None else
                   _motivo_obra(l, clave, obras, filtro.empresa_obras))
         if clave is None or motivo:
-            no(l, motivo or MOTIVO_NO_EN_BASE.format(obra=l.obra_cod))
+            no(l, t, motivo or MOTIVO_NO_EN_BASE.format(obra=l.obra_cod))
             continue
         grupos.setdefault(l.recurso_ide, {}).setdefault(clave, []).append(l)
     entradas = {r: [_entrada(c, ls) for c, ls in sorted(g.items())]

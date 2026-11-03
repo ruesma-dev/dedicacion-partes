@@ -81,10 +81,12 @@ def _obras(uow: UnitOfWork, periodo_id: int, ides: set[int]
            ) -> dict[int, Obra]:
     """Las del periodo (activas, de postventa y usadas) más las de `ides`
     que están en la base sin ofrecerse: inactivas y sin postventa (si no,
-    saldrían en el listado), para que su motivo sea «no se ofrece»."""
+    saldrían en el listado), para que su motivo sea «no se ofrece», con su
+    `cod` (T25, R46: el código, no el `ide`)."""
     obras = {o.ide: o for o in uow.obras.listar_para_periodo(periodo_id)}
-    for ide in sorted(uow.obras.existen(ides - set(obras))):
-        obras[ide] = Obra(ide=ide, cod=str(ide), descripcion="",
+    codigos = uow.obras.codigos(ides - set(obras))
+    for ide in sorted(codigos):
+        obras[ide] = Obra(ide=ide, cod=codigos[ide], descripcion="",
                           estado_sigrid=None, activa=False, empresa=None,
                           admite_postventa=False)
     return obras

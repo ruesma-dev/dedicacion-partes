@@ -1130,6 +1130,14 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       `cod · nombre`, Líneas, Motivo): las líneas con igual parte, obra,
       recurso y motivo van en **una** fila con «×K» en Líneas (N = filas).
       El front no compara: agrupar y ordenar es presentación.
+    - **Los motivos nombran códigos, no números internos** (el `ide`, solo
+      si no hay código): la obra de la base que no se ofrece, por su `cod`
+      (la api); la entrada VAR que no está en la base, `<obra>-<partida>`
+      (si falta alguno de los dos, `VAR-<var_paride>`); en postventa, la
+      partida (`partida_cod` de la línea) y las obras con las que casa (su
+      `codigo`), y en VAR, la partida y la obra (el transfer, con lo que ya
+      lee). Cada línea que no se trae lleva el código y el nombre de su
+      trabajador (`recurso_cod`, `recurso_nombre`). Sin lecturas nuevas.
 
     *Decidido por Pablo Gris el 2026-10-24 («al sincronizar, puedo querer
     trarme algunas laineas(obras) de sigrid y otras no. si acepto en la
@@ -1137,8 +1145,12 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     2026-10-29 (D18 = A: de los vinculados no se trae nada) y el 2026-11-02
     tras la prueba manual (D12 revisada, «2, ok»: aceptó de más porque las
     `solo_sigrid` salían marcadas; sustituye a «d12, con la casilla marcada
-    por defecto, aunque se puede desmarcar») · F-054,
-    `specs/F-054-sync-trae-porcentajes/requirements.md` (R28, R39-R42).*
+    por defecto, aunque se puede desmarcar») y el 2026-11-03, tras la
+    misma prueba (D20, «hazlo todo dentro de la feature»: cabecera
+    estándar, «No se traen» en tabla y motivos con códigos; D21,
+    «trasladalo a codigos legibles, no numeros internos», también en el
+    preflight del registro, y «filas de tabla» para la N) · F-054,
+    `specs/F-054-sync-trae-porcentajes/requirements.md` (R28, R39-R47).*
 
 24. <a id="regla-obra-cero"></a>**Al registrar, una obra en la que la
     plataforma no tiene nada es un 0 %.** El preflight del periodo o de un

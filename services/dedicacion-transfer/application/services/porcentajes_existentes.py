@@ -34,7 +34,8 @@ from application.services.universo_var import (
 )
 
 #: R9: la partida de la línea de postventa no casa con ninguna obra de las
-#: que admiten postventa, o casa con varias.
+#: que admiten postventa, o casa con varias. T25 (R46): la partida por su
+#: `partida_cod` y las obras por su `codigo`; el `ide`, solo sin código.
 MOTIVO_PV_NINGUNA = ("la partida {partida} de {pv} no casa con ninguna obra "
                      "que admita postventa")
 MOTIVO_PV_VARIAS = ("la partida {partida} de {pv} casa con varias obras "
@@ -76,21 +77,23 @@ def traducir(linea: LineaMensualSigrid, *, cod_pruebas: str,
     if obra and obra == _cod(cod_postventa):
         out["destino"] = "postventa"
         casan = inverso.get(int(linea.paride or 0), [])
+        partida = _cod(linea.partida_cod) or linea.paride
         if motivo_postventa:
             out["motivo"] = motivo_postventa
         elif len(casan) == 1:
             out["obra_origen_ide"] = int(casan[0].ide)
         elif casan:
             out["motivo"] = MOTIVO_PV_VARIAS.format(
-                partida=linea.paride, pv=obra,
-                obras=", ".join(str(o.ide) for o in casan))
+                partida=partida, pv=obra,
+                obras=", ".join(_cod(o.codigo) or str(o.ide) for o in casan))
         else:
-            out["motivo"] = MOTIVO_PV_NINGUNA.format(partida=linea.paride,
-                                                     pv=obra)
+            out["motivo"] = MOTIVO_PV_NINGUNA.format(partida=partida, pv=obra)
     elif obra and obra == _cod(cod_var) and catalogo_var is not None:
         out["destino"] = "var"
         nodo, motivo = partida_var_de(catalogo_var, linea.obra_ide,
-                                      int(linea.paride or 0), int(desde))
+                                      int(linea.paride or 0), int(desde),
+                                      partida_cod=_cod(linea.partida_cod),
+                                      obra_cod=obra)
         if nodo is None:
             out["motivo"] = motivo
         else:

@@ -96,21 +96,26 @@ def cargar_catalogo_var(cliente, settings, empresa: int) -> CatalogoVar:
 
 
 def partida_var_de(catalogo: CatalogoVar, obra_ide: int | None,
-                   var_paride: int, desde: int
+                   var_paride: int, desde: int, *,
+                   partida_cod: str | None = None,
+                   obra_cod: str | None = None
                    ) -> tuple[PartidaNodo | None, str | None]:
     """(partida, motivo) de una línea con `var_paride` de la obra
     `obra_ide`, contra el catálogo ya cargado: la partida solo vale si está
-    en el universo y la obra es la obra VAR."""
+    en el universo y la obra es la obra VAR. F-054 T25 (R46): el motivo
+    nombra la partida por `partida_cod` y la obra por `obra_cod` si llegan;
+    sin ellos, por su `ide` (el texto de siempre)."""
+    paride = partida_cod or var_paride
     if catalogo.obra is None:
-        return None, MOTIVO_VAR_SIN_UNIVERSO.format(paride=var_paride,
+        return None, MOTIVO_VAR_SIN_UNIVERSO.format(paride=paride,
                                                     motivo=catalogo.motivo)
     var = catalogo.obra.codigo
     if obra_ide != catalogo.obra.ide:
-        return None, MOTIVO_VAR_OTRA_OBRA.format(paride=var_paride,
-                                                 obra=obra_ide, var=var)
+        return None, MOTIVO_VAR_OTRA_OBRA.format(
+            paride=paride, obra=obra_cod or obra_ide, var=var)
     nodo = catalogo.partidas.get(var_paride)
     if nodo is None:
-        return None, MOTIVO_VAR_FUERA.format(paride=var_paride, var=var,
+        return None, MOTIVO_VAR_FUERA.format(paride=paride, var=var,
                                              desde=desde)
     return nodo, None
 
