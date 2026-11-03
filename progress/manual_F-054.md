@@ -1,3 +1,4 @@
+<!-- progress/manual_F-054.md -->
 # F-054 · verificaciones MANUAL
 
 ## T18 (humano, local, solo lecturas en Sigrid)
@@ -18,7 +19,7 @@ Resultado: `ok` true, `lineas_leidas` 429 (353 `normal`, 72 `postventa`,
 La `MADM` de la 0694 (recurso 1705036, parte PT26/00319) sale con
 `can` 0,95, partida `CI.1.5` y `destino = normal`. Cumple.
 
-### Pasos 2 a 4 · pendientes (humano, sobre la ventana de T23)
+### Pasos 2 a 4 · pendientes (humano, sobre la ventana de T23-T26)
 
 Ver `specs/F-054-sync-trae-porcentajes/tasks.md`, T18.
 
