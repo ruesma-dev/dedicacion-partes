@@ -154,7 +154,8 @@ def test_f054_r27_ruta_sin_aceptar_compara(monkeypatch):
     assert j["no_traidas"] == [{
         "hmores_ide": 972, "recurso_ide": 30, "obra_cod": "0694",
         "parte_cod": "PT26/972", "can": 0.5,
-        "motivo": "el trabajador no está vigente en 09/2026"}]
+        "motivo": "el trabajador no está vigente en 09/2026",
+        "recurso_cod": "30", "recurso_nombre": "Cris"}]
     ana, bea = j["trabajadores"]
     assert (ana["trabajador_ide"], ana["cod"], ana["nombre"],
             ana["aceptadas"]) == (10, "10", "Ana", [])

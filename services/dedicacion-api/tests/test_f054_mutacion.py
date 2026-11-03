@@ -86,15 +86,15 @@ def test_f054_r14_obra_en_la_base_sin_ofrecerse_tampoco_en_postventa():
     class _UowStub(_Uow):
         def __init__(self, d):
             super().__init__(d)
-            self.obras.existen = lambda ides: set(ides) & {694, 678, 713,
-                                                           900, 555}
+            self.obras.codigos = lambda ides: {
+                i: "0708" for i in set(ides) & {555}}
 
     g = _Gateway([_s(980, 20, 555, 0.3, destino="postventa",
                      obra_origen_ide=555)])
     d = _datos()
     r, _, _ = _traer(d, [], g, uow=_UowStub(d))
     assert [(n.hmores_ide, n.motivo) for n in r.no_traidas] == [
-        (980, "la obra 555 no se ofrece en postventa")]
+        (980, "la obra 0708 no se ofrece en postventa")]
 
 
 def test_f054_r19_aceptar_sin_es_postventa_es_la_normal():

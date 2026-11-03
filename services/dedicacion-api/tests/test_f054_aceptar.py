@@ -290,7 +290,8 @@ class _Uow:
             obtener=lambda ide: TRAB.get(ide))
         self.obras = SimpleNamespace(
             listar_para_periodo=lambda pid: list(OBRAS.values()),
-            existen=lambda ides: set(ides) & set(OBRAS),
+            codigos=lambda ides: {i: OBRAS[i].cod
+                                  for i in set(ides) & set(OBRAS)},
             modos_ofrecibles=lambda ides: {
                 i: (OBRAS[i].activa, OBRAS[i].admite_postventa)
                 for i in ides if i in OBRAS})
@@ -589,22 +590,24 @@ def test_f054_r14_de_vinculados_y_fuera_del_maestro_en_el_resultado():
 
 def test_f054_r14_obra_en_la_base_sin_ofrecerse_y_obra_var():
     """Una obra fuera del listado del periodo pero en la base (inactiva y
-    sin postventa) da «no se ofrece»; la entrada VAR va a `−var_paride`."""
+    sin postventa) da «no se ofrece», con su código (T25, R46: `0708`, no
+    su `ide`); la entrada VAR va a `−var_paride`."""
     class _UowVar(_Uow):
         def __init__(self, d):
             super().__init__(d)
             var = _obra(-2105)
             self.obras.listar_para_periodo = lambda pid: [
                 *OBRAS.values(), var]
-            self.obras.existen = lambda ides: set(ides) & {694, 678, 713,
-                                                           900, 555, -2105}
+            self.obras.codigos = lambda ides: {
+                i: c for i, c in {555: "0708", -2105: "VAR-29"}.items()
+                if i in ides}
 
     g = _Gateway([_s(980, 20, 555, 0.3),
                   _s(981, 20, 777, 0.7, destino="var", var_paride=2105)])
     d = _datos()
     r, _, _ = _traer(d, [_acepta(20, -2105)], g, uow=_UowVar(d))
     assert [(n.hmores_ide, n.motivo) for n in r.no_traidas] == [
-        (980, "la obra 555 no se ofrece normal")]
+        (980, "la obra 0708 no se ofrece normal")]
     [f] = d.filas[20]
     assert (f["linea"].obra_ide, f["linea"].porcentaje,
             f["linea"].partida_fija) == (-2105, Decimal("70.00"), True)
@@ -617,3 +620,38 @@ def test_f054_cerrado_entre_medias_409_y_nada_guardado():
     with pytest.raises(PeriodoCerrado):
         _traer(d, [_acepta(10, 694)])
     assert d.__dict__ == antes
+
+
+# ====== T25 (R46): `ObraRepository.codigos`, el `cod` de las obras ====== #
+class _SesionFilas(_Sesion):
+    """Sesión falsa que devuelve `filas` a cualquier `execute`."""
+
+    def __init__(self, filas) -> None:
+        super().__init__()
+        self.filas = filas
+
+    def execute(self, stmt: Any) -> Any:
+        self.sentencias.append(stmt)
+        return SimpleNamespace(all=lambda: list(self.filas))
+
+
+def test_f054_r46_repositorio_codigos_de_las_obras():
+    from infrastructure.db.orm_models import ObraORM
+    from infrastructure.db.repositories import PgObraRepository
+    s = _SesionFilas([(555, "0708"), (-2105, "VAR-29")])
+    assert PgObraRepository(s).codigos({555, -2105, 9}) == {
+        555: "0708", -2105: "VAR-29"}
+    [stmt] = s.sentencias
+    sql = " ".join(str(_compilada(stmt)).split())
+    assert sql.startswith("SELECT obra.ide, obra.cod FROM obra WHERE "
+                          "obra.ide IN")
+    [ides] = _compilada(stmt).params.values()
+    assert sorted(ides) == [-2105, 9, 555]
+    assert {"ide", "cod"} <= {c.name for c in ObraORM.__table__.columns}
+
+
+def test_f054_r46_repositorio_codigos_sin_ides_no_lee():
+    from infrastructure.db.repositories import PgObraRepository
+    s = _SesionFilas([(1, "x")])
+    assert PgObraRepository(s).codigos(set()) == {}
+    assert s.sentencias == []

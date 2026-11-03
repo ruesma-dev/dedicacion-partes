@@ -40,6 +40,9 @@ from application.services.universo_postventa import (
 )
 from application.services.universo_var import (
     MOTIVO_VAR_FUERA,
+    MOTIVO_VAR_OTRA_OBRA,
+    MOTIVO_VAR_SIN_UNIVERSO,
+    CatalogoVar,
     cargar_catalogo_var,
     partida_var_de,
 )
@@ -64,12 +67,13 @@ O0678_BIS = ObraEntrada(ide=555999, codigo=OBRA_ORIGEN, nombre="OTRA")
 
 
 def _l(ide: int, obra_ide: int, obra_cod: str, *, paride: int = 0,
-       recurso: int = 200, can: float = 0.5) -> LineaMensualSigrid:
+       recurso: int = 200, can: float = 0.5,
+       partida_cod: str | None = None) -> LineaMensualSigrid:
     return LineaMensualSigrid(
         hmores_ide=ide, recurso_ide=recurso, obra_ide=obra_ide,
         obra_cod=obra_cod, parte_ide=7000 + obra_ide % 1000,
         parte_cod="PT26/00001", parte_est=1, en_registro=True, hora="MENC",
-        can=can, fec=20260930, paride=paride, partida_cod=None,
+        can=can, fec=20260930, paride=paride, partida_cod=partida_cod,
         partida_res=None, synckey=None)
 
 
@@ -146,12 +150,13 @@ def test_f054_r9_postventa_sin_obra_que_case_es_motivo():
 
 
 def test_f054_r9_postventa_con_dos_obras_que_casan_es_motivo():
+    """T25 cambia este test de T2 (R46): las obras, por su código."""
     r, _ = _calcular([_l(3, PV_IDE, OBRA_POSTVENTA, paride=70001)],
                      obras=[O0678_BIS, O0713, O0678])
     [x] = r["lineas"]
     assert x["obra_origen_ide"] is None
     assert x["motivo"] == MOTIVO_PV_VARIAS.format(
-        partida=70001, pv=OBRA_POSTVENTA, obras="555001, 555999")
+        partida=70001, pv=OBRA_POSTVENTA, obras="0678, 0678")
 
 
 def test_f054_r9_postventa_sin_partida_es_motivo():
@@ -273,3 +278,86 @@ def test_f054_r3_un_fallo_de_lectura_sube():
 
     with pytest.raises(RuntimeError, match="502"):
         _calcular([], cli=Falla())
+
+
+# ================== R46 (T25, D20) · motivos con códigos ================= #
+def _traducir(linea, inverso=None, catalogo_var=None):
+    return traducir(linea, cod_pruebas=OBRA_PRUEBAS,
+                    cod_postventa=OBRA_POSTVENTA, cod_var=OBRA_VAR,
+                    inverso=inverso or {}, catalogo_var=catalogo_var,
+                    desde=DESDE)
+
+
+def test_f054_r46_postventa_que_no_casa_nombra_el_codigo_de_la_partida():
+    r, _ = _calcular([_l(3, PV_IDE, OBRA_POSTVENTA, paride=70002,
+                         partida_cod="11")], obras=[O0678])
+    assert r["lineas"][0]["motivo"] == MOTIVO_PV_NINGUNA.format(
+        partida="11", pv=OBRA_POSTVENTA)
+    assert "70002" not in r["lineas"][0]["motivo"]
+
+
+@pytest.mark.parametrize("partida_cod", [None, "", "  "])
+def test_f054_r46_postventa_sin_codigo_de_partida_su_ide(partida_cod):
+    x = _traducir(_l(3, PV_IDE, OBRA_POSTVENTA, paride=70002,
+                     partida_cod=partida_cod))
+    assert x["motivo"] == MOTIVO_PV_NINGUNA.format(partida=70002,
+                                                   pv=OBRA_POSTVENTA)
+
+
+def test_f054_r46_postventa_con_varias_por_codigo_y_su_ide_de_reserva():
+    """La partida por su `partida_cod` y cada obra por su `codigo` (sin
+    espacios); la obra sin código, por su `ide`."""
+    inverso = {70001: [ObraEntrada(ide=1, codigo=" 0708 "),
+                       ObraEntrada(ide=2, codigo=None),
+                       ObraEntrada(ide=3, codigo="  "),
+                       ObraEntrada(ide=4, codigo="0713")]}
+    x = _traducir(_l(3, PV_IDE, OBRA_POSTVENTA, paride=70001,
+                     partida_cod=" 11 "), inverso)
+    assert x["motivo"] == MOTIVO_PV_VARIAS.format(
+        partida="11", pv=OBRA_POSTVENTA, obras="0708, 2, 3, 0713")
+    x = _traducir(_l(3, PV_IDE, OBRA_POSTVENTA, paride=70001), inverso)
+    assert x["motivo"] == MOTIVO_PV_VARIAS.format(
+        partida=70001, pv=OBRA_POSTVENTA, obras="0708, 2, 3, 0713")
+
+
+def test_f054_r46_var_fuera_nombra_el_codigo_de_la_partida():
+    r, _ = _calcular([_l(4, VAR_IDE, OBRA_VAR, paride=417002,
+                         partida_cod="28")])
+    assert r["lineas"][0]["motivo"] == MOTIVO_VAR_FUERA.format(
+        paride="28", var=OBRA_VAR, desde=DESDE)
+
+
+def test_f054_r46_var_de_otra_obra_nombra_partida_y_obra_por_codigo():
+    """`traducir` pasa a `partida_var_de` el `partida_cod` y el `obra_cod`
+    de la línea (una ficha con el código VAR que no es la obra VAR)."""
+    cat = cargar_catalogo_var(ClienteVar(), ajustes_var(), 1)
+    x = _traducir(_l(4, 12345, f" {OBRA_VAR} ", paride=417055,
+                     partida_cod="29"), catalogo_var=cat)
+    assert x["motivo"] == MOTIVO_VAR_OTRA_OBRA.format(
+        paride="29", obra=OBRA_VAR, var=OBRA_VAR)
+
+
+def test_f054_r46_partida_var_de_con_codigos_y_su_reserva():
+    cat = cargar_catalogo_var(ClienteVar(), ajustes_var(), 1)
+    sin = CatalogoVar(obra=None, partidas={}, motivo="sin obra VAR")
+    casos = [
+        ((sin, VAR_IDE, 417002, DESDE), {"partida_cod": "28"},
+         MOTIVO_VAR_SIN_UNIVERSO.format(paride="28", motivo="sin obra VAR")),
+        ((sin, VAR_IDE, 417002, DESDE), {},
+         MOTIVO_VAR_SIN_UNIVERSO.format(paride=417002, motivo="sin obra VAR")),
+        ((cat, 12345, 417055, DESDE), {"partida_cod": "29", "obra_cod": "0708"},
+         MOTIVO_VAR_OTRA_OBRA.format(paride="29", obra="0708", var=OBRA_VAR)),
+        ((cat, 12345, 417055, DESDE), {"partida_cod": "", "obra_cod": None},
+         MOTIVO_VAR_OTRA_OBRA.format(paride=417055, obra=12345, var=OBRA_VAR)),
+        ((cat, 12345, 417055, DESDE), {},
+         MOTIVO_VAR_OTRA_OBRA.format(paride=417055, obra=12345, var=OBRA_VAR)),
+        ((cat, VAR_IDE, 417002, DESDE), {"partida_cod": "28"},
+         MOTIVO_VAR_FUERA.format(paride="28", var=OBRA_VAR, desde=DESDE)),
+        ((cat, VAR_IDE, 417002, DESDE), {},
+         MOTIVO_VAR_FUERA.format(paride=417002, var=OBRA_VAR, desde=DESDE)),
+    ]
+    for args, kw, esperado in casos:
+        assert partida_var_de(*args, **kw) == (None, esperado), (args, kw)
+    nodo, motivo = partida_var_de(cat, VAR_IDE, 417055, DESDE,
+                                  partida_cod="X", obra_cod="Y")
+    assert motivo is None and nodo.ide == 417055

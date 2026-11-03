@@ -21,6 +21,8 @@ Sin red ni BBDD.
 """
 from __future__ import annotations
 
+import dataclasses
+
 from decimal import Decimal
 
 import pytest
@@ -67,10 +69,10 @@ TRABAJADORES = {t.ide: t for t in [
 
 def _s(ide, recurso=10, obra=694, *, can=0.5, destino="normal", paride=0,
        origen=None, var=None, motivo=None, parte="PT26/00001",
-       partida_cod=None) -> LineaSigridTraida:
+       partida_cod=None, obra_cod=None) -> LineaSigridTraida:
     return LineaSigridTraida(
         hmores_ide=ide, recurso_ide=recurso, obra_ide=obra,
-        obra_cod=f"{obra:04d}", parte_ide=7000, parte_cod=parte,
+        obra_cod=obra_cod or f"{obra:04d}", parte_ide=7000, parte_cod=parte,
         parte_est=1, en_registro=True, hora="MENC", can=can, fec=20260930,
         paride=paride, partida_cod=partida_cod, partida_res=None,
         synckey=None, destino=destino, obra_origen_ide=origen,
@@ -285,3 +287,35 @@ def test_f054_r18_el_estado_es_texto():
     assert [e.value for e in EstadoEntrada] == [
         "igual", "distinta", "solo_sigrid", "solo_cuadrante",
         "no_traducible"]
+
+
+# ============ R45-R46 (T25, D20): códigos en `no_traidas` ================ #
+@pytest.mark.parametrize("obra_cod, partida_cod, nombre", [
+    ("VAR", "29", "VAR-29"),
+    (" VAR ", " 29 ", "VAR-29"),
+    ("VAR", None, "VAR-1234"),
+    ("VAR", "", "VAR-1234"),
+    (None, "29", "VAR-1234"),
+])
+def test_f054_r46_var_fuera_de_la_base_por_su_codigo(obra_cod, partida_cod,
+                                                     nombre):
+    """La entrada VAR que no está en la base: `<obra>-<partida>` con los
+    dos códigos de la línea; si falta alguno, `VAR-<var_paride>`."""
+    linea = _s(1, obra=683806, destino="var", var=1234,
+               partida_cod=partida_cod, obra_cod=obra_cod)
+    if obra_cod is None:
+        linea = dataclasses.replace(linea, obra_cod=None)
+    _, no, _ = _entradas([linea])
+    assert [n.motivo for n in no] == [MOTIVO_NO_EN_BASE.format(obra=nombre)]
+
+
+def test_f054_r45_no_traidas_con_el_codigo_y_nombre_del_trabajador():
+    """Toda `no_traida` es de un trabajador del maestro (R14): su código y
+    su nombre, en cada motivo."""
+    _, no, _ = _entradas([_s(1, recurso=11), _s(2, recurso=12),
+                          _s(3, obra=555), _s(4, recurso=13, obra=701),
+                          _s(5, motivo="m")])
+    assert [(n.hmores_ide, n.recurso_ide, n.recurso_cod, n.recurso_nombre)
+            for n in no] == [(1, 11, "11", "T11"), (2, 12, "12", "T12"),
+                             (3, 10, "10", "T10"), (4, 13, "13", "T13"),
+                             (5, 10, "10", "T10")]

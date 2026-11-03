@@ -181,7 +181,7 @@ def test_f054_r10_var_sin_partida_se_pregunta_con_la_0(monkeypatch):
     """Mata `linea.paride or 1` en la VAR."""
     vistas = []
 
-    def espia(catalogo, obra, paride, desde):
+    def espia(catalogo, obra, paride, desde, **kw):   # T25: + los códigos
         vistas.append((paride, desde))
         return None, "fuera"
 
