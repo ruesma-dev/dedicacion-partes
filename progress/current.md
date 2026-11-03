@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), **REVIEW 7 APROBADA** (`5c42b61`; O8-O10 del rastro recogidas); **SEGUNDA ENMIENDA EN SPEC (T24-T25, spec-author, 2026-11-03)**: al probar T18 paso 2 el humano pidió la cabecera estándar (`.filterable`: burdeos, filtros debajo, «Limpiar»), «No se traen» como tabla con duplicados agrupados, y motivos con códigos en vez de `ide` (api y transfer); «hazlo todo dentro de la feature»**
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), **REVIEW 7 APROBADA** (`5c42b61`; O8-O10 del rastro recogidas); **SEGUNDA ENMIENDA: spec hecha (T24-T26, R43-R47, D20-D21; `45b97a9`, `f44d37b`, `3cbc117`), IMPLEMENTER EN MARCHA (2026-11-03, «si»)**: al probar T18 paso 2 el humano pidió la cabecera estándar (`.filterable`: burdeos, filtros debajo, «Limpiar»), «No se traen» como tabla con duplicados agrupados, y motivos con códigos en vez de `ide` (api y transfer); «hazlo todo dentro de la feature»**
 (en T18 el humano pidió, para poder desplegar, que la ventana de «Sincronizar Sigrid» sea una tabla
 única ordenable y filtrable por columna, con «Desmarcar todas» y «Marcar las visibles», y que
 `solo_sigrid` salga **desmarcada**: D12 revisada, «2, ok»; el cuadrante local de 2026-09 se deja
