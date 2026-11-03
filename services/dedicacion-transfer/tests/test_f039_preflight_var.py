@@ -135,8 +135,10 @@ def test_f039_r6_partida_fuera_del_universo_se_omite(paride):
     pf = _pf(lineas=[linea(var_paride=paride)])
     a = pf.acciones[0]
     assert a.accion == "omitir", a
-    assert a.motivo == MOTIVO_VAR_FUERA.format(paride=paride, var=OBRA_VAR,
-                                               desde=DESDE)
+    assert a.motivo == MOTIVO_VAR_FUERA.format(
+        paride={417002: "28", 417001: "05", 60001: "CI.1.3", 417061: "31",
+                417063: "32", 52979: "CD"}.get(paride, paride),
+        var=OBRA_VAR, desde=DESDE)
     assert a.aviso is None and pf.conflictos == []
 
 
@@ -149,7 +151,7 @@ def test_f039_r6_otra_obra_se_omite():
     a = pf.acciones[0]
     assert a.accion == "omitir", a
     assert a.motivo == MOTIVO_VAR_OTRA_OBRA.format(
-        paride=P29, obra=cli.obra_origen.ide, var=OBRA_VAR)
+        paride="29", obra=OBRA_ORIGEN, var=OBRA_VAR)
     assert a.aviso is None and pf.conflictos == []
 
 

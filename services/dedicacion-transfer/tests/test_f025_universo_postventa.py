@@ -85,7 +85,7 @@ def test_f025_r9_override_validado_contra_el_presupuesto_de_su_peticion():
     segundo = pl.preflight(obra=OBRA, lineas=[linea(**override)])
     a = segundo.acciones[0]
     assert a.accion == "omitir", a
-    assert a.motivo == MOTIVO_PARTIDA_PV_NO_HOJA.format(paride=70002)
+    assert a.motivo == MOTIVO_PARTIDA_PV_NO_HOJA.format(paride="0713")
 
 
 # ======================= T2 · el universo (R1-R7) ======================= #
