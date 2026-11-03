@@ -1026,3 +1026,49 @@ def test_f054_r45_recurso_con_codigo_y_nombre_o_su_ide():
     r = _programa(_api(datos={**DATOS, "no_traidas": nt}),
                   "await traerDeSigrid([]);")
     assert [f[2] for f in _filas_nt(r)] == ["30 · Carla &lt;C&gt;", "1671338"]
+
+
+# ---- T24, campaña 7 de mutación manual: E4, E6 y E28 vivos ---- #
+def test_f054_r44_cada_clave_del_grupo_distingue():
+    """Igual parte, recurso y motivo y otra obra: dos filas (E6); y así con
+    cada clave por separado."""
+    base = dict(hmores=1, recurso=30, obra="0708", parte="P", motivo="m")
+    variantes = [{}, {"obra": "0713"}, {"parte": "Q"}, {"recurso": 31},
+                 {"motivo": "n"}, {}]
+    nt = [_no_traida(**{**base, **v, "hmores": i}) for i, v in
+          enumerate(variantes)]
+    r = _programa(_api(datos={**DATOS, "no_traidas": nt}),
+                  "await traerDeSigrid([]);")
+    assert [(f[0], f[1], f[2], f[3], f[4]) for f in _filas_nt(r)] == [
+        ("P", "0708", "30", "×2", "m"), ("P", "0713", "30", "", "m"),
+        ("Q", "0708", "30", "", "m"), ("P", "0708", "31", "", "m"),
+        ("P", "0708", "30", "", "n")]
+
+
+def test_f054_r44_ordenar_texto_sin_distinguir_mayusculas_empate_estable():
+    """«ALFA» y «alfa» empatan (E28): en los dos sentidos, el de la
+    respuesta."""
+    nt = [_no_traida(1, 30, "0708", "P", "Zeta"),
+          _no_traida(2, 30, "0708", "P", "ALFA"),
+          _no_traida(3, 30, "0708", "P", "alfa")]
+    datos = {**DATOS, "no_traidas": nt}
+    o = 'ordenarEn("#no-traidas", "motivo"); '
+    asc = _programa(_api(datos=datos), "await traerDeSigrid([]);\n" + o)
+    desc = _programa(_api(datos=datos), "await traerDeSigrid([]);\n" + o * 2)
+    assert [f[4] for f in _filas_nt(asc)] == ["ALFA", "alfa", "Zeta"]
+    assert [f[4] for f in _filas_nt(desc)] == ["Zeta", "ALFA", "alfa"]
+
+
+def test_f054_r44_el_filtro_de_recurso_existe_desde_el_principio():
+    """Los cuatro filtros de «No se traen» están en el modelo al abrir
+    (E4): filtrar por otro no falla y «Limpiar» los recorre todos."""
+    r = _programa(_api(datos=DATOS_NT), """
+        await traerDeSigrid([]); filtrarEn("#no-traidas", "parte", "00028");""")
+    assert len(_filas_nt(r)) == 2
+    programa = "\n".join([
+        DOM_TEXTO, _funcion("escapeHtml"), _funcion("textoEstadoSigrid"),
+        _funcion("agruparNoTraidas"), _funcion("modeloTraerSigrid"),
+        "process.stdout.write(JSON.stringify(modeloTraerSigrid({ "
+        "trabajadores: [], no_traidas: [] }).noTraidas.filtros));"])
+    assert _node(programa) == {"parte": "", "obra": "", "recurso": "",
+                               "motivo": ""}
