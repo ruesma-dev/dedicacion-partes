@@ -241,12 +241,28 @@ class PendienteOut(_Base):
     es_postventa: bool
 
 
+class PropuestaSubfilaOut(_Base):
+    """Una subfila de vinculado automática con propuesta guardada (F-044,
+    R9)."""
+
+    trabajador_ide: int
+    obra_ide: int
+    es_postventa: bool
+    vinculado_ide: int
+    propuesta_cod: str | None
+    propuesta_res: str | None
+    propuesta_metodo: str | None
+
+
 class PropuestasOut(_Base):
-    """`GET …/propuestas` (F-055, R35; F-057 `pendientes`)."""
+    """`GET …/propuestas` (F-055, R35; F-057 `pendientes`; F-044 R9
+    `subfilas`). Sin declarar `subfilas`, `extra="forbid"` daba 500 en
+    cuanto una subfila tenía propuesta (hotfix del 2026-11-03)."""
 
     en_curso: bool
     lineas: list[PropuestaLineaOut]
     pendientes: list[PendienteOut]
+    subfilas: list[PropuestaSubfilaOut] = []
 
 
 class EmpresaOut(_Base):

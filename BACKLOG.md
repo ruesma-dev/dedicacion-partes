@@ -3,15 +3,17 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **65 features**, 24 abiertas, 41 terminadas.
+Resumen: **67 features**, 26 abiertas, 41 terminadas.
 
 ## Trabajo abierto
 
 | # | Feature | Prioridad | Estado | Rigor | Rama |
 |---|---|---|---|---|---|
+| F-069 | Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras | 1 | pendiente | critico | `feature/F-069-importe-caja-km` |
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
+| F-070 | La cabecera del cuadrante se queda fija arriba al hacer scroll | 5 | pendiente | estandar | `feature/F-070-cabecera-fija` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | pendiente | critico | `feature/F-052-mensajeria-por-obra` |
 | F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | pendiente | critico | `feature/F-053-delegados-parte-unico` |
 | F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 8 | pendiente | critico | `feature/F-054-sync-trae-porcentajes` |
@@ -82,6 +84,12 @@ Resumen: **65 features**, 24 abiertas, 41 terminadas.
 
 ## Detalle
 
+### F-069 · Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras
+
+estado **pendiente** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-069-importe-caja-km`
+
+Petición del humano del 2026-11-03, tras el hotfix que incluye los VP (km) como vinculados. Lectura de solo lectura del líder (scratchpad, explore_vp_automatica): 44 de 45 VP tienen `reshor.pre = 0` en su hora `KM`, así que F-044 R14 los omite al registrar («sin importe mensual»); en las líneas KM hechas a mano el importe cambia cada mes (p. ej. VP0085: 199,36 / 292,88 / 381,11 / 351,81). Lo mismo pasa con la caja de obra. Humano: «tanto caja de obra como km hay que poner una casilla para rellenar la cantidad que luego se reparte porcentualmente en las obras. el tema es como lo plantreamos (esto ira en feature aparte) por ejemplo que al escribir en la linea del recurso si tiene caja o km te pregunte cantidad (que puede ser 0)». Por diseñar en spec: dónde se guarda la cantidad del mes por vinculado, cómo se pide (al escribir la línea del trabajador con vinculado KM/caja), cómo se reparte (importe × % de cada obra) y qué hace el registro con cantidad 0 o sin cantidad. Toca api, front y transfer. Bloquea registrar los km de octubre de 2026.
+
 ### F-058 · Un porcentaje que redondea a cantidad 0 no se registra en Sigrid
 
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-058-porcentaje-cero-no-registra`
@@ -99,6 +107,12 @@ Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21
 estado **pendiente** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-060-bandeja-partes`
 
 Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21). Si `partes` enciende su interruptor `MENSUALES_A_DEDICACION` (su F-019), las incidencias de los trabajadores mensuales que se apuntan en sus partes diarios dejan de ir a Sigrid y se quedan en `dedicacion_bandeja`. Esta feature es el espejo: dedicación lee esa bandeja y las convierte en incidencias de F-030 en el cuadrante (sin duplicar las que ya estén, R27 de F-030), para que se registren por la vía de F-030. **Mientras no exista, `MENSUALES_A_DEDICACION` de `partes` debe seguir apagado.** Cruza la frontera del proyecto: leer antes `azure-apps/partes.md` y el contrato de la bandeja; el documento de `partes` lo mantiene `partes`. Servicio previsto: api (lectura de la bandeja y alta de incidencias); el front solo pinta.
+
+### F-070 · La cabecera del cuadrante se queda fija arriba al hacer scroll
+
+estado **pendiente** · prioridad 5 · rigor `estandar` · SDD no · rama `feature/F-070-cabecera-fija`
+
+Petición del humano del 2026-11-03: «añade otra feature que sea que la cabecera se mantenga arriba al hacer scroll». Títulos y fila de filtros del cuadrante (`.filterable`, `renderCabeceraTabla`) visibles al bajar; mirar también las tablas de las ventanas (Sincronizar Sigrid, registro). Solo front.
 
 ### F-052 · Mensajería: una línea mensual de «consumos de mensajería» por obra en curso
 

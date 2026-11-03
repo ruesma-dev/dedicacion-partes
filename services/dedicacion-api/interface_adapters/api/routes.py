@@ -272,7 +272,7 @@ def obtener_cuadrante(
 
 
 @router.get("/periodos/{anio}/{mes}/propuestas", response_model=PropuestasOut,
-            tags=["cuadrante"])
+            response_model_exclude_unset=True, tags=["cuadrante"])
 def propuestas_del_mes(anio: int, mes: int,
                        contenedor: Cont) -> PropuestasOut:
     """F-055 (R35): si hay propuestas en curso y las automáticas con
