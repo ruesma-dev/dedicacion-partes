@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), **REVIEW 7 APROBADA** (`5c42b61`; O8-O10 del rastro recogidas); **SEGUNDA ENMIENDA: spec hecha (T24-T26, R43-R47, D20-D21; `45b97a9`, `f44d37b`, `3cbc117`), IMPLEMENTER EN MARCHA (2026-11-03, «si»)**: al probar T18 paso 2 el humano pidió la cabecera estándar (`.filterable`: burdeos, filtros debajo, «Limpiar»), «No se traen» como tabla con duplicados agrupados, y motivos con códigos en vez de `ide` (api y transfer); «hazlo todo dentro de la feature»**
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), **REVIEW 7 APROBADA** (`5c42b61`; O8-O10 del rastro recogidas); **SEGUNDA ENMIENDA: spec hecha (T24-T26, R43-R47, D20-D21; `45b97a9`, `f44d37b`, `3cbc117`), T24-T26 HECHAS (2026-11-03, `1b25a0c`…`74758a3`; mutación Python 287/287 y campañas manuales 7-8 de `app.js`; `init.sh` sin [KO]), en **REVIEW 8**: al probar T18 paso 2 el humano pidió la cabecera estándar (`.filterable`: burdeos, filtros debajo, «Limpiar»), «No se traen» como tabla con duplicados agrupados, y motivos con códigos en vez de `ide` (api y transfer); «hazlo todo dentro de la feature»**
 (en T18 el humano pidió, para poder desplegar, que la ventana de «Sincronizar Sigrid» sea una tabla
 única ordenable y filtrable por columna, con «Desmarcar todas» y «Marcar las visibles», y que
 `solo_sigrid` salga **desmarcada**: D12 revisada, «2, ok»; el cuadrante local de 2026-09 se deja
@@ -71,13 +71,13 @@ las filas de una campaña manual sobre el SHA que declara la campaña, o sobre H
 original sigue igual) amplía ese mismo encargo `de161b4`: pendiente de añadirla allí, sin decisión nueva. Otras propuestas de arnés pendientes, en sus secciones:
 F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
 tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
-`init.sh`). **Siguiente:** F-054, review 7 APROBADA; faltan T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
+`init.sh`). **Siguiente:** F-054, review 8 (T24-T26); faltan T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
-## F-054 · review 7 APROBADA (2026-11-03, enmienda T23), MANUAL pendientes
+## F-054 · segunda enmienda T24-T26 en review 8 (2026-11-03), MANUAL pendientes
 
-- **Spec:** `specs/F-054-sync-trae-porcentajes/` (T1-T23, R1-R42), todas las
-  decisiones cerradas (D1-D19; D12 revisada el 2026-11-02, «2, ok», `solo_sigrid` desmarcada; D16 = C, D17 = A y D18 = A, el 2026-10-29,
+- **Spec:** `specs/F-054-sync-trae-porcentajes/` (T1-T26, R1-R47), todas las
+  decisiones cerradas (D1-D21; D20 «hazlo todo dentro de la feature» y D21 «trasladalo a codigos legibles, no numeros internos», «filas de tabla», «ok», «si», el 2026-11-03; D12 revisada el 2026-11-02, «2, ok», `solo_sigrid` desmarcada; D16 = C, D17 = A y D18 = A, el 2026-10-29,
   «estoy de acuerdo»; D19 = b, el 2026-10-30, «b», con su efecto en el
   modal aceptado y el vinculado omitido «Dejarlo así»). Revisión contra F-044, F-062 y F-068 en
   `progress/spec_F-054.md`.
@@ -112,7 +112,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   (`167c63f`) y 5 (`10bcf85`): código aprobado en `9334fd3`, CAMBIOS
   REQUERIDOS solo por `progress/current.md` (rangos T/D, peticiones de
   arnés, un commit obsoleto, T20), corregido. **Review 6 APROBADA el
-  2026-10-30** (`838b390`). T10 hecha. **Enmienda T23 (2026-11-02)**, pedida por el humano en T18: spec `2f3c8bd`, código `828b393`-`82caaa5`, opción «a» con `test_f050_r29` (`8d997dd`), mutación manual de `app.js` 84/84 (campañas 5 y 6, `progress/mutacion_manual_F-054.md`); **review 7 APROBADA** (`5c42b61`), O8-O10 recogidas. Falta: T18 (pasos 2 a 4) y T19 (abajo), y T20 al desplegar. Las dos
+  2026-10-30** (`838b390`). T10 hecha. **Enmienda T23 (2026-11-02)**, pedida por el humano en T18: spec `2f3c8bd`, código `828b393`-`82caaa5`, opción «a» con `test_f050_r29` (`8d997dd`), mutación manual de `app.js` 84/84 (campañas 5 y 6, `progress/mutacion_manual_F-054.md`); **review 7 APROBADA** (`5c42b61`), O8-O10 recogidas. **Segunda enmienda (2026-11-03)**, pedida por el humano en T18 paso 2: T24 cabecera estándar `.filterable` y «No se traen» en tabla agrupada; T25 motivos de «Sincronizar Sigrid» con códigos y `recurso_cod`/`recurso_nombre`; T26 motivos del preflight del registro con códigos (`CatalogoVar.codigos`, la api manda `partida_cod` en las líneas VAR). Spec `45b97a9`, `f44d37b`, `3cbc117`; código `1b25a0c`…`74758a3`; **review 8 pendiente**. Falta: T18 (pasos 2 a 4) y T19 (abajo), y T20 al desplegar. Las dos
   automejoras de la review 3 (el operador `not` genera mutantes que no
   compilan, p. ej. en `reglas_porcentajes.py:563`, y cuentan como muertos;
   y si una fila manual que quita un solo elemento vale como «texto
@@ -138,15 +138,23 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   1) **HECHO el 2026-11-02** (PowerShell): `Invoke-RestMethod -Method Post -Uri
   http://localhost:8006/api/porcentajes/existentes -ContentType 'application/json' -Body
   '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'` ⇒ `ok`, 429 líneas (353 `normal`, 72 `postventa`, 4 `var`),
-  `MADM` 0694 al 95 % `normal` (partida CI.1.5). 2) Tras T23, front, cuadrante 2026-09, «Sincronizar
-  Sigrid» ⇒ una sola tabla y **ninguna** casilla marcada. `0694` en Obra ⇒ solo sus filas y «Aceptar 0
-  marcadas»; «Marcar las visibles» ⇒ «Aceptar N marcadas»; filtro a otra obra ⇒ «Aceptar N marcadas (N
-  ocultas por el filtro)»; «Desmarcar todas» y vaciar el filtro ⇒ «Aceptar 0 marcadas»; dos pulsaciones en
-  la cabecera Obra ⇒ orden invertido. Con `0694` en Obra, marcar **solo** esa entrada y aceptar ⇒ su otra
-  línea sigue igual; «Deshacer» la devuelve (O6: que no pase a pisado). Si ya sale `igual` por lo aceptado
-  el 2026-11-02, usar otra `distinta` o `solo_sigrid` y anotarlo. 3) Aceptarla otra vez y abrir el
-  registro solo hasta el **preflight** ⇒ ya registrada, sin pisado ni sobrecarga. 4) Sincronizar de nuevo
-  ⇒ `igual`. Resultado en `progress/manual_F-054.md` (paso 1 ya copiado ahí).
+  `MADM` 0694 al 95 % `normal` (partida CI.1.5). 2) Tras T23-T25 (recargar con Ctrl+F5), front, cuadrante
+  2026-09 (o el mes de la prueba; el 2026-11-03 fue 01/2026), «Sincronizar Sigrid» ⇒ una sola tabla con la
+  **cabecera estándar** (títulos en burdeos, flecha amarilla, filtros en blanco debajo, «Limpiar» en la
+  última columna) y **ninguna** casilla marcada. `0694` en Obra ⇒ solo sus filas y «Aceptar 0 marcadas»;
+  Escape ⇒ se vacía el filtro y la ventana sigue abierta; otra vez `0694`; «Marcar las visibles» ⇒
+  «Aceptar N marcadas»; filtro a otra obra ⇒ «Aceptar N marcadas (N ocultas por el filtro)»; «Limpiar» ⇒
+  filtros vacíos (Estado «Todos») y casillas como estaban; «Desmarcar todas» ⇒ «Aceptar 0 marcadas»; dos
+  pulsaciones en la cabecera Obra ⇒ orden invertido. «No se traen (N)», N = filas: tabla con la misma
+  cabecera (Parte, Obra, Recurso, Líneas, Motivo), recurso `cod · nombre`, iguales en una fila con «×K»
+  (01/2026: `PT26/00028` · `POSTV2` · recurso 1671338), motivos con **códigos** (01/2026: `0708`, no
+  `2565541`; partida y obras de `POSTV2` por código); su «Limpiar» no toca la otra tabla. Con `0694` en
+  Obra, marcar **solo** esa entrada y aceptar ⇒ su otra línea sigue igual; «Deshacer» la devuelve (O6: que
+  no pase a pisado). Si ya sale `igual` por lo aceptado el 2026-11-02, usar otra `distinta` o
+  `solo_sigrid` y anotarlo. 3) Aceptarla otra vez y abrir el registro solo hasta el **preflight** ⇒ ya
+  registrada, sin pisado ni sobrecarga; tras T26, una omitida VAR o de postventa con partida no hoja nombra
+  partida y obra por código (D21; anotarlo). 4) Sincronizar de nuevo ⇒ `igual`. Resultado en
+  `progress/manual_F-054.md` (paso 1 ya copiado ahí).
 - **T19 (humano, `OBRA_PRUEBAS_FORZAR=true`; la única que escribe).** Crear
   a mano en el parte En registro de la 0404, 2026-11, una línea `M*` con
   `can = 0,2`, sin `synckey`, del recurso de prueba y con una partida que no
@@ -164,7 +172,10 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` y comprobar con `git
   -C C:/Users/pgris/PycharmProjects/azure-apps log -1 -- dedicacion.md`.
   **Aviso a `partes`**: el transfer pone a 0 líneas `M*` y de vinculados de
-  los partes compartidos, sin borrarlas.
+  los partes compartidos, sin borrarlas. Anotar además en `dedicacion.md`
+  (T26): la api manda `partida_cod` en las líneas VAR de `preflight-lote` y
+  `ejecutar` (campo opcional que ya existía); motivos con códigos (T25-T26);
+  `no_traidas` gana `recurso_cod`/`recurso_nombre` (solo el front).
 
 ## F-068 · CERRADA y DESPLEGADA (2026-10-28), MANUAL hecha
 
@@ -558,7 +569,7 @@ F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-11-02):** F-054, enmienda T23 hecha y review 7 APROBADA; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
+F-033 y, detrás, F-017, F-018… **Hoy (2026-11-03):** F-054, T23 aprobada (review 7) y T24-T26 hechas, en review 8; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
