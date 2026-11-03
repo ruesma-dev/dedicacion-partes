@@ -1147,6 +1147,32 @@
       "rigor": "critico",
       "priority": 1,
       "branch": "feature/F-068-propuesta-vinculado-como-titular"
+    },
+    {
+      "id": "F-069",
+      "title": "Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras",
+      "description": "Petición del humano del 2026-11-03, tras el hotfix que incluye los VP (km) como vinculados. Lectura de solo lectura del líder (scratchpad, explore_vp_automatica): 44 de 45 VP tienen `reshor.pre = 0` en su hora `KM`, así que F-044 R14 los omite al registrar («sin importe mensual»); en las líneas KM hechas a mano el importe cambia cada mes (p. ej. VP0085: 199,36 / 292,88 / 381,11 / 351,81). Lo mismo pasa con la caja de obra. Humano: «tanto caja de obra como km hay que poner una casilla para rellenar la cantidad que luego se reparte porcentualmente en las obras. el tema es como lo plantreamos (esto ira en feature aparte) por ejemplo que al escribir en la linea del recurso si tiene caja o km te pregunte cantidad (que puede ser 0)». Por diseñar en spec: dónde se guarda la cantidad del mes por vinculado, cómo se pide (al escribir la línea del trabajador con vinculado KM/caja), cómo se reparte (importe × % de cada obra) y qué hace el registro con cantidad 0 o sin cantidad. Toca api, front y transfer. Bloquea registrar los km de octubre de 2026.",
+      "acceptance": [
+        "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md` con rigor crítico."
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 1,
+      "branch": "feature/F-069-importe-caja-km"
+    },
+    {
+      "id": "F-070",
+      "title": "La cabecera del cuadrante se queda fija arriba al hacer scroll",
+      "description": "Petición del humano del 2026-11-03: «añade otra feature que sea que la cabecera se mantenga arriba al hacer scroll». Títulos y fila de filtros del cuadrante (`.filterable`, `renderCabeceraTabla`) visibles al bajar; mirar también las tablas de las ventanas (Sincronizar Sigrid, registro). Solo front.",
+      "acceptance": [
+        "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 5,
+      "branch": "feature/F-070-cabecera-fija"
     }
   ]
 }
