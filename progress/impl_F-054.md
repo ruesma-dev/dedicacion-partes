@@ -12,7 +12,7 @@ Commit por tarea: T1 `d12ec81`, T2 `bf2361a`, T3 `f99e0cd`, T4
 `ccad4db`, T11 `892d93f`, T12 `eaaca4b`, T13 `60a7dab`, T14 `d382ae7`, T15
 `f5a9bb8`, T16 `95cc089`, T17 `e72d22c`/`c614be3`/`1c16454`, T21. Review 1:
 O1 `e881a17`, O4 `56dd403`, O2 `5d426b5`, O5 `97e5fed`. T22 (D19): `abd5514`
-(RED), `fd56da6` (código), `69647cf` (4 bis), `a781d25`. T23: `828b393` (RED) … `b660091` (ver su sección). MANUAL: T10, T18-T20.
+(RED), `fd56da6` (código), `69647cf` (4 bis), `a781d25`. T23: `828b393` (RED) … `b660091`. T24-T26 (2026-11-03): ver su sección. MANUAL: T10, T18-T20.
 
 ## Ficheros tocados
 
@@ -20,120 +20,51 @@ O1 `e881a17`, O4 `56dd403`, O2 `5d426b5`, O5 `97e5fed`. T22 (D19): `abd5514`
   nuevos `porcentajes_existentes.py`, `reglas_obra_cero.py`,
   `poner_a_cero.py`; `lecturas_lote.py` y `registro_lote.py` (ronda A,
   `preflight_completo`); `reglas_porcentajes.py`, solo `omitir`/`decidir`
-  (T22, D19). `registro_pipeline.py` NO se toca.
+  (T22, D19); `universo_var.py` (T25-T26); `registro_pipeline.py`, solo
+  los tres motivos de T26.
 - api: `domain/{models,errors,ports,traer_sigrid}.py`,
   `application/{traer_sigrid,registro_sigrid}.py`, `transfer_client.py`,
   `db/{repositories,orm_models}.py`, `api/{app,routes,schemas,deps}.py`.
-- front `app.js`; docs `ARCHITECTURE.md` (puntos 23-24) e `INTEGRACION.md`.
+- api, además, `domain/obras.py` (T26). Front `app.js` y `styles.css`; docs
+  `ARCHITECTURE.md` (puntos 23-24, `#regla-var`) e `INTEGRACION.md`.
 - tests nuevos `test_f054_*` en los tres servicios; ajenos, solo la lista
   cerrada (`ANCLAS`; dobles `preflight_lote` de F-022/F-024/F-055 con
   `completo=False`, sin cambiar aserciones).
 
 ## Decisiones de diseño y desviaciones (justificadas)
 
-1. **Vigencia por `vigente_en`** (activo + fecha de baja), la regla única del
-   dominio, no solo `activo` (design §5.2): `listar_para_periodo` ya da
-   `activo` = vigente en el mes; el trabajador que no sale en el listado (no
-   vigente sin líneas) se lee con `obtener` para que su motivo sea «no
-   vigente» y no «fuera del maestro».
-2. `ExistentesIn.empresa` sin tipo: lo no válido da 422 sin leer. 3. La 0404
-   siempre se excluye en A (R5); `lineas_leidas` cuenta todas. 4. La
-   comparación solo saca a trabajadores con alguna entrada de Sigrid.
-5. Obra en la base y no en el listado (inactiva): inactiva, «no se ofrece».
-6. **Relectura del periodo**: `PgPeriodoRepository.obtener` con
-   `populate_existing=True`; sin ello el mapa de identidad no veía un cierre
-   entre medias (R22, 409). A los demás llamantes solo les da el dato de la base.
-7. «Después» del evento `SIGRID`, en memoria (fila de antes + aceptadas y
-   subfilas): tras el `INSERT … ON CONFLICT` el ORM podía no refrescar.
-8. Aceptadas repetidas cuentan una vez. 9. Sin cuerpo = comparar; `_encolar` solo con tocados.
-10. T7 con UoW en memoria **propia**, no la de `test_f024_cuadrante_empresa.py`
-    (design §9): sin transacción ni traza, R19/R22/R23 no se comprobarían.
-11. Front: `#btn-sync` con `() => sincronizarYTraer()`: los arneses ajenos de
-    `test_f050_t15e_sombreado.py`, `test_f029_seleccion.py` y
-    `test_f050_m2_arreglos.py` solo definen `sincronizar`; con la referencia
-    directa fallaba `ReferenceError: sincronizarYTraer is not defined`.
-12. La ventana usa `#modal-registro`, sin casillas.
-13. **B, la obra especial por código**: `cubierta` reconoce postventa, VAR y
-    pruebas por `obra_cod` (la lectura va por empresa), no por `ide` (design
-    §6.1): el preflight no siempre las resuelve y así no hay lectura más.
-14. En pruebas, «alguna acción tiene su partida» compara también la partida 0:
-    una omitida sin partida cubre las sin partida de la 0404 (menos sobrantes).
-    15. El lote que falla no da sobrantes.
-16. `PonerACero` importa `_fila` y `_traza` de `registro_pipeline.py`; «en la
-    0404» = `hmoide` entre sus partes del periodo; lotes de 15 (`SIGRID_MAX_STATEMENTS`).
-17. T14: `poner_a_cero` con la empresa por defecto de la api
-    (`self._por_defecto`), la del preflight; viajan los campos que relee la
-    guarda (`hmores_ide, recurso_ide, hora, vinculado, can, synckey`). Un
-    `sobrantes_a_cero` mal formado es 422 sin escribir; si poner a 0 falla,
-    no se escribe nada por obra.
-18. T15: «la línea sigue en su parte, a 0», no «no se borran» (un test ajeno
-    prohíbe «se borran» en `app.js`). 19. T16: la remisión de
-    `#regla-vinculado` es un párrafo tras la firma del punto 22.
+1. **Vigencia por `vigente_en`** (activo + baja), no solo `activo` (design
+   §5.2); el trabajador fuera del listado se lee con `obtener` («no vigente»,
+   no «fuera del maestro»). 2. `ExistentesIn.empresa` sin tipo: lo no válido
+   da 422 sin leer. 3. La 0404 siempre se excluye en A (R5); `lineas_leidas`
+   cuenta todas. 4. Solo salen trabajadores con alguna entrada de Sigrid.
+   5. Obra en la base fuera del listado: inactiva, «no se ofrece».
+6. **Relectura del periodo** con `populate_existing=True`: sin ello no se veía
+   un cierre entre medias (R22, 409). 7. «Después» del evento `SIGRID`, en
+   memoria (el ORM podía no refrescar tras `ON CONFLICT`). 8. Aceptadas
+   repetidas, una vez. 9. Sin cuerpo = comparar; `_encolar` solo con tocados.
+10. T7 con UoW en memoria propia (sin transacción ni traza, R19/R22/R23 no se
+    comprobarían con la de `test_f024`). 11. `#btn-sync` con `() =>
+    sincronizarYTraer()`: arneses ajenos (`test_f050_t15e`, `test_f029`,
+    `test_f050_m2`) solo definen `sincronizar` (`ReferenceError`). 12. La
+    ventana usa `#modal-registro`. 13. **B**: `cubierta` reconoce postventa,
+    VAR y pruebas por `obra_cod`, no por `ide` (sin lectura más). 14. En
+    pruebas compara también la partida 0. 15. El lote que falla no da
+    sobrantes. 16. `PonerACero` importa `_fila`/`_traza`; «en la 0404» =
+    `hmoide` entre sus partes; lotes de 15. 17. T14: `poner_a_cero` con la
+    empresa por defecto; viajan los campos que relee la guarda; mal formado,
+    422 sin escribir; si falla, nada por obra. 18. T15: «sigue en su parte, a
+    0» (un test ajeno prohíbe «se borran»). 19. T16: la remisión de
+    `#regla-vinculado`, párrafo tras la firma del punto 22.
 
-## Review 1: observaciones recogidas (O3 y O6, aceptadas sin cambio)
+## Review 1, T22 y T23 (resumen; detalle y trazas en `progress/impl_F-054_anexo.md`)
 
-- **O1** (`e881a17`): 54 avisos de `ruff` corregidos (contra `1ed18be`: 309 →
-  308); la fixture `api` de F-055 se reexporta con nombre.
-- **O4** (`56dd403`): `cubierta` sin `cod_pruebas`. **O5** (`97e5fed`): `api()`
-  deja `status` en el error; comparar con 404/409 no avisa (aceptar sí); el
-  aviso de registrar da el motivo de cada sobrante omitida, en rojo si hay.
-- **O2** (`5d426b5`): `coberturas_de` marca de postventa la acción (y sus
-  vinculados) de una `Postv-` aunque llegue con `destino="obra"`; en la obra
-  de postventa cubre si su partida es la de la línea **o 0** (cubre todas).
-  Corrección (review 2, O7): hasta D19 **toda** `Postv-` omitida llevaba
-  `paride` 0, también la omitida **tras** resolver su partida (sin recurso,
-  %, sin `M*`), y cubría todas; desde T22 solo la omitida antes de resolverla.
-- RED: O4 `TypeError: cubierta() missing 1 required keyword-only argument:
-  'cod_pruebas'` → `4 failed, 16 passed`. O2 `-k o2`: `AssertionError`
-  (`obra` ≠ `postventa`), `assert False`, `assert [7001] == [7002]` → `3
-  failed, 1 passed`. O5: `assert [['No se pudo...riodo', True]] == []` (×2),
-  `['cerrado', None] == ['cerrado', 409]`, `'1 sin poner a 0: x' in '… · 1
-  sin poner a 0'`, `assert False is True` → `5 failed, 24 passed`.
-- Mutación tras la review: `6d23067` (267, 2 vivos, 4541 s), dos mutantes
-  de O1 (`Decimal("0")` → `Decimal(0)`) reproducidos en serie: `Decimal(1) <
-  pct` (hueco real: test `0.50`/`1.00` en R16, RED `2 failed`) y el % de la
-  `Linea` de sondeo de `_motivo_obra` (equivalente; ahora `Decimal()`).
-  `c70eb61`: 0 vivos. `app.js`: C7 vivo en O5, test nuevo (`870e585`).
-
-## T22 · D19 (review 2, O7; el humano, 2026-10-30)
-
-`omitir(motivo, **resuelta)`; tras P5, `resuelta = {destino, paride,
-partida_cod}` va en los cuatro `omitir` posteriores (sin recurso, % no
-numérico, fuera de rango, sin `M*`). Los anteriores (sin empresa, motivo de
-empresa, P5 off, partida sin resolver) y toda no `Postv-`: `obra`/0/`None`.
-`cubierta`, `_destino`, `registro_pipeline.py` y `reglas_vinculados.py`, intactos.
-
-- RED (`tests/test_f054_obra_cero.py -k d19`, transfer, antes de `fd56da6`):
-  `E AssertionError: assert ('omitir', 'obra', 0, None) == ('omitir',
-  'p...a', 33, 'P33')` ×5 (`[kw0]`-`[kw4]`) y `E assert [] == [2]` (sobrantes)
-  → `6 failed, 8 passed`. Verde: `14 passed`.
-- 4 bis, respuesta (`-k d19_respuesta`, con `reglas_porcentajes.py` de
-  `abd5514` restaurado a mano y devuelto después): `At index 0 diff:
-  ('omitir', 'obra', 0, None, '200|202607|0|0') != ('omitir', 'postventa',
-  70001, '0678', '200|202607|0|70001')` → `1 failed, 1 passed`; verde `2
-  passed`. Front (`test_f054_modal_cero.py`): el modal pinta el
-  `destino` publicado, **sin cambio de `app.js`**, así que no tiene RED
-  propio (lo fija la de la respuesta): `Postventa`×2 / `Obra`×2; el fichero, `9 passed`.
-- **Consumidores**, lector por lector (sin cambio salvo lo aceptado):
-  - `registro_pipeline.py`: `obra_de` (l. 764, 1136, 1413) solo sobre
-    `escribir`, `vin_escribir`, `a_escribir`, `a_insertar`, `pendientes`;
-    `normales`/`validas` (l. 647, 651) filtran `escribir`; el bucle de
-    partida salta lo demás (l. 666); `sin_partida`, `_cuentas`, idempotencia,
-    `_emparejar_ceros`/`pisables_al_cero`, `_nueva`, `_escrita`, sobre
-    `escribir`; `omitidas` publica solo `registro_id` y `motivo`.
-  - `registro_lote.py`: no los lee. `registro_vinculados.py`: `PartidaTitular` y `_partida` solo con
-    `escribir`. `decidir_vinculados` copia `destino` y **no** `paride`: el
-    vinculado omitido sale `postventa`/0 y cubre todas (asimetría aceptada).
-  - `app.py`: el preflight publica `asdict(a)` y `clave_conflicto(a)`; la
-    omitida tras resolver lleva `postventa`, su `paride`/`partida_cod` y
-    clave `|<paride>` (**aceptado**); `ejecutar` publica las omitidas solo
-    con `registro_id` y `motivo`.
-  - api `registro_sigrid.py`, `_guardar_propuestas`: exige `paride` y un
-    `partida_metodo` de propuesta; la omitida lleva `None` y no guarda nada.
-  - `app.js`, `pintarModalPreflight` l. 3510 y 3549: «Postventa» en
-    Destino para ella y sus vinculados omitidos (**aceptado**). El `print`
-    de `prueba_escritura_porcentajes.py` l. 311 también (**aceptado**).
-- Transfer entero tras `fd56da6`: `1863 passed`, nada fuera de la lista cerrada.
+- **Review 1**: O1 `e881a17` (ruff), O4 `56dd403`, O2 `5d426b5`, O5
+  `97e5fed`; O3 y O6 aceptadas sin cambio. RED de O2/O4/O5 en el anexo.
+- **T22 (D19)**: `abd5514` RED (`6 failed, 8 passed`), `fd56da6` código,
+  `69647cf` 4 bis, `a781d25`; consumidores lector por lector, en el anexo.
+- **T23**: `828b393` RED (`36 failed, 2 passed in 2.77s`) … `b660091`; opción
+  «a» del humano para `test_f050_r29_…`; campañas 5-6, 84 mutantes, 0 vivos.
 
 ## Fase RED de T1-T15 (trazas reales; comando y salida)
 
@@ -158,55 +89,125 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
   'preflight_completo'` (7) y `E KeyError: 'sobrantes'` → `8 failed, 1 passed, 11 deselected`.
 - T14 api `test_f054_registro_cero.py`: `E AssertionError: assert [('preflight_lote', False)] == [('preflight_lote', True)]` (4), `E TypeError: RegistroSigrid.ejecutar() got an unexpected keyword argument 'sobrantes_a_cero'` (4), `E AttributeError: 'TransferClient' object has no attribute 'poner_a_cero'` (2), `E TypeError: TransferClient.preflight_lote() got an unexpected keyword argument 'completo'` → `11 failed, 1 passed in 3.05s`.
 
-## MANUAL pendientes (NO ejecutadas; comando exacto en `tasks.md`)
+## MANUAL pendientes (NO ejecutadas por ningún agente)
 
-- **T10** (líder, solo lecturas): preflight de 2026-09 desde el front, tres
-  pasadas (F-055 T18), en `ccad4db` (**antes de B**). **Hecha el 2026-10-30**:
-  12,25 / 9,20 / 10,34 s, **mediana 10,34 s** (umbral de T19: ≤ 11,89 s); el
-  log del transfer, solo `preflight-lote` y `propuesta-lote`.
-- **T18** (humano, local, solo lecturas; T23 ya cerrada): 1) **hecho el 2026-11-02** (resultado en `progress/manual_F-054.md`); Git Bash: `curl -s -X POST http://localhost:8006/api/porcentajes/existentes -H "Content-Type: application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'`. 2) **Nuevo**: front, 2026-09, «Sincronizar Sigrid» → una sola tabla, **ninguna** casilla marcada; `0694` en Obra → solo sus filas y «Aceptar 0 marcadas»; «Marcar las visibles» → «Aceptar N marcadas»; otra obra en el filtro → «(N ocultas por el filtro)»; «Desmarcar todas» y vaciar el filtro → «Aceptar 0 marcadas»; dos clics en Obra → orden invertido; con `0694`, marcar solo la `MADM`, aceptar y «Deshacer» (si sale `igual`, otra `distinta`/`solo_sigrid`, y anotarlo). 3) y 4) como en `tasks.md` → `progress/manual_F-054.md`.
-- **T19** (humano, `OBRA_PRUEBAS_FORZAR=true`): líneas a mano en la 0404;
-  `cd services/dedicacion-transfer && .venv/Scripts/python
+- **T10**: hecha el 2026-10-30 (`ccad4db`): mediana **10,34 s** (T19 ≤ 11,89 s).
+- **T18** (humano, local, solo lecturas). 1) Hecho el 2026-11-02: en Git Bash
+  `curl -s -X POST http://localhost:8006/api/porcentajes/existentes -H
+  "Content-Type: application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'`.
+  2) **Pendiente, ya con T23-T25**: front, 2026-09, «Sincronizar Sigrid» →
+  cabecera estándar (flecha, filtros debajo, «Limpiar» al final), ninguna
+  casilla marcada; `0694` en Obra y Escape (se vacía, la ventana sigue);
+  «Marcar las visibles», otra obra → «(N ocultas por el filtro)», «Limpiar»;
+  dos clics en Obra; «No se traen (N)», N = filas, con «×K», recurso `cod ·
+  nombre` y motivos con códigos (`0708`, no `2565541`); aceptar la de la
+  0694 y «Deshacer». 3) Hasta el preflight: si sale una omitida VAR o de
+  postventa no hoja, su motivo nombra la partida por código (T26). 4) Volver
+  a sincronizar → `igual`. Pasos: `tasks.md` T18 → `progress/manual_F-054.md`.
+- **T19** (humano, `OBRA_PRUEBAS_FORZAR=true`, la única que escribe): `cd
+  services/dedicacion-transfer && .venv/Scripts/python
   prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`; registrar sin
-  marcar y marcando; preflight ≤ 1,15 × mediana de T10. **Es la única prueba
-  que escribe y no la ha lanzado ningún agente.**
-- **T20** (líder, al desplegar): **transfer → api → front**; refrescar
-  `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` (`git -C`) y avisar
-  a `partes`: el transfer pone a 0 (sin borrar) `M*` y de vinculados en
-  partes compartidos. **Fuera**: `features.json` y el cierre (líder).
+  marcar y marcando; preflight ≤ 1,15 × 10,34 s.
+- **T20** (líder, al desplegar **transfer → api → front**): refrescar
+  `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` (`git -C
+  C:/Users/pgris/PycharmProjects/azure-apps`) y avisar a `partes`. Nuevo de
+  T25-T26: la api manda `partida_cod` en las líneas VAR (ya en
+  `INTEGRACION.md` §5) y `no_traidas` gana `recurso_cod`/`recurso_nombre`.
 
-## T23 · 2026-11-02 (enmienda tras T18): ventana de una tabla, D12 desmarcada
+## T24-T26 · 2026-11-03 (D20, D21): cabecera estándar, «No se traen», códigos
 
-- **Commits**: RED `828b393`; código `8c83473`; parada e informe `d883019`/`68fa411`; opción «a» `8d997dd`; `ARCHITECTURE.md` punto 23 `488d423`; mutación y tests nuevos `2af8177`; campañas y T23 `[x]` `b660091`.
-- **Código** (`app.js`): las puras `filasTraerVisibles` (filtros «contiene» sin mayúsculas sobre lo pintado y estado exacto; `sort` estable, raya al final en los dos sentidos) y `textoAceptarTraer`; `modeloTraerSigrid` (filas en el orden de la respuesta, `marcada = false`, D12), `textoBotonTraer`, `cuerpoTraerSigrid`, `titulosTraerSigrid` (▲/▼); `filaEntradaSigrid(f)`, `pintarTraerSigrid(datos, modelo)`, `aceptadasMarcadas(modelo)` (lee el modelo, ocultas incluidas; cuerpo de hoy) y `abrirTraerSigrid` (modelo en su cierre; escuchas en `#traer-titulos`, `#traer-filtros` y `#traer-cuerpo`; repinta títulos, `<tbody>` y botón, nunca los filtros). CSS `.acciones-traer` y `.tabla-traer`. Api, transfer y contrato, intactos. El botón dice «Aceptar N marcadas», como la spec (el singular no está decidido).
-- **Tests** (`test_f054_traer_front.py`): 20 nuevos (R39-R42 y los dos de la campaña 5); de T9 cambian sin borrarse el de la casilla (ahora **ninguna** `checked`), escuchas, sin casillas, sin pulsar y aceptar (desde el modelo). Fichero: `40 passed`.
-- **RED** (desde el front, `.venv/Scripts/python -m pytest tests/test_f054_traer_front.py -q -p no:cacheprovider`, antes del código): `E AssertionError: no existe la función modeloTraerSigrid en app.js` (35) y `… textoAceptarTraer …` (1) → `36 failed, 2 passed in 2.77s`. Tras `8c83473`: `38 passed in 9.62s`.
-- **Parada y decisión**: el `<select>` de Estado (R41) tumbaba `test_f050_r29_el_front_ya_no_manda_overrides_ni_lee_catalogos` (`"<select" not in JS`, fuera de la lista cerrada). El humano eligió **«a»** (2026-11-02): la aserción se acota a la elección de partida (ningún `<select` en `pintarModalPreflight`, `montarSelectorPartida`, `listaSelector` ni `htmlPartida`, y en todo `app.js` solo los de `pintarTraerSigrid`); el resto del test, igual. `test_f050_modal_registro.py` entra en la lista cerrada (tasks, design §3 y T23). Comprobado con 5 mutantes a mano (un `<select>` al principio de cada una de esas cuatro funciones y de `textoPartidaAccion`): **5/5 muertos**, base `1 passed`.
-- **Mutación manual de `app.js`** (`progress/mutacion_manual_F-054.md`, campañas 5 y 6): 81 mutantes sobre las funciones nuevas, 78 muertos y 3 vivos. D10, equivalente (`asc` inicial sin leer), se quita del código; D11 (filtro inicial) y D51 (tabla sin filas), huecos reales con test nuevo; la campaña 6 los mata (3/3, más D10b). **Total: 84 mutantes, 0 supervivientes.**
-- **Docs**: `ARCHITECTURE.md` punto 23 (`#regla-traer-sigrid`): tabla única, las dos desmarcadas, orden, filtros, botones y la D12 revisada con su cita. `INTEGRACION.md` no la describía: sin cambio.
-- **`bash harness/init.sh`** tras `b660091` (caché `suite_*.ok` borrada, sin pipes): código 0, **sin `[KO]`**: api `1469 passed` (110,67 s), front `507 passed` (97,94 s), transfer `1865 passed` (42,41 s), raíz `418 passed, 1 skipped` (74,03 s); cobertura 99,5 % (755/759; no mide JS) y tamaño (impl 210/220) en `[OK]`.
-- **Pendiente** (humano): MANUAL T18 paso 2 (comando y pasos abajo), T19; T20 al desplegar (líder).
+**Commits**: T24 RED `1b25a0c`, código `0fc94fb`, tests de la campaña 7
+`cf28eea`/`4e5ac80`; T25 RED `de7951e`, código `9dd4465`; T26 RED `d6224b4`,
+código `086983a`; cierre (tasks `[x]`, campañas, informe, anexo) el último.
+
+- **T24** (`app.js`, `styles.css`): las dos tablas `tabla-reg filterable`
+  con el marcado de `renderCabeceraTabla()` (`titulosOrdenables`,
+  `celdaFiltroTraer`); el `<select` de Estado sigue en `pintarTraerSigrid`.
+  `enlazarCabeceraTraer(tabla, parte, repintar)`, común: clic con
+  `closest("[data-orden]")`, Escape solo en `INPUT` (sin cerrar), «Limpiar»
+  vacía filtros y campos de esa fila sin tocar orden ni casillas. Puras
+  `agruparNoTraidas` y `noTraidasVisibles` (Líneas numérica). Fuera
+  `.tabla-traer`, `th.ordenable`, `#traer-filtros th`, `.filtro-traer`.
+- **T25**: transfer `MOTIVO_PV_*` con `partida_cod or paride` y `codigo or
+  ide`; `partida_var_de(…, *, partida_cod, obra_cod)`. Api
+  `ObraRepository.codigos` (port y Pg; `existen` sigue, la usa
+  `use_cases.py`), `_nombre_obra` VAR `<obra>-<partida>` o
+  `VAR-<var_paride>`, `NoTraida`/`NoTraidaOut` con `recurso_cod`/`_nombre`.
+- **T26**: `CatalogoVar.codigos` (presupuesto ya leído, `{}` por defecto) y
+  `partida_var_de` con `codigos.get(var_paride) or partida_cod or
+  var_paride`; `registro_pipeline.py`, solo los motivos `VAR_POSTVENTA`,
+  la llamada (`obra_cod=origen.codigo`) y `PARTIDA_PV_NO_HOJA`. Api
+  `partida_de_entrada` y la línea VAR con `partida_cod` solo si no es `None`
+  (nadie lo usa para decidir: test `…_el_partida_cod_de_la_var_no_decide_nada`).
+- **Interpretaciones (para el reviewer)**: a) «ni `ordenable` en `app.js`»
+  se lee como la **clase** (`class="ordenable"`); la propiedad `ordenable` de
+  `COLUMNAS` (tabla principal, tests de F-044/F-050) sigue. b) Dos obras con
+  el mismo código salen «(0678, 0678)», como dice la spec. c) Un test de T26
+  partía de una premisa falsa (sin `codigo` en la petición, el pipeline
+  resuelve la obra en Sigrid): rehecho como
+  `…_otra_obra_por_el_codigo_de_la_obra_resuelta` antes del código.
+- **Tests anteriores cambiados**: lista cerrada (T26) `test_f039_preflight_var.py`,
+  `test_f002_postventa.py` (`"11"`), `test_f025_universo_postventa.py`
+  (`"0713"`), api `test_f039_registro_var.py` y `test_f050_partida_linea.py`
+  (`"29"`). De F-054: `test_f054_traer_front.py` (escuchas, r39-r41, dobles),
+  `test_f054_traduccion.py` (`"0678, 0678"`; r10 `"28"`), `test_f054_mutacion.py`
+  (×2), `test_f054_aceptar.py`, `test_f054_comparar.py`, `test_f054_rutas.py`.
+  Ninguno más; `test_f050_modal_registro.py` sin tocar (`17 passed`).
+- **Consumidores** (grep, tres servicios): `MOTIVO_PV_*`, solo
+  `porcentajes_existentes.py`; `partida_var_de`, ella y `registro_pipeline.py`;
+  `no_traidas`/`NoTraida`, `traer_sigrid.py`, `schemas.py` y `app.js`. Ningún
+  motivo entra en `clave_conflicto`; `pintarModalPreflight` solo lo pinta.
+- **Docs**: `ARCHITECTURE.md` punto 23 y `#regla-var`; `INTEGRACION.md` §5.
+
+**RED** (desde cada servicio, `.venv/Scripts/python -m pytest <ficheros> -q
+-p no:cacheprovider`, antes del código):
+
+- T24 front `tests/test_f054_traer_front.py`: `E AssertionError: no existe la
+  función titulosOrdenables en app.js` (49), `… agruparNoTraidas …`, `…
+  enlazarCabeceraTraer …`, `filtro-traer` presente → `52 failed, 4 passed in
+  4.80s`. Tras `0fc94fb`: `56 passed`; con la campaña 7, `60 passed`.
+- T25 transfer `tests/test_f054_traduccion.py tests/test_f054_mutacion.py`:
+  `- (0678, 0678) + (555001, 555999)`, `- la partida 11 … + la partida 70002
+  …`, `- partida VAR 28 … + partida VAR 417002 …`, `TypeError:
+  partida_var_de() got an unexpected keyword argument 'partida_cod'` → `6
+  failed, 43 passed in 3.03s`. Api `test_f054_{comparar,aceptar,mutacion,rutas}.py`:
+  `'la obra VAR-1234 …' != 'la obra VAR-29 …'`, `AttributeError: 'NoTraida'
+  object has no attribute 'recurso_cod'`, `'SimpleNamespace' object has no
+  attribute 'existen'`, `'PgObraRepository' object has no attribute
+  'codigos'` → `31 failed, 97 passed in 15.97s`.
+- T26 transfer `test_f054_motivos_preflight.py test_f039_preflight_var.py
+  test_f002_postventa.py test_f025_universo_postventa.py`: `AttributeError:
+  'CatalogoVar' object has no attribute 'codigos'`, `- partida VAR 28 … +
+  partida VAR 417002 …` → `19 failed, 104 passed in 3.36s`. Api: `ImportError:
+  cannot import name 'partida_de_entrada' from 'domain.obras'` (`1 error`) y
+  `test_f039_r20_…`/`test_f050_r19_…` → `2 failed, 31 passed`.
+
+**Mutación.** Python (`python -m harness.mutacion --feature F-054`, SHA
+`086983a`, 4 workers): **287 generados, 287 muertos, 0 supervivientes**, 0
+timeouts, 2676 s (`progress/mutacion_F-054.md`). `app.js`
+(`progress/mutacion_manual_F-054.md`): campaña 7 (`0fc94fb`) 90 mutantes, 85
+muertos, 5 vivos, todos huecos de test (E4 filtro `recurso` inicial, E6 clave
+sin obra, E28 orden sin minúsculas, E46/E49 Parte y Obra sin escapar), tests
+nuevos sin tocar producción; campaña 8 (`4e5ac80`): 5/5 muertos. Total T24:
+95, **0 supervivientes**.
+
+**`bash harness/init.sh`** (`.arnes_cache/suite_*.ok` borrados, sin pipes):
+código 0, **sin `[KO]`**; cobertura `[OK]` 99.5 % (786/790) y tamaño `[OK]`
+(impl 212/220). Suites abajo.
 
 ## Evidencias
 
-`bash harness/init.sh` tras T22 (`.arnes_cache/suite_*.ok` borrados antes): código 0, sin `[KO]`.
-
 | Evidencia | Resultado real |
 |---|---|
-| Tests | api `1469 passed` (152,47 s); transfer `1865 passed` (69,40 s); front `489 passed` (241,96 s); tras T23 (`b660091`), front `507 passed` (97,94 s) y el resto igual; raíz `418 passed, 1 skipped` (72,71 s). Antes de T22 (`36a7d4b`): 1469 / 1849 / 488 / 418+1 |
-| Cobertura de líneas cambiadas | **99,5 %** (755/759, umbral 80 %; antes 748/752). No mide JS |
-| Mutación Python | T22: 266 generados, **266 muertos, 0 supervivientes**, 0 timeouts, 4 workers, 3696 s, SHA `a781d25`; `reglas_porcentajes.py` no genera ninguno: RM4 a mano, **8/8 muertos** (`progress/mutacion_F-054.md`). Antes: `c70eb61` 266/266 (4837 s), `c614be3` 262/262 |
-| Mutación `app.js` | manual, **69 + 14 (O5) mutantes, 0 supervivientes**: `progress/mutacion_manual_F-054.md`; T22 no toca `app.js`; T23: **81 + 3, 0 supervivientes** (campañas 5 y 6; D10 equivalente, quitado del código) |
+| Tests | 2026-11-03, tras T24-T26: api `1502 passed` (81,77 s), front `527 passed` (82,13 s), transfer `1886 passed` (34,62 s), raíz `418 passed, 1 skipped` (43,01 s). Tras T23: api 1469, transfer 1865, front 507, raíz 418+1 |
+| Cobertura de líneas cambiadas | **99,5 %** (786/790) (umbral 80 %). No mide JS |
+| Mutación Python | T24-T26: **287/287 muertos**, 0 vivos, 0 timeouts, 4 workers, 2676 s, SHA `086983a`. Antes: T22 266/266 (+ RM4 8/8 a mano), `c70eb61` 266/266, `c614be3` 262/262 |
+| Mutación `app.js` | manual: T9/T15 69 + O5 14; T23 81 + 3; T24 90 + 5; **0 supervivientes** |
+| Tiempo de la suite | el de cada suite en la fila Tests |
 
-**Análisis de supervivientes.** Ningún equivalente: nada queda para que lo
-acepte el humano. La campaña 1 (`95cc089`, 207/262,
-`progress/mutacion_F-054_campana1.md`) dejó 55 vivos y la de `app.js`, 9;
-todos se matan con tests, **sin cambiar código de producción**:
-`test_f054_mutacion.py` (api 35, transfer 20) y 4 en el front. Huecos reales:
-validación de `sobrantes_a_cero` en `routes.py` (6, sin ningún test); guarda
-de `can` y `_EPS` exacto; `ok: true` con todo omitido (la api lo tomaría por
-fallo); 502 de la ruta; pruebas sin 0404; partida 0 frente a 1 (6); `cod_var`
-y `desde`; textos de la sobrante (el test miraba todo el modal y el pisado de
-F-064 los repetía). De poco riesgo: `frozen` (11) y defectos (10). La campaña
-2 (`c70eb61`, 266/266, `progress/mutacion_F-054_campana2.md`) y la de T22
-no dejan vivos: no hubo nada que reproducir en serie.
+**Análisis de supervivientes.** Ningún equivalente pendiente del humano. La
+campaña 1 (`95cc089`, 207/262, `progress/mutacion_F-054_campana1.md`) dejó 55
+vivos Python y 9 de `app.js`: huecos reales, cerrados con tests sin cambiar
+producción (detalle en el anexo). Campaña 2, T22 y T24-T26: sin vivos Python.
+Los vivos de `app.js` de cada campaña manual (9, C7, D11, D51, E4, E6, E28,
+E46, E49) se mataron con tests; D10, equivalente, se quitó del código.
