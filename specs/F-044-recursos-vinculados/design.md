@@ -205,7 +205,7 @@ se despliega transfer → api → front.
 
 - **D1b · Tipos sin importe mensual** (KM, caja, viaje con `pre` 0 en
   `reshor`; un `VP` sí lo tiene): se omiten con motivo visible «sin importe
-  mensual» y `tipos_excluidos: [VP]` en `config.yaml` (Juan: los km «de la
+  mensual» y `tipos_excluidos: [VP]` en `config.yaml` (**revisada el 2026-11-03**, hotfix: el humano, «los km son un recurso que funciona exactamente igual que el resto de recursos asociados. se reparten porcentualmente» ⇒ `tipos_excluidos: []`) (Juan: los km «de la
   manera habitual»).
 - **D3 · Importe**: `reshor.pre` del vinculado (99 % en 2026).
 - **D4b · Partida fuera de la CI del tipo**: postventa, VAR y partida no `CI*`

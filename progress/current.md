@@ -36,6 +36,28 @@ pruebas, única que escribe) y T20 (despliegue transfer → api → front,
 pendiente:** T20. **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la
 api (`990e264`), porque la 2.1 rompía F-003 R14. Después de F-054, F-066. 
 
+**HOTFIX 2026-11-03 `hotfix/propuestas-subfilas`** («si, haz el hotfix A»): tras el hotfix VP las subfilas
+salían «automática» aunque el transfer sí proponía (Lourdes García VP0065 → CI.03P.9 `parte_anterior`; David
+Silva, todo con propuesta; 73/80 pares VP-obra). Causa (logs de la api): `GET …/propuestas` daba **500**
+porque `PropuestasOut` no declaraba `subfilas` (F-044 R9) y `extra="forbid"` la rechazaba; el front lo trata
+como «sin datos». Arreglo: `PropuestaSubfilaOut` y `subfilas` en `PropuestasOut`, ruta con
+`response_model_exclude_unset` (sin subfilas, la respuesta de siempre); test
+`tests/test_hotfix_propuestas_subfilas.py` (RED: 2 failed antes del arreglo). **Pendiente del humano:**
+desplegar SOLO la api. Además, altas en el backlog: **F-069** (importe mensual de caja y km con casilla:
+44 de 45 VP tienen `pre` 0 en `KM` y el registro los omite, «sin importe mensual»; bloquea los km de
+octubre) y **F-070** (cabecera fija al hacer scroll). Fuera del hotfix, para otra feature: subfilas en cola
+como «buscando partida…» y aviso del front si `…/propuestas` falla.
+
+**HOTFIX 2026-11-03 `hotfix/vinculados-incluye-vp`** (petición del humano al registrar el mes: «no esta
+trayendo el recurso kms hechos (VPXXX)… hay que incluirlo. esto es un hotfix»; «los km son un recursos que
+funciona exactamente igual que el resto de recursos asociados. se reparten porcentualmente»): F-044 D1b
+revisada, `sync.vinculados.tipos_excluidos` de `[VP]` a `[]` en la api; test `test_f044_r1_config_versionada`
+(RED antes del cambio) y `docs/ARCHITECTURE.md`. `bash harness/init.sh` en verde. Unido a `dev` el 2026-11-03.
+**Pendiente del humano:** despliegue SOLO de la api y «Sincronizar Sigrid» para que los `VP` salgan como subfilas.
+`azure-apps/dedicacion.md` (l. ~706) solo describe el efecto genérico de cambiar `tipos_excluidos`, sin su valor: no se toca. F-054 sigue en su copia `porcentajes-f054`.
+
+Los dos hotfixes se trajeron de `dev` a la rama de F-054 el 2026-11-04 (merge de `dev`), para probar T18 y T19 con ellos.
+
 **F-068** cerrada, desplegada y con su MANUAL hecha el 2026-10-28 (sección propia, abajo). **F-067** (casilla «Recursos vinculados» para
 ver u ocultar sus subfilas en el cuadrante; solo front) **cerrada (`done`)
 el 2026-10-28**: review 1 APROBADA (`8423a5a`), `bash harness/init.sh` en

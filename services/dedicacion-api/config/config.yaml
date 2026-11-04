@@ -260,15 +260,16 @@ sync:
     # `desde`: primer periodo (AAAA-MM) cuyas líneas llevan sus vinculados al
     #          registrar (D13); los meses anteriores se registran como antes.
     # `tipos_excluidos`: tipos de recurso (`auxrestip.cod`) que no se
-    #          vinculan aunque tengan el campo (D1b: `VP`, kilómetros); el
-    #          preview los cuenta.
+    #          vinculan aunque tengan el campo; el preview los cuenta. Vacío
+    #          desde el hotfix del 2026-11-03: los `VP` (km) se reparten por
+    #          porcentaje como los demás vinculados (D1b de F-044 revisada).
     # Alias obligatorios (sin uno, el sync falla sin persistir nada): ide,
     # principal_ide, cod, descripcion, empresa, fecbaj (0 = sin baja), tipo,
     # tipo_res, horide (hora por defecto del recurso). Unas 560 filas: sin
     # paginar; `truncated` es error.
     campo: "5"
     desde: "2026-10"
-    tipos_excluidos: [VP]
+    tipos_excluidos: []
     sql: |
       SELECT r.ide AS ide, x.valn AS principal_ide, c.cod AS cod,
              CAST(c.res AS NVARCHAR(255)) AS descripcion, c.emp AS empresa,
