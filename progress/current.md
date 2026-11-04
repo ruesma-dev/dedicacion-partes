@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), **REVIEW 7 APROBADA** (`5c42b61`; O8-O10 del rastro recogidas); **SEGUNDA ENMIENDA: spec hecha (T24-T26, R43-R47, D20-D21; `45b97a9`, `f44d37b`, `3cbc117`), T24-T26 HECHAS (2026-11-03, `1b25a0c`…`74758a3`; mutación Python 287/287 y campañas manuales 7-8 de `app.js`; `init.sh` sin [KO]), **REVIEW 8 APROBADA** (`f9be667`); 2026-11-04: `dev` traído a la rama (`a2ad52a`, los dos hotfixes) y **O11 hecha** (`353d290`, el motivo `OTRA_OBRA` lleva el ide si el código es el de la VAR; mutación 289/289), **review 9 de O11 lanzada**: al probar T18 paso 2 el humano pidió la cabecera estándar (`.filterable`: burdeos, filtros debajo, «Limpiar»), «No se traen» como tabla con duplicados agrupados, y motivos con códigos en vez de `ide` (api y transfer); «hazlo todo dentro de la feature»**
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), **REVIEW 7 APROBADA** (`5c42b61`; O8-O10 del rastro recogidas); **SEGUNDA ENMIENDA: spec hecha (T24-T26, R43-R47, D20-D21; `45b97a9`, `f44d37b`, `3cbc117`), T24-T26 HECHAS (2026-11-03, `1b25a0c`…`74758a3`; mutación Python 287/287 y campañas manuales 7-8 de `app.js`; `init.sh` sin [KO]), **REVIEW 8 APROBADA** (`f9be667`); 2026-11-04: `dev` traído a la rama (`a2ad52a`, los dos hotfixes) y **O11 hecha** (`353d290`, el motivo `OTRA_OBRA` lleva el ide si el código es el de la VAR; mutación 289/289), **REVIEW 9 APROBADA** (`30b8171`, O15 recogida). Origen de la segunda enmienda: al probar T18 paso 2 el humano pidió la cabecera estándar (`.filterable`: burdeos, filtros debajo, «Limpiar»), «No se traen» como tabla con duplicados agrupados, y motivos con códigos en vez de `ide` (api y transfer); «hazlo todo dentro de la feature»**
 (en T18 el humano pidió, para poder desplegar, que la ventana de «Sincronizar Sigrid» sea una tabla
 única ordenable y filtrable por columna, con «Desmarcar todas» y «Marcar las visibles», y que
 `solo_sigrid` salga **desmarcada**: D12 revisada, «2, ok»; el cuadrante local de 2026-09 se deja
@@ -93,10 +93,10 @@ las filas de una campaña manual sobre el SHA que declara la campaña, o sobre H
 original sigue igual) amplía ese mismo encargo `de161b4`: pendiente de añadirla allí, sin decisión nueva. Otras propuestas de arnés pendientes, en sus secciones:
 F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
 tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
-`init.sh`). **Siguiente:** F-054, review 8 APROBADA; faltan T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
+`init.sh`). **Siguiente:** F-054, review 9 APROBADA (O11 y `dev` traído, 2026-11-04); faltan T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
-## F-054 · review 8 APROBADA (2026-11-03, T24-T26), MANUAL pendientes
+## F-054 · review 9 APROBADA (2026-11-04, O11 y `dev` traído; T24-T26 en la 8), MANUAL pendientes
 
 - **Spec:** `specs/F-054-sync-trae-porcentajes/` (T1-T26, R1-R47), todas las
   decisiones cerradas (D1-D21; D20 «hazlo todo dentro de la feature» y D21 «trasladalo a codigos legibles, no numeros internos», «filas de tabla», «ok», «si», el 2026-11-03; D12 revisada el 2026-11-02, «2, ok», `solo_sigrid` desmarcada; D16 = C, D17 = A y D18 = A, el 2026-10-29,
@@ -591,7 +591,7 @@ F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-11-03):** F-054, T23 aprobada (review 7) y T24-T26 hechas y review 8 APROBADA; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
+F-033 y, detrás, F-017, F-018… **Hoy (2026-11-04):** F-054, T23 aprobada (review 7), T24-T26 (review 8) y O11 con `dev` traído, review 9 APROBADA; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
