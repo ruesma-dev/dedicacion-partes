@@ -32,6 +32,10 @@ MOTIVO_VAR_OFF = "registro VAR desactivado (VAR_OBRA_COD vacío)"
 MOTIVO_VAR_SIN_UNIVERSO = "partida VAR {paride} no registrable: {motivo}"
 MOTIVO_VAR_OTRA_OBRA = ("partida VAR {paride}: la obra {obra} no es la obra "
                         "VAR {var}")
+#: O11 (review 8 de F-054): la obra de `MOTIVO_VAR_OTRA_OBRA` cuando su
+#: código es el de la obra VAR (p. ej. la VAR de otra empresa): sin su `ide`
+#: se leería «la obra VAR no es la obra VAR VAR». Solo es texto.
+OBRA_HOMONIMA_VAR = "{cod} (ide {ide})"
 MOTIVO_VAR_FUERA = ("partida VAR {paride} fuera del universo VAR de {var} "
                     "(hoja activa con número inicial >= {desde})")
 MOTIVO_VAR_POSTVENTA = ("partida VAR {paride}: una línea de postventa no se "
@@ -118,12 +122,25 @@ def partida_var_de(catalogo: CatalogoVar, obra_ide: int | None,
     var = catalogo.obra.codigo
     if obra_ide != catalogo.obra.ide:
         return None, MOTIVO_VAR_OTRA_OBRA.format(
-            paride=paride, obra=obra_cod or obra_ide, var=var)
+            paride=paride, obra=_nombre_otra_obra(obra_cod, obra_ide, var),
+            var=var)
     nodo = catalogo.partidas.get(var_paride)
     if nodo is None:
         return None, MOTIVO_VAR_FUERA.format(paride=paride, var=var,
                                              desde=desde)
     return nodo, None
+
+
+def _nombre_otra_obra(obra_cod: str | None, obra_ide: int | None,
+                      var: str | None) -> str | int | None:
+    """Cómo nombra `MOTIVO_VAR_OTRA_OBRA` a la obra de la línea: por su
+    código, con su `ide` si el código es el de la obra VAR (sin contar
+    espacios; O11) y, sin código, por su `ide` (el texto de siempre)."""
+    if not obra_cod:
+        return obra_ide
+    if obra_cod.strip() == (var or "").strip():
+        return OBRA_HOMONIMA_VAR.format(cod=obra_cod.strip(), ide=obra_ide)
+    return obra_cod
 
 
 class UniversoVar:

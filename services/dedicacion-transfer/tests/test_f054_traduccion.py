@@ -337,7 +337,31 @@ def test_f054_r46_var_de_otra_obra_nombra_partida_y_obra_por_codigo():
     x = _traducir(_l(4, 12345, f" {OBRA_VAR} ", paride=417055,
                      partida_cod="29"), catalogo_var=cat)
     assert x["motivo"] == MOTIVO_VAR_OTRA_OBRA.format(
-        paride="29", obra=OBRA_VAR, var=OBRA_VAR)
+        paride="29", obra=f"{OBRA_VAR} (ide 12345)", var=OBRA_VAR)
+
+
+def test_f054_o11_otra_obra_con_el_codigo_var_lleva_su_ide():
+    """O11 (review 8): si el código de la obra coincide con el de la obra
+    VAR (sin contar espacios, en cualquiera de los dos), el motivo añade su
+    `ide` para que no se lea «la obra VAR no es la obra VAR VAR»; con
+    código distinto, o sin él, el texto de siempre."""
+    cat = cargar_catalogo_var(ClienteVar(), ajustes_var(), 1)
+    con_espacios = dataclasses.replace(
+        cat, obra=dataclasses.replace(cat.obra, codigo=f" {OBRA_VAR} "))
+    con_ide = f"{OBRA_VAR} (ide 12345)"
+    casos = [
+        (cat, OBRA_VAR, con_ide, OBRA_VAR),
+        (cat, f" {OBRA_VAR} ", con_ide, OBRA_VAR),
+        (con_espacios, OBRA_VAR, con_ide, f" {OBRA_VAR} "),
+        (cat, "0708", "0708", OBRA_VAR),
+        (cat, None, 12345, OBRA_VAR),
+        (cat, "", 12345, OBRA_VAR),
+    ]
+    for catalogo, obra_cod, obra, var in casos:
+        assert partida_var_de(catalogo, 12345, 417055, DESDE,
+                              partida_cod="29", obra_cod=obra_cod) == (
+            None, MOTIVO_VAR_OTRA_OBRA.format(paride="29", obra=obra,
+                                              var=var)), obra_cod
 
 
 def test_f054_r46_partida_var_de_con_codigos_y_su_reserva():
