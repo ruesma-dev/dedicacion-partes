@@ -139,7 +139,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   compilan, p. ej. en `reglas_porcentajes.py:563`, y cuentan como muertos;
   y si una fila manual que quita un solo elemento vale como «texto
   exacto» en C4 bis) ya están en los encargos `e7a172b` y `de161b4` de
-  `arnes-base`; no afectan a F-054 (ninguno de sus mutantes: 266 entonces, 287 en `086983a`). Review 8 APROBADA (`f9be667`): O12-O14 recogidas; O11 (texto de `OTRA_OBRA` en «Sincronizar Sigrid»), pendiente del humano; su automejora, encargo `b5a9930` de `arnes-base` (y la de la review 7, añadida al de `de161b4` en el mismo commit).
+  `arnes-base`; no afectan a F-054 (ninguno de sus mutantes: 266 entonces, 287 en `086983a`). Review 8 APROBADA (`f9be667`): O11-O14 recogidas (O11, «ok» del humano: `OTRA_OBRA` añade «(ide N)» si el código de la obra es el de la VAR, `353d290`); su automejora, encargo `b5a9930` de `arnes-base` (y la de la review 7, añadida al de `de161b4` en el mismo commit).
 
 ### MANUAL pendientes (comando exacto)
 

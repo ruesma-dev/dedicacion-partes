@@ -181,6 +181,10 @@ código `086983a`; cierre (tasks `[x]`, campañas, informe, anexo) el último.
   partida VAR 417002 …` → `19 failed, 104 passed in 3.36s`. Api: `ImportError:
   cannot import name 'partida_de_entrada' from 'domain.obras'` (`1 error`) y
   `test_f039_r20_…`/`test_f050_r19_…` → `2 failed, 31 passed`.
+- **O11** (review 8, «ok» del humano; `353d290`): `OTRA_OBRA` nombra «VAR (ide N)» si el código es
+  el de la VAR (`_nombre_otra_obra`, `universo_var.py`). RED `pytest tests/test_f054_traduccion.py -k "otra_obra or o11"`:
+  `'…la obra VAR no es la obra VAR VAR' != '…la obra VAR (ide 12345) no es…'` → `2 failed`. Grep: nadie decide
+  por el texto (`app.js` solo hace `exec` de `MOTIVO_PARTIDA_NO_HOJA`; `.motivo ==` solo con `pisado`/`sobrecarga`/`sin_partida`).
 
 **Mutación.** Python (`python -m harness.mutacion --feature F-054`, SHA
 `086983a`, 4 workers): **287 generados, 287 muertos, 0 supervivientes**, 0
@@ -201,7 +205,7 @@ código 0, **sin `[KO]`**; cobertura `[OK]` 99.5 % (786/790) y tamaño `[OK]`
 |---|---|
 | Tests | 2026-11-03, tras T24-T26: api `1502 passed` (81,77 s), front `527 passed` (82,13 s), transfer `1886 passed` (34,62 s), raíz `418 passed, 1 skipped` (43,01 s). Tras T23: api 1469, transfer 1865, front 507, raíz 418+1 |
 | Cobertura de líneas cambiadas | **99,5 %** (786/790) (umbral 80 %). No mide JS |
-| Mutación Python | T24-T26: **287/287 muertos**, 0 vivos, 0 timeouts, 4 workers, 2676 s, SHA `086983a`. Antes: T22 266/266 (+ RM4 8/8 a mano), `c70eb61` 266/266, `c614be3` 262/262 |
+| Mutación Python | O11: **289/289 muertos**, 0 vivos, 0 timeouts, 2936 s, SHA `353d290`. T24-T26: 287/287, `086983a`. Antes: T22 266/266 (+ RM4 8/8 a mano), `c70eb61` 266/266, `c614be3` 262/262 |
 | Mutación `app.js` | manual: T9/T15 69 + O5 14; T23 81 + 3; T24 90 + 5; **0 supervivientes** |
 | Tiempo de la suite | el de cada suite en la fila Tests |
 
