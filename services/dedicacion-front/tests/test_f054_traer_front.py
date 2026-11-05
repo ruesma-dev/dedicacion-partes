@@ -1106,8 +1106,45 @@ def test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas():
     reglas = [d for s, d in _reglas_css() if s == SELECTORES_R48]
     assert len(reglas) == 1, "falta la regla de T27 con esos dos selectores"
     decl = reglas[0]
-    assert decl == {"position": "sticky", "top": "0", "z-index": "2",
+    assert decl == {"position": "sticky", "top": TOP_R48, "z-index": "2",
                     "background": "var(--paper)"}
+
+
+# `.modal` es el contenedor que se desplaza y tiene padding: con `top: 0`
+# la cabecera se pega al borde de su contenido, 22 px por debajo del de la
+# ventana, y por esa franja se ven pasar las filas (T18 paso 2, 2026-11-05).
+# El `top` compensa el padding superior con la misma variable.
+TOP_R48 = "calc(-1 * var(--modal-pad-top))"
+
+
+def test_f054_r48_el_top_compensa_el_padding_superior_del_modal():
+    modal = [d for s, d in _reglas_css() if s == [".modal"]]
+    assert modal, "falta la regla `.modal`"
+    assert all("padding" not in d and "padding-top" not in d
+               for d in modal[1:]), "otra regla `.modal` redefine el padding"
+    assert modal[0].get("--modal-pad-top") == "22px"
+    assert modal[0]["padding"].split()[0] == "var(--modal-pad-top)"
+    assert "padding-top" not in modal[0]
+    fija = [d for s, d in _reglas_css() if s == SELECTORES_R48][0]
+    assert fija["top"] == TOP_R48
+
+
+def test_f054_r48_cada_th_de_las_dos_filas_trae_fondo_opaco():
+    """El `thead` fijo es opaco, pero también cada celda: los títulos (con
+    la casilla vacía) por `.filterable thead tr:first-child th` y los
+    filtros (con las vacías y la de «Limpiar») por `.filter-row th`."""
+    reglas = _reglas_css()
+    fondos = {s[0]: d.get("background") for s, d in reglas if len(s) == 1}
+    assert fondos[".filterable thead tr:first-child th"] == "var(--brand)"
+    assert fondos[".filter-row th"] == "var(--paper)"
+    pagina = _programa(_api(datos=DATOS_NT),
+                       "await traerDeSigrid([]);")["modal"]["html"]
+    for tabla in ("traer", "no-traidas"):
+        thead = re.search(rf'<thead><tr id="{tabla}-titulos">.*?</thead>',
+                          pagina, re.DOTALL).group(0)
+        filas = re.findall(r"<tr[^>]*>", thead)
+        assert filas == [f'<tr id="{tabla}-titulos">',
+                         f'<tr id="{tabla}-filtros" class="filter-row">']
 
 
 def test_f054_r48_ninguna_otra_regla_sticky_nueva():
