@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **68 features**, 27 abiertas, 41 terminadas.
+Resumen: **69 features**, 28 abiertas, 41 terminadas.
 
 ## Trabajo abierto
 
@@ -11,7 +11,8 @@ Resumen: **68 features**, 27 abiertas, 41 terminadas.
 |---|---|---|---|---|---|
 | F-069 | Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras | 1 | pendiente | critico | `feature/F-069-importe-caja-km` |
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
-| F-071 | Trabajador que solo ha trabajado parte del mes: alta con el mes empezado o baja en la empresa | 2 | pendiente | critico | `feature/F-071-trabajador-mes-parcial` |
+| F-071 | Trabajador con parte del mes: fecha de alta o baja en el cuadrante y % a escribir ajustado al % trabajado del mes | 2 | pendiente | critico | `feature/F-071-trabajador-mes-parcial` |
+| F-072 | Filtrar el cuadrante por los trabajadores que imputaron en una obra el mes anterior | 3 | pendiente | estandar | `feature/F-072-filtro-imputados-mes-anterior` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
 | F-070 | La cabecera del cuadrante se queda fija arriba al hacer scroll | 5 | pendiente | estandar | `feature/F-070-cabecera-fija` |
@@ -97,11 +98,17 @@ estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `featur
 
 O4 de la review de F-051 (2026-10-21): un porcentaje menor de 0,00005 (en fracción) se redondea a `can` 0,0 en `reglas_porcentajes.py` (`can = round(porcentaje, 4)`) y sale una acción `escribir` con cantidad 0. Hueco anterior a F-051, pero con F-051 esa acción podría editar una línea al 0 % dejándola a 0 con nuestra `synckey` (o insertar una línea a 0). Decisión del humano el 2026-10-21 («ok o2 y o4»: feature aparte, como recomendó el líder): esas líneas NO se registran; salen como omitidas con un aviso legible en el preflight y en `ejecutar`. Servicio: transfer (la regla que construye la cantidad); el front solo enseña el aviso que ya pinta para las omitidas. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
 
-### F-071 · Trabajador que solo ha trabajado parte del mes: alta con el mes empezado o baja en la empresa
+### F-071 · Trabajador con parte del mes: fecha de alta o baja en el cuadrante y % a escribir ajustado al % trabajado del mes
 
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-071-trabajador-mes-parcial`
 
-Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso).
+Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso). AMPLIADA el mismo día con la solución que quiere el humano: «que se pueda poner baja del trabajador o alta en una fecha y que se calcule el % a escribir modificado por el % trabajado del mes». O sea, en el cuadrante se puede indicar una fecha de alta o de baja del trabajador en el mes, y lo que se escribe en Sigrid es el % de cada obra multiplicado por la fracción del mes trabajada. Por decidir en la spec: si la fecha se mete a mano, se propone desde Sigrid o ambas; si la fracción va por días naturales o laborables; si se ajusta el % (`can`) o el importe; y cómo cuadra con la regla del 100 % y con los vinculados.
+
+### F-072 · Filtrar el cuadrante por los trabajadores que imputaron en una obra el mes anterior
+
+estado **pendiente** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-072-filtro-imputados-mes-anterior`
+
+Petición del humano del 2026-11-05: «filtrar por los que han imputado en la obra x del mes anterior». Un filtro del cuadrante que, dada una obra, deja solo a los trabajadores que tuvieron porcentaje en ella el mes anterior. Por decidir en la spec: si «imputado» es el cuadrante guardado del mes anterior en `dedicacion` o los partes de Sigrid de ese mes (lo que trae F-054); dónde se pide la obra; y cómo convive con los filtros de columna y con F-031 (velar las otras obras). La consulta la hace la api; el front solo filtra.
 
 ### F-059 · El % de cada obra por días trabajados, con el calendario del convenio
 
