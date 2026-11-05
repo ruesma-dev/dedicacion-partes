@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **67 features**, 26 abiertas, 41 terminadas.
+Resumen: **68 features**, 27 abiertas, 41 terminadas.
 
 ## Trabajo abierto
 
@@ -11,6 +11,7 @@ Resumen: **67 features**, 26 abiertas, 41 terminadas.
 |---|---|---|---|---|---|
 | F-069 | Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras | 1 | pendiente | critico | `feature/F-069-importe-caja-km` |
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | pendiente | critico | `feature/F-058-porcentaje-cero-no-registra` |
+| F-071 | Trabajador que solo ha trabajado parte del mes: alta con el mes empezado o baja en la empresa | 2 | pendiente | critico | `feature/F-071-trabajador-mes-parcial` |
 | F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | pendiente | critico | `feature/F-059-porcentaje-por-dias` |
 | F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | pendiente | critico | `feature/F-060-bandeja-partes` |
 | F-070 | La cabecera del cuadrante se queda fija arriba al hacer scroll | 5 | pendiente | estandar | `feature/F-070-cabecera-fija` |
@@ -95,6 +96,12 @@ Petición del humano del 2026-11-03, tras el hotfix que incluye los VP (km) como
 estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-058-porcentaje-cero-no-registra`
 
 O4 de la review de F-051 (2026-10-21): un porcentaje menor de 0,00005 (en fracción) se redondea a `can` 0,0 en `reglas_porcentajes.py` (`can = round(porcentaje, 4)`) y sale una acción `escribir` con cantidad 0. Hueco anterior a F-051, pero con F-051 esa acción podría editar una línea al 0 % dejándola a 0 con nuestra `synckey` (o insertar una línea a 0). Decisión del humano el 2026-10-21 («ok o2 y o4»: feature aparte, como recomendó el líder): esas líneas NO se registran; salen como omitidas con un aviso legible en el preflight y en `ejecutar`. Servicio: transfer (la regla que construye la cantidad); el front solo enseña el aviso que ya pinta para las omitidas. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
+
+### F-071 · Trabajador que solo ha trabajado parte del mes: alta con el mes empezado o baja en la empresa
+
+estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-071-trabajador-mes-parcial`
+
+Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso).
 
 ### F-059 · El % de cada obra por días trabajados, con el calendario del convenio
 
