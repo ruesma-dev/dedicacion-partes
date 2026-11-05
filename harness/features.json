@@ -1176,8 +1176,8 @@
     },
     {
       "id": "F-071",
-      "title": "Trabajador que solo ha trabajado parte del mes: alta con el mes empezado o baja en la empresa",
-      "description": "Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso).",
+      "title": "Trabajador con parte del mes: fecha de alta o baja en el cuadrante y % a escribir ajustado al % trabajado del mes",
+      "description": "Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso). AMPLIADA el mismo día con la solución que quiere el humano: «que se pueda poner baja del trabajador o alta en una fecha y que se calcule el % a escribir modificado por el % trabajado del mes». O sea, en el cuadrante se puede indicar una fecha de alta o de baja del trabajador en el mes, y lo que se escribe en Sigrid es el % de cada obra multiplicado por la fracción del mes trabajada. Por decidir en la spec: si la fecha se mete a mano, se propone desde Sigrid o ambas; si la fracción va por días naturales o laborables; si se ajusta el % (`can`) o el importe; y cómo cuadra con la regla del 100 % y con los vinculados.",
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md` con rigor crítico."
       ],
@@ -1186,6 +1186,19 @@
       "rigor": "critico",
       "priority": 2,
       "branch": "feature/F-071-trabajador-mes-parcial"
+    },
+    {
+      "id": "F-072",
+      "title": "Filtrar el cuadrante por los trabajadores que imputaron en una obra el mes anterior",
+      "description": "Petición del humano del 2026-11-05: «filtrar por los que han imputado en la obra x del mes anterior». Un filtro del cuadrante que, dada una obra, deja solo a los trabajadores que tuvieron porcentaje en ella el mes anterior. Por decidir en la spec: si «imputado» es el cuadrante guardado del mes anterior en `dedicacion` o los partes de Sigrid de ese mes (lo que trae F-054); dónde se pide la obra; y cómo convive con los filtros de columna y con F-031 (velar las otras obras). La consulta la hace la api; el front solo filtra.",
+      "acceptance": [
+        "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 3,
+      "branch": "feature/F-072-filtro-imputados-mes-anterior"
     }
   ]
 }
