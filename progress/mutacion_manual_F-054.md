@@ -1007,3 +1007,92 @@ Línea base (sin mutar, en verde): 103 passed in 28.78s · Tiempo: 186.1 s
 
 **Total T24: 90 + 5 mutantes, 0 supervivientes.** `mutacion_manual_f054_c8.py`
 filtra la `M` de la campaña 7 a `{E4, E6, E28, E46, E49}`.
+
+## Campaña 9 (`ff3d1ac`, T27/R48): 15 mutantes, 15 muertos, 0 supervivientes
+
+La regla nueva de `styles.css` (la automática no muta CSS) y los dos `<thead><tr id=…>` de
+`app.js` de los que depende su `:has(> #…)`. A diferencia de las campañas 1-8, sobre el
+**árbol de trabajo** (cada mutante restaurado en un `finally`; `git diff` limpio al acabar) y
+solo con `tests/test_f054_traer_front.py` sin `-x` (importa el escenario de
+`test_f054_modal_cero.py`). Textos recortados a 70 caracteres en la tabla; el canónico es la
+lista `M` del script `mutacion_manual_f054_c9.py` (fuera del repo, copiado abajo).
+
+Línea base (sin mutar, en verde): 64 passed in 42.69s
+
+| Mutante | Fichero | Texto exacto original → mutado | Resultado | Fallos (sin `-x`) | Tests que lo matan |
+|---|---|---|---|---|---|
+| F1 sin sticky | `styles.css` | `position: sticky; top: 0; z-index: 2; background: var(--paper); }` → `top: 0; z-index: 2; background: var(--paper); }` | MUERTO | 2 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas, test_f054_r48_ninguna_otra_regla_sticky_nueva |
+| F2 relative en vez de sticky | `styles.css` | `position: sticky; top: 0; z-index: 2; background: var(--paper); }` → `position: relative; top: 0; z-index: 2; background: var(--paper); }` | MUERTO | 2 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas, test_f054_r48_ninguna_otra_regla_sticky_nueva |
+| F3 sin top | `styles.css` | `position: sticky; top: 0; z-index: 2; background: var(--paper); }` → `position: sticky; z-index: 2; background: var(--paper); }` | MUERTO | 1 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| F4 top con hueco | `styles.css` | `position: sticky; top: 0; z-index: 2; background: var(--paper); }` → `position: sticky; top: 22px; z-index: 2; background: var(--paper); }` | MUERTO | 1 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| F5b z-index por debajo | `styles.css` | `position: sticky; top: 0; z-index: 2; background: var(--paper); }` → `position: sticky; top: 0; z-index: 0; background: var(--paper); }` | MUERTO | 1 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| F5 sin z-index | `styles.css` | `position: sticky; top: 0; z-index: 2; background: var(--paper); }` → `position: sticky; top: 0; background: var(--paper); }` | MUERTO | 1 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| F6 sin background | `styles.css` | `position: sticky; top: 0; z-index: 2; background: var(--paper); }` → `position: sticky; top: 0; z-index: 2; }` | MUERTO | 1 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| F7 background transparente | `styles.css` | `position: sticky; top: 0; z-index: 2; background: var(--paper); }` → `position: sticky; top: 0; z-index: 2; background: transparent; }` | MUERTO | 1 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| F8 sin el selector de entradas | `styles.css` | `.modal thead:has(> #traer-titulos), .modal thead:has(> #no-traidas-tit` → `.modal thead:has(> #no-traidas-titulos) {` | MUERTO | 2 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas, test_f054_r48_ninguna_otra_regla_sticky_nueva |
+| F9 sin el selector de No se traen | `styles.css` | `.modal thead:has(> #traer-titulos), .modal thead:has(> #no-traidas-tit` → `.modal thead:has(> #traer-titulos) {` | MUERTO | 2 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas, test_f054_r48_ninguna_otra_regla_sticky_nueva |
+| F10 a todo thead del modal | `styles.css` | `.modal thead:has(> #traer-titulos), .modal thead:has(> #no-traidas-tit` → `.modal thead {` | MUERTO | 2 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas, test_f054_r48_ninguna_otra_regla_sticky_nueva |
+| F11 sin el hijo directo | `styles.css` | `.modal thead:has(> #traer-titulos), .modal thead:has(> #no-traidas-tit` → `.modal thead:has(#traer-titulos), .modal thead:has(#no-traidas-titulos` | MUERTO | 2 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas, test_f054_r48_ninguna_otra_regla_sticky_nueva |
+| F12 sticky en .filter-row | `styles.css` | `.modal thead:has(> #traer-titulos), .modal thead:has(> #no-traidas-tit` → `.modal thead:has(> #traer-titulos), .modal thead:has(> #no-traidas-tit` | MUERTO | 2 | test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas, test_f054_r48_ninguna_otra_regla_sticky_nueva |
+| F13 tr de entradas no hijo del thead | `app.js` | ``<table class="tabla-reg filterable"><thead>` + `<tr id="traer-t` → ``<table class="tabla-reg filterable"><thead><tr></tr>` + `<tr id` | MUERTO | 1 | test_f054_r48_los_id_van_en_la_primera_fila_hija_del_thead |
+| F14 tr de No se traen sin id | `app.js` | ``<tr id="no-traidas-titulos">${titulosNoTraidas` → ``<tr>${titulosNoTraidas` | MUERTO | 45 | test_f054_r1_tras_un_sync_con_exito_se_pide_comparar … (45 tests) |
+
+**Total T27: 15 mutantes, 0 supervivientes.**
+
+```python
+# mutacion_manual_f054_c9.py (fuera del repo): T27, regla de R48.
+import pathlib, re, subprocess, sys
+
+RAIZ = pathlib.Path(r"C:\Users\pgris\PycharmProjects\porcentajes-f054\services\dedicacion-front")
+CSS = RAIZ / "static" / "css" / "styles.css"
+JS = RAIZ / "static" / "js" / "app.js"
+REGLA = (".modal thead:has(> #traer-titulos), .modal thead:has(> #no-traidas-titulos) {")
+DECL = "  position: sticky; top: 0; z-index: 2; background: var(--paper); }"
+M = [
+    ("F1 sin sticky", CSS, DECL, "  top: 0; z-index: 2; background: var(--paper); }"),
+    ("F2 relative en vez de sticky", CSS, DECL, "  position: relative; top: 0; z-index: 2; background: var(--paper); }"),
+    ("F3 sin top", CSS, DECL, "  position: sticky; z-index: 2; background: var(--paper); }"),
+    ("F4 top con hueco", CSS, DECL, "  position: sticky; top: 22px; z-index: 2; background: var(--paper); }"),
+    ("F5b z-index por debajo", CSS, DECL, "  position: sticky; top: 0; z-index: 0; background: var(--paper); }"),
+    ("F5 sin z-index", CSS, DECL, "  position: sticky; top: 0; background: var(--paper); }"),
+    ("F6 sin background", CSS, DECL, "  position: sticky; top: 0; z-index: 2; }"),
+    ("F7 background transparente", CSS, DECL, "  position: sticky; top: 0; z-index: 2; background: transparent; }"),
+    ("F8 sin el selector de entradas", CSS, REGLA, ".modal thead:has(> #no-traidas-titulos) {"),
+    ("F9 sin el selector de No se traen", CSS, REGLA, ".modal thead:has(> #traer-titulos) {"),
+    ("F10 a todo thead del modal", CSS, REGLA, ".modal thead {"),
+    ("F11 sin el hijo directo", CSS, REGLA, ".modal thead:has(#traer-titulos), .modal thead:has(#no-traidas-titulos) {"),
+    ("F12 sticky en .filter-row", CSS, REGLA, ".modal thead:has(> #traer-titulos), .modal thead:has(> #no-traidas-titulos), .filterable .filter-row {"),
+    ("F13 tr de entradas no hijo del thead", JS, '`<table class="tabla-reg filterable"><thead>` +\n      `<tr id="traer-titulos">', '`<table class="tabla-reg filterable"><thead><tr></tr>` +\n      `<tr id="traer-titulos">'),
+    ("F14 tr de No se traen sin id", JS, '`<tr id="no-traidas-titulos">${titulosNoTraidas', '`<tr>${titulosNoTraidas'),
+]
+
+
+def pytest():
+    r = subprocess.run([str(RAIZ / ".venv" / "Scripts" / "python.exe"), "-m", "pytest",
+                        "tests/test_f054_traer_front.py", "-q", "-p", "no:cacheprovider", "-rf"],
+                       cwd=RAIZ, capture_output=True, text=True)
+    fallos = sorted(set(re.findall(r"^FAILED \S+::(\w+)", r.stdout, re.M)))
+    return r.returncode, fallos, r.stdout.strip().splitlines()[-1]
+
+
+base = pytest()
+print("BASE", base[0], base[2])
+assert base[0] == 0
+vivos = 0
+for nombre, f, a, b in M:
+    orig = f.read_bytes()
+    txt = orig.decode("utf-8")
+    nl = "\r\n" in txt
+    t = txt.replace("\r\n", "\n")
+    assert t.count(a) == 1, nombre
+    t = t.replace(a, b)
+    f.write_bytes((t.replace("\n", "\r\n") if nl else t).encode("utf-8"))
+    try:
+        rc, fallos, ult = pytest()
+    finally:
+        f.write_bytes(orig)
+    estado = "MUERTO" if rc else "VIVO"
+    vivos += not rc
+    print(f"| {nombre} | `{f.name}` | `{a.strip()[:70]}` → `{b.strip()[:70]}` | {estado} | {len(fallos)} | {', '.join(fallos)} |")
+print("VIVOS", vivos)
+```

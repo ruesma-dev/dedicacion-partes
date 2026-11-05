@@ -59,8 +59,7 @@ O1 `e881a17`, O4 `56dd403`, O2 `5d426b5`, O5 `97e5fed`. T22 (D19): `abd5514`
 
 ## Review 1, T22 y T23 (resumen; detalle y trazas en `progress/impl_F-054_anexo.md`)
 
-- **Review 1**: O1 `e881a17` (ruff), O4 `56dd403`, O2 `5d426b5`, O5
-  `97e5fed`; O3 y O6 aceptadas sin cambio. RED de O2/O4/O5 en el anexo.
+- **Review 1**: O1 `e881a17`, O4 `56dd403`, O2 `5d426b5`, O5 `97e5fed`; O3 y O6 sin cambio (RED en el anexo).
 - **T22 (D19)**: `abd5514` RED (`6 failed, 8 passed`), `fd56da6` código,
   `69647cf` 4 bis, `a781d25`; consumidores lector por lector, en el anexo.
 - **T23**: `828b393` RED (`36 failed, 2 passed in 2.77s`) … `b660091`; opción
@@ -95,15 +94,11 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
 - **T18** (humano, local, solo lecturas). 1) Hecho el 2026-11-02: en Git Bash
   `curl -s -X POST http://localhost:8006/api/porcentajes/existentes -H
   "Content-Type: application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'`.
-  2) **Pendiente, ya con T23-T25**: front, 2026-09, «Sincronizar Sigrid» →
-  cabecera estándar (flecha, filtros debajo, «Limpiar» al final), ninguna
-  casilla marcada; `0694` en Obra y Escape (se vacía, la ventana sigue);
-  «Marcar las visibles», otra obra → «(N ocultas por el filtro)», «Limpiar»;
-  dos clics en Obra; «No se traen (N)», N = filas, con «×K», recurso `cod ·
-  nombre` y motivos con códigos (`0708`, no `2565541`); aceptar la de la
-  0694 y «Deshacer». 3) Hasta el preflight: si sale una omitida VAR o de
-  postventa no hoja, su motivo nombra la partida por código (T26). 4) Volver
-  a sincronizar → `igual`. Pasos: `tasks.md` T18 → `progress/manual_F-054.md`.
+  2) **Pendiente, tras T23-T25 y T27**: la ventana de «Sincronizar Sigrid» y
+  «No se traen» (cabecera estándar, filtros, «Limpiar», «×K», códigos) y, de
+  R48, al bajar la cabecera y los filtros fijos en las dos tablas, sin hueco ni
+  transparencia. 3) Preflight (T26). 4) Sincronizar ⇒ `igual`. Pasos exactos:
+  `tasks.md` T18 y `progress/current.md` → `progress/manual_F-054.md`.
 - **T19** (humano, `OBRA_PRUEBAS_FORZAR=true`, la única que escribe): `cd
   services/dedicacion-transfer && .venv/Scripts/python
   prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`; registrar sin
@@ -199,14 +194,21 @@ nuevos sin tocar producción; campaña 8 (`4e5ac80`): 5/5 muertos. Total T24:
 código 0, **sin `[KO]`**; cobertura `[OK]` 99.5 % (786/790) y tamaño `[OK]`
 (impl 212/220). Suites abajo.
 
+## T27 · 2026-11-05 (R48): cabecera fija en «Sincronizar Sigrid»
+
+RED `5442c4b`, código `ff3d1ac`: **solo** una regla en `styles.css` junto a `.acciones-traer` (`app.js`, registro y cuadrante sin tocar). Tests `test_f054_r48_*` (4): la regla con **exactamente** los dos `thead:has(> #…)` y sus 4 declaraciones; `sticky` solo en `.topbar` (intacta) y la nueva; los dos `<thead><tr id=…>` en la ventana; el modal del registro sin esos `id`. Los dos últimos ya pasaban (fijan el marcado de T24; los matan F13/F14).
+RED: `cd services/dedicacion-front && .venv/Scripts/python -m pytest tests/test_f054_traer_front.py -k r48 -q -p no:cacheprovider` →
+`E AssertionError: falta la regla de T27 con esos dos selectores` / `E assert 0 == 1`; `E AssertionError: assert [['.topbar']] == [['.topbar'],...as-titulos)']]` / `E Right contains one more item: ['.modal thead:has(> #traer-titulos)', '.modal thead:has(> #no-traidas-titulos)']` → `2 failed, 2 passed, 60 deselected in 1.86s`. Tras `ff3d1ac`: `4 passed`; front entero `531 passed` (300,54 s).
+Mutación manual, campaña 9 (`progress/mutacion_manual_F-054.md`): **15/15 muertos**, 0 vivos (cada declaración, `relative`, `top: 22px`, `z-index: 0`, `transparent`, cada selector, sin `>`, `.modal thead`, `.filter-row` añadido, y los dos `tr` de `app.js`). Pendiente: la MANUAL de T18 paso 2 con R48 (si hay hueco o transparencia, PARAR: design §7).
+
 ## Evidencias
 
 | Evidencia | Resultado real |
 |---|---|
-| Tests | 2026-11-03, tras T24-T26: api `1502 passed` (81,77 s), front `527 passed` (82,13 s), transfer `1886 passed` (34,62 s), raíz `418 passed, 1 skipped` (43,01 s). Tras T23: api 1469, transfer 1865, front 507, raíz 418+1 |
+| Tests | 2026-11-05, tras T27: front `531 passed` (300,54 s); el resto, en `init.sh` (T27). 2026-11-03, tras T24-T26: api `1502 passed` (81,77 s), front `527 passed` (82,13 s), transfer `1886 passed` (34,62 s), raíz `418 passed, 1 skipped` (43,01 s). Tras T23: api 1469, transfer 1865, front 507, raíz 418+1 |
 | Cobertura de líneas cambiadas | **99,5 %** (786/790) (umbral 80 %). No mide JS |
 | Mutación Python | O11: **289/289 muertos**, 0 vivos, 0 timeouts, 2936 s, SHA `353d290`. T24-T26: 287/287, `086983a`. Antes: T22 266/266 (+ RM4 8/8 a mano), `c70eb61` 266/266, `c614be3` 262/262 |
-| Mutación `app.js` | manual: T9/T15 69 + O5 14; T23 81 + 3; T24 90 + 5; **0 supervivientes** |
+| Mutación `app.js`/CSS | manual: T9/T15 69 + O5 14; T23 81 + 3; T24 90 + 5; T27 15 (CSS y `app.js`); **0 supervivientes** |
 | Tiempo de la suite | el de cada suite en la fila Tests |
 
 **Análisis de supervivientes.** Ningún equivalente pendiente del humano. La
