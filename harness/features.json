@@ -1173,6 +1173,19 @@
       "rigor": "estandar",
       "priority": 5,
       "branch": "feature/F-070-cabecera-fija"
+    },
+    {
+      "id": "F-071",
+      "title": "Trabajador que solo ha trabajado parte del mes: alta con el mes empezado o baja en la empresa",
+      "description": "Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso).",
+      "acceptance": [
+        "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md` con rigor crítico."
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 2,
+      "branch": "feature/F-071-trabajador-mes-parcial"
     }
   ]
 }
