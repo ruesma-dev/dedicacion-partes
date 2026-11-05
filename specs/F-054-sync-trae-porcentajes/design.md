@@ -3,7 +3,7 @@
 
 Decisiones cerradas: D1-D15 el 2026-10-24 (requirements §6; D12 revisada el 2026-11-02) y D16-D19 (§12).
 **Revisado el 2026-10-29** contra `dev` con F-044, F-062-F-065, F-067 y F-068 (`ac56e96`;
-`progress/spec_F-054.md`). **Aprobada**; enmiendas T23 (2026-11-02) y T24-T26 (2026-11-03, D20-D21).
+`progress/spec_F-054.md`). **Aprobada**; enmiendas T23 (2026-11-02), T24-T26 (2026-11-03, D20-D21) y T27 (2026-11-05, R48).
 
 ## 1. Servicios, límite y contrato
 **A: el transfer lee y traduce; la api compara y escribe; el front pinta.** El transfer tiene la lectura
@@ -53,7 +53,7 @@ Transfer `application/services/{porcentajes_existentes,reglas_obra_cero}.py` (§
 | api `transfer_client.py` | `porcentajes_existentes`, `poner_a_cero`; `preflight_lote(…, completo=False)`, en el cuerpo solo si es `true` |
 | api `repositories.py` · `orm_models.py` | `aceptar_entrada` (§5.3) · solo el comentario de la traza |
 | api `registro_sigrid.py` · `{routes,schemas,deps}.py` | `completo`, `sobrantes`, `sobrantes_a_cero` (§6.4) · ruta A |
-| front `app.js` y `static/css/styles.css` · `docs/{ARCHITECTURE,INTEGRACION}.md` | §7 (T9, T15, T23, T24) · R29 (§8) |
+| front `app.js` y `static/css/styles.css` · `docs/{ARCHITECTURE,INTEGRACION}.md` | §7 (T9, T15, T23, T24, T27) · R29 (§8) |
 | T25-T26: transfer `universo_var.py`, `registro_pipeline.py` (solo dos motivos, T26) · api `registro_sigrid.py`, `domain/obras.py` (T26) · api `domain/{ports,traer_sigrid}.py`, `repositories.py`, `application/traer_sigrid.py`, `schemas.py` | solo `partida_var_de(…, *, partida_cod=None, obra_cod=None)` (§4.2) · `ObraRepository.codigos`, `NoTraida`/`NoTraidaOut` con `recurso_*`, `_obras`, `_nombre_obra` (§5.4) |
 | tests ajenos (lista cerrada) | `test_f002_fuente_unica.py` (`ANCLAS`); dobles `preflight_lote` de api `test_f0{22,24,55}_*.py` aceptan `completo`; front `test_f050_modal_registro.py`, el `<select` de `test_f050_r29_…` acotado a la partida (T23; el humano, «a», 2026-11-02); T26 (D21): `test_f039_preflight_var.py`, `test_f002_postventa.py` y `test_f025_universo_postventa.py`, solo el texto esperado; api `test_f039_registro_var.py` y `test_f050_partida_linea.py`, la línea VAR con `partida_cod` |
 
@@ -185,6 +185,12 @@ vinculados, en paralelo) en la ronda A; como F-055 T18 (local, 2026-09, 3 pasada
   `agruparNoTraidas(no_traidas)` (clave parte, obra, `recurso_ide`, motivo; orden de la primera; `n`) y
   `noTraidasVisibles(filas, filtros, orden)` (R40-R41; Líneas numérica, «×K» si K > 1); recurso,
   `recurso_cod · recurso_nombre` o el `recurso_ide`; modelo y filtros propios.
+- A, **T27** (R48; el humano, 2026-11-05: «la del modal al sincronizar sigrid»): **solo** `styles.css`,
+  acotada por los `id` que ya pinta `pintarTraerSigrid`: `.modal thead:has(> #traer-titulos), .modal
+  thead:has(> #no-traidas-titulos) { position: sticky; top: 0; z-index: 2; background: var(--paper); }`:
+  el `thead` entero (las dos filas, sin medir la primera); cada `th` ya trae fondo (burdeos, `--paper`).
+  `top: 0` es el borde del área desplazable de `.modal`, sin hueco por su padding. `:has` exige Edge o
+  Chrome ≥ 105; si la MANUAL ve hueco o transparencia, **PARA**. Ni `app.js` ni el registro ni F-070.
 - B: `pintarModalPreflight` gana «En Sigrid, en obras que no tiene en la plataforma» (las de vinculado
   con tipo y código): `.chk-cero` por confirmable, **desmarcada** (D17; sin `marcadaPorDefecto` ni
   `vistas` de F-064), y las demás como aviso. `registroEjecutar` manda `sobrantes_a_cero`, aparte de
@@ -203,7 +209,8 @@ vinculado no es sobrante de su trabajador, la obra sola no lee, el completo lee 
 vinculados) en la ronda A. Api: dominio puro, UoW en memoria de `test_f024_cuadrante_empresa.py`,
 `registro_sigrid` con transfer doble (sin sobrantes, ni clave ni llamada); aceptar conserva
 `asignacion_vinculado`. Front: node con dobles. T24: cabecera estándar, «Limpiar», Escape, tabla
-agrupada; T25-T26: motivos con código y reserva, `codigos`, `recurso_*`. Sigrid: T18-T19.
+agrupada; T25-T26: motivos con código y reserva, `codigos`, `recurso_*`; T27: la regla CSS acotada.
+Sigrid: T18-T19.
 
 ## 10. Ficheros que NO se tocan
 Transfer `registro_pipeline.py` (salvo T26), `registro_vinculados.py`, `rachas.py`,

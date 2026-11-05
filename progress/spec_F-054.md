@@ -445,3 +445,16 @@ los `##`, como ya se hizo con los `###`; R43 y R47 reescritos más cortos, sin q
 
 **Puntos para el humano / el líder**: ninguno nuevo. Recordatorio para T20: la api manda desde
 T26 `partida_cod` en las líneas VAR al transfer; contrato de campos igual.
+
+## 2026-11-05 · Tercera enmienda tras la MANUAL T18 paso 2: cabecera fija (T27, R48, D20)
+
+Petición del humano: «el problema que queda es que la cabcera no se mantiene al bajar»; «es la del
+modal al sincronizar sigrid»; enmienda dentro de F-054 (D20, «hazlo todo dentro de la feature»).
+- **R48** (requirements §4), **T27** (tasks), design §7: solo `styles.css`, `position: sticky` sobre el
+  `thead` entero de las dos tablas, acotado con `.modal thead:has(> #traer-titulos)` y
+  `#no-traidas-titulos` (los `id` que ya pinta `pintarTraerSigrid`): sin tocar `app.js`, `.filterable`,
+  el modal del registro ni el cuadrante (F-070, fuera). T18 paso 2 gana la comprobación al bajar.
+- Riesgos: `:has` exige Edge/Chrome ≥ 105; hueco por el padding de `.modal` o transparencia, solo se ven
+  en la MANUAL (si salen, el implementer PARA). R29/ARCHITECTURE no cambia: es presentación.
+- Tamaños: requirements 150/150 (R48 en una línea; cabecera y §6 recompuestas, sin quitar contenido),
+  design 250/250. **Puntos para el humano**: ninguno nuevo.
