@@ -187,12 +187,9 @@ vinculados, en paralelo) en la ronda A; como F-055 T18 (local, 2026-09, 3 pasada
   `recurso_cod · recurso_nombre` o el `recurso_ide`; modelo y filtros propios.
 - A, **T27** (R48; el humano, 2026-11-05: «la del modal al sincronizar sigrid»): **solo** `styles.css`,
   acotada por los `id` que ya pinta `pintarTraerSigrid`: `.modal thead:has(> #traer-titulos), .modal
-  thead:has(> #no-traidas-titulos) { position: sticky; top: calc(-1 * var(--modal-pad-top)); z-index: 2;
-  background: var(--paper); }`: el `thead` entero (las dos filas, sin medir la primera); cada `th` ya
-  trae fondo (burdeos, `--paper`). **Corrección 2026-11-05** (T18 paso 2): `top: 0` **no** es el borde de
-  la ventana sino el de su contenido; dejaba encima la franja del padding de `.modal` (22 px) con las
-  filas pasando por ella. `.modal` declara `--modal-pad-top: 22px` y lo usa en su `padding`; la regla lo
-  compensa con el mismo valor, así no divergen. `:has` exige Edge o
+  thead:has(> #no-traidas-titulos) { position: sticky; top: calc(-1 * var(--modal-pad-top)); … }`: el
+  `thead` entero; cada `th` ya trae fondo (burdeos, `--paper`). `top: 0` (corregido en T18, 2026-11-05)
+  dejaba encima la franja del padding de `.modal` (22 px): `.modal` declara `--modal-pad-top`. `:has` exige Edge o
   Chrome ≥ 105; si la MANUAL ve hueco o transparencia, **PARA**. Ni `app.js` ni el registro ni F-070.
 - B: `pintarModalPreflight` gana «En Sigrid, en obras que no tiene en la plataforma» (las de vinculado
   con tipo y código): `.chk-cero` por confirmable, **desmarcada** (D17; sin `marcadaPorDefecto` ni
