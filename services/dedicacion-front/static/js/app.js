@@ -3088,17 +3088,21 @@ function pintarTraerSigrid(datos, modelo) {
     html += "<p>Ningún trabajador del cuadrante tiene porcentajes en Sigrid este mes.</p>";
   }
   const casillas = modelo.filas.some((f) => f.casilla);
+  if (casillas) {
+    html += `<div class="acciones-traer">` +
+      `<button class="btn secondary" id="btn-traer-desmarcar">Desmarcar todas</button>` +
+      `<button class="btn secondary" id="btn-traer-marcar">Marcar las visibles</button></div>`;
+  }
+  // T27 (R48): las tablas y «No se traen» van en la zona que se desplaza,
+  // entre los botones y el pie (los dos, fuera y quietos); la zona se pinta
+  // siempre, vacía si no hay tablas. Hija directa de `.modal` (styles.css).
+  html += `<div class="zona-traer" id="traer-zona">`;
   if (modelo.filas.length) {
     // R39-R43: una sola tabla con la cabecera estándar: títulos ordenables
     // y, debajo, los filtros, con «Limpiar» en la última columna. El
     // `<select` de Estado vive aquí (F-050 R29, acotado por T23).
     const estados = ["distinta", "solo_sigrid", "igual", "solo_cuadrante",
       "no_traducible"];
-    if (casillas) {
-      html += `<div class="acciones-traer">` +
-        `<button class="btn secondary" id="btn-traer-desmarcar">Desmarcar todas</button>` +
-        `<button class="btn secondary" id="btn-traer-marcar">Marcar las visibles</button></div>`;
-    }
     html += `<table class="tabla-reg filterable"><thead>` +
       `<tr id="traer-titulos">${titulosTraerSigrid(modelo.orden)}</tr>` +
       `<tr id="traer-filtros" class="filter-row"><th></th>` +
@@ -3122,7 +3126,7 @@ function pintarTraerSigrid(datos, modelo) {
       `${celdaFiltroTraer("motivo", "no-traidas-limpiar")}</tr></thead>` +
       `<tbody id="no-traidas-cuerpo">${cuerpoNoTraidas(nt.filas)}</tbody></table>`;
   }
-  html += `<div class="pie-modal">` +
+  html += "</div>" + `<div class="pie-modal">` +
     `<button class="btn secondary" id="btn-traer-cerrar">Cerrar</button>` +
     (casillas ? `<button class="btn primary" id="btn-traer-aceptar">` +
       `${textoBotonTraer(modelo, modelo.filas)}</button>` : "") +

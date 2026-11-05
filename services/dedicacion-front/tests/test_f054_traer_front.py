@@ -1083,9 +1083,27 @@ def test_f054_r44_parte_y_obra_escapadas():
     assert "<a>" not in r["modal"]["html"] and "<b>" not in r["modal"]["html"]
 
 
-# ---- T27 (R48): cabecera fija en las dos tablas de la ventana ---- #
-SELECTORES_R48 = [".modal thead:has(> #traer-titulos)",
-                  ".modal thead:has(> #no-traidas-titulos)"]
+# ---- T27 (R48, rehecha el 2026-11-06): la ventana en tres zonas ---- #
+# Arriba, quieto y opaco: título, resumen, avisos y botones de marcado (el
+# fondo de `.modal`, que deja de desplazarse). En medio, `.zona-traer`, lo
+# único que se desplaza: las dos tablas enteras, con su `thead` fijo en
+# `top: 0` (arranca en su sitio, bajo los botones, y comparte columnas con
+# el cuerpo). Abajo, el pie. La primera versión (`c9611c3`, `thead` sticky
+# dentro de `.modal` con `top` negativo) no gustó: se subía al borde.
+SELECTORES_R48 = {
+    "columna": [".modal:has(> .zona-traer)"],
+    "hijos": [".modal:has(> .zona-traer) > *"],
+    "zona": [".modal:has(> .zona-traer) > .zona-traer"],
+    "cabecera": [".zona-traer thead"],
+}
+DECLARACIONES_R48 = {
+    "columna": {"display": "flex", "flex-direction": "column",
+                "overflow": "hidden"},
+    "hijos": {"flex": "none"},
+    "zona": {"flex": "0 1 auto", "min-height": "0", "overflow": "auto"},
+    "cabecera": {"position": "sticky", "top": "0", "z-index": "2",
+                 "background": "var(--paper)"},
+}
 
 
 def _reglas_css() -> list[tuple[list[str], dict[str, str]]]:
@@ -1102,31 +1120,43 @@ def _reglas_css() -> list[tuple[list[str], dict[str, str]]]:
     return reglas
 
 
-def test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas():
-    reglas = [d for s, d in _reglas_css() if s == SELECTORES_R48]
-    assert len(reglas) == 1, "falta la regla de T27 con esos dos selectores"
-    decl = reglas[0]
-    assert decl == {"position": "sticky", "top": TOP_R48, "z-index": "2",
-                    "background": "var(--paper)"}
+@pytest.mark.parametrize("zona", list(SELECTORES_R48))
+def test_f054_r48_las_reglas_de_las_tres_zonas(zona):
+    """(a)-(d) de T27, con exactamente esos selectores y declaraciones."""
+    reglas = [d for s, d in _reglas_css() if s == SELECTORES_R48[zona]]
+    assert len(reglas) == 1, f"falta (o sobra) la regla «{zona}» de T27"
+    assert reglas[0] == DECLARACIONES_R48[zona]
 
 
-# `.modal` es el contenedor que se desplaza y tiene padding: con `top: 0`
-# la cabecera se pega al borde de su contenido, 22 px por debajo del de la
-# ventana, y por esa franja se ven pasar las filas (T18 paso 2, 2026-11-05).
-# El `top` compensa el padding superior con la misma variable.
-TOP_R48 = "calc(-1 * var(--modal-pad-top))"
+def test_f054_r48_ninguna_otra_regla_toca_la_zona():
+    """Solo esas cuatro reglas nombran `.zona-traer`."""
+    con_zona = [s for s, _ in _reglas_css()
+                if any("zona-traer" in x for x in s)]
+    assert sorted(map(tuple, con_zona)) == sorted(
+        tuple(s) for s in SELECTORES_R48.values())
 
 
-def test_f054_r48_el_top_compensa_el_padding_superior_del_modal():
+def test_f054_r48_el_modal_vuelve_a_su_padding_y_fuera_la_primera_version():
+    from tests.test_f042_sugerencias import CSS
     modal = [d for s, d in _reglas_css() if s == [".modal"]]
     assert modal, "falta la regla `.modal`"
+    assert modal[0]["padding"] == "22px 26px"
+    assert modal[0]["max-height"] == "86vh" and modal[0]["overflow"] == "auto"
     assert all("padding" not in d and "padding-top" not in d
                for d in modal[1:]), "otra regla `.modal` redefine el padding"
-    assert modal[0].get("--modal-pad-top") == "22px"
-    assert modal[0]["padding"].split()[0] == "var(--modal-pad-top)"
-    assert "padding-top" not in modal[0]
-    fija = [d for s, d in _reglas_css() if s == SELECTORES_R48][0]
-    assert fija["top"] == TOP_R48
+    for texto in (CSS, JS):
+        assert "--modal-pad-top" not in texto
+        assert "thead:has(" not in texto
+
+
+def test_f054_r48_solo_dos_reglas_sticky():
+    """La `.topbar` de siempre y el `thead` de la zona; ninguna sobre
+    `.modal`, `thead`, `.filterable` o `.filter-row` en general."""
+    fijas = [(s, d) for s, d in _reglas_css()
+             if "sticky" in d.get("position", "")]
+    assert [s for s, _ in fijas] == [[".topbar"], SELECTORES_R48["cabecera"]]
+    assert {k: fijas[0][1][k] for k in ("position", "top", "z-index")} == {
+        "position": "sticky", "top": "0", "z-index": "20"}
 
 
 def test_f054_r48_cada_th_de_las_dos_filas_trae_fondo_opaco():
@@ -1147,18 +1177,79 @@ def test_f054_r48_cada_th_de_las_dos_filas_trae_fondo_opaco():
                          f'<tr id="{tabla}-filtros" class="filter-row">']
 
 
-def test_f054_r48_ninguna_otra_regla_sticky_nueva():
-    """Solo la `.topbar` de siempre y la de T27 llevan `sticky`; ninguna
-    sobre `.modal`, `thead`, `.filterable` o `.filter-row` en general."""
-    fijas = [(s, d) for s, d in _reglas_css()
-             if "sticky" in d.get("position", "")]
-    assert [s for s, _ in fijas] == [[".topbar"], SELECTORES_R48]
-    assert {k: fijas[0][1][k] for k in ("position", "top", "z-index")} == {
-        "position": "sticky", "top": "0", "z-index": "20"}
+ZONA = '<div class="zona-traer" id="traer-zona">'
+
+
+def _zonas(pagina: str) -> tuple[str, str, str]:
+    """(antes, dentro, después) de la zona; `dentro` hasta el `</div>` que
+    la cierra (el pie empieza justo después)."""
+    assert pagina.count(ZONA) == 1, "la zona, una vez"
+    antes, resto = pagina.split(ZONA)
+    i = resto.rindex('<div class="pie-modal">')
+    dentro, despues = resto[:i], resto[i:]
+    assert dentro.endswith("</div>"), "el pie, justo después de la zona"
+    return antes, dentro[:-len("</div>")], despues
+
+
+def test_f054_r48_las_tablas_dentro_de_la_zona_y_lo_demas_fuera():
+    datos = {**DATOS_NT, "motivo_var": "var sin catálogo"}
+    pagina = _programa(_api(datos=datos),
+                       "await traerDeSigrid([]);")["modal"]["html"]
+    antes, dentro, despues = _zonas(pagina)
+    assert dentro.count("<table") == 2 and "<h3>No se traen (" in dentro
+    assert dentro.index('id="traer-cuerpo"') < dentro.index("<h3>No se traen")
+    assert dentro.startswith('<table class="tabla-reg filterable">')
+    for fuera in ("<h2>", '<p class="aviso">pv sin catálogo</p>',
+                  '<p class="aviso">var sin catálogo</p>',
+                  '<div class="acciones-traer">', 'id="btn-traer-marcar"'):
+        assert fuera in antes and fuera not in dentro + despues, fuera
+    assert "<table" not in antes + despues
+    assert despues.startswith('<div class="pie-modal">')
+    assert 'id="btn-traer-aceptar"' in despues
+    assert "pie-modal" not in antes + dentro
+    assert (pagina.index("acciones-traer") < pagina.index(ZONA)
+            < pagina.index("pie-modal"))
+
+
+def test_f054_r48_sin_no_se_traen_la_zona_con_la_tabla_principal():
+    pagina = _programa(_api(datos={**DATOS, "no_traidas": []}),
+                       "await traerDeSigrid([]);")["modal"]["html"]
+    _, dentro, _ = _zonas(pagina)
+    assert dentro.count("<table") == 1 and 'id="traer-cuerpo"' in dentro
+    assert "No se traen" not in dentro
+
+
+def test_f054_r48_sin_entradas_la_zona_con_no_se_traen():
+    pagina = _programa(_api(datos={**DATOS_NT, "trabajadores": []}),
+                       "await traerDeSigrid([]);")["modal"]["html"]
+    antes, dentro, _ = _zonas(pagina)
+    assert dentro.startswith("<h3>No se traen (")
+    assert dentro.count("<table") == 1
+    assert "Ningún trabajador del cuadrante" in antes
+
+
+def test_f054_r48_sin_nada_la_zona_vacia_y_el_pie():
+    pagina = _programa(_api(datos={**DATOS, "trabajadores": [],
+                                   "no_traidas": []}),
+                       "await traerDeSigrid([]);")["modal"]["html"]
+    _, dentro, despues = _zonas(pagina)
+    assert dentro == ""
+    assert despues.startswith('<div class="pie-modal">')
+
+
+def test_f054_r48_la_zona_es_hija_directa_del_modal():
+    """`.modal:has(> .zona-traer)`: lo que pinta `pintarTraerSigrid` va tal
+    cual dentro de `.modal` (`abrirModal`), así que la zona no puede ir
+    anidada en otro `div`: antes de ella, todo `<div>` está cerrado."""
+    pagina = _programa(_api(datos=DATOS_NT),
+                       "await traerDeSigrid([]);")["modal"]["html"]
+    antes, _, _ = _zonas(pagina)
+    assert antes.count("<div") == antes.count("</div>")
+    assert '<div class="modal">${html}</div>' in _funcion("abrirModal")
 
 
 def test_f054_r48_los_id_van_en_la_primera_fila_hija_del_thead():
-    """`:has(> #…)` exige el `tr` con ese `id` hijo directo del `thead`."""
+    """Cada `id` de cabecera, una vez y en su `thead` (las escuchas)."""
     pagina = _programa(_api(datos=DATOS_NT),
                        "await traerDeSigrid([]);")["modal"]["html"]
     for ids in ("traer-titulos", "no-traidas-titulos"):
@@ -1166,9 +1257,11 @@ def test_f054_r48_los_id_van_en_la_primera_fila_hija_del_thead():
         assert f'<thead><tr id="{ids}">' in pagina
 
 
-def test_f054_r48_el_modal_del_registro_no_lleva_esos_id():
+def test_f054_r48_el_modal_del_registro_no_lleva_la_zona():
     from tests.test_f054_modal_cero import _escenario, _pf
     html = _escenario("await abrir(D.pf); obs.html = dom.html;",
                       {"pf": _pf()})["html"]
-    assert "<thead>" in html
+    assert "<thead>" in html and "pie-modal" in html
+    assert "zona-traer" not in html
     assert "traer-titulos" not in html and "no-traidas-titulos" not in html
+    assert "zona-traer" not in _funcion("pintarModalPreflight")
