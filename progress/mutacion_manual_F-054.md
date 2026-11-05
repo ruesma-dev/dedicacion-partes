@@ -1096,3 +1096,87 @@ for nombre, f, a, b in M:
     print(f"| {nombre} | `{f.name}` | `{a.strip()[:70]}` → `{b.strip()[:70]}` | {estado} | {len(fallos)} | {', '.join(fallos)} |")
 print("VIVOS", vivos)
 ```
+
+## Campaña 10 (`c9611c3`, corrección de T27/R48): 13 mutantes, 13 muertos, 0 supervivientes
+
+La MANUAL de T18 paso 2 (2026-11-05) vio la franja de 22 px sobre la cabecera fija: `top: 0`
+en un `.modal` con padding. Mutantes del **valor del `top`** y de lo que lo ata al padding
+(`--modal-pad-top`). Mismo método que la campaña 9 (árbol de trabajo, `finally`, solo
+`tests/test_f054_traer_front.py` sin `-x`). G10 y G11 cambian padding y `top` a la vez (sin
+hueco, pero el modal cambia de aspecto): los mata el `22px` fijado en el test.
+
+Línea base (sin mutar, en verde): 66 passed in 72.19s
+
+| Mutante | Texto exacto original → mutado (recortado a 60) | Resultado | Fallos (sin `-x`) | Tests que lo matan |
+|---|---|---|---|---|
+| G1 top 0 (el fallo) | `position: sticky; top: calc(-1 * var(--modal-pad-top)); z-in` → `position: sticky; top: 0; z-index: 2;` | MUERTO | 2 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal, test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| G2 top positivo | `position: sticky; top: calc(-1 * var(--modal-pad-top)); z-in` → `position: sticky; top: var(--modal-pad-top); z-index: 2;` | MUERTO | 2 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal, test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| G3 top -22px a mano | `position: sticky; top: calc(-1 * var(--modal-pad-top)); z-in` → `position: sticky; top: -22px; z-index: 2;` | MUERTO | 2 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal, test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| G4 top calc con 22px | `position: sticky; top: calc(-1 * var(--modal-pad-top)); z-in` → `position: sticky; top: calc(-1 * 22px); z-index: 2;` | MUERTO | 2 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal, test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| G5 top -padding/2 | `position: sticky; top: calc(-1 * var(--modal-pad-top)); z-in` → `position: sticky; top: calc(-0.5 * var(--modal-pad-top)); z-` | MUERTO | 2 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal, test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| G6 top otra variable | `position: sticky; top: calc(-1 * var(--modal-pad-top)); z-in` → `position: sticky; top: calc(-1 * var(--modal-pad)); z-index:` | MUERTO | 2 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal, test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| G7 top sin el signo | `position: sticky; top: calc(-1 * var(--modal-pad-top)); z-in` → `position: sticky; top: calc(1 * var(--modal-pad-top)); z-ind` | MUERTO | 2 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal, test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas |
+| G8 padding a mano | `padding: var(--modal-pad-top) 26px; }` → `padding: 22px 26px; }` | MUERTO | 1 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal |
+| G9 padding-top aparte | `padding: var(--modal-pad-top) 26px; }` → `padding: var(--modal-pad-top) 26px; padding-top: 30px; }` | MUERTO | 1 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal |
+| G10 variable a 0 | `.modal { --modal-pad-top: 22px; background: var(--paper);` → `.modal { --modal-pad-top: 0; background: var(--paper);` | MUERTO | 1 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal |
+| G11 variable distinta | `.modal { --modal-pad-top: 22px; background: var(--paper);` → `.modal { --modal-pad-top: 30px; background: var(--paper);` | MUERTO | 1 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal |
+| G12 sin la variable | `.modal { --modal-pad-top: 22px; background: var(--paper);` → `.modal { background: var(--paper);` | MUERTO | 1 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal |
+| G13 padding redefinido en otra regla .modal | `.modal h2 {` → `.modal { padding: 10px 26px; } .modal h2 {` | MUERTO | 1 | test_f054_r48_el_top_compensa_el_padding_superior_del_modal |
+
+**Total corrección T27: 13 mutantes, 0 supervivientes.**
+
+```python
+# mutacion_manual_f054_c10.py (fuera del repo): T27, valor del `top` de R48.
+import pathlib, re, subprocess
+
+RAIZ = pathlib.Path(r"C:\Users\pgris\PycharmProjects\porcentajes-f054\services\dedicacion-front")
+CSS = RAIZ / "static" / "css" / "styles.css"
+TOP = "position: sticky; top: calc(-1 * var(--modal-pad-top)); z-index: 2;"
+VAR = ".modal { --modal-pad-top: 22px; background: var(--paper);"
+PAD = "  padding: var(--modal-pad-top) 26px; }"
+M = [
+    ("G1 top 0 (el fallo)", TOP, "position: sticky; top: 0; z-index: 2;"),
+    ("G2 top positivo", TOP, "position: sticky; top: var(--modal-pad-top); z-index: 2;"),
+    ("G3 top -22px a mano", TOP, "position: sticky; top: -22px; z-index: 2;"),
+    ("G4 top calc con 22px", TOP, "position: sticky; top: calc(-1 * 22px); z-index: 2;"),
+    ("G5 top -padding/2", TOP, "position: sticky; top: calc(-0.5 * var(--modal-pad-top)); z-index: 2;"),
+    ("G6 top otra variable", TOP, "position: sticky; top: calc(-1 * var(--modal-pad)); z-index: 2;"),
+    ("G7 top sin el signo", TOP, "position: sticky; top: calc(1 * var(--modal-pad-top)); z-index: 2;"),
+    ("G8 padding a mano", PAD, "  padding: 22px 26px; }"),
+    ("G9 padding-top aparte", PAD, "  padding: var(--modal-pad-top) 26px; padding-top: 30px; }"),
+    ("G10 variable a 0", VAR, ".modal { --modal-pad-top: 0; background: var(--paper);"),
+    ("G11 variable distinta", VAR, ".modal { --modal-pad-top: 30px; background: var(--paper);"),
+    ("G12 sin la variable", VAR, ".modal { background: var(--paper);"),
+    ("G13 padding redefinido en otra regla .modal", ".modal h2 {", ".modal { padding: 10px 26px; }\n.modal h2 {"),
+]
+
+
+def pytest():
+    r = subprocess.run([str(RAIZ / ".venv" / "Scripts" / "python.exe"), "-m", "pytest",
+                        "tests/test_f054_traer_front.py", "-q", "-p", "no:cacheprovider", "-rf"],
+                       cwd=RAIZ, capture_output=True, text=True)
+    fallos = sorted(set(re.findall(r"^FAILED \S+::(\w+)", r.stdout, re.M)))
+    return r.returncode, fallos, r.stdout.strip().splitlines()[-1]
+
+
+base = pytest()
+print("BASE", base[0], base[2])
+assert base[0] == 0
+vivos = 0
+for nombre, a, b in M:
+    orig = CSS.read_bytes()
+    txt = orig.decode("utf-8")
+    nl = "\r\n" in txt
+    t = txt.replace("\r\n", "\n")
+    assert t.count(a) == 1, nombre
+    t = t.replace(a, b)
+    CSS.write_bytes((t.replace("\n", "\r\n") if nl else t).encode("utf-8"))
+    try:
+        rc, fallos, ult = pytest()
+    finally:
+        CSS.write_bytes(orig)
+    estado = "MUERTO" if rc else "VIVO"
+    vivos += not rc
+    print(f"| {nombre} | `{a.strip()[:60]}` → `{b.strip()[:60]}` | {estado} | {len(fallos)} | {', '.join(fallos)} |")
+print("VIVOS", vivos)
+```
