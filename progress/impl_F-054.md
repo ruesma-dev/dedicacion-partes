@@ -198,15 +198,15 @@ código 0, **sin `[KO]`**; cobertura `[OK]` 99.5 % (786/790) y tamaño `[OK]`
 
 RED `5442c4b`, código `ff3d1ac`: **solo** una regla en `styles.css` junto a `.acciones-traer` (`app.js`, registro y cuadrante sin tocar). Tests `test_f054_r48_*` (4): la regla con **exactamente** los dos `thead:has(> #…)` y sus 4 declaraciones; `sticky` solo en `.topbar` (intacta) y la nueva; los dos `<thead><tr id=…>` en la ventana; el modal del registro sin esos `id`. Los dos últimos ya pasaban (fijan el marcado de T24; los matan F13/F14).
 RED: `cd services/dedicacion-front && .venv/Scripts/python -m pytest tests/test_f054_traer_front.py -k r48 -q -p no:cacheprovider` →
-`E AssertionError: falta la regla de T27 con esos dos selectores` / `E assert 0 == 1`; `E AssertionError: assert [['.topbar']] == [['.topbar'],...as-titulos)']]` / `E Right contains one more item: ['.modal thead:has(> #traer-titulos)', '.modal thead:has(> #no-traidas-titulos)']` → `2 failed, 2 passed, 60 deselected in 1.86s`. Tras `ff3d1ac`: `4 passed`; front entero `531 passed` (300,54 s).
+`E AssertionError: falta la regla de T27 con esos dos selectores` / `E assert 0 == 1`; `E AssertionError: assert [['.topbar']] == [['.topbar'],...as-titulos)']]` / `E Right contains one more item: ['.modal thead:has(> #traer-titulos)', '.modal thead:has(> #no-traidas-titulos)']` → `2 failed, 2 passed, 60 deselected in 1.86s`. Tras `ff3d1ac`: `4 passed`; front entero `531 passed` (300,54 s). **`bash harness/init.sh`** (`0fda482`, `.arnes_cache/suite_*.ok` borrados, sin pipes): código 0, **sin `[KO]`**, «ENTORNO LISTO»; cobertura 99.5 % (793/797), tamaño impl 219/220.
 Mutación manual, campaña 9 (`progress/mutacion_manual_F-054.md`): **15/15 muertos**, 0 vivos (cada declaración, `relative`, `top: 22px`, `z-index: 0`, `transparent`, cada selector, sin `>`, `.modal thead`, `.filter-row` añadido, y los dos `tr` de `app.js`). Pendiente: la MANUAL de T18 paso 2 con R48 (si hay hueco o transparencia, PARAR: design §7).
 
 ## Evidencias
 
 | Evidencia | Resultado real |
 |---|---|
-| Tests | 2026-11-05, tras T27: front `531 passed` (300,54 s); el resto, en `init.sh` (T27). 2026-11-03, tras T24-T26: api `1502 passed` (81,77 s), front `527 passed` (82,13 s), transfer `1886 passed` (34,62 s), raíz `418 passed, 1 skipped` (43,01 s). Tras T23: api 1469, transfer 1865, front 507, raíz 418+1 |
-| Cobertura de líneas cambiadas | **99,5 %** (786/790) (umbral 80 %). No mide JS |
+| Tests | 2026-11-05, tras T27 (`init.sh`): api `1504 passed` (223,45 s), front `531 passed` (251,20 s), transfer `1887 passed` (79,66 s), raíz `418 passed, 1 skipped` (103,22 s). 2026-11-03, tras T24-T26: api `1502 passed` (81,77 s), front `527 passed` (82,13 s), transfer `1886 passed` (34,62 s), raíz `418 passed, 1 skipped` (43,01 s). Tras T23: api 1469, transfer 1865, front 507, raíz 418+1 |
+| Cobertura de líneas cambiadas | **99,5 %** (793/797, tras T27) (umbral 80 %). No mide JS ni CSS |
 | Mutación Python | O11: **289/289 muertos**, 0 vivos, 0 timeouts, 2936 s, SHA `353d290`. T24-T26: 287/287, `086983a`. Antes: T22 266/266 (+ RM4 8/8 a mano), `c70eb61` 266/266, `c614be3` 262/262 |
 | Mutación `app.js`/CSS | manual: T9/T15 69 + O5 14; T23 81 + 3; T24 90 + 5; T27 15 (CSS y `app.js`); **0 supervivientes** |
 | Tiempo de la suite | el de cada suite en la fila Tests |
