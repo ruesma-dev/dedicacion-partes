@@ -1081,3 +1081,57 @@ def test_f054_r44_parte_y_obra_escapadas():
                   "await traerDeSigrid([]);")
     assert _filas_nt(r)[0][:2] == ["P&lt;a&gt;", "O&lt;b&gt;"]
     assert "<a>" not in r["modal"]["html"] and "<b>" not in r["modal"]["html"]
+
+
+# ---- T27 (R48): cabecera fija en las dos tablas de la ventana ---- #
+SELECTORES_R48 = [".modal thead:has(> #traer-titulos)",
+                  ".modal thead:has(> #no-traidas-titulos)"]
+
+
+def _reglas_css() -> list[tuple[list[str], dict[str, str]]]:
+    """Las reglas de `styles.css` (sin comentarios ni `@media`), como
+    (selectores, {propiedad: valor})."""
+    from tests.test_f042_sugerencias import CSS
+    css = re.sub(r"/\*.*?\*/", "", CSS, flags=re.DOTALL)
+    reglas = []
+    for sel, cuerpo in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        sel = sel.rsplit("{", 1)[-1]
+        decl = dict((p.strip(), v.strip()) for p, v in (
+            d.split(":", 1) for d in cuerpo.split(";") if ":" in d))
+        reglas.append(([" ".join(s.split()) for s in sel.split(",")], decl))
+    return reglas
+
+
+def test_f054_r48_la_regla_fija_las_dos_cabeceras_y_las_hace_opacas():
+    reglas = [d for s, d in _reglas_css() if s == SELECTORES_R48]
+    assert len(reglas) == 1, "falta la regla de T27 con esos dos selectores"
+    decl = reglas[0]
+    assert decl == {"position": "sticky", "top": "0", "z-index": "2",
+                    "background": "var(--paper)"}
+
+
+def test_f054_r48_ninguna_otra_regla_sticky_nueva():
+    """Solo la `.topbar` de siempre y la de T27 llevan `sticky`; ninguna
+    sobre `.modal`, `thead`, `.filterable` o `.filter-row` en general."""
+    fijas = [(s, d) for s, d in _reglas_css()
+             if "sticky" in d.get("position", "")]
+    assert [s for s, _ in fijas] == [[".topbar"], SELECTORES_R48]
+    assert {k: fijas[0][1][k] for k in ("position", "top", "z-index")} == {
+        "position": "sticky", "top": "0", "z-index": "20"}
+
+
+def test_f054_r48_los_id_van_en_la_primera_fila_hija_del_thead():
+    """`:has(> #…)` exige el `tr` con ese `id` hijo directo del `thead`."""
+    pagina = _programa(_api(datos=DATOS_NT),
+                       "await traerDeSigrid([]);")["modal"]["html"]
+    for ids in ("traer-titulos", "no-traidas-titulos"):
+        assert pagina.count(f'id="{ids}"') == 1
+        assert f'<thead><tr id="{ids}">' in pagina
+
+
+def test_f054_r48_el_modal_del_registro_no_lleva_esos_id():
+    from tests.test_f054_modal_cero import _escenario, _pf
+    html = _escenario("await abrir(D.pf); obs.html = dom.html;",
+                      {"pf": _pf()})["html"]
+    assert "<thead>" in html
+    assert "traer-titulos" not in html and "no-traidas-titulos" not in html
