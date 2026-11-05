@@ -100,7 +100,8 @@ vinculado.
   la partida y las obras que casan; en VAR (R10), la partida y la obra. **R47.** `[D21]` Y el
   preflight, igual: `MOTIVO_VAR_*` (F-039 R6) y la partida de postventa no hoja (F-002 R16); la api
   manda en la línea VAR el `partida_cod` (ya existe) de su `cod`, sin lecturas ni campos nuevos.
-- **R48.** `[D20]` MIENTRAS se baja, las dos filas de cabecera de las dos tablas quedan fijas y opacas.
+- **R48.** `[D20]` MIENTRAS se baja, las dos filas de cabecera de las dos tablas quedan fijas y opacas,
+  pegadas al borde superior de la ventana, sin franja libre encima (el padding de `.modal`).
 - **R29.** `ARCHITECTURE.md` puntos 23 `#regla-traer-sigrid` (con R39-R47) y 24 `#regla-obra-cero`
   (remitidos desde `#regla-vinculado`), tabla de acceso, `ANCLAS`; `INTEGRACION.md` §1, §5, §7;
   `azure-apps` al desplegar. **R30.** MANUAL: A en local, solo lectura (T18); B en pruebas (T19).

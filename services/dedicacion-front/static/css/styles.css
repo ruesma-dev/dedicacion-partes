@@ -566,9 +566,13 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
 /* ---------- Modal de registro en Sigrid ---------- */
 .modal-overlay { position: fixed; inset: 0; background: rgba(29,32,36,.45);
   z-index: 60; display: flex; align-items: center; justify-content: center; }
-.modal { background: var(--paper); border-radius: var(--radius);
+/* `--modal-pad-top`: el padding superior, compartido con la cabecera fija
+   de R48 (F-054 T27), que lo compensa para pegarse al borde de la ventana. */
+.modal { --modal-pad-top: 22px; background: var(--paper);
+  border-radius: var(--radius);
   width: min(1060px, calc(100% - 40px)); max-height: 86vh; overflow: auto;
-  box-shadow: 0 24px 60px -20px rgba(29,32,36,.6); padding: 22px 26px; }
+  box-shadow: 0 24px 60px -20px rgba(29,32,36,.6);
+  padding: var(--modal-pad-top) 26px; }
 .modal h2 { font-family: var(--font-display); margin: 0 0 4px; }
 .modal h3 { font-size: .95rem; margin: 18px 0 8px; }
 .modal .tabla-reg { width: 100%; border-collapse: collapse; font-size: .84rem; }
@@ -607,9 +611,13 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
    Sigrid». Sus dos tablas llevan la cabecera estándar (.filterable, T24). */
 .modal .acciones-traer { display: flex; gap: 8px; margin: 10px 0 6px; }
 /* F-054 (T27, R48): las dos filas de cabecera de esas tablas, fijas y
-   opacas al bajar; solo esta ventana (los `id` que pinta pintarTraerSigrid). */
+   opacas al bajar; solo esta ventana (los `id` que pinta pintarTraerSigrid).
+   `.modal` es lo que se desplaza: con `top: 0` se pegaría al borde de su
+   contenido y dejaría encima la franja del padding, por la que se ven
+   pasar las filas; el `top` negativo la cubre. */
 .modal thead:has(> #traer-titulos), .modal thead:has(> #no-traidas-titulos) {
-  position: sticky; top: 0; z-index: 2; background: var(--paper); }
+  position: sticky; top: calc(-1 * var(--modal-pad-top)); z-index: 2;
+  background: var(--paper); }
 
 /* ---------- Diálogo «Completar al 100 %» (F-029) ---------- */
 .modal #completar-obra { width: 100%; }
