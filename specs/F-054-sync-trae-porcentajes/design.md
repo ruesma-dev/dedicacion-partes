@@ -3,7 +3,7 @@
 
 Decisiones cerradas: D1-D15 el 2026-10-24 (requirements §6; D12 revisada el 2026-11-02) y D16-D19 (§12).
 **Revisado el 2026-10-29** contra `dev` con F-044, F-062-F-065, F-067 y F-068 (`ac56e96`;
-`progress/spec_F-054.md`). **Aprobada**; enmiendas T23 (2026-11-02), T24-T26 (2026-11-03, D20-D21) y T27 (2026-11-05, R48).
+`progress/spec_F-054.md`). **Aprobada**; enmiendas T23 (2026-11-02), T24-T26 (2026-11-03, D20-D21) y T27 (2026-11-05, R48; rehecha el 2026-11-06).
 
 ## 1. Servicios, límite y contrato
 **A: el transfer lee y traduce; la api compara y escribe; el front pinta.** El transfer tiene la lectura
@@ -185,12 +185,12 @@ vinculados, en paralelo) en la ronda A; como F-055 T18 (local, 2026-09, 3 pasada
   `agruparNoTraidas(no_traidas)` (clave parte, obra, `recurso_ide`, motivo; orden de la primera; `n`) y
   `noTraidasVisibles(filas, filtros, orden)` (R40-R41; Líneas numérica, «×K» si K > 1); recurso,
   `recurso_cod · recurso_nombre` o el `recurso_ide`; modelo y filtros propios.
-- A, **T27** (R48; el humano, 2026-11-05: «la del modal al sincronizar sigrid»): **solo** `styles.css`,
-  acotada por los `id` que ya pinta `pintarTraerSigrid`: `.modal thead:has(> #traer-titulos), .modal
-  thead:has(> #no-traidas-titulos) { position: sticky; top: calc(-1 * var(--modal-pad-top)); … }`: el
-  `thead` entero; cada `th` ya trae fondo (burdeos, `--paper`). `top: 0` (corregido en T18, 2026-11-05)
-  dejaba encima la franja del padding de `.modal` (22 px): `.modal` declara `--modal-pad-top`. `:has` exige Edge o
-  Chrome ≥ 105; si la MANUAL ve hueco o transparencia, **PARA**. Ni `app.js` ni el registro ni F-070.
+- A, **T27** (R48; rehecha el 2026-11-06, «si hazlo asi»; la de `c9611c3`, `thead` sticky en `.modal`, no gustó):
+  `pintarTraerSigrid` mete las dos tablas y el `<h3>` «No se traen» en `<div class="zona-traer">`, entre los
+  botones y `.pie-modal`; `styles.css`: `.modal:has(> .zona-traer)` columna flex sin desplazarse, hijos `flex: none`,
+  zona `flex: 0 1 auto; min-height: 0; overflow: auto` (sin hueco) y su `thead` sticky en `top: 0`, opaco. **Tabla
+  entera dentro**: el `thead` arranca arriba de la zona (su sitio) y comparte columnas con el cuerpo; fuera habría
+  que igualar anchos (descartado). Fuera `--modal-pad-top` y `thead:has(> #…)`. Ni registro ni F-070; detalle, T27.
 - B: `pintarModalPreflight` gana «En Sigrid, en obras que no tiene en la plataforma» (las de vinculado
   con tipo y código): `.chk-cero` por confirmable, **desmarcada** (D17; sin `marcadaPorDefecto` ni
   `vistas` de F-064), y las demás como aviso. `registroEjecutar` manda `sobrantes_a_cero`, aparte de
@@ -209,7 +209,7 @@ vinculado no es sobrante de su trabajador, la obra sola no lee, el completo lee 
 vinculados) en la ronda A. Api: dominio puro, UoW en memoria de `test_f024_cuadrante_empresa.py`,
 `registro_sigrid` con transfer doble (sin sobrantes, ni clave ni llamada); aceptar conserva
 `asignacion_vinculado`. Front: node con dobles. T24: cabecera estándar, «Limpiar», Escape, tabla
-agrupada; T25-T26: motivos con código y reserva, `codigos`, `recurso_*`; T27: la regla CSS acotada.
+agrupada; T25-T26: motivos con código y reserva, `codigos`, `recurso_*`; T27: las tres zonas y sus reglas CSS.
 Sigrid: T18-T19.
 
 ## 10. Ficheros que NO se tocan

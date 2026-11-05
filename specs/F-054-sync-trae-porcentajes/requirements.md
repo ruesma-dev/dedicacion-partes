@@ -70,9 +70,8 @@ vinculado.
 
 ## 4. Resultado, front y documentación `[D12, D20]`
 
-- **R27.** Por trabajador, sus entradas (estado, los dos %, parte, motivo); y `aceptadas`,
-  `no_traidas`, `fuera_maestro`, `de_vinculados`, `lineas_leidas`, `excluidas_pruebas`, motivos de
-  catálogo.
+- **R27.** Por trabajador, sus entradas (estado, los dos %, parte, motivo); y `aceptadas`, `no_traidas`,
+  `fuera_maestro`, `de_vinculados`, `lineas_leidas`, `excluidas_pruebas`, motivos de catálogo.
 - **R28.** El front enseña el resumen y la tabla de R39, con casilla en cada entrada `distinta` o
   `solo_sigrid`, las dos **desmarcadas** al abrir `[D12]`; el botón de aceptar repite la petición con
   `aceptar` = **exactamente las marcadas**, visibles u ocultas por el filtro, y recarga. Sin casillas,
@@ -100,7 +99,8 @@ vinculado.
   la partida y las obras que casan; en VAR (R10), la partida y la obra. **R47.** `[D21]` Y el
   preflight, igual: `MOTIVO_VAR_*` (F-039 R6) y la partida de postventa no hoja (F-002 R16); la api
   manda en la línea VAR el `partida_cod` (ya existe) de su `cod`, sin lecturas ni campos nuevos.
-- **R48.** `[D20]` MIENTRAS se baja, las dos filas de cabecera de ambas tablas, fijas, opacas y al borde.
+- **R48.** `[D20]` MIENTRAS se baja en esa ventana, solo se mueven sus filas y «No se traen» (cuya cabecera
+  se fija al llegar); lo de encima, quieto y opaco, sin nada asomando; el pie, a la vista; sin hueco.
 - **R29.** `ARCHITECTURE.md` puntos 23 `#regla-traer-sigrid` (con R39-R47) y 24 `#regla-obra-cero`
   (remitidos desde `#regla-vinculado`), tabla de acceso, `ANCLAS`; `INTEGRACION.md` §1, §5, §7;
   `azure-apps` al desplegar. **R30.** MANUAL: A en local, solo lectura (T18); B en pruebas (T19).
@@ -133,18 +133,18 @@ vinculado.
 
 ## 6. Decisiones
 
-**Del humano, 2026-10-24**: «al sincronizar, puedo querer trarme algunas laineas(obras) de sigrid y
-otras no. si acepto en la plataforma piso solo esas lineas del trabjador. al registrar, si el
-trabajador no tiene nada en una obra es como un 0%. si en sigrid si tiene debe preguntar si lo pisa (y
-lo deja a 0) o no» ⇒ **D4** por entrada y **parte B**; D9 = A; «d13, metelo aqui. ok a lo demas» ⇒
-**D13 = B** (T19) y **D1-D3, D5-D8, D10-D11, D14-D15 = A**. **D12, revisada el 2026-11-02** («2, ok»,
-MANUAL T18: aceptó de más porque salían marcadas): `solo_sigrid` y `distinta` **desmarcadas** (R28,
-R39-R42); sustituye a «d12, con la casilla marcada por defecto, aunque se puede desmarcar»
-(2026-10-24). Lo ya aceptado en local: «déjalo así». **D20** (el humano, 2026-11-03, MANUAL T18 con
-01/2026: «hazlo todo dentro de la feature»): R43-R46 y R48 (2026-11-05). **D21** (el humano,
-2026-11-03): «trasladalo a codigos legibles, no numeros internos» (R47), «filas de tabla» (N de R44),
-«ok» (columna Líneas) y «si» (el `partida_cod` VAR y la postventa no hoja, R47). **Del humano,
-2026-10-29** («estoy de acuerdo», las recomendadas; motivos en design §12): **D16 = C**, vinculados en
-obra sobrante como el trabajador (R38); **D17 = A**, casilla siempre desmarcada (R33); **D18 = A**, A
-no trae nada de ellos (R14). **D19 = b**, 2026-10-30 («b»; review 2, O7): la `Postv-` omitida tras
-resolver su partida cubre solo esa (R31); efectos en el modal y el vinculado omitido, design §12.
+**Del humano, 2026-10-24**: «al sincronizar, puedo querer trarme algunas laineas(obras) de sigrid y otras
+no. si acepto en la plataforma piso solo esas lineas del trabjador. al registrar, si el trabajador no
+tiene nada en una obra es como un 0%. si en sigrid si tiene debe preguntar si lo pisa (y lo deja a 0) o
+no» ⇒ **D4** por entrada y **parte B**; D9 = A; «d13, metelo aqui. ok a lo demas» ⇒ **D13 = B** (T19) y
+**D1-D3, D5-D8, D10-D11, D14-D15 = A**. **D12, revisada el 2026-11-02** («2, ok», MANUAL T18: aceptó de
+más porque salían marcadas): `solo_sigrid` y `distinta` **desmarcadas** (R28, R39-R42); sustituye a «d12,
+con la casilla marcada por defecto, aunque se puede desmarcar» (2026-10-24). Lo ya aceptado en local:
+«déjalo así». **D20** (el humano, 2026-11-03, MANUAL T18 con 01/2026: «hazlo todo dentro de la feature»):
+R43-R46 y R48 (2026-11-05; rehecha el 2026-11-06: «si hazlo asi»). **D21** (el humano, 2026-11-03):
+«trasladalo a codigos legibles, no numeros internos» (R47), «filas de tabla» (N de R44), «ok» (columna
+Líneas) y «si» (el `partida_cod` VAR y la postventa no hoja, R47). **Del humano, 2026-10-29** («estoy de
+acuerdo», las recomendadas; motivos, design §12): **D16 = C**, vinculados en obra sobrante como el
+trabajador (R38); **D17 = A**, casilla siempre desmarcada (R33); **D18 = A**, A no trae nada de ellos
+(R14). **D19 = b**, 2026-10-30 («b»; review 2, O7): la `Postv-` omitida tras resolver su partida cubre
+solo esa (R31); efectos (modal, vinculado omitido), design §12.

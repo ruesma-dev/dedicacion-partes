@@ -458,3 +458,17 @@ modal al sincronizar sigrid»; enmienda dentro de F-054 (D20, «hazlo todo dentr
   en la MANUAL (si salen, el implementer PARA). R29/ARCHITECTURE no cambia: es presentación.
 - Tamaños: requirements 150/150 (R48 en una línea; cabecera y §6 recompuestas, sin quitar contenido),
   design 250/250. **Puntos para el humano**: ninguno nuevo.
+
+## 2026-11-06 · T27/R48 rehecha: la ventana en tres zonas (D20)
+
+La primera versión (`ff3d1ac`, `c9611c3`: `thead` sticky dentro de `.modal`) no gustó al probarla: «que
+no se quedara tan arriba la cabcera … sino que siga como estaba sin moverse y sea opaca». Propuesta del
+líder aprobada el 2026-11-06 («si hazlo asi»), pie fijo incluido.
+- **R48** reescrita; **design §7** T27: `pintarTraerSigrid` mete las dos tablas y «No se traen» en
+  `div.zona-traer`; `.modal:has(> .zona-traer)` columna flex sin desplazarse, la zona `flex: 0 1 auto;
+  min-height: 0; overflow: auto` y `.zona-traer thead` sticky en `top: 0`. Fuera `--modal-pad-top`.
+- **Decisión**: la tabla entera dentro de la zona (no su cabecera fuera): el `thead` arranca en su sitio
+  y las columnas son las del cuerpo; fuera habría que igualar anchos. Detalle, tests (lista cerrada: los
+  `test_f054_r48_*`) y riesgos en **T27** (reabierta, `[ ]`); T18 paso 2 gana la comprobación nueva.
+- Tamaños: requirements 150/150 (R27 y §6 recompuestos sin quitar nada), design 250/250.
+  **Puntos para el humano**: ninguno nuevo (los márgenes en flex, a ver en la MANUAL).
