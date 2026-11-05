@@ -606,6 +606,10 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
 /* F-054 (T23, R42): los botones de marcado de la ventana de «Sincronizar
    Sigrid». Sus dos tablas llevan la cabecera estándar (.filterable, T24). */
 .modal .acciones-traer { display: flex; gap: 8px; margin: 10px 0 6px; }
+/* F-054 (T27, R48): las dos filas de cabecera de esas tablas, fijas y
+   opacas al bajar; solo esta ventana (los `id` que pinta pintarTraerSigrid). */
+.modal thead:has(> #traer-titulos), .modal thead:has(> #no-traidas-titulos) {
+  position: sticky; top: 0; z-index: 2; background: var(--paper); }
 
 /* ---------- Diálogo «Completar al 100 %» (F-029) ---------- */
 .modal #completar-obra { width: 100%; }
