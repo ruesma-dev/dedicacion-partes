@@ -1332,3 +1332,86 @@ for nombre, fichero, cambios in M:
     print(f"| {nombre} | {fichero.name} | `{a0}` → `{b0}` | {estado} | {len(fallos)} | {', '.join(fallos[:4])}{' …' if len(fallos) > 4 else ''} |", flush=True)
 print("VIVOS", vivos)
 ```
+
+## Campaña 12 (`083076c`, retoque de T27/R48, bordes separados): 12 mutantes, 12 muertos, 0 supervivientes
+
+MANUAL T18 paso 2 sobre `f82fd6b` (2026-11-06): franja de ~1 px entre títulos y filtros (bordes colapsados, de la rejilla). Mutantes de la regla `.zona-traer .tabla-reg` (cada declaración, valor vecino, selector y posición respecto a `.modal .tabla-reg`) y de los bordes que con `separate` saldrían dobles (arriba o a la izquierda en `th`/`td`). Mismo método que la 11, solo `-k r48`.
+
+Línea base (sin mutar, en verde): 17 passed, 60 deselected in 5.87s
+
+| Mutante | Fichero | Resultado | Fallos (sin `-x`) | Tests que lo matan |
+|---|---|---|---|---|
+| K1 sin la regla de bordes | styles.css | MUERTO | 3 | test_f054_r48_las_reglas_de_las_tres_zonas[bordes], test_f054_r48_los_bordes_viajan_con_la_cabecera_sin_dobles, test_f054_r48_ninguna_otra_regla_toca_la_zona |
+| K2 bordes colapsados | styles.css | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[bordes] |
+| K3 sin border-collapse | styles.css | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[bordes] |
+| K4 sin border-spacing | styles.css | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[bordes] |
+| K5 border-spacing 2px | styles.css | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[bordes] |
+| K6 selector de toda .tabla-reg | styles.css | MUERTO | 3 | test_f054_r48_las_reglas_de_las_tres_zonas[bordes], test_f054_r48_los_bordes_viajan_con_la_cabecera_sin_dobles, test_f054_r48_ninguna_otra_regla_toca_la_zona |
+| K7 selector de la tabla de la zona por etiqueta | styles.css | MUERTO | 3 | test_f054_r48_las_reglas_de_las_tres_zonas[bordes], test_f054_r48_los_bordes_viajan_con_la_cabecera_sin_dobles, test_f054_r48_ninguna_otra_regla_toca_la_zona |
+| K8 la regla antes de .modal .tabla-reg | styles.css | MUERTO | 1 | test_f054_r48_los_bordes_viajan_con_la_cabecera_sin_dobles |
+| K9 th con borde arriba | styles.css | MUERTO | 1 | test_f054_r48_los_bordes_viajan_con_la_cabecera_sin_dobles |
+| K10 td con borde a la izquierda | styles.css | MUERTO | 1 | test_f054_r48_los_bordes_viajan_con_la_cabecera_sin_dobles |
+| K11 filtros con borde completo | styles.css | MUERTO | 1 | test_f054_r48_los_bordes_viajan_con_la_cabecera_sin_dobles |
+| K12 títulos con border-width | styles.css | MUERTO | 1 | test_f054_r48_los_bordes_viajan_con_la_cabecera_sin_dobles |
+
+**Total retoque T27: 12 mutantes, 0 supervivientes.**
+
+```python
+# mutacion_manual_f054_c12.py (fuera del repo): retoque de T27/R48, bordes separados.
+import pathlib, re, subprocess
+
+RAIZ = pathlib.Path(r"C:\Users\pgris\PycharmProjects\porcentajes-f054\services\dedicacion-front")
+CSS = RAIZ / "static" / "css" / "styles.css"
+BOR = ".zona-traer .tabla-reg { border-collapse: separate; border-spacing: 0; }"
+MOD = ".modal .tabla-reg { width: 100%; border-collapse: collapse; font-size: .84rem; }"
+TH = "  border-bottom: 1px solid var(--line-strong); }\n/* F-044 (R31)"
+TD = ".modal .tabla-reg td { padding: 6px 8px; border-bottom: 1px solid var(--line);"
+FR = ".filter-row th {\n  background: var(--paper); padding: 6px 8px 9px; vertical-align: top;"
+FT = ".filterable thead tr:first-child th {\n  background: var(--brand); color: #fff; font-weight: 700;"
+
+M = [
+    ("K1 sin la regla de bordes", [(BOR, "")]),
+    ("K2 bordes colapsados", [(BOR, BOR.replace("separate", "collapse"))]),
+    ("K3 sin border-collapse", [(BOR, BOR.replace("border-collapse: separate; ", ""))]),
+    ("K4 sin border-spacing", [(BOR, BOR.replace(" border-spacing: 0;", ""))]),
+    ("K5 border-spacing 2px", [(BOR, BOR.replace("spacing: 0", "spacing: 2px"))]),
+    ("K6 selector de toda .tabla-reg", [(BOR, BOR.replace(".zona-traer .tabla-reg", ".tabla-reg"))]),
+    ("K7 selector de la tabla de la zona por etiqueta", [(BOR, BOR.replace(".zona-traer .tabla-reg", ".zona-traer table"))]),
+    ("K8 la regla antes de .modal .tabla-reg", [(BOR, ""), (MOD, BOR + "\n" + MOD)]),
+    ("K9 th con borde arriba", [(TH, "  border-bottom: 1px solid var(--line-strong); border-top: 1px solid var(--line); }\n/* F-044 (R31)")]),
+    ("K10 td con borde a la izquierda", [(TD, TD.replace("padding: 6px 8px;", "padding: 6px 8px; border-left: 1px solid var(--line);"))]),
+    ("K11 filtros con borde completo", [(FR, FR.replace("vertical-align: top;", "vertical-align: top; border: 1px solid var(--line);"))]),
+    ("K12 títulos con border-width", [(FT, FT.replace("font-weight: 700;", "font-weight: 700; border-width: 1px;"))]),
+]
+
+
+def pytest():
+    r = subprocess.run([str(RAIZ / ".venv" / "Scripts" / "python.exe"), "-m", "pytest",
+                        "tests/test_f054_traer_front.py", "-q", "-p", "no:cacheprovider", "-rf", "-k", "r48"],
+                       cwd=RAIZ, capture_output=True, text=True)
+    fallos = sorted(set(re.findall(r"^FAILED \S+::([\w\[\]-]+)", r.stdout, re.M)))
+    return r.returncode, fallos, r.stdout.strip().splitlines()[-1]
+
+
+base = pytest()
+print("BASE", base[0], base[2], flush=True)
+assert base[0] == 0
+vivos = 0
+for nombre, cambios in M:
+    orig = CSS.read_bytes()
+    txt = orig.decode("utf-8")
+    nl = "\r\n" in txt
+    t = txt.replace("\r\n", "\n")
+    for a, b in cambios:
+        assert t.count(a) == 1, (nombre, a)
+        t = t.replace(a, b)
+    CSS.write_bytes((t.replace("\n", "\r\n") if nl else t).encode("utf-8"))
+    try:
+        rc, fallos, ult = pytest()
+    finally:
+        CSS.write_bytes(orig)
+    estado = "MUERTO" if rc else "VIVO"
+    vivos += not rc
+    print(f"| {nombre} | styles.css | {estado} | {len(fallos)} | {', '.join(fallos[:4])}{' …' if len(fallos) > 4 else ''} |", flush=True)
+print("VIVOS", vivos)
+```
