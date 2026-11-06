@@ -21,6 +21,8 @@ La `MADM` de la 0694 (recurso 1705036, parte PT26/00319) sale con
 
 ### Pasos 2 a 4 · pendientes (humano, sobre la ventana de T23-T26)
 
+**R48 (T27), parte visual de T18 paso 2: comprobada por el humano el 2026-11-06** sobre `083076c`, tras dos retoques que pidió él mismo (cabecera fija en su sitio y no pegada al borde: «si hazlo asi»; franja de 1 px entre títulos y filtros) ⇒ «perfecto». El resto del paso 2 y los pasos 3 y 4 siguen pendientes.
+
 Ver `specs/F-054-sync-trae-porcentajes/tasks.md`, T18.
 
 ## T19 · pendiente (humano, modo pruebas)
