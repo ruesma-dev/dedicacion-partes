@@ -29,7 +29,7 @@ enmendada (D19, T22, `e1a1902` y `83811d9`) y T22 hecha (`abd5514`,
 8/8 en `reglas_porcentajes.py`). Reviews 3, 4 y 5: código aprobado en
 `9334fd3`, CAMBIOS REQUERIDOS solo por este fichero, corregido; **review 6
 APROBADA** (`838b390`).
-**T10 hecha** (2026-10-30, mediana 10,34 s). **Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T18 (humano, local, solo lecturas; paso 1 hecho, faltan los pasos 2 a 4 sobre la ventana nueva), T19 (humano, modo
+**T10 hecha** (2026-10-30, mediana 10,34 s). **Pendientes MANUAL**, con sus comandos en la sección de F-054, abajo: T18 (**HECHA el 2026-11-06**), T19 (humano, modo
 pruebas, única que escribe) y T20 (despliegue transfer → api → front,
 `azure-apps/dedicacion.md` y aviso a `partes`: el transfer pone a 0 líneas
 `M*` y de vinculados en partes compartidos, sin borrarlas). **`azure-apps`
@@ -155,7 +155,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   «Registrar en Sigrid» hasta que el modal salga con todo el mes, tres
   pasadas (método de F-055 T18), **Cancelar, sin Registrar**. Anotar la
   mediana en `progress/impl_F-054.md`.
-- **T18 (humano, local, solo lecturas en Sigrid).** Transfer, api y front
+- **T18 HECHA el 2026-11-06** (resultado en `progress/manual_F-054.md`). Lo que se comprobó: Transfer, api y front
   locales desde `porcentajes-f054` (sus `.env` copiados por el líder el 2026-11-02, «si copia tu los env»).
   1) **HECHO el 2026-11-02** (PowerShell): `Invoke-RestMethod -Method Post -Uri
   http://localhost:8006/api/porcentajes/existentes -ContentType 'application/json' -Body
@@ -178,7 +178,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   marcadas» **siempre a la vista** abajo; al llegar a «No se traen», su cabecera se queda fija arriba de la
   zona de filas y la de la tabla principal se va; escribir en un filtro con la zona bajada sigue filtrando;
   con un mes de **pocas filas**, sin hueco grande entre la tabla y el pie; el modal del registro y el
-  cuadrante, como antes. **Pendiente del paso 2:** todo lo anterior a R48 y lo que sigue. Con `0694` en
+  cuadrante, como antes. El resto del paso 2 y los pasos 3 y 4, **HECHOS el 2026-11-06** (líder, en el navegador). Con `0694` en
   Obra, marcar **solo** esa entrada y aceptar ⇒ su otra línea sigue igual; «Deshacer» la devuelve (O6: que
   no pase a pisado). Si ya sale `igual` por lo aceptado el 2026-11-02, usar otra `distinta` o
   `solo_sigrid` y anotarlo. 3) Aceptarla otra vez y abrir el registro solo hasta el **preflight** ⇒ ya
