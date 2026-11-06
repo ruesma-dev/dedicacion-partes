@@ -186,11 +186,11 @@ vinculados, en paralelo) en la ronda A; como F-055 T18 (local, 2026-09, 3 pasada
   `noTraidasVisibles(filas, filtros, orden)` (R40-R41; Líneas numérica, «×K» si K > 1); recurso,
   `recurso_cod · recurso_nombre` o el `recurso_ide`; modelo y filtros propios.
 - A, **T27** (R48; rehecha el 2026-11-06, «si hazlo asi»; la de `c9611c3`, `thead` sticky en `.modal`, no gustó):
-  `pintarTraerSigrid` mete las dos tablas y el `<h3>` «No se traen» en `<div class="zona-traer">`, entre los
-  botones y `.pie-modal`; `styles.css`: `.modal:has(> .zona-traer)` columna flex sin desplazarse, hijos `flex: none`,
-  zona `flex: 0 1 auto; min-height: 0; overflow: auto` (sin hueco) y su `thead` sticky en `top: 0`, opaco. **Tabla
-  entera dentro**: el `thead` arranca arriba de la zona (su sitio) y comparte columnas con el cuerpo; fuera habría
-  que igualar anchos (descartado). Fuera `--modal-pad-top` y `thead:has(> #…)`. Ni registro ni F-070; detalle, T27.
+  `pintarTraerSigrid` mete las dos tablas y «No se traen» en `<div class="zona-traer">`, entre los botones y el pie;
+  CSS: `.modal:has(> .zona-traer)` columna flex quieta, hijos `flex: none`, zona `flex: 0 1 auto; min-height: 0;
+  overflow: auto` y su `thead` sticky en `top: 0`, opaco; quinta regla (retoque `083076c`, franja de 1 px de la MANUAL),
+  `.zona-traer .tabla-reg { border-collapse: separate; border-spacing: 0; }`. Tabla entera dentro: el `thead` comparte
+  columnas con el cuerpo. Fuera `--modal-pad-top` y `thead:has(> #…)`; ni registro ni F-070; detalle, T27.
 - B: `pintarModalPreflight` gana «En Sigrid, en obras que no tiene en la plataforma» (las de vinculado
   con tipo y código): `.chk-cero` por confirmable, **desmarcada** (D17; sin `marcadaPorDefecto` ni
   `vistas` de F-064), y las demás como aviso. `registroEjecutar` manda `sobrantes_a_cero`, aparte de
