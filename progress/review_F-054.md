@@ -77,4 +77,6 @@ después el código». Lo que costó la review 10 fue justo eso.
 
 ## Resultado de `init.sh`
 
-INIT_PLACEHOLDER
+`bash harness/init.sh` con `suite_*.ok` borrados y sin pipes: código 0, ningún `[KO]` y «ENTORNO
+LISTO». Raíz: 418 passed y 1 skipped. Api: 1504 passed. Front: 544 passed. Transfer: 1887 passed.
+Cobertura 99,5 % (793/797). Tamaño dentro de los topes (review 80/140, antes de este pie).
