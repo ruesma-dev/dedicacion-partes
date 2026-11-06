@@ -1180,3 +1180,155 @@ for nombre, a, b in M:
     print(f"| {nombre} | `{a.strip()[:60]}` → `{b.strip()[:60]}` | {estado} | {len(fallos)} | {', '.join(fallos)} |")
 print("VIVOS", vivos)
 ```
+
+## Campaña 11 (`f82fd6b`, T27 rehecha/R48, tres zonas): 38 mutantes, 38 muertos, 0 supervivientes
+
+T27 rehecha el 2026-11-06 (el humano rechazó la cabecera de `c9611c3`, que se subía al borde). Mutantes
+de **cada regla** (a)-(d) de `styles.css` (cada declaración, valores vecinos y cada selector, incluido
+volver a la regla y a la variable de `c9611c3`) y del marcado de `pintarTraerSigrid` (pie, acciones,
+título o «Ningún trabajador» dentro de la zona; «No se traen» fuera; zona sin cerrar, sin `id`, con
+otra clase, condicional o anidada). Mismo método que la 9-10 (árbol de trabajo restaurado en
+`finally`, solo `tests/test_f054_traer_front.py`, sin `-x`). Tests que lo matan: hasta 4 por mutante.
+
+Línea base (sin mutar, en verde): 75 passed in 22.40s
+
+| Mutante | Fichero | Texto original → mutado (recortado a 50) | Resultado | Fallos (sin `-x`) | Tests que lo matan |
+|---|---|---|---|---|---|
+| H1 columna sin overflow hidden | styles.css | `.modal:has(> .zona-traer) { display: flex; flex-di` → `.modal:has(> .zona-traer) { display: flex; flex-di` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[columna] |
+| H2 columna con overflow auto | styles.css | `.modal:has(> .zona-traer) { display: flex; flex-di` → `.modal:has(> .zona-traer) { display: flex; flex-di` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[columna] |
+| H3 columna sin display flex | styles.css | `.modal:has(> .zona-traer) { display: flex; flex-di` → `.modal:has(> .zona-traer) { flex-direction: column` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[columna] |
+| H4 columna en fila | styles.css | `.modal:has(> .zona-traer) { display: flex; flex-di` → `.modal:has(> .zona-traer) { display: flex; flex-di` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[columna] |
+| H5 sin la regla de los hijos | styles.css | `.modal:has(> .zona-traer) > * { flex: none; }` → `` | MUERTO | 2 | test_f054_r48_las_reglas_de_las_tres_zonas[hijos], test_f054_r48_ninguna_otra_regla_toca_la_zona |
+| H6 hijos flex 1 | styles.css | `.modal:has(> .zona-traer) > * { flex: none; }` → `.modal:has(> .zona-traer) > * { flex: 1; }` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[hijos] |
+| H7 zona crece (hueco) | styles.css | `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` → `.modal:has(> .zona-traer) > .zona-traer { flex: 1 ` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[zona] |
+| H8 zona no encoge | styles.css | `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` → `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[zona] |
+| H9 zona sin flex | styles.css | `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` → `.modal:has(> .zona-traer) > .zona-traer { min-heig` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[zona] |
+| H10 zona sin min-height | styles.css | `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` → `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[zona] |
+| H11 zona min-height auto | styles.css | `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` → `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[zona] |
+| H12 zona sin overflow | styles.css | `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` → `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[zona] |
+| H13 zona overflow hidden | styles.css | `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` → `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[zona] |
+| H14 cabecera no sticky | styles.css | `.zona-traer thead { position: sticky; top: 0; z-in` → `.zona-traer thead { position: relative; top: 0; z-` | MUERTO | 2 | test_f054_r48_las_reglas_de_las_tres_zonas[cabecera], test_f054_r48_solo_dos_reglas_sticky |
+| H15 cabecera sin position | styles.css | `.zona-traer thead { position: sticky; top: 0; z-in` → `.zona-traer thead { top: 0; z-index: 2; background` | MUERTO | 2 | test_f054_r48_las_reglas_de_las_tres_zonas[cabecera], test_f054_r48_solo_dos_reglas_sticky |
+| H16 cabecera top 10px | styles.css | `.zona-traer thead { position: sticky; top: 0; z-in` → `.zona-traer thead { position: sticky; top: 10px; z` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[cabecera] |
+| H17 cabecera sin top | styles.css | `.zona-traer thead { position: sticky; top: 0; z-in` → `.zona-traer thead { position: sticky; z-index: 2; ` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[cabecera] |
+| H18 cabecera sin z-index | styles.css | `.zona-traer thead { position: sticky; top: 0; z-in` → `.zona-traer thead { position: sticky; top: 0; back` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[cabecera] |
+| H19 cabecera sin fondo | styles.css | `.zona-traer thead { position: sticky; top: 0; z-in` → `.zona-traer thead { position: sticky; top: 0; z-in` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[cabecera] |
+| H20 cabecera fondo transparente | styles.css | `.zona-traer thead { position: sticky; top: 0; z-in` → `.zona-traer thead { position: sticky; top: 0; z-in` | MUERTO | 1 | test_f054_r48_las_reglas_de_las_tres_zonas[cabecera] |
+| H21 selector columna sin :has | styles.css | `.modal:has(> .zona-traer) { display: flex; flex-di` → `.modal { display: flex; flex-direction: column; ov` | MUERTO | 2 | test_f054_r48_las_reglas_de_las_tres_zonas[columna], test_f054_r48_ninguna_otra_regla_toca_la_zona |
+| H22 selector :has sin hijo directo | styles.css | `.modal:has(> .zona-traer) { display: flex; flex-di` → `.modal:has(.zona-traer) { display: flex; flex-dire` | MUERTO | 2 | test_f054_r48_las_reglas_de_las_tres_zonas[columna], test_f054_r48_ninguna_otra_regla_toca_la_zona |
+| H23 selector hijos descendientes | styles.css | `.modal:has(> .zona-traer) > * { flex: none; }` → `.modal:has(> .zona-traer) * { flex: none; }` | MUERTO | 2 | test_f054_r48_las_reglas_de_las_tres_zonas[hijos], test_f054_r48_ninguna_otra_regla_toca_la_zona |
+| H24 selector zona sin padre | styles.css | `.modal:has(> .zona-traer) > .zona-traer { flex: 0 ` → `.zona-traer { flex: 0 1 auto; min-height: 0; overf` | MUERTO | 2 | test_f054_r48_las_reglas_de_las_tres_zonas[zona], test_f054_r48_ninguna_otra_regla_toca_la_zona |
+| H25 selector cabecera de todo modal | styles.css | `.zona-traer thead { position: sticky; top: 0; z-in` → `.modal thead { position: sticky; top: 0; z-index: ` | MUERTO | 3 | test_f054_r48_las_reglas_de_las_tres_zonas[cabecera], test_f054_r48_ninguna_otra_regla_toca_la_zona, test_f054_r48_solo_dos_reglas_sticky |
+| H26 selector cabecera de la primera versión | styles.css | `.zona-traer thead { position: sticky; top: 0; z-in` → `.modal thead:has(> #traer-titulos) { position: sti` | MUERTO | 4 | test_f054_r48_el_modal_vuelve_a_su_padding_y_fuera_la_primera_version, test_f054_r48_las_reglas_de_las_tres_zonas[cabecera], test_f054_r48_ninguna_otra_regla_toca_la_zona, test_f054_r48_solo_dos_reglas_sticky |
+| H27 padding con la variable de c9611c3 | styles.css | `box-shadow: 0 24px 60px -20px rgba(29,32,36,.6); p` → `--modal-pad-top: 22px; box-shadow: 0 24px 60px -20` | MUERTO | 1 | test_f054_r48_el_modal_vuelve_a_su_padding_y_fuera_la_primera_version |
+| H28 padding distinto | styles.css | `box-shadow: 0 24px 60px -20px rgba(29,32,36,.6); p` → `box-shadow: 0 24px 60px -20px rgba(29,32,36,.6); p` | MUERTO | 1 | test_f054_r48_el_modal_vuelve_a_su_padding_y_fuera_la_primera_version |
+| J1 pie dentro de la zona | app.js | `html += "</div>" + `<div class="pie-modal">` +` → `html += `<div class="pie-modal">` +` | MUERTO | 5 | test_f054_r48_la_zona_es_hija_directa_del_modal, test_f054_r48_las_tablas_dentro_de_la_zona_y_lo_demas_fuera, test_f054_r48_sin_entradas_la_zona_con_no_se_traen, test_f054_r48_sin_nada_la_zona_vacia_y_el_pie … |
+| J2 acciones dentro de la zona | app.js | `html += `<div class="zona-traer" id="traer-zona">`` → `` | MUERTO | 1 | test_f054_r48_las_tablas_dentro_de_la_zona_y_lo_demas_fuera |
+| J3 zona desde el título (avisos dentro) | app.js | `html += `<div class="zona-traer" id="traer-zona">`` → `` | MUERTO | 3 | test_f054_r48_las_tablas_dentro_de_la_zona_y_lo_demas_fuera, test_f054_r48_sin_entradas_la_zona_con_no_se_traen, test_f054_r48_sin_nada_la_zona_vacia_y_el_pie |
+| J4 «No se traen» fuera de la zona | app.js | `html += `<h3>No se traen (${nt.filas.length})</h3>` → `html += "</div>" + `<h3>No se traen (${nt.filas.le` | MUERTO | 5 | test_f054_r48_la_zona_es_hija_directa_del_modal, test_f054_r48_las_tablas_dentro_de_la_zona_y_lo_demas_fuera, test_f054_r48_sin_entradas_la_zona_con_no_se_traen, test_f054_r48_sin_nada_la_zona_vacia_y_el_pie … |
+| J5 zona sin cerrar | app.js | `html += "</div>" + `<div class="pie-modal">` +` → `html += `<div class="pie-modal">` +` | MUERTO | 5 | test_f054_r48_la_zona_es_hija_directa_del_modal, test_f054_r48_las_tablas_dentro_de_la_zona_y_lo_demas_fuera, test_f054_r48_sin_entradas_la_zona_con_no_se_traen, test_f054_r48_sin_nada_la_zona_vacia_y_el_pie … |
+| J6 zona sin id | app.js | `html += `<div class="zona-traer" id="traer-zona">`` → `html += `<div class="zona-traer">`;` | MUERTO | 5 | test_f054_r48_la_zona_es_hija_directa_del_modal, test_f054_r48_las_tablas_dentro_de_la_zona_y_lo_demas_fuera, test_f054_r48_sin_entradas_la_zona_con_no_se_traen, test_f054_r48_sin_nada_la_zona_vacia_y_el_pie … |
+| J7 zona con otra clase | app.js | `html += `<div class="zona-traer" id="traer-zona">`` → `html += `<div class="zona" id="traer-zona">`;` | MUERTO | 5 | test_f054_r48_la_zona_es_hija_directa_del_modal, test_f054_r48_las_tablas_dentro_de_la_zona_y_lo_demas_fuera, test_f054_r48_sin_entradas_la_zona_con_no_se_traen, test_f054_r48_sin_nada_la_zona_vacia_y_el_pie … |
+| J8 zona solo con tablas | app.js | `html += `<div class="zona-traer" id="traer-zona">`` → `if (modelo.filas.length || modelo.noTraidas.filas.` | MUERTO | 1 | test_f054_r48_sin_nada_la_zona_vacia_y_el_pie |
+| J9 zona anidada en otro div | app.js | `html += `<div class="zona-traer" id="traer-zona">`` → `html += `<div><div class="zona-traer" id="traer-zo` | MUERTO | 2 | test_f054_r48_la_zona_es_hija_directa_del_modal, test_f054_r48_sin_nada_la_zona_vacia_y_el_pie |
+| J10 zona antes de «Ningún trabajador» | app.js | `html += `<div class="zona-traer" id="traer-zona">`` → `` | MUERTO | 3 | test_f054_r48_las_tablas_dentro_de_la_zona_y_lo_demas_fuera, test_f054_r48_sin_entradas_la_zona_con_no_se_traen, test_f054_r48_sin_nada_la_zona_vacia_y_el_pie |
+
+**Total T27 rehecha: 38 mutantes, 0 supervivientes.**
+
+```python
+# mutacion_manual_f054_c11.py (fuera del repo): T27 rehecha, las tres zonas de R48.
+import pathlib, re, subprocess
+
+RAIZ = pathlib.Path(r"C:\Users\pgris\PycharmProjects\porcentajes-f054\services\dedicacion-front")
+CSS = RAIZ / "static" / "css" / "styles.css"
+JS = RAIZ / "static" / "js" / "app.js"
+COL = ".modal:has(> .zona-traer) { display: flex; flex-direction: column;\n  overflow: hidden; }"
+HIJ = ".modal:has(> .zona-traer) > * { flex: none; }"
+ZON = ".modal:has(> .zona-traer) > .zona-traer { flex: 0 1 auto; min-height: 0;\n  overflow: auto; }"
+CAB = ".zona-traer thead { position: sticky; top: 0; z-index: 2;\n  background: var(--paper); }"
+PAD = "box-shadow: 0 24px 60px -20px rgba(29,32,36,.6); padding: 22px 26px; }"
+ABRE = 'html += `<div class="zona-traer" id="traer-zona">`;'
+CIERRA = 'html += "</div>" + `<div class="pie-modal">` +'
+ACC = """  if (casillas) {
+    html += `<div class="acciones-traer">` +"""
+H3 = "html += `<h3>No se traen (${nt.filas.length})</h3>` +"
+H2 = "let html = `<h2>Porcentajes en Sigrid"
+FIN_PIE = """      `${textoBotonTraer(modelo, modelo.filas)}</button>` : "") +
+    "</div>";
+  return html;"""
+
+# (nombre, fichero, [(original, mutado), ...])
+M = [
+    ("H1 columna sin overflow hidden", CSS, [(COL, ".modal:has(> .zona-traer) { display: flex; flex-direction: column; }")]),
+    ("H2 columna con overflow auto", CSS, [(COL, COL.replace("hidden", "auto"))]),
+    ("H3 columna sin display flex", CSS, [(COL, COL.replace("display: flex; ", ""))]),
+    ("H4 columna en fila", CSS, [(COL, COL.replace("column", "row"))]),
+    ("H5 sin la regla de los hijos", CSS, [(HIJ, "")]),
+    ("H6 hijos flex 1", CSS, [(HIJ, HIJ.replace("none", "1"))]),
+    ("H7 zona crece (hueco)", CSS, [(ZON, ZON.replace("0 1 auto", "1 1 auto"))]),
+    ("H8 zona no encoge", CSS, [(ZON, ZON.replace("0 1 auto", "0 0 auto"))]),
+    ("H9 zona sin flex", CSS, [(ZON, ZON.replace("flex: 0 1 auto; ", ""))]),
+    ("H10 zona sin min-height", CSS, [(ZON, ZON.replace(" min-height: 0;", ""))]),
+    ("H11 zona min-height auto", CSS, [(ZON, ZON.replace("min-height: 0", "min-height: auto"))]),
+    ("H12 zona sin overflow", CSS, [(ZON, ZON.replace("\n  overflow: auto; ", " "))]),
+    ("H13 zona overflow hidden", CSS, [(ZON, ZON.replace("overflow: auto", "overflow: hidden"))]),
+    ("H14 cabecera no sticky", CSS, [(CAB, CAB.replace("sticky", "relative"))]),
+    ("H15 cabecera sin position", CSS, [(CAB, CAB.replace("position: sticky; ", ""))]),
+    ("H16 cabecera top 10px", CSS, [(CAB, CAB.replace("top: 0", "top: 10px"))]),
+    ("H17 cabecera sin top", CSS, [(CAB, CAB.replace("top: 0; ", ""))]),
+    ("H18 cabecera sin z-index", CSS, [(CAB, CAB.replace("z-index: 2;", ""))]),
+    ("H19 cabecera sin fondo", CSS, [(CAB, CAB.replace("\n  background: var(--paper); ", " "))]),
+    ("H20 cabecera fondo transparente", CSS, [(CAB, CAB.replace("var(--paper)", "transparent"))]),
+    ("H21 selector columna sin :has", CSS, [(COL, COL.replace(".modal:has(> .zona-traer)", ".modal"))]),
+    ("H22 selector :has sin hijo directo", CSS, [(COL, COL.replace(":has(> ", ":has("))]),
+    ("H23 selector hijos descendientes", CSS, [(HIJ, HIJ.replace(") > *", ") *"))]),
+    ("H24 selector zona sin padre", CSS, [(ZON, ZON.replace(".modal:has(> .zona-traer) > .zona-traer", ".zona-traer"))]),
+    ("H25 selector cabecera de todo modal", CSS, [(CAB, CAB.replace(".zona-traer thead", ".modal thead"))]),
+    ("H26 selector cabecera de la primera versión", CSS, [(CAB, CAB.replace(".zona-traer thead", ".modal thead:has(> #traer-titulos)"))]),
+    ("H27 padding con la variable de c9611c3", CSS, [(PAD, "--modal-pad-top: 22px; box-shadow: 0 24px 60px -20px rgba(29,32,36,.6); padding: var(--modal-pad-top) 26px; }")]),
+    ("H28 padding distinto", CSS, [(PAD, PAD.replace("22px 26px", "10px 26px"))]),
+    ("J1 pie dentro de la zona", JS, [(CIERRA, 'html += `<div class="pie-modal">` +'), (FIN_PIE, FIN_PIE.replace('"</div>";', '"</div></div>";'))]),
+    ("J2 acciones dentro de la zona", JS, [(ABRE, ""), (ACC, '  html += `<div class="zona-traer" id="traer-zona">`;\n' + ACC)]),
+    ("J3 zona desde el título (avisos dentro)", JS, [(ABRE, ""), (H2, 'let html = `<div class="zona-traer" id="traer-zona"><h2>Porcentajes en Sigrid')]),
+    ("J4 «No se traen» fuera de la zona", JS, [(H3, 'html += "</div>" + `<h3>No se traen (${nt.filas.length})</h3>` +'), (CIERRA, 'html += `<div class="pie-modal">` +')]),
+    ("J5 zona sin cerrar", JS, [(CIERRA, 'html += `<div class="pie-modal">` +')]),
+    ("J6 zona sin id", JS, [(ABRE, 'html += `<div class="zona-traer">`;')]),
+    ("J7 zona con otra clase", JS, [(ABRE, 'html += `<div class="zona" id="traer-zona">`;')]),
+    ("J8 zona solo con tablas", JS, [(ABRE, 'if (modelo.filas.length || modelo.noTraidas.filas.length) html += `<div class="zona-traer" id="traer-zona">`;')]),
+    ("J9 zona anidada en otro div", JS, [(ABRE, 'html += `<div><div class="zona-traer" id="traer-zona">`;'), (CIERRA, 'html += "</div></div>" + `<div class="pie-modal">` +')]),
+    ("J10 zona antes de «Ningún trabajador»", JS, [(ABRE, ""), ('  if (!(datos.trabajadores || []).length) {', '  html += `<div class="zona-traer" id="traer-zona">`;\n  if (!(datos.trabajadores || []).length) {')]),
+]
+
+
+def pytest():
+    r = subprocess.run([str(RAIZ / ".venv" / "Scripts" / "python.exe"), "-m", "pytest",
+                        "tests/test_f054_traer_front.py", "-q", "-p", "no:cacheprovider", "-rf"],
+                       cwd=RAIZ, capture_output=True, text=True)
+    fallos = sorted(set(re.findall(r"^FAILED \S+::([\w\[\]-]+)", r.stdout, re.M)))
+    return r.returncode, fallos, r.stdout.strip().splitlines()[-1]
+
+
+base = pytest()
+print("BASE", base[0], base[2], flush=True)
+assert base[0] == 0
+vivos = 0
+for nombre, fichero, cambios in M:
+    orig = fichero.read_bytes()
+    txt = orig.decode("utf-8")
+    nl = "\r\n" in txt
+    t = txt.replace("\r\n", "\n")
+    for a, b in cambios:
+        assert t.count(a) == 1, (nombre, a)
+        t = t.replace(a, b)
+    fichero.write_bytes((t.replace("\n", "\r\n") if nl else t).encode("utf-8"))
+    try:
+        rc, fallos, ult = pytest()
+    finally:
+        fichero.write_bytes(orig)
+    estado = "MUERTO" if rc else "VIVO"
+    vivos += not rc
+    a0 = " ".join(cambios[0][0].split())[:50]
+    b0 = " ".join(cambios[0][1].split())[:50]
+    print(f"| {nombre} | {fichero.name} | `{a0}` → `{b0}` | {estado} | {len(fallos)} | {', '.join(fallos[:4])}{' …' if len(fallos) > 4 else ''} |", flush=True)
+print("VIVOS", vivos)
+```

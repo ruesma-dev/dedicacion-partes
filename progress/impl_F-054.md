@@ -96,8 +96,8 @@ Desde la carpeta del servicio: `.venv/Scripts/python -m pytest tests/<fichero>
   "Content-Type: application/json" -d '{"empresa":1,"ano":2026,"mes":9,"obras":[]}'`.
   2) **Pendiente, tras T23-T25 y T27**: la ventana de «Sincronizar Sigrid» y
   «No se traen» (cabecera estándar, filtros, «Limpiar», «×K», códigos) y, de
-  R48, al bajar la cabecera y los filtros fijos en las dos tablas, sin hueco ni
-  transparencia. 3) Preflight (T26). 4) Sincronizar ⇒ `igual`. Pasos exactos:
+  R48 (rehecha), al bajar solo se mueven las filas: lo de arriba quieto y opaco,
+  columnas alineadas, pie a la vista, sin hueco. 3) Preflight (T26). 4) Sincronizar ⇒ `igual`. Pasos exactos:
   `tasks.md` T18 y `progress/current.md` → `progress/manual_F-054.md`.
 - **T19** (humano, `OBRA_PRUEBAS_FORZAR=true`, la única que escribe): `cd
   services/dedicacion-transfer && .venv/Scripts/python
@@ -193,13 +193,13 @@ nuevos sin tocar producción; campaña 8 (`4e5ac80`): 5/5 muertos. Total T24:
 **`bash harness/init.sh`** (cachés borradas, sin pipes): código 0, **sin `[KO]`**;
 cobertura 99.5 % (786/790), impl 212/220. Suites abajo.
 
-## T27 · 2026-11-05 (R48): cabecera fija en «Sincronizar Sigrid»
+## T27 (R48): la ventana de «Sincronizar Sigrid» en tres zonas (rehecha el 2026-11-06)
 
-RED `5442c4b`, código `ff3d1ac`: **solo** una regla en `styles.css` junto a `.acciones-traer` (`app.js`, registro y cuadrante sin tocar). Tests `test_f054_r48_*` (4): la regla con **exactamente** los dos `thead:has(> #…)` y sus 4 declaraciones; `sticky` solo en `.topbar` (intacta) y la nueva; los dos `<thead><tr id=…>` en la ventana; el modal del registro sin esos `id`. Los dos últimos ya pasaban (fijan el marcado de T24; los matan F13/F14).
-RED: `cd services/dedicacion-front && .venv/Scripts/python -m pytest tests/test_f054_traer_front.py -k r48 -q -p no:cacheprovider` →
-`E AssertionError: falta la regla de T27 con esos dos selectores` / `E assert 0 == 1`; `E AssertionError: assert [['.topbar']] == [['.topbar'],...as-titulos)']]` / `E Right contains one more item: ['.modal thead:has(> #traer-titulos)', '.modal thead:has(> #no-traidas-titulos)']` → `2 failed, 2 passed, 60 deselected in 1.86s`. Tras `ff3d1ac`: `4 passed`; front entero `531 passed` (300,54 s). **`bash harness/init.sh`** (`0fda482`, `.arnes_cache/suite_*.ok` borrados, sin pipes): código 0, **sin `[KO]`**, «ENTORNO LISTO»; cobertura 99.5 % (793/797), tamaño impl 219/220.
-Mutación manual, campaña 9 (`progress/mutacion_manual_F-054.md`): **15/15 muertos**, 0 vivos (cada declaración, `relative`, `top: 22px`, `z-index: 0`, `transparent`, cada selector, sin `>`, `.modal thead`, `.filter-row` añadido, y los dos `tr` de `app.js`).
-**Corrección (MANUAL T18 paso 2, «ha quedado fatal»: franja de 22 px sobre la cabecera, `top: 0` en un `.modal` con padding):** RED `645ccdb` (`-k r48` → `{'top': '0'} != {'top': 'calc(-1 * var(--modal-pad-top))'}` y `assert None == '22px'` en `test_f054_r48_el_top_compensa_el_padding_superior_del_modal` → `2 failed, 4 passed`), código `c9611c3`: `.modal { --modal-pad-top: 22px; padding: var(--modal-pad-top) 26px }` y `top: calc(-1 * var(--modal-pad-top))`; test nuevo de fondo de cada `th` (ya pasaba: `.filterable … tr:first-child th` burdeos, `.filter-row th` `--paper`). `-k r48` `6 passed`; front `533 passed` (254,21 s); campaña 10 **13/13 muertos**. **`bash harness/init.sh`** (`74ac30d`, cachés borradas, sin pipes): código 0, **sin `[KO]`**, «ENTORNO LISTO»; api 1504, front 533, transfer 1887, raíz 418+1; cobertura 99.5 % (793/797); tamaño requirements 150/150, design 250/250, impl 219/220. Pendiente: repetir la MANUAL de T18 paso 2 con R48.
+**Primera versión (historia; detalle en `git show`)**: `5442c4b`/`ff3d1ac` (`thead:has(> #…)` sticky en `.modal`, campaña 9 15/15) y `645ccdb`/`c9611c3` (`--modal-pad-top` y `top` negativo, campaña 10 13/13). La MANUAL de T18 paso 2 la rechazó dos veces; el humano aprobó tres zonas («si hazlo asi», spec `1a2ca2c`). **Rehecha, `f82fd6b`** (RED y código en el mismo commit: la RED se lanzó con los tests nuevos sobre el código de `c9611c3`, abajo). `app.js`, solo `pintarTraerSigrid`: `.acciones-traer` sale del `if (modelo.filas.length)` (con casillas siempre hay filas: mismo HTML) y las dos tablas y el `<h3>` «No se traen» van en `<div class="zona-traer" id="traer-zona">`, pintado siempre, hijo directo de `.modal`, justo antes de `.pie-modal`; `id`, escuchas y `abrirTraerSigrid`, iguales. `styles.css`: `.modal` vuelve a `padding: 22px 26px` (fuera `--modal-pad-top` y su comentario); en lugar de `thead:has(> #…)`, las reglas (a)-(d) de la spec, literales.
+**Tests** (lista cerrada, solo `test_f054_r48_*` de `test_f054_traer_front.py`): fuera `…_el_top_compensa_el_padding_superior_del_modal` y `…_la_regla_fija_las_dos_cabeceras…`; `SELECTORES_R48` y `DECLARACIONES_R48` (sustituye a `TOP_R48`) a lo nuevo; nuevos: las cuatro reglas exactas (parametrizado), ninguna otra nombra `.zona-traer`, `.modal` con `22px 26px` y ni `--modal-pad-top` ni `thead:has(` en CSS ni `app.js`, solo dos `sticky`, zona una vez con dentro las tablas y «No se traen» y fuera (antes) `<h2>`, avisos y `.acciones-traer` y (después) el pie, sin «No se traen», sin entradas, sin nada (zona vacía), zona hija directa (divs equilibrados antes), registro sin `zona-traer`; siguen `…_cada_th…_fondo_opaco` y `…_los_id_van_en_la_primera_fila…`. Ningún test de T9/T23-T24 tocado.
+RED: `cd services/dedicacion-front && python -m pytest tests/test_f054_traer_front.py -k r48 -q --tb=line -p no:cacheprovider` (sobre `c9611c3`) → `E AssertionError: falta (o sobra) la regla «columna» de T27` (y «hijos», «zona», «cabecera»); `E AssertionError: assert 'var(--modal-pad-top) 26px' == '22px 26px'`; `E AssertionError: assert [['.topbar'],...as-titulos)']] == [['.topbar'],...traer thead']]`; `E AssertionError: assert [] == [('.modal:has...raer thead',)]`; `E AssertionError: la zona, una vez` / `assert 0 == 1` (×5) → `12 failed, 3 passed, 60 deselected in 1.88s`.
+Verde: `-k r48` `15 passed, 60 deselected in 1.80s`; el fichero `75 passed`; front entero (`.venv`) `542 passed, 19 warnings in 125.48s`. **Campaña 11** (`progress/mutacion_manual_F-054.md`): **38/38 muertos**, 0 vivos (28 de CSS: cada declaración, valores vecinos, cada selector, la regla y la variable de `c9611c3`; 10 de `app.js`: pie, acciones, título o «Ningún trabajador» dentro, «No se traen» fuera, sin cerrar, sin `id`, otra clase, condicional, anidada). **Riesgos que solo ve la MANUAL** (no los ve un test sin navegador): `:has` (Edge/Chrome ≥ 105), márgenes de `h2`/`p` que en flex no colapsan, hueco, transparencia o columnas desalineadas ⇒ PARA (T27). Pendiente: review y T18 paso 2 con R48.
+INIT_T27
 
 ## Evidencias
 
@@ -208,7 +208,7 @@ Mutación manual, campaña 9 (`progress/mutacion_manual_F-054.md`): **15/15 muer
 | Tests | 2026-11-05, tras T27 (`init.sh`): api `1504 passed` (223,45 s), front `531 passed` (251,20 s), transfer `1887 passed` (79,66 s), raíz `418 passed, 1 skipped` (103,22 s). 2026-11-03, tras T24-T26: api `1502 passed` (81,77 s), front `527 passed` (82,13 s), transfer `1886 passed` (34,62 s), raíz `418 passed, 1 skipped` (43,01 s). Tras T23: api 1469, transfer 1865, front 507, raíz 418+1 |
 | Cobertura de líneas cambiadas | **99,5 %** (793/797, tras T27) (umbral 80 %). No mide JS ni CSS |
 | Mutación Python | O11: **289/289 muertos**, 0 vivos, 0 timeouts, 2936 s, SHA `353d290`. T24-T26: 287/287, `086983a`. Antes: T22 266/266 (+ RM4 8/8 a mano), `c70eb61` 266/266, `c614be3` 262/262 |
-| Mutación `app.js`/CSS | manual: T9/T15 69 + O5 14; T23 81 + 3; T24 90 + 5; T27 15 + 13 (CSS y `app.js`); **0 supervivientes** |
+| Mutación `app.js`/CSS | manual: T9/T15 69 + O5 14; T23 81 + 3; T24 90 + 5; T27 15 + 13 y, rehecha, 38 (campaña 11); **0 supervivientes** |
 | Tiempo de la suite | el de cada suite en la fila Tests |
 
 **Análisis de supervivientes.** Ningún equivalente pendiente del humano. La
