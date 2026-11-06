@@ -621,6 +621,11 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
   overflow: auto; }
 .zona-traer thead { position: sticky; top: 0; z-index: 2;
   background: var(--paper); }
+/* Bordes separados (sin espacio): con `collapse` el borde es de la rejilla
+   y no viaja con el `thead` fijo, y entre títulos y filtros se veían pasar
+   las filas. Ninguna celda lleva borde arriba ni a la izquierda: no salen
+   dobles. Va tras `.modal .tabla-reg`, que tiene la misma especificidad. */
+.zona-traer .tabla-reg { border-collapse: separate; border-spacing: 0; }
 
 /* ---------- Diálogo «Completar al 100 %» (F-029) ---------- */
 .modal #completar-obra { width: 100%; }

@@ -1095,6 +1095,7 @@ SELECTORES_R48 = {
     "hijos": [".modal:has(> .zona-traer) > *"],
     "zona": [".modal:has(> .zona-traer) > .zona-traer"],
     "cabecera": [".zona-traer thead"],
+    "bordes": [".zona-traer .tabla-reg"],
 }
 DECLARACIONES_R48 = {
     "columna": {"display": "flex", "flex-direction": "column",
@@ -1103,6 +1104,10 @@ DECLARACIONES_R48 = {
     "zona": {"flex": "0 1 auto", "min-height": "0", "overflow": "auto"},
     "cabecera": {"position": "sticky", "top": "0", "z-index": "2",
                  "background": "var(--paper)"},
+    # Retoque del 2026-11-06 (MANUAL T18 paso 2): con bordes colapsados,
+    # el borde es de la rejilla y no viaja con el `thead` fijo; entre
+    # títulos y filtros quedaba 1 px por el que se veían pasar las filas.
+    "bordes": {"border-collapse": "separate", "border-spacing": "0"},
 }
 
 
@@ -1129,11 +1134,30 @@ def test_f054_r48_las_reglas_de_las_tres_zonas(zona):
 
 
 def test_f054_r48_ninguna_otra_regla_toca_la_zona():
-    """Solo esas cuatro reglas nombran `.zona-traer`."""
+    """Solo esas cinco reglas nombran `.zona-traer`."""
     con_zona = [s for s, _ in _reglas_css()
                 if any("zona-traer" in x for x in s)]
     assert sorted(map(tuple, con_zona)) == sorted(
         tuple(s) for s in SELECTORES_R48.values())
+
+
+def test_f054_r48_los_bordes_viajan_con_la_cabecera_sin_dobles():
+    """Bordes separados: cada celda lleva el suyo y viaja con el `thead`
+    fijo (sin franja entre títulos y filtros). La regla va después de
+    `.modal .tabla-reg` (misma especificidad: si fuera antes, perdería) y
+    ninguna regla de `th`/`td` de esas tablas pone borde arriba ni a la
+    izquierda: con `separate` los bordes no se funden y saldrían dobles."""
+    reglas = _reglas_css()
+    selectores = [s for s, _ in reglas]
+    assert selectores.index(SELECTORES_R48["bordes"]) > selectores.index(
+        [".modal .tabla-reg"])
+    for sel, decl in reglas:
+        for s in sel:
+            ultimo = s.split()[-1] if s.split() else ""
+            if (any(c in s for c in (".tabla-reg", ".filterable", ".filter-row"))
+                    and re.match(r"(th|td)([.:\[]|$)", ultimo)):
+                assert not {"border", "border-top", "border-left",
+                            "border-width"} & set(decl), (s, decl)
 
 
 def test_f054_r48_el_modal_vuelve_a_su_padding_y_fuera_la_primera_version():
