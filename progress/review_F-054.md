@@ -1,102 +1,122 @@
 <!-- progress/review_F-054.md -->
-Revisión incremental desde 398312c (pasada 9; la 8 aprobó `f9be667`, más `398312c` con O12-O14), HEAD `276593b`; CHECKPOINTS entero sobre el estado actual.
+Revisión incremental desde 9c5e629 (pasada 10; la 9 aprobó `30b8171`, más `9c5e629` con O15), HEAD `5ca4838`; CHECKPOINTS entero sobre el estado actual.
 
-# F-054 · Review 9 (merge de `dev` y O11)
+# F-054 · Review 10 (T27/R48, la ventana de «Sincronizar Sigrid» en tres zonas)
 
-**Veredicto: APROBADO (APPROVED).** El merge de `dev` trae exactamente los dos hotfixes y no toca nada
-de F-054; O11 solo cambia texto y ningún consumidor decide por él. Sin bloqueos; una observación (O15).
+**Veredicto: CAMBIOS REQUERIDOS (CHANGES_REQUESTED).** El código y los tests están bien: el
+cambio queda dentro de esa ventana, los tests de T23-T26 siguen intactos y la mutación manual es
+suficiente. Bloquea el **rastro**: la spec no recoge la quinta regla CSS (el retoque de bordes) y
+`current.md` sigue dando por pendiente la MANUAL de R48, que `manual_F-054.md` da por hecha
+(«perfecto»). Solo hay que tocar documentación.
 
 **Rigor:** `critico` (`features.json`): RED, cobertura, mutación con 0 supervivientes, RM5 y MANUAL.
-Anteriores: 8, 7, 6 y 2 APROBADAS; 5, 4 y 3 CAMBIOS solo por `current.md`; 1 RECHAZADA.
+Anteriores: 9, 8, 7, 6 y 2 APROBADAS; 5, 4 y 3 CAMBIOS solo por `current.md`; 1 RECHAZADA. La
+review 10 anterior, sobre la primera versión, no dejó nada en este fichero: se sustituye la 9.
 
-## Delta revisado (`git diff 398312c..HEAD`, 16 ficheros)
+## Delta revisado (`git diff 9c5e629..HEAD`, 11 ficheros, 19 commits)
 
-- **Merge `a2ad52a`.** Lo que añade en `services/` es exactamente `29b969b` (`tipos_excluidos: []`,
-  comentario de `config.yaml` y `test_f044_r1_config_versionada`) más `23160d0` (`PropuestaSubfilaOut`,
-  `PropuestasOut.subfilas = []`, `response_model_exclude_unset=True` en `GET …/propuestas` y
-  `test_hotfix_propuestas_subfilas.py`). En `schemas.py`/`routes.py` las líneas de F-054 (124 y 58 en
-  alcance) siguen intactas: el delta solo añade la clase y el parámetro de la ruta. `exclude_unset`
-  actúa sobre los modelos anidados, pero `PropuestaLineaOut` y `PendienteOut` no tienen campos con
-  defecto y F-054 no toca esa ruta: la respuesta no pierde claves (los dos tests del hotfix lo fijan).
-  `specs/F-044` (D1b, R3), `ARCHITECTURE.md`, `features.json` (F-069, F-070) y `BACKLOG.md` vienen de dev.
-- **`current.md` tras el conflicto.** Comparé los dos lados contra la base del merge (`1ed18be`): los
-  dos párrafos HOTFIX de dev están completos (l. 39-57), más una línea (l. 59) que dice que se trajeron
-  a la rama; el resto del lado F-054 sigue. No se pierde nada.
-- **O11 (`353d290`).** `_nombre_otra_obra` (`universo_var.py:134-143`) es puro texto: la decisión sigue
-  siendo `obra_ide != catalogo.obra.ide` (l. 123), igual que antes. Sin código, el `ide` (como antes);
-  con el código de la VAR, sin contar espacios, «COD (ide N)» (`OBRA_HOMONIMA_VAR`); si no, el código.
-  `test_f054_o11_otra_obra_con_el_codigo_var_lleva_su_ide` cubre los seis casos (igual, espacios en
-  cualquiera de los dos lados, distinto, `None`, `""`), y `test_f054_r46_var_de_otra_obra_*` cambia
-  solo el esperado (es de F-054). RED real en `impl_F-054.md` (`2 failed`, con el texto esperado).
-- **Consumidores del texto.** Grep de `MOTIVO_VAR_OTRA_OBRA`, `OBRA_HOMONIMA_VAR`, «no es la obra» y
-  «(ide » en los tres servicios, sin tests: solo la definición y el `format`. Grep de comparaciones
-  (`motivo ==`/`!=`/`in`, `startswith`, `includes`, `indexOf`, `match`, `exec` sobre `motivo`): ninguna
-  con este texto. El regex R20 de `pintarModalPreflight` no casa con «partida VAR …» (ver review 8).
-- **Convenciones:** primera línea con ruta; sin `print` ni secretos. `ruff` sobre lo cambiado: solo
-  `I001` en `schemas.py:3`, que es el bloque de imports y no cambia en el delta (deuda previa).
-- **`276593b`**: solo la primera línea de `current.md`, con review 9 lanzada.
+- **`app.js`, solo `pintarTraerSigrid`.** `.acciones-traer` sale del `if (modelo.filas.length)`.
+  Da el mismo HTML, porque `casillas = modelo.filas.some(...)` implica que hay filas. Las dos tablas
+  y el `<h3>` «No se traen» van en `<div class="zona-traer" id="traer-zona">`, que se pinta siempre y
+  se cierra justo antes de `.pie-modal`. Es hija directa de `.modal` (`abrirModal`, l. 3381, sin
+  cambios). Los `id` y las escuchas no cambian.
+- **`styles.css` (l. 609-628).** Hay cinco reglas, todas bajo `.modal:has(> .zona-traer)` o
+  `.zona-traer`, y la clase solo la pinta `pintarTraerSigrid` (grep en `static/` y `templates/`).
+  Por eso no tocan el modal del registro, «Completar al 100 %» ni el cuadrante. `.modal` sigue con
+  `padding: 22px 26px`, sin `--modal-pad-top` ni `thead:has(`. Solo hay dos reglas `sticky`:
+  `.topbar` y `.zona-traer thead`. La primera versión (`ff3d1ac`, `c9611c3`) no deja rastro en el código.
+- **Tests.** El diff de `test_f054_traer_front.py` **solo añade líneas** (+208, −0) y no cambia
+  ningún otro fichero de test, así que T9 y T23-T26 no se han debilitado. Los 15 `r48_*` comprueban
+  las reglas con selector y declaraciones exactas, que ninguna otra nombra `.zona-traer`, el orden
+  respecto a `.modal .tabla-reg`, que no haya bordes arriba ni a la izquierda en `th` y `td`, y el
+  HTML por zonas en cuatro escenarios. También comprueban que la zona es hija directa y que el
+  registro no la lleva.
+- **Convenciones:** primera línea con ruta; sin `console.log`, `print` ni secretos.
 
 ## Checkpoints
 
-- **C1** [x] `init.sh` (`suite_*.ok` borrados, sin pipes): código 0, sin `[KO]`, «ENTORNO LISTO»;
-  raíz 418 (+1 skipped), api 1504 (+2 del hotfix), front 527, transfer 1887 (+1 de O11) · [x] ficheros
-  del arnés.
-- **C2** [x] una sola `in_progress` (F-054) · [x] rama `feature/F-054-sync-trae-porcentajes` · [x]
-  `current.md` coherente (cabecera con review 9; ver O15) · [x] history.
-- **C3** [x] hexagonal (`_nombre_otra_obra` en `application/services`, pura) · [x] primera línea · [x]
-  sin debug ni secretos · [x] front sin negocio (el delta no toca el front).
+- **C1** [x] `init.sh` (`suite_*.ok` borrados, sin pipes): ver el resultado al pie · [x] ficheros del arnés.
+- **C2** [x] una sola `in_progress` (F-054) · [x] rama `feature/F-054-sync-trae-porcentajes` ·
+  **[ ] `current.md` coherente** (CR2) · [x] history.
+- **C3** [x] hexagonal (el delta es solo front de presentación) · [x] primera línea · [x] sin debug
+  ni secretos · [x] front sin negocio (marcado y CSS).
 - **C3 bis** N/A: el delta no toca `docs/referencia/`.
-- **C4** [x] requisitos con tests (tabla abajo) · [x] sin red ni BBDD (los tests nuevos usan el
-  `ClienteVar` de prueba y la fixture `api` con dobles) · [x] MANUAL: T18 pasos 2-4, T19 y T20 siguen
-  con su comando en `current.md`.
-- **C4 bis** [x] rigor declarado · [x] RED real de O11 · [x] cobertura `[OK]` 99,5 % (793/797) · [x]
-  mutación: **recalculé** con `alcance_de_feature("F-054")` + `generar_mutantes`: base `d317edb`, 25
-  ficheros, **1744 líneas, 289 mutantes** (5 en `universo_var.py`): coincide con el informe. Campaña no
-  reejecutada: 2936 s según el informe · [x] RM1: SHA medido `353d290`; después solo `e37cea5` y
-  `276593b`, que tocan `progress/` y `tasks.md`, ningún fichero del alcance · [x] RM2: 2936,3 / 289 =
-  10,2 s de pared con 4 workers (≈ 41 s por mutante y worker frente a bases de 37-90 s, con `-x`):
-  coherente, como en la 8 · [x] sin «CAMPAÑA NO VÁLIDA», «Sin veredicto» 0, línea base declarada ·
-  [x] RM3: ningún equivalente · [x] RM5 N/A: la campaña no declara equivalentes · [x] RM6 N/A: no se
-  quita ninguna guarda (O11 añade ramas) · [x] `app.js` sin cambios en el delta: las campañas manuales
-  7-8 de la review 8 siguen valiendo · [x] «Evidencias» con los cuatro números (fila Mutación al día).
+- **C4** [x] R48 con tests (tabla abajo) · [x] sin red ni BBDD · [x] MANUAL de R48 hecha por el
+  humano (`manual_F-054.md:24`, sobre `083076c`).
+- **C4 bis** [x] rigor declarado · [x] RED real (`impl_F-054.md:200`, `12 failed`, con mensajes, sobre
+  `c9611c3`) · [x] cobertura `[OK]` 99,5 % (793/797; no mide JS ni CSS) · [x] mutación Python: el
+  delta no toca ningún `.py` del alcance (solo un test). El informe de `353d290` sigue valiendo (RM1).
+  · [x] mutación manual de `app.js`/CSS: **campaña 11, 38/38** (28 de CSS: cada declaración, valores
+  vecinos, cada selector, la regla y la variable de `c9611c3`; 10 de marcado: pie, acciones, título o
+  «Ningún trabajador» dentro, «No se traen» fuera, zona sin cerrar, sin `id`, con otra clase,
+  condicional o anidada). **Campaña 12, 12/12** (la regla de bordes, su posición y los bordes que
+  saldrían dobles). La columna de texto de la tabla va recortada (11) o falta (12), pero el script de
+  cada campaña lleva los pares original → mutado **exactos**, así que se pueden reproducir. **Reproduje
+  dos al pie de la letra** sobre una copia en mi scratchpad (RM4): H12 muere en `[zona]` y K8 en
+  `…_los_bordes_viajan…`, como dice el informe. En la copia, `…_registro_no_lleva_la_zona` falla
+  también sin mutar, porque necesita `dedicacion-transfer` al lado. Es efecto de la copia, no del
+  mutante. · [x] RM2: líneas base de 22,4 s y 5,9 s, coherentes con el fichero y con `-k r48` · [x] RM3:
+  ningún equivalente sale muerto · [x] RM5 N/A: ninguna campaña declara equivalentes · [x] RM6 N/A: no
+  se quita ninguna guarda · [x] «Evidencias» con los cuatro números (fila `app.js`/CSS al día).
 - **C4 ter** N/A: no hay `harness/rutas_sensibles.json`.
-- **C5** [x] T1-T17 y T21-T26 `[x]`; O11 anotada en T26 y commits `F-054 O11: …` · T18-T20 `[ ]` por
-  ser MANUAL, legítimo · [x] árbol limpio antes del informe · [x] `features.json` en `in_progress`.
+- **C5** [x] T27 `[x]` con commits `F-054 T27: …` · T18-T20 `[ ]` por ser MANUAL, legítimo ·
+  **[ ] T27 describe lo que hay** (CR1) · [x] árbol limpio antes del informe.
 
-## Rastro (`progress/current.md`, 810 líneas, relectura de los sitios de estado)
-
-Cabecera (l. 4) con merge, O11 y review 9; l. 142 con O11-O14 recogidas y el SHA; hotfixes en l.
-39-59; MANUAL pendientes con comando (l. 144 y ss.). Una incoherencia menor, no bloquea:
-
-- **O15** `current.md:96` («**Siguiente:** F-054, review 8 APROBADA…»), l. 99 (título «review 8
-  APROBADA») y l. 594 («**Hoy (2026-11-03):** … review 8 APROBADA») no nombran el merge, O11 ni la
-  review 9. Lo pendiente que dicen (T18 pasos 2-4, T19, T20) sigue siendo cierto. Propuesta al
-  actualizar tras esta review: «review 9 APROBADA (O11 y `dev` traído, 2026-11-04)» en los tres.
-  Además, en l. 4 el «:» de «review 9 de O11 lanzada:» cuelga ahora la frase de T18 paso 2 de la
-  review 9; mejor «…lanzada. Origen de la segunda enmienda: al probar…».
+¿Es suficiente la mutación? Sí. Cubre cada declaración y cada selector de las cinco reglas, y cada
+forma razonable de colocar mal la zona en el marcado. Lo que ninguna mutación ve (hueco,
+transparencia, alineación, `:has` en el navegador) lo cubrió la MANUAL del humano.
 
 ## Cambios requeridos
 
-Ninguno. Para cerrar faltan T18 (pasos 2-4) y T19, del humano, con resultado en
-`progress/manual_F-054.md`, y T20 al desplegar (el despliegue de la api arrastrará ya los dos
-hotfixes). R37 sin cifra final hasta T19 (≤ 11,89 s).
+1. **La spec no recoge el retoque `083076c`.** `tasks.md:34` (T27) define las reglas «(a)-(d)» y pide
+   verificarlas «con **exactamente** esos selectores y declaraciones». Su lista cerrada de tests no
+   nombra `test_f054_r48_los_bordes_viajan_con_la_cabecera_sin_dobles`. `design.md:188-193` tampoco
+   menciona la quinta regla. En cambio, el código lleva `.zona-traer .tabla-reg { border-collapse:
+   separate; border-spacing: 0; }` (`styles.css:628`) y el test dice «Solo esas **cinco** reglas»
+   (`test_f054_traer_front.py:1136`). Grep de `separate` y `border-collapse` en `specs/F-054-*`: cero
+   resultados. Hay que añadir a T27 la regla (e) con su motivo (la franja de 1 px de la MANUAL del
+   2026-11-06; sin bordes dobles porque ninguna celda lleva borde arriba ni a la izquierda; va después
+   de `.modal .tabla-reg`), el test nuevo a la lista cerrada y la campaña 12 a la verificación (8).
+   Lo mismo en una línea de `design.md` §7. `impl_F-054.md:199` también dice «las cuatro reglas
+   exactas»: hay que añadir que el retoque suma la quinta.
+2. **`current.md` no dice lo mismo que `manual_F-054.md`.**
+   - La l. 4 acaba en «falta review y repetir la MANUAL de T18 paso 2 con lo de R48», pero
+     `manual_F-054.md:24` (`5ca4838`) la da por comprobada («perfecto»). Hay que reescribir esa
+     cola: la MANUAL de R48 está hecha (parte visual de T18 paso 2) y queda la review 10.
+   - En las l. 173-181, el bloque de R48 dentro de T18 paso 2 sigue como pendiente. Hay que marcarlo
+     **HECHO el 2026-11-06 sobre `083076c`** y dejar pendiente el resto del paso 2 y los pasos 3 y 4,
+     como en `manual_F-054.md`. `tasks.md:25` (T18) se trata igual.
+   - Las l. 96 («**Siguiente:**»), 99 (título de la sección) y 602 («**Hoy (2026-11-04):**») no
+     nombran T27 ni R48. Hay que añadir «T27/R48 hecha y comprobada por el humano (2026-11-06)» a
+     las tres.
+
+   La mención de «22 px» en la l. 4 es historia del rechazo, no describe la versión vigente, y puede
+   quedarse. Aun así, esa línea ya es ilegible: se puede resumir la historia de T27 en una frase
+   («primera versión rechazada dos veces; rehecha en tres zonas, `f82fd6b` + `083076c`») y enlazar
+   `impl_F-054.md` §T27.
+
+En la review 11 solo hace falta comprobar estos dos puntos (más `init.sh`). El código queda aprobado
+hasta `5ca4838`.
 
 ## Cobertura
 
 | Requisito | Test o verificación |
 |---|---|
-| R1-R27, R31-R36, R38 | como en la review 7 (`test_f054_*` de los tres servicios) |
-| R28, R39-R42 | `test_f054_traer_front.py` `r28_*`, `r39_*`-`r42_*` |
-| R43-R45 | como en la review 8 (`test_f054_traer_front.py` `r43_*`-`r45_*`; api `test_f054_comparar`, `test_f054_rutas`) |
-| R46 (+O11) | transfer `test_f054_traduccion` `r46_*` y `o11_otra_obra_con_el_codigo_var_lleva_su_ide`; api `test_f054_comparar` `r46_*`, `test_f054_aceptar` `r46_*` |
-| R47 | transfer `test_f054_motivos_preflight`, `test_f039_preflight_var`, `test_f002_r16`, `test_f025_r9`; api `test_f054_partida_var`, `test_f039_r20`, `test_f050_r19` |
-| R29 | `ARCHITECTURE.md` 23 y `#regla-var`, `INTEGRACION.md` §5; `azure-apps`, en T20 |
-| R30, R37 | MANUAL T10 (hecha), T18, T19 |
-| Hotfixes de dev | `test_f044_r1_config_versionada`, `test_hotfix_propuestas_subfilas` (2) |
+| R1-R47 | como en las reviews 7-9 (`test_f054_*` de los tres servicios) |
+| R48 | `test_f054_traer_front.py` `r48_*` (15) · campañas manuales 11 y 12 · MANUAL del humano (`manual_F-054.md:24`) |
+| R29 | `ARCHITECTURE.md` 23, `INTEGRACION.md` §5; `azure-apps`, en T20 |
+| R30, R37 | MANUAL T10 (hecha), T18 (paso 1 y la parte de R48 de su paso 2, hechos), T19 |
 
 ## Automejora (propuesta, no aplicada; para `reviewer.md` y `arnes-base`)
 
-Cuando el delta incremental es un merge de `dev`, el protocolo no dice cómo comprobarlo. Propuesta:
-«comparar `git diff <aprobado> <merge> -- services/` con la suma de los commits de dev entrados, y los
-ficheros en conflicto contra la base del merge (`git merge-base`) por los dos lados». Es lo que se hizo
-aquí y cuesta dos comandos.
+Un retoque que nace de la MANUAL (aquí, `083076c`) tiende a entrar en código, tests y campaña sin
+pasar por `tasks.md`. Propuesta para `implementer.md`: «un cambio posterior a la spec, aunque lo pida
+el humano en la MANUAL, actualiza primero la tarea en `tasks.md` (qué regla, qué test, qué
+verificación) y después el código».
+
+## Resultado de `init.sh`
+
+`bash harness/init.sh` con `suite_*.ok` borrados y sin pipes: código 0, ningún `[KO]` y «ENTORNO
+LISTO». Raíz: 418 passed y 1 skipped. Api: 1504 passed. Front: 544 passed, 2 más que en
+`impl_F-054.md` por el retoque. Transfer: 1887 passed. Cobertura 99,5 % (793/797). Tamaño dentro de
+los topes, con esta review en 119/140.
