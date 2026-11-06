@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), **REVIEW 7 APROBADA** (`5c42b61`; O8-O10 del rastro recogidas); **SEGUNDA ENMIENDA: spec hecha (T24-T26, R43-R47, D20-D21; `45b97a9`, `f44d37b`, `3cbc117`), T24-T26 HECHAS (2026-11-03, `1b25a0c`…`74758a3`; mutación Python 287/287 y campañas manuales 7-8 de `app.js`; `init.sh` sin [KO]), **REVIEW 8 APROBADA** (`f9be667`); 2026-11-04: `dev` traído a la rama (`a2ad52a`, los dos hotfixes) y **O11 hecha** (`353d290`, el motivo `OTRA_OBRA` lleva el ide si el código es el de la VAR; mutación 289/289), **REVIEW 9 APROBADA** (`30b8171`, O15 recogida). **2026-11-05: tercera enmienda T27/R48** (en T18 paso 2: «la cabcera no se mantiene al bajar», «es la del modal al sincronizar sigrid»; D20): cabecera `.filterable` fija en las dos tablas de «Sincronizar Sigrid», solo CSS; spec `bdae1ed`; **T27 HECHA** (RED `5442c4b`, regla en `styles.css`, campaña manual 9; `init.sh` sin [KO]); **2026-11-05, MANUAL T18 paso 2 la rechazó** («ha quedado fatal»: la cabecera se pegaba 22 px por debajo del borde, con las filas pasando por esa franja: `top: 0` en un `.modal` con padding); corregida (`645ccdb`/`c9611c3`, `top` negativo; campaña 10); **2026-11-06 el humano la rechazó** («que siga como estaba sin moverse y sea opaca tanto la misma cabcera como el blanco alrededor») y aprobó un diseño en tres zonas («si hazlo asi»; spec `1a2ca2c`); **T27 REHECHA** (`f82fd6b`: título, avisos y botones quietos arriba, solo las tablas se desplazan con su cabecera fija en lo alto de esa zona, el pie fijo abajo; fuera `--modal-pad-top` y el `top` negativo; campaña manual 11, cero vivos; `init.sh` sin [KO]); **2026-11-06, MANUAL T18 paso 2 sobre `f82fd6b`: «casi perfecto», pero entre títulos y filtros una franja de ~1 px dejaba ver pasar las filas** (bordes colapsados: son de la rejilla y no viajan con el `thead` fijo); **retocada** (`083076c`: `.zona-traer .tabla-reg { border-collapse: separate; border-spacing: 0; }`, sin bordes dobles porque ninguna celda lleva borde arriba ni a la izquierda; campaña manual 12, 12/12; `init.sh` sin [KO]), falta review y repetir la MANUAL de T18 paso 2 con lo de R48. Origen de la segunda enmienda: al probar T18 paso 2 el humano pidió la cabecera estándar (`.filterable`: burdeos, filtros debajo, «Limpiar»), «No se traen» como tabla con duplicados agrupados, y motivos con códigos en vez de `ide` (api y transfer); «hazlo todo dentro de la feature»**
+**F-054 EN CURSO (`in_progress` desde el 2026-10-29), ENMIENDA T23 HECHA (2026-11-02), **REVIEW 7 APROBADA** (`5c42b61`; O8-O10 del rastro recogidas); **SEGUNDA ENMIENDA: spec hecha (T24-T26, R43-R47, D20-D21; `45b97a9`, `f44d37b`, `3cbc117`), T24-T26 HECHAS (2026-11-03, `1b25a0c`…`74758a3`; mutación Python 287/287 y campañas manuales 7-8 de `app.js`; `init.sh` sin [KO]), **REVIEW 8 APROBADA** (`f9be667`); 2026-11-04: `dev` traído a la rama (`a2ad52a`, los dos hotfixes) y **O11 hecha** (`353d290`, el motivo `OTRA_OBRA` lleva el ide si el código es el de la VAR; mutación 289/289), **REVIEW 9 APROBADA** (`30b8171`, O15 recogida). **2026-11-05/06: tercera enmienda T27/R48** (pedida en T18 paso 2, «es la del modal al sincronizar sigrid»; D20): cabecera fija en «Sincronizar Sigrid»; la primera versión (`thead` sticky en `.modal`) la rechazó el humano dos veces, y se rehízo en tres zonas («si hazlo asi»; spec `1a2ca2c`, código `f82fd6b` + `083076c` por una franja de 1 px; detalle en `impl_F-054.md` §T27). **MANUAL de R48 HECHA el 2026-11-06 sobre `083076c`** («perfecto», `manual_F-054.md`). Review 10: código aprobado hasta `5ca4838`, CAMBIOS REQUERIDOS solo por el rastro (spec sin la regla de bordes; este fichero), en corrección. Origen de la segunda enmienda: al probar T18 paso 2 el humano pidió la cabecera estándar (`.filterable`: burdeos, filtros debajo, «Limpiar»), «No se traen» como tabla con duplicados agrupados, y motivos con códigos en vez de `ide` (api y transfer); «hazlo todo dentro de la feature»**
 (en T18 el humano pidió, para poder desplegar, que la ventana de «Sincronizar Sigrid» sea una tabla
 única ordenable y filtrable por columna, con «Desmarcar todas» y «Marcar las visibles», y que
 `solo_sigrid` salga **desmarcada**: D12 revisada, «2, ok»; el cuadrante local de 2026-09 se deja
@@ -93,10 +93,10 @@ las filas de una campaña manual sobre el SHA que declara la campaña, o sobre H
 original sigue igual) amplía ese mismo encargo `de161b4`: pendiente de añadirla allí, sin decisión nueva. Otras propuestas de arnés pendientes, en sus secciones:
 F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
 tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
-`init.sh`). **Siguiente:** F-054, review 9 APROBADA (O11 y `dev` traído, 2026-11-04); faltan T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
+`init.sh`). **Siguiente:** F-054, review 9 APROBADA (O11 y `dev` traído, 2026-11-04), T27/R48 hecha y comprobada por el humano (2026-11-06), review 10 con cambios solo de rastro; faltan T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
-## F-054 · review 9 APROBADA (2026-11-04, O11 y `dev` traído; T24-T26 en la 8), MANUAL pendientes
+## F-054 · review 9 APROBADA (2026-11-04, O11 y `dev` traído; T24-T26 en la 8); T27/R48 hecha y comprobada por el humano (2026-11-06); MANUAL pendientes
 
 - **Spec:** `specs/F-054-sync-trae-porcentajes/` (T1-T26, R1-R47), todas las
   decisiones cerradas (D1-D21; D20 «hazlo todo dentro de la feature» y D21 «trasladalo a codigos legibles, no numeros internos», «filas de tabla», «ok», «si», el 2026-11-03; D12 revisada el 2026-11-02, «2, ok», `solo_sigrid` desmarcada; D16 = C, D17 = A y D18 = A, el 2026-10-29,
@@ -170,7 +170,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   pulsaciones en la cabecera Obra ⇒ orden invertido. «No se traen (N)», N = filas: tabla con la misma
   cabecera (Parte, Obra, Recurso, Líneas, Motivo), recurso `cod · nombre`, iguales en una fila con «×K»
   (01/2026: `PT26/00028` · `POSTV2` · recurso 1671338), motivos con **códigos** (01/2026: `0708`, no
-  `2565541`; partida y obras de `POSTV2` por código); su «Limpiar» no toca la otra tabla. **R48 (T27, rehecha el 2026-11-06; recargar con Ctrl+F5)**, con más filas que la ventana: al bajar con
+  `2565541`; partida y obras de `POSTV2` por código); su «Limpiar» no toca la otra tabla. **R48 (T27): HECHO el 2026-11-06 sobre `083076c`** («perfecto»; lo que se comprobó:), con más filas que la ventana: al bajar con
   la rueda dentro de las filas, **solo se desplazan las filas**; título, resumen, avisos, «Desmarcar todas»/
   «Marcar las visibles», la fila de títulos y la de filtros **no se mueven** (siguen bajo los botones, donde
   estaban) y son opacas: **nada asoma por encima de la cabecera** (ni filas ni la franja blanca de arriba se
@@ -178,7 +178,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   marcadas» **siempre a la vista** abajo; al llegar a «No se traen», su cabecera se queda fija arriba de la
   zona de filas y la de la tabla principal se va; escribir en un filtro con la zona bajada sigue filtrando;
   con un mes de **pocas filas**, sin hueco grande entre la tabla y el pie; el modal del registro y el
-  cuadrante, como antes (si hay hueco, transparencia o columnas desalineadas, PARAR: tasks.md T27). Con `0694` en
+  cuadrante, como antes. **Pendiente del paso 2:** todo lo anterior a R48 y lo que sigue. Con `0694` en
   Obra, marcar **solo** esa entrada y aceptar ⇒ su otra línea sigue igual; «Deshacer» la devuelve (O6: que
   no pase a pisado). Si ya sale `igual` por lo aceptado el 2026-11-02, usar otra `distinta` o
   `solo_sigrid` y anotarlo. 3) Aceptarla otra vez y abrir el registro solo hasta el **preflight** ⇒ ya
@@ -599,7 +599,7 @@ F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-11-04):** F-054, T23 aprobada (review 7), T24-T26 (review 8) y O11 con `dev` traído, review 9 APROBADA; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
+F-033 y, detrás, F-017, F-018… **Hoy (2026-11-06):** F-054, T23 aprobada (review 7), T24-T26 (review 8), O11 con `dev` traído (review 9 APROBADA) y T27/R48 hecha y comprobada por el humano; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
