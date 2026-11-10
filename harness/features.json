@@ -1176,8 +1176,8 @@
     },
     {
       "id": "F-071",
-      "title": "Trabajador con parte del mes: fecha de alta o baja en el cuadrante y % a escribir ajustado al % trabajado del mes",
-      "description": "Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso). AMPLIADA el mismo día con la solución que quiere el humano: «que se pueda poner baja del trabajador o alta en una fecha y que se calcule el % a escribir modificado por el % trabajado del mes». O sea, en el cuadrante se puede indicar una fecha de alta o de baja del trabajador en el mes, y lo que se escribe en Sigrid es el % de cada obra multiplicado por la fracción del mes trabajada. Por decidir en la spec: si la fecha se mete a mano, se propone desde Sigrid o ambas; si la fracción va por días naturales o laborables; si se ajusta el % (`can`) o el importe; y cómo cuadra con la regla del 100 % y con los vinculados.",
+      "title": "Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid",
+      "description": "Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso). AMPLIADA el mismo día con la solución que quiere el humano: «que se pueda poner baja del trabajador o alta en una fecha y que se calcule el % a escribir modificado por el % trabajado del mes». O sea, en el cuadrante se puede indicar una fecha de alta o de baja del trabajador en el mes, y lo que se escribe en Sigrid es el % de cada obra multiplicado por la fracción del mes trabajada. Por decidir en la spec: si la fecha se mete a mano, se propone desde Sigrid o ambas; si la fracción va por días naturales o laborables; si se ajusta el % (`can`) o el importe; y cómo cuadra con la regla del 100 % y con los vinculados. REDEFINIDA por el humano el 2026-11-10: «debe buscar el alta y baja del trabajador en sesame/cegid para calcular proporcionalmente cuanto ha estado en el mes si causa alta o baja de la empresa y llevar ese %. no el que se ponga en la app». Las fechas de alta y baja NO se meten a mano en el cuadrante: se leen de Sesame o de Cegid, y el % que se escribe en Sigrid es el del reparto multiplicado por la fracción del mes en alta. Por decidir en la spec: qué sistema manda si Sesame y Cegid no coinciden; cómo se accede (azure-apps/partes.md 5.3 bis para sesame-api; Cegid, por ver si hay acceso); días naturales o laborables; cómo se le enseña al usuario el ajuste antes de registrar; y cómo cuadra con la regla del 100 % y con los vinculados. Cruza la frontera del proyecto: leer `azure-apps/` antes de diseñar.",
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md` con rigor crítico."
       ],
@@ -1199,6 +1199,19 @@
       "rigor": "estandar",
       "priority": 3,
       "branch": "feature/F-072-filtro-imputados-mes-anterior"
+    },
+    {
+      "id": "F-073",
+      "title": "Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube",
+      "description": "Petición del humano del 2026-11-10, tras registrar todo octubre de una vez: «añade una feature que guarde en descargas local y en cloud un excel con lo que se ha registrado si ha ido bien, y lo que no. etc.. para revisar». Al terminar un registro (por obra o el mes entero), un Excel con una fila por línea: trabajador o vinculado, obra, partida, %, importe, parte y línea de Sigrid, y resultado (escrita, editada, ya estaba, puesta a 0, omitida o fallida) con su motivo (sin partida, conflicto, sin importe mensual…). Se descarga en el navegador y se guarda una copia en la nube. Por decidir en la spec: qué es «la nube» (SharePoint u OneDrive de Ruesma, o un blob de Azure); quién lo genera (la api ya tiene el export a Excel); y qué pasa si el registro no termina. Contexto del 2026-11-10: el registro de octubre (56 obras) tardó unos 3,5 min en el servidor, pero el proxy del front cortó la espera antes (502 a los ~3,5 min) y el usuario no vio el resultado. Mirar en la spec si el registro debe ir en segundo plano, con progreso, para que el informe llegue aunque la petición corte.",
+      "acceptance": [
+        "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 2,
+      "branch": "feature/F-073-informe-registro-excel"
     }
   ]
 }
