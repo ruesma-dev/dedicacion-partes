@@ -1,136 +1,143 @@
 <!-- specs/F-069-importe-caja-km/requirements.md -->
-# F-069 · Importe mensual de caja de obra, km y viajes, repartido por %
+# F-069 · Importe del mes de caja y viajes, y km de vehículo propio, por %
 
 Rigor **`critico`** (cambia lo que el transfer escribe en Sigrid). Toca **los
-tres servicios** (design §1). Es una enmienda de F-044 R14: algunos tipos de
-vinculado ya no toman el precio de `reshor.pre`, sino un **importe del mes**
-que se teclea. **Decisiones abiertas D1-D9** en design §9; cada `[Dn]` remite
-a una de ellas y **los requisitos están escritos con mi recomendación**: si el
-humano elige otra opción, se reescribe el requisito antes de implementar.
-Fuera: mensajería (F-052), el ajuste del % por alta o baja (F-071, ver design
-§10), el informe Excel (F-073), deshacer en Sigrid (F-033) y `partes`.
+tres servicios** (design §1). Enmienda F-044 R14: algunos tipos de vinculado
+ya no toman el precio de `reshor.pre`, sino una **cantidad del mes** que se
+teclea. **Decisiones** en design §9: D1-D9 **cerradas por el humano el
+2026-11-11** («d2, caja en euros, km en km y viaje en wuros. d7, copia
+importes. A a lo demas»); **D10 (de dónde sale el precio por km) y D11
+(copiado sin revisar) ABIERTAS**: con ellas abiertas la spec no se puede
+aprobar entera. `[Dn]` remite a cada una. Fuera: mensajería (F-052), el
+ajuste del % por alta o baja (F-071, design §10), el informe Excel (F-073),
+deshacer en Sigrid (F-033) y `partes`.
 
-## 0. Lo que hay hoy (contexto)
+## 0. Contexto
 
-- F-044 R14: un vinculado sin `pre` en su hora por defecto se omite «sin
-  importe mensual». Les pasa a todos los `CAJA` y `VIAJE` y a 44 de los 45
-  `VP` (`KM`) (`progress/explore_F-044_sigrid.md` §1).
-- Registro de octubre de 2026 (10/11): de 521 líneas no escritas, 300 son
-  «sin importe mensual» (caja 177, viaje 74, VP 49). Hay además 29 vinculados
-  caja/VP con una línea hecha a mano en el parte con el gasto real.
-- Las líneas `KM` hechas a mano en 2026 llevan `can` = % del titular,
-  `pre` = importe del mes (cambia cada mes) y `tot = can × pre`
-  (explore F-044 §3: `tot = can × pre` en 489 de 489).
-- Glosario: **vinculado de importe** = un vinculado vigente cuyo tipo está en
-  la lista de tipos de importe (R1); **importe del mes** = la cantidad en €
-  que se teclea para ese vinculado y ese periodo.
+- F-044 R14 omite «sin importe mensual» el vinculado sin `pre`: todos los
+  `CAJA` y `VIAJE` y casi todos los `VP` (`KM`). Octubre de 2026: 300 de las
+  521 líneas no escritas (caja 177, viaje 74, VP 49).
+- Glosario: **vinculado de cantidad** = vinculado vigente de un tipo de la
+  lista de R1; **cantidad del mes** = lo que se teclea para él en el periodo:
+  euros (caja, viaje) o kilómetros (VP); **importe del mes** = los euros
+  (la cantidad, o km × precio por km).
 
-## 1. Qué vinculados llevan importe (api)
+## 1. Qué vinculados llevan cantidad (api)
 
-- **R1.** `[D1]` El sistema debe leer de `config.yaml`
-  (`sync.vinculados.tipos_importe`) la lista de tipos de recurso
-  (`auxrestip.cod`) que van por importe del mes, hoy `[CAJA, VP, VIAJE]`.
-  Mal escrita (no es una lista de textos), la api no arranca.
-- **R2.** El sistema debe decidir si un vinculado es de importe con **una**
-  función pura de `dedicacion-api/domain/importes.py`, comparando su tipo sin
-  espacios y en mayúsculas. Un tipo fuera de la lista se registra como hoy.
+- **R1.** `[D1, D2]` El sistema debe leer de `config.yaml`
+  (`sync.vinculados.tipos_importe`) los tipos (`auxrestip.cod`) que van por
+  cantidad del mes y su unidad: hoy `{CAJA: eur, VIAJE: eur, VP: km}`. Mal
+  escrito (unidad que no sea `eur` o `km`), la api no arranca.
+- **R2.** El sistema debe decidir si un vinculado es de cantidad, y su
+  unidad, con **una** función pura de `dedicacion-api/domain/importes.py`
+  (tipo sin espacios y en mayúsculas). Un tipo fuera de la lista, como hoy.
 
-## 2. Guardar el importe (api)
+## 2. Guardar la cantidad (api)
 
-- **R3.** `[D7]` El importe del mes se guarda en la tabla nueva
-  `importe_vinculado` (periodo × vinculado, único), declarada en
-  `orm_models.py`, con usuario y fecha del último cambio.
+- **R3.** `[D7]` La cantidad se guarda en la tabla nueva `importe_vinculado`
+  (periodo × vinculado, único), declarada en `orm_models.py`, con su
+  `cantidad`, la marca `copiado` y usuario y fecha del último cambio.
 - **R4.** CUANDO llega `PUT /api/v1/periodos/{a}/{m}/trabajadores/{ide}/
-  importes` con `{importes: [{vinculado_ide, importe}]}`, el sistema debe
-  sustituir los importes de los vinculados de ese trabajador en el periodo:
-  un número los guarda; `null` lo borra (vuelve a «falta»); un vinculado que
-  no viene no se toca.
-- **R5.** `[D2]` El importe es en **euros**, con dos decimales como mucho,
-  ≥ 0 y ≤ 999.999,99. SI no cumple, ENTONCES 422 y no se guarda ninguno.
+  importes` con `{importes: [{vinculado_ide, cantidad}]}`, el sistema debe
+  sustituir las de esos vinculados: un número la guarda con `copiado =
+  false`; `null` la borra (vuelve a «falta»); el que no viene no se toca.
+- **R5.** `[D2]` La cantidad es ≥ 0 y con dos decimales como mucho; en `eur`
+  ≤ 999.999,99 y en `km` ≤ 99.999,99. SI no cumple, ENTONCES 422 y no se
+  guarda ninguna.
 - **R6.** SI el vinculado no es del trabajador, no está activo, no es
-  vigente en el mes o no es de importe (R2), ENTONCES 422 y no se guarda
-  ninguno. SI el periodo no existe, 404; SI está cerrado, 409.
-- **R7.** CUANDO cambia algún importe, el sistema debe dejar un evento
-  `IMPORTES` con la foto de antes y de después, que se deshace como cualquier
-  otro (`#regla-deshacer`). Si no cambia nada, ni escribe ni deja evento.
-- **R8.** `[D7]` Copiar el mes anterior (el periodo o un trabajador) **no**
-  copia importes.
+  vigente en el mes, no es de cantidad (R2) o viene repetido, ENTONCES 422 y
+  no se guarda ninguna. SI el periodo no existe, 404; SI está cerrado, 409.
+- **R7.** CUANDO cambia alguna cantidad (o su `copiado`), el sistema debe
+  dejar un evento `IMPORTES` con la foto de antes y de después, deshacible
+  como cualquier otro (`#regla-deshacer`). Sin cambios, ni escribe ni evento.
+- **R8.** `[D7]` CUANDO se copia el mes anterior (el periodo o un
+  trabajador), el sistema debe copiar también las cantidades del periodo de
+  origen de los vinculados que en el destino sean de cantidad, vigentes y
+  **sin** cantidad, con `copiado = true`; nunca pisa una ya puesta. Si copia
+  alguna, deja su propio evento `IMPORTES` tras el de la copia.
 
 ## 3. Cuadrante (api y front)
 
 - **R9.** El cuadrante debe devolver en cada trabajador `importes`: uno por
-  vinculado de importe vigente en el mes, en el orden de
+  vinculado de cantidad vigente en el mes, en el orden de
   `recurso_vinculado.ide`, con `vinculado_ide`, tipo, descripción del tipo,
-  código, `importe` (nulo = falta) e `importe_anterior` `[D7]` (el del
-  periodo anterior, nulo si no hay). Sin vinculados de importe, lista vacía.
-- **R10.** Cada subfila de un vinculado de importe debe llevar `con_importe:
-  true` y su `importe` del mes; la del resto, `con_importe: false`.
+  código, `unidad`, `cantidad` (nula = falta) y `copiado`. Sin ellos, `[]`.
+- **R10.** Cada subfila de un vinculado de cantidad debe llevar
+  `con_importe: true`, `unidad`, `cantidad` y `copiado`; el resto,
+  `con_importe: false`.
 - **R11.** `[D3]` MIENTRAS el periodo está abierto, el editor del trabajador
-  debe enseñar, aparte y detrás de las incidencias, una casilla por cada
-  entrada de `importes`, con su tipo y código, el importe guardado (vacía si
-  falta) y, si lo hay, «mes anterior: X €» como referencia, sin rellenarla.
-- **R12.** CUANDO el usuario cambia una casilla, el front debe guardarla con
-  el mismo diferido del editor (`guardarAhora`), con su propio `PUT`, solo si
-  los importes cambiaron. Acepta coma o punto decimal; vacía manda `null`; lo
-  que la api rechace sale en el aviso de siempre y queda pendiente.
-- **R13.** La subfila de un vinculado de importe debe enseñar su importe del
-  mes (el del mes entero, no la parte de la obra) o una marca «falta
-  importe». El front no reparte ni calcula nada.
+  debe enseñar, aparte y detrás de las incidencias, una casilla por entrada
+  de `importes` con su tipo, código y unidad («€» o «km»), la cantidad
+  guardada (vacía si falta) y, si `copiado`, la marca «copiado del mes
+  anterior, sin revisar» con un botón «Revisado».
+- **R12.** CUANDO el usuario cambia una casilla o pulsa «Revisado», el front
+  debe mandar su `PUT` con el mismo diferido del editor (`guardarAhora`),
+  solo si algo cambió («Revisado» manda la cantidad tal cual). Acepta coma o
+  punto decimal; vacía manda `null`; lo rechazado sale en el aviso de
+  siempre y queda pendiente.
+- **R13.** La subfila de un vinculado de cantidad debe enseñar la cantidad
+  del mes con su unidad (la del mes entero), «falta importe» o, si
+  `copiado`, la marca de copiado. El front no reparte ni multiplica.
 
 ## 4. Contrato api → transfer
 
-- **R14.** Cada vinculado de importe que viaja en `vinculados` (F-044 R10)
-  debe llevar `importe_mensual: true` y `importe` (número o `null` si falta).
-  El resto de vinculados viajan exactamente como hoy, sin esas claves.
-- **R15.** La api debe leer los importes del periodo en **una** lectura más
-  y solo si alguna línea mandada lleva vinculados de importe.
+- **R14.** Cada vinculado de cantidad que viaja en `vinculados` (F-044 R10)
+  debe llevar `importe_mensual: true`, `unidad` (`eur` | `km`), `cantidad`
+  (número o `null`) y `copiado`. El resto viaja exactamente como hoy.
+- **R15.** La api debe leer las cantidades del periodo en **una** lectura más
+  y solo si alguna línea mandada lleva vinculados de cantidad.
 
 ## 5. Qué escribe el transfer
 
-- **R16.** `[D5]` CUANDO un vinculado llega con `importe_mensual` e
-  `importe > 0`, el transfer debe escribir su línea con la hora por defecto
-  del vinculado, `can` = el del titular (sin normalizar, `[D8]`),
-  `pre` = el importe del mes y `tot = round(can × pre, 2)`, ignorando
-  `reshor.pre`. Partida, cuenta, parte, pisado, capacidad, modo pruebas y
-  `synckey`: los de F-044, sin cambios.
-- **R17.** `[D4]` SI llega con `importe_mensual` e `importe` nulo, ENTONCES
-  el vinculado se omite con el motivo «falta el importe del mes» (con tipo y
-  código); el titular y los demás vinculados se registran igual.
-- **R18.** `[D4]` SI llega con `importe_mensual` e `importe` 0, ENTONCES se
-  omite con el motivo «importe 0 este mes»: no se escribe ninguna línea.
-- **R19.** SI un vinculado de importe no tiene hora por defecto en `reshor`,
-  ENTONCES se omite «sin hora por defecto», como hoy.
-- **R20.** Un vinculado sin `importe_mensual` se decide exactamente como en
-  F-044 (R14 incluido), y una petición sin vinculados de importe da el mismo
-  `asdict(Preflight)` y las mismas lecturas que antes de F-069.
-- **R21.** `[D6]` Lo que ya está en el parte se trata como en F-044 (R20-R23)
-  y F-064: la línea a mano con su hora y partida es un pisado a confirmar del
-  vinculado; con otra partida, cuenta en su capacidad (sobrecarga a confirmar
-  si pasa de 1). Nunca `DELETE`.
-- **R22.** `[D9]` Un vinculado ya registrado (`synckey` o `hmores_ide`) sale
-  `ya_registrado` aunque su importe haya cambiado, como el % de hoy.
-- **R23.** Suelto y por lote (`RegistroLote`) el resultado es el mismo.
-- **R24.** La forma de la respuesta de preflight y `ejecutar` no cambia: la
-  entrada de `vinculados` ya lleva `pre` y `tot` (F-044 R25), que en un
-  vinculado de importe son el importe del mes y su parte en esa obra.
+- **R16.** `[D5]` CUANDO un vinculado llega con `importe_mensual` y
+  `cantidad > 0`, el transfer debe escribir su línea con su hora por
+  defecto, `can` = el del titular (sin normalizar, `[D8]`), `pre` = el
+  importe del mes y `tot = round(can × pre, 2)`, ignorando `reshor.pre`.
+  En `eur`, importe = cantidad. Partida, cuenta, parte, pisado, capacidad,
+  modo pruebas y `synckey`: los de F-044, sin cambios.
+- **R17.** `[D2, D10]` En `km`, importe = `round(km × precio por km, 2)`,
+  con el precio por km del recurso que el transfer lee de Sigrid (fuente:
+  D10), en **una** lectura por petición y solo si algún `VP` llega con
+  km > 0. SI no hay precio (> 0) para ese recurso, ENTONCES se omite «sin
+  precio por km en Sigrid» con tipo y código. Un fallo o `truncated` de la
+  lectura: falla sin escribir.
+- **R18.** `[D4]` SI llega con `cantidad` nula, ENTONCES se omite «falta el
+  importe del mes» (tipo y código); el titular y los demás, como siempre.
+- **R19.** `[D4]` SI llega con `cantidad` 0, ENTONCES se omite «importe 0
+  este mes»: no se escribe ninguna línea.
+- **R20.** `[D11]` SI llega con `copiado: true`, ENTONCES se omite «importe
+  copiado del mes anterior sin revisar» (recomendación de D11, abierta).
+- **R21.** SI no tiene hora por defecto en `reshor`, ENTONCES se omite «sin
+  hora por defecto».
+- **R22.** Un vinculado sin `importe_mensual` se decide como en F-044 (R14
+  incluido): mismas acciones, valores y lecturas que antes de F-069.
+- **R23.** `[D6]` Lo que ya está en el parte, como en F-044 (R20-R23) y
+  F-064: misma hora y partida ⇒ pisado a confirmar del vinculado; otra
+  partida ⇒ cuenta en su capacidad. Nunca `DELETE`.
+- **R24.** `[D9]` Ya registrado (`synckey` o `hmores_ide`) ⇒ `ya_registrado`
+  aunque su cantidad haya cambiado, como el % de hoy.
+- **R25.** Suelto y por lote (`RegistroLote`) el resultado es el mismo.
+- **R26.** La entrada de `vinculados` de preflight y `ejecutar` gana `km` y
+  `precio_km` (nulos si no es `km`); `pre` y `tot` siguen siendo el importe
+  del mes y su parte en esa obra.
 
 ## 6. Modal y traza
 
-- **R25.** El modal de registro debe enseñar, en la fila de **cualquier**
-  vinculado que se escribe, su `tot` y su `pre` tal como los manda el
-  transfer («27,36 € de 45,60 €»); el omitido, su motivo, como hoy.
-- **R26.** La traza del vinculado (estado, motivo, parte, `hmores.ide`) se
-  guarda en `asignacion_vinculado` como en F-044 R30, sin cambios.
+- **R27.** El modal de registro debe enseñar, en la fila de cualquier
+  vinculado que se escribe, su `tot` y su `pre` como los manda el transfer
+  («27,36 € de 45,60 €») y, en un `km`, además los km y el precio
+  («724,5 km × 0,20 €/km»); el omitido, su motivo.
+- **R28.** La traza del vinculado se guarda en `asignacion_vinculado` como en
+  F-044 R30, sin cambios.
 
 ## 7. Documentación, despliegue y verificación
 
-- **R27.** `docs/ARCHITECTURE.md#regla-vinculado` debe ganar el punto
-  «Importe del mes» (fuente única; R14 de F-044 remitido a él) y la tabla
-  `importe_vinculado` en la lista de tablas; `docs/INTEGRACION.md` §5 y §7,
-  el contrato nuevo y el orden de despliegue.
-- **R28.** Orden de despliegue **transfer → api → front**. Con el transfer
-  viejo y la api nueva, los vinculados de importe se siguen omitiendo «sin
-  importe mensual» (nunca se escribe un importe inventado).
-- **R29.** MANUAL en local, en modo pruebas sobre la 0404 (tasks T13).
-- **R30.** Al desplegar, `azure-apps/dedicacion.md` al día (tabla, endpoint,
-  campos del contrato) en el mismo trabajo.
+- **R29.** `docs/ARCHITECTURE.md#regla-vinculado` gana el punto «Cantidad del
+  mes» (fuente única, decisiones citadas; F-044 R14 remite a él) y la tabla
+  `importe_vinculado`; `docs/INTEGRACION.md` §1 (la lectura del precio por
+  km), §5 y §7.
+- **R30.** Despliegue **transfer → api → front**. Transfer viejo con api
+  nueva: los de cantidad se siguen omitiendo «sin importe mensual».
+- **R31.** MANUAL en local, en modo pruebas sobre la 0404 (tasks T13).
+- **R32.** Al desplegar, `azure-apps/dedicacion.md` al día en el mismo
+  trabajo (tabla, endpoint, contrato, lectura nueva del transfer).
