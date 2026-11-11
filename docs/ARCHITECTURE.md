@@ -1179,6 +1179,16 @@ En local están al revés (el front se rinde antes que la api): el usuario
 vería un error de un registro que sí se estaba haciendo. Se corrige al
 desplegar, subiendo el front a 200 s.
 
+Un registro grande puede pasar de esos 200 s (octubre de 2026, 56 obras:
+~3,5 min): el proxy del front contesta 502 «Backend dedicacion-api
+inaccesible» mientras la api y el transfer siguen y terminan. Por eso
+(hotfix del 2026-11-11) la pantalla no trata un 502, un 504 ni un fallo de
+red de `registro/ejecutar` como un registro fallido: cierra el modal, avisa
+de que sigue en el servidor, bloquea el registro y a los 60 s
+(`ESPERA_RECARGA_TRAS_CORTE` en `app.js`) recarga el cuadrante del mes para
+que se vea qué quedó escrito. Cualquier otro error se enseña como siempre.
+Registrar en segundo plano, con progreso, queda fuera de ese arreglo.
+
 Desde F-055 el preflight del periodo es **una** llamada al lote del
 transfer (`TRANSFER_TIMEOUT_S` le cubre entero) y las propuestas del mes se
 calculan en un hilo de la api, por trozos de 10 obras, cada trozo con el
