@@ -245,12 +245,15 @@ function escapeHtml(texto) {
   return div.innerHTML;
 }
 
-function toast(mensaje, esError = false) {
+// `fijo` (hotfix 2026-11-11): el aviso no se va solo; quien lo pide lo
+// quita con el `remove()` de la caja que se devuelve.
+function toast(mensaje, esError = false, fijo = false) {
   const caja = document.createElement("div");
   caja.className = "toast" + (esError ? " error" : "");
   caja.textContent = mensaje;
   $("#toasts").appendChild(caja);
-  setTimeout(() => caja.remove(), esError ? 6000 : 3500);
+  if (!fijo) setTimeout(() => caja.remove(), esError ? 6000 : 3500);
+  return caja;
 }
 
 // Añade la empresa elegida a una ruta de la API (F-024, R5). El front no
@@ -261,17 +264,29 @@ function conEmpresa(ruta) {
   return `${ruta}${sep}empresa=${encodeURIComponent(state.empresa)}`;
 }
 
+// El `Error` que lanza lleva `status`: el código HTTP, o 0 si el `fetch`
+// rechaza (fallo de red: la respuesta no llegó). Hotfix 2026-11-11: es lo
+// que deja a `registroEjecutar` distinguir un corte del proxy de un error.
 async function api(ruta, opciones = {}) {
   const destino = ruta.startsWith("/periodos/") ? conEmpresa(ruta) : ruta;
-  const respuesta = await fetch("/api/v1" + destino, {
-    headers: { "Content-Type": "application/json" },
-    ...opciones,
-  });
+  let respuesta;
+  try {
+    respuesta = await fetch("/api/v1" + destino, {
+      headers: { "Content-Type": "application/json" },
+      ...opciones,
+    });
+  } catch (e) {
+    const error = new Error(e.message);
+    error.status = 0;
+    throw error;
+  }
   let cuerpo = null;
   try { cuerpo = await respuesta.json(); } catch (e) { cuerpo = null; }
   if (!respuesta.ok) {
     const mensaje = (cuerpo && cuerpo.error) || `Error HTTP ${respuesta.status}`;
-    throw new Error(mensaje);
+    const error = new Error(mensaje);
+    error.status = respuesta.status;
+    throw error;
   }
   return cuerpo;
 }
@@ -2996,7 +3011,13 @@ document.addEventListener("DOMContentLoaded", init);
 // preflight repetido aún en vuelo (F-050, M2 punto 5).
 // `vistas` (F-064): las claves que `marcadaPorDefecto` señala y ya se han
 // enseñado en este modal; la que no está sale marcada una sola vez.
-const registro = { pisar: new Set(), vistas: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map() };
+const registro = { pisar: new Set(), vistas: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map(), cortado: false };
+
+// Hotfix 2026-11-11: tras un corte del `registro/ejecutar` (502 del proxy a
+// los 200 s, 504 del balanceador a los 230 s o fallo de red) el servidor
+// sigue escribiendo. Se espera esto (ms) antes de recargar el cuadrante, y
+// mientras tanto `registro.cortado` impide relanzar el registro.
+const ESPERA_RECARGA_TRAS_CORTE = 60000;
 
 // Abrir o repintar el modal cierra el selector de partida que hubiera,
 // también uno que aún cargaba (F-050, M2 punto 4): no puede quedar colgando
@@ -3029,6 +3050,10 @@ function pedirPreflight(obraIde) {
 }
 
 async function registroPreflight(trabajadorIde = null) {
+  if (registro.cortado) {          // hotfix 2026-11-11: no relanzar
+    toast("El registro anterior sigue en curso; espera a que se recargue el cuadrante.", true);
+    return;
+  }
   registro.trabajadorIde = trabajadorIde;
   const seq = ++registro.seq;
   registro.analizando.clear();     // lo que se repetía era del modal de antes
@@ -3494,7 +3519,38 @@ async function registroEjecutar() {
       `${pend} pendientes de confirmar${pend ? " (repite y marca pisar)" : ""}` +
       (vinOmi ? ` · ${vinOmi} recursos vinculados omitidos` : ""),
       !r.ok);
-  } catch (err) { toast(err.message, true); }
+  } catch (err) {
+    if (esCorteDelProxy(err)) { esperarRegistroCortado(err); return; }
+    toast(err.message, true);
+    btn.disabled = false; btn.textContent = "Registrar";
+  }
+}
+
+// Hotfix 2026-11-11: la respuesta del registro no llegó (502 del proxy, 504
+// del balanceador o fallo de red), pero eso no dice que el registro fallase.
+function esCorteDelProxy(err) {
+  return [0, 502, 504].includes(err && err.status);
+}
+
+// Cierra el modal, avisa con un aviso fijo y bloquea el registro; pasada la
+// espera, recarga el cuadrante del mes registrado (aunque se haya cambiado
+// de mes) y lo desbloquea. Qué quedó escrito lo dice el cuadrante, no esto.
+function esperarRegistroCortado(err) {
+  const anio = state.anio, mes = state.mes;
+  cerrarModal();
+  registro.cortado = true;
+  const lanzar = $("#btn-registro");
+  lanzar.disabled = true; lanzar.textContent = "Registro en curso…";
+  const aviso = toast(`El registro sigue en curso en el servidor (${err.message}). ` +
+    `Recargo el cuadrante en ${ESPERA_RECARGA_TRAS_CORTE / 1000} s; no lo relances.`,
+  true, true);
+  setTimeout(async () => {
+    await cargarPeriodo(anio, mes);
+    aviso.remove();
+    registro.cortado = false;
+    lanzar.disabled = false; lanzar.textContent = "Registrar en Sigrid";
+    toast("Cuadrante recargado; revisa el resultado del registro.");
+  }, ESPERA_RECARGA_TRAS_CORTE);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
