@@ -1,7 +1,7 @@
 <!-- specs/F-069-importe-caja-km/design.md -->
 # F-069 · Diseño: caja por obra, km y viajes por %, con comentario
 
-D1-D10 **cerradas**; D11-D16 **abiertas** (§9), con mi recomendación.
+D1-D16 **cerradas por el humano** (§9); ninguna abierta.
 
 ## 1. Servicios y límite
 
@@ -56,7 +56,7 @@ Editor → `PUT …/importes` / `…/asignaciones` → `_sumar_vinculados` →
   con `importes` y comentarios (R10).
 - `application/registro_sigrid.py` — `_sumar_vinculados` (una lectura,
   R16), `_vinculado(...)` con las claves de R15 y la línea con `comentario`.
-- `application/traer_sigrid.py` (de F-054) — R32 (§6.4). **Solo tras F-054.**
+- `application/traer_sigrid.py` (de F-054, ya en `dev` por D16) — R32 (§6.4).
 - `interface_adapters/api/schemas.py`, `routes.py`, `deps.py` — `ImporteIn`,
   `ImportesIn`, `ImporteOut`, campos nuevos de `SubfilaOut`, `LineaOut`,
   `LineaIn` y `TrabajadorOut`; la ruta `PUT`.
@@ -138,7 +138,7 @@ comentario), marca `copiado = true` en las copiadas y copia las del mes
 vacías; evento `IMPORTES` propio (deshacer dos veces deshace la copia
 entera; consta en `#regla-deshacer`).
 
-### 6.4 api · comentario traído (tras F-054)
+### 6.4 api · comentario traído (sobre F-054, D16)
 
 En `TraerDeSigrid`, con las líneas de `existentes`: por cada asignación y
 cada subfila con traza (`sigrid_hmores_ide`) o `synckey` nuestra, si
@@ -151,7 +151,7 @@ por trabajador, como F-054 R25. No toca % ni cantidades.
 ### 7.1 Sigrid
 
 Escritura: la de F-044 con otro `can`/`pre`/`tot` y `tex`. Lectura nueva
-**solo tras F-054** (R31): las líneas del periodo con `synckey LIKE
+(R31, sobre la de F-054): las líneas del periodo con `synckey LIKE
 'porcentajes:vin:%'` en obras de la empresa (`hmores` + `hmo` + `con`),
 con `CAST(tex AS NVARCHAR(400))`, parametrizada; `truncated` es error.
 
@@ -206,37 +206,28 @@ columna de comentarios, y esots deben traerse al sincronizar»; Juan: «con
 el campo de observaciones podemos reflejar cualquier cosa que se salga de
 la rutina»).
 
-### 9.2 Abiertas (las pregunta el líder al humano)
+### 9.2 Cerradas por el humano el 2026-11-12 («elijo opcion A en d11. a en las demas»)
 
-- **D11 · Copiada sin revisar al registrar** (R21). (A) Se omite hasta
-  teclearla o pulsar «Revisado». (B) Se registra tal cual. **Recomiendo A.**
-- **D12 · Caja: dónde y qué línea** (R11, R18). (A) Casilla «Caja · obra»
-  por línea en el editor (como D3) y línea `can` 1, `pre = tot` = cantidad,
-  como las de caja a mano; la capacidad de F-044 queda en «una caja por obra
-  y mes» (una a mano en esa obra ⇒ sobrecarga a confirmar). (B) Casilla en
-  la subfila (hay una por obra, encaja, pero rompe «se teclea en el
-  editor»). (C) `can` = % del titular y `pre = cantidad / %`: `tot` igual,
-  pero `pre` raro y redondeos. **Recomiendo A.**
-- **D13 · Caja vacía en una obra** (R20). (A) Como D4: «falta el importe»
-  en esa obra (omisión que avisa; con 5 obras y gasto en 1, hay que poner 0
-  en 4 o ver 4 avisos). (B) Vacía = sin gasto en esa obra, sin aviso; solo
-  avisa si **ninguna** obra tiene caja. **Recomiendo B** (es la forma
-  normal de la caja) — contradice D4 en caja: lo decide el humano.
-- **D14 · Alcance del comentario** (R9, R13, R23). (A) En cada línea del
-  titular y en cada vinculado de cantidad (por % uno al mes, que va a todas
-  sus líneas; caja, uno por obra), todos a `tex`. (B) Solo vinculados de
-  cantidad. **Recomiendo A** («una columna de comentarios»).
-- **D15 · Comentario traído** (R31, R32). (A) De nuestras líneas ya
-  registradas, el `tex` de Sigrid manda (Administración corrige allí; D9:
-  lo de la app tras registrar no llega a Sigrid). (B) Solo si el de la app
-  está vacío. (C) Como entradas a aceptar en la tabla de F-054. Las líneas a
-  mano no nuestras no se traen. **Recomiendo A.**
-- **D16 · Orden con F-054** (§7 de requirements). F-054 (rama
-  `feature/F-054-sync-trae-porcentajes`, copia `porcentajes-f054`) no está
-  en `dev`. (A) Cerrar y unir F-054, rebasar esta rama sobre `dev` y
-  entonces implementar F-069 entera. (B) Implementar T1-T13 ya y dejar
-  T14-T15 (traer) condicionadas a F-054 en `dev`. **Recomiendo A**: F-054
-  está casi cerrada y las dos tocan el registro y el cuadrante.
+- **D11 = A** · La copiada sin revisar se omite al registrar hasta
+  teclearla o pulsar «Revisado» (R21). Descartada B: registrarla tal cual.
+- **D12 = A** · Caja: casilla «Caja · obra» por línea en el editor (como
+  D3); línea `can` 1, `pre = tot` = cantidad, como las de caja a mano; la
+  capacidad de F-044 queda en «una caja por obra y mes» (una a mano en esa
+  obra ⇒ sobrecarga a confirmar). Descartadas: casilla en la subfila (B) y
+  `can` = % con `pre = cantidad / %` (C).
+- **D13 = A** · Caja vacía en una obra: como D4, **cada** obra sin caja
+  avisa «falta la caja del mes» y esa línea se omite; 0 ⇒ nada en esa obra
+  (R20). Yo recomendaba B (vacía = sin gasto); el humano eligió A: con 5
+  obras y gasto en 1, se pone 0 en las otras 4 o se ven 4 avisos.
+- **D14 = A** · Comentario en cada línea del titular y en cada vinculado de
+  cantidad (por %, uno al mes que va a todas sus líneas; caja, uno por
+  obra), todos a `tex` (R9, R13, R23).
+- **D15 = A** · Al traer, en nuestras líneas ya registradas manda el `tex`
+  de Sigrid (R31, R32); las líneas a mano ajenas no se traen.
+- **D16 = A** · Primero se cierra F-054 (rama
+  `feature/F-054-sync-trae-porcentajes`, copia `porcentajes-f054`) y se une
+  a `dev`; esta rama se rebasa sobre `dev` y entonces se implementa F-069
+  **entera**, sin tareas condicionadas.
 
 Técnicas (mías): nombres, topes, `PUT` aparte, `limpiar` por prefijo.
 

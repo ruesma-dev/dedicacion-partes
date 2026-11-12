@@ -1,10 +1,10 @@
 <!-- progress/spec_F-069.md -->
-# F-069 · Informe del spec-author (2026-11-10, revisado el 2026-11-11 y el 2026-11-12)
+# F-069 · Informe del spec-author (2026-11-10, revisado el 2026-11-11 y dos veces el 2026-11-12)
 
 Spec en `specs/F-069-importe-caja-km/` (rama `feature/F-069-importe-caja-km`,
-copia `porcentajes-f069`): `requirements.md` R1-R36 (150 líneas), `design.md`
-(250), `tasks.md` T1-T18. Estado en `features.json`: `spec_ready`, todavía sin
-aprobar porque quedan **D11-D16 abiertas**.
+copia `porcentajes-f069`): `requirements.md` R1-R36 (148 líneas), `design.md`
+(241), `tasks.md` T1-T18. Estado en `features.json`: `spec_ready`, **sin
+decisiones abiertas**, pendiente de que el humano apruebe la spec.
 
 ## Resumen
 
@@ -31,14 +31,16 @@ Despliegue: transfer → api → front.
   - **Caja por obra** («la caja se asigna a la obra, cada obra con la suya»).
   - **Columna de comentarios**, que «deben traerse al sincronizar».
 
-## Decisiones abiertas (detalle en design §9.2)
+## Decisiones cerradas el 2026-11-12 por el humano («elijo opcion A en d11. a en las demas»)
 
-- D11 · Copiada sin revisar al registrar: **A**, se omite hasta que se teclee o se pulse «Revisado».
-- D12 · Caja: **A**, casilla «Caja · obra» por línea en el editor; línea con `can` 1 y `pre` = `tot` = cantidad. La capacidad queda en una caja por obra y mes: si ya hay una a mano, sale sobrecarga a confirmar.
-- D13 · Caja vacía en una obra: **B**, vacía = sin gasto; solo avisa «falta la caja del mes» si ninguna obra tiene caja. **Contradice D4 en caja.**
-- D14 · Alcance del comentario: **A**, en la línea del titular y en los vinculados de cantidad.
-- D15 · Comentario traído: **A**, en nuestras líneas ya registradas manda el `tex` de Sigrid; las líneas a mano ajenas no se traen.
-- D16 · Orden con F-054: **A**, cerrar y unir F-054, rebasar esta rama sobre `dev` y después implementar. Con B, T1-T13 ya y T14-T15 condicionadas.
+- D11 = A: la copiada sin revisar se omite al registrar hasta que se teclee o se pulse «Revisado».
+- D12 = A: caja en una casilla «Caja · obra» por línea en el editor; línea con `can` 1 y `pre` = `tot` = cantidad (una caja por obra y mes en la capacidad).
+- D13 = A, **en contra de mi recomendación (B)**: como D4, cada obra con la caja vacía avisa «falta la caja del mes» y se omite esa línea; con 0, no se escribe nada en esa obra. Aplicado en R20, en design §9.2 y en T2.
+- D14 = A: comentario en la línea del titular y en los vinculados de cantidad.
+- D15 = A: al traer, el `tex` de Sigrid manda en nuestras líneas ya registradas.
+- D16 = A: primero se cierra F-054 y se une a `dev`; esta rama se rebasa sobre `dev` y se implementa F-069 entera, sin tareas condicionadas (en la cabecera de tasks).
+
+**No queda ninguna decisión abierta.**
 
 ## Lecturas contra Sigrid (solo `SELECT` vía `sigrid-api` `POST /api/sql/read`, base `ruesma`)
 

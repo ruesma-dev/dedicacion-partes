@@ -4,9 +4,8 @@
 Rigor **`critico`** (cambia lo que el transfer escribe en Sigrid). Toca **los
 tres servicios** (design §1). Enmienda F-044 R14: caja, km y viajes ya no
 toman el precio de `reshor.pre`, sino una **cantidad** que se teclea.
-Decisiones en design §9: D1-D10 **cerradas** (2026-11-11 y 2026-11-12); D11
-y D12-D16 **abiertas** (cada una con su recomendación, con la que están
-escritos los R). **Depende de F-054** para traer los comentarios (§7, D16).
+Decisiones D1-D16, **todas cerradas por el humano** (2026-11-11 y
+2026-11-12; design §9). **Va tras F-054** (D16: unirla a `dev` antes).
 Fuera: F-052, F-071, F-073, F-033 y `partes`.
 
 ## 0. Contexto y glosario
@@ -101,10 +100,9 @@ Fuera: F-052, F-071, F-073, F-033 y `partes`.
   pruebas y `synckey` son los de F-044. La hora es **siempre** la hora por
   defecto del recurso (`hora_del_vinculado`; en caja, `CO`): no se elige.
 - **R20.** `[D4, D13]` Por %: SI `cantidad` es nula, ENTONCES se omite
-  «falta el importe» (tipo y código); SI es 0, «importe 0». Caja: nula o 0
-  en una obra ⇒ nada en esa obra; SI ninguna línea del vinculado trae caja,
-  ENTONCES se omite «falta la caja del mes» (en la línea de menor
-  `registro_id`). El titular y los demás, como siempre.
+  «falta el importe» (tipo y código); SI es 0, «importe 0». Caja, igual
+  **en cada obra**: nula ⇒ esa línea se omite «falta la caja del mes» (con
+  la obra); 0 ⇒ nada en esa obra. El titular y los demás, como siempre.
 - **R21.** `[D11]` SI llega `copiado: true`, ENTONCES se omite «copiado del
   mes anterior sin revisar».
 - **R22.** SI no tiene hora por defecto en `reshor`, se omite «sin hora».
