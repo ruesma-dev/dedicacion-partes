@@ -2,7 +2,7 @@
 # F-069 · Tareas
 
 Orden de despliegue: transfer → api → front (design §8). Tests sin red ni BBDD, tests primero (fase RED en el informe).
-D1-D16 cerradas por el humano (2026-11-11 y 2026-11-12, design §9). D16 = A: **antes de T1**, F-054 cerrada y unida a `dev`, y esta rama rebasada sobre `dev` (`git -C C:/Users/pgris/PycharmProjects/porcentajes-f069 rebase dev`, con la rama comprobada); ninguna tarea condicionada.
+D1-D16 cerradas por el humano (2026-11-11 y 2026-11-12, design §9). **Spec aprobada por el humano el 2026-11-12** («si»). D16 = A: **antes de T1**, F-054 cerrada y unida a `dev`, y esta rama rebasada sobre `dev` (`git -C C:/Users/pgris/PycharmProjects/porcentajes-f069 rebase dev`, con la rama comprobada); ninguna tarea condicionada.
 
 - [ ] T1: transfer, contrato: `VinculadoEntrada`/`VinculadoIn` (`importe_mensual`, `unidad`, `reparto`, `cantidad`, `copiado`, `comentario`, `precio_km`), `LineaEntrada`/`LineaIn.comentario`, `AccionVinculado.km`/`.precio_km`/`.reparto` (R15, R24, R28)  |  Verificación: `test_f069_pipeline_importe.py::test_f069_r24_*` (sin las claves, mismas acciones, valores y lecturas) y `pytest services/dedicacion-transfer/tests/test_f044_*` (dobles con las claves nuevas a `null`)
 - [ ] T2: transfer, `precio_del_vinculado` y sus motivos; `decidir_vinculados` por reparto (R17-R22)  |  Verificación: `test_f069_reglas_importe.py` (VP 100 km × 0,20 al 60 % ⇒ `pre` 20, `tot` 12; viaje 45,60 € al 60 % ⇒ `tot` 27,36; caja 80 € en una obra ⇒ `can` 1, `pre` = `tot` = 80 aunque el % sea 30; caja nula en una obra ⇒ esa línea omitida «falta la caja del mes» con la obra (D13-A) y 0 ⇒ nada; nula / 0 / copiado / sin hora / sin `precio_km` con su motivo ≤ 300; la hora es siempre la por defecto)
