@@ -115,13 +115,22 @@ partes de trabajo de Sigrid. Detalle completo en `docs/ARCHITECTURE.md`.
 
 ## Documentos que llegan de fuera (PDF y ofimática)
 
-Cuando el humano pase un PDF —o un `.docx`, `.xlsx`, `.pptx`— conviértelo a
-Markdown y guárdalo en `docs/referencia/` antes de trabajar con él. El
-original NO se versiona: al repositorio entra solo el Markdown.
+Hay dos usos distintos, y la regla depende del uso:
 
-- La conversión se hace **siempre con la herramienta MCP `markitdown`**, no
-  leyendo el documento por tu cuenta. Única excepción: que el humano lo
-  indique explícitamente en esa petición.
+- **Leer para trabajar** (un correo exportado a PDF, una respuesta, algo de
+  consulta puntual): puedes leer el PDF directamente, sin `markitdown`. No se
+  guarda en el repositorio ni se convierte. Lo que se decida a partir de él
+  queda en la spec o en `progress/` con la fecha y el origen, no el documento.
+- **Documento de referencia** (lo que hay que conservar como fuente: normas de
+  negocio, documentación de sistemas origen): se convierte a Markdown y se
+  guarda en `docs/referencia/`. El original NO se versiona: al repositorio
+  entra solo el Markdown.
+
+Para la conversión a `docs/referencia/`:
+
+- Se hace **siempre con la herramienta MCP `markitdown`**, no leyendo el
+  documento por tu cuenta. Única excepción: que el humano lo indique
+  explícitamente en esa petición.
 - Si `markitdown` no está conectada, **PARA y dilo**. No improvises otra vía
   de conversión: el resultado saldría distinto según quién lo convierta y el
   Markdown va a quedar versionado en git.
@@ -129,7 +138,8 @@ original NO se versiona: al repositorio entra solo el Markdown.
   ponle la cabecera con origen y fecha del documento.
 - Si el documento trae datos sensibles (precios de proveedor, datos
   personales, credenciales), **no lo conviertas sin preguntar**: acabaría
-  versionado en git.
+  versionado en git. Al leerlo para trabajar, tampoco copies esos datos a
+  ningún fichero del repositorio.
 
 ## Reglas duras (no negociables)
 
