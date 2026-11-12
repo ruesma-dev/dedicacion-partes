@@ -1,247 +1,250 @@
 <!-- specs/F-069-importe-caja-km/design.md -->
-# F-069 · Diseño: cantidad del mes de caja, viajes y km
+# F-069 · Diseño: caja por obra, km y viajes por %, con comentario
 
-D1-D9 **cerradas** (2026-11-11); **D10 y D11 abiertas** (§9). El diseño de la
-lectura del precio por km (§7.1) queda a expensas de D10.
+D1-D10 **cerradas**; D11-D16 **abiertas** (§9), con mi recomendación.
 
 ## 1. Servicios y límite
 
-- **api** (dueña del dato, la cantidad se teclea como el %): tipos y unidad
-  (config), tabla `importe_vinculado`, `PUT …/importes`, evento `IMPORTES`,
-  la copia del mes, el cuadrante y el contrato (`importe_mensual`, `unidad`,
-  `cantidad`, `copiado`). Guarda **km** para los `VP` y **€** para caja y
-  viaje; no multiplica km por precio (el precio está en Sigrid, y Sigrid lo
-  lee el transfer, como `reshor.pre`).
-- **transfer** (única pluma): lee el precio por km (D10), calcula el importe
-  y lo pone en `pre` en vez de `reshor.pre`, u omite con motivo. Partida,
+- **api** (dueña del dato: la cantidad y el comentario se teclean como el
+  %): tipos, unidad, reparto y `precio_km` (config versionada), tabla
+  `importe_vinculado`, columnas nuevas, `PUT …/importes`, evento `IMPORTES`,
+  copia del mes, cuadrante, contrato y, tras F-054, el comentario traído.
+  Guarda km y € tal cual: **no multiplica**.
+- **transfer** (única pluma): calcula el importe (km × `precio_km`, que le
+  llega en el contrato) y la línea (por % o por obra), escribe el
+  comentario en `tex` y, tras F-054, publica el `tex` al traer. Partida,
   cuenta, pisado y capacidad, los de F-044/F-068.
-- **front**: casillas en el editor, marcas en la subfila, km/precio/`pre`/
-  `tot` en el modal; no reparte ni multiplica. Ningún servicio nuevo;
-  `round(...)` solo en el transfer (la subfila no enseña la parte de obra).
+- **front**: editor, columna «Comentario», subfila y modal; no calcula.
+  Ningún servicio nuevo; la cuenta solo en el transfer.
 
 ## 2. Encaje
 
-Editor (front) → `PUT …/importes` (api) → registro: `_sumar_vinculados`
-añade las cuatro claves → `PasoVinculados` lee los precios por km (si hace
-falta) → `decidir_vinculados` pone el importe en `pre` → lo de siempre. Las
-peticiones van **por obra**: cada una calcula su `tot` sin ver las demás.
+Editor → `PUT …/importes` / `…/asignaciones` → `_sumar_vinculados` →
+`decidir_vinculados` (`can`, `pre`, `tot` por reparto) → `PasoVinculados` →
+`tex`. Las peticiones van por obra: la caja de cada obra viaja en su línea.
 
 ## 3. Ficheros a crear
 
-- `services/dedicacion-api/domain/importes.py` — puro (§6.1).
-- Tests, sin red ni BBDD: api `tests/test_f069_importes_dominio.py` (R1, R2,
-  R5) y `test_f069_importes_api.py` (R3-R10, R14, R15; `TestClient` y dobles
-  de UoW); transfer `tests/test_f069_reglas_importe.py` (R16-R22) y
-  `test_f069_pipeline_importe.py` (R17, R22-R26; dobles de `conftest.py`);
-  front `tests/test_f069_importes_front.py` (R11-R13, R27; arnés de F-044).
+- `services/dedicacion-api/domain/importes.py` (§6.1) y, en el transfer,
+  `application/services/texto_linea.py` (§4). Tests sin red ni BBDD: api
+  `test_f069_importes_dominio.py`, `_importes_api.py`, `_traer_comentarios.py`;
+  transfer `test_f069_reglas_importe.py`, `_pipeline_importe.py`,
+  `_existentes_tex.py`; front `test_f069_importes_front.py`.
 
 ## 4. Ficheros a modificar
 
 **api**
-- `config/config.yaml` — `sync.vinculados.tipos_importe: {CAJA: eur,
-  VIAJE: eur, VP: km}` con su comentario (D1, D2).
-- `application/sync_pipeline.py` — `ConfigVinculados.tipos_importe:
-  dict[str, str]` (validado al arrancar, R1).
-- `infrastructure/db/orm_models.py` — `ImporteVinculadoORM` (§7.2).
-- `domain/models.py` — `TipoEvento.IMPORTES`; `SubfilaVinculado.con_importe`,
-  `.unidad`, `.cantidad`, `.copiado`; `CuadranteTrabajador.importes`.
-- `domain/ports.py` — `ImporteRepository` (`de_trabajador`, `del_periodo`,
-  `reemplazar`, `copiar_vacias`) y `UnitOfWork.importes`.
-- `infrastructure/db/repositories.py` — `PgImporteRepository`; `subfilas_de`
-  rellena los campos de cantidad (una lectura más solo si hay vinculados de
-  cantidad); `SqlAlchemyUnitOfWork.importes`.
-- `application/use_cases.py` — `GuardarImportes` (R4-R7);
-  `DeshacerUltimaModificacion` con `IMPORTES`; `CopiarPeriodoAnterior` y
-  `CopiarTrabajadorAnterior` llaman a `_copiar_importes` (R8);
-  `ObtenerCuadrante` / `ObtenerFilaTrabajador` con `importes` (R9).
-- `application/registro_sigrid.py` — `_sumar_vinculados` lee las cantidades
-  del periodo (R15); `_vinculado(v, es_var, cantidades, tipos)` añade las
-  cuatro claves solo a los de cantidad (R14).
-- `interface_adapters/api/schemas.py` — `ImporteIn`, `ImportesIn`,
-  `ImporteOut`; campos nuevos de `SubfilaOut`; `TrabajadorOut.importes = []`.
-- `interface_adapters/api/routes.py` y `deps.py` — la ruta `PUT` y su caso.
+- `config/config.yaml` — `sync.vinculados.importes: {CAJA: {unidad: eur,
+  reparto: obra}, VIAJE: {eur, pct}, VP: {km, pct}}` y `precio_km: 0.20`.
+- `application/sync_pipeline.py` — `ConfigVinculados.importes` y
+  `.precio_km` (validados al arrancar, R1).
+- `infrastructure/db/orm_models.py` — `ImporteVinculadoORM` (§7.2);
+  `AsignacionVinculadoORM.cantidad`, `.copiado`, `.comentario`;
+  `AsignacionORM.comentario` (columnas nuevas: el `ALTER … ADD COLUMN IF
+  NOT EXISTS` lo deriva `esquema.py`).
+- `domain/models.py` — `TipoEvento.IMPORTES`; `SubfilaVinculado` y `Linea`
+  con sus campos nuevos; `CuadranteTrabajador.importes`.
+- `domain/ports.py` y `infrastructure/db/repositories.py` —
+  `ImporteRepository`/`PgImporteRepository` (`de_trabajador`,
+  `del_periodo`, `reemplazar`, `copiar_vacias`), `UnitOfWork.importes`;
+  `_valores_subfila` y `_a_subfila` con cantidad, copiado y comentario (así
+  `reemplazar` los conserva, como la partida elegida, F-044 R8);
+  `reemplazar` de asignaciones con `comentario`.
+- `application/use_cases.py` — `GuardarImportes` (R4-R7); `GuardarAsignaciones`
+  con `comentario` (R9); `DeshacerUltimaModificacion` con `IMPORTES`; las dos
+  copias del mes con `_copiar_importes` y el comentario (R8, R9); cuadrante
+  con `importes` y comentarios (R10).
+- `application/registro_sigrid.py` — `_sumar_vinculados` (una lectura,
+  R16), `_vinculado(...)` con las claves de R15 y la línea con `comentario`.
+- `application/traer_sigrid.py` (de F-054) — R32 (§6.4). **Solo tras F-054.**
+- `interface_adapters/api/schemas.py`, `routes.py`, `deps.py` — `ImporteIn`,
+  `ImportesIn`, `ImporteOut`, campos nuevos de `SubfilaOut`, `LineaOut`,
+  `LineaIn` y `TrabajadorOut`; la ruta `PUT`.
 
 **transfer**
-- `domain/models/registro_models.py` — `VinculadoEntrada.importe_mensual:
-  bool = False`, `.unidad`, `.cantidad`, `.copiado = False`;
-  `AccionVinculado.km`, `.precio_km` (`None` por defecto).
-- `interface_adapters/api/app.py` — `VinculadoIn` con los cuatro campos.
+- `domain/models/registro_models.py` — `VinculadoEntrada` (`importe_mensual`,
+  `unidad`, `reparto`, `cantidad`, `copiado`, `comentario`, `precio_km`),
+  `LineaEntrada.comentario`, `AccionVinculado.km`/`.precio_km`/`.reparto`.
+- `interface_adapters/api/app.py` — `VinculadoIn` y `LineaIn` iguales.
 - `application/services/reglas_vinculados.py` — `precio_del_vinculado` y sus
-  motivos; `decidir_vinculados(titular, linea, horas, precios_km=None)`.
-- `application/pipelines/registro_vinculados.py` — `PasoVinculados.decidir`
-  pide los precios por km una vez (perezoso, `_UnaVez`) y se los pasa.
-- `infrastructure/sigrid/sigrid_write_client.py` — `precios_km(recursos)`
-  (SELECT según D10, parametrizado, `truncated` es error) y su doble en
-  `tests/conftest.py`.
-- `prueba_escritura_porcentajes.py` — nada (ya lista y limpia `porcentajes:vin:`).
+  motivos; `decidir_vinculados` con `can`/`pre`/`tot` por reparto (§6.2).
+- `texto_linea.py` (nuevo, puro): `tex_de(comentario, marca, tex_previo,
+  editando) -> str | None` (R23).
+- `application/pipelines/registro_pipeline.py` y `registro_vinculados.py` —
+  donde hoy pasan `tex = marca o None`, pasan `tex_de(...)` de cada línea.
+- `prueba_escritura_porcentajes.py` — `estado` y `limpiar` buscan la marca
+  como **prefijo** (`tex LIKE marca + '%'`, con el prefijo de `synckey` de
+  siempre): con comentario, el `tex` ya no es la marca sola.
+- Tras F-054: `application/services/porcentajes_existentes.py` y su lectura
+  en `sigrid_write_client.py` — `tex` en cada línea y la lectura de las
+  `porcentajes:vin:` del periodo (R31).
 
-**front**
-- `static/js/app.js` — `chipImporte` en `pintarEditor` (tras las
-  incidencias), `state.importesEdicion`/`importesGuardados`,
-  `cuerpoImportes` y su `PUT` en `guardarAhora` (patrón incidencias, R12);
-  `construirCeldaVinculado` (`tipo`) con cantidad, «falta importe» o
-  «copiado» (R13); `filaVinculado` del modal con km/precio/`tot`/`pre` (R27).
-- `static/css/` — estilo de la casilla y de las marcas, sin dependencias.
+**front** — `static/js/app.js`: `chipImporte` (por % y por obra, con
+comentario, marca y «Revisado») en `pintarEditor` tras las incidencias;
+comentario del titular en `chipEditable`; `cuerpoImportes`/`cuerpoLineas`
+con comentario y el `PUT` en `guardarAhora` (patrón incidencias, R12);
+columna `comentario` en `state.columnas` y en `construirCeldaVinculado`;
+subfila con cantidad/«falta importe»/«copiado» (R14); `filaVinculado` del
+modal (R29). `static/css/`, sin dependencias.
 
-**docs** — `docs/ARCHITECTURE.md` (`#regla-vinculado`: punto «Cantidad del
-mes» con las decisiones citadas, «Qué se escribe» remite a él; tabla
-`importe_vinculado`) y `docs/INTEGRACION.md` §1 (lectura del precio por km),
-§5 (contrato, endpoint) y §7 (orden de despliegue, `tipos_importe`).
+**docs** — `ARCHITECTURE.md` y `INTEGRACION.md` §5 y §7 (R33).
 
 ## 5. Ficheros que NO se tocan
 
-- Transfer: `registro_pipeline.py` (solo cambia lo que `PasoVinculados`
-  decide), `reglas_porcentajes.py`, la escritura (`stmt_insert_linea` ya
-  escribe `can`, `pre`, `tot`) y las copias de `partes` (lista cerrada).
-- Api: `domain/vinculados.py` y el sync de vinculados (`tipos_excluidos`
-  sigue vacío); el export Excel (fuera, F-073 / F-038).
-- Front: `main.py` (el proxy `/api/*` ya cubre la ruta).
+Transfer: `reglas_porcentajes.py`, la SQL de escritura (ya acepta `can`,
+`pre`, `tot`, `tex`) y las copias de `partes`. Api: `domain/vinculados.py`,
+el sync de vinculados y el export Excel («Observaciones» sigue vacía). Front:
+`main.py`.
 
 ## 6. Clases y funciones
 
 ### 6.1 api · `domain/importes.py` (domain, sin dependencias)
 
-- `unidad_de(tipo: str | None, tipos: dict[str, str]) -> str | None` — R2:
-  `eur`, `km` o `None` (no es de cantidad).
-- `validar_cantidad(valor: object, unidad: str) -> Decimal | None` — R5:
-  `None` pasa; número finito, ≥ 0, dos decimales como mucho (comparando
-  `Decimal(str(valor))` con su cuantizado) y bajo el tope de su unidad; si
-  no, `ImporteInvalido` (422). Booleanos y textos, inválidos.
-- `a_copiar(origen: dict[int, Decimal], destino: dict[int, Decimal],
-  vinculados: set[int]) -> dict[int, Decimal]` — R8: las del origen de
-  `vinculados` que no están en el destino.
-- `@dataclass(frozen=True) ImporteVinculado` — `vinculado_ide`, `tipo`,
-  `tipo_res`, `cod`, `unidad`, `cantidad: Decimal | None`, `copiado: bool`.
+- `TipoCantidad(unidad: "eur" | "km", reparto: "pct" | "obra")` y
+  `tipo_de(tipo, importes) -> TipoCantidad | None` (R2).
+- `validar_cantidad(valor, unidad) -> Decimal | None` y
+  `validar_comentario(texto) -> str | None` (R5: `Decimal(str(v))` contra
+  su cuantizado; booleanos y textos inválidos; comentario sin espacios a
+  los lados, vacío ⇒ `None`, > 200 ⇒ `ImporteInvalido`).
+- `a_copiar(origen, destino) -> dict` — R8: las claves del origen que no
+  están en el destino.
+- `comentario_de_sigrid(tex, marca) -> str | None` — R32: quita la marca de
+  pruebas del principio y los espacios; vacío ⇒ `None`.
 
 ### 6.2 transfer · `reglas_vinculados.py` (application, puro)
 
-- `precio_del_vinculado(v, horas, precios_km) -> (hora, pre, km, precio_km,
-  motivo)`. Sin `importe_mensual`: `hora_del_vinculado` como hoy (R22). Con
-  él, en orden: sin hora por defecto ⇒ «sin hora» (R21); `copiado` ⇒
-  «copiado sin revisar» (R20, si D11-A); `cantidad` nula ⇒ «falta el
-  importe del mes» (R18); 0 ⇒ «importe 0 este mes» (R19); `eur` ⇒ `pre =
-  cantidad`; `km` ⇒ `precio = precios_km.get(recurso)`, sin él o ≤ 0 «sin
-  precio por km en Sigrid» (R17), si no `pre = round(km × precio, 2)`.
-- Motivos ≤ 300 caracteres con `{tipo} {cod}` (cabe en `sigrid_motivo`).
-- `necesita_precios_km(lineas) -> list[int]` — los `recurso_ide` `km` con
-  cantidad > 0 y sin `copiado`: si está vacía, no se lee nada (R17).
+`precio_del_vinculado(v, horas) -> (hora, can, pre, tot, km, precio_km,
+motivo)` dado el `can` del titular. Sin `importe_mensual`: F-044 tal cual
+(R24). Con él, en orden: sin hora por defecto ⇒ «sin hora» (R22; la hora
+es la de `hora_del_vinculado`, que ya elige el `defecto` de `reshor`, es
+decir `res.horide`: `CO` en los 120 `CAJA` activos, `KM` en los 57 `VP`,
+`VI` en los 22 `VIAJE`, leído el 2026-11-12); `copiado` ⇒ «sin revisar»
+(R21); `cantidad` nula ⇒ «falta el importe» (R20); 0 ⇒ «importe 0»; por
+obra ⇒ `can` 1, `pre = tot = cantidad` (R18); por % ⇒ importe = cantidad
+(`eur`) o `round(km × precio_km, 2)` (`km`, sin `precio_km` > 0 ⇒ «sin
+precio por km»), `can` del titular, `tot = round(can × pre, 2)` (R17).
+Motivos ≤ 300 caracteres con `{tipo} {cod}` y, en caja, la obra.
 
 ### 6.3 api · `GuardarImportes` y la copia (application)
 
 `GuardarImportes.ejecutar(uow, anio, mes, trabajador_ide, entrada, usuario,
-*, filtro)`: periodo abierto o 404/409; trabajador o 404; cada elemento con
-`validar_cantidad` en la unidad de su vinculado, que tiene que ser activo,
-vigente, de cantidad y del trabajador (si no, 422); repetido, 422. Si la foto
-cambia, `reemplazar` y evento `IMPORTES` (`[{vinculado_ide, cantidad,
-copiado}]` de **todos** los del trabajador). Deshacer: vuelve a la foto de
-antes, como `INCIDENCIAS`. `_copiar_importes(uow, origen_id, periodo_id,
-trabajador_ide, usuario)`: tras la copia de líneas de ese trabajador (en el
-periodo, solo los copiados), `a_copiar` y `copiar_vacias` con `copiado =
-true`, y su evento `IMPORTES` si copió alguna (deshacer dos veces deshace la
-copia entera; consta en `#regla-deshacer`).
+*, filtro)`: periodo abierto o 404/409; trabajador o 404; cada elemento
+validado (R5, R6): por % ⇒ `importe_vinculado`; por obra ⇒ la fila de
+`asignacion_vinculado` de esa línea (se crea si no hay). Foto de **todo**
+lo del trabajador (del mes y por obra); si cambia, se guarda y evento
+`IMPORTES`; deshacer vuelve a la foto. `_copiar_importes`: tras la copia de
+líneas (que ya copia las subfilas con su partida, y ahora con cantidad y
+comentario), marca `copiado = true` en las copiadas y copia las del mes
+vacías; evento `IMPORTES` propio (deshacer dos veces deshace la copia
+entera; consta en `#regla-deshacer`).
 
-### 6.4 front · `app.js`
+### 6.4 api · comentario traído (tras F-054)
 
-`chipImporte(entrada, idx, editor)`: `tipo_res cod`, `<input
-inputmode="decimal">` con la cantidad en formato español y su unidad; con
-`copiado`, la marca y el botón «Revisado» (manda la misma cantidad). Al
-teclear, `parsearCantidad` (coma o punto, vacío ⇒ `null`, lo demás tal cual:
-la api lo rechaza) y `programarGuardado()`. El front no decide qué es
-«revisado»: pinta `copiado` tal como llega.
+En `TraerDeSigrid`, con las líneas de `existentes`: por cada asignación y
+cada subfila con traza (`sigrid_hmores_ide`) o `synckey` nuestra, si
+`comentario_de_sigrid(tex)` difiere del guardado, se pone; las del mes, en
+`importe_vinculado` (el de su primera línea por `ide`). Un evento `SIGRID`
+por trabajador, como F-054 R25. No toca % ni cantidades.
 
 ## 7. SQL
 
-### 7.1 Sigrid (solo lectura; la escritura es la de F-044 con otro `pre`)
+### 7.1 Sigrid
 
-`precios_km`: **pendiente de D10**. Lo leído el 2026-11-11 (§9, D10) no da
-un precio por km por recurso. Cuando D10 diga la tabla y el campo: un
-`SELECT` parametrizado por los `recurso_ide` (lotes como las demás
-lecturas), alias `reside` y `precio`, `truncated` es error.
+Escritura: la de F-044 con otro `can`/`pre`/`tot` y `tex`. Lectura nueva
+**solo tras F-054** (R31): las líneas del periodo con `synckey LIKE
+'porcentajes:vin:%'` en obras de la empresa (`hmores` + `hmo` + `con`),
+con `CAST(tex AS NVARCHAR(400))`, parametrizada; `truncated` es error.
 
 ### 7.2 PostgreSQL `dedicacion` (ORM, única verdad)
 
-`ImporteVinculadoORM` → `importe_vinculado`, tabla **nueva** (`create_all`,
-sin `ALTER`): `id` PK · `periodo_id` FK `periodo.id` y `vinculado_ide` FK
-`recurso_vinculado.ide`, NOT NULL, `UniqueConstraint` de los dos ·
-`cantidad` `Numeric(12, 2)` NOT NULL (€ o km según el tipo, no se guarda la
-unidad: es de la config) · `copiado` boolean NOT NULL default false ·
-`actualizado_en` timestamptz (`now()`, `onupdate`) · `actualizado_por` text
-NOT NULL. No cuelga de `asignacion` (`reemplazar` borra las líneas). Un
-`null` del PUT borra la fila. Nada a nivel de servidor.
+- `importe_vinculado` (nueva, `create_all`): `id` PK · `periodo_id` FK y
+  `vinculado_ide` FK, NOT NULL, únicos juntos · `cantidad` `Numeric(12, 2)`
+  NOT NULL · `copiado` boolean NOT NULL default false · `comentario`
+  `String(200)` · `actualizado_en`, `actualizado_por`.
+- `asignacion_vinculado`: `cantidad` `Numeric(12, 2)`, `copiado` boolean,
+  `comentario` `String(200)`, nulables y sin default (como sus demás
+  columnas). `asignacion`: `comentario` `String(200)` nulable.
+- Unidad y reparto, de la config. Nada a nivel de servidor.
 
 ## 8. Contrato (api ↔ transfer)
 
-`lineas[].vinculados` de `registro/preflight` y `registro/ejecutar` gana,
-**solo en los de cantidad**, `importe_mensual: true`, `unidad`, `cantidad`
-y `copiado` (en `partidas/propuesta(-lote)` no viajan). La respuesta gana
-`km` y `precio_km` en cada entrada de `vinculados` (nulos fuera de `km`,
-R26). Transfer viejo + api nueva: ignora las claves (`VinculadoIn` no
-prohíbe extras) y omite «sin importe mensual», como hoy; api vieja +
-transfer nuevo: F-044 tal cual. Orden **transfer → api → front** (R30).
+`lineas[]` gana `comentario`; cada vinculado de cantidad, las claves de R15
+(en `partidas/propuesta(-lote)` no viajan). Respuesta: `km`, `precio_km`,
+`reparto` en `vinculados` (R28). Tras F-054, `existentes` gana `tex` por
+línea y `vinculados_registrados` (R31). Transfer viejo + api nueva: ignora
+las claves (sin `extra="forbid"`) y omite «sin importe mensual», como hoy;
+api vieja + transfer nuevo: F-044 tal cual. Orden **transfer → api → front**.
 
 ## 9. Decisiones
 
-### 9.1 Cerradas por el humano (2026-11-11: «d2, caja en euros, km en km y viaje en wuros. d7, copia importes. A a lo demas»)
+### 9.1 Cerradas por el humano
 
-- **D1 = A** · `CAJA`, `VP` y `VIAJE`, en una lista de `config.yaml`.
-- **D2 = caja y viaje en €, `VP` en km** · importe del `VP` = km × precio
-  unitario; a «¿de dónde sale el precio?»: «esta en sigrid como unitario de
-  ese recurso» (→ D10). Sin negativos.
-- **D3 = A** · casillas en el editor del trabajador, tras las incidencias.
-- **D4 = A** · sin cantidad ⇒ ese vinculado se omite y lo demás se
-  registra; 0 ⇒ no se escribe nada.
-- **D5 = A** · `can` = % del titular, `pre` = importe del mes, `tot =
-  round(can × pre, 2)`; descuadre de céntimos aceptado.
-- **D6 = A** · líneas a mano: como F-044/F-064 (pisado marcado; otra partida
-  ⇒ capacidad).
-- **D7 = B** · copiar el mes copia las cantidades, como valor puesto y
-  editable, con la marca `copiado` hasta que se teclea o se pulsa
-  «Revisado» (R8, R11). Riesgo: registrar el gasto del mes pasado sin
-  revisarlo (→ D11).
-- **D8 = A** · sin normalizar. **D9 = A** · ya registrado no se edita.
+2026-11-11 («d2, caja en euros, km en km y viaje en wuros. d7, copia
+importes. A a lo demas»): **D1 = A** (`CAJA`, `VP`, `VIAJE`; el 2026-11-12
+«viaje dejalo dentro, como euros tambien. aunque es posible que de momento
+no se use») · **D2** caja y viaje en €, `VP` en km · **D3 = A** casillas en
+el editor · **D4 = A** sin cantidad se omite, 0 no escribe · **D5 = A** por
+% con `can` = %, `pre` = importe, `tot = can × pre` (ahora solo `VP` y
+`VIAJE`) · **D6 = A** líneas a mano como F-044/F-064 · **D7 = B** copiar el
+mes copia las cantidades marcadas `copiado` · **D8 = A** sin normalizar ·
+**D9 = A** ya registrado no se edita.
+
+**D10 = precio único 0,20 €/km en `config.yaml`**, no por recurso (Juan
+Romero, Dir. Admón. y Control de Costes, correo «RE: parte km» del
+2026-11-12: «que permita meter los kilómetros totales y que el sistema
+multiplique por 0,20€. He comprobado que se cumple la regla en todos los
+pdf analizados»). Queda lo leído el 2026-11-11: ningún precio por km por
+recurso en `reshor`, `auxhor`, `tarmob`, `rescen` ni `conext`; `auxgas` 8
+«Kilometros» 0,1923 (global); 8 líneas `KM` de 2026 a mano con `can` = km
+y `pre` 0,20. **Hora de caja**: la por defecto del recurso, sin categorizar
+(Juan, mismo correo: «lleve al parte el tipo de hora por defecto (CO)»); es
+lo que ya hace `hora_del_vinculado` (§6.2). **Caja por obra** (humano,
+2026-11-12: «la caja se asigna a la obra, cada obra con la suya»); el
+riesgo que veía Juan (un gasto de una obra repartido entre todas las del
+trabajador) desaparece. **Comentarios** (humano: «hay que añadir una
+columna de comentarios, y esots deben traerse al sincronizar»; Juan: «con
+el campo de observaciones podemos reflejar cualquier cosa que se salga de
+la rutina»).
 
 ### 9.2 Abiertas (las pregunta el líder al humano)
 
-- **D10 · Dónde está en Sigrid «el unitario» de cada `VP`.** Leído el
-  2026-11-11 vía `sigrid-api` (solo `SELECT`): `reshor` de la hora `KM`
-  (46) tiene `pre`, `prenom`, `preven` a 0 en los `VP` salvo 3 con un
-  **importe mensual** (VP0016 160, VP0046 600, VP0115 175; `candef` 1 en 43);
-  `auxhor` 46 (`KM`, unidad 19 «ud») sin precio; `tarmob` sin filas de la
-  hora 46; `rescen` y `tarres` sin filas de los `VP` mirados; `conext` solo
-  el «Recurso Asociado»; `reshor.proide` 0. Lo único con precio por km es
-  `auxgas` 8 «Kilometros» `pre` 0,1923 (tipo de gasto **global**, de las
-  hojas de gastos; `hgvres` sin líneas suyas desde 2025). Las líneas `KM`
-  de 2026 (602): 563 con `can` ≤ 1 y `pre` en € (6 a 1.069,20), 31 a 0 y 8
-  con `can` = km y `pre` **0,20** (VP0111 724,5 km, VP0117, VP0137 2.018
-  km; también en 2024-2025: VP0050, VP0078…), un 0,20 que no está en ninguna
-  ficha leída. Opciones: (A) el humano dice la pantalla y el campo exactos
-  de Sigrid (con un `VP` de ejemplo) y se lee de ahí; (B) un precio por km
-  único en `config.yaml` (hoy 0,20, el de las líneas a mano); (C) `auxgas`
-  «Kilometros» (0,1923; no coincide con el 0,20 de las líneas); (D) que
-  Administración lo dé de alta en `reshor.pre` de la hora `KM` de cada `VP`
-  (hoy ese campo lleva importes mensuales en 3 de ellos). **Recomiendo A**
-  y, si no existe por recurso, B. **Sin D10 cerrada no se implementa
-  `precios_km` (T3) ni se aprueba la spec.**
-- **D11 · Cantidad copiada sin revisar al registrar** (R20). (A) Se omite
-  «importe copiado del mes anterior sin revisar» hasta que se teclea o se
-  pulsa «Revisado»: nunca se registra el gasto del mes pasado por descuido.
-  (B) Se registra tal cual (la copia vale como dato) y el modal solo lo
-  avisa. **Recomiendo A.**
+- **D11 · Copiada sin revisar al registrar** (R21). (A) Se omite hasta
+  teclearla o pulsar «Revisado». (B) Se registra tal cual. **Recomiendo A.**
+- **D12 · Caja: dónde y qué línea** (R11, R18). (A) Casilla «Caja · obra»
+  por línea en el editor (como D3) y línea `can` 1, `pre = tot` = cantidad,
+  como las de caja a mano; la capacidad de F-044 queda en «una caja por obra
+  y mes» (una a mano en esa obra ⇒ sobrecarga a confirmar). (B) Casilla en
+  la subfila (hay una por obra, encaja, pero rompe «se teclea en el
+  editor»). (C) `can` = % del titular y `pre = cantidad / %`: `tot` igual,
+  pero `pre` raro y redondeos. **Recomiendo A.**
+- **D13 · Caja vacía en una obra** (R20). (A) Como D4: «falta el importe»
+  en esa obra (omisión que avisa; con 5 obras y gasto en 1, hay que poner 0
+  en 4 o ver 4 avisos). (B) Vacía = sin gasto en esa obra, sin aviso; solo
+  avisa si **ninguna** obra tiene caja. **Recomiendo B** (es la forma
+  normal de la caja) — contradice D4 en caja: lo decide el humano.
+- **D14 · Alcance del comentario** (R9, R13, R23). (A) En cada línea del
+  titular y en cada vinculado de cantidad (por % uno al mes, que va a todas
+  sus líneas; caja, uno por obra), todos a `tex`. (B) Solo vinculados de
+  cantidad. **Recomiendo A** («una columna de comentarios»).
+- **D15 · Comentario traído** (R31, R32). (A) De nuestras líneas ya
+  registradas, el `tex` de Sigrid manda (Administración corrige allí; D9:
+  lo de la app tras registrar no llega a Sigrid). (B) Solo si el de la app
+  está vacío. (C) Como entradas a aceptar en la tabla de F-054. Las líneas a
+  mano no nuestras no se traen. **Recomiendo A.**
+- **D16 · Orden con F-054** (§7 de requirements). F-054 (rama
+  `feature/F-054-sync-trae-porcentajes`, copia `porcentajes-f054`) no está
+  en `dev`. (A) Cerrar y unir F-054, rebasar esta rama sobre `dev` y
+  entonces implementar F-069 entera. (B) Implementar T1-T13 ya y dejar
+  T14-T15 (traer) condicionadas a F-054 en `dev`. **Recomiendo A**: F-054
+  está casi cerrada y las dos tocan el registro y el cuadrante.
 
-Decididas por mí (técnicas): nombres `importe_vinculado`, `importe_mensual`,
-`unidad`, `cantidad`, `copiado`, `IMPORTES`; topes; `PUT` aparte (patrón de
-las incidencias); evento `IMPORTES` propio en la copia.
+Técnicas (mías): nombres, topes, `PUT` aparte, `limpiar` por prefijo.
 
-## 10. Riesgos, relaciones y avisos
+## 10. Riesgos y avisos
 
-- **F-071** (`can` ajustado por alta/baja): con D5 el importe se repartiría
-  sobre el `can` ajustado y una parte quedaría sin imputar; su spec debe
-  decidirlo (anotarlo allí). F-058 y F-054: sin cruce (F-054 no trae
-  cantidades).
-- **Octubre de 2026**: titulares ya registrados ⇒ cada vinculado se decide
-  solo (F-044 R18): tecleadas las cantidades, registrar otra vez escribe solo
-  los de cantidad. Aviso a `partes` (lo transmite el humano): dedicación
-  escribirá `KM`, caja (`CO`/`CA`/`CD`/`CG`) y `VI` variables.
-- Con D5-A la línea `KM` sale `can` = %, `pre` = km × precio: no como las 8
-  líneas a mano con `can` = km y `pre` 0,20 (romperían la capacidad del
-  vinculado, suma de `can` ≤ 1). El modal enseña los km y el precio (R27).
+- **F-071**: no debe tocar la caja (`can` 1); en `VP`/`VIAJE` repartiría
+  sobre el `can` ajustado (anotarlo en su spec). **Octubre**: titulares ya
+  registrados ⇒ cada vinculado se decide solo (F-044 R18). Aviso a `partes`
+  (lo da el humano): escribiremos `KM`, `CO`, `VI` variables y `tex`.
+- Horas mal codificadas a mano (`CO` en vez de `KM`, Juan): otra hora no
+  choca y el gasto puede salir doble; se ve en la MANUAL.
