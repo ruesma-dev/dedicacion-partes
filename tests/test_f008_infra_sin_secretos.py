@@ -44,6 +44,8 @@ from pathlib import Path
 
 import pytest
 
+from harness.tiempos import escalar_timeout
+
 RAIZ = Path(__file__).resolve().parents[1]
 
 #: Los cuatro árboles que se barren (R22). `infra/` porque es donde nacen los
@@ -159,7 +161,7 @@ def _rutas_que_git_puede_versionar() -> set[Path] | None:
     try:
         salida = subprocess.run(
             ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
-            cwd=RAIZ, capture_output=True, text=True, timeout=30,
+            cwd=RAIZ, capture_output=True, text=True, timeout=escalar_timeout(30),
         )
     except (OSError, subprocess.SubprocessError):
         return None

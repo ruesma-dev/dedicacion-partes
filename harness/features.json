@@ -1,14 +1,17 @@
 {
-  "$schema_doc": "Estados: pending -> spec_ready (aprueba humano) -> in_progress -> done. 'blocked' = parada con motivo en progress/current.md. Máximo UNA in_progress (lo valida init.sh). sdd=false salta la spec: 'acceptance' hace de mini-spec y el reviewer valida contra ella.",
-  "$rigor_doc": "El campo 'rigor' de cada feature declara cuanta evidencia se le exige: documental, estandar o critico (ver CHECKPOINTS.md y harness/rigor.json). Si una feature NO lo declara se le aplica el 'nivel_por_defecto' de harness/rigor.json, hoy 'estandar': sigue exigiendo fase RED, cobertura y campana de mutacion, pero no cero supervivientes. Lo critico se declara, no se hereda por descuido (arnes 1.7.0).",
+  "$schema_doc": "Estados, en orden de flujo: pending (backlog: dada de alta) -> todo (comprometida: el humano ha decidido que se haga; nada sale de pending sin pasar por todo y el líder no arranca nada que no venga de todo) -> spec_ready (spec escrita; la aprueba el humano) -> in_progress (implementer) -> in_review (reviewer) -> human_review (PARADA 2: espera el OK del humano) -> done. 'blocked' = parada fuera del flujo, con el motivo y el estado del que sale en progress/current.md. Activos: in_progress, in_review y human_review; como mucho UNA feature activa (lo valida init.sh). todo no es activa: se pueden comprometer varias a la vez (una fase entera del plan). La lista de estados vive en harness/estados.py y solo el líder cambia el estado (salvo blocked). sdd=false salta la spec: 'acceptance' hace de mini-spec y el reviewer valida contra ella. Campos de fecha OPCIONALES, AAAA-MM-DD: 'spec_aprobada' (día en que el humano aprobó la spec; sin ella el líder no lanza el implementer de una sdd=true), 'ok_humano' (día en que el humano dio el OK al resumen de la PARADA 2; con él la feature pasa a done) y 'fecha_cierre' (día en que pasa a done; ordena las terminadas de BACKLOG.md y las que no la llevan salen al final, 'sin fecha'). Una fecha mal formada hace fallar harness/backlog.py nombrando la feature y el campo.",
+  "$rigor_doc": "El campo 'rigor' de cada feature declara cuanta evidencia se le exige: documental, express, estandar o critico (ver CHECKPOINTS.md y harness/rigor.json). Si una feature NO lo declara se le aplica el 'nivel_por_defecto' de harness/rigor.json (hoy estandar): omitirlo no libra de las puertas, pero 'critico' se declara, no se hereda. 'express' exige sdd false y que harness/rigor.json lo declare.",
   "$nota": "Backlog propuesto el 2026-08-19 al instalar el arnés, leyendo el código migrado. Validado por el humano en esa misma sesión salvo el orden fino. La F-004 de la propuesta inicial (paginación contra sigrid-api) se retiró: el tope real de la instancia dev son 500.000 filas, no 1.000, y el cliente ya falla en claro si la respuesta viene truncada.",
   "rules": {
     "one_feature_at_a_time": true,
     "require_init_green_to_close": true,
     "valid_status": [
       "pending",
+      "todo",
       "spec_ready",
       "in_progress",
+      "in_review",
+      "human_review",
       "done",
       "blocked"
     ]
