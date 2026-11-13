@@ -1,6 +1,9 @@
 {
   "$schema_comment": "Hooks: la verificación la ejecuta el arnés, no el agente, así que no se puede saltar. Adaptado a Git Bash en Windows.",
-  "$nota": "Monorepo: el hook PostToolUse corre SOLO la suite de la raíz (tests/, las herramientas del arnés). Las suites de los servicios necesitan el intérprete y el directorio de cada uno, y las ejecuta harness/init.sh (sección 7 bis) leyendo harness/servicios.json.",
+  "$nota": "Monorepo: las suites de los servicios necesitan el intérprete y el directorio de cada uno, y las ejecuta harness/init.sh (sección 7 bis) leyendo harness/servicios.json. El hook PostToolUse que corría la suite de la raíz con | tail -5 se quitó al pasar a la 1.10.1: escondía el código de salida.",
+  "$adaptar": "No hay hook por edición: lanzar la suite completa tras cada Edit o Write costaba la suite entera por cambio y, sin ruta, ni arrancaba en un monorepo. La verificación por turno la hace el hook Stop, que corre el portero ligero (init.sh sin suites); las suites las corre el portero completo al arrancar y al cerrar la feature. Un proyecto que no sea Python no tiene nada que adaptar aquí: su suite va en COMANDO_TESTS de harness/init.sh (o en harness/servicios.json si es un monorepo). Modelo y esfuerzo (F-070): model fija claude-opus-5-5 para la sesión del líder y effortLevel su esfuerzo (high); un proyecto puede bajar effortLevel, nunca a max (no lo admite). No definas CLAUDE_CODE_EFFORT_LEVEL en env: pisaría el esfuerzo por rol de todos los agentes.",
+  "model": "claude-opus-5-5",
+  "effortLevel": "high",
   "hooks": {
     "SessionStart": [
       {
@@ -26,18 +29,6 @@
         ]
       }
     ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python -m pytest tests -q --tb=line 2>&1 | tail -5",
-            "description": "Tras editar o escribir ficheros, corre la suite de la raíz y muestra el resumen."
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
@@ -53,11 +44,20 @@
   "permissions": {
     "allow": [
       "Bash(bash harness/init.sh)",
+      "Bash(ARNES_SIN_CACHE=1 bash harness/init.sh)",
       "Bash(python -m pytest*)",
       "Bash(python -m compileall*)",
+      "Bash(python -m harness.alcance*)",
+      "Bash(python -m harness.cobertura*)",
+      "Bash(python -m harness.mutacion*)",
+      "Bash(python -m harness.rigor*)",
+      "Bash(python -m harness.servicios*)",
+      "Bash(python -m harness.tamano*)",
+      "Bash(python harness/backlog.py*)",
       "Bash(git status)",
       "Bash(git diff*)",
       "Bash(git branch --show-current)",
+      "Bash(git checkout -b*)",
       "Bash(git log*)"
     ]
   }
