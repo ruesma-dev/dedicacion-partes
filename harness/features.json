@@ -1160,7 +1160,8 @@
       "acceptance": [
         "Spec SDD aprobada por el humano (D1-D16 cerradas por el humano el 2026-11-11 y el 2026-11-12; va tras F-054 unida a dev, D16): `specs/F-069-importe-caja-km/`; se cumplen sus requisitos R1-R36 y sus tareas; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md` con rigor crítico."
       ],
-      "status": "spec_ready",
+      "status": "in_progress",
+      "spec_aprobada": "2026-11-12",
       "sdd": true,
       "rigor": "critico",
       "priority": 1,
