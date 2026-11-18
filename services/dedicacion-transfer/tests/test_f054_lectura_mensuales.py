@@ -28,7 +28,7 @@ BASE = (
     "co.cod AS obra_cod, m.ide AS parte_ide, c.cod AS parte_cod, "
     "c.est AS parte_est, a.cod AS hora, h.can AS can, h.fec AS fec, "
     "h.paride AS paride, p.cod AS par_cod, p.res AS par_res, "
-    "h.synckey AS synckey "
+    "h.synckey AS synckey, CAST(h.tex AS NVARCHAR(400)) AS tex "
     "FROM hmores h JOIN hmo m ON m.ide = h.hmoide JOIN con c ON c.ide = m.ide "
     "JOIN con co ON co.ide = m.obride JOIN auxhor a ON a.ide = h.horide "
     "LEFT JOIN obrparpar p ON p.ide = h.paride "

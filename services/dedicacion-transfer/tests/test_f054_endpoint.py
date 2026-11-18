@@ -62,7 +62,8 @@ def test_f054_contrato_de_la_respuesta(monkeypatch):
     cuerpo = r.json()
     assert set(cuerpo) == {"ok", "lineas_leidas", "excluidas_pruebas",
                            "obra_postventa", "motivo_postventa", "obra_var",
-                           "motivo_var", "lineas"}
+                           "motivo_var", "lineas",
+                           "vinculados_registrados"}  # F-069 (R31)
     assert cuerpo["ok"] is True
     assert (cuerpo["lineas_leidas"], cuerpo["excluidas_pruebas"]) == (4, 1)
     assert [(x["hmores_ide"], x["destino"], x["obra_origen_ide"],
@@ -73,8 +74,8 @@ def test_f054_contrato_de_la_respuesta(monkeypatch):
     assert set(cuerpo["lineas"][0]) == {
         "hmores_ide", "recurso_ide", "obra_ide", "obra_cod", "parte_ide",
         "parte_cod", "parte_est", "en_registro", "hora", "can", "fec",
-        "paride", "partida_cod", "partida_res", "synckey", "destino",
-        "obra_origen_ide", "var_paride", "motivo"}
+        "paride", "partida_cod", "partida_res", "synckey", "tex",
+        "destino", "obra_origen_ide", "var_paride", "motivo"}
     assert cuerpo["obra_postventa"]["ide"] == PV_IDE
     assert cuerpo["obra_var"]["ide"] == VAR_IDE
     assert cli.leidas_mensuales == [(1, 2026, 9, None, True)]

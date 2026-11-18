@@ -469,6 +469,10 @@ class ClienteFalso(EdicionesFalsas):
         su cuenta y su nombre."""
         return []
 
+    def lineas_por_synckey_del_periodo(self, empresa, ano, mes, prefijo):
+        """F-069 (R31): sin líneas de vinculados nuestros en el periodo."""
+        return []
+
     def siguiente_cod_pt(self, ano, empresa=None):
         return "PT26/09999"
 

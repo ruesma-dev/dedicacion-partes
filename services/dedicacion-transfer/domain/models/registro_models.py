@@ -471,6 +471,22 @@ class LineaMensualSigrid:
     partida_cod: str | None = None
     partida_res: str | None = None
     synckey: str | None = None
+    # F-069 (R31, D15): su `tex` (sin espacios a los lados; None si vacío),
+    # para que la api traiga el comentario de nuestras líneas registradas.
+    tex: str | None = None
+
+
+@dataclass(frozen=True)
+class LineaVinculadoSigrid:
+    """F-069 (R31, D15): una línea del periodo con `synckey` de un
+    vinculado nuestro (`porcentajes:vin:{registro}:{recurso}`), tal como la
+    lee `lineas_por_synckey_del_periodo`: su `hmores.ide`, recurso,
+    `synckey` y `tex` (None si vacío). La api pone su `tex` como comentario
+    del vinculado en el cuadrante."""
+    hmores_ide: int
+    recurso_ide: int
+    synckey: str | None
+    tex: str | None = None
 
 
 @dataclass(frozen=True)

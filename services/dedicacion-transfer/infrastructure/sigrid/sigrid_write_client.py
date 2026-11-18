@@ -59,6 +59,7 @@ from application.services.propuesta_partida import LineaHistorial
 from domain.errores import ObraAmbigua
 from domain.models.registro_models import (
     HoraRecurso, LineaIncidenciaSigrid, LineaMensualSigrid, LineaSigrid,
+    LineaVinculadoSigrid,
     ObraEntrada, ParteDestino, ParteSigrid, PartidaCuenta, PartidaValida,
 )
 
@@ -532,7 +533,7 @@ class SigridWriteClient:
             "co.cod AS obra_cod, m.ide AS parte_ide, c.cod AS parte_cod, "
             "c.est AS parte_est, a.cod AS hora, h.can AS can, h.fec AS fec, "
             "h.paride AS paride, p.cod AS par_cod, p.res AS par_res, "
-            "h.synckey AS synckey "
+            "h.synckey AS synckey, CAST(h.tex AS NVARCHAR(400)) AS tex "
             "FROM hmores h JOIN hmo m ON m.ide = h.hmoide "
             "JOIN con c ON c.ide = m.ide JOIN con co ON co.ide = m.obride "
             "JOIN auxhor a ON a.ide = h.horide "
@@ -567,7 +568,32 @@ class SigridWriteClient:
             fec=int(f["fec"]), paride=int(f["paride"] or 0),
             partida_cod=(f["par_cod"] or "").strip() or None,
             partida_res=(f["par_res"] or "").strip() or None,
-            synckey=(f["synckey"] or "").strip() or None)
+            synckey=(f["synckey"] or "").strip() or None,
+            tex=(f.get("tex") or "").strip() or None)
+
+    def lineas_por_synckey_del_periodo(
+        self, empresa: int, ano: int, mes: int, prefijo: str,
+    ) -> list[LineaVinculadoSigrid]:
+        """F-069 (R31, D15; design §7.1): las líneas de los partes de
+        trabajo de obra del periodo en obras de `empresa` cuya `synckey`
+        empieza por `prefijo` (los vinculados nuestros,
+        `porcentajes:vin:`), con su `tex`, por `hmores.ide`. UNA lectura,
+        parametrizada (el prefijo va como `?`); un `truncated` sube como
+        excepción. Solo lectura."""
+        filas = self._lectura(
+            "lineas_por_synckey_del_periodo",
+            "SELECT h.ide AS ide, h.reside AS reside, h.synckey AS synckey, "
+            "CAST(h.tex AS NVARCHAR(400)) AS tex "
+            "FROM hmores h JOIN hmo m ON m.ide = h.hmoide "
+            "JOIN con c ON c.ide = m.ide JOIN con co ON co.ide = m.obride "
+            "WHERE c.tip = ? AND ISNULL(m.reside, 0) = 0 AND m.ano = ? "
+            "AND m.mes = ? AND co.emp = ? AND h.synckey LIKE ? "
+            "ORDER BY h.ide",
+            [self._tip, int(ano), int(mes), int(empresa), f"{prefijo}%"])
+        return [LineaVinculadoSigrid(
+            hmores_ide=int(f["ide"]), recurso_ide=int(f["reside"]),
+            synckey=(f["synckey"] or "").strip() or None,
+            tex=(f.get("tex") or "").strip() or None) for f in filas]
 
     def partes_del_periodo(self, obra_ide: int, ano: int,
                            mes: int) -> list[ParteSigrid]:

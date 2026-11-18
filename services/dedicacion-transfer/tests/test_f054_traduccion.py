@@ -125,8 +125,9 @@ def test_f054_r8_obra_normal_destino_normal_con_lo_de_r6():
         "obra_cod": "0694", "parte_ide": 7694, "parte_cod": "PT26/00001",
         "parte_est": 1, "en_registro": True, "hora": "MENC", "can": 0.95,
         "fec": 20260930, "paride": 2105, "partida_cod": None,
-        "partida_res": None, "synckey": None, "destino": "normal",
-        "obra_origen_ide": None, "var_paride": None, "motivo": None}
+        "partida_res": None, "synckey": None, "tex": None,   # F-069 (R31)
+        "destino": "normal", "obra_origen_ide": None, "var_paride": None,
+        "motivo": None}
     assert r["obra_postventa"] is None and r["motivo_postventa"] is None
     assert r["obra_var"] is None and r["motivo_var"] is None
 

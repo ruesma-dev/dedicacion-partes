@@ -22,6 +22,9 @@ from dataclasses import asdict
 
 from domain.models.registro_models import LineaMensualSigrid, ObraEntrada
 
+from application.services.reglas_vinculados import (
+    PREFIJO_SYNCKEY_VINCULADO,
+)
 from application.services.universo_postventa import (
     CatalogoPostventa,
     cargar_catalogo_postventa,
@@ -32,6 +35,10 @@ from application.services.universo_var import (
     cargar_catalogo_var,
     partida_var_de,
 )
+
+#: F-069 (R31): el prefijo de `synckey` de las líneas de nuestros
+#: vinculados (`reglas_vinculados.PREFIJO_SYNCKEY_VINCULADO`).
+PREFIJO_VINCULADOS = PREFIJO_SYNCKEY_VINCULADO
 
 #: R9: la partida de la línea de postventa no casa con ninguna obra de las
 #: que admiten postventa, o casa con varias. T25 (R46): la partida por su
@@ -112,8 +119,15 @@ class PorcentajesExistentes:
     def calcular(self, empresa: int, ano: int, mes: int,
                  obras: list[ObraEntrada]) -> dict:
         """UNA lectura de las líneas (R4) y, solo si hacen falta, los
-        catálogos de postventa y VAR (R11). Un fallo de lectura sube."""
+        catálogos de postventa y VAR (R11). Un fallo de lectura sube.
+
+        F-069 (R31, D15): cada línea lleva su `tex` y, en UNA lectura más,
+        `vinculados_registrados`: las líneas del periodo con `synckey` de
+        nuestros vinculados, con su `tex` (sin filtrar por la obra de
+        pruebas: la api solo mira las suyas, por `synckey`)."""
         leidas = self._cli.lineas_mensuales_del_periodo(empresa, ano, mes)
+        vinculados = self._cli.lineas_por_synckey_del_periodo(
+            empresa, ano, mes, PREFIJO_VINCULADOS)
         cod_pv = _cod(self._st.postventa_obra_cod)
         cod_var = _cod(getattr(self._st, "var_obra_cod", ""))
         codigos = {_cod(l.obra_cod) for l in leidas}
@@ -141,4 +155,5 @@ class PorcentajesExistentes:
                          if catalogo_var and catalogo_var.obra else None),
             "motivo_var": catalogo_var.motivo if catalogo_var else None,
             "lineas": lineas,
+            "vinculados_registrados": [asdict(v) for v in vinculados],
         }
