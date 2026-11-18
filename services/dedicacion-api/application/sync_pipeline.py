@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import date
+from decimal import Decimal
 from typing import Any, Protocol
 
 from application.filtros_maestros import (
@@ -32,6 +33,12 @@ from domain.models import (
     ResultadoSyncMaestro,
     ResultadoUniverso,
     ResultadoUniversoVar,
+)
+from domain.importes import (
+    UNIDAD_KM,
+    TipoCantidad,
+    precio_km_de_config,
+    tipos_de_config,
 )
 from domain.normalizacion import entero_o_none, texto_o_none
 from domain.ports import (
@@ -90,6 +97,10 @@ class ConfigVinculados:
     desde: tuple[int, int]
     tipos_excluidos: frozenset[str]
     sql: str
+    # F-069 (R1, D1, D2, D10, D12): los tipos de cantidad con su unidad y su
+    # reparto (`importes`) y el precio por km; sin ellos, ninguno.
+    importes: Mapping[str, TipoCantidad] = field(default_factory=dict)
+    precio_km: Decimal | None = None
 
     @classmethod
     def desde_config(cls, cfg: dict[str, Any]) -> ConfigVinculados:
@@ -99,11 +110,18 @@ class ConfigVinculados:
         sql = texto_o_none(cfg.get("sql"))
         if sql is None:
             raise ValueError("Falta sync.vinculados.sql en config.yaml")
+        importes = tipos_de_config(cfg.get("importes"))
+        precio_km = precio_km_de_config(cfg.get("precio_km"))
+        if precio_km is None and any(t.unidad == UNIDAD_KM
+                                     for t in importes.values()):
+            raise ValueError("Falta sync.vinculados.precio_km en config.yaml "
+                             "(hay tipos en km)")
         return cls(campo=campo, desde=_anio_mes(cfg.get("desde")),
                    tipos_excluidos=frozenset(
                        str(t).strip().upper()
                        for t in cfg.get("tipos_excluidos") or []),
-                   sql=sql)
+                   sql=sql,
+                   importes=importes, precio_km=precio_km)
 
 
 def _anio_mes(valor: Any) -> tuple[int, int]:

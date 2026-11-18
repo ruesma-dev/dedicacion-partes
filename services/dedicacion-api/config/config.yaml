@@ -267,9 +267,26 @@ sync:
     # principal_ide, cod, descripcion, empresa, fecbaj (0 = sin baja), tipo,
     # tipo_res, horide (hora por defecto del recurso). Unas 560 filas: sin
     # paginar; `truncated` es error.
+    # `importes` (F-069, R1, D1, D2, D10, D12): los tipos de CANTIDAD, que no
+    #          toman el precio de su hora (`reshor.pre`) sino una cantidad que
+    #          se teclea en el editor. `unidad`: `eur` o `km`. `reparto`:
+    #          `pct`, una cantidad del mes que se reparte con el % del
+    #          titular (km y viajes; viaje «aunque es posible que de momento
+    #          no se use», 2026-11-12), u `obra`, una cantidad por cada línea
+    #          del titular, entera a esa obra («la caja se asigna a la obra,
+    #          cada obra con la suya», 2026-11-12). Unidad o reparto
+    #          desconocidos: la api no arranca.
+    # `precio_km`: € por km, único para todos (D10, Juan Romero, Dir. Admón.
+    #          y Control de Costes, 2026-11-12: «que el sistema multiplique
+    #          por 0,20€»). Lo multiplica el transfer; ≤ 0, no arranca.
     campo: "5"
     desde: "2026-10"
     tipos_excluidos: []
+    importes:
+      CAJA: {unidad: eur, reparto: obra}
+      VIAJE: {unidad: eur, reparto: pct}
+      VP: {unidad: km, reparto: pct}
+    precio_km: 0.20
     sql: |
       SELECT r.ide AS ide, x.valn AS principal_ide, c.cod AS cod,
              CAST(c.res AS NVARCHAR(255)) AS descripcion, c.emp AS empresa,

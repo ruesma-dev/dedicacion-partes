@@ -15,6 +15,7 @@ from domain.errors import (
     ErrorDominio,
     LineaNoEncontrada,
     IncidenciaInvalida,
+    ImporteInvalido,
     LineasInvalidas,
     NadaQueDeshacer,
     ObraNoValida,
@@ -46,6 +47,7 @@ _HTTP_POR_ERROR: list[tuple[type[ErrorDominio], int]] = [
     (TrabajadorNoValido, 422),   # F-056
     (LineasInvalidas, 422),
     (IncidenciaInvalida, 422),   # F-030 (R19)
+    (ImporteInvalido, 422),      # F-069 (R5, R6)
     (SigridNoConfigurado, 503),
     (SigridError, 502),
     (UniversoPostventaNoDisponible, 502),
