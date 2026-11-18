@@ -73,6 +73,7 @@ from typing import Optional
 from application.pipelines.registro_vinculados import (
     EscrituraVinculados, PasoVinculados, motivo_de_conflicto,
 )
+from application.services.texto_linea import tex_de
 from application.services.reglas_vinculados import decidir_vinculados
 from application.services.cuenta_analitica import (
     origen_subcuenta, resolver_cuenta, subcuenta_de_linea,
@@ -764,7 +765,7 @@ class RegistroPipeline:
             validas=validas, nodos_pv=nodos_pv,
             nodos=lambda: nodos_ya if nodos_ya is not None else
             construir_catalogo(self._cli.capitulos_de_obra(int(origen.ide))),
-            ventana=lambda: self._ventana(lineas))
+            ventana=lambda: self._ventana(lineas), obra=origen.codigo)
         vin_escribir = [v for v in vinculados if v.accion == "escribir"]
 
         def obra_de(a: AccionLinea) -> ObraEntrada:
@@ -1220,7 +1221,8 @@ class RegistroPipeline:
         if not (a_escribir or inc_escribir or inc_editar or cierres):
             logger.info("[registro] nada que escribir (bloqueadas=%s)",
                         len(bloqueadas))
-            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
+            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados,
+                                         lineas)
 
         # Paso 9 bis (F-051 R4, R5, R12): qué edita cada acción y qué se
         # pone a 0, comprobado contra Sigrid justo antes de escribir. Va
@@ -1247,7 +1249,8 @@ class RegistroPipeline:
         if not (a_escribir or inc_escribir or inc_editar or cierres):
             logger.info("[registro] nada que escribir (cambiadas=%s)",
                         len(cambiadas))
-            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
+            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados,
+                                             lineas)
         a_insertar = [a for a in a_escribir if a.registro_id not in edita]
 
         # Paso 9: crear los partes que falten (por destino), solo para lo
@@ -1277,12 +1280,20 @@ class RegistroPipeline:
         # insertar. Ningún DELETE (F-051 R6, ARCHITECTURE.md#regla-cero).
         statements: list[dict] = []
         tex = self._st.marca_pruebas if pf.forzada_pruebas else None
+        # F-069 (R23, D14): el `tex` de cada línea del titular, su
+        # comentario (en pruebas, tras la marca); sin él, el de siempre.
+        comentarios = {l.registro_id: l.comentario for l in lineas}
+
+        def tex_linea(registro_id: int) -> str | None:
+            return tex_de(comentarios.get(registro_id), tex)
+
         orden = sorted(a_escribir, key=lambda x: (x.ano, x.mes,
                                                   x.registro_id))
         for a in orden:
             ls = edita.get(a.registro_id)
             if ls is None:
                 continue
+            tex_a = tex_linea(a.registro_id)
             synckey = synckey_tras_editar(ls.synckey,
                                           synckey_de(a.registro_id))
             despues = {
@@ -1294,13 +1305,13 @@ class RegistroPipeline:
                 "horide": int(a.hora_ide), "hora_codigo": a.hora_codigo,
                 "paride": int(a.paride or 0), "caaide": int(a.caa_ide or 0),
                 "fecha_int": a.fecha_int, "synckey": synckey,
-                "tex": ls.tex if tex is None else tex}
+                "tex": ls.tex if tex_a is None else tex_a}
             statements.append(self._cli.stmt_editar_linea(
                 ide=ls.ide, reside=int(ls.reside), can_leido=ls.can,
                 synckey_leida=ls.synckey, horide=int(a.hora_ide),
                 can=float(a.can), pre=float(a.pre),
                 paride=int(a.paride or 0), caaide=int(a.caa_ide or 0),
-                fecha_int=a.fecha_int, synckey=synckey, tex=tex))
+                fecha_int=a.fecha_int, synckey=synckey, tex=tex_a))
             res.editadas.append(_traza("edita", a.registro_id, ls, despues))
             res.escritas.append(self._escrita(
                 a, obra_de(a), ls.hmoide, ls.parte_cod, editada=True,
@@ -1327,7 +1338,7 @@ class RegistroPipeline:
                 pos=pos_por_parte[hmoide], fecha_int=a.fecha_int,
                 horide=int(a.hora_ide), can=float(a.can), pre=float(a.pre),
                 ano=a.ano, mes=a.mes, synckey=synckey_de(a.registro_id),
-                tex=tex, paride=int(a.paride or 0),
+                tex=tex_linea(a.registro_id), paride=int(a.paride or 0),
                 caaide=int(a.caa_ide or 0)))
             res.escritas.append(self._escrita(a, d, hmoide, p.cod,
                                               editada=False))
@@ -1401,14 +1412,18 @@ class RegistroPipeline:
                     res.borradas, afectadas, usuario,
                     datetime.now(timezone.utc).isoformat())
         self._comprobar_escrito(res, inc_escribir, inc_editar, cierres)
-        return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
+        return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados,
+                                             lineas)
 
     # ------------------------------------------------------------- #
     def _ejecutar_vinculados(self, res: ResultadoRegistro, pf: Preflight,
-                             pisar: set[str], bloqueados: dict
+                             pisar: set[str], bloqueados: dict,
+                             lineas: list[LineaEntrada] = ()
                              ) -> ResultadoRegistro:
         """F-044 (R24, R28): los vinculados, DESPUÉS de los titulares y de
-        su relectura (`EscrituraVinculados`). Sin vinculados, nada."""
+        su relectura (`EscrituraVinculados`). Sin vinculados, nada. F-069
+        (R23): con el comentario de cada vinculado de `lineas`, para su
+        `tex`."""
         if not pf.vinculados:
             return res
         destino_normal = pf.obra_destino
@@ -1427,6 +1442,8 @@ class RegistroPipeline:
             crear_parte=lambda p, d: self._crear_parte(
                 p, d, f"Parte {d.nombre or d.codigo}{marca}"),
             traza=_traza,
+            comentarios={(l.registro_id, int(v.recurso_ide)): v.comentario
+                         for l in lineas for v in l.vinculados},
         ).ejecutar(res, pf.partes, pf.vinculados, pf.conflictos, pisar,
                    bloqueados)
         return res

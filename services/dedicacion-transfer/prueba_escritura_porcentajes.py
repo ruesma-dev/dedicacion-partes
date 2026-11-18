@@ -408,12 +408,15 @@ def fase_limpiar(cli: SigridWriteClient, st, confirmar: bool,
                  permitir_modo_real: bool = False) -> None:
     """Borra las líneas de este script: por la marca y el prefijo de synckey,
     de todos los meses (los `id` de incidencia de cualquier mes incluidos
-    y, F-044, las `porcentajes:vin:` de los recursos vinculados)."""
+    y, F-044, las `porcentajes:vin:` de los recursos vinculados). F-069
+    (R23): la marca se busca como PREFIJO del `tex`, que con comentario es
+    «marca comentario»."""
     _solo_en_pruebas(st, confirmar, permitir_modo_real)
     filas = cli._read(
         "SELECT ide, hmoide, reside, fec, can, synckey FROM hmores "
-        "WHERE CAST(tex AS NVARCHAR(200)) = ? "
-        "AND synckey LIKE ?", [st.marca_pruebas, f"{PREFIJO_SYNCKEY}%"])
+        "WHERE CAST(tex AS NVARCHAR(400)) LIKE ? "
+        "AND synckey LIKE ?", [f"{st.marca_pruebas}%",
+                               f"{PREFIJO_SYNCKEY}%"])
     print(f"Líneas marcadas '{st.marca_pruebas}' de este hilo: {len(filas)}")
     for f in filas:
         print("  ", _no_vacio(f))

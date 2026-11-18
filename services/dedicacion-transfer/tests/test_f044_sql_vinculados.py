@@ -362,9 +362,10 @@ def test_f044_script_limpiar_incluye_los_vinculados_con_la_marca(capsys):
     cli = _ScriptFalso(vin)
     script.fase_limpiar(cli, SettingsFalso(), False)
     [(sql, params)] = cli.lecturas
-    assert "CAST(tex AS NVARCHAR(200)) = ?" in sql
+    # F-069 (R23): la marca, como prefijo del `tex`.
+    assert "CAST(tex AS NVARCHAR(400)) LIKE ?" in sql
     assert "synckey LIKE ?" in sql
-    assert params == ["PRUEBA-PORC", "porcentajes:%"]
+    assert params == ["PRUEBA-PORC%", "porcentajes:%"]
     assert "porcentajes:vin:900001:10".startswith(params[1].rstrip("%"))
     assert "Líneas marcadas 'PRUEBA-PORC' de este hilo: 1" in (
         capsys.readouterr().out)
