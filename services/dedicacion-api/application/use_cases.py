@@ -33,6 +33,7 @@ from domain.estados import calcular_estado, completar_hasta_100, resumir
 from domain.importes import (
     REPARTO_OBRA,
     TipoCantidad,
+    a_copiar,
     tipo_de,
     validar_cantidad,
     validar_comentario,
@@ -511,6 +512,9 @@ class CopiarPeriodoAnterior:
                 [],
                 _snapshot(utilizables),
             )
+            # F-069 (R8): y las cantidades del mes que falten, con su evento.
+            _copiar_importes(uow, origen_id, periodo_id, trabajador_ide,
+                             utilizables, usuario)
             copiados += 1
         uow.commit()
         return ResultadoCopia(
@@ -560,6 +564,10 @@ class CopiarTrabajadorAnterior:
                 _snapshot(antes),
                 _snapshot(utilizables),
             )
+            antes = utilizables
+        # F-069 (R8): y las cantidades del mes que falten, con su evento.
+        _copiar_importes(uow, origen_id, periodo_id, trabajador_ide, antes,
+                         usuario)
         uow.commit()
         fila, resumen = ObtenerFilaTrabajador().ejecutar(
             uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
@@ -1163,12 +1171,46 @@ def _conservar_partidas(lineas: list[Linea], antes: list[Linea],
 def _sin_propuesta(lineas: list[Linea]) -> list[Linea]:
     """Las líneas copiadas de otro periodo, sin su propuesta guardada
     (F-055, R17: copiar el mes y F8 no la copian; la partida elegida sí,
-    F-050 R16). F-044 (R8): igual sus subfilas."""
+    F-050 R16). F-044 (R8): igual sus subfilas. F-069 (R8, R9): el
+    comentario de la línea y la cantidad por obra y el comentario de la
+    subfila sí se copian, la cantidad marcada `copiado` (sin revisar, D11)."""
     return [dataclasses.replace(
         ln, **dict.fromkeys(_CAMPOS_PROPUESTA), vinculados=tuple(
-            dataclasses.replace(v, **dict.fromkeys(_CAMPOS_PROPUESTA))
+            dataclasses.replace(
+                v, **dict.fromkeys(_CAMPOS_PROPUESTA),
+                copiado=None if v.cantidad is None else True)
             for v in ln.vinculados))
         for ln in lineas]
+
+
+def _copiar_importes(uow: UnitOfWork, origen_id: int, periodo_id: int,
+                     trabajador_ide: int, lineas: list[Linea],
+                     usuario: str) -> None:
+    """F-069 (R8, D7, D11): copia al destino las cantidades DEL MES del
+    trabajador en el origen que en el destino falten (nunca pisa), de los
+    vinculados de sus subfilas, con `copiado = true`. Si copia alguna, un
+    evento `IMPORTES` (tras el de la copia de líneas): deshacer dos veces
+    deshace la copia entera."""
+    vigentes = {v.vinculado_ide for ln in lineas for v in ln.vinculados}
+    if not vigentes:
+        return
+    origen = {k: v for k, v in
+              uow.importes.de_trabajador(origen_id, trabajador_ide).items()
+              if k in vigentes}
+    destino = uow.importes.de_trabajador(periodo_id, trabajador_ide)
+    nuevos = a_copiar(origen, destino)
+    if not nuevos:
+        return
+    antes = _foto_importes(lineas, destino)
+    for im in nuevos.values():
+        uow.importes.guardar(periodo_id, dataclasses.replace(im, copiado=True),
+                             usuario)
+    despues = _foto_importes(lineas, {
+        **destino, **{k: dataclasses.replace(v, copiado=True)
+                      for k, v in nuevos.items()}})
+    uow.eventos.registrar(periodo_id, trabajador_ide, TipoEvento.IMPORTES,
+                          usuario, _snapshot_importes(antes),
+                          _snapshot_importes(despues))
 
 
 def _snapshot(lineas: list[Linea]) -> list[dict[str, Any]]:

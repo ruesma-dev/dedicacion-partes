@@ -561,3 +561,116 @@ def test_f069_r9_put_asignaciones_con_y_sin_comentario(api_imp):
         {"obra_ide": 100, "porcentaje": 50},
         {"obra_ide": 900, "porcentaje": 50}]})
     assert r.json()["trabajador"]["lineas"][0]["comentario"] == "visita"
+
+
+# ===================== T8 · R8 · copiar el mes ============================ #
+from application.use_cases import (  # noqa: E402
+    CopiarPeriodoAnterior,
+    CopiarTrabajadorAnterior,
+)
+
+from tests.test_f024_cuadrante_empresa import P_ANT  # noqa: E402
+
+
+class _ImportesPorPeriodo:
+    def __init__(self, filas=None) -> None:
+        self.filas: dict[int, dict[int, ImporteMes]] = filas or {}
+        self.escrituras: list[tuple] = []
+
+    def de_trabajador(self, periodo_id, ide):
+        return dict(self.filas.get(periodo_id, {}))
+
+    def del_periodo(self, periodo_id):
+        return {10: self.de_trabajador(periodo_id, 10)}
+
+    def guardar(self, periodo_id, importe, usuario):
+        self.escrituras.append((periodo_id, importe.vinculado_ide))
+        self.filas.setdefault(periodo_id, {})[importe.vinculado_ide] = importe
+
+    def borrar(self, periodo_id, vid):
+        self.escrituras.append((periodo_id, "borrar", vid))
+        self.filas.get(periodo_id, {}).pop(vid, None)
+
+
+def _uow_copia(destino_mes=None, origen_mes=None):
+    caja = dataclasses.replace(CAJA, cantidad=Decimal("80.00"), copiado=False,
+                               comentario="caja")
+    previas = [dataclasses.replace(_ln(100, "60"), comentario="visita",
+                                   vinculados=(VP, caja)),
+               dataclasses.replace(_ln(101, "40"), vinculados=(VP, CAJA))]
+    uow = _Uow({P_ACT: {}, P_ANT: {10: previas}})
+    uow.asignaciones = _AsigMem(uow)
+    uow.eventos = _EventosTipo()
+    uow.importes = _ImportesPorPeriodo({
+        P_ANT: origen_mes if origen_mes is not None else {
+            20: ImporteMes(vinculado_ide=20, cantidad=Decimal("100.00"),
+                           comentario="km"),
+            77: ImporteMes(vinculado_ide=77, cantidad=Decimal("1.00"))},
+        P_ACT: destino_mes or {}})
+    return uow
+
+
+def _copiar_trabajador(uow):
+    return CopiarTrabajadorAnterior().ejecutar(uow, ANIO, MES, 10, "pgris",
+                                               filtro=FILTRO)
+
+
+@pytest.mark.parametrize("copiar", [
+    _copiar_trabajador,
+    lambda uow: CopiarPeriodoAnterior().ejecutar(uow, ANIO, MES, "pgris",
+                                                 filtro=FILTRO)])
+def test_f069_r8_copia_cantidades_y_comentarios_con_copiado(copiar):
+    uow = _uow_copia()
+    copiar(uow)
+    lineas = uow.lineas[P_ACT][10]
+    assert lineas[0].comentario == "visita"
+    caja = _subfila(uow, 100)
+    assert (caja.cantidad, caja.copiado, caja.comentario) == (
+        Decimal("80.00"), True, "caja")
+    assert _subfila(uow, 101).copiado is None
+    # Solo las de sus vinculados (el 77 ya no es suyo), con `copiado`.
+    assert uow.importes.filas[P_ACT] == {20: ImporteMes(
+        vinculado_ide=20, cantidad=Decimal("100.00"), copiado=True,
+        comentario="km")}
+    assert [t for t, _, _ in uow.eventos.registrados] == ["COPIA", "IMPORTES"]
+    _, antes, despues = uow.eventos.registrados[1]
+    assert [b["obra_ide"] for b in antes] == [100]
+    assert [(b["vinculado_ide"], b["copiado"]) for b in despues] == [
+        (20, True), (30, True)]
+
+
+def test_f069_r8_nunca_pisa_lo_del_destino():
+    propia = ImporteMes(vinculado_ide=20, cantidad=Decimal("5.00"))
+    uow = _uow_copia(destino_mes={20: propia})
+    _copiar_trabajador(uow)
+    assert uow.importes.filas[P_ACT] == {20: propia}
+    assert uow.importes.escrituras == []
+    assert [t for t, _, _ in uow.eventos.registrados] == ["COPIA"]
+
+
+def test_f069_r8_sin_nada_en_origen_ni_filas_ni_evento():
+    uow = _uow_copia(origen_mes={})
+    _copiar_trabajador(uow)
+    assert uow.importes.escrituras == []
+    assert [t for t, _, _ in uow.eventos.registrados] == ["COPIA"]
+
+
+def test_f069_r8_deshacer_dos_veces_deshace_la_copia_entera():
+    uow = _uow_copia()
+    _copiar_trabajador(uow)
+    deshacer = DeshacerUltimaModificacion()
+    deshacer.ejecutar(uow, ANIO, MES, 10, "pgris", filtro=FILTRO)
+    assert uow.importes.filas[P_ACT] == {}
+    assert _subfila(uow, 100).cantidad == Decimal("80.00")
+    deshacer.ejecutar(uow, ANIO, MES, 10, "pgris", filtro=FILTRO)
+    assert uow.lineas[P_ACT][10] == []
+
+
+def test_f069_r8_la_copia_repetida_del_trabajador_solo_completa_el_mes():
+    uow = _uow_copia()
+    _copiar_trabajador(uow)
+    uow.importes.filas[P_ACT].clear()
+    _copiar_trabajador(uow)
+    assert [t for t, _, _ in uow.eventos.registrados] == [
+        "COPIA", "IMPORTES", "IMPORTES"]
+    assert uow.importes.filas[P_ACT][20].copiado is True
