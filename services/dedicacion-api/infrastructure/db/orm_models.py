@@ -184,6 +184,9 @@ class AsignacionORM(Base):
     propuesta_res: Mapped[str | None] = mapped_column(Text)
     propuesta_metodo: Mapped[str | None] = mapped_column(Text)
     propuesta_origen: Mapped[str | None] = mapped_column(Text)
+    # Comentario de la línea del titular (F-069, R9, D14): viaja como `tex`
+    # de su línea en Sigrid. Nulable y sin default (ADD COLUMN de `esquema`).
+    comentario: Mapped[str | None] = mapped_column(String(200))
 
     __table_args__ = (
         UniqueConstraint(
@@ -387,8 +390,46 @@ class AsignacionVinculadoORM(Base):
     sigrid_motivo: Mapped[str | None] = mapped_column(String(300))
     sigrid_parte: Mapped[str | None] = mapped_column(String(24))
     sigrid_hmores_ide: Mapped[int | None] = mapped_column(Integer)
+    # F-069 (R3, D7, D12): la cantidad POR OBRA (caja) de esta línea, si su
+    # vinculado es de reparto `obra`; si se copió del mes anterior sin
+    # revisar (D11), y el comentario del vinculado en esta línea (R9).
+    # Nulables y sin default, como el resto (ADD COLUMN de `esquema`).
+    cantidad: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    copiado: Mapped[bool | None] = mapped_column(Boolean)
+    comentario: Mapped[str | None] = mapped_column(String(200))
 
     __table_args__ = (
         UniqueConstraint("asignacion_id", "vinculado_ide",
                          name="uq_asignacion_vinculado"),
+    )
+
+
+class ImporteVinculadoORM(Base):
+    """La cantidad DEL MES de un vinculado de reparto `pct` (km y viajes;
+    F-069, R3, D7): una por periodo y vinculado, que el transfer reparte con
+    el % de cada línea del titular. `copiado` si vino de copiar el mes
+    anterior y nadie la ha revisado (D11). Sin cantidad no hay fila: `null`
+    en el `PUT …/importes` la borra. Tabla NUEVA, por `create_all`."""
+
+    __tablename__ = "importe_vinculado"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    periodo_id: Mapped[int] = mapped_column(
+        ForeignKey("periodo.id", ondelete="CASCADE"), nullable=False
+    )
+    vinculado_ide: Mapped[int] = mapped_column(
+        ForeignKey("recurso_vinculado.ide"), nullable=False
+    )
+    cantidad: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    copiado: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false())
+    comentario: Mapped[str | None] = mapped_column(String(200))
+    actualizado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    actualizado_por: Mapped[str] = mapped_column(Text, nullable=False, default="local")
+
+    __table_args__ = (
+        UniqueConstraint("periodo_id", "vinculado_ide",
+                         name="uq_importe_vinculado"),
     )

@@ -12,6 +12,7 @@ from domain.models import (
     CuadranteTrabajador,
     Empresa,
     EventoPendiente,
+    ImporteMes,
     Incidencia,
     Linea,
     Obra,
@@ -138,6 +139,30 @@ class VinculadoRepository(Protocol):
     def ides(self) -> set[int]:
         """Los `ide` de todo `recurso_vinculado`, activo o no (F-054, R14:
         sus líneas de Sigrid solo cuentan en `de_vinculados`)."""
+        ...
+
+
+class ImporteRepository(Protocol):
+    """Las cantidades DEL MES de los vinculados por % (F-069, R3, D7):
+    `importe_vinculado`, una fila por periodo y vinculado."""
+
+    def de_trabajador(self, periodo_id: int, trabajador_ide: int
+                      ) -> dict[int, ImporteMes]:
+        """Las del trabajador (por `recurso_vinculado.trabajador_ide`),
+        por vinculado."""
+        ...
+
+    def del_periodo(self, periodo_id: int) -> dict[int, dict[int, ImporteMes]]:
+        """Las del periodo, por trabajador y vinculado (una lectura)."""
+        ...
+
+    def guardar(self, periodo_id: int, importe: ImporteMes,
+                usuario: str) -> None:
+        """Upsert de la fila del vinculado (cantidad no nula)."""
+        ...
+
+    def borrar(self, periodo_id: int, vinculado_ide: int) -> None:
+        """Borra la fila del vinculado, si la hay."""
         ...
 
 
@@ -270,6 +295,7 @@ class UnitOfWork(Protocol):
     incidencias: IncidenciaRepository  # F-030
     eventos: EventoRepository
     vinculados: VinculadoRepository  # F-044
+    importes: ImporteRepository  # F-069
 
     def __enter__(self) -> "UnitOfWork": ...
 

@@ -127,7 +127,8 @@ def test_f055_r13_linea_sin_propuesta_por_defecto_al_final():
     ln = Linea(obra_ide=1, es_postventa=False, porcentaje=Decimal(10))
     assert tuple(getattr(ln, c) for c in CAMPOS) == (None,) * 5
     nombres = [f.name for f in dataclasses.fields(Linea)]
-    assert nombres[-5:] == list(CAMPOS)
+    # F-069 (R9): tras ellas, solo `comentario`.
+    assert nombres[-6:] == [*CAMPOS, "comentario"]
     assert dataclasses.replace(ln, **PR).clave() == (1, False)
 
 

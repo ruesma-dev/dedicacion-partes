@@ -146,6 +146,8 @@ def test_f044_r5_r30_esquema_ddl_y_defectos():
         "propuesta_metodo TEXT", "propuesta_origen TEXT",
         "sigrid_estado VARCHAR(16)", "sigrid_motivo VARCHAR(300)",
         "sigrid_parte VARCHAR(24)", "sigrid_hmores_ide INTEGER",
+        # F-069 (R3): nulables y sin default.
+        "cantidad NUMERIC(12, 2)", "copiado BOOLEAN", "comentario VARCHAR(200)",
         "PRIMARY KEY (id)",
         ("CONSTRAINT uq_asignacion_vinculado UNIQUE (asignacion_id, "
         "vinculado_ide)"),
