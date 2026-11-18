@@ -38,6 +38,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from typing import NamedTuple
 
 from domain.models.registro_models import (
     AccionLinea,
@@ -45,6 +46,7 @@ from domain.models.registro_models import (
     HoraRecurso,
     LineaEntrada,
     LineaSigrid,
+    VinculadoEntrada,
 )
 
 from application.services import text_match as tm
@@ -91,6 +93,32 @@ MOTIVO_ELEGIDA_NO_VALIDA = (
 MOTIVO_SIN_IMPORTE = (
     "sin importe mensual: el recurso vinculado {tipo} {cod} no tiene precio "
     "en su hora por defecto ({hora}): no se registra")
+#: F-069 (R20-R22, D4, D10, D11, D13): por qué no se escribe un vinculado
+#: de cantidad. Se formatean con tipo y cod (en caja, con la obra; el de
+#: copiado, con `donde`: vacío o « en la obra X»). Caben en los 300 de
+#: `sigrid_motivo`.
+MOTIVO_SIN_HORA = (
+    "sin hora: el recurso vinculado {tipo} {cod} no tiene hora por defecto "
+    "en Sigrid: no se registra")
+MOTIVO_SIN_REVISAR = (
+    "copiado del mes anterior sin revisar: el importe del recurso vinculado "
+    "{tipo} {cod}{donde} se copió del mes anterior; tecléalo o pulsa "
+    "«Revisado» para registrarlo")
+MOTIVO_FALTA_IMPORTE = (
+    "falta el importe del mes del recurso vinculado {tipo} {cod}: no se "
+    "registra")
+MOTIVO_IMPORTE_CERO = (
+    "importe 0: el recurso vinculado {tipo} {cod} no tiene importe este "
+    "mes: no se registra")
+MOTIVO_FALTA_CAJA = (
+    "falta la caja del mes del recurso vinculado {tipo} {cod} en la obra "
+    "{obra}: no se registra en esta obra")
+MOTIVO_CAJA_CERO = (
+    "caja 0 del recurso vinculado {tipo} {cod} en la obra {obra}: no se "
+    "registra nada en esta obra")
+MOTIVO_SIN_PRECIO_KM = (
+    "sin precio por km: el recurso vinculado {tipo} {cod} lleva km y no "
+    "llega el precio por km: no se registra")
 #: R18 (D10): el titular no se escribe; se formatea con su motivo.
 MOTIVO_SIGUE_AL_TRABAJADOR = "sigue al trabajador: {motivo}"
 #: R28: el titular no quedó escrito sin estar en `omitidas` (su pisado sin
@@ -350,14 +378,108 @@ def es_linea_de(hora_codigo: str) -> Callable[[LineaSigrid], bool]:
     return lambda ls: es_de_la_hora(ls, hora_codigo)
 
 
+#: F-069 (R18, D12): el `can` de una línea de caja: una caja por obra y mes.
+CAN_CAJA = 1.0
+#: F-069 (R1): los valores de `reparto` y `unidad` que llegan de la api.
+REPARTO_OBRA = "obra"
+UNIDAD_KM = "km"
+
+
+class PrecioVinculado(NamedTuple):
+    """F-069 (design §6.2): lo que `precio_del_vinculado` decide de un
+    vinculado: su hora, `can`, `pre`, `tot`, los km y el precio por km (solo
+    en `km`) o, si no se escribe, `motivo` (y todo lo demás None)."""
+    hora: HoraRecurso | None
+    can: float | None
+    pre: float | None
+    tot: float | None
+    km: float | None
+    precio_km: float | None
+    motivo: str | None
+
+
+def _omitido(motivo: str) -> PrecioVinculado:
+    return PrecioVinculado(None, None, None, None, None, None, motivo)
+
+
+def hora_por_defecto(horas: list[HoraRecurso]) -> HoraRecurso | None:
+    """F-069 (R19): la hora por defecto del vinculado (`res.horide`,
+    `defecto` en su `reshor`), TENGA O NO precio: la de un vinculado de
+    cantidad no lo necesita (R17 ignora `reshor.pre`)."""
+    return next((h for h in horas if h.defecto), None)
+
+
+def precio_del_vinculado(v: VinculadoEntrada, horas: list[HoraRecurso],
+                         can_titular: float, *, obra: str | None = None
+                         ) -> PrecioVinculado:
+    """F-069 (R17-R22, design §6.2): la hora, el `can`, el `pre` y el
+    `tot` de un vinculado dado el `can` de su titular (sin normalizar, D8).
+
+    Sin `importe_mensual`, F-044 tal cual (R24): la hora por defecto con su
+    `pre` (`hora_del_vinculado`); sin ella o con `pre` 0, «sin importe
+    mensual». Con él, en este orden: sin hora por defecto ⇒ «sin hora»
+    (R22); copiado ⇒ «sin revisar» (R21, D11); cantidad nula ⇒ «falta el
+    importe» o, en caja, «falta la caja del mes» con la obra (R20, D13); 0
+    ⇒ «importe 0» o, en caja, nada en esa obra (D4); por obra ⇒ `can` 1 y
+    `pre = tot = cantidad` (R18, D12); por % ⇒ `pre` = la cantidad (`eur`)
+    o `round(km × precio_km, 2)` (`km`; sin `precio_km` > 0, «sin precio
+    por km», D10), `can` del titular y `tot = round(can × pre, 2)` (R17)."""
+    tipo, cod = v.tipo, v.cod
+    if not v.importe_mensual:
+        hora = hora_del_vinculado(horas)
+        if hora is None:
+            defecto = hora_por_defecto(horas)
+            return _omitido(MOTIVO_SIN_IMPORTE.format(
+                tipo=tipo, cod=cod,
+                hora=defecto.cod if defecto else "sin hora"))
+        can, pre = float(can_titular), float(hora.pre)
+        return PrecioVinculado(hora, can, pre, round(can * pre, 2), None,
+                               None, None)
+    por_obra = v.reparto == REPARTO_OBRA
+    hora = hora_por_defecto(horas)
+    if hora is None:
+        return _omitido(MOTIVO_SIN_HORA.format(tipo=tipo, cod=cod))
+    if v.copiado:
+        donde = f" en la obra {obra}" if por_obra else ""
+        return _omitido(MOTIVO_SIN_REVISAR.format(tipo=tipo, cod=cod,
+                                                  donde=donde))
+    if v.cantidad is None:
+        return _omitido((MOTIVO_FALTA_CAJA if por_obra
+                         else MOTIVO_FALTA_IMPORTE).format(
+            tipo=tipo, cod=cod, obra=obra))
+    cantidad = float(v.cantidad)
+    if not cantidad > 0:
+        return _omitido((MOTIVO_CAJA_CERO if por_obra
+                         else MOTIVO_IMPORTE_CERO).format(
+            tipo=tipo, cod=cod, obra=obra))
+    if por_obra:
+        return PrecioVinculado(hora, CAN_CAJA, cantidad, cantidad, None,
+                               None, None)
+    km = precio_km = None
+    pre = cantidad
+    if v.unidad == UNIDAD_KM:
+        if v.precio_km is None or not float(v.precio_km) > 0:
+            return _omitido(MOTIVO_SIN_PRECIO_KM.format(tipo=tipo, cod=cod))
+        km, precio_km = cantidad, float(v.precio_km)
+        pre = round(km * precio_km, 2)
+    can = float(can_titular)
+    return PrecioVinculado(hora, can, pre, round(can * pre, 2), km,
+                           precio_km, None)
+
+
 def decidir_vinculados(titular: AccionLinea, linea: LineaEntrada,
-                       horas: dict[int, list[HoraRecurso]]
-                       ) -> list[AccionVinculado]:
+                       horas: dict[int, list[HoraRecurso]],
+                       obra: str | None = None) -> list[AccionVinculado]:
     """R12, R14, R18: una acción por vinculado de `linea`, en su orden, con
     el `can`, la `fec`, el destino y el periodo del titular (sin
     normalizar), la hora por defecto del vinculado, su `pre` y `tot =
     round(can × pre, 2)`, como `stmt_insert_linea`. La partida, la cuenta,
-    el parte y lo que ya hay en Sigrid los decide el paso del pipeline."""
+    el parte y lo que ya hay en Sigrid los decide el paso del pipeline.
+
+    F-069 (R17-R22, R28): la hora, `can`, `pre` y `tot` los decide
+    `precio_del_vinculado`; un vinculado de cantidad lleva su `reparto` y,
+    en `km`, los km y el precio por km. `obra` (el código de la obra de la
+    petición) nombra la obra en los motivos de la caja."""
     out = []
     for v in linea.vinculados:
         base = {
@@ -371,21 +493,18 @@ def decidir_vinculados(titular: AccionLinea, linea: LineaEntrada,
                 accion="omitir", motivo=MOTIVO_SIGUE_AL_TRABAJADOR.format(
                     motivo=titular.motivo), **base))
             continue
-        suyas = horas.get(int(v.recurso_ide), [])
-        hora = hora_del_vinculado(suyas)
-        if hora is None:
-            defecto = next((h for h in suyas if h.defecto), None)
-            out.append(AccionVinculado(
-                accion="omitir", motivo=MOTIVO_SIN_IMPORTE.format(
-                    tipo=v.tipo, cod=v.cod,
-                    hora=defecto.cod if defecto else "sin hora"), **base))
+        if v.importe_mensual:
+            base["reparto"] = v.reparto
+        p = precio_del_vinculado(v, horas.get(int(v.recurso_ide), []),
+                                 float(titular.can), obra=obra)
+        if p.hora is None:
+            out.append(AccionVinculado(accion="omitir", motivo=p.motivo,
+                                       **base))
             continue
-        can = float(titular.can)
-        pre = float(hora.pre)
         out.append(AccionVinculado(
-            accion="escribir", hora_ide=int(hora.horide),
-            hora_codigo=hora.cod, can=can, pre=pre,
-            tot=round(can * pre, 2), **base))
+            accion="escribir", hora_ide=int(p.hora.horide),
+            hora_codigo=p.hora.cod, can=p.can, pre=p.pre, tot=p.tot,
+            km=p.km, precio_km=p.precio_km, **base))
     return out
 
 
