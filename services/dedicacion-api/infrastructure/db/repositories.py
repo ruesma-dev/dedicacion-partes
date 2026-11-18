@@ -787,6 +787,22 @@ def _a_importe(f: ImporteVinculadoORM) -> ImporteMes:
                       comentario=f.comentario)
 
 
+def importes_del_mes_de(s: Session, anio: int, mes: int,
+                        vinculados: list[int]) -> dict[int, ImporteMes]:
+    """F-069 (R16): las cantidades del mes (`importe_vinculado`) de esos
+    vinculados en el periodo (anio, mes), en UNA lectura. Sin vinculados,
+    ninguna."""
+    if not vinculados:
+        return {}
+    filas = s.scalars(
+        select(ImporteVinculadoORM)
+        .join(PeriodoORM, PeriodoORM.id == ImporteVinculadoORM.periodo_id)
+        .where(PeriodoORM.anio == anio, PeriodoORM.mes == mes,
+               ImporteVinculadoORM.vinculado_ide.in_(sorted(set(vinculados))))
+    ).all()
+    return {f.vinculado_ide: _a_importe(f) for f in filas}
+
+
 class PgImporteRepository:
     """`importe_vinculado` (F-069, R3, D7): la cantidad del mes de cada
     vinculado por %, con si es copiada y su comentario."""

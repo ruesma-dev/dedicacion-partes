@@ -156,7 +156,10 @@ def construir_contenedor(
         registro_sigrid=RegistroSigrid(
             session_factory, transfer, settings.empresa_imputacion,
             # F-044 (R10): desde qué periodo viajan los vinculados.
-            vinculados_desde=cfg_vinculados.desde),
+            vinculados_desde=cfg_vinculados.desde,
+            # F-069 (R15): los de cantidad y el precio por km.
+            importes=cfg_vinculados.importes,
+            precio_km=cfg_vinculados.precio_km),
         partidas_linea=PartidasDeLinea(transfer),
         # F-055 (R30): UN hilo, cola por orden de llegada; estado de una
         # réplica (ARCHITECTURE «Topología»).

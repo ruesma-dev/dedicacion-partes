@@ -62,13 +62,20 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from decimal import Decimal
 from typing import Any, Optional
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from domain.empresas import visible_en_empresa
+from domain.importes import (
+    REPARTO_OBRA,
+    UNIDAD_KM,
+    TipoCantidad,
+    tipo_de,
+)
 from domain.incidencias import letra_y_nombre
 from domain.models import FiltroEmpresa
 from domain.obras import partida_de_entrada
@@ -84,6 +91,7 @@ from application.traza_incidencias import (
 )
 from application.traza_vinculados import trazar_vinculados
 from infrastructure.db.repositories import (
+    importes_del_mes_de,
     subfilas_de,
     upsert_asignacion_vinculado,
 )
@@ -146,6 +154,26 @@ def _vinculado(v: Any, es_var: bool) -> dict[str, Any]:
     return out
 
 
+def _cantidad_al_transfer(v: Any, tipo: TipoCantidad, del_mes: Any,
+                          precio_km: Decimal | None) -> dict[str, Any]:
+    """F-069 (R15): las claves de un vinculado de cantidad: su unidad y
+    reparto, la cantidad (la del mes en los por %, la de esa línea en los
+    por obra; `null` si falta), si es copiada, su comentario y, en km, el
+    precio por km. Las suma `_vinculado` a las de F-044."""
+    fuente = v if tipo.reparto == REPARTO_OBRA else del_mes
+    cantidad = getattr(fuente, "cantidad", None)
+    out: dict[str, Any] = {
+        "importe_mensual": True, "unidad": tipo.unidad,
+        "reparto": tipo.reparto,
+        "cantidad": None if cantidad is None else float(cantidad),
+        "copiado": bool(getattr(fuente, "copiado", False)
+                        and cantidad is not None),
+        "comentario": getattr(fuente, "comentario", None)}
+    if tipo.unidad == UNIDAD_KM:
+        out["precio_km"] = None if precio_km is None else float(precio_km)
+    return out
+
+
 #: F-054 (R35): lo de cada sobrante que el transfer compara al releer.
 _CAMPOS_CERO = ("hmores_ide", "recurso_ide", "hora", "vinculado", "can",
                 "synckey")
@@ -155,9 +183,17 @@ class RegistroSigrid:
     def __init__(self, session_factory: sessionmaker[Session],
                  transfer: TransferClient, empresa_imputacion: int, *,
                  vinculados_desde: tuple[int, int] | None = None,
-                 subfilas: Callable = subfilas_de) -> None:
+                 subfilas: Callable = subfilas_de,
+                 importes: Mapping[str, TipoCantidad] | None = None,
+                 precio_km: Decimal | None = None,
+                 leer_importes: Callable = importes_del_mes_de) -> None:
         self._sf = session_factory
         self._transfer = transfer
+        # F-069 (R1, R15, R16): los tipos de cantidad, el precio por km y la
+        # lectura de las cantidades del mes; sin tipos, F-044 tal cual.
+        self._importes = dict(importes or {})
+        self._precio_km = precio_km
+        self._leer_importes = leer_importes
         # F-044 (R10): primer periodo (anio, mes) cuyas líneas llevan sus
         # vinculados (`sync.vinculados.desde`); sin él, ninguno.
         self._vinculados_desde = vinculados_desde
@@ -262,6 +298,11 @@ class RegistroSigrid:
             hmores_ide = getattr(a, "sigrid_hmores_ide", None)
             if hmores_ide:
                 linea["hmores_ide"] = int(hmores_ide)
+            # F-069 (R15, R23): su comentario, solo si lo tiene (sin él, la
+            # línea de hoy; `getattr`: dobles anteriores a F-069).
+            comentario = getattr(a, "comentario", None)
+            if comentario:
+                linea["comentario"] = comentario
             grupo["lineas"].append(linea)
             mandadas.append((a, linea, bool(o.registro_paride)))
         self._sumar_vinculados(s, anio, mes, mandadas)
@@ -287,10 +328,22 @@ class RegistroSigrid:
         if desde is None or (anio, mes) < tuple(desde) or not mandadas:
             return
         de = self._subfilas(s, [a for a, _, _ in mandadas], (anio, mes))
-        for a, linea, es_var in mandadas:
-            suyas = de(a)
+        suyas_de = [(a, linea, es_var, de(a)) for a, linea, es_var in mandadas]
+        # F-069 (R16): UNA lectura más, solo si alguna línea lleva
+        # vinculados de cantidad por %.
+        por_pct = [v.vinculado_ide for *_, suyas in suyas_de for v in suyas
+                   if (t := tipo_de(v.tipo, self._importes))
+                   and t.reparto != REPARTO_OBRA]
+        del_mes = (self._leer_importes(s, anio, mes, por_pct)
+                   if por_pct else {})
+        for _, linea, es_var, suyas in suyas_de:
             if suyas:
-                linea["vinculados"] = [_vinculado(v, es_var) for v in suyas]
+                linea["vinculados"] = [
+                    {**_vinculado(v, es_var),
+                     **(_cantidad_al_transfer(v, t, del_mes.get(
+                         v.vinculado_ide), self._precio_km)
+                        if (t := tipo_de(v.tipo, self._importes)) else {})}
+                    for v in suyas]
 
     @staticmethod
     def _designar_cierres(payloads: list[dict[str, Any]]) -> None:

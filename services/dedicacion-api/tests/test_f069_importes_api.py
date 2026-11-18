@@ -674,3 +674,156 @@ def test_f069_r8_la_copia_repetida_del_trabajador_solo_completa_el_mes():
     assert [t for t, _, _ in uow.eventos.registrados] == [
         "COPIA", "IMPORTES", "IMPORTES"]
     assert uow.importes.filas[P_ACT][20].copiado is True
+
+
+# ================= T9 · R15, R16 · el payload del registro ================= #
+from application.registro_sigrid import RegistroSigrid  # noqa: E402
+
+from tests.test_f022_empresa_en_linea import (  # noqa: E402
+    _Sesion as _SesionReg,
+    _Transfer as _TransferReg,
+)
+from tests.test_f044_payload_traza import _TEL, _Cargador  # noqa: E402
+from tests.test_f051_hmores_ide import _fila  # noqa: E402
+
+
+class _LeerImportes:
+    def __init__(self, filas: dict[int, ImporteMes]) -> None:
+        self.filas = filas
+        self.llamadas: list[tuple] = []
+
+    def __call__(self, s, anio, mes, vinculados):
+        self.llamadas.append((anio, mes, sorted(vinculados)))
+        return dict(self.filas)
+
+
+def _payload(filas, por_id, *, tipos=TIPOS, leer=None, precio=Decimal("0.20")):
+    transfer = _TransferReg()
+    leer = leer or _LeerImportes({})
+    RegistroSigrid(lambda: _SesionReg(filas), transfer, 1,
+                   vinculados_desde=(2026, 10), subfilas=_Cargador(por_id),
+                   importes=tipos, precio_km=precio,
+                   leer_importes=leer).ejecutar(2026, 10, pisar_claves=[])
+    [p] = transfer.payloads
+    return p["lineas"], leer
+
+
+def test_f069_r15_r16_los_de_cantidad_con_sus_claves_y_una_lectura():
+    caja = dataclasses.replace(CAJA, cantidad=Decimal("80.00"), copiado=True,
+                               comentario="caja")
+    viaje = SubfilaVinculado(vinculado_ide=21, tipo="VIAJE", cod="VJ-21")
+    leer = _LeerImportes({20: ImporteMes(
+        vinculado_ide=20, cantidad=Decimal("724.50"), comentario="visita")})
+    [ln], leer = _payload([_fila(1)], {1: (_TEL, VP, viaje, caja)}, leer=leer)
+    tel, vp, vj, cj = ln["vinculados"]
+    assert tel == {"recurso_ide": 10, "tipo": "TF", "tipo_res": "TELEFONO",
+                   "cod": "TF-10"}
+    assert vp == {"recurso_ide": 20, "tipo": "VP", "tipo_res": None,
+                  "cod": "VP-20", "importe_mensual": True, "unidad": "km",
+                  "reparto": "pct", "cantidad": 724.5, "copiado": False,
+                  "comentario": "visita", "precio_km": 0.2}
+    assert (vj["unidad"], vj["reparto"], vj["cantidad"], vj["copiado"],
+            vj["comentario"]) == ("eur", "pct", None, False, None)
+    assert "precio_km" not in vj
+    assert (cj["reparto"], cj["cantidad"], cj["copiado"],
+            cj["comentario"]) == ("obra", 80.0, True, "caja")
+    assert leer.llamadas == [(2026, 10, [20, 21])]       # la caja no se lee
+
+
+def test_f069_r16_sin_vinculados_de_cantidad_ni_se_lee_y_el_payload_de_hoy():
+    hoy, _ = _payload([_fila(1)], {1: (_TEL,)}, tipos={})
+    con, leer = _payload([_fila(1)], {1: (_TEL,)})
+    assert con == hoy and leer.llamadas == []
+    sin_tipos, leer = _payload([_fila(1)], {1: (_TEL, VP, CAJA)}, tipos={})
+    assert leer.llamadas == []
+    assert all("importe_mensual" not in v for v in sin_tipos[0]["vinculados"])
+
+
+def test_f069_r16_solo_caja_tampoco_lee():
+    _, leer = _payload([_fila(1)], {1: (CAJA,)})
+    assert leer.llamadas == []
+
+
+def test_f069_r15_la_linea_lleva_su_comentario_solo_si_lo_tiene():
+    fila = _fila(1)
+    fila[0].comentario = "mes con visita"
+    [ln], _ = _payload([fila], {})
+    assert ln["comentario"] == "mes con visita"
+    [ln], _ = _payload([_fila(2)], {})
+    assert "comentario" not in ln
+
+
+def test_f069_r15_el_contenedor_pasa_tipos_y_precio(monkeypatch):
+    from interface_adapters.api import deps
+
+    capturado: dict = {}
+
+    class _Espia(RegistroSigrid):
+        def __init__(self, *a, **kw):
+            capturado.update(kw)
+            super().__init__(*a, **kw)
+
+    monkeypatch.setattr(deps, "RegistroSigrid", _Espia)
+    monkeypatch.delenv("EMPRESA_IMPUTACION", raising=False)
+    deps.construir_contenedor(Settings(_env_file=None), lambda: None)
+    assert capturado["importes"] == TIPOS
+    assert capturado["precio_km"] == Decimal("0.20")
+
+
+# ======================= R10 · el cuadrante ============================== #
+from application.use_cases import ObtenerCuadrante  # noqa: E402
+from domain.importes import importes_del_mes  # noqa: E402
+from infrastructure.db.repositories import importes_del_mes_de  # noqa: E402
+
+
+class _ImportesQueCuentan(_ImportesMem):
+    def __init__(self) -> None:
+        super().__init__()
+        self.lecturas = 0
+
+    def del_periodo(self, periodo_id):
+        self.lecturas += 1
+        return super().del_periodo(periodo_id)
+
+
+def test_f069_r10_el_cuadrante_lee_las_del_mes_una_vez_y_solo_con_vinculados():
+    uow = _uow_imp(VP, CAJA)
+    uow.importes = _ImportesQueCuentan()
+    uow.importes.filas[20] = ImporteMes(vinculado_ide=20,
+                                        cantidad=Decimal("100.00"))
+    cuadrante = ObtenerCuadrante().ejecutar(uow, ANIO, MES, FILTRO,
+                                            usuario="pgris")
+    assert uow.importes.lecturas == 1
+    [ana] = [f for f in cuadrante.filas if f.trabajador.ide == 10]
+    assert [i.vinculado_ide for i in ana.importes] == [20]
+    sin = _uow_imp()
+    sin.importes = _ImportesQueCuentan()
+    ObtenerCuadrante().ejecutar(sin, ANIO, MES, FILTRO, usuario="pgris")
+    assert sin.importes.lecturas == 0
+
+
+def test_f069_r10_importes_del_mes_uno_por_vinculado_por_pct():
+    lineas = [dataclasses.replace(_ln(100, "60"), vinculados=(VP, CAJA, TEL)),
+              dataclasses.replace(_ln(900, "40"), vinculados=(VP, CAJA, TEL))]
+    guardada = ImporteMes(vinculado_ide=20, cantidad=Decimal("5.00"),
+                          copiado=True, comentario="c")
+    assert importes_del_mes(lineas, {20: guardada}, TIPOS) == [ImporteMes(
+        vinculado_ide=20, tipo="VP", cod="VP-20", unidad="km",
+        cantidad=Decimal("5.00"), copiado=True, comentario="c")]
+    assert importes_del_mes(lineas, {}, TIPOS)[0].cantidad is None
+    assert importes_del_mes(lineas, {}, {}) == []
+
+
+def test_f069_r16_la_lectura_del_registro_es_una_y_por_periodo():
+    s = _Sesion()
+    s.scalars = lambda stmt: (s.sentencias.append(stmt)
+                              or SimpleNamespace(all=lambda: []))
+    assert importes_del_mes_de(s, 2026, 10, []) == {}
+    assert s.sentencias == []
+    importes_del_mes_de(s, 2026, 10, [21, 20, 21])
+    [stmt] = s.sentencias
+    sql = _sql(stmt)
+    assert "JOIN periodo ON periodo.id = importe_vinculado.periodo_id" in sql
+    assert "importe_vinculado.vinculado_ide IN" in sql
+    assert stmt.compile(dialect=postgresql.dialect()).params[
+        "vinculado_ide_1"] == [20, 21]
