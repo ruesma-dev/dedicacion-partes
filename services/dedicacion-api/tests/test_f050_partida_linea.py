@@ -301,7 +301,7 @@ def test_f050_r19_var_igual_aunque_tenga_elegida():
     from tests.test_f039_registro_var import VAR_29
     [ln] = _registro([_fila_r19(1, VAR_29, 80003, "CI.1.9")])
     assert ln["var_paride"] == 417055
-    assert "paride" not in ln and "partida_cod" not in ln
+    assert "paride" not in ln and ln["partida_cod"] == "29"
 
 
 class _Filas:

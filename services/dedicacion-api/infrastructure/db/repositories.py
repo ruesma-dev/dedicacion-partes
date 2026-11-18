@@ -50,6 +50,11 @@ from infrastructure.db.orm_models import (
 
 logger = logging.getLogger(__name__)
 
+#: F-054 (R23): el motivo de la traza de una entrada aceptada de Sigrid.
+MOTIVO_TRAIDA_DE_SIGRID = "traída de Sigrid"
+#: Longitud de `asignacion.sigrid_parte_cod` (`String(24)`, `orm_models.py`).
+_PARTE_COD_MAX = 24
+
 
 # ----------------------------------------------------------------------
 # Trabajadores
@@ -251,6 +256,13 @@ class PgObraRepository:
         stmt = select(ObraORM.ide).where(ObraORM.ide.in_(ides))
         return set(self._s.scalars(stmt).all())
 
+    def codigos(self, ides: set[int]) -> dict[int, str]:
+        """`{ide: cod}` de las de `ides` que existen (F-054 T25, R46)."""
+        if not ides:
+            return {}
+        stmt = select(ObraORM.ide, ObraORM.cod).where(ObraORM.ide.in_(ides))
+        return {int(ide): cod for ide, cod in self._s.execute(stmt).all()}
+
     def modos_ofrecibles(self, ides: set[int]) -> dict[int, tuple[bool, bool]]:
         """(activa, admite_postventa) de cada obra de `ides` (F-025, R20)."""
         if not ides:
@@ -400,9 +412,11 @@ class PgPeriodoRepository:
         return [_a_periodo(p) for p in self._s.scalars(stmt).all()]
 
     def obtener(self, anio: int, mes: int) -> tuple[int, Periodo] | None:
+        # F-054 (R22): siempre de la base, no del mapa de identidad de la
+        # sesión, para que releerlo vea el cierre hecho entre medias.
         stmt = select(PeriodoORM).where(
             PeriodoORM.anio == anio, PeriodoORM.mes == mes
-        )
+        ).execution_options(populate_existing=True)
         orm = self._s.scalars(stmt).first()
         return (orm.id, _a_periodo(orm)) if orm else None
 
@@ -538,6 +552,52 @@ class PgAsignacionRepository:
                 self._s.add(o)
             self._s.flush()
 
+    def aceptar_entrada(
+        self,
+        periodo_id: int,
+        trabajador_ide: int,
+        linea: Linea,
+        *,
+        hmores_ide: int,
+        parte_cod: str | None,
+        usuario: str,
+    ) -> None:
+        """F-054 (R19, R23; design §5.3): la entrada aceptada de Sigrid en
+        la línea de su clave (obra, postventa), en UNA sentencia `INSERT …
+        ON CONFLICT (uq_asignacion_linea) DO UPDATE`: si la línea existe se
+        actualiza en su sitio (mismo `id`; sus filas de
+        `asignacion_vinculado` no se tocan) y, si no, se crea (sus subfilas,
+        automáticas). Porcentaje y partida elegida de `linea`, propuesta a
+        nulo y la traza de «ya registrada» (`#regla-cero`): su
+        `hmores.ide`, su parte, `registrado` y el motivo, sin fecha ni autor
+        de registro. Las demás líneas del trabajador no se tocan
+        (`reemplazar` las borraría y recrearía sin traza)."""
+        valores = {
+            "porcentaje": linea.porcentaje,
+            "partida_ide": linea.partida_ide,
+            "partida_cod": linea.partida_cod,
+            "partida_res": linea.partida_res,
+            "propuesta_ide": None, "propuesta_cod": None,
+            "propuesta_res": None, "propuesta_metodo": None,
+            "propuesta_origen": None,
+            "actualizado_por": usuario,
+            "sigrid_estado": "registrado",
+            "sigrid_parte_cod": (parte_cod or None) and parte_cod[
+                :_PARTE_COD_MAX],
+            "sigrid_hmores_ide": int(hmores_ide),
+            "sigrid_motivo": MOTIVO_TRAIDA_DE_SIGRID,
+            "sigrid_registrado_at_utc": None,
+            "sigrid_registrado_by": None,
+        }
+        stmt = pg_insert(AsignacionORM).values(
+            periodo_id=periodo_id, trabajador_ide=trabajador_ide,
+            obra_ide=linea.obra_ide, es_postventa=bool(linea.es_postventa),
+            **valores)
+        self._s.execute(stmt.on_conflict_do_update(
+            constraint="uq_asignacion_linea",
+            set_={**{k: stmt.excluded[k] for k in valores},
+                  "actualizado_en": func.now()}))
+
     def guardar_propuesta_vinculado(
         self,
         periodo_id: int,
@@ -661,6 +721,10 @@ def upsert_asignacion_vinculado(asignacion: int | Select[Any],
 class PgVinculadoRepository:
     def __init__(self, session: Session) -> None:
         self._s = session
+
+    def ides(self) -> set[int]:
+        """Los `ide` de todo `recurso_vinculado`, activo o no (F-054, R14)."""
+        return set(self._s.scalars(select(RecursoVinculadoORM.ide)).all())
 
     def sincronizar(self, resultado: ResultadoVinculos) -> ResultadoSyncMaestro:
         """Upsert por `res.ide` de lo que decide `vincular` (R3, R5). Los de

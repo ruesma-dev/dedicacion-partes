@@ -86,6 +86,9 @@ class LecturasDelLote:
         # F-062 (R19): por obra de pruebas (o None), recursos, `ide`,
         # ventana y líneas de incidencia leídas.
         self._ventana: dict[int | None, tuple] = {}
+        # F-054 (R31, R38): las líneas mensuales leídas para las sobrantes
+        # (solo en el preflight completo).
+        self._mensuales: list = []
 
     # ------------------------------------------------------------ #
     #  Utilidades
@@ -144,12 +147,16 @@ class LecturasDelLote:
     # ------------------------------------------------------------ #
     #  Precarga
     # ------------------------------------------------------------ #
-    def precargar(self, peticiones: list[tuple], settings) -> None:
+    def precargar(self, peticiones: list[tuple], settings, *,
+                  mensuales: bool = False) -> None:
         """Rondas A-C (design §2, con validación e historial en B) para
         las peticiones del lote: `(obra, lineas)` o, con incidencias
         (F-030), `(obra, lineas, incidencias)` y (F-062) su contexto,
         `(obra, lineas, incidencias, contexto)`. Ronda D (F-062 R20): los
-        partes de M−1 de los cierres D14, solo si los hay."""
+        partes de M−1 de los cierres D14, solo si los hay. F-054 (R31,
+        R38): con `mensuales`, en la ronda A (no depende de nada) las líneas
+        mensuales del periodo de los trabajadores de las LÍNEAS (`M*`) y, si
+        las traen, de sus vinculados (cualquier hora)."""
         incs = [list(p[2]) if len(p) > 2 else [] for p in peticiones]
         ctxs = [p[3] if len(p) > 3 else None for p in peticiones]
         peticiones = [(p[0], p[1]) for p in peticiones]
@@ -204,6 +211,8 @@ class LecturasDelLote:
                         *(v.hmores_ide for _, v in vins)])
         if claves:
             tareas.append(lambda: self._cargar_registradas(claves, hmores))
+        if mensuales:
+            tareas.extend(self._tareas_mensuales(peticiones, empresas))
         self._ronda(tareas)
 
         # --- Ronda B ---
@@ -341,6 +350,40 @@ class LecturasDelLote:
             ("capitulos_de_obra", obride),
             lambda o=obride: self._cli.capitulos_de_obra(o))
             for obride in sorted(origenes)])
+
+    def _tareas_mensuales(self, peticiones: list[tuple],
+                          empresas: dict[int, int | None]) -> list[Callable]:
+        """F-054 (R31, R38): una lectura por empresa y periodo para los
+        trabajadores (`solo_m`) y otra para sus vinculados; una petición sin
+        empresa (fallará sola) no lee."""
+        grupos: dict[tuple, tuple[set[int], set[int]]] = {}
+        for i, (_, lineas) in enumerate(peticiones):
+            if not empresas[i]:
+                continue
+            for l in lineas:
+                trab, vins = grupos.setdefault(
+                    (empresas[i], int(l.ano), int(l.mes)), (set(), set()))
+                trab |= _ides([l.recurso_ide])
+                vins |= _ides(v.recurso_ide for v in l.vinculados)
+        tareas: list[Callable] = []
+        for (emp, ano, mes), (trab, vins) in sorted(grupos.items()):
+            for resides, solo_m in ((trab, True), (vins, False)):
+                if resides:
+                    tareas.append(lambda e=emp, a=ano, m=mes, r=resides,
+                                  s=solo_m: self._cargar_mensuales(
+                                      e, a, m, r, s))
+        return tareas
+
+    def _cargar_mensuales(self, empresa: int, ano: int, mes: int,
+                          resides: set[int], solo_m: bool) -> None:
+        leidas = self._cli.lineas_mensuales_del_periodo(
+            empresa, ano, mes, resides=sorted(resides), solo_m=solo_m)
+        with self._lock:
+            self._mensuales.extend(leidas)
+
+    def mensuales(self) -> list:
+        """F-054: las líneas mensuales precargadas (vacía sin ellas)."""
+        return list(self._mensuales)
 
     def _codigo(self, cod: str, empresa: int) -> Callable:
         return self._tolerante(

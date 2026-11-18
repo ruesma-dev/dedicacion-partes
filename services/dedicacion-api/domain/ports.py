@@ -18,6 +18,7 @@ from domain.models import (
     Periodo,
     ResultadoSyncMaestro,
     TipoIncidencia,
+    ResultadoExistentes,
     ResultadoUniverso,
     ResultadoUniversoVar,
     TipoEvento,
@@ -61,6 +62,20 @@ class UniversosGateway(UniversoPostventaGateway, UniversoVarGateway, Protocol):
     """Los dos universos que el sync pide al transfer (un solo cliente)."""
 
 
+class PorcentajesSigridGateway(Protocol):
+    """Las líneas mensuales del periodo en los partes de Sigrid, leídas y
+    traducidas a entradas por el transfer (F-054, R4-R12,
+    docs/ARCHITECTURE.md#regla-traer-sigrid). Solo lectura."""
+
+    def porcentajes_existentes(
+        self, empresa: int, anio: int, mes: int, obras: list[dict[str, Any]]
+    ) -> ResultadoExistentes:
+        """Las de `empresa` en el periodo; `obras` (`ide`, `codigo`,
+        `nombre`), las que admiten postventa. Lanza
+        `PorcentajesSigridNoDisponible` si el transfer no las da."""
+        ...
+
+
 class TrabajadorRepository(Protocol):
     def sincronizar(self, filas: list[dict[str, Any]]) -> ResultadoSyncMaestro: ...
 
@@ -84,6 +99,11 @@ class ObraRepository(Protocol):
 
     def existen(self, ides: set[int]) -> set[int]:
         """Subconjunto de `ides` que existen en el maestro."""
+        ...
+
+    def codigos(self, ides: set[int]) -> dict[int, str]:
+        """`{ide: cod}` de las de `ides` que existen en el maestro (F-054
+        T25, R46: los motivos de «Sincronizar Sigrid» nombran el código)."""
         ...
 
     def modos_ofrecibles(self, ides: set[int]) -> dict[int, tuple[bool, bool]]:
@@ -113,6 +133,11 @@ class VinculadoRepository(Protocol):
     def sincronizar(self, resultado: ResultadoVinculos) -> ResultadoSyncMaestro:
         """Upsert por `res.ide` de lo que decide `vincular`; el que no llega
         o pierde su trabajador queda inactivo (nunca se borra)."""
+        ...
+
+    def ides(self) -> set[int]:
+        """Los `ide` de todo `recurso_vinculado`, activo o no (F-054, R14:
+        sus líneas de Sigrid solo cuentan en `de_vinculados`)."""
         ...
 
 
@@ -160,6 +185,21 @@ class AsignacionRepository(Protocol):
         usuario: str,
     ) -> None:
         """Sustituye en bloque las líneas del trabajador (transaccional)."""
+        ...
+
+    def aceptar_entrada(
+        self,
+        periodo_id: int,
+        trabajador_ide: int,
+        linea: Linea,
+        *,
+        hmores_ide: int,
+        parte_cod: str | None,
+        usuario: str,
+    ) -> None:
+        """F-054 (R19, R23): la entrada aceptada de Sigrid en la línea de su
+        clave, en su sitio (mismo `id` y subfilas) o nueva, con la traza de
+        «ya registrada». Las demás líneas del trabajador no cambian."""
         ...
 
     def guardar_propuesta(

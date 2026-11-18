@@ -87,6 +87,22 @@ class CompletarIn(_Base):
     es_postventa: bool = False
 
 
+class AceptarSigridIn(_Base):
+    """Una entrada de Sigrid que el usuario acepta (F-054, R19)."""
+
+    trabajador_ide: int
+    obra_ide: int
+    es_postventa: bool = False
+
+
+class TraerSigridIn(_Base):
+    """`POST …/traer-sigrid` (F-054, R18-R19): sin `aceptar`, solo
+    compara."""
+
+    aceptar: list[AceptarSigridIn] = Field(default_factory=list,
+                                           max_length=5000)
+
+
 # --------------------------- Salida -----------------------------------
 class SubfilaOut(_Base):
     """La subfila de un vinculado bajo una línea (F-044, R6, R7): tipo y
@@ -482,3 +498,111 @@ def lineas_a_dicts(payload: AsignacionesIn) -> list[dict[str, Any]]:
         }
         for ln in payload.lineas
     ]
+
+
+# ------------------- F-054 · traer de Sigrid (R27) --------------------
+class EntradaSigridOut(_Base):
+    """Una entrada del trabajador: estado, los dos %, la partida y el parte
+    de Sigrid, cuántas líneas suma y, si no se puede traer, por qué."""
+
+    obra_ide: int
+    cod: str
+    descripcion: str
+    es_postventa: bool
+    estado: str
+    pct_sigrid: float | None
+    pct_cuadrante: float | None
+    partida_cod: str | None
+    partida_res: str | None
+    parte_cod: str | None
+    n_lineas: int
+    motivo: str | None
+
+
+class ClaveEntradaOut(_Base):
+    obra_ide: int
+    es_postventa: bool
+
+
+class RechazadaOut(_Base):
+    trabajador_ide: int
+    obra_ide: int
+    es_postventa: bool
+    motivo: str
+
+
+class TrabajadorSigridOut(_Base):
+    trabajador_ide: int
+    cod: str | None
+    nombre: str
+    entradas: list[EntradaSigridOut]
+    aceptadas: list[ClaveEntradaOut]
+
+
+class NoTraidaOut(_Base):
+    hmores_ide: int
+    recurso_ide: int
+    obra_cod: str | None
+    parte_cod: str | None
+    can: float
+    motivo: str
+    # F-054 T25 (R45): el trabajador del maestro, para pintarlo `cod · nombre`.
+    recurso_cod: str | None
+    recurso_nombre: str
+
+
+class TraerSigridOut(_Base):
+    trabajadores: list[TrabajadorSigridOut]
+    aceptadas: int
+    rechazadas: list[RechazadaOut]
+    no_traidas: list[NoTraidaOut]
+    fuera_maestro: int
+    de_vinculados: int
+    lineas_leidas: int
+    excluidas_pruebas: int
+    motivo_postventa: str | None
+    motivo_var: str | None
+    propuestas_en_curso: bool = False       # F-055 (R37), R26
+
+
+def _pct(valor: Decimal | None) -> float | None:
+    return None if valor is None else float(valor)
+
+
+def a_traer_sigrid_out(r: Any) -> TraerSigridOut:
+    """`ResultadoTraer` (application/traer_sigrid.py) a la salida (R27)."""
+    def entrada(c: Any) -> EntradaSigridOut:
+        obra = r.obras.get(c.obra_ide)
+        e = c.entrada
+        return EntradaSigridOut(
+            obra_ide=c.obra_ide, cod=obra.cod if obra else str(c.obra_ide),
+            descripcion=obra.descripcion if obra else "",
+            es_postventa=c.es_postventa, estado=c.estado.value,
+            pct_sigrid=_pct(c.pct_sigrid), pct_cuadrante=_pct(c.pct_cuadrante),
+            partida_cod=e.partida_cod if e else None,
+            partida_res=e.partida_res if e else None,
+            parte_cod=e.parte_cod if e else None,
+            n_lineas=e.n_lineas if e else 0, motivo=c.motivo)
+
+    return TraerSigridOut(
+        trabajadores=[TrabajadorSigridOut(
+            trabajador_ide=t.trabajador.ide, cod=t.trabajador.cod,
+            nombre=t.trabajador.nombre,
+            entradas=[entrada(c) for c in t.comparadas],
+            aceptadas=[ClaveEntradaOut(obra_ide=o, es_postventa=pv)
+                       for o, pv in t.aceptadas])
+            for t in r.trabajadores],
+        aceptadas=sum(len(t.aceptadas) for t in r.trabajadores),
+        rechazadas=[RechazadaOut(trabajador_ide=t, obra_ide=o,
+                                 es_postventa=pv, motivo=m)
+                    for (t, o, pv), m in r.rechazadas],
+        no_traidas=[NoTraidaOut(
+            hmores_ide=n.hmores_ide, recurso_ide=n.recurso_ide,
+            obra_cod=n.obra_cod, parte_cod=n.parte_cod, can=n.can,
+            motivo=n.motivo, recurso_cod=n.recurso_cod,
+            recurso_nombre=n.recurso_nombre) for n in r.no_traidas],
+        fuera_maestro=r.contadores.fuera_maestro,
+        de_vinculados=r.contadores.de_vinculados,
+        lineas_leidas=r.lineas_leidas,
+        excluidas_pruebas=r.excluidas_pruebas,
+        motivo_postventa=r.motivo_postventa, motivo_var=r.motivo_var)

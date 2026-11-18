@@ -1,19 +1,32 @@
 # infrastructure/transfer/transfer_client.py
 """Cliente HTTP de porcentajes-transfer (preflight / ejecutar, universo de
-postventa, F-025, y universo VAR, F-039)."""
+postventa, F-025, universo VAR, F-039, y los % que ya hay en Sigrid,
+F-054)."""
 from __future__ import annotations
 
+from dataclasses import fields
 from typing import Any
 
 import httpx
 
 from config.settings import Settings
 from domain.errors import (
+    PorcentajesSigridNoDisponible,
     PropuestaNoDisponible,
     UniversoPostventaNoDisponible,
     UniversoVarNoDisponible,
 )
-from domain.models import PartidaVar, ResultadoUniverso, ResultadoUniversoVar
+from domain.models import (
+    LineaSigridTraida,
+    PartidaVar,
+    ResultadoExistentes,
+    ResultadoUniverso,
+    ResultadoUniversoVar,
+)
+
+#: Los campos de una línea traída (F-054): lo demás que mande el transfer
+#: se ignora.
+_CAMPOS_TRAIDA = tuple(f.name for f in fields(LineaSigridTraida))
 
 
 class TransferClient:
@@ -39,11 +52,28 @@ class TransferClient:
     def preflight(self, payload: dict) -> dict[str, Any]:
         return self._post("/api/registro/preflight", payload)
 
-    def preflight_lote(self, peticiones: list[dict]) -> dict[str, Any]:
+    def preflight_lote(self, peticiones: list[dict], completo: bool = False
+                       ) -> dict[str, Any]:
         """F-055 (R26): el preflight de varias obras en una llamada
-        (`POST /api/registro/preflight-lote`): `{ok, obras}`."""
+        (`POST /api/registro/preflight-lote`): `{ok, obras}`. F-054 (R31):
+        con `completo`, también `sobrantes`; la clave solo viaja si es
+        `true` (un transfer viejo la ignora y responde como hoy)."""
         return self._post("/api/registro/preflight-lote",
-                          {"peticiones": peticiones})
+                          {"peticiones": peticiones,
+                           **({"completo": True} if completo else {})})
+
+    def poner_a_cero(self, empresa: int, ano: int, mes: int,
+                     lineas: list[dict]) -> dict[str, Any]:
+        """F-054 (R35): pone a 0 las sobrantes confirmadas (`POST
+        /api/registro/poner-a-cero`): `{ok, puestas, omitidas}`. Sin `ok:
+        true`, `RuntimeError` con el motivo: no se sigue escribiendo."""
+        r = self._post("/api/registro/poner-a-cero",
+                       {"empresa": empresa, "ano": ano, "mes": mes,
+                        "lineas": lineas})
+        if r.get("ok") is not True:
+            raise RuntimeError("no se pudieron poner a 0 las líneas "
+                               f"sobrantes: {r.get('error') or r}")
+        return r
 
     def ejecutar(self, payload: dict) -> dict[str, Any]:
         return self._post("/api/registro/ejecutar", payload)
@@ -70,6 +100,30 @@ class TransferClient:
             raise PropuestaNoDisponible(
                 f"propuesta de partidas no disponible: {causa}")
         return r
+
+    def porcentajes_existentes(
+        self, empresa: int, anio: int, mes: int, obras: list[dict[str, Any]]
+    ) -> ResultadoExistentes:
+        """F-054 (R3-R12; `PorcentajesSigridGateway`): las líneas mensuales
+        del periodo de `empresa` en Sigrid, traducidas por el transfer
+        (`POST /api/porcentajes/existentes`). `obras`, las que admiten
+        postventa. Sin `ok: true` o sin `lineas` (caído, lectura que falla
+        o truncada): `PorcentajesSigridNoDisponible` con el motivo."""
+        r = self._post("/api/porcentajes/existentes",
+                       {"empresa": empresa, "ano": anio, "mes": mes,
+                        "obras": obras})
+        if r.get("ok") is not True or not isinstance(r.get("lineas"), list):
+            causa = r.get("error") or "la respuesta del transfer no trae líneas"
+            raise PorcentajesSigridNoDisponible(
+                f"las líneas de Sigrid no están disponibles: {causa}")
+        return ResultadoExistentes(
+            lineas_leidas=int(r.get("lineas_leidas") or 0),
+            excluidas_pruebas=int(r.get("excluidas_pruebas") or 0),
+            motivo_postventa=r.get("motivo_postventa"),
+            motivo_var=r.get("motivo_var"),
+            lineas=tuple(LineaSigridTraida(**{k: x[k] for k in _CAMPOS_TRAIDA
+                                              if k in x})
+                         for x in r["lineas"]))
 
     def universo_postventa(
         self, empresa: int, obras: list[dict[str, Any]]

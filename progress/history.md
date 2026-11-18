@@ -3155,3 +3155,25 @@ revisiones `Healthy` con el 100 % del tráfico (comprobado por el líder, solo
 lectura). El transfer sigue en modo real. T14: `azure-apps/dedicacion.md`
 al día (`bcc3f71`). MANUAL T13 hecha por el humano en producción el mismo
 día: «comprobado, sale bien».
+
+## 2026-11-18 · F-054 · Al sincronizar, traer al cuadrante los porcentajes que ya están en Sigrid
+
+Rama `feature/F-054-sync-trae-porcentajes` · `sdd: true` · rigor `critico` ·
+**APROBADO** por el reviewer en la review 11 · 136 commits locales (`f91c1fc` … `3741717`) ·
+OK del humano al cierre el 2026-11-18 («ok»).
+
+**Qué cambió.**
+- **A, solo lectura.** «Sincronizar Sigrid» lee las líneas `M*` de los partes del mes en obra normal, postventa y VAR, más las de los vinculados. Las traduce a la obra y el porcentaje del cuadrante y las enseña en una ventana de una sola tabla. Estados: `solo_sigrid`, `igual`, `distinta` y «no se puede traer», con el motivo y los códigos de obra y partida (D20 y D21). La ventana tiene filtros en la cabecera, orden por columna, marcado y cabecera fija (T23-T27).
+- **B, escritura en el registro.** Las líneas del parte que el cuadrante ya no tiene salen en el modal como *sobrantes*. Solo si el humano las marca, el transfer las pone a 0 en su sitio, `can` y `tot` a 0, sin borrarlas y con doble guarda y log del antes.
+- **Servicios.** Toca transfer, api y front.
+
+**Verificado.**
+- RED por tarea, cobertura de las líneas cambiadas, y campañas de mutación 11 y 12 con 0 supervivientes. RM5 y MANUAL según C4 bis, en la review 10 sobre `5ca4838`.
+- MANUAL T10: mediana del preflight 10,34 s.
+- MANUAL T18: ventana y aceptación, en local y solo leyendo.
+- MANUAL T19, el 2026-11-18, en modo pruebas en la 0404, 2032-01. Las dos líneas sin `synckey` se crearon por sigrid-api a petición del humano. Sin marcar, quedan igual. Marcadas, quedan con `can` y `tot` a 0 y el mismo `ide` y `pos`, sin ningún `DELETE`. Mediana del preflight 10,43 s, por debajo del tope de 11,89 s; la primera medida en frío, 13,0 s, lo supera.
+- `bash harness/init.sh` en verde en la rama al cerrar.
+
+**Fuera / pendiente.**
+- T20, al desplegar: transfer → api → front, refrescar `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` y avisar a `partes` de que el transfer pone a 0 líneas `M*` y de vinculados de partes compartidos, sin borrarlas.
+- En Sigrid queda el parte de pruebas PT32/00001 de la 0404, con tres líneas `PRUEBA-PORC` y dos sin marca, a 0. Sin limpiar, decisión pendiente del humano.

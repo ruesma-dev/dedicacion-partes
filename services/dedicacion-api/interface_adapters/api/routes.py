@@ -25,8 +25,14 @@ from application.use_cases import (
     ObtenerFilaTrabajador,
 )
 from application.palabras_incidencia import palabras_por_codigo
+from application.traer_sigrid import TraerDeSigrid
 from config.settings import cargar_config
-from domain.errors import ErrorDominio, ObraNoValida, TrabajadorNoValido
+from domain.errors import (
+    ErrorDominio,
+    LineasInvalidas,
+    ObraNoValida,
+    TrabajadorNoValido,
+)
 from domain.models import EstadoPeriodo, FiltroEmpresa
 from interface_adapters.api.deps import (
     Contenedor,
@@ -51,6 +57,8 @@ from interface_adapters.api.schemas import (
     PropuestasOut,
     SyncOut,
     TipoIncidenciaOut,
+    TraerSigridIn,
+    TraerSigridOut,
     TiposIncidenciaOut,
     a_completar_out,
     a_copia_periodo_out,
@@ -59,6 +67,7 @@ from interface_adapters.api.schemas import (
     a_resumen_out,
     a_sync_out,
     a_trabajador_out,
+    a_traer_sigrid_out,
     lineas_a_dicts,
 )
 
@@ -475,6 +484,37 @@ def completar_lote(
                                         payload.trabajadores)[0]})
 
 
+# ------------------- Traer de Sigrid (F-054, parte A) -----------------
+@router.post(
+    "/periodos/{anio}/{mes}/traer-sigrid",
+    response_model=TraerSigridOut,
+    tags=["sigrid"],
+)
+def traer_sigrid(
+    anio: int,
+    mes: int,
+    contenedor: Cont,
+    usuario: Usuario,
+    payload: TraerSigridIn | None = None,
+    empresa: EmpresaQ = None,
+) -> TraerSigridOut:
+    """Compara el cuadrante con lo que ya hay en los partes de Sigrid y
+    escribe solo las entradas de `aceptar` (F-054, R18-R27;
+    docs/ARCHITECTURE.md#regla-traer-sigrid). Sin `aceptar`, nada se
+    escribe. Lee Sigrid a través del transfer; no escribe en Sigrid."""
+    filtro = _filtro(contenedor, empresa)
+    aceptar = [a.model_dump() for a in (payload.aceptar if payload else [])]
+    caso: TraerDeSigrid = contenedor.traer_sigrid
+    with contenedor.uow() as uow:
+        resultado = caso.ejecutar(uow, anio, mes, usuario, filtro=filtro,
+                                  aceptar=aceptar)
+    # R26: las propuestas, solo de los trabajadores escritos.
+    en_curso = (_encolar(contenedor, anio, mes, resultado.tocados)[0]
+                if resultado.tocados else False)
+    return a_traer_sigrid_out(resultado).model_copy(
+        update={"propuestas_en_curso": en_curso})
+
+
 # --------------------------- Export -----------------------------------
 @router.get("/periodos/{anio}/{mes}/export.xlsx", tags=["export"])
 def exportar(
@@ -536,4 +576,20 @@ def registro_ejecutar(anio: int, mes: int, contenedor: Cont,
         anio, mes, pisar_claves=list(payload.get("pisar_claves") or []),
         overrides=overrides, usuario=str(payload.get("usuario") or "local"),
         trabajador_ide=trabajador_ide,
-        empresa=filtro.empresa)
+        empresa=filtro.empresa,
+        # F-054 (R35): las sobrantes confirmadas, tal como las publicó el
+        # preflight; sin ellas, como hoy.
+        sobrantes_a_cero=_sobrantes_a_cero(payload.get("sobrantes_a_cero")))
+
+
+def _sobrantes_a_cero(valor: Any) -> list[dict] | None:
+    """F-054 (R35): una lista de objetos con su `hmores_ide` entero; otra
+    cosa es 422 sin escribir nada."""
+    if valor is None:
+        return None
+    if not isinstance(valor, list) or not all(
+            isinstance(x, dict) and isinstance(x.get("hmores_ide"), int)
+            and not isinstance(x.get("hmores_ide"), bool) for x in valor):
+        raise LineasInvalidas(
+            "sobrantes_a_cero debe ser una lista de líneas con hmores_ide")
+    return valor

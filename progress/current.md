@@ -1,6 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
+**F-054 CERRADA (`done`) el 2026-11-18 y unida a `dev`** (OK del humano al cierre: «ok»). Review 11 APROBADA; MANUAL T19 hecha en modo pruebas (0404, 2032-01; `progress/manual_F-054.md`): sobrantes a 0 en su sitio, mismo `ide`/`pos`, sin `DELETE`, preflight mediana 10,43 s ≤ 11,89 s. Resumen en `progress/history.md`. **Pendiente:** T20 al desplegar (transfer → api → front, `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md`, aviso a `partes`); decisión del humano sobre limpiar el parte de pruebas PT32/00001 de la 0404 (3 líneas `PRUEBA-PORC` y 2 sin marca a 0). **Siguiente:** rebasar F-069 (`porcentajes-f069`, `spec_ready`) sobre `dev` (D16) e implementarla. **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la api (`990e264`).
+
 **ARNÉS 2026-11-13: actualizado de la 1.7.3 a la 1.10.1** (rama `chore/arnes-1.10.1`, «ok» del humano al plan). Instalador en modo `actualizar`: 70 nuevos, 26 arnés puro pisados con backup, y fusión a mano de los seis `adaptado` (`CLAUDE.md`, `CHECKPOINTS.md`, `harness/init.sh`, `docs/CONVENTIONS.md`, `.claude/settings.json`; `docs/referencia/README.md` sin cambios) sin perder lo del proyecto; quitado el hook `PostToolUse` (`| tail -5` escondía el código de salida). Decisión del humano: `rigor.json` tal cual (mutación informativa en `estandar`, `critico` muestreado, nivel `express`), sin `rigor.local.json`. Estados nuevos (`todo`, `in_review`, `human_review`): nada está en `todo`, el líder pedirá qué comprometer. `bash harness/init.sh` en verde (raíz 2319 passed / 47 skipped). Informe `progress/impl_chore_arnes_1.10.1.md`. **F-054 y F-069 siguen con la 1.7.3 en sus copias**: la recogen al integrarse/rebasarse sobre `dev`. Pendiente del humano: `git -C …/porcentajes push origin dev`.
 
 **HOTFIX 2026-11-11 `hotfix/registro-corte-proxy`: unido a `dev` (`b83482c`) y DESPLEGADO el 2026-11-11** (front `r20261111-1916`, junto con la api `r20261111-1915`, que lleva los hotfixes VP y `/propuestas`; transfer sin cambios en `r20261028-1914`). Si `registro/ejecutar` recibe 502/504 o falla la red: cierra el modal, aviso fijo «el registro sigue en curso… recargo en 60 s», registro bloqueado en sus tres entradas y recarga del mes registrado a los 60 s; otros errores, como antes, y el botón del modal ya no se queda en «Registrando…». 15 tests (RED 13/15), `init.sh` en verde en `dev`; informe `progress/impl_hotfix_registro_corte_proxy.md`. `azure-apps` `c1608f3` (nota de redespliegue, sin cambio de contrato). **Pendiente del humano:** comprobarlo en producción en el próximo registro grande.
@@ -25,11 +27,9 @@ revisada, `sync.vinculados.tipos_excluidos` de `[VP]` a `[]` en la api; test `te
 **Pendiente del humano:** despliegue SOLO de la api y «Sincronizar Sigrid» para que los `VP` salgan como subfilas.
 `azure-apps/dedicacion.md` (l. ~706) solo describe el efecto genérico de cambiar `tipos_excluidos`, sin su valor: no se toca. F-054 sigue en su copia `porcentajes-f054`.
 
-**F-068** (la partida del recurso vinculado se propone como la del
-trabajador: historial en la obra y, si no, por nombre, CI.4 en empate;
-transfer y api, rigor crítico, SDD; petición del humano del 2026-10-28, va
-antes de F-054), rama `feature/F-068-propuesta-vinculado-como-titular`,
-**cerrada (`done`) el 2026-10-28**: review 1 APROBADA (`0762c25`), observaciones recogidas, equivalente aceptado por el humano, `bash harness/init.sh` en verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (transfer `r20261028-1914`, api `r20261028-1918`, front `r20261028-1922`; «Producción, hoy»); T14 hecha (`azure-apps` `bcc3f71`). **MANUAL T13 hecha por el humano en producción el 2026-10-28** («comprobado, sale bien»): F-068 cerrada del todo. Ninguna feature en curso. **Para retomar:** siguiente F-054 (spec aprobada, worktree `porcentajes-f054`) y después F-066. **F-067** (casilla «Recursos vinculados» para
+Los dos hotfixes se trajeron de `dev` a la rama de F-054 el 2026-11-04 (merge de `dev`), para probar T18 y T19 con ellos.
+
+**F-068** cerrada, desplegada y con su MANUAL hecha el 2026-10-28 (sección propia, abajo). **F-067** (casilla «Recursos vinculados» para
 ver u ocultar sus subfilas en el cuadrante; solo front) **cerrada (`done`)
 el 2026-10-28**: review 1 APROBADA (`8423a5a`), `bash harness/init.sh` en
 verde; resumen en `progress/history.md`. **Desplegada el 2026-10-28** (solo el
@@ -46,7 +46,7 @@ verde; resumen en `progress/history.md`. **Desplegada el 2026-10-27** (solo el
 front, `r20261027-1202`); pendiente su MANUAL del navegador («⚠ Lo que espera al humano»). **F-044** (los porcentajes también a los
 recursos vinculados) y **F-064** (su pisado, marcado por defecto en el modal)
 **cerradas y DESPLEGADAS el 2026-10-27** (transfer `r20261027-0742`, api
-`r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). T23 hecha:
+`r20261027-0844`, front `r20261027-0846`; «Producción, hoy»). F-044 T23 hecha:
 `azure-apps/dedicacion.md` al día (`29321e1`). **Pendiente del humano:**
 («Sincronizar Sigrid» ya hecho: el humano confirma el 2026-10-27 que
 salen las subfilas de teléfono y demás, «esta bien»); la MANUAL de F-064 en el navegador, solo mirar y
@@ -56,9 +56,22 @@ validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
 **Para retomar (sesión nueva):** `arnes-base` va 3 commits por delante de
 su `origin/main` (encargos pendientes; push del humano: `git -C
-../arnes-base push origin main`). Peticiones de arnés pendientes de
-decisión: ninguna (la de C4 bis, al encargo `de161b4`). **Siguiente:** tras F-068, F-054 (spec aprobada, worktree `porcentajes-f054`); después
+../arnes-base push origin main`). Las dos propuestas de arnés de la
+review 3 de F-054 no piden decisión nueva: ya tienen encargo en
+`arnes-base` (mutantes que no compilan: `e7a172b`; campaña manual de C4
+bis: `de161b4`). La automejora de la review 7 (que el reviewer reproduzca
+las filas de una campaña manual sobre el SHA que declara la campaña, o sobre HEAD solo si el texto
+original sigue igual) amplía ese mismo encargo `de161b4`: pendiente de añadirla allí, sin decisión nueva. Otras propuestas de arnés pendientes, en sus secciones:
+F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
+tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
+`init.sh`). **Siguiente:** F-054, review 9 APROBADA (O11 y `dev` traído, 2026-11-04), T27/R48 hecha y comprobada por el humano (2026-11-06), review 10 con cambios solo de rastro; faltan T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
+
+## F-054 · CERRADA (2026-11-18), pendiente de desplegar
+
+- Resumen completo en `progress/history.md`; MANUAL T10, T18 y T19 en `progress/manual_F-054.md`.
+- **T20 al desplegar** (líder, tras el despliegue que lanza el humano): orden **transfer → api → front**; refrescar `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` (commit aparte en `azure-apps`, con `pull --rebase` antes) y avisar a `partes` de que el transfer pone a 0 líneas `M*` y de vinculados de los partes compartidos, sin borrarlas. Texto exacto en `specs/F-054-sync-trae-porcentajes/tasks.md`, T20.
+- En Sigrid queda el parte de pruebas **PT32/00001** de la 0404 (2032-01): 414543-414545 `PRUEBA-PORC` y 415966-415967 sin marca, a 0. Limpieza pendiente de decisión del humano. En la BBDD local queda el periodo 01/2032.
 
 ## F-068 · CERRADA y DESPLEGADA (2026-10-28), MANUAL hecha
 
@@ -108,7 +121,7 @@ para cerrarla, uno de M−1); y deja rachas **abiertas** a fin de mes, que el
 papel de sv4 verá. Nunca borra. Su `partes.md` debería decirlo en su «qué
 se rompe».
 
-## F-044 · spec aprobada (2026-10-25)
+## F-044 · spec aprobada (2026-10-25); cerrada y desplegada el 2026-10-27
 
 - **Spec:** `specs/F-044-recursos-vinculados/` (requirements 149 líneas,
   design 248, tasks T1-T24). Rigor `critico`; toca **api** (vínculo en el sync,
@@ -123,11 +136,11 @@ se rompe».
   («ok a todo»). D1b se aplica en el sync: `tipos_excluidos: [VP]` no se
   vincula y el preview lo cuenta (R3); con `pre` 0, omitido con motivo (R14).
 - **Hecho el 2026-10-26:** `dev` (con F-062) unido a la rama, `in_progress`
-  e implementer lanzado; bloqueo antes de T7 resuelto («si a todo»); T1-T20, T22 y T24 hechas. T21 es MANUAL
+  e implementer lanzado (ya terminado: F-044 cerrada); bloqueo antes de T7 resuelto («si a todo»); T1-T20, T22 y T24 hechas. T21 es MANUAL
   del humano en modo pruebas.
 - **F-054:** trae solo las `M*` de trabajadores (por recurso, no por prefijo);
-  los vinculados no son asignaciones; F-054 puede traer la partida de la línea
-  del vinculado como elegida de su subfila (design §10). Lo diseña F-054.
+  los vinculados no son asignaciones. F-054 lo cerró con D18 = A
+  (2026-10-29): de los vinculados no se trae nada.
 - **Riesgos:** `MESVE` empieza por `M` (R19 y sus tests); la columna nueva
   puede tocar tests del front (el implementer PARA y pide ampliar la lista
   cerrada); **F-062 toca `registro_pipeline.py`**: implementar F-044 sobre
@@ -452,7 +465,8 @@ F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
 que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018…
+F-033 y, detrás, F-017, F-018… **Hoy (2026-11-06):** F-054, T23 aprobada (review 7), T24-T26 (review 8), O11 con `dev` traído (review 9 APROBADA) y T27/R48 hecha y comprobada por el humano; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
+después, F-066.
 
 ## ⚠ Lo que espera al humano
 

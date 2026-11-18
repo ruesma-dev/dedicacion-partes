@@ -58,8 +58,8 @@ from application.services.cuenta_analitica import indexar_cuentas
 from application.services.propuesta_partida import LineaHistorial
 from domain.errores import ObraAmbigua
 from domain.models.registro_models import (
-    HoraRecurso, LineaIncidenciaSigrid, LineaSigrid, ObraEntrada,
-    ParteDestino, ParteSigrid, PartidaCuenta, PartidaValida,
+    HoraRecurso, LineaIncidenciaSigrid, LineaMensualSigrid, LineaSigrid,
+    ObraEntrada, ParteDestino, ParteSigrid, PartidaCuenta, PartidaValida,
 )
 
 logger = logging.getLogger(__name__)
@@ -514,6 +514,60 @@ class SigridWriteClient:
                 lote + [int(obra_ide), self._tip, int(desde), int(hasta)])
             out.extend(_linea_historial(f) for f in filas)
         return out
+
+    def lineas_mensuales_del_periodo(
+        self, empresa: int, ano: int, mes: int,
+        resides: Iterable[int | None] | None = None, solo_m: bool = True,
+    ) -> list[LineaMensualSigrid]:
+        """F-054 (R4, R6, R31, R38; design §4.1): las líneas con `can` ≠ 0
+        de los partes de trabajo de obra (`con.tip` del ajuste, `hmo.reside`
+        0) del periodo en obras de `empresa`, con su parte, su estado y su
+        partida, por `hmores.ide`. `solo_m`: solo horas `M*` (parte A y
+        trabajadores de B); sin él, cualquier hora (vinculados, D16). Con
+        `resides`, solo esos recursos, en trozos de `LOTE_PARAMETROS` (una
+        lectura por trozo; sin ninguno no se lee). Solo lectura; un fallo o
+        un `truncated` sube como excepción."""
+        sql = (
+            "SELECT h.ide AS ide, h.reside AS reside, m.obride AS obride, "
+            "co.cod AS obra_cod, m.ide AS parte_ide, c.cod AS parte_cod, "
+            "c.est AS parte_est, a.cod AS hora, h.can AS can, h.fec AS fec, "
+            "h.paride AS paride, p.cod AS par_cod, p.res AS par_res, "
+            "h.synckey AS synckey "
+            "FROM hmores h JOIN hmo m ON m.ide = h.hmoide "
+            "JOIN con c ON c.ide = m.ide JOIN con co ON co.ide = m.obride "
+            "JOIN auxhor a ON a.ide = h.horide "
+            "LEFT JOIN obrparpar p ON p.ide = h.paride "
+            "WHERE c.tip = ? AND ISNULL(m.reside, 0) = 0 AND m.ano = ? "
+            "AND m.mes = ? AND co.emp = ? AND ISNULL(h.can, 0) <> 0"
+            + (" AND a.cod LIKE 'M%'" if solo_m else ""))
+        base = [self._tip, int(ano), int(mes), int(empresa)]
+        if resides is None:
+            consultas = [(f"{sql} ORDER BY h.ide", base)]
+        else:
+            consultas = [
+                ((f"{sql} AND h.reside IN ({','.join('?' for _ in t)}) "
+                  "ORDER BY h.ide"), base + t)
+                for t in _trozos(sorted({int(r) for r in resides if r}))]
+        out: list[LineaMensualSigrid] = []
+        for texto, params in consultas:
+            out.extend(self._linea_mensual(f) for f in self._lectura(
+                "lineas_mensuales_del_periodo", texto, params))
+        return out
+
+    def _linea_mensual(self, f: dict) -> LineaMensualSigrid:
+        est = _entero(f["parte_est"])
+        return LineaMensualSigrid(
+            hmores_ide=int(f["ide"]), recurso_ide=int(f["reside"]),
+            obra_ide=int(f["obride"]),
+            obra_cod=(f["obra_cod"] or "").strip() or None,
+            parte_ide=int(f["parte_ide"]),
+            parte_cod=(f["parte_cod"] or "").strip() or None,
+            parte_est=est, en_registro=est == self._est,
+            hora=(f["hora"] or "").strip() or None, can=float(f["can"]),
+            fec=int(f["fec"]), paride=int(f["paride"] or 0),
+            partida_cod=(f["par_cod"] or "").strip() or None,
+            partida_res=(f["par_res"] or "").strip() or None,
+            synckey=(f["synckey"] or "").strip() or None)
 
     def partes_del_periodo(self, obra_ide: int, ano: int,
                            mes: int) -> list[ParteSigrid]:

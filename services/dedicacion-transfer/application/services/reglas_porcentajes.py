@@ -525,8 +525,11 @@ class ReglasPorcentajes:
             es_postventa=linea.es_postventa,
         )
 
-        def omitir(motivo: str) -> AccionLinea:
-            return AccionLinea(accion="omitir", motivo=motivo, **base)
+        def omitir(motivo: str, **resuelta) -> AccionLinea:
+            # D19 (F-054): la omitida tras resolver su destino lo lleva; la
+            # de antes, el de por defecto (`obra`, `paride` 0, sin partida).
+            return AccionLinea(accion="omitir", motivo=motivo, **resuelta,
+                               **base)
 
         # Empresa (ARCHITECTURE.md#regla-empresa), antes que nada más: sin
         # ella no se sabe ni dónde buscar la obra.
@@ -546,17 +549,20 @@ class ReglasPorcentajes:
             destino = "postventa"
             paride = int(self._partida["ide"])
             partida_cod = self._partida.get("cod")
+        resuelta = dict(destino=destino, paride=paride,
+                        partida_cod=partida_cod)
 
         if not linea.recurso_ide:
-            return omitir(MOTIVO_SIN_RECURSO)
+            return omitir(MOTIVO_SIN_RECURSO, **resuelta)
 
         # P3: porcentaje sobre 1.
         try:
             porcentaje = float(linea.porcentaje)
         except (TypeError, ValueError):
-            return omitir(MOTIVO_PORCENTAJE)
+            return omitir(MOTIVO_PORCENTAJE, **resuelta)
         if not (0.0 < porcentaje <= 1.0):
-            return omitir(f"{MOTIVO_PORCENTAJE}: {linea.porcentaje!r}")
+            return omitir(f"{MOTIVO_PORCENTAJE}: {linea.porcentaje!r}",
+                          **resuelta)
 
         # P1: solo recursos con código mensual.
         mensuales = [
@@ -564,7 +570,7 @@ class ReglasPorcentajes:
             if h.es_mensual
         ]
         if not mensuales:
-            return omitir(MOTIVO_SIN_MENSUAL)
+            return omitir(MOTIVO_SIN_MENSUAL, **resuelta)
         hora = sorted(mensuales, key=lambda h: h.cod or "")[0]
         if len(mensuales) > 1:
             logger.info(

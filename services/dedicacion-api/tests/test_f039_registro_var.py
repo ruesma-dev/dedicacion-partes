@@ -112,7 +112,7 @@ def test_f039_r20_la_entrada_lleva_lo_mismo_que_una_linea_normal():
                      "porcentaje": 0.4, "recurso_ide": 10, "dni": None,
                      "nombre": "T10", "categoria": "Encargado",
                      "es_postventa": False, "empresa": 1,
-                     "var_paride": 417055}
+                     "var_paride": 417055, "partida_cod": "29"}
 
 
 # --- R19 · lo ya guardado se queda, marcado ----------------------------------

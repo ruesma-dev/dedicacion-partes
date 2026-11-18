@@ -3,8 +3,11 @@
 
   POST /api/registro/preflight  -> analiza y devuelve qué se haría
   POST /api/registro/preflight-lote -> el preflight de varias obras con las
-                                   lecturas agrupadas (F-055 R19; solo lee)
+                                   lecturas agrupadas (F-055 R19; solo lee);
+                                   con `completo`, las sobrantes (F-054 R31)
   POST /api/registro/ejecutar   -> escribe en Sigrid (con pisar_claves)
+  POST /api/registro/poner-a-cero -> pone a 0 las sobrantes confirmadas,
+                                   sin borrar (F-054 R35; escribe)
   POST /api/postventa/universo  -> obras de una empresa que admiten postventa
                                    (ARCHITECTURE.md#regla-p5; solo lee)
   POST /api/var/universo        -> obra VAR de una empresa y sus partidas VAR
@@ -15,6 +18,9 @@
   POST /api/partidas/propuesta-lote -> las propuestas de varias obras de un
                                    periodo, con las lecturas agrupadas
                                    (F-055 R34; solo lee)
+  POST /api/porcentajes/existentes -> los % que ya hay en los partes del
+                                   periodo, traducidos a entradas del
+                                   cuadrante (F-054 R4-R12; solo lee)
   GET  /health
 """
 from __future__ import annotations
@@ -27,8 +33,12 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from application.pipelines.poner_a_cero import PonerACero
 from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
+from application.services.porcentajes_existentes import (
+    PorcentajesExistentes,
+)
 from application.services.reglas_porcentajes import (
     clave_conflicto, empresa_valida,
 )
@@ -157,6 +167,30 @@ class LoteIn(BaseModel):
     de preflight, una por obra."""
 
     peticiones: list[PeticionIn] = Field(default_factory=list)
+    # F-054 (R31, R33): el preflight del periodo o de un trabajador (no el
+    # de una obra sola) pide además las sobrantes; sin él, como hoy.
+    completo: bool = False
+
+
+class LineaCeroIn(BaseModel):
+    """F-054 (R35): una sobrante confirmada, tal como la publicó el
+    preflight (lo que la guarda compara al releer)."""
+
+    hmores_ide: int
+    recurso_ide: int
+    hora: str | None = None
+    vinculado: dict | None = None
+    can: float
+    synckey: str | None = None
+
+
+class PonerACeroIn(BaseModel):
+    """`POST /api/registro/poner-a-cero` (F-054, R35)."""
+
+    empresa: int
+    ano: int
+    mes: int
+    lineas: list[LineaCeroIn] = Field(default_factory=list)
 
 
 class UniversoIn(BaseModel):
@@ -239,6 +273,18 @@ class PropuestaLoteIn(BaseModel):
     de propuesta, todas del mismo `ano` y `mes` (si no, 422)."""
 
     peticiones: list[PropuestaIn] = Field(default_factory=list)
+
+
+class ExistentesIn(BaseModel):
+    """`POST /api/porcentajes/existentes` (F-054, design §1): la empresa,
+    el periodo y las obras que admiten postventa (para el casado inverso,
+    R9). `empresa` sin tipo A PROPÓSITO: lo que no es una empresa es 422
+    con motivo (`empresa_valida`), sin leer nada."""
+
+    empresa: Any = None
+    ano: int
+    mes: int
+    obras: list[ObraIn] = Field(default_factory=list)
 
 
 def _empresas_mezcladas(exc: EmpresasMezcladas) -> JSONResponse:
@@ -341,6 +387,7 @@ def build_app(settings) -> FastAPI:
         est_parte=settings.est_parte_activo,
     )
     pipeline = RegistroPipeline(cliente=cliente, settings=settings)
+    existentes = PorcentajesExistentes(cliente=cliente, settings=settings)
     universo = UniversoPostventa(cliente=cliente, settings=settings)
     universo_var = UniversoVar(cliente=cliente, settings=settings)
 
@@ -409,10 +456,14 @@ def build_app(settings) -> FastAPI:
         """F-055 (R19, R24, R25): síncrona, en el threadpool. Por petición,
         la forma de `/api/registro/preflight` o `{ok: false, error}`; una
         lectura agrupada que falla, 502."""
+        sobrantes = None
         try:
-            resultados = RegistroLote(cliente=cliente,
-                                      settings=settings).preflight(
-                [_dominio(x) for x in p.peticiones])
+            lote = RegistroLote(cliente=cliente, settings=settings)
+            peticiones = [_dominio(x) for x in p.peticiones]
+            if p.completo:
+                resultados, sobrantes = lote.preflight_completo(peticiones)
+            else:
+                resultados = lote.preflight(peticiones)
         except Exception as exc:                # noqa: BLE001
             logger.exception("preflight en lote fallo")
             return JSONResponse(status_code=502,
@@ -425,7 +476,23 @@ def build_app(settings) -> FastAPI:
             else:
                 obras.append(_respuesta_preflight(
                     r, _contexto(x) is not None))
-        return {"ok": True, "obras": obras}
+        # F-054 (R33): con `completo`, las sobrantes (lista, quizá vacía).
+        return {"ok": True, "obras": obras,
+                **({"sobrantes": [asdict(s) for s in sobrantes]}
+                   if sobrantes is not None else {})}
+
+    @app.post("/api/registro/poner-a-cero")
+    def poner_a_cero(p: PonerACeroIn):
+        """F-054 (R35): pone a 0 (`can` y `tot`) las sobrantes confirmadas,
+        con la guarda de F-051; las que no la cumplen vuelven en `omitidas`.
+        Ningún `DELETE`. La api la llama ANTES de las escrituras por obra."""
+        try:
+            return PonerACero(cliente=cliente, settings=settings).ejecutar(
+                p.empresa, p.ano, p.mes, [x.model_dump() for x in p.lineas])
+        except Exception as exc:                # noqa: BLE001
+            logger.exception("poner a 0 fallo")
+            return JSONResponse(status_code=502,
+                                content={"ok": False, "error": str(exc)})
 
     @app.post("/api/registro/ejecutar")
     async def ejecutar(p: PeticionIn):
@@ -527,7 +594,7 @@ def build_app(settings) -> FastAPI:
                      "ano": x.ano, "mes": x.mes,
                      "lineas": [l.para_pipeline() for l in x.lineas]}
                     for x in validas]))
-        except Exception as exc:                # noqa: BLE001
+        except Exception as exc:
             logger.exception("propuesta en lote fallo")
             return JSONResponse(status_code=502,
                                 content={"ok": False, "error": str(exc)})
@@ -545,6 +612,26 @@ def build_app(settings) -> FastAPI:
                                r["error"])
             obras.append(r)
         return {"ok": True, "obras": obras}
+
+    @app.post("/api/porcentajes/existentes")
+    def porcentajes_existentes(p: ExistentesIn):
+        """F-054 (R3-R12): solo lee, nunca escribe (R7). Empresa no válida,
+        422 sin leer; una lectura que falla o viene truncada, 502 con el
+        motivo (R3). Síncrona, en el threadpool."""
+        if not empresa_valida(p.empresa):
+            logger.warning("existentes rechazado: empresa %r", p.empresa)
+            return JSONResponse(status_code=422, content={
+                "ok": False,
+                "error": f"empresa no válida: {p.empresa!r}"})
+        try:
+            obras = [ObraEntrada(ide=o.ide, codigo=o.codigo, nombre=o.nombre)
+                     for o in p.obras]
+            return {"ok": True, **existentes.calcular(p.empresa, p.ano,
+                                                      p.mes, obras)}
+        except Exception as exc:
+            logger.exception("porcentajes existentes fallo")
+            return JSONResponse(status_code=502,
+                                content={"ok": False, "error": str(exc)})
 
     @app.post("/api/var/universo")
     async def universo_de_var(p: UniversoVarIn):

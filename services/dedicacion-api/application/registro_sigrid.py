@@ -71,6 +71,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from domain.empresas import visible_en_empresa
 from domain.incidencias import letra_y_nombre
 from domain.models import FiltroEmpresa
+from domain.obras import partida_de_entrada
 from domain.vigencia import vigente_en
 from infrastructure.db.orm_models import (
     AsignacionORM, AsignacionVinculadoORM, IncidenciaORM, ObraORM, PeriodoORM,
@@ -143,6 +144,11 @@ def _vinculado(v: Any, es_var: bool) -> dict[str, Any]:
     if v.sigrid_hmores_ide:
         out["hmores_ide"] = int(v.sigrid_hmores_ide)
     return out
+
+
+#: F-054 (R35): lo de cada sobrante que el transfer compara al releer.
+_CAMPOS_CERO = ("hmores_ide", "recurso_ide", "hora", "vinculado", "can",
+                "synckey")
 
 
 class RegistroSigrid:
@@ -231,6 +237,12 @@ class RegistroSigrid:
             if o.registro_paride:
                 # Su partida es la de la entrada; un override no la cambia.
                 linea["var_paride"] = int(o.registro_paride)
+                # F-054 T26 (R47): su código, sacado del de la entrada, para
+                # los motivos del transfer; nunca la elegida (F-050 R19).
+                # Sin él, sin la clave: el transfer nombra el `ide`.
+                partida_cod = partida_de_entrada(o.cod, o.registro_obra_cod)
+                if partida_cod is not None:
+                    linea["partida_cod"] = partida_cod
             elif overrides.get(a.id):
                 linea["paride"] = int(overrides[a.id])
             elif a.partida_ide:
@@ -399,29 +411,39 @@ class RegistroSigrid:
         if obra_ide is not None:
             payloads = [p for p in payloads if p["obra"]["ide"] == obra_ide]
         self._designar_cierres(payloads)
-        resultados = [{"obra": p["obra"], **r} for p, r in zip(
-            payloads, self._preflight_lote(payloads))]
+        # F-054 (R31): el del periodo o de un trabajador es completo (con
+        # las sobrantes); el de una obra sola, no.
+        obras, sobrantes = self._preflight_lote(payloads,
+                                                completo=obra_ide is None)
+        resultados = [{"obra": p["obra"], **r}
+                      for p, r in zip(payloads, obras)]
         self._guardar_propuestas(resultados)
         respuesta = {"ok": all(r.get("ok") for r in resultados) if resultados
                      else True, "obras": resultados, "no_vigentes": no_vigentes}
         if quitadas:
             respuesta["incidencias_quitadas"] = quitadas
+        if sobrantes:
+            respuesta["sobrantes"] = sobrantes       # F-054 (R33)
         return respuesta
 
-    def _preflight_lote(self, payloads: list[dict]) -> list[dict]:
+    def _preflight_lote(self, payloads: list[dict], *, completo: bool = False
+                        ) -> tuple[list[dict], list[dict]]:
         """F-055 (R26): UNA llamada al lote del transfer; por obra, la
         respuesta del preflight de hoy. Si el lote falla o no trae una
-        entrada por obra, cada obra lleva el error."""
+        entrada por obra, cada obra lleva el error. F-054 (R31, R33): con
+        `completo`, también las sobrantes (vacía si no vienen)."""
         if not payloads:
-            return []
+            return [], []
         r = self._transfer.preflight_lote(
-            [{**p, "pisar_claves": []} for p in payloads])
+            [{**p, "pisar_claves": []} for p in payloads], completo=completo)
         obras = r.get("obras")
+        sobrantes = r.get("sobrantes") if completo else None
+        sobrantes = list(sobrantes) if isinstance(sobrantes, list) else []
         if r.get("ok") is True and isinstance(obras, list) \
                 and len(obras) == len(payloads):
-            return obras
+            return obras, sobrantes
         error = r.get("error") or "el transfer no devolvió todas las obras"
-        return [{"ok": False, "error": error} for _ in payloads]
+        return [{"ok": False, "error": error} for _ in payloads], []
 
     def _guardar_propuestas(self, resultados: list[dict]) -> None:
         """F-055 (R14): la partida de cada acción con método de propuesta,
@@ -467,12 +489,25 @@ class RegistroSigrid:
                  overrides: Optional[dict[int, int]] = None,
                  usuario: str = "local",
                  trabajador_ide: Optional[int] = None,
-                 empresa: int | None = None) -> dict:
+                 empresa: int | None = None,
+                 sobrantes_a_cero: list[dict] | None = None) -> dict:
+        """F-054 (R35; design §6.4): si trae `sobrantes_a_cero` (las que
+        el usuario confirmó del preflight), PRIMERO se ponen a 0 y después
+        van las peticiones por obra de siempre, que releen. Si poner a 0
+        falla, no se escribe nada por obra."""
         with self._sf() as s:
             payloads, no_vigentes = self._payloads(
                 s, anio, mes, overrides or {}, trabajador_ide,
                 self._filtro(empresa))
         self._designar_cierres(payloads)
+        a_cero = None
+        if sobrantes_a_cero:
+            r = self._transfer.poner_a_cero(
+                self._por_defecto, anio, mes,
+                [{k: x.get(k) for k in _CAMPOS_CERO}
+                 for x in sobrantes_a_cero])
+            a_cero = {"puestas": r.get("puestas", []),
+                      "omitidas": r.get("omitidas", [])}
         resultados = []
         for p in payloads:
             r = self._transfer.ejecutar({**p, "pisar_claves": pisar_claves,
@@ -480,8 +515,11 @@ class RegistroSigrid:
             resultados.append({"obra": p["obra"], **r})
             if r.get("ok"):
                 self._trazar(r, usuario)
-        return {"ok": all(x.get("ok") for x in resultados) if resultados
-                else True, "obras": resultados, "no_vigentes": no_vigentes}
+        respuesta = {"ok": all(x.get("ok") for x in resultados) if resultados
+                     else True, "obras": resultados, "no_vigentes": no_vigentes}
+        if a_cero is not None:
+            respuesta["sobrantes_a_cero"] = a_cero
+        return respuesta
 
     def _trazar(self, r: dict, usuario: str) -> None:
         """Persiste en la asignación qué hizo Sigrid con ella.

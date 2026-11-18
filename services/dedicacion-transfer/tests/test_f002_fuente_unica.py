@@ -41,7 +41,9 @@ ANCLAS = ("regla-p1", "regla-p2", "regla-p3", "regla-p4", "regla-p5",
           # F-030: la incidencia, un par CI*/CIZ sin importe.
           "regla-incidencia",
           # F-044: los recursos vinculados van con el % de su trabajador.
-          "regla-vinculado")
+          "regla-vinculado",
+          # F-054: traer de Sigrid al sincronizar y la obra sin nada = 0 %.
+          "regla-traer-sigrid", "regla-obra-cero")
 
 #: Ficheros de producción donde vive el código de la obra de postventa como
 #: literal. Fuera de aquí se cita el ajuste, no el valor (R5).

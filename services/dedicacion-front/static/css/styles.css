@@ -603,6 +603,30 @@ body.col-resizing { cursor: col-resize !important; user-select: none !important;
   border: 1px solid var(--warn-border); color: var(--warn);
   border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: .84rem; }
 
+/* F-054 (T23, R42): los botones de marcado de la ventana de «Sincronizar
+   Sigrid». Sus dos tablas llevan la cabecera estándar (.filterable, T24). */
+.modal .acciones-traer { display: flex; gap: 8px; margin: 10px 0 6px; }
+/* F-054 (T27, R48): esa ventana en tres zonas; solo ella pinta
+   `.zona-traer` (pintarTraerSigrid). La ventana deja de desplazarse y es
+   una columna: arriba, título, avisos y botones, quietos sobre el fondo
+   opaco de `.modal`; en medio, la zona con las tablas, lo único que se
+   desplaza (encoge si no cabe y nunca crece: con pocas filas, sin hueco);
+   abajo, el pie. Cada `thead` se fija en lo alto de la zona, que es su
+   sitio bajo los botones, y comparte columnas con su cuerpo; el de «No se
+   traen» se fija al llegar a él. */
+.modal:has(> .zona-traer) { display: flex; flex-direction: column;
+  overflow: hidden; }
+.modal:has(> .zona-traer) > * { flex: none; }
+.modal:has(> .zona-traer) > .zona-traer { flex: 0 1 auto; min-height: 0;
+  overflow: auto; }
+.zona-traer thead { position: sticky; top: 0; z-index: 2;
+  background: var(--paper); }
+/* Bordes separados (sin espacio): con `collapse` el borde es de la rejilla
+   y no viaja con el `thead` fijo, y entre títulos y filtros se veían pasar
+   las filas. Ninguna celda lleva borde arriba ni a la izquierda: no salen
+   dobles. Va tras `.modal .tabla-reg`, que tiene la misma especificidad. */
+.zona-traer .tabla-reg { border-collapse: separate; border-spacing: 0; }
+
 /* ---------- Diálogo «Completar al 100 %» (F-029) ---------- */
 .modal #completar-obra { width: 100%; }
 .modal .completar-candidatas { max-height: 220px; overflow-y: auto;

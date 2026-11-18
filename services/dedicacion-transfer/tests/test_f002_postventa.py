@@ -154,7 +154,7 @@ def test_f002_r16_un_override_manual_a_un_capitulo_se_omite():
     cli, pf = _pv("hojas", paride=69100, partida_cod="11")
     a = pf.acciones[0]
     assert a.accion == "omitir", a
-    assert a.motivo == MOTIVO_PARTIDA_PV_NO_HOJA.format(paride=69100), a.motivo
+    assert a.motivo == MOTIVO_PARTIDA_PV_NO_HOJA.format(paride="11"), a.motivo
     assert cli.inserts() == []
 
 

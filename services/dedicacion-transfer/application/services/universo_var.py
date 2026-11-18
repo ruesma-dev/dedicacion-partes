@@ -17,7 +17,7 @@ divergir. Ningún catálogo se guarda en una instancia.
 from __future__ import annotations
 
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 from domain.errores import ObraAmbigua
 from domain.models.registro_models import ObraEntrada
@@ -32,6 +32,10 @@ MOTIVO_VAR_OFF = "registro VAR desactivado (VAR_OBRA_COD vacío)"
 MOTIVO_VAR_SIN_UNIVERSO = "partida VAR {paride} no registrable: {motivo}"
 MOTIVO_VAR_OTRA_OBRA = ("partida VAR {paride}: la obra {obra} no es la obra "
                         "VAR {var}")
+#: O11 (review 8 de F-054): la obra de `MOTIVO_VAR_OTRA_OBRA` cuando su
+#: código es el de la obra VAR (p. ej. la VAR de otra empresa): sin su `ide`
+#: se leería «la obra VAR no es la obra VAR VAR». Solo es texto.
+OBRA_HOMONIMA_VAR = "{cod} (ide {ide})"
 MOTIVO_VAR_FUERA = ("partida VAR {paride} fuera del universo VAR de {var} "
                     "(hoja activa con número inicial >= {desde})")
 MOTIVO_VAR_POSTVENTA = ("partida VAR {paride}: una línea de postventa no se "
@@ -45,11 +49,15 @@ class CatalogoVar:
     """Obra VAR resuelta en la empresa y SOLO sus partidas VAR, por `ide`.
 
     Sin obra (`obra is None`), `partidas` está vacío y `motivo` dice por qué.
+    F-054 T26 (R47): `codigos`, el `cod` de TODO el presupuesto leído (no
+    solo de las VAR), para que los motivos nombren la partida por su código
+    aunque quede fuera del universo; vacío sin obra.
     """
 
     obra: ObraEntrada | None
     partidas: dict[int, PartidaNodo]
     motivo: str | None
+    codigos: dict[int, str | None] = field(default_factory=dict)
 
 
 def numero_inicial(cod: str | None) -> int | None:
@@ -92,27 +100,47 @@ def cargar_catalogo_var(cliente, settings, empresa: int) -> CatalogoVar:
     return CatalogoVar(
         obra=obra, motivo=None,
         partidas={ide: n for ide, n in nodos.items()
-                  if es_partida_var(n, desde)})
+                  if es_partida_var(n, desde)},
+        codigos={ide: n.cod for ide, n in nodos.items()})
 
 
 def partida_var_de(catalogo: CatalogoVar, obra_ide: int | None,
-                   var_paride: int, desde: int
+                   var_paride: int, desde: int, *,
+                   partida_cod: str | None = None,
+                   obra_cod: str | None = None
                    ) -> tuple[PartidaNodo | None, str | None]:
     """(partida, motivo) de una línea con `var_paride` de la obra
     `obra_ide`, contra el catálogo ya cargado: la partida solo vale si está
-    en el universo y la obra es la obra VAR."""
+    en el universo y la obra es la obra VAR. F-054 T25-T26 (R46-R47): el
+    motivo nombra la partida por su código en el presupuesto VAR leído, si
+    no por `partida_cod`, y la obra por `obra_cod`; sin ellos, por su `ide`
+    (el texto de siempre)."""
+    paride = catalogo.codigos.get(var_paride) or partida_cod or var_paride
     if catalogo.obra is None:
-        return None, MOTIVO_VAR_SIN_UNIVERSO.format(paride=var_paride,
+        return None, MOTIVO_VAR_SIN_UNIVERSO.format(paride=paride,
                                                     motivo=catalogo.motivo)
     var = catalogo.obra.codigo
     if obra_ide != catalogo.obra.ide:
-        return None, MOTIVO_VAR_OTRA_OBRA.format(paride=var_paride,
-                                                 obra=obra_ide, var=var)
+        return None, MOTIVO_VAR_OTRA_OBRA.format(
+            paride=paride, obra=_nombre_otra_obra(obra_cod, obra_ide, var),
+            var=var)
     nodo = catalogo.partidas.get(var_paride)
     if nodo is None:
-        return None, MOTIVO_VAR_FUERA.format(paride=var_paride, var=var,
+        return None, MOTIVO_VAR_FUERA.format(paride=paride, var=var,
                                              desde=desde)
     return nodo, None
+
+
+def _nombre_otra_obra(obra_cod: str | None, obra_ide: int | None,
+                      var: str | None) -> str | int | None:
+    """Cómo nombra `MOTIVO_VAR_OTRA_OBRA` a la obra de la línea: por su
+    código, con su `ide` si el código es el de la obra VAR (sin contar
+    espacios; O11) y, sin código, por su `ide` (el texto de siempre)."""
+    if not obra_cod:
+        return obra_ide
+    if obra_cod.strip() == (var or "").strip():
+        return OBRA_HOMONIMA_VAR.format(cod=obra_cod.strip(), ide=obra_ide)
+    return obra_cod
 
 
 class UniversoVar:

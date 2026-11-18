@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **70 features**, 29 abiertas y 41 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 0 en To do, 29 en Backlog y 41 en Done.
+Resumen: **70 features**, 28 abiertas y 42 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 0 en To do, 28 en Backlog y 42 en Done.
 
 ## Review
 
@@ -39,7 +39,6 @@ _Nada comprometido._
 | F-070 | La cabecera del cuadrante se queda fija arriba al hacer scroll | 5 | estandar | `feature/F-070-cabecera-fija` |
 | F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | critico | `feature/F-052-mensajeria-por-obra` |
 | F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | critico | `feature/F-053-delegados-parte-unico` |
-| F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 8 | critico | `feature/F-054-sync-trae-porcentajes` |
 | F-066 | Una sola función para la regla «baja sin carga» del front | 8 | estandar | `feature/F-066-baja-sin-carga-una-funcion` |
 | F-021 | Filtro por obra: velar las etiquetas de las demás obras del recurso | 9 | estandar | `feature/F-021-filtro-obra-chip-unico` |
 | F-048 | Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas») | 10 | estandar | `feature/F-048-aviso-obra-fallida` |
@@ -63,6 +62,7 @@ _Nada comprometido._
 
 | # | Feature | Cierre | OK humano | Prioridad | Rigor |
 |---|---|---|---|---|---|
+| F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 2026-11-18 | 2026-11-18 | 8 | critico |
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | sin fecha | sin anotar | 1 | estandar |
 | F-034 | Las obras son siempre de Construcciones Ruesma; el selector filtra solo trabajadores | sin fecha | sin anotar | 1 | critico |
 | F-035 | El script de vaciado no funciona contra Azure: la contraseña se corrompe | sin fecha | sin anotar | 1 | estandar |
@@ -166,12 +166,6 @@ Pedida por el humano el 2026-10-08 («lee el último correo de Juan sobre los re
 estado **pendiente** · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-053-delegados-parte-unico`
 
 Pedida por el humano el 2026-10-08 (mismo encargo que F-052). Hilo «RE: Porcentajes Septiembre 2026» de Juan Romero (Dir. Admón y Control de Costes), 2026-10-08 (original no versionado; leído por el líder a petición del humano). Juan: «Delegados: son dos y tienen un tratamiento especial, a ver cómo lo enfocas» y «El parte es único y existe. Este parte es solo informativo del reparto, ya que este coste se está asumiendo en CP (luego te lo explico). La cuestión es que las líneas van registradas sobre ese parte y cada línea tiene que apuntar a la obra e imputarse al CP». Hoy el transfer escribe cada obra en el parte de ESA obra (F-037); para los delegados las líneas irían a UN parte ya existente, apuntando cada una a su obra y con la imputación al CP (proporcionales, árbol analítico de F-037). Hipótesis del líder, A CONFIRMAR: en el mismo hilo Miguel Ángel Gómez avisa de que «los de Eduardo Bernal y Mario Vicente no hay que meterlos. Lo hace Mario Redondo»: podrían ser los dos delegados. PRIMERO EXPLORAR (solo lectura en Sigrid): cuál es ese parte único, cómo son hoy sus líneas (obra, partida, cuenta CP, hora, cantidad) y cómo se identifica a un delegado (marca en el recurso, lista en configuración). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa; coordinar con `partes` (mismo parte). Juan lo explicará: la spec no se cierra sin él.
-
-### F-054 · Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid
-
-estado **pendiente** · prioridad 8 · rigor `critico` · SDD sí · rama `feature/F-054-sync-trae-porcentajes`
-
-Pedida por el humano el 2026-10-08: «al sincronizar debería traer los % ya existentes en Sigrid». Hoy el sync solo trae maestros (recursos, obras, partidas); el cuadrante no sabe lo que Administración ya metió a mano en los partes (ejemplo real: GONZALEZ PANIAGUA tiene MADM 95 % en PT26/00319 de la 0694, 2026-09, sin synckey, y el cuadrante no lo enseñaba: salió como sobrecarga al registrar). Se trata de LEER (solo lectura, vía sigrid-api) las líneas mensuales (horas M*) de los partes de obra del periodo y cargarlas como asignaciones del trabajador en la base `dedicacion`. Lectura en Sigrid (transfer o api según el límite de servicio: el transfer ya tiene la lectura de líneas y el casado de postventa/VAR) y escritura solo en la base local de la app. DECISIONES PARA LA SPEC: qué periodo (el del cuadrante abierto, al pulsar sync o con botón aparte); qué líneas cuentan (horas mensuales M*, can = %; las nuestras con synckey vs las manuales); cómo se traduce la partida a la entrada del cuadrante (obra normal, `Postv-` por partida de POSTV2, `VAR-NN`); qué pasa si el cuadrante ya tiene algo para ese trabajador (no pisar lo editado, avisar, o Sigrid manda); si se marcan como «ya registradas» para no volver a escribirlas; partes cerrados; meses cerrados en la app; deshacer. Relación: F-051 (pisar líneas al 0 %), F-044 (vinculados), F-050 (partida por línea).
 
 ### F-066 · Una sola función para la regla «baja sin carga» del front
 
@@ -280,6 +274,12 @@ Decision del humano el 2026-08-20: estas dos cosas dejan de bloquear F-002 y la 
 estado **pendiente** · prioridad 26 · rigor `estandar` · SDD no · rama `feature/F-016-sigrid-key-solo-lectura`
 
 Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T30, T30 se movio a F-015 y F-015 solo se llevo la mitad del Portal. La review de cierre de F-008 la busco en las trece entradas del backlog y no aparecia en ninguna. El problema: la api y el transfer comparten HOY la misma function key de sigrid-api, y lo unico que impide que la api escriba en el ERP es que su codigo no tiene rutas de escritura, NO la credencial. Es decir, la separacion es por disciplina, no por permisos: cualquiera que anada por error una llamada de escritura a la api tendria credencial para ejecutarla. Hay que preguntar al dueno de sigrid-api si puede emitir una clave de SOLO LECTURA y, si puede, desplegarla en la api. Si no puede, hay que dejar escrito que la separacion depende del codigo y que eso es un riesgo aceptado a conciencia.
+
+### F-054 · Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid
+
+estado **terminada** · cerrada el 2026-11-18 · OK del humano el 2026-11-18 · prioridad 8 · rigor `critico` · SDD sí · rama `feature/F-054-sync-trae-porcentajes`
+
+Pedida por el humano el 2026-10-08: «al sincronizar debería traer los % ya existentes en Sigrid». Hoy el sync solo trae maestros (recursos, obras, partidas); el cuadrante no sabe lo que Administración ya metió a mano en los partes (ejemplo real: GONZALEZ PANIAGUA tiene MADM 95 % en PT26/00319 de la 0694, 2026-09, sin synckey, y el cuadrante no lo enseñaba: salió como sobrecarga al registrar). Se trata de LEER (solo lectura, vía sigrid-api) las líneas mensuales (horas M*) de los partes de obra del periodo y cargarlas como asignaciones del trabajador en la base `dedicacion`. Lectura en Sigrid (transfer o api según el límite de servicio: el transfer ya tiene la lectura de líneas y el casado de postventa/VAR) y escritura solo en la base local de la app. DECISIONES PARA LA SPEC: qué periodo (el del cuadrante abierto, al pulsar sync o con botón aparte); qué líneas cuentan (horas mensuales M*, can = %; las nuestras con synckey vs las manuales); cómo se traduce la partida a la entrada del cuadrante (obra normal, `Postv-` por partida de POSTV2, `VAR-NN`); qué pasa si el cuadrante ya tiene algo para ese trabajador (no pisar lo editado, avisar, o Sigrid manda); si se marcan como «ya registradas» para no volver a escribirlas; partes cerrados; meses cerrados en la app; deshacer. Relación: F-051 (pisar líneas al 0 %), F-044 (vinculados), F-050 (partida por línea).
 
 ### F-001 · Primera suite de tests de dedicacion-api: la regla del 100 %
 

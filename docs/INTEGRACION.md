@@ -82,7 +82,7 @@
 | Recurso | Compartido con | Qué hacemos | Desde |
 |---|---|---|---|
 | PostgreSQL `psql-albaranes-rs9k2` | `albaranes`, `partes`, `datamart-seg-anual`, `postventa-incidencias` | Base propia `dedicacion`: periodos, cuadrante, asignaciones y auditoría | **F-008** |
-| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna**. Desde F-030 la api lee en cada sync el catálogo de incidencias (`auxhor`, códigos `CI*`), y el transfer **escribe** por cada incidencia un par de líneas `CI*`/`CIZ` con `can = 0` y `synckey` `porcentajes:inc:{id}:ini|fin`, tras **una** lectura de las líneas `CI*` del mes de esos recursos en cualquier parte (`hmores` + `auxhor` + `hmo` + `con`) para no duplicar; si la incidencia ya registrada cambia de días, **edita la `fec`** de su par (`UPDATE` con guarda, anexo R30). Desde F-062 las incidencias son **rachas** como las de Administración: esa lectura es **una** por petición o lote **en ventana** (de 12 meses antes, `INCIDENCIAS_MESES_ATRAS`, al mes siguiente, en cualquier parte y también por `ide` de las trazas), el transfer continúa la racha de quien sea, **mueve la `fec`** de `CIZ` ajenos (de Administración o de `partes`, con su `can` y sin cambiar su `synckey`) y la devuelve a su día si deja de continuarla, escribe un `CIZ` en el parte del inicio (también ajeno) y cierra el último día del mes anterior las rachas que quedaron abiertas, en un parte de ese mes; nunca borra. Desde F-044 la api lee en cada sync los recursos no persona con el campo extendido «Recurso Asociado» (`sync.vinculados` de `config.yaml`, el código del campo como parámetro), y el transfer lee **una** vez por obra las cuentas de las partidas del presupuesto (`obrparpar` + `con`) si algún vinculado necesita la CI de su tipo y **escribe o edita**, en el parte de su trabajador, una línea por recurso vinculado con **su** hora y `synckey` `porcentajes:vin:{registro_id}:{recurso_ide}`; nunca borra. Desde F-068 el transfer lee además, **una** vez por petición (y por obra en un lote) y solo si algún vinculado llega a ese paso, el historial de partidas de los vinculados en la obra de origen (`hmores` + `hmo` + `con` + `obrparpar`, cualquier hora) | F-001, F-002, F-037, F-051, F-030, F-062, F-044, F-068 |
+| `sigrid-api` (`func-sigridapi-dev-huyke`) | todo el ecosistema | **Lectura** de maestros desde la api (empleados, obras y, desde F-032, el catálogo de empresas `auxemp`); **escritura** de líneas de parte desde el transfer, siempre contra la base `ruesma`. Desde F-037 el transfer lee además los partes del periodo con su estado (`hmo` + `con.est`), las cuentas analíticas del centro de la obra (`caa` + `con`), la cuenta de la plantilla del recurso (`reshor.caaide`) y la de la partida (`obrparpar.caaide`); un `truncated` es error y no se escribe nada. Desde F-051 el transfer **edita en su sitio** (`UPDATE` con guarda) líneas `M*` del parte —las al 0 % que copia Administración y las pisadas confirmadas, también de otros sistemas, sin cambiar su `synckey`— y **no borra ninguna**. Desde F-030 la api lee en cada sync el catálogo de incidencias (`auxhor`, códigos `CI*`), y el transfer **escribe** por cada incidencia un par de líneas `CI*`/`CIZ` con `can = 0` y `synckey` `porcentajes:inc:{id}:ini|fin`, tras **una** lectura de las líneas `CI*` del mes de esos recursos en cualquier parte (`hmores` + `auxhor` + `hmo` + `con`) para no duplicar; si la incidencia ya registrada cambia de días, **edita la `fec`** de su par (`UPDATE` con guarda, anexo R30). Desde F-062 las incidencias son **rachas** como las de Administración: esa lectura es **una** por petición o lote **en ventana** (de 12 meses antes, `INCIDENCIAS_MESES_ATRAS`, al mes siguiente, en cualquier parte y también por `ide` de las trazas), el transfer continúa la racha de quien sea, **mueve la `fec`** de `CIZ` ajenos (de Administración o de `partes`, con su `can` y sin cambiar su `synckey`) y la devuelve a su día si deja de continuarla, escribe un `CIZ` en el parte del inicio (también ajeno) y cierra el último día del mes anterior las rachas que quedaron abiertas, en un parte de ese mes; nunca borra. Desde F-044 la api lee en cada sync los recursos no persona con el campo extendido «Recurso Asociado» (`sync.vinculados` de `config.yaml`, el código del campo como parámetro), y el transfer lee **una** vez por obra las cuentas de las partidas del presupuesto (`obrparpar` + `con`) si algún vinculado necesita la CI de su tipo y **escribe o edita**, en el parte de su trabajador, una línea por recurso vinculado con **su** hora y `synckey` `porcentajes:vin:{registro_id}:{recurso_ide}`; nunca borra. Desde F-068 el transfer lee además, **una** vez por petición (y por obra en un lote) y solo si algún vinculado llega a ese paso, el historial de partidas de los vinculados en la obra de origen (`hmores` + `hmo` + `con` + `obrparpar`, cualquier hora). Desde F-054 el transfer lee **una** vez por petición las líneas mensuales (`M*`, `can` ≠ 0) de los partes de trabajo de obra del periodo (`hmores` + `hmo` + `con` + `auxhor` + `obrparpar`) para traerlas al cuadrante (solo lectura) y, en el preflight del periodo o de un trabajador, las de sus trabajadores (y de sus vinculados, cualquier hora) para las sobrantes; las que el usuario confirma las **pone a 0** (`UPDATE` de `can` y `tot` con guarda), también en partes compartidos; nunca borra | F-001, F-002, F-037, F-051, F-030, F-062, F-044, F-068, F-054 |
 | `acralbaranesdev` | `albaranes`, `partes` | Publicar y tirar las tres imágenes, por identidad gestionada | **F-008** |
 | Entra ID | todo el ecosistema | Autenticación del front (Easy Auth) y grupo de acceso | **F-008** |
 
@@ -112,7 +112,12 @@ líneas de **recursos no persona** vinculados a sus trabajadores (teléfono,
 gasoil, vehículo…), con su hora (no `M*`, salvo `MESVE`) y `synckey`
 `porcentajes:vin:…`, y edita las de esos recursos al 0 % o pisadas
 confirmadas con la guarda de su hora; nunca borra
-(`docs/ARCHITECTURE.md#regla-vinculado`). `azure-apps/partes.md` debería
+(`docs/ARCHITECTURE.md#regla-vinculado`). Desde F-054 el transfer **pone
+a 0** (`can` y `tot`, en su sitio) las líneas `M*` y de vinculados de esos
+partes compartidos que no corresponden a ninguna obra de la plataforma,
+solo si el usuario lo confirma línea a línea, y nunca las de un parte
+cerrado ni con `synckey` de otro sistema (`partes:…`); nunca borra
+(`docs/ARCHITECTURE.md#regla-obra-cero`). `azure-apps/partes.md` debería
 decirlo en su «qué se rompe»; es de `partes`.
 
 **Lo nuevo de F-008 son tres de esas cuatro filas.** La primera es la que
@@ -305,7 +310,10 @@ VAR, `{ide, cod, res}` por `ide`, con el umbral y el motivo si no hay obra;
 La api lo llama **una vez** en cada `POST /api/v1/sync` y en cada `GET
 /api/v1/sync/preview`, con la empresa de las obras: dos lecturas de Sigrid
 (la obra VAR y su presupuesto). Las líneas del registro ganan un campo
-opcional, `var_paride`. En el mismo sync la api descarta las obras cuyo
+opcional, `var_paride`. Desde F-054 (T26), la línea VAR lleva además el
+`partida_cod` de su entrada (`VAR-29` → `29`; campo opcional que ya
+existía): solo sirve para que los motivos del preflight nombren la partida
+por su código; no decide nada. En el mismo sync la api descarta las obras cuyo
 código contiene 6 o más dígitos seguidos (`sync.obras.digitos_seguidos_excluidos`
 de `config.yaml`). Las reglas están en `docs/ARCHITECTURE.md#regla-var` y
 `#regla-seis-digitos`.
@@ -509,6 +517,34 @@ con la que el front desempata el desplegable. La lista sigue por letra. Es
 dato de la api, no de Sigrid: no cambia ninguna lectura ni escritura. El
 front vuelve a pedir el catálogo tras cada `POST /sync` con éxito.
 
+Desde F-054 (traer de Sigrid al sincronizar y la obra sin nada = 0 %;
+`docs/ARCHITECTURE.md#regla-traer-sigrid` y `#regla-obra-cero`):
+
+- El transfer expone, **solo para la api**, `POST
+  /api/porcentajes/existentes` (`{empresa, ano, mes, obras}` → `{ok, lineas_leidas,
+  excluidas_pruebas, obra_postventa, obra_var, lineas, …}`: las líneas
+  mensuales del periodo traducidas a su entrada del cuadrante; solo lee;
+  502 si falla una lectura) y `POST
+  /api/registro/poner-a-cero` (`{empresa, ano, mes, lineas: [{hmores_ide,
+  recurso_ide, hora, vinculado, can, synckey}]}` → `{ok, puestas,
+  omitidas}`: relee, aplica la guarda y pone `can` y `tot` a 0; nunca
+  borra; en modo pruebas, solo en la obra de pruebas).
+- `POST /api/registro/preflight-lote` acepta `completo` (opcional; sin él,
+  como hoy): con `true` la respuesta gana `sobrantes` (`[{clave: "cero:…",
+  hmores_ide, recurso_ide, vinculado, obra_ide, obra_cod, parte_cod,
+  parte_est, hora, paride, partida_cod, can, synckey, confirmable,
+  motivo}]`). La api lo pide en el preflight del periodo o de un
+  trabajador, no en el de una obra.
+- La api sirve, **solo para el front**, `POST
+  /api/v1/periodos/{anio}/{mes}/traer-sigrid` (sin cuerpo o sin `aceptar`,
+  compara y no escribe; con `aceptar: [{trabajador_ide, obra_ide,
+  es_postventa}]`, pisa solo esas entradas y deja un evento `SIGRID` por
+  trabajador). `registro/preflight` gana `sobrantes` (solo si hay alguna) y
+  `registro/ejecutar` acepta `sobrantes_a_cero` (las sobrantes marcadas,
+  tal como las publicó el preflight; otro valor es 422), que se ponen a 0
+  **antes** de las escrituras por obra; su respuesta gana
+  `sobrantes_a_cero: {puestas, omitidas}`.
+
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 
 El acceso lo decide la pertenencia al grupo de Entra
@@ -666,6 +702,7 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Cambiar `PROPUESTA_MESES_ATRAS` del transfer | Cambia hasta dónde se mira atrás para proponer la partida del parte anterior y del último parte; cuantos más meses, más filas lee el historial (F-050) |
 | Publicar la api o el front de F-051 antes que el transfer | El transfer viejo ignora `hmores_ide` y sigue **borrando** al pisar mientras el front nuevo dice «se edita»: **orden de despliegue transfer → api → front** (F-051) |
 | Publicar la api de F-068 antes que el transfer | El transfer viejo ignora `descripcion` y `tipo_res` y propone como F-044. Al revés (transfer nuevo, api vieja): sin `descripcion` el nombre del vinculado no casa; en el preflight (`registro/*`, donde `tipo_res` ya viaja desde F-044) puede casar por la categoría (`auto_categoria`), y en el selector no. La subfila queda en el historial, su cuenta, la categoría, el CI.4 en empate o «sin partida» (nunca una partida inventada); la api vieja no guarda los métodos nuevos. **Orden: transfer → api → front** (F-068) |
+| Publicar la api de F-054 antes que el transfer | Traer de Sigrid da **502** con motivo (el transfer viejo no tiene `POST /api/porcentajes/existentes`) y el registro sigue como hoy, sin sobrantes (el transfer viejo ignora `completo`). **Orden de despliegue: transfer → api → front** (F-054) |
 | Publicar la api o el front de F-044 antes que el transfer | El transfer viejo ignora `vinculados`: el registro sigue como antes pero **no escribe ningún vinculado**, y el modal no los enseña. **Orden de despliegue: transfer → api → front** (F-044) |
 | Cambiar `sync.vinculados` de `config.yaml` (`campo`, `desde`, `tipos_excluidos`, `sql`) | Mal escrito, la api no arranca. `desde` decide desde qué periodo viajan los vinculados; un tipo que sale de `tipos_excluidos` se vincula en el siguiente sync (F-044) |
 | Cambiar en el transfer la elección del parte o la regla de la cuenta (`estado_parte.py`, `cuenta_analitica.py`) sin cambiarla en `partes` | Los dos servicios dejan de caer en el mismo parte o de poner la misma cuenta: dos complementarios en un mes, o un asiento analítico (`ANA`) con cuentas distintas para la misma persona. Las copias se vigilan con `tests/test_f037_copias_partes.py` (F-037) |

@@ -919,11 +919,13 @@
         "Solo lectura en Sigrid; probado por el humano en local con septiembre 2026",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "done",
       "sdd": true,
       "rigor": "critico",
       "priority": 8,
-      "branch": "feature/F-054-sync-trae-porcentajes"
+      "branch": "feature/F-054-sync-trae-porcentajes",
+      "fecha_cierre": "2026-11-18",
+      "ok_humano": "2026-11-18"
     },
     {
       "id": "F-055",

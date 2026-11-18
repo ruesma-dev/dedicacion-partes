@@ -284,6 +284,7 @@ async function api(ruta, opciones = {}) {
   try { cuerpo = await respuesta.json(); } catch (e) { cuerpo = null; }
   if (!respuesta.ok) {
     const mensaje = (cuerpo && cuerpo.error) || `Error HTTP ${respuesta.status}`;
+    // F-054: el código, para quien distinga el motivo (`traerDeSigrid`).
     const error = new Error(mensaje);
     error.status = respuesta.status;
     throw error;
@@ -2836,12 +2837,381 @@ async function sincronizar() {
     // F-061: el sync puede traer tipos de incidencia nuevos; el desplegable
     // usa ya el catálogo nuevo. Si falla, avisa y se queda el que había.
     await cargarTiposIncidencia();
+    return true;    // F-054 (R1): con éxito, se compara con Sigrid
   } catch (err) {
     toast(err.message, true);
+    return false;
   } finally {
     boton.disabled = false;
     boton.textContent = "Sincronizar Sigrid";
   }
+}
+
+// ------------------------------------ traer de Sigrid (F-054, parte A)
+// Tras un sync con éxito se compara el cuadrante con los partes de Sigrid
+// (R1). El front no compara ni decide: pinta lo que manda la API y envía
+// las entradas marcadas (R28).
+async function sincronizarYTraer() {
+  if (await sincronizar()) await traerDeSigrid([]);
+}
+
+// `aceptar` vacío = solo comparar (abre la ventana); con entradas, las
+// escribe la API, se cierra la ventana y se recarga el periodo.
+async function traerDeSigrid(aceptar) {
+  let datos;
+  try {
+    datos = await api(`/periodos/${state.anio}/${state.mes}/traer-sigrid`, {
+      method: "POST", body: JSON.stringify({ aceptar }),
+    });
+  } catch (err) {
+    // R2: mes cerrado (409) o sin periodo (404): nada que comparar, no es
+    // un error. Al aceptar sí: es un cierre entre medias, no se guardó.
+    if (!aceptar.length && [404, 409].includes(err.status)) return;
+    toast(`No se pudo comparar con Sigrid: ${err.message}`, true);
+    return;
+  }
+  if (!aceptar.length) { abrirTraerSigrid(datos); return; }
+  cerrarModal();
+  const rechazadas = datos.rechazadas || [];
+  toast(`Traídas de Sigrid: ${datos.aceptadas}` + (rechazadas.length
+    ? ` · ${rechazadas.length} sin traer: ` +
+      rechazadas.map((r) => r.motivo).join("; ")
+    : ""), rechazadas.length > 0);
+  marcarPropuestas(datos.propuestas_en_curso);    // F-055 (R26)
+  await cargarPeriodo(state.anio, state.mes);
+}
+
+function textoEstadoSigrid(estado) {
+  const textos = {
+    igual: "igual", distinta: "distinta", solo_sigrid: "solo en Sigrid",
+    solo_cuadrante: "solo en el cuadrante", no_traducible: "no se puede traer",
+  };
+  return textos[estado] || estado;
+}
+
+// T23 (R39-R42): el modelo de la ventana. Una fila por entrada, en el
+// orden de la respuesta (`i`, también su `data-fila`), con los textos que
+// se pintan (sobre ellos se filtra y se ordena) y `marcada = false`: la
+// `distinta` y la `solo_sigrid` salen desmarcadas (D12, 2026-11-02).
+function modeloTraerSigrid(datos) {
+  const filas = [];
+  (datos.trabajadores || []).forEach((t) => t.entradas.forEach((e) => {
+    filas.push({
+      t, e, i: filas.length, marcada: false,
+      casilla: e.estado === "distinta" || e.estado === "solo_sigrid",
+      textos: {
+        trabajador: `${t.cod} · ${t.nombre}`,
+        obra: `${e.cod} ${e.descripcion}${e.es_postventa ? " (postventa)" : ""}`,
+        estado: textoEstadoSigrid(e.estado),
+        detalle: [e.parte_cod ? `parte ${e.parte_cod}` : "",
+          e.partida_cod ? `partida ${e.partida_cod}` : "", e.motivo || ""]
+          .filter(Boolean).join(" · "),
+      },
+    });
+  }));
+  // T24 (R44): «No se traen», agrupadas, con su orden y sus filtros.
+  const noTraidas = { filas: agruparNoTraidas(datos.no_traidas || []),
+    orden: { col: null },
+    filtros: { parte: "", obra: "", recurso: "", motivo: "" } };
+  return { filas, orden: { col: null },
+    filtros: { trabajador: "", obra: "", estado: "", detalle: "" },
+    noTraidas };
+}
+
+// Pura (T24, R44-R45): una fila por grupo de líneas con igual parte, obra,
+// recurso (`recurso_ide`) y motivo, en el orden de la primera; `n`, cuántas.
+// El recurso, `cod · nombre` del maestro o, sin él, su `recurso_ide`.
+function agruparNoTraidas(noTraidas) {
+  const grupos = new Map();
+  noTraidas.forEach((n) => {
+    const clave = JSON.stringify([n.parte_cod, n.obra_cod, n.recurso_ide,
+      n.motivo]);
+    const grupo = grupos.get(clave);
+    if (grupo) { grupo.n += 1; return; }
+    grupos.set(clave, { i: grupos.size, n: 1, textos: {
+      parte: n.parte_cod || "—",
+      obra: n.obra_cod || "—",
+      recurso: n.recurso_cod ? `${n.recurso_cod} · ${n.recurso_nombre}`
+        : String(n.recurso_ide),
+      motivo: n.motivo,
+    } });
+  });
+  return [...grupos.values()];
+}
+
+// Pura (T24, R44 con R40-R41): las filas de «No se traen» que se ven.
+// Filtros «contiene» sin distinguir mayúsculas sobre lo pintado; Líneas,
+// numérica; `sort` estable sobre una copia: en empate, el de la primera.
+function noTraidasVisibles(filas, filtros, orden) {
+  const visibles = filas.filter((f) => Object.keys(filtros).every((k) =>
+    f.textos[k].toLowerCase().includes(filtros[k].toLowerCase())));
+  if (!orden.col) return visibles;
+  return visibles.sort((a, b) => {
+    const c = orden.col === "lineas" ? a.n - b.n
+      : a.textos[orden.col].toLowerCase()
+        .localeCompare(b.textos[orden.col].toLowerCase(), "es");
+    return orden.asc ? c : -c;
+  });
+}
+
+// Pura (R40, R41): las filas que se ven. Texto «contiene» sin distinguir
+// mayúsculas sobre lo pintado y estado exacto; luego el orden de la
+// columna, con la raya al final en los dos sentidos. `sort` es estable: en
+// empate, el orden de la respuesta. No cambia `filas` ni ninguna `marcada`.
+function filasTraerVisibles(filas, filtros, orden) {
+  const contiene = (texto, filtro) =>
+    texto.toLowerCase().includes(filtro.toLowerCase());
+  const visibles = filas.filter((f) =>
+    contiene(f.textos.trabajador, filtros.trabajador) &&
+    contiene(f.textos.obra, filtros.obra) &&
+    contiene(f.textos.detalle, filtros.detalle) &&
+    (!filtros.estado || f.e.estado === filtros.estado));
+  if (!orden.col) return visibles;
+  const numerica = orden.col === "cuadrante" || orden.col === "sigrid";
+  const valor = (f) => (numerica ? f.e[`pct_${orden.col}`] : f.textos[orden.col]);
+  const raya = (v) => v === null || v === undefined;
+  return visibles.sort((a, b) => {
+    const va = valor(a);
+    const vb = valor(b);
+    if (raya(va) || raya(vb)) return raya(va) - raya(vb);
+    const c = numerica ? va - vb
+      : va.toLowerCase().localeCompare(vb.toLowerCase(), "es");
+    return orden.asc ? c : -c;
+  });
+}
+
+// Pura (R42): el rótulo del botón de aceptar.
+function textoAceptarTraer(n, ocultas) {
+  return `Aceptar ${n} marcadas` +
+    (ocultas > 0 ? ` (${ocultas} ocultas por el filtro)` : "");
+}
+
+function textoBotonTraer(modelo, visibles) {
+  const marcadas = modelo.filas.filter((f) => f.marcada);
+  return textoAceptarTraer(marcadas.length,
+    marcadas.filter((f) => !visibles.includes(f)).length);
+}
+
+// R28: casilla solo en `distinta` y `solo_sigrid`, con lo que diga el
+// modelo (al abrir, desmarcadas).
+function filaEntradaSigrid(f) {
+  const casilla = f.casilla
+    ? `<input type="checkbox" class="chk-traer" data-fila="${f.i}"` +
+      `${f.marcada ? " checked" : ""}>`
+    : "";
+  const pct = (v) => (v === null || v === undefined ? "—" : fmtPct(v));
+  return `<tr><td>${casilla}</td><td>${escapeHtml(f.textos.trabajador)}</td>` +
+    `<td>${escapeHtml(f.textos.obra)}</td>` +
+    `<td>${escapeHtml(f.textos.estado)}</td>` +
+    `<td>${pct(f.e.pct_cuadrante)}</td><td>${pct(f.e.pct_sigrid)}</td>` +
+    `<td>${escapeHtml(f.textos.detalle)}</td></tr>`;
+}
+
+function cuerpoTraerSigrid(visibles) {
+  return visibles.length ? visibles.map(filaEntradaSigrid).join("")
+    : '<tr><td colspan="7" class="motivo">Ninguna entrada con estos filtros.</td></tr>';
+}
+
+// R40, T24 (R43): títulos ordenables con el marcado de la cabecera
+// estándar (`renderCabeceraTabla`): `th-sort` y la flecha en `sort-arrow`,
+// ▲ o ▼ solo en la columna ordenada. Sin mover ni redimensionar columnas.
+function titulosOrdenables(orden, columnas) {
+  return columnas.map(([col, titulo]) =>
+    `<th class="th-sort" data-orden="${col}">${titulo}<span class="sort-arrow">` +
+    `${col === orden.col ? (orden.asc ? " ▲" : " ▼") : ""}</span></th>`).join("");
+}
+
+// La casilla, sin título ni orden.
+function titulosTraerSigrid(orden) {
+  return "<th></th>" + titulosOrdenables(orden, [["trabajador", "Trabajador"],
+    ["obra", "Obra"], ["estado", "Estado"], ["cuadrante", "Cuadrante"],
+    ["sigrid", "Sigrid"], ["detalle", "Detalle"]]);
+}
+
+function titulosNoTraidas(orden) {
+  return titulosOrdenables(orden, [["parte", "Parte"], ["obra", "Obra"],
+    ["recurso", "Recurso"], ["lineas", "Líneas"], ["motivo", "Motivo"]]);
+}
+
+// T24 (R43): la celda de un filtro de texto; en la última columna, con
+// «Limpiar» (`limpiar`, el `id` del botón).
+function celdaFiltroTraer(clave, limpiar) {
+  return `<th><div class="filtro-celda"><input class="col-filter" type="text" ` +
+    `data-filtro="${clave}" placeholder="Contiene…">` +
+    (limpiar ? `<button type="button" class="filter-clear" id="${limpiar}">` +
+      "Limpiar</button>" : "") + "</div></th>";
+}
+
+function filaNoTraida(f) {
+  return `<tr><td>${escapeHtml(f.textos.parte)}</td>` +
+    `<td>${escapeHtml(f.textos.obra)}</td>` +
+    `<td>${escapeHtml(f.textos.recurso)}</td>` +
+    `<td>${f.n > 1 ? `×${f.n}` : ""}</td>` +
+    `<td>${escapeHtml(f.textos.motivo)}</td></tr>`;
+}
+
+function cuerpoNoTraidas(visibles) {
+  return visibles.length ? visibles.map(filaNoTraida).join("")
+    : '<tr><td colspan="5" class="motivo">Ninguna línea con estos filtros.</td></tr>';
+}
+
+// T24 (R43): las escuchas de la cabecera de una tabla de la ventana (`id`
+// `<tabla>-titulos`, `-filtros` y `-limpiar`) sobre su parte del modelo
+// (`orden`, `filtros`). El clic en la flecha ordena por su `th`; Escape en
+// un filtro de texto lo vacía (la ventana sigue abierta); «Limpiar» vacía
+// los filtros y los campos de esa tabla, sin tocar orden ni casillas, y
+// sin repintar la cabecera.
+function enlazarCabeceraTraer(tabla, parte, repintar) {
+  $(`#${tabla}-titulos`).addEventListener("click", (ev) => {
+    const th = ev.target.closest("[data-orden]");
+    if (!th) return;
+    const col = th.dataset.orden;
+    parte.orden = { col, asc: parte.orden.col !== col || !parte.orden.asc };
+    repintar();
+  });
+  const filtros = $(`#${tabla}-filtros`);
+  filtros.addEventListener("input", (ev) => {
+    parte.filtros[ev.target.dataset.filtro] = ev.target.value;
+    repintar();
+  });
+  filtros.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape" || ev.target.tagName !== "INPUT") return;
+    ev.target.value = "";
+    parte.filtros[ev.target.dataset.filtro] = "";
+    repintar();
+  });
+  $(`#${tabla}-limpiar`).addEventListener("click", () => {
+    Object.keys(parte.filtros).forEach((k) => { parte.filtros[k] = ""; });
+    filtros.querySelectorAll(".col-filter").forEach((c) => { c.value = ""; });
+    repintar();
+  });
+}
+
+function pintarTraerSigrid(datos, modelo) {
+  const resumen = [
+    `${datos.lineas_leidas} líneas leídas en los partes`,
+    `${datos.excluidas_pruebas} de la obra de pruebas`,
+    `${datos.de_vinculados} de recursos vinculados`,
+    `${datos.fuera_maestro} de recursos fuera del maestro`,
+  ].join(" · ");
+  let html = `<h2>Porcentajes en Sigrid · ${String(state.mes).padStart(2, "0")}/${state.anio}</h2>` +
+    `<p>${escapeHtml(resumen)}</p>`;
+  [datos.motivo_postventa, datos.motivo_var].filter(Boolean).forEach((m) => {
+    html += `<p class="aviso">${escapeHtml(m)}</p>`;
+  });
+  if (!(datos.trabajadores || []).length) {
+    html += "<p>Ningún trabajador del cuadrante tiene porcentajes en Sigrid este mes.</p>";
+  }
+  const casillas = modelo.filas.some((f) => f.casilla);
+  if (casillas) {
+    html += `<div class="acciones-traer">` +
+      `<button class="btn secondary" id="btn-traer-desmarcar">Desmarcar todas</button>` +
+      `<button class="btn secondary" id="btn-traer-marcar">Marcar las visibles</button></div>`;
+  }
+  // T27 (R48): las tablas y «No se traen» van en la zona que se desplaza,
+  // entre los botones y el pie (los dos, fuera y quietos); la zona se pinta
+  // siempre, vacía si no hay tablas. Hija directa de `.modal` (styles.css).
+  html += `<div class="zona-traer" id="traer-zona">`;
+  if (modelo.filas.length) {
+    // R39-R43: una sola tabla con la cabecera estándar: títulos ordenables
+    // y, debajo, los filtros, con «Limpiar» en la última columna. El
+    // `<select` de Estado vive aquí (F-050 R29, acotado por T23).
+    const estados = ["distinta", "solo_sigrid", "igual", "solo_cuadrante",
+      "no_traducible"];
+    html += `<table class="tabla-reg filterable"><thead>` +
+      `<tr id="traer-titulos">${titulosTraerSigrid(modelo.orden)}</tr>` +
+      `<tr id="traer-filtros" class="filter-row"><th></th>` +
+      `${celdaFiltroTraer("trabajador")}${celdaFiltroTraer("obra")}` +
+      `<th><div class="filtro-celda"><select class="col-filter" data-filtro="estado">` +
+      `<option value="">Todos</option>` +
+      estados.map((s) => `<option value="${s}">${escapeHtml(textoEstadoSigrid(s))}</option>`).join("") +
+      `</select></div></th><th></th><th></th>` +
+      `${celdaFiltroTraer("detalle", "traer-limpiar")}</tr></thead>` +
+      `<tbody id="traer-cuerpo">${cuerpoTraerSigrid(modelo.filas)}</tbody></table>`;
+  }
+  // T24 (R44): «No se traen (N)», N = filas; tabla sin casillas.
+  const nt = modelo.noTraidas;
+  if (nt.filas.length) {
+    html += `<h3>No se traen (${nt.filas.length})</h3>` +
+      `<table class="tabla-reg filterable"><thead>` +
+      `<tr id="no-traidas-titulos">${titulosNoTraidas(nt.orden)}</tr>` +
+      `<tr id="no-traidas-filtros" class="filter-row">` +
+      `${celdaFiltroTraer("parte")}${celdaFiltroTraer("obra")}` +
+      `${celdaFiltroTraer("recurso")}<th></th>` +
+      `${celdaFiltroTraer("motivo", "no-traidas-limpiar")}</tr></thead>` +
+      `<tbody id="no-traidas-cuerpo">${cuerpoNoTraidas(nt.filas)}</tbody></table>`;
+  }
+  html += "</div>" + `<div class="pie-modal">` +
+    `<button class="btn secondary" id="btn-traer-cerrar">Cerrar</button>` +
+    (casillas ? `<button class="btn primary" id="btn-traer-aceptar">` +
+      `${textoBotonTraer(modelo, modelo.filas)}</button>` : "") +
+    "</div>";
+  return html;
+}
+
+// Lee el modelo, no el DOM: la marcada oculta por el filtro no se pinta y
+// también se manda (R28). El cuerpo, el de hoy.
+function aceptadasMarcadas(modelo) {
+  return modelo.filas.filter((f) => f.marcada).map((f) => ({
+    trabajador_ide: f.t.trabajador_ide,
+    obra_ide: f.e.obra_ide,
+    es_postventa: f.e.es_postventa,
+  }));
+}
+
+// Sin pulsar «Aceptar N marcadas» no se manda nada (R21, R28). Ordenar y
+// filtrar repintan solo los títulos, el `<tbody>` y el botón (los filtros
+// no se repintan: no pierden el foco); la casilla cambia su `marcada`.
+// T24: «No se traen» tiene su propio orden y sus filtros (`noTraidas`).
+function abrirTraerSigrid(datos) {
+  const modelo = modeloTraerSigrid(datos);
+  abrirModal(pintarTraerSigrid(datos, modelo));
+  const aceptar = $("#btn-traer-aceptar");
+  const visibles = () =>
+    filasTraerVisibles(modelo.filas, modelo.filtros, modelo.orden);
+  const repintarBoton = (v) => {
+    if (aceptar) aceptar.textContent = textoBotonTraer(modelo, v);
+  };
+  const repintar = () => {
+    const v = visibles();
+    $("#traer-titulos").innerHTML = titulosTraerSigrid(modelo.orden);
+    $("#traer-cuerpo").innerHTML = cuerpoTraerSigrid(v);
+    repintarBoton(v);
+  };
+  const nt = modelo.noTraidas;
+  if (nt.filas.length) {
+    enlazarCabeceraTraer("no-traidas", nt, () => {
+      $("#no-traidas-titulos").innerHTML = titulosNoTraidas(nt.orden);
+      $("#no-traidas-cuerpo").innerHTML =
+        cuerpoNoTraidas(noTraidasVisibles(nt.filas, nt.filtros, nt.orden));
+    });
+  }
+  if (modelo.filas.length) {
+    enlazarCabeceraTraer("traer", modelo, repintar);
+    $("#traer-cuerpo").addEventListener("change", (ev) => {
+      modelo.filas[Number(ev.target.dataset.fila)].marcada = ev.target.checked;
+      repintarBoton(visibles());
+    });
+  }
+  if (aceptar) {
+    aceptar.addEventListener("click", () => {
+      const marcadas = aceptadasMarcadas(modelo);
+      if (!marcadas.length) {
+        toast("No hay ninguna entrada marcada", true);
+        return undefined;
+      }
+      return traerDeSigrid(marcadas);
+    });
+    $("#btn-traer-desmarcar").addEventListener("click", () => {
+      modelo.filas.forEach((f) => { f.marcada = false; });
+      repintar();
+    });
+    $("#btn-traer-marcar").addEventListener("click", () => {
+      visibles().forEach((f) => { if (f.casilla) f.marcada = true; });
+      repintar();
+    });
+  }
+  $("#btn-traer-cerrar").addEventListener("click", cerrarModal);
 }
 
 async function cambiarEstadoPeriodo(accion) {
@@ -2860,7 +3230,10 @@ async function cambiarEstadoPeriodo(accion) {
 function enlazarEventos() {
   $("#btn-mes-prev").addEventListener("click", () => moverMes(-1));
   $("#btn-mes-next").addEventListener("click", () => moverMes(1));
-  $("#btn-sync").addEventListener("click", sincronizar);
+  // F-054 (R1): tras un sync con éxito, se compara con Sigrid. La flecha
+  // resuelve la función al pulsar (los arneses de `enlazarEventos` no la
+  // cargan).
+  $("#btn-sync").addEventListener("click", () => sincronizarYTraer());
   $("#btn-copiar-mes").addEventListener("click", copiarMesAnterior);
   $("#btn-completar").addEventListener("click", abrirCompletar);
   $("#btn-export").addEventListener("click", () => {
@@ -3011,7 +3384,8 @@ document.addEventListener("DOMContentLoaded", init);
 // preflight repetido aún en vuelo (F-050, M2 punto 5).
 // `vistas` (F-064): las claves que `marcadaPorDefecto` señala y ya se han
 // enseñado en este modal; la que no está sale marcada una sola vez.
-const registro = { pisar: new Set(), vistas: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map(), cortado: false };
+// `cero` (F-054): las claves `cero:` marcadas de las sobrantes.
+const registro = { pisar: new Set(), vistas: new Set(), cero: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map(), cortado: false };
 
 // Hotfix 2026-11-11: tras un corte del `registro/ejecutar` (502 del proxy a
 // los 200 s, 504 del balanceador a los 230 s o fallo de red) el servidor
@@ -3066,6 +3440,7 @@ async function registroPreflight(trabajadorIde = null) {
     // `marcadaPorDefecto` vuelven a salir marcadas (F-064).
     registro.pisar = new Set();
     registro.vistas = new Set();
+    registro.cero = new Set();      // F-054 (D17): las sobrantes, desmarcadas
     registro.pf = pf;
     pintarModalPreflight(pf);
   } catch (err) { toast(err.message, true); }
@@ -3105,6 +3480,9 @@ async function repreflightPartida(obraIde) {
     registro.analizando.delete(obraIde);
     if ($("#modal-registro").classList.contains("oculto")) return;
     registro.pisar = new Set([...document.querySelectorAll(".chk-pisar:checked")]
+      .map((c) => c.value));
+    // F-054: lo marcado de las sobrantes se conserva al repintar.
+    registro.cero = new Set([...document.querySelectorAll(".chk-cero:checked")]
       .map((c) => c.value));
     registro.pf = obraIde ? unirPreflight(registro.pf, pf, obraIde) : pf;
     pintarModalPreflight(registro.pf);
@@ -3468,6 +3846,8 @@ function pintarModalPreflight(pf) {
   if ((pf.obras || []).some((o) => (o.no_coincide || []).length)) {
     html += pintarNoCoincide(pf);
   }
+  // F-054 (R33): las sobrantes; sin ellas, como antes.
+  if ((pf.sobrantes || []).length) html += pintarSobrantes(pf);
   html += `<div class="pie-modal">` +
     `<button class="btn secondary" onclick="cerrarModal()">Cancelar</button>` +
     `<button class="btn primary" id="btn-ejecutar-registro">Registrar</button></div>`;
@@ -3491,9 +3871,43 @@ const marcadaPorDefecto = (c) => {
   return Boolean(c.vinculado) && (c.motivo || "pisado") === "pisado";
 };
 
+// F-054 (R33-R34, D17): líneas de Sigrid en obras que la plataforma no
+// tiene. Una casilla `.chk-cero` por confirmable, siempre desmarcada (sin
+// `marcadaPorDefecto`); las demás, aviso con su motivo. Solo pinta lo que
+// manda el transfer: ni calcula ni decide.
+function pintarSobrantes(pf) {
+  let html = "<h3>En Sigrid, en obras que no tiene en la plataforma</h3>" +
+    `<div class="motivo">Marca las que se ponen a 0 %: la línea sigue en su parte, a 0.</div>`;
+  pf.sobrantes.forEach((s) => {
+    const quien = s.vinculado
+      ? `${s.vinculado.tipo || ""} ${s.vinculado.cod || ""} de ` +
+        nombreTrabajador(s.vinculado.titular_ide)
+      : nombreTrabajador(s.recurso_ide);
+    const texto = `${quien} · obra ${s.obra_cod || s.obra_ide} · ` +
+      `parte ${s.parte_cod || "—"} · ${s.hora || ""} · ` +
+      `${s.partida_cod || "sin partida"} · ${fmtPct((s.can || 0) * 100)}`;
+    if (s.confirmable) {
+      html += `<div class="conflicto"><label class="check">` +
+        `<input type="checkbox" class="chk-cero" value="${escapeHtml(s.clave)}"` +
+        `${registro.cero.has(s.clave) ? " checked" : ""}> ` +
+        `<strong>Poner a 0</strong> · ${escapeHtml(texto)}</label></div>`;
+    } else {
+      html += `<div class="aviso">${escapeHtml(texto)}: ` +
+        `${escapeHtml(s.motivo || "")}</div>`;
+    }
+  });
+  return html;
+}
+
 async function registroEjecutar() {
   const pisar = [...document.querySelectorAll(".chk-pisar:checked")]
     .map((c) => c.value);
+  // F-054 (R35): las sobrantes marcadas, tal como las publicó el preflight;
+  // aparte de `pisar_claves` y solo si hay alguna.
+  const ceros = new Set([...document.querySelectorAll(".chk-cero:checked")]
+    .map((c) => c.value));
+  const sobrantes = ((registro.pf && registro.pf.sobrantes) || [])
+    .filter((x) => ceros.has(x.clave));
   const btn = $("#btn-ejecutar-registro");
   btn.disabled = true; btn.textContent = "Registrando…";
   try {
@@ -3501,7 +3915,8 @@ async function registroEjecutar() {
       `/periodos/${state.anio}/${state.mes}/registro/ejecutar`,
       { method: "POST", body: JSON.stringify({
           pisar_claves: pisar, trabajador_ide: registro.trabajadorIde,
-          usuario: document.body.dataset.usuario || "local" }) });
+          usuario: document.body.dataset.usuario || "local",
+          ...(sobrantes.length ? { sobrantes_a_cero: sobrantes } : {}) }) });
     let esc = 0, omi = 0, pend = 0, vinOmi = 0;
     (r.obras || []).forEach((o) => {
       esc += (o.escritas || []).length;
@@ -3515,10 +3930,19 @@ async function registroEjecutar() {
         .filter((c) => c.accion === "pendiente").length;
     });
     cerrarModal();
+    // F-054 (R35): una sobrante sin poner a 0 no sale como éxito.
+    const ceroOmitidas = r.sobrantes_a_cero ? r.sobrantes_a_cero.omitidas : [];
     toast(`Sigrid: ${esc} escritas · ${omi} omitidas · ` +
       `${pend} pendientes de confirmar${pend ? " (repite y marca pisar)" : ""}` +
-      (vinOmi ? ` · ${vinOmi} recursos vinculados omitidos` : ""),
-      !r.ok);
+      (vinOmi ? ` · ${vinOmi} recursos vinculados omitidos` : "") +
+      // F-054 (R35): lo puesto a 0 y lo que no se pudo.
+      (r.sobrantes_a_cero
+        ? ` · ${r.sobrantes_a_cero.puestas.length} puestas a 0` +
+          (ceroOmitidas.length
+            ? ` · ${ceroOmitidas.length} sin poner a 0: ` +
+              ceroOmitidas.map((x) => x.motivo).join("; ") : "")
+        : ""),
+      !r.ok || ceroOmitidas.length > 0);
   } catch (err) {
     if (esCorteDelProxy(err)) { esperarRegistroCortado(err); return; }
     toast(err.message, true);

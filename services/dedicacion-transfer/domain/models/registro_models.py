@@ -425,6 +425,57 @@ class LineaIncidenciaSigrid:
     parte_emp: int | None = None
 
 
+@dataclass(frozen=True)
+class LineaMensualSigrid:
+    """F-054 (R4, R6; design §4.1): una línea de un parte de trabajo de obra
+    del periodo con `can` ≠ 0, tal como la lee
+    `lineas_mensuales_del_periodo`: su `hmores.ide`, recurso, obra, parte
+    (`ide`, código, `con.est` y si está En registro), hora, `can`, `fec`,
+    partida (0 si no tiene) y `synckey` (None si está vacía). Ver
+    ARCHITECTURE.md#regla-traer-sigrid y ARCHITECTURE.md#regla-obra-cero."""
+    hmores_ide: int
+    recurso_ide: int
+    obra_ide: int
+    obra_cod: str | None
+    parte_ide: int
+    parte_cod: str | None
+    parte_est: int | None
+    en_registro: bool
+    hora: str | None
+    can: float
+    fec: int
+    paride: int = 0
+    partida_cod: str | None = None
+    partida_res: str | None = None
+    synckey: str | None = None
+
+
+@dataclass(frozen=True)
+class Sobrante:
+    """F-054 (R31-R34, R38; design §6.1): una línea mensual de Sigrid de un
+    recurso del lote que ninguna acción suya cubre: la plataforma no tiene
+    nada en esa obra, que es un 0 %. Se confirma por línea (`clave` =
+    `cero:{hmores_ide}`); `confirmable` False con `motivo` si su parte no
+    está En registro o es de otro sistema. `vinculado`: `{tipo, cod,
+    titular_ide}` si el recurso es un vinculado; None si es trabajador. Ver
+    ARCHITECTURE.md#regla-obra-cero."""
+    clave: str
+    hmores_ide: int
+    recurso_ide: int
+    vinculado: dict | None
+    obra_ide: int
+    obra_cod: str | None
+    parte_cod: str | None
+    parte_est: int | None
+    hora: str | None
+    paride: int
+    partida_cod: str | None
+    can: float
+    synckey: str | None
+    confirmable: bool
+    motivo: str | None = None
+
+
 @dataclass
 class Conflicto:
     """Algo que el humano tiene que confirmar antes de que se escriba.
@@ -460,7 +511,7 @@ class Conflicto:
     nombre: Optional[str]
     ano: int
     mes: int
-    parte_cod: Optional[str]
+    parte_cod: str | None
     horide: Optional[int] = None
     hora_codigo: Optional[str] = None
     lineas: list[LineaSigrid] = field(default_factory=list)

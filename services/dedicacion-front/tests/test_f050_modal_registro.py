@@ -196,7 +196,13 @@ def test_f050_r29_el_front_ya_no_manda_overrides_ni_lee_catalogos():
     assert "opcionesPartida" not in JS
     assert "partidas_obra" not in JS
     assert "partidas_postventa" not in _funcion("pintarModalPreflight")
-    assert "<select" not in JS
+    # Acotado por F-054 T23 (el humano, «a», 2026-11-02): F-050 protege que
+    # la partida se elija sin `<select>`; el único `<select` permitido es el
+    # filtro de Estado de la ventana de «Sincronizar Sigrid» (R41).
+    for f in ("pintarModalPreflight", "montarSelectorPartida",
+              "listaSelector", "htmlPartida"):
+        assert "<select" not in _funcion(f), f
+    assert JS.count("<select") == _funcion("pintarTraerSigrid").count("<select")
 
 
 def test_f050_r29_pedir_y_ejecutar_mandan_el_trabajador():

@@ -58,7 +58,7 @@ class _Transfer:
         self.payloads.append(payload)
         return {"ok": True}
 
-    def preflight_lote(self, peticiones: list[dict]) -> dict:
+    def preflight_lote(self, peticiones: list[dict], completo=False) -> dict:
         """F-055 (R26; lista cerrada): el lote delega en `preflight`."""
         return {"ok": True, "obras": [self.preflight(p) for p in peticiones]}
 
