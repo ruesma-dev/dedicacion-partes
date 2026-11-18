@@ -49,6 +49,20 @@ class VinculadoEntrada:
     propuesta_metodo: str | None = None
     propuesta_origen: str | None = None
     hmores_ide: int | None = None
+    # F-069 (R15, design §8): un vinculado de CANTIDAD (caja, km, viaje).
+    # `importe_mensual` lo marca; `unidad` (`eur` | `km`) y `reparto`
+    # (`pct` | `obra`) los decide la api con su `config.yaml`; `cantidad` es
+    # la del mes (por %) o la de esta línea (por obra), None si falta;
+    # `copiado`, copiada del mes anterior sin revisar (D11); `comentario`
+    # va al `tex` (D14); `precio_km`, solo en `km` (D10). Sin
+    # `importe_mensual`, el vinculado de F-044 tal cual (R24).
+    importe_mensual: bool = False
+    unidad: str | None = None
+    reparto: str | None = None
+    cantidad: float | None = None
+    copiado: bool = False
+    comentario: str | None = None
+    precio_km: float | None = None
 
 
 @dataclass
@@ -92,6 +106,9 @@ class LineaEntrada:
     # esta línea (los manda la api; el transfer no busca vínculos). Vacía,
     # la línea se decide exactamente como antes de F-044.
     vinculados: list[VinculadoEntrada] = field(default_factory=list)
+    # F-069 (R15, R23, D14): el comentario de la línea del titular, que va
+    # al `tex` de su línea en Sigrid; None, el `tex` de siempre.
+    comentario: Optional[str] = None
 
     @property
     def fecha_int(self) -> int:
@@ -352,6 +369,12 @@ class AccionVinculado:
     caa_aviso: Optional[str] = None
     caa_origen: Optional[str] = None
     caa_nota: Optional[str] = None
+    # F-069 (R28): de un vinculado de cantidad, los km del mes, el precio por
+    # km (los dos solo en `km`) y su reparto (`pct` | `obra`); nulos en los
+    # demás.
+    km: Optional[float] = None
+    precio_km: Optional[float] = None
+    reparto: Optional[str] = None
 
 
 @dataclass
