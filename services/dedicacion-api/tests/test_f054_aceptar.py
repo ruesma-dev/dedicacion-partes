@@ -233,6 +233,12 @@ class _Asig:
         return {t: [f["linea"] for f in fs]
                 for t, fs in self.d.filas.items() if fs}
 
+    def registradas(self, pid):
+        """F-069 (R32): (trabajador, clave, id, hmores) de cada línea."""
+        return [(t, f["linea"].clave(), None,
+                 (f.get("traza") or {}).get("sigrid_hmores_ide"))
+                for t, fs in self.d.filas.items() for f in fs]
+
     def reemplazar(self, pid, ide, lineas, usuario):
         """Como el de verdad: borra y recrea, sin traza."""
         self.d.filas[ide] = [self.d.fila(ln) for ln in lineas]

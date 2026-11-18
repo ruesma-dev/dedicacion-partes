@@ -169,7 +169,7 @@ def construir_contenedor(
                                thread_name_prefix="propuestas"),
             empresa_obras=empresa_obras),
         # F-054: lee Sigrid por el MISMO cliente del transfer.
-        traer_sigrid=TraerDeSigrid(transfer),
+        traer_sigrid=TraerDeSigrid(transfer, cfg_vinculados.importes),
         importes=cfg_vinculados.importes,
     )
 

@@ -555,6 +555,38 @@ class PgAsignacionRepository:
                 self._s.add(o)
             self._s.flush()
 
+    def guardar_subfila_importe(self, periodo_id: int, trabajador_ide: int,
+                                clave: tuple[int, bool], vinculado_ide: int,
+                                valores: dict[str, Any]) -> None:
+        """F-069 (R4, R7, R32): `upsert_asignacion_vinculado` de la subfila
+        bajo la línea `clave`, en UNA sentencia (sin línea, nada)."""
+        self._s.execute(upsert_asignacion_vinculado(
+            id_de_asignacion(periodo_id, trabajador_ide, clave),
+            vinculado_ide, valores))
+
+    def poner_comentario(self, periodo_id: int, trabajador_ide: int,
+                         clave: tuple[int, bool], comentario: str | None
+                         ) -> None:
+        """F-069 (R32): `UPDATE asignacion SET comentario` de esa línea."""
+        obra_ide, es_postventa = clave
+        self._s.execute(update(AsignacionORM).where(
+            AsignacionORM.periodo_id == periodo_id,
+            AsignacionORM.trabajador_ide == trabajador_ide,
+            AsignacionORM.obra_ide == obra_ide,
+            AsignacionORM.es_postventa == bool(es_postventa),
+        ).values(comentario=comentario))
+
+    def registradas(self, periodo_id: int
+                    ) -> list[tuple[int, tuple[int, bool], int, int | None]]:
+        """F-069 (R32): de cada línea del periodo, su trabajador, clave,
+        `id` (el `registro_id` de su `synckey`) y `sigrid_hmores_ide`."""
+        filas = self._s.execute(select(
+            AsignacionORM.trabajador_ide, AsignacionORM.obra_ide,
+            AsignacionORM.es_postventa, AsignacionORM.id,
+            AsignacionORM.sigrid_hmores_ide,
+        ).where(AsignacionORM.periodo_id == periodo_id)).all()
+        return [(t, (o, bool(pv)), i, h) for t, o, pv, i, h in filas]
+
     def aceptar_entrada(
         self,
         periodo_id: int,

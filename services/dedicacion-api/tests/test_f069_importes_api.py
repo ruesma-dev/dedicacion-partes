@@ -218,11 +218,33 @@ LARGO = "x" * 201
 
 
 class _AsigMem(_Asignaciones):
-    """`reemplazar` que guarda las líneas tal cual (con sus subfilas)."""
+    """`reemplazar` que guarda las líneas tal cual (con sus subfilas) y las
+    escrituras sueltas de subfila y comentario, anotadas."""
 
     def reemplazar(self, periodo_id, ide, lineas, usuario):
         self._uow.lineas.setdefault(periodo_id, {})[ide] = list(lineas)
         self._uow.reemplazados.append(ide)
+
+    def _cambiar(self, periodo_id, ide, clave, fn):
+        self._uow.lineas[periodo_id][ide] = [
+            fn(ln) if ln.clave() == clave else ln
+            for ln in self._uow.lineas[periodo_id][ide]]
+
+    def guardar_subfila_importe(self, periodo_id, ide, clave, vid, valores):
+        self.sueltas.append(("subfila", clave, vid, dict(valores)))
+        self._cambiar(periodo_id, ide, clave, lambda ln: dataclasses.replace(
+            ln, vinculados=tuple(dataclasses.replace(v, **valores)
+                                 if v.vinculado_ide == vid else v
+                                 for v in ln.vinculados)))
+
+    def poner_comentario(self, periodo_id, ide, clave, comentario):
+        self.sueltas.append(("comentario", clave, comentario))
+        self._cambiar(periodo_id, ide, clave, lambda ln: dataclasses.replace(
+            ln, comentario=comentario))
+
+    @property
+    def sueltas(self):
+        return self._uow.__dict__.setdefault("sueltas", [])
 
 
 class _ImportesMem:
@@ -349,7 +371,7 @@ def test_f069_r5_r6_lo_que_no_vale_es_422_sin_guardar_nada(malo):
     with pytest.raises(ImporteInvalido):
         _guardar(uow, {"vinculado_ide": 20, "cantidad": 3}, malo)
     assert uow.importes.escrituras == [] and uow.reemplazados == []
-    assert uow.eventos.registrados == []
+    assert uow.asignaciones.sueltas == [] and uow.eventos.registrados == []
 
 
 def test_f069_r6_repetido_es_422():
@@ -383,11 +405,12 @@ def test_f069_r7_sin_cambios_ni_escribe_ni_deja_evento():
     _guardar(uow, {"vinculado_ide": 20, "cantidad": 5},
              {"vinculado_ide": 30, "obra_ide": 100, "cantidad": 8})
     uow.importes.escrituras.clear()
-    uow.reemplazados.clear()
+    uow.asignaciones.sueltas.clear()
     _guardar(uow, {"vinculado_ide": 20, "cantidad": "5.00"},
              {"vinculado_ide": 30, "obra_ide": 100, "cantidad": 8.0})
     _guardar(uow)
     assert uow.importes.escrituras == [] and uow.reemplazados == []
+    assert uow.asignaciones.sueltas == []
     assert len(uow.eventos.registrados) == 1
 
 

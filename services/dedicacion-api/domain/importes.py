@@ -28,6 +28,10 @@ REPARTO_OBRA = "obra"
 UNIDAD_KM = "km"
 #: R5: la cantidad más alta por unidad (cabe en `Numeric(12, 2)`).
 TOPES = {"eur": Decimal("999999.99"), "km": Decimal("99999.99")}
+#: R32 (D15): la marca con la que el transfer en modo pruebas empieza el
+#: `tex` (su `MARCA_PRUEBAS`, `PRUEBA-PORC` por defecto); al traer un
+#: comentario de Sigrid se le quita.
+MARCA_PRUEBAS = "PRUEBA-PORC"
 #: R5, R9: el largo máximo de un comentario (`String(200)`).
 COMENTARIO_MAX = 200
 _CENTIMO = Decimal("0.01")

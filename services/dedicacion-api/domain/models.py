@@ -448,6 +448,19 @@ class LineaSigridTraida:
     obra_origen_ide: int | None = None
     var_paride: int | None = None
     motivo: str | None = None
+    # F-069 (R31): su `tex` (None si vacío).
+    tex: str | None = None
+
+
+@dataclass(frozen=True)
+class VinculadoRegistrado:
+    """F-069 (R31): una línea del periodo en Sigrid con `synckey` de un
+    vinculado nuestro (`porcentajes:vin:{registro}:{recurso}`) y su `tex`."""
+
+    hmores_ide: int
+    recurso_ide: int
+    synckey: str | None = None
+    tex: str | None = None
 
 
 @dataclass(frozen=True)
@@ -461,3 +474,5 @@ class ResultadoExistentes:
     motivo_postventa: str | None = None
     motivo_var: str | None = None
     lineas: tuple[LineaSigridTraida, ...] = ()
+    # F-069 (R31): las líneas de nuestros vinculados en el periodo.
+    vinculados_registrados: tuple[VinculadoRegistrado, ...] = ()

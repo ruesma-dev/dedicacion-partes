@@ -198,6 +198,25 @@ class PeriodoRepository(Protocol):
 class AsignacionRepository(Protocol):
     def lineas_de_trabajador(self, periodo_id: int, trabajador_ide: int) -> list[Linea]: ...
 
+    def guardar_subfila_importe(self, periodo_id: int, trabajador_ide: int,
+                                clave: tuple[int, bool], vinculado_ide: int,
+                                valores: dict[str, Any]) -> None:
+        """F-069 (R4, R32): cantidad, copiado y/o comentario de la subfila
+        de `vinculado_ide` bajo la línea `clave`, sin tocar la línea."""
+        ...
+
+    def poner_comentario(self, periodo_id: int, trabajador_ide: int,
+                         clave: tuple[int, bool], comentario: str | None
+                         ) -> None:
+        """F-069 (R32): el comentario de la línea `clave`, sin más."""
+        ...
+
+    def registradas(self, periodo_id: int
+                    ) -> list[tuple[int, tuple[int, bool], int, int | None]]:
+        """F-069 (R32): (trabajador, clave, `asignacion.id`,
+        `sigrid_hmores_ide`) de cada línea del periodo."""
+        ...
+
     def lineas_del_periodo(self, periodo_id: int) -> dict[int, list[Linea]]:
         """Mapa trabajador_ide → líneas (con datos de obra resueltos)."""
         ...

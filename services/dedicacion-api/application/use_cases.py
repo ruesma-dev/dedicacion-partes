@@ -1318,8 +1318,9 @@ def _aplicar_foto(uow: UnitOfWork, periodo_id: int, trabajador_ide: int,
                   usuario: str) -> bool:
     """Deja lo del trabajador como dice `foto` (R4, R7): las del mes, por
     upsert o borrado (sin cantidad, sin fila); las por obra, en las
-    subfilas de sus líneas (las que no están en la foto, vacías), con UN
-    `reemplazar` solo si alguna cambia. Devuelve si cambió algo."""
+    subfilas de sus líneas (las que no están en la foto, vacías), una
+    escritura por subfila que cambia. No toca las líneas ni su traza.
+    Devuelve si cambió algo."""
     lineas = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
     mes = uow.importes.de_trabajador(periodo_id, trabajador_ide)
     actual = _foto_importes(lineas, mes)
@@ -1336,14 +1337,20 @@ def _aplicar_foto(uow: UnitOfWork, periodo_id: int, trabajador_ide: int,
             uow.importes.guardar(periodo_id, ImporteMes(
                 vinculado_ide=vid, cantidad=nuevo[0], copiado=nuevo[1],
                 comentario=nuevo[2]), usuario)
-    nuevas = [dataclasses.replace(ln, vinculados=tuple(
-        _subfila_con(v, foto.get((v.vinculado_ide, ln.obra_ide,
-                                  ln.es_postventa)))
-        for v in ln.vinculados)) for ln in lineas]
-    if nuevas != lineas:
-        uow.asignaciones.reemplazar(periodo_id, trabajador_ide, nuevas,
-                                    usuario)
-        cambio = True
+    # Las por obra, en su fila de `asignacion_vinculado` (un upsert por
+    # subfila que cambia): sin `reemplazar`, la línea y su traza siguen.
+    for ln in lineas:
+        for v in ln.vinculados:
+            nueva = _subfila_con(v, foto.get((v.vinculado_ide, ln.obra_ide,
+                                              ln.es_postventa)))
+            if (nueva.cantidad, nueva.copiado, nueva.comentario) == (
+                    v.cantidad, v.copiado, v.comentario):
+                continue
+            uow.asignaciones.guardar_subfila_importe(
+                periodo_id, trabajador_ide, ln.clave(), v.vinculado_ide,
+                {"cantidad": nueva.cantidad, "copiado": nueva.copiado,
+                 "comentario": nueva.comentario})
+            cambio = True
     return cambio
 
 

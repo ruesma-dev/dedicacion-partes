@@ -66,13 +66,14 @@ def test_f054_t17_valores_por_defecto_de_la_linea_traida():
         "parte_est": None, "en_registro": False, "hora": None, "can": 0.0,
         "fec": None, "paride": 0, "partida_cod": None, "partida_res": None,
         "synckey": None, "destino": "normal", "obra_origen_ide": None,
-        "var_paride": None, "motivo": None}
+        "var_paride": None, "motivo": None, "tex": None}   # F-069 (R31)
 
 
 def test_f054_t17_valores_por_defecto_del_resultado_y_la_entrada():
     assert _defectos(ResultadoExistentes) == {
         "lineas_leidas": 0, "excluidas_pruebas": 0, "motivo_postventa": None,
-        "motivo_var": None, "lineas": ()}
+        "motivo_var": None, "lineas": (),
+        "vinculados_registrados": ()}                  # F-069 (R31)
     assert _defectos(Contadores) == {"fuera_maestro": 0, "de_vinculados": 0}
     assert _defectos(EntradaSigrid) == {
         "partida_ide": None, "partida_cod": None, "partida_res": None,
