@@ -17,6 +17,7 @@ from application.use_cases import (
     CrearObtenerPeriodo,
     DeshacerUltimaModificacion,
     GuardarAsignaciones,
+    GuardarImportes,
     GuardarIncidencias,
     ListarEmpresas,
     ListarPeriodos,
@@ -49,6 +50,7 @@ from interface_adapters.api.schemas import (
     EmpresaOut,
     EmpresasOut,
     FilaOut,
+    ImportesIn,
     IncidenciasIn,
     PartidaIn,
     PeriodoCreadoOut,
@@ -79,6 +81,12 @@ Usuario = Annotated[str, Depends(obtener_usuario)]
 #: Empresa elegida en el selector (F-024, R6). Sin ella, la por defecto
 #: (`EMPRESA_IMPUTACION`); si no es un entero > 0, 422 sin tocar nada.
 EmpresaQ = Annotated[int | None, Query(gt=0)]
+
+
+def _tipos(contenedor: Contenedor) -> Any:
+    """F-069 (R1): los tipos de cantidad del contenedor; uno sin ellos (los
+    dobles de los tests de antes) es «ninguno», como hoy."""
+    return getattr(contenedor, "importes", None) or {}
 
 
 def _filtro(contenedor: Contenedor, empresa: int | None) -> FiltroEmpresa:
@@ -273,7 +281,8 @@ def obtener_cuadrante(
         empresa=cuadrante.empresa,
         obras=[a_obra_out(o) for o in cuadrante.obras],
         trabajadores=[
-            a_trabajador_out(f, filtro.empresa_obras, pendientes)
+            a_trabajador_out(f, filtro.empresa_obras, pendientes,
+                             _tipos(contenedor))
             for f in cuadrante.filas
         ],
         resumen=a_resumen_out(cuadrante.resumen),
@@ -317,7 +326,8 @@ def guardar_incidencias(
         )
     en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
+                                    _tipos(contenedor)),
         resumen=a_resumen_out(resumen),
         propuestas_en_curso=en_curso,
     )
@@ -345,7 +355,42 @@ def guardar_asignaciones(
         )
     en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
+                                    _tipos(contenedor)),
+        resumen=a_resumen_out(resumen),
+        propuestas_en_curso=en_curso,
+    )
+
+
+@router.put(
+    "/periodos/{anio}/{mes}/trabajadores/{trabajador_ide}/importes",
+    response_model=FilaOut,
+    tags=["cuadrante"],
+)
+def guardar_importes(
+    anio: int,
+    mes: int,
+    trabajador_ide: int,
+    payload: ImportesIn,
+    contenedor: Cont,
+    usuario: Usuario,
+    empresa: EmpresaQ = None,
+) -> FilaOut:
+    """F-069 (R4-R7): sustituye la cantidad y el comentario de los
+    vinculados de cantidad que llegan (`null` borra; lo que no llega no se
+    toca); responde como el PUT de asignaciones. 422 si algo no vale, sin
+    guardar nada; 404 sin periodo; 409 cerrado."""
+    filtro = _filtro(contenedor, empresa)
+    with contenedor.uow() as uow:
+        fila, resumen = GuardarImportes(_tipos(contenedor)).ejecutar(
+            uow, anio, mes, trabajador_ide,
+            [i.model_dump() for i in payload.importes], usuario,
+            filtro=filtro,
+        )
+    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
+    return FilaOut(
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
+                                    _tipos(contenedor)),
         resumen=a_resumen_out(resumen),
         propuestas_en_curso=en_curso,
     )
@@ -405,7 +450,8 @@ def cambiar_partida(
         )
     en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
+                                    _tipos(contenedor)),
         resumen=a_resumen_out(resumen),
         propuestas_en_curso=en_curso,
     )
@@ -427,7 +473,8 @@ def deshacer(
         )
     en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
+                                    _tipos(contenedor)),
         resumen=a_resumen_out(resumen),
         propuestas_en_curso=en_curso,
     )
@@ -449,7 +496,8 @@ def copiar_trabajador_anterior(
         )
     en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
     return CopiaTrabajadorOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
+                                    _tipos(contenedor)),
         resumen=a_resumen_out(resumen),
         periodo_origen=a_periodo_out(origen) if origen else None,
         lineas_omitidas_obra_inactiva=omitidas,

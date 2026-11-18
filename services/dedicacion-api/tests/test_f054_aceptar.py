@@ -298,6 +298,8 @@ class _Uow:
                 for i in ides if i in OBRAS})
         self.vinculados = SimpleNamespace(ides=lambda: {5000})
         self.incidencias = SimpleNamespace(de_trabajador=lambda p, i: [])
+        # F-069 (R10): sin cantidades del mes.
+        self.importes = SimpleNamespace(de_trabajador=lambda p, i: {})
         self.periodos = SimpleNamespace(obtener=lambda a, m: (
             (PID, Periodo(a, m, self.d.estado)) if (a, m) == (2026, 9)
             else None))

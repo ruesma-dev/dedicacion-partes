@@ -18,6 +18,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from domain.errors import ImporteInvalido
+from domain.models import ImporteMes, Linea
 
 #: R1 (D2, D12): las unidades y los repartos que se admiten en la config.
 UNIDADES = ("eur", "km")
@@ -154,3 +155,25 @@ def comentario_de_sigrid(tex: str | None, marca: str | None) -> str | None:
     if marca and texto.startswith(marca):
         texto = texto[len(marca):].strip()
     return texto or None
+
+
+def importes_del_mes(lineas: list[Linea], filas: Mapping[int, ImporteMes],
+                     importes: Mapping[str, TipoCantidad]) -> list[ImporteMes]:
+    """R10: uno por vinculado POR % de las subfilas del trabajador (en
+    orden de vinculado), con su tipo, código y unidad y, si la hay, la
+    cantidad del mes guardada (`filas`). Sin subfilas de cantidad, []."""
+    vistos: dict[int, ImporteMes] = {}
+    for ln in lineas:
+        for v in ln.vinculados:
+            tipo = tipo_de(v.tipo, importes)
+            if (tipo is None or tipo.reparto != REPARTO_PCT
+                    or v.vinculado_ide in vistos):
+                continue
+            fila = filas.get(v.vinculado_ide)
+            vistos[v.vinculado_ide] = ImporteMes(
+                vinculado_ide=v.vinculado_ide, tipo=v.tipo, cod=v.cod,
+                unidad=tipo.unidad,
+                cantidad=fila.cantidad if fila else None,
+                copiado=bool(fila.copiado) if fila else False,
+                comentario=fila.comentario if fila else None)
+    return [vistos[k] for k in sorted(vistos)]
