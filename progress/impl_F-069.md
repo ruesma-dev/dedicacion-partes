@@ -74,10 +74,10 @@ informe en commit propio.
 8. **D20, relectura y lote propios al final** (`_actualizar_tex`), no los de
    paso 10: el `tex` va después de todas las demás escrituras, con relectura
    fresca, `_tex_sigue_valiendo` (nuestra, misma `reside`, parte activo, M* o
-   la hora del vinculado) y comprobación posterior. Una lectura más solo si
-   hay algo que actualizar; `con_tex` (que añade `tex`, `obride` y `con.est`
-   a la lectura de registradas) solo si alguna línea trae comentario: sin
-   comentarios, SQL y lecturas idénticas a las de hoy.
+   la hora del vinculado) y comprobación posterior: dos lecturas (relectura y
+   comprobación) y una escritura más, solo si alguna trae `tex_nuevo`; `con_tex`
+   solo si alguna trae comentario (sin ellos, SQL de hoy). Aceptada en la
+   review 2; design §6.5 la recoge (`e58a596`).
 9. **Tests de la pasada 1 reescritos por la enmienda** (manda la enmienda):
    api `r4_una_cantidad_tecleada_quita_el_copiado` (D18: la misma cantidad
    ya no revisa) y front `r11`/`r12` (sin `fotoImportes`: cada casilla guarda
