@@ -503,6 +503,10 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     devuelve la fila **entera** del trabajador al `snapshot_antes` de su
     último evento pendiente (no deshecho) del periodo; el autor del evento
     es el usuario que llega en `X-Usuario` (Easy Auth, vía el front).
+    Un evento `IMPORTES` (F-069) devuelve solo las cantidades y
+    comentarios de sus vinculados a su foto, sin tocar los %; copiar el
+    mes deja uno tras el `COPIA`: deshacer dos veces deshace la copia
+    entera ([`#regla-vinculado`](#regla-vinculado)).
 
     - **Solo se deshace si ese último evento es del usuario que lo pide.**
       Si es de otro, la API responde **409** —como «nada que deshacer»—
@@ -1077,6 +1081,54 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     en una obra que la plataforma no le da es una sobrante como la de su
     trabajador ([`#regla-obra-cero`](#regla-obra-cero)).
 
+    **Cantidad y comentario (F-069).** Unos tipos de vinculado no toman el
+    precio de su hora sino una **cantidad** que se teclea: los de
+    `sync.vinculados.importes` de `config.yaml`, cada uno con su unidad
+    (`eur` o `km`) y su reparto. Hoy `CAJA` (€, `obra`), `VIAJE` (€, `pct`)
+    y `VP` (km, `pct`), y `precio_km` 0,20 €/km. Mal escrita, la api no
+    arranca. Tipo, unidad y reparto los decide **una** función,
+    `dedicacion-api/domain/importes.py` (`tipo_de`).
+
+    - **Por %** (km y viajes): una cantidad **del mes** por vinculado
+      (tabla `importe_vinculado`, periodo × vinculado). El transfer la
+      reparte con el % del titular: `can` = el del titular, `pre` = la
+      cantidad (en km, `round(km × precio_km, 2)`) y `tot = round(can ×
+      pre, 2)`. Ejemplo: 100 km × 0,20 al 60 % ⇒ `pre` 20, `tot` 12.
+    - **Por obra** (caja): una cantidad por **cada línea** del titular, en
+      su fila de `asignacion_vinculado` (`cantidad`, `copiado`,
+      `comentario`), entera a esa obra: `can` 1, `pre` = `tot` = la
+      cantidad, sea cual sea el %. Cuenta en la capacidad del parte como
+      cualquier línea: una caja más una a mano en la misma obra es
+      sobrecarga.
+    - La api guarda lo tecleado tal cual (km o €); **no multiplica**: el
+      importe lo calcula el transfer (`precio_del_vinculado`,
+      `reglas_vinculados.py`). La hora es la por defecto.
+    - **Se omite**, con su motivo: sin hora; copiado del mes anterior y sin
+      revisar; sin cantidad («falta importe», en caja «falta la caja del
+      mes» con la obra); a 0 (nada que escribir); en km sin `precio_km`.
+    - **Copiar el mes** copia las cantidades que en el destino falten,
+      marcadas `copiado` («copiado del mes anterior, sin revisar»): no se
+      registran hasta que alguien las revisa (teclearla o «Revisado» quita
+      la marca). Nunca pisa lo que ya hay.
+    - **Comentario**: cada línea del titular (`asignacion.comentario`) y
+      cada vinculado de cantidad tienen el suyo (≤ 200). Viaja como `tex`
+      de su línea en Sigrid; en modo pruebas, `PRUEBA-PORC` + espacio +
+      el comentario (`texto_linea.tex_de`). Sin comentario, el `tex` de
+      siempre. El script de pruebas busca la marca como **prefijo**.
+    - Se guardan con `PUT …/importes` (`null` borra; lo que no llega no se
+      toca; 422 si algo no vale) y dejan un evento `IMPORTES`, deshacible
+      ([`#regla-deshacer`](#regla-deshacer)). Guardar la fila conserva la
+      caja y los comentarios de los vinculados.
+    - Al sincronizar con Sigrid, el comentario de nuestras líneas ya
+      registradas es el `tex` de Sigrid sin la marca
+      ([`#regla-traer-sigrid`](#regla-traer-sigrid)).
+
+    *Decidido el 2026-11-12: Juan Romero (Dir. Admón. y Control de Costes),
+    «que el sistema multiplique por 0,20€» (D10); Pablo Gris, «la caja se
+    asigna a la obra, cada obra con la suya» (D12), viaje «aunque es
+    posible que de momento no se use», y «elijo opcion A en d11. a en las
+    demas» (D11, D13-D16) · F-069, `specs/F-069-importe-caja-km/`.*
+
 23. <a id="regla-traer-sigrid"></a>**Al sincronizar, lo que ya hay en los
     partes de Sigrid se compara con el cuadrante y solo entra lo que el
     usuario acepta.** Tras un «Sincronizar Sigrid» con éxito, el front pide
@@ -1113,6 +1165,13 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       transacción; un evento `SIGRID` por trabajador con su usuario, que se
       deshace como los demás ([`#regla-deshacer`](#regla-deshacer)). Tras
       aceptar se encolan las propuestas de los escritos.
+    - **El comentario (F-069, D15).** En cada línea **nuestra** ya
+      registrada (titular por su `sigrid_hmores_ide` o su `synckey`;
+      vinculado por la suya), el comentario pasa a ser el `tex` de Sigrid
+      sin la marca de pruebas, si difiere: manda Sigrid. Una aceptada trae
+      el de su línea de menor `ide`. Las líneas a mano ajenas no se tocan;
+      ni los % ni las cantidades. Va en el evento `SIGRID` del trabajador;
+      el de una cantidad del mes (vinculado por %), en un `IMPORTES`.
     - En el front, **una sola tabla** con una fila por entrada (Trabajador,
       Obra, Estado, Cuadrante, Sigrid, Detalle) y casilla en las `distinta`
       y las `solo_sigrid`, **las dos desmarcadas** al abrir. Se ordena

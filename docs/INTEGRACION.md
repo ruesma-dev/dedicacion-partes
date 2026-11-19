@@ -410,6 +410,24 @@ Desde F-051 (editar, nunca borrar; `docs/ARCHITECTURE.md#regla-cero`):
 Desde F-030 (incidencias en el cuadrante;
 `docs/ARCHITECTURE.md#regla-incidencia`):
 
+- **F-069 · cantidades y comentarios.** La api sirve al front
+  `PUT /api/v1/periodos/{anio}/{mes}/trabajadores/{ide}/importes` con
+  `{importes: [{vinculado_ide, obra_ide?, es_postventa?, cantidad,
+  comentario}]}` (422 si algo no vale; 404 sin periodo; 409 cerrado);
+  responde como el `PUT …/asignaciones`, que admite además `comentario`
+  por línea. El cuadrante gana `importes` por trabajador, `reparto`,
+  `unidad`, `cantidad`, `copiado` y `comentario` en la subfila (solo con
+  valor) y `comentario` en la línea. Al transfer, cada vinculado de
+  cantidad lleva `importe_mensual`, `unidad`, `reparto`, `cantidad`,
+  `copiado`, `comentario` y, en km, `precio_km`; cada línea, su
+  `comentario`. La respuesta del transfer gana `km`, `precio_km` y
+  `reparto` por vinculado, y `POST /api/porcentajes/existentes`, `tex` por
+  línea y `vinculados_registrados` (una lectura más de las `synckey`
+  `porcentajes:vin:` del periodo). En PostgreSQL: tabla nueva
+  `importe_vinculado` y columnas `asignacion.comentario`,
+  `asignacion_vinculado.cantidad`/`copiado`/`comentario` (por
+  `create_all` y el `ADD COLUMN` de `esquema.py`). Orden de despliegue:
+  **transfer → api → front**.
 - La api sirve **al front** `GET /api/v1/incidencias` (`{incidencias:
   [{codigo, letra, nombre}]}`, el catálogo activo por letra, solo lee) y
   `PUT /api/v1/periodos/{anio}/{mes}/trabajadores/{ide}/incidencias`
@@ -687,6 +705,8 @@ que sí se estaba haciendo. En local el front venía con 120 s y la api con
 | Bajar `API_TIMEOUT_S` por debajo de `TRANSFER_TIMEOUT_S` | El usuario ve un error de un registro que sí se está haciendo |
 | Poner `OBRA_PRUEBAS_FORZAR=false` | Se escribe **de verdad** en las obras reales de Sigrid (§8) |
 | Reescribir un tag de imagen ya publicado | Deja de poder saberse qué código está corriendo |
+| Cambiar `sync.vinculados.importes` o `precio_km` | Un tipo que deja de ser de cantidad vuelve a registrarse con el precio de su hora; un `precio_km` distinto cambia el importe de todos los km del mes que se registre. Mal escrito, la api no arranca (F-069) |
+| Cambiar `MARCA_PRUEBAS` del transfer | La api quita `PRUEBA-PORC` del `tex` al traer los comentarios (`domain/importes.py`): con otra marca, el comentario traído la llevaría delante (F-069) |
 | Vaciar `dedicacion` reiniciando las secuencias (`RESTART IDENTITY`) | Un `asignacion.id` nuevo reutiliza la `synckey` `porcentajes:{id}` de una línea ya escrita en Sigrid y el transfer la da por registrada sin escribirla. Por eso el vaciado de F-026 usa `CONTINUE IDENTITY` |
 | Volver a mandar al transfer el `ide` de la ficha de empleado en vez de `recurso_ide` | El transfer lo ignora y omite la línea «sin recurso»: no se registra nada (F-026) |
 | Parar el transfer, o que no responda a `POST /api/postventa/universo` | El sync de maestros (y su preview) falla entero con **502** nombrando el universo de postventa, sin persistir nada: no hay obras nuevas ni marcas al día hasta que vuelva (F-025, D3) |
