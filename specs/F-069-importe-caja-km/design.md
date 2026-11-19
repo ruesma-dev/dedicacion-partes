@@ -137,19 +137,20 @@ su primera línea por `ide`), con un evento `IMPORTES` propio: deshacer
 
 ### 6.5 transfer · comentario de una ya registrada (D20)
 - **Paso 6** (titulares y `PasoVinculados.idempotencia`): el `hit` de
-  `lineas_registradas` trae `tex`, `obride` y el `con.est` de su parte.
-  `tex_a_actualizar(comentario, marca, hit, en_registro, obra_pruebas) ->
-  (tex_nuevo | None, motivo | None)`, pura: sin comentario ⇒ nada (R23);
-  `tex_de(...)` igual al leído (sin espacios a los lados) ⇒ nada; `synckey`
-  sin `porcentajes:` ⇒ «no es nuestra»; parte no En registro ⇒ «parte
-  cerrado»; en pruebas, otra `obride` ⇒ «fuera de la obra de pruebas»; si no,
-  `tex_nuevo`. Sigue `ya_registrado` (la traza de la api no cambia); el
-  motivo añade «se actualiza el comentario» o por qué no.
-- **Paso 10** (`ejecutar`): sus `hmores_ide` van a la relectura
-  `lineas_para_editar` de siempre (sin otras piezas, esa sola); si siguen
-  valiendo (nuestra, En registro, sin enlaces), `stmt_editar_tex` en el mismo
-  lote; `tex_actualizadas`, las que pasan; la que no, al log (como F-051).
-  Ni `can`, `pre`, `tot`, hora, partida ni cuenta; nunca `DELETE`.
+  `lineas_registradas` trae `tex`, `obride` y el `con.est` de su parte;
+  `tex_a_actualizar(comentario, marca, hit, en_registro, obra_pruebas)`, pura,
+  da `(tex_nuevo, motivo)`: sin comentario ⇒ nada (R23); `tex_de(...)` igual al
+  leído (sin espacios a los lados) ⇒ nada; `synckey` sin `porcentajes:` ⇒ «no
+  es nuestra»; parte no En registro ⇒ «parte cerrado»; en pruebas, otra
+  `obride` ⇒ «fuera de la obra de pruebas». Sigue `ya_registrado` (la traza
+  de la api no cambia); el motivo añade «se actualiza el comentario» o por qué no.
+- **Paso 10** (`_actualizar_tex`; decisión 8, aceptada en la review 2 del
+  2026-11-19): lo último de `ejecutar`, tras titulares y vinculados o sin nada
+  más que escribir, y solo si alguna trae `tex_nuevo`. Relectura propia
+  `lineas_para_editar`; las que siguen valiendo (nuestra, recurso y hora, sin
+  enlaces, En registro), `stmt_editar_tex` en un lote propio; lectura de
+  comprobación (`lineas_registradas(con_tex=True)`): `tex_actualizadas`, las
+  que quedan; las demás, al log. Solo el `tex`; nunca `DELETE`.
 
 ## 7. SQL
 
@@ -160,7 +161,8 @@ leídos, sin enlaces, parte En registro, `M*` o la hora del vinculado) y, en
 pruebas, `AND obride = ?`. Lecturas parametrizadas, `truncated` es error:
 `lineas_registradas`, si algo trae comentario (si no, la de hoy, R24), gana en
 la misma lectura `CAST(tex AS NVARCHAR(400))`, `obride` y `con.est` (`LEFT
-JOIN con`); y (R31) las del periodo con `synckey LIKE 'porcentajes:vin:%'`.
+JOIN con`), también en la comprobación tras `stmt_editar_tex` (§6.5); y (R31)
+las del periodo con `synckey LIKE 'porcentajes:vin:%'`.
 
 ### 7.2 PostgreSQL `dedicacion` (ORM, única verdad)
 - `importe_vinculado` (nueva, `create_all`): `id` PK · `periodo_id` y
@@ -209,16 +211,15 @@ añadir una columna de comentarios, y esots deben traerse al sincronizar»;
 Juan: «con el campo de observaciones podemos reflejar cualquier cosa que se
 salga de la rutina»).
 
-2026-11-12 («elijo opcion A en d11. a en las demas»): **D11 = A** la copiada
-sin revisar se omite hasta teclearla o «Revisado» (R21; descartada B,
-registrarla) · **D12 = A** caja por línea, `can` 1, `pre = tot` = cantidad,
-«una caja por obra y mes» (descartadas casilla en la subfila, B, y `pre =
-cantidad / %`, C) · **D13 = A** **cada** obra sin caja avisa y se omite; 0 ⇒
-nada (R20; yo recomendaba B, vacía = sin gasto) · **D14 = A** comentario en
-cada línea y vinculado de cantidad (por %, uno al mes; caja, uno por obra),
-a `tex` · **D15 = A** al traer, en nuestras ya registradas manda el `tex` de
-Sigrid; las a mano ajenas no · **D16 = A** antes, F-054 en `dev` (hecho el
-2026-11-18).
+2026-11-12 («elijo opcion A en d11. a en las demas»): **D11 = A** la copiada sin
+revisar se omite hasta teclearla o «Revisado» (R21; descartada B, registrarla) ·
+**D12 = A** caja por línea, `can` 1, `pre = tot` = cantidad, «una caja por obra
+y mes» (descartadas casilla en la subfila, B, y `pre = cantidad / %`, C) · **D13
+= A** **cada** obra sin caja avisa y se omite; 0 ⇒ nada (R20; yo recomendaba B,
+vacía = sin gasto) · **D14 = A** comentario en cada línea y vinculado de
+cantidad (por %, uno al mes; caja, uno por obra), a `tex` · **D15 = A** al
+traer, en nuestras ya registradas manda el `tex` de Sigrid; las a mano ajenas no
+· **D16 = A** antes, F-054 en `dev` (hecho el 2026-11-18).
 
 ### 9.2 Cerradas por el humano el 2026-11-19, tras la review 1
 - **D17 = A** («A: el transfer la quita»): `PRUEBA-PORC` no se copia en la
