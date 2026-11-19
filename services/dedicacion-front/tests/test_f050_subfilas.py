@@ -65,7 +65,7 @@ def test_f050_r23_columna_partida_a_la_derecha_de_obras():
     # F-044 (lista cerrada): con «Tipo recurso» entre obras y partida.
     assert _plano(_const("ORDEN_COLUMNAS_DEFECTO")) == (
         'const ORDEN_COLUMNAS_DEFECTO = ["nombre", "categoria", '
-        '"asignaciones", "tipo", "partida", "total"];')
+        '"asignaciones", "tipo", "partida", "comentario", "total"];')  # F-069
 
 
 
@@ -81,14 +81,19 @@ def _prefs(guardadas) -> list[str]:
 
 # F-044 (lista cerrada): «Tipo recurso» entra tras la de obras, como Partida.
 @pytest.mark.parametrize("guardadas, esperado", [
+    # F-069 (R13, lista cerrada): «Comentario» entra tras Partida.
     ({"orden": ["total", "asignaciones", "nombre", "categoria"]},
-     ["total", "asignaciones", "tipo", "partida", "nombre", "categoria"]),
+     ["total", "asignaciones", "tipo", "partida", "comentario", "nombre",
+      "categoria"]),
     ({"orden": ["nombre", "categoria", "asignaciones", "total"]},
-     ["nombre", "categoria", "asignaciones", "tipo", "partida", "total"]),
+     ["nombre", "categoria", "asignaciones", "tipo", "partida", "comentario",
+      "total"]),
     ({"orden": ["partida", "total", "nombre", "categoria", "asignaciones"]},
-     ["partida", "total", "nombre", "categoria", "asignaciones", "tipo"]),
+     ["partida", "comentario", "total", "nombre", "categoria",
+      "asignaciones", "tipo"]),
     ({"orden": ["nombre", "total"]},
-     ["nombre", "total", "categoria", "asignaciones", "tipo", "partida"]),
+     ["nombre", "total", "categoria", "asignaciones", "tipo", "partida",
+      "comentario"]),
 ])
 def test_f050_r23_preferencias_viejas_meten_partida_tras_obras(guardadas,
                                                                esperado):
@@ -110,7 +115,8 @@ def test_f050_r22_una_subfila_por_linea_con_rowspan():
     assert "return frag;" in fila
     # F-044 (lista cerrada): y «Tipo recurso».
     assert _plano(_const("COLUMNAS_POR_LINEA")) == (
-        'const COLUMNAS_POR_LINEA = ["asignaciones", "tipo", "partida"];')
+        'const COLUMNAS_POR_LINEA = ["asignaciones", "tipo", "partida", '
+        '"comentario"];')                                  # F-069 (R13)
 
 
 def test_f050_r22_la_celda_de_obras_pinta_solo_su_linea():
