@@ -1243,6 +1243,14 @@ function textoImporteVinculado(v) {
   return `${fmtCantidad(v.km, "km")} × ${precio} €/km · ${base}`;
 }
 
+// F-069 (R29, D20): en una ya registrada cuyo comentario cambia, el `tex`
+// que el transfer le pondrá (su motivo ya dice «se actualiza el comentario»
+// o por qué no). Sin `tex_nuevo` (transfer viejo o nada que cambiar), nada.
+function htmlTexNuevo(x) {
+  if (!x.tex_nuevo) return "";
+  return `<div class="tex-nuevo">comentario nuevo: «${escapeHtml(x.tex_nuevo)}»</div>`;
+}
+
 // Las celdas de la subfila del vinculado `v` bajo la línea `idx` (F-044,
 // R6-R9). Solo pinta lo que manda la API: el % es el de la línea y no se
 // edita (R7); la partida, la elegida o la propuesta guardada en cursiva con
@@ -4002,7 +4010,8 @@ function pintarModalPreflight(pf) {
       const aviso = v.aviso ? `<div class="aviso">${escapeHtml(v.aviso)}</div>` : "";
       let sel;
       if (v.accion !== "escribir") {
-        sel = `<span class="motivo">${escapeHtml(v.motivo || "")}</span>`;
+        sel = `<span class="motivo">${escapeHtml(v.motivo || "")}</span>` +
+          (v.tex_nuevo ? htmlTexNuevo(v) : "");
       } else if (a.partida_metodo === "var") {
         sel = `<span class="partida-fija">${escapeHtml(v.partida_cod || "")}</span>` + aviso;
       } else {
@@ -4057,7 +4066,8 @@ function pintarModalPreflight(pf) {
         const r20 = /^la partida (.+) elegida no es una partida hoja activa del presupuesto de la obra /
           .exec(a.motivo);
         sel = (r20 ? botonPartida(r20[1]) : "") +
-          `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
+          `<span class="motivo">${escapeHtml(a.motivo || "")}</span>` +
+          (a.tex_nuevo ? htmlTexNuevo(a) : "");
       }
       return `<tr><td>${escapeHtml(a.nombre || "")}</td>` +
         `<td>${a.destino === "postventa" ? "Postventa" : "Obra"}</td>` +

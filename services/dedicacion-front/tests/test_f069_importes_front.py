@@ -331,3 +331,40 @@ def test_f069_r29_el_modal_dice_el_importe_tal_cual():
     assert r == ["27,36 € de 45,60 €",
                  "724,5 km × 0,20 €/km · 86,94 € de 144,90 €",
                  "80,00 € · caja de esta obra"]
+
+
+# ============================ R29 · D20 (T24) ============================= #
+def test_f069_r29_d20_el_modal_dice_si_se_actualiza_el_comentario():
+    """D20: la ya registrada con `tex_nuevo` enseña el motivo del transfer
+    («… se actualiza el comentario») y el comentario nuevo; la que no, solo
+    el motivo con el porqué. El front no decide nada: pinta lo que llega."""
+    from tests.test_f044_vinculados_front import (
+        _accion_reg,
+        _filas_tabla,
+        _modal_vin,
+        _obra_reg,
+        _vin_reg,
+    )
+
+    ya = "ya registrada en Sigrid (línea 5301); no se duplica"
+    obs = _modal_vin([_obra_reg(
+        [_accion_reg(accion="ya_registrado", hmores_ide=5301,
+                     motivo=ya + "; se actualiza el comentario",
+                     tex_nuevo="PRUEBA-PORC visita")],
+        [_vin_reg(accion="ya_registrado", tipo="VP", cod="VP-20",
+                  motivo=ya + "; se actualiza el comentario",
+                  tex_nuevo="PRUEBA-PORC km nuevo", reparto="pct"),
+         _vin_reg(recurso_ide=22, accion="ya_registrado", tipo="CAJA",
+                  cod="CJ", reparto="obra", tex_nuevo=None,
+                  motivo=ya + "; el comentario no se actualiza: su parte "
+                  "no está En registro")])])
+    titular, km, caja = _filas_tabla(obs["html"])
+    assert "se actualiza el comentario" in titular
+    assert 'class="tex-nuevo">comentario nuevo: «PRUEBA-PORC visita»' in titular
+    assert 'class="tex-nuevo">comentario nuevo: «PRUEBA-PORC km nuevo»' in km
+    assert "su parte no está En registro" in caja and "tex-nuevo" not in caja
+    # Sin `tex_nuevo` (transfer viejo o sin comentario), la fila de hoy.
+    obs = _modal_vin([_obra_reg([_accion_reg(accion="ya_registrado",
+                                             motivo=ya)])])
+    [fila] = _filas_tabla(obs["html"])
+    assert "tex-nuevo" not in fila and ya in fila
