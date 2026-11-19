@@ -1748,7 +1748,6 @@ function cargarEdicion(t) {
   const conImportes = (t.importes || []).length > 0 || (t.lineas || []).some(
     (l) => (l.vinculados || []).some((v) => v.reparto === "obra"));
   state.importesEdicion = conImportes ? importesDeFila(t) : [];
-  state.importesGuardados = conImportes ? fotoImportes(state.importesEdicion) : "";
 }
 
 // F-069 (R11): las casillas de cantidad del editor, de lo que trae la fila.
@@ -1774,6 +1773,13 @@ function importesDeFila(t) {
       copiado: !!v.copiado,
     });
   }));
+  // T23 (review 1, cambio 1): cada casilla recuerda lo que la API tiene de
+  // ella (`guardada`) y si estaba copiada: el PUT lleva solo las que cambian.
+  casillas.forEach((c) => {
+    c.guardada = firmaImporte(c);
+    c.copiadoGuardado = c.copiado;
+    c.revisado = false;
+  });
   return casillas;
 }
 
@@ -1786,21 +1792,28 @@ function cantidadTecleada(texto) {
   return Number.isFinite(n) ? n : limpio;
 }
 
-// F-069 (R4, R12): lo que se manda en el PUT de importes.
-function cuerpoImportes(casillas) {
-  return casillas.map((c) => ({
+// F-069 (R4, R12): lo que se manda de una casilla (sin `revisado`); vacía ⇒
+// `null`, y un comentario sin cantidad viaja igual (D19).
+function elementoImporte(c) {
+  return {
     vinculado_ide: c.vinculado_ide,
     ...(c.obra_ide != null ? { obra_ide: c.obra_ide, es_postventa: !!c.es_postventa } : {}),
     cantidad: cantidadTecleada(c.cantidad),
     comentario: (c.comentario || "").trim() || null,
-  }));
+  };
 }
 
-// F-069 (R12): la foto que decide si hay que guardar: el cuerpo y las
-// marcas de copiado («Revisado» manda la misma cantidad, pero cambia).
-function fotoImportes(casillas) {
-  return JSON.stringify({ cuerpo: cuerpoImportes(casillas),
-    copiado: casillas.map((c) => !!c.copiado) });
+function firmaImporte(c) {
+  return JSON.stringify(elementoImporte(c));
+}
+
+// F-069 (R12, D18; review 1, cambio 1): el PUT lleva SOLO las casillas que
+// cambiaron desde lo guardado o con «Revisado» pulsado (`revisado: true`):
+// actuar sobre una no toca el `copiado` de otra. Sin ninguna, `[]` (sin PUT).
+function cuerpoImportes(casillas) {
+  return casillas
+    .filter((c) => c.revisado || firmaImporte(c) !== c.guardada)
+    .map((c) => ({ ...elementoImporte(c), ...(c.revisado ? { revisado: true } : {}) }));
 }
 
 // F-069 (R11): la casilla de un vinculado de cantidad en el editor.
@@ -1816,9 +1829,14 @@ function chipImporte(casilla) {
   cantidad.inputMode = "decimal";
   cantidad.value = casilla.cantidad;
   cantidad.placeholder = casilla.unidad === "km" ? "km" : "€";
+  // D18: la marca solo se va al teclear OTRA cantidad que la guardada (o con
+  // «Revisado»); la misma, o solo el comentario, no la quitan (como la API).
   cantidad.addEventListener("input", () => {
     casilla.cantidad = cantidad.value;
-    casilla.copiado = false;
+    const guardada = casilla.guardada ? JSON.parse(casilla.guardada).cantidad : null;
+    casilla.copiado = !!casilla.copiadoGuardado && !casilla.revisado &&
+      cantidadTecleada(cantidad.value) === guardada;
+    pintarMarca();
     programarGuardado();
   });
   chip.appendChild(cantidad);
@@ -1836,24 +1854,30 @@ function chipImporte(casilla) {
     programarGuardado();
   });
   chip.appendChild(comentario);
-  if (casilla.copiado) {
-    const marca = document.createElement("span");
-    marca.className = "marca-copiado";
-    marca.textContent = "copiado del mes anterior, sin revisar";
+  const marca = document.createElement("span");
+  marca.className = "marca-copiado";
+  marca.textContent = "copiado del mes anterior, sin revisar";
+  const revisado = document.createElement("button");
+  revisado.type = "button";
+  revisado.className = "btn secondary small btn-revisado";
+  revisado.textContent = "Revisado";
+  revisado.addEventListener("click", () => {
+    casilla.copiado = false;
+    casilla.revisado = true;          // D18: el PUT lleva `revisado: true`
+    pintarMarca();
+    programarGuardado();
+  });
+  // La marca y «Revisado», solo mientras la casilla siga copiada.
+  function pintarMarca() {
+    marca.remove();
+    revisado.remove();
+    chip.classList.remove("copiado");
+    if (!casilla.copiado) return;
+    chip.classList.add("copiado");
     chip.appendChild(marca);
-    const revisado = document.createElement("button");
-    revisado.type = "button";
-    revisado.className = "btn secondary small btn-revisado";
-    revisado.textContent = "Revisado";
-    revisado.addEventListener("click", () => {
-      casilla.copiado = false;
-      chip.classList.remove("copiado");
-      marca.remove();
-      revisado.remove();
-      programarGuardado();
-    });
     chip.appendChild(revisado);
   }
+  pintarMarca();
   return chip;
 }
 
@@ -2840,10 +2864,15 @@ async function guardarAhora() {
   const enviadas = state.incidenciasEdicion.slice();
   const incidencias = cuerpoIncidencias(enviadas);
   const cambianIncidencias = JSON.stringify(incidencias) !== state.incidenciasGuardadas;
-  // F-069 (R12): las cantidades, por su foto (incluye «Revisado»).
-  const casillas = (state.importesEdicion || []).slice();
-  const fotoNueva = casillas.length > 0 ? fotoImportes(casillas) : "";
-  const cambianImportes = fotoNueva !== (state.importesGuardados || "");
+  // F-069 (R12, D18): solo las casillas que cambiaron (o con «Revisado»),
+  // con lo que se manda de cada una para darla por guardada si va bien.
+  // Sin casillas, lo de hoy: ni se mira.
+  const casillas = state.importesEdicion || [];
+  const importes = casillas.length > 0 ? cuerpoImportes(casillas) : [];
+  const enviadasImp = casillas
+    .filter((c) => c.revisado || firmaImporte(c) !== c.guardada)
+    .map((c) => [c, firmaImporte(c), !!c.copiado]);
+  const cambianImportes = importes.length > 0;
   const cambianLineas = !(cambianIncidencias || cambianImportes) ||
     JSON.stringify(lineas) !== state.lineasGuardadas;
   const ruta = `/periodos/${state.anio}/${state.mes}/trabajadores/${ide}`;
@@ -2868,8 +2897,12 @@ async function guardarAhora() {
     }
     if (cambianImportes) {
       datos = await api(`${ruta}/importes`,
-        { method: "PUT", body: JSON.stringify({ importes: cuerpoImportes(casillas) }) });
-      state.importesGuardados = fotoNueva;
+        { method: "PUT", body: JSON.stringify({ importes }) });
+      enviadasImp.forEach(([c, firma, copiado]) => {
+        c.guardada = firma;
+        c.copiadoGuardado = copiado;
+        c.revisado = false;
+      });
     }
     state.guardadoPendiente = false;
     aplicarFila(datos);
