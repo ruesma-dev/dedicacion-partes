@@ -1,9 +1,8 @@
 <!-- progress/impl_F-069.md -->
 # F-069 · Informe del implementer (`critico`)
 
-Rama `feature/F-069-importe-caja-km` (copia `porcentajes-f069`), sobre `dev`
-`5381243`. Spec `specs/F-069-importe-caja-km/` (R1-R36, D1-D16), aprobada el
-2026-11-12. Fecha del informe: 2026-11-19.
+Rama `feature/F-069-importe-caja-km` (copia `porcentajes-f069`) sobre `dev`
+`5381243`; spec `specs/F-069-importe-caja-km/` aprobada el 2026-11-12. 2026-11-19.
 
 ## Qué cambió
 
@@ -27,68 +26,40 @@ en la api (R16).
 
 ## Commits (uno por tarea)
 
-| Commit | Tarea |
-|---|---|
-| `eca0f8f` | `in_progress` |
-| `59583d4` | T1 contrato del transfer |
-| `be4dc10` | T2 `precio_del_vinculado` y reparto |
-| `a308d4c` | T3+T4 `tex_de` y pipeline |
-| `4069ed3` | T14 `existentes` con `tex` y `vinculados_registrados` |
-| `6f4c753` | T5 `domain/importes.py` y config |
-| `adebb98` | T6 ORM, repositorio y evento `IMPORTES` |
-| `9c27ce2` | T7 `PUT …/importes`, deshacer y comentario del titular |
-| `5529256` | T8 copia del mes |
-| `47a1f82` | T9 cuadrante y registro |
-| `7924b42` | T15 traer comentarios de Sigrid |
-| `917f392` | T10+T11 front |
-| `de6de26` | T12 docs |
-
-Diff contra `dev`: 59 ficheros, +4522 / −122.
+`eca0f8f` in_progress · `59583d4` T1 · `be4dc10` T2 · `a308d4c` T3+T4 ·
+`4069ed3` T14 · `6f4c753` T5 · `adebb98` T6 · `9c27ce2` T7 · `5529256` T8 ·
+`47a1f82` T9 · `7924b42` T15 · `917f392` T10+T11 · `de6de26` T12 ·
+informe en commit propio. Diff contra `dev`: 59 ficheros, +4522 / −122.
 
 ## Ficheros principales
 
-- **Transfer**
-  - `domain/models/registro_models.py`
-  - `application/services/reglas_vinculados.py` (`precio_del_vinculado`, sus
-    motivos)
-  - `texto_linea.py` (`tex_de`)
-  - `registro_pipeline.py`, `registro_vinculados.py`
-  - `porcentajes_existentes.py`
-  - `sigrid_write_client.py`: una lectura más, parametrizada, de las
-    `porcentajes:vin:`
-  - `prueba_escritura_porcentajes.py`: la marca se busca como prefijo
-- **Api**
-  - `domain/importes.py` (nuevo), `domain/models.py`, `domain/ports.py`,
-    `domain/errors.py` (`ImporteInvalido` → 422)
-  - `config/config.yaml` (`importes`, `precio_km`), `sync_pipeline.py`
-  - `orm_models.py`, `repositories.py` (`PgImporteRepository`,
-    `guardar_subfila_importe`, `poner_comentario`, `registradas`)
-  - `use_cases.py` (`GuardarImportes`, deshacer `IMPORTES`, `_copiar_importes`)
-  - `registro_sigrid.py`, `traer_sigrid.py`, `transfer_client.py`
-  - `schemas.py`, `routes.py` (`PUT /periodos/{a}/{m}/trabajadores/{ide}/importes`),
-    `deps.py`
-- **Front**
-  - `static/js/app.js`:
-    - `chipImporte`, `importesDeFila`, `cantidadTecleada`, `cuerpoImportes` y
-      `fotoImportes`
-    - columna «Comentario»
-    - `htmlCantidadVinculado` y `textoImporteVinculado`
-    - comentario en `chipEditable`
-    - PUT de importes en `guardarAhora`
-  - `static/css/styles.css`: estilos mínimos.
-- **Docs**
-  - `docs/ARCHITECTURE.md`: «Cantidad y comentario» en `#regla-vinculado`, con
-    cita y fecha, más `#regla-deshacer` y `#regla-traer-sigrid`.
-  - `docs/INTEGRACION.md`: §5, contrato y esquema; §7, dos filas nuevas.
-- **Tests nuevos**
-  - transfer: `test_f069_reglas_importe.py`, `test_f069_pipeline_importe.py`,
-    `test_f069_existentes_tex.py`
-  - api: `test_f069_importes_dominio.py`, `test_f069_importes_api.py`,
-    `test_f069_traer_comentarios.py`
-  - front: `test_f069_importes_front.py`
-- **Tests adaptados**, con un comentario F-069 en cada sitio: fakes y conjuntos
-  de claves de F-003, F-024, F-044, F-050, F-054 y F-055, por las columnas y
-  campos nuevos (listas cerradas de esquema y columnas).
+- **Transfer:** `registro_models.py`; `reglas_vinculados.py`
+  (`precio_del_vinculado` y motivos); `texto_linea.py` (`tex_de`);
+  `registro_pipeline.py`, `registro_vinculados.py`;
+  `porcentajes_existentes.py`; `sigrid_write_client.py` (una lectura más,
+  parametrizada, de las `porcentajes:vin:`); `prueba_escritura_porcentajes.py`
+  (marca como prefijo).
+- **Api:** `domain/importes.py` (nuevo), `models.py`, `ports.py`, `errors.py`
+  (`ImporteInvalido` → 422); `config.yaml` (`importes`, `precio_km`),
+  `sync_pipeline.py`; `orm_models.py`, `repositories.py`
+  (`PgImporteRepository`, `guardar_subfila_importe`, `poner_comentario`,
+  `registradas`); `use_cases.py` (`GuardarImportes`, deshacer `IMPORTES`,
+  `_copiar_importes`); `registro_sigrid.py`, `traer_sigrid.py`,
+  `transfer_client.py`; `schemas.py`, `routes.py`
+  (`PUT /periodos/{a}/{m}/trabajadores/{ide}/importes`), `deps.py`.
+- **Front:** `app.js` (`chipImporte`, `importesDeFila`, `cantidadTecleada`,
+  `cuerpoImportes`, `fotoImportes`, columna «Comentario»,
+  `htmlCantidadVinculado`, `textoImporteVinculado`, comentario en
+  `chipEditable`, PUT de importes en `guardarAhora`); `styles.css`.
+- **Docs:** `ARCHITECTURE.md` («Cantidad y comentario» en `#regla-vinculado`
+  con cita y fecha, `#regla-deshacer`, `#regla-traer-sigrid`);
+  `INTEGRACION.md` §5 (contrato y esquema) y §7 (dos filas).
+- **Tests nuevos:** transfer `test_f069_reglas_importe.py`,
+  `test_f069_pipeline_importe.py`, `test_f069_existentes_tex.py`; api
+  `test_f069_importes_dominio.py`, `test_f069_importes_api.py`,
+  `test_f069_traer_comentarios.py`; front `test_f069_importes_front.py`.
+- **Tests adaptados** (con comentario F-069): fakes y listas cerradas de
+  esquema, claves y columnas de F-003, F-024, F-044, F-050, F-054 y F-055.
 
 ## Decisiones de diseño y desviaciones (justificadas)
 
@@ -188,16 +159,10 @@ Ejecutado tal cual, con la salida a fichero. Código de salida **0**, ningún
 [OK] CAPA E2E: N/A (ningún servicio declara el bloque e2e)
 ```
 
-Una ejecución anterior, a mitad del trabajo, dio la cobertura en 69,1 %: le
-faltaban T10-T12 y tenía la suite de la api en rojo por `test_f003`, ya
-arreglado. Esta es la final.
-
 ## Verificaciones por tarea (resultado real)
 
-- **Transfer:** suite entera 1933 passed tras T14, la última medición por
-  servicio. Dentro de `init.sh` corre en la raíz (2319 passed).
-- **Api:** 1618 passed.
-- **Front:** 568 passed, de ellos 9 de `test_f069_importes_front.py`.
+- Transfer 1933 passed tras T14 (en `init.sh`, dentro de la raíz); api 1618;
+  front 568, 9 de ellos de `test_f069_importes_front.py`.
 - **T12:** `test_f002_fuente_unica.py` da 86 passed. El grep de
   `importe_vinculado|importe_mensual|precio_km` da 4 aciertos en
   `ARCHITECTURE.md` y 5 en `INTEGRACION.md`.
@@ -238,10 +203,9 @@ arreglado. Esta es la final.
     - lectura de F-054 ampliada
   - Va en un commit aparte en `azure-apps`, con `pull --rebase` antes.
   - En `progress/current.md`, el aviso a `partes` y el apunte para F-071.
-- **Documento del ecosistema.** La spec dice que la feature cruza la frontera y
-  `CLAUDE.md` declara `azure-apps`, pero la spec deja su actualización en T17,
-  al desplegar. No lo he tocado.
-- **`BACKLOG.md`** lo regeneró `init.sh`; va en el commit del informe.
+- **Documento del ecosistema:** la feature cruza la frontera y `CLAUDE.md`
+  declara `azure-apps`, pero la spec lo deja en T17: no lo he tocado.
+  `BACKLOG.md`, regenerado por `init.sh`, va en el commit del informe.
 
 ## Evidencias
 
