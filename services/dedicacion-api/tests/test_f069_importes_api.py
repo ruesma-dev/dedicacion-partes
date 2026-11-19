@@ -969,3 +969,49 @@ def test_f069_r16_la_lectura_del_registro_es_una_y_por_periodo():
     assert "importe_vinculado.vinculado_ide IN" in sql
     assert stmt.compile(dialect=postgresql.dialect()).params[
         "vinculado_ide_1"] == [20, 21]
+
+
+# ================== R30 · la traza conserva cantidad y comentario ========= #
+from application.traza_vinculados import trazar_vinculados  # noqa: E402
+
+
+class _SesionTraza:
+    """Apunta cada sentencia que ejecuta la traza (sin base)."""
+
+    def __init__(self) -> None:
+        self.sentencias: list = []
+
+    def execute(self, stmt):
+        self.sentencias.append(stmt)
+
+
+def _columnas_traza(stmt) -> tuple[set[str], set[str]]:
+    """Las columnas del `INSERT` y las del `ON CONFLICT DO UPDATE SET`."""
+    sql = " ".join(str(stmt.compile(dialect=postgresql.dialect())).split())
+    insert = sql.split("(", 1)[1].split(")", 1)[0]
+    set_ = sql.split("DO UPDATE SET", 1)[1]
+    return ({c.strip() for c in insert.split(",")},
+            {p.split("=")[0].strip() for p in set_.split(", ")})
+
+
+def test_f069_r30_la_traza_de_una_caja_conserva_cantidad_copiado_y_comentario():
+    """R30 (review 1, cambio 5): la traza que `registro_sigrid` escribe en
+    la subfila de un vinculado (escrito, ya registrado u omitido) solo toca
+    `sigrid_*`: la cantidad, el `copiado` y el comentario de la caja siguen
+    como estaban (el `ON CONFLICT` no los nombra)."""
+    s = _SesionTraza()
+    trazar_vinculados(s, {
+        "vinculados": [
+            {"registro_id": 7, "recurso_ide": 30, "accion": "escribir",
+             "hmores_ide": 5301, "parte_cod": "P-1", "reparto": "obra",
+             "cantidad": 80.0, "copiado": True, "comentario": "caja"},
+            {"registro_id": 7, "recurso_ide": 31, "accion": "ya_registrado",
+             "hmores_ide": 5302, "cantidad": 10.0, "comentario": "otra"}],
+        "omitidas": [{"registro_id": 7, "vinculado_ide": 32,
+                      "motivo": "sin partida"}]})
+    assert len(s.sentencias) == 3
+    for stmt in s.sentencias:
+        insert, set_ = _columnas_traza(stmt)
+        assert not ({"cantidad", "copiado", "comentario"} & (insert | set_)), (
+            insert, set_)
+        assert set_ and all(c.startswith("sigrid_") for c in set_), set_
