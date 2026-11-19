@@ -137,3 +137,53 @@ def test_f069_r31_un_fallo_de_la_lectura_nueva_sube():
     with pytest.raises(RuntimeError, match="caída"):
         PorcentajesExistentes(cliente=Falla(), settings=ajustes_var()
                               ).calcular(1, 2026, 9, [O0678])
+
+
+# ================= D17 · el transfer publica el tex sin su marca ========== #
+def test_f069_r31_comentario_de_tex_quita_la_marca_y_los_espacios():
+    from application.services.texto_linea import comentario_de_tex
+    assert comentario_de_tex("PRUEBA-PORC visita", "PRUEBA-PORC") == "visita"
+    assert comentario_de_tex("  PRUEBA-PORC   visita  ", "PRUEBA-PORC") == (
+        "visita")
+    assert comentario_de_tex("PRUEBA-PORC", "PRUEBA-PORC") is None
+    assert comentario_de_tex("PRUEBA-PORC  ", "PRUEBA-PORC") is None
+    assert comentario_de_tex("visita PRUEBA-PORC", "PRUEBA-PORC") == (
+        "visita PRUEBA-PORC")                       # solo al principio
+    assert comentario_de_tex("  visita ", "PRUEBA-PORC") == "visita"
+    assert comentario_de_tex("   ", "PRUEBA-PORC") is None
+    assert comentario_de_tex(None, "PRUEBA-PORC") is None
+    assert comentario_de_tex("PRUEBA-PORC visita", None) == (
+        "PRUEBA-PORC visita")                       # sin marca, tal cual
+    assert comentario_de_tex("PRUEBA-PORC visita", "") == "PRUEBA-PORC visita"
+
+
+def test_f069_r31_existentes_publica_el_tex_sin_la_marca():
+    from dataclasses import replace
+    vin = [LineaVinculadoSigrid(9101, 20, "porcentajes:vin:7:20",
+                                "PRUEBA-PORC km de obra"),
+           LineaVinculadoSigrid(9102, 22, "porcentajes:vin:7:22",
+                                "PRUEBA-PORC"),
+           LineaVinculadoSigrid(9103, 23, "porcentajes:vin:7:23", "sin marca")]
+    cli = ClienteTex([replace(_l(2, 694, "0694"), tex="PRUEBA-PORC visita"),
+                      replace(_l(3, 695, "0695"), tex="PRUEBA-PORC")], vin)
+    r = PorcentajesExistentes(cliente=cli, settings=ajustes_var()).calcular(
+        1, 2026, 9, [O0678])
+    assert [x["tex"] for x in r["lineas"]] == ["visita", None]
+    assert [v["tex"] for v in r["vinculados_registrados"]] == [
+        "km de obra", None, "sin marca"]
+
+
+def test_f069_r31_quita_la_marca_de_los_settings():
+    from dataclasses import replace
+    vin = [LineaVinculadoSigrid(9101, 20, "porcentajes:vin:7:20",
+                                "OTRA-MARCA km"),
+           LineaVinculadoSigrid(9102, 22, "porcentajes:vin:7:22",
+                                "PRUEBA-PORC km")]
+    cli = ClienteTex([replace(_l(2, 694, "0694"), tex="OTRA-MARCA visita")],
+                     vin)
+    r = PorcentajesExistentes(
+        cliente=cli, settings=ajustes_var(marca_pruebas="OTRA-MARCA")
+    ).calcular(1, 2026, 9, [O0678])
+    assert r["lineas"][0]["tex"] == "visita"
+    assert [v["tex"] for v in r["vinculados_registrados"]] == [
+        "km", "PRUEBA-PORC km"]

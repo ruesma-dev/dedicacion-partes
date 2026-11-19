@@ -19,3 +19,16 @@ def tex_de(comentario: str | None, marca: str | None) -> str | None:
     if not texto:
         return marca or None
     return f"{marca} {texto}" if marca else texto
+
+
+def comentario_de_tex(tex: str | None, marca: str | None) -> str | None:
+    """F-069 (R31, D17): el comentario que guarda el `tex` de una línea, tal
+    como lo publica `existentes`: sin la `marca` de pruebas del principio
+    (la de `st.marca_pruebas`, la que pone `tex_de`) ni espacios a los lados;
+    vacío ⇒ `None`. Solo se quita al principio: en otro sitio es texto del
+    usuario. Sin marca, el `tex` tal cual (sin espacios). La api lo guarda
+    sin tocarlo: no conoce la marca (D17)."""
+    texto = (tex or "").strip()
+    if marca and texto.startswith(marca):
+        texto = texto[len(marca):].strip()
+    return texto or None
