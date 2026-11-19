@@ -15,8 +15,8 @@ Silva, todo con propuesta; 73/80 pares VP-obra). Causa (logs de la api): `GET �
 porque `PropuestasOut` no declaraba `subfilas` (F-044 R9) y `extra="forbid"` la rechazaba; el front lo trata
 como «sin datos». Arreglo: `PropuestaSubfilaOut` y `subfilas` en `PropuestasOut`, ruta con
 `response_model_exclude_unset` (sin subfilas, la respuesta de siempre); test
-`tests/test_hotfix_propuestas_subfilas.py` (RED: 2 failed antes del arreglo). **Pendiente del humano:**
-desplegar SOLO la api. Además, altas en el backlog: **F-069** (importe mensual de caja y km con casilla:
+`tests/test_hotfix_propuestas_subfilas.py` (RED: 2 failed antes del arreglo). **Desplegado el 2026-11-11** (api
+`r20261111-1915`). Además, altas en el backlog: **F-069** (importe mensual de caja y km con casilla:
 44 de 45 VP tienen `pre` 0 en `KM` y el registro los omite, «sin importe mensual»; bloquea los km de
 octubre) y **F-070** (cabecera fija al hacer scroll). Fuera del hotfix, para otra feature: subfilas en cola
 como «buscando partida…» y aviso del front si `…/propuestas` falla.
@@ -26,7 +26,7 @@ trayendo el recurso kms hechos (VPXXX)… hay que incluirlo. esto es un hotfix»
 funciona exactamente igual que el resto de recursos asociados. se reparten porcentualmente»): F-044 D1b
 revisada, `sync.vinculados.tipos_excluidos` de `[VP]` a `[]` en la api; test `test_f044_r1_config_versionada`
 (RED antes del cambio) y `docs/ARCHITECTURE.md`. `bash harness/init.sh` en verde. Unido a `dev` el 2026-11-03.
-**Pendiente del humano:** despliegue SOLO de la api y «Sincronizar Sigrid» para que los `VP` salgan como subfilas.
+**Desplegado el 2026-11-11** (la misma api `r20261111-1915`); si no se ha hecho, queda «Sincronizar Sigrid» para que los `VP` salgan como subfilas.
 `azure-apps/dedicacion.md` (l. ~706) solo describe el efecto genérico de cambiar `tipos_excluidos`, sin su valor: no se toca. (F-054 se cerró y se unió a `dev` el 2026-11-18.)
 
 Los dos hotfixes se trajeron de `dev` a la rama de F-054 el 2026-11-04 (merge de `dev`), para probar T18 y T19 con ellos.
@@ -56,8 +56,8 @@ Cancelar («⚠ Lo que espera al humano», manera B); el resto de T21 de F-044
 (líneas ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
 validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
-**Para retomar (sesión nueva):** `arnes-base` va 3 commits por delante de
-su `origin/main` (encargos pendientes; push del humano: `git -C
+**Para retomar (sesión nueva):** `arnes-base` va 1 commit por delante de
+su `origin/main` (`8de97cb`, encargo pendiente; push del humano: `git -C
 ../arnes-base push origin main`). Las dos propuestas de arnés de la
 review 3 de F-054 no piden decisión nueva: ya tienen encargo en
 `arnes-base` (mutantes que no compilan: `e7a172b`; campaña manual de C4
@@ -85,7 +85,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
   - Antes: en la BBDD **local** `dedicacion`, si ya tiene la tabla de la pasada 1: `ALTER TABLE importe_vinculado ALTER COLUMN cantidad DROP NOT NULL` (D19, design §7.2). Transfer, api y front de esta rama con `OBRA_PRUEBAS_FORZAR=true`; `curl -s http://127.0.0.1:8006/health` ⇒ `modo_pruebas: true` y `0404`; `transfer_base_url` de la api ⇒ `http://127.0.0.1:8006`; «MODO PRUEBAS» en el modal.
   - Lectura previa (Git Bash): `cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`.
   - Esperado: km «100 km × 0,20 €/km», 12,00 € y 8,00 € de 20,00 €; caja 80,00 € solo en la primera obra (`can` 1, `pre` 80); `tex` «PRUEBA-PORC visita a proveedor»; registrar otra vez ⇒ «ya registrada»; copiar a 2026-12 ⇒ omitido hasta «Revisado»; el comentario del km vuelve al sincronizar (el del titular no vuelve en modo pruebas: decisión 8 del informe).
-  - Paso añadido en review 1 (cambio 4): en 2026-12, «Revisado» **solo** en el km ⇒ el preflight escribe el km y la caja sigue omitida «copiado del mes anterior sin revisar»; cambiar solo el comentario de la caja no la revisa (D18). Y D20: cambiar el comentario de una línea ya registrada y registrar otra vez ⇒ su `tex` cambia en Sigrid, cantidades iguales.
+  - Paso añadido en review 1 (cambio 4): en 2026-12, «Revisado» **solo** en el km ⇒ el preflight escribe el km y la caja sigue omitida «copiado del mes anterior sin revisar»; cambiar solo el comentario de la caja no la revisa (D18). Y D20: cambiar el comentario de una línea ya registrada y registrar otra vez ⇒ su `tex` cambia en Sigrid, cantidades iguales (si `tex_actualizadas` sale vacío, buscar en el log del transfer `[registro] la guarda no dejo cambiar el tex`).
   - Limpieza: `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --ano 2026 --mes 11 --confirmar`, y lo mismo con `--mes 12`.
   - El mes: la spec dice 2026-11. En la T19 de F-054 el humano eligió un mes que no se usa (2032-01); se le pregunta antes de ejecutarla.
   - Resultado real en `progress/manual_F-069.md`.
@@ -255,6 +255,7 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés era entonces la 1.7.3 (hoy, la 1.10.1).
 ## Producción, hoy
 
+- **Desplegado el 2026-11-11 (lo último): hotfixes.** Api `r20261111-1915` (VP como vinculados y `/propuestas`) y front `r20261111-1916` (corte del proxy); transfer sin cambios, `r20261028-1914`. Lo que sigue (F-068, 2026-10-28) es el despliegue anterior: su api y su front ya no son los de hoy.
 - **Desplegado el 2026-10-28: F-068**, los tres servicios en orden, lanzado
   por el humano con `infra/d.local.ps1`: transfer `r20261028-1914`
   (`ca-dedicacion-transfer--r20261028191409`), api `r20261028-1918`
@@ -488,9 +489,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
-que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-11-19):** F-069 en `in_review`; F-054 cerrada el 2026-11-18 y pendiente de desplegar (T20);
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-19):** F-069 en `in_review`; F-054 cerrada el 2026-11-18 y pendiente de desplegar (T20);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
@@ -575,8 +574,7 @@ después, F-066.
     mirando el modal, y **Cancelar**. Ni cambiar partidas (se guardan en el
     cuadrante) ni «Registrar» (escribe en la obra real).
 
-- **F-062: T19 y T20, MANUAL**, con sus comandos exactos en «F-062 · T19 y
-  T20» (arriba), primer paso incluido (`True 0404` o PARAR).
+- **F-062: T19 y T20, MANUAL, HECHAS** (`progress/manual_F-062.md`).
   **Equivalentes de la mutación nº 14 (`rachas.py:113`) y nº 23
   (`rachas.py:528`): ACEPTADOS** por el humano el 2026-10-24 («ok a 1 y
   2»), con la condición de que la campaña nueva los repita y sigan siendo
