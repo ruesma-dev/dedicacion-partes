@@ -531,6 +531,9 @@ def build_app(settings) -> FastAPI:
                 "pendientes_confirmacion": [_conflicto(c) for c in
                                             r.pendientes_confirmacion],
                 "error": r.error,
+                # F-069 (D20, R28): las ya registradas a las que se cambió
+                # solo el `tex`; vacía si ninguna.
+                "tex_actualizadas": r.tex_actualizadas,
             }, r.incidencias)
             _con_vinculados(respuesta, r.vinculados)
             return _con_rachas(respuesta, r) if len(resto) > 1 else respuesta

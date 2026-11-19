@@ -62,7 +62,7 @@ from application.services.reglas_porcentajes import (
     repartir_choques,
     synckey_tras_editar,
 )
-from application.services.texto_linea import tex_de
+from application.services.texto_linea import anotar_tex, tex_de
 from application.services.reglas_vinculados import (
     AVISO_SIN_PARTIDA_VINCULADO,
     METODO_MANUAL,
@@ -329,10 +329,14 @@ class PasoVinculados:
                 [self._entradas[clave_de(av)].hmores_ide for av in escribir])
 
     def idempotencia(self, vinculados: list[AccionVinculado], por_sk: dict,
-                     por_ide: dict) -> None:
+                     por_ide: dict, tex: Callable | None = None) -> None:
         """Paso 6 (R13, R30): ya registrado si la línea de su `hmores_ide`
         es de su recurso, de su hora y no es nuestra de otra; si no, la de
-        su `synckey`. Cada vinculado se decide solo (R18)."""
+        su `synckey`. Cada vinculado se decide solo (R18).
+
+        F-069 (D20, R26): con `tex` (la decisión del pipeline, solo si la
+        petición trae comentarios), el ya registrado lleva su `tex_nuevo` y
+        el motivo dice si se actualiza su comentario."""
         for av in vinculados:
             if av.accion != "escribir":
                 continue
@@ -347,6 +351,9 @@ class PasoVinculados:
                 av.accion, av.hmores_ide = "ya_registrado", hit.ide
                 av.motivo = (f"ya registrada en Sigrid (línea {hit.ide}); "
                              f"no se duplica")
+                if tex is not None:
+                    anotar_tex(av, tex(
+                        self._entradas[clave_de(av)].comentario, hit))
 
     @staticmethod
     def sin_partida(vinculados: list[AccionVinculado]) -> list[Conflicto]:
@@ -493,6 +500,7 @@ class PasoVinculados:
                 av.motivo = MOTIVO_SIGUE_AL_TRABAJADOR.format(
                     motivo=t.motivo)
                 av.linea_cero = None
+                av.tex_nuevo = None             # F-069 (D20)
                 _sin_cuenta(av)
         omitidos = {clave_de(av) for av in vinculados
                     if av.accion == "omitir"}

@@ -181,26 +181,44 @@ class EdicionesFalsas:
     guarda_falla: frozenset = frozenset()
     #: `ide` de líneas con enlaces de Sigrid.
     enlazadas: frozenset = frozenset()
+    #: F-069 (D20): el `con.est` del parte `parte` (1, En registro).
+    parte_est: int = 1
 
     def _partes_de_lineas(self) -> list[tuple]:
         """(hmoide, código, `con.est`, lista de líneas) de cada parte."""
         out = []
         parte = getattr(self, "parte", None)
         if parte is not None and parte.ide:
-            out.append((int(parte.ide), parte.cod, 1, self.lineas_parte))
+            out.append((int(parte.ide), parte.cod, self.parte_est,
+                        self.lineas_parte))
         periodo = {p.ide: p for p in (getattr(self, "periodo", None) or [])}
         for h, lista in (getattr(self, "lineas_por_parte", None) or {}).items():
             p = periodo.get(h)
             out.append((h, p.cod if p else None, p.est if p else 1, lista))
         return out
 
-    def lineas_registradas(self, claves, ides=()):
+    def lineas_registradas(self, claves, ides=(), *, con_tex=False):
+        """F-069 (D20): con `con_tex`, las líneas de los partes del doble
+        también por `synckey` y con su parte y su `con.est` (el `tex` y la
+        `obride` ya los lleva la línea); cada llamada anota `con_tex`."""
+        self.registradas_con_tex = getattr(
+            self, "registradas_con_tex", []) + [bool(con_tex)]
         por_sk = self.lineas_por_synckey(list(claves))
         pedidos = {int(i) for i in ides if i}
         todas = [*self.synckeys.values(),
                  *(ls for *_, lista in self._partes_de_lineas()
                    for ls in lista)]
-        return por_sk, {ls.ide: ls for ls in todas if ls.ide in pedidos}
+        por_ide = {ls.ide: ls for ls in todas if ls.ide in pedidos}
+        if con_tex:
+            frescas = [replace(ls, hmoide=h, parte_est=est)
+                       for h, _, est, lista in self._partes_de_lineas()
+                       for ls in lista]
+            pedidas = set(claves)
+            por_sk.update({(ls.synckey or "").strip(): ls for ls in frescas
+                           if (ls.synckey or "").strip() in pedidas})
+            por_ide.update({ls.ide: ls for ls in frescas
+                            if ls.ide in pedidos})
+        return por_sk, por_ide
 
     def lineas_para_editar(self, ides):
         self.para_editar = getattr(self, "para_editar", []) + [sorted(ides)]
@@ -218,6 +236,10 @@ class EdicionesFalsas:
 
     def stmt_poner_a_cero(self, **kw):
         return {"sql": "a_cero", "parameters": kw}
+
+    def stmt_editar_tex(self, **kw):
+        """F-069 (D20): el `UPDATE` del `tex` de una ya registrada."""
+        return {"sql": "editar_tex", "parameters": kw}
 
     def stmt_editar_fecha_incidencia(self, **kw):
         """F-030, anexo R30 (design §13.7): el `UPDATE` de la `fec`."""
@@ -261,10 +283,32 @@ class EdicionesFalsas:
                         == (kw["synckey_leida"] or "").strip()):
                     lista[i] = replace(ls, fecha_int=kw["fecha_int"])
 
+    def _editar_tex(self, kw) -> None:
+        """F-069 (D20): la guarda de `stmt_editar_tex`, la de F-051 (con
+        `hora`, ese código; sin ella, `M*`) y, con `obride`, esa obra."""
+        hora = (kw.get("hora") or "").strip()
+        for _, _, est, lista in self._partes_de_lineas():
+            for i, ls in enumerate(lista):
+                codigo = (ls.hora_codigo or "").strip()
+                if (ls.ide == kw["ide"] and ls.ide not in self.guarda_falla
+                        and ls.ide not in self.enlazadas and est == 1
+                        and ls.reside == kw["reside"]
+                        and (codigo == hora if hora
+                             else codigo.startswith("M"))
+                        and abs(float(ls.can or 0)
+                                - float(kw["can_leido"] or 0)) < 0.000001
+                        and (ls.synckey or "").strip()
+                        == (kw["synckey_leida"] or "").strip()
+                        and (kw.get("obride") is None
+                             or ls.obride == kw["obride"])):
+                    lista[i] = replace(ls, tex=kw["tex"])
+
     def _aplicar_ediciones(self, statements) -> None:
         for st in statements:
             if st["sql"] == "editar_fec":
                 self._editar_fec(st["parameters"])
+            if st["sql"] == "editar_tex":
+                self._editar_tex(st["parameters"])
             if st["sql"] not in ("editar", "a_cero"):
                 continue
             kw = st["parameters"]

@@ -52,6 +52,7 @@ from application.services.reglas_incidencias import (
 )
 from application.services.reglas_porcentajes import empresa_de_peticion
 from application.services.reglas_vinculados import synckey_vinculado
+from application.services.texto_linea import hay_comentarios
 from domain.models.registro_models import ContextoRachas, ObraEntrada
 from infrastructure.sigrid.sigrid_write_client import synckey_de
 
@@ -78,8 +79,10 @@ class LecturasDelLote:
         self._validas: tuple[set[int], dict] | None = None
         self._partidas: tuple[set[int], dict] | None = None
         # F-051 (R15): claves e `ide` pedidos y `({synckey: línea},
-        # {ide: línea})` leídos por `lineas_registradas`.
+        # {ide: línea})` leídos por `lineas_registradas`. F-069 (D20): y si
+        # se leyeron con el `tex` (`con_tex`).
         self._registradas: tuple[set[str], set[int], dict, dict] | None = None
+        self._registradas_con_tex = False
         self._historial: dict[tuple[int, int], tuple[set[int], list]] = {}
         self._partes: dict[tuple[int, int, int], list] = {}
         self._lineas: tuple[set[int], dict] | None = None
@@ -209,8 +212,11 @@ class LecturasDelLote:
                    for l, v in vins}
         hmores = _ides([*(l.hmores_ide for l in todas),
                         *(v.hmores_ide for _, v in vins)])
+        # F-069 (D20, R27): con el `tex` si alguna línea trae comentario.
+        con_tex = hay_comentarios(todas)
         if claves:
-            tareas.append(lambda: self._cargar_registradas(claves, hmores))
+            tareas.append(lambda: self._cargar_registradas(claves, hmores,
+                                                           con_tex))
         if mensuales:
             tareas.extend(self._tareas_mensuales(peticiones, empresas))
         self._ronda(tareas)
@@ -505,10 +511,13 @@ class LecturasDelLote:
     def _cargar_horas(self, resides: set[int]) -> None:
         self._horas = (resides, self._cli.horas_de_recursos(sorted(resides)))
 
-    def _cargar_registradas(self, claves: set[str], ides: set[int]) -> None:
-        por_sk, por_ide = self._cli.lineas_registradas(sorted(claves),
-                                                       sorted(ides))
+    def _cargar_registradas(self, claves: set[str], ides: set[int],
+                            con_tex: bool = False) -> None:
+        por_sk, por_ide = self._cli.lineas_registradas(
+            sorted(claves), sorted(ides),
+            **({"con_tex": True} if con_tex else {}))
         self._registradas = (claves, ides, por_sk, por_ide)
+        self._registradas_con_tex = con_tex
 
     def _cargar_validas(self, parides: set[int]) -> None:
         self._validas = (parides,
@@ -612,14 +621,18 @@ class LecturasDelLote:
         self._fallo("lineas_por_synckey")
         return self._cli.lineas_por_synckey(claves)
 
-    def lineas_registradas(self, claves, ides):
+    def lineas_registradas(self, claves, ides, *, con_tex=False):
+        """F-069 (D20): lo leído con el `tex` sirve también sin él; lo
+        leído sin él no sirve a quien lo pide (`con_tex`)."""
         pedidas, pedidos = {k for k in claves if k}, _ides(ides)
         r = self._registradas
-        if r is not None and pedidas <= r[0] and pedidos <= r[1]:
+        if (r is not None and pedidas <= r[0] and pedidos <= r[1]
+                and (self._registradas_con_tex or not con_tex)):
             return ({k: r[2][k] for k in sorted(pedidas) if k in r[2]},
                     {i: r[3][i] for i in sorted(pedidos) if i in r[3]})
         self._fallo("lineas_registradas")
-        return self._cli.lineas_registradas(claves, ides)
+        return self._cli.lineas_registradas(
+            claves, ides, **({"con_tex": True} if con_tex else {}))
 
     def historial_partidas(self, resides, desde, hasta):
         pedidos = _ides(resides)

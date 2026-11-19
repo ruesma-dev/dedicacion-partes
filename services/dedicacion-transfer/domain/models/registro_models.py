@@ -268,6 +268,9 @@ class LineaSigrid:
     caaide: Optional[int] = None
     tex: Optional[str] = None
     enlazada: bool = False
+    # F-069 (D20, R26): la obra de la línea (`hmores.obride`); solo la
+    # rellena `lineas_registradas(con_tex=True)` (con `tex` y `parte_est`).
+    obride: Optional[int] = None
 
 
 # ----------------------------- salida ----------------------------- #
@@ -322,6 +325,9 @@ class AccionLinea:
     caa_aviso: Optional[str] = None
     caa_origen: Optional[str] = None
     caa_nota: Optional[str] = None
+    # F-069 (D20, R26, R28): en una ya registrada con comentario, el `tex`
+    # al que `ejecutar` cambia su línea (solo el `tex`); None si no aplica.
+    tex_nuevo: Optional[str] = None
     # La CLAVE de conflicto de esta acción no se calcula aquí: sale de
     # `application.services.reglas_porcentajes.clave_conflicto`, junto al
     # criterio de choque que la tiene que respetar. Tenerla en dos capas es
@@ -375,6 +381,8 @@ class AccionVinculado:
     km: Optional[float] = None
     precio_km: Optional[float] = None
     reparto: Optional[str] = None
+    # F-069 (D20, R28): como `AccionLinea.tex_nuevo`.
+    tex_nuevo: Optional[str] = None
 
 
 @dataclass
@@ -636,3 +644,7 @@ class ResultadoRegistro:
     # F-044 (R25, R28): las de `Preflight.vinculados` tras escribir, con su
     # `hmores_ide` o, si no se escribieron, `omitir` y el motivo.
     vinculados: list[AccionVinculado] = field(default_factory=list)
+    # F-069 (D20, R28): las líneas ya registradas cuyo `tex` se cambió
+    # (`registro_id`, `vinculado_ide` si es de un vinculado, `hmores_ide`,
+    # `tex`), comprobadas al releer; vacía si ninguna.
+    tex_actualizadas: list[dict] = field(default_factory=list)

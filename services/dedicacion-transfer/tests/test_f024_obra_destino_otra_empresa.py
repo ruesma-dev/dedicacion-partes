@@ -65,7 +65,10 @@ CLAVES_EJECUTAR = {"ok", "obra_destino", "forzada_pruebas", "partes",
                    "borradas", "pendientes_confirmacion", "error",
                    # F-051 (R16, R18): lo editado, lo puesto a 0 y el
                    # `hmores.ide` de cada ya registrada.
-                   "editadas", "a_cero", "ya_registradas_ide"}
+                   "editadas", "a_cero", "ya_registradas_ide",
+                   # F-069 (D20, R28): las ya registradas a las que se
+                   # cambió solo el `tex`.
+                   "tex_actualizadas"}
 CLAVES_OBRA = {"ide", "codigo", "nombre", "empresa"}
 
 

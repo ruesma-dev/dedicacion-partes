@@ -858,16 +858,29 @@ class SigridWriteClient:
         return sorted(out.values(), key=lambda x: (x.fecha_int, x.ide))
 
     def lineas_registradas(
-        self, claves: Iterable[str], ides: Iterable[int | None]
+        self, claves: Iterable[str], ides: Iterable[int | None], *,
+        con_tex: bool = False,
     ) -> tuple[dict[str, LineaSigrid], dict[int, LineaSigrid]]:
         """F-051 (R15): lo ya registrado por `synckey` **o** por
         `hmores.ide`, en UNA lectura por trozo de `LOTE_PARAMETROS`
         parámetros. Devuelve `({synckey: línea}, {ide: línea})`. Sin `ides`
-        es la consulta de hoy (`lineas_por_synckey`)."""
+        es la consulta de hoy (`lineas_por_synckey`).
+
+        F-069 (D20, R24; design §7.1): con `con_tex` (solo si la petición
+        trae algún comentario), la MISMA lectura gana el `tex`, la `obride`
+        y el `con.est` de su parte (`LEFT JOIN con`), también sin `ides`;
+        sin él, la SQL de siempre."""
         ks = sorted({k for k in claves if k})
         ids = sorted({int(i) for i in ides if i})
-        if not ids:
+        if not ids and not con_tex:
             return self.lineas_por_synckey(ks), {}
+        if not (ks or ids):
+            return {}, {}
+        extra = ("CAST(hmores.tex AS NVARCHAR(400)) AS tex, "
+                 "hmores.obride AS obride, con.est AS est "
+                 if con_tex else "")
+        union = ("LEFT JOIN con ON con.ide = hmores.hmoide "
+                 if con_tex else "")
         por_sk: dict[str, LineaSigrid] = {}
         por_ide: dict[int, LineaSigrid] = {}
         pedidas = [("k", k) for k in ks] + [("i", i) for i in ids]
@@ -887,12 +900,19 @@ class SigridWriteClient:
                 "hmores.reside AS reside, hmores.fec AS fec, "
                 "hmores.horide AS horide, hmores.paride AS paride, "
                 "auxhor.cod AS hora, hmores.can AS can, hmores.tot AS tot, "
-                "hmores.synckey AS synckey FROM hmores "
+                "hmores.synckey AS synckey"
+                + (", " + extra if con_tex else " ")
+                + "FROM hmores "
                 "LEFT JOIN auxhor ON auxhor.ide = hmores.horide "
-                f"WHERE {' OR '.join(conds)}", t_k + t_i)
+                + union
+                + f"WHERE {' OR '.join(conds)}", t_k + t_i)
             for f in filas:
                 ls = self._linea_del_parte(f)
                 ls.hmoide = int(f["hmoide"] or 0)
+                if con_tex:
+                    ls.tex = f["tex"]
+                    ls.obride = _entero(f["obride"])
+                    ls.parte_est = _entero(f["est"])
                 if ls.synckey in ks:
                     por_sk[ls.synckey] = ls
                 if ls.ide in ids:
@@ -1101,6 +1121,22 @@ class SigridWriteClient:
                            int(paride or 0), int(caaide or 0),
                            int(fecha_int), synckey]
             + ([tex] if con_tex else []) + params}
+
+    def stmt_editar_tex(self, *, ide: int, reside: int,
+                        can_leido: float | None, synckey_leida: str | None,
+                        tex: str, hora: str | None = None,
+                        obride: int | None = None) -> dict:
+        """F-069 (D20, R26; design §7.1): cambia SOLO el `tex` de una línea
+        nuestra ya registrada, en su sitio (ni `can`, `pre`, `tot`, hora,
+        partida, cuenta ni `synckey`), con la guarda de F-051 (con `hora`,
+        la de un vinculado) y, en modo pruebas (`obride`), solo si la línea
+        es de la obra de pruebas. Nunca `DELETE`."""
+        guarda, params = self._guarda(ide, reside, can_leido, synckey_leida,
+                                      hora)
+        en_obra = " AND obride = ?" if obride is not None else ""
+        return {"sql": f"UPDATE hmores SET tex = ? {guarda}{en_obra}",
+                "parameters": [tex] + params
+                + ([int(obride)] if obride is not None else [])}
 
     def stmt_poner_a_cero(self, *, ide: int, reside: int,
                           can_leido: float | None,
