@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-069 · `in_review` (2026-11-19), reviewer principal en marcha:** el implementer entregó T1-T12, T14 y T15 con commit en `feature/F-069-importe-caja-km` (copia `porcentajes-f069`), informe `progress/impl_F-069.md`; `bash harness/init.sh` en verde (raíz 2319 passed / 47 skipped, api 1618, front 568; cobertura de lo cambiado 99,7 %). Quedan, en la sección «F-069 · en review» de abajo: T13 (mutación, pasada de campaña tras el APPROVED), T16 (MANUAL en modo pruebas, 0404), T17 (despliegue y `azure-apps`) y T18 (`init.sh` final con la mutación). Spec: `specs/F-069-importe-caja-km/` (aprobada 2026-11-12, D16 cumplida 2026-11-18).
+**F-069 · `in_progress` (2026-11-19), pasada 2 del implementer:** review 1 con CAMBIOS REQUERIDOS (`progress/review_F-069.md`): una casilla «copiado, sin revisar» deja de estarlo al revisar otra del mismo trabajador (el front manda todas en el `PUT …/importes`), faltan RED de R15, R8 y R32 y test de R30, y la spec no recoge lo construido. El humano cerró el 2026-11-19 las decisiones D17-D21 (sección «F-069 · en review» de abajo); spec-author enmienda la spec y después el implementer hace los 7 cambios. Rama `feature/F-069-importe-caja-km` (copia `porcentajes-f069`); spec `specs/F-069-importe-caja-km/` (aprobada 2026-11-12, D16 cumplida 2026-11-18).
 
 **F-054 CERRADA (`done`) el 2026-11-18 y unida a `dev`** (OK del humano al cierre: «ok»). Review 11 APROBADA; MANUAL T19 hecha en modo pruebas (0404, 2032-01; `progress/manual_F-054.md`): sobrantes a 0 en su sitio, mismo `ide`/`pos`, sin `DELETE`, preflight mediana 10,43 s ≤ 11,89 s. Resumen en `progress/history.md`. **Pendiente:** T20 al desplegar (transfer → api → front, `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md`, aviso a `partes`); decisión del humano sobre limpiar el parte de pruebas PT32/00001 de la 0404 (3 líneas `PRUEBA-PORC` y 2 sin marca a 0). **Siguiente:** F-069, en review (arriba). **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la api (`990e264`).
 
@@ -27,7 +27,7 @@ funciona exactamente igual que el resto de recursos asociados. se reparten porce
 revisada, `sync.vinculados.tipos_excluidos` de `[VP]` a `[]` en la api; test `test_f044_r1_config_versionada`
 (RED antes del cambio) y `docs/ARCHITECTURE.md`. `bash harness/init.sh` en verde. Unido a `dev` el 2026-11-03.
 **Pendiente del humano:** despliegue SOLO de la api y «Sincronizar Sigrid» para que los `VP` salgan como subfilas.
-`azure-apps/dedicacion.md` (l. ~706) solo describe el efecto genérico de cambiar `tipos_excluidos`, sin su valor: no se toca. F-054 sigue en su copia `porcentajes-f054`.
+`azure-apps/dedicacion.md` (l. ~706) solo describe el efecto genérico de cambiar `tipos_excluidos`, sin su valor: no se toca. (F-054 se cerró y se unió a `dev` el 2026-11-18.)
 
 Los dos hotfixes se trajeron de `dev` a la rama de F-054 el 2026-11-04 (merge de `dev`), para probar T18 y T19 con ellos.
 
@@ -71,12 +71,19 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
 ## F-069 · en review (2026-11-19)
 
+- **Review 1: CAMBIOS REQUERIDOS** (`progress/review_F-069.md`, cambios 1-7 y O1-O4). Decisiones del humano del 2026-11-19, a las preguntas del líder:
+  - **D17 = A** («A: el transfer la quita»): `PRUEBA-PORC` no se copia en la api; el transfer publica en `existentes` el `tex` ya sin su marca (cambio 3).
+  - **D18** («No cuenta»): cambiar solo el comentario de una cantidad copiada no la da por revisada; solo teclear la cantidad o «Revisado» (campo `revisado` en el `PUT …/importes`; cambio 1).
+  - **D19** («Guardarlo igual»; antes: «el comentario es un campo de texto que deberia llevarse sin chequeo del contenido»): un comentario de km/viaje sin cantidad se guarda; sin cantidad no se registra nada en Sigrid (O1).
+  - **D20** («Que el cambio llegue a Sigrid»): si en una línea ya registrada solo cambia el comentario, el registro actualiza su `tex` en Sigrid sin tocar cantidades (O2).
+  - **D21** («Sí, se acepta»): decisión 6 del implementer, el comentario traído de una cantidad del mes va en un evento `IMPORTES`; se enmiendan R32 y design §6.4 (cambio 7).
 - Informe del implementer: `progress/impl_F-069.md` (decisiones 1-10; la 6 es una desviación del design y la 7 un riesgo a decidir en review: `MARCA_PRUEBAS` duplicada en la api).
 - **T13 / T18, mutación (`critico`).** Tras el APPROVED del reviewer principal, el líder relanza al implementer para la pasada de campaña: `python -m harness.mutacion --feature F-069` ⇒ `progress/mutacion_F-069.md` válido, 0 supervivientes sin justificar. Después, `bash harness/init.sh` sin `[KO]` (T18) y el reviewer de evidencias.
 - **T16, MANUAL (humano, o el líder si él lo autoriza). Escribe en la obra 0404 de pruebas.** Pasos completos en `specs/F-069-importe-caja-km/tasks.md`, T16. Resumen:
   - Antes: transfer, api y front de esta rama con `OBRA_PRUEBAS_FORZAR=true`; `curl -s http://127.0.0.1:8006/health` ⇒ `modo_pruebas: true` y `0404`; `transfer_base_url` de la api ⇒ `http://127.0.0.1:8006`; «MODO PRUEBAS» en el modal.
   - Lectura previa (Git Bash): `cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`.
   - Esperado: km «100 km × 0,20 €/km», 12,00 € y 8,00 € de 20,00 €; caja 80,00 € solo en la primera obra (`can` 1, `pre` 80); `tex` «PRUEBA-PORC visita a proveedor»; registrar otra vez ⇒ «ya registrada»; copiar a 2026-12 ⇒ omitido hasta «Revisado»; el comentario del km vuelve al sincronizar (el del titular no vuelve en modo pruebas: decisión 8 del informe).
+  - Paso añadido en review 1 (cambio 4): en 2026-12, «Revisado» **solo** en el km ⇒ el preflight escribe el km y la caja sigue omitida «copiado del mes anterior sin revisar»; cambiar solo el comentario de la caja no la revisa (D18). Y D20: cambiar el comentario de una línea ya registrada y registrar otra vez ⇒ su `tex` cambia en Sigrid, cantidades iguales.
   - Limpieza: `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --ano 2026 --mes 11 --confirmar`, y lo mismo con `--mes 12`.
   - El mes: la spec dice 2026-11. En la T19 de F-054 el humano eligió un mes que no se usa (2032-01); se le pregunta antes de ejecutarla.
   - Resultado real en `progress/manual_F-069.md`.
@@ -155,7 +162,8 @@ se rompe».
   del humano en modo pruebas.
 - **F-054:** trae solo las `M*` de trabajadores (por recurso, no por prefijo);
   los vinculados no son asignaciones. F-054 lo cerró con D18 = A
-  (2026-10-29): de los vinculados no se trae nada.
+  (2026-10-29): de los vinculados no se traían % ni cantidades; desde F-069
+  se trae su comentario (R32).
 - **Riesgos:** `MESVE` empieza por `M` (R19 y sus tests); la columna nueva
   puede tocar tests del front (el implementer PARA y pide ampliar la lista
   cerrada); **F-062 toca `registro_pipeline.py`**: implementar F-044 sobre
@@ -200,7 +208,7 @@ detalle de las opciones, en el historial de git de este fichero,
 **F-030** (incidencias en el cuadrante)
 **cerrada (`done`) y desplegada el 2026-10-22** (permiso del humano, «3
 si»; el script lo lanzó el humano, ver «Producción, hoy»);
-`azure-apps/dedicacion.md` `3d5c80b`. El arnés es la **1.7.3**.
+`azure-apps/dedicacion.md` `3d5c80b`. El arnés era entonces la 1.7.3 (hoy, la 1.10.1).
 
 **Pendiente del humano:** la comprobación de F-051 en producción (Ctrl+F5;
 un registro con una línea `M*` al 0 % en el parte la edita en su sitio y el
@@ -242,7 +250,7 @@ f51»), transfer → api → front (ver «Producción, hoy»); T16 hecho
 (`azure-apps/dedicacion.md` `223490c`).
 Altas nuevas del 2026-10-21: **F-058** (un % que redondea a 0 no se
 registra), **F-059** (% por días con el calendario de convenio) y **F-060**
-(leer la bandeja de `partes`). El arnés es la **1.7.3**.
+(leer la bandeja de `partes`). El arnés era entonces la 1.7.3 (hoy, la 1.10.1).
 ## Producción, hoy
 
 - **Desplegado el 2026-10-28: F-068**, los tres servicios en orden, lanzado
@@ -650,17 +658,16 @@ después, F-066.
    capacidad no se evalúa en un periodo sin ningún parte (dos líneas nuevas
    del mismo recurso que sumen más del 100 % no avisan). Preexistente.
 
-> **`azure-apps` no tiene remoto configurado** (`git remote -v` vacío): vive
-> solo en local. No es de este proyecto, pero ahí está la documentación de todo
-> el ecosistema y no está respaldada en ningún sitio.
+> `azure-apps` tiene remoto (`origin`, organización `ruesma-dev`) y es un
+> repositorio compartido: `pull --rebase` antes de editar (ver `CLAUDE.md`).
 
 ## Lo que el sistema sabe hacer, comprobado
 
 - **Corre en local y en Azure.** En local: transfer 8006 → api 8090 →
   front 8080, cada uno desde su carpeta con su venv (`README.md`).
 - **Escribe en Sigrid de verdad**: crea el parte si no existe e inserta la
-  línea con su `synckey` (T14). Ahora mismo **no tiene ninguna fila propia** en
-  el ERP: la prueba se limpió.
+  línea con su `synckey` (T14). Escribe en real desde el
+  2026-10-01; en la 0404 de pruebas queda el parte PT32/00001 (F-054 T19).
 - **Avisa y espera confirmación** en tres casos, cada uno con su clave: pisar
   una línea existente, pasarse del 100 % de un trabajador (F-002) y escribir
   sin partida casada (F-013).
