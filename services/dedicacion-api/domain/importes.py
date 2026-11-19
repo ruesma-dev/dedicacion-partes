@@ -28,10 +28,6 @@ REPARTO_OBRA = "obra"
 UNIDAD_KM = "km"
 #: R5: la cantidad más alta por unidad (cabe en `Numeric(12, 2)`).
 TOPES = {"eur": Decimal("999999.99"), "km": Decimal("99999.99")}
-#: R32 (D15): la marca con la que el transfer en modo pruebas empieza el
-#: `tex` (su `MARCA_PRUEBAS`, `PRUEBA-PORC` por defecto); al traer un
-#: comentario de Sigrid se le quita.
-MARCA_PRUEBAS = "PRUEBA-PORC"
 #: R5, R9: el largo máximo de un comentario (`String(200)`).
 COMENTARIO_MAX = 200
 _CENTIMO = Decimal("0.01")
@@ -152,13 +148,11 @@ def a_copiar(origen: Mapping[Any, Any], destino: Mapping[Any, Any]
     return {k: v for k, v in origen.items() if k not in destino}
 
 
-def comentario_de_sigrid(tex: str | None, marca: str | None) -> str | None:
-    """R32 (D15): el comentario de un `tex` de Sigrid: sin la marca de
-    pruebas del principio ni espacios; vacío ⇒ None."""
-    texto = (tex or "").strip()
-    if marca and texto.startswith(marca):
-        texto = texto[len(marca):].strip()
-    return texto or None
+def comentario_de_sigrid(tex: str | None) -> str | None:
+    """R32 (D15, D17): el comentario de un `tex` que publica el transfer:
+    sin espacios a los lados; vacío ⇒ None. La marca de pruebas ya la quitó
+    el transfer (D17, 2026-11-19): la api no la conoce ni la busca."""
+    return (tex or "").strip() or None
 
 
 def importes_del_mes(lineas: list[Linea], filas: Mapping[int, ImporteMes],

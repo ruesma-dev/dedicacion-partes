@@ -1,13 +1,15 @@
 # tests/test_f069_traer_comentarios.py
-"""F-069 · T15: al traer de Sigrid, el comentario de nuestras líneas ya
-registradas es el `tex` de Sigrid sin la marca de pruebas (R32, D15).
+"""F-069 · T15 y T21: al traer de Sigrid, el comentario de nuestras líneas
+ya registradas es el `tex` que publica el transfer, tal cual (R32, D15): el
+transfer ya le quitó la marca de pruebas (D17); la api no la conoce.
 
 - Titular por `sigrid_hmores_ide` o por su `synckey` (`porcentajes:{id}`);
   vinculado por la suya (`porcentajes:vin:{id}:{recurso}`) o su traza.
 - Solo si difiere; las líneas a mano ajenas (sin traza ni `synckey`
   nuestra) no se tocan; % y cantidades, tampoco.
 - Un evento `SIGRID` por trabajador (con el de lo aceptado, si lo hay); las
-  cantidades del mes (vinculados por %), con su evento `IMPORTES`.
+  cantidades del mes (vinculados por %), con su evento `IMPORTES` (D21), que
+  se deshace solo.
 - Una aceptada ahora trae el `tex` de su línea de menor `ide`.
 
 UoW en memoria (la de los tests de F-054): sin red ni BBDD.
@@ -108,10 +110,10 @@ def _eventos(uow):
     return [(e[2].value, e[4], e[5]) for e in uow.guardado.eventos]
 
 
-def test_f069_r32_titular_por_hmores_sin_la_marca_y_un_evento():
+def test_f069_r32_titular_por_hmores_y_un_evento():
     uow = _uow([(_ln(694, "100"), {"sigrid_hmores_ide": 901})])
     _, filas = _traer(uow, _Gw([_s(901, 10, 694, 1.0,
-                                   tex="PRUEBA-PORC mes con visita")]))
+                                   tex=" mes con visita ")]))
     assert filas[10][0]["linea"].comentario == "mes con visita"
     assert filas[10][0]["traza"] == {"sigrid_hmores_ide": 901}   # sin tocar
     [(tipo, antes, despues)] = _eventos(uow)
@@ -144,8 +146,56 @@ def test_f069_r32_solo_si_difiere_y_las_ajenas_no():
 def test_f069_r32_un_tex_vacio_borra_el_de_la_app():
     con = dataclasses.replace(_ln(694, "100"), comentario="viejo")
     uow = _uow([(con, {"sigrid_hmores_ide": 901})])
-    _traer(uow, _Gw([_s(901, 10, 694, 1.0, tex="PRUEBA-PORC")]))
+    _traer(uow, _Gw([_s(901, 10, 694, 1.0, tex=None)]))
     assert uow.sueltas == [("linea", 10, (694, False), None)]
+
+
+def test_f069_r32_la_api_no_quita_ninguna_marca():
+    """D17: un `tex` «PRUEBA-PORC x» (el transfer ya quitó SU marca: lo que
+    queda es texto) se guarda tal cual, en línea, subfila y mes."""
+    mes = {5020: ImporteMes(vinculado_ide=5020, cantidad=Decimal("100"))}
+    caja = dataclasses.replace(CAJA, cantidad=Decimal("80"))
+    uow = _uow([(_ln(694, "100", vinculados=(VP, caja)),
+                 {"sigrid_hmores_ide": 901})], mes)
+    _, filas = _traer(uow, _Gw(
+        [_s(901, 10, 694, 1.0, tex="PRUEBA-PORC x")],
+        [VinculadoRegistrado(7002, 5030, "porcentajes:vin:1:5030",
+                             "PRUEBA-PORC caja"),
+         VinculadoRegistrado(7003, 5020, "porcentajes:vin:1:5020",
+                             "PRUEBA-PORC km")]))
+    ln = filas[10][0]["linea"]
+    assert ln.comentario == "PRUEBA-PORC x"
+    assert ln.vinculados[1].comentario == "PRUEBA-PORC caja"
+    assert [g.comentario for g in uow.importes.guardados] == [
+        "PRUEBA-PORC km"]
+
+
+def test_f069_r32_d21_sigrid_e_importes_y_deshacer_el_de_importes():
+    """D21: titular y caja en el evento `SIGRID`; la cantidad del mes, en
+    uno `IMPORTES` propio, el último: deshacerlo repone el comentario del
+    mes y no toca el del titular."""
+    from application.use_cases import DeshacerUltimaModificacion
+    from domain.models import TipoEvento
+
+    from tests.test_f054_aceptar import FILTRO as F
+
+    mes = {5020: ImporteMes(vinculado_ide=5020, cantidad=Decimal("100"),
+                            comentario="viejo")}
+    uow = _uow([(_ln(694, "100", vinculados=(VP,)),
+                 {"sigrid_hmores_ide": 901})], mes)
+    _traer(uow, _Gw([_s(901, 10, 694, 1.0, tex="titular")],
+                    [VinculadoRegistrado(7003, 5020,
+                                         "porcentajes:vin:1:5020", "km")]))
+    assert [t for t, _, _ in _eventos(uow)] == ["SIGRID", "IMPORTES"]
+    assert uow.importes.filas[5020].comentario == "km"
+    uow.importes.borrar = lambda pid, vid: uow.importes.filas.pop(vid)
+    with uow:
+        DeshacerUltimaModificacion().ejecutar(uow, 2026, 9, 10, "ana",
+                                              filtro=F)
+    assert uow.importes.filas[5020].comentario == "viejo"
+    assert uow.importes.filas[5020].cantidad == Decimal("100")
+    assert uow.guardado.filas[10][0]["linea"].comentario == "titular"
+    assert uow.guardado.eventos[-1][2] is TipoEvento.IMPORTES
 
 
 def test_f069_r32_vinculado_de_linea_y_por_obra_en_su_subfila():
@@ -156,7 +206,7 @@ def test_f069_r32_vinculado_de_linea_y_por_obra_en_su_subfila():
     _, filas = _traer(uow, _Gw(vinculados=[
         VinculadoRegistrado(7001, 5000, "porcentajes:vin:1:5000", "tel"),
         VinculadoRegistrado(7002, 5030, "porcentajes:vin:1:5030",
-                            "PRUEBA-PORC caja de obra")]))
+                            "caja de obra")]))
     tel2, caja2 = filas[10][0]["linea"].vinculados
     assert (tel2.comentario, caja2.comentario) == ("tel", "caja de obra")
     assert caja2.cantidad == Decimal("80")           # no toca cantidades

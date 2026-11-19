@@ -18,7 +18,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from domain.importes import (
-    MARCA_PRUEBAS,
     REPARTO_PCT,
     TipoCantidad,
     comentario_de_sigrid,
@@ -163,17 +162,16 @@ class TraerDeSigrid:
 
     F-069 (R32, D15): y poner como comentario de cada línea NUESTRA ya
     registrada (titular por `sigrid_hmores_ide` o su `synckey`; vinculado
-    por la suya) el `tex` de Sigrid sin la marca de pruebas, si difiere. No
-    toca % ni cantidades. Los de líneas, en el evento `SIGRID` del
-    trabajador; los de las cantidades del mes (vinculados por %), en un
-    evento `IMPORTES` propio (su snapshot no es de líneas)."""
+    por la suya) el `tex` que publica el transfer, si difiere: ya viene sin
+    la marca de pruebas (D17), y aquí no se quita nada. No toca % ni
+    cantidades. Los de líneas, en el evento `SIGRID` del trabajador; los de
+    las cantidades del mes (vinculados por %), en un evento `IMPORTES`
+    propio (D21: su snapshot no es de líneas)."""
 
     def __init__(self, gateway: PorcentajesSigridGateway,
-                 importes: Mapping[str, TipoCantidad] | None = None,
-                 marca: str | None = MARCA_PRUEBAS) -> None:
+                 importes: Mapping[str, TipoCantidad] | None = None) -> None:
         self._gateway = gateway
         self._importes = dict(importes or {})
-        self._marca = marca
 
     def ejecutar(self, uow: UnitOfWork, anio: int, mes: int, usuario: str, *,
                  filtro: FiltroEmpresa, aceptar: list[dict[str, Any]]
@@ -325,12 +323,12 @@ class TraerDeSigrid:
 
     def _tex(self, por_ide: dict, por_clave: dict, hmores: int | None,
              synckey: str | None) -> str | None | bool:
-        """El comentario de Sigrid de una línea nuestra (sin la marca), o
-        `False` si no está en Sigrid."""
+        """El comentario de Sigrid de una línea nuestra (D17: el `tex` ya
+        viene sin la marca), o `False` si no está en Sigrid."""
         if hmores and int(hmores) in por_ide:
-            return comentario_de_sigrid(por_ide[int(hmores)], self._marca)
+            return comentario_de_sigrid(por_ide[int(hmores)])
         if synckey and synckey in por_clave:
-            return comentario_de_sigrid(por_clave[synckey], self._marca)
+            return comentario_de_sigrid(por_clave[synckey])
         return False
 
     @staticmethod

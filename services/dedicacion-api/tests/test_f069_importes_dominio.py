@@ -142,12 +142,21 @@ def test_f069_r8_a_copiar_solo_lo_que_falta_en_el_destino():
 
 
 @pytest.mark.parametrize("tex, esperado", [
-    ("PRUEBA-PORC visita", "visita"), ("PRUEBA-PORC", None),
-    ("  visita  ", "visita"), ("", None), (None, None),
-    ("visita PRUEBA-PORC", "visita PRUEBA-PORC")])
+    ("visita", "visita"), ("  visita  ", "visita"), ("", None),
+    ("   ", None), (None, None),
+    # D17: la api no conoce la marca de pruebas: lo que llegue, tal cual.
+    ("PRUEBA-PORC visita", "PRUEBA-PORC visita"),
+    ("PRUEBA-PORC", "PRUEBA-PORC")])
 def test_f069_r32_comentario_de_sigrid(tex, esperado):
-    assert comentario_de_sigrid(tex, "PRUEBA-PORC") == esperado
+    assert comentario_de_sigrid(tex) == esperado
 
 
-def test_f069_r32_comentario_de_sigrid_sin_marca():
-    assert comentario_de_sigrid(" PRUEBA-PORC x ", None) == "PRUEBA-PORC x"
+def test_f069_r32_la_api_no_conoce_la_marca():
+    """D17 (2026-11-19, «A: el transfer la quita»): ni constante ni
+    parámetro de marca en la api."""
+    import inspect
+
+    import domain.importes as importes
+    assert not hasattr(importes, "MARCA_PRUEBAS")
+    assert list(inspect.signature(comentario_de_sigrid).parameters) == [
+        "tex"]
