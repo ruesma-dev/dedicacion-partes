@@ -49,7 +49,7 @@ def test_f069_r3_ddl_de_importe_vinculado():
     assert _ddl(ImporteVinculadoORM.__table__) == [
         "CREATE TABLE importe_vinculado (", "id SERIAL NOT NULL",
         "periodo_id INTEGER NOT NULL", "vinculado_ide BIGINT NOT NULL",
-        "cantidad NUMERIC(12, 2) NOT NULL",
+        "cantidad NUMERIC(12, 2)",           # D19: nulable
         "copiado BOOLEAN DEFAULT false NOT NULL",
         "comentario VARCHAR(200)",
         "actualizado_en TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL",
@@ -341,13 +341,94 @@ def test_f069_r4_null_borra_y_lo_que_no_viene_no_se_toca():
 
 
 def test_f069_r4_una_cantidad_tecleada_quita_el_copiado():
+    """D18: teclear OTRA cantidad o «Revisado» (`revisado: true`) quita el
+    `copiado`; mandar la misma, no (la api no distingue teclearla igual)."""
     uow = _uow_imp(VP)
     uow.importes.filas[20] = ImporteMes(vinculado_ide=20,
                                         cantidad=Decimal("100.00"),
                                         copiado=True)
     _guardar(uow, {"vinculado_ide": 20, "cantidad": 100})
+    assert uow.importes.filas[20].copiado is True
+    assert uow.eventos.registrados == []
+    _guardar(uow, {"vinculado_ide": 20, "cantidad": 100, "revisado": True})
     assert uow.importes.filas[20].copiado is False
     assert len(uow.eventos.registrados) == 1
+    uow.importes.filas[20] = dataclasses.replace(uow.importes.filas[20],
+                                                 copiado=True)
+    _guardar(uow, {"vinculado_ide": 20, "cantidad": 101})
+    assert uow.importes.filas[20].copiado is False
+
+
+def _dos_copiadas():
+    caja = dataclasses.replace(CAJA, cantidad=Decimal("80.00"), copiado=True)
+    uow = _uow_imp(VP, caja)
+    uow.importes.filas[20] = ImporteMes(vinculado_ide=20,
+                                        cantidad=Decimal("100.00"),
+                                        copiado=True)
+    return uow
+
+
+def test_f069_r4_d18_solo_el_comentario_no_revisa_ninguna():
+    """D18 (2026-11-19, «No cuenta»): dos copiadas en el mismo `PUT`; el
+    comentario de una cambia y las dos siguen `copiado`."""
+    uow = _dos_copiadas()
+    _guardar(uow, {"vinculado_ide": 20, "cantidad": 100,
+                   "comentario": "visita"},
+             {"vinculado_ide": 30, "obra_ide": 100, "cantidad": 80})
+    assert (uow.importes.filas[20].copiado,
+            uow.importes.filas[20].comentario) == (True, "visita")
+    assert _subfila(uow, 100).copiado is True
+    [(_, _, despues)] = uow.eventos.registrados
+    # La del mes y la caja de las dos líneas (100 y 900), todas copiadas.
+    assert [b["copiado"] for b in despues] == [True, True, True]
+
+
+def test_f069_r4_d18_revisado_en_una_solo_quita_esa():
+    uow = _dos_copiadas()
+    _guardar(uow, {"vinculado_ide": 20, "cantidad": 100, "revisado": True},
+             {"vinculado_ide": 30, "obra_ide": 100, "cantidad": 80,
+              "revisado": False})
+    assert uow.importes.filas[20].copiado is False
+    assert _subfila(uow, 100).copiado is True
+    uow = _dos_copiadas()
+    _guardar(uow, {"vinculado_ide": 30, "obra_ide": 100, "cantidad": 80,
+                   "revisado": True})
+    assert (uow.importes.filas[20].copiado, _subfila(uow, 100).copiado) == (
+        True, False)
+
+
+def test_f069_r4_d19_comentario_sin_cantidad_se_guarda_tambien_por_pct():
+    """D19 («Guardarlo igual»): km `null` con comentario ⇒ fila sin cantidad
+    y con el comentario; sin los dos ⇒ sin fila."""
+    uow = _uow_imp(VP, CAJA)
+    _guardar(uow, {"vinculado_ide": 20, "cantidad": None,
+                   "comentario": "visita a proveedor"})
+    assert uow.importes.filas[20] == ImporteMes(
+        vinculado_ide=20, cantidad=None, copiado=False,
+        comentario="visita a proveedor")
+    [(_, _, despues)] = uow.eventos.registrados
+    assert despues == [{"vinculado_ide": 20, "obra_ide": None,
+                        "es_postventa": False, "cantidad": None,
+                        "copiado": False, "comentario": "visita a proveedor"}]
+    _guardar(uow, {"vinculado_ide": 20, "cantidad": 100,
+                   "comentario": "visita a proveedor"})
+    assert uow.importes.filas[20].cantidad == Decimal("100.00")
+    _guardar(uow, {"vinculado_ide": 20, "cantidad": None,
+                   "comentario": None})
+    assert 20 not in uow.importes.filas
+    assert uow.importes.escrituras[-1] == ("borrar", 20)
+
+
+def test_f069_r4_d19_deshacer_vuelve_al_comentario_sin_cantidad():
+    uow = _uow_imp(VP)
+    _guardar(uow, {"vinculado_ide": 20, "comentario": "solo comentario"})
+    _guardar(uow, {"vinculado_ide": 20, "cantidad": 5,
+                   "comentario": "solo comentario"})
+    DeshacerUltimaModificacion().ejecutar(uow, ANIO, MES, 10, "pgris",
+                                          filtro=FILTRO)
+    assert uow.importes.filas[20] == ImporteMes(
+        vinculado_ide=20, cantidad=None, copiado=False,
+        comentario="solo comentario")
 
 
 @pytest.mark.parametrize("malo", [
@@ -365,6 +446,10 @@ def test_f069_r4_una_cantidad_tecleada_quita_el_copiado():
      "cantidad": 1},
     {"vinculado_ide": 30, "obra_ide": 100, "es_postventa": "no",
      "cantidad": 1},
+    # D18 (R5): `revisado`, booleano (el 20 ya va el primero: la caja).
+    {"vinculado_ide": 30, "obra_ide": 900, "cantidad": 1, "revisado": "si"},
+    {"vinculado_ide": 30, "obra_ide": 100, "cantidad": 1, "revisado": 1},
+    {"vinculado_ide": 30, "obra_ide": 100, "cantidad": 1, "revisado": "true"},
 ])
 def test_f069_r5_r6_lo_que_no_vale_es_422_sin_guardar_nada(malo):
     uow = _uow_imp(VP, CAJA, TEL)
@@ -554,6 +639,8 @@ def test_f069_r4_r10_put_importes_responde_la_fila(api_imp):
     ({"importes": [{"vinculado_ide": 20, "cantidad": -3}]}, 422),
     ({"importes": [{"vinculado_ide": 10, "cantidad": 3}]}, 422),
     ({"importes": [{"vinculado_ide": 20, "cantidad": 3, "otra": 1}]}, 422),
+    ({"importes": [{"vinculado_ide": 20, "cantidad": 3,
+                    "revisado": "si"}]}, 422),
     ({}, 422),
 ])
 def test_f069_r5_r6_put_importes_errores(api_imp, cuerpo, codigo):
@@ -561,6 +648,18 @@ def test_f069_r5_r6_put_importes_errores(api_imp, cuerpo, codigo):
     r = cliente.put(RUTA, json=cuerpo)
     assert r.status_code == codigo, r.text
     assert uow.importes.escrituras == []
+
+
+def test_f069_r4_put_importes_con_revisado(api_imp):
+    """D18: la ruta acepta `revisado` (el esquema lo declara) y lo pasa."""
+    cliente, uow = api_imp
+    uow.importes.filas[20] = ImporteMes(vinculado_ide=20,
+                                        cantidad=Decimal("100.00"),
+                                        copiado=True)
+    r = cliente.put(RUTA, json={"importes": [
+        {"vinculado_ide": 20, "cantidad": 100, "revisado": True}]})
+    assert r.status_code == 200, r.text
+    assert r.json()["trabajador"]["importes"][0]["copiado"] is False
 
 
 def test_f069_r6_put_importes_periodo_inexistente_404(api_imp):
@@ -687,6 +786,26 @@ def test_f069_r8_deshacer_dos_veces_deshace_la_copia_entera():
     assert _subfila(uow, 100).cantidad == Decimal("80.00")
     deshacer.ejecutar(uow, ANIO, MES, 10, "pgris", filtro=FILTRO)
     assert uow.lineas[P_ACT][10] == []
+
+
+def test_f069_r8_d19_un_comentario_sin_cantidad_se_copia_sin_copiado():
+    """D19 + R8: `copiado = true` solo si se copia una cantidad; el
+    comentario sin cantidad del mes o de la caja se copia igual, sin la
+    marca (no hay nada que revisar: no se registra)."""
+    uow = _uow_copia(origen_mes={20: ImporteMes(
+        vinculado_ide=20, cantidad=None, comentario="visita")})
+    caja = dataclasses.replace(CAJA, comentario="sin caja")
+    uow.lineas[P_ANT][10] = [dataclasses.replace(
+        uow.lineas[P_ANT][10][0], vinculados=(VP, caja))]
+    _copiar_trabajador(uow)
+    assert uow.importes.filas[P_ACT] == {20: ImporteMes(
+        vinculado_ide=20, cantidad=None, copiado=False, comentario="visita")}
+    sub = _subfila(uow, 100)
+    assert (sub.cantidad, sub.copiado, sub.comentario) == (
+        None, None, "sin caja")
+    _, _, despues = uow.eventos.registrados[1]
+    assert [(b["vinculado_ide"], b["copiado"]) for b in despues] == [
+        (20, False), (30, False)]
 
 
 def test_f069_r8_la_copia_repetida_del_trabajador_solo_completa_el_mes():

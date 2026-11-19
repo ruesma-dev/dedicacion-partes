@@ -40,13 +40,16 @@ class LineaIn(_Base):
 class ImporteIn(_Base):
     """F-069 (R4): la cantidad y el comentario de un vinculado de cantidad;
     `obra_ide`/`es_postventa`, solo en los por obra (caja). `cantidad` como
-    número o texto (la valida `domain/importes.py`, R5); `null` borra."""
+    número o texto (la valida `domain/importes.py`, R5); `null`, sin
+    cantidad (D19: el comentario se guarda igual). `revisado: true` es
+    «Revisado» (D18): quita el `copiado` aunque la cantidad no cambie."""
 
     vinculado_ide: Any
     obra_ide: Any = None
     es_postventa: Any = False
     cantidad: Any = None
     comentario: Any = None
+    revisado: Any = None
 
 
 class ImportesIn(_Base):

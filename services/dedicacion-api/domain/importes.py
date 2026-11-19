@@ -141,6 +141,16 @@ def validar_comentario(texto: Any) -> str | None:
     return limpio or None
 
 
+def validar_revisado(valor: Any) -> bool:
+    """R5 (D18): `revisado` es un booleano; sin él, `False`. Cualquier otra
+    cosa (un texto, un número): `ImporteInvalido`."""
+    if valor is None:
+        return False
+    if not isinstance(valor, bool):
+        raise ImporteInvalido(f"revisado {valor!r} no es un booleano")
+    return valor
+
+
 def a_copiar(origen: Mapping[Any, Any], destino: Mapping[Any, Any]
              ) -> dict[Any, Any]:
     """R8 (D7): de `origen`, lo que no está en `destino` (copiar el mes

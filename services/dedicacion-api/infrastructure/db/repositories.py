@@ -814,9 +814,11 @@ class PgVinculadoRepository:
 # Cantidades del mes de los vinculados por % (F-069)
 # ----------------------------------------------------------------------
 def _a_importe(f: ImporteVinculadoORM) -> ImporteMes:
+    # D19: una fila puede no tener cantidad (solo el comentario).
     return ImporteMes(vinculado_ide=f.vinculado_ide,
-                      cantidad=Decimal(f.cantidad), copiado=bool(f.copiado),
-                      comentario=f.comentario)
+                      cantidad=None if f.cantidad is None
+                      else Decimal(f.cantidad),
+                      copiado=bool(f.copiado), comentario=f.comentario)
 
 
 def importes_del_mes_de(s: Session, anio: int, mes: int,

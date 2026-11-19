@@ -408,8 +408,9 @@ class ImporteVinculadoORM(Base):
     """La cantidad DEL MES de un vinculado de reparto `pct` (km y viajes;
     F-069, R3, D7): una por periodo y vinculado, que el transfer reparte con
     el % de cada línea del titular. `copiado` si vino de copiar el mes
-    anterior y nadie la ha revisado (D11). Sin cantidad no hay fila: `null`
-    en el `PUT …/importes` la borra. Tabla NUEVA, por `create_all`."""
+    anterior y nadie la ha revisado (D11). D19: `cantidad` nulable (un
+    comentario sin cantidad se guarda igual); sin cantidad ni comentario no
+    hay fila. Tabla NUEVA, por `create_all`."""
 
     __tablename__ = "importe_vinculado"
 
@@ -420,7 +421,7 @@ class ImporteVinculadoORM(Base):
     vinculado_ide: Mapped[int] = mapped_column(
         ForeignKey("recurso_vinculado.ide"), nullable=False
     )
-    cantidad: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    cantidad: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
     copiado: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=false())
     comentario: Mapped[str | None] = mapped_column(String(200))

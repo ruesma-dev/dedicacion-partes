@@ -37,6 +37,7 @@ from domain.importes import (
     tipo_de,
     validar_cantidad,
     validar_comentario,
+    validar_revisado,
 )
 from domain.incidencias import completar_dias, identificar, validar_incidencias
 from domain.models import (
@@ -1188,7 +1189,9 @@ def _copiar_importes(uow: UnitOfWork, origen_id: int, periodo_id: int,
                      usuario: str) -> None:
     """F-069 (R8, D7, D11): copia al destino las cantidades DEL MES del
     trabajador en el origen que en el destino falten (nunca pisa), de los
-    vinculados de sus subfilas, con `copiado = true`. Si copia alguna, un
+    vinculados de sus subfilas, con `copiado = true` si se copia una
+    cantidad (D19: un comentario sin cantidad no tiene nada que revisar:
+    `copiado = false`). Si copia alguna, un
     evento `IMPORTES` (tras el de la copia de líneas): deshacer dos veces
     deshace la copia entera."""
     vigentes = {v.vinculado_ide for ln in lineas for v in ln.vinculados}
@@ -1202,12 +1205,11 @@ def _copiar_importes(uow: UnitOfWork, origen_id: int, periodo_id: int,
     if not nuevos:
         return
     antes = _foto_importes(lineas, destino)
-    for im in nuevos.values():
-        uow.importes.guardar(periodo_id, dataclasses.replace(im, copiado=True),
-                             usuario)
-    despues = _foto_importes(lineas, {
-        **destino, **{k: dataclasses.replace(v, copiado=True)
-                      for k, v in nuevos.items()}})
+    copiados = {k: dataclasses.replace(v, copiado=v.cantidad is not None)
+                for k, v in nuevos.items()}
+    for im in copiados.values():
+        uow.importes.guardar(periodo_id, im, usuario)
+    despues = _foto_importes(lineas, {**destino, **copiados})
     uow.eventos.registrar(periodo_id, trabajador_ide, TipoEvento.IMPORTES,
                           usuario, _snapshot_importes(antes),
                           _snapshot_importes(despues))
@@ -1331,7 +1333,8 @@ def _aplicar_foto(uow: UnitOfWork, periodo_id: int, trabajador_ide: int,
         if actual.get((vid, None, False)) == nuevo:
             continue
         cambio = True
-        if nuevo is None or nuevo[0] is None:
+        # D19: la fila se queda si tiene cantidad o comentario.
+        if nuevo is None or (nuevo[0] is None and not nuevo[2]):
             uow.importes.borrar(periodo_id, vid)
         else:
             uow.importes.guardar(periodo_id, ImporteMes(
@@ -1365,10 +1368,12 @@ def _subfila_con(v: SubfilaVinculado, valor: ValorImporte | None
 class GuardarImportes:
     """F-069 (R4-R7): `PUT …/importes`. Sustituye la cantidad y el
     comentario de los vinculados de cantidad que llegan (los por obra, en
-    la línea de su obra y modo); `null` borra; lo que no llega no se toca.
-    Una cantidad tecleada deja `copiado = false` («Revisado» es mandar la
-    misma). Validado entero antes de escribir nada (422); con cambios, un
-    evento `IMPORTES` con la foto de antes y la de después."""
+    la línea de su obra y modo); lo que no llega no se toca. D18: `copiado`
+    pasa a `false` solo si la cantidad cambia o llega `revisado: true`
+    («Revisado»); cambiar solo el comentario lo conserva. D19: cantidad
+    `null` con comentario se guarda sin cantidad (también por %); sin los
+    dos, nada. Validado entero antes de escribir nada (422); con cambios,
+    un evento `IMPORTES` con la foto de antes y la de después."""
 
     def __init__(self, tipos: Mapping[str, TipoCantidad] | None = None
                  ) -> None:
@@ -1391,9 +1396,10 @@ class GuardarImportes:
         antes = _foto_importes(
             lineas, uow.importes.de_trabajador(periodo_id, trabajador_ide))
         despues = dict(antes)
-        despues.update(self._validar(lineas, entrada))
+        despues.update(self._validar(lineas, entrada, antes))
+        # D19: sin cantidad ni comentario, no queda nada que guardar.
         despues = {k: v for k, v in despues.items()
-                   if v[0] is not None or (k[1] is not None and v[2])}
+                   if v[0] is not None or v[2]}
         if despues != antes:
             _aplicar_foto(uow, periodo_id, trabajador_ide, despues, usuario)
             uow.eventos.registrar(
@@ -1404,10 +1410,14 @@ class GuardarImportes:
             uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
         )
 
-    def _validar(self, lineas: list[Linea], entrada: list[dict[str, Any]]
+    def _validar(self, lineas: list[Linea], entrada: list[dict[str, Any]],
+                 antes: Mapping[ClaveImporte, ValorImporte] | None = None,
                  ) -> dict[ClaveImporte, ValorImporte]:
         """R5, R6: cada elemento contra las subfilas del trabajador; el
-        primero que no vale tumba el `PUT` entero."""
+        primero que no vale tumba el `PUT` entero. D18: el `copiado` de
+        `antes` se conserva si la cantidad no cambia y no llega
+        `revisado: true`."""
+        antes = antes or {}
         subfilas = {(v.vinculado_ide, ln.clave()): v
                     for ln in lineas for v in ln.vinculados}
         por_vinculado = {vid: v for (vid, _), v in subfilas.items()}
@@ -1424,6 +1434,7 @@ class GuardarImportes:
                     "trabajador en el mes")
             cantidad = validar_cantidad(bruto.get("cantidad"), tipo.unidad)
             comentario = validar_comentario(bruto.get("comentario"))
+            revisado = validar_revisado(bruto.get("revisado"))
             if tipo.reparto == REPARTO_OBRA:
                 obra = bruto.get("obra_ide")
                 pv = bruto.get("es_postventa", False)
@@ -1438,5 +1449,8 @@ class GuardarImportes:
                 clave = (vid, None, False)
             if clave in out:
                 raise ImporteInvalido(f"Importe repetido: {clave}")
-            out[clave] = (cantidad, False, comentario)
+            previo = antes.get(clave)
+            copiado = bool(previo and previo[1] and not revisado
+                           and previo[0] == cantidad)
+            out[clave] = (cantidad, copiado, comentario)
         return out
