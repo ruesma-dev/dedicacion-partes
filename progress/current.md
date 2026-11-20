@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-069 · `in_review` (2026-11-20), review 5 (incremental) en marcha:** vuelta desde `human_review` por la PARADA 2 («1 recomendado. 2 mes sin uso y hazlo tu»): test que fija que el lote del `tex` de D20 es el último `escribir` (`5cf50a8`, con RED; O1 de la review 4) y MANUAL T16 HECHA por el líder en 2032-03/04 (`progress/manual_F-069.md`: todo cumple; el `limpiar` borró también las `PRUEBA-PORC` de la T19 de F-054, ver «F-054»). Antes: review 3 APROBADA (código), campaña T13/T18 (142/159 muertos, 17 equivalentes, `progress/mutacion_F-069.md`) y review 4 de evidencias APROBADA. Después, otra vez PARADA 2; queda T17 al desplegar. Rama `feature/F-069-importe-caja-km` (copia `porcentajes-f069`); spec `specs/F-069-importe-caja-km/` (aprobada 2026-11-12, enmienda D17-D21 aprobada 2026-11-19).
+**F-069 · `human_review` (2026-11-20), PARADA 2 tras la review 5 APROBADA (incremental):** vuelta desde `human_review` por la PARADA 2 («1 recomendado. 2 mes sin uso y hazlo tu»): test que fija que el lote del `tex` de D20 es el último `escribir` (`5cf50a8`, con RED; O1 de la review 4) y MANUAL T16 HECHA por el líder en 2032-03/04 (`progress/manual_F-069.md`: todo cumple; el `limpiar` borró también las `PRUEBA-PORC` de la T19 de F-054, ver «F-054»). Antes: review 3 APROBADA (código), campaña T13/T18 (142/159 muertos, 17 equivalentes, `progress/mutacion_F-069.md`) y review 4 de evidencias APROBADA. Después, otra vez PARADA 2; queda T17 al desplegar. Rama `feature/F-069-importe-caja-km` (copia `porcentajes-f069`); spec `specs/F-069-importe-caja-km/` (aprobada 2026-11-12, enmienda D17-D21 aprobada 2026-11-19).
 
 **F-054 CERRADA (`done`) el 2026-11-18 y unida a `dev`** (OK del humano al cierre: «ok»). Review 11 APROBADA; MANUAL T19 hecha en modo pruebas (0404, 2032-01; `progress/manual_F-054.md`): sobrantes a 0 en su sitio, mismo `ide`/`pos`, sin `DELETE`, preflight mediana 10,43 s ≤ 11,89 s. Resumen en `progress/history.md`. **Pendiente:** T20 al desplegar (transfer → api → front, `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md`, aviso a `partes`); decisión del humano sobre lo que queda de pruebas en la 0404 (sección «F-054», abajo). **Siguiente:** F-069, en review (arriba). **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la api (`990e264`).
 
@@ -82,7 +82,7 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 - **Observaciones de la review 1 que no cambian la spec** (decisión del líder, enseñadas al humano): O3, `CopiarTrabajadorAnterior` sobre un destino con líneas sustituye también su caja tecleada (coherente con «sustituyendo»); O4, en `traer_sigrid._comentarios`, sin `sigrid_hmores_ide` el comentario del mes no sale de la línea de menor `ide` (sin efecto visible). O1 y O2 quedan resueltas por D19 y D20.
 - Informe del implementer: `progress/impl_F-069.md` (pasada 1 resumida y pasada 2; decisiones 1-10).
 - **T13 / T18, mutación (`critico`): HECHAS el 2026-11-20** (`2fe6031`…`dccbb7d`; 142/159 muertos, 17 equivalentes justificados; review 4 de evidencias APROBADA el 2026-11-20). Lo que se pidió: tras el APPROVED del reviewer principal, el líder relanza al implementer para la pasada de campaña (incluye `texto_linea.py`, `_actualizar_tex` y `_tex_sigue_valiendo`, O3 de la review 2): `python -m harness.mutacion --feature F-069` ⇒ `progress/mutacion_F-069.md` válido, 0 supervivientes sin justificar. Después, `bash harness/init.sh` sin `[KO]` (T18) y el reviewer de evidencias.
-- **T16, MANUAL: HECHA el 2026-11-20 por el líder** (petición del humano: «mes sin uso y hazlo tu»), en modo pruebas, 2032-03 y 2032-04, trabajador 2299582 (CA0173, VP0131): D19, reparto del km (12 € y 8 € de 20 €), caja 80 € solo en la primera obra, «ya registrada», D20 (`UPDATE` solo de `tex`, 0 `DELETE`), copia con «copiado», D18, «Revisado» solo en el km y D17 al traer de Sigrid: todo cumple. Detalle en `progress/manual_F-069.md`. Hallazgo: `prueba_escritura_porcentajes.py limpiar` no se limita a `--ano/--mes` (borra toda la marca de la 0404).
+- **T16, MANUAL: HECHA el 2026-11-20 por el líder** (petición del humano: «mes sin uso y hazlo tu»), en modo pruebas, 2032-03 y 2032-04, trabajador 2299582 (CA0173, VP0131): D19, reparto del km (12 € y 8 € de 20 €), caja 80 € solo en la primera obra, «ya registrada», D20 (`UPDATE` solo de `tex`, 0 `DELETE`), copia con «copiado», D18, «Revisado» solo en el km y D17 al traer de Sigrid: todo cumple. Detalle en `progress/manual_F-069.md`. El `limpiar` borró, como dice su docstring, toda la marca `PRUEBA-PORC` del hilo de cualquier mes y obra (`--ano/--mes` no filtran), también las tres de la T19 de F-054, sin la decisión del humano; dicho en la PARADA 2.
 - **T17, al desplegar (lo lanza el humano):** orden **transfer → api → front**. Después, **pendiente antes del `done` de la parte de ecosistema**: `azure-apps/dedicacion.md` al día desde `docs/INTEGRACION.md` §5 y §7 (tabla `importe_vinculado` y columnas nuevas, `PUT …/periodos/{a}/{m}/trabajadores/{ide}/importes`, claves nuevas del contrato del transfer, `revisado` en el `PUT`, `tex` sin marca en `existentes`, `tex_nuevo`/`tex_actualizadas` y el `UPDATE` de `tex` de D20, lectura de F-054 ampliada a las `porcentajes:vin:`), commit aparte en `azure-apps` con `git pull --rebase` antes; aviso a `partes` y apunte para F-071 (design §10).
 
 ## F-054 · CERRADA (2026-11-18), pendiente de desplegar
@@ -406,7 +406,7 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
   PT26/00298 (En registro), partida CI.1.8, con cuenta analítica. Las dos
   líneas de Bas Leal en la **0404** (`porcentajes:148` y `:149`, parte
   PT26/00344) son de la prueba LOCAL en modo pruebas (ids de la base local):
-  **pendiente que el humano las borre**, como las de F-037.
+  las borró el `limpiar` de F-051 el 2026-10-21 (`progress/manual_F-051.md`).
 - **Desplegado el 2026-10-07 (tarde): F-041 y F-042**, solo el front
   (`r20261007-1734`, revisión `Running` comprobada con `az containerapp show`):
   el filtro de obra casa con `Postv-` y la última fila abre el desplegable de
@@ -482,7 +482,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-19):** F-069 en `in_review`; F-054 cerrada el 2026-11-18 y pendiente de desplegar (T20);
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-20):** F-069 en `human_review` (PARADA 2); F-054 cerrada el 2026-11-18 y pendiente de desplegar (T20);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
@@ -614,10 +614,7 @@ después, F-066.
   humano las ejecute», pero aquí el líder las cumple a menudo antes de la
   review (F-055, F-056, F-057); propuesta: «listadas con su comando exacto y,
   si ya se ejecutaron, con quién, cuándo y el resultado real» ⇒ `arnes-base`.
-- **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
-  `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
-  `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`
-  410599, GONZALEZ PANIAGUA, `porcentajes:180`).
+- **Borrar en la 0404 las líneas de las pruebas locales: HECHO** el 2026-10-21 por el `limpiar` de F-051 (Bas Leal `porcentajes:148`/`:149` y la M3 de F-050, `porcentajes:180`).
 - **Cargar también la copia local de variables al desplegar.** El orden es
   `. .\00_vars_dedicacion.ps1`, `. .\00_vars_dedicacion.local.ps1` y
   `. .\00_capps_vars_dedicacion.ps1`. Si falta la local, `redeploy` sigue con
