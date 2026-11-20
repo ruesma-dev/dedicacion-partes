@@ -290,6 +290,26 @@ def test_f069_r26_con_otra_escritura_en_la_misma_peticion():
     assert cli.borrados() == []
 
 
+def test_f069_r26_el_lote_del_tex_es_el_ultimo_del_ejecutar():
+    """Design §6.5 (decisión 8 del implementer; review 4, O1): el `UPDATE
+    hmores SET tex` va en un lote propio y DESPUÉS de todas las demás
+    escrituras: el `INSERT` del titular nuevo y el de su vinculado
+    (`EscrituraVinculados`) van antes."""
+    cli = ClienteCant(lineas_parte=_registradas())
+    nueva = _titular(registro_id=2, recurso_ide=400, nombre="Otro",
+                     categoria="Jefe de obra", comentario="otra",
+                     vinculados=[_km(comentario="km de otra")])
+    res = _eje(cli, _entrada(km=None, caja=None), nueva)
+    lotes = [[(s["sql"], s["parameters"].get("synckey")) for s in lote]
+             for lote in cli.llamadas]
+    assert lotes == [[("insert", "porcentajes:2")],
+                     [("insert", "porcentajes:vin:2:20")],
+                     [("editar_tex", None)]]
+    assert [v.accion for v in res.vinculados] == [
+        "ya_registrado", "ya_registrado", "escribir"]
+    assert [t["hmores_ide"] for t in res.tex_actualizadas] == [5301]
+
+
 # ===================== R27 · suelto = lote; R28 · contrato =============== #
 def test_f069_r27_el_lote_da_lo_mismo_que_la_suelta():
     peticion = (ObraEntrada(codigo=OBRA_ORIGEN), [_entrada()])
