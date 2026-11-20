@@ -189,7 +189,7 @@ Tal cual, sin pipes: código de salida **0**, ningún `[KO]` (ruff: 406 avisos d
 
 ## Pendiente (fuera de mi alcance)
 
-- **T13 / T18 (mutación):** para la pasada de campaña, tras el APPROVED.
+- **T13 / T18 (mutación):** hechas en la pasada de campaña (`progress/mutacion_F-069.md`).
 - **T16, MANUAL (humano o líder), escribe en la 0404 de pruebas; no la he
   ejecutado.** Pasos completos en `tasks.md` T16 (D19, D20, «Revisado» solo en
   el km, D17). Antes: servicios de la rama con `OBRA_PRUEBAS_FORZAR=true`,
@@ -214,6 +214,6 @@ Tal cual, sin pipes: código de salida **0**, ningún `[KO]` (ruff: 406 avisos d
 |---|---|
 | Tests ejecutados | raíz 2319 passed / 47 skipped · api 1632 · front 573 · transfer 1956; 0 failed |
 | Cobertura de líneas cambiadas | **99,6 %** (687/690; umbral 90 %, `critico`) |
-| Mutantes generados / supervivientes | **PENDIENTE de la pasada de campaña** (tras el APPROVED: `python -m harness.mutacion --feature F-069`) |
+| Mutantes generados / supervivientes | 473 generados, muestra `critico` de 159: campaña 1, 29 supervivientes; tras los tests de `2fe6031`, **142 muertos y 17 supervivientes, todos equivalentes justificados** (`progress/mutacion_F-069.md`) |
 | Tiempo de la suite | raíz 560,54 s · api 52,40 s · front 71,05 s · transfer 30,24 s |
 | Capa e2e | `CAPA E2E: N/A` (ningún servicio declara el bloque e2e) |
