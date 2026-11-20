@@ -47,6 +47,14 @@ const COLUMNAS = {
     ordenable: false,
     placeholder: "Filtrar partida…",
   },
+  // F-069 (R13): el comentario del titular en la fila de la línea y el del
+  // vinculado en su subfila. Lo pinta tal cual llega de la API.
+  comentario: {
+    titulo: "Comentario",
+    ancho: 240,
+    ordenable: false,
+    placeholder: "Filtrar comentario…",
+  },
   total: {
     titulo: "Total",
     ancho: 190,
@@ -55,16 +63,16 @@ const COLUMNAS = {
     placeholder: "ok / falta / sobra…",
   },
 };
-const ORDEN_COLUMNAS_DEFECTO = ["nombre", "categoria", "asignaciones", "tipo", "partida", "total"];
+const ORDEN_COLUMNAS_DEFECTO = ["nombre", "categoria", "asignaciones", "tipo", "partida", "comentario", "total"];
 // F-050 (R22): columnas con una celda por línea (subfila); las demás son
 // del trabajador y ocupan todas sus subfilas (`rowSpan`). F-044 (R6): y por
 // subfila de vinculado.
-const COLUMNAS_POR_LINEA = ["asignaciones", "tipo", "partida"];
+const COLUMNAS_POR_LINEA = ["asignaciones", "tipo", "partida", "comentario"];
 const CLAVE_TABLA = "dedicacion:tabla:v1";
 // F-050 (M2, punto 1): hasta dónde encoge cada columna para que la tabla
 // quepa en la ventana (Total no encoge: su contenido no se parte). Por debajo
 // de esto, scroll horizontal. Las preferencias del usuario no se tocan.
-const MINIMO_COLUMNA = { nombre: 160, categoria: 100, asignaciones: 150, tipo: 110, partida: 150, total: 190 };
+const MINIMO_COLUMNA = { nombre: 160, categoria: 100, asignaciones: 150, tipo: 110, partida: 150, comentario: 120, total: 190 };
 
 const state = {
   anio: 0,
@@ -302,11 +310,13 @@ function cargarPrefsTabla() {
         // F-050 (R23): la columna Partida entra justo a la derecha de la de
         // obras en unas preferencias guardadas sin ella. F-044 (R6): Tipo
         // recurso, también a la derecha de la de obras, y Partida tras ella.
+        // F-069 (R13): Comentario, a la derecha de Partida.
         const tras = c === "tipo" ? validas.indexOf("asignaciones")
           : c === "partida"
             ? (validas.includes("tipo") ? validas.indexOf("tipo")
               : validas.indexOf("asignaciones"))
-            : -1;
+            : c === "comentario" ? validas.indexOf("partida")
+              : -1;
         if (tras >= 0) validas.splice(tras + 1, 0, c);
         else validas.push(c);
       });
@@ -913,6 +923,13 @@ function textoColumna(t, clave, conVinculados = true) {
       (l.vinculados || []).map((v) =>
         `${v.tipo_res || v.tipo || ""} ${v.cod || ""}`)) : []).join(" ");
   }
+  // F-069 (R13): los comentarios de sus líneas y de sus vinculados.
+  if (clave === "comentario") {
+    return t.lineas.map((l) => l.comentario || "").concat(conVinculados
+      ? t.lineas.flatMap((l) => (l.vinculados || []).map((v) =>
+        comentarioVinculado(t, v) || ""))
+      : []).join(" ");
+  }
   if (clave === "total") {
     const partes = [fmtPct(t.total), String(Math.round(t.total))];
     if (t.estado === "OK") partes.push("ok 100");
@@ -1178,6 +1195,62 @@ function construirFilaVinculado(t, idx, v, trs) {
   return tr;
 }
 
+// F-069 (R10, R14): la cantidad del mes de un vinculado por % (la de
+// `t.importes`) o la de esa línea en uno por obra (la de la subfila).
+function cantidadVinculado(t, v) {
+  if (v.reparto === "pct") {
+    return (t.importes || []).find((i) => i.vinculado_ide === v.vinculado_ide) || {};
+  }
+  return v;
+}
+
+function comentarioVinculado(t, v) {
+  return v.reparto ? cantidadVinculado(t, v).comentario : v.comentario;
+}
+
+// F-069 (R14): «100 km», «80,00 €».
+function fmtCantidad(cantidad, unidad) {
+  if (cantidad == null) return "";
+  if (unidad === "km") {
+    return `${cantidad.toLocaleString("es-ES", { maximumFractionDigits: 2 })} km`;
+  }
+  return `${cantidad.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
+
+// F-069 (R14): lo que la subfila de un vinculado de cantidad enseña tras
+// su tipo: su cantidad con unidad, «falta importe» o la marca de copiado.
+// No reparte ni multiplica: pinta lo que llega. Sin `reparto`, nada.
+function htmlCantidadVinculado(t, v) {
+  if (!v.reparto) return "";
+  const c = cantidadVinculado(t, v);
+  if (c.cantidad == null) {
+    return '<span class="cantidad-vin falta">falta importe</span>';
+  }
+  return `<span class="cantidad-vin">${escapeHtml(fmtCantidad(c.cantidad, v.unidad))}</span>` +
+    (c.copiado ? '<span class="marca-copiado">copiado</span>' : "");
+}
+
+// F-069 (R29): el importe de un vinculado de cantidad en el modal, tal
+// como lo manda el transfer: «27,36 € de 45,60 €», en km «724,5 km × 0,20
+// €/km» y en caja «caja de esta obra». No calcula nada.
+function textoImporteVinculado(v) {
+  const eur = (x) => fmtCantidad(x, "eur");
+  if (v.reparto === "obra") return `${eur(v.tot)} · caja de esta obra`;
+  const base = `${eur(v.tot)} de ${eur(v.pre)}`;
+  if (v.km == null) return base;
+  const precio = (v.precio_km || 0).toLocaleString("es-ES",
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${fmtCantidad(v.km, "km")} × ${precio} €/km · ${base}`;
+}
+
+// F-069 (R29, D20): en una ya registrada cuyo comentario cambia, el `tex`
+// que el transfer le pondrá (su motivo ya dice «se actualiza el comentario»
+// o por qué no). Sin `tex_nuevo` (transfer viejo o nada que cambiar), nada.
+function htmlTexNuevo(x) {
+  if (!x.tex_nuevo) return "";
+  return `<div class="tex-nuevo">comentario nuevo: «${escapeHtml(x.tex_nuevo)}»</div>`;
+}
+
 // Las celdas de la subfila del vinculado `v` bajo la línea `idx` (F-044,
 // R6-R9). Solo pinta lo que manda la API: el % es el de la línea y no se
 // edita (R7); la partida, la elegida o la propuesta guardada en cursiva con
@@ -1197,7 +1270,11 @@ function construirCeldaVinculado(t, idx, v, clave) {
     td.className = "celda-tipo";
     td.innerHTML =
       `<span class="tipo-vin">${escapeHtml(v.tipo_res || v.tipo || "")}</span>` +
-      `<span class="cod-vin">${escapeHtml(v.cod || "")}</span>`;
+      `<span class="cod-vin">${escapeHtml(v.cod || "")}</span>` +
+      (v.reparto ? htmlCantidadVinculado(t, v) : "");
+  } else if (clave === "comentario") {
+    td.className = "celda-comentario";
+    td.textContent = comentarioVinculado(t, v) || "";
   } else if (clave === "partida") {
     td.className = "celda-partida celda-partida-vin";
     td.dataset.ide = t.ide;
@@ -1519,6 +1596,11 @@ function construirCelda(t, clave, idx) {
       chips.appendChild(chip);
     }
     td.appendChild(chips);
+  } else if (clave === "comentario") {
+    // F-069 (R13): el comentario del titular de esa línea, tal cual.
+    td.className = "celda-comentario";
+    const l = t.lineas[idx];
+    td.textContent = (l && l.comentario) || "";
   } else if (clave === "partida") {
     // F-050 (R24, R25): la elegida, la fija de una entrada o «automática»;
     // con el periodo abierto, el clic abre el selector (no el editor).
@@ -1668,6 +1750,143 @@ function cargarEdicion(t) {
   }));
   state.lineasGuardadas = JSON.stringify(cuerpoLineas(state.edicion));
   state.incidenciasGuardadas = JSON.stringify(cuerpoIncidencias(state.incidenciasEdicion));
+  // F-069 (R11): una casilla por vinculado por % y una «Caja · obra» por
+  // cada línea con un vinculado por obra, con lo que mande la API.
+  // Solo si la fila trae alguno (sin ellos, lo de hoy).
+  const conImportes = (t.importes || []).length > 0 || (t.lineas || []).some(
+    (l) => (l.vinculados || []).some((v) => v.reparto === "obra"));
+  state.importesEdicion = conImportes ? importesDeFila(t) : [];
+}
+
+// F-069 (R11): las casillas de cantidad del editor, de lo que trae la fila.
+function importesDeFila(t) {
+  const casillas = (t.importes || []).map((i) => ({
+    vinculado_ide: i.vinculado_ide,
+    etiqueta: `${i.tipo || ""} ${i.cod || ""}`.trim(),
+    unidad: i.unidad,
+    cantidad: i.cantidad == null ? "" : String(i.cantidad).replace(".", ","),
+    comentario: i.comentario || "",
+    copiado: !!i.copiado,
+  }));
+  (t.lineas || []).forEach((l) => (l.vinculados || []).forEach((v) => {
+    if (v.reparto !== "obra") return;
+    casillas.push({
+      vinculado_ide: v.vinculado_ide,
+      obra_ide: l.obra_ide,
+      es_postventa: l.es_postventa,
+      etiqueta: `Caja · ${etiquetaObra(l.cod, l.es_postventa)}`,
+      unidad: v.unidad || "eur",
+      cantidad: v.cantidad == null ? "" : String(v.cantidad).replace(".", ","),
+      comentario: v.comentario || "",
+      copiado: !!v.copiado,
+    });
+  }));
+  // T23 (review 1, cambio 1): cada casilla recuerda lo que la API tiene de
+  // ella (`guardada`) y si estaba copiada: el PUT lleva solo las que cambian.
+  casillas.forEach((c) => {
+    c.guardada = firmaImporte(c);
+    c.copiadoGuardado = c.copiado;
+    c.revisado = false;
+  });
+  return casillas;
+}
+
+// F-069 (R12): coma o punto decimal; vacía ⇒ `null`. Lo que no es un número
+// va tal cual: lo rechaza la API (422) y sale en el aviso de siempre.
+function cantidadTecleada(texto) {
+  const limpio = String(texto == null ? "" : texto).trim();
+  if (!limpio) return null;
+  const n = Number(limpio.replace(",", "."));
+  return Number.isFinite(n) ? n : limpio;
+}
+
+// F-069 (R4, R12): lo que se manda de una casilla (sin `revisado`); vacía ⇒
+// `null`, y un comentario sin cantidad viaja igual (D19).
+function elementoImporte(c) {
+  return {
+    vinculado_ide: c.vinculado_ide,
+    ...(c.obra_ide != null ? { obra_ide: c.obra_ide, es_postventa: !!c.es_postventa } : {}),
+    cantidad: cantidadTecleada(c.cantidad),
+    comentario: (c.comentario || "").trim() || null,
+  };
+}
+
+function firmaImporte(c) {
+  return JSON.stringify(elementoImporte(c));
+}
+
+// F-069 (R12, D18; review 1, cambio 1): el PUT lleva SOLO las casillas que
+// cambiaron desde lo guardado o con «Revisado» pulsado (`revisado: true`):
+// actuar sobre una no toca el `copiado` de otra. Sin ninguna, `[]` (sin PUT).
+function cuerpoImportes(casillas) {
+  return casillas
+    .filter((c) => c.revisado || firmaImporte(c) !== c.guardada)
+    .map((c) => ({ ...elementoImporte(c), ...(c.revisado ? { revisado: true } : {}) }));
+}
+
+// F-069 (R11): la casilla de un vinculado de cantidad en el editor.
+function chipImporte(casilla) {
+  const chip = document.createElement("span");
+  chip.className = "chip-edit chip-importe" + (casilla.copiado ? " copiado" : "");
+  const etiqueta = document.createElement("span");
+  etiqueta.className = "cod";
+  etiqueta.textContent = casilla.etiqueta;
+  chip.appendChild(etiqueta);
+  const cantidad = document.createElement("input");
+  cantidad.className = "importe-cantidad";
+  cantidad.inputMode = "decimal";
+  cantidad.value = casilla.cantidad;
+  cantidad.placeholder = casilla.unidad === "km" ? "km" : "€";
+  // D18: la marca solo se va al teclear OTRA cantidad que la guardada (o con
+  // «Revisado»); la misma, o solo el comentario, no la quitan (como la API).
+  cantidad.addEventListener("input", () => {
+    casilla.cantidad = cantidad.value;
+    const guardada = casilla.guardada ? JSON.parse(casilla.guardada).cantidad : null;
+    casilla.copiado = !!casilla.copiadoGuardado && !casilla.revisado &&
+      cantidadTecleada(cantidad.value) === guardada;
+    pintarMarca();
+    programarGuardado();
+  });
+  chip.appendChild(cantidad);
+  const unidad = document.createElement("span");
+  unidad.className = "importe-unidad";
+  unidad.textContent = casilla.unidad === "km" ? "km" : "€";
+  chip.appendChild(unidad);
+  const comentario = document.createElement("input");
+  comentario.className = "importe-comentario";
+  comentario.maxLength = 200;
+  comentario.placeholder = "Comentario";
+  comentario.value = casilla.comentario;
+  comentario.addEventListener("input", () => {
+    casilla.comentario = comentario.value;
+    programarGuardado();
+  });
+  chip.appendChild(comentario);
+  const marca = document.createElement("span");
+  marca.className = "marca-copiado";
+  marca.textContent = "copiado del mes anterior, sin revisar";
+  const revisado = document.createElement("button");
+  revisado.type = "button";
+  revisado.className = "btn secondary small btn-revisado";
+  revisado.textContent = "Revisado";
+  revisado.addEventListener("click", () => {
+    casilla.copiado = false;
+    casilla.revisado = true;          // D18: el PUT lleva `revisado: true`
+    pintarMarca();
+    programarGuardado();
+  });
+  // La marca y «Revisado», solo mientras la casilla siga copiada.
+  function pintarMarca() {
+    marca.remove();
+    revisado.remove();
+    chip.classList.remove("copiado");
+    if (!casilla.copiado) return;
+    chip.classList.add("copiado");
+    chip.appendChild(marca);
+    chip.appendChild(revisado);
+  }
+  pintarMarca();
+  return chip;
 }
 
 function construirFilaEditor() {
@@ -1693,6 +1912,12 @@ function pintarEditor(editor) {
   state.incidenciasEdicion.forEach((inc, idx) => {
     editor.appendChild(chipIncidencia(inc, idx, editor));
   });
+  // F-069 (R11): tras las incidencias, las cantidades (periodo abierto).
+  if (state.periodoEstado === "ABIERTO") {
+    (state.importesEdicion || []).forEach((casilla) => {
+      editor.appendChild(chipImporte(casilla));
+    });
+  }
 
   // --- añadir obra (normal o Postv-) ---
   const anadir = document.createElement("div");
@@ -1900,6 +2125,18 @@ function chipEditable(linea, idx, editor) {
     programarGuardado();
   });
   chip.appendChild(btnX);
+
+  // F-069 (R9, R11): el comentario del titular de esta línea.
+  const comentario = document.createElement("input");
+  comentario.className = "linea-comentario";
+  comentario.maxLength = 200;
+  comentario.placeholder = "Comentario";
+  comentario.value = linea.comentario || "";
+  comentario.addEventListener("input", () => {
+    linea.comentario = comentario.value;
+    programarGuardado();
+  });
+  chip.appendChild(comentario);
 
   return chip;
 }
@@ -2604,6 +2841,10 @@ function cuerpoLineas(edicion) {
       obra_ide: l.obra_ide,
       es_postventa: l.es_postventa,
       porcentaje: l.porcentaje,
+      // F-069 (R9): el comentario, si la línea lo tiene o se tecleó; sin
+      // la clave, la API conserva el guardado.
+      ...(l.comentario !== undefined
+        ? { comentario: (l.comentario || "").trim() || null } : {}),
     }));
 }
 
@@ -2631,7 +2872,16 @@ async function guardarAhora() {
   const enviadas = state.incidenciasEdicion.slice();
   const incidencias = cuerpoIncidencias(enviadas);
   const cambianIncidencias = JSON.stringify(incidencias) !== state.incidenciasGuardadas;
-  const cambianLineas = !cambianIncidencias ||
+  // F-069 (R12, D18): solo las casillas que cambiaron (o con «Revisado»),
+  // con lo que se manda de cada una para darla por guardada si va bien.
+  // Sin casillas, lo de hoy: ni se mira.
+  const casillas = state.importesEdicion || [];
+  const importes = casillas.length > 0 ? cuerpoImportes(casillas) : [];
+  const enviadasImp = casillas
+    .filter((c) => c.revisado || firmaImporte(c) !== c.guardada)
+    .map((c) => [c, firmaImporte(c), !!c.copiado]);
+  const cambianImportes = importes.length > 0;
+  const cambianLineas = !(cambianIncidencias || cambianImportes) ||
     JSON.stringify(lineas) !== state.lineasGuardadas;
   const ruta = `/periodos/${state.anio}/${state.mes}/trabajadores/${ide}`;
   try {
@@ -2652,6 +2902,15 @@ async function guardarAhora() {
       if (guardadas) idsDeLaRespuesta(enviadas, guardadas);
       state.incidenciasGuardadas = JSON.stringify(incidencias.map((c, k) =>
         (c.id != null || enviadas[k].id == null ? c : { id: enviadas[k].id, ...c })));
+    }
+    if (cambianImportes) {
+      datos = await api(`${ruta}/importes`,
+        { method: "PUT", body: JSON.stringify({ importes }) });
+      enviadasImp.forEach(([c, firma, copiado]) => {
+        c.guardada = firma;
+        c.copiadoGuardado = copiado;
+        c.revisado = false;
+      });
     }
     state.guardadoPendiente = false;
     aplicarFila(datos);
@@ -3751,7 +4010,8 @@ function pintarModalPreflight(pf) {
       const aviso = v.aviso ? `<div class="aviso">${escapeHtml(v.aviso)}</div>` : "";
       let sel;
       if (v.accion !== "escribir") {
-        sel = `<span class="motivo">${escapeHtml(v.motivo || "")}</span>`;
+        sel = `<span class="motivo">${escapeHtml(v.motivo || "")}</span>` +
+          (v.tex_nuevo ? htmlTexNuevo(v) : "");
       } else if (a.partida_metodo === "var") {
         sel = `<span class="partida-fija">${escapeHtml(v.partida_cod || "")}</span>` + aviso;
       } else {
@@ -3765,8 +4025,11 @@ function pintarModalPreflight(pf) {
           (origen ? `<div class="origen-partida">${escapeHtml(origen)}</div>` : "") +
           aviso;
       }
+      // F-069 (R29): el de cantidad que se escribe, con su importe.
+      const importe = v.accion === "escribir" && v.reparto
+        ? `<div class="importe-vin">${escapeHtml(textoImporteVinculado(v))}</div>` : "";
       return `<tr class="fila-vinculado-reg">` +
-        `<td>↳ ${escapeHtml(v.tipo_res || v.tipo || "")} ${escapeHtml(v.cod || "")}</td>` +
+        `<td>↳ ${escapeHtml(v.tipo_res || v.tipo || "")} ${escapeHtml(v.cod || "")}${importe}</td>` +
         `<td>${v.destino === "postventa" ? "Postventa" : "Obra"}</td>` +
         `<td>${escapeHtml(v.accion)}</td>` +
         `<td class="num">${v.can != null ? fmtPct(v.can * 100) : ""}</td>` +
@@ -3803,7 +4066,8 @@ function pintarModalPreflight(pf) {
         const r20 = /^la partida (.+) elegida no es una partida hoja activa del presupuesto de la obra /
           .exec(a.motivo);
         sel = (r20 ? botonPartida(r20[1]) : "") +
-          `<span class="motivo">${escapeHtml(a.motivo || "")}</span>`;
+          `<span class="motivo">${escapeHtml(a.motivo || "")}</span>` +
+          (a.tex_nuevo ? htmlTexNuevo(a) : "");
       }
       return `<tr><td>${escapeHtml(a.nombre || "")}</td>` +
         `<td>${a.destino === "postventa" ? "Postventa" : "Obra"}</td>` +

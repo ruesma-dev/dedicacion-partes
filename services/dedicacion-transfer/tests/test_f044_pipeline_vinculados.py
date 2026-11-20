@@ -363,10 +363,11 @@ class ClientePre(ClienteVin):
         return [ls for ls in self.lineas_por_parte.get(int(hmoide), [])
                 if ls.reside in set(resides)]
 
-    def lineas_registradas(self, claves, ides=()):
+    def lineas_registradas(self, claves, ides=(), **kw):
+        # F-069 (D20): `con_tex` pasa al doble base (solo con comentarios).
         self.registradas.append((sorted(claves), sorted(i for i in ides
                                                         if i)))
-        return super().lineas_registradas(claves, ides)
+        return super().lineas_registradas(claves, ides, **kw)
 
 
 def _v(*ides: int, **kw) -> list[VinculadoEntrada]:

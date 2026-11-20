@@ -112,9 +112,12 @@ def test_f050_m2_1_cada_columna_tiene_su_minimo():
          "Object.keys(MINIMO_COLUMNA), Object.keys(COLUMNAS).map((c) => "
          "MINIMO_COLUMNA[c] <= COLUMNAS[c].ancho)]));")])) == [
         # F-044 (lista cerrada): y «Tipo recurso».
-        ["nombre", "categoria", "asignaciones", "tipo", "partida", "total"],
-        ["nombre", "categoria", "asignaciones", "tipo", "partida", "total"],
-        [True] * 6]
+        # F-069 (R13, lista cerrada): y «Comentario».
+        ["nombre", "categoria", "asignaciones", "tipo", "partida",
+         "comentario", "total"],
+        ["nombre", "categoria", "asignaciones", "tipo", "partida",
+         "comentario", "total"],
+        [True] * 7]
 
 
 def _sincronizar(anchos: dict, disponible: int, columnas=None) -> dict:

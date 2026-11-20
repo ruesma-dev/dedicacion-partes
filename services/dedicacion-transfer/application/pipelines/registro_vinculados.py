@@ -62,6 +62,7 @@ from application.services.reglas_porcentajes import (
     repartir_choques,
     synckey_tras_editar,
 )
+from application.services.texto_linea import anotar_tex, tex_de
 from application.services.reglas_vinculados import (
     AVISO_SIN_PARTIDA_VINCULADO,
     METODO_MANUAL,
@@ -214,7 +215,8 @@ class PasoVinculados:
                 horas: dict[int, list[HoraRecurso]], *, origen_ide: int,
                 validas: dict, nodos_pv: dict[int, PartidaNodo],
                 nodos: Callable[[], dict[int, PartidaNodo]],
-                ventana: Callable[[], tuple[int, int]]
+                ventana: Callable[[], tuple[int, int]],
+                obra: str | None = None,
                 ) -> list[AccionVinculado]:
         """Tras la partida de los titulares (paso 4): la línea de cada
         vinculado (`decidir_vinculados`, R12, R14, R18) y su partida (R15-R17
@@ -223,7 +225,8 @@ class PasoVinculados:
         con un método propio o la regla. El historial de los vinculados en la
         obra (en `ventana()`, `(desde, hasta)`: la del trabajador) y las
         cuentas del presupuesto, una vez y solo si alguna subfila llega a su
-        paso; el presupuesto, el del pipeline si ya se leyó."""
+        paso; el presupuesto, el del pipeline si ya se leyó. F-069: `obra`,
+        el código de la obra de la petición, para los motivos de la caja."""
         por_id = {l.registro_id: l for l in lineas}
         recursos = sorted({int(v.recurso_ide) for l in lineas
                            for v in l.vinculados})
@@ -246,7 +249,7 @@ class PasoVinculados:
                 destino=a.destino, paride=int(a.paride or 0),
                 cod=a.partida_cod, res=a.partida_res, metodo=a.partida_metodo)
             for v, av in zip(linea.vinculados,
-                             decidir_vinculados(a, linea, horas),
+                             decidir_vinculados(a, linea, horas, obra),
                              strict=True):
                 self._entradas[clave_de(av)] = v
                 if av.accion == "escribir":
@@ -326,10 +329,14 @@ class PasoVinculados:
                 [self._entradas[clave_de(av)].hmores_ide for av in escribir])
 
     def idempotencia(self, vinculados: list[AccionVinculado], por_sk: dict,
-                     por_ide: dict) -> None:
+                     por_ide: dict, tex: Callable | None = None) -> None:
         """Paso 6 (R13, R30): ya registrado si la línea de su `hmores_ide`
         es de su recurso, de su hora y no es nuestra de otra; si no, la de
-        su `synckey`. Cada vinculado se decide solo (R18)."""
+        su `synckey`. Cada vinculado se decide solo (R18).
+
+        F-069 (D20, R26): con `tex` (la decisión del pipeline, solo si la
+        petición trae comentarios), el ya registrado lleva su `tex_nuevo` y
+        el motivo dice si se actualiza su comentario."""
         for av in vinculados:
             if av.accion != "escribir":
                 continue
@@ -344,6 +351,9 @@ class PasoVinculados:
                 av.accion, av.hmores_ide = "ya_registrado", hit.ide
                 av.motivo = (f"ya registrada en Sigrid (línea {hit.ide}); "
                              f"no se duplica")
+                if tex is not None:
+                    anotar_tex(av, tex(
+                        self._entradas[clave_de(av)].comentario, hit))
 
     @staticmethod
     def sin_partida(vinculados: list[AccionVinculado]) -> list[Conflicto]:
@@ -490,6 +500,7 @@ class PasoVinculados:
                 av.motivo = MOTIVO_SIGUE_AL_TRABAJADOR.format(
                     motivo=t.motivo)
                 av.linea_cero = None
+                av.tex_nuevo = None             # F-069 (D20)
                 _sin_cuenta(av)
         omitidos = {clave_de(av) for av in vinculados
                     if av.accion == "omitir"}
@@ -536,14 +547,23 @@ class EscrituraVinculados:
 
     def __init__(self, cliente, *, est: int, paso_pos: int,
                  tex: str | None, obra_de: Callable,
-                 crear_parte: Callable, traza: Callable) -> None:
+                 crear_parte: Callable, traza: Callable,
+                 comentarios: dict[tuple[int, int], str | None] | None = None,
+                 ) -> None:
         self._cli = cliente
         self._est = int(est)
         self._paso = int(paso_pos)
         self._tex = tex
+        # F-069 (R23, D14): el comentario de cada vinculado, por (titular,
+        # recurso), para su `tex`; sin él, la marca o nada, como siempre.
+        self._comentarios = comentarios or {}
         self._obra_de = obra_de
         self._crear_parte = crear_parte
         self._traza = traza
+
+    def _tex_de(self, av: AccionVinculado) -> str | None:
+        """F-069 (R23): el `tex` de la línea de `av`."""
+        return tex_de(self._comentarios.get(clave_de(av)), self._tex)
 
     def ejecutar(self, res: ResultadoRegistro, partes: list[ParteDestino],
                  vinculados: list[AccionVinculado], conflictos: list,
@@ -588,19 +608,19 @@ class EscrituraVinculados:
                 continue
             sk = synckey_tras_editar(ls.synckey,
                                      synckey_vinculado(*clave_de(av)))
+            tex = self._tex_de(av)
             despues = {
                 "can": float(av.can), "pre": float(av.pre),
                 "tot": float(av.tot), "horide": int(av.hora_ide),
                 "hora_codigo": av.hora_codigo, "paride": int(av.paride or 0),
                 "caaide": int(av.caa_ide or 0), "fecha_int": av.fecha_int,
-                "synckey": sk, "tex": ls.tex if self._tex is None
-                else self._tex}
+                "synckey": sk, "tex": ls.tex if tex is None else tex}
             statements.append(self._cli.stmt_editar_linea(
                 ide=ls.ide, reside=int(ls.reside), can_leido=ls.can,
                 synckey_leida=ls.synckey, horide=int(av.hora_ide),
                 can=float(av.can), pre=float(av.pre),
                 paride=int(av.paride or 0), caaide=int(av.caa_ide or 0),
-                fecha_int=av.fecha_int, synckey=sk, tex=self._tex,
+                fecha_int=av.fecha_int, synckey=sk, tex=tex,
                 hora=av.hora_codigo))
             t = self._traza("edita vinculado", av.registro_id, ls, despues)
             t["vinculado_ide"] = av.recurso_ide
@@ -647,7 +667,8 @@ class EscrituraVinculados:
                 pos=pos[hmoide], fecha_int=av.fecha_int,
                 horide=int(av.hora_ide), can=float(av.can),
                 pre=float(av.pre), ano=av.ano, mes=av.mes,
-                synckey=synckey_vinculado(*clave_de(av)), tex=self._tex,
+                synckey=synckey_vinculado(*clave_de(av)),
+                tex=self._tex_de(av),
                 paride=int(av.paride or 0), caaide=int(av.caa_ide or 0)))
             av.parte_cod = p.cod
         return nuevas

@@ -18,6 +18,7 @@ from domain.errors import (
 )
 from domain.models import (
     LineaSigridTraida,
+    VinculadoRegistrado,
     PartidaVar,
     ResultadoExistentes,
     ResultadoUniverso,
@@ -123,7 +124,14 @@ class TransferClient:
             motivo_var=r.get("motivo_var"),
             lineas=tuple(LineaSigridTraida(**{k: x[k] for k in _CAMPOS_TRAIDA
                                               if k in x})
-                         for x in r["lineas"]))
+                         for x in r["lineas"]),
+            # F-069 (R31): sin la clave (transfer de antes), ninguna.
+            vinculados_registrados=tuple(
+                VinculadoRegistrado(
+                    hmores_ide=int(x["hmores_ide"]),
+                    recurso_ide=int(x["recurso_ide"]),
+                    synckey=x.get("synckey"), tex=x.get("tex"))
+                for x in r.get("vinculados_registrados") or []))
 
     def universo_postventa(
         self, empresa: int, obras: list[dict[str, Any]]

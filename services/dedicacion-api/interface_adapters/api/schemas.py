@@ -2,6 +2,7 @@
 """Schemas Pydantic v2 (contratos de entrada/salida de la API REST)."""
 from __future__ import annotations
 
+from collections.abc import Mapping
 from collections.abc import Set as AbstractSet
 from decimal import Decimal
 from typing import Any
@@ -10,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from domain.empresas import linea_de_otra_empresa
 from domain.estados import calcular_desviacion, calcular_estado
+from domain.importes import TipoCantidad, importes_del_mes, tipo_de
 from domain.models import (
     CuadranteTrabajador,
     Incidencia,
@@ -31,6 +33,27 @@ class LineaIn(_Base):
     obra_ide: int
     es_postventa: bool = False
     porcentaje: Decimal = Field(gt=0, le=100, max_digits=6, decimal_places=2)
+    # F-069 (R9): el comentario de la línea; sin la clave, se conserva.
+    comentario: str | None = None
+
+
+class ImporteIn(_Base):
+    """F-069 (R4): la cantidad y el comentario de un vinculado de cantidad;
+    `obra_ide`/`es_postventa`, solo en los por obra (caja). `cantidad` como
+    número o texto (la valida `domain/importes.py`, R5); `null`, sin
+    cantidad (D19: el comentario se guarda igual). `revisado: true` es
+    «Revisado» (D18): quita el `copiado` aunque la cantidad no cambie."""
+
+    vinculado_ide: Any
+    obra_ide: Any = None
+    es_postventa: Any = False
+    cantidad: Any = None
+    comentario: Any = None
+    revisado: Any = None
+
+
+class ImportesIn(_Base):
+    importes: list[ImporteIn] = Field(max_length=500)
 
 
 class AsignacionesIn(_Base):
@@ -121,6 +144,28 @@ class SubfilaOut(_Base):
     propuesta_cod: str | None = None
     propuesta_res: str | None = None
     propuesta_metodo: str | None = None
+    # F-069 (R10): si el vinculado es de cantidad, su reparto y su unidad y,
+    # si es por obra, su cantidad aquí, si es copiada y su comentario. Las
+    # claves solo salen con valor (sin cantidad, la subfila de siempre).
+    reparto: str | None = Field(default=None, exclude_if=lambda v: v is None)
+    unidad: str | None = Field(default=None, exclude_if=lambda v: v is None)
+    cantidad: float | None = Field(default=None,
+                                   exclude_if=lambda v: v is None)
+    copiado: bool | None = Field(default=None, exclude_if=lambda v: v is None)
+    comentario: str | None = Field(default=None,
+                                   exclude_if=lambda v: v is None)
+
+
+class ImporteOut(_Base):
+    """F-069 (R10): la cantidad DEL MES de un vinculado por %."""
+
+    vinculado_ide: int
+    tipo: str | None
+    cod: str | None
+    unidad: str | None
+    cantidad: float | None
+    copiado: bool
+    comentario: str | None
 
 
 class LineaOut(_Base):
@@ -154,6 +199,9 @@ class LineaOut(_Base):
     # solo sale si hay alguna (sin vinculados, la línea de siempre).
     vinculados: list[SubfilaOut] = Field(default_factory=list,
                                          exclude_if=lambda v: not v)
+    # F-069 (R9, R13): el comentario del titular; sin él, sin la clave.
+    comentario: str | None = Field(default=None,
+                                   exclude_if=lambda v: v is None)
 
 
 class IncidenciaOut(_Base):
@@ -202,6 +250,10 @@ class TrabajadorOut(_Base):
     puede_deshacer: bool
     # F-030 (R21): las incidencias del trabajador; no cuentan en `total`.
     incidencias: list[IncidenciaOut] = []
+    # F-069 (R10): las cantidades del mes de sus vinculados por %; sin
+    # ninguno, sin la clave.
+    importes: list[ImporteOut] = Field(default_factory=list,
+                                       exclude_if=lambda v: not v)
 
 
 class ObraOut(_Base):
@@ -371,11 +423,13 @@ def a_obra_out(obra: Obra) -> ObraOut:
 def a_trabajador_out(
     fila: CuadranteTrabajador, empresa_obras: int,
     pendientes: AbstractSet[tuple[int, int, bool]] = frozenset(),
+    tipos: Mapping[str, TipoCantidad] | None = None,
 ) -> TrabajadorOut:
     """`empresa_obras` es la empresa de las obras (`EMPRESA_IMPUTACION`), no
     la elegida: decide `otra_empresa` de cada línea (F-034, R5).
     `pendientes` son las líneas `(trabajador, obra, es_postventa)` en la cola
     de propuestas (F-057): marcan `propuesta_pendiente` por identidad."""
+    tipos = tipos or {}
     total = fila.total
     estado = calcular_estado(total, len(fila.lineas))
     desviacion = calcular_desviacion(total, len(fila.lineas))
@@ -416,17 +470,41 @@ def a_trabajador_out(
                         partida_fija=ln.partida_fija,
                         propuesta_cod=v.propuesta_cod,
                         propuesta_res=v.propuesta_res,
-                        propuesta_metodo=v.propuesta_metodo)
+                        propuesta_metodo=v.propuesta_metodo,
+                        **_cantidad_out(v, tipo_de(v.tipo, tipos)))
                     for v in ln.vinculados],
+                comentario=ln.comentario,
             )
             for ln in fila.lineas
         ],
+        importes=[
+            ImporteOut(vinculado_ide=i.vinculado_ide, tipo=i.tipo, cod=i.cod,
+                       unidad=i.unidad,
+                       cantidad=None if i.cantidad is None
+                       else float(i.cantidad),
+                       copiado=i.copiado, comentario=i.comentario)
+            for i in importes_del_mes(
+                fila.lineas, {i.vinculado_ide: i for i in fila.importes},
+                tipos)],
         total=float(total),
         desviacion=float(desviacion),
         estado=estado.value,
         puede_deshacer=fila.puede_deshacer,
         incidencias=[a_incidencia_out(i) for i in fila.incidencias],
     )
+
+
+def _cantidad_out(v: Any, tipo: TipoCantidad | None) -> dict[str, Any]:
+    """F-069 (R10): lo de cantidad de una subfila; {} si no es de cantidad.
+    En los por % la cantidad es la del mes (`importes`), no la de aquí."""
+    if tipo is None:
+        return {}
+    out: dict[str, Any] = {"reparto": tipo.reparto, "unidad": tipo.unidad}
+    if tipo.reparto == "obra":
+        out["cantidad"] = None if v.cantidad is None else float(v.cantidad)
+        out["copiado"] = bool(v.copiado) if v.cantidad is not None else None
+        out["comentario"] = v.comentario
+    return out
 
 
 def a_incidencia_out(inc: Incidencia) -> IncidenciaOut:
@@ -490,11 +568,15 @@ def a_completar_out(
 
 
 def lineas_a_dicts(payload: AsignacionesIn) -> list[dict[str, Any]]:
+    """F-069 (R9): la clave `comentario` solo si llegó (sin ella, el caso
+    de uso conserva el guardado)."""
     return [
         {
             "obra_ide": ln.obra_ide,
             "es_postventa": ln.es_postventa,
             "porcentaje": str(ln.porcentaje),
+            **({"comentario": ln.comentario}
+               if "comentario" in ln.model_fields_set else {}),
         }
         for ln in payload.lineas
     ]

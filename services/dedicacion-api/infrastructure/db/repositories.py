@@ -24,6 +24,7 @@ from domain.models import (
     Empresa,
     EstadoPeriodo,
     EventoPendiente,
+    ImporteMes,
     Incidencia,
     Linea,
     Obra,
@@ -40,6 +41,7 @@ from infrastructure.db.orm_models import (
     AsignacionVinculadoORM,
     EmpresaORM,
     EventoORM,
+    ImporteVinculadoORM,
     IncidenciaORM,
     ObraORM,
     PeriodoORM,
@@ -534,6 +536,7 @@ class PgAsignacionRepository:
                     propuesta_res=linea.propuesta_res,
                     propuesta_metodo=linea.propuesta_metodo,
                     propuesta_origen=linea.propuesta_origen,
+                    comentario=linea.comentario,   # F-069 (R9)
                 )
             )
             self._s.add(creadas[-1])
@@ -551,6 +554,38 @@ class PgAsignacionRepository:
             for o in subfilas:
                 self._s.add(o)
             self._s.flush()
+
+    def guardar_subfila_importe(self, periodo_id: int, trabajador_ide: int,
+                                clave: tuple[int, bool], vinculado_ide: int,
+                                valores: dict[str, Any]) -> None:
+        """F-069 (R4, R7, R32): `upsert_asignacion_vinculado` de la subfila
+        bajo la línea `clave`, en UNA sentencia (sin línea, nada)."""
+        self._s.execute(upsert_asignacion_vinculado(
+            id_de_asignacion(periodo_id, trabajador_ide, clave),
+            vinculado_ide, valores))
+
+    def poner_comentario(self, periodo_id: int, trabajador_ide: int,
+                         clave: tuple[int, bool], comentario: str | None
+                         ) -> None:
+        """F-069 (R32): `UPDATE asignacion SET comentario` de esa línea."""
+        obra_ide, es_postventa = clave
+        self._s.execute(update(AsignacionORM).where(
+            AsignacionORM.periodo_id == periodo_id,
+            AsignacionORM.trabajador_ide == trabajador_ide,
+            AsignacionORM.obra_ide == obra_ide,
+            AsignacionORM.es_postventa == bool(es_postventa),
+        ).values(comentario=comentario))
+
+    def registradas(self, periodo_id: int
+                    ) -> list[tuple[int, tuple[int, bool], int, int | None]]:
+        """F-069 (R32): de cada línea del periodo, su trabajador, clave,
+        `id` (el `registro_id` de su `synckey`) y `sigrid_hmores_ide`."""
+        filas = self._s.execute(select(
+            AsignacionORM.trabajador_ide, AsignacionORM.obra_ide,
+            AsignacionORM.es_postventa, AsignacionORM.id,
+            AsignacionORM.sigrid_hmores_ide,
+        ).where(AsignacionORM.periodo_id == periodo_id)).all()
+        return [(t, (o, bool(pv)), i, h) for t, o, pv, i, h in filas]
 
     def aceptar_entrada(
         self,
@@ -776,6 +811,80 @@ class PgVinculadoRepository:
 
 
 # ----------------------------------------------------------------------
+# Cantidades del mes de los vinculados por % (F-069)
+# ----------------------------------------------------------------------
+def _a_importe(f: ImporteVinculadoORM) -> ImporteMes:
+    # D19: una fila puede no tener cantidad (solo el comentario).
+    return ImporteMes(vinculado_ide=f.vinculado_ide,
+                      cantidad=None if f.cantidad is None
+                      else Decimal(f.cantidad),
+                      copiado=bool(f.copiado), comentario=f.comentario)
+
+
+def importes_del_mes_de(s: Session, anio: int, mes: int,
+                        vinculados: list[int]) -> dict[int, ImporteMes]:
+    """F-069 (R16): las cantidades del mes (`importe_vinculado`) de esos
+    vinculados en el periodo (anio, mes), en UNA lectura. Sin vinculados,
+    ninguna."""
+    if not vinculados:
+        return {}
+    filas = s.scalars(
+        select(ImporteVinculadoORM)
+        .join(PeriodoORM, PeriodoORM.id == ImporteVinculadoORM.periodo_id)
+        .where(PeriodoORM.anio == anio, PeriodoORM.mes == mes,
+               ImporteVinculadoORM.vinculado_ide.in_(sorted(set(vinculados))))
+    ).all()
+    return {f.vinculado_ide: _a_importe(f) for f in filas}
+
+
+class PgImporteRepository:
+    """`importe_vinculado` (F-069, R3, D7): la cantidad del mes de cada
+    vinculado por %, con si es copiada y su comentario."""
+
+    def __init__(self, session: Session) -> None:
+        self._s = session
+
+    def _consulta(self, periodo_id: int) -> Any:
+        return (select(ImporteVinculadoORM, RecursoVinculadoORM.trabajador_ide)
+                .join(RecursoVinculadoORM, RecursoVinculadoORM.ide
+                      == ImporteVinculadoORM.vinculado_ide)
+                .where(ImporteVinculadoORM.periodo_id == periodo_id)
+                .order_by(ImporteVinculadoORM.vinculado_ide))
+
+    def de_trabajador(self, periodo_id: int, trabajador_ide: int
+                      ) -> dict[int, ImporteMes]:
+        filas = self._s.execute(self._consulta(periodo_id).where(
+            RecursoVinculadoORM.trabajador_ide == trabajador_ide)).all()
+        return {f.vinculado_ide: _a_importe(f) for f, _ in filas}
+
+    def del_periodo(self, periodo_id: int) -> dict[int, dict[int, ImporteMes]]:
+        out: dict[int, dict[int, ImporteMes]] = {}
+        for f, trabajador in self._s.execute(self._consulta(periodo_id)).all():
+            out.setdefault(trabajador, {})[f.vinculado_ide] = _a_importe(f)
+        return out
+
+    def guardar(self, periodo_id: int, importe: ImporteMes,
+                usuario: str) -> None:
+        """`INSERT … ON CONFLICT (periodo_id, vinculado_ide) DO UPDATE`."""
+        valores = {"cantidad": importe.cantidad,
+                   "copiado": bool(importe.copiado),
+                   "comentario": importe.comentario,
+                   "actualizado_por": usuario}
+        stmt = pg_insert(ImporteVinculadoORM).values(
+            periodo_id=periodo_id, vinculado_ide=importe.vinculado_ide,
+            **valores)
+        self._s.execute(stmt.on_conflict_do_update(
+            constraint="uq_importe_vinculado",
+            set_={**{k: stmt.excluded[k] for k in valores},
+                  "actualizado_en": func.now()}))
+
+    def borrar(self, periodo_id: int, vinculado_ide: int) -> None:
+        self._s.execute(delete(ImporteVinculadoORM).where(
+            ImporteVinculadoORM.periodo_id == periodo_id,
+            ImporteVinculadoORM.vinculado_ide == vinculado_ide))
+
+
+# ----------------------------------------------------------------------
 # Incidencias (F-030)
 # ----------------------------------------------------------------------
 def _consulta_incidencias(periodo_id: int) -> Any:
@@ -949,6 +1058,7 @@ class SqlAlchemyUnitOfWork:
         self.incidencias = PgIncidenciaRepository(s)
         self.eventos = PgEventoRepository(s)
         self.vinculados = PgVinculadoRepository(s)
+        self.importes = PgImporteRepository(s)  # F-069
         return self
 
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
@@ -1059,17 +1169,22 @@ def _a_linea(a: AsignacionORM, o: ObraORM) -> Linea:
 
 
 #: Lo que una subfila guarda en `asignacion_vinculado` al reemplazar las
-#: líneas (R8, R9): la elegida y la propuesta. La traza la escribe solo
-#: `registro_sigrid` (R30) y, como la del titular, no sobrevive al guardar.
+#: líneas (R8, R9): la elegida y la propuesta y, desde F-069 (R3, R9), la
+#: cantidad por obra, si es copiada y el comentario. La traza la escribe
+#: solo `registro_sigrid` (R30) y, como la del titular, no sobrevive al
+#: guardar.
 _GUARDADO_SUBFILA = ("partida_ide", "partida_cod", "partida_res",
                      "propuesta_ide", "propuesta_cod", "propuesta_res",
-                     "propuesta_metodo", "propuesta_origen")
+                     "propuesta_metodo", "propuesta_origen",
+                     "cantidad", "copiado", "comentario")
 
 
 def _valores_subfila(v: SubfilaVinculado) -> dict[str, Any]:
     """Las columnas de la fila de `v`, o {} si no hay nada que guardar
-    (sin elegida ni propuesta): fila solo cuando hay algo (design §7.2)."""
-    if v.partida_ide is None and v.propuesta_ide is None:
+    (sin elegida, propuesta, cantidad ni comentario): fila solo cuando hay
+    algo (design §7.2)."""
+    if (v.partida_ide is None and v.propuesta_ide is None
+            and v.cantidad is None and v.comentario is None):
         return {}
     return {c: getattr(v, c) for c in _GUARDADO_SUBFILA}
 
@@ -1140,4 +1255,5 @@ def _a_linea_con_partida(a: AsignacionORM, o: ObraORM,
         propuesta_metodo=a.propuesta_metodo,
         propuesta_origen=a.propuesta_origen,
         vinculados=vinculados,
+        comentario=getattr(a, "comentario", None),   # F-069 (R9)
     )

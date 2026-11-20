@@ -80,6 +80,14 @@ class VinculadoIn(BaseModel):
     propuesta_metodo: str | None = None
     propuesta_origen: str | None = None
     hmores_ide: int | None = None
+    # F-069 (R15): un vinculado de cantidad; sin estas claves, F-044 (R24).
+    importe_mensual: bool = False
+    unidad: str | None = None
+    reparto: str | None = None
+    cantidad: float | None = None
+    copiado: bool = False
+    comentario: str | None = None
+    precio_km: float | None = None
 
 
 class LineaIn(BaseModel):
@@ -115,6 +123,8 @@ class LineaIn(BaseModel):
     hmores_ide: Optional[int] = None
     # F-044 (R10, R11): los recursos vinculados; vacía, la línea de hoy.
     vinculados: list[VinculadoIn] = Field(default_factory=list)
+    # F-069 (R15, R23): el comentario del titular, para el `tex`.
+    comentario: Optional[str] = None
 
     def para_pipeline(self) -> LineaEntrada:
         """La `LineaEntrada` de la línea, con sus vinculados como
@@ -521,6 +531,9 @@ def build_app(settings) -> FastAPI:
                 "pendientes_confirmacion": [_conflicto(c) for c in
                                             r.pendientes_confirmacion],
                 "error": r.error,
+                # F-069 (D20, R28): las ya registradas a las que se cambió
+                # solo el `tex`; vacía si ninguna.
+                "tex_actualizadas": r.tex_actualizadas,
             }, r.incidencias)
             _con_vinculados(respuesta, r.vinculados)
             return _con_rachas(respuesta, r) if len(resto) > 1 else respuesta

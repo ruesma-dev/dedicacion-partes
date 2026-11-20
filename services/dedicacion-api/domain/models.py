@@ -38,6 +38,9 @@ class TipoEvento(str, Enum):
     # Entradas aceptadas de Sigrid (F-054, R25); su snapshot es el de
     # líneas con las subfilas, como el de `PARTIDA_VINCULADO`.
     SIGRID = "SIGRID"
+    # Cantidades y comentarios de los vinculados de cantidad (F-069, R7); su
+    # snapshot es una lista de importes (`_foto_importes`), no de líneas.
+    IMPORTES = "IMPORTES"
 
 
 class ResultadoCompletado(str, Enum):
@@ -112,6 +115,29 @@ class SubfilaVinculado:
     sigrid_motivo: str | None = None
     sigrid_parte: str | None = None
     sigrid_hmores_ide: int | None = None
+    # F-069 (R3, R10): si el vinculado es de cantidad, su `unidad` y su
+    # `reparto` (de la config, no se guardan); si es por obra, la cantidad
+    # de esta línea, si es copiada sin revisar y su comentario aquí.
+    unidad: str | None = None
+    reparto: str | None = None
+    cantidad: Decimal | None = None
+    copiado: bool | None = None
+    comentario: str | None = None
+
+
+@dataclass(frozen=True)
+class ImporteMes:
+    """La cantidad DEL MES de un vinculado por % (F-069, R3, R10): la de
+    `importe_vinculado`, o `cantidad` None si no hay fila. Con su tipo,
+    código y unidad para el cuadrante."""
+
+    vinculado_ide: int
+    tipo: str | None = None
+    cod: str | None = None
+    unidad: str | None = None
+    cantidad: Decimal | None = None
+    copiado: bool = False
+    comentario: str | None = None
 
 
 @dataclass(frozen=True)
@@ -169,6 +195,8 @@ class Linea:
     propuesta_res: str | None = None
     propuesta_metodo: str | None = None
     propuesta_origen: str | None = None
+    # Comentario de la línea del titular (F-069, R9). No entra en `clave()`.
+    comentario: str | None = None
 
     def clave(self) -> tuple[int, bool]:
         return (self.obra_ide, self.es_postventa)
@@ -308,6 +336,9 @@ class CuadranteTrabajador:
     # Incidencias del trabajador en el periodo (F-030, R21). No entran en
     # `total` ni en el estado (R22): van aparte de las líneas.
     incidencias: tuple[Incidencia, ...] = ()
+    # Cantidades del mes de los vinculados por % (F-069, R10): una por
+    # vinculado por % de las subfilas; vacío sin vinculados de cantidad.
+    importes: tuple[ImporteMes, ...] = ()
 
     @property
     def total(self) -> Decimal:
@@ -417,6 +448,19 @@ class LineaSigridTraida:
     obra_origen_ide: int | None = None
     var_paride: int | None = None
     motivo: str | None = None
+    # F-069 (R31): su `tex` (None si vacío).
+    tex: str | None = None
+
+
+@dataclass(frozen=True)
+class VinculadoRegistrado:
+    """F-069 (R31): una línea del periodo en Sigrid con `synckey` de un
+    vinculado nuestro (`porcentajes:vin:{registro}:{recurso}`) y su `tex`."""
+
+    hmores_ide: int
+    recurso_ide: int
+    synckey: str | None = None
+    tex: str | None = None
 
 
 @dataclass(frozen=True)
@@ -430,3 +474,5 @@ class ResultadoExistentes:
     motivo_postventa: str | None = None
     motivo_var: str | None = None
     lineas: tuple[LineaSigridTraida, ...] = ()
+    # F-069 (R31): las líneas de nuestros vinculados en el periodo.
+    vinculados_registrados: tuple[VinculadoRegistrado, ...] = ()

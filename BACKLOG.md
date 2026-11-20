@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **70 features**, 28 abiertas y 42 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 0 en To do, 28 en Backlog y 42 en Done.
+Resumen: **70 features**, 27 abiertas y 43 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 0 en To do, 27 en Backlog y 43 en Done.
 
 ## Review
 
@@ -29,7 +29,6 @@ _Nada comprometido._
 
 | # | Feature | Prioridad | Rigor | Rama |
 |---|---|---|---|---|
-| F-069 | Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras | 1 | critico | `feature/F-069-importe-caja-km` |
 | F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | critico | `feature/F-058-porcentaje-cero-no-registra` |
 | F-071 | Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid | 2 | critico | `feature/F-071-trabajador-mes-parcial` |
 | F-073 | Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube | 2 | critico | `feature/F-073-informe-registro-excel` |
@@ -62,6 +61,7 @@ _Nada comprometido._
 
 | # | Feature | Cierre | OK humano | Prioridad | Rigor |
 |---|---|---|---|---|---|
+| F-069 | Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras | 2026-11-20 | 2026-11-20 | 1 | critico |
 | F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 2026-11-18 | 2026-11-18 | 8 | critico |
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | sin fecha | sin anotar | 1 | estandar |
 | F-034 | Las obras son siempre de Construcciones Ruesma; el selector filtra solo trabajadores | sin fecha | sin anotar | 1 | critico |
@@ -106,12 +106,6 @@ _Nada comprometido._
 | F-030 | Incidencias en el cuadrante: texto en lugar del % con desplegable de las de partes (y dedicación por días) | sin fecha | sin anotar | 14 | critico |
 
 ## Detalle
-
-### F-069 · Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras
-
-estado **pendiente** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-069-importe-caja-km`
-
-Petición del humano del 2026-11-03, tras el hotfix que incluye los VP (km) como vinculados. Lectura de solo lectura del líder (scratchpad, explore_vp_automatica): 44 de 45 VP tienen `reshor.pre = 0` en su hora `KM`, así que F-044 R14 los omite al registrar («sin importe mensual»); en las líneas KM hechas a mano el importe cambia cada mes (p. ej. VP0085: 199,36 / 292,88 / 381,11 / 351,81). Lo mismo pasa con la caja de obra. Humano: «tanto caja de obra como km hay que poner una casilla para rellenar la cantidad que luego se reparte porcentualmente en las obras. el tema es como lo plantreamos (esto ira en feature aparte) por ejemplo que al escribir en la linea del recurso si tiene caja o km te pregunte cantidad (que puede ser 0)». Por diseñar en spec: dónde se guarda la cantidad del mes por vinculado, cómo se pide (al escribir la línea del trabajador con vinculado KM/caja), cómo se reparte (importe × % de cada obra) y qué hace el registro con cantidad 0 o sin cantidad. Toca api, front y transfer. Bloquea registrar los km de octubre de 2026.
 
 ### F-058 · Un porcentaje que redondea a cantidad 0 no se registra en Sigrid
 
@@ -274,6 +268,12 @@ Decision del humano el 2026-08-20: estas dos cosas dejan de bloquear F-002 y la 
 estado **pendiente** · prioridad 26 · rigor `estandar` · SDD no · rama `feature/F-016-sigrid-key-solo-lectura`
 
 Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T30, T30 se movio a F-015 y F-015 solo se llevo la mitad del Portal. La review de cierre de F-008 la busco en las trece entradas del backlog y no aparecia en ninguna. El problema: la api y el transfer comparten HOY la misma function key de sigrid-api, y lo unico que impide que la api escriba en el ERP es que su codigo no tiene rutas de escritura, NO la credencial. Es decir, la separacion es por disciplina, no por permisos: cualquiera que anada por error una llamada de escritura a la api tendria credencial para ejecutarla. Hay que preguntar al dueno de sigrid-api si puede emitir una clave de SOLO LECTURA y, si puede, desplegarla en la api. Si no puede, hay que dejar escrito que la separacion depende del codigo y que eso es un riesgo aceptado a conciencia.
+
+### F-069 · Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras
+
+estado **terminada** · cerrada el 2026-11-20 · spec aprobada el 2026-11-12 · OK del humano el 2026-11-20 · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-069-importe-caja-km`
+
+Petición del humano del 2026-11-03, tras el hotfix que incluye los VP (km) como vinculados. Lectura de solo lectura del líder (scratchpad, explore_vp_automatica): 44 de 45 VP tienen `reshor.pre = 0` en su hora `KM`, así que F-044 R14 los omite al registrar («sin importe mensual»); en las líneas KM hechas a mano el importe cambia cada mes (p. ej. VP0085: 199,36 / 292,88 / 381,11 / 351,81). Lo mismo pasa con la caja de obra. Humano: «tanto caja de obra como km hay que poner una casilla para rellenar la cantidad que luego se reparte porcentualmente en las obras. el tema es como lo plantreamos (esto ira en feature aparte) por ejemplo que al escribir en la linea del recurso si tiene caja o km te pregunte cantidad (que puede ser 0)». Por diseñar en spec: dónde se guarda la cantidad del mes por vinculado, cómo se pide (al escribir la línea del trabajador con vinculado KM/caja), cómo se reparte (importe × % de cada obra) y qué hace el registro con cantidad 0 o sin cantidad. Toca api, front y transfer. Bloquea registrar los km de octubre de 2026.
 
 ### F-054 · Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid
 

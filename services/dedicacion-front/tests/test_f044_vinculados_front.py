@@ -43,7 +43,7 @@ def test_f044_r6_columna_tipo_recurso_entre_obras_y_partida():
             'placeholder: "Filtrar tipo…", },') in columnas
     assert _plano(_const("ORDEN_COLUMNAS_DEFECTO")).endswith(
         '["nombre", "categoria", "asignaciones", "tipo", "partida", '
-        '"total"];')
+        '"comentario", "total"];')          # F-069 (R13, lista cerrada)
     assert '"tipo"' in _const("COLUMNAS_POR_LINEA")
     assert "tipo: 110" in _const("MINIMO_COLUMNA")
 

@@ -248,6 +248,16 @@ class _IncidenciasVacias:
         return []
 
 
+class _ImportesVacios:
+    """F-069 (R10): sin cantidades del mes de vinculados."""
+
+    def de_trabajador(self, periodo_id: int, ide: int) -> dict:
+        return {}
+
+    def del_periodo(self, periodo_id: int) -> dict:
+        return {}
+
+
 class _Uow:
     """UnitOfWork en memoria con los repositorios que usan los casos."""
 
@@ -261,6 +271,7 @@ class _Uow:
         self.asignaciones = _Asignaciones(self)
         self.eventos = _Eventos()
         self.incidencias = _IncidenciasVacias()  # F-030 (lista cerrada)
+        self.importes = _ImportesVacios()  # F-069
 
     def commit(self) -> None:
         return None

@@ -109,7 +109,8 @@ def test_f044_r5_asignacion_vinculado_unica_y_en_cascada():
         "id", "asignacion_id", "vinculado_ide", "partida_ide", "partida_cod",
         "partida_res", "propuesta_ide", "propuesta_cod", "propuesta_res",
         "propuesta_metodo", "propuesta_origen", "sigrid_estado",
-        "sigrid_motivo", "sigrid_parte", "sigrid_hmores_ide"]
+        "sigrid_motivo", "sigrid_parte", "sigrid_hmores_ide",
+        "cantidad", "copiado", "comentario"]   # F-069 (R3)
     [fk_a] = t.columns["asignacion_id"].foreign_keys
     assert (fk_a.target_fullname, fk_a.ondelete) == ("asignacion.id",
                                                      "CASCADE")

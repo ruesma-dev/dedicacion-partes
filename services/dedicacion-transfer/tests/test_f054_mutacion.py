@@ -202,7 +202,8 @@ def test_f054_r10_sin_ajuste_de_desde_es_0(monkeypatch):
 
     monkeypatch.setattr(modulo_pe, "traducir", espia)
     cli = SimpleNamespace(lineas_mensuales_del_periodo=lambda *a: [
-        _l(1, 7, "0007")])
+        _l(1, 7, "0007")],
+        lineas_por_synckey_del_periodo=lambda *a: [])     # F-069 (R31)
     modulo_pe.PorcentajesExistentes(cliente=cli, settings=SimpleNamespace(
         postventa_obra_cod="PV", obra_pruebas_cod="P")).calcular(1, 2026, 9, [])
     assert vistos == [0]

@@ -49,6 +49,20 @@ class VinculadoEntrada:
     propuesta_metodo: str | None = None
     propuesta_origen: str | None = None
     hmores_ide: int | None = None
+    # F-069 (R15, design §8): un vinculado de CANTIDAD (caja, km, viaje).
+    # `importe_mensual` lo marca; `unidad` (`eur` | `km`) y `reparto`
+    # (`pct` | `obra`) los decide la api con su `config.yaml`; `cantidad` es
+    # la del mes (por %) o la de esta línea (por obra), None si falta;
+    # `copiado`, copiada del mes anterior sin revisar (D11); `comentario`
+    # va al `tex` (D14); `precio_km`, solo en `km` (D10). Sin
+    # `importe_mensual`, el vinculado de F-044 tal cual (R24).
+    importe_mensual: bool = False
+    unidad: str | None = None
+    reparto: str | None = None
+    cantidad: float | None = None
+    copiado: bool = False
+    comentario: str | None = None
+    precio_km: float | None = None
 
 
 @dataclass
@@ -92,6 +106,9 @@ class LineaEntrada:
     # esta línea (los manda la api; el transfer no busca vínculos). Vacía,
     # la línea se decide exactamente como antes de F-044.
     vinculados: list[VinculadoEntrada] = field(default_factory=list)
+    # F-069 (R15, R23, D14): el comentario de la línea del titular, que va
+    # al `tex` de su línea en Sigrid; None, el `tex` de siempre.
+    comentario: Optional[str] = None
 
     @property
     def fecha_int(self) -> int:
@@ -251,6 +268,9 @@ class LineaSigrid:
     caaide: Optional[int] = None
     tex: Optional[str] = None
     enlazada: bool = False
+    # F-069 (D20, R26): la obra de la línea (`hmores.obride`); solo la
+    # rellena `lineas_registradas(con_tex=True)` (con `tex` y `parte_est`).
+    obride: Optional[int] = None
 
 
 # ----------------------------- salida ----------------------------- #
@@ -305,6 +325,9 @@ class AccionLinea:
     caa_aviso: Optional[str] = None
     caa_origen: Optional[str] = None
     caa_nota: Optional[str] = None
+    # F-069 (D20, R26, R28): en una ya registrada con comentario, el `tex`
+    # al que `ejecutar` cambia su línea (solo el `tex`); None si no aplica.
+    tex_nuevo: Optional[str] = None
     # La CLAVE de conflicto de esta acción no se calcula aquí: sale de
     # `application.services.reglas_porcentajes.clave_conflicto`, junto al
     # criterio de choque que la tiene que respetar. Tenerla en dos capas es
@@ -352,6 +375,14 @@ class AccionVinculado:
     caa_aviso: Optional[str] = None
     caa_origen: Optional[str] = None
     caa_nota: Optional[str] = None
+    # F-069 (R28): de un vinculado de cantidad, los km del mes, el precio por
+    # km (los dos solo en `km`) y su reparto (`pct` | `obra`); nulos en los
+    # demás.
+    km: Optional[float] = None
+    precio_km: Optional[float] = None
+    reparto: Optional[str] = None
+    # F-069 (D20, R28): como `AccionLinea.tex_nuevo`.
+    tex_nuevo: Optional[str] = None
 
 
 @dataclass
@@ -448,6 +479,22 @@ class LineaMensualSigrid:
     partida_cod: str | None = None
     partida_res: str | None = None
     synckey: str | None = None
+    # F-069 (R31, D15): su `tex` (sin espacios a los lados; None si vacío),
+    # para que la api traiga el comentario de nuestras líneas registradas.
+    tex: str | None = None
+
+
+@dataclass(frozen=True)
+class LineaVinculadoSigrid:
+    """F-069 (R31, D15): una línea del periodo con `synckey` de un
+    vinculado nuestro (`porcentajes:vin:{registro}:{recurso}`), tal como la
+    lee `lineas_por_synckey_del_periodo`: su `hmores.ide`, recurso,
+    `synckey` y `tex` (None si vacío). La api pone su `tex` como comentario
+    del vinculado en el cuadrante."""
+    hmores_ide: int
+    recurso_ide: int
+    synckey: str | None
+    tex: str | None = None
 
 
 @dataclass(frozen=True)
@@ -597,3 +644,7 @@ class ResultadoRegistro:
     # F-044 (R25, R28): las de `Preflight.vinculados` tras escribir, con su
     # `hmores_ide` o, si no se escribieron, `omitir` y el motivo.
     vinculados: list[AccionVinculado] = field(default_factory=list)
+    # F-069 (D20, R28): las líneas ya registradas cuyo `tex` se cambió
+    # (`registro_id`, `vinculado_ide` si es de un vinculado, `hmores_ide`,
+    # `tex`), comprobadas al releer; vacía si ninguna.
+    tex_actualizadas: list[dict] = field(default_factory=list)

@@ -12,6 +12,7 @@ from domain.models import (
     CuadranteTrabajador,
     Empresa,
     EventoPendiente,
+    ImporteMes,
     Incidencia,
     Linea,
     Obra,
@@ -141,6 +142,30 @@ class VinculadoRepository(Protocol):
         ...
 
 
+class ImporteRepository(Protocol):
+    """Las cantidades DEL MES de los vinculados por % (F-069, R3, D7):
+    `importe_vinculado`, una fila por periodo y vinculado."""
+
+    def de_trabajador(self, periodo_id: int, trabajador_ide: int
+                      ) -> dict[int, ImporteMes]:
+        """Las del trabajador (por `recurso_vinculado.trabajador_ide`),
+        por vinculado."""
+        ...
+
+    def del_periodo(self, periodo_id: int) -> dict[int, dict[int, ImporteMes]]:
+        """Las del periodo, por trabajador y vinculado (una lectura)."""
+        ...
+
+    def guardar(self, periodo_id: int, importe: ImporteMes,
+                usuario: str) -> None:
+        """Upsert de la fila del vinculado (cantidad no nula)."""
+        ...
+
+    def borrar(self, periodo_id: int, vinculado_ide: int) -> None:
+        """Borra la fila del vinculado, si la hay."""
+        ...
+
+
 class TipoIncidenciaRepository(Protocol):
     """Catálogo de incidencias copiado de `auxhor` (F-030, R3-R6)."""
 
@@ -172,6 +197,25 @@ class PeriodoRepository(Protocol):
 
 class AsignacionRepository(Protocol):
     def lineas_de_trabajador(self, periodo_id: int, trabajador_ide: int) -> list[Linea]: ...
+
+    def guardar_subfila_importe(self, periodo_id: int, trabajador_ide: int,
+                                clave: tuple[int, bool], vinculado_ide: int,
+                                valores: dict[str, Any]) -> None:
+        """F-069 (R4, R32): cantidad, copiado y/o comentario de la subfila
+        de `vinculado_ide` bajo la línea `clave`, sin tocar la línea."""
+        ...
+
+    def poner_comentario(self, periodo_id: int, trabajador_ide: int,
+                         clave: tuple[int, bool], comentario: str | None
+                         ) -> None:
+        """F-069 (R32): el comentario de la línea `clave`, sin más."""
+        ...
+
+    def registradas(self, periodo_id: int
+                    ) -> list[tuple[int, tuple[int, bool], int, int | None]]:
+        """F-069 (R32): (trabajador, clave, `asignacion.id`,
+        `sigrid_hmores_ide`) de cada línea del periodo."""
+        ...
 
     def lineas_del_periodo(self, periodo_id: int) -> dict[int, list[Linea]]:
         """Mapa trabajador_ide → líneas (con datos de obra resueltos)."""
@@ -270,6 +314,7 @@ class UnitOfWork(Protocol):
     incidencias: IncidenciaRepository  # F-030
     eventos: EventoRepository
     vinculados: VinculadoRepository  # F-044
+    importes: ImporteRepository  # F-069
 
     def __enter__(self) -> "UnitOfWork": ...
 

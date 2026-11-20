@@ -190,7 +190,7 @@ def test_f003_r8_la_tabla_queda_con_las_previas_mas_las_seis() -> None:
     # F-055 R13 (lista cerrada): + las cinco `propuesta_*`.
     assert presentes == set(COLUMNAS_PREVIAS) | set(COLUMNAS_TRAZA) | {"partida_ide", "partida_cod", "partida_res"} | {
         "propuesta_ide", "propuesta_cod", "propuesta_res", "propuesta_metodo",
-        "propuesta_origen"}
+        "propuesta_origen"} | {"comentario"}   # F-069 R9 (lista cerrada)
 
 
 def test_f003_r6_la_marca_de_tiempo_lleva_zona_horaria() -> None:

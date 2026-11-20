@@ -1,9 +1,11 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 CERRADA (`done`) el 2026-11-18 y unida a `dev`** (OK del humano al cierre: «ok»). Review 11 APROBADA; MANUAL T19 hecha en modo pruebas (0404, 2032-01; `progress/manual_F-054.md`): sobrantes a 0 en su sitio, mismo `ide`/`pos`, sin `DELETE`, preflight mediana 10,43 s ≤ 11,89 s. Resumen en `progress/history.md`. **Pendiente:** T20 al desplegar (transfer → api → front, `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md`, aviso a `partes`); decisión del humano sobre limpiar el parte de pruebas PT32/00001 de la 0404 (3 líneas `PRUEBA-PORC` y 2 sin marca a 0). **Siguiente:** rebasar F-069 (`porcentajes-f069`, `spec_ready`) sobre `dev` (D16) e implementarla. **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la api (`990e264`).
+**F-069 CERRADA (`done`) el 2026-11-20 y unida a `dev`** (OK del humano: «despleguemos»). Resumen en `progress/history.md`. **Pendiente:** despliegue que lanza el humano (F-054 y F-069 juntas, transfer → api → front) y, después, T17 de F-069 y T20 de F-054 (sección «Pendiente al desplegar», abajo).
 
-**ARNÉS 2026-11-13: actualizado de la 1.7.3 a la 1.10.1** (rama `chore/arnes-1.10.1`, «ok» del humano al plan). Instalador en modo `actualizar`: 70 nuevos, 26 arnés puro pisados con backup, y fusión a mano de los seis `adaptado` (`CLAUDE.md`, `CHECKPOINTS.md`, `harness/init.sh`, `docs/CONVENTIONS.md`, `.claude/settings.json`; `docs/referencia/README.md` sin cambios) sin perder lo del proyecto; quitado el hook `PostToolUse` (`| tail -5` escondía el código de salida). Decisión del humano: `rigor.json` tal cual (mutación informativa en `estandar`, `critico` muestreado, nivel `express`), sin `rigor.local.json`. Estados nuevos (`todo`, `in_review`, `human_review`): nada está en `todo`, el líder pedirá qué comprometer. `bash harness/init.sh` en verde (raíz 2319 passed / 47 skipped). Informe `progress/impl_chore_arnes_1.10.1.md`. **F-054 y F-069 siguen con la 1.7.3 en sus copias**: la recogen al integrarse/rebasarse sobre `dev`. Pendiente del humano: `git -C …/porcentajes push origin dev`.
+**F-054 CERRADA (`done`) el 2026-11-18 y unida a `dev`** (OK del humano al cierre: «ok»). Review 11 APROBADA; MANUAL T19 hecha en modo pruebas (0404, 2032-01; `progress/manual_F-054.md`): sobrantes a 0 en su sitio, mismo `ide`/`pos`, sin `DELETE`, preflight mediana 10,43 s ≤ 11,89 s. Resumen en `progress/history.md`. **Pendiente:** T20 al desplegar (transfer → api → front, `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md`, aviso a `partes`); decisión del humano sobre lo que queda de pruebas en la 0404 (sección «F-054», abajo). **Siguiente:** desplegar F-054 y F-069 juntas (sección «F-069 · CERRADA»). **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la api (`990e264`).
+
+**ARNÉS 2026-11-13: actualizado de la 1.7.3 a la 1.10.1** (rama `chore/arnes-1.10.1`, «ok» del humano al plan). Instalador en modo `actualizar`: 70 nuevos, 26 arnés puro pisados con backup, y fusión a mano de los seis `adaptado` (`CLAUDE.md`, `CHECKPOINTS.md`, `harness/init.sh`, `docs/CONVENTIONS.md`, `.claude/settings.json`; `docs/referencia/README.md` sin cambios) sin perder lo del proyecto; quitado el hook `PostToolUse` (`| tail -5` escondía el código de salida). Decisión del humano: `rigor.json` tal cual (mutación informativa en `estandar`, `critico` muestreado, nivel `express`), sin `rigor.local.json`. Estados nuevos (`todo`, `in_review`, `human_review`): nada está en `todo`, el líder pedirá qué comprometer. `bash harness/init.sh` en verde (raíz 2319 passed / 47 skipped). Informe `progress/impl_chore_arnes_1.10.1.md`. F-054 la recogió al unirse a `dev` y F-069 al rebasarse sobre `dev` (2026-11-18). Pendiente del humano: `git -C …/porcentajes push origin dev`.
 
 **HOTFIX 2026-11-11 `hotfix/registro-corte-proxy`: unido a `dev` (`b83482c`) y DESPLEGADO el 2026-11-11** (front `r20261111-1916`, junto con la api `r20261111-1915`, que lleva los hotfixes VP y `/propuestas`; transfer sin cambios en `r20261028-1914`). Si `registro/ejecutar` recibe 502/504 o falla la red: cierra el modal, aviso fijo «el registro sigue en curso… recargo en 60 s», registro bloqueado en sus tres entradas y recarga del mes registrado a los 60 s; otros errores, como antes, y el botón del modal ya no se queda en «Registrando…». 15 tests (RED 13/15), `init.sh` en verde en `dev`; informe `progress/impl_hotfix_registro_corte_proxy.md`. `azure-apps` `c1608f3` (nota de redespliegue, sin cambio de contrato). **Pendiente del humano:** comprobarlo en producción en el próximo registro grande.
 
@@ -13,8 +15,8 @@ Silva, todo con propuesta; 73/80 pares VP-obra). Causa (logs de la api): `GET �
 porque `PropuestasOut` no declaraba `subfilas` (F-044 R9) y `extra="forbid"` la rechazaba; el front lo trata
 como «sin datos». Arreglo: `PropuestaSubfilaOut` y `subfilas` en `PropuestasOut`, ruta con
 `response_model_exclude_unset` (sin subfilas, la respuesta de siempre); test
-`tests/test_hotfix_propuestas_subfilas.py` (RED: 2 failed antes del arreglo). **Pendiente del humano:**
-desplegar SOLO la api. Además, altas en el backlog: **F-069** (importe mensual de caja y km con casilla:
+`tests/test_hotfix_propuestas_subfilas.py` (RED: 2 failed antes del arreglo). **Desplegado el 2026-11-11** (api
+`r20261111-1915`). Además, altas en el backlog: **F-069** (importe mensual de caja y km con casilla:
 44 de 45 VP tienen `pre` 0 en `KM` y el registro los omite, «sin importe mensual»; bloquea los km de
 octubre) y **F-070** (cabecera fija al hacer scroll). Fuera del hotfix, para otra feature: subfilas en cola
 como «buscando partida…» y aviso del front si `…/propuestas` falla.
@@ -24,8 +26,8 @@ trayendo el recurso kms hechos (VPXXX)… hay que incluirlo. esto es un hotfix»
 funciona exactamente igual que el resto de recursos asociados. se reparten porcentualmente»): F-044 D1b
 revisada, `sync.vinculados.tipos_excluidos` de `[VP]` a `[]` en la api; test `test_f044_r1_config_versionada`
 (RED antes del cambio) y `docs/ARCHITECTURE.md`. `bash harness/init.sh` en verde. Unido a `dev` el 2026-11-03.
-**Pendiente del humano:** despliegue SOLO de la api y «Sincronizar Sigrid» para que los `VP` salgan como subfilas.
-`azure-apps/dedicacion.md` (l. ~706) solo describe el efecto genérico de cambiar `tipos_excluidos`, sin su valor: no se toca. F-054 sigue en su copia `porcentajes-f054`.
+**Desplegado el 2026-11-11** (la misma api `r20261111-1915`); si no se ha hecho, queda «Sincronizar Sigrid» para que los `VP` salgan como subfilas.
+`azure-apps/dedicacion.md` (l. ~706) solo describe el efecto genérico de cambiar `tipos_excluidos`, sin su valor: no se toca. (F-054 se cerró y se unió a `dev` el 2026-11-18.)
 
 Los dos hotfixes se trajeron de `dev` a la rama de F-054 el 2026-11-04 (merge de `dev`), para probar T18 y T19 con ellos.
 
@@ -54,8 +56,8 @@ Cancelar («⚠ Lo que espera al humano», manera B); el resto de T21 de F-044
 (líneas ajenas hechas a mano —`OTEL` con `can = 0` y `OGAS` al 95 %— y la
 validación de Administración); y los **avisos a `partes`** de F-062 y F-044
 («Riesgos para el humano» y «F-044 · spec aprobada», más abajo).
-**Para retomar (sesión nueva):** `arnes-base` va 3 commits por delante de
-su `origin/main` (encargos pendientes; push del humano: `git -C
+**Para retomar (sesión nueva):** `arnes-base` va 1 commit por delante de
+su `origin/main` (`8de97cb`, encargo pendiente; push del humano: `git -C
 ../arnes-base push origin main`). Las dos propuestas de arnés de la
 review 3 de F-054 no piden decisión nueva: ya tienen encargo en
 `arnes-base` (mutantes que no compilan: `e7a172b`; campaña manual de C4
@@ -64,14 +66,20 @@ las filas de una campaña manual sobre el SHA que declara la campaña, o sobre H
 original sigue igual) amplía ese mismo encargo `de161b4`: pendiente de añadirla allí, sin decisión nueva. Otras propuestas de arnés pendientes, en sus secciones:
 F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
 tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
-`init.sh`). **Siguiente:** F-054, review 9 APROBADA (O11 y `dev` traído, 2026-11-04), T27/R48 hecha y comprobada por el humano (2026-11-06), review 10 con cambios solo de rastro; faltan T18 (pasos 2 a 4) y T19 del humano, y T20 al desplegar (worktree `porcentajes-f054`); después
+`init.sh`). **Siguiente:** desplegar F-054 y F-069; después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
+
+## F-069 · CERRADA (2026-11-20), pendiente de desplegar
+
+- Resumen completo en `progress/history.md`; MANUAL T16 en `progress/manual_F-069.md`; reviews en `progress/review_F-069.md`.
+- **T17 al desplegar** (líder, tras el despliegue que lanza el humano): orden **transfer → api → front**. Después, `azure-apps/dedicacion.md` al día desde `docs/INTEGRACION.md` §5 y §7 (tabla `importe_vinculado` y columnas nuevas, `PUT …/periodos/{a}/{m}/trabajadores/{ide}/importes` con `revisado`, claves nuevas del contrato del transfer, `tex` sin marca en `existentes`, `tex_nuevo`/`tex_actualizadas` y el `UPDATE` de `tex` de D20, lectura de F-054 ampliada a las `porcentajes:vin:`), commit aparte en `azure-apps` con `git pull --rebase` antes; aviso a `partes` (el transfer cambia el `tex` de sus líneas ya registradas) y apunte para F-071 (design §10).
+- Automejoras propuestas por los reviewers, a llevar al humano para `arnes-base`: contrastar «Pendiente del humano: desplegar…» con «Producción, hoy» (review 2); en RM7, un orden que solo dice el design se prueba igual (review 4); el paso destructivo de una MANUAL cita su salida real y su alcance (review 5).
 
 ## F-054 · CERRADA (2026-11-18), pendiente de desplegar
 
 - Resumen completo en `progress/history.md`; MANUAL T10, T18 y T19 en `progress/manual_F-054.md`.
 - **T20 al desplegar** (líder, tras el despliegue que lanza el humano): orden **transfer → api → front**; refrescar `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` (commit aparte en `azure-apps`, con `pull --rebase` antes) y avisar a `partes` de que el transfer pone a 0 líneas `M*` y de vinculados de los partes compartidos, sin borrarlas. Texto exacto en `specs/F-054-sync-trae-porcentajes/tasks.md`, T20.
-- En Sigrid queda el parte de pruebas **PT32/00001** de la 0404 (2032-01): 414543-414545 `PRUEBA-PORC` y 415966-415967 sin marca, a 0. Limpieza pendiente de decisión del humano. En la BBDD local queda el periodo 01/2032.
+- En la 0404 de pruebas quedan PT32/00001 (2032-01) con 415966-415967 sin marca, a 0, y los partes vacíos PT32/00002 y PT32/00003 (2032-03 y 2032-04); las tres `PRUEBA-PORC` de la T19 de F-054 (414543-414545) las borró el 2026-11-20 el `limpiar` de la T16 de F-069, que no se limita al mes. Quitar el resto (las dos sin marca y los partes vacíos) sigue siendo decisión del humano. En la BBDD local quedan los periodos 01, 03 y 04 de 2032.
 
 ## F-068 · CERRADA y DESPLEGADA (2026-10-28), MANUAL hecha
 
@@ -140,7 +148,8 @@ se rompe».
   del humano en modo pruebas.
 - **F-054:** trae solo las `M*` de trabajadores (por recurso, no por prefijo);
   los vinculados no son asignaciones. F-054 lo cerró con D18 = A
-  (2026-10-29): de los vinculados no se trae nada.
+  (2026-10-29): de los vinculados no se traían % ni cantidades; desde F-069
+  se trae su comentario (R32).
 - **Riesgos:** `MESVE` empieza por `M` (R19 y sus tests); la columna nueva
   puede tocar tests del front (el implementer PARA y pide ampliar la lista
   cerrada); **F-062 toca `registro_pipeline.py`**: implementar F-044 sobre
@@ -185,7 +194,7 @@ detalle de las opciones, en el historial de git de este fichero,
 **F-030** (incidencias en el cuadrante)
 **cerrada (`done`) y desplegada el 2026-10-22** (permiso del humano, «3
 si»; el script lo lanzó el humano, ver «Producción, hoy»);
-`azure-apps/dedicacion.md` `3d5c80b`. El arnés es la **1.7.3**.
+`azure-apps/dedicacion.md` `3d5c80b`. El arnés era entonces la 1.7.3 (hoy, la 1.10.1).
 
 **Pendiente del humano:** la comprobación de F-051 en producción (Ctrl+F5;
 un registro con una línea `M*` al 0 % en el parte la edita en su sitio y el
@@ -194,8 +203,8 @@ modal lo avisa; un pisado dice «se edita la línea X (…) y se escribe N%»).
 desde F-051 el transfer de dedicación **edita en su sitio** líneas `M*` de
 los partes compartidos (también las que tengan `synckey partes:…`, sin
 cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
-**F-030 en producción:** lanzar un sync (el desplegable de incidencias sale
-vacío hasta que el sync llene el catálogo de `auxhor`) y comprobarla
+**F-030 en producción:** el sync ya se lanzó el 2026-10-27 (llena el catálogo de `auxhor`
+que usa el desplegable de incidencias); queda comprobarla
 (Ctrl+F5; texto en la celda del % ⇒ desplegable; registrar ⇒ el par
 `CI*`/`CIZ` en el parte). **Aviso a `partes`** de F-030: dedicación escribe
 líneas de incidencia `CI*`/`CIZ` (`can = 0`, `synckey porcentajes:inc:`) en
@@ -227,9 +236,10 @@ f51»), transfer → api → front (ver «Producción, hoy»); T16 hecho
 (`azure-apps/dedicacion.md` `223490c`).
 Altas nuevas del 2026-10-21: **F-058** (un % que redondea a 0 no se
 registra), **F-059** (% por días con el calendario de convenio) y **F-060**
-(leer la bandeja de `partes`). El arnés es la **1.7.3**.
+(leer la bandeja de `partes`). El arnés era entonces la 1.7.3 (hoy, la 1.10.1).
 ## Producción, hoy
 
+- **Desplegado el 2026-11-11 (lo último): hotfixes.** Api `r20261111-1915` (VP como vinculados y `/propuestas`) y front `r20261111-1916` (corte del proxy); transfer sin cambios, `r20261028-1914`. Lo que sigue (F-068, 2026-10-28) es el despliegue anterior: su api y su front ya no son los de hoy.
 - **Desplegado el 2026-10-28: F-068**, los tres servicios en orden, lanzado
   por el humano con `infra/d.local.ps1`: transfer `r20261028-1914`
   (`ca-dedicacion-transfer--r20261028191409`), api `r20261028-1918`
@@ -274,8 +284,7 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
   `recurso_vinculado` y `asignacion_vinculado` por `create_all`). El
   transfer sigue en **modo real**. `infra/imagenes.json` al día en este
   commit; `azure-apps/dedicacion.md` `29321e1`. **Pendiente del humano:**
-  Ctrl+F5 en el front, **«Sincronizar Sigrid»** (sin él no hay vínculos ni
-  subfilas), la MANUAL B de F-064 y el **aviso a `partes`** de F-044
+  Ctrl+F5 en el front («Sincronizar Sigrid» ya hecho el 2026-10-27), la MANUAL B de F-064 y el **aviso a `partes`** de F-044
   («F-044 · spec aprobada»).
 - **Desplegado el 2026-10-26: F-062**, los tres servicios en orden, uno a
   uno, lanzados por el humano con `infra/d.local.ps1 transfer|api|front`
@@ -387,7 +396,7 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
   PT26/00298 (En registro), partida CI.1.8, con cuenta analítica. Las dos
   líneas de Bas Leal en la **0404** (`porcentajes:148` y `:149`, parte
   PT26/00344) son de la prueba LOCAL en modo pruebas (ids de la base local):
-  **pendiente que el humano las borre**, como las de F-037.
+  las borró el `limpiar` de F-051 el 2026-10-21 (`progress/manual_F-051.md`).
 - **Desplegado el 2026-10-07 (tarde): F-041 y F-042**, solo el front
   (`r20261007-1734`, revisión `Running` comprobada con `az containerapp show`):
   el filtro de obra casa con `Postv-` y la última fila abre el desplegable de
@@ -463,9 +472,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden: **F-058** (un % que redondea a 0 no se registra), F-044, F-052, F-053, **F-054** (el sync trae los %
-que ya hay en los partes de Sigrid; 2026-10-08), F-021, F-048, F-046, F-038, F-028, F-036, F-031, F-059, F-060,
-F-033 y, detrás, F-017, F-018… **Hoy (2026-11-06):** F-054, T23 aprobada (review 7), T24-T26 (review 8), O11 con `dev` traído (review 9 APROBADA) y T27/R48 hecha y comprobada por el humano; T10 y T18 paso 1 hechos, faltan T18 pasos 2 a 4 y T19 del humano, y T20 al desplegar (O7 = b, D19; D12 revisada);
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-20):** F-069 cerrada y unida a `dev`, pendiente de desplegar; F-054 cerrada el 2026-11-18 y pendiente de desplegar (T20);
 después, F-066.
 
 ## ⚠ Lo que espera al humano
@@ -550,8 +557,7 @@ después, F-066.
     mirando el modal, y **Cancelar**. Ni cambiar partidas (se guardan en el
     cuadrante) ni «Registrar» (escribe en la obra real).
 
-- **F-062: T19 y T20, MANUAL**, con sus comandos exactos en «F-062 · T19 y
-  T20» (arriba), primer paso incluido (`True 0404` o PARAR).
+- **F-062: T19 y T20, MANUAL, HECHAS** (`progress/manual_F-062.md`).
   **Equivalentes de la mutación nº 14 (`rachas.py:113`) y nº 23
   (`rachas.py:528`): ACEPTADOS** por el humano el 2026-10-24 («ok a 1 y
   2»), con la condición de que la campaña nueva los repita y sigan siendo
@@ -598,10 +604,7 @@ después, F-066.
   humano las ejecute», pero aquí el líder las cumple a menudo antes de la
   review (F-055, F-056, F-057); propuesta: «listadas con su comando exacto y,
   si ya se ejecutaron, con quién, cuándo y el resultado real» ⇒ `arnes-base`.
-- **Borrar en la 0404 las líneas de las pruebas locales** (modo pruebas,
-  `PRUEBA-PORC`): las dos de Bas Leal (parte PT26/00344, `porcentajes:148` y
-  `:149`) y la de la M3 de F-050 (parte PT26/00371, noviembre 2026, `hmores`
-  410599, GONZALEZ PANIAGUA, `porcentajes:180`).
+- **Borrar en la 0404 las líneas de las pruebas locales: HECHO** el 2026-10-21 por el `limpiar` de F-051 (Bas Leal `porcentajes:148`/`:149` y la M3 de F-050, `porcentajes:180`).
 - **Cargar también la copia local de variables al desplegar.** El orden es
   `. .\00_vars_dedicacion.ps1`, `. .\00_vars_dedicacion.local.ps1` y
   `. .\00_capps_vars_dedicacion.ps1`. Si falta la local, `redeploy` sigue con
@@ -635,17 +638,16 @@ después, F-066.
    capacidad no se evalúa en un periodo sin ningún parte (dos líneas nuevas
    del mismo recurso que sumen más del 100 % no avisan). Preexistente.
 
-> **`azure-apps` no tiene remoto configurado** (`git remote -v` vacío): vive
-> solo en local. No es de este proyecto, pero ahí está la documentación de todo
-> el ecosistema y no está respaldada en ningún sitio.
+> `azure-apps` tiene remoto (`origin`, organización `ruesma-dev`) y es un
+> repositorio compartido: `pull --rebase` antes de editar (ver `CLAUDE.md`).
 
 ## Lo que el sistema sabe hacer, comprobado
 
 - **Corre en local y en Azure.** En local: transfer 8006 → api 8090 →
   front 8080, cada uno desde su carpeta con su venv (`README.md`).
 - **Escribe en Sigrid de verdad**: crea el parte si no existe e inserta la
-  línea con su `synckey` (T14). Ahora mismo **no tiene ninguna fila propia** en
-  el ERP: la prueba se limpió.
+  línea con su `synckey` (T14). Escribe en real desde el
+  2026-10-01; en la 0404 de pruebas quedan PT32/00001 (dos líneas a 0, F-054 T19) y dos partes vacíos de la T16 de F-069.
 - **Avisa y espera confirmación** en tres casos, cada uno con su clave: pisar
   una línea existente, pasarse del 100 % de un trabajador (F-002) y escribir
   sin partida casada (F-013).

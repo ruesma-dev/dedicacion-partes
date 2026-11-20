@@ -83,3 +83,11 @@ class IncidenciaInvalida(ErrorDominio):
     del mes, `desde` posterior a `hasta`, dos que comparten algún día, un
     código que no está activo o una obra que no se ofrece como normal. 422
     con el motivo, sin tocar nada."""
+
+
+class ImporteInvalido(ErrorDominio):
+    """La cantidad o el comentario de un vinculado de cantidad no valen
+    (F-069, R5, R6): negativa, con más de dos decimales, por encima del tope
+    de su unidad, un comentario de más de 200, un vinculado que no es del
+    trabajador o no es de cantidad, una caja sin línea en esa obra o un
+    vinculado repetido. 422 con el motivo, sin guardar nada."""

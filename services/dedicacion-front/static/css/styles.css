@@ -466,6 +466,16 @@ tr.fila-editor > td {
 .chip-inc { border-style: dashed; }
 .chip-inc .inc-tipo, .chip-inc .inc { font-weight: 600; color: var(--ink-soft); }
 .chip-inc .inc-rotulo { font-size: 0.78rem; color: var(--steel-300); }
+/* F-069 (R11, R14): cantidades y comentarios de los vinculados. */
+.chip-importe .importe-cantidad { width: 5.5rem; text-align: right; }
+.chip-importe .importe-unidad { font-size: 0.78rem; color: var(--steel-300); }
+.chip-importe .importe-comentario, .chip-edit .linea-comentario { width: 10rem; }
+.chip-importe.copiado { border-style: dashed; }
+.marca-copiado { font-size: 0.75rem; font-style: italic; color: var(--ink-soft); margin-left: 0.3rem; }
+.cantidad-vin { margin-left: 0.4rem; font-variant-numeric: tabular-nums; }
+.cantidad-vin.falta { font-style: italic; color: var(--ink-soft); }
+.celda-comentario { color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.importe-vin { font-size: 0.78rem; color: var(--ink-soft); }
 .chip-inc .inc-dia { width: 2.4em; text-align: center; }
 tr.fila-inc td { font-style: italic; }
 /* F-030, anexo R30 (R38): la quitada del cuadrante que sigue en Sigrid. */

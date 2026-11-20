@@ -73,6 +73,9 @@ from typing import Optional
 from application.pipelines.registro_vinculados import (
     EscrituraVinculados, PasoVinculados, motivo_de_conflicto,
 )
+from application.services.texto_linea import (
+    PREFIJO_NUESTRAS, anotar_tex, hay_comentarios, tex_a_actualizar, tex_de,
+)
 from application.services.reglas_vinculados import decidir_vinculados
 from application.services.cuenta_analitica import (
     origen_subcuenta, resolver_cuenta, subcuenta_de_linea,
@@ -99,7 +102,7 @@ from application.services.reglas_porcentajes import (
     MOTIVO_EMPRESA_OBRA, MOTIVO_LINEA_CAMBIADA, MOTIVO_PARTIDA_PV_NO_HOJA,
     MOTIVO_SIN_PARTIDA, MOTIVO_SOBRECARGA, ReglasPorcentajes, clave_conflicto, clave_sin_partida,
     clave_sobrecarga, criterio_choque, emparejar_ceros, empresa_de_peticion,
-    es_linea_mensual, es_nuestra_de_otra, evaluar_capacidad,
+    es_de_la_hora, es_linea_mensual, es_nuestra_de_otra, evaluar_capacidad,
     pisables_al_cero, repartir_choques, sin_partida, synckey_tras_editar,
 )
 from application.services.universo_postventa import (
@@ -566,6 +569,21 @@ class RegistroPipeline:
                 AVISO_QUEDAN_A_CERO.format(n=n) if n else None)
 
     # ------------------------------------------------------------- #
+    def _decision_tex(self, forzada: bool, destino: ObraEntrada):
+        """F-069 (D20, design §6.5): `(comentario, línea leída) -> (tex_nuevo,
+        motivo)` de una ya registrada, con la marca y la obra de pruebas en
+        modo pruebas (una obra sin `ide` no casa con ninguna línea)."""
+        marca = self._st.marca_pruebas if forzada else None
+        obride = int(destino.ide or 0) if forzada else None
+        est = int(self._st.est_parte_activo)
+
+        def decidir(comentario, hit):
+            return tex_a_actualizar(comentario, marca, hit,
+                                    en_registro=hit.parte_est == est,
+                                    obride_pruebas=obride)
+        return decidir
+
+    # ------------------------------------------------------------- #
     def preflight(self, *, obra: ObraEntrada,
                   lineas: list[LineaEntrada],
                   incidencias: list[IncidenciaEntrada] | None = None,
@@ -764,7 +782,7 @@ class RegistroPipeline:
             validas=validas, nodos_pv=nodos_pv,
             nodos=lambda: nodos_ya if nodos_ya is not None else
             construir_catalogo(self._cli.capitulos_de_obra(int(origen.ide))),
-            ventana=lambda: self._ventana(lineas))
+            ventana=lambda: self._ventana(lineas), obra=origen.codigo)
         vin_escribir = [v for v in vinculados if v.accion == "escribir"]
 
         def obra_de(a: AccionLinea) -> ObraEntrada:
@@ -817,11 +835,18 @@ class RegistroPipeline:
         # una `H*`/`C*` de `partes`) y no es nuestra de otra asignación; si
         # no, la de su `synckey`, como siempre. Las dos en UNA lectura.
         # F-044 (R13, R30): con los de los vinculados, en la misma lectura.
+        # F-069 (D20, R24): si algo trae comentario, la misma lectura trae
+        # también el `tex`, la `obride` y el `con.est` de lo registrado, y
+        # cada ya registrada decide su `tex_nuevo`; si no, la de siempre.
         claves_vin, ides_vin = paso.registradas(vinculados)
+        tex = (self._decision_tex(forzada, destino_normal)
+               if hay_comentarios(lineas) else None)
         por_sk, por_ide = self._cli.lineas_registradas(
             [synckey_de(a.registro_id) for a in escribir] + claves_vin,
-            [por_id[a.registro_id].hmores_ide for a in escribir] + ides_vin)
-        paso.idempotencia(vinculados, por_sk, por_ide)
+            [por_id[a.registro_id].hmores_ide for a in escribir] + ides_vin,
+            **({"con_tex": True} if tex else {}))
+        paso.idempotencia(vinculados, por_sk, por_ide,
+                          **({"tex": tex} if tex else {}))
         for a in escribir:
             propia = synckey_de(a.registro_id)
             hit = por_ide.get(int(por_id[a.registro_id].hmores_ide or 0))
@@ -834,6 +859,8 @@ class RegistroPipeline:
                 a.hmores_ide = hit.ide
                 a.motivo = (f"ya registrada en Sigrid (línea {hit.ide}); "
                             f"no se duplica")
+                if tex:
+                    anotar_tex(a, tex(por_id[a.registro_id].comentario, hit))
 
         # Paso 6 bis: líneas SIN PARTIDA (ver ARCHITECTURE
         # `#regla-sin-partida`). Se emiten ANTES que los pisados y las
@@ -1220,7 +1247,8 @@ class RegistroPipeline:
         if not (a_escribir or inc_escribir or inc_editar or cierres):
             logger.info("[registro] nada que escribir (bloqueadas=%s)",
                         len(bloqueadas))
-            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
+            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados,
+                                         lineas)
 
         # Paso 9 bis (F-051 R4, R5, R12): qué edita cada acción y qué se
         # pone a 0, comprobado contra Sigrid justo antes de escribir. Va
@@ -1247,7 +1275,8 @@ class RegistroPipeline:
         if not (a_escribir or inc_escribir or inc_editar or cierres):
             logger.info("[registro] nada que escribir (cambiadas=%s)",
                         len(cambiadas))
-            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
+            return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados,
+                                             lineas)
         a_insertar = [a for a in a_escribir if a.registro_id not in edita]
 
         # Paso 9: crear los partes que falten (por destino), solo para lo
@@ -1277,12 +1306,20 @@ class RegistroPipeline:
         # insertar. Ningún DELETE (F-051 R6, ARCHITECTURE.md#regla-cero).
         statements: list[dict] = []
         tex = self._st.marca_pruebas if pf.forzada_pruebas else None
+        # F-069 (R23, D14): el `tex` de cada línea del titular, su
+        # comentario (en pruebas, tras la marca); sin él, el de siempre.
+        comentarios = {l.registro_id: l.comentario for l in lineas}
+
+        def tex_linea(registro_id: int) -> str | None:
+            return tex_de(comentarios.get(registro_id), tex)
+
         orden = sorted(a_escribir, key=lambda x: (x.ano, x.mes,
                                                   x.registro_id))
         for a in orden:
             ls = edita.get(a.registro_id)
             if ls is None:
                 continue
+            tex_a = tex_linea(a.registro_id)
             synckey = synckey_tras_editar(ls.synckey,
                                           synckey_de(a.registro_id))
             despues = {
@@ -1294,13 +1331,13 @@ class RegistroPipeline:
                 "horide": int(a.hora_ide), "hora_codigo": a.hora_codigo,
                 "paride": int(a.paride or 0), "caaide": int(a.caa_ide or 0),
                 "fecha_int": a.fecha_int, "synckey": synckey,
-                "tex": ls.tex if tex is None else tex}
+                "tex": ls.tex if tex_a is None else tex_a}
             statements.append(self._cli.stmt_editar_linea(
                 ide=ls.ide, reside=int(ls.reside), can_leido=ls.can,
                 synckey_leida=ls.synckey, horide=int(a.hora_ide),
                 can=float(a.can), pre=float(a.pre),
                 paride=int(a.paride or 0), caaide=int(a.caa_ide or 0),
-                fecha_int=a.fecha_int, synckey=synckey, tex=tex))
+                fecha_int=a.fecha_int, synckey=synckey, tex=tex_a))
             res.editadas.append(_traza("edita", a.registro_id, ls, despues))
             res.escritas.append(self._escrita(
                 a, obra_de(a), ls.hmoide, ls.parte_cod, editada=True,
@@ -1327,7 +1364,7 @@ class RegistroPipeline:
                 pos=pos_por_parte[hmoide], fecha_int=a.fecha_int,
                 horide=int(a.hora_ide), can=float(a.can), pre=float(a.pre),
                 ano=a.ano, mes=a.mes, synckey=synckey_de(a.registro_id),
-                tex=tex, paride=int(a.paride or 0),
+                tex=tex_linea(a.registro_id), paride=int(a.paride or 0),
                 caaide=int(a.caa_ide or 0)))
             res.escritas.append(self._escrita(a, d, hmoide, p.cod,
                                               editada=False))
@@ -1401,16 +1438,20 @@ class RegistroPipeline:
                     res.borradas, afectadas, usuario,
                     datetime.now(timezone.utc).isoformat())
         self._comprobar_escrito(res, inc_escribir, inc_editar, cierres)
-        return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados)
+        return self._ejecutar_vinculados(res, pf, pisar, vin_bloqueados,
+                                             lineas)
 
     # ------------------------------------------------------------- #
     def _ejecutar_vinculados(self, res: ResultadoRegistro, pf: Preflight,
-                             pisar: set[str], bloqueados: dict
+                             pisar: set[str], bloqueados: dict,
+                             lineas: list[LineaEntrada] = ()
                              ) -> ResultadoRegistro:
         """F-044 (R24, R28): los vinculados, DESPUÉS de los titulares y de
-        su relectura (`EscrituraVinculados`). Sin vinculados, nada."""
+        su relectura (`EscrituraVinculados`). Sin vinculados, nada. F-069
+        (R23): con el comentario de cada vinculado de `lineas`, para su
+        `tex`."""
         if not pf.vinculados:
-            return res
+            return self._actualizar_tex(res, pf)
         destino_normal = pf.obra_destino
         destino_pv = getattr(pf, "obra_postventa", None)
         marca = (f" ({self._st.marca_pruebas})" if pf.forzada_pruebas
@@ -1427,9 +1468,80 @@ class RegistroPipeline:
             crear_parte=lambda p, d: self._crear_parte(
                 p, d, f"Parte {d.nombre or d.codigo}{marca}"),
             traza=_traza,
+            comentarios={(l.registro_id, int(v.recurso_ide)): v.comentario
+                         for l in lineas for v in l.vinculados},
         ).ejecutar(res, pf.partes, pf.vinculados, pf.conflictos, pisar,
                    bloqueados)
+        return self._actualizar_tex(res, pf)
+
+    # ------------------------------------------------------------- #
+    def _actualizar_tex(self, res: ResultadoRegistro,
+                        pf: Preflight) -> ResultadoRegistro:
+        """F-069 (D20, R26; design §6.5): el último paso de `ejecutar`, tras
+        titulares y vinculados. Las ya registradas con `tex_nuevo` se releen
+        (`lineas_para_editar`, una lectura, solo si hay alguna) y, si siguen
+        valiendo (nuestras, de su recurso y hora, sin enlaces y En
+        registro), `stmt_editar_tex` en un lote: solo el `tex`, con la
+        guarda de F-051 y, en pruebas, `AND obride = ?`. Se comprueba al
+        releer: la que no quedó con su `tex`, al log y fuera de
+        `tex_actualizadas`. Nunca `DELETE`."""
+        piezas = [(a, None) for a in pf.acciones
+                  if a.accion == "ya_registrado" and a.tex_nuevo
+                  and a.hmores_ide]
+        piezas += [(v, v.recurso_ide) for v in pf.vinculados
+                   if v.accion == "ya_registrado" and v.tex_nuevo
+                   and v.hmores_ide]
+        if not piezas:
+            return res
+        leidas = self._cli.lineas_para_editar([p.hmores_ide
+                                               for p, _ in piezas])
+        obride = (int(pf.obra_destino.ide or 0) if pf.forzada_pruebas
+                  else None)
+        statements, enviadas = [], []
+        for p, vinculado in piezas:
+            ls = leidas.get(int(p.hmores_ide))
+            if not self._tex_sigue_valiendo(ls, p, vinculado is not None):
+                logger.warning("[registro] no se cambia el tex de la linea "
+                               "%s (registro %s): ya no vale", p.hmores_ide,
+                               p.registro_id)
+                continue
+            statements.append(self._cli.stmt_editar_tex(
+                ide=ls.ide, reside=int(ls.reside), can_leido=ls.can,
+                synckey_leida=ls.synckey, tex=p.tex_nuevo,
+                hora=p.hora_codigo if vinculado is not None else None,
+                obride=obride))
+            enviadas.append((p, vinculado, ls))
+        if not statements:
+            return res
+        afectadas = self._cli.escribir(statements)
+        _, por_ide = self._cli.lineas_registradas(
+            [], [ls.ide for *_, ls in enviadas], con_tex=True)
+        for p, vinculado, ls in enviadas:
+            hit = por_ide.get(ls.ide)
+            if hit is None or (hit.tex or "").strip() != p.tex_nuevo.strip():
+                logger.warning("[registro] la guarda no dejo cambiar el tex "
+                               "de la linea %s (registro %s)", ls.ide,
+                               p.registro_id)
+                continue
+            res.tex_actualizadas.append(
+                {"registro_id": p.registro_id,
+                 **({"vinculado_ide": vinculado}
+                    if vinculado is not None else {}),
+                 "hmores_ide": ls.ide, "tex": p.tex_nuevo})
+        logger.info("[registro] tex actualizados=%s filas=%s",
+                    len(res.tex_actualizadas), afectadas)
         return res
+
+    def _tex_sigue_valiendo(self, ls, p, vinculado: bool) -> bool:
+        """F-069 (D20): la línea releída sigue siendo nuestra, del recurso,
+        de su hora (`M*` el titular; la suya el vinculado), sin enlaces y
+        en un parte En registro."""
+        return (ls is not None and not ls.enlazada
+                and ls.reside == p.recurso_ide
+                and (ls.synckey or "").strip().startswith(PREFIJO_NUESTRAS)
+                and ls.parte_est == int(self._st.est_parte_activo)
+                and (es_de_la_hora(ls, p.hora_codigo) if vinculado
+                     else es_linea_mensual(ls)))
 
     # ------------------------------------------------------------- #
     @staticmethod

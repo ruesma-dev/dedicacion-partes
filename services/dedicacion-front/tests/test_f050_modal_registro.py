@@ -79,7 +79,9 @@ def test_f050_r29_sin_codigo_partida_n_y_sin_partida():
 
 # ========================= el modal (código real) ========================= #
 MODAL = ("fmtPct", "pctNuevas", "rotuloConflicto", "textoPartidaAccion",
-         "rotuloOrigen", "pintarModalPreflight")
+         "rotuloOrigen", "pintarModalPreflight",
+         # F-069 (R29, D20): el comentario nuevo de una ya registrada.
+         "htmlTexNuevo")
 
 
 def _modal(obras: list[dict], escenario: str = "") -> dict:

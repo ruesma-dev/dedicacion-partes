@@ -9,7 +9,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -19,6 +19,7 @@ from domain.deshacer import deshacer_permitido
 from domain.empresas import visible_en_empresa
 from domain.errors import (
     DeshacerAjeno,
+    ImporteInvalido,
     IncidenciaInvalida,
     LineaNoEncontrada,
     LineasInvalidas,
@@ -29,6 +30,15 @@ from domain.errors import (
     TrabajadorNoEncontrado,
 )
 from domain.estados import calcular_estado, completar_hasta_100, resumir
+from domain.importes import (
+    REPARTO_OBRA,
+    TipoCantidad,
+    a_copiar,
+    tipo_de,
+    validar_cantidad,
+    validar_comentario,
+    validar_revisado,
+)
 from domain.incidencias import completar_dias, identificar, validar_incidencias
 from domain.models import (
     CuadranteTrabajador,
@@ -36,6 +46,7 @@ from domain.models import (
     EstadoPeriodo,
     EstadoTrabajador,
     FiltroEmpresa,
+    ImporteMes,
     Incidencia,
     Linea,
     Obra,
@@ -88,11 +99,17 @@ class ObtenerCuadrante:
         ]
         autores = uow.eventos.autores_ultimo_pendiente(periodo_id)
         incidencias = uow.incidencias.de_periodo(periodo_id)  # F-030, R21
+        # F-069 (R10): las cantidades del mes, en UNA lectura y solo si
+        # alguna línea tiene vinculados.
+        importes = (uow.importes.del_periodo(periodo_id)
+                    if _con_vinculados(filas) else {})
         for fila in filas:
             fila.puede_deshacer = deshacer_permitido(
                 autores.get(fila.trabajador.ide), usuario
             )
             fila.incidencias = tuple(incidencias.get(fila.trabajador.ide, ()))
+            fila.importes = tuple(
+                importes.get(fila.trabajador.ide, {}).values())
         return Cuadrante(
             periodo=periodo,
             obras=obras,
@@ -119,14 +136,19 @@ class ObtenerFilaTrabajador:
         periodo_id, _ = _periodo_o_error(uow, anio, mes)
         trabajador = _trabajador_o_error(uow, trabajador_ide)
         pendiente = uow.eventos.ultimo_pendiente(periodo_id, trabajador_ide)
+        lineas = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
         fila = CuadranteTrabajador(
             trabajador=trabajador,
-            lineas=uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide),
+            lineas=lineas,
             puede_deshacer=deshacer_permitido(
                 pendiente.usuario if pendiente else None, usuario
             ),
             incidencias=tuple(
                 uow.incidencias.de_trabajador(periodo_id, trabajador_ide)),
+            # F-069 (R10): las del mes, solo si alguna línea tiene vinculados.
+            importes=tuple(uow.importes.de_trabajador(
+                periodo_id, trabajador_ide).values())
+            if any(ln.vinculados for ln in lineas) else (),
         )
         resumen = _resumen_periodo(uow, periodo_id, filtro)
         return fila, resumen
@@ -154,8 +176,10 @@ class GuardarAsignaciones:
         antes = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
         _rechazar_nuevas_no_ofrecibles(uow, lineas, antes)
         # F-050 (R14): guardar la fila no cambia la partida de ninguna línea
-        # que ya existía; la nueva entra automática.
-        lineas = _conservar_partidas(lineas, antes)
+        # que ya existía; la nueva entra automática. F-069 (R9): la línea
+        # que llega sin la clave `comentario` conserva el suyo.
+        lineas = _conservar_partidas(lineas, antes, _sin_comentario(
+            lineas_entrada))
         if _snapshot(antes) != _snapshot(lineas):
             uow.asignaciones.reemplazar(periodo_id, trabajador_ide, lineas, usuario)
             uow.eventos.registrar(
@@ -413,6 +437,11 @@ class DeshacerUltimaModificacion:
             uow.incidencias.reemplazar(
                 periodo_id, trabajador_ide,
                 [i for i in snapshot if not i.quitada], usuario)
+        elif pendiente.tipo == TipoEvento.IMPORTES.value:
+            # F-069 (R7): vuelve a la foto de antes; no toca los %.
+            _aplicar_foto(uow, periodo_id, trabajador_ide,
+                          _foto_de_snapshot(pendiente.snapshot_antes),
+                          usuario)
         else:
             lineas = _validar_lineas(
                 uow, pendiente.snapshot_antes, permitir_inactivas=True
@@ -484,6 +513,9 @@ class CopiarPeriodoAnterior:
                 [],
                 _snapshot(utilizables),
             )
+            # F-069 (R8): y las cantidades del mes que falten, con su evento.
+            _copiar_importes(uow, origen_id, periodo_id, trabajador_ide,
+                             utilizables, usuario)
             copiados += 1
         uow.commit()
         return ResultadoCopia(
@@ -533,6 +565,10 @@ class CopiarTrabajadorAnterior:
                 _snapshot(antes),
                 _snapshot(utilizables),
             )
+            antes = utilizables
+        # F-069 (R8): y las cantidades del mes que falten, con su evento.
+        _copiar_importes(uow, origen_id, periodo_id, trabajador_ide, antes,
+                         usuario)
         uow.commit()
         fila, resumen = ObtenerFilaTrabajador().ejecutar(
             uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
@@ -996,6 +1032,8 @@ def _validar_lineas(
                 partida_res=bruto.get("partida_res"),
                 # F-044 (R8): y las elegidas de sus subfilas.
                 vinculados=_subfilas_de_snapshot(bruto),
+                # F-069 (R9): y su comentario (≤ 200).
+                comentario=_comentario_de_linea(bruto),
             )
         )
     ides = {ln.obra_ide for ln in lineas}
@@ -1010,16 +1048,43 @@ def _validar_lineas(
 
 def _subfilas_de_snapshot(bruto: dict[str, Any]
                           ) -> tuple[SubfilaVinculado, ...]:
-    """Las subfilas con elegida de una línea de snapshot (`_snapshot`)."""
+    """Las subfilas con elegida de una línea de snapshot (`_snapshot`) y,
+    desde F-069 (R7, R8), su cantidad por obra, si es copiada y su
+    comentario."""
     try:
         return tuple(
             SubfilaVinculado(vinculado_ide=int(v["vinculado_ide"]),
                              partida_ide=v.get("partida_ide"),
                              partida_cod=v.get("partida_cod"),
-                             partida_res=v.get("partida_res"))
+                             partida_res=v.get("partida_res"),
+                             cantidad=_decimal_o_none(v.get("cantidad")),
+                             copiado=v.get("copiado"),
+                             comentario=v.get("comentario"))
             for v in bruto.get("vinculados") or [])
-    except (KeyError, TypeError, ValueError, AttributeError) as exc:
+    except (KeyError, TypeError, ValueError, AttributeError,
+            ArithmeticError) as exc:
         raise LineasInvalidas(f"Línea inválida: {bruto}") from exc
+
+
+def _decimal_o_none(valor: Any) -> Decimal | None:
+    return None if valor is None else Decimal(str(valor))
+
+
+def _comentario_de_linea(bruto: dict[str, Any]) -> str | None:
+    """F-069 (R9): el comentario de una línea de entrada (≤ 200, sin
+    espacios a los lados; vacío ⇒ None). Uno que no vale: 422."""
+    try:
+        return validar_comentario(bruto.get("comentario"))
+    except ImporteInvalido as exc:
+        raise LineasInvalidas(str(exc)) from exc
+
+
+def _sin_comentario(lineas_entrada: list[dict[str, Any]]
+                    ) -> set[tuple[int, bool]]:
+    """F-069 (R9): las claves de las líneas que llegan SIN la clave
+    `comentario` (conservan el guardado). Ya validadas por `_validar_lineas`."""
+    return {(int(b["obra_ide"]), bool(b.get("es_postventa", False)))
+            for b in lineas_entrada if "comentario" not in b}
 
 
 def _rechazar_nuevas_no_ofrecibles(
@@ -1044,6 +1109,10 @@ def _rechazar_nuevas_no_ofrecibles(
             "Obras que no se ofrecen en ese modo (obra, postventa): "
             f"{rechazadas}"
         )
+
+
+def _con_vinculados(filas: list[CuadranteTrabajador]) -> bool:
+    return any(ln.vinculados for f in filas for ln in f.lineas)
 
 
 def _filas_de_empresa(
@@ -1075,10 +1144,14 @@ _CAMPOS_PROPUESTA = ("propuesta_ide", "propuesta_cod", "propuesta_res",
                      "propuesta_metodo", "propuesta_origen")
 
 
-def _conservar_partidas(lineas: list[Linea], antes: list[Linea]) -> list[Linea]:
+def _conservar_partidas(lineas: list[Linea], antes: list[Linea],
+                        sin_comentario: set[tuple[int, bool]] = frozenset(),
+                        ) -> list[Linea]:
     """Cada línea cuya clave (obra, postventa) estaba en `antes` recibe la
     partida que tenía (F-050, R14), su propuesta guardada (F-055, R17) y
-    sus subfilas (F-044, R8); las demás quedan como vienen."""
+    sus subfilas (F-044, R8; con su caja y comentario, F-069); las demás
+    quedan como vienen. F-069 (R9): las de `sin_comentario`, además, su
+    comentario."""
     previas = {ln.clave(): ln for ln in antes}
     return [
         dataclasses.replace(
@@ -1088,6 +1161,8 @@ def _conservar_partidas(lineas: list[Linea], antes: list[Linea]) -> list[Linea]:
             partida_res=previas[ln.clave()].partida_res,
             **{c: getattr(previas[ln.clave()], c) for c in _CAMPOS_PROPUESTA},
             vinculados=previas[ln.clave()].vinculados,
+            **({"comentario": previas[ln.clave()].comentario}
+               if ln.clave() in sin_comentario else {}),
         )
         if ln.clave() in previas else ln
         for ln in lineas
@@ -1097,12 +1172,47 @@ def _conservar_partidas(lineas: list[Linea], antes: list[Linea]) -> list[Linea]:
 def _sin_propuesta(lineas: list[Linea]) -> list[Linea]:
     """Las líneas copiadas de otro periodo, sin su propuesta guardada
     (F-055, R17: copiar el mes y F8 no la copian; la partida elegida sí,
-    F-050 R16). F-044 (R8): igual sus subfilas."""
+    F-050 R16). F-044 (R8): igual sus subfilas. F-069 (R8, R9): el
+    comentario de la línea y la cantidad por obra y el comentario de la
+    subfila sí se copian, la cantidad marcada `copiado` (sin revisar, D11)."""
     return [dataclasses.replace(
         ln, **dict.fromkeys(_CAMPOS_PROPUESTA), vinculados=tuple(
-            dataclasses.replace(v, **dict.fromkeys(_CAMPOS_PROPUESTA))
+            dataclasses.replace(
+                v, **dict.fromkeys(_CAMPOS_PROPUESTA),
+                copiado=None if v.cantidad is None else True)
             for v in ln.vinculados))
         for ln in lineas]
+
+
+def _copiar_importes(uow: UnitOfWork, origen_id: int, periodo_id: int,
+                     trabajador_ide: int, lineas: list[Linea],
+                     usuario: str) -> None:
+    """F-069 (R8, D7, D11): copia al destino las cantidades DEL MES del
+    trabajador en el origen que en el destino falten (nunca pisa), de los
+    vinculados de sus subfilas, con `copiado = true` si se copia una
+    cantidad (D19: un comentario sin cantidad no tiene nada que revisar:
+    `copiado = false`). Si copia alguna, un
+    evento `IMPORTES` (tras el de la copia de líneas): deshacer dos veces
+    deshace la copia entera."""
+    vigentes = {v.vinculado_ide for ln in lineas for v in ln.vinculados}
+    if not vigentes:
+        return
+    origen = {k: v for k, v in
+              uow.importes.de_trabajador(origen_id, trabajador_ide).items()
+              if k in vigentes}
+    destino = uow.importes.de_trabajador(periodo_id, trabajador_ide)
+    nuevos = a_copiar(origen, destino)
+    if not nuevos:
+        return
+    antes = _foto_importes(lineas, destino)
+    copiados = {k: dataclasses.replace(v, copiado=v.cantidad is not None)
+                for k, v in nuevos.items()}
+    for im in copiados.values():
+        uow.importes.guardar(periodo_id, im, usuario)
+    despues = _foto_importes(lineas, {**destino, **copiados})
+    uow.eventos.registrar(periodo_id, trabajador_ide, TipoEvento.IMPORTES,
+                          usuario, _snapshot_importes(antes),
+                          _snapshot_importes(despues))
 
 
 def _snapshot(lineas: list[Linea]) -> list[dict[str, Any]]:
@@ -1127,16 +1237,220 @@ def _snapshot(lineas: list[Linea]) -> list[dict[str, Any]]:
                 {"vinculados": elegidas}
                 if (elegidas := _elegidas_de_subfilas(ln)) else {}
             ),
+            # F-069 (R9): el comentario, solo si lo hay.
+            **({"comentario": ln.comentario} if ln.comentario else {}),
         }
         for ln in sorted(lineas, key=lambda x: (x.obra_ide, x.es_postventa))
     ]
 
 
 def _elegidas_de_subfilas(ln: Linea) -> list[dict[str, Any]]:
-    """Las subfilas de `ln` con partida elegida, en orden de vinculado."""
+    """Las subfilas de `ln` con partida elegida, en orden de vinculado.
+    F-069 (R7, R8): también las que tienen cantidad por obra o comentario,
+    con esas claves solo si las tienen (sin ellas, el snapshot de hoy)."""
     return [
         {"vinculado_ide": v.vinculado_ide, "partida_ide": v.partida_ide,
-         "partida_cod": v.partida_cod, "partida_res": v.partida_res}
+         "partida_cod": v.partida_cod, "partida_res": v.partida_res,
+         **_cantidad_de_subfila(v)}
         for v in sorted(ln.vinculados, key=lambda v: v.vinculado_ide)
-        if v.partida_ide is not None
+        if v.partida_ide is not None or _cantidad_de_subfila(v)
     ]
+
+
+def _cantidad_de_subfila(v: SubfilaVinculado) -> dict[str, Any]:
+    """F-069: la cantidad por obra (como texto), si es copiada y el
+    comentario de la subfila, solo los que tiene."""
+    out: dict[str, Any] = {}
+    if v.cantidad is not None:
+        out["cantidad"] = str(v.cantidad)
+        out["copiado"] = bool(v.copiado)
+    if v.comentario:
+        out["comentario"] = v.comentario
+    return out
+
+
+# ----------------------------------------------------------------------
+# Cantidades de los vinculados (F-069, R4-R8)
+# ----------------------------------------------------------------------
+#: Clave de un importe en la foto: (vinculado, obra, postventa); la del mes
+#: (por %) lleva obra None.
+ClaveImporte = tuple[int, int | None, bool]
+ValorImporte = tuple[Decimal | None, bool, str | None]
+
+
+def _foto_importes(lineas: list[Linea], mes: Mapping[int, ImporteMes]
+                   ) -> dict[ClaveImporte, ValorImporte]:
+    """R7: lo del trabajador: las cantidades del mes (`importe_vinculado`)
+    y, por línea, las de sus subfilas con cantidad, comentario o copiado."""
+    foto: dict[ClaveImporte, ValorImporte] = {
+        (vid, None, False): (im.cantidad, bool(im.copiado), im.comentario)
+        for vid, im in mes.items()}
+    for ln in lineas:
+        for v in ln.vinculados:
+            if v.cantidad is not None or v.comentario or v.copiado:
+                foto[(v.vinculado_ide, ln.obra_ide, ln.es_postventa)] = (
+                    v.cantidad, bool(v.copiado), v.comentario)
+    return foto
+
+
+def _snapshot_importes(foto: Mapping[ClaveImporte, ValorImporte]
+                       ) -> list[dict[str, Any]]:
+    """La foto como snapshot de evento, en orden estable."""
+    return [
+        {"vinculado_ide": vid, "obra_ide": obra, "es_postventa": pv,
+         "cantidad": None if c is None else str(c), "copiado": cop,
+         "comentario": com}
+        for (vid, obra, pv), (c, cop, com) in sorted(
+            foto.items(), key=lambda kv: (kv[0][0], kv[0][1] or 0, kv[0][2]))]
+
+
+def _foto_de_snapshot(snapshot: list[dict[str, Any]]
+                      ) -> dict[ClaveImporte, ValorImporte]:
+    return {
+        (int(b["vinculado_ide"]),
+         None if b.get("obra_ide") is None else int(b["obra_ide"]),
+         bool(b.get("es_postventa", False))):
+        (_decimal_o_none(b.get("cantidad")), bool(b.get("copiado")),
+         b.get("comentario"))
+        for b in snapshot}
+
+
+def _aplicar_foto(uow: UnitOfWork, periodo_id: int, trabajador_ide: int,
+                  foto: Mapping[ClaveImporte, ValorImporte],
+                  usuario: str) -> bool:
+    """Deja lo del trabajador como dice `foto` (R4, R7): las del mes, por
+    upsert o borrado (sin cantidad, sin fila); las por obra, en las
+    subfilas de sus líneas (las que no están en la foto, vacías), una
+    escritura por subfila que cambia. No toca las líneas ni su traza.
+    Devuelve si cambió algo."""
+    lineas = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
+    mes = uow.importes.de_trabajador(periodo_id, trabajador_ide)
+    actual = _foto_importes(lineas, mes)
+    cambio = False
+    mes_ides = {vid for vid, obra, _ in (*actual, *foto) if obra is None}
+    for vid in sorted(mes_ides):
+        nuevo = foto.get((vid, None, False))
+        if actual.get((vid, None, False)) == nuevo:
+            continue
+        cambio = True
+        # D19: la fila se queda si tiene cantidad o comentario.
+        if nuevo is None or (nuevo[0] is None and not nuevo[2]):
+            uow.importes.borrar(periodo_id, vid)
+        else:
+            uow.importes.guardar(periodo_id, ImporteMes(
+                vinculado_ide=vid, cantidad=nuevo[0], copiado=nuevo[1],
+                comentario=nuevo[2]), usuario)
+    # Las por obra, en su fila de `asignacion_vinculado` (un upsert por
+    # subfila que cambia): sin `reemplazar`, la línea y su traza siguen.
+    for ln in lineas:
+        for v in ln.vinculados:
+            nueva = _subfila_con(v, foto.get((v.vinculado_ide, ln.obra_ide,
+                                              ln.es_postventa)))
+            if (nueva.cantidad, nueva.copiado, nueva.comentario) == (
+                    v.cantidad, v.copiado, v.comentario):
+                continue
+            uow.asignaciones.guardar_subfila_importe(
+                periodo_id, trabajador_ide, ln.clave(), v.vinculado_ide,
+                {"cantidad": nueva.cantidad, "copiado": nueva.copiado,
+                 "comentario": nueva.comentario})
+            cambio = True
+    return cambio
+
+
+def _subfila_con(v: SubfilaVinculado, valor: ValorImporte | None
+                 ) -> SubfilaVinculado:
+    c, cop, com = valor or (None, False, None)
+    return dataclasses.replace(v, cantidad=c,
+                               copiado=None if c is None else bool(cop),
+                               comentario=com)
+
+
+class GuardarImportes:
+    """F-069 (R4-R7): `PUT …/importes`. Sustituye la cantidad y el
+    comentario de los vinculados de cantidad que llegan (los por obra, en
+    la línea de su obra y modo); lo que no llega no se toca. D18: `copiado`
+    pasa a `false` solo si la cantidad cambia o llega `revisado: true`
+    («Revisado»); cambiar solo el comentario lo conserva. D19: cantidad
+    `null` con comentario se guarda sin cantidad (también por %); sin los
+    dos, nada. Validado entero antes de escribir nada (422); con cambios,
+    un evento `IMPORTES` con la foto de antes y la de después."""
+
+    def __init__(self, tipos: Mapping[str, TipoCantidad] | None = None
+                 ) -> None:
+        self._tipos = dict(tipos or {})
+
+    def ejecutar(
+        self,
+        uow: UnitOfWork,
+        anio: int,
+        mes: int,
+        trabajador_ide: int,
+        entrada: list[dict[str, Any]],
+        usuario: str,
+        *,
+        filtro: FiltroEmpresa,
+    ) -> tuple[CuadranteTrabajador, ResumenPeriodo]:
+        periodo_id, _ = _periodo_abierto_o_error(uow, anio, mes)
+        _trabajador_o_error(uow, trabajador_ide)
+        lineas = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
+        antes = _foto_importes(
+            lineas, uow.importes.de_trabajador(periodo_id, trabajador_ide))
+        despues = dict(antes)
+        despues.update(self._validar(lineas, entrada, antes))
+        # D19: sin cantidad ni comentario, no queda nada que guardar.
+        despues = {k: v for k, v in despues.items()
+                   if v[0] is not None or v[2]}
+        if despues != antes:
+            _aplicar_foto(uow, periodo_id, trabajador_ide, despues, usuario)
+            uow.eventos.registrar(
+                periodo_id, trabajador_ide, TipoEvento.IMPORTES, usuario,
+                _snapshot_importes(antes), _snapshot_importes(despues))
+        uow.commit()
+        return ObtenerFilaTrabajador().ejecutar(
+            uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
+        )
+
+    def _validar(self, lineas: list[Linea], entrada: list[dict[str, Any]],
+                 antes: Mapping[ClaveImporte, ValorImporte] | None = None,
+                 ) -> dict[ClaveImporte, ValorImporte]:
+        """R5, R6: cada elemento contra las subfilas del trabajador; el
+        primero que no vale tumba el `PUT` entero. D18: el `copiado` de
+        `antes` se conserva si la cantidad no cambia y no llega
+        `revisado: true`."""
+        antes = antes or {}
+        subfilas = {(v.vinculado_ide, ln.clave()): v
+                    for ln in lineas for v in ln.vinculados}
+        por_vinculado = {vid: v for (vid, _), v in subfilas.items()}
+        out: dict[ClaveImporte, ValorImporte] = {}
+        for bruto in entrada:
+            vid = bruto.get("vinculado_ide")
+            if isinstance(vid, bool) or not isinstance(vid, int):
+                raise ImporteInvalido(f"vinculado_ide no válido: {vid!r}")
+            v = por_vinculado.get(vid)
+            tipo = tipo_de(v.tipo, self._tipos) if v else None
+            if tipo is None:
+                raise ImporteInvalido(
+                    f"El vinculado {vid} no es de cantidad de este "
+                    "trabajador en el mes")
+            cantidad = validar_cantidad(bruto.get("cantidad"), tipo.unidad)
+            comentario = validar_comentario(bruto.get("comentario"))
+            revisado = validar_revisado(bruto.get("revisado"))
+            if tipo.reparto == REPARTO_OBRA:
+                obra = bruto.get("obra_ide")
+                pv = bruto.get("es_postventa", False)
+                if (isinstance(obra, bool) or not isinstance(obra, int)
+                        or not isinstance(pv, bool)
+                        or (vid, (obra, pv)) not in subfilas):
+                    raise ImporteInvalido(
+                        f"El vinculado {vid} no tiene línea en la obra "
+                        f"{obra!r} (postventa={pv!r})")
+                clave: ClaveImporte = (vid, obra, pv)
+            else:
+                clave = (vid, None, False)
+            if clave in out:
+                raise ImporteInvalido(f"Importe repetido: {clave}")
+            previo = antes.get(clave)
+            copiado = bool(previo and previo[1] and not revisado
+                           and previo[0] == cantidad)
+            out[clave] = (cantidad, copiado, comentario)
+        return out

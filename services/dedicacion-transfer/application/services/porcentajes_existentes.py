@@ -22,6 +22,10 @@ from dataclasses import asdict
 
 from domain.models.registro_models import LineaMensualSigrid, ObraEntrada
 
+from application.services.reglas_vinculados import (
+    PREFIJO_SYNCKEY_VINCULADO,
+)
+from application.services.texto_linea import comentario_de_tex
 from application.services.universo_postventa import (
     CatalogoPostventa,
     cargar_catalogo_postventa,
@@ -32,6 +36,10 @@ from application.services.universo_var import (
     cargar_catalogo_var,
     partida_var_de,
 )
+
+#: F-069 (R31): el prefijo de `synckey` de las líneas de nuestros
+#: vinculados (`reglas_vinculados.PREFIJO_SYNCKEY_VINCULADO`).
+PREFIJO_VINCULADOS = PREFIJO_SYNCKEY_VINCULADO
 
 #: R9: la partida de la línea de postventa no casa con ninguna obra de las
 #: que admiten postventa, o casa con varias. T25 (R46): la partida por su
@@ -64,16 +72,19 @@ def traducir(linea: LineaMensualSigrid, *, cod_pruebas: str,
              cod_postventa: str, cod_var: str,
              inverso: dict[int, list[ObraEntrada]],
              catalogo_var: CatalogoVar | None, desde: int,
-             motivo_postventa: str | None = None) -> dict | None:
+             motivo_postventa: str | None = None,
+             marca: str | None = None) -> dict | None:
     """La línea con lo de R6 y su entrada: `destino`, `obra_origen_ide`
     (postventa), `var_paride` (VAR) y `motivo` si no se puede traer. `None`
     si es de la obra de pruebas (R5). `motivo_postventa`, el del catálogo
-    de postventa si no lo hay."""
+    de postventa si no lo hay. F-069 (R31, D17): su `tex`, sin la `marca`
+    de pruebas (`comentario_de_tex`)."""
     obra = _cod(linea.obra_cod)
     if obra and obra == _cod(cod_pruebas):
         return None
     out = {**asdict(linea), "destino": "normal", "obra_origen_ide": None,
-           "var_paride": None, "motivo": None}
+           "var_paride": None, "motivo": None,
+           "tex": comentario_de_tex(linea.tex, marca)}
     if obra and obra == _cod(cod_postventa):
         out["destino"] = "postventa"
         casan = inverso.get(int(linea.paride or 0), [])
@@ -112,8 +123,17 @@ class PorcentajesExistentes:
     def calcular(self, empresa: int, ano: int, mes: int,
                  obras: list[ObraEntrada]) -> dict:
         """UNA lectura de las líneas (R4) y, solo si hacen falta, los
-        catálogos de postventa y VAR (R11). Un fallo de lectura sube."""
+        catálogos de postventa y VAR (R11). Un fallo de lectura sube.
+
+        F-069 (R31, D15): cada línea lleva su `tex` y, en UNA lectura más,
+        `vinculados_registrados`: las líneas del periodo con `synckey` de
+        nuestros vinculados, con su `tex` (sin filtrar por la obra de
+        pruebas: la api solo mira las suyas, por `synckey`). D17: los `tex`
+        salen sin la marca de pruebas; la api no la conoce."""
+        marca = getattr(self._st, "marca_pruebas", None)
         leidas = self._cli.lineas_mensuales_del_periodo(empresa, ano, mes)
+        vinculados = self._cli.lineas_por_synckey_del_periodo(
+            empresa, ano, mes, PREFIJO_VINCULADOS)
         cod_pv = _cod(self._st.postventa_obra_cod)
         cod_var = _cod(getattr(self._st, "var_obra_cod", ""))
         codigos = {_cod(l.obra_cod) for l in leidas}
@@ -127,7 +147,8 @@ class PorcentajesExistentes:
             l, cod_pruebas=self._st.obra_pruebas_cod, cod_postventa=cod_pv,
             cod_var=cod_var, inverso=inverso, catalogo_var=catalogo_var,
             desde=int(getattr(self._st, "var_partida_desde", 0) or 0),
-            motivo_postventa=catalogo_pv.motivo if catalogo_pv else None)
+            motivo_postventa=catalogo_pv.motivo if catalogo_pv else None,
+            marca=marca)
             for l in leidas]
         lineas = sorted((t for t in traducidas if t is not None),
                         key=lambda t: t["hmores_ide"])
@@ -141,4 +162,7 @@ class PorcentajesExistentes:
                          if catalogo_var and catalogo_var.obra else None),
             "motivo_var": catalogo_var.motivo if catalogo_var else None,
             "lineas": lineas,
+            "vinculados_registrados": [
+                {**asdict(v), "tex": comentario_de_tex(v.tex, marca)}
+                for v in vinculados],
         }

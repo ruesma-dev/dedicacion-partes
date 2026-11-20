@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 
 from fastapi import Request
 from sqlalchemy.orm import Session, sessionmaker
@@ -29,6 +30,7 @@ from application.propuestas_mes import PropuestasDelMes
 from application.traer_sigrid import TraerDeSigrid
 from application.use_cases import PreviewSync
 from config.settings import Settings, cargar_config
+from domain.importes import TipoCantidad
 from infrastructure.db.repositories import SqlAlchemyUnitOfWork
 from application.registro_sigrid import RegistroSigrid
 from infrastructure.excel.exporter import OpenpyxlExcelExporter
@@ -50,6 +52,9 @@ class Contenedor:
     propuestas_mes: PropuestasDelMes
     # F-054 (parte A): traer al cuadrante los porcentajes de Sigrid.
     traer_sigrid: TraerDeSigrid
+    # F-069 (R1): los tipos de vinculado de cantidad (de `config.yaml`); sin
+    # ellos, ninguno (el cuadrante y el registro, como hoy).
+    importes: Mapping[str, TipoCantidad] = field(default_factory=dict)
 
     def uow(self) -> SqlAlchemyUnitOfWork:
         return SqlAlchemyUnitOfWork(self.session_factory)
@@ -151,7 +156,10 @@ def construir_contenedor(
         registro_sigrid=RegistroSigrid(
             session_factory, transfer, settings.empresa_imputacion,
             # F-044 (R10): desde qué periodo viajan los vinculados.
-            vinculados_desde=cfg_vinculados.desde),
+            vinculados_desde=cfg_vinculados.desde,
+            # F-069 (R15): los de cantidad y el precio por km.
+            importes=cfg_vinculados.importes,
+            precio_km=cfg_vinculados.precio_km),
         partidas_linea=PartidasDeLinea(transfer),
         # F-055 (R30): UN hilo, cola por orden de llegada; estado de una
         # réplica (ARCHITECTURE «Topología»).
@@ -161,7 +169,8 @@ def construir_contenedor(
                                thread_name_prefix="propuestas"),
             empresa_obras=empresa_obras),
         # F-054: lee Sigrid por el MISMO cliente del transfer.
-        traer_sigrid=TraerDeSigrid(transfer),
+        traer_sigrid=TraerDeSigrid(transfer, cfg_vinculados.importes),
+        importes=cfg_vinculados.importes,
     )
 
 
