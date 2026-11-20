@@ -1,140 +1,132 @@
 <!-- progress/review_F-069.md -->
-Revisión completa (pasada 2), principal, sobre `3f9b5ff` (`git diff 5381243...HEAD`, 67 ficheros; delta de la pasada 2, `ed7c212..3f9b5ff`, leído entero).
+Revisión incremental desde 3f9b5ff (pasada 3), principal, sobre `789e8c4` (`git diff 3f9b5ff..789e8c4`: 4 commits, 5 ficheros).
 
-# F-069 · Review 2 (principal)
+# F-069 · Review 3 (principal, incremental)
 
-**Veredicto: CAMBIOS REQUERIDOS (CHANGES_REQUESTED), solo de papeleo.** El código queda aprobado en
-`3f9b5ff`: los cambios 1-7 de la review 1 están resueltos, D17-D21 implementadas, RED de lo nuevo
-con trazas reales y D20 escribe solo donde debe. Lo que bloquea: el design §6.5 describe un paso 10
-que no es el construido (decisión 8) y `current.md` dice seis cosas falsas hoy. La review 3 puede ser
-incremental desde `3f9b5ff` y limitarse a esos ficheros, si no se toca código.
+**Veredicto: APPROVED.** El código sigue aprobado en `3f9b5ff` y el delta no lo toca. Los cambios 1 y
+2 de la review 2 están resueltos y O1-O3 recogidas. Quedan tres erratas de rastro que no inducen a
+error (O1-O3, abajo); se corrigen antes de la pasada de evidencias, que las comprueba.
 
-**Review 1 (resumen):** CAMBIOS REQUERIDOS sobre `ed7c212`: el front mandaba todas las casillas y
-«Revisado» en una revisaba las demás (D11); faltaba la RED de R15, R8 y R32; `MARCA_PRUEBAS` copiada
-en la api; T16 incompleta; R30 sin test; `current.md` falso en 5 sitios; spec frente a lo construido.
+**Reviews anteriores (resumen):**
+- **Review 1** (`ed7c212`): CAMBIOS REQUERIDOS, 1-7 (D11 en el front, RED de R15/R8/R32,
+  `MARCA_PRUEBAS` en la api, T16, R30, `current.md`, spec). Resueltos en la pasada 2.
+- **Review 2** (`3f9b5ff`, completa): código APROBADO; CAMBIOS REQUERIDOS solo de papeleo:
+  1, design §6.5 y §7.1 y la decisión 8 del informe frente a lo construido; 2, seis frases falsas de
+  `current.md`. Observaciones O1 (log en T16), O2 (`comentario_de_tex` sin espacio) y O3 (alcance de
+  la campaña). Con detalle de D20, tabla de cambios y C1-C5: `git show 909a5e2:progress/review_F-069.md`.
 
 **Rigor:** `critico` (`features.json`): RED en los centrales, cobertura ≥ 90 %, mutación con 0
-supervivientes en la muestra (uno por línea, 60 %, [100, 300]) y MANUAL con su comando. Mutación y
-RM1-RM7: **pendiente: pasada de evidencias** (T13/T18). Capa e2e N/A (ningún servicio la declara).
+supervivientes en la muestra y MANUAL con su comando. Mutación y RM1-RM7: **pendiente: pasada de
+evidencias** (T13/T18). Capa e2e N/A (ningún servicio la declara).
 
-## Cambios 1-7 de la review 1
+## El delta: sin código
 
-| Cambio | Estado | Dónde |
-|---|---|---|
-| 1 (D11, `PUT` con todas) | resuelto | `app.js` `cuerpoImportes` filtra por `guardada`/`revisado`; api `_validar` conserva `copiado` (D18); tests `r12_d18_dos_copiadas…`, `r4_d18_revisado_en_una_solo_quita_esa`, `r4_d18_solo_el_comentario_no_revisa_ninguna` |
-| 2 (RED R15, R8, R32) | resuelto | `impl_F-069.md` T25: ≥ 1 failed por ruptura, descartadas |
-| 3 (`MARCA_PRUEBAS`) | resuelto por D17 | `grep PRUEBA-PORC\|MARCA_PRUEBAS` en `domain`, `application`, `infrastructure`, `interface_adapters` de la api: 0 aciertos; el transfer usa `st.marca_pruebas` (`comentario_de_tex`) |
-| 4 (T16) | resuelto | `tasks.md` T16 y `current.md` l. 84-91 |
-| 5 (R30) | resuelto | `test_f069_r30_la_traza_de_una_caja_conserva…`, con RED |
-| 6 (`current.md`) | resuelto (los 5) | pero hay otros seis: cambio 2 abajo |
-| 7 (spec) | resuelto | R32 y §6.4 con D21; §4 con el puerto real |
+`git diff --stat 3f9b5ff..789e8c4`: `progress/current.md`, `progress/impl_F-069.md`,
+`progress/review_F-069.md`, `specs/F-069-importe-caja-km/design.md` y `tasks.md`. Nada en
+`services/`, `tests/`, `docs/` ni `harness/`: la review puede ser incremental entera. El §9.1 del
+design solo se ha reflowado (mismo texto palabra a palabra, comprobado con `md5sum` del texto
+normalizado en los dos SHA).
 
-## D17-D21 frente a la spec enmendada
+## Cambio 1 de la review 2 (design y decisión 8): resuelto
 
-- **D17** [x] `existentes` publica `tex` y `vinculados_registrados` con `comentario_de_tex(tex,
-  st.marca_pruebas)`; la api, `comentario_de_sigrid(tex)` sin marca. RED T19/T21.
-- **D18** [x] `copiado` solo cae si la cantidad cambia o `revisado: true`; `validar_revisado` (422).
-- **D19** [x] `importe_vinculado.cantidad` nulable; fila con solo comentario; copia sin `copiado`.
-- **D20** [x] ver la sección siguiente. **D21** [x] evento `IMPORTES` para las del mes.
+Contrastado con `registro_pipeline.py` en `789e8c4` (`_actualizar_tex`, l. 1478-1533;
+`_tex_sigue_valiendo`, l. 1535-1544; retornos de `ejecutar`, l. 1250, 1278, 1441, 1454, 1475):
 
-## D20 con lupa (el `UPDATE hmores SET tex`)
+| Lo que dice §6.5 «Paso 10» | En el código |
+|---|---|
+| Lo último de `ejecutar`, tras titulares y vinculados o sin nada más que escribir | Los cinco retornos pasan por `_ejecutar_vinculados`, que acaba siempre en `_actualizar_tex` (también sin vinculados, l. 1454) |
+| Solo si alguna trae `tex_nuevo` | `piezas` vacías ⇒ `return res` sin leer |
+| Relectura propia `lineas_para_editar` | `self._cli.lineas_para_editar([...hmores_ide])` |
+| Las que siguen valiendo (nuestra, recurso y hora, sin enlaces, En registro) | `_tex_sigue_valiendo`: `enlazada`, `reside`, `porcentajes:`, `parte_est`, `M*` o la hora del vinculado |
+| `stmt_editar_tex` en un lote propio | un `escribir(statements)` aparte, con `obride` en pruebas (§7.1) |
+| Comprobación `lineas_registradas(con_tex=True)` ⇒ `tex_actualizadas`; las demás, al log | igual, con el `warning` «la guarda no dejo cambiar el tex» |
+| Solo el `tex`; nunca `DELETE` | `stmt_editar_tex` (aprobado en la review 2) |
 
-Comprobado en `texto_linea.py`, `registro_pipeline.py` (`_decision_tex`, `_actualizar_tex`,
-`_tex_sigue_valiendo`), `registro_vinculados.py` y `sigrid_write_client.py` (`stmt_editar_tex`, `_guarda`):
+- [x] §7.1 añade la comprobación tras `stmt_editar_tex` con la misma lectura ampliada.
+- [x] El paso 6 de §6.5 se reescribe sin cambio de sentido.
+- [x] Decisión 8 del informe: «dos lecturas (relectura y comprobación) y una escritura más, solo si
+  alguna trae `tex_nuevo`». Preciso salvo un detalle menor: si la relectura descarta todas, solo hay
+  una lectura y ninguna escritura (`if not statements: return res`); no hace falta tocarlo.
+- [x] Tamaño: design 250/250 (sustitución, no añadido).
 
-- **Solo nuestras:** tres capas. Preflight (`tex_a_actualizar`: `synckey` empieza por `porcentajes:`),
-  relectura (`_tex_sigue_valiendo`) y SQL (`synckey = ?` la leída, que ya empieza por `porcentajes:`).
-- **Parte activo:** preflight (`hit.parte_est`), relectura (`ls.parte_est`) y SQL (`EXISTS … c.est = ?`).
-- **Recurso y hora:** `reside = ?` y `a.cod LIKE 'M%'` (titular) o `a.cod = ?` (vinculado); sin enlaces.
-- **Pruebas, solo la 0404:** `obride` = `pf.obra_destino.ide`, que en pruebas es siempre la obra de
-  pruebas de la empresa (`_obra_destino`); preflight y `AND obride = ?`. Una obra sin `ide` da 0 y no casa.
-- **Ni `DELETE` ni otras columnas:** `UPDATE hmores SET tex = ? WHERE …`; orden de parámetros
-  correcto (`[tex] + guarda + [obride]`). Test `r26_stmt_editar_tex` con la SQL real.
-- **Sin comentarios, nada cambia:** `con_tex` solo si `hay_comentarios`; `r24_…la_sql_de_hoy`.
-- `ejecutar` no va en lote (F-055 D6): la memoria de `LecturasDelLote` no puede servir una relectura vieja.
+## Cambio 2 de la review 2 (seis frases de `current.md`): resuelto
 
-**Decisión 8 (relectura y lote propios al final): aceptable.** El caso principal de D20 (solo cambia el
-comentario) no tiene nada más que escribir y `ejecutar` sale antes del paso 9 bis por los dos `return`
-de «nada que escribir»; los dos pasan ahora por `_actualizar_tex`. Ir al final, tras titulares y
-vinculados, sigue el precedente de `EscrituraVinculados` (lote propio) y la comprobación al releer el
-de `_comprobar_escrito`. Coste: solo con algo que actualizar, **dos** lecturas (relectura y
-comprobación) y una escritura más; el informe dice «una lectura más» (impreciso). Riesgo, el mismo que
-F-044: si ese lote falla tras escribir los titulares, `ejecutar` devuelve error y el reintento los ve
-`ya_registrado`. **La spec sí tiene que recogerlo** (cambio 1): §6.5 dice «la relectura
-`lineas_para_editar` de siempre (sin otras piezas, esa sola)» y «en el mismo lote».
+| Punto | Hoy |
+|---|---|
+| l. 19, hotfix `/propuestas` | «Desplegado el 2026-11-11 (api `r20261111-1915`)» |
+| l. 29, hotfix VP | «Desplegado el 2026-11-11…; si no se ha hecho, queda “Sincronizar Sigrid”» |
+| l. 59, `arnes-base` | «1 commit por delante (`8de97cb`)»: comprobado, `main...origin/main [ahead 1]` |
+| l. 256, «Producción, hoy» | entrada nueva en l. 259 con api `r20261111-1915`, front `r20261111-1916`, transfer `r20261028-1914` |
+| l. 491, orden | «Orden de lo pendiente: el de `BACKLOG.md`» |
+| l. 578, F-062 | «T19 y T20, MANUAL, HECHAS (`progress/manual_F-062.md`)»: el fichero existe |
 
-## Checkpoints
+## O1-O3 de la review 2: recogidas
 
-- **C1** [x] `ARNES_SIN_CACHE=1 bash harness/init.sh` entero (pie). [x] Ficheros del arnés.
-- **C2** [x] Una sola activa (F-069 `in_review`), rama, orden, history. [ ] `current.md` con seis
-  afirmaciones falsas hoy (cambio 2).
-- **C3** [x] Hexagonal: `texto_linea.py` puro en `application/services`; `domain/importes.py` sin
-  infraestructura. [x] Ruta en la 1.ª línea de los nuevos; sin `print`/`TODO`/secretos.
-  [x] Límite de servicio: la marca vive solo en el transfer (D17). [x] Front sin lógica de negocio:
-  `revisado` lo decide el usuario, el `copiado` lo decide la api; la marca del front solo pinta.
-  [x] Solo escribe el transfer, con guarda, sin `DELETE`.
-- **C3 bis** N/A: no toca `docs/referencia/`. **C3 ter** [x] D17-D21 con cita y fecha (design §9.2,
-  `#regla-vinculado`). [ ] design §6.5 frente a lo construido (cambio 1).
-- **C3 quater** pendiente de T17 al desplegar, listado con contenido en `current.md` l. 92.
-- **C4** [x] R1-R36 con test o MANUAL (tabla). [x] Sin red ni BBDD. [x] MANUAL T16 y T17 con comando
-  y resultado esperado (`tasks.md`, `current.md` l. 84-92). [x] Dobles: `lineas_registradas(con_tex)`,
-  `stmt_editar_tex`, `lineas_para_editar` y `lineas_por_synckey_del_periodo` existen en el cliente
-  real con la misma firma (cruzado a mano).
-- **C4 bis** [x] Nivel declarado. [x] RED de lo nuevo (T19-T25 y T9/R30, salidas reales en el
-  informe). [x] Cobertura `[OK]` (pie). [x] «Evidencias» con sus números (mutación pendiente).
-  Mutación y RM1-RM7: pendiente: pasada de evidencias.
+- [x] **O1** en `tasks.md` T16 (los dos `warning` del transfer, con su texto real) y en `current.md`
+  l. 89 (uno de los dos; ver O2 abajo).
+- [x] **O2** aceptada y anotada en `current.md` l. 81.
+- [x] **O3** en `current.md` l. 81 y l. 84 (alcance de T13).
+- [x] La automejora de la review 2 queda anotada en l. 81, para después del cierre.
+
+## `current.md` releído entero (707 líneas): lo que queda
+
+Las seis de la review 2 están bien. Al releer entero quedan estas, todas menores; **son todas**:
+
+- **O1 · «decisión 8» donde es la 6.** `current.md` l. 88 («el del titular no vuelve en modo pruebas:
+  decisión 8 del informe») y `tasks.md` T16 («decisión 8 del implementer»). En `impl_F-069.md` esa es
+  la **decisión 6**; la 8 es D20. El paréntesis dice ya el motivo, así que no lleva a error, pero la
+  referencia es falsa. Ya estaba en `3f9b5ff` y se me pasó en la review 2.
+- **O2 · O1 a medias en `current.md`.** l. 89 da solo uno de los dos `warning`; `tasks.md` T16 da los
+  dos («la guarda no dejo cambiar el tex» y «no se cambia el tex de la linea … ya no vale»). Añadir
+  el segundo o remitir a T16.
+- **O3 · «Sincronizar Sigrid» pendiente, ya hecho.** l. 304-305 (despliegue de F-044 en «Producción,
+  hoy») sigue diciendo «Pendiente del humano: … **«Sincronizar Sigrid»** (sin él no hay vínculos ni
+  subfilas)», y l. 53 dice que está hecho (el humano lo confirmó el 2026-10-27). Lo mismo para F-030
+  en l. 223-224 («lanzar un sync… hasta que el sync llene el catálogo»): ese sync es anterior. Dejar
+  en esas entradas solo lo que de verdad queda (MANUAL B de F-064 y aviso a `partes`).
+
+No bloquean: no cambian lo que hace nadie ni la MANUAL que ejecutará el humano, y ninguna es de esta
+pasada. **Se recogen antes de la pasada de evidencias**, que las mira (si no, vuelven como bloqueo).
+
+## Checkpoints (delta)
+
+- **C1** [x] `ARNES_SIN_CACHE=1 bash harness/init.sh` entero sobre `789e8c4` (pie). [x] Arnés sin tocar.
+- **C2** [x] Una sola activa (F-069 `in_review`), rama `feature/F-069-importe-caja-km`, orden. [x]
+  `current.md`: los seis de la review 2 corregidos; las tres erratas residuales, O1-O3.
+- **C3** [x] Sin código en el delta: lo aprobado en `3f9b5ff` sigue valiendo (hexagonal, ruta en la
+  1.ª línea, sin `print`/secretos, límite de servicio, solo escribe el transfer).
+- **C3 bis** N/A: el delta no toca `docs/referencia/`. **C3 ter** [x] design §6.5 y §7.1 frente a lo
+  construido (tabla arriba); D17-D21 con cita y fecha (sin cambios).
+- **C3 quater** pendiente de T17 al desplegar, listado con contenido en `current.md` l. 93.
+- **C4** [x] R1-R36 con test o MANUAL (tabla de la review 2, sin cambios: el delta no mueve tests).
+  [x] MANUAL T16 y T17 con comando y resultado esperado; T16 con O1 de la review 2.
+- **C4 bis** [x] Nivel declarado. [x] RED y «Evidencias» (aprobadas en la review 2). [x] Cobertura
+  `[OK]` (pie). Mutación y RM1-RM7: **pendiente: pasada de evidencias** (T13/T18), con el alcance de O3
+  de la review 2 (`texto_linea.py`, `_actualizar_tex`, `_tex_sigue_valiendo`).
 - **C4 ter** N/A: no hay `harness/rutas_sensibles.json`.
-- **C5** [x] Un commit por tarea `F-069 Tn:`; T13, T16-T18 abiertas, legítimas en esta fase.
+- **C5** [x] Commits del delta con prefijo `F-069:` (papeleo, sin tarea). T13, T16-T18 abiertas,
+  legítimas en esta fase.
 
 ## Cobertura (requisito → test)
 
-| R | Test |
-|---|---|
-| R1, R2, R5 | `test_f069_importes_dominio.py` (y `validar_revisado`) |
-| R3-R10, R15, R16, R30 | `test_f069_importes_api.py` (`r3`… `r16`, `r4_d18_*`, `r4_d19_*`, `r8_d19_*`, `r30_*`) |
-| R11-R14, R29 | `test_f069_importes_front.py` (`r12_d18_*`, `r12_d19_*`, `r29` con `tex_nuevo`) |
-| R17-R22, R24 | `test_f069_reglas_importe.py` |
-| R23, R25-R28 | `test_f069_pipeline_importe.py`, `test_f069_tex_registrada.py` (D20, R27 suelto = lote) |
-| R31, R32 | `test_f069_existentes_tex.py` (`r31`), `test_f069_traer_comentarios.py` (`r32_*`) |
-| R33, R34 | `ARCHITECTURE.md` `#regla-vinculado` y `#regla-traer-sigrid`; `INTEGRACION.md` §1, §5, §7 |
-| R35, R36 | MANUAL T16 y T17 (pendientes) |
+Sin cambios desde la review 2 (el delta no toca tests): R1-R34 con test, R35-R36 MANUAL (T16, T17).
+Tabla completa: `git show 909a5e2:progress/review_F-069.md`, sección «Cobertura».
 
 ## Cambios requeridos
 
-1. **Design §6.5, «Paso 10», y §7.1 frente a la decisión 8.** Sustituir el texto del paso 10 por lo
-   construido: «al final de `ejecutar` (`_actualizar_tex`), tras titulares y vinculados y también si
-   no hay nada más que escribir: relectura propia `lineas_para_editar` de esas líneas, `stmt_editar_tex`
-   en un lote propio y una lectura más de comprobación (`lineas_registradas(con_tex=True)`); solo con
-   alguna `tex_nuevo`». Y en §7.1, esa lectura de comprobación. Design está en 249/250: sustitución,
-   no añadido. Corregir también en `impl_F-069.md` la decisión 8 («una lectura más» ⇒ dos).
-2. **`current.md`, falso hoy** (leído entero, líneas reales; son todas):
-   - l. 19: hotfix `propuestas-subfilas`, «Pendiente del humano: desplegar SOLO la api»: desplegada
-     el 2026-11-11 (`r20261111-1915`, l. 10).
-   - l. 29: hotfix `vinculados-incluye-vp`, «Pendiente del humano: despliegue SOLO de la api»: la misma
-     api; queda, si acaso, «Sincronizar Sigrid».
-   - l. 59: «`arnes-base` va 3 commits por delante de su `origin/main`»: hoy va 1 (`8de97cb`).
-   - l. 256: «Producción, hoy» acaba en F-068 (2026-10-28) y no tiene el despliegue del 2026-11-11
-     (api `r20261111-1915`, front `r20261111-1916`): la api y el front que enseña no son los de hoy.
-   - l. 491: «Orden: **F-058**…, F-044, F-052, F-053, **F-054**…»: F-044 y F-054 están `done`.
-   - l. 578: «F-062: T19 y T20, MANUAL, con sus comandos exactos en «F-062 · T19 y T20» (arriba)»:
-     las dos están HECHAS (`progress/manual_F-062.md`) y esa sección ya no existe.
-
-## Observaciones (no bloquean; el líder las recoge)
-
-- **O1** El paso de D20 en `current.md` l. 88 y T16 no dicen qué mirar si `tex_actualizadas` sale
-  vacío (guarda que no deja): el log `[registro] la guarda no dejo cambiar el tex`. Útil en la MANUAL.
-- **O2** `comentario_de_tex` quita la marca también sin espacio detrás («PRUEBA-PORCx» ⇒ «x»). Solo
-  afecta a un `tex` escrito a mano así; menor.
-- **O3** Tras este APPROVED de código, la campaña (T13) debe incluir `texto_linea.py` y
-  `_actualizar_tex`/`_tex_sigue_valiendo`: son las guardas que protegen D20 (RM6 si alguien las quita).
+Ninguno. Para el líder, antes de la pasada de evidencias: O1-O3 de esta review.
 
 ## Automejora (propuesta para `reviewer.md`)
 
-Al releer `current.md` entero, contrastar cada «Pendiente del humano: desplegar…» con «Producción,
-hoy» y con las entradas de despliegue posteriores: en la review 1 se me pasaron tres de las seis.
+La «decisión N» citada en otro fichero se desfasa cuando el informe se renumera entre pasadas. Al
+releer `current.md` y `tasks.md`, contrastar cada «decisión N del informe» con la lista del informe.
 
-## Resultado de `ARNES_SIN_CACHE=1 bash harness/init.sh` (2026-11-19, `3f9b5ff`, sin pipes)
+## Resultado de `ARNES_SIN_CACHE=1 bash harness/init.sh` (`789e8c4`, sin pipes)
 
-Código de salida **0**, ningún `[KO]`. Suites sin caché, todas en verde: raíz 2319 passed / 47 skipped
-(612,5 s); api 1632 passed; front 573 passed; transfer 1956 passed. `[OK]` PUERTA COBERTURA 99,6 %
-(687/690), TAMAÑO (review 1, 139/140; este, 140/140 con `harness.tamano`, código 0), CARRIL y E2E N/A.
+- **1.ª ejecución, código 1:** raíz 1 failed, 2231 passed (`-x`). Cayó
+  `tests/test_mutacion_prueba_de_verdad.py::test_F_cada_patron_da_su_mutante…` con «TIMEOUT tras 258 s
+  en 1 mutante… máquina sobresuscrita». Test del arnés, ajeno al delta. La suite duró 15 h 23 min
+  porque la máquina se suspendió durante la noche. No se aprueba sobre ella.
+- **2.ª ejecución (2026-11-20), código 0, ningún `[KO]`, «ENTORNO LISTO»:** raíz 2319 passed / 47
+  skipped (17 min 14 s); api 1632; front 573; transfer 1956. `[OK]` PUERTA COBERTURA 99,6 % (687/690),
+  TAMAÑO, CARRIL N/A y CAPA E2E N/A. Este informe, medido con `harness.tamano` (código 0).

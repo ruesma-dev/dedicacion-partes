@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-069 · `in_review` (2026-11-19), review 3 (principal, incremental) en marcha:** la review 2 aprobó el código y pidió solo papeleo (design §6.5 con la decisión 8, `e58a596`; informe; seis frases falsas de `current.md`, ya corregidas). Pasada 2 del implementer entregada (T19-T26 y T9 reabierta, informe `progress/impl_F-069.md`): D17-D21 de la spec enmendada y los cambios 1-7 de la review 1. `bash harness/init.sh` en verde (raíz 2319 passed / 47 skipped, api 1632, front 573, transfer 1956). Quedan T13/T18 (mutación, tras el APPROVED), T16 (MANUAL, 0404) y T17 (despliegue y `azure-apps`): sección «F-069 · en review». Rama `feature/F-069-importe-caja-km` (copia `porcentajes-f069`); spec `specs/F-069-importe-caja-km/` (aprobada 2026-11-12, enmienda D17-D21 aprobada 2026-11-19).
+**F-069 · `in_review` (2026-11-20), review 3 APROBADA (incremental, `progress/review_F-069.md`); pasada de campaña (T13/T18, mutación) en marcha, después reviewer de evidencias:** la review 2 aprobó el código y pidió solo papeleo (design §6.5 con la decisión 8, `e58a596`; informe; seis frases falsas de `current.md`, ya corregidas). Pasada 2 del implementer entregada (T19-T26 y T9 reabierta, informe `progress/impl_F-069.md`): D17-D21 de la spec enmendada y los cambios 1-7 de la review 1. `bash harness/init.sh` en verde (raíz 2319 passed / 47 skipped, api 1632, front 573, transfer 1956). Quedan T13/T18 (mutación, tras el APPROVED), T16 (MANUAL, 0404) y T17 (despliegue y `azure-apps`): sección «F-069 · en review». Rama `feature/F-069-importe-caja-km` (copia `porcentajes-f069`); spec `specs/F-069-importe-caja-km/` (aprobada 2026-11-12, enmienda D17-D21 aprobada 2026-11-19).
 
 **F-054 CERRADA (`done`) el 2026-11-18 y unida a `dev`** (OK del humano al cierre: «ok»). Review 11 APROBADA; MANUAL T19 hecha en modo pruebas (0404, 2032-01; `progress/manual_F-054.md`): sobrantes a 0 en su sitio, mismo `ide`/`pos`, sin `DELETE`, preflight mediana 10,43 s ≤ 11,89 s. Resumen en `progress/history.md`. **Pendiente:** T20 al desplegar (transfer → api → front, `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md`, aviso a `partes`); decisión del humano sobre limpiar el parte de pruebas PT32/00001 de la 0404 (3 líneas `PRUEBA-PORC` y 2 sin marca a 0). **Siguiente:** F-069, en review (arriba). **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la api (`990e264`).
 
@@ -85,8 +85,8 @@ F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 - **T16, MANUAL (humano, o el líder si él lo autoriza). Escribe en la obra 0404 de pruebas.** Pasos completos en `specs/F-069-importe-caja-km/tasks.md`, T16. Resumen:
   - Antes: en la BBDD **local** `dedicacion`, si ya tiene la tabla de la pasada 1: `ALTER TABLE importe_vinculado ALTER COLUMN cantidad DROP NOT NULL` (D19, design §7.2). Transfer, api y front de esta rama con `OBRA_PRUEBAS_FORZAR=true`; `curl -s http://127.0.0.1:8006/health` ⇒ `modo_pruebas: true` y `0404`; `transfer_base_url` de la api ⇒ `http://127.0.0.1:8006`; «MODO PRUEBAS» en el modal.
   - Lectura previa (Git Bash): `cd services/dedicacion-transfer && .venv/Scripts/python prueba_escritura_porcentajes.py estado --ano 2026 --mes 11`.
-  - Esperado: km «100 km × 0,20 €/km», 12,00 € y 8,00 € de 20,00 €; caja 80,00 € solo en la primera obra (`can` 1, `pre` 80); `tex` «PRUEBA-PORC visita a proveedor»; registrar otra vez ⇒ «ya registrada»; copiar a 2026-12 ⇒ omitido hasta «Revisado»; el comentario del km vuelve al sincronizar (el del titular no vuelve en modo pruebas: decisión 8 del informe).
-  - Paso añadido en review 1 (cambio 4): en 2026-12, «Revisado» **solo** en el km ⇒ el preflight escribe el km y la caja sigue omitida «copiado del mes anterior sin revisar»; cambiar solo el comentario de la caja no la revisa (D18). Y D20: cambiar el comentario de una línea ya registrada y registrar otra vez ⇒ su `tex` cambia en Sigrid, cantidades iguales (si `tex_actualizadas` sale vacío, buscar en el log del transfer `[registro] la guarda no dejo cambiar el tex`).
+  - Esperado: km «100 km × 0,20 €/km», 12,00 € y 8,00 € de 20,00 €; caja 80,00 € solo en la primera obra (`can` 1, `pre` 80); `tex` «PRUEBA-PORC visita a proveedor»; registrar otra vez ⇒ «ya registrada»; copiar a 2026-12 ⇒ omitido hasta «Revisado»; el comentario del km vuelve al sincronizar (el del titular no vuelve en modo pruebas: decisión 6 del informe).
+  - Paso añadido en review 1 (cambio 4): en 2026-12, «Revisado» **solo** en el km ⇒ el preflight escribe el km y la caja sigue omitida «copiado del mes anterior sin revisar»; cambiar solo el comentario de la caja no la revisa (D18). Y D20: cambiar el comentario de una línea ya registrada y registrar otra vez ⇒ su `tex` cambia en Sigrid, cantidades iguales (si `tex_actualizadas` sale vacío, buscar en el log del transfer `[registro] la guarda no dejo cambiar el tex` o `[registro] no se cambia el tex de la linea … ya no vale`).
   - Limpieza: `.venv/Scripts/python prueba_escritura_porcentajes.py limpiar --ano 2026 --mes 11 --confirmar`, y lo mismo con `--mes 12`.
   - El mes: la spec dice 2026-11. En la T19 de F-054 el humano eligió un mes que no se usa (2032-01); se le pregunta antes de ejecutarla.
   - Resultado real en `progress/manual_F-069.md`.
@@ -220,8 +220,8 @@ modal lo avisa; un pisado dice «se edita la línea X (…) y se escribe N%»).
 desde F-051 el transfer de dedicación **edita en su sitio** líneas `M*` de
 los partes compartidos (también las que tengan `synckey partes:…`, sin
 cambiarla) y no borra ninguna; su `partes.md` debería decirlo.
-**F-030 en producción:** lanzar un sync (el desplegable de incidencias sale
-vacío hasta que el sync llene el catálogo de `auxhor`) y comprobarla
+**F-030 en producción:** el sync ya se lanzó el 2026-10-27 (llena el catálogo de `auxhor`
+que usa el desplegable de incidencias); queda comprobarla
 (Ctrl+F5; texto en la celda del % ⇒ desplegable; registrar ⇒ el par
 `CI*`/`CIZ` en el parte). **Aviso a `partes`** de F-030: dedicación escribe
 líneas de incidencia `CI*`/`CIZ` (`can = 0`, `synckey porcentajes:inc:`) en
@@ -301,8 +301,7 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
   `recurso_vinculado` y `asignacion_vinculado` por `create_all`). El
   transfer sigue en **modo real**. `infra/imagenes.json` al día en este
   commit; `azure-apps/dedicacion.md` `29321e1`. **Pendiente del humano:**
-  Ctrl+F5 en el front, **«Sincronizar Sigrid»** (sin él no hay vínculos ni
-  subfilas), la MANUAL B de F-064 y el **aviso a `partes`** de F-044
+  Ctrl+F5 en el front («Sincronizar Sigrid» ya hecho el 2026-10-27), la MANUAL B de F-064 y el **aviso a `partes`** de F-044
   («F-044 · spec aprobada»).
 - **Desplegado el 2026-10-26: F-062**, los tres servicios en orden, uno a
   uno, lanzados por el humano con `infra/d.local.ps1 transfer|api|front`
