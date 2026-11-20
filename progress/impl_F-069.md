@@ -78,6 +78,7 @@ informe en commit propio.
    comprobación) y una escritura más, solo si alguna trae `tex_nuevo`; `con_tex`
    solo si alguna trae comentario (sin ellos, SQL de hoy). Aceptada en la
    review 2; design §6.5 la recoge (`e58a596`).
+   **Orden fijado** (PARADA 2, review 4 O1) por `test_f069_r26_el_lote_del_tex_es_el_ultimo_del_ejecutar` (`5cf50a8`). RED con `_actualizar_tex` antes de `EscrituraVinculados` (`pytest tests -q`, transfer): `At index 1 diff: [('editar_tex', None)] != [('insert', 'porcentajes:vin:2:20')]`, 1 failed, 1956 passed; ruptura descartada.
 9. **Tests de la pasada 1 reescritos por la enmienda** (manda la enmienda):
    api `r4_una_cantidad_tecleada_quita_el_copiado` (D18: la misma cantidad
    ya no revisa) y front `r11`/`r12` (sin `fotoImportes`: cada casilla guarda
@@ -166,8 +167,7 @@ E  AssertionError: ({'asignacion_id', 'cantidad', 'comentario', 'copiado', 'sigr
 FAILED tests/test_f069_importes_api.py::test_f069_r30_la_traza_de_una_caja_conserva_cantidad_copiado_y_comentario
 1 failed, 1631 deselected, 1 warning in 3.35s
 ```
-Ruptura descartada; con el código de verdad, 1 passed. R30 ya se cumplía (la
-traza solo nombra `sigrid_*`): faltaba el test.
+Ruptura descartada; con el código de verdad, 1 passed (R30 ya se cumplía: faltaba el test).
 
 ## Verificaciones por tarea (resultado real)
 
