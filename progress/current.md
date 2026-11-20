@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-069 · `human_review` (2026-11-20), PARADA 2 tras la review 5 APROBADA (incremental):** vuelta desde `human_review` por la PARADA 2 («1 recomendado. 2 mes sin uso y hazlo tu»): test que fija que el lote del `tex` de D20 es el último `escribir` (`5cf50a8`, con RED; O1 de la review 4) y MANUAL T16 HECHA por el líder en 2032-03/04 (`progress/manual_F-069.md`: todo cumple; el `limpiar` borró también las `PRUEBA-PORC` de la T19 de F-054, ver «F-054»). Antes: review 3 APROBADA (código), campaña T13/T18 (142/159 muertos, 17 equivalentes, `progress/mutacion_F-069.md`) y review 4 de evidencias APROBADA. Después, otra vez PARADA 2; queda T17 al desplegar. Rama `feature/F-069-importe-caja-km` (copia `porcentajes-f069`); spec `specs/F-069-importe-caja-km/` (aprobada 2026-11-12, enmienda D17-D21 aprobada 2026-11-19).
+**F-069 CERRADA (`done`) el 2026-11-20 y unida a `dev`** (OK del humano: «despleguemos»). Resumen en `progress/history.md`. **Pendiente:** despliegue que lanza el humano (F-054 y F-069 juntas, transfer → api → front) y, después, T17 de F-069 y T20 de F-054 (sección «Pendiente al desplegar», abajo).
 
 **F-054 CERRADA (`done`) el 2026-11-18 y unida a `dev`** (OK del humano al cierre: «ok»). Review 11 APROBADA; MANUAL T19 hecha en modo pruebas (0404, 2032-01; `progress/manual_F-054.md`): sobrantes a 0 en su sitio, mismo `ide`/`pos`, sin `DELETE`, preflight mediana 10,43 s ≤ 11,89 s. Resumen en `progress/history.md`. **Pendiente:** T20 al desplegar (transfer → api → front, `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md`, aviso a `partes`); decisión del humano sobre lo que queda de pruebas en la 0404 (sección «F-054», abajo). **Siguiente:** F-069, en review (arriba). **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la api (`990e264`).
 
@@ -66,24 +66,14 @@ las filas de una campaña manual sobre el SHA que declara la campaña, o sobre H
 original sigue igual) amplía ese mismo encargo `de161b4`: pendiente de añadirla allí, sin decisión nueva. Otras propuestas de arnés pendientes, en sus secciones:
 F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
 tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
-`init.sh`). **Siguiente:** F-069 en review (`porcentajes-f069`); después
+`init.sh`). **Siguiente:** desplegar F-054 y F-069; después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
-## F-069 · en review (2026-11-19)
+## F-069 · CERRADA (2026-11-20), pendiente de desplegar
 
-- **Review 1: CAMBIOS REQUERIDOS** (`progress/review_F-069.md`, cambios 1-7 y O1-O4). Decisiones del humano del 2026-11-19, a las preguntas del líder:
-  - **D17 = A** («A: el transfer la quita»): `PRUEBA-PORC` no se copia en la api; el transfer publica en `existentes` el `tex` ya sin su marca (cambio 3).
-  - **D18** («No cuenta»): cambiar solo el comentario de una cantidad copiada no la da por revisada; solo teclear la cantidad o «Revisado» (campo `revisado` en el `PUT …/importes`; cambio 1).
-  - **D19** («Guardarlo igual»; antes: «el comentario es un campo de texto que deberia llevarse sin chequeo del contenido»): un comentario de km/viaje sin cantidad se guarda; sin cantidad no se registra nada en Sigrid (O1).
-  - **D20** («Que el cambio llegue a Sigrid»): si en una línea ya registrada solo cambia el comentario, el registro actualiza su `tex` en Sigrid sin tocar cantidades (O2).
-  - **D21** («Sí, se acepta»): decisión 6 del implementer, el comentario traído de una cantidad del mes va en un evento `IMPORTES`; se enmiendan R32 y design §6.4 (cambio 7).
-- **Spec enmendada** (`f074a0a`, `progress/spec_F-069_enmienda.md`): D17-D21 en R3-R5, R8, R12, R26-R32 y design; tareas nuevas T19-T26 y T9 reabierta (R30). OK del humano el 2026-11-19 («ok»), con las lecturas del spec-author enseñadas: borrar un comentario no vacía el `tex` de Sigrid (R23); D20 solo en partes En registro, líneas con `synckey` `porcentajes:` y, en pruebas, de la 0404; teclear el mismo número no revisa. Pasada 2 del implementer entregada (`c6462f2`…`fb28744`); su decisión 8 (D20 con relectura y lote propios al final) la aceptó la review 2 y ya está en design §6.5 (`e58a596`).
-- **Review 2: CAMBIOS REQUERIDOS solo de papeleo** (código aprobado en `3f9b5ff`). Observaciones recogidas: O1 en T16 (log a mirar si `tex_actualizadas` sale vacío); O2, `comentario_de_tex` quita la marca también sin espacio detrás (solo afecta a un `tex` escrito a mano así, se acepta); O3, la campaña de T13 incluye `texto_linea.py` y `_actualizar_tex`/`_tex_sigue_valiendo` (las guardas de D20). Automejora del reviewer, a proponer al humano para `reviewer.md` (y `arnes-base`) tras el cierre: contrastar cada «Pendiente del humano: desplegar…» con «Producción, hoy».
-- **Observaciones de la review 1 que no cambian la spec** (decisión del líder, enseñadas al humano): O3, `CopiarTrabajadorAnterior` sobre un destino con líneas sustituye también su caja tecleada (coherente con «sustituyendo»); O4, en `traer_sigrid._comentarios`, sin `sigrid_hmores_ide` el comentario del mes no sale de la línea de menor `ide` (sin efecto visible). O1 y O2 quedan resueltas por D19 y D20.
-- Informe del implementer: `progress/impl_F-069.md` (pasada 1 resumida y pasada 2; decisiones 1-10).
-- **T13 / T18, mutación (`critico`): HECHAS el 2026-11-20** (`2fe6031`…`dccbb7d`; 142/159 muertos, 17 equivalentes justificados; review 4 de evidencias APROBADA el 2026-11-20). Lo que se pidió: tras el APPROVED del reviewer principal, el líder relanza al implementer para la pasada de campaña (incluye `texto_linea.py`, `_actualizar_tex` y `_tex_sigue_valiendo`, O3 de la review 2): `python -m harness.mutacion --feature F-069` ⇒ `progress/mutacion_F-069.md` válido, 0 supervivientes sin justificar. Después, `bash harness/init.sh` sin `[KO]` (T18) y el reviewer de evidencias.
-- **T16, MANUAL: HECHA el 2026-11-20 por el líder** (petición del humano: «mes sin uso y hazlo tu»), en modo pruebas, 2032-03 y 2032-04, trabajador 2299582 (CA0173, VP0131): D19, reparto del km (12 € y 8 € de 20 €), caja 80 € solo en la primera obra, «ya registrada», D20 (`UPDATE` solo de `tex`, 0 `DELETE`), copia con «copiado», D18, «Revisado» solo en el km y D17 al traer de Sigrid: todo cumple. Detalle en `progress/manual_F-069.md`. El `limpiar` borró, como dice su docstring, toda la marca `PRUEBA-PORC` del hilo de cualquier mes y obra (`--ano/--mes` no filtran), también las tres de la T19 de F-054, sin la decisión del humano; dicho en la PARADA 2.
-- **T17, al desplegar (lo lanza el humano):** orden **transfer → api → front**. Después, **pendiente antes del `done` de la parte de ecosistema**: `azure-apps/dedicacion.md` al día desde `docs/INTEGRACION.md` §5 y §7 (tabla `importe_vinculado` y columnas nuevas, `PUT …/periodos/{a}/{m}/trabajadores/{ide}/importes`, claves nuevas del contrato del transfer, `revisado` en el `PUT`, `tex` sin marca en `existentes`, `tex_nuevo`/`tex_actualizadas` y el `UPDATE` de `tex` de D20, lectura de F-054 ampliada a las `porcentajes:vin:`), commit aparte en `azure-apps` con `git pull --rebase` antes; aviso a `partes` y apunte para F-071 (design §10).
+- Resumen completo en `progress/history.md`; MANUAL T16 en `progress/manual_F-069.md`; reviews en `progress/review_F-069.md`.
+- **T17 al desplegar** (líder, tras el despliegue que lanza el humano): orden **transfer → api → front**. Después, `azure-apps/dedicacion.md` al día desde `docs/INTEGRACION.md` §5 y §7 (tabla `importe_vinculado` y columnas nuevas, `PUT …/periodos/{a}/{m}/trabajadores/{ide}/importes` con `revisado`, claves nuevas del contrato del transfer, `tex` sin marca en `existentes`, `tex_nuevo`/`tex_actualizadas` y el `UPDATE` de `tex` de D20, lectura de F-054 ampliada a las `porcentajes:vin:`), commit aparte en `azure-apps` con `git pull --rebase` antes; aviso a `partes` (el transfer cambia el `tex` de sus líneas ya registradas) y apunte para F-071 (design §10).
+- Automejoras propuestas por los reviewers, a llevar al humano para `arnes-base`: contrastar «Pendiente del humano: desplegar…» con «Producción, hoy» (review 2); en RM7, un orden que solo dice el design se prueba igual (review 4); el paso destructivo de una MANUAL cita su salida real y su alcance (review 5).
 
 ## F-054 · CERRADA (2026-11-18), pendiente de desplegar
 
@@ -482,7 +472,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-20):** F-069 en `human_review` (PARADA 2); F-054 cerrada el 2026-11-18 y pendiente de desplegar (T20);
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-20):** F-069 cerrada y unida a `dev`, pendiente de desplegar; F-054 cerrada el 2026-11-18 y pendiente de desplegar (T20);
 después, F-066.
 
 ## ⚠ Lo que espera al humano

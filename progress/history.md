@@ -3177,3 +3177,26 @@ OK del humano al cierre el 2026-11-18 («ok»).
 **Fuera / pendiente.**
 - T20, al desplegar: transfer → api → front, refrescar `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` y avisar a `partes` de que el transfer pone a 0 líneas `M*` y de vinculados de partes compartidos, sin borrarlas.
 - En Sigrid queda el parte de pruebas PT32/00001 de la 0404, con tres líneas `PRUEBA-PORC` y dos sin marca, a 0. Sin limpiar, decisión pendiente del humano.
+
+## 2026-11-20 · F-069 · Cantidad del mes y comentario para km, viaje y caja de obra
+
+Rama `feature/F-069-importe-caja-km` · `sdd: true` · rigor `critico` ·
+**APROBADO** por el reviewer en la review 5 (código en la 3, evidencias en la 4) · 52 commits locales (`79fe1bd` … `3b8869b`) ·
+OK del humano al cierre el 2026-11-20 («despleguemos»).
+
+**Qué cambió.**
+- **Km y viaje (por %):** una cantidad del mes por vinculado (tabla nueva `importe_vinculado`); el transfer la reparte con el % del titular y el km a 0,20 €/km (D10).
+- **Caja (por obra):** una cantidad por línea en `asignacion_vinculado`, entera a su obra (`can` 1); 0 no registra nada en esa obra.
+- **Comentarios:** en cada línea del titular y de cada vinculado de cantidad; viajan como `tex` (con `PRUEBA-PORC` delante en pruebas) y vuelven al traer de Sigrid sin la marca, que solo conoce el transfer (D17). Un comentario sin cantidad se guarda (D19). Si en una línea ya registrada solo cambia el comentario, el registro hace `UPDATE hmores SET tex` en un lote propio y el último, solo en líneas nuestras con parte En registro (D20).
+- **Copiar el mes:** las cantidades llegan «copiado» y no se registran hasta teclear otra o «Revisado»; el comentario solo no revisa (D11, D18). El `PUT …/importes` lleva solo las casillas cambiadas.
+- **Servicios.** Toca transfer, api y front. Spec enmendada con D17-D21 el 2026-11-19.
+
+**Verificado.**
+- RED por requisito; cobertura de lo cambiado 99,6 % (687/690); campaña de mutación 142 muertos de 159 evaluados, 17 equivalentes justificados (`progress/mutacion_F-069.md`), review 4 de evidencias APROBADA.
+- Test que fija el orden de D20 (`5cf50a8`, con RED), a petición del humano en la PARADA 2.
+- MANUAL T16, el 2026-11-20, por el líder en modo pruebas en la 0404, 2032-03 y 2032-04 (`progress/manual_F-069.md`): todo cumple.
+- `bash harness/init.sh` en verde en la rama al cerrar (raíz 2319 passed / 47 skipped).
+
+**Fuera / pendiente.**
+- T17, al desplegar: transfer → api → front; `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` §5 y §7; aviso a `partes` (el transfer cambia el `tex` de sus líneas ya registradas) y apunte para F-071.
+- El `limpiar` de la T16 borró toda la marca `PRUEBA-PORC` del hilo (no filtra por mes), también las tres de la T19 de F-054, sin la decisión del humano; dicho en la PARADA 2. En la 0404 quedan PT32/00001 con dos líneas sin marca a 0 y los partes vacíos PT32/00002 y PT32/00003.
