@@ -1,132 +1,139 @@
 <!-- progress/review_F-069.md -->
-Revisión incremental desde 3f9b5ff (pasada 3), principal, sobre `789e8c4` (`git diff 3f9b5ff..789e8c4`: 4 commits, 5 ficheros).
+Revisión de evidencias desde 3f9b5ff (pasada 4), sobre `46e7835` (`git diff 6b6d637..46e7835`, 5 commits).
 
-# F-069 · Review 3 (principal, incremental)
+# F-069 · Review 4 (evidencias)
 
-**Veredicto: APPROVED.** El código sigue aprobado en `3f9b5ff` y el delta no lo toca. Los cambios 1 y
-2 de la review 2 están resueltos y O1-O3 recogidas. Quedan tres erratas de rastro que no inducen a
-error (O1-O3, abajo); se corrigen antes de la pasada de evidencias, que las comprueba.
+**Veredicto: APPROVED.** La campaña es real y reproducible. Los 17 supervivientes son equivalentes:
+los he juzgado uno a uno contra el código. Los 12 que mataron los tests nuevos los mataban de verdad:
+he reproducido 8. RM1-RM7 cumplidas. Queda una observación sobre un orden (O1) que no bloquea.
 
-**Reviews anteriores (resumen):**
-- **Review 1** (`ed7c212`): CAMBIOS REQUERIDOS, 1-7 (D11 en el front, RED de R15/R8/R32,
-  `MARCA_PRUEBAS` en la api, T16, R30, `current.md`, spec). Resueltos en la pasada 2.
-- **Review 2** (`3f9b5ff`, completa): código APROBADO; CAMBIOS REQUERIDOS solo de papeleo:
-  1, design §6.5 y §7.1 y la decisión 8 del informe frente a lo construido; 2, seis frases falsas de
-  `current.md`. Observaciones O1 (log en T16), O2 (`comentario_de_tex` sin espacio) y O3 (alcance de
-  la campaña). Con detalle de D20, tabla de cambios y C1-C5: `git show 909a5e2:progress/review_F-069.md`.
+**La principal, en una línea:** reviews 1-3 (`ed7c212`, `3f9b5ff`, `789e8c4`): código APROBADO en `3f9b5ff`;
+CAMBIOS REQUERIDOS 1-7 (review 1) y de papeleo (review 2) resueltos; O1-O3 de la review 3 corregidas en
+`6b6d637` (comprobado: «decisión 6» en `current.md` l. 88 y en T16; los dos `warning` en l. 89; el sync
+de F-030/F-044, «ya hecho»). Detalle de D20, tabla requisito → test y C1-C5: `git show 909a5e2:progress/review_F-069.md`
+(review 2) y `git show 6b6d637:progress/review_F-069.md` (review 3).
 
-**Rigor:** `critico` (`features.json`): RED en los centrales, cobertura ≥ 90 %, mutación con 0
-supervivientes en la muestra y MANUAL con su comando. Mutación y RM1-RM7: **pendiente: pasada de
-evidencias** (T13/T18). Capa e2e N/A (ningún servicio la declara).
+**Rigor:** `critico` (`features.json`): fase RED, cobertura ≥ 90 %, mutación con 0 supervivientes sin
+justificar en la muestra del nivel (uno por línea, 60 % de los candidatos, acotado a [100, 300]), RM1-RM7.
+Capa e2e N/A: ningún servicio declara el bloque e2e.
 
-## El delta: sin código
+## El delta: sin código de producción
 
-`git diff --stat 3f9b5ff..789e8c4`: `progress/current.md`, `progress/impl_F-069.md`,
-`progress/review_F-069.md`, `specs/F-069-importe-caja-km/design.md` y `tasks.md`. Nada en
-`services/`, `tests/`, `docs/` ni `harness/`: la review puede ser incremental entera. El §9.1 del
-design solo se ha reflowado (mismo texto palabra a palabra, comprobado con `md5sum` del texto
-normalizado en los dos SHA).
+`git diff --name-only 3f9b5ff..HEAD -- services` solo devuelve `tests/`: `test_f069_importes_api.py`,
+`test_f069_importes_dominio.py`, `test_f069_traer_comentarios.py` y `dedicacion-transfer/tests/conftest.py`.
+El resto es papeleo (`progress/`, `tasks.md`; `design.md` solo en `6b6d637`, ya revisado). Lo aprobado en
+`3f9b5ff` sigue valiendo.
 
-## Cambio 1 de la review 2 (design y decisión 8): resuelto
+## C4 bis · mutación (verificada por mi cuenta)
 
-Contrastado con `registro_pipeline.py` en `789e8c4` (`_actualizar_tex`, l. 1478-1533;
-`_tex_sigue_valiendo`, l. 1535-1544; retornos de `ejecutar`, l. 1250, 1278, 1441, 1454, 1475):
+- [x] **Informe generado por la herramienta**, sin «⚠ CAMPAÑA NO VÁLIDA» y con «Sin veredicto (base rota)»
+  0. Corrió la línea base: 8 líneas base, entre 40,1 y 53,3 s. Ningún análisis ni declaración en `PENDIENTE`.
+- [x] **Recálculo puro** (`harness.alcance` + `generar_mutantes` + `seleccionar` con la regla del nivel):
+  1754 líneas en 25 ficheros y **473 mutantes**, fichero a fichero igual que el informe. **264 candidatos**,
+  tope 159 y **159 elegidos** (semilla `20261030`). Los 17 supervivientes existen en la muestra, con el mismo
+  operador y el mismo texto original → mutado.
+- [x] **Ficheros sin mutantes (prueba de control)**, generando sin exclusión de alcance: `errors.py` da 0 en
+  todo el fichero. `ports.py` da 1, `deps.py` 9 y `prueba_escritura_porcentajes.py` 150, todos fuera de las
+  líneas en alcance, así que el cero es legítimo. `deps.py` se mutó a mano: reproduje `traer_sigrid=TraerDeSigrid(transfer, {})`
+  (l. 172) y cae `test_f069_r15_el_contenedor_pasa_tipos_y_precio`.
+- [x] **Campaña no reejecutada: 1752 s según el informe** (> 60 s): recálculo puro, RM1-RM7 y reproducción.
+- [x] **O3 de la review 2, alcance de D20**: la muestra trae 9 mutantes de `texto_linea.py` (l. 18-93) y 11 de
+  `_actualizar_tex`/`_tex_sigue_valiendo` (l. 1491-1543); los he listado con el recálculo. Sobreviven 2, la l. 1498
+  y la l. 1511, las dos equivalentes (abajo).
 
-| Lo que dice §6.5 «Paso 10» | En el código |
+### Los 12 que mataron los tests nuevos: 8 reproducidos
+
+Todo en una copia (`git archive HEAD`) de mi scratchpad: aplico el mutante con `aplicar_mutante` y paso
+los tests. Caen exactamente los tests que el informe nombra.
+
+| Mutante | Cae |
 |---|---|
-| Lo último de `ejecutar`, tras titulares y vinculados o sin nada más que escribir | Los cinco retornos pasan por `_ejecutar_vinculados`, que acaba siempre en `_actualizar_tex` (también sin vinculados, l. 1454) |
-| Solo si alguna trae `tex_nuevo` | `piezas` vacías ⇒ `return res` sin leer |
-| Relectura propia `lineas_para_editar` | `self._cli.lineas_para_editar([...hmores_ide])` |
-| Las que siguen valiendo (nuestra, recurso y hora, sin enlaces, En registro) | `_tex_sigue_valiendo`: `enlazada`, `reside`, `porcentajes:`, `parte_est`, `M*` o la hora del vinculado |
-| `stmt_editar_tex` en un lote propio | un `escribir(statements)` aparte, con `obride` en pruebas (§7.1) |
-| Comprobación `lineas_registradas(con_tex=True)` ⇒ `tex_actualizadas`; las demás, al log | igual, con el `warning` «la guarda no dejo cambiar el tex» |
-| Solo el `tex`; nunca `DELETE` | `stmt_editar_tex` (aprobado en la review 2) |
+| `repositories.py:574` `==`→`!=` | `test_f069_r32_poner_comentario_solo_en_esa_linea` |
+| `repositories.py:834` `anio ==`→`!=` | `test_f069_r16_importes_del_mes_de_ese_anio_y_mes` |
+| `repositories.py:819` `is None`→`not` | `test_f069_r3_una_cantidad_cero_se_lee_como_cero` |
+| `traer_sigrid.py:154` `and`→`or` | `…titular_por_su_synckey_el_de_menor_ide_en_cualquier_orden` |
+| `use_cases.py:1304` `kv[0][1]`→`kv[1][1]` (es el sorteado) | `test_f069_r7_el_snapshot_ordena_por_vinculado_y_obra` |
+| `schemas.py:153` `is None`→`not` | `test_f069_r10_una_caja_a_cero_y_sin_copiado_sale_con_sus_claves` |
+| `importes.py:36` `frozen=True`→`False` | `test_f069_r1_r3_tipo_e_importe_del_mes_son_inmutables` |
+| `registro_pipeline.py:1518` `con_tex=True`→`False` | 7 de `test_f069_tex_registrada.py` (R26) |
 
-- [x] §7.1 añade la comprobación tras `stmt_editar_tex` con la misma lectura ampliada.
-- [x] El paso 6 de §6.5 se reescribe sin cambio de sentido.
-- [x] Decisión 8 del informe: «dos lecturas (relectura y comprobación) y una escritura más, solo si
-  alguna trae `tex_nuevo`». Preciso salvo un detalle menor: si la relectura descarta todas, solo hay
-  una lectura y ninguna escritura (`if not statements: return res`); no hace falta tocarlo.
-- [x] Tamaño: design 250/250 (sustitución, no añadido).
+**El `conftest.py` del transfer.** Con el de `6b6d637`, el mutante de la l. 1518 **sobrevive**; con el
+nuevo, caen 7. El doble no es frágil: es fiel. El SQL real (`sigrid_write_client.py`
+l. 879-883) solo lee `tex` y `obride` con `con_tex`, y el doble hace lo mismo. La suite del transfer pasa
+entera con él (1956 en `init.sh`). Los tests nuevos de la api miran el SQL compilado o el valor de dominio,
+sin acoplarse a detalles sueltos: los acepto.
 
-## Cambio 2 de la review 2 (seis frases de `current.md`): resuelto
+### Los 17 supervivientes: juicio uno a uno
 
-| Punto | Hoy |
-|---|---|
-| l. 19, hotfix `/propuestas` | «Desplegado el 2026-11-11 (api `r20261111-1915`)» |
-| l. 29, hotfix VP | «Desplegado el 2026-11-11…; si no se ha hecho, queda “Sincronizar Sigrid”» |
-| l. 59, `arnes-base` | «1 commit por delante (`8de97cb`)»: comprobado, `main...origin/main [ahead 1]` |
-| l. 256, «Producción, hoy» | entrada nueva en l. 259 con api `r20261111-1915`, front `r20261111-1916`, transfer `r20261028-1914` |
-| l. 491, orden | «Orden de lo pendiente: el de `BACKLOG.md`» |
-| l. 578, F-062 | «T19 y T20, MANUAL, HECHAS (`progress/manual_F-062.md`)»: el fichero existe |
+Todos son **equivalentes**, y he comprobado en el código la invariante de origen que cita cada análisis:
 
-## O1-O3 de la review 2: recogidas
+- **Valor nunca 0 ni `""`** (2, 3, 4, 10, 11, 15). Los `ide` de Sigrid son > 0. En los snapshots la
+  cantidad va como `str(Decimal)` o `None` (l. 1060, 1313). `unidad` es `eur` o `km`. El comentario pasa por
+  `validar_comentario` o `comentario_de_sigrid`, que dan `None` para el vacío.
+- **Sin `__bool__` ni `__len__`** (12, 17): `TipoCantidad` y `HoraRecurso` (grep en `domain/` de ambos).
+- **Defecto que no se usa** (1, 5, 16). En el 1, `getattr` con `fuente` `None` da `cantidad` `None`. En el 5,
+  `_snapshot_importes` siempre pone `es_postventa`. En el 16, el único llamador (l. 218-219) pasa `con_tex`.
+- **Rama inalcanzable** (13, 14): en pruebas, la obra sale de `obra_por_codigo`, con `obr.ide` como clave
+  primaria (l. 265), o se lanza `RuntimeError`.
+- **Retorno muerto** (6, 7): los dos llamadores de `_aplicar_foto` (l. 442 y 1404) descartan lo que devuelve.
+  Hago mía la propuesta al humano: quitarlo o usarlo, fuera de F-069.
+- **Mismo error** (8) y **mismo resultado** (9): el 8 es el de RM5, abajo. En el 9, `""` acaba en `None` por
+  los dos caminos.
 
-- [x] **O1** en `tasks.md` T16 (los dos `warning` del transfer, con su texto real) y en `current.md`
-  l. 89 (uno de los dos; ver O2 abajo).
-- [x] **O2** aceptada y anotada en `current.md` l. 81.
-- [x] **O3** en `current.md` l. 81 y l. 84 (alcance de T13).
-- [x] La automejora de la review 2 queda anotada en l. 81, para después del cierre.
+## RM1-RM7
 
-## `current.md` releído entero (707 líneas): lo que queda
+- [x] **RM1.** El informe mide `a0ad1e2` y HEAD es `46e7835`. `git diff --name-only a0ad1e2..HEAD` solo da
+  `progress/` y `tasks.md`, nada del alcance: no hay que repetir la campaña.
+- [x] **RM2.** Media por mutante con la suite entera: 38,6 s, frente a una base de 52,9 s. Es la misma escala;
+  queda por debajo por el `-x` con 142 de 159 muertos. 159 × 38,6 / 4 workers ≈ 1534 s, más las líneas
+  base, ≈ 1752 s. Cuadra.
+- [x] **RM3.** Ningún equivalente sale muerto: los 12 que mueren con los tests nuevos cambian el comportamiento,
+  y su test lo demuestra (tabla de arriba).
+- [x] **RM4.** Usado: subconjuntos de tests sobre la copia, nunca en el árbol.
+- [x] **RM5.** Elijo el 8 (`importes.py:107`, `or`→`and`), el menos evidente. Demostración ejecutable:
+  `validar_cantidad` original contra la mutada, con 26 entradas por unidad (52 casos: `None`, booleanos,
+  enteros, flotantes, `nan`/`inf`, `Decimal`, textos válidos, vacíos y no numéricos, `"NaN"`, `"Infinity"`,
+  listas, dicts, negativos, más de dos decimales, más del tope). **0 diferencias**, ni en la excepción ni en
+  el mensaje.
+- [x] **RM6.** N/A justificado: sin cambios de producción, ninguna guarda quitada. [x] **RM7.** El requisito central de F-069 (cantidades de caja y km) no es un orden entre colaboradores,
+  y el orden de D20 no está en ningún R, solo en el design. Aun así probé a mano el único orden declarado.
+  Lo cuento en O1.
 
-Las seis de la review 2 están bien. Al releer entero quedan estas, todas menores; **son todas**:
+## Observaciones (no bloquean; que el líder las recoja o se las lleve al humano)
 
-- **O1 · «decisión 8» donde es la 6.** `current.md` l. 88 («el del titular no vuelve en modo pruebas:
-  decisión 8 del informe») y `tasks.md` T16 («decisión 8 del implementer»). En `impl_F-069.md` esa es
-  la **decisión 6**; la 8 es D20. El paréntesis dice ya el motivo, así que no lleva a error, pero la
-  referencia es falsa. Ya estaba en `3f9b5ff` y se me pasó en la review 2.
-- **O2 · O1 a medias en `current.md`.** l. 89 da solo uno de los dos `warning`; `tasks.md` T16 da los
-  dos («la guarda no dejo cambiar el tex» y «no se cambia el tex de la linea … ya no vale»). Añadir
-  el segundo o remitir a T16.
-- **O3 · «Sincronizar Sigrid» pendiente, ya hecho.** l. 304-305 (despliegue de F-044 en «Producción,
-  hoy») sigue diciendo «Pendiente del humano: … **«Sincronizar Sigrid»** (sin él no hay vínculos ni
-  subfilas)», y l. 53 dice que está hecho (el humano lo confirmó el 2026-10-27). Lo mismo para F-030
-  en l. 223-224 («lanzar un sync… hasta que el sync llene el catálogo»): ese sync es anterior. Dejar
-  en esas entradas solo lo que de verdad queda (MANUAL B de F-064 y aviso a `partes`).
+- **O1 · El «al final» de D20 no lo ve ningún test.** Design §6.5 e informe (decisión 8): «el `tex` va
+  después de todas las demás escrituras». En una copia moví `_actualizar_tex` al principio de
+  `_ejecutar_vinculados`, **delante** de `EscrituraVinculados` (l. 1463), y la suite del transfer sigue en
+  verde: 1952 passed. Daño real bajo: solo toca las `ya_registrado`, que `EscrituraVinculados` no escribe, y
+  un nuevo intento es idempotente. Pero si fallan los vinculados, el `tex` ya habría cambiado. Hay dos salidas:
+  un test que fije que el lote del `tex` es el último `escribir`, o que el humano acepte el hueco por escrito.
+- **O2 · `current.md`, l. 4.** Dice a la vez «pasada de campaña hecha (T13/T18…)» y «Quedan T13/T18 (mutación,
+  tras el APPROVED)». Hay que quitar lo segundo al cambiar de estado. Y `tasks.md` T13 dice que el análisis está
+  «en `progress/impl_F-069.md`», cuando vive en `progress/mutacion_F-069.md` (el informe lo enlaza).
 
-No bloquean: no cambian lo que hace nadie ni la MANUAL que ejecutará el humano, y ninguna es de esta
-pasada. **Se recogen antes de la pasada de evidencias**, que las mira (si no, vuelven como bloqueo).
+## Checkpoints (pasada de evidencias)
 
-## Checkpoints (delta)
-
-- **C1** [x] `ARNES_SIN_CACHE=1 bash harness/init.sh` entero sobre `789e8c4` (pie). [x] Arnés sin tocar.
-- **C2** [x] Una sola activa (F-069 `in_review`), rama `feature/F-069-importe-caja-km`, orden. [x]
-  `current.md`: los seis de la review 2 corregidos; las tres erratas residuales, O1-O3.
-- **C3** [x] Sin código en el delta: lo aprobado en `3f9b5ff` sigue valiendo (hexagonal, ruta en la
-  1.ª línea, sin `print`/secretos, límite de servicio, solo escribe el transfer).
-- **C3 bis** N/A: el delta no toca `docs/referencia/`. **C3 ter** [x] design §6.5 y §7.1 frente a lo
-  construido (tabla arriba); D17-D21 con cita y fecha (sin cambios).
-- **C3 quater** pendiente de T17 al desplegar, listado con contenido en `current.md` l. 93.
-- **C4** [x] R1-R36 con test o MANUAL (tabla de la review 2, sin cambios: el delta no mueve tests).
-  [x] MANUAL T16 y T17 con comando y resultado esperado; T16 con O1 de la review 2.
-- **C4 bis** [x] Nivel declarado. [x] RED y «Evidencias» (aprobadas en la review 2). [x] Cobertura
-  `[OK]` (pie). Mutación y RM1-RM7: **pendiente: pasada de evidencias** (T13/T18), con el alcance de O3
-  de la review 2 (`texto_linea.py`, `_actualizar_tex`, `_tex_sigue_valiendo`).
-- **C4 ter** N/A: no hay `harness/rutas_sensibles.json`.
-- **C5** [x] Commits del delta con prefijo `F-069:` (papeleo, sin tarea). T13, T16-T18 abiertas,
-  legítimas en esta fase.
-
-## Cobertura (requisito → test)
-
-Sin cambios desde la review 2 (el delta no toca tests): R1-R34 con test, R35-R36 MANUAL (T16, T17).
-Tabla completa: `git show 909a5e2:progress/review_F-069.md`, sección «Cobertura».
+- **C1** [x] `ARNES_SIN_CACHE=1 bash harness/init.sh` entero sobre `46e7835` (pie). [x] `git status` limpio
+  después: todo lo he mutado en el scratchpad.
+- **C2** [x] Una sola feature activa. [x] Rama correcta. [x] `current.md` al día salvo O2.
+- **C3 / C3 bis / C3 ter** [x] Sin cambios de producción ni de `docs/referencia/` desde `3f9b5ff`. **C3
+  quater** pendiente de T17 al desplegar (listado en `current.md`), como en la review 3.
+- **C4** [x] Los tests nuevos cubren R1, R3, R7, R10, R15, R16, R26 y R32 (tabla). [x] R1-R34 con test y
+  R35-R36 MANUAL, sin cambios.
+- **C4 bis** [x] Nivel declarado. [x] RED y «Evidencias» (con los totales de mutación ya puestos). [x] Cobertura
+  `[OK]` 99,6 %. [x] Mutación válida: 0 supervivientes sin justificar. [x] RM1-RM7. [x] Capa e2e N/A justificada.
+- **C4 ter** N/A: no existe `harness/rutas_sensibles.json`. **C5** [x] Commits `F-069 T13:` / `F-069:`. [x] T13 y T18 `[x]`. T16 (MANUAL) y T17 (despliegue) siguen
+  abiertas, como corresponde a esta fase.
 
 ## Cambios requeridos
 
-Ninguno. Para el líder, antes de la pasada de evidencias: O1-O3 de esta review.
+Ninguno. Para el líder, antes del cierre: O1 (test o aceptación del humano) y O2.
 
-## Automejora (propuesta para `reviewer.md`)
+**Automejora (propuesta para `reviewer.md`).** En RM7, añadir: «un orden que solo dice el design, y no un R, se prueba igual y su superviviente va como
+observación, con dos salidas: test o aceptación del humano». Hoy el texto solo habla del requisito central.
 
-La «decisión N» citada en otro fichero se desfasa cuando el informe se renumera entre pasadas. Al
-releer `current.md` y `tasks.md`, contrastar cada «decisión N del informe» con la lista del informe.
+## Resultado de `ARNES_SIN_CACHE=1 bash harness/init.sh` (`46e7835`, sin pipes)
 
-## Resultado de `ARNES_SIN_CACHE=1 bash harness/init.sh` (`789e8c4`, sin pipes)
-
-- **1.ª ejecución, código 1:** raíz 1 failed, 2231 passed (`-x`). Cayó
-  `tests/test_mutacion_prueba_de_verdad.py::test_F_cada_patron_da_su_mutante…` con «TIMEOUT tras 258 s
-  en 1 mutante… máquina sobresuscrita». Test del arnés, ajeno al delta. La suite duró 15 h 23 min
-  porque la máquina se suspendió durante la noche. No se aprueba sobre ella.
-- **2.ª ejecución (2026-11-20), código 0, ningún `[KO]`, «ENTORNO LISTO»:** raíz 2319 passed / 47
-  skipped (17 min 14 s); api 1632; front 573; transfer 1956. `[OK]` PUERTA COBERTURA 99,6 % (687/690),
-  TAMAÑO, CARRIL N/A y CAPA E2E N/A. Este informe, medido con `harness.tamano` (código 0).
+Código 0, ningún `[KO]`, «ENTORNO LISTO». Raíz 2319 passed / 47 skipped (9 min 32 s); api 1640; front 573;
+transfer 1956. `[OK]` PUERTA COBERTURA 99,6 % (687/690), TAMAÑO, CARRIL N/A y CAPA E2E N/A. Este informe, medido
+con `python -m harness.tamano --feature F-069`.
