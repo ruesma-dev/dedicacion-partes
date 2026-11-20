@@ -160,3 +160,16 @@ def test_f069_r32_la_api_no_conoce_la_marca():
     assert not hasattr(importes, "MARCA_PRUEBAS")
     assert list(inspect.signature(comentario_de_sigrid).parameters) == [
         "tex"]
+
+
+def test_f069_r1_r3_tipo_e_importe_del_mes_son_inmutables():
+    """Mutación (importes.py:36, models.py:128, `frozen=True`): valores, no
+    estado; se comparan y se usan como claves."""
+    import dataclasses
+
+    from domain.models import ImporteMes
+
+    for valor in (VP, ImporteMes(vinculado_ide=20)):
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            valor.cantidad = 1  # type: ignore[misc]
+        assert hash(valor) == hash(dataclasses.replace(valor))

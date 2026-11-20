@@ -209,6 +209,14 @@ class EdicionesFalsas:
                  *(ls for *_, lista in self._partes_de_lineas()
                    for ls in lista)]
         por_ide = {ls.ide: ls for ls in todas if ls.ide in pedidos}
+        if not con_tex:
+            # Como el SQL real: sin `con_tex` no se leen `tex` ni `obride`
+            # (mutación de F-069: la comprobación del `tex` sin `con_tex`
+            # sobrevivía porque el doble los daba siempre).
+            por_sk = {k: replace(ls, tex=None, obride=None)
+                      for k, ls in por_sk.items()}
+            por_ide = {k: replace(ls, tex=None, obride=None)
+                       for k, ls in por_ide.items()}
         if con_tex:
             frescas = [replace(ls, hmoide=h, parte_est=est)
                        for h, _, est, lista in self._partes_de_lineas()

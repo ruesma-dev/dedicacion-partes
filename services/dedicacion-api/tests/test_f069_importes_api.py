@@ -907,9 +907,15 @@ def test_f069_r15_el_contenedor_pasa_tipos_y_precio(monkeypatch):
 
     monkeypatch.setattr(deps, "RegistroSigrid", _Espia)
     monkeypatch.delenv("EMPRESA_IMPUTACION", raising=False)
-    deps.construir_contenedor(Settings(_env_file=None), lambda: None)
+    contenedor = deps.construir_contenedor(Settings(_env_file=None),
+                                           lambda: None)
     assert capturado["importes"] == TIPOS
     assert capturado["precio_km"] == Decimal("0.20")
+    # Mutación (deps.py:172-173, sin mutantes del generador): los mismos
+    # tipos llegan a las rutas (`PUT …/importes`, cuadrante) y a traer de
+    # Sigrid (comentario de las cantidades del mes, R32).
+    assert contenedor.importes == TIPOS
+    assert contenedor.traer_sigrid._importes == TIPOS
 
 
 # ======================= R10 · el cuadrante ============================== #
@@ -1015,3 +1021,77 @@ def test_f069_r30_la_traza_de_una_caja_conserva_cantidad_copiado_y_comentario():
         assert not ({"cantidad", "copiado", "comentario"} & (insert | set_)), (
             insert, set_)
         assert set_ and all(c.startswith("sigrid_") for c in set_), set_
+
+
+# ============ Pasada de campaña: supervivientes de la mutación ============ #
+# (progress/mutacion_F-069.md). Cada test nombra el mutante que mata.
+from application.use_cases import _snapshot_importes  # noqa: E402
+from infrastructure.db.repositories import (  # noqa: E402
+    PgAsignacionRepository,
+    PgImporteRepository,
+    _a_importe,
+)
+from interface_adapters.api.schemas import SubfilaOut, _cantidad_out  # noqa: E402
+
+
+def test_f069_r32_poner_comentario_solo_en_esa_linea():
+    """`poner_comentario` filtra por trabajador, obra y modo con `=`
+    (mutantes `!=` de repositories.py:574-576)."""
+    s = _Sesion()
+    PgAsignacionRepository(s).poner_comentario(7, 10, (694, False), "x")
+    [stmt] = s.sentencias
+    sql = _sql(stmt)
+    for col in ("periodo_id", "trabajador_ide", "obra_ide", "es_postventa"):
+        assert f"asignacion.{col} = " in sql, sql
+    assert "!=" not in sql
+
+
+def test_f069_r16_importes_del_mes_de_ese_anio_y_mes():
+    """repositories.py:834: `anio = ` (no `!=`)."""
+    s = _Sesion()
+    s.scalars = lambda stmt: (s.sentencias.append(stmt)
+                              or SimpleNamespace(all=lambda: []))
+    importes_del_mes_de(s, 2026, 10, [20])
+    sql = _sql(s.sentencias[0])
+    assert "periodo.anio = " in sql and "periodo.mes = " in sql
+    assert "!=" not in sql
+
+
+def test_f069_r3_las_del_mes_se_cruzan_con_su_vinculado():
+    """repositories.py:850: el `JOIN` con `recurso_vinculado` por su `ide`."""
+    s = _Sesion()
+    PgImporteRepository(s).de_trabajador(7, 10)
+    sql = _sql(s.sentencias[0])
+    assert ("JOIN recurso_vinculado ON recurso_vinculado.ide = "
+            "importe_vinculado.vinculado_ide") in sql
+    assert "!=" not in sql
+
+
+def test_f069_r3_una_cantidad_cero_se_lee_como_cero():
+    """repositories.py:819: `cantidad is None`, no `not cantidad`: 0 € es
+    una cantidad («a 0, nada que escribir»), no «sin cantidad»."""
+    f = SimpleNamespace(vinculado_ide=20, cantidad=Decimal("0.00"),
+                        copiado=False, comentario=None)
+    assert _a_importe(f).cantidad == Decimal("0.00")
+
+
+def test_f069_r7_el_snapshot_ordena_por_vinculado_y_obra():
+    """use_cases.py:1304: orden por (vinculado, obra, modo), no por el
+    `copiado`: dos cajas del mismo vinculado en dos obras."""
+    foto = {(30, 100, False): (Decimal("1"), True, None),
+            (30, 200, False): (Decimal("2"), False, None)}
+    assert [b["obra_ide"] for b in _snapshot_importes(foto)] == [100, 200]
+
+
+def test_f069_r10_una_caja_a_cero_y_sin_copiado_sale_con_sus_claves():
+    """schemas.py:153 (y :154): `exclude_if=v is None`: la cantidad 0 y el
+    `copiado` false salen (solo se omite lo nulo)."""
+    v = SimpleNamespace(cantidad=Decimal("0.00"), copiado=False,
+                        comentario=None)
+    sub = SubfilaOut(vinculado_ide=30, tipo="CAJA", tipo_res=None, cod="CJ",
+                     partida_ide=None, partida_cod=None, partida_res=None,
+                     partida_fija=False,
+                     **_cantidad_out(v, TipoCantidad("eur", "obra")))
+    out = sub.model_dump(mode="json")
+    assert (out["cantidad"], out["copiado"]) == (0.0, False)
+    assert "comentario" not in out

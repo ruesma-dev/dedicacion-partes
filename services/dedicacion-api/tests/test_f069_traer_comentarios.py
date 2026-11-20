@@ -132,6 +132,17 @@ def test_f069_r32_titular_por_su_synckey():
     assert uow.sueltas == [("linea", 10, (694, False), "a")]   # el de menor ide
 
 
+def test_f069_r32_titular_por_su_synckey_el_de_menor_ide_en_cualquier_orden():
+    """Mutación (traer_sigrid.py:154, `and` → `or`): con la de menor `ide`
+    PRIMERO, la segunda no la pisa."""
+    uow = _uow([(_ln(694, "100"), None)])
+    _traer(uow, _Gw([_s(904, 10, 694, 1.0, synckey="porcentajes:1",
+                        tex="a"),
+                     _s(905, 10, 694, 1.0, synckey="porcentajes:1",
+                        tex="b")]))
+    assert uow.sueltas == [("linea", 10, (694, False), "a")]
+
+
 def test_f069_r32_solo_si_difiere_y_las_ajenas_no():
     con = dataclasses.replace(_ln(694, "60"), comentario="igual")
     uow = _uow([(con, {"sigrid_hmores_ide": 901}),
