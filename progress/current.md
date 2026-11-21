@@ -1,9 +1,9 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-069 CERRADA (`done`) el 2026-11-20 y unida a `dev`** (OK del humano: «despleguemos»). Resumen en `progress/history.md`. **Pendiente:** despliegue que lanza el humano (F-054 y F-069 juntas, transfer → api → front) y, después, T17 de F-069 y T20 de F-054 (sección «Pendiente al desplegar», abajo).
+**F-054 y F-069 DESPLEGADAS el 2026-11-21** (lanzado por el humano: transfer `r20261121-1743`, api `r20261121-1745` y front `r20261121-1749`, las tres `Healthy` con el 100 % del tráfico; «Producción, hoy»). T17 de F-069 y T20 de F-054 hechas: `azure-apps/dedicacion.md` al día (`0e33de3`, pendiente de push del humano). **Pendiente del humano:** Ctrl+F5 y mirar en producción las casillas de km y caja y «Sincronizar Sigrid»; transmitir el aviso a `partes` («⚠ Lo que espera al humano»); decidir qué se hace con lo que queda de pruebas en la 0404 (sección «F-054»). Siguiente en el backlog: F-066.
 
-**F-054 CERRADA (`done`) el 2026-11-18 y unida a `dev`** (OK del humano al cierre: «ok»). Review 11 APROBADA; MANUAL T19 hecha en modo pruebas (0404, 2032-01; `progress/manual_F-054.md`): sobrantes a 0 en su sitio, mismo `ide`/`pos`, sin `DELETE`, preflight mediana 10,43 s ≤ 11,89 s. Resumen en `progress/history.md`. **Pendiente:** T20 al desplegar (transfer → api → front, `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md`, aviso a `partes`); decisión del humano sobre lo que queda de pruebas en la 0404 (sección «F-054», abajo). **Siguiente:** desplegar F-054 y F-069 juntas (sección «F-069 · CERRADA»). **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la api (`990e264`).
+**F-054 CERRADA (`done`) el 2026-11-18 y unida a `dev`** (OK del humano al cierre: «ok»). Review 11 APROBADA; MANUAL T19 hecha en modo pruebas (0404, 2032-01; `progress/manual_F-054.md`): sobrantes a 0 en su sitio, mismo `ide`/`pos`, sin `DELETE`, preflight mediana 10,43 s ≤ 11,89 s. Resumen en `progress/history.md`. **Desplegada el 2026-11-21** con F-069; T20 hecha (`azure-apps` `0e33de3`). **Pendiente del humano:** el aviso a `partes` y qué se hace con lo que queda de pruebas en la 0404 (sección «F-054», abajo). **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la api (`990e264`).
 
 **ARNÉS 2026-11-13: actualizado de la 1.7.3 a la 1.10.1** (rama `chore/arnes-1.10.1`, «ok» del humano al plan). Instalador en modo `actualizar`: 70 nuevos, 26 arnés puro pisados con backup, y fusión a mano de los seis `adaptado` (`CLAUDE.md`, `CHECKPOINTS.md`, `harness/init.sh`, `docs/CONVENTIONS.md`, `.claude/settings.json`; `docs/referencia/README.md` sin cambios) sin perder lo del proyecto; quitado el hook `PostToolUse` (`| tail -5` escondía el código de salida). Decisión del humano: `rigor.json` tal cual (mutación informativa en `estandar`, `critico` muestreado, nivel `express`), sin `rigor.local.json`. Estados nuevos (`todo`, `in_review`, `human_review`): nada está en `todo`, el líder pedirá qué comprometer. `bash harness/init.sh` en verde (raíz 2319 passed / 47 skipped). Informe `progress/impl_chore_arnes_1.10.1.md`. F-054 la recogió al unirse a `dev` y F-069 al rebasarse sobre `dev` (2026-11-18). Pendiente del humano: `git -C …/porcentajes push origin dev`.
 
@@ -69,16 +69,16 @@ tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
 `init.sh`). **Siguiente:** desplegar F-054 y F-069; después
 F-066 (la regla «baja sin carga» en una sola función, petición del humano).
 
-## F-069 · CERRADA (2026-11-20), pendiente de desplegar
+## F-069 · CERRADA (2026-11-20) y DESPLEGADA (2026-11-21)
 
 - Resumen completo en `progress/history.md`; MANUAL T16 en `progress/manual_F-069.md`; reviews en `progress/review_F-069.md`.
-- **T17 al desplegar** (líder, tras el despliegue que lanza el humano): orden **transfer → api → front**. Después, `azure-apps/dedicacion.md` al día desde `docs/INTEGRACION.md` §5 y §7 (tabla `importe_vinculado` y columnas nuevas, `PUT …/periodos/{a}/{m}/trabajadores/{ide}/importes` con `revisado`, claves nuevas del contrato del transfer, `tex` sin marca en `existentes`, `tex_nuevo`/`tex_actualizadas` y el `UPDATE` de `tex` de D20, lectura de F-054 ampliada a las `porcentajes:vin:`), commit aparte en `azure-apps` con `git pull --rebase` antes; aviso a `partes` (el transfer cambia el `tex` de sus líneas ya registradas) y apunte para F-071 (design §10).
+- **T17 HECHA el 2026-11-21**: el humano desplegó transfer → api → front y el líder dejó `azure-apps/dedicacion.md` al día (`0e33de3`, cabecera, §1, §5 y §7, con F-054), el aviso a `partes` en «⚠ Lo que espera al humano» y el apunte en la descripción de F-071 (`features.json`). Lo que pedía: `azure-apps/dedicacion.md` al día desde `docs/INTEGRACION.md` §5 y §7 (tabla `importe_vinculado` y columnas nuevas, `PUT …/periodos/{a}/{m}/trabajadores/{ide}/importes` con `revisado`, claves nuevas del contrato del transfer, `tex` sin marca en `existentes`, `tex_nuevo`/`tex_actualizadas` y el `UPDATE` de `tex` de D20, lectura de F-054 ampliada a las `porcentajes:vin:`), commit aparte en `azure-apps` con `git pull --rebase` antes; aviso a `partes` (el transfer cambia el `tex` de sus líneas ya registradas) y apunte para F-071 (design §10).
 - Automejoras propuestas por los reviewers, a llevar al humano para `arnes-base`: contrastar «Pendiente del humano: desplegar…» con «Producción, hoy» (review 2); en RM7, un orden que solo dice el design se prueba igual (review 4); el paso destructivo de una MANUAL cita su salida real y su alcance (review 5).
 
-## F-054 · CERRADA (2026-11-18), pendiente de desplegar
+## F-054 · CERRADA (2026-11-18) y DESPLEGADA (2026-11-21)
 
 - Resumen completo en `progress/history.md`; MANUAL T10, T18 y T19 en `progress/manual_F-054.md`.
-- **T20 al desplegar** (líder, tras el despliegue que lanza el humano): orden **transfer → api → front**; refrescar `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` (commit aparte en `azure-apps`, con `pull --rebase` antes) y avisar a `partes` de que el transfer pone a 0 líneas `M*` y de vinculados de los partes compartidos, sin borrarlas. Texto exacto en `specs/F-054-sync-trae-porcentajes/tasks.md`, T20.
+- **T20 HECHA el 2026-11-21** (desplegada con F-069; `azure-apps` `0e33de3`, también el `partida_cod` de las líneas VAR; aviso a `partes` en «⚠ Lo que espera al humano»). Lo que pedía: orden **transfer → api → front**; refrescar `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` (commit aparte en `azure-apps`, con `pull --rebase` antes) y avisar a `partes` de que el transfer pone a 0 líneas `M*` y de vinculados de los partes compartidos, sin borrarlas. Texto exacto en `specs/F-054-sync-trae-porcentajes/tasks.md`, T20.
 - En la 0404 de pruebas quedan PT32/00001 (2032-01) con 415966-415967 sin marca, a 0, y los partes vacíos PT32/00002 y PT32/00003 (2032-03 y 2032-04); las tres `PRUEBA-PORC` de la T19 de F-054 (414543-414545) las borró el 2026-11-20 el `limpiar` de la T16 de F-069, que no se limita al mes. Quitar el resto (las dos sin marca y los partes vacíos) sigue siendo decisión del humano. En la BBDD local quedan los periodos 01, 03 y 04 de 2032.
 
 ## F-068 · CERRADA y DESPLEGADA (2026-10-28), MANUAL hecha
@@ -239,7 +239,8 @@ registra), **F-059** (% por días con el calendario de convenio) y **F-060**
 (leer la bandeja de `partes`). El arnés era entonces la 1.7.3 (hoy, la 1.10.1).
 ## Producción, hoy
 
-- **Desplegado el 2026-11-11 (lo último): hotfixes.** Api `r20261111-1915` (VP como vinculados y `/propuestas`) y front `r20261111-1916` (corte del proxy); transfer sin cambios, `r20261028-1914`. Lo que sigue (F-068, 2026-10-28) es el despliegue anterior: su api y su front ya no son los de hoy.
+- **Desplegado el 2026-11-21 (lo último): F-054 y F-069**, los tres servicios en orden, lanzado por el humano con `infra/d.local.ps1`: transfer `r20261121-1743` (`ca-dedicacion-transfer--r20261121174338`), api `r20261121-1745` (`ca-dedicacion-api--r20261121174510`) y front `r20261121-1749` (`ca-dedicacion-front--r20261121174904`); las tres `Healthy`, `RunningAtMaxScale` y con el 100 % del tráfico (comprobado por el líder, solo lectura). Código de `dev` `1d058c1` (`init.sh` en verde antes de desplegar). El transfer sigue en **modo real**: desde hoy pone a 0 las sobrantes que el usuario confirme (F-054) y cambia el `tex` de líneas ya registradas (F-069 D20). La api crea al arrancar `importe_vinculado` y las columnas nuevas. `infra/imagenes.json` al día en este commit (sus `digest` no los refresca el script: son los de antes). `azure-apps/dedicacion.md` al día (`0e33de3`). **Pendiente del humano:** Ctrl+F5 y mirarlo en producción.
+- **Desplegado el 2026-11-11: hotfixes.** Api `r20261111-1915` (VP como vinculados y `/propuestas`) y front `r20261111-1916` (corte del proxy); transfer sin cambios, `r20261028-1914`. Ya no es lo que corre: lo sustituye el del 2026-11-21.
 - **Desplegado el 2026-10-28: F-068**, los tres servicios en orden, lanzado
   por el humano con `infra/d.local.ps1`: transfer `r20261028-1914`
   (`ca-dedicacion-transfer--r20261028191409`), api `r20261028-1918`
@@ -472,11 +473,12 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-20):** F-069 cerrada y unida a `dev`, pendiente de desplegar; F-054 cerrada el 2026-11-18 y pendiente de desplegar (T20);
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-21):** F-054 y F-069 desplegadas; T17 y T20 hechas;
 después, F-066.
 
 ## ⚠ Lo que espera al humano
 
+- **F-054 y F-069 (desplegadas el 2026-11-21): aviso a `partes`** (lo transmite el humano; aquí no se toca `partes`). Desde el 2026-11-21, en los partes de obra que compartimos: (1) **F-054**: dedicación **pone a 0** (`can` y `tot`, en su sitio, mismo `ide`, sin borrar) líneas `M*` y de recursos vinculados que no corresponden a ninguna obra de la plataforma, solo si el usuario lo confirma línea a línea, nunca en un parte cerrado ni en líneas con `synckey` `partes:…`; (2) **F-069**: escribe las horas de los vinculados de cantidad (`KM`, `CO`, `VI`) con `can` variable y el comentario del usuario en `tex`, y **cambia solo el `tex`** de sus líneas ya registradas (`porcentajes:…`) cuando el usuario cambia el comentario, si el parte sigue En registro (`UPDATE` con guarda, nunca `DELETE`). Su `azure-apps/partes.md` debería decirlo en «qué se rompe».
 - **F-063: MANUAL en el navegador (pendiente, nadie la ha ejecutado).** Solo
   mirar la pantalla y pulsar fichas: no escribe nada (vale en producción tras
   desplegar el front, o en local). Los tests la cubren en node; en un
