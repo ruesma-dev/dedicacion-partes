@@ -3200,3 +3200,9 @@ OK del humano al cierre el 2026-11-20 («despleguemos»).
 **Fuera / pendiente.**
 - T17, al desplegar: transfer → api → front; `azure-apps/dedicacion.md` desde `docs/INTEGRACION.md` §5 y §7; aviso a `partes` (el transfer cambia el `tex` de sus líneas ya registradas) y apunte para F-071.
 - El `limpiar` de la T16 borró toda la marca `PRUEBA-PORC` del hilo (no filtra por mes), también las tres de la T19 de F-054, sin la decisión del humano; dicho en la PARADA 2. En la 0404 quedan PT32/00001 con dos líneas sin marca a 0 y los partes vacíos PT32/00002 y PT32/00003.
+
+## 2026-11-21 · F-054 y F-069 · Desplegadas
+
+- Lanzado por el humano con `infra/d.local.ps1`, en orden: transfer `r20261121-1743`, api `r20261121-1745` y front `r20261121-1749`, desde `dev` `1d058c1` (`init.sh` en verde antes). Las tres revisiones `Healthy`, `RunningAtMaxScale` y con el 100 % del tráfico (comprobado por el líder, solo lectura). El transfer sigue en modo real.
+- T17 de F-069 y T20 de F-054: `azure-apps/dedicacion.md` al día (`0e33de3`: cabecera, §1, §5 y §7); aviso a `partes` en `progress/current.md`, para que lo transmita el humano; apunte de F-069 en la descripción de F-071.
+- Pendiente del humano: mirarlo en producción tras Ctrl+F5; el aviso a `partes`; los push de `dev`, `arnes-base` y `azure-apps`.
