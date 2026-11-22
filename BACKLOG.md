@@ -27,7 +27,7 @@ _Ninguna feature con la spec lista._
 |---|---|---|---|---|
 | F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | 1 | critico | `feature/F-074-partida-sin-automatica` |
 | F-075 | Excel de exportación con la cabecera corporativa y el logo de Ruesma | 2 | estandar | `feature/F-075-excel-cabecera-logo` |
-| F-076 | Excel de exportación sin las líneas «resto de» ni los recursos que solo tienen «resto de» | 3 | estandar | `feature/F-076-excel-sin-resto-de` |
+| F-076 | Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …») | 3 | estandar | `feature/F-076-excel-sin-resto-de` |
 | F-071 | Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid | 4 | critico | `feature/F-071-trabajador-mes-parcial` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 5 | estandar | `feature/F-046-permiso-cerrar-periodo` |
 | F-077 | Km, viajes y gastos de obra en euros: un total por persona que se reparte por el % de cada obra | 6 | critico | `feature/F-077-importes-en-euros-por-persona` |
@@ -126,11 +126,11 @@ estado **to do (comprometida)** · prioridad 2 · rigor `estandar` · SDD no · 
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 3): «la cabecera excel con logo». El Excel de exportación (F-040, F-045) lleva una cabecera con el logo de Ruesma. Por decidir: qué logo y de dónde sale (fichero versionado en el repositorio, sin datos sensibles), qué más va en la cabecera (título, mes, empresa, fecha de generación) y en qué pestañas. Solo api (export a Excel).
 
-### F-076 · Excel de exportación sin las líneas «resto de» ni los recursos que solo tienen «resto de»
+### F-076 · Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …»)
 
 estado **to do (comprometida)** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-076-excel-sin-resto-de`
 
-Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». En el Excel de exportación no salen las líneas «resto de» ni los recursos cuyas únicas líneas son «resto de». Por aclarar con negocio antes de la spec: qué es exactamente «resto de» (el texto no lo genera la app: hay que localizar si es una obra, una partida o un concepto de Sigrid con ese nombre) y si se quitan solo del Excel o también del cuadrante. Solo api (export a Excel).
+Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». ACLARADO por el humano el mismo día: «en el excel en la pestaña de postventa las obras normales salen como resto, y viceversa. Con este nuevo enfoque, en postventa sale solo postventa, y en obra solo obra». Hoy (F-045 D6, `infrastructure/excel/contenido.py` y `exporter.py`) cada trabajador lleva al final de su grupo una línea agregada en cursiva con la suma de la otra parte: «RESTO POSTVENTA» en la pestaña Obras y «RESTO OBRAS» en la de Postventa; un trabajador que solo tiene la otra parte sale solo con esa línea. Lo que se pide: fuera esas líneas agregadas, y fuera de cada pestaña los trabajadores que no tienen nada de esa parte. La pestaña Detalle no cambia. Por decidir: qué pasa con «Total empleado», «Desviación» y «Estado» de cada pestaña (hoy cuentan la línea agregada, así que el total de un trabajador repartido entre obras y postventa daría menos del 100 % en cada una). Solo api (export a Excel); cambia la decisión D6 de F-045.
 
 ### F-071 · Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid
 
@@ -148,7 +148,7 @@ Pedida por el humano el 2026-10-07: «que cerrar y abrir solo sea posible en cie
 
 estado **to do (comprometida)** · prioridad 6 · rigor `critico` · SDD sí · rama `feature/F-077-importes-en-euros-por-persona`
 
-Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas).
+Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas). CONFIRMADO por el humano el 2026-11-22: «sí, cambia lo desplegado» (F-069 D2 queda sustituida).
 
 ### F-078 · Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes)
 
