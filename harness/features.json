@@ -767,7 +767,7 @@
     {
       "id": "F-046",
       "title": "Cerrar y reabrir el periodo solo para ciertos usuarios",
-      "description": "Pedida por el humano el 2026-10-07: «que cerrar y abrir solo sea posible en ciertos usuarios». Hoy cualquier usuario puede pulsar «Cerrar periodo» (deja el mes en solo lectura) y «Reabrir» (aviso amarillo). El permiso lo hace cumplir la api (el usuario llega del front por la cabecera de Easy Auth); el front solo oculta o desactiva los botones a quien no lo tiene, sin decidir nada. DECISIONES PARA LA SPEC: qué usuarios (lista en configuración de la api, por variable de entorno, sin secretos; o tabla en la base `dedicacion`); si cerrar y reabrir llevan el mismo permiso; qué ve quien no lo tiene; si se registra quién cerró y reabrió; cómo se configura en Azure al desplegar (azure-apps en el mismo trabajo).",
+      "description": "Pedida por el humano el 2026-10-07: «que cerrar y abrir solo sea posible en ciertos usuarios». Hoy cualquier usuario puede pulsar «Cerrar periodo» (deja el mes en solo lectura) y «Reabrir» (aviso amarillo). El permiso lo hace cumplir la api (el usuario llega del front por la cabecera de Easy Auth); el front solo oculta o desactiva los botones a quien no lo tiene, sin decidir nada. DECISIONES PARA LA SPEC: qué usuarios (lista en configuración de la api, por variable de entorno, sin secretos; o tabla en la base `dedicacion`); si cerrar y reabrir llevan el mismo permiso; qué ve quien no lo tiene; si se registra quién cerró y reabrió; cómo se configura en Azure al desplegar (azure-apps en el mismo trabajo). CONFIRMADA por negocio el 2026-11-22 (punto 6): «abrir y cerrar solo ciertos usuarios (Juan, Carmen y Miguel Ángel)». Los usuarios con permiso son esos tres; en la spec, sus cuentas de Entra (sin escribirlas en el repositorio si se consideran dato personal: por decidir dónde se configuran).",
       "acceptance": [
         "Spec aprobada por el humano con la lista de usuarios y dónde se configura",
         "La api rechaza cerrar y reabrir a un usuario sin permiso (403 con mensaje claro) y lo permite a los autorizados",
@@ -1172,7 +1172,7 @@
     {
       "id": "F-070",
       "title": "La cabecera del cuadrante se queda fija arriba al hacer scroll",
-      "description": "Petición del humano del 2026-11-03: «añade otra feature que sea que la cabecera se mantenga arriba al hacer scroll». Títulos y fila de filtros del cuadrante (`.filterable`, `renderCabeceraTabla`) visibles al bajar; mirar también las tablas de las ventanas (Sincronizar Sigrid, registro). Solo front.",
+      "description": "Petición del humano del 2026-11-03: «añade otra feature que sea que la cabecera se mantenga arriba al hacer scroll». Títulos y fila de filtros del cuadrante (`.filterable`, `renderCabeceraTabla`) visibles al bajar; mirar también las tablas de las ventanas (Sincronizar Sigrid, registro). Solo front. CONFIRMADA por negocio el 2026-11-22 (punto 11): «dejar fija la cabecera del portal al hacer scroll». La barra superior ya es fija; por aclarar si se refiere también al bloque del título y los botones (Copiar, Exportar, Sincronizar, Registrar…) además de los títulos y filtros de la tabla.",
       "acceptance": [
         "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
@@ -1185,7 +1185,7 @@
     {
       "id": "F-071",
       "title": "Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid",
-      "description": "Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso). AMPLIADA el mismo día con la solución que quiere el humano: «que se pueda poner baja del trabajador o alta en una fecha y que se calcule el % a escribir modificado por el % trabajado del mes». O sea, en el cuadrante se puede indicar una fecha de alta o de baja del trabajador en el mes, y lo que se escribe en Sigrid es el % de cada obra multiplicado por la fracción del mes trabajada. Por decidir en la spec: si la fecha se mete a mano, se propone desde Sigrid o ambas; si la fracción va por días naturales o laborables; si se ajusta el % (`can`) o el importe; y cómo cuadra con la regla del 100 % y con los vinculados. REDEFINIDA por el humano el 2026-11-10: «debe buscar el alta y baja del trabajador en sesame/cegid para calcular proporcionalmente cuanto ha estado en el mes si causa alta o baja de la empresa y llevar ese %. no el que se ponga en la app». Las fechas de alta y baja NO se meten a mano en el cuadrante: se leen de Sesame o de Cegid, y el % que se escribe en Sigrid es el del reparto multiplicado por la fracción del mes en alta. Por decidir en la spec: qué sistema manda si Sesame y Cegid no coinciden; cómo se accede (azure-apps/partes.md 5.3 bis para sesame-api; Cegid, por ver si hay acceso); días naturales o laborables; cómo se le enseña al usuario el ajuste antes de registrar; y cómo cuadra con la regla del 100 % y con los vinculados. Cruza la frontera del proyecto: leer `azure-apps/` antes de diseñar. Apunte de F-069 (design §10, 2026-11-21): no debe tocar la caja (`can` 1); en `VP`/`VIAJE` repartiría sobre el `can` ajustado.",
+      "description": "Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso). AMPLIADA el mismo día con la solución que quiere el humano: «que se pueda poner baja del trabajador o alta en una fecha y que se calcule el % a escribir modificado por el % trabajado del mes». O sea, en el cuadrante se puede indicar una fecha de alta o de baja del trabajador en el mes, y lo que se escribe en Sigrid es el % de cada obra multiplicado por la fracción del mes trabajada. Por decidir en la spec: si la fecha se mete a mano, se propone desde Sigrid o ambas; si la fracción va por días naturales o laborables; si se ajusta el % (`can`) o el importe; y cómo cuadra con la regla del 100 % y con los vinculados. REDEFINIDA por el humano el 2026-11-10: «debe buscar el alta y baja del trabajador en sesame/cegid para calcular proporcionalmente cuanto ha estado en el mes si causa alta o baja de la empresa y llevar ese %. no el que se ponga en la app». Las fechas de alta y baja NO se meten a mano en el cuadrante: se leen de Sesame o de Cegid, y el % que se escribe en Sigrid es el del reparto multiplicado por la fracción del mes en alta. Por decidir en la spec: qué sistema manda si Sesame y Cegid no coinciden; cómo se accede (azure-apps/partes.md 5.3 bis para sesame-api; Cegid, por ver si hay acceso); días naturales o laborables; cómo se le enseña al usuario el ajuste antes de registrar; y cómo cuadra con la regla del 100 % y con los vinculados. Cruza la frontera del proyecto: leer `azure-apps/` antes de diseñar. Apunte de F-069 (design §10, 2026-11-21): no debe tocar la caja (`can` 1); en `VP`/`VIAJE` repartiría sobre el `can` ajustado. AMPLIADA el 2026-11-22 (petición de negocio, punto 5): «coger de Sesame la fecha de alta y baja, y llevar el % de contratación × % de la obra». Además de la fracción del mes en alta, entra el **% de contratación** (jornada parcial): lo que se escribe es el % de la obra × el % de contratación (y × la fracción del mes, si hay alta o baja). Por decidir en la spec: de dónde sale el % de contratación (Sesame o Cegid) y si aplica también a los vinculados.",
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md` con rigor crítico."
       ],
@@ -1211,7 +1211,7 @@
     {
       "id": "F-073",
       "title": "Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube",
-      "description": "Petición del humano del 2026-11-10, tras registrar todo octubre de una vez: «añade una feature que guarde en descargas local y en cloud un excel con lo que se ha registrado si ha ido bien, y lo que no. etc.. para revisar». Al terminar un registro (por obra o el mes entero), un Excel con una fila por línea: trabajador o vinculado, obra, partida, %, importe, parte y línea de Sigrid, y resultado (escrita, editada, ya estaba, puesta a 0, omitida o fallida) con su motivo (sin partida, conflicto, sin importe mensual…). Se descarga en el navegador y se guarda una copia en la nube. Por decidir en la spec: qué es «la nube» (SharePoint u OneDrive de Ruesma, o un blob de Azure); quién lo genera (la api ya tiene el export a Excel); y qué pasa si el registro no termina. Contexto del 2026-11-10: el registro de octubre (56 obras) tardó unos 3,5 min en el servidor, pero el proxy del front cortó la espera antes (502 a los ~3,5 min) y el usuario no vio el resultado. Mirar en la spec si el registro debe ir en segundo plano, con progreso, para que el informe llegue aunque la petición corte.",
+      "description": "Petición del humano del 2026-11-10, tras registrar todo octubre de una vez: «añade una feature que guarde en descargas local y en cloud un excel con lo que se ha registrado si ha ido bien, y lo que no. etc.. para revisar». Al terminar un registro (por obra o el mes entero), un Excel con una fila por línea: trabajador o vinculado, obra, partida, %, importe, parte y línea de Sigrid, y resultado (escrita, editada, ya estaba, puesta a 0, omitida o fallida) con su motivo (sin partida, conflicto, sin importe mensual…). Se descarga en el navegador y se guarda una copia en la nube. Por decidir en la spec: qué es «la nube» (SharePoint u OneDrive de Ruesma, o un blob de Azure); quién lo genera (la api ya tiene el export a Excel); y qué pasa si el registro no termina. Contexto del 2026-11-10: el registro de octubre (56 obras) tardó unos 3,5 min en el servidor, pero el proxy del front cortó la espera antes (502 a los ~3,5 min) y el usuario no vio el resultado. Mirar en la spec si el registro debe ir en segundo plano, con progreso, para que el informe llegue aunque la petición corte. AMPLIADA el 2026-11-22 (petición de negocio, punto 9): «listado de incidencias al registrar en un Excel, que se pueda sacar del modal al registrar». El Excel se puede descargar desde el propio modal del registro (también del preflight, antes de escribir, con lo que se va a escribir y los avisos), no solo al terminar.",
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
@@ -1220,6 +1220,84 @@
       "rigor": "critico",
       "priority": 2,
       "branch": "feature/F-073-informe-registro-excel"
+    },
+    {
+      "id": "F-074",
+      "title": "La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 1): «solucionar que se quede en automática la imputación. O sale la que se va a encontrar después o sale que no encuentra y que se ponga, pero dejarlo para luego no tiene sentido». Hoy una subfila sin partida elegida ni propuesta enseña «automática (la propone el registro)» (`app.js`, F-050 R24-R25) y la partida se resuelve al registrar. Lo que se pide: que el cuadrante enseñe ya la partida que el registro va a usar o, si no la va a encontrar, que lo diga para que el usuario la elija antes. Por decidir en la spec: en qué casos queda hoy «automática» (titular y vinculados; tras F-055 la propuesta va en segundo plano), si se calcula con la misma regla que el registro para que no diverjan (el transfer es el que decide; nada de lógica en el front), cómo se enseña el «no la encuentra» y su coste en lecturas de Sigrid.",
+      "acceptance": [
+        "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 3,
+      "branch": "feature/F-074-partida-sin-automatica"
+    },
+    {
+      "id": "F-075",
+      "title": "Excel de exportación con la cabecera corporativa y el logo de Ruesma",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 3): «la cabecera excel con logo». El Excel de exportación (F-040, F-045) lleva una cabecera con el logo de Ruesma. Por decidir: qué logo y de dónde sale (fichero versionado en el repositorio, sin datos sensibles), qué más va en la cabecera (título, mes, empresa, fecha de generación) y en qué pestañas. Solo api (export a Excel).",
+      "acceptance": [
+        "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 3,
+      "branch": "feature/F-075-excel-cabecera-logo"
+    },
+    {
+      "id": "F-076",
+      "title": "Excel de exportación sin las líneas «resto de» ni los recursos que solo tienen «resto de»",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». En el Excel de exportación no salen las líneas «resto de» ni los recursos cuyas únicas líneas son «resto de». Por aclarar con negocio antes de la spec: qué es exactamente «resto de» (el texto no lo genera la app: hay que localizar si es una obra, una partida o un concepto de Sigrid con ese nombre) y si se quitan solo del Excel o también del cuadrante. Solo api (export a Excel).",
+      "acceptance": [
+        "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
+      ],
+      "status": "pending",
+      "sdd": false,
+      "rigor": "estandar",
+      "priority": 3,
+      "branch": "feature/F-076-excel-sin-resto-de"
+    },
+    {
+      "id": "F-077",
+      "title": "Km, viajes y gastos de obra en euros: un total por persona que se reparte por el % de cada obra",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas).",
+      "acceptance": [
+        "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 3,
+      "branch": "feature/F-077-importes-en-euros-por-persona"
+    },
+    {
+      "id": "F-078",
+      "title": "Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes)",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 8): «poder registrar solo por seleccionados o visibles (por paquetes)». Hoy se registra el mes entero, un trabajador o una obra. Se pide registrar un paquete: los seleccionados (selección múltiple de F-029) o los que quedan visibles con los filtros. Relacionado con el corte del proxy en registros grandes (hotfix del 2026-11-11, F-073): paquetes más pequeños terminan antes. Por decidir en la spec: si el preflight y el ejecutar del paquete se comportan como los del periodo (sobrantes de F-054 incluidas) o como los de un trabajador, cómo se enseña en el modal y cómo cuadra con la regla del 100 % y los avisos por obra.",
+      "acceptance": [
+        "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 3,
+      "branch": "feature/F-078-registrar-por-paquetes"
+    },
+    {
+      "id": "F-079",
+      "title": "En Sigrid, las líneas del parte se ven agrupadas por persona y no por concepto",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 10): «al registrar en Sigrid, el orden de visualización en Sigrid ver si es por entrada, para que se registre agrupado por persona, y no por item como ahora». Primero investigar (solo lectura): en qué orden enseña Sigrid las líneas de un parte (`hmores.pos`, `ide` u otro campo) y en qué orden las escribe hoy el transfer (titulares, vinculados, incidencias, en lotes). Después, si se puede, escribir de modo que cada trabajador quede junto con sus vinculados. Por decidir en la spec: qué pasa con las líneas ya escritas y con las de otros sistemas en el mismo parte (`partes`, Administración); nada de renumerar líneas ajenas sin decisión expresa. Solo transfer.",
+      "acceptance": [
+        "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
+      ],
+      "status": "pending",
+      "sdd": true,
+      "rigor": "critico",
+      "priority": 3,
+      "branch": "feature/F-079-orden-por-persona-en-sigrid"
     }
   ]
 }
