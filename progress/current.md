@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-054 y F-069 DESPLEGADAS el 2026-11-21** (lanzado por el humano: transfer `r20261121-1743`, api `r20261121-1745` y front `r20261121-1749`, las tres `Healthy` con el 100 % del tráfico; «Producción, hoy»). T17 de F-069 y T20 de F-054 hechas: `azure-apps/dedicacion.md` al día (`0e33de3`, pendiente de push del humano). **Pendiente del humano:** Ctrl+F5 y mirar en producción las casillas de km y caja y «Sincronizar Sigrid»; transmitir el aviso a `partes` («⚠ Lo que espera al humano»); decidir qué se hace con lo que queda de pruebas en la 0404 (sección «F-054»). Siguiente en el backlog: F-066.
+**F-054 y F-069 DESPLEGADAS el 2026-11-21** (lanzado por el humano: transfer `r20261121-1743`, api `r20261121-1745` y front `r20261121-1749`, las tres `Healthy` con el 100 % del tráfico; «Producción, hoy»). T17 de F-069 y T20 de F-054 hechas: `azure-apps/dedicacion.md` al día (`0e33de3`, pendiente de push del humano). **Pendiente del humano:** Ctrl+F5 y mirar en producción las casillas de km y caja y «Sincronizar Sigrid»; transmitir el aviso a `partes` («⚠ Lo que espera al humano»); decidir qué se hace con lo que queda de pruebas en la 0404 (sección «F-054»). **Backlog reordenado el 2026-11-22** (petición del humano): las diez peticiones de negocio del 2026-11-22 en `todo` y por delante, con prioridad 1-10 en el orden de su lista (F-074, F-075, F-076, F-071, F-046, F-077, F-078, F-073, F-079, F-070); el resto, `pending` desde la 11, en su orden de antes. Por aclarar con negocio antes de sus specs: el punto 2 (observaciones; sin alta, quizá cubierto por F-069), F-077 (cambia lo desplegado de F-069) y qué es «resto de» (F-076). Siguiente: F-074.
 
 **F-054 CERRADA (`done`) el 2026-11-18 y unida a `dev`** (OK del humano al cierre: «ok»). Review 11 APROBADA; MANUAL T19 hecha en modo pruebas (0404, 2032-01; `progress/manual_F-054.md`): sobrantes a 0 en su sitio, mismo `ide`/`pos`, sin `DELETE`, preflight mediana 10,43 s ≤ 11,89 s. Resumen en `progress/history.md`. **Desplegada el 2026-11-21** con F-069; T20 hecha (`azure-apps` `0e33de3`). **Pendiente del humano:** el aviso a `partes` y qué se hace con lo que queda de pruebas en la 0404 (sección «F-054», abajo). **Deuda de entorno:** SQLAlchemy con techo `<2.1` en la api (`990e264`).
 
@@ -66,8 +66,7 @@ las filas de una campaña manual sobre el SHA que declara la campaña, o sobre H
 original sigue igual) amplía ese mismo encargo `de161b4`: pendiente de añadirla allí, sin decisión nueva. Otras propuestas de arnés pendientes, en sus secciones:
 F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
 tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
-`init.sh`). **Siguiente:** desplegar F-054 y F-069; después
-F-066 (la regla «baja sin carga» en una sola función, petición del humano).
+`init.sh`). **Siguiente:** F-074 (ver la línea 4).
 
 ## F-069 · CERRADA (2026-11-20) y DESPLEGADA (2026-11-21)
 
@@ -474,7 +473,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-21):** F-054 y F-069 desplegadas; T17 y T20 hechas;
-después, F-066.
+después, F-074 (backlog reordenado el 2026-11-22).
 
 ## ⚠ Lo que espera al humano
 

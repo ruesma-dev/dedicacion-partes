@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **76 features**, 33 abiertas y 43 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 0 en To do, 33 en Backlog y 43 en Done.
+Resumen: **76 features**, 33 abiertas y 43 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 10 en To do, 23 en Backlog y 43 en Done.
 
 ## Review
 
@@ -23,45 +23,46 @@ _Ninguna feature con la spec lista._
 
 ## To do
 
-_Nada comprometido._
+| # | Feature | Prioridad | Rigor | Rama |
+|---|---|---|---|---|
+| F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | 1 | critico | `feature/F-074-partida-sin-automatica` |
+| F-075 | Excel de exportación con la cabecera corporativa y el logo de Ruesma | 2 | estandar | `feature/F-075-excel-cabecera-logo` |
+| F-076 | Excel de exportación sin las líneas «resto de» ni los recursos que solo tienen «resto de» | 3 | estandar | `feature/F-076-excel-sin-resto-de` |
+| F-071 | Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid | 4 | critico | `feature/F-071-trabajador-mes-parcial` |
+| F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 5 | estandar | `feature/F-046-permiso-cerrar-periodo` |
+| F-077 | Km, viajes y gastos de obra en euros: un total por persona que se reparte por el % de cada obra | 6 | critico | `feature/F-077-importes-en-euros-por-persona` |
+| F-078 | Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes) | 7 | critico | `feature/F-078-registrar-por-paquetes` |
+| F-073 | Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube | 8 | critico | `feature/F-073-informe-registro-excel` |
+| F-079 | En Sigrid, las líneas del parte se ven agrupadas por persona y no por concepto | 9 | critico | `feature/F-079-orden-por-persona-en-sigrid` |
+| F-070 | La cabecera del cuadrante se queda fija arriba al hacer scroll | 10 | estandar | `feature/F-070-cabecera-fija` |
 
 ## Backlog
 
 | # | Feature | Prioridad | Rigor | Rama |
 |---|---|---|---|---|
-| F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 2 | critico | `feature/F-058-porcentaje-cero-no-registra` |
-| F-071 | Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid | 2 | critico | `feature/F-071-trabajador-mes-parcial` |
-| F-073 | Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube | 2 | critico | `feature/F-073-informe-registro-excel` |
-| F-072 | Filtrar el cuadrante por los trabajadores que imputaron en una obra el mes anterior | 3 | estandar | `feature/F-072-filtro-imputados-mes-anterior` |
-| F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | 3 | critico | `feature/F-074-partida-sin-automatica` |
-| F-075 | Excel de exportación con la cabecera corporativa y el logo de Ruesma | 3 | estandar | `feature/F-075-excel-cabecera-logo` |
-| F-076 | Excel de exportación sin las líneas «resto de» ni los recursos que solo tienen «resto de» | 3 | estandar | `feature/F-076-excel-sin-resto-de` |
-| F-077 | Km, viajes y gastos de obra en euros: un total por persona que se reparte por el % de cada obra | 3 | critico | `feature/F-077-importes-en-euros-por-persona` |
-| F-078 | Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes) | 3 | critico | `feature/F-078-registrar-por-paquetes` |
-| F-079 | En Sigrid, las líneas del parte se ven agrupadas por persona y no por concepto | 3 | critico | `feature/F-079-orden-por-persona-en-sigrid` |
-| F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 4 | critico | `feature/F-059-porcentaje-por-dias` |
-| F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 4 | critico | `feature/F-060-bandeja-partes` |
-| F-070 | La cabecera del cuadrante se queda fija arriba al hacer scroll | 5 | estandar | `feature/F-070-cabecera-fija` |
-| F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 6 | critico | `feature/F-052-mensajeria-por-obra` |
-| F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 7 | critico | `feature/F-053-delegados-parte-unico` |
-| F-066 | Una sola función para la regla «baja sin carga» del front | 8 | estandar | `feature/F-066-baja-sin-carga-una-funcion` |
-| F-021 | Filtro por obra: velar las etiquetas de las demás obras del recurso | 9 | estandar | `feature/F-021-filtro-obra-chip-unico` |
-| F-048 | Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas») | 10 | estandar | `feature/F-048-aviso-obra-fallida` |
-| F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 11 | estandar | `feature/F-046-permiso-cerrar-periodo` |
-| F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 12 | estandar | `feature/F-038-pestana-analitica` |
-| F-028 | Borrar todo lo que está en pantalla | 13 | estandar | `feature/F-028-borrar-todo-filtrado` |
-| F-036 | Un recurso cerrado en bloque en Sigrid no cuenta en el mes de su cierre | 15 | critico | `feature/F-036-baja-efectiva-recurso` |
-| F-031 | MCP para que una IA haga el trabajo del usuario | 16 | critico | `feature/F-031-mcp-ia` |
-| F-033 | Deshacer una línea real mal escrita en Sigrid | 17 | critico | `feature/F-033-deshacer-linea-real` |
-| F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 18 | documental | `feature/F-017-prueba-administracion` |
-| F-018 | Pasar a escritura real cuando Administracion apruebe | 19 | critico | `feature/F-018-paso-a-escritura-real` |
-| F-019 | Excel de importacion en formato Carmen | 20 | estandar | `feature/F-019-excel-formato-carmen` |
-| F-005 | Alinear los literales internos con el nombre «dedicación» | 21 | estandar | `feature/F-005-nomenclatura-dedicacion` |
-| F-006 | Sanear la suite del transfer | 22 | estandar | `feature/F-006-sanear-suite-transfer` |
-| F-011 | Un solo codigo de hora mes por trabajador | 23 | estandar | `feature/F-011-codigo-hora-mes-unico` |
-| F-012 | El test de la epsilon compartida ata el transfer al monorepo | 24 | estandar | `feature/F-012-epsilon-compartida-entre-servicios` |
-| F-014 | Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14 | 25 | documental | `feature/F-014-cabos-sigrid-administracion` |
-| F-016 | Una function key de solo lectura para dedicacion-api | 26 | estandar | `feature/F-016-sigrid-key-solo-lectura` |
+| F-058 | Un porcentaje que redondea a cantidad 0 no se registra en Sigrid | 11 | critico | `feature/F-058-porcentaje-cero-no-registra` |
+| F-072 | Filtrar el cuadrante por los trabajadores que imputaron en una obra el mes anterior | 12 | estandar | `feature/F-072-filtro-imputados-mes-anterior` |
+| F-059 | El % de cada obra por días trabajados, con el calendario del convenio | 13 | critico | `feature/F-059-porcentaje-por-dias` |
+| F-060 | Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios) | 14 | critico | `feature/F-060-bandeja-partes` |
+| F-052 | Mensajería: una línea mensual de «consumos de mensajería» por obra en curso | 15 | critico | `feature/F-052-mensajeria-por-obra` |
+| F-053 | Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP | 16 | critico | `feature/F-053-delegados-parte-unico` |
+| F-066 | Una sola función para la regla «baja sin carga» del front | 17 | estandar | `feature/F-066-baja-sin-carga-una-funcion` |
+| F-021 | Filtro por obra: velar las etiquetas de las demás obras del recurso | 18 | estandar | `feature/F-021-filtro-obra-chip-unico` |
+| F-048 | Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas») | 19 | estandar | `feature/F-048-aviso-obra-fallida` |
+| F-038 | Cuadro de mando: el Excel navegable con filtros en una pestaña de la app | 20 | estandar | `feature/F-038-pestana-analitica` |
+| F-028 | Borrar todo lo que está en pantalla | 21 | estandar | `feature/F-028-borrar-todo-filtrado` |
+| F-036 | Un recurso cerrado en bloque en Sigrid no cuenta en el mes de su cierre | 22 | critico | `feature/F-036-baja-efectiva-recurso` |
+| F-031 | MCP para que una IA haga el trabajo del usuario | 23 | critico | `feature/F-031-mcp-ia` |
+| F-033 | Deshacer una línea real mal escrita en Sigrid | 24 | critico | `feature/F-033-deshacer-linea-real` |
+| F-017 | Probar con Administracion sobre la obra de pruebas 0404 | 25 | documental | `feature/F-017-prueba-administracion` |
+| F-018 | Pasar a escritura real cuando Administracion apruebe | 26 | critico | `feature/F-018-paso-a-escritura-real` |
+| F-019 | Excel de importacion en formato Carmen | 27 | estandar | `feature/F-019-excel-formato-carmen` |
+| F-005 | Alinear los literales internos con el nombre «dedicación» | 28 | estandar | `feature/F-005-nomenclatura-dedicacion` |
+| F-006 | Sanear la suite del transfer | 29 | estandar | `feature/F-006-sanear-suite-transfer` |
+| F-011 | Un solo codigo de hora mes por trabajador | 30 | estandar | `feature/F-011-codigo-hora-mes-unico` |
+| F-012 | El test de la epsilon compartida ata el transfer al monorepo | 31 | estandar | `feature/F-012-epsilon-compartida-entre-servicios` |
+| F-014 | Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14 | 32 | documental | `feature/F-014-cabos-sigrid-administracion` |
+| F-016 | Una function key de solo lectura para dedicacion-api | 33 | estandar | `feature/F-016-sigrid-key-solo-lectura` |
 
 ## Done
 
@@ -113,201 +114,201 @@ _Nada comprometido._
 
 ## Detalle
 
-### F-058 · Un porcentaje que redondea a cantidad 0 no se registra en Sigrid
-
-estado **pendiente** · prioridad 2 · rigor `critico` · SDD no · rama `feature/F-058-porcentaje-cero-no-registra`
-
-O4 de la review de F-051 (2026-10-21): un porcentaje menor de 0,00005 (en fracción) se redondea a `can` 0,0 en `reglas_porcentajes.py` (`can = round(porcentaje, 4)`) y sale una acción `escribir` con cantidad 0. Hueco anterior a F-051, pero con F-051 esa acción podría editar una línea al 0 % dejándola a 0 con nuestra `synckey` (o insertar una línea a 0). Decisión del humano el 2026-10-21 («ok o2 y o4»: feature aparte, como recomendó el líder): esas líneas NO se registran; salen como omitidas con un aviso legible en el preflight y en `ejecutar`. Servicio: transfer (la regla que construye la cantidad); el front solo enseña el aviso que ya pinta para las omitidas. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
-
-### F-071 · Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid
-
-estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-071-trabajador-mes-parcial`
-
-Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso). AMPLIADA el mismo día con la solución que quiere el humano: «que se pueda poner baja del trabajador o alta en una fecha y que se calcule el % a escribir modificado por el % trabajado del mes». O sea, en el cuadrante se puede indicar una fecha de alta o de baja del trabajador en el mes, y lo que se escribe en Sigrid es el % de cada obra multiplicado por la fracción del mes trabajada. Por decidir en la spec: si la fecha se mete a mano, se propone desde Sigrid o ambas; si la fracción va por días naturales o laborables; si se ajusta el % (`can`) o el importe; y cómo cuadra con la regla del 100 % y con los vinculados. REDEFINIDA por el humano el 2026-11-10: «debe buscar el alta y baja del trabajador en sesame/cegid para calcular proporcionalmente cuanto ha estado en el mes si causa alta o baja de la empresa y llevar ese %. no el que se ponga en la app». Las fechas de alta y baja NO se meten a mano en el cuadrante: se leen de Sesame o de Cegid, y el % que se escribe en Sigrid es el del reparto multiplicado por la fracción del mes en alta. Por decidir en la spec: qué sistema manda si Sesame y Cegid no coinciden; cómo se accede (azure-apps/partes.md 5.3 bis para sesame-api; Cegid, por ver si hay acceso); días naturales o laborables; cómo se le enseña al usuario el ajuste antes de registrar; y cómo cuadra con la regla del 100 % y con los vinculados. Cruza la frontera del proyecto: leer `azure-apps/` antes de diseñar. Apunte de F-069 (design §10, 2026-11-21): no debe tocar la caja (`can` 1); en `VP`/`VIAJE` repartiría sobre el `can` ajustado. AMPLIADA el 2026-11-22 (petición de negocio, punto 5): «coger de Sesame la fecha de alta y baja, y llevar el % de contratación × % de la obra». Además de la fracción del mes en alta, entra el **% de contratación** (jornada parcial): lo que se escribe es el % de la obra × el % de contratación (y × la fracción del mes, si hay alta o baja). Por decidir en la spec: de dónde sale el % de contratación (Sesame o Cegid) y si aplica también a los vinculados.
-
-### F-073 · Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube
-
-estado **pendiente** · prioridad 2 · rigor `critico` · SDD sí · rama `feature/F-073-informe-registro-excel`
-
-Petición del humano del 2026-11-10, tras registrar todo octubre de una vez: «añade una feature que guarde en descargas local y en cloud un excel con lo que se ha registrado si ha ido bien, y lo que no. etc.. para revisar». Al terminar un registro (por obra o el mes entero), un Excel con una fila por línea: trabajador o vinculado, obra, partida, %, importe, parte y línea de Sigrid, y resultado (escrita, editada, ya estaba, puesta a 0, omitida o fallida) con su motivo (sin partida, conflicto, sin importe mensual…). Se descarga en el navegador y se guarda una copia en la nube. Por decidir en la spec: qué es «la nube» (SharePoint u OneDrive de Ruesma, o un blob de Azure); quién lo genera (la api ya tiene el export a Excel); y qué pasa si el registro no termina. Contexto del 2026-11-10: el registro de octubre (56 obras) tardó unos 3,5 min en el servidor, pero el proxy del front cortó la espera antes (502 a los ~3,5 min) y el usuario no vio el resultado. Mirar en la spec si el registro debe ir en segundo plano, con progreso, para que el informe llegue aunque la petición corte. AMPLIADA el 2026-11-22 (petición de negocio, punto 9): «listado de incidencias al registrar en un Excel, que se pueda sacar del modal al registrar». El Excel se puede descargar desde el propio modal del registro (también del preflight, antes de escribir, con lo que se va a escribir y los avisos), no solo al terminar.
-
-### F-072 · Filtrar el cuadrante por los trabajadores que imputaron en una obra el mes anterior
-
-estado **pendiente** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-072-filtro-imputados-mes-anterior`
-
-Petición del humano del 2026-11-05: «filtrar por los que han imputado en la obra x del mes anterior». Un filtro del cuadrante que, dada una obra, deja solo a los trabajadores que tuvieron porcentaje en ella el mes anterior. Por decidir en la spec: si «imputado» es el cuadrante guardado del mes anterior en `dedicacion` o los partes de Sigrid de ese mes (lo que trae F-054); dónde se pide la obra; y cómo convive con los filtros de columna y con F-031 (velar las otras obras). La consulta la hace la api; el front solo filtra.
-
 ### F-074 · La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra
 
-estado **pendiente** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-074-partida-sin-automatica`
+estado **to do (comprometida)** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-074-partida-sin-automatica`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 1): «solucionar que se quede en automática la imputación. O sale la que se va a encontrar después o sale que no encuentra y que se ponga, pero dejarlo para luego no tiene sentido». Hoy una subfila sin partida elegida ni propuesta enseña «automática (la propone el registro)» (`app.js`, F-050 R24-R25) y la partida se resuelve al registrar. Lo que se pide: que el cuadrante enseñe ya la partida que el registro va a usar o, si no la va a encontrar, que lo diga para que el usuario la elija antes. Por decidir en la spec: en qué casos queda hoy «automática» (titular y vinculados; tras F-055 la propuesta va en segundo plano), si se calcula con la misma regla que el registro para que no diverjan (el transfer es el que decide; nada de lógica en el front), cómo se enseña el «no la encuentra» y su coste en lecturas de Sigrid.
 
 ### F-075 · Excel de exportación con la cabecera corporativa y el logo de Ruesma
 
-estado **pendiente** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-075-excel-cabecera-logo`
+estado **to do (comprometida)** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-075-excel-cabecera-logo`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 3): «la cabecera excel con logo». El Excel de exportación (F-040, F-045) lleva una cabecera con el logo de Ruesma. Por decidir: qué logo y de dónde sale (fichero versionado en el repositorio, sin datos sensibles), qué más va en la cabecera (título, mes, empresa, fecha de generación) y en qué pestañas. Solo api (export a Excel).
 
 ### F-076 · Excel de exportación sin las líneas «resto de» ni los recursos que solo tienen «resto de»
 
-estado **pendiente** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-076-excel-sin-resto-de`
+estado **to do (comprometida)** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-076-excel-sin-resto-de`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». En el Excel de exportación no salen las líneas «resto de» ni los recursos cuyas únicas líneas son «resto de». Por aclarar con negocio antes de la spec: qué es exactamente «resto de» (el texto no lo genera la app: hay que localizar si es una obra, una partida o un concepto de Sigrid con ese nombre) y si se quitan solo del Excel o también del cuadrante. Solo api (export a Excel).
 
+### F-071 · Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid
+
+estado **to do (comprometida)** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-071-trabajador-mes-parcial`
+
+Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso). AMPLIADA el mismo día con la solución que quiere el humano: «que se pueda poner baja del trabajador o alta en una fecha y que se calcule el % a escribir modificado por el % trabajado del mes». O sea, en el cuadrante se puede indicar una fecha de alta o de baja del trabajador en el mes, y lo que se escribe en Sigrid es el % de cada obra multiplicado por la fracción del mes trabajada. Por decidir en la spec: si la fecha se mete a mano, se propone desde Sigrid o ambas; si la fracción va por días naturales o laborables; si se ajusta el % (`can`) o el importe; y cómo cuadra con la regla del 100 % y con los vinculados. REDEFINIDA por el humano el 2026-11-10: «debe buscar el alta y baja del trabajador en sesame/cegid para calcular proporcionalmente cuanto ha estado en el mes si causa alta o baja de la empresa y llevar ese %. no el que se ponga en la app». Las fechas de alta y baja NO se meten a mano en el cuadrante: se leen de Sesame o de Cegid, y el % que se escribe en Sigrid es el del reparto multiplicado por la fracción del mes en alta. Por decidir en la spec: qué sistema manda si Sesame y Cegid no coinciden; cómo se accede (azure-apps/partes.md 5.3 bis para sesame-api; Cegid, por ver si hay acceso); días naturales o laborables; cómo se le enseña al usuario el ajuste antes de registrar; y cómo cuadra con la regla del 100 % y con los vinculados. Cruza la frontera del proyecto: leer `azure-apps/` antes de diseñar. Apunte de F-069 (design §10, 2026-11-21): no debe tocar la caja (`can` 1); en `VP`/`VIAJE` repartiría sobre el `can` ajustado. AMPLIADA el 2026-11-22 (petición de negocio, punto 5): «coger de Sesame la fecha de alta y baja, y llevar el % de contratación × % de la obra». Además de la fracción del mes en alta, entra el **% de contratación** (jornada parcial): lo que se escribe es el % de la obra × el % de contratación (y × la fracción del mes, si hay alta o baja). Por decidir en la spec: de dónde sale el % de contratación (Sesame o Cegid) y si aplica también a los vinculados.
+
+### F-046 · Cerrar y reabrir el periodo solo para ciertos usuarios
+
+estado **to do (comprometida)** · prioridad 5 · rigor `estandar` · SDD sí · rama `feature/F-046-permiso-cerrar-periodo`
+
+Pedida por el humano el 2026-10-07: «que cerrar y abrir solo sea posible en ciertos usuarios». Hoy cualquier usuario puede pulsar «Cerrar periodo» (deja el mes en solo lectura) y «Reabrir» (aviso amarillo). El permiso lo hace cumplir la api (el usuario llega del front por la cabecera de Easy Auth); el front solo oculta o desactiva los botones a quien no lo tiene, sin decidir nada. DECISIONES PARA LA SPEC: qué usuarios (lista en configuración de la api, por variable de entorno, sin secretos; o tabla en la base `dedicacion`); si cerrar y reabrir llevan el mismo permiso; qué ve quien no lo tiene; si se registra quién cerró y reabrió; cómo se configura en Azure al desplegar (azure-apps en el mismo trabajo). CONFIRMADA por negocio el 2026-11-22 (punto 6): «abrir y cerrar solo ciertos usuarios (Juan, Carmen y Miguel Ángel)». Los usuarios con permiso son esos tres; en la spec, sus cuentas de Entra (sin escribirlas en el repositorio si se consideran dato personal: por decidir dónde se configuran).
+
 ### F-077 · Km, viajes y gastos de obra en euros: un total por persona que se reparte por el % de cada obra
 
-estado **pendiente** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-077-importes-en-euros-por-persona`
+estado **to do (comprometida)** · prioridad 6 · rigor `critico` · SDD sí · rama `feature/F-077-importes-en-euros-por-persona`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas).
 
 ### F-078 · Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes)
 
-estado **pendiente** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-078-registrar-por-paquetes`
+estado **to do (comprometida)** · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-078-registrar-por-paquetes`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 8): «poder registrar solo por seleccionados o visibles (por paquetes)». Hoy se registra el mes entero, un trabajador o una obra. Se pide registrar un paquete: los seleccionados (selección múltiple de F-029) o los que quedan visibles con los filtros. Relacionado con el corte del proxy en registros grandes (hotfix del 2026-11-11, F-073): paquetes más pequeños terminan antes. Por decidir en la spec: si el preflight y el ejecutar del paquete se comportan como los del periodo (sobrantes de F-054 incluidas) o como los de un trabajador, cómo se enseña en el modal y cómo cuadra con la regla del 100 % y los avisos por obra.
 
+### F-073 · Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube
+
+estado **to do (comprometida)** · prioridad 8 · rigor `critico` · SDD sí · rama `feature/F-073-informe-registro-excel`
+
+Petición del humano del 2026-11-10, tras registrar todo octubre de una vez: «añade una feature que guarde en descargas local y en cloud un excel con lo que se ha registrado si ha ido bien, y lo que no. etc.. para revisar». Al terminar un registro (por obra o el mes entero), un Excel con una fila por línea: trabajador o vinculado, obra, partida, %, importe, parte y línea de Sigrid, y resultado (escrita, editada, ya estaba, puesta a 0, omitida o fallida) con su motivo (sin partida, conflicto, sin importe mensual…). Se descarga en el navegador y se guarda una copia en la nube. Por decidir en la spec: qué es «la nube» (SharePoint u OneDrive de Ruesma, o un blob de Azure); quién lo genera (la api ya tiene el export a Excel); y qué pasa si el registro no termina. Contexto del 2026-11-10: el registro de octubre (56 obras) tardó unos 3,5 min en el servidor, pero el proxy del front cortó la espera antes (502 a los ~3,5 min) y el usuario no vio el resultado. Mirar en la spec si el registro debe ir en segundo plano, con progreso, para que el informe llegue aunque la petición corte. AMPLIADA el 2026-11-22 (petición de negocio, punto 9): «listado de incidencias al registrar en un Excel, que se pueda sacar del modal al registrar». El Excel se puede descargar desde el propio modal del registro (también del preflight, antes de escribir, con lo que se va a escribir y los avisos), no solo al terminar.
+
 ### F-079 · En Sigrid, las líneas del parte se ven agrupadas por persona y no por concepto
 
-estado **pendiente** · prioridad 3 · rigor `critico` · SDD sí · rama `feature/F-079-orden-por-persona-en-sigrid`
+estado **to do (comprometida)** · prioridad 9 · rigor `critico` · SDD sí · rama `feature/F-079-orden-por-persona-en-sigrid`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 10): «al registrar en Sigrid, el orden de visualización en Sigrid ver si es por entrada, para que se registre agrupado por persona, y no por item como ahora». Primero investigar (solo lectura): en qué orden enseña Sigrid las líneas de un parte (`hmores.pos`, `ide` u otro campo) y en qué orden las escribe hoy el transfer (titulares, vinculados, incidencias, en lotes). Después, si se puede, escribir de modo que cada trabajador quede junto con sus vinculados. Por decidir en la spec: qué pasa con las líneas ya escritas y con las de otros sistemas en el mismo parte (`partes`, Administración); nada de renumerar líneas ajenas sin decisión expresa. Solo transfer.
 
+### F-070 · La cabecera del cuadrante se queda fija arriba al hacer scroll
+
+estado **to do (comprometida)** · prioridad 10 · rigor `estandar` · SDD no · rama `feature/F-070-cabecera-fija`
+
+Petición del humano del 2026-11-03: «añade otra feature que sea que la cabecera se mantenga arriba al hacer scroll». Títulos y fila de filtros del cuadrante (`.filterable`, `renderCabeceraTabla`) visibles al bajar; mirar también las tablas de las ventanas (Sincronizar Sigrid, registro). Solo front. CONFIRMADA por negocio el 2026-11-22 (punto 11): «dejar fija la cabecera del portal al hacer scroll». La barra superior ya es fija; por aclarar si se refiere también al bloque del título y los botones (Copiar, Exportar, Sincronizar, Registrar…) además de los títulos y filtros de la tabla.
+
+### F-058 · Un porcentaje que redondea a cantidad 0 no se registra en Sigrid
+
+estado **pendiente** · prioridad 11 · rigor `critico` · SDD no · rama `feature/F-058-porcentaje-cero-no-registra`
+
+O4 de la review de F-051 (2026-10-21): un porcentaje menor de 0,00005 (en fracción) se redondea a `can` 0,0 en `reglas_porcentajes.py` (`can = round(porcentaje, 4)`) y sale una acción `escribir` con cantidad 0. Hueco anterior a F-051, pero con F-051 esa acción podría editar una línea al 0 % dejándola a 0 con nuestra `synckey` (o insertar una línea a 0). Decisión del humano el 2026-10-21 («ok o2 y o4»: feature aparte, como recomendó el líder): esas líneas NO se registran; salen como omitidas con un aviso legible en el preflight y en `ejecutar`. Servicio: transfer (la regla que construye la cantidad); el front solo enseña el aviso que ya pinta para las omitidas. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
+
+### F-072 · Filtrar el cuadrante por los trabajadores que imputaron en una obra el mes anterior
+
+estado **pendiente** · prioridad 12 · rigor `estandar` · SDD sí · rama `feature/F-072-filtro-imputados-mes-anterior`
+
+Petición del humano del 2026-11-05: «filtrar por los que han imputado en la obra x del mes anterior». Un filtro del cuadrante que, dada una obra, deja solo a los trabajadores que tuvieron porcentaje en ella el mes anterior. Por decidir en la spec: si «imputado» es el cuadrante guardado del mes anterior en `dedicacion` o los partes de Sigrid de ese mes (lo que trae F-054); dónde se pide la obra; y cómo convive con los filtros de columna y con F-031 (velar las otras obras). La consulta la hace la api; el front solo filtra.
+
 ### F-059 · El % de cada obra por días trabajados, con el calendario del convenio
 
-estado **pendiente** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-059-porcentaje-por-dias`
+estado **pendiente** · prioridad 13 · rigor `critico` · SDD sí · rama `feature/F-059-porcentaje-por-dias`
 
 Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21: «da de alta las features que quedaron fuera»). Hoy el % de cada obra es libre y las incidencias de F-030 (V, B, AT, FJ, F, H, M) no restan nada: no cuentan para el 100 % (F-030 D4 = A). Esta feature calcula o propone el % según los días que la persona trabajó de verdad en el mes, descontando sus incidencias y con el calendario laboral de su convenio (festivos, jornada). Abre decisiones para la spec: de dónde sale el calendario de convenio (Sigrid u otra fuente), si el % se propone o se impone, cómo convive con la regla del 100 % y con lo ya registrado. Servicios: probablemente api (cálculo) y front (solo pintar); la regla del 100 % vive en `domain/`. Si cambia el contrato, `docs/INTEGRACION.md` y `azure-apps/dedicacion.md`.
 
 ### F-060 · Leer la bandeja de `partes` (incidencias de mensuales que llegan de los partes diarios)
 
-estado **pendiente** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-060-bandeja-partes`
+estado **pendiente** · prioridad 14 · rigor `critico` · SDD sí · rama `feature/F-060-bandeja-partes`
 
 Sale de F-030 (D10, fuera de su alcance; alta pedida por el humano el 2026-10-21). Si `partes` enciende su interruptor `MENSUALES_A_DEDICACION` (su F-019), las incidencias de los trabajadores mensuales que se apuntan en sus partes diarios dejan de ir a Sigrid y se quedan en `dedicacion_bandeja`. Esta feature es el espejo: dedicación lee esa bandeja y las convierte en incidencias de F-030 en el cuadrante (sin duplicar las que ya estén, R27 de F-030), para que se registren por la vía de F-030. **Mientras no exista, `MENSUALES_A_DEDICACION` de `partes` debe seguir apagado.** Cruza la frontera del proyecto: leer antes `azure-apps/partes.md` y el contrato de la bandeja; el documento de `partes` lo mantiene `partes`. Servicio previsto: api (lectura de la bandeja y alta de incidencias); el front solo pinta.
 
-### F-070 · La cabecera del cuadrante se queda fija arriba al hacer scroll
-
-estado **pendiente** · prioridad 5 · rigor `estandar` · SDD no · rama `feature/F-070-cabecera-fija`
-
-Petición del humano del 2026-11-03: «añade otra feature que sea que la cabecera se mantenga arriba al hacer scroll». Títulos y fila de filtros del cuadrante (`.filterable`, `renderCabeceraTabla`) visibles al bajar; mirar también las tablas de las ventanas (Sincronizar Sigrid, registro). Solo front. CONFIRMADA por negocio el 2026-11-22 (punto 11): «dejar fija la cabecera del portal al hacer scroll». La barra superior ya es fija; por aclarar si se refiere también al bloque del título y los botones (Copiar, Exportar, Sincronizar, Registrar…) además de los títulos y filtros de la tabla.
-
 ### F-052 · Mensajería: una línea mensual de «consumos de mensajería» por obra en curso
 
-estado **pendiente** · prioridad 6 · rigor `critico` · SDD sí · rama `feature/F-052-mensajeria-por-obra`
+estado **pendiente** · prioridad 15 · rigor `critico` · SDD sí · rama `feature/F-052-mensajeria-por-obra`
 
 Pedida por el humano el 2026-10-08 («lee el último correo de Juan sobre los recursos y porcentajes, donde explica mensajería y delegados; inclúyelo como feature»). Hilo «RE: Porcentajes Septiembre 2026» de Juan Romero (Dir. Admón y Control de Costes), 2026-10-08 (original no versionado; leído por el líder a petición del humano). Juan: «en todas las obras en curso metemos una línea de “consumos de mensajería” todos los meses. Lo podemos incorporar» y «Mensajería: una línea mensual por obra. Además, tienes que tomar en consideración la “fecha fin” que figure en SIGRID. Ya veremos luego si hay que pulir el criterio». No es un reparto por porcentaje de un trabajador: es una línea por obra y mes. PRIMERO EXPLORAR (solo lectura en Sigrid): qué recurso es «consumos de mensajería», con qué hora, cantidad/importe y partida se mete hoy en los partes reales, qué es «obra en curso» (estado) y qué «fecha fin» de Sigrid manda (de la obra: no se genera la línea en meses posteriores a su fin). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa. DECISIONES PARA LA SPEC (con Juan): importe o cantidad, partida y cuenta, si sale en el cuadrante o va sola al registrar, idempotencia (synckey por obra y mes), qué pasa con las obras cerradas a mitad de mes. Juan quiere el volcado completo de octubre desde la app.
 
 ### F-053 · Delegados: su reparto se registra en un parte único, cada línea a su obra e imputada al CP
 
-estado **pendiente** · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-053-delegados-parte-unico`
+estado **pendiente** · prioridad 16 · rigor `critico` · SDD sí · rama `feature/F-053-delegados-parte-unico`
 
 Pedida por el humano el 2026-10-08 (mismo encargo que F-052). Hilo «RE: Porcentajes Septiembre 2026» de Juan Romero (Dir. Admón y Control de Costes), 2026-10-08 (original no versionado; leído por el líder a petición del humano). Juan: «Delegados: son dos y tienen un tratamiento especial, a ver cómo lo enfocas» y «El parte es único y existe. Este parte es solo informativo del reparto, ya que este coste se está asumiendo en CP (luego te lo explico). La cuestión es que las líneas van registradas sobre ese parte y cada línea tiene que apuntar a la obra e imputarse al CP». Hoy el transfer escribe cada obra en el parte de ESA obra (F-037); para los delegados las líneas irían a UN parte ya existente, apuntando cada una a su obra y con la imputación al CP (proporcionales, árbol analítico de F-037). Hipótesis del líder, A CONFIRMAR: en el mismo hilo Miguel Ángel Gómez avisa de que «los de Eduardo Bernal y Mario Vicente no hay que meterlos. Lo hace Mario Redondo»: podrían ser los dos delegados. PRIMERO EXPLORAR (solo lectura en Sigrid): cuál es ese parte único, cómo son hoy sus líneas (obra, partida, cuenta CP, hora, cantidad) y cómo se identifica a un delegado (marca en el recurso, lista en configuración). Escribe en Sigrid (solo el transfer): rigor crítico, modo pruebas y autorización expresa; coordinar con `partes` (mismo parte). Juan lo explicará: la spec no se cierra sin él.
 
 ### F-066 · Una sola función para la regla «baja sin carga» del front
 
-estado **pendiente** · prioridad 8 · rigor `estandar` · SDD no · rama `feature/F-066-baja-sin-carga-una-funcion`
+estado **pendiente** · prioridad 17 · rigor `estandar` · SDD no · rama `feature/F-066-baja-sin-carga-una-funcion`
 
 Petición del humano del 2026-10-27 («da de alta la feature de mejora de código. será la siguiente después de f54»), a partir de la O4 de la review 1 de F-063 (`progress/review_F-063.md`): la regla «un trabajador de baja sin carga no se enseña ni cuenta» (`!t.activo && !t.lineas.length`) está repetida en tres sitios de `app.js` (`trabajadoresVisibles`, `renderTabla` y `tiposIncidenciaDelMes`). Hoy coinciden; si uno cambia y los otros no, el número de una ficha dejaría de cuadrar con lo que se ve al pulsarla. Mejora de código sin cambio de comportamiento: una función pura con nombre (p. ej. `ocultoPorBaja(t)`) usada en los tres sitios. Solo front (`app.js` y sus tests). Va DESPUÉS de F-054.
 
 ### F-021 · Filtro por obra: velar las etiquetas de las demás obras del recurso
 
-estado **pendiente** · prioridad 9 · rigor `estandar` · SDD sí · rama `feature/F-021-filtro-obra-chip-unico`
+estado **pendiente** · prioridad 18 · rigor `estandar` · SDD sí · rama `feature/F-021-filtro-obra-chip-unico`
 
 Pedida por el humano el 2026-09-03. En la tabla del cuadrante, la columna asignaciones pinta un chip por cada obra del trabajador (dedicacion-front/static/js/app.js, construirCelda ~530-545). El filtro 'Filtrar obra...' de esa columna (trabajadoresVisibles ~439) decide que FILAS se ven, pero cada fila sigue pintando TODOS sus chips: filtras por una obra y ves al trabajador con las otras cuatro al lado. Se pide que, con el filtro activo, cada fila muestre solo el chip que coincide. A DECIDIR EN LA SPEC: la columna total y el estado (OK/FALTA/EXCESO) seguirian refiriendose al 100 % de TODAS las obras, asi que la fila se contradice a simple vista; hay que decidir si se recalcula sobre lo filtrado -y entonces el estado deja de significar lo que significa- o si se avisa de que hay chips ocultos. Es presentacion pura: no toca dedicacion-api ni el transfer y no cambia nada de lo que se registra en Sigrid. AMPLIADA 2026-09-29 (revisión de negocio): el filtro por obra debe además SELECCIONAR los recursos asignados a esa obra en Sesame (el humano confirma que Sesame guarda la obra de cada persona). Eso deja de ser presentación pura: cruza la frontera del proyecto (sesame-api, ver azure-apps/partes.md 5.3 bis) y la consulta la hace la API, no el front. Pendiente en la spec: si sesame-api expone la obra asignada y si está desplegado; cómo se casa la persona (DNI) y la obra de Sesame con las de Sigrid. La selección que produce es la que usa F-029. REDEFINIDA por el humano el 2026-10-08: «que al filtrar por obra (al buscar) te vele las etiquetas de las obras que no son la filtrada cuando el recurso tiene más de 1 obra»: las otras obras se ven VELADAS (atenuadas), no ocultas, así que el total y el estado siguen cuadrando a la vista. Si llega antes F-050 (subfilas), se veladan las subfilas de las otras obras.
 
 ### F-048 · Al registrar, decir qué obra ha fallado y por qué (hoy solo «0 escritas»)
 
-estado **pendiente** · prioridad 10 · rigor `estandar` · SDD sí · rama `feature/F-048-aviso-obra-fallida`
+estado **pendiente** · prioridad 19 · rigor `estandar` · SDD sí · rama `feature/F-048-aviso-obra-fallida`
 
 Pedida por el humano el 2026-10-07 («2 ok»), a raíz de F-047: cuando una obra falla al registrar (p. ej. «sigrid-api devolvio una respuesta truncada»), las demás sí se escriben (cada obra es una petición aparte al transfer, `services/dedicacion-api/application/registro_sigrid.py`), pero el aviso final del front (`static/js/app.js`, tras ejecutar) solo da cuentas, en rojo si `!r.ok`, sin nombrar la obra ni el error; el humano lo leyó como «no me registra nada». La api ya devuelve por obra `ok` y `error`: el front solo tiene que enseñarlo (sin lógica de negocio). DECISIONES PARA LA SPEC: dónde se enseña (aviso, modal que no se cierra, lista por obra), si se ofrece reintentar solo las fallidas y cómo se distingue «escritas 0 porque ya estaba todo registrado» de «0 por error». RECOGIDO de la review de F-049 (O4, 2026-10-08): el aviso final de `registroEjecutar` (app.js) sigue diciendo «(repite y marca pisar)» para cualquier aviso sin confirmar, aunque sea «sin partida» o «sobrecarga»: que diga lo que corresponde a cada tipo. RECOGIDO de la review 3 de F-049 (O5, 2026-10-08): DOBLE REGISTRO CONCURRENTE. Mientras «Registrando…», cambiar una partida lanza el repreflight, que repinta el modal con «Registrar» activo; un segundo clic abre otro `ejecutar` en paralelo (ya era posible con Cancelar y reabrir). No hay cerrojo en api ni transfer y el synckey no cubre dos peticiones en vuelo. Propuesta del reviewer: ignorar repreflight y apertura mientras se ejecuta, o cerrojo por periodo en la api. RECOGIDO de la review 2 de F-050 (2026-10-10): el front reconoce la acción omitida por partida no válida (R20) por el TEXTO del motivo (`MOTIVO_PARTIDA_NO_HOJA`, blindado hoy por un test de contrato). Si otra omisión necesita su propio botón o aviso, mejor un campo estructurado en la acción (p. ej. `motivo_codigo`) publicado por el transfer.
 
-### F-046 · Cerrar y reabrir el periodo solo para ciertos usuarios
-
-estado **pendiente** · prioridad 11 · rigor `estandar` · SDD sí · rama `feature/F-046-permiso-cerrar-periodo`
-
-Pedida por el humano el 2026-10-07: «que cerrar y abrir solo sea posible en ciertos usuarios». Hoy cualquier usuario puede pulsar «Cerrar periodo» (deja el mes en solo lectura) y «Reabrir» (aviso amarillo). El permiso lo hace cumplir la api (el usuario llega del front por la cabecera de Easy Auth); el front solo oculta o desactiva los botones a quien no lo tiene, sin decidir nada. DECISIONES PARA LA SPEC: qué usuarios (lista en configuración de la api, por variable de entorno, sin secretos; o tabla en la base `dedicacion`); si cerrar y reabrir llevan el mismo permiso; qué ve quien no lo tiene; si se registra quién cerró y reabrió; cómo se configura en Azure al desplegar (azure-apps en el mismo trabajo). CONFIRMADA por negocio el 2026-11-22 (punto 6): «abrir y cerrar solo ciertos usuarios (Juan, Carmen y Miguel Ángel)». Los usuarios con permiso son esos tres; en la spec, sus cuentas de Entra (sin escribirlas en el repositorio si se consideran dato personal: por decidir dónde se configuran).
-
 ### F-038 · Cuadro de mando: el Excel navegable con filtros en una pestaña de la app
 
-estado **pendiente** · prioridad 12 · rigor `estandar` · SDD sí · rama `feature/F-038-pestana-analitica`
+estado **pendiente** · prioridad 20 · rigor `estandar` · SDD sí · rama `feature/F-038-pestana-analitica`
 
 Pedida por el humano el 2026-10-06, para ir inmediatamente después de mejorar el Excel (F-020). Una pestaña nueva en el front con cuadros y análisis de la dedicación: por obra, por trabajador, por empresa, por categoría y por mes, y su evolución. Qué cuadros, con qué cortes y si llevan coste (dedicación × importe mensual del recurso, P3) se decide en la spec con el humano. Los cálculos y agregados los hace la API (el front no lleva lógica de negocio); solo lectura de la base `dedicacion`, nada en Sigrid. Si incluye coste, cuidar quién lo ve. REDEFINIDA por el humano el 2026-10-06: «crear una pestaña que genere un cuadro de mando que sea el excel (que sea navegable con filtros, etc.)»; usa F-038 en vez de abrir otra feature, con prioridad 2, detrás de F-040 (el Excel del modelo de Juan, que define el contenido: Detalle y Resumen).
 
 ### F-028 · Borrar todo lo que está en pantalla
 
-estado **pendiente** · prioridad 13 · rigor `estandar` · SDD no · rama `feature/F-028-borrar-todo-filtrado`
+estado **pendiente** · prioridad 21 · rigor `estandar` · SDD no · rama `feature/F-028-borrar-todo-filtrado`
 
 Salida de la revisión de negocio del 2026-09-29. Botón «Borrar todo». Decisión del humano 2026-09-29: borra SOLO lo filtrado que aparece en pantalla en ese momento, no el mes entero. El borrado lo hace la API sobre la lista de trabajadores que le pasa el front. PLAN APROBADO por el humano el 2026-10-06 (PARADA 1) con la opción A: siempre todo lo visible, aunque haya selección de F-029. Plan: POST /periodos/{a}/{m}/borrar con lista de trabajadores y modo «solo calcular» para el diálogo; borra solo líneas no registradas y conserva las registradas; un evento deshacible por trabajador (F-027); periodo cerrado → rechazo entero; botón sin atajo, foco en Cancelar; prueba de usabilidad en local antes de desplegar. Se hace DESPUÉS de F-037 (decisión del humano).
 
 ### F-036 · Un recurso cerrado en bloque en Sigrid no cuenta en el mes de su cierre
 
-estado **pendiente** · prioridad 15 · rigor `critico` · SDD sí · rama `feature/F-036-baja-efectiva-recurso`
+estado **pendiente** · prioridad 22 · rigor `critico` · SDD sí · rama `feature/F-036-baja-efectiva-recurso`
 
 Detectado el 2026-10-05 (correo de Miguel Ángel Gómez, captura del cuadrante): recursos que salen en agosto y no en septiembre. Causa comprobada en Sigrid (solo lectura): el 2026-08-06 se cerraron en bloque 46 fichas de recurso (con.fecbaj = 20260806) de personas que dejaron la empresa en 2024 (18) y 2025 (28) según su última baja laboral (emphis.fecbaj); por la regla de F-026 (vigente en el mes de su baja) cuentan en agosto. Opción A elegida para la spec: si el recurso está de baja, su fecha de baja efectiva es la MÁS TEMPRANA entre la del recurso y la última baja laboral; un recurso activo no cambia aunque tenga una baja laboral antigua. DE MOMENTO SOLO SPEC (decisión del humano 2026-10-05): se aplica la opción B, que Administración corrija en Sigrid la fecha de baja de esas fichas.
 
 ### F-031 · MCP para que una IA haga el trabajo del usuario
 
-estado **pendiente** · prioridad 16 · rigor `critico` · SDD sí · rama `feature/F-031-mcp-ia`
+estado **pendiente** · prioridad 23 · rigor `critico` · SDD sí · rama `feature/F-031-mcp-ia`
 
 Salida de la revisión de negocio del 2026-09-29. Servidor MCP para que una IA responda sobre la información de la BBDD de la app y, sobre todo, pueda ESCRIBIR: hacer el trabajo del usuario en el cuadrante. Límites propuestos por el líder para la spec: escribe SIEMPRE a través de dedicacion-api con la identidad del usuario, nunca directo a PostgreSQL, para que valgan las mismas reglas (100 %, periodo abierto, deshacer propio de F-027); NO puede lanzar el registro en Sigrid, ese paso sigue siendo humano desde el front. A decidir: dónde vive (dentro de la API o servicio aparte), autenticación, y si toma como referencia mcp-bbdd (azure-apps/mcp_bbdd.md). Cambia lo que el proyecto expone: azure-apps/dedicacion.md se actualiza en el mismo trabajo. RECOGIDO de la review de F-024 (O1, 2026-10-01): guardar, deshacer y copiar trabajador NO comprueban que el trabajador sea visible en la empresa elegida; hoy no pasa nada porque el único cliente es el front, que no lo provoca. Un MCP que escriba es un segundo cliente: aquí hay que cerrar ese hueco en la API, no confiar en el cliente.
 
 ### F-033 · Deshacer una línea real mal escrita en Sigrid
 
-estado **pendiente** · prioridad 17 · rigor `critico` · SDD sí · rama `feature/F-033-deshacer-linea-real`
+estado **pendiente** · prioridad 24 · rigor `critico` · SDD sí · rama `feature/F-033-deshacer-linea-real`
 
 Detectado el 2026-10-01 al pasar el transfer desplegado a modo real (decisión del humano). Hoy la única vía para borrar lo que escribe el sistema es 'prueba_escritura_porcentajes.py limpiar --confirmar', que solo toca lo marcado PRUEBA-PORC en la obra de pruebas. Una línea REAL mal escrita (recurso de otra empresa, partida equivocada, importe incorrecto) no tiene vía de retirada desde el sistema: habría que borrarla a mano en Sigrid. Hace falta un camino controlado, por synckey 'porcentajes:{id}', que solo pueda borrar lo que escribió este sistema, con preflight, confirmación del humano y traza, y decidir quién puede usarlo.
 
 ### F-017 · Probar con Administracion sobre la obra de pruebas 0404
 
-estado **pendiente** · prioridad 18 · rigor `documental` · SDD no · rama `feature/F-017-prueba-administracion`
+estado **pendiente** · prioridad 25 · rigor `documental` · SDD no · rama `feature/F-017-prueba-administracion`
 
 Pedida por el humano el 2026-08-25. El sistema esta desplegado, en uso por 8 personas y escribiendo de verdad en Sigrid, pero TODO se desvia a la obra de pruebas 0404 marcada PRUEBA-PORC. Falta la validacion que nadie ha hecho todavia: que Administracion mire lo que el sistema escribe y diga si es correcto. No toca codigo; si sale un defecto se abre su propia feature en vez de parchearlo aqui. Es la puerta de entrada de F-018 (pasar a real): sin la firma de Administracion, F-018 no arranca.
 
 ### F-018 · Pasar a escritura real cuando Administracion apruebe
 
-estado **pendiente** · prioridad 19 · rigor `critico` · SDD sí · rama `feature/F-018-paso-a-escritura-real`
+estado **pendiente** · prioridad 26 · rigor `critico` · SDD sí · rama `feature/F-018-paso-a-escritura-real`
 
 Pedida por el humano el 2026-08-25, condicionada a F-017. Hoy OBRA_PRUEBAS_FORZAR=true desvia toda escritura a la obra 0404: las obras reales no reciben nada. Quitar ese modo es la accion de mas riesgo de todo el proyecto -escribe en el ERP de produccion, en la base ruesma, y de ahi salen importes- y por eso el repositorio la tiene prohibida sin autorizacion expresa del humano para esa accion concreta. El bloqueador de fondo no es la bandera sino lo que consta en docs/ARCHITECTURE.md: la imputacion a partidas EN PRODUCCION no esta validada. Esta feature cubre resolver eso, el cambio de modo, el primer registro real acotado y la documentacion que deja de ser cierta el dia que se haga. AÑADIDO 2026-09-29: también depende de F-022. El transfer resuelve la obra por código sin empresa y POSTV2 existe en las empresas 1 y 28; sin F-022 la primera escritura real podría caer en la ficha de Porsan. HECHO FUERA DE ESTA FEATURE, 2026-10-01: el humano ordenó expresamente desplegar en MODO REAL al republicar con F-022, F-023, F-024 y F-032 («despliega en real 100%»), tras escuchar los riesgos abiertos y rechazar la prueba acotada que proponía el líder. El transfer desplegado está con OBRA_PRUEBAS_FORZAR=false desde ese día. Siguen abiertos a sabiendas: F-017 (Administración no ha validado la imputación a partidas), F-026 (el recurso se elige sin mirar la empresa; caso conocido MO/0496 con ficha solo en la UTE 18) y F-011 (varios códigos M*). Lo que queda de esta feature: validar el primer registro real, la vía para deshacer una línea real mal escrita y la documentación que aún dependa del modo pruebas.
 
 ### F-019 · Excel de importacion en formato Carmen
 
-estado **pendiente** · prioridad 20 · rigor `estandar` · SDD sí · rama `feature/F-019-excel-formato-carmen`
+estado **pendiente** · prioridad 27 · rigor `estandar` · SDD sí · rama `feature/F-019-excel-formato-carmen`
 
 Pedida por el humano el 2026-09-03. Hoy la API exporta un unico Excel (services/dedicacion-api/infrastructure/excel/exporter.py: hojas Detalle y Resumen, declaradas compatibles con la plantilla v14), pensado para leerlo, no para que otro sistema lo importe. Hace falta poder generar ADEMAS un segundo Excel con otro formato, el que usa Carmen para la importacion adicion. PENDIENTE DE DATOS (la feature no arranca sin esto): el humano tiene que pasar el fichero de ejemplo del formato Carmen -se convierte con markitdown y se guarda en docs/referencia/, el original no se versiona- y explicar que es la importacion adicion y en que sistema entra ese Excel. Sin las dos cosas no hay criterio de aceptacion verificable y lo que se escriba sera una adivinanza.
 
 ### F-005 · Alinear los literales internos con el nombre «dedicación»
 
-estado **pendiente** · prioridad 21 · rigor `estandar` · SDD sí · rama `feature/F-005-nomenclatura-dedicacion`
+estado **pendiente** · prioridad 28 · rigor `estandar` · SDD sí · rama `feature/F-005-nomenclatura-dedicacion`
 
 El proyecto se llama de dos maneras y el humano decidió el 2026-08-19 el reparto: el nombre de dominio y de los servicios es «dedicación» (las carpetas ya son dedicacion-*), la carpeta del monorepo se queda como «porcentajes», y la synckey 'porcentajes:{id}' NO se toca, porque es un identificador funcional escrito en Sigrid y cambiarlo invalidaría la idempotencia de lo ya registrado. Queda alinear lo que aún dice otra cosa: service_name del transfer, sus README y los literales internos, y dejar las dos decisiones escritas donde se busquen.
 
 ### F-006 · Sanear la suite del transfer
 
-estado **pendiente** · prioridad 22 · rigor `estandar` · SDD no · rama `feature/F-006-sanear-suite-transfer`
+estado **pendiente** · prioridad 29 · rigor `estandar` · SDD no · rama `feature/F-006-sanear-suite-transfer`
 
 tests/test_pipeline_offline.py tiene un test que devuelve un objeto Preflight en vez de comprobarlo con assert: pytest lo avisa y ese test no verifica nada. Se revisa la suite entera con el mismo criterio.
 
 ### F-011 · Un solo codigo de hora mes por trabajador
 
-estado **pendiente** · prioridad 23 · rigor `estandar` · SDD no · rama `feature/F-011-codigo-hora-mes-unico`
+estado **pendiente** · prioridad 30 · rigor `estandar` · SDD no · rama `feature/F-011-codigo-hora-mes-unico`
 
 Detectado el 2026-08-19 al revisar el original porcentajes-transfer. Cuando un recurso tiene varios codigos de hora mensual (MENC, MJEFO...), reglas_porcentajes.py:105 elige el PRIMERO POR ORDEN ALFABETICO y de ahi sale el importe mensual (pre) que se escribe en Sigrid. Es una heuristica que nadie ha confirmado y que puede escribir un importe distinto del correcto. Decision del humano: de momento se deja el primero, y se abre esta feature para que la situacion no se de. Dos partes: que el sistema avise en el preflight cuando un recurso tenga mas de un codigo M* vigente (hoy solo lo escribe en el log, donde nadie lo ve), y llevar a Administracion la peticion de que en Sigrid un trabajador solo pueda tener un codigo de hora mes.
 
 ### F-012 · El test de la epsilon compartida ata el transfer al monorepo
 
-estado **pendiente** · prioridad 24 · rigor `estandar` · SDD no · rama `feature/F-012-epsilon-compartida-entre-servicios`
+estado **pendiente** · prioridad 31 · rigor `estandar` · SDD no · rama `feature/F-012-epsilon-compartida-entre-servicios`
 
 Detectado por la review de la Fase 2 de F-002 (observacion 9.4). El test test_f002_r26_la_tolerancia_es_la_del_cuadrante navega con Path(__file__).resolve().parents[3] hasta services/dedicacion-api/domain/estados.py para comprobar que la tolerancia del transfer (0.00005) sigue siendo el equivalente exacto del _EPSILON del cuadrante (0.005 en escala 0-100). La decision es la correcta y NO viola el limite de servicio: no importa codigo ni duplica logica, y sin ese test las dos epsilon se separarian sin que nadie se entere. Pero ata la suite del transfer a la disposicion del monorepo: si algun dia el servicio se extrae a su propio repositorio, el test se cae con un error de ruta en vez de con el mensaje de negocio que lleva escrito. Hay que decidir como se vigila esa invariante entre servicios sin depender de rutas relativas.
 
 ### F-014 · Cerrar los cabos de Sigrid y Administracion que quedaron de F-002 y T14
 
-estado **pendiente** · prioridad 25 · rigor `documental` · SDD no · rama `feature/F-014-cabos-sigrid-administracion`
+estado **pendiente** · prioridad 32 · rigor `documental` · SDD no · rama `feature/F-014-cabos-sigrid-administracion`
 
 Decision del humano el 2026-08-20: estas dos cosas dejan de bloquear F-002 y la fase 7 de F-008, y se agrupan aqui con prioridad baja. (1) LIMPIEZA EN SIGRID: quedo viva la fila de la primera escritura real del sistema, hmores.ide=403039, synckey 'porcentajes:77', marca PRUEBA-PORC, en el parte PT26/00296 (hmo.ide=2820419) de la obra de pruebas 0404, escrita el 2026-08-20. El humano queria verla en la pantalla del ERP antes de borrarla. Se borra con 'prueba_escritura_porcentajes.py limpiar --confirmar --ano 2026 --mes 7', que solo toca lo marcado PRUEBA-PORC; la cabecera del parte quedaria creada y vacia y hay que decidir si se borra tambien. OJO: cuando se pruebe el registro desde Azure se escribiran MAS lineas PRUEBA-PORC en la misma obra y mes, indistinguibles de esa, asi que conviene hacerlo antes o asumir que habra que distinguirlas por ide. (2) ADMINISTRACION: avisar de las cuatro partidas duplicadas sin cero inicial en el presupuesto de POSTV2 (656, 664, 680, 693, colgando de la raiz en vez de CD; tabla en progress/sigrid_F-002.md), y decidir si la procedencia de las reglas P4/P5 la firma el responsable del proyecto (como hoy) o pasa por Administracion. El test de procedencia no clava el interlocutor, asi que cambiar esa linea no rompe nada. ANADIDO al cerrar F-002 (review de cierre, seccion 5): la Regla B de capacidad del 100 % esta implementada y probada offline (35 tests, cobertura y mutacion), pero NUNCA se ha ejercitado contra Sigrid real, porque el preflight de julio no llego a dispararla: el parte de la obra destino no existia y por tanto no habia lineas M* previas con las que chocar. No es un defecto de F-002. Conviene que la primera vez que un parte real tenga lineas M* previas alguien mire ese preflight con atencion. ESTADO 2026-08-20: los dos puntos de Sigrid (limpieza y cabecera del parte) estan CERRADOS. Queda solo lo de Administracion: el aviso de las cuatro partidas duplicadas, quien firma la procedencia, y mirar el primer preflight real que tenga lineas M* previas para ver la Regla B ejercitada.
 
 ### F-016 · Una function key de solo lectura para dedicacion-api
 
-estado **pendiente** · prioridad 26 · rigor `estandar` · SDD no · rama `feature/F-016-sigrid-key-solo-lectura`
+estado **pendiente** · prioridad 33 · rigor `estandar` · SDD no · rama `feature/F-016-sigrid-key-solo-lectura`
 
 Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T30, T30 se movio a F-015 y F-015 solo se llevo la mitad del Portal. La review de cierre de F-008 la busco en las trece entradas del backlog y no aparecia en ninguna. El problema: la api y el transfer comparten HOY la misma function key de sigrid-api, y lo unico que impide que la api escriba en el ERP es que su codigo no tiene rutas de escritura, NO la credencial. Es decir, la separacion es por disciplina, no por permisos: cualquiera que anada por error una llamada de escritura a la api tendria credencial para ejecutarla. Hay que preguntar al dueno de sigrid-api si puede emitir una clave de SOLO LECTURA y, si puede, desplegarla en la api. Si no puede, hay que dejar escrito que la separacion depende del codigo y que eso es un riesgo aceptado a conciencia.
 
