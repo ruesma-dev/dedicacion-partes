@@ -93,7 +93,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 21,
+      "priority": 28,
       "branch": "feature/F-005-nomenclatura-dedicacion"
     },
     {
@@ -108,7 +108,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 22,
+      "priority": 29,
       "branch": "feature/F-006-sanear-suite-transfer"
     },
     {
@@ -157,7 +157,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 23,
+      "priority": 30,
       "branch": "feature/F-011-codigo-hora-mes-unico"
     },
     {
@@ -172,7 +172,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 24,
+      "priority": 31,
       "branch": "feature/F-012-epsilon-compartida-entre-servicios"
     },
     {
@@ -209,7 +209,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 25,
+      "priority": 32,
       "branch": "feature/F-014-cabos-sigrid-administracion"
     },
     {
@@ -243,7 +243,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 26,
+      "priority": 33,
       "branch": "feature/F-016-sigrid-key-solo-lectura"
     },
     {
@@ -262,7 +262,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "documental",
-      "priority": 18,
+      "priority": 25,
       "branch": "feature/F-017-prueba-administracion"
     },
     {
@@ -283,7 +283,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 19,
+      "priority": 26,
       "branch": "feature/F-018-paso-a-escritura-real"
     },
     {
@@ -301,7 +301,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 20,
+      "priority": 27,
       "branch": "feature/F-019-excel-formato-carmen"
     },
     {
@@ -320,7 +320,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 9,
+      "priority": 18,
       "branch": "feature/F-021-filtro-obra-chip-unico"
     },
     {
@@ -448,7 +448,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 13,
+      "priority": 21,
       "branch": "feature/F-028-borrar-todo-filtrado"
     },
     {
@@ -501,7 +501,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 16,
+      "priority": 23,
       "branch": "feature/F-031-mcp-ia"
     },
     {
@@ -538,7 +538,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 17,
+      "priority": 24,
       "branch": "feature/F-033-deshacer-linea-real"
     },
     {
@@ -596,7 +596,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 15,
+      "priority": 22,
       "branch": "feature/F-036-baja-efectiva-recurso"
     },
     {
@@ -634,7 +634,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 12,
+      "priority": 20,
       "branch": "feature/F-038-pestana-analitica"
     },
     {
@@ -775,10 +775,10 @@
         "Tests de la api con usuario autorizado y no autorizado; probado por el humano en local",
         "Veredicto APROBADO del reviewer contra CHECKPOINTS.md y bash harness/init.sh en verde"
       ],
-      "status": "pending",
+      "status": "todo",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 11,
+      "priority": 5,
       "branch": "feature/F-046-permiso-cerrar-periodo"
     },
     {
@@ -813,7 +813,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 10,
+      "priority": 19,
       "branch": "feature/F-048-aviso-obra-fallida"
     },
     {
@@ -888,7 +888,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 6,
+      "priority": 15,
       "branch": "feature/F-052-mensajeria-por-obra"
     },
     {
@@ -905,7 +905,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 7,
+      "priority": 16,
       "branch": "feature/F-053-delegados-parte-unico"
     },
     {
@@ -989,7 +989,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "critico",
-      "priority": 2,
+      "priority": 11,
       "branch": "feature/F-058-porcentaje-cero-no-registra"
     },
     {
@@ -1004,7 +1004,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 4,
+      "priority": 13,
       "branch": "feature/F-059-porcentaje-por-dias"
     },
     {
@@ -1020,7 +1020,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "critico",
-      "priority": 4,
+      "priority": 14,
       "branch": "feature/F-060-bandeja-partes"
     },
     {
@@ -1119,7 +1119,7 @@
       "status": "pending",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 8,
+      "priority": 17,
       "branch": "feature/F-066-baja-sin-carga-una-funcion"
     },
     {
@@ -1176,10 +1176,10 @@
       "acceptance": [
         "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "pending",
+      "status": "todo",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 5,
+      "priority": 10,
       "branch": "feature/F-070-cabecera-fija"
     },
     {
@@ -1189,10 +1189,10 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md` con rigor crítico."
       ],
-      "status": "pending",
+      "status": "todo",
       "sdd": true,
       "rigor": "critico",
-      "priority": 2,
+      "priority": 4,
       "branch": "feature/F-071-trabajador-mes-parcial"
     },
     {
@@ -1205,7 +1205,7 @@
       "status": "pending",
       "sdd": true,
       "rigor": "estandar",
-      "priority": 3,
+      "priority": 12,
       "branch": "feature/F-072-filtro-imputados-mes-anterior"
     },
     {
@@ -1215,10 +1215,10 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "pending",
+      "status": "todo",
       "sdd": true,
       "rigor": "critico",
-      "priority": 2,
+      "priority": 8,
       "branch": "feature/F-073-informe-registro-excel"
     },
     {
@@ -1228,10 +1228,10 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "pending",
+      "status": "todo",
       "sdd": true,
       "rigor": "critico",
-      "priority": 3,
+      "priority": 1,
       "branch": "feature/F-074-partida-sin-automatica"
     },
     {
@@ -1241,20 +1241,20 @@
       "acceptance": [
         "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "pending",
+      "status": "todo",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 3,
+      "priority": 2,
       "branch": "feature/F-075-excel-cabecera-logo"
     },
     {
       "id": "F-076",
-      "title": "Excel de exportación sin las líneas «resto de» ni los recursos que solo tienen «resto de»",
-      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». En el Excel de exportación no salen las líneas «resto de» ni los recursos cuyas únicas líneas son «resto de». Por aclarar con negocio antes de la spec: qué es exactamente «resto de» (el texto no lo genera la app: hay que localizar si es una obra, una partida o un concepto de Sigrid con ese nombre) y si se quitan solo del Excel o también del cuadrante. Solo api (export a Excel).",
+      "title": "Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …»)",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». ACLARADO por el humano el mismo día: «en el excel en la pestaña de postventa las obras normales salen como resto, y viceversa. Con este nuevo enfoque, en postventa sale solo postventa, y en obra solo obra». Hoy (F-045 D6, `infrastructure/excel/contenido.py` y `exporter.py`) cada trabajador lleva al final de su grupo una línea agregada en cursiva con la suma de la otra parte: «RESTO POSTVENTA» en la pestaña Obras y «RESTO OBRAS» en la de Postventa; un trabajador que solo tiene la otra parte sale solo con esa línea. Lo que se pide: fuera esas líneas agregadas, y fuera de cada pestaña los trabajadores que no tienen nada de esa parte. La pestaña Detalle no cambia. Por decidir: qué pasa con «Total empleado», «Desviación» y «Estado» de cada pestaña (hoy cuentan la línea agregada, así que el total de un trabajador repartido entre obras y postventa daría menos del 100 % en cada una). Solo api (export a Excel); cambia la decisión D6 de F-045.",
       "acceptance": [
         "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "pending",
+      "status": "todo",
       "sdd": false,
       "rigor": "estandar",
       "priority": 3,
@@ -1263,14 +1263,14 @@
     {
       "id": "F-077",
       "title": "Km, viajes y gastos de obra en euros: un total por persona que se reparte por el % de cada obra",
-      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas).",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas). CONFIRMADO por el humano el 2026-11-22: «sí, cambia lo desplegado» (F-069 D2 queda sustituida).",
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "pending",
+      "status": "todo",
       "sdd": true,
       "rigor": "critico",
-      "priority": 3,
+      "priority": 6,
       "branch": "feature/F-077-importes-en-euros-por-persona"
     },
     {
@@ -1280,10 +1280,10 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "pending",
+      "status": "todo",
       "sdd": true,
       "rigor": "critico",
-      "priority": 3,
+      "priority": 7,
       "branch": "feature/F-078-registrar-por-paquetes"
     },
     {
@@ -1293,10 +1293,10 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "pending",
+      "status": "todo",
       "sdd": true,
       "rigor": "critico",
-      "priority": 3,
+      "priority": 9,
       "branch": "feature/F-079-orden-por-persona-en-sigrid"
     }
   ]
