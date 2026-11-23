@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **76 features**, 33 abiertas y 43 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 10 en To do, 23 en Backlog y 43 en Done.
+Resumen: **76 features**, 33 abiertas y 43 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 1 en Spec aprobada, 9 en To do, 23 en Backlog y 43 en Done.
 
 ## Review
 
@@ -19,13 +19,14 @@ _Ninguna feature en implementación._
 
 ## Spec aprobada
 
-_Ninguna feature con la spec lista._
+| # | Feature | Spec aprobada | Prioridad | Rigor | Rama |
+|---|---|---|---|---|---|
+| F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | pendiente de tu aprobación | 1 | critico | `feature/F-074-partida-sin-automatica` |
 
 ## To do
 
 | # | Feature | Prioridad | Rigor | Rama |
 |---|---|---|---|---|
-| F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | 1 | critico | `feature/F-074-partida-sin-automatica` |
 | F-075 | Excel de exportación con la cabecera corporativa y el logo de Ruesma | 2 | estandar | `feature/F-075-excel-cabecera-logo` |
 | F-076 | Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …») | 3 | estandar | `feature/F-076-excel-sin-resto-de` |
 | F-071 | Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid | 4 | critico | `feature/F-071-trabajador-mes-parcial` |
@@ -116,7 +117,7 @@ _Ninguna feature con la spec lista._
 
 ### F-074 · La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra
 
-estado **to do (comprometida)** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-074-partida-sin-automatica`
+estado **spec lista** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-074-partida-sin-automatica`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 1): «solucionar que se quede en automática la imputación. O sale la que se va a encontrar después o sale que no encuentra y que se ponga, pero dejarlo para luego no tiene sentido». Hoy una subfila sin partida elegida ni propuesta enseña «automática (la propone el registro)» (`app.js`, F-050 R24-R25) y la partida se resuelve al registrar. Lo que se pide: que el cuadrante enseñe ya la partida que el registro va a usar o, si no la va a encontrar, que lo diga para que el usuario la elija antes. Por decidir en la spec: en qué casos queda hoy «automática» (titular y vinculados; tras F-055 la propuesta va en segundo plano), si se calcula con la misma regla que el registro para que no diverjan (el transfer es el que decide; nada de lógica en el front), cómo se enseña el «no la encuentra» y su coste en lecturas de Sigrid.
 

@@ -1,144 +1,136 @@
 <!-- specs/F-074-partida-sin-automatica/requirements.md -->
-# F-074 · La partida no se queda en «automática»
+# F-074 · La partida no se queda en «automática»: al registrar ya viene definida
 
-Rigor **`critico`**; toca **transfer** (una marca en el preflight), **api**
-(estados de la celda, postventa, memoria) y **front** (textos); design §1.
-Petición de negocio del 2026-11-22: «O sale la que se va a encontrar después
-o sale que no encuentra y que se ponga, pero dejarlo para luego no tiene
-sentido». Decisiones `[Dn]`: design §12, abiertas. Diagnóstico de los casos
-en que hoy queda «automática»: design §2.
+Rigor **`critico`**; transfer, api y front (design §1). Negocio, 2026-11-22:
+«O sale la que se va a encontrar después o sale que no encuentra y que se
+ponga, pero dejarlo para luego no tiene sentido». Humano, 2026-11-23: «d6 la
+b» y «cuando se le da a registrar ya no hay que casar partidas, ya vienen
+definidas». Decisiones `[Dn]`: design §12 (D6 decidida). Casos de hoy:
+design §2.
 
-Fuera de alcance: la regla de la propuesta (`#regla-partida`,
-`#regla-vinculado`, `#regla-p5`, `#regla-var` no cambian), la Regla C
-(`#regla-sin-partida`, sigue igual al registrar), el Excel, el orden y los
-triggers de la cola (F-055 R29-R33), un contador de líneas sin partida.
+**Enmienda** lo que hacía el preflight al registrar: F-050 R9, F-055 R3-R8 y
+R14, F-044 R15-R16 y F-068 R1-R16 (en el preflight), y el casado de
+`#regla-p5`. La **regla** de la propuesta no cambia: solo deja de correr al
+registrar. Fuera: la regla VAR, el Excel, los triggers de la cola (F-055
+R29-R33), un contador de líneas sin partida.
 
-Glosario (el de F-050 y F-055): **elegida**, **propuesta guardada**,
-**pendiente** (en la cola de F-055/F-057), **memoria «sin propuesta»** (F-055
-R32: la línea o subfila cuya petición devolvió propuesta nula o su obra
-`{ok: false}`), **no encontrada** = automática en esa memoria.
+Glosario: **definida** = la elegida, la fija VAR, la propuesta guardada o, en
+postventa, la de su obra; **memoria «sin propuesta»** = la de F-055 R32;
+**no encontrada** = sin definida y en esa memoria (o postventa fuera del
+universo).
 
-## 1. Qué enseña la celda Partida (front, pinta lo que manda la api)
+## 1. Al registrar, la partida ya viene definida (transfer)
 
-- **R1.** La celda Partida de una línea o de una subfila debe enseñar lo
-  primero que aplique: (1) la elegida; (2) la fija (VAR); (3) la propuesta
-  (guardada o, en postventa, la de su obra, R11-R12) en cursiva con su
-  método; (4) «buscando partida…» si la api la marca pendiente; (5) «no
-  encuentra partida» si la api la marca no encontrada; (6) «sin calcular»
-  con el periodo ABIERTO; (7) «—» con el periodo no ABIERTO. Ninguna celda
-  dice «automática». (capa: unit)
-- **R2.** `[D1][D6]` «no encuentra partida» se pinta como aviso (clase
-  `partida-sin`, color de aviso, sin cursiva) con el título «El registro no
-  encuentra partida: elige una»; con el periodo ABIERTO, el clic abre el
-  selector como cualquier celda (F-050 R25). (capa: unit)
-- **R3.** El front no decide el estado: lo toma de `propuesta_*`,
-  `propuesta_pendiente` y `propuesta_no_encontrada` de la api; solo
-  `periodoEstado` separa (6) de (7). (capa: unit)
-- **R4.** El filtro «Partida» y el buscador libre deben casar con el texto
-  que enseña la celda (también la propuesta y los textos de R1), línea a
-  línea y, si se ven (F-067), subfila a subfila. (capa: unit)
-- **R5.** `[D5]` La opción «automática (la propone el registro)» del
-  selector pasa a «sin elegir · usar la propuesta» si la respuesta del
-  selector trae propuesta y a «sin elegir · no encuentra partida» si no;
-  sigue borrando la elegida (F-050 R13). (capa: unit)
-
-## 2. Línea de obra normal (api)
-
-- **R6.** Una línea de obra normal sin elegida ni propuesta guardada que
-  está en la memoria «sin propuesta» debe publicar `propuesta_no_encontrada:
-  true` en el cuadrante, en la respuesta de cada escritura que hoy publica
-  `propuesta_pendiente` (F-057) y en `GET …/propuestas` (lista
-  `no_encontradas: [{trabajador_ide, obra_ide, es_postventa}]`). (capa: unit)
-- **R7.** La marca sale de la **misma** lectura de la cola que `pendientes`
-  y `en_curso` (F-057); una línea pendiente, con elegida o con propuesta no
-  la lleva. (capa: unit)
-- **R8.** Sin marca, la clave `propuesta_no_encontrada` no sale (la línea de
-  siempre), y `GET …/propuestas` no gana `no_encontradas` si está vacía.
+- **R1.** El preflight (suelto y en lote) no debe proponer ni casar: cada
+  línea usa su elegida (`paride`) o, sin ella, su propuesta guardada
+  (`propuesta_*`), también en postventa (la de su obra, método `postventa`,
+  R12); VAR, su fija (`#regla-var`, sin cambio). (capa: unit)
+- **R2.** Cada subfila usa su elegida; si su titular va a postventa, VAR o
+  partida no `CI*`, la del titular (F-044 R17, sin leer nada); si no, su
+  propuesta guardada de método propio (F-068 R16). (capa: unit)
+- **R3.** Toda partida definida se valida por `ide` en la lectura única de
+  hoy (`validar_partidas`, F-055 R3): hoja activa del presupuesto de la obra
+  de origen o, en postventa, de la obra de postventa, que se sigue
+  resolviendo por código como destino. (capa: unit)
+- **R4.** `[D4]` SI la partida definida no vale, ENTONCES la línea o subfila
+  se omite con un motivo que la nombra (como F-050 R20) y su acción lleva
+  `partida_no_valida` con su código; nunca se propone otra. (capa: unit)
+- **R5.** `[D7][D8]` SI una línea o subfila llega sin partida definida,
+  ENTONCES no se propone: la de obra normal y la subfila van al conflicto
+  «sin partida» de `#regla-sin-partida` (con la casilla de escribirla sin
+  partida solo si D8 = a); la de postventa se omite con motivo (`#regla-p5`).
   (capa: unit)
+- **R6.** El preflight no debe leer el presupuesto de la obra de origen ni el
+  de la obra de postventa, el historial del trabajador, el de los vinculados
+  ni las cuentas del presupuesto; `partidas_obra` y `partidas_postventa`
+  salen `[]`. El catálogo VAR, como hoy. (capa: unit)
+- **R7.** El resultado de cada obra en un lote sigue idéntico al de su
+  petición suelta (F-055 R21). (capa: unit)
 
-## 3. Subfilas de vinculados (api)
+## 2. La regla, solo en segundo plano (transfer)
 
-- **R9.** Una subfila sin elegida ni propuesta guardada debe publicar
-  `propuesta_pendiente: true` si está en la cola de subfilas y
-  `propuesta_no_encontrada: true` si está en su memoria «sin propuesta» (hoy
-  dice «automática» en los dos casos). `GET …/propuestas` gana
-  `subfilas_pendientes` y `subfilas_no_encontradas`
-  (`[{trabajador_ide, obra_ide, es_postventa, vinculado_ide}]`), solo con
-  alguna; las claves de la subfila, solo con valor (R8). (capa: unit)
-- **R10.** CUANDO la api borra la propuesta guardada de las subfilas de una
-  línea porque cambia la partida de su titular (`CambiarPartida` sin
-  `vinculado_ide`, F-044 R9), debe sacar esas subfilas de su memoria «sin
-  propuesta» **antes** de encolar, para que se recalculen con la partida
-  nueva del titular (hoy se quedan fuera hasta el próximo sync). (capa: unit)
+- **R8.** La regla (`proponer_partida`, `PasoVinculados.proponer`,
+  `casar_postventa`) solo debe correr en `partidas/propuesta(-lote)` y
+  `postventa/universo`, con el mismo orden y resultado de hoy. (capa: unit)
+- **R9.** `[D6]` `partidas/propuesta(-lote)` gana, por petición, `motivos:
+  {clave: texto}` de cada línea sin propuesta y `motivos_vinculados: {clave:
+  {recurso: texto}}` de cada subfila sin propuesta (titular sin partida,
+  `sin_ci`, `varias_ci`, `empate_nombre`), solo con alguno. (capa: unit)
+- **R10.** `[D6]` `postventa/universo` gana `motivos: {ide: texto}` de las
+  obras pedidas que no casan (el texto de `casar_postventa`). (capa: unit)
 
-## 4. Postventa (api)
+## 3. La api guarda, marca y manda la definida
 
-- **R11.** `[D2]` El sync debe guardar en cada obra la partida de postventa
-  con la que casa en el universo (`POST /api/postventa/universo`,
-  `obras[].partida`: `ide`, `cod`, `res`) y dejarla nula si la obra no está
-  en el universo; con **la misma** llamada de hoy, sin lecturas nuevas.
+- **R11.** `[D2]` El sync debe guardar en cada obra su partida de postventa
+  del universo (`ide`, `cod`, `res`) o, si no casa, nulas y su motivo (R10);
+  con la misma llamada de hoy. (capa: unit)
+- **R12.** Una línea de postventa sin elegida debe publicar como propuesta la
+  de su obra (método `postventa`) y mandarla al registro como `propuesta_*`.
+  SI la obra no casa, ENTONCES no encontrada con su motivo; SI aún no tiene
+  partida guardada (sync pendiente), ENTONCES ninguna marca. (capa: unit)
+- **R13.** Una línea de obra normal sin elegida ni propuesta guardada en la
+  memoria «sin propuesta» debe publicar `propuesta_no_encontrada: true` y
+  `propuesta_motivo` (el de R9 o el error de su obra `{ok: false}`) en el
+  cuadrante, en cada escritura que hoy publica `propuesta_pendiente` y en
+  `GET …/propuestas` (`no_encontradas`, con motivo). Misma lectura de la
+  cola que `pendientes`; las claves, solo con valor. (capa: unit)
+- **R14.** Una subfila sin elegida ni propuesta debe publicar
+  `propuesta_pendiente` si está en su cola y `propuesta_no_encontrada` con
+  `propuesta_motivo` si está en su memoria; `GET …/propuestas` gana
+  `subfilas_pendientes` y `subfilas_no_encontradas`, solo con alguna.
   (capa: unit)
-- **R12.** Una línea de postventa sin elegida debe publicar como propuesta
-  (`propuesta_cod`, `_res`, `propuesta_metodo: "postventa"`) la partida de
-  postventa de su obra. SI la obra no admite postventa, ENTONCES
-  `propuesta_no_encontrada: true`. SI la admite y aún no tiene partida
-  guardada (sync pendiente tras desplegar), ENTONCES ninguna marca («sin
-  calcular»). (capa: unit)
-- **R13.** Esa partida solo se enseña: no se guarda en `asignacion.propuesta_*`
-  ni viaja al registro; el preflight la vuelve a casar con `casar_postventa`
-  (`#regla-p5`), la función del universo. (capa: unit)
+- **R15.** CUANDO `CambiarPartida` borra la propuesta de las subfilas de una
+  línea (cambia la del titular, F-044 R9), la api debe sacarlas de su
+  memoria antes de encolar, para recalcularlas. (capa: unit)
+- **R16.** `[D4]` CUANDO el preflight devuelve `partida_no_valida` en una
+  línea o subfila que viajó con propuesta guardada, la api debe borrarla si
+  sigue sin elegida (sin evento), para que la cola la recalcule; la elegida
+  no se toca. Deja de guardar propuestas al volver del preflight (F-055
+  R14): ya no propone. (capa: unit)
 
-## 5. La propuesta que deja de valer antes de registrar
+## 4. Front (pinta lo que manda la api)
 
-- **R14.** CUANDO una línea o subfila llega al preflight con una propuesta
-  guardada de método propio que no vale (F-055 R6; F-068 R16), el transfer
-  debe publicar en su acción `propuesta_descartada` con el código de la
-  guardada (o `partida N` sin código); en el resto, nula. La partida de la
-  acción sigue la regla de hoy (nueva propuesta, o sin partida con su
-  conflicto de la Regla C). (capa: unit)
-- **R15.** `[D4]` El modal de registro debe enseñar, en la acción con
-  `propuesta_descartada`, «la del cuadrante (X) ya no vale» junto a la
-  partida que se escribiría. (capa: unit)
-- **R16.** CUANDO el preflight devuelve `propuesta_descartada` y la acción
-  no trae una propuesta nueva, la api debe borrar la propuesta guardada de
-  esa línea o subfila si sigue sin elegida (sin evento); con propuesta
-  nueva, la guarda como hoy (F-055 R14). (capa: unit)
-
-## 6. Coste y reintento
-
-- **R17.** F-074 no debe añadir lecturas a Sigrid: el cuadrante, la cola en
-  segundo plano, el sync y el preflight leen lo mismo que hoy (se cuentan
-  en los dobles del cliente), salvo el recálculo de las subfilas de R10.
+- **R17.** La celda Partida de una línea o subfila debe enseñar lo primero
+  que aplique: elegida; fija; propuesta en cursiva con su método; «buscando
+  partida…» (pendiente); «no encuentra partida» con su motivo (no
+  encontrada); «sin calcular» (periodo ABIERTO); «—». Nunca «automática».
   (capa: unit)
-- **R18.** `[D3]` Una no encontrada no se reintenta en segundo plano hasta
-  el próximo sync con éxito o un reinicio (F-055 R32, sin cambio), salvo
-  R10; al registrar, el preflight la vuelve a buscar (F-055 R7) y, si la
-  encuentra, se escribe y se guarda (F-055 R14). (capa: unit)
+- **R18.** `[D1]` «no encuentra partida» va como aviso (`partida-sin`, sin
+  cursiva), con el motivo en el título; abierto, el clic abre el selector
+  (F-050 R25). (capa: unit)
+- **R19.** El front no decide el estado: lo toma de las claves de la api;
+  solo `periodoEstado` separa «sin calcular» de «—». (capa: unit)
+- **R20.** El filtro «Partida» y el buscador libre casan con el texto de la
+  celda, línea a línea y subfila a subfila (F-067). (capa: unit)
+- **R21.** `[D5]` La opción «automática (la propone el registro)» pasa a
+  «sin elegir · usar la propuesta» o, sin propuesta, «sin elegir · no
+  encuentra partida»; sigue borrando la elegida. (capa: unit)
+- **R22.** El modal debe enseñar el selector (F-050 R29) también en la
+  omitida por R4, con el motivo del transfer. (capa: unit)
 
-## 7. Documentación
+## 5. Coste, documentación y criterio
 
-- **R19.** `docs/ARCHITECTURE.md#regla-partida` dice los estados de la celda
-  (R1), la postventa (R11-R13) y la propuesta descartada (R14-R16);
-  `docs/INTEGRACION.md` §5, los campos nuevos; el líder pone al día
-  `azure-apps/dedicacion.md` en el mismo trabajo (design §11).
+- **R23.** El preflight debe leer menos o lo mismo que hoy y nada de lo de
+  R6 (contado en los dobles: C1 y C2 de design §8); cuadrante, cola y sync,
+  lo mismo, salvo el recálculo de R15. (capa: unit)
+- **R24.** `ARCHITECTURE.md` (`#regla-partida`, `#regla-sin-partida`,
+  `#regla-p5`, `#regla-vinculado`) dice que el registro usa la definida; la
+  regla, solo en segundo plano. `INTEGRACION.md` §5: campos nuevos; el líder,
+  `azure-apps/dedicacion.md`.
 
-## 8. Tests anteriores que cambian: lista CERRADA
+## 6. Tests anteriores que cambian: lista CERRADA por criterio
 
-- Front (el texto «automática» y la rama de la celda): `test_f050_subfilas::
-  test_f050_r24_celda_elegida_fija_o_automatica` y `::test_f050_r28_filtro_
-  partida_casa_linea_a_linea` (`auto`); `test_f055_propuesta_celda::
-  test_f055_r27_html_de_la_celda` (caso `automatica`) y `::test_f055_r27_
-  construir_celda_usa_html_partida`; `test_f057_buscando_pendientes::test_
-  f057_r1_buscando_solo_si_la_linea_es_pendiente` (los tres `AUTOMATICA`);
-  `test_f067_ver_vinculados::test_f067_r3_partida_desmarcada_solo_las_lineas`
-  (`automatica`); `test_f050_selector_partida::test_f050_r26_sin_resultados_
-  y_opcion_automatica` (solo si cambia la línea del rótulo).
-- Api: `test_f025_sync_postventa::test_f025_r15_el_cliente_pide_el_universo_
-  y_devuelve_los_ides` (lo esperado gana las partidas; el doble, su `res`).
-- Otro test que cambie: **PARA** y se pregunta.
+Solo pueden cambiar los tests que cumplan uno de estos criterios, y solo en
+eso: (i) esperan que el **preflight** proponga o case (acción con método de
+propuesta o `postventa` sin partida en la entrada); (ii) cuentan lecturas de
+presupuesto, historial o cuentas en el preflight; (iii) esperan
+`partidas_postventa` no vacío del preflight; (iv) pintan o filtran
+«automática»; (v) comparan `ResultadoUniverso`. El implementer anota en
+`progress/impl_F-074.md` cada uno, con su criterio, antes de tocarlo
+(ficheros candidatos: `tasks.md`). Otro test: **PARA** y se pregunta.
 
-## 9. Verificación MANUAL (humano)
+## 7. Verificación MANUAL (humano)
 
-M1 (local, modo pruebas, solo preflight y Cancelar), M2 (local, base
-`dedicacion` local, propuesta descartada) y M3 (producción, solo lectura):
-`tasks.md` T13-T15.
+M1 (local, modo pruebas, solo preflight y Cancelar), M2 (medición `medir`
+antes y después), M3 (base `dedicacion` local) y M4 (producción, tras un
+sync): `tasks.md` T15-T18.

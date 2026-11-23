@@ -1,208 +1,217 @@
 <!-- specs/F-074-partida-sin-automatica/design.md -->
-# F-074 · Diseño: la partida no se queda en «automática»
+# F-074 · Diseño: la partida, definida antes de registrar
 
 **Rigor: `critico`.** Disparador 2 de «Niveles de rigor» (`CHECKPOINTS.md`):
-lo que enseña la celda es la partida que el transfer **escribe en Sigrid de
-producción** (`hmores.paride`, `registro_pipeline._preflight`); si el
-cuadrante y el registro divergen, se imputa a una partida que nadie vio. Lo
-mismo que declararon F-050, F-055 y F-068.
+la partida definida es la que el transfer **escribe en Sigrid de producción**
+(`hmores.paride`, `registro_pipeline._preflight`); F-074 cambia de dónde sale.
+
+**Enfoque (humano, 2026-11-23).** La regla de la propuesta corre **solo en
+segundo plano** (cola, selector, universo del sync); el cuadrante enseña su
+resultado y el registro **escribe eso**, sin volver a casar. Lo que se ve es
+lo que se registra por construcción, no por coincidencia de dos cálculos.
 
 ## 1. Servicios y límite
 
 | Servicio | Qué cambia | Por qué ahí |
 |---|---|---|
-| transfer | `propuesta_descartada` en `AccionLinea` y `AccionVinculado` (R14) | solo él sabe que la guardada no vale (valida por `ide`) |
-| api | estados por línea y subfila (R6-R10), partida de postventa del sync (R11-R13), borrar la guardada descartada (R16) | dueña del dato, de la cola y de la memoria |
-| front | textos y clases de la celda, filtro, rótulo del selector, aviso del modal (R1-R5, R15) | solo pinta lo que manda la api |
+| transfer | el preflight deja de proponer y casar (R1-R7); motivos en la propuesta y el universo (R9-R10); `partida_no_valida` | la regla y la validación por `ide` viven aquí |
+| api | partida de postventa del sync y al registro (R11-R12); estados y motivos (R13-R14); memoria (R15); borrar la guardada que no vale (R16) | dueña del dato, la cola y la memoria |
+| front | textos, filtro, selector y modal (R17-R22) | solo pinta |
 
-**La regla no se toca ni se copia.** La partida que se enseña sale siempre
-de funciones del transfer: `proponer_partida`/`PasoVinculados.proponer`
-(cola, selector) y `casar_postventa` (universo del sync, el mismo casado que
-el preflight: docstring de `universo_postventa.py`). La api solo **guarda y
-marca**; el front no calcula nada. Ninguna responsabilidad nueva fuera de los
-tres servicios; ninguna copia nueva entre servicios.
+La regla no se copia ni se mueve: sigue en `propuesta_partida.py`,
+`reglas_vinculados.py` y `universo_postventa.py`. Ninguna responsabilidad
+nueva fuera de los tres servicios; ninguna copia nueva entre servicios.
 
-## 2. Diagnóstico: cuándo queda hoy «automática» y por qué
+## 2. Diagnóstico: cuándo queda hoy «automática»
 
-| # | Caso | Hoy en la celda | Al registrar | Con F-074 |
-|---|---|---|---|---|
-| a | Obra normal, la regla no da partida (los tres pasos fallan) | memoria R32 de F-055, sin marca → «automática» | conflicto «sin partida» (Regla C) | «no encuentra partida» (R6) |
-| b | Obra normal, su obra vuelve `{ok: false}` (otra empresa, no encontrada) | igual que a | omitida con motivo de empresa | «no encuentra partida» |
-| c | El transfer no responde o pasa su timeout (F-055 R33) | se desencola sin memoria → «automática» | — | «sin calcular»; el próximo cuadrante o escritura la reencola |
-| d | Línea de **postventa** | nunca se encola (F-055 R29: solo obra normal) → «automática» | casado `#regla-p5` por obra, siempre | la partida del universo, «obra de postventa» (R11-R12) |
-| e | Subfila de vinculado **en la cola** | sin marca de pendiente (F-057 es solo de líneas) → «automática» | — | «buscando partida…» (R9) |
-| f | Subfila sin propuesta (titular sin partida; `sin_ci`, `varias_ci`, `empate_nombre`) | memoria de subfilas → «automática» | aviso «sin partida» del vinculado | «no encuentra partida» (R9) |
-| g | Subfila en memoria cuyo titular **gana** partida | no se reencola hasta el próximo sync (fallo latente) | el preflight sí la recalcula | sale de la memoria y se recalcula (R10) |
-| h | Periodo no ABIERTO | no se encola → «automática» | no se registra | «—» |
-| i | Propuesta guardada que **deja de valer** | sigue enseñándola | el preflight recalcula (F-055 R6) | aviso en el modal y se borra si no hay otra (R14-R16) |
+| # | Caso | Hoy | Con F-074 (celda → registro) |
+|---|---|---|---|
+| a | Obra normal, la regla no da partida | memoria F-055 R32, sin marca; el preflight vuelve a proponer y acaba en «sin partida» | «no encuentra partida» + motivo → conflicto «sin partida» (D8) |
+| b | Su obra vuelve `{ok: false}` | igual que a; el registro la omite por empresa | igual, motivo = el error |
+| c | El transfer no responde (F-055 R33) | «automática»; el preflight propone | «sin calcular» → sin partida definida (D7) |
+| d | Postventa | nunca se encola; el preflight casa por obra | la del universo, «obra de postventa» → se escribe esa |
+| e | Subfila en la cola | sin marca (F-057 es de líneas) | «buscando partida…» → sin definida (D7) |
+| f | Subfila sin propuesta | memoria de subfilas, sin marca | «no encuentra partida» + motivo |
+| g | Subfila en memoria cuyo titular gana partida | no se reencola hasta el sync | sale de la memoria y se recalcula (R15) |
+| h | Periodo no ABIERTO | «automática» | «—» |
+| i | Guardada que deja de valer | sigue enseñándola; el preflight propone otra | se omite nombrándola; la api la borra y la cola la recalcula (D4) |
 
-Sin cambio: la elegida, la fija VAR (también en sus subfilas, que ya pintan
-la de la línea) y la propuesta guardada que vale (se escribe tal cual, F-055
-R8: lo que se ve es lo que se registra).
+Sin cambio: elegida, fija VAR (y sus subfilas) y guardada que vale.
 
-## 3. Estados y precedencia (R1)
+## 3. La partida al registrar y los estados de la celda
 
-elegida → fija → propuesta (guardada, o la de postventa de la obra) →
-`propuesta_pendiente` «buscando partida…» → `propuesta_no_encontrada` «no
-encuentra partida» → ABIERTO «sin calcular» → «—». La api nunca manda a la
-vez pendiente y no encontrada (la memoria y la cola son excluyentes:
-`_lanzar` no encola lo que está en memoria). «sin calcular» no lo marca la
-api: es lo que queda en un periodo ABIERTO cuando no hay nada (caso c, o el
-de R12 sin sync), y cubre por construcción cualquier hueco.
+**Línea** (`_preflight`): VAR → su fija (`partida_var_de`, como hoy);
+elegida → validada (R20 de F-050 si no vale); si no, `propuesta_paride`
+(también la de postventa) → validada; si no vale, omitida con
+`partida_no_valida`; sin ninguna, sin partida (R5). **Subfila**
+(`PasoVinculados._partida`): elegida; con titular de postventa, VAR o no
+`CI*`, la del titular (derivación, no búsqueda: no lee); guardada de método
+propio; si no, sin partida. Una guardada de método `titular` no se usa: o va
+con el titular o no tiene definida.
+
+**Celda** (R17), en este orden: elegida → fija → propuesta (guardada o de
+postventa) → «buscando partida…» → «no encuentra partida» + motivo → ABIERTO
+«sin calcular» → «—». Pendiente y no encontrada son excluyentes (`_lanzar` no
+encola lo que está en memoria). «sin calcular» no lo marca la api: es el
+hueco (caso c, postventa sin sync).
 
 ## 4. Ficheros a crear
 
-- `services/dedicacion-api/application/estado_partida.py` — funciones puras
-  `estado_de_linea(ln, marcas) -> dict` y `estado_de_subfila(ln, v, marcas)
-  -> dict`: las claves `propuesta_*`, `propuesta_pendiente` y
-  `propuesta_no_encontrada` de §3 (solo con valor). Sin E/S.
-- Tests: `services/dedicacion-transfer/tests/test_f074_descartada.py`;
+- `services/dedicacion-api/application/estado_partida.py`: puras
+  `estado_de_linea(ln, marcas)` y `estado_de_subfila(ln, v, marcas)` (claves
+  `propuesta_*`, `propuesta_pendiente`, `propuesta_no_encontrada`,
+  `propuesta_motivo`, solo con valor).
+- `services/dedicacion-transfer/application/services/partida_definida.py`:
+  pura `partida_definida_del_vinculado(titular, elegida, elegida_valida,
+  guardada, guardada_valida)`; la línea se decide en `_preflight` (§5).
+- Tests: transfer `test_f074_preflight_definida.py`, `test_f074_motivos.py`;
   api `test_f074_estados.py`, `test_f074_postventa.py`,
-  `test_f074_memoria_subfilas.py`, `test_f074_descartada_api.py`; front
+  `test_f074_memoria_subfilas.py`, `test_f074_no_valida_api.py`; front
   `test_f074_celda.py`, `test_f074_selector_modal.py`.
 
 ## 5. Ficheros a modificar
 
 **Transfer**
-- `domain/models/registro_models.py`: `AccionLinea.propuesta_descartada:
-  str | None = None` y lo mismo en `AccionVinculado`.
-- `application/pipelines/registro_pipeline.py` (`_preflight`): en la normal
-  sin elegida con `propuesta_paride` que no `vale(...)`, rellena
-  `a.propuesta_descartada = linea.propuesta_cod or f"partida {paride}"`
-  antes de proponer. Sin lecturas nuevas.
-- `application/pipelines/registro_vinculados.py` (`_partida`): igual cuando
-  la guardada con método de `METODOS_PROPUESTA_PROPIA` no `_valida`.
+- `domain/models/registro_models.py`: `partida_no_valida: str | None = None`
+  en `AccionLinea` y `AccionVinculado`.
+- `application/pipelines/registro_pipeline.py`: `_preflight` sin
+  `por_proponer`, `nodos_origen`, `_historial` ni `proponer_partida`; el
+  destino de postventa sigue (`obra_por_codigo`), sin cargar su presupuesto:
+  elegida y guardada de postventa se validan en `_validas` contra la obra de
+  postventa; `ReglasPorcentajes` recibe la partida de cada línea de
+  postventa en vez de la global. `proponer` (endpoint) gana `motivos`.
+- `application/pipelines/registro_vinculados.py`: `decidir` deja de leer
+  historial, cuentas y presupuesto y usa `partida_definida_del_vinculado`;
+  `proponer` gana `motivos_vinculados` (el motivo que hoy calcula
+  `partida_del_vinculado` y tira).
+- `application/services/reglas_porcentajes.py`: P5 con la partida de la
+  línea (sin ella, omitida con su motivo).
+- `application/services/lecturas_lote.py` (`precargar`): fuera
+  `presupuestos` de origen y de postventa, `_ventanas` del historial; las
+  guardadas de postventa entran en `_cargar_validas`. `precargar_propuestas`,
+  sin cambio.
+- `application/services/universo_postventa.py` (`calcular`): `motivos`.
+- `application/services/propuesta_partida.py`: `motivo_sin_propuesta(nodos)`
+  (sin hojas activas o «ningún paso da partida»), sin tocar la regla.
+- `interface_adapters/api/app.py`: las salidas de R9-R10.
 
 **Api**
-- `domain/models.py`: `ResultadoUniverso.partidas: Mapping[int, dict]`
-  (`{ide_obra: {ide, cod, res}}`, por defecto vacío); `Obra` y `Linea` ganan
-  `postventa_partida_ide/_cod/_res` (`Linea`: `obra_pv_partida_*`).
-- `infrastructure/transfer/transfer_client.py` (`universo_postventa`): llena
-  `partidas` con `obras[].partida` de la respuesta que ya recibe.
-- `application/filtros_maestros.py` (`depurar_obras`) y
-  `application/sync_pipeline.py`: la fila de cada obra lleva su partida de
-  postventa (o nulas) junto a `admite_postventa`.
-- `infrastructure/db/orm_models.py` (`ObraORM`): tres columnas nulables
-  (§7); `infrastructure/db/repositories.py`: el upsert de obras las guarda (y
-  cuenta el cambio), la desactivación las anula, y `_a_obra`, `_a_linea` y
-  los demás constructores de `Linea` las copian.
-- `application/propuestas_mes.py`: `_foto` devuelve, de la misma lectura bajo
-  el lock, una `Marcas` (frozen: `pendientes`, `no_encontradas`,
-  `sub_pendientes`, `sub_no_encontradas`) del periodo; nuevo
-  `encolar_marcas(anio, mes, trabajadores) -> (en_curso, Marcas)`, y
-  `encolar` queda como envoltorio que devuelve `(en_curso,
-  marcas.pendientes)` (firma de hoy). `olvidar_subfilas(periodo_id,
-  trabajador, obra, es_postventa)` (R10). `estado()` gana las listas de R6 y
-  R9, solo con alguna.
-- `application/use_cases.py` (`CambiarPartida`): donde borra la propuesta de
-  las subfilas (F-044 R9) llama a un `al_borrar_subfilas` inyectado (el
-  `olvidar_subfilas` de la cola, cableado en `interface_adapters/api/deps.py`;
-  `None` en los tests de siempre).
-- `application/registro_sigrid.py` (`_guardar_propuestas`): la acción o
-  subfila con `propuesta_descartada` y sin propuesta nueva → `propuesta_* =
-  NULL` donde `partida_ide IS NULL` (R16).
-- `interface_adapters/api/schemas.py`: `LineaOut` y `SubfilaOut` ganan
-  `propuesta_no_encontrada: bool` (`exclude_if=lambda v: not v`, como F-069);
-  `SubfilaOut`, `propuesta_pendiente` igual; `PropuestasOut`, las tres listas
-  nuevas con defecto `[]` y fuera si vacías; `a_trabajador_out` gana `marcas:
-  Marcas | None = None` (con ella manda sobre `pendientes`) y usa
-  `estado_partida`.
-- `interface_adapters/api/routes.py` (`_encolar`): usa `encolar_marcas` y pasa
-  `marcas` a cada `a_trabajador_out`; la forma de `propuestas_en_curso` no
-  cambia.
+- `domain/models.py`: `ResultadoUniverso.partidas` y `.motivos`; `Obra` y
+  `Linea` ganan `postventa_partida_ide/_cod/_res/_motivo` (`Linea`:
+  `obra_pv_*`).
+- `infrastructure/transfer/transfer_client.py`, `application/filtros_maestros.py`
+  (`depurar_obras`), `application/sync_pipeline.py`: la partida y el motivo
+  de cada obra junto a `admite_postventa`.
+- `infrastructure/db/orm_models.py` (§7) y `repositories.py`: upsert,
+  desactivación (las anula) y constructores de `Obra`/`Linea`.
+- `application/registro_sigrid.py`: `_payloads` manda la de postventa como
+  `propuesta_*` (método `postventa`); `_guardar_propuestas` se sustituye por
+  el borrado de R16.
+- `application/propuestas_mes.py`: memorias con motivo (`dict` clave →
+  motivo); `_foto` → `Marcas` (pendientes, no encontradas con motivo, y lo
+  mismo de subfilas) de la misma lectura; `encolar_marcas`; `encolar` como
+  envoltorio de hoy; `olvidar_subfilas` (R15); `estado()` con las listas.
+- `application/use_cases.py` (`CambiarPartida`): llama a un
+  `al_borrar_subfilas` inyectado (cableado en `interface_adapters/api/deps.py`).
+- `interface_adapters/api/schemas.py` y `routes.py`: `LineaOut`/`SubfilaOut`
+  con las claves nuevas (`exclude_if`, como F-069), `PropuestasOut` con las
+  listas (fuera si vacías), `a_trabajador_out(marcas=…)`.
 
-**Front** (`static/js/app.js`, `static/css/styles.css`)
-- `htmlPartida(l)`: las ramas de §3; `construirCelda` y la celda de subfila
-  delegan en ella (la rama «automática» desaparece). `.partida-sin` (aviso).
-- `aplicarNoEncontradas(lineas, subfilas)` (como `aplicarPendientes`) y las
-  marcas de subfila en `consultarPropuestas`, antes de
-  `repintarCeldasPartida`.
-- `trabajadoresVisibles`: el filtro «Partida» usa `textoCeldaPartida(l)`, el
-  texto plano de `htmlPartida` (una sola fuente para celda y filtro, R4).
-- `montarSelectorPartida`: rótulo de la opción según `resp.propuesta` (R5).
-- `pintarModalPreflight`: `<div class="propuesta-descartada">` en acciones y
-  vinculados con `propuesta_descartada` (R15).
+**Front** (`app.js`, `styles.css`): `htmlPartida` con §3 y una
+`textoCeldaPartida` para el filtro; celda de línea y subfila delegan en ella;
+`aplicarNoEncontradas` y marcas de subfila en `consultarPropuestas`; rótulo
+de la opción del selector; selector en la omitida por `partida_no_valida`.
 
-**Docs**: `docs/ARCHITECTURE.md#regla-partida` y `#regla-p5` (una línea),
-`docs/INTEGRACION.md` §5 (R19).
+**Docs**: `ARCHITECTURE.md` (R24), `INTEGRACION.md` §5.
 
 ## 6. Ficheros que NO se tocan
 
-`propuesta_partida.py`, `reglas_porcentajes.py`, `reglas_vinculados.py`,
-`partida_matcher.py`, `partida_catalog.py`, `text_match.py` (copias de
-`partes`), `universo_postventa.py`, `lecturas_lote.py`, `registro_lote.py`;
-los endpoints `partidas/propuesta(-lote)` y `postventa/universo` (su forma no
-cambia); la Regla C y sus conflictos; `config.yaml` (sin SQL nuevo);
-`partidas_linea.py` (el selector ya guarda lo que propone).
+La regla: `proponer_partida`, `previa_en_obra`, `resolver_normal`,
+`partida_del_vinculado`, `casar_postventa`; `partida_matcher.py`,
+`partida_catalog.py`, `text_match.py`, `cuenta_analitica.py`,
+`estado_parte.py` (copias); `partidas_linea.py` (el selector); la regla VAR
+(`universo_var.py`, `partida_var_de`); `config.yaml` (sin SQL nuevo); cuenta
+analítica, partes, pisados, sobrecarga, idempotencia y rachas.
 
 ## 7. Esquema (PostgreSQL `dedicacion`, api)
 
-`obra.postventa_partida_ide` (BigInteger), `postventa_partida_cod` y
-`postventa_partida_res` (Text): nulables y sin default en `ObraORM`; el
-`ADD COLUMN IF NOT EXISTS` lo deriva `esquema.alters_faltantes` al arrancar
-(`docs/CONVENTIONS.md` §SQL). Sin DDL a mano, sin SQL contra Sigrid.
+`obra.postventa_partida_ide` (BigInteger), `_cod`, `_res` y
+`postventa_motivo` (Text): nulables, sin default, en `ObraORM`; el `ADD
+COLUMN` lo deriva `esquema.alters_faltantes`. Sin DDL a mano.
 
 ## 8. Cuándo se calcula y qué cuesta (topes: `azure-apps/sigrid_api.md` §4.1)
 
-| Momento | Lecturas de Sigrid | Cambio |
+Cuadrante y escrituras: 0 lecturas de Sigrid. Cola y selector: lo de F-055
+(C7), más un trozo de una obra por R15. Sync: la misma llamada al universo.
+**Preflight, lo que deja de leer** (contado del código, `lecturas_lote.py` y
+`_preflight`):
+
+| Caso del lote | Hoy | Con F-074 |
 |---|---|---|
-| Cuadrante, escrituras, `…/propuestas` | 0 (lee PostgreSQL y la memoria) | ninguno |
-| Cola en segundo plano (F-055 R29-R31) | por trozo de 10 obras: obras, historial y un presupuesto por obra (F-055 C7) | ninguno; solo R10 reencola las subfilas de una línea: un trozo de una obra |
-| Sync (universo de postventa) | la misma llamada de hoy | la api guarda lo que ya recibía y tiraba |
-| Preflight | las de F-055 (validación por `ide`) | ninguno: `propuesta_descartada` sale de lo ya leído |
+| Líneas normales con guardada válida | `validar_partidas` | igual (0 de ahorro) |
+| Obras con alguna pendiente | + 1 presupuesto por obra + 1 historial (24 meses, la más pesada) | 0 |
+| Alguna línea de postventa | + presupuesto de la obra de postventa | 0 (sigue la obra por código) |
+| Subfilas sin guardada propia | + historial de vinculados y cuentas por obra (y presupuesto) | 0 |
+| Guardada que no vale | + presupuesto e historial perezosos | 0 |
+| VAR | catálogo VAR | igual |
 
-Lejos de los topes: ninguna lectura nueva, filas y tiempos de F-055 (C1-C8).
-El historial es el único que crece con los recursos y ya va en una lectura
-por lote, con `truncated` como error (F-050 R7).
+Hoy, con la cola al día, el ahorro es poco (1 lectura por lote con
+postventa); en el peor caso (mes recién abierto, tras un sync o con el
+transfer caído), N + 1 (+1) (+2 por obra con vinculados). **C1** (test): un
+lote de 10 obras sin ninguna partida definida no lee presupuesto, historial
+ni cuentas. **C2** (test): uno con postventa lee la obra de postventa y no su
+presupuesto. **Medición real**: MANUAL M2 (`medir`, antes y después).
 
-## 9. Si la propuesta deja de valer antes de registrar (R14-R16)
+## 9. Si la definida deja de valer antes de registrar
 
-La guardada no caduca (F-055 D8): vale lo que enseña el cuadrante mientras
-sea hoja activa. Si al registrar ya no lo es: el transfer la descarta y
-propone de nuevo con la regla (como hoy), marca `propuesta_descartada`, y el
-modal lo dice antes de escribir. La api guarda la nueva (F-055 R14) o, sin
-ella, borra la vieja: la línea vuelve a pendiente, la cola la recalcula y
-acaba en «no encuentra partida» o con la nueva. Nada se escribe sin pasar
-por el modal; la Regla C sigue pidiendo confirmar la que va sin partida.
+La guardada no caduca (F-055 D8). Si al registrar ya no es hoja activa, el
+transfer la omite nombrándola (`partida_no_valida`) y no busca otra; el modal
+ofrece el selector; la api borra la guardada (no la elegida) y la cola la
+recalcula: acaba en una nueva o en «no encuentra partida». Nada se escribe en
+una partida no válida ni en una que nadie vio.
 
 ## 10. Riesgos y alternativas descartadas
 
-- **Postventa por la cola** (alternativa de D2): uniforme, pero +2 lecturas
-  por trozo con postventa y una propuesta guardada que el registro ignora.
-- **Postventa calculada al pedir el cuadrante**: lecturas en cada carga.
-- **«sin calcular» marcado por la api** (una memoria de fallos): más estado
-  sin ganar nada; el hueco del front lo cubre (§3).
-- **La api infiere la descartada** comparando lo enviado con la acción:
-  posible, pero la causa la sabe el transfer y la api la deduciría.
-- Riesgo: tras desplegar, las postventa dicen «sin calcular» hasta el primer
-  sync (MANUAL T14 lo pide). Riesgo: una obra cuyo presupuesto de postventa
-  cambia entre dos syncs enseña la partida vieja; el modal enseña la que se
-  escribe (F-050 R29), como hoy pasa con `admite_postventa`.
-- Riesgo: la memoria es de una réplica (`max 1`, ARCHITECTURE «Topología»);
-  tras un reinicio, las no encontradas pasan un rato por «buscando…».
-- Orden de despliegue: transfer → api → front (el front tolera la api vieja:
-  sin las claves nuevas pinta «sin calcular»; la api tolera el transfer
-  viejo: sin `propuesta_descartada`, no borra nada).
+- **Seguir proponiendo en el preflight como red** (lo de hoy): descartado
+  por el humano; dos cálculos pueden divergir y cuesta lecturas.
+- **Postventa por la cola** (D2 b): +2 lecturas por trozo.
+- Riesgo: tras desplegar, **las de postventa no se registran** hasta el
+  primer sync (sin definida → omitidas). Orden obligatorio: **api → sync →
+  transfer → front** (la api nueva manda la de postventa, que el transfer
+  viejo ignora; el transfer nuevo ya la encuentra). T18 lo fija.
+- Riesgo: una línea guardada en el editor justo antes de registrar puede
+  estar aún «buscando…»: sale sin definida (D7); se repite el preflight al
+  acabar la cola.
+- Riesgo: presupuesto de postventa que cambia entre dos syncs: se omite por
+  R4 con el motivo, hasta el siguiente sync.
+- Riesgo: memoria de una réplica (`max 1`): tras un reinicio, las no
+  encontradas pasan por «buscando…».
+- Compatibilidad: sin `motivos`, la api publica el motivo nulo; sin
+  `partida_no_valida`, no borra; sin las claves nuevas, el front pinta «sin
+  calcular».
 
 ## 11. Frontera
 
-**¿Cruza la frontera del proyecto? Sí, solo en lo documentado.** No hay
-llamada nueva a otro servicio ni lectura nueva a `sigrid-api`; la base
-`dedicacion` (en el servidor compartido `psql-albaranes-rs9k2` al desplegar)
-gana tres columnas propias, sin tocar nada del servidor. Cambia el contrato
-interno que `azure-apps/dedicacion.md` §5 describe: el cuadrante y las
-escrituras (`propuesta_no_encontrada`, subfilas con `propuesta_pendiente`),
-`GET …/propuestas` (tres listas), el preflight del transfer
-(`propuesta_descartada`) y §2 (columnas de `obra`). El líder lo pone al día en
-un commit aparte en `azure-apps` (protocolo de `CLAUDE.md`).
+**¿Cruza la frontera del proyecto? Sí, solo en lo documentado.** Ninguna
+llamada nueva a otro servicio y menos lecturas a `sigrid-api`. La base
+`dedicacion` (servidor compartido `psql-albaranes-rs9k2` al desplegar) gana
+cuatro columnas propias, sin tocar el servidor. Cambian contratos que
+`azure-apps/dedicacion.md` describe: §5 (preflight sin propuesta y con
+`partida_no_valida`; `partidas/propuesta(-lote)` y `postventa/universo` con
+motivos; cuadrante, escrituras y `…/propuestas` con las claves y listas
+nuevas), §2 (columnas de `obra`), §4 (menos lecturas) y §7 (postventa sin
+sync no se registra; orden de despliegue). El líder lo actualiza en un commit
+aparte en `azure-apps` (protocolo de `CLAUDE.md`).
 
 ## 12. Decisiones
 
 | Decisión | Opciones | Recomendado | Decidido |
 |---|---|---|---|
-| D1 Cómo se enseña «no la encuentra» | (a) «no encuentra partida» como aviso en la celda, clic al selector; la Regla C sigue al registrar; (b) además, no deja registrar esas líneas hasta elegir | (a): la Regla C ya pide confirmar; (b) bloquea a quien quiere escribir sin partida | |
-| D2 Partida de postventa | (a) la del universo, guardada en el sync: 0 lecturas, necesita un sync tras desplegar; (b) por la cola como las normales: +2 lecturas por trozo | (a) | |
-| D3 Reintento de las no encontradas | (a) como hoy: hasta el próximo sync o reinicio, y el preflight vuelve a buscar; (b) reencolarlas al abrir el cuadrante si han pasado N minutos | (a): (b) relee historial y presupuestos en cada carga | |
-| D4 Propuesta que deja de valer | (a) aviso en el modal y la api borra la guardada sin sustituta; (b) solo borrarla, sin aviso | (a) | |
-| D5 Opción «automática» del selector | (a) renombrarla «sin elegir · usar la propuesta / no encuentra partida»; (b) quitarla (una elegida solo se deshace con Ctrl+Z) | (a) | |
-| D6 Motivo del «no encuentra» | (a) sin motivo, texto fijo; (b) con el motivo del transfer (`sin_ci`, empresa…): cambia `propuesta-lote` | (a); (b) como feature aparte si negocio lo pide | |
+| D1 Cómo se enseña «no la encuentra» | (a) aviso en la celda con el motivo y clic al selector; (b) además, un aviso en la cabecera del mes | (a) | |
+| D2 Partida de postventa | (a) la del universo, guardada en el sync y mandada al registro: 0 lecturas, exige sync tras desplegar; (b) por la cola: +2 lecturas por trozo | (a) | |
+| D3 Reintento de las no encontradas | (a) como hoy: tras el sync o un reinicio; abrir el selector ya la recalcula; (b) reencolarlas al abrir el cuadrante cada N min | (a): el registro ya no las busca, pero (b) relee historial y presupuestos en cada carga | |
+| D4 La definida que ya no vale al registrar | (a) omitida con motivo y selector; la api borra la guardada y la cola la recalcula; (b) tratarla como sin partida (D7-D8) | (a): nunca escribe donde no vale y no confunde «no vale» con «no hay» | |
+| D5 Opción «automática» del selector | (a) «sin elegir · usar la propuesta / no encuentra partida»; (b) quitarla | (a) | |
+| D6 Motivo del «no encuentra» | (a) texto fijo; (b) el motivo del transfer, en esta feature | (b) | (b), humano 2026-11-23 |
+| D7 Registrar con líneas sin definida («buscando…», «sin calcular», «no encuentra») | (a) esa línea o subfila no se escribe; el modal la lista con el selector y el resto se registra; (b) no deja registrar nada hasta que todas la tengan; (c) bloquea solo a ese trabajador | (a): «que se ponga» se cumple en el mismo modal sin parar a los demás | |
+| D8 Qué queda de la Regla C | (a) el conflicto «sin partida» se queda, con su casilla para escribirla con `paride = 0`, ahora para la línea sin definida; (b) desaparece la casilla: sin definida nunca se escribe | (a): única salida si el presupuesto no tiene una partida que sirva; es explícita y por línea. (b) si negocio no quiere partes sin partida | |
