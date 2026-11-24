@@ -1,11 +1,34 @@
 <!-- progress/review_F-076.md -->
-Revisión completa (pasada 1), `dev...HEAD` (merge-base `2eac660`, HEAD `1d67473`)
+Revisión incremental desde e5b4ef6 (pasada 2)
 
-# F-076 · Review (pasada principal, única: e2e N/A y mutación informativa)
+# F-076 · Review (pasada principal; no hay pasada de evidencias: e2e N/A y mutación informativa)
 
-**Veredicto: CHANGES_REQUESTED**
+**Veredicto: APPROVED** (pasada 2, HEAD `860d1c0`). La pasada 1 (`e5b4ef6`) salió CHANGES_REQUESTED por dos puntos del rastro y el estilo. Los dos están corregidos, y lo demás de la pasada 1 queda dado por bueno.
 
-El código, los tests y la lista cerrada están bien y verificados de forma independiente (abajo). Se rechaza por el rastro: el comando exacto de la MANUAL M1 en `progress/current.md` l. 4 está roto (C4). Además, `test_f045` deja seis saltos de PEP8 (C3). Las dos cosas se arreglan en minutos y no tocan código de producción.
+## Pasada 2: el delta `e5b4ef6..860d1c0`
+
+El delta son dos commits y no toca código de producción ni el alcance medido. Por eso no se revisa de nuevo lo aprobado.
+
+- **`c355fb3`, cambio 2 → [x].** En `test_f045_excel_pestanas.py` solo se quitan 12 líneas en blanco, sin cambiar ninguna aserción.
+  - `ruff check --select E3 --preview` da `All checks passed!`.
+  - Queda el I001 previo (deuda de `dev`, aceptado en la pasada 1).
+  - En `impl_F-076.md` hay una nota de la vuelta, de 8 líneas.
+- **`860d1c0`, cambio 1 → [x].** Lo comprobé barriendo `progress/current.md` en Python: no queda **ningún** byte de control (todos los bytes por debajo de 0x20, salvo tabulador y saltos de línea).
+  - L. 4 trae ahora `curl.exe -o "$env:TEMP\f076.xlsx" "…/2026/10/export.xlsx?empresa=1"`, igual que design §7.
+  - Las dos observaciones se recogieron: «Pendiente» nombra la campaña de mutación informativa, y la M1 está en «⚠ Lo que espera al humano» con el mismo comando y su resultado en `progress/manual_F-076.md`.
+- **`ARNES_SIN_CACHE=1 bash harness/init.sh` entero:** salida 0, sin `[KO]` y sin ninguna suite aprobada por caché.
+  - Tests: raíz `2319 passed, 47 skipped`; api `1695 passed`; front `611 passed`; transfer `2011 passed`.
+  - Puertas: `PUERTA COBERTURA` 100,0 % (4/4); `TAMAÑO` dentro de los topes; `CAPA E2E` N/A.
+- **C3 (estilo) y C4 (MANUAL con su comando exacto) pasan a `[x]`.** Ningún checkpoint queda `[ ]`. T7 sigue en `[ ]` por ser la MANUAL (humano) M1, justificado en C5.
+- **Lo que queda tras el APPROVED:**
+  - la pasada de campaña de mutación informativa (no bloquea; sus totales van al resumen final);
+  - la M1 del humano.
+
+---
+
+## Pasada 1 (`e5b4ef6`): revisión completa de `dev...HEAD` (merge-base `2eac660`, HEAD `1d67473`)
+
+**Veredicto de la pasada 1: CHANGES_REQUESTED.** El código, los tests y la lista cerrada estaban bien y verificados de forma independiente (abajo). Bloqueaban el comando roto de la M1 en `current.md` l. 4 (C4) y seis E303 en `test_f045` (C3). Las marcas `[ ]` de abajo son las de la pasada 1, ya resueltas en la 2.
 
 ## Nivel de rigor
 
