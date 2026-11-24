@@ -3265,3 +3265,9 @@ Rama `feature/F-076-excel-sin-resto-de` · `sdd: true` (por petición del humano
 
 - Lanzado por el humano con `infra/d.local.ps1 api`: api `r20261124-1826`, `Healthy`, `RunningAtMaxScale` y con el 100 % del tráfico (comprobado por el líder, solo lectura). Transfer (`r20261124-1636`) y front (`r20261124-1637`) sin cambios.
 - Sin cambio de contrato; nota de redespliegue en `azure-apps/dedicacion.md`. `imagenes.json` en `chore/despliegue-f076-20261124`, unido a `dev`.
+
+## 2026-11-24 · F-074 y F-076 · Comprobadas en producción
+
+- El «Sincronizar Sigrid» del orden de despliegue de F-074 se había saltado (último en los logs, el 2026-11-10): las 52 líneas de postventa de octubre salían sin partida y no se habrían registrado. Lo pulsó el líder con el OK del humano: «250 empleados (+2/-0), 295 obras (+2/-0)»; después, 52 de 52 con la partida de su obra.
+- T18 de F-074 y el Excel de F-076 en producción, por el líder: cumplen (`progress/manual_F-074.md`, `progress/manual_F-076.md`).
+- Lección: el paso manual del medio («Sincronizar Sigrid») se pierde si el despliegue se lanza servicio a servicio; el resumen de despliegue debe pedir confirmarlo antes de seguir con el transfer.

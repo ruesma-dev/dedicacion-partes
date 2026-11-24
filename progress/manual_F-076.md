@@ -39,3 +39,22 @@ api local contra la base `dedicacion` LOCAL; nada toca Sigrid ni Azure.
   D1 b: cada pestaña mira solo su parte. Para verlo hay que mirar «Detalle».
 - Cabecera «Total empleado» en las pestañas: sin cambiar (design §8); el visto
   bueno al rótulo es del humano.
+
+## Producción (2026-11-24): CUMPLE
+
+Hecha por el **líder** a petición del humano («miralo tu en produccion»; OK
+expreso a descargar el Excel). `export.xlsx` de octubre de 2026 de la api
+desplegada (`r20261124-1826`), bajado desde la sesión del navegador (200,
+51.990 bytes) a la carpeta temporal de la sesión, tras la sincronización de
+`progress/manual_F-074.md`. Mismo script y misma apertura con Excel que la
+M1.
+
+| Qué se mira | Resultado |
+|---|---|
+| Excel lo abre | Sí, completo (Obras 297, Postventa 87 y Detalle 349 filas usadas) |
+| Filas «RESTO …» / cursiva | 0 / 0 |
+| Cada pestaña solo con su parte, comparada con «Detalle» | 0 discrepancias |
+| Quien no tiene nada de una parte no sale en esa pestaña | 143 solo con obras, fuera de «Postventa»; 12 solo con postventa, fuera de «Obras» |
+| «SIN CARGA» en las dos pestañas | los 33, en las dos |
+| Total = suma de la pestaña (D1 b) | 0 discrepancias; los 2 repartidos: 94/6 y 27/73 salen «FALTA» en cada pestaña y «OK» en «Detalle»; los de solo postventa, «OK» |
+| Recuento | Detalle 190 = 145 con obras + 14 con postventa − 2 repartidos + 33 sin carga; Obras 178; Postventa 47 |
