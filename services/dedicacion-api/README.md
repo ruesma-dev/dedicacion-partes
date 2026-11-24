@@ -42,7 +42,7 @@ cambio de esquema es una migración que escribe una persona.
 | PUT  | /periodos/{a}/{m}/trabajadores/{ide}/partida | Cambiar la partida elegida de una línea (`null` = automática), con evento deshacible |
 | POST | /periodos/{a}/{m}/completar | Completar al 100 % en una obra a un lote de trabajadores (`docs/ARCHITECTURE.md#regla-completar`); no toca Sigrid |
 | (las seis escrituras) | asignaciones, partida, deshacer, copiar-anterior ×2, completar | Encolan las propuestas pendientes de los trabajadores escritos y publican `propuestas_en_curso` (F-055) |
-| GET  | /periodos/{a}/{m}/export.xlsx | Excel con el modelo de negocio: Obras y Postventa agrupadas por trabajador (combinadas, bandas y línea gruesa), cada una con la otra parte en una línea agregada en cursiva («RESTO POSTVENTA» / «RESTO OBRAS»), y Detalle con todas las líneas de cada trabajador, la postventa intercalada; columna Observaciones vacía en las tres hojas; convenio Postv- |
+| GET  | /periodos/{a}/{m}/export.xlsx | Excel con el modelo de negocio: Obras y Postventa agrupadas por trabajador (combinadas, bandas y línea gruesa), cada una solo con sus líneas y con el total y el estado de esa parte (sin línea agregada de la otra; quien no tiene nada de una parte no sale en su pestaña), y Detalle con todas las líneas y el total de cada trabajador, la postventa intercalada; columna Observaciones vacía en las tres hojas; convenio Postv- |
 
 ## Pendiente de decidir con datos reales
 

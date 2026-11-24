@@ -1,20 +1,23 @@
 # infrastructure/excel/exporter.py
-"""Exportación a Excel del periodo, con el modelo de negocio (F-040, F-045).
+"""Exportación a Excel del periodo, con el modelo de negocio (F-040, F-045,
+F-076).
 
 Tres hojas:
   - "Obras" y "Postventa": una fila por línea de esa parte, agrupadas por
-    trabajador, y al final del grupo UNA línea agregada («RESTO POSTVENTA» o
-    «RESTO OBRAS», en cursiva) con la suma de la otra parte. Empleado,
-    Categoría, Total, Desviación y Estado son los del trabajador completo y
-    van en todas las filas del grupo y combinadas (con el valor en todas,
-    para que el autofiltro saque el grupo entero). Bandas blanco / azul claro
-    y línea gruesa bajo cada trabajador.
+    trabajador, solo los trabajadores con alguna línea de esa parte (más los
+    «SIN CARGA», en las dos) y sin línea agregada de la otra parte (F-076).
+    Total, Desviación y Estado son los de esa parte; Empleado, Categoría,
+    Total, Desviación y Estado van en todas las filas del grupo y combinadas
+    (con el valor en todas, para que el autofiltro saque el grupo entero).
+    Bandas blanco / azul claro por trabajador de la hoja y línea gruesa
+    bajo cada uno. Una pestaña sin nadie sale con título y cabecera.
   - "Detalle": la hoja de F-040, igual que antes: todas las líneas de cada
-    trabajador agrupadas, la postventa intercalada con su prefijo y sin
-    línea agregada. No hay hoja Resumen (F-045 D2).
+    trabajador agrupadas, la postventa intercalada con su prefijo, y el
+    Total, la Desviación y el Estado del trabajador completo. No hay hoja
+    Resumen (F-045 D2).
 
 Las tres acaban en la columna I «Observaciones» (F-045 D11): vacía, una
-celda por fila de datos (también la agregada y la «SIN CARGA», D12), sin
+celda por fila de datos (también la «SIN CARGA», D12), sin
 combinar, con ajuste de texto y dentro del autofiltro, para escribir en el
 Excel. La app no guarda observaciones: lo escrito vive solo en el fichero.
 
@@ -52,8 +55,6 @@ _GRUESO = Side(style="medium", color="000000")
 _BORDE = Border(left=_FINO, right=_FINO, top=_FINO, bottom=_FINO)
 _BORDE_ULTIMA = Border(left=_FINO, right=_FINO, top=_FINO, bottom=_GRUESO)
 _CENTRADA = Alignment(vertical="center")
-#: Código, Obra y % de la línea agregada (F-045 R15).
-_CURSIVA = Font(italic=True)
 #: Columna I «Observaciones»: vacía, para escribir en el Excel (F-045 R21).
 _OBSERVACIONES = 9
 _AJUSTE = Alignment(wrap_text=True, vertical="top")
@@ -112,9 +113,6 @@ class OpenpyxlExcelExporter:
                     celda.fill = _BANDAS[n % 2]
                     celda.border = _BORDE_ULTIMA if r == fin else _BORDE
                 hoja.cell(r, _OBSERVACIONES).alignment = _AJUSTE
-                if linea.agregada:
-                    for col in (3, 4, 5):
-                        hoja.cell(r, col).font = _CURSIVA
             if fin > ini:
                 for col in _COMBINADAS:
                     _combinar_con_valor(hoja, col, ini, fin)

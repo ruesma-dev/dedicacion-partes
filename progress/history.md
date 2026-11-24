@@ -3232,3 +3232,31 @@ OK del humano al cierre el 2026-11-24 («ok» a la PARADA 2, que incluía acepta
 - Al desplegar, orden **obligatorio** api → «Sincronizar Sigrid» → transfer → front (sin sync, postventa no se registra) y `azure-apps/dedicacion.md` §2, §4, §5 y §7 (líder, commit aparte).
 - Aceptado: una línea guardada justo antes de registrar puede salir «buscando…» y no se escribe hasta repetir; una subfila con propuesta «de titular» desfasada va a «sin partida» (H5, seguro).
 - Automejoras del arnés propuestas por los reviewers, pendientes de decisión del humano para `arnes-base`.
+
+## 2026-11-24 · F-074 · Desplegada
+
+- Lanzado por el humano con `infra/d.local.ps1`, en el orden obligatorio api → «Sincronizar Sigrid» → transfer → front: api `r20261124-1616`, transfer `r20261124-1636` y front `r20261124-1637`. Las tres revisiones `Healthy`, `RunningAtMaxScale` y con el 100 % del tráfico (comprobado por el líder, solo lectura). El transfer sigue en modo real.
+- `azure-apps/dedicacion.md` al día (`192b988`: cabecera, §2, §5 y §7; `a1afdda`: tags). `imagenes.json` en `chore/despliegue-20261124`, unido a `dev`.
+- Pendiente del humano: T18 (mirarlo en producción tras Ctrl+F5), MANUAL T15-T17 y los push de `dev` y `azure-apps`.
+
+## 2026-11-24 · F-076 · Excel: «Obras» solo con obras y «Postventa» solo con postventa
+
+Rama `feature/F-076-excel-sin-resto-de` · `sdd: true` (por petición del humano: «lanza spec de la siguiente f76») · rigor `estandar` ·
+**APROBADO** por el reviewer en la pasada 2 · OK del humano al cierre el 2026-11-24 («ok»).
+
+**Qué cambió.** Solo `dedicacion-api` (`infrastructure/excel/contenido.py` y `exporter.py`):
+- Fuera las líneas agregadas «RESTO POSTVENTA» / «RESTO OBRAS» (sustituye F-045 D3, D4, D6 y D7).
+- Cada pestaña solo con los trabajadores que tienen algo de esa parte (una línea al 0 % basta).
+- D1 (b): en «Obras» y «Postventa», Total, Desviación y Estado de esa parte; un repartido sale «FALTA» en cada pestaña y «OK» en «Detalle».
+- D2 (a): «SIN CARGA» en las dos pestañas; D3 (a): pestaña sin nadie, vacía con cabecera; D5 (a): fuera `agregada`, `AGREGADA_EN_*` y la cursiva. «Detalle» sin cambios.
+
+**Verificado.**
+- RED (13 de 15 en rojo, por aserciones); lista cerrada de tests anteriores (24 de F-045 y 1 de F-040) medida por el implementer y por el reviewer.
+- Cobertura de lo cambiado 100 % (4/4 líneas ejecutables, verificada por el reviewer); mutación informativa 3 de 3 muertos.
+- `bash harness/init.sh` sin caché en verde (api 1695, front 611, transfer 2011).
+
+**Fuera / pendiente.**
+- MANUAL M1 (T7) hecha por el líder el 2026-11-24, a petición del humano («haz tu m1»): cumple (`progress/manual_F-076.md`).
+- Sin desplegar: solo cambia la api (`infra/d.local.ps1 api`); no cruza la frontera.
+- La cabecera sigue diciendo «Total empleado» en las pestañas (design §8).
+- Incidente al medir la mutación: quitar el worktree temporal vació el `.venv` de la api del árbol principal (enlazado); reconstruido desde `requirements.txt`. Automejoras propuestas para `arnes-base`: aviso de bytes de control en `current.md` y no enlazar venvs del árbol principal en worktrees que se borran.

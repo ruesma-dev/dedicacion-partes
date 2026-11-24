@@ -10,7 +10,8 @@ Dos niveles (specs/F-040-excel-modelo-juan/design.md §7):
     openpyxl o, para las celdas combinadas, con `zipfile` sobre el XML de la
     hoja, porque `load_workbook` limpia las celdas no ancla al leer (§5).
     Desde F-045 el libro lleva delante «Obras» y «Postventa» (se prueban en
-    `test_f045_excel_pestanas.py`), «Detalle» es la tercera hoja
+    `test_f045_excel_pestanas.py` y, desde F-076, solo con su parte:
+    `test_f076_excel_sin_resto.py`), «Detalle» es la tercera hoja
     (`sheet3.xml`, `_HOJA_DETALLE`) y no hay Resumen. Desde F-045 D11 las
     tres hojas acaban en la columna I «Observaciones», vacía (ancho 50,
     dentro del autofiltro).
@@ -258,10 +259,14 @@ def test_f040_r2_titulo_en_fila_1_cabecera_en_2_datos_desde_3():
     libro = _libro(_exportar())
     det = libro["Detalle"]
     assert det["A1"].value == "DETALLE DE DEDICACIÓN · Septiembre 2026"
+    # Desde F-076 «Postventa» solo lleva a quien tiene postventa: GAMMA
+    # (DELTA, sin carga, va detrás).
+    primero = {"Obras": "ALFA PRUEBA UNO", "Postventa": "GAMMA PRUEBA TRES",
+               "Detalle": "ALFA PRUEBA UNO"}
     for hoja in libro.worksheets:
         assert hoja["A1"].font.bold and hoja["A1"].font.size == 13
         assert hoja["A2"].value == "Empleado"
-        assert hoja["A3"].value == "ALFA PRUEBA UNO"
+        assert hoja["A3"].value == primero[hoja.title], hoja.title
     assert det.max_row == 12
     enero = _libro(OpenpyxlExcelExporter().exportar(Periodo(2027, 1), []))
     assert enero["Detalle"]["A1"].value == "DETALLE DE DEDICACIÓN · Enero 2027"

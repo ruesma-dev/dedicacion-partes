@@ -1,18 +1,21 @@
 # infrastructure/excel/contenido.py
-"""Modelo de presentación del Excel de exportación (F-040, F-045).
+"""Modelo de presentación del Excel de exportación (F-040, F-045, F-076).
 
 Puro: no importa openpyxl. Convierte el cuadrante que entrega la API en lo
 que pinta `exporter.py`:
 
   - un `GrupoTrabajador` por trabajador con todas sus líneas
     (`grupos_detalle`), para la hoja «Detalle»;
-  - un `GrupoTrabajador` por trabajador para cada pestaña «Obras» y
-    «Postventa» (`grupos_pestana`): sus líneas de esa parte y, al final, una
-    línea agregada con la suma de la otra parte (F-045);
+  - un `GrupoTrabajador` por trabajador con alguna línea de esa parte (o
+    sin ninguna línea) para cada pestaña «Obras» y «Postventa»
+    (`grupos_pestana`): solo sus líneas de esa parte, sin línea agregada de
+    la otra (F-076);
   - los textos de porcentaje y de estado.
 
 Las cifras (total, estado, desviación) son las de la regla del 100 %
-(`domain.estados`): aquí no hay umbral ni épsilon propios, solo formato.
+(`domain.estados`): aquí no hay umbral ni épsilon propios, solo formato. En
+«Detalle» se aplica al trabajador completo; en las pestañas, a su parte
+(F-076 D1).
 """
 from __future__ import annotations
 
@@ -34,7 +37,6 @@ class LineaDetalle:
     obra: str                 # columna Obra del Detalle (con prefijo si postventa)
     nombre: str               # descripción sin prefijo (F-045 D10: se conserva)
     porcentaje: Decimal | None
-    agregada: bool = False    # la línea «RESTO …» de la otra parte (F-045)
 
 
 @dataclass(frozen=True)
@@ -50,17 +52,14 @@ class GrupoTrabajador:
 _LINEA_VACIA = LineaDetalle(codigo="", obra="", nombre="", porcentaje=None)
 
 
-#: Rótulos (Código, Obra) de la línea agregada según la pestaña (F-045 D6).
-AGREGADA_EN_OBRAS = ("POSTVENTA", "RESTO POSTVENTA")
-AGREGADA_EN_POSTVENTA = ("OBRAS", "RESTO OBRAS")
-
-
 def grupos_detalle(
     filas: list[CuadranteTrabajador], prefijo: str
 ) -> list[GrupoTrabajador]:
-    """Un grupo por trabajador, en el orden en que llegan (no reordena)."""
+    """Un grupo por trabajador, en el orden en que llegan (no reordena),
+    con el total y el estado del trabajador completo."""
     return [
-        _grupo(fila, [_linea_detalle(ln, prefijo) for ln in fila.lineas])
+        _grupo(fila, [_linea_detalle(ln, prefijo) for ln in fila.lineas],
+               fila.total, len(fila.lineas))
         for fila in filas
     ]
 
@@ -68,26 +67,26 @@ def grupos_detalle(
 def grupos_pestana(
     filas: list[CuadranteTrabajador], prefijo: str, postventa: bool
 ) -> list[GrupoTrabajador]:
-    """Grupos de la pestaña «Postventa» (`postventa`) u «Obras» (F-045).
+    """Grupos de la pestaña «Postventa» (`postventa`) u «Obras» (F-076).
 
-    Cada grupo lleva las líneas de esa parte, en su orden, y al final UNA
-    línea agregada con la suma exacta de las de la otra parte, si las hay.
-    Total, desviación y estado son los del trabajador completo, así que la
-    suma de los % del grupo es su total en las dos pestañas (R11, R12).
+    Cada grupo lleva solo las líneas de esa parte, en su orden, sin línea
+    agregada de la otra (R2-R4). El trabajador que tiene líneas pero ninguna
+    de esa parte no sale (R5: basta una, aunque esté al 0 %); el que no tiene
+    ninguna sale «SIN CARGA» en las dos pestañas (R7, D2). Total, desviación
+    y estado son los de esa parte (R8, D1): la suma exacta de sus % y la
+    regla del 100 % sobre ella, así que la columna % del grupo suma su total.
     """
-    codigo, obra = AGREGADA_EN_POSTVENTA if postventa else AGREGADA_EN_OBRAS
     grupos: list[GrupoTrabajador] = []
     for fila in filas:
-        propias = [_linea_detalle(ln, prefijo) for ln in fila.lineas
-                   if ln.es_postventa == postventa]
-        otras = [ln.porcentaje for ln in fila.lineas
-                 if ln.es_postventa != postventa]
-        if otras:
-            propias.append(LineaDetalle(
-                codigo=codigo, obra=obra, nombre="",
-                porcentaje=sum(otras, Decimal(0)), agregada=True,
-            ))
-        grupos.append(_grupo(fila, propias))
+        propias = [ln for ln in fila.lineas if ln.es_postventa == postventa]
+        if fila.lineas and not propias:
+            continue
+        grupos.append(_grupo(
+            fila,
+            [_linea_detalle(ln, prefijo) for ln in propias],
+            sum((ln.porcentaje for ln in propias), Decimal(0)),
+            len(propias),
+        ))
     return grupos
 
 
@@ -103,11 +102,11 @@ def _linea_detalle(ln: Linea, prefijo: str) -> LineaDetalle:
 
 
 def _grupo(
-    fila: CuadranteTrabajador, lineas: list[LineaDetalle]
+    fila: CuadranteTrabajador, lineas: list[LineaDetalle],
+    total: Decimal, num: int,
 ) -> GrupoTrabajador:
-    """Grupo con total, desviación y estado del trabajador completo."""
-    total = fila.total
-    num = len(fila.lineas)
+    """Grupo con el total dado y el estado y la desviación de la regla del
+    100 % sobre ese total y ese número de líneas (`domain.estados`)."""
     estado = calcular_estado(total, num)
     desviacion = calcular_desviacion(total, num)
     return GrupoTrabajador(
