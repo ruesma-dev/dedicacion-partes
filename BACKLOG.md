@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **76 features**, 32 abiertas y 44 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 1 en Spec aprobada, 8 en To do, 23 en Backlog y 44 en Done.
+Resumen: **76 features**, 32 abiertas y 44 terminadas. Por columna: 0 en Review, 0 en Blocked, 1 en In progress, 0 en Spec aprobada, 8 en To do, 23 en Backlog y 44 en Done.
 
 ## Review
 
@@ -15,13 +15,13 @@ _Ninguna feature bloqueada._
 
 ## In progress
 
-_Ninguna feature en implementación._
+| # | Feature | La tiene | Prioridad | Rigor | Rama |
+|---|---|---|---|---|---|
+| F-076 | Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …») | implementer | 3 | estandar | `feature/F-076-excel-sin-resto-de` |
 
 ## Spec aprobada
 
-| # | Feature | Spec aprobada | Prioridad | Rigor | Rama |
-|---|---|---|---|---|---|
-| F-076 | Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …») | pendiente de tu aprobación | 3 | estandar | `feature/F-076-excel-sin-resto-de` |
+_Ninguna feature con la spec lista._
 
 ## To do
 
@@ -117,7 +117,7 @@ _Ninguna feature en implementación._
 
 ### F-076 · Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …»)
 
-estado **spec lista** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-076-excel-sin-resto-de`
+estado **en curso** · spec aprobada el 2026-11-24 · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-076-excel-sin-resto-de`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». ACLARADO por el humano el mismo día: «en el excel en la pestaña de postventa las obras normales salen como resto, y viceversa. Con este nuevo enfoque, en postventa sale solo postventa, y en obra solo obra». Hoy (F-045 D6, `infrastructure/excel/contenido.py` y `exporter.py`) cada trabajador lleva al final de su grupo una línea agregada en cursiva con la suma de la otra parte: «RESTO POSTVENTA» en la pestaña Obras y «RESTO OBRAS» en la de Postventa; un trabajador que solo tiene la otra parte sale solo con esa línea. Lo que se pide: fuera esas líneas agregadas, y fuera de cada pestaña los trabajadores que no tienen nada de esa parte. La pestaña Detalle no cambia. Por decidir: qué pasa con «Total empleado», «Desviación» y «Estado» de cada pestaña (hoy cuentan la línea agregada, así que el total de un trabajador repartido entre obras y postventa daría menos del 100 % en cada una). Solo api (export a Excel); cambia la decisión D6 de F-045. Reordenado el 2026-11-24 (petición del humano: «lanza spec de la siguiente f76»): pasa a llevar spec SDD.
 
