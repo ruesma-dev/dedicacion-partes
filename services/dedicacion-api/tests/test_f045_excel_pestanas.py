@@ -108,10 +108,6 @@ def test_f045_r6_postventa_lleva_sus_lineas_en_orden_con_prefijo():
         "Postv-0702", "Postv-0705"]
 
 
-
-
-
-
 def test_f045_r10_sin_carga_una_fila_vacia_en_cada_pestana():
     for postventa in (_OBRAS, _POSTVENTA):
         delta = _por_nombre(postventa)["DELTA PRUEBA CUATRO"]
@@ -120,7 +116,6 @@ def test_f045_r10_sin_carga_una_fila_vacia_en_cada_pestana():
         assert delta.total == Decimal(0)
         assert delta.desviacion is None
         assert delta.estado == "SIN CARGA"
-
 
 
 @pytest.mark.parametrize("postventa", [_OBRAS, _POSTVENTA])
@@ -136,7 +131,6 @@ def test_f045_r12_la_columna_pct_del_grupo_suma_el_total(postventa):
             assert pcts == []
             continue
         assert sum(pcts, Decimal(0)) == g.total, g.empleado
-
 
 
 def test_f045_r5_d5_var_en_obras_y_nunca_en_postventa():
@@ -187,7 +181,6 @@ def _columna(hoja, col: int) -> list:
     return [hoja.cell(r, col).value for r in range(3, hoja.max_row + 1)]
 
 
-
 def test_f045_r1_tres_hojas_obras_postventa_y_detalle():
     assert _libro(_exportar()).sheetnames == ["Obras", "Postventa", "Detalle"]
     assert _libro(_exportar([])).sheetnames == ["Obras", "Postventa", "Detalle"]
@@ -227,9 +220,6 @@ def test_f045_r3_cabecera_autofiltro_paneles_anchos_e_impresion(nombre):
     assert hoja.page_setup.fitToHeight == 0
     assert hoja.print_title_rows == "$1:$2"
     assert _libro(_exportar([]))[nombre].auto_filter.ref == "A2:I2"
-
-
-
 
 
 def test_f045_r12_la_columna_pct_de_cada_grupo_suma_su_total_en_el_libro():
@@ -286,8 +276,6 @@ def test_f045_r14_bandas_por_hoja_y_linea_gruesa_bajo_cada_trabajador():
             for r in range(ini, fin):
                 for col in "CDE":
                     assert celdas[f"{col}{r}"]["bottom"] == ("thin", "FFBFBFBF")
-
-
 
 
 def test_f045_r17_detalle_igual_que_en_f040():

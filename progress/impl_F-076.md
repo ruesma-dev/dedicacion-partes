@@ -167,3 +167,11 @@ La suite de la api salió de caché. Para comprobarlo, se lanzó sin caché desd
 - la review;
 - la pasada de campaña de mutación (informativa);
 - la MANUAL M1 (T7) del humano.
+
+## Vuelta de la review, pasada 1 (CHANGES_REQUESTED, punto 2)
+
+En `test_f045_excel_pestanas.py`, los huecos de las funciones borradas en T4 dejaban más de dos líneas en blanco (l. 115, 126, 142, 191, 235 y 293).
+
+- **Arreglo:** `ruff check --select E3 --preview --fix`. Solo se quitan 12 líneas en blanco; no cambia ninguna aserción.
+- **Ahora:** `ruff check --select E3 --preview` da 0 avisos y `pytest tests/test_f045_excel_pestanas.py` da `18 passed in 1.48s`.
+- **Pendiente:** el `init.sh` completo queda para la pasada 2.
