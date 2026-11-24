@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-074 CERRADA (`done`) el 2026-11-24, unida a `dev` y SIN DESPLEGAR** (OK del humano a la PARADA 2: «ok», que incluye aceptar los 12 supervivientes equivalentes de mutación). Resumen en `progress/history.md`. **Pendiente del humano:** push de `dev`; MANUAL T15-T18 y, al desplegar, el orden **obligatorio** api → «Sincronizar Sigrid» → transfer → front; `azure-apps/dedicacion.md` lo actualiza el líder al desplegar (todo en «⚠ Lo que espera al humano»). Siguiente: F-075.
+**F-074 CERRADA (`done`) el 2026-11-24, unida a `dev` y SIN DESPLEGAR** (OK del humano a la PARADA 2: «ok», que incluye aceptar los 12 supervivientes equivalentes de mutación). Resumen en `progress/history.md`. **Pendiente del humano:** push de `dev`; MANUAL T15-T18 y, al desplegar, el orden **obligatorio** api → «Sincronizar Sigrid» → transfer → front; `azure-apps/dedicacion.md` lo actualiza el líder al desplegar (todo en «⚠ Lo que espera al humano»). Siguiente: F-076, con spec (el humano bajó F-075 al final del backlog el 2026-11-24).
 
 **F-054 y F-069 DESPLEGADAS el 2026-11-21** (lanzado por el humano: transfer `r20261121-1743`, api `r20261121-1745` y front `r20261121-1749`, las tres `Healthy` con el 100 % del tráfico; «Producción, hoy»). T17 de F-069 y T20 de F-054 hechas: `azure-apps/dedicacion.md` al día (`0e33de3`, pendiente de push del humano). **Pendiente del humano:** Ctrl+F5 y mirar en producción las casillas de km y caja y «Sincronizar Sigrid»; transmitir el aviso a `partes` («⚠ Lo que espera al humano»); decidir qué se hace con lo que queda de pruebas en la 0404 (sección «F-054»). **Backlog reordenado el 2026-11-22** (petición del humano): las diez peticiones de negocio del 2026-11-22 en `todo` y por delante, con prioridad 1-10 en el orden de su lista (F-074, F-075, F-076, F-071, F-046, F-077, F-078, F-073, F-079, F-070); el resto, `pending` desde la 11, en su orden de antes. Respuestas del humano el mismo día: el punto 2 (observaciones) lo cubre F-069, sin alta («creo que sí»; ojo: la columna «Observaciones» del Excel sigue vacía, F-045 R21, y no recoge el comentario); F-077 sí cambia lo desplegado de F-069 (D2 sustituida); «resto de» son las líneas agregadas «RESTO POSTVENTA» / «RESTO OBRAS» del Excel (F-045 D6): F-076 las quita y deja cada pestaña solo con lo suyo. F-074, cerrada (línea 4).
 
@@ -68,7 +68,7 @@ las filas de una campaña manual sobre el SHA que declara la campaña, o sobre H
 original sigue igual) amplía ese mismo encargo `de161b4`: pendiente de añadirla allí, sin decisión nueva. Otras propuestas de arnés pendientes, en sus secciones:
 F-061 (C4 bis para JS), «⚠ Lo que espera al humano» (trabajo del arnés
 tras F-055) y «Hechos que no conviene volver a descubrir» (dos defectos de
-`init.sh`). **Siguiente:** F-075 (F-074 cerrada, línea 4).
+`init.sh`). **Siguiente:** F-076 (línea 4).
 
 ## F-069 · CERRADA (2026-11-20) y DESPLEGADA (2026-11-21)
 
@@ -474,7 +474,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-24):** F-074 cerrada y sin desplegar (línea 4); después, F-075 (orden de `BACKLOG.md`, reordenado el 2026-11-22).
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-24):** F-074 cerrada y sin desplegar (línea 4); después, F-076 (orden de `BACKLOG.md`, reordenado el 2026-11-22; F-075 al final desde el 2026-11-24).
 
 ## ⚠ Lo que espera al humano
 
