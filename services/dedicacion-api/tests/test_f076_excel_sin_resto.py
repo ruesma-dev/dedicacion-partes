@@ -28,7 +28,7 @@ from infrastructure.excel.contenido import (
 from infrastructure.excel.exporter import OpenpyxlExcelExporter
 from openpyxl import load_workbook
 
-from tests.test_f040_excel import _fila, _linea, _rgb, _xml_hoja
+from tests.test_f040_excel import _fila, _linea, _xml_hoja
 from tests.test_f045_excel_pestanas import _muestra
 
 _PREFIJO = "Postv-"
