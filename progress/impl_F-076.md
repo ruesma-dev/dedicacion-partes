@@ -174,3 +174,15 @@ En `test_f045_excel_pestanas.py`, los huecos de las funciones borradas en T4 dej
 - **Arreglo:** `ruff check --select E3 --preview --fix`. Solo se quitan 12 líneas en blanco; no cambia ninguna aserción.
 - **Ahora:** `ruff check --select E3 --preview` da 0 avisos y `pytest tests/test_f045_excel_pestanas.py` da `18 passed in 1.48s`.
 - **Pendiente:** el `init.sh` completo queda para la pasada 2.
+
+## Pasada de campaña (2026-11-24) e incidente con el venv de la api
+
+- **Campaña:** 3 mutantes muertos de 3, 0 supervivientes. Detalle en `progress/mutacion_F-076.md`, que explica también por qué se midió en un worktree limpio.
+- **Incidente, provocado por mí y ya reparado.** El worktree temporal llevaba un enlace (*junction*) a `services/dedicacion-api/.venv` del árbol principal. Al quitarlo con `git worktree remove --force`, git siguió el enlace y **vació el venv de la api del árbol principal**. El código y el repositorio no se vieron afectados.
+- **Reparación:**
+  - comando, desde `services/dedicacion-api`: `python -m venv .venv` y `pip install -r requirements.txt pytest coverage ruff`, las mismas herramientas que tiene el venv del transfer (Python 3.12.7);
+  - quedó: SQLAlchemy 2.0.58 (`<2.1`, como manda `requirements.txt`), openpyxl 3.1.5, fastapi 0.165.0, pytest 9.2.0;
+  - suite de la api: `1695 passed`, la misma cifra que antes del incidente.
+- **Sin cambios en el manifiesto.** Si el venv anterior llevaba algo que no está en `requirements.txt`, no lo puedo saber; ninguna suite lo echa de menos.
+- **Para la próxima vez:** nunca quitar con `worktree remove --force` un worktree que tenga enlaces a otros árboles; quitar antes el enlace (`rmdir` de la junction).
+- **Comprobación tras reparar:** `ARNES_SIN_CACHE=1 bash harness/init.sh` en verde y sin `[KO]`. Raíz: `2319 passed, 47 skipped`. Servicios: api `1695 passed`, front `611 passed`, transfer `2011 passed`. `PUERTA COBERTURA` 100 % (4/4).
