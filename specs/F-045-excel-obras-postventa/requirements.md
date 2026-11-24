@@ -1,5 +1,7 @@
 # F-045 · Excel desglosado: pestaña de obras y pestaña de postventa
 
+> **Nota (2026-11-24):** D3 (salvo la SIN CARGA), D4, D6, D7, D9 y R4, R7-R9, R11, R12 (su primera mitad), R15 y R16 sustituidos por F-076 (`specs/F-076-excel-sin-resto-de/`): «Obras» solo con obras y «Postventa» solo con postventa, sin línea agregada «RESTO …», con el total y el estado de esa parte.
+
 Pedida por el humano el 2026-10-07: «desglosar excel, la postventa va [en] una pestaña
 independiente, y se crea otra [de] obra donde sale una línea agregada de postventa en el
 recurso. En la postventa sale la línea agregada de obras xxx en el recurso, de forma que en
