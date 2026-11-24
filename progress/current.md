@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-076 CERRADA (`done`) el 2026-11-24, unida a `dev` y SIN DESPLEGAR** (OK del humano a la PARADA 2: «ok»). Resumen en `progress/history.md`. MANUAL M1 hecha por el líder («haz tu m1»): cumple (`progress/manual_F-076.md`). **Pendiente del humano:** push de `dev`; desplegar solo la api (`infra/d.local.ps1 api`) cuando quiera. Siguiente: F-071.
+**F-076 CERRADA el 2026-11-24 y DESPLEGADA el mismo día** (OK del humano a la PARADA 2: «ok»; M1 hecha por el líder, cumple, `progress/manual_F-076.md`). Lanzado por el humano: api `r20261124-1826` (`Healthy`, 100 % del tráfico, comprobado por el líder, solo lectura); transfer y front sin cambios. **Pendiente del humano:** push de `dev` y `azure-apps`; mirar el Excel en producción tras Ctrl+F5. Siguiente: F-071.
 
 **F-074 CERRADA el 2026-11-24 y DESPLEGADA el mismo día** (lanzado por el humano, orden api → «Sincronizar Sigrid» → transfer → front: api `r20261124-1616`, transfer `r20261124-1636` y front `r20261124-1637`, las tres `Healthy` con el 100 % del tráfico, comprobado por el líder, solo lectura; `imagenes.json` en `chore/despliegue-20261124`, unido a `dev`). `azure-apps/dedicacion.md` al día (`192b988` y `a1afdda`, pendientes de push del humano). **Pendiente del humano:** T18 (Ctrl+F5 y mirar en producción) y las MANUAL T15-T17, en «⚠ Lo que espera al humano».
 
@@ -476,7 +476,7 @@ obra e imputada al CP); F-044 queda en persona, gasoil, vehículo y teléfono
 (KM no). Juan quiere registrar **octubre entero desde la app**. F-045 desplegada.
 F-049 desplegada. F-050 desplegada. F-055 cerrada y desplegada el 2026-10-17. F-056 cerrada y
 desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
-2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-24):** F-074 cerrada y desplegada; F-076 cerrada y sin desplegar (línea 4); después, F-071 (orden de `BACKLOG.md`, reordenado el 2026-11-22; F-075 al final desde el 2026-11-24).
+2026-10-20. F-051 cerrada y desplegada el 2026-10-21. F-030 cerrada y desplegada el 2026-10-22. F-061 cerrada y desplegada el 2026-10-23. Orden de lo pendiente: el de `BACKLOG.md`. **Hoy (2026-11-24):** F-074 cerrada y desplegada; F-076 cerrada y desplegada (línea 4); después, F-071 (orden de `BACKLOG.md`, reordenado el 2026-11-22; F-075 al final desde el 2026-11-24).
 
 ## ⚠ Lo que espera al humano
 

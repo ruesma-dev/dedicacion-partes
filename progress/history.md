@@ -3260,3 +3260,8 @@ Rama `feature/F-076-excel-sin-resto-de` · `sdd: true` (por petición del humano
 - Sin desplegar: solo cambia la api (`infra/d.local.ps1 api`); no cruza la frontera.
 - La cabecera sigue diciendo «Total empleado» en las pestañas (design §8).
 - Incidente al medir la mutación: quitar el worktree temporal vació el `.venv` de la api del árbol principal (enlazado); reconstruido desde `requirements.txt`. Automejoras propuestas para `arnes-base`: aviso de bytes de control en `current.md` y no enlazar venvs del árbol principal en worktrees que se borran.
+
+## 2026-11-24 · F-076 · Desplegada
+
+- Lanzado por el humano con `infra/d.local.ps1 api`: api `r20261124-1826`, `Healthy`, `RunningAtMaxScale` y con el 100 % del tráfico (comprobado por el líder, solo lectura). Transfer (`r20261124-1636`) y front (`r20261124-1637`) sin cambios.
+- Sin cambio de contrato; nota de redespliegue en `azure-apps/dedicacion.md`. `imagenes.json` en `chore/despliegue-f076-20261124`, unido a `dev`.
