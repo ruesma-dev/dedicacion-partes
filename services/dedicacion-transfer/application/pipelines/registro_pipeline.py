@@ -10,8 +10,9 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
      (ARCHITECTURE.md#regla-empresa). Sin empresa, o con la obra en otra
      empresa, todas las líneas salen omitidas aquí, sin seguir.
   1. Resolver los DESTINOS: la obra normal (en pruebas, la de pruebas) y,
-     si hay líneas de postventa, la obra de postventa con su PARTIDA
-     (ARCHITECTURE.md#regla-p5), todas en la empresa de la petición.
+     si hay líneas de postventa, la obra de postventa como destino, SIN
+     casar su partida (F-074: la trae cada línea, casada en el sync;
+     ARCHITECTURE.md#regla-p5), todas en la empresa de la petición.
   2. El RECURSO de cada línea es el que manda la API (`recurso_ide`); el
      transfer no lo elige ni lee `res.conide`
      (ARCHITECTURE.md#regla-recurso). Sin él, la regla omite la línea.
@@ -19,10 +20,14 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
   4. Aplicar las REGLAS de la línea (ARCHITECTURE.md#regla-p1 … #regla-p3,
      #regla-p5). La línea que trae `var_paride` (una entrada VAR del
      cuadrante) va a esa partida o se omite, antes del override manual
-     (ARCHITECTURE.md#regla-var). La partida elegida de una línea de obra
-     tiene que ser hoja activa del presupuesto de origen o se omite; la que
-     no trae partida lleva la PROPUESTA, con una sola lectura del historial
-     por petición (ARCHITECTURE.md#regla-partida, F-050).
+     (ARCHITECTURE.md#regla-var). F-074: cada línea va a su partida
+     DEFINIDA (la elegida, la fija VAR o la `propuesta_*` guardada; en
+     postventa, la de su obra), validada por `ide` en una sola lectura por
+     petición; si no vale, se omite nombrándola (`partida_no_valida`). Sin
+     definida, la de obra normal va a la Regla C (sin partida, a confirmar)
+     y la de postventa se omite con su motivo. Sin lecturas de presupuesto,
+     historial ni cuentas: la PROPUESTA (`proponer`) solo corre en segundo
+     plano (ARCHITECTURE.md#regla-partida).
   4 bis. CUENTA ANALÍTICA de cada acción `escribir` en el centro de su obra
      destino (ARCHITECTURE.md#regla-analitica): la del recurso y, si no da,
      la de la partida de coste. Una lectura de partidas por petición y una

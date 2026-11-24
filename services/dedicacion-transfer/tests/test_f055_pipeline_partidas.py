@@ -118,7 +118,7 @@ def test_f055_r5_elegida_que_no_vale_se_omite(paride):
 # ============== R6/R7 · propuesta que no vale y pendientes =============== #
 @pytest.mark.parametrize("paride", [80004, 80000, 70001, 12345],
                          ids=["baja", "capitulo", "otra_obra", "inexistente"])
-def test_f055_r6_propuesta_que_no_vale_se_recalcula(paride):
+def test_f055_r6_propuesta_que_no_vale_se_omite_nombrandola(paride):
     """F-074 (§6, criterio i; R4, D4): ya no se recalcula; se omite
     nombrándola y no se lee presupuesto ni historial."""
     cli = Cliente([_h()])

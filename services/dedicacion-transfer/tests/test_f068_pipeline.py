@@ -312,7 +312,7 @@ def test_f068_r14_todos_resueltos_antes_las_lecturas_de_hoy():
         22: (81101, "CD.1", "titular", None)}
 
 
-def test_f068_r13_si_el_historial_falla_el_preflight_falla():
+def test_f068_r13_el_preflight_no_lee_el_historial_aunque_falle():
     """F-074 (§6, criterio ii): el preflight ya no lee el historial; su
     fallo no le afecta."""
     cli = Cliente68(falla=RuntimeError(
@@ -345,8 +345,8 @@ def test_f068_r16_guardada_con_metodo_propio_se_escribe_tal_cual(metodo):
 @pytest.mark.parametrize("metodo, paride, no_valida", [
     ("titular", 82013, None), ("manual", 82013, None), (None, 82013, None),
     ("parte_anterior", 82000, "X"), ("parte_anterior", 99999, "X")])
-def test_f068_r16_la_que_no_vale_o_de_titular_se_recalcula(metodo, paride,
-                                                          no_valida):
+def test_f068_r16_la_que_no_vale_se_omite_y_la_de_titular_no_cuenta(
+        metodo, paride, no_valida):
     """F-074 (§6, criterio i; R2, R4): ya no se recalcula. La de método
     `titular`, `manual` o sin método no cuenta (sin partida); la que no
     vale se omite nombrándola. Sin leer historial."""

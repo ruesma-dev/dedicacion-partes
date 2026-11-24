@@ -17,8 +17,8 @@ métodos de lectura, así que el pipeline de registro no cambia: un
   preflight usa la partida definida de cada línea y solo la valida.
   F-044 (R27, R29): los recursos vinculados de cada línea van en las
   mismas lecturas que su titular (horas, líneas de los partes, `synckey` y
-  `hmores.ide`, partidas); las cuentas del presupuesto, una vez por obra y
-  solo si alguna subfila las pide.
+  `hmores.ide`, partidas). F-074 (R6): las cuentas del presupuesto ya no se
+  precargan; el preflight no las lee.
   La validación no depende de A: va en B para que una obra con elegidas
   quepa en una tanda de `limite` (4) por ronda (C2).
 - Una lectura del pipeline se responde de lo precargado SOLO si la consulta

@@ -5,24 +5,28 @@ registro (design §6.3; ARCHITECTURE.md#regla-vinculado).
 Aparte de `registro_pipeline.py` para no engordarlo:
 
 - `proponer` (R9, R29): la propuesta de partida de cada subfila con la
-  misma regla que el preflight (`reglas_vinculados.partida_del_vinculado`):
-  la partida del titular en postventa, VAR o partida no `CI*`; si no
-  (F-068), su historial en la obra y, sin él, su cuenta (la subcuenta de la
-  cuenta de su hora por defecto, `reshor.caaide`, entre las cuentas del
-  presupuesto de la obra) y su nombre.
+  regla de `reglas_vinculados.partida_del_vinculado`: la partida del
+  titular en postventa, VAR o partida no `CI*`; si no (F-068), su
+  historial en la obra y, sin él, su cuenta (la subcuenta de la cuenta de
+  su hora por defecto, `reshor.caaide`, entre las cuentas del presupuesto
+  de la obra) y su nombre. F-074: SOLO corre en segundo plano (la cola del
+  mes y el selector), nunca en el preflight.
 - El preflight (R12-R26), en los puntos del pipeline donde sus lecturas
   van JUNTO a las de los titulares (R27): `decidir` tras la partida del
-  titular (paso 4), la cuenta en el paso 4 bis, el parte en el 5,
+  titular (paso 4), con la partida DEFINIDA de la subfila
+  (`partida_definida_del_vinculado`, F-074: la elegida, la del titular si
+  va con él o la propuesta guardada, validada por `ide`), sin lecturas de
+  la regla; la cuenta en el paso 4 bis, el parte en el 5,
   `idempotencia` con la lectura del paso 6, `sin_partida` en el 6 bis,
   `conflictos_del_parte` con las líneas del paso 7 y `cerrar` al final
   (titular omitido ⇒ sus vinculados también, sin sus avisos).
 
 Lecturas (R27): las horas de los vinculados y sus líneas, en las mismas
-lecturas que las de los trabajadores; las cuentas del presupuesto, UNA vez
-por petición y solo si alguna subfila las necesita. Sin vinculados no se
-lee nada más que antes. F-068 (R11, R12, R14): el historial de los
-vinculados en la obra, también UNA vez por petición (con los recursos de
-todos) y solo si alguna subfila llega a ese paso.
+lecturas que las de los trabajadores. Sin vinculados no se lee nada más que
+antes. Las cuentas del presupuesto y el historial de los vinculados (F-068,
+R11, R12, R14) son SOLO de `proponer`: UNA vez por petición (el historial,
+con los recursos de todos) y solo si alguna subfila llega a ese paso. El
+preflight no los lee (F-074, R6).
 """
 from __future__ import annotations
 

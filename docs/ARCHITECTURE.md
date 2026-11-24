@@ -105,7 +105,7 @@ ninguna obra con 6 o más dígitos seguidos en el código,
 `numemp`, que es el `con.emp` de las fichas; F-032), `periodo` (año+mes único, `ABIERTO`/`CERRADO`),
 `asignacion` (periodo × trabajador × obra × `es_postventa`, `porcentaje` en
 0-100 y la partida ELEGIDA, `partida_ide` / `partida_cod` / `partida_res`,
-nulas = automática, [`#regla-partida`](#regla-partida)), `tipo_incidencia`
+nulas = sin elegida, [`#regla-partida`](#regla-partida)), `tipo_incidencia`
 (catálogo `CI*` de `auxhor`, sincronizado) e `incidencia` (periodo ×
 trabajador × obra × código × días, con la traza de su registro; no cuenta en
 el 100 %, [`#regla-incidencia`](#regla-incidencia)) y `evento`
@@ -766,7 +766,7 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       la elegida) para que la cola la recalcule (F-074, D4). Sin partida
       definida, la línea va a [`#regla-sin-partida`](#regla-sin-partida).
     - **La elegida** se guarda en la asignación (api). Guardar la fila
-      conserva la de cada línea que ya existía; la nueva entra automática.
+      conserva la de cada línea que ya existía; la nueva entra sin elegida.
       Cambiarla deja un evento `PARTIDA`, que se deshace como cualquier otro
       ([`#regla-deshacer`](#regla-deshacer)); las copias del mes anterior la
       copian. Al registrar viaja como `paride`.
@@ -1217,7 +1217,7 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       pisa **solo esa** línea, en su sitio (mismo `id`, sus subfilas de
       vinculado no cambian) o la crea; las demás vuelven con su motivo. La
       partida: normal, la de sus líneas como elegida; postventa,
-      automática; VAR, la fija. Sin propuesta guardada. Guarda la traza de
+      sin elegida; VAR, la fija. Sin propuesta guardada. Guarda la traza de
       ya registrada (`sigrid_hmores_ide` = el menor `ide` de sus líneas,
       parte, «traída de Sigrid»): al registrar sale **ya registrada**
       ([`#regla-cero`](#regla-cero)). Guardar luego la fila pierde la traza
