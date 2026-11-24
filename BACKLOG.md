@@ -9,7 +9,7 @@ Resumen: **76 features**, 33 abiertas y 43 terminadas. Por columna: 1 en Review,
 
 | # | Feature | La tiene | Prioridad | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | reviewer | 1 | critico | `feature/F-074-partida-sin-automatica` |
+| F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | humano | 1 | critico | `feature/F-074-partida-sin-automatica` |
 
 ## Blocked
 
@@ -117,7 +117,7 @@ _Ninguna feature con la spec lista._
 
 ### F-074 · La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra
 
-estado **en QA / revisión** · spec aprobada el 2026-11-23 · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-074-partida-sin-automatica`
+estado **en revisión humana** · spec aprobada el 2026-11-23 · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-074-partida-sin-automatica`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 1): «solucionar que se quede en automática la imputación. O sale la que se va a encontrar después o sale que no encuentra y que se ponga, pero dejarlo para luego no tiene sentido». Hoy una subfila sin partida elegida ni propuesta enseña «automática (la propone el registro)» (`app.js`, F-050 R24-R25) y la partida se resuelve al registrar. Lo que se pide: que el cuadrante enseñe ya la partida que el registro va a usar o, si no la va a encontrar, que lo diga para que el usuario la elija antes. Por decidir en la spec: en qué casos queda hoy «automática» (titular y vinculados; tras F-055 la propuesta va en segundo plano), si se calcula con la misma regla que el registro para que no diverjan (el transfer es el que decide; nada de lógica en el front), cómo se enseña el «no la encuentra» y su coste en lecturas de Sigrid.
 
