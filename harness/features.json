@@ -1240,25 +1240,25 @@
     {
       "id": "F-075",
       "title": "Excel de exportación con la cabecera corporativa y el logo de Ruesma",
-      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 3): «la cabecera excel con logo». El Excel de exportación (F-040, F-045) lleva una cabecera con el logo de Ruesma. Por decidir: qué logo y de dónde sale (fichero versionado en el repositorio, sin datos sensibles), qué más va en la cabecera (título, mes, empresa, fecha de generación) y en qué pestañas. Solo api (export a Excel).",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 3): «la cabecera excel con logo». El Excel de exportación (F-040, F-045) lleva una cabecera con el logo de Ruesma. Por decidir: qué logo y de dónde sale (fichero versionado en el repositorio, sin datos sensibles), qué más va en la cabecera (título, mes, empresa, fecha de generación) y en qué pestañas. Solo api (export a Excel). El 2026-11-24 el humano la baja al final del backlog («f75 bájala a la última de todo»).",
       "acceptance": [
         "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
       "status": "todo",
       "sdd": false,
       "rigor": "estandar",
-      "priority": 2,
+      "priority": 34,
       "branch": "feature/F-075-excel-cabecera-logo"
     },
     {
       "id": "F-076",
       "title": "Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …»)",
-      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». ACLARADO por el humano el mismo día: «en el excel en la pestaña de postventa las obras normales salen como resto, y viceversa. Con este nuevo enfoque, en postventa sale solo postventa, y en obra solo obra». Hoy (F-045 D6, `infrastructure/excel/contenido.py` y `exporter.py`) cada trabajador lleva al final de su grupo una línea agregada en cursiva con la suma de la otra parte: «RESTO POSTVENTA» en la pestaña Obras y «RESTO OBRAS» en la de Postventa; un trabajador que solo tiene la otra parte sale solo con esa línea. Lo que se pide: fuera esas líneas agregadas, y fuera de cada pestaña los trabajadores que no tienen nada de esa parte. La pestaña Detalle no cambia. Por decidir: qué pasa con «Total empleado», «Desviación» y «Estado» de cada pestaña (hoy cuentan la línea agregada, así que el total de un trabajador repartido entre obras y postventa daría menos del 100 % en cada una). Solo api (export a Excel); cambia la decisión D6 de F-045.",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». ACLARADO por el humano el mismo día: «en el excel en la pestaña de postventa las obras normales salen como resto, y viceversa. Con este nuevo enfoque, en postventa sale solo postventa, y en obra solo obra». Hoy (F-045 D6, `infrastructure/excel/contenido.py` y `exporter.py`) cada trabajador lleva al final de su grupo una línea agregada en cursiva con la suma de la otra parte: «RESTO POSTVENTA» en la pestaña Obras y «RESTO OBRAS» en la de Postventa; un trabajador que solo tiene la otra parte sale solo con esa línea. Lo que se pide: fuera esas líneas agregadas, y fuera de cada pestaña los trabajadores que no tienen nada de esa parte. La pestaña Detalle no cambia. Por decidir: qué pasa con «Total empleado», «Desviación» y «Estado» de cada pestaña (hoy cuentan la línea agregada, así que el total de un trabajador repartido entre obras y postventa daría menos del 100 % en cada una). Solo api (export a Excel); cambia la decisión D6 de F-045. Reordenado el 2026-11-24 (petición del humano: «lanza spec de la siguiente f76»): pasa a llevar spec SDD.",
       "acceptance": [
         "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
       "status": "todo",
-      "sdd": false,
+      "sdd": true,
       "rigor": "estandar",
       "priority": 3,
       "branch": "feature/F-076-excel-sin-resto-de"

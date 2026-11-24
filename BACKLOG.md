@@ -25,7 +25,6 @@ _Ninguna feature con la spec lista._
 
 | # | Feature | Prioridad | Rigor | Rama |
 |---|---|---|---|---|
-| F-075 | Excel de exportación con la cabecera corporativa y el logo de Ruesma | 2 | estandar | `feature/F-075-excel-cabecera-logo` |
 | F-076 | Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …») | 3 | estandar | `feature/F-076-excel-sin-resto-de` |
 | F-071 | Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid | 4 | critico | `feature/F-071-trabajador-mes-parcial` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 5 | estandar | `feature/F-046-permiso-cerrar-periodo` |
@@ -34,6 +33,7 @@ _Ninguna feature con la spec lista._
 | F-073 | Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube | 8 | critico | `feature/F-073-informe-registro-excel` |
 | F-079 | En Sigrid, las líneas del parte se ven agrupadas por persona y no por concepto | 9 | critico | `feature/F-079-orden-por-persona-en-sigrid` |
 | F-070 | La cabecera del cuadrante se queda fija arriba al hacer scroll | 10 | estandar | `feature/F-070-cabecera-fija` |
+| F-075 | Excel de exportación con la cabecera corporativa y el logo de Ruesma | 34 | estandar | `feature/F-075-excel-cabecera-logo` |
 
 ## Backlog
 
@@ -114,17 +114,11 @@ _Ninguna feature con la spec lista._
 
 ## Detalle
 
-### F-075 · Excel de exportación con la cabecera corporativa y el logo de Ruesma
-
-estado **to do (comprometida)** · prioridad 2 · rigor `estandar` · SDD no · rama `feature/F-075-excel-cabecera-logo`
-
-Petición de negocio transmitida por el humano el 2026-11-22 (punto 3): «la cabecera excel con logo». El Excel de exportación (F-040, F-045) lleva una cabecera con el logo de Ruesma. Por decidir: qué logo y de dónde sale (fichero versionado en el repositorio, sin datos sensibles), qué más va en la cabecera (título, mes, empresa, fecha de generación) y en qué pestañas. Solo api (export a Excel).
-
 ### F-076 · Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …»)
 
-estado **to do (comprometida)** · prioridad 3 · rigor `estandar` · SDD no · rama `feature/F-076-excel-sin-resto-de`
+estado **to do (comprometida)** · prioridad 3 · rigor `estandar` · SDD sí · rama `feature/F-076-excel-sin-resto-de`
 
-Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». ACLARADO por el humano el mismo día: «en el excel en la pestaña de postventa las obras normales salen como resto, y viceversa. Con este nuevo enfoque, en postventa sale solo postventa, y en obra solo obra». Hoy (F-045 D6, `infrastructure/excel/contenido.py` y `exporter.py`) cada trabajador lleva al final de su grupo una línea agregada en cursiva con la suma de la otra parte: «RESTO POSTVENTA» en la pestaña Obras y «RESTO OBRAS» en la de Postventa; un trabajador que solo tiene la otra parte sale solo con esa línea. Lo que se pide: fuera esas líneas agregadas, y fuera de cada pestaña los trabajadores que no tienen nada de esa parte. La pestaña Detalle no cambia. Por decidir: qué pasa con «Total empleado», «Desviación» y «Estado» de cada pestaña (hoy cuentan la línea agregada, así que el total de un trabajador repartido entre obras y postventa daría menos del 100 % en cada una). Solo api (export a Excel); cambia la decisión D6 de F-045.
+Petición de negocio transmitida por el humano el 2026-11-22 (punto 4): «en el excel quitar los recursos que tengan solo resto de, y las líneas resto de». ACLARADO por el humano el mismo día: «en el excel en la pestaña de postventa las obras normales salen como resto, y viceversa. Con este nuevo enfoque, en postventa sale solo postventa, y en obra solo obra». Hoy (F-045 D6, `infrastructure/excel/contenido.py` y `exporter.py`) cada trabajador lleva al final de su grupo una línea agregada en cursiva con la suma de la otra parte: «RESTO POSTVENTA» en la pestaña Obras y «RESTO OBRAS» en la de Postventa; un trabajador que solo tiene la otra parte sale solo con esa línea. Lo que se pide: fuera esas líneas agregadas, y fuera de cada pestaña los trabajadores que no tienen nada de esa parte. La pestaña Detalle no cambia. Por decidir: qué pasa con «Total empleado», «Desviación» y «Estado» de cada pestaña (hoy cuentan la línea agregada, así que el total de un trabajador repartido entre obras y postventa daría menos del 100 % en cada una). Solo api (export a Excel); cambia la decisión D6 de F-045. Reordenado el 2026-11-24 (petición del humano: «lanza spec de la siguiente f76»): pasa a llevar spec SDD.
 
 ### F-071 · Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid
 
@@ -305,6 +299,12 @@ Decision del humano el 2026-08-20: estas dos cosas dejan de bloquear F-002 y la 
 estado **pendiente** · prioridad 33 · rigor `estandar` · SDD no · rama `feature/F-016-sigrid-key-solo-lectura`
 
 Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T30, T30 se movio a F-015 y F-015 solo se llevo la mitad del Portal. La review de cierre de F-008 la busco en las trece entradas del backlog y no aparecia en ninguna. El problema: la api y el transfer comparten HOY la misma function key de sigrid-api, y lo unico que impide que la api escriba en el ERP es que su codigo no tiene rutas de escritura, NO la credencial. Es decir, la separacion es por disciplina, no por permisos: cualquiera que anada por error una llamada de escritura a la api tendria credencial para ejecutarla. Hay que preguntar al dueno de sigrid-api si puede emitir una clave de SOLO LECTURA y, si puede, desplegarla en la api. Si no puede, hay que dejar escrito que la separacion depende del codigo y que eso es un riesgo aceptado a conciencia.
+
+### F-075 · Excel de exportación con la cabecera corporativa y el logo de Ruesma
+
+estado **to do (comprometida)** · prioridad 34 · rigor `estandar` · SDD no · rama `feature/F-075-excel-cabecera-logo`
+
+Petición de negocio transmitida por el humano el 2026-11-22 (punto 3): «la cabecera excel con logo». El Excel de exportación (F-040, F-045) lleva una cabecera con el logo de Ruesma. Por decidir: qué logo y de dónde sale (fichero versionado en el repositorio, sin datos sensibles), qué más va en la cabecera (título, mes, empresa, fecha de generación) y en qué pestañas. Solo api (export a Excel). El 2026-11-24 el humano la baja al final del backlog («f75 bájala a la última de todo»).
 
 ### F-074 · La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra
 
