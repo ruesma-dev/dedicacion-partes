@@ -570,6 +570,43 @@ Desde F-054 (traer de Sigrid al sincronizar y la obra sin nada = 0 %;
   **antes** de las escrituras por obra; su respuesta gana
   `sobrantes_a_cero: {puestas, omitidas}`.
 
+Desde F-074 (la partida ya no se queda en «automática»; el registro usa la
+partida **definida** y no propone ni casa,
+`docs/ARCHITECTURE.md#regla-partida`):
+
+- `registro/preflight(-lote)` deja de proponer: cada línea escribe su
+  elegida o su `propuesta_*` (en postventa, la de su obra) validada por
+  `ide`; sin ninguna, el conflicto «sin partida» de siempre (normal) u
+  omitida con motivo (postventa). Cada acción y cada vinculado ganan
+  `partida_no_valida` (el código de la partida definida que no vale, o
+  `null`): se omite nombrándola. `partidas_obra` y `partidas_postventa`
+  salen siempre `[]`. Lee menos: ni presupuestos de origen o de postventa,
+  ni historial, ni cuentas de partida (sigue la obra de postventa por
+  código y el catálogo VAR).
+- `partidas/propuesta(-lote)` gana `motivos` (`{clave: texto}`, de cada
+  línea sin propuesta) y `motivos_vinculados` (`{clave: {recurso:
+  texto}}`), solo si hay alguno. `postventa/universo` gana `motivos`
+  (`{ide: texto}`, de las obras pedidas que no casan), solo si hay alguno;
+  cada `obras[]` ya traía su `partida` (`{ide, cod, res}`).
+- La api guarda en `obra` la partida de postventa del universo
+  (`postventa_partida_ide`, `_cod`, `_res`) o su `postventa_motivo`: cuatro
+  columnas nulables sin default que pone al día al arrancar; las rellena el
+  sync. La línea de postventa sin elegida viaja al registro con
+  `propuesta_*` de su obra (método `postventa`).
+- Al volver del preflight la api ya **no guarda** propuestas; borra la
+  propuesta guardada de la línea o subfila que volvió con
+  `partida_no_valida` (si sigue sin elegida), para que la cola la recalcule.
+- Al front: cada línea del cuadrante y de las escrituras gana, solo con
+  valor, `propuesta_no_encontrada` (`true`) y `propuesta_motivo`; cada
+  subfila, `propuesta_pendiente`, `propuesta_no_encontrada` y
+  `propuesta_motivo`. La de postventa sin elegida publica como
+  `propuesta_*` la de su obra. `GET …/propuestas` gana, solo si hay alguna,
+  `no_encontradas` (`[{trabajador_ide, obra_ide, es_postventa, motivo}]`),
+  `subfilas_pendientes` y `subfilas_no_encontradas` (con `vinculado_ide`).
+- **Orden de despliegue: api → «Sincronizar Sigrid» → transfer → front.**
+  Con el transfer nuevo y sin sync, las líneas de postventa no tienen
+  partida de su obra y se omiten con su motivo hasta el primer sync.
+
 ### Quién puede entrar, y cómo se da acceso a alguien nuevo
 
 El acceso lo decide la pertenencia al grupo de Entra
