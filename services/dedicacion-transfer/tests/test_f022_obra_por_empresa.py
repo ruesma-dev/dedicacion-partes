@@ -32,8 +32,8 @@ from tests.conftest import (
     PRESUPUESTO_PV_HOJAS,
     ClienteFalso,
     SettingsFalso,
-    linea,
 )
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 
 # ============================ dominio (T1) ============================ #
 
@@ -332,6 +332,7 @@ class ClienteEmpresas(ClienteFalso):
 
     def obra_por_codigo(self, cod, empresa):
         self.llamadas.append(("codigo", cod, empresa))
+        self._empresa = empresa
         if (cod, empresa) in self.ambiguas:
             raise ObraAmbigua(f"obra {cod} ambigua: 2 fichas en la empresa "
                               f"{empresa}")
@@ -347,6 +348,18 @@ class ClienteEmpresas(ClienteFalso):
         if obride in (555001, 555028):
             return PRESUPUESTO_ORIGEN
         return []
+
+    def validar_partidas(self, parides):
+        """F-074 (§6, «cómo»): la validación por `ide` del doble padre, con
+        la obra de la empresa pedida (los presupuestos de la 28 son los
+        mismos datos que los de la 1, en sus fichas)."""
+        out = super().validar_partidas(parides)
+        if getattr(self, "_empresa", 1) != 28:
+            return out
+        obra_28 = {999001: 999028, 555001: 555028}
+        return {i: dataclasses.replace(v, obride=obra_28.get(v.obride,
+                                                             v.obride))
+                for i, v in out.items()}
 
     def stmts_crear_parte(self, **kw):
         self.creados.append(kw["obra"])
@@ -696,7 +709,10 @@ def test_f022_r18_app_preflight_publica_la_empresa(app_falsa):
     assert cuerpo["obra_destino"]["codigo"] == "0404"
     assert cuerpo["obra_postventa"]["empresa"] == 1
     assert cuerpo["obra_postventa"]["ide"] == 828942
-    assert cuerpo["capitulo_postventa"]["cod"] == "0678"
+    # F-074 (§6, criterio i): el preflight ya no casa la partida de
+    # postventa; sin línea de postventa que se escriba (esta no trae
+    # recurso), no hay capítulo que publicar.
+    assert cuerpo["capitulo_postventa"] is None
 
 
 def test_f022_r18_app_ejecutar_publica_la_empresa(app_falsa):

@@ -37,7 +37,6 @@ from tests.conftest import (
     ClienteFalso,
     SettingsFalso,
     _fila,
-    linea,
 )
 
 #: Tope por defecto aprobado por el humano el 2026-10-07 («ponle 200k»).
@@ -115,10 +114,15 @@ class ClienteObraGrande(ClienteFalso):
         return super().capitulos_de_obra(obride)
 
 
-def _preflight(cli) -> object:
+def _proponer(cli) -> dict:
+    """F-074 (§6, criterios i, ii): el presupuesto de la obra ya no lo lee
+    el preflight, sino la propuesta (la regla, en segundo plano)."""
     pl = RegistroPipeline(cliente=cli, settings=SettingsFalso())
-    return pl.preflight(obra=ObraEntrada(codigo=OBRA_ORIGEN),
-                        lineas=[linea(registro_id=1)])
+    return pl.proponer(empresa=1, obra=ObraEntrada(codigo=OBRA_ORIGEN),
+                       ano=2026, mes=7, lineas=[{
+                           "clave": "a", "recurso_ide": 200,
+                           "nombre": "Acuna Mera, Antonio",
+                           "categoria": "Encargado", "es_postventa": False}])
 
 
 # ================== a1 · el tope que se envía a sigrid-api ================== #
@@ -200,14 +204,15 @@ def test_f047_a1_env_example_documenta_el_tope():
 
 def test_f047_a2_una_obra_mayor_que_el_tope_sigue_siendo_error(monkeypatch):
     """Con el tope por debajo del presupuesto, la lectura NO devuelve las
-    filas parciales: lanza. Y el preflight cae sin decidir nada."""
+    filas parciales: lanza. Y la propuesta cae sin decidir nada (F-074: el
+    preflight ya no lee el presupuesto)."""
     _emulada(monkeypatch, presupuesto_grande())
     real = _cliente(max_rows=2000)
     with pytest.raises(RuntimeError, match="truncada"):
         real.capitulos_de_obra(555001)
     cli = ClienteObraGrande(real)
     with pytest.raises(RuntimeError, match="truncada"):
-        _preflight(cli)
+        _proponer(cli)
     assert cli.escritos == []
 
 
@@ -227,9 +232,7 @@ def test_f047_a3_obra_con_mas_de_2000_partidas_resuelve_su_partida(
     assert len(filas) > 3_000
     api = _emulada(monkeypatch, filas)
     cli = ClienteObraGrande(_cliente())
-    pf = _preflight(cli)
-    (a,) = pf.acciones
-    assert a.accion == "escribir"
-    assert (a.paride, a.partida_cod) == (80001, "CI.1.10")
+    propuesta = _proponer(cli)["propuestas"]["a"]
+    assert (propuesta["paride"], propuesta["cod"]) == (80001, "CI.1.10")
     assert [p["max_rows"] for p in api.peticiones] == [TOPE_DEFECTO]
     assert cli.escritos == []

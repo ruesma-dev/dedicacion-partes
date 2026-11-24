@@ -115,7 +115,11 @@ def _proponer_comparado(self, **peticion):
         _CUENTA["propuestas_error_iguales"] += 1
         raise
     lote = _propuesta_en_lote(copia[0], self._st, copia[1])
-    esperado = ({"ok": True, "propuestas": suelta["propuestas"]}
+    # F-074 (§6, criterio vi; R9): y los `motivos*` de la suelta, si los hay.
+    esperado = ({"ok": True, "propuestas": suelta["propuestas"],
+                 **{k: suelta[k] for k in ("vinculados", "motivos",
+                                           "motivos_vinculados")
+                    if k in suelta}}
                 if suelta["ok"] else suelta)
     assert lote == esperado, f"R21: {lote!r} != {esperado!r}"
     _CUENTA["propuestas_iguales"] += 1

@@ -34,6 +34,7 @@ from __future__ import annotations
 import re
 
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -218,13 +219,20 @@ def depurar_obras(
     filtro_activo: bool,
     universo: frozenset[int],
     no_normales: frozenset[int] = frozenset(),
+    *,
+    partidas: Mapping[int, dict[str, Any]] | None = None,
+    motivos: Mapping[int, str | None] | None = None,
 ) -> ResultadoDepuracion:
     """Marca cada obra con `activa` (por estado) y `admite_postventa` (su
     `ide` está en `universo`); descarta solo la que no tiene ninguna, y la
     cuenta como excluida por estado, como antes de F-025 (R13-R14).
 
     La obra de `no_normales` (la obra VAR, F-039 D1) sale siempre, con
-    `activa = False` sea cual sea su estado: no se ofrece como obra normal."""
+    `activa = False` sea cual sea su estado: no se ofrece como obra normal.
+
+    F-074 (R11, D2): cada fila lleva su partida de postventa del universo
+    (`postventa_partida_ide/_cod/_res`, de `partidas`) o, si no casa, las
+    tres nulas y su motivo (`postventa_motivo`, de `motivos`)."""
     resultado = ResultadoDepuracion(filas=[], brutos=len(filas))
     excluidos = [normalizar(e) for e in estados_excluidos if normalizar(e)]
 
@@ -244,8 +252,21 @@ def depurar_obras(
         resultado.admiten_postventa += admite
         resultado.solo_postventa += admite and not activa
         resultado.filas.append({**fila, "activa": activa,
-                                "admite_postventa": admite})
+                                "admite_postventa": admite,
+                                **_partida_postventa(ide, partidas or {},
+                                                     motivos or {})})
     return resultado
+
+
+def _partida_postventa(ide: int, partidas: Mapping[int, dict[str, Any]],
+                       motivos: Mapping[int, str | None]) -> dict[str, Any]:
+    """F-074 (R11): las columnas `postventa_*` de la obra `ide`: su partida
+    del universo o, sin ella, las nulas y su motivo (o nulo)."""
+    p = partidas.get(ide)
+    return {"postventa_partida_ide": p.get("ide") if p else None,
+            "postventa_partida_cod": p.get("cod") if p else None,
+            "postventa_partida_res": p.get("res") if p else None,
+            "postventa_motivo": None if p else motivos.get(ide)}
 
 
 def entradas_var(uvar: ResultadoUniversoVar) -> list[dict[str, Any]]:

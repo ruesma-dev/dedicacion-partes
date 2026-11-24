@@ -41,6 +41,27 @@ class CatalogoPostventa:
     motivo: str | None
 
 
+def obra_de_postventa(cliente, settings,
+                      empresa: int) -> tuple[ObraEntrada | None, str | None]:
+    """La obra de postventa de `empresa` (una lectura) y, sin ella, por qué.
+
+    Con el registro de postventa desactivado no lee nada. F-074 (R3): el
+    preflight la resuelve así, como destino, sin leer su presupuesto.
+    """
+    if not settings.postventa_registrar:
+        return None, MOTIVO_POSTVENTA_OFF
+    cod_pv = settings.postventa_obra_cod
+    try:
+        obra_pv = cliente.obra_por_codigo(cod_pv, empresa)
+    except ObraAmbigua as exc:
+        return None, (f"obra de postventa '{cod_pv}' ambigua en la empresa "
+                      f"{empresa}: {exc}")
+    if obra_pv is None:
+        return None, (f"obra de postventa '{cod_pv}' no encontrada en Sigrid "
+                      f"en la empresa {empresa}")
+    return obra_pv, None
+
+
 def cargar_catalogo_postventa(cliente, settings,
                               empresa: int) -> CatalogoPostventa:
     """Lee la obra de postventa de `empresa` y su presupuesto (dos lecturas).
@@ -48,22 +69,9 @@ def cargar_catalogo_postventa(cliente, settings,
     Con el registro de postventa desactivado no lee nada. Con la obra
     ausente o ambigua en la empresa, devuelve el motivo sin presupuesto.
     """
-    if not settings.postventa_registrar:
-        return CatalogoPostventa(obra=None, nodos={},
-                                 motivo=MOTIVO_POSTVENTA_OFF)
-    cod_pv = settings.postventa_obra_cod
-    try:
-        obra_pv = cliente.obra_por_codigo(cod_pv, empresa)
-    except ObraAmbigua as exc:
-        return CatalogoPostventa(
-            obra=None, nodos={},
-            motivo=(f"obra de postventa '{cod_pv}' ambigua en la empresa "
-                    f"{empresa}: {exc}"))
+    obra_pv, motivo = obra_de_postventa(cliente, settings, empresa)
     if obra_pv is None:
-        return CatalogoPostventa(
-            obra=None, nodos={},
-            motivo=(f"obra de postventa '{cod_pv}' no encontrada en Sigrid "
-                    f"en la empresa {empresa}"))
+        return CatalogoPostventa(obra=None, nodos={}, motivo=motivo)
     nodos = construir_catalogo(cliente.capitulos_de_obra(int(obra_pv.ide)))
     return CatalogoPostventa(obra=obra_pv, nodos=nodos, motivo=None)
 
@@ -97,20 +105,26 @@ class UniversoPostventa:
         """Una carga del catálogo por petición (R7) y un casado por obra.
 
         Sin obras no se lee nada. Un fallo de lectura sube tal cual: no hay
-        universo parcial (R6).
+        universo parcial (R6). F-074 (R10, D6 b): `motivos`, el texto de
+        `casar_postventa` de cada obra pedida que no casa, por su `ide`;
+        solo si hay alguna (sin ella, la respuesta de siempre).
         """
         catalogo = (cargar_catalogo_postventa(self._cli, self._st, empresa)
                     if obras else CatalogoPostventa(None, {}, None))
         casadas = []
+        motivos: dict[int, str | None] = {}
         for obra in obras:
-            partida, _motivo = casar_postventa(catalogo, obra.codigo,
-                                               obra.nombre)
+            partida, motivo = casar_postventa(catalogo, obra.codigo,
+                                              obra.nombre)
             if partida is not None:
                 casadas.append({"ide": obra.ide, "partida": partida})
+            elif obra.ide is not None:
+                motivos[obra.ide] = motivo
         return {
             "empresa": empresa,
             "obra_postventa": asdict(catalogo.obra) if catalogo.obra else None,
             "motivo": catalogo.motivo,
             "casadas": len(casadas),
             "obras": casadas,
+            **({"motivos": motivos} if motivos else {}),
         }

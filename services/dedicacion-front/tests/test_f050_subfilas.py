@@ -165,8 +165,10 @@ def test_f050_r24_celda_elegida_fija_o_automatica():
     assert ("else if (l.partida_ide != null) { td.innerHTML = "
             "`<span class=\"partida-elegida\">${escapeHtml(textoPartida(l))}"
             "</span>`; }") in partida
-    assert ("else { td.innerHTML = '<span class=\"partida-auto\">"
-            "automática</span>'; }") in partida
+    # F-074 (§6, criterio iv): sin fija ni elegida, la celda de F-074
+    # (nunca «automática»).
+    assert "else { td.innerHTML = htmlPartida(l); }" in partida
+    assert "automática" not in partida
     assert re.search(r"\.partida-auto\s*\{[^}]*font-style: italic", CSS)
 
 
@@ -231,7 +233,7 @@ def test_f050_r28_filtro_partida_casa_linea_a_linea():
                      "vacio": ""})
     assert res["ci19"] == ["Ana"]
     assert res["jef"] == ["Benito"]
-    assert res["auto"] == ["Ana"]
+    assert res["auto"] == []            # F-074 (§6, criterio iv)
     assert res["nada"] == []
     assert res["vacio"] == ["Ana", "Benito", "Carla"]
 

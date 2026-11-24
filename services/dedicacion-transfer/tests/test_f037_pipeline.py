@@ -29,10 +29,10 @@ from tests.conftest import (
     PRESUPUESTO_ORIGEN,
     ClienteFalso,
     SettingsFalso,
-    linea,
     linea_previa,
     _fila,
 )
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
 #: Centros de las obras del doble de `conftest.py`.

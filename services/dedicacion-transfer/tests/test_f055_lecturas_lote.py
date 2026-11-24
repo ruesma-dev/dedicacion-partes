@@ -178,17 +178,14 @@ def contar_tandas(monkeypatch) -> list[tuple[int, int]]:
 
 
 def test_f055_r20_pendientes_historial_y_presupuesto_una_vez():
+    """F-074 (§6, criterio ii; R6, R23): ni con pendientes precarga el lote
+    el historial ni el presupuesto: el preflight ya no los lee."""
     cli = ClienteQueAnota(historial=[_h()])
-    m = _precargado(cli, _peticiones(
+    _precargado(cli, _peticiones(
         [linea(registro_id=1), linea(registro_id=2, recurso_ide=400,
                                      propuesta_paride=80002)]))
-    assert ("historial_partidas", [200, 400], 202407, 202607) \
-        in cli.llamadas
-    assert ("capitulos_de_obra", 555001) in cli.llamadas
-    cli.llamadas.clear()
-    assert m.historial_partidas([200], 202407, 202607) == [_h()]
-    assert m.capitulos_de_obra(555001) == cli.partidas_origen
-    assert cli.llamadas == [] and m.fallos_de_memoria == {}
+    assert "historial_partidas" not in cli.nombres()
+    assert "capitulos_de_obra" not in cli.nombres()
 
 
 def test_f055_r20_sin_pendientes_ni_historial_ni_presupuesto():
@@ -207,7 +204,8 @@ def test_f055_r20_postventa_y_real_destinos_y_presupuesto():
                 obra_pruebas_forzar=False)
     assert ("obra_por_codigo", OBRA_POSTVENTA, 1) in cli.llamadas
     assert ("obra_por_codigo", OBRA_PRUEBAS, 1) not in cli.llamadas
-    assert ("capitulos_de_obra", cli.obra_pv.ide) in cli.llamadas
+    # F-074 (§6, criterio ii): ni el presupuesto de la obra de postventa.
+    assert "capitulos_de_obra" not in cli.nombres()
     [partes] = [c for c in cli.llamadas if c[0] == "partes_de_periodos"]
     assert partes[1] == sorted([555001, cli.obra_pv.ide])
 
@@ -244,7 +242,7 @@ def test_f055_r20_partidas_de_lineas_solo_si_falta_subcuenta():
     ("partes_del_periodo", (828942, 2026, 7), (828942, 2026, 6)),
     ("lineas_del_parte", (777, [200]), (777, [300])),
     ("obra_por_ide", (555001,), (555002,)),
-    ("historial_partidas", ([200], 202407, 202607), ([200], 202406, 202606)),
+    # F-074 (§6, criterio ii): el historial ya no se precarga.
 ])
 def test_f055_r22_responde_si_esta_dentro_y_si_no_lee(metodo, dentro,
                                                        fuera):
@@ -445,13 +443,14 @@ def test_f055_r20_real_sin_obra_de_postventa_la_precarga_sigue():
 
 
 def test_f055_r20_validacion_solo_de_obra_normal_sin_var():
-    """Superviviente `not es_postventa or var is None`: la elegida de una
-    línea de postventa no se valida por `ide` (va contra su catálogo)."""
+    """Superviviente `not es_postventa or var is None`. F-074 (§6,
+    criterio vii; R3): la elegida de una línea de postventa también se
+    valida por `ide`, en la misma lectura."""
     cli = ClienteQueAnota()
     _precargado(cli, _peticiones([
         linea(**ELEGIDA),
         linea(registro_id=2, es_postventa=True, paride=70002)]))
-    assert ("validar_partidas", [80002]) in cli.llamadas
+    assert ("validar_partidas", [70002, 80002]) in cli.llamadas
 
 
 def test_f055_r20_la_obra_var_se_busca_en_la_precarga():

@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **76 features**, 33 abiertas y 43 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 10 en To do, 23 en Backlog y 43 en Done.
+Resumen: **76 features**, 32 abiertas y 44 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 9 en To do, 23 en Backlog y 44 en Done.
 
 ## Review
 
@@ -25,7 +25,6 @@ _Ninguna feature con la spec lista._
 
 | # | Feature | Prioridad | Rigor | Rama |
 |---|---|---|---|---|
-| F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | 1 | critico | `feature/F-074-partida-sin-automatica` |
 | F-075 | Excel de exportación con la cabecera corporativa y el logo de Ruesma | 2 | estandar | `feature/F-075-excel-cabecera-logo` |
 | F-076 | Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …») | 3 | estandar | `feature/F-076-excel-sin-resto-de` |
 | F-071 | Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid | 4 | critico | `feature/F-071-trabajador-mes-parcial` |
@@ -68,6 +67,7 @@ _Ninguna feature con la spec lista._
 
 | # | Feature | Cierre | OK humano | Prioridad | Rigor |
 |---|---|---|---|---|---|
+| F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | 2026-11-24 | 2026-11-24 | 1 | critico |
 | F-069 | Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras | 2026-11-20 | 2026-11-20 | 1 | critico |
 | F-054 | Al sincronizar, traer al cuadrante los porcentajes que ya existen en los partes de Sigrid | 2026-11-18 | 2026-11-18 | 8 | critico |
 | F-001 | Primera suite de tests de dedicacion-api: la regla del 100 % | sin fecha | sin anotar | 1 | estandar |
@@ -113,12 +113,6 @@ _Ninguna feature con la spec lista._
 | F-030 | Incidencias en el cuadrante: texto en lugar del % con desplegable de las de partes (y dedicación por días) | sin fecha | sin anotar | 14 | critico |
 
 ## Detalle
-
-### F-074 · La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra
-
-estado **to do (comprometida)** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-074-partida-sin-automatica`
-
-Petición de negocio transmitida por el humano el 2026-11-22 (punto 1): «solucionar que se quede en automática la imputación. O sale la que se va a encontrar después o sale que no encuentra y que se ponga, pero dejarlo para luego no tiene sentido». Hoy una subfila sin partida elegida ni propuesta enseña «automática (la propone el registro)» (`app.js`, F-050 R24-R25) y la partida se resuelve al registrar. Lo que se pide: que el cuadrante enseñe ya la partida que el registro va a usar o, si no la va a encontrar, que lo diga para que el usuario la elija antes. Por decidir en la spec: en qué casos queda hoy «automática» (titular y vinculados; tras F-055 la propuesta va en segundo plano), si se calcula con la misma regla que el registro para que no diverjan (el transfer es el que decide; nada de lógica en el front), cómo se enseña el «no la encuentra» y su coste en lecturas de Sigrid.
 
 ### F-075 · Excel de exportación con la cabecera corporativa y el logo de Ruesma
 
@@ -311,6 +305,12 @@ Decision del humano el 2026-08-20: estas dos cosas dejan de bloquear F-002 y la 
 estado **pendiente** · prioridad 33 · rigor `estandar` · SDD no · rama `feature/F-016-sigrid-key-solo-lectura`
 
 Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T30, T30 se movio a F-015 y F-015 solo se llevo la mitad del Portal. La review de cierre de F-008 la busco en las trece entradas del backlog y no aparecia en ninguna. El problema: la api y el transfer comparten HOY la misma function key de sigrid-api, y lo unico que impide que la api escriba en el ERP es que su codigo no tiene rutas de escritura, NO la credencial. Es decir, la separacion es por disciplina, no por permisos: cualquiera que anada por error una llamada de escritura a la api tendria credencial para ejecutarla. Hay que preguntar al dueno de sigrid-api si puede emitir una clave de SOLO LECTURA y, si puede, desplegarla en la api. Si no puede, hay que dejar escrito que la separacion depende del codigo y que eso es un riesgo aceptado a conciencia.
+
+### F-074 · La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra
+
+estado **terminada** · cerrada el 2026-11-24 · spec aprobada el 2026-11-23 · OK del humano el 2026-11-24 · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-074-partida-sin-automatica`
+
+Petición de negocio transmitida por el humano el 2026-11-22 (punto 1): «solucionar que se quede en automática la imputación. O sale la que se va a encontrar después o sale que no encuentra y que se ponga, pero dejarlo para luego no tiene sentido». Hoy una subfila sin partida elegida ni propuesta enseña «automática (la propone el registro)» (`app.js`, F-050 R24-R25) y la partida se resuelve al registrar. Lo que se pide: que el cuadrante enseñe ya la partida que el registro va a usar o, si no la va a encontrar, que lo diga para que el usuario la elija antes. Por decidir en la spec: en qué casos queda hoy «automática» (titular y vinculados; tras F-055 la propuesta va en segundo plano), si se calcula con la misma regla que el registro para que no diverjan (el transfer es el que decide; nada de lógica en el front), cómo se enseña el «no la encuentra» y su coste en lecturas de Sigrid.
 
 ### F-069 · Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras
 

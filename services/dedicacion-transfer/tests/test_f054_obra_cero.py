@@ -214,7 +214,8 @@ from application.pipelines.registro_lote import RegistroLote
 from interface_adapters.api.app import _respuesta_preflight
 
 from tests import test_f055_lote as lote_f055
-from tests.conftest import linea, linea_previa
+from tests.conftest import linea_previa
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 from tests.test_f055_lote import (
     ClienteObras,
     _ajustes,
@@ -496,11 +497,12 @@ def test_f054_d19_sobrantes_omitida_antes_cubre_todas():
 def _pf_ruta(api, ajustes=None, **kw) -> dict:
     """El preflight publicado (`asdict(a)` y su clave) de una `Postv-` con
     un vinculado, en el doble de `conftest` (partida de postventa 70001)."""
-    from tests.conftest import ClienteFalso
+    from tests.conftest import DEFINIDA_POSTVENTA, ClienteFalso
+    # F-074 (§6, «cómo»): con la partida de su obra (la que casaba antes).
     lin = {"registro_id": 1, "ano": 2026, "mes": 7, "porcentaje": 0.4,
            "recurso_ide": 200, "empresa": 1, "es_postventa": True,
            "vinculados": [{"recurso_ide": 300, "tipo": "TF", "cod": "TEL1"}],
-           **kw}
+           **DEFINIDA_POSTVENTA, **kw}
     r = api(ClienteFalso(), **(ajustes or {})).post(
         "/api/registro/preflight",
         json={"obra": {"codigo": "0678"}, "lineas": [lin]})

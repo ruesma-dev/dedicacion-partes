@@ -31,7 +31,10 @@ from tests.test_f050_subfilas import CSS, JS, _const, _funcion, _plano
 FUNCIONES = ["textoPartida", "rotuloOrigen", "htmlPartida",
              "aplicarPropuestas", "marcarPropuestas", "reiniciarPropuestas",
              "seguirPropuestas", "consultarPropuestas",
-             "aplicarPendientes"]                   # + F-057
+             "aplicarPendientes",                   # + F-057
+             # F-074 (§6, criterio iv): las marcas que sustituyen a
+             # «automática» en la consulta de 5 s.
+             "aplicarNoEncontradas", "aplicarMarcasSubfilas"]
 CONSTS = ("INTERVALO_PROPUESTAS", "propuestas")
 
 #: Dobles del entorno: temporizadores que se disparan a mano, `api` que
@@ -98,7 +101,8 @@ PROPUESTA_HTML = (
     # F-057: «buscando» lo decide la marca de la línea, no el global.
     (_l(1, propuesta_pendiente=True), True,
      '<span class="partida-auto buscando">buscando partida…</span>'),
-    (_l(1), False, '<span class="partida-auto">automática</span>'),
+    # F-074 (§6, criterio iv): sin nada y sin periodo abierto, «—».
+    (_l(1), False, '<span class="partida-auto">—</span>'),
     (_l(1, partida_ide=7, partida_cod="CI.1.9", partida_res="ADM", **PROP),
      True, '<span class="partida-elegida">CI.1.9 · ADM</span>'),
     (_l(1, propuesta_cod="X<1", propuesta_metodo="auto_nombre"), False,
@@ -117,7 +121,9 @@ def test_f055_r27_construir_celda_usa_html_partida():
     assert "td.innerHTML = htmlPartida(l);" in celda        # F-057
     assert "td.dataset.ide = t.ide;" in celda
     assert "td.dataset.linea = idx;" in celda
-    assert "else if (l.propuesta_cod || l.propuesta_pendiente) {" in celda
+    # F-074 (§6, criterio iv): todo lo que no es fija ni elegida, a
+    # `htmlPartida` (antes, solo la propuesta y «buscando»).
+    assert "else { td.innerHTML = htmlPartida(l); }" in celda
     assert ".partida-propuesta {" in CSS and "font-style: italic" in \
         CSS.split(".partida-propuesta {")[1].split("}")[0]
 

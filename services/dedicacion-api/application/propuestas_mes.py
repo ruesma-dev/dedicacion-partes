@@ -28,6 +28,13 @@ evento). La api no propone: guarda lo que devuelve el transfer.
   una se guarda en su fila de `asignacion_vinculado` solo si sigue vacía.
   Las subfilas tienen su cola aparte: `pendientes` sigue siendo de líneas;
   `en_curso` cuenta las dos.
+- F-074 (R13-R15): las memorias guardan el MOTIVO del transfer (el de su
+  `motivos` / `motivos_vinculados` o el error de la obra `{ok: false}`), y
+  `encolar_marcas` devuelve, de la misma foto de la cola, las `Marcas` de
+  líneas y subfilas (pendientes y no encontradas con su motivo): la api las
+  publica y el front pinta «buscando partida…» o «no encuentra partida».
+  `olvidar_subfilas` saca de la memoria las subfilas de una línea cuyo
+  titular cambia de partida, para recalcularlas.
 """
 from __future__ import annotations
 
@@ -39,6 +46,7 @@ from typing import Any
 from domain.models import EstadoPeriodo, Linea
 from domain.ports import UnitOfWork
 
+from application.estado_partida import Marcas
 from application.partidas_linea import peticion_de_subfilas
 from application.registro_sigrid import (
     es_metodo_de_propuesta,
@@ -70,9 +78,10 @@ class PropuestasDelMes:
         self._n = int(obras_por_llamada)
         self._lock = threading.Lock()
         self._en_cola: set[Clave] = set()
-        self._sin_propuesta: set[Clave] = set()
+        # F-074 (R13, R14): la memoria de «sin propuesta», con el motivo.
+        self._sin_propuesta: dict[Clave, str | None] = {}
         self._en_cola_sub: set[ClaveSubfila] = set()
-        self._sin_propuesta_sub: set[ClaveSubfila] = set()
+        self._sin_propuesta_sub: dict[ClaveSubfila, str | None] = {}
         # Marca de parada de la api (T17b): `_calcular` la mira entre trozos.
         self._parada = threading.Event()
 
@@ -84,21 +93,33 @@ class PropuestasDelMes:
         Solo se encolan líneas de obra normal, así que `es_postventa` es
         siempre falso; va en la tupla para que quien la use case la línea
         por su identidad completa y no confunda la de postventa."""
-        return self._foto(periodo_id)[1]
+        return self._foto(periodo_id)[1].pendientes
 
     def en_curso(self, periodo_id: int) -> bool:
         """¿Alguna línea o subfila (F-044) del periodo en cola o en marcha?
         (R30)."""
         return self._foto(periodo_id)[0]
 
-    def _foto(self, periodo_id: int) -> tuple[bool, frozenset[Pendiente]]:
-        """`(en_curso, pendientes)` del periodo, de una sola lectura de la
-        cola (F-057); `en_curso` cuenta también las subfilas (F-044)."""
+    def _foto(self, periodo_id: int) -> tuple[bool, Marcas]:
+        """`(en_curso, marcas)` del periodo, de una sola lectura de la cola
+        (F-057); `en_curso` cuenta también las subfilas (F-044). F-074 (R13,
+        R14): las marcas, también las no encontradas con su motivo y las de
+        las subfilas, de la misma lectura."""
         with self._lock:
             pendientes = frozenset((c[1], c[2], False) for c in self._en_cola
                                    if c[0] == periodo_id)
-            subfilas = any(c[0] == periodo_id for c in self._en_cola_sub)
-        return bool(pendientes) or subfilas, pendientes
+            subfilas = frozenset(c[1:] for c in self._en_cola_sub
+                                 if c[0] == periodo_id)
+            marcas = Marcas(
+                pendientes=pendientes,
+                no_encontradas={(c[1], c[2], False): m for c, m
+                                in self._sin_propuesta.items()
+                                if c[0] == periodo_id},
+                subfilas_pendientes=subfilas,
+                subfilas_no_encontradas={c[1:]: m for c, m
+                                         in self._sin_propuesta_sub.items()
+                                         if c[0] == periodo_id})
+        return bool(pendientes) or bool(subfilas), marcas
 
     def cerrar(self) -> None:
         """Parada de la api (T17b, O5 de la review): levanta la marca de
@@ -115,6 +136,17 @@ class PropuestasDelMes:
         with self._lock:
             self._sin_propuesta.clear()
             self._sin_propuesta_sub.clear()
+
+    def olvidar_subfilas(self, periodo_id: int, trabajador_ide: int,
+                         obra_ide: int, es_postventa: bool) -> None:
+        """F-074 (R15): saca de la memoria de «sin propuesta» las subfilas
+        de una línea cuyo titular cambia de partida (`CambiarPartida` les
+        borra la propuesta), para que el próximo `encolar` las recalcule
+        con la partida nueva del titular."""
+        linea = (periodo_id, trabajador_ide, obra_ide, es_postventa)
+        with self._lock:
+            for c in [c for c in self._sin_propuesta_sub if c[:4] == linea]:
+                del self._sin_propuesta_sub[c]
 
     def tras_sync(self) -> None:
         """Tras un sync con éxito: olvida y lanza cada periodo ABIERTO
@@ -143,21 +175,31 @@ class PropuestasDelMes:
         """Como `lanzar`, y además las pendientes de TODO el periodo tras
         encolar (F-057), leídas a la vez que `en_curso`: las dos salen de la
         misma foto de la cola. Periodo cerrado o inexistente, o un fallo:
-        `(False, frozenset())`. Nunca lanza (R37)."""
+        `(False, frozenset())`. Nunca lanza (R37). F-074: el envoltorio de
+        `encolar_marcas` con solo las pendientes de líneas."""
+        en_curso, marcas = self.encolar_marcas(anio, mes, trabajadores)
+        return en_curso, marcas.pendientes
+
+    def encolar_marcas(self, anio: int, mes: int,
+                       trabajadores: Iterable[int] | None = None,
+                       ) -> tuple[bool, Marcas]:
+        """F-074 (R13, R14): como `encolar`, con TODAS las marcas del
+        periodo tras encolar (`Marcas`), de la misma foto que `en_curso`.
+        Periodo cerrado o inexistente, o un fallo: `(False, Marcas())`.
+        Nunca lanza (R37)."""
         try:
             return self._lanzar(anio, mes, trabajadores)
         except Exception:                           # noqa: BLE001
             logger.exception("[propuestas] no se pudo encolar %02d/%s",
                              mes, anio)
-            return False, frozenset()
+            return False, Marcas()
 
-    def _lanzar(self, anio, mes, trabajadores
-                ) -> tuple[bool, frozenset[Pendiente]]:
+    def _lanzar(self, anio, mes, trabajadores) -> tuple[bool, Marcas]:
         solo = None if trabajadores is None else set(trabajadores)
         with self._uow() as uow:
             r = uow.periodos.obtener(anio, mes)
             if r is None or r[1].estado is not EstadoPeriodo.ABIERTO:
-                return False, frozenset()
+                return False, Marcas()
             periodo_id = r[0]
             candidatas = []
             for ide, lineas in sorted(
@@ -186,7 +228,8 @@ class PropuestasDelMes:
                     titular = False
                 subs = [v for v in subfilas
                         if self._clave_sub(periodo_id, ide, ln, v)
-                        not in self._en_cola_sub | self._sin_propuesta_sub]
+                        not in self._en_cola_sub.union(
+                            self._sin_propuesta_sub)]
                 if not titular and not subs:
                     continue
                 nuevas.append(self._pendiente(
@@ -261,18 +304,23 @@ class PropuestasDelMes:
             {"empresa": self._empresa, "obra": ps[0]["obra"], "ano": anio,
              "mes": mes, "lineas": [p["linea"] for p in ps]}
             for _, ps in obras])
-        sin: list[Clave] = []
-        sin_sub: list[ClaveSubfila] = []
+        sin: dict[Clave, str | None] = {}
+        sin_sub: dict[ClaveSubfila, str | None] = {}
         with self._uow() as uow:
             for (obra_ide, ps), entrada in zip(obras, r["obras"]):
+                ok = bool(entrada.get("ok"))
                 for p in ps:
                     clave_t = p["linea"]["clave"]
                     if p["clave"] is not None:
                         prop = (entrada.get("propuestas") or {}).get(
-                            clave_t) if entrada.get("ok") else None
+                            clave_t) if ok else None
                         if prop is None or not es_metodo_de_propuesta(
                                 prop.get("metodo")):
-                            sin.append(p["clave"])
+                            # F-074 (R13): con el motivo del transfer o el
+                            # error de la obra.
+                            sin[p["clave"]] = _motivo(
+                                entrada, (entrada.get("motivos") or {})
+                                .get(clave_t))
                         else:
                             _, trabajador, obra = p["clave"]
                             uow.asignaciones.guardar_propuesta(
@@ -280,13 +328,16 @@ class PropuestasDelMes:
                                 prop, solo_si_vacia=True)
                     # F-044 (R9): las subfilas de la línea.
                     de_linea = ((entrada.get("vinculados") or {}).get(clave_t)
-                                or {}) if entrada.get("ok") else {}
+                                or {}) if ok else {}
+                    motivos_sub = ((entrada.get("motivos_vinculados") or {})
+                                   .get(clave_t) or {})
                     for c in p["subfilas"]:
                         periodo_id, trabajador, obra, pv, vid = c
                         prop = de_linea.get(str(vid))
                         if prop is None or not es_metodo_de_propuesta_vinculado(
                                 prop.get("metodo")):
-                            sin_sub.append(c)
+                            sin_sub[c] = _motivo(entrada,
+                                                 motivos_sub.get(str(vid)))
                             continue
                         uow.asignaciones.guardar_propuesta_vinculado(
                             periodo_id, trabajador, (obra, pv), vid, prop,
@@ -300,9 +351,12 @@ class PropuestasDelMes:
     def estado(self, uow: UnitOfWork, anio: int, mes: int) -> dict[str, Any]:
         """R35: `{en_curso, lineas, pendientes}`: las automáticas con
         propuesta guardada del periodo y (F-057) las que siguen en la cola,
-        de la misma foto que `en_curso`. Solo lee."""
+        de la misma foto que `en_curso`. Solo lee. F-074 (R13, R14): y, solo
+        si hay alguna, `no_encontradas` (con su motivo),
+        `subfilas_pendientes` y `subfilas_no_encontradas`."""
         periodo_id, _ = _periodo_o_error(uow, anio, mes)
-        en_curso, pendientes = self._foto(periodo_id)
+        en_curso, marcas = self._foto(periodo_id)
+        pendientes = marcas.pendientes
         por_trabajador = uow.asignaciones.lineas_del_periodo(periodo_id)
         lineas = [
             {"trabajador_ide": ide, "obra_ide": ln.obra_ide,
@@ -329,4 +383,36 @@ class PropuestasDelMes:
                 "pendientes": [
                     {"trabajador_ide": t, "obra_ide": o, "es_postventa": pv}
                     for t, o, pv in sorted(pendientes)],
-                **({"subfilas": subfilas} if subfilas else {})}
+                **({"subfilas": subfilas} if subfilas else {}),
+                **_listas_de_marcas(marcas)}
+
+
+def _motivo(entrada: dict, motivo: str | None) -> str | None:
+    """F-074 (R13): el motivo de una línea o subfila sin propuesta: el que
+    manda el transfer o, si su obra vuelve `{ok: false}`, su error."""
+    if not entrada.get("ok"):
+        return entrada.get("error") or motivo
+    return motivo
+
+
+def _listas_de_marcas(marcas: Marcas) -> dict[str, Any]:
+    """F-074 (R13, R14): las listas de `estado()`, solo las que tienen
+    alguna (sin ninguna, la respuesta de siempre)."""
+    out: dict[str, Any] = {}
+    if marcas.no_encontradas:
+        out["no_encontradas"] = [
+            {"trabajador_ide": t, "obra_ide": o, "es_postventa": pv,
+             "motivo": m}
+            for (t, o, pv), m in sorted(marcas.no_encontradas.items())]
+    if marcas.subfilas_pendientes:
+        out["subfilas_pendientes"] = [
+            {"trabajador_ide": t, "obra_ide": o, "es_postventa": pv,
+             "vinculado_ide": vid}
+            for t, o, pv, vid in sorted(marcas.subfilas_pendientes)]
+    if marcas.subfilas_no_encontradas:
+        out["subfilas_no_encontradas"] = [
+            {"trabajador_ide": t, "obra_ide": o, "es_postventa": pv,
+             "vinculado_ide": vid, "motivo": m}
+            for (t, o, pv, vid), m
+            in sorted(marcas.subfilas_no_encontradas.items())]
+    return out

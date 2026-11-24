@@ -149,7 +149,9 @@ def test_f025_r15_el_cliente_pide_el_universo_y_devuelve_los_ides(
         "ok": True, "empresa": 1, "motivo": None, "casadas": 1,
         "obras": [{"ide": 10, "partida": {"ide": 5, "cod": "0656"}}]}))
     r = cliente.universo_postventa(1, OBRAS)
-    assert r == ResultadoUniverso(ides=frozenset({10}), motivo=None)
+    # F-074 (§6, criterio v; R11): y la partida de cada obra del universo.
+    assert r == ResultadoUniverso(ides=frozenset({10}), motivo=None,
+                                  partidas={10: {"ide": 5, "cod": "0656"}})
     assert enviado == [("http://transfer.invalid/api/postventa/universo",
                         {"empresa": 1, "obras": OBRAS}, 7.0)]
 

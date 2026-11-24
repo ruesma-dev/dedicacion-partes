@@ -29,11 +29,10 @@ import pytest
 from application.pipelines.registro_lote import RegistroLote
 from application.pipelines.registro_pipeline import RegistroPipeline
 from application.services.lecturas_lote import LecturasDelLote
+from application.services.partida_definida import POR_QUE_SIN_DEFINIDA
 from application.services.propuesta_partida import LineaHistorial
 from application.services.reglas_vinculados import (
     AVISO_SIN_PARTIDA_VINCULADO,
-    MOTIVO_VARIAS_CI,
-    por_que_sin_ci,
 )
 from domain.models.registro_models import (
     HoraRecurso,
@@ -47,7 +46,7 @@ from interface_adapters.api.app import (
 )
 
 import tests.test_f044_sql_vinculados as sql_vin
-from tests.conftest import OBRA_ORIGEN, _fila, linea
+from tests.conftest import OBRA_ORIGEN, _fila, linea, linea_definida
 from tests.test_f044_pipeline_vinculados import (
     CUENTAS_VIN,
     PRESUPUESTO_VIN,
@@ -229,14 +228,35 @@ def _partidas(pf) -> dict:
 ORIGEN = f"parte PT26/00300 · 06/2026 · obra {OBRA_ORIGEN}"
 
 
+#: F-074: la propuesta guardada de cada subfila, como la calculó la cola
+#: con la regla de F-068 (el caso de la 0678: teléfono y gasoil con «parte
+#: anterior»; el vehículo, sin propuesta).
+GUARDADAS_0678 = {
+    20: dict(propuesta_paride=82413, propuesta_cod="CI.4.13",
+             propuesta_res="TELEFONIA", propuesta_metodo="parte_anterior",
+             propuesta_origen=ORIGEN),
+    21: dict(propuesta_paride=82401, propuesta_cod="CI.4.1",
+             propuesta_res="COMBUSTIBLE", propuesta_metodo="parte_anterior",
+             propuesta_origen=ORIGEN),
+}
+
+
+def _v68_guardadas(*ides: int) -> list[VinculadoEntrada]:
+    """F-074 (§6, «cómo»): los vinculados con su propuesta guardada."""
+    return [v for i in ides for v in _v68(i, **GUARDADAS_0678.get(i, {}))]
+
+
 # ============================ R1 · preflight ============================= #
+# F-074 (§6, criterios i, ii): el preflight ya no corre la regla de F-068
+# (historial, cuentas, nombre, CI.4): escribe la propuesta GUARDADA de cada
+# subfila, la que calculó la cola, y sin ella va a «sin partida». La regla
+# sigue probándose en el selector (abajo, R15), que es donde corre.
 def test_f068_r1_preflight_el_caso_de_la_0678():
-    """El caso pedido: el teléfono y el gasoil, a la partida de su
-    historial con «parte anterior» y su origen; el vehículo (sin historial,
-    ninguna del CI.4), sin partida."""
+    """El caso pedido: el teléfono y el gasoil, a la partida que propuso la
+    cola con «parte anterior» y su origen; el vehículo, sin partida."""
     cli = Cliente68()
     pf = _pf(cli, linea(paride=80001, partida_cod="CI.1.10",
-                        vinculados=_v68(20, 21, 22)))
+                        vinculados=_v68_guardadas(20, 21, 22)))
     assert _partidas(pf) == {
         20: (82413, "CI.4.13", "parte_anterior", ORIGEN),
         21: (82401, "CI.4.1", "parte_anterior", ORIGEN),
@@ -244,82 +264,28 @@ def test_f068_r1_preflight_el_caso_de_la_0678():
     v = _por(pf)
     assert v[(1, 20)].partida_res == "TELEFONIA"
     assert v[(1, 22)].aviso == AVISO_SIN_PARTIDA_VINCULADO.format(
-        tipo="VE", cod="VE-22", por_que=por_que_sin_ci(MOTIVO_VARIAS_CI))
+        tipo="VE", cod="VE-22", por_que=POR_QUE_SIN_DEFINIDA)
     assert [c.clave for c in pf.conflictos
             if c.motivo == "sin_partida"] == ["sin_partida:1:22"]
 
 
-def test_f068_r7_preflight_sin_historial_decide_el_ci4():
-    cli = Cliente68(historial=[])
-    pf = _pf(cli, linea(paride=80001, partida_cod="CI.1.10",
-                        vinculados=_v68(20, 21, 22)))
-    assert _partidas(pf) == {
-        20: (82413, "CI.4.13", "capitulo_ci4", None),
-        21: (82401, "CI.4.1", "capitulo_ci4", None),
-        22: (0, None, None, None)}
-
-
-def test_f068_r18_preflight_casa_con_tipo_res_y_descripcion():
-    """Sin su cuenta en el presupuesto: el nombre entre las `CI*`, con la
-    descripción del tipo y la del recurso que manda la api."""
-    pf = _pf(Cliente68(historial=[]), linea(
-        paride=80001, partida_cod="CI.1.10",
-        vinculados=_v68(23, descripcion="TELEFONO MOVIL ENCARGADO")))
-    assert _partidas(pf) == {23: (82502, "CI.5.2", "auto_nombre", None)}
-    sin = _pf(Cliente68(historial=[]), linea(
-        paride=80001, partida_cod="CI.1.10",
-        vinculados=[VinculadoEntrada(recurso_ide=23, tipo="TF",
-                                     cod="TF-23")]))
-    assert _partidas(sin) == {23: (0, None, None, None)}
-
-
 def test_f068_r1_preflight_titular_automatico_tambien():
-    """El titular sin elegida (su propuesta, en `CI*`): igual."""
-    pf = _pf(Cliente68(), linea(vinculados=_v68(20)))
+    """El titular con su propuesta guardada (en `CI*`): igual."""
+    pf = _pf(Cliente68(), linea_definida(vinculados=_v68_guardadas(20)))
     assert pf.acciones[0].partida_cod == "CI.1.10"
     assert _partidas(pf)[20] == (82413, "CI.4.13", "parte_anterior", ORIGEN)
 
 
 # ======================= R11-R14 · las lecturas ========================== #
 def test_f068_r11_una_lectura_de_historial_con_todos_los_vinculados():
+    """F-074 (§6, criterio ii): ninguna, ni de historial ni de cuentas,
+    aunque ningún vinculado traiga propuesta."""
     cli = Cliente68()
     _pf(cli, linea(paride=80001, partida_cod="CI.1.10",
                    vinculados=_v68(22, 20)),
         linea(registro_id=2, recurso_ide=201, paride=80001,
               partida_cod="CI.1.10", vinculados=_v68(21)))
-    assert cli.historial_leido == [([20, 21, 22], OBRA_IDE, *VENTANA)]
-
-
-def test_f068_r2_d3_la_ventana_incluye_el_periodo():
-    """D3-A: la del trabajador, con el periodo que se registra (julio)."""
-    cli = Cliente68(historial=[*HISTORIAL_0678, _h(20, 82013, 7)])
-    pf = _pf(cli, linea(paride=80001, partida_cod="CI.1.10",
-                        vinculados=_v68(20)))
-    assert _partidas(pf)[20][:3] == (82013, "CI.0.13", "parte_anterior")
-    fuera = Cliente68(historial=[_h(20, 82013, 6, ano=2024),
-                                 _h(20, 82401, 7, ano=2024)])
-    pf = _pf(fuera, linea(paride=80001, partida_cod="CI.1.10",
-                          vinculados=_v68(20)))
-    assert _partidas(pf)[20][:3] == (82401, "CI.4.1", "parte_anterior")
-
-
-def test_f068_r11_solo_la_obra_de_origen():
-    cli = Cliente68(historial=[_h(20, 82013, 6, obra=999)])
-    pf = _pf(cli, linea(paride=80001, partida_cod="CI.1.10",
-                        vinculados=_v68(20)))
-    assert _partidas(pf)[20][2] == "capitulo_ci4"
-
-
-def test_f068_r12_cuentas_solo_si_alguno_llega_a_la_cuenta():
-    cli = Cliente68()
-    _pf(cli, linea(paride=80001, partida_cod="CI.1.10",
-                   vinculados=_v68(20, 21)))
-    assert cli.cuentas_leidas == []
-    cli = Cliente68()
-    _pf(cli, linea(paride=80001, partida_cod="CI.1.10",
-                   vinculados=_v68(20, 21, 22)))
-    assert cli.cuentas_leidas == [OBRA_IDE]
-    assert len(cli.historial_leido) == 1
+    assert (cli.historial_leido, cli.cuentas_leidas) == ([], [])
 
 
 def test_f068_r14_sin_vinculados_ni_historial_ni_cuentas():
@@ -346,13 +312,15 @@ def test_f068_r14_todos_resueltos_antes_las_lecturas_de_hoy():
         22: (81101, "CD.1", "titular", None)}
 
 
-def test_f068_r13_si_el_historial_falla_el_preflight_falla():
+def test_f068_r13_el_preflight_no_lee_el_historial_aunque_falle():
+    """F-074 (§6, criterio ii): el preflight ya no lee el historial; su
+    fallo no le afecta."""
     cli = Cliente68(falla=RuntimeError(
         "sigrid-api devolvio una respuesta truncada"))
-    with pytest.raises(RuntimeError, match="truncada"):
-        _pf(cli, linea(paride=80001, partida_cod="CI.1.10",
-                       vinculados=_v68(20)))
-    assert cli.escritos == []
+    pf = _pf(cli, linea(paride=80001, partida_cod="CI.1.10",
+                        vinculados=_v68_guardadas(20)))
+    assert _partidas(pf)[20][0] == 82413
+    assert cli.historial_leido == [] and cli.escritos == []
 
 
 # ==================== R16 · la propuesta guardada ======================== #
@@ -374,17 +342,23 @@ def test_f068_r16_guardada_con_metodo_propio_se_escribe_tal_cual(metodo):
     assert (cli.historial_leido, cli.cuentas_leidas) == ([], [])
 
 
-@pytest.mark.parametrize("metodo, paride", [
-    ("titular", 82013), ("manual", 82013), (None, 82013),
-    ("parte_anterior", 82000), ("parte_anterior", 99999)])
-def test_f068_r16_la_que_no_vale_o_de_titular_se_recalcula(metodo, paride):
+@pytest.mark.parametrize("metodo, paride, no_valida", [
+    ("titular", 82013, None), ("manual", 82013, None), (None, 82013, None),
+    ("parte_anterior", 82000, "X"), ("parte_anterior", 99999, "X")])
+def test_f068_r16_la_que_no_vale_se_omite_y_la_de_titular_no_cuenta(
+        metodo, paride, no_valida):
+    """F-074 (§6, criterio i; R2, R4): ya no se recalcula. La de método
+    `titular`, `manual` o sin método no cuenta (sin partida); la que no
+    vale se omite nombrándola. Sin leer historial."""
     cli = Cliente68()
     pf = _pf(cli, linea(paride=80001, partida_cod="CI.1.10",
                         vinculados=_v68(20, propuesta_paride=paride,
                                         propuesta_cod="X",
                                         propuesta_metodo=metodo)))
-    assert _partidas(pf)[20] == (82413, "CI.4.13", "parte_anterior", ORIGEN)
-    assert len(cli.historial_leido) == 1
+    v = _por(pf)[(1, 20)]
+    assert (v.paride, v.partida_no_valida) == (0, no_valida)
+    assert v.accion == ("omitir" if no_valida else "escribir")
+    assert cli.historial_leido == []
 
 
 def test_f068_r16_con_el_titular_la_guardada_no_cuenta():
@@ -440,11 +414,20 @@ def _como_selector(pf) -> dict:
 
 @pytest.mark.parametrize("historial", [HISTORIAL_0678, []])
 def test_f068_r15_selector_igual_que_preflight(historial):
+    """F-074 (§6, criterio i): lo que propone el selector, guardado en la
+    subfila, es lo que escribe el preflight (sin correr la regla)."""
     sel = _sel(Cliente68(historial=historial),
                _linea(paride=80001, vinculados=_vin_sel(20, 21, 22)))
+
+    def guardada(i):
+        p = sel["vinculados"]["a"][str(i)]
+        return {} if p is None else {
+            "propuesta_paride": p["paride"], "propuesta_cod": p["cod"],
+            "propuesta_res": p["res"], "propuesta_metodo": p["metodo"],
+            "propuesta_origen": p["origen"]}
     pf = _pf(Cliente68(historial=historial),
-             linea(paride=80001, partida_cod="CI.1.10",
-                   vinculados=_v68(20, 21, 22)))
+             linea(paride=80001, partida_cod="CI.1.10", vinculados=[
+                 v for i in (20, 21, 22) for v in _v68(i, **guardada(i))]))
     assert sel["vinculados"] == {"a": _como_selector(pf)}
 
 
@@ -523,11 +506,12 @@ def _peticiones_68():
     """Dos peticiones de la misma obra con los mismos vinculados (el lote
     de la cola puede traer la obra dos veces) y una sin vinculados."""
     obra = ObraEntrada(codigo=OBRA_ORIGEN)
+    # F-074 (§6, «cómo»): con las propuestas guardadas de la cola.
     return [
         (obra, [linea(paride=80001, partida_cod="CI.1.10",
-                      vinculados=_v68(20, 21, 22))]),
+                      vinculados=_v68_guardadas(20, 21, 22))]),
         (obra, [linea(registro_id=2, paride=80001, partida_cod="CI.1.10",
-                      vinculados=_v68(20, 21, 22))]),
+                      vinculados=_v68_guardadas(20, 21, 22))]),
         (obra, [linea(registro_id=3, paride=80001, partida_cod="CI.1.10")]),
     ]
 
@@ -540,17 +524,18 @@ def test_f068_r15_lote_igual_que_suelto(historial):
                for _, lineas_ in _peticiones_68()]
     assert [_partidas(pf) for pf in lote] == [
         _partidas(pf) for pf in sueltos]
-    esperado = (("parte_anterior", ORIGEN) if historial
-                else ("capitulo_ci4", None))
-    assert _partidas(lote[0])[20] == (82413, "CI.4.13", *esperado)
+    # F-074 (§6, criterio i): la guardada, con o sin historial.
+    assert _partidas(lote[0])[20] == (82413, "CI.4.13", "parte_anterior",
+                                      ORIGEN)
 
 
 def test_f068_r15_lote_una_lectura_por_obra():
+    """F-074 (§6, criterio ii): el lote del preflight no lee historial ni
+    cuentas."""
     cli = Cliente68()
     RegistroLote(cliente=cli, settings=_st_lote()).preflight(
         _peticiones_68())
-    assert cli.historial_leido == [([20, 21, 22], OBRA_IDE, *VENTANA)]
-    assert cli.cuentas_leidas == [OBRA_IDE]
+    assert (cli.historial_leido, cli.cuentas_leidas) == ([], [])
 
 
 def test_f068_r15_memoria_del_lote_por_obra_ventana_y_recursos():
@@ -570,12 +555,12 @@ def test_f068_r15_memoria_del_lote_por_obra_ventana_y_recursos():
 
 
 def test_f068_r13_lote_si_el_historial_falla_esa_obra_falla():
+    """F-074 (§6, criterio ii): sin lectura del historial, ninguna obra del
+    lote del preflight falla por él."""
     cli = Cliente68(falla=RuntimeError("respuesta truncada"))
     lote = RegistroLote(cliente=cli, settings=_st_lote()).preflight(
         _peticiones_68())
-    assert isinstance(lote[0], RuntimeError)
-    assert isinstance(lote[1], RuntimeError)
-    assert not isinstance(lote[2], Exception)
+    assert not any(isinstance(r, Exception) for r in lote)
 
 
 def _pet_sel(*lineas_: dict) -> dict:

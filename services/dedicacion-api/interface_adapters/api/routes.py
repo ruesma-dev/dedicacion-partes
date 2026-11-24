@@ -25,6 +25,7 @@ from application.use_cases import (
     ObtenerCuadrante,
     ObtenerFilaTrabajador,
 )
+from application.estado_partida import Marcas
 from application.palabras_incidencia import palabras_por_codigo
 from application.traer_sigrid import TraerDeSigrid
 from config.settings import cargar_config
@@ -101,19 +102,29 @@ def _filtro(contenedor: Contenedor, empresa: int | None) -> FiltroEmpresa:
 
 def _encolar(contenedor: Contenedor, anio: int, mes: int,
              trabajadores: Iterable[int] | None = None,
-             ) -> tuple[bool, frozenset[tuple[int, int, bool]]]:
+             ) -> tuple[bool, Marcas]:
     """F-055 (R29, R30, R37): encola las propuestas pendientes del periodo
     (o de `trabajadores`) y devuelve `propuestas_en_curso` y (F-057) las
     líneas del periodo que siguen en la cola, leídas DESPUÉS de encolar.
     Siempre tras cerrar la UoW de la ruta; si encolar falla, `(False, ∅)` y
-    un log: la respuesta no cambia por ello."""
+    un log: la respuesta no cambia por ello.
+
+    F-074 (R13, R14): las `Marcas` enteras (pendientes y no encontradas, de
+    líneas y subfilas) de la misma foto, con `encolar_marcas`. Una cola sin
+    él (la de antes de F-074, o un doble de los tests de rutas) da solo las
+    pendientes de líneas, como hasta ahora."""
+    pm = contenedor.propuestas_mes
+    solo = None if trabajadores is None else list(trabajadores)
     try:
-        return contenedor.propuestas_mes.encolar(
-            anio, mes, None if trabajadores is None else list(trabajadores))
+        encolar_marcas = getattr(pm, "encolar_marcas", None)
+        if encolar_marcas is not None:
+            return encolar_marcas(anio, mes, solo)
+        en_curso, pendientes = pm.encolar(anio, mes, solo)
+        return en_curso, Marcas(pendientes=frozenset(pendientes))
     except Exception:                               # noqa: BLE001
         logger.warning("[propuestas] no se pudieron encolar las de %02d/%s",
                        mes, anio, exc_info=True)
-        return False, frozenset()
+        return False, Marcas()
 
 
 def _entero_opcional(valor: Any, campo: str,
@@ -274,15 +285,15 @@ def obtener_cuadrante(
     with contenedor.uow() as uow:
         cuadrante = ObtenerCuadrante().ejecutar(uow, anio, mes, filtro,
                                                 usuario=usuario)
-    en_curso, pendientes = _encolar(contenedor, anio, mes)
+    en_curso, marcas = _encolar(contenedor, anio, mes)
     return CuadranteOut(
         propuestas_en_curso=en_curso,
         periodo=a_periodo_out(cuadrante.periodo),
         empresa=cuadrante.empresa,
         obras=[a_obra_out(o) for o in cuadrante.obras],
         trabajadores=[
-            a_trabajador_out(f, filtro.empresa_obras, pendientes,
-                             _tipos(contenedor))
+            a_trabajador_out(f, filtro.empresa_obras,
+                             tipos=_tipos(contenedor), marcas=marcas)
             for f in cuadrante.filas
         ],
         resumen=a_resumen_out(cuadrante.resumen),
@@ -324,10 +335,11 @@ def guardar_incidencias(
             [i.model_dump() for i in payload.incidencias], usuario,
             filtro=filtro,
         )
-    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
+    en_curso, marcas = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
-                                    _tipos(contenedor)),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras,
+                                    tipos=_tipos(contenedor),
+                                    marcas=marcas),
         resumen=a_resumen_out(resumen),
         propuestas_en_curso=en_curso,
     )
@@ -353,10 +365,11 @@ def guardar_asignaciones(
             uow, anio, mes, trabajador_ide, lineas_a_dicts(payload), usuario,
             filtro=filtro,
         )
-    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
+    en_curso, marcas = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
-                                    _tipos(contenedor)),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras,
+                                    tipos=_tipos(contenedor),
+                                    marcas=marcas),
         resumen=a_resumen_out(resumen),
         propuestas_en_curso=en_curso,
     )
@@ -387,10 +400,11 @@ def guardar_importes(
             [i.model_dump() for i in payload.importes], usuario,
             filtro=filtro,
         )
-    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
+    en_curso, marcas = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
-                                    _tipos(contenedor)),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras,
+                                    tipos=_tipos(contenedor),
+                                    marcas=marcas),
         resumen=a_resumen_out(resumen),
         propuestas_en_curso=en_curso,
     )
@@ -441,17 +455,22 @@ def cambiar_partida(
     (F-050, R13). `partida` nula = automática. F-044 (R8): con
     `vinculado_ide`, la de esa subfila (evento `PARTIDA_VINCULADO`)."""
     filtro = _filtro(contenedor, empresa)
+    # F-074 (R15): al cambiar la del titular, sus subfilas salen de la
+    # memoria de «sin propuesta» antes de encolar (una cola sin esa memoria,
+    # nada que olvidar).
     with contenedor.uow() as uow:
-        fila, resumen = CambiarPartida().ejecutar(
+        fila, resumen = CambiarPartida(al_borrar_subfilas=getattr(
+            contenedor.propuestas_mes, "olvidar_subfilas", None)).ejecutar(
             uow, anio, mes, trabajador_ide, payload.obra_ide,
             payload.es_postventa,
             payload.partida.model_dump() if payload.partida else None,
             usuario, filtro=filtro, vinculado_ide=payload.vinculado_ide,
         )
-    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
+    en_curso, marcas = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
-                                    _tipos(contenedor)),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras,
+                                    tipos=_tipos(contenedor),
+                                    marcas=marcas),
         resumen=a_resumen_out(resumen),
         propuestas_en_curso=en_curso,
     )
@@ -471,10 +490,11 @@ def deshacer(
         fila, resumen = DeshacerUltimaModificacion().ejecutar(
             uow, anio, mes, trabajador_ide, usuario, filtro=filtro
         )
-    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
+    en_curso, marcas = _encolar(contenedor, anio, mes, [trabajador_ide])
     return FilaOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
-                                    _tipos(contenedor)),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras,
+                                    tipos=_tipos(contenedor),
+                                    marcas=marcas),
         resumen=a_resumen_out(resumen),
         propuestas_en_curso=en_curso,
     )
@@ -494,10 +514,11 @@ def copiar_trabajador_anterior(
         fila, resumen, origen, omitidas = CopiarTrabajadorAnterior().ejecutar(
             uow, anio, mes, trabajador_ide, usuario, filtro=filtro
         )
-    en_curso, pendientes = _encolar(contenedor, anio, mes, [trabajador_ide])
+    en_curso, marcas = _encolar(contenedor, anio, mes, [trabajador_ide])
     return CopiaTrabajadorOut(
-        trabajador=a_trabajador_out(fila, filtro.empresa_obras, pendientes,
-                                    _tipos(contenedor)),
+        trabajador=a_trabajador_out(fila, filtro.empresa_obras,
+                                    tipos=_tipos(contenedor),
+                                    marcas=marcas),
         resumen=a_resumen_out(resumen),
         periodo_origen=a_periodo_out(origen) if origen else None,
         lineas_omitidas_obra_inactiva=omitidas,

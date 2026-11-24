@@ -328,6 +328,11 @@ class AccionLinea:
     # F-069 (D20, R26, R28): en una ya registrada con comentario, el `tex`
     # al que `ejecutar` cambia su línea (solo el `tex`); None si no aplica.
     tex_nuevo: Optional[str] = None
+    # F-074 (R4, D4): en una omitida porque su partida DEFINIDA (elegida o
+    # propuesta guardada) ya no es hoja activa, su código (o su `ide`); el
+    # modal ofrece el selector y la api borra la propuesta guardada. None
+    # en las demás.
+    partida_no_valida: Optional[str] = None
     # La CLAVE de conflicto de esta acción no se calcula aquí: sale de
     # `application.services.reglas_porcentajes.clave_conflicto`, junto al
     # criterio de choque que la tiene que respetar. Tenerla en dos capas es
@@ -383,6 +388,8 @@ class AccionVinculado:
     reparto: Optional[str] = None
     # F-069 (D20, R28): como `AccionLinea.tex_nuevo`.
     tex_nuevo: Optional[str] = None
+    # F-074 (R4, D4): como `AccionLinea.partida_no_valida`.
+    partida_no_valida: Optional[str] = None
 
 
 @dataclass

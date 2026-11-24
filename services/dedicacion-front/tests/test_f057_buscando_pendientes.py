@@ -33,7 +33,8 @@ from tests.test_f055_propuesta_celda import CONSTS, ENTORNO, FUNCIONES, PROP, _l
 FUNCIONES_F057 = [*FUNCIONES, "aplicarPendientes"]
 
 BUSCANDO = '<span class="partida-auto buscando">buscando partida…</span>'
-AUTOMATICA = '<span class="partida-auto">automática</span>'
+# F-074 (§6, criterio iv): ya no «automática»; sin periodo abierto, «—».
+AUTOMATICA = '<span class="partida-auto">—</span>'
 
 
 def _node(cuerpo: str, estado: dict) -> object:

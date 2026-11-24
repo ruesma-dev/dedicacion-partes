@@ -217,8 +217,10 @@ def test_f044_r29_lote_igual_que_suelto():
     cli = ClienteVin()
     [lote] = RegistroLote(cliente=cli, settings=_ajustes()).proponer(
         [_peticion(*lineas)])
-    assert lote == {"ok": True, "propuestas": suelto["propuestas"],
-                    "vinculados": suelto["vinculados"]}
+    # F-074 (§6, criterio vi): y los `motivos*` de la suelta (R9).
+    assert lote == {"ok": True, **{k: suelto[k] for k in (
+        "propuestas", "vinculados", "motivos", "motivos_vinculados")
+        if k in suelto}}
 
 
 def test_f044_r29_lote_cuentas_una_vez_por_obra_y_horas_precargadas():
@@ -332,7 +334,8 @@ from domain.models.registro_models import (
     VinculadoEntrada,
 )
 
-from tests.conftest import OBRA_PRUEBAS, linea, linea_previa
+from tests.conftest import OBRA_PRUEBAS, linea_previa
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 
 PT_REG = ParteSigrid(777, "PT26/00251", 1)
 PT_CER = ParteSigrid(778, "PT26/00200", 3)
@@ -370,9 +373,24 @@ class ClientePre(ClienteVin):
         return super().lineas_registradas(claves, ides, **kw)
 
 
+#: F-074 (§6, «cómo»): la propuesta guardada de los vinculados 10 y 11,
+#: la que el preflight casaba antes (la CI de su tipo); 12 (dos hojas) y 13
+#: (sin cuenta) no tenían.
+DEFINIDA_VIN = {10: (81001, "CICO13", "TELEFONIA"),
+                11: (81002, "CIGA14", "GASOIL")}
+
+
 def _v(*ides: int, **kw) -> list[VinculadoEntrada]:
+    def definida(i):
+        if i not in DEFINIDA_VIN or any(
+                kw.get(k) for k in ("paride", "propuesta_paride")):
+            return {}
+        paride, cod, res = DEFINIDA_VIN[i]
+        return {"propuesta_paride": paride, "propuesta_cod": cod,
+                "propuesta_res": res, "propuesta_metodo": "ci_tipo"}
     return [VinculadoEntrada(recurso_ide=i, tipo="TF", tipo_res="TELEFONO",
-                             cod=f"TF-{i}", **kw) for i in ides]
+                             cod=f"TF-{i}", **{**definida(i), **kw})
+            for i in ides]
 
 
 def _ls_vin(ide: int, reside: int, can: float | None, *, paride: int = 0,
@@ -413,7 +431,9 @@ def test_f044_r12_una_linea_por_vinculado_con_el_can_y_la_fec_del_titular():
     assert v[(1, 13)].motivo == MOTIVO_SIN_IMPORTE.format(
         tipo="TF", cod="TF-13", hora="OKM")
     assert titular.accion == "escribir" and titular.can == 0.4
-    assert cli.cuentas_leidas == [555001]
+    # F-074 (§6, criterio ii): el preflight no lee las cuentas del
+    # presupuesto (la CI de su tipo viene definida).
+    assert cli.cuentas_leidas == []
 
 
 def test_f044_r27_horas_y_lineas_en_las_mismas_lecturas():

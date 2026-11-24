@@ -1228,11 +1228,14 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "todo",
+      "status": "done",
+      "spec_aprobada": "2026-11-23",
       "sdd": true,
       "rigor": "critico",
       "priority": 1,
-      "branch": "feature/F-074-partida-sin-automatica"
+      "branch": "feature/F-074-partida-sin-automatica",
+      "fecha_cierre": "2026-11-24",
+      "ok_humano": "2026-11-24"
     },
     {
       "id": "F-075",

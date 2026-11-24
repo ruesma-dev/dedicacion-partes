@@ -325,7 +325,16 @@ class CambiarPartida:
     (evento `PARTIDA_VINCULADO`); el vinculado que no está bajo la línea,
     `LineaNoEncontrada`; la de una línea VAR, fija como la suya. Al cambiar
     la del titular, sus subfilas pierden la propuesta guardada (R9: se
-    calcula con la partida del titular) y conservan su elegida."""
+    calcula con la partida del titular) y conservan su elegida.
+
+    F-074 (R15): entonces, tras confirmar, llama a `al_borrar_subfilas`
+    (`periodo_id, trabajador_ide, obra_ide, es_postventa`), que la ruta
+    cablea a la memoria de las propuestas del mes: las subfilas salen de su
+    «sin propuesta» y la cola las recalcula con la partida nueva."""
+
+    def __init__(self, al_borrar_subfilas: Callable[
+            [int, int, int, bool], None] | None = None) -> None:
+        self._al_borrar_subfilas = al_borrar_subfilas
 
     def ejecutar(
         self,
@@ -392,6 +401,11 @@ class CambiarPartida:
                 _snapshot(despues),
             )
         uow.commit()
+        if (vinculado_ide is None and linea.vinculados
+                and self._al_borrar_subfilas is not None
+                and _snapshot(antes) != _snapshot(despues)):
+            self._al_borrar_subfilas(periodo_id, trabajador_ide, obra_ide,
+                                     es_postventa)
         return ObtenerFilaTrabajador().ejecutar(
             uow, anio, mes, trabajador_ide, filtro=filtro, usuario=usuario
         )

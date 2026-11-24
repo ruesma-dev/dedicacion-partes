@@ -105,7 +105,7 @@ ninguna obra con 6 o más dígitos seguidos en el código,
 `numemp`, que es el `con.emp` de las fichas; F-032), `periodo` (año+mes único, `ABIERTO`/`CERRADO`),
 `asignacion` (periodo × trabajador × obra × `es_postventa`, `porcentaje` en
 0-100 y la partida ELEGIDA, `partida_ide` / `partida_cod` / `partida_res`,
-nulas = automática, [`#regla-partida`](#regla-partida)), `tipo_incidencia`
+nulas = sin elegida, [`#regla-partida`](#regla-partida)), `tipo_incidencia`
 (catálogo `CI*` de `auxhor`, sincronizado) e `incidencia` (periodo ×
 trabajador × obra × código × días, con la traza de su registro; no cuenta en
 el 100 %, [`#regla-incidencia`](#regla-incidencia)) y `evento`
@@ -216,9 +216,20 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 
    - **Partida hoja, nunca un capítulo.** El destino (`hmores.paride`) es
      siempre una hoja del árbol del presupuesto y activa (`tipdes = 0`). Es
-     el mismo universo que el preflight publica en `partidas_postventa` para
-     el desplegable del front: el automático y el desplegable **no pueden
-     apuntar a sitios distintos**.
+     el mismo universo que ofrece el selector de
+     [`#regla-partida`](#regla-partida): la de su obra y la elegida **no
+     pueden apuntar a sitios distintos**.
+   - **El casado corre en el sync, no al registrar** (F-074, D2). El
+     universo de abajo devuelve, de cada obra que casa, su partida (`ide`,
+     `cod`, `res`) y, de las que no, el motivo; la api la guarda en la obra
+     (`obra.postventa_partida_*`, `postventa_motivo`) con la misma llamada
+     del sync. La línea de postventa sin elegida la enseña como propuesta
+     («obra de postventa») y la manda al registro como `propuesta_*`; el
+     preflight **no casa**: valida esa partida (o la elegida) **por `ide`**
+     contra la obra de postventa, sin leer su presupuesto, y si no vale la
+     omite nombrándola (`partida_no_valida`). Sin partida de su obra (no
+     casa, o aún sin sync tras desplegar) la línea se omite con su motivo:
+     por eso el orden de despliegue es api → sync → transfer → front.
    - **Casado por código, sin escalones ajenos.** En `obrparpar` el código y
      la descripción son campos separados (`cod`, `res`); lo que la pantalla
      de Sigrid enseña junto es la concatenación de los dos. Se compara el
@@ -338,10 +349,12 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
    *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-19 ·
    decisión D2, `specs/F-002-reglas-postventa-conflicto/requirements.md` §2.*
 8. <a id="regla-sin-partida"></a>**Una línea sin partida no se escribe en silencio (Regla C).**
-   En la obra normal, si el casado de partida falla, la línea se escribiría
-   con `hmores.paride = 0`: colgada de la obra, sin imputar a ninguna
-   partida del presupuesto. Eso **no se escribe sin confirmación
-   explícita**.
+   En la obra normal, si la línea llega al registro sin partida **definida**
+   (ni elegida ni propuesta guardada: «buscando partida…», «sin calcular» o
+   «no encuentra partida» en la celda; F-074, D7-D8), se escribiría con
+   `hmores.paride = 0`: colgada de la obra, sin imputar a ninguna partida
+   del presupuesto. El registro **no la busca**: eso **no se escribe sin
+   confirmación explícita**.
 
    - **Al no casar se avisa, no se decide.** El preflight devuelve un
      conflicto de **sin partida**, uno por línea. Sin confirmación **no se
@@ -349,9 +362,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      Confirmarla la escribe con `paride = 0` —el comportamiento anterior— y
      **no borra nada**.
    - **La decisión es por LÍNEA.** A diferencia de la sobrecarga, que es
-     propiedad del conjunto de líneas del trabajador, que el casado falle lo
-     es de una línea concreta: su categoría y su nombre. Confirmar una no
-     puede arrastrar a otra que el humano no ha mirado.
+     propiedad del conjunto de líneas del trabajador, que falte la partida
+     lo es de una línea concreta. Confirmar una no puede arrastrar a otra
+     que el humano no ha mirado.
    - **Los tres avisos se enseñan a la vez y en orden**: sin partida,
      pisado, sobrecarga. Una misma línea puede caer en varios, y cada uno se
      confirma por separado, porque cada uno es una decisión distinta. El
@@ -360,17 +373,17 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
      sobrecarga incluye su `can`). Retenida por varios, la línea sale **una
      sola vez** en `omitidas`, con el motivo del primero.
    - **Alcance: la obra normal.** La **postventa** no llega hasta aquí: sin
-     partida casada no tiene destino posible en un presupuesto ajeno al de
-     su obra, así que [`#regla-p5`](#regla-p5) la **omite** y no hay nada que
-     confirmar. En la obra normal sí hay destino —la propia obra— y lo único
+     la partida de su obra no tiene destino posible en un presupuesto ajeno
+     al de su obra, así que [`#regla-p5`](#regla-p5) la **omite** y no hay
+     nada que confirmar. En la obra normal sí hay destino —la propia obra— y lo único
      que falta es la partida del presupuesto: por eso se puede escribir, y
      por eso se pregunta. La partida **no** es la cuenta analítica de la
      línea: esa sale del recurso
      ([`#regla-analitica`](#regla-analitica)).
-   - **La elección alternativa sigue existiendo:** el preflight publica las
-     partidas de la obra en `partidas_obra` y el front las ofrece en un
-     desplegable. Confirmar «sin partida» es lo que se hace cuando ninguna
-     vale, no el único camino.
+   - **La elección alternativa sigue existiendo:** el modal ofrece el
+     selector de [`#regla-partida`](#regla-partida) en cada línea (y en la
+     omitida porque su partida no vale). Confirmar «sin partida» es lo que
+     se hace cuando ninguna vale, no el único camino.
 
    *Confirmado por Pablo Gris (responsable del proyecto) el 2026-08-20 ·
    preflight real del periodo 2026-07*, donde una jefa de obra iba a
@@ -684,10 +697,12 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
 19. <a id="regla-partida"></a>**La partida de cada línea: la elegida o la
     propuesta.** Cada línea del cuadrante (obra + modo) puede llevar una
     partida **elegida** en el cuadrante o en el modal de registro; si no la
-    lleva, es **automática** y se registra con la **propuesta**.
+    lleva, se registra con la **propuesta** que enseña su celda. Lo que se
+    ve es lo que se registra: el registro **no propone ni casa** (F-074).
 
-    - **La propuesta, solo en el transfer** (una línea de obra normal sin
-      elegida), la del primer paso que dé una, en este orden: (1) **parte
+    - **La propuesta, solo en el transfer y solo en segundo plano** (una
+      línea de obra normal sin elegida: la cola del mes y el selector, nunca
+      el preflight), la del primer paso que dé una, en este orden: (1) **parte
       anterior**: el mes más reciente con líneas `M*` del recurso en un
       parte de trabajo de **esa obra**, del periodo del cuadrante (incluido)
       hacia atrás hasta `PROPUESTA_MESES_ATRAS` meses; (2) el
@@ -710,37 +725,48 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       también en modo pruebas. El historial se lee en **una** lectura por
       petición; si falla o viene `truncated`, la petición falla sin proponer
       ni escribir.
-    - **La misma función** propone en el selector
-      (`POST /api/partidas/propuesta`) y en el preflight: lo que se ve es lo
-      que se registra. En postventa la propuesta es el casado de
-      [`#regla-p5`](#regla-p5); una entrada VAR tiene su partida fija
+    - **La misma función** propone en el selector y en la cola
+      (`POST /api/partidas/propuesta(-lote)`); sin propuesta, devuelve por
+      qué (`motivos`: sin hojas activas o ningún paso da partida). En
+      postventa la propuesta es la partida de su obra, casada en el sync
+      ([`#regla-p5`](#regla-p5)); una entrada VAR tiene su partida fija
       ([`#regla-var`](#regla-var)).
     - **La propuesta guardada** (F-055): la api guarda en la asignación
       (`propuesta_*`) la propuesta que le devuelve el transfer para una
-      línea de obra normal **sin elegida**, sin evento: al volver de un
-      preflight, al abrir el selector (que la reescribe) y **en segundo
-      plano**, que calcula las **pendientes** (obra normal, sin partida
+      línea de obra normal **sin elegida**, sin evento: al abrir el selector
+      (que la reescribe) y **en segundo plano**, que calcula las
+      **pendientes** (obra normal, sin partida
       fija, sin elegida ni propuesta) al pedir el cuadrante de un periodo
       ABIERTO, tras un sync con éxito (todos los abiertos) y tras cada
       escritura del cuadrante (guardar la fila, F7, F8, Completar, Copiar
       mes, cambiar la partida y Deshacer; solo las de los trabajadores
       escritos, o de todo el periodo en Copiar mes). El segundo plano nunca
       pisa una elegida ni una propuesta ya guardada; una línea sin propuesta
-      posible no se reintenta hasta el próximo sync o un reinicio. La
-      propuesta **no caduca**. El cuadrante la enseña en cursiva con su
-      método y, mientras se busca, «buscando partida…»: solo en las líneas
-      que la api marca `propuesta_pendiente` (las que están en la cola,
-      F-057), nunca en las que no se encolan. Guardar la fila la
+      posible no se reintenta hasta el próximo sync o un reinicio, y queda
+      en una memoria con el **motivo** del transfer. La propuesta **no
+      caduca** (salvo la que el registro encuentra no válida, abajo).
+    - **La celda Partida** (F-074) enseña lo primero que aplique, con lo
+      que marca la api: la elegida; la fija (VAR); la propuesta en cursiva
+      con su método; «buscando partida…» (en la cola,
+      `propuesta_pendiente`); «no encuentra partida», un aviso con el
+      motivo en el título (`propuesta_no_encontrada`, `propuesta_motivo`);
+      «sin calcular» con el periodo ABIERTO; «—». Nunca «automática». Lo
+      mismo en cada subfila. El filtro «Partida» y el buscador casan con
+      ese texto; la opción sin elegida del selector dice «sin elegir · usar
+      la propuesta» o «sin elegir · no encuentra partida». Guardar la fila la
       conserva en cada línea que ya existía; copiar el mes, F8 y completar
       no la copian; deshacer no la restaura; cambiar la elegida no la borra.
-    - **Al registrar**, la elegida viaja como `paride` y, sin ella, la
-      propuesta guardada como `propuesta_*`. El transfer valida las dos
-      **por `ide`** (una lectura por petición: obra de origen, hoja y alta),
-      sin leer el presupuesto ni el historial: la propuesta que vale se
-      escribe tal cual; la que no vale hace la línea **pendiente**, que se
-      propone como siempre (presupuesto e historial, una vez por petición).
+    - **Al registrar**, la partida **definida**: la elegida viaja como
+      `paride` y, sin ella, la propuesta guardada (en postventa, la de su
+      obra) como `propuesta_*`. El transfer valida las dos **por `ide`**
+      (una lectura por petición: obra, hoja y alta), sin leer presupuesto,
+      historial ni cuentas: la que vale se escribe tal cual; la que no vale
+      se **omite nombrándola** (`partida_no_valida`), sin proponer otra, y
+      el modal ofrece el selector; la api borra esa propuesta guardada (no
+      la elegida) para que la cola la recalcule (F-074, D4). Sin partida
+      definida, la línea va a [`#regla-sin-partida`](#regla-sin-partida).
     - **La elegida** se guarda en la asignación (api). Guardar la fila
-      conserva la de cada línea que ya existía; la nueva entra automática.
+      conserva la de cada línea que ya existía; la nueva entra sin elegida.
       Cambiarla deja un evento `PARTIDA`, que se deshace como cualquier otro
       ([`#regla-deshacer`](#regla-deshacer)); las copias del mes anterior la
       copian. Al registrar viaja como `paride`.
@@ -757,7 +783,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       (`CI.1.9` antes que `CI.1.10`).
     - **La subfila de un vinculado** usa este mismo selector y guarda su
       elegida y su propuesta aparte; su propuesta es la de
-      [`#regla-vinculado`](#regla-vinculado), no la de esta regla.
+      [`#regla-vinculado`](#regla-vinculado), no la de esta regla. Al
+      cambiar la partida del titular, sus subfilas pierden la propuesta y
+      salen de la memoria de «sin propuesta» para recalcularse (F-074).
 
     *Decidido por Pablo Gris el 2026-10-09 (D1-D10 = A, el mismo selector
     en el modal y los botones CD · CI · CP) · F-050,
@@ -766,7 +794,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     Gris el 2026-10-13 (D1-D8) y el 2026-10-14 (D9) · F-055. Orden cambiado por
     Pablo Gris el 2026-10-14 (D10: «si pero en reglas hay que cambiar el
     orden, a c b») · F-055, `specs/F-055-preflight-rapido/requirements.md`
-    R38.*
+    R38. El registro usa la definida y la regla solo corre en segundo
+    plano: decidido por Pablo Gris el 2026-11-23 (D1-D8) · F-074,
+    `specs/F-074-partida-sin-automatica/requirements.md`.*
 20. <a id="regla-cero"></a>**Las líneas del parte se editan, nunca se
     borran.** Al registrar, el transfer no emite ningún `DELETE`: lo que
     antes se borraba e insertaba se **edita en su sitio** (`UPDATE`), y la
@@ -1022,10 +1052,15 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       4. **Capítulo CI.4 en empate** (`capitulo_ci4`): la **única** empatada
          cuyo código, normalizado y partido por puntos, empieza por `CI` y
          un número igual a 4 (`CI.4.13`, `CI.04.13`; no `CI0.04.05`).
-      Si ninguno decide, «sin partida» a confirmar por vinculado
-      ([`#regla-sin-partida`](#regla-sin-partida)), nunca la primera. La
-      propuesta guardada en la subfila con uno de esos métodos se escribe
-      tal cual si sigue siendo hoja activa; la de `titular` se recalcula.
+      Si ninguno decide, la subfila no tiene propuesta y su celda dice «no
+      encuentra partida» con el motivo. Estos pasos corren **solo en
+      segundo plano** (la cola y el selector), nunca al registrar (F-074).
+      **Al registrar**, la definida: la elegida; si va con el titular, la
+      suya (derivada, sin leer nada); si no, la propuesta guardada en la
+      subfila con uno de esos métodos, validada por `ide` (si no vale, se
+      omite nombrándola, `partida_no_valida`); la de método `titular` no
+      cuenta. Sin ninguna, «sin partida» a confirmar por vinculado
+      ([`#regla-sin-partida`](#regla-sin-partida)), nunca la primera.
     - **Sigue al trabajador.** Titular omitido o retenido por un aviso sin
       confirmar ⇒ sus vinculados se omiten («sigue al trabajador» y su
       motivo); titular ya registrado ⇒ cada vinculado se decide solo. En
@@ -1182,7 +1217,7 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
       pisa **solo esa** línea, en su sitio (mismo `id`, sus subfilas de
       vinculado no cambian) o la crea; las demás vuelven con su motivo. La
       partida: normal, la de sus líneas como elegida; postventa,
-      automática; VAR, la fija. Sin propuesta guardada. Guarda la traza de
+      sin elegida; VAR, la fija. Sin propuesta guardada. Guarda la traza de
       ya registrada (`sigrid_hmores_ide` = el menor `ide` de sus líneas,
       parte, «traída de Sigrid»): al registrar sale **ya registrada**
       ([`#regla-cero`](#regla-cero)). Guardar luego la fila pierde la traza

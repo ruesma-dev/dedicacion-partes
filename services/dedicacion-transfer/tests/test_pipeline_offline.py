@@ -16,7 +16,9 @@ from infrastructure.sigrid.sigrid_write_client import synckey_de
 
 # F-051: los métodos de edición del doble (lectura previa, sentencias de
 # edición aplicadas a `lineas_parte` y relectura por `ide`).
-from tests.conftest import EdicionesFalsas
+from tests.conftest import (
+    DEFINIDA_NORMAL, DEFINIDA_POSTVENTA, EdicionesFalsas,
+)
 
 
 class Settings:
@@ -193,15 +195,18 @@ class ClienteFalso(EdicionesFalsas):
 
 
 def lineas_entrada():
+    # F-074 (§6, «cómo»): la 1 y la 3 con su partida DEFINIDA (la que el
+    # preflight casaba antes): el registro ya no casa.
     return [
         LineaEntrada(registro_id=1, ano=2026, mes=7, porcentaje=0.4,
                      recurso_ide=200, nombre="Acuna Mera, Antonio",
-                     categoria="Encargado", empresa=1),
+                     categoria="Encargado", empresa=1,
+                     **DEFINIDA_NORMAL),
         LineaEntrada(registro_id=2, ano=2026, mes=7, porcentaje=0.6,
                      recurso_ide=300, nombre="Peon", empresa=1),
         LineaEntrada(registro_id=3, ano=2026, mes=7, porcentaje=0.5,
                      recurso_ide=200, nombre="Encargado PV",
-                     es_postventa=True, empresa=1),
+                     es_postventa=True, empresa=1, **DEFINIDA_POSTVENTA),
         LineaEntrada(registro_id=4, ano=2026, mes=7, porcentaje=40,
                      recurso_ide=200, nombre="Rango mal", empresa=1),
     ]

@@ -3206,3 +3206,29 @@ OK del humano al cierre el 2026-11-20 («despleguemos»).
 - Lanzado por el humano con `infra/d.local.ps1`, en orden: transfer `r20261121-1743`, api `r20261121-1745` y front `r20261121-1749`, desde `dev` `1d058c1` (`init.sh` en verde antes). Las tres revisiones `Healthy`, `RunningAtMaxScale` y con el 100 % del tráfico (comprobado por el líder, solo lectura). El transfer sigue en modo real.
 - T17 de F-069 y T20 de F-054: `azure-apps/dedicacion.md` al día (`0e33de3`: cabecera, §1, §5 y §7); aviso a `partes` en `progress/current.md`, para que lo transmita el humano; apunte de F-069 en la descripción de F-071.
 - Pendiente del humano: mirarlo en producción tras Ctrl+F5; el aviso a `partes`; los push de `dev`, `arnes-base` y `azure-apps`.
+
+## 2026-11-24 · F-074 · La partida no se queda en «automática»
+
+Rama `feature/F-074-partida-sin-automatica` · `sdd: true` · rigor `critico` ·
+**APROBADO** por el reviewer (código en la pasada 2, evidencias en la 3) · 22 commits locales (`1e808fa` … `e8c2aa3`) ·
+OK del humano al cierre el 2026-11-24 («ok» a la PARADA 2, que incluía aceptar los 12 equivalentes).
+
+**Qué cambió.**
+- **El registro ya no casa partidas** (cambio de enfoque del humano: «cuando se le da a registrar ya no hay que casar partidas, ya vienen definidas»). El transfer escribe la partida **definida**: elegida, fija VAR, propuesta guardada o, en postventa, la de su obra guardada en el sync (D2). La valida por `ide` y no busca otra; si ya no vale, la omite con `partida_no_valida` y la api borra la guardada (D4); sin partida definida, la línea no se escribe y el modal la lista con su selector (D7). Regla C («sin partida», `paride = 0`) sigue igual (D8).
+- **La regla de partida corre solo en segundo plano** (cola, selector, universo del sync), sin cambios en la regla.
+- **La celda Partida nunca dice «automática»:** elegida, propuesta con su método, «buscando partida…», «no encuentra partida» con el motivo (D1, D6 b), «sin calcular» o «—».
+- **Postventa:** columnas `obra.postventa_partida_*`, guardadas en cada «Sincronizar Sigrid» sin lecturas nuevas.
+- **Menos lecturas en el preflight:** fuera presupuestos de origen, historial y cuentas.
+- **Servicios:** transfer, api y front (70 ficheros, unas 3.500 líneas añadidas). Spec enmendada el 2026-11-24 (requirements §6, criterios vi y vii) por 72 tests fuera de la lista cerrada.
+
+**Verificado.**
+- RED por requisito; cobertura de lo cambiado 100 % (310/310).
+- Campaña de mutación: 202 generados, 100 medidos; 4 supervivientes muertos con tests nuevos; 12 equivalentes (10 puros, 2 por dominio: solo los mataría un `ide` 0 de Sigrid), aceptados por el humano (`progress/mutacion_F-074.md`, `progress/review_F-074.md`).
+- Review pasada 1 CHANGES_REQUESTED (documentación: cabeceras de módulo, `ARCHITECTURE.md`, nombres de test); pasada 2 APROBADA; pasada de evidencias APROBADA.
+- `bash harness/init.sh` en verde sin caché: transfer 2011, api 1692, front 611 tests.
+
+**Fuera / pendiente.**
+- MANUAL T15-T18 del humano (comandos en `progress/current.md`, «⚠ Lo que espera al humano»).
+- Al desplegar, orden **obligatorio** api → «Sincronizar Sigrid» → transfer → front (sin sync, postventa no se registra) y `azure-apps/dedicacion.md` §2, §4, §5 y §7 (líder, commit aparte).
+- Aceptado: una línea guardada justo antes de registrar puede salir «buscando…» y no se escribe hasta repetir; una subfila con propuesta «de titular» desfasada va a «sin partida» (H5, seguro).
+- Automejoras del arnés propuestas por los reviewers, pendientes de decisión del humano para `arnes-base`.

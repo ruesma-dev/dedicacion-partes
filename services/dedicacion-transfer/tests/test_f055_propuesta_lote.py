@@ -26,6 +26,7 @@ from types import SimpleNamespace
 
 import pytest
 from application.pipelines.registro_lote import RegistroLote
+from application.services.partida_definida import MOTIVO_NINGUN_PASO
 from domain.models.registro_models import ObraEntrada
 from fastapi.testclient import TestClient
 from interface_adapters.api import app as modulo_app
@@ -99,7 +100,9 @@ def test_f055_r34_propuestas_por_obra_y_en_su_orden():
         "paride": 700002, "cod": "CI.1.9", "res": "ADMINISTRATIVO",
         "metodo": "parte_anterior",
         "origen": "parte PT26/00100 · 07/2026 · obra 0678"}}}
-    assert r[1] == {"ok": True, "propuestas": {"x": None}}
+    # F-074 (§6, criterio vi; R9): la que no tiene propuesta, con su motivo.
+    assert r[1] == {"ok": True, "propuestas": {"x": None},
+                    "motivos": {"x": MOTIVO_NINGUN_PASO}}
 
 
 def test_f055_r34_las_mismas_propuestas_que_el_selector_suelto():

@@ -10,8 +10,9 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
      (ARCHITECTURE.md#regla-empresa). Sin empresa, o con la obra en otra
      empresa, todas las líneas salen omitidas aquí, sin seguir.
   1. Resolver los DESTINOS: la obra normal (en pruebas, la de pruebas) y,
-     si hay líneas de postventa, la obra de postventa con su PARTIDA
-     (ARCHITECTURE.md#regla-p5), todas en la empresa de la petición.
+     si hay líneas de postventa, la obra de postventa como destino, SIN
+     casar su partida (F-074: la trae cada línea, casada en el sync;
+     ARCHITECTURE.md#regla-p5), todas en la empresa de la petición.
   2. El RECURSO de cada línea es el que manda la API (`recurso_ide`); el
      transfer no lo elige ni lee `res.conide`
      (ARCHITECTURE.md#regla-recurso). Sin él, la regla omite la línea.
@@ -19,10 +20,14 @@ Pasos (el preflight ejecuta 0-8; la escritura, 0-10):
   4. Aplicar las REGLAS de la línea (ARCHITECTURE.md#regla-p1 … #regla-p3,
      #regla-p5). La línea que trae `var_paride` (una entrada VAR del
      cuadrante) va a esa partida o se omite, antes del override manual
-     (ARCHITECTURE.md#regla-var). La partida elegida de una línea de obra
-     tiene que ser hoja activa del presupuesto de origen o se omite; la que
-     no trae partida lleva la PROPUESTA, con una sola lectura del historial
-     por petición (ARCHITECTURE.md#regla-partida, F-050).
+     (ARCHITECTURE.md#regla-var). F-074: cada línea va a su partida
+     DEFINIDA (la elegida, la fija VAR o la `propuesta_*` guardada; en
+     postventa, la de su obra), validada por `ide` en una sola lectura por
+     petición; si no vale, se omite nombrándola (`partida_no_valida`). Sin
+     definida, la de obra normal va a la Regla C (sin partida, a confirmar)
+     y la de postventa se omite con su motivo. Sin lecturas de presupuesto,
+     historial ni cuentas: la PROPUESTA (`proponer`) solo corre en segundo
+     plano (ARCHITECTURE.md#regla-partida).
   4 bis. CUENTA ANALÍTICA de cada acción `escribir` en el centro de su obra
      destino (ARCHITECTURE.md#regla-analitica): la del recurso y, si no da,
      la de la partida de coste. Una lectura de partidas por petición y una
@@ -83,6 +88,10 @@ from application.services.cuenta_analitica import (
 from application.services.estado_parte import (
     aviso_de_parte, elegir_parte, motivo_choque, nombre_estado,
 )
+from application.services.partida_definida import (
+    MOTIVO_PROPUESTA_NO_VALIDA, MOTIVO_PROPUESTA_PV_NO_VALIDA,
+    MOTIVO_PV_SIN_DEFINIDA, motivo_sin_propuesta,
+)
 from application.services.partida_resolver import construir_catalogo
 from application.services.propuesta_partida import (
     MOTIVO_PARTIDA_NO_HOJA, Propuesta, catalogo, mayor_inicial,
@@ -106,7 +115,7 @@ from application.services.reglas_porcentajes import (
     pisables_al_cero, repartir_choques, sin_partida, synckey_tras_editar,
 )
 from application.services.universo_postventa import (
-    cargar_catalogo_postventa, casar_postventa,
+    cargar_catalogo_postventa, casar_postventa, obra_de_postventa,
 )
 from application.services.universo_var import (
     MOTIVO_VAR_POSTVENTA, cargar_catalogo_var, partida_var_de,
@@ -197,6 +206,43 @@ def _partes_de_rachas(rachas: list, acciones_inc: list[AccionIncidencia]
             r.cierre_parte = fin.parte_cod
 
 
+def _definida_pv(l: LineaEntrada, obra_pv: ObraEntrada | None,
+                 motivo_pv: str | None) -> tuple[dict | None, str | None]:
+    """F-074 (R1, R5; ARCHITECTURE.md#regla-p5): `(partida, motivo)` con
+    los que P5 decide una línea de postventa: sin obra de postventa, su
+    motivo; con ella, la elegida o la propuesta guardada (la de su obra, que
+    manda la api), sin casar nada; sin ninguna, se omite. La entrada VAR no
+    va a postventa: lleva destino sin partida y su rama la omite con su
+    motivo (`MOTIVO_VAR_POSTVENTA`), como antes."""
+    if obra_pv is None:
+        return None, motivo_pv
+    if l.var_paride is not None:
+        return {"ide": 0, "cod": None}, None
+    if l.paride:
+        return {"ide": int(l.paride), "cod": l.partida_cod}, None
+    if l.propuesta_paride:
+        return {"ide": int(l.propuesta_paride), "cod": l.propuesta_cod}, None
+    return None, MOTIVO_PV_SIN_DEFINIDA
+
+
+def _vinculados_a_validar(a: AccionLinea,
+                          linea: LineaEntrada) -> list[VinculadoEntrada]:
+    """F-044 (R15) y F-074 (R3): los vinculados cuya partida entra en la
+    lectura de `validar_partidas`: bajo una línea de obra, todos (la
+    elegida o la guardada); bajo una de postventa, solo los que traen
+    elegida (los demás van con la de su titular)."""
+    if a.destino == "postventa":
+        return [v for v in linea.vinculados if v.paride]
+    return list(linea.vinculados)
+
+
+def _no_valida(a: AccionLinea, motivo: str, cod) -> None:
+    """F-074 (R4, D4): la acción se omite porque su partida definida no
+    vale, con el motivo que la nombra y su código en `partida_no_valida`."""
+    a.accion, a.motivo = "omitir", motivo
+    a.partida_no_valida = str(cod)
+
+
 def _obra_de_linea(obride: int | None, cenide: int | None) -> ObraEntrada:
     """F-062 (R5, R12): la obra y el centro de una línea leída de Sigrid,
     para el `INSERT` de un `CIZ` en el parte de esa línea."""
@@ -278,66 +324,18 @@ class RegistroPipeline:
                         for av in decidir_vinculados(a, l, {})])
 
     # ------------------------------------------------------------- #
-    def _destino_postventa(
-        self, obra_origen: ObraEntrada, forzada: bool,
-        destino_pruebas: ObraEntrada, empresa: int,
-    ) -> tuple[Optional[ObraEntrada], Optional[dict], Optional[str], dict]:
-        """Paso 1b. Obra de postventa + partida de la obra original.
-
-        Devuelve (obra_destino_pv, partida, motivo_si_falla, catálogo). El
-        catálogo es el de ESTA petición: no se guarda en la instancia (F-025
-        R9). Carga y casado son las mismas funciones que el universo de
-        postventa (`universo_postventa`). En modo pruebas el parte se
-        escribe en la obra de pruebas, pero la partida se resuelve
-        igualmente contra la obra de postventa real (para validar el
-        casado). Ver `ARCHITECTURE.md#regla-p5`.
-        """
-        catalogo = cargar_catalogo_postventa(self._cli, self._st, empresa)
-        partida, motivo = casar_postventa(catalogo, obra_origen.codigo,
-                                          obra_origen.nombre)
-        if partida is None:
-            return None, None, motivo, catalogo.nodos
-        destino = destino_pruebas if forzada else catalogo.obra
-        return destino, partida, None, catalogo.nodos
-
-    # ------------------------------------------------------------- #
-    @staticmethod
-    def _es_hoja_activa_pv(nodos: dict, paride: int) -> bool:
-        """¿`paride` es una partida hoja activa del presupuesto de la obra
-        de postventa leído en esta petición? Es el universo de
-        `ARCHITECTURE.md#regla-p5`, el mismo que se publica en
-        `partidas_postventa`."""
-        nodo = nodos.get(int(paride))
-        return bool(nodo and nodo.es_hoja and nodo.activa)
-
-    # ------------------------------------------------------------- #
-    def _ventana(self, lineas: list[LineaEntrada]) -> tuple[int, int]:
-        """F-050 (R7): la ventana del historial, la que acaba en el periodo
-        más reciente de `lineas` (incluido). F-068 (D3): la misma para el
-        historial de los vinculados."""
-        ano, mes = max((l.ano, l.mes) for l in lineas)
-        return ventana(ano, mes, self._st.propuesta_meses_atras)
-
-    def _historial(self, lineas: list[LineaEntrada]) -> list:
-        """F-050 (R7): UNA lectura del historial de partidas de los recursos
-        de las líneas automáticas, en la ventana que acaba en su periodo.
-        Sin `try`: si falla, la petición falla sin proponer ni escribir."""
-        desde, hasta = self._ventana(lineas)
-        return self._cli.historial_partidas(
-            sorted({l.recurso_ide for l in lineas}), desde, hasta)
-
-    # ------------------------------------------------------------- #
-    def _validas(self, normales: list[LineaEntrada],
+    def _validas(self, lineas: list[LineaEntrada],
                  incidencias: list[AccionIncidencia],
                  vinculados: list[VinculadoEntrada] | None = None) -> dict:
         """F-055 (R3): UNA lectura de `validar_partidas` con la elegida de
-        cada línea de obra normal o, sin ella, su propuesta guardada, y la
-        partida de cada incidencia que se escribe (F-030 R25). Sin ninguna
-        no se lee. Sin `try`: si falla, la petición falla. F-044 (R15): en
-        la misma, la elegida o la propuesta guardada de cada vinculado de
-        una línea que no va a postventa."""
+        cada línea o, sin ella, su propuesta guardada, y la partida de cada
+        incidencia que se escribe (F-030 R25). Sin ninguna no se lee. Sin
+        `try`: si falla, la petición falla. F-044 (R15): en la misma, la
+        de cada vinculado (`_vinculados_a_validar`). F-074 (R3): también las
+        de postventa (la elegida o la de su obra), que se validan contra la
+        obra de postventa sin leer su presupuesto."""
         parides = ({int(l.paride or l.propuesta_paride or 0)
-                    for l in normales}
+                    for l in lineas}
                    | {a.paride for a in incidencias}
                    | {int(v.paride or v.propuesta_paride or 0)
                       for v in vinculados or []}) - {0}
@@ -625,56 +623,69 @@ class RegistroPipeline:
                                         incidencias)
         destino_normal, forzada = self._obra_destino(origen, empresa)
 
-        # Paso 1b: destino de postventa (solo si hace falta).
-        # Sin líneas de postventa no se lee ni se publica catálogo (R8).
+        # Paso 1b: destino de postventa (solo si hace falta). F-074 (R3,
+        # R6): la obra de postventa por su código (`POSTVENTA_OBRA_COD`), SIN
+        # leer su presupuesto: la partida de cada línea es la suya
+        # (`_definida_pv`), no un casado.
+        # Sin líneas de postventa no se lee ni se publica nada (R8 de F-025).
         destino_pv: Optional[ObraEntrada] = None
-        partida_pv: Optional[dict] = None
+        obra_pv: Optional[ObraEntrada] = None
         motivo_pv: Optional[str] = None
-        nodos_pv: dict = {}
         if any(l.es_postventa for l in lineas):
-            destino_pv, partida_pv, motivo_pv, nodos_pv = \
-                self._destino_postventa(obra, forzada, destino_normal,
-                                        empresa)
+            obra_pv, motivo_pv = obra_de_postventa(self._cli, self._st,
+                                                   empresa)
+            if obra_pv is not None:
+                destino_pv = destino_normal if forzada else obra_pv
 
         # Pasos 2-4: horas de los recursos dados + reglas.
         # Las horas, en UNA lectura con los recursos de las incidencias.
+        # F-074 (R1, R5): la línea de postventa decide P5 con SU partida
+        # definida (`ReglasPorcentajes` con la de esa línea, no una global).
         horas = self._horas_de_lineas([*lineas, *incidencias])
         reglas = ReglasPorcentajes(
-            horas, postventa_registrar=self._st.postventa_registrar,
-            partida_postventa=partida_pv, motivo_postventa=motivo_pv)
-        acciones: list[AccionLinea] = [reglas.decidir(l) for l in lineas]
+            horas, postventa_registrar=self._st.postventa_registrar)
+
+        def decidir(l: LineaEntrada) -> AccionLinea:
+            if not l.es_postventa:
+                return reglas.decidir(l)
+            partida, motivo = _definida_pv(l, obra_pv, motivo_pv)
+            return ReglasPorcentajes(
+                horas, postventa_registrar=self._st.postventa_registrar,
+                partida_postventa=partida, motivo_postventa=motivo,
+            ).decidir(l)
+
+        acciones: list[AccionLinea] = [decidir(l) for l in lineas]
         # F-030 (R24, R26): las dos líneas de cada incidencia.
         acciones_inc: list[AccionIncidencia] = [
             a for i in incidencias for a in decidir_incidencia(i, horas)]
         inc_escribir = [a for a in acciones_inc if a.accion == "escribir"]
 
-        # Partida de imputación por línea (ARCHITECTURE.md#regla-partida): la
-        # elegida (override) manda si es hoja activa del presupuesto de la
-        # obra ORIGEN; si no viene, la NORMAL lleva la propuesta GUARDADA si
-        # vale y, si no, es PENDIENTE y lleva la PROPUESTA (parte anterior,
-        # casamiento por rol y nombre o último parte, R38); la POSTVENTA ya
-        # trae la suya de la obra de postventa (`POSTVENTA_OBRA_COD`).
-        # F-055 (R3): elegidas y guardadas se validan por `ide` en UNA
-        # lectura; presupuesto e historial, solo si hay pendientes (R7).
-        nodos_origen = None
+        # Partida de imputación por línea (ARCHITECTURE.md#regla-partida),
+        # F-074: la DEFINIDA, sin proponer ni casar (R1). La elegida
+        # (override) manda si es hoja activa del presupuesto de su obra (la
+        # de origen o, en postventa, la de postventa); si no viene, la
+        # propuesta guardada (en postventa, la de su obra) si vale. La que no
+        # vale se omite nombrándola (R4); sin ninguna, la normal queda SIN
+        # PARTIDA (Regla C, R5) y la de postventa ya salió omitida en P5.
+        # F-055 (R3): todas se validan por `ide` en UNA lectura.
         catalogo_var = None
-        historial = None
         por_id = {l.registro_id: l for l in lineas}
-        normales = [
-            l for a in acciones
-            if a.accion == "escribir" and a.destino != "postventa"
-            for l in [por_id[a.registro_id]] if l.var_paride is None]
-        validas = self._validas(normales, inc_escribir, [
-            v for a in acciones
-            if a.accion == "escribir" and a.destino != "postventa"
-            for v in por_id[a.registro_id].vinculados])
+        escriben = [a for a in acciones if a.accion == "escribir"]
+        validas = self._validas(
+            [por_id[a.registro_id] for a in escriben
+             if por_id[a.registro_id].var_paride is None],
+            inc_escribir,
+            [v for a in escriben
+             for v in _vinculados_a_validar(a, por_id[a.registro_id])])
 
         def vale(paride) -> bool:
             v = validas.get(int(paride or 0))
             return v is not None and v.vale_en(origen.ide)
 
-        por_proponer = [l for l in normales
-                        if not l.paride and not vale(l.propuesta_paride)]
+        def vale_pv(paride) -> bool:
+            v = validas.get(int(paride or 0))
+            return v is not None and v.vale_en(obra_pv.ide)
+
         for a in inc_escribir:
             # R25: la partida de la línea de % que vale por `ide` o 0, sin
             # aviso ni confirmación.
@@ -706,40 +717,43 @@ class RegistroPipeline:
                 a.paride, a.partida_cod = int(nodo.ide), nodo.cod
                 a.partida_res, a.partida_metodo = nodo.res, "var"
                 continue
+            if a.destino == "postventa":
+                # P5 (ARCHITECTURE.md#regla-p5): la definida de la línea,
+                # validada contra la obra de postventa (R3). La que no vale
+                # no se escribe (R4): un capítulo o una partida de baja.
+                leida = validas.get(int(a.paride))
+                cod = a.partida_cod or (leida.cod if leida else None) \
+                    or int(a.paride)
+                if not vale_pv(a.paride):
+                    _no_valida(a, (
+                        MOTIVO_PARTIDA_PV_NO_HOJA.format(paride=cod)
+                        if linea.paride else
+                        MOTIVO_PROPUESTA_PV_NO_VALIDA.format(cod=cod)), cod)
+                    continue
+                a.partida_res = validas[int(a.paride)].res
+                a.partida_metodo = "manual" if linea.paride else "postventa"
+                continue
             if linea.paride:
-                # El override del front manda… salvo que apunte fuera del
-                # universo válido de la postventa (un capítulo, una partida
-                # de baja). Ahí no se escribe: ver ARCHITECTURE #regla-p5.
-                if a.destino == "postventa":
-                    if not self._es_hoja_activa_pv(nodos_pv, linea.paride):
-                        # F-054 T26 (R47): la partida por su código.
-                        nodo_pv = nodos_pv.get(int(linea.paride))
-                        a.accion = "omitir"
-                        a.motivo = MOTIVO_PARTIDA_PV_NO_HOJA.format(
-                            paride=linea.partida_cod
-                            or (nodo_pv.cod if nodo_pv else None)
-                            or int(linea.paride))
-                        continue
-                    a.partida_res = nodos_pv[int(linea.paride)].res
-                elif not vale(linea.paride):
+                if not vale(linea.paride):
                     # R20 de F-050 (D9) y F-055 R5: una elegida que ya no
                     # vale no se escribe: se omite y se elige otra.
-                    a.accion = "omitir"
-                    a.motivo = MOTIVO_PARTIDA_NO_HOJA.format(
-                        cod=linea.partida_cod or int(linea.paride),
-                        obra=origen.codigo)
+                    cod = linea.partida_cod or int(linea.paride)
+                    _no_valida(a, MOTIVO_PARTIDA_NO_HOJA.format(
+                        cod=cod, obra=origen.codigo), cod)
                     continue
-                else:
-                    a.partida_res = validas[int(linea.paride)].res
                 a.paride = int(linea.paride)
                 a.partida_cod = linea.partida_cod
+                a.partida_res = validas[int(linea.paride)].res
                 a.partida_metodo = "manual"
                 continue
-            if a.destino == "postventa":
-                a.partida_metodo = "postventa"
-                a.partida_res = partida_pv["res"]
-                continue
-            if vale(linea.propuesta_paride):
+            if linea.propuesta_paride:
+                if not vale(linea.propuesta_paride):
+                    # F-074 (R4, D4): la guardada que ya no vale se omite
+                    # nombrándola; no se propone otra.
+                    cod = linea.propuesta_cod or int(linea.propuesta_paride)
+                    _no_valida(a, MOTIVO_PROPUESTA_NO_VALIDA.format(
+                        cod=cod, obra=origen.codigo), cod)
+                    continue
                 # F-055 R8: la propuesta guardada que vale se escribe con lo
                 # que enseña el cuadrante (design §10).
                 a.paride = int(linea.propuesta_paride)
@@ -748,41 +762,24 @@ class RegistroPipeline:
                 a.partida_metodo = linea.propuesta_metodo
                 a.partida_origen = linea.propuesta_origen
                 continue
-            if nodos_origen is None:
-                # La obra de origen ya está resuelta en el paso 0: no se
-                # vuelve a buscar (R14 de F-022).
-                nodos_origen = construir_catalogo(
-                    self._cli.capitulos_de_obra(int(origen.ide)))
-            if historial is None:
-                historial = self._historial(por_proponer)
-            p = proponer_partida(nodos_origen, historial, a.recurso_ide,
-                                 int(origen.ide), linea.categoria,
-                                 linea.nombre)
-            if p is None:
-                # Hasta F-013 esto se escribía igual, con un aviso que nadie
-                # tenía que atender. Ahora el paso 6 bis lo convierte en un
-                # conflicto: ver ARCHITECTURE.md#regla-sin-partida.
-                a.paride = 0
-                a.aviso = AVISO_SIN_PARTIDA
-            else:
-                a.paride, a.partida_cod, a.partida_res = p.paride, p.cod, p.res
-                a.partida_metodo, a.partida_origen = p.metodo, p.origen
+            # F-074 (R5, D7, D8): sin partida definida. No se propone: el
+            # paso 6 bis lo convierte en el conflicto de
+            # ARCHITECTURE.md#regla-sin-partida.
+            a.paride = 0
+            a.aviso = AVISO_SIN_PARTIDA
 
         escribir = [a for a in acciones if a.accion == "escribir"]
 
         # F-044 (R12-R18; ARCHITECTURE.md#regla-vinculado): la línea y la
-        # partida de cada vinculado, con la de su titular ya decidida. Sin
-        # vinculados, ninguna lectura más. F-068 (R2, D3): su historial, en
-        # la ventana del trabajador, que se calcula solo si alguno llega a
-        # ese paso.
+        # partida de cada vinculado, con la de su titular ya decidida.
+        # F-074 (R2, R6): la definida, validada en la lectura de arriba; sin
+        # historial, cuentas ni presupuesto.
         paso = PasoVinculados(self._cli)
-        nodos_ya = nodos_origen
         vinculados = paso.decidir(
             acciones, lineas, horas, origen_ide=int(origen.ide),
-            validas=validas, nodos_pv=nodos_pv,
-            nodos=lambda: nodos_ya if nodos_ya is not None else
-            construir_catalogo(self._cli.capitulos_de_obra(int(origen.ide))),
-            ventana=lambda: self._ventana(lineas), obra=origen.codigo)
+            validas=validas,
+            obra_pv_ide=int(obra_pv.ide) if obra_pv is not None else None,
+            obra=origen.codigo)
         vin_escribir = [v for v in vinculados if v.accion == "escribir"]
 
         def obra_de(a: AccionLinea) -> ObraEntrada:
@@ -1061,28 +1058,31 @@ class RegistroPipeline:
         setattr(pf, "obra_postventa", destino_pv)
         # OJO con el nombre: lo que viaja es una PARTIDA, no un capítulo
         # (ARCHITECTURE.md#regla-p5). El atributo conserva el nombre viejo
-        # porque es contrato HTTP y el front lo lee como `capitulo_postventa`
-        # en la respuesta de /api/registro/preflight. Renombrarlo obliga a
-        # tocar los tres servicios a la vez: es una feature aparte.
-        setattr(pf, "capitulo_postventa", partida_pv)
-
-        def _cat(nodos):
-            # F-050 (R10): en orden natural del código; sin `mayor`, que solo
-            # publica `/api/partidas/propuesta` (el front ya no lee estos).
-            # F-055 (R10): solo si se leyó el presupuesto (hay pendientes);
-            # si no, `[]` sin leer (sale la lectura forzada de F-049 d).
-            return [{k: p[k] for k in ("ide", "cod", "res", "categoria")}
-                    for p in catalogo(nodos or {})]
-
-        setattr(pf, "partidas_obra", _cat(nodos_origen))
-        setattr(pf, "partidas_postventa", _cat(nodos_pv))
+        # porque es contrato HTTP de /api/registro/preflight. Renombrarlo
+        # obliga a tocar los tres servicios a la vez: es una feature aparte.
+        # F-074 (R1): ya no hay casado por petición; es la partida de
+        # postventa de la primera línea de postventa que se escribe o ya está
+        # registrada, `{ide, cod, res}`) o None.
+        setattr(pf, "capitulo_postventa", next(
+            ({"ide": a.paride, "cod": a.partida_cod, "res": a.partida_res}
+             for a in acciones if a.destino == "postventa"
+             and a.accion in ("escribir", "ya_registrado")), None))
+        # F-074 (R6): el preflight no lee presupuestos: sin catálogos (el
+        # selector los pide a `/api/partidas/propuesta`).
+        setattr(pf, "partidas_obra", [])
+        setattr(pf, "partidas_postventa", [])
         return pf
 
     # ------------------------------------------------------------- #
     def proponer(self, *, empresa: int, obra: ObraEntrada, ano: int,
                  mes: int, lineas: list[dict]) -> dict:
         """F-050 (R8, R11): catálogo y propuesta de cada línea, SOLO
-        LECTURA, con la misma `proponer_partida` que el preflight (R9).
+        LECTURA. F-074 (R8): es el único sitio, con el universo de
+        postventa, donde corre la regla (`proponer_partida`, el casado de
+        postventa y la de los vinculados): el preflight ya no la usa. F-074
+        (R9, D6 b): `motivos` (`{clave: texto}`) de las líneas sin
+        propuesta y `motivos_vinculados` (`{clave: {recurso: texto}}`) de
+        las subfilas sin ella, solo si hay alguno.
 
         `lineas`: `{clave, recurso_ide, nombre, categoria, es_postventa}`
         y, F-044 (R9), opcionales `paride` (la elegida del titular) y
@@ -1106,16 +1106,20 @@ class RegistroPipeline:
                         if l["recurso_ide"]}), desde, hasta)
         nodos_pv: dict = {}
         partida_pv = None
+        motivo_pv = None
         if len(normales) < len(lineas):
             # Postventa (R11): su propuesta es el casado de `#regla-p5`.
             catalogo_pv = cargar_catalogo_postventa(self._cli, self._st,
                                                     empresa)
-            partida_pv, _ = casar_postventa(catalogo_pv, origen.codigo,
-                                            origen.nombre)
+            partida_pv, motivo_pv = casar_postventa(catalogo_pv,
+                                                    origen.codigo,
+                                                    origen.nombre)
             nodos_pv = catalogo_pv.nodos
         propuestas: dict = {}
         mayores: dict = {}
         objetos: dict = {}
+        # F-074 (R9, D6 b): por qué no hay propuesta, de cada línea sin ella.
+        motivos: dict = {}
         for l in lineas:
             if l["es_postventa"]:
                 p = (Propuesta(partida_pv["ide"], partida_pv["cod"],
@@ -1130,15 +1134,24 @@ class RegistroPipeline:
             objetos[l["clave"]] = p
             propuestas[l["clave"]] = asdict(p) if p else None
             mayores[l["clave"]] = mayor_inicial(p, de, l["categoria"])
+            if p is None:
+                motivos[l["clave"]] = (motivo_pv if l["es_postventa"]
+                                       else motivo_sin_propuesta(nodos))
         salida = {"ok": True, "partidas_obra": catalogo(nodos),
                   "partidas_postventa": catalogo(nodos_pv),
                   "propuestas": propuestas, "mayor_inicial": mayores}
+        if motivos:
+            salida["motivos"] = motivos
         # F-068 (R15): la ventana del historial de los vinculados, la misma.
+        motivos_vin: dict = {}
         vinculados = PasoVinculados(self._cli).proponer(
             origen_ide=int(origen.ide), nodos=nodos, nodos_pv=nodos_pv,
-            lineas=lineas, propuestas=objetos, desde=desde, hasta=hasta)
+            lineas=lineas, propuestas=objetos, desde=desde, hasta=hasta,
+            motivos=motivos_vin)
         if vinculados:
             salida["vinculados"] = vinculados
+        if motivos_vin:
+            salida["motivos_vinculados"] = motivos_vin
         return salida
 
     # ------------------------------------------------------------- #

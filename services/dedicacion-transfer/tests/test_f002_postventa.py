@@ -34,6 +34,7 @@ from tests.conftest import (
     SettingsFalso,
     _fila,
     linea,
+    linea_definida,
 )
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
@@ -86,8 +87,9 @@ def test_f002_r15_la_obra_normal_no_se_ve_afectada():
     """R15 · Control: que falte la obra de postventa no puede bloquear las
     líneas normales, que no la necesitan para nada."""
     cli = ClienteFalso(obra_postventa_existe=False)
+    # F-074 (§6, «cómo»): la normal, con su partida definida.
     res = _pipeline(cli).ejecutar(obra=OBRA, lineas=[
-        linea(registro_id=1),
+        linea_definida(registro_id=1),
         linea(registro_id=3, es_postventa=True),
     ])
     assert [e["registro_id"] for e in res.escritas] == [1]
@@ -182,33 +184,15 @@ def test_f002_r16_el_override_de_la_obra_normal_no_se_valida_contra_postventa():
 
 # --------- R17 · el automático y el desplegable, mismo universo --------- #
 
-@pytest.mark.parametrize("variante", ("hojas", "capitulos"))
-def test_f002_r17_el_automatico_y_el_desplegable_comparten_universo(variante):
-    """R17 · Lo que el automático puede elegir y lo que el front ofrece son
-    el MISMO conjunto. Si divergen, el usuario ve un desplegable que no
-    incluye lo que el sistema acaba de decidir por él, y no puede corregirlo
-    sin salirse de la lista. Con el presupuesto `capitulos`, desde F-025
-    (D8 = A) la obra-capítulo no casa: no hay elegida, y el desplegable
-    sigue siendo el universo."""
+@pytest.mark.parametrize("variante", ("hojas", "capitulos",
+                                      "hojas_inactivas"))
+def test_f002_r17_el_preflight_ya_no_publica_el_desplegable(variante):
+    """R17 · F-074 (§6, criterio iii; R6): el preflight no lee el
+    presupuesto de postventa, así que no publica desplegable. El universo
+    «hojas activas» lo ofrece el selector (`/api/partidas/propuesta`) y la
+    partida de la línea es la de su obra, validada por `ide`."""
     _cli, pf = _pv(variante)
-    desplegable = {p["ide"] for p in getattr(pf, "partidas_postventa")}
-    universo = {n.ide for n in partidas_hoja(_nodos(variante))}
-    assert desplegable == universo, variante
-
-    elegida = getattr(pf, "capitulo_postventa")
-    if variante == "capitulos":
-        assert elegida is None, elegida
-    else:
-        assert elegida is not None and elegida["ide"] in desplegable, elegida
-
-
-def test_f002_r17_el_desplegable_no_ofrece_capitulos_ni_bajas():
-    """R17 · Control: el universo es «hojas activas», no «todo el árbol»."""
-    _cli, pf = _pv("hojas_inactivas")
-    ides = {p["ide"] for p in getattr(pf, "partidas_postventa")}
-    assert 69000 not in ides            # CD es capítulo
-    assert 70001 not in ides            # 0678 está de baja
-    assert 70002 in ides                # 0713 es hoja activa
+    assert getattr(pf, "partidas_postventa") == []
 
 
 # ------------------- R18 · casado por código exacto -------------------- #

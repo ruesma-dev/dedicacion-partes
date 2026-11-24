@@ -152,6 +152,13 @@ class Obra:
     activa: bool = True
     empresa: int | None = None  # con.emp de su ficha (F-023)
     admite_postventa: bool = False
+    # F-074 (R11, D2): su partida de postventa del universo (la que el
+    # transfer casa en el sync) o, si no casa, por qué; las cuatro None =
+    # aún sin sincronizar (o fuera del universo pedido).
+    postventa_partida_ide: int | None = None
+    postventa_partida_cod: str | None = None
+    postventa_partida_res: str | None = None
+    postventa_motivo: str | None = None
 
 
 @dataclass(frozen=True)
@@ -187,6 +194,12 @@ class Linea:
     # Subfilas de los vinculados del trabajador vigentes en el mes (F-044,
     # R6); vacío = la línea de siempre. No entran en `clave()`.
     vinculados: tuple[SubfilaVinculado, ...] = ()
+    # F-074 (R12): la partida de postventa de su obra (la de `Obra`,
+    # guardada en el sync) y, si no casa, su motivo. No entra en `clave()`.
+    obra_pv_ide: int | None = None
+    obra_pv_cod: str | None = None
+    obra_pv_res: str | None = None
+    obra_pv_motivo: str | None = None
     # Propuesta GUARDADA (F-055, R13): la del transfer para una línea sin
     # elegida; todas None = sin propuesta. No entra en `clave()` ni en los
     # eventos (R17).
@@ -357,10 +370,14 @@ class ResumenPeriodo:
 @dataclass(frozen=True)
 class ResultadoUniverso:
     """Universo de postventa que devuelve el transfer (F-025): los `ide` de
-    las obras que admiten postventa y, si no hay universo, por qué."""
+    las obras que admiten postventa y, si no hay universo, por qué. F-074
+    (R11): la partida de cada una (`{ide, cod, res}`) y, de las pedidas que
+    no casan, su motivo (R10)."""
 
     ides: frozenset[int]
     motivo: str | None
+    partidas: dict[int, dict[str, Any]] = field(default_factory=dict)
+    motivos: dict[int, str | None] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

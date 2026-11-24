@@ -224,15 +224,19 @@ def preparar_obras(
     2. Universo de postventa con las que quedan (F-025) y universo VAR de la
        empresa de las obras, una petición cada uno (#regla-var).
     3. Marcas de F-025; la obra VAR no se ofrece como normal (D1) y cada
-       partida VAR entra como fila propia (`entradas_var`).
+       partida VAR entra como fila propia (`entradas_var`). F-074 (R11):
+       cada obra, con su partida de postventa del universo o su motivo.
     """
     quedan, descartadas = descartar_por_codigo(brutas, digitos)
     universo_pv = pedir_universo(universo, quedan, empresa_obras)
     universo_var = universo.universo_var(empresa_obras)
     no_normales = (frozenset({universo_var.obra_ide})
                    if universo_var.obra_ide is not None else frozenset())
+    # F-074 (R11, D2): con la partida de postventa de cada obra (o su
+    # motivo), de la MISMA llamada al universo.
     depurado = depurar_obras(quedan, estados, filtro, universo_pv.ides,
-                             no_normales)
+                             no_normales, partidas=universo_pv.partidas,
+                             motivos=universo_pv.motivos)
     depurado.brutos = len(brutas)
     entradas = entradas_var(universo_var)
     depurado.filas.extend(entradas)

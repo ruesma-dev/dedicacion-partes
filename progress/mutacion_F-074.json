@@ -1,0 +1,920 @@
+{
+ "version": 1,
+ "criterio": "codigo_1",
+ "fiable": true,
+ "feature": "F-074",
+ "sha": "671ac439c40bc7e2605ab902e33bbcfe326ba4fd",
+ "nivel": "critico",
+ "regla": {
+  "por_linea": true,
+  "fraccion": 0.6,
+  "suelo": 100,
+  "techo": 300,
+  "origen": "nivel"
+ },
+ "semilla": 20261030,
+ "generados": 202,
+ "candidatos": 133,
+ "evaluados": [
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 33,
+   "col": 18,
+   "operador": "booleano",
+   "original": "@dataclass(frozen=True)",
+   "mutado": "@dataclass(frozen=False)",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 51,
+   "col": 39,
+   "operador": "booleano",
+   "original": "return {\"propuesta_no_encontrada\": True,",
+   "mutado": "return {\"propuesta_no_encontrada\": False,",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 52,
+   "col": 47,
+   "operador": "ternario",
+   "original": "**({\"propuesta_motivo\": motivo} if motivo else {})}",
+   "mutado": "**({\"propuesta_motivo\": motivo} if not motivo else {})}",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 70,
+   "col": 56,
+   "operador": "comparacion",
+   "original": "\"propuesta_pendiente\": clave in marcas.pendientes}",
+   "mutado": "\"propuesta_pendiente\": clave not in marcas.pendientes}",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 73,
+   "col": 7,
+   "operador": "negacion",
+   "original": "if ln.es_postventa:",
+   "mutado": "if not ln.es_postventa:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 75,
+   "col": 16,
+   "operador": "veracidad",
+   "original": "tiene = ln.obra_pv_ide is not None",
+   "mutado": "tiene = ln.obra_pv_ide",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 76,
+   "col": 51,
+   "operador": "ternario",
+   "original": "out.update(propuesta_cod=ln.obra_pv_cod if tiene else None,",
+   "mutado": "out.update(propuesta_cod=ln.obra_pv_cod if not tiene else None,",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 77,
+   "col": 51,
+   "operador": "ternario",
+   "original": "propuesta_res=ln.obra_pv_res if tiene else None,",
+   "mutado": "propuesta_res=ln.obra_pv_res if not tiene else None,",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 78,
+   "col": 56,
+   "operador": "ternario",
+   "original": "propuesta_metodo=METODO_POSTVENTA if tiene else None)",
+   "mutado": "propuesta_metodo=METODO_POSTVENTA if not tiene else None)",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 79,
+   "col": 11,
+   "operador": "negacion",
+   "original": "if not tiene and ln.obra_pv_motivo:",
+   "mutado": "if not (not tiene and ln.obra_pv_motivo):",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 82,
+   "col": 24,
+   "operador": "comparacion",
+   "original": "if ln.propuesta_ide is None and not out[\"propuesta_pendiente\"] \\",
+   "mutado": "if ln.propuesta_ide is not None and not out[\"propuesta_pendiente\"] \\",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 101,
+   "col": 37,
+   "operador": "booleano",
+   "original": "out[\"propuesta_pendiente\"] = True",
+   "mutado": "out[\"propuesta_pendiente\"] = False",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/estado_partida.py",
+   "linea": 102,
+   "col": 15,
+   "operador": "comparacion",
+   "original": "elif clave in marcas.subfilas_no_encontradas:",
+   "mutado": "elif clave not in marcas.subfilas_no_encontradas:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/filtros_maestros.py",
+   "linea": 256,
+   "col": 67,
+   "operador": "logico",
+   "original": "**_partida_postventa(ide, partidas or {},",
+   "mutado": "**_partida_postventa(ide, partidas and {},",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/filtros_maestros.py",
+   "linea": 257,
+   "col": 61,
+   "operador": "logico",
+   "original": "motivos or {})})",
+   "mutado": "motivos and {})})",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/filtros_maestros.py",
+   "linea": 266,
+   "col": 53,
+   "operador": "ternario",
+   "original": "return {\"postventa_partida_ide\": p.get(\"ide\") if p else None,",
+   "mutado": "return {\"postventa_partida_ide\": p.get(\"ide\") if not p else None,",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/filtros_maestros.py",
+   "linea": 267,
+   "col": 53,
+   "operador": "ternario",
+   "original": "\"postventa_partida_cod\": p.get(\"cod\") if p else None,",
+   "mutado": "\"postventa_partida_cod\": p.get(\"cod\") if not p else None,",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/filtros_maestros.py",
+   "linea": 268,
+   "col": 53,
+   "operador": "ternario",
+   "original": "\"postventa_partida_res\": p.get(\"res\") if p else None,",
+   "mutado": "\"postventa_partida_res\": p.get(\"res\") if not p else None,",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/filtros_maestros.py",
+   "linea": 269,
+   "col": 40,
+   "operador": "ternario",
+   "original": "\"postventa_motivo\": None if p else motivos.get(ide)}",
+   "mutado": "\"postventa_motivo\": None if not p else motivos.get(ide)}",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 111,
+   "col": 35,
+   "operador": "entero",
+   "original": "subfilas = frozenset(c[1:] for c in self._en_cola_sub",
+   "mutado": "subfilas = frozenset(c[2:] for c in self._en_cola_sub",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 115,
+   "col": 35,
+   "operador": "entero",
+   "original": "no_encontradas={(c[1], c[2], False): m for c, m",
+   "mutado": "no_encontradas={(c[2], c[2], False): m for c, m",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 117,
+   "col": 37,
+   "operador": "entero",
+   "original": "if c[0] == periodo_id},",
+   "mutado": "if c[1] == periodo_id},",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 119,
+   "col": 43,
+   "operador": "entero",
+   "original": "subfilas_no_encontradas={c[1:]: m for c, m",
+   "mutado": "subfilas_no_encontradas={c[2:]: m for c, m",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 121,
+   "col": 49,
+   "operador": "comparacion",
+   "original": "if c[0] == periodo_id})",
+   "mutado": "if c[0] != periodo_id})",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 122,
+   "col": 32,
+   "operador": "logico",
+   "original": "return bool(pendientes) or bool(subfilas), marcas",
+   "mutado": "return bool(pendientes) and bool(subfilas), marcas",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 148,
+   "col": 63,
+   "operador": "entero",
+   "original": "for c in [c for c in self._sin_propuesta_sub if c[:4] == linea]:",
+   "mutado": "for c in [c for c in self._sin_propuesta_sub if c[:5] == linea]:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 202,
+   "col": 23,
+   "operador": "booleano",
+   "original": "return False, Marcas()",
+   "mutado": "return True, Marcas()",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 316,
+   "col": 40,
+   "operador": "ternario",
+   "original": "clave_t) if ok else None",
+   "mutado": "clave_t) if not ok else None",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 322,
+   "col": 65,
+   "operador": "logico",
+   "original": "entrada, (entrada.get(\"motivos\") or {})",
+   "mutado": "entrada, (entrada.get(\"motivos\") and {})",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 331,
+   "col": 42,
+   "operador": "ternario",
+   "original": "or {}) if ok else {}",
+   "mutado": "or {}) if not ok else {}",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 386,
+   "col": 45,
+   "operador": "ternario",
+   "original": "**({\"subfilas\": subfilas} if subfilas else {}),",
+   "mutado": "**({\"subfilas\": subfilas} if not subfilas else {}),",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 393,
+   "col": 7,
+   "operador": "not",
+   "original": "if not entrada.get(\"ok\"):",
+   "mutado": "if entrada.get(\"ok\"):",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 394,
+   "col": 36,
+   "operador": "logico",
+   "original": "return entrada.get(\"error\") or motivo",
+   "mutado": "return entrada.get(\"error\") and motivo",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 402,
+   "col": 7,
+   "operador": "negacion",
+   "original": "if marcas.no_encontradas:",
+   "mutado": "if not marcas.no_encontradas:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 407,
+   "col": 7,
+   "operador": "negacion",
+   "original": "if marcas.subfilas_pendientes:",
+   "mutado": "if not marcas.subfilas_pendientes:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/propuestas_mes.py",
+   "linea": 412,
+   "col": 7,
+   "operador": "negacion",
+   "original": "if marcas.subfilas_no_encontradas:",
+   "mutado": "if not marcas.subfilas_no_encontradas:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/registro_sigrid.py",
+   "linea": 301,
+   "col": 19,
+   "operador": "negacion",
+   "original": "if pv_ide:",
+   "mutado": "if not pv_ide:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/registro_sigrid.py",
+   "linea": 531,
+   "col": 18,
+   "operador": "logico",
+   "original": "and x.get(\"propuesta_metodo\") != METODO_POSTVENTA}",
+   "mutado": "or x.get(\"propuesta_metodo\") != METODO_POSTVENTA}",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/registro_sigrid.py",
+   "linea": 534,
+   "col": 49,
+   "operador": "logico",
+   "original": "for v in x.get(\"vinculados\") or []",
+   "mutado": "for v in x.get(\"vinculados\") and []",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/registro_sigrid.py",
+   "linea": 543,
+   "col": 41,
+   "operador": "logico",
+   "original": "for v in r.get(\"vinculados\") or []",
+   "mutado": "for v in r.get(\"vinculados\") and []",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/registro_sigrid.py",
+   "linea": 545,
+   "col": 12,
+   "operador": "logico",
+   "original": "and (v.get(\"registro_id\"), v.get(\"recurso_ide\")) in subfilas})",
+   "mutado": "or (v.get(\"registro_id\"), v.get(\"recurso_ide\")) in subfilas})",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/registro_sigrid.py",
+   "linea": 546,
+   "col": 26,
+   "operador": "not",
+   "original": "if not borrar and not borrar_sub:",
+   "mutado": "if not borrar and borrar_sub:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/registro_sigrid.py",
+   "linea": 557,
+   "col": 70,
+   "operador": "comparacion",
+   "original": ".where(AsignacionVinculadoORM.asignacion_id == rid,",
+   "mutado": ".where(AsignacionVinculadoORM.asignacion_id != rid,",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/use_cases.py",
+   "linea": 405,
+   "col": 20,
+   "operador": "veracidad",
+   "original": "and self._al_borrar_subfilas is not None",
+   "mutado": "and self._al_borrar_subfilas",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/use_cases.py",
+   "linea": 406,
+   "col": 37,
+   "operador": "comparacion",
+   "original": "and _snapshot(antes) != _snapshot(despues)):",
+   "mutado": "and _snapshot(antes) == _snapshot(despues)):",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/infrastructure/db/repositories.py",
+   "linea": 238,
+   "col": 19,
+   "operador": "comparacion",
+   "original": "if ide not in recibidos:",
+   "mutado": "if ide in recibidos:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/routes.py",
+   "linea": 120,
+   "col": 26,
+   "operador": "comparacion",
+   "original": "if encolar_marcas is not None:",
+   "mutado": "if encolar_marcas is None:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/routes.py",
+   "linea": 127,
+   "col": 15,
+   "operador": "booleano",
+   "original": "return False, Marcas()",
+   "mutado": "return True, Marcas()",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/schemas.py",
+   "linea": 154,
+   "col": 43,
+   "operador": "veracidad",
+   "original": "default=None, exclude_if=lambda v: v is None)",
+   "mutado": "default=None, exclude_if=lambda v: not v)",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/schemas.py",
+   "linea": 213,
+   "col": 45,
+   "operador": "comparacion",
+   "original": "default=None, exclude_if=lambda v: v is None)",
+   "mutado": "default=None, exclude_if=lambda v: v is not None)",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/schemas.py",
+   "linea": 486,
+   "col": 23,
+   "operador": "veracidad",
+   "original": "marcas = marcas if marcas is not None else Marcas(",
+   "mutado": "marcas = marcas if marcas else Marcas(",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_lote.py",
+   "linea": 74,
+   "col": 68,
+   "operador": "comparacion",
+   "original": "\"motivos_vinculados\") if k in r}}",
+   "mutado": "\"motivos_vinculados\") if k not in r}}",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 217,
+   "col": 7,
+   "operador": "veracidad",
+   "original": "if obra_pv is None:",
+   "mutado": "if not obra_pv:",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 220,
+   "col": 23,
+   "operador": "entero",
+   "original": "return {\"ide\": 0, \"cod\": None}, None",
+   "mutado": "return {\"ide\": 1, \"cod\": None}, None",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 221,
+   "col": 7,
+   "operador": "negacion",
+   "original": "if l.paride:",
+   "mutado": "if not l.paride:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 234,
+   "col": 17,
+   "operador": "comparacion",
+   "original": "if a.destino == \"postventa\":",
+   "mutado": "if a.destino != \"postventa\":",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 637,
+   "col": 15,
+   "operador": "veracidad",
+   "original": "if obra_pv is not None:",
+   "mutado": "if obra_pv:",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 638,
+   "col": 47,
+   "operador": "ternario",
+   "original": "destino_pv = destino_normal if forzada else obra_pv",
+   "mutado": "destino_pv = destino_normal if not forzada else obra_pv",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 649,
+   "col": 15,
+   "operador": "not",
+   "original": "if not l.es_postventa:",
+   "mutado": "if l.es_postventa:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 676,
+   "col": 49,
+   "operador": "comparacion",
+   "original": "if por_id[a.registro_id].var_paride is None],",
+   "mutado": "if por_id[a.registro_id].var_paride is not None],",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 686,
+   "col": 42,
+   "operador": "entero",
+   "original": "v = validas.get(int(paride or 0))",
+   "mutado": "v = validas.get(int(paride or 1))",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 687,
+   "col": 19,
+   "operador": "veracidad",
+   "original": "return v is not None and v.vale_en(obra_pv.ide)",
+   "mutado": "return v and v.vale_en(obra_pv.ide)",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 720,
+   "col": 25,
+   "operador": "comparacion",
+   "original": "if a.destino == \"postventa\":",
+   "mutado": "if a.destino != \"postventa\":",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 725,
+   "col": 53,
+   "operador": "ternario",
+   "original": "cod = a.partida_cod or (leida.cod if leida else None) \\",
+   "mutado": "cod = a.partida_cod or (leida.cod if not leida else None) \\",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 727,
+   "col": 19,
+   "operador": "not",
+   "original": "if not vale_pv(a.paride):",
+   "mutado": "if vale_pv(a.paride):",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 730,
+   "col": 27,
+   "operador": "ternario",
+   "original": "if linea.paride else",
+   "mutado": "if not linea.paride else",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 737,
+   "col": 19,
+   "operador": "not",
+   "original": "if not vale(linea.paride):",
+   "mutado": "if vale(linea.paride):",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 740,
+   "col": 44,
+   "operador": "logico",
+   "original": "cod = linea.partida_cod or int(linea.paride)",
+   "mutado": "cod = linea.partida_cod and int(linea.paride)",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 749,
+   "col": 15,
+   "operador": "negacion",
+   "original": "if linea.propuesta_paride:",
+   "mutado": "if not linea.propuesta_paride:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 753,
+   "col": 46,
+   "operador": "logico",
+   "original": "cod = linea.propuesta_cod or int(linea.propuesta_paride)",
+   "mutado": "cod = linea.propuesta_cod and int(linea.propuesta_paride)",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 768,
+   "col": 23,
+   "operador": "entero",
+   "original": "a.paride = 0",
+   "mutado": "a.paride = 1",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 781,
+   "col": 44,
+   "operador": "veracidad",
+   "original": "obra_pv_ide=int(obra_pv.ide) if obra_pv is not None else None,",
+   "mutado": "obra_pv_ide=int(obra_pv.ide) if obra_pv else None,",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 1069,
+   "col": 26,
+   "operador": "comparacion",
+   "original": "and a.accion in (\"escribir\", \"ya_registrado\")), None))",
+   "mutado": "and a.accion not in (\"escribir\", \"ya_registrado\")), None))",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 1137,
+   "col": 15,
+   "operador": "veracidad",
+   "original": "if p is None:",
+   "mutado": "if not p:",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 1138,
+   "col": 52,
+   "operador": "ternario",
+   "original": "motivos[l[\"clave\"]] = (motivo_pv if l[\"es_postventa\"]",
+   "mutado": "motivos[l[\"clave\"]] = (motivo_pv if not l[\"es_postventa\"]",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 1143,
+   "col": 11,
+   "operador": "negacion",
+   "original": "if motivos:",
+   "mutado": "if not motivos:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
+   "linea": 1153,
+   "col": 11,
+   "operador": "negacion",
+   "original": "if motivos_vin:",
+   "mutado": "if not motivos_vin:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_vinculados.py",
+   "linea": 222,
+   "col": 19,
+   "operador": "not",
+   "original": "if not p.paride:",
+   "mutado": "if p.paride:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_vinculados.py",
+   "linea": 223,
+   "col": 65,
+   "operador": "ternario",
+   "original": "sin[str(rid)] = (por_que_sin_ci(p.motivo) if p.sin_partida",
+   "mutado": "sin[str(rid)] = (por_que_sin_ci(p.motivo) if not p.sin_partida",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_vinculados.py",
+   "linea": 256,
+   "col": 56,
+   "operador": "comparacion",
+   "original": "obra_de_validar = (obra_pv_ide if a.destino == \"postventa\"",
+   "mutado": "obra_de_validar = (obra_pv_ide if a.destino != \"postventa\"",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_vinculados.py",
+   "linea": 274,
+   "col": 30,
+   "operador": "logico",
+   "original": "return (v is not None and obra_ide is not None",
+   "mutado": "return (v is not None or obra_ide is not None",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_vinculados.py",
+   "linea": 275,
+   "col": 16,
+   "operador": "logico",
+   "original": "and v.vale_en(obra_ide), v.res if v else None)",
+   "mutado": "or v.vale_en(obra_ide), v.res if v else None)",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_vinculados.py",
+   "linea": 289,
+   "col": 42,
+   "operador": "booleano",
+   "original": "guardada, guardada_valida = None, True",
+   "mutado": "guardada, guardada_valida = None, False",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_vinculados.py",
+   "linea": 290,
+   "col": 11,
+   "operador": "negacion",
+   "original": "if v.propuesta_paride:",
+   "mutado": "if not v.propuesta_paride:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/pipelines/registro_vinculados.py",
+   "linea": 294,
+   "col": 49,
+   "operador": "logico",
+   "original": "v.propuesta_res or res, v.propuesta_metodo,",
+   "mutado": "v.propuesta_res and res, v.propuesta_metodo,",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/lecturas_lote.py",
+   "linea": 269,
+   "col": 33,
+   "operador": "logico",
+   "original": "parides = _ides(l.paride or l.propuesta_paride for l in todas",
+   "mutado": "parides = _ides(l.paride and l.propuesta_paride for l in todas",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/lecturas_lote.py",
+   "linea": 276,
+   "col": 39,
+   "operador": "logico",
+   "original": "else v.paride or v.propuesta_paride",
+   "mutado": "else v.paride and v.propuesta_paride",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 81,
+   "col": 18,
+   "operador": "booleano",
+   "original": "@dataclass(frozen=True)",
+   "mutado": "@dataclass(frozen=False)",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 92,
+   "col": 15,
+   "operador": "logico",
+   "original": "return cod or str(int(paride))",
+   "mutado": "return cod and str(int(paride))",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 108,
+   "col": 7,
+   "operador": "veracidad",
+   "original": "if elegida is not None:",
+   "mutado": "if elegida:",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 109,
+   "col": 11,
+   "operador": "not",
+   "original": "if not elegida_valida:",
+   "mutado": "if elegida_valida:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 114,
+   "col": 27,
+   "operador": "booleano",
+   "original": "omitir=True),",
+   "mutado": "omitir=False),",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 119,
+   "col": 7,
+   "operador": "negacion",
+   "original": "if va_con_el_titular(titular):",
+   "mutado": "if not va_con_el_titular(titular):",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 121,
+   "col": 38,
+   "operador": "logico",
+   "original": "paride=int(titular.paride or 0), cod=titular.cod,",
+   "mutado": "paride=int(titular.paride and 0), cod=titular.cod,",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 123,
+   "col": 48,
+   "operador": "comparacion",
+   "original": "if guardada is not None and guardada.metodo in METODOS_PROPUESTA_PROPIA:",
+   "mutado": "if guardada is not None and guardada.metodo not in METODOS_PROPUESTA_PROPIA:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 124,
+   "col": 11,
+   "operador": "not",
+   "original": "if not guardada_valida:",
+   "mutado": "if guardada_valida:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 130,
+   "col": 27,
+   "operador": "booleano",
+   "original": "omitir=True),",
+   "mutado": "omitir=False),",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",
+   "linea": 142,
+   "col": 7,
+   "operador": "not",
+   "original": "if not any(n.es_hoja and n.activa for n in nodos.values()):",
+   "mutado": "if any(n.es_hoja and n.activa for n in nodos.values()):",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/universo_postventa.py",
+   "linea": 59,
+   "col": 7,
+   "operador": "veracidad",
+   "original": "if obra_pv is None:",
+   "mutado": "if not obra_pv:",
+   "veredicto": "superviviente"
+  },
+  {
+   "fichero": "services/dedicacion-transfer/application/services/universo_postventa.py",
+   "linea": 129,
+   "col": 39,
+   "operador": "ternario",
+   "original": "**({\"motivos\": motivos} if motivos else {}),",
+   "mutado": "**({\"motivos\": motivos} if not motivos else {}),",
+   "veredicto": "muerto"
+  }
+ ]
+}

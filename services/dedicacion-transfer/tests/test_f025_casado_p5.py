@@ -13,13 +13,15 @@ Sin red ni BBDD: catálogos construidos aquí y dobles de `conftest.py`.
 from __future__ import annotations
 
 import pytest
+
 from application.pipelines.registro_pipeline import RegistroPipeline
+from application.services.partida_definida import MOTIVO_PV_SIN_DEFINIDA
 from application.services.partida_resolver import (
     construir_catalogo,
     resolver_postventa,
 )
+from application.services.universo_postventa import UniversoPostventa
 from domain.models.registro_models import ObraEntrada
-
 from tests.conftest import PRESUPUESTOS_PV, ClienteFalso, SettingsFalso, _fila, linea
 
 
@@ -129,7 +131,10 @@ def test_f025_r11_la_obra_capitulo_no_casa_con_el_presupuesto_capitulos():
 @pytest.mark.parametrize("codigo", ["CP", "0679"])
 def test_f025_r11_el_preflight_omite_la_linea_por_no_casa(codigo):
     """R11 · Y el preflight omite su línea de postventa por «no casa»: no
-    imputa a `CP.1` ni a la hija de la obra-capítulo."""
+    imputa a `CP.1` ni a la hija de la obra-capítulo. F-074 (§6, criterio
+    i; R10): el casado corre en el universo del sync, que da el «no casa»
+    como motivo de la obra; el preflight no casa, y la línea sin la
+    partida de su obra se omite con el suyo."""
     cli = ClienteFalso()
     cli.capitulos = [
         _fila(100, 0, 0, "CD", "COSTES DIRECTOS"),
@@ -137,12 +142,16 @@ def test_f025_r11_el_preflight_omite_la_linea_por_no_casa(codigo):
         _fila(201, 200, 1, "CP.1", "SEGUROS"),
         _fila(300, 100, 1, "0679", "OBRA CAPITULO"),
         _fila(301, 300, 1, "0679.MO", "MANO DE OBRA")]
+    obra = ObraEntrada(ide=1, codigo=codigo, nombre="X")
+    universo = UniversoPostventa(cliente=cli,
+                                 settings=SettingsFalso()).calcular(1, [obra])
+    assert universo["obras"] == []
+    assert universo["motivos"] == {1: (
+        f"la obra {codigo} no casa con ninguna partida de POSTV2")}
     pf = RegistroPipeline(cliente=cli, settings=SettingsFalso()).preflight(
-        obra=ObraEntrada(ide=1, codigo=codigo, nombre="X"),
-        lineas=[linea(registro_id=9, es_postventa=True)])
+        obra=obra, lineas=[linea(registro_id=9, es_postventa=True)])
     a = pf.acciones[0]
     assert a.accion == "omitir", a
-    assert a.motivo == (f"la obra {codigo} no casa con ninguna partida de "
-                        f"POSTV2")
+    assert a.motivo == MOTIVO_PV_SIN_DEFINIDA
     assert pf.capitulo_postventa is None
     assert cli.inserts() == []

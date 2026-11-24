@@ -353,7 +353,8 @@ def test_f055_r2_medir_ensena_segundos_por_lectura_obra_y_total(
             rf"Obra {obra}: {n} lecturas · {n * 0.5:.2f} s leyendo · "
             r"\d+\.\d\d s en total", resumen[0]), resumen
     # Sin partida elegida: las dos líneas van por la automática de hoy.
-    assert "historial_partidas" in "\n".join(bloques[OBRA_ORIGEN])
+    # F-074 (§6, criterio ii): ya no; el preflight no lee el historial.
+    assert "historial_partidas" not in "\n".join(bloques[OBRA_ORIGEN])
     total = [l for l in salida.splitlines() if l.startswith("TOTAL: ")]
     n_total = sum(len([l for l in b if l.startswith("  lectura ")])
                   for b in bloques.values())

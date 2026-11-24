@@ -5,24 +5,28 @@ registro (design §6.3; ARCHITECTURE.md#regla-vinculado).
 Aparte de `registro_pipeline.py` para no engordarlo:
 
 - `proponer` (R9, R29): la propuesta de partida de cada subfila con la
-  misma regla que el preflight (`reglas_vinculados.partida_del_vinculado`):
-  la partida del titular en postventa, VAR o partida no `CI*`; si no
-  (F-068), su historial en la obra y, sin él, su cuenta (la subcuenta de la
-  cuenta de su hora por defecto, `reshor.caaide`, entre las cuentas del
-  presupuesto de la obra) y su nombre.
+  regla de `reglas_vinculados.partida_del_vinculado`: la partida del
+  titular en postventa, VAR o partida no `CI*`; si no (F-068), su
+  historial en la obra y, sin él, su cuenta (la subcuenta de la cuenta de
+  su hora por defecto, `reshor.caaide`, entre las cuentas del presupuesto
+  de la obra) y su nombre. F-074: SOLO corre en segundo plano (la cola del
+  mes y el selector), nunca en el preflight.
 - El preflight (R12-R26), en los puntos del pipeline donde sus lecturas
   van JUNTO a las de los titulares (R27): `decidir` tras la partida del
-  titular (paso 4), la cuenta en el paso 4 bis, el parte en el 5,
+  titular (paso 4), con la partida DEFINIDA de la subfila
+  (`partida_definida_del_vinculado`, F-074: la elegida, la del titular si
+  va con él o la propuesta guardada, validada por `ide`), sin lecturas de
+  la regla; la cuenta en el paso 4 bis, el parte en el 5,
   `idempotencia` con la lectura del paso 6, `sin_partida` en el 6 bis,
   `conflictos_del_parte` con las líneas del paso 7 y `cerrar` al final
   (titular omitido ⇒ sus vinculados también, sin sus avisos).
 
 Lecturas (R27): las horas de los vinculados y sus líneas, en las mismas
-lecturas que las de los trabajadores; las cuentas del presupuesto, UNA vez
-por petición y solo si alguna subfila las necesita. Sin vinculados no se
-lee nada más que antes. F-068 (R11, R12, R14): el historial de los
-vinculados en la obra, también UNA vez por petición (con los recursos de
-todos) y solo si alguna subfila llega a ese paso.
+lecturas que las de los trabajadores. Sin vinculados no se lee nada más que
+antes. Las cuentas del presupuesto y el historial de los vinculados (F-068,
+R11, R12, R14) son SOLO de `proponer`: UNA vez por petición (el historial,
+con los recursos de todos) y solo si alguna subfila llega a ese paso. El
+preflight no los lee (F-074, R6).
 """
 from __future__ import annotations
 
@@ -46,6 +50,11 @@ from domain.models.registro_models import (
 from application.services.cuenta_analitica import subcuenta_de_linea
 from application.services.estado_parte import motivo_choque
 from application.services.partida_catalog import PartidaNodo
+from application.services.partida_definida import (
+    MOTIVO_TITULAR_NO_VALIDA,
+    MOTIVO_TITULAR_SIN_PARTIDA,
+    partida_definida_del_vinculado,
+)
 from application.services.propuesta_partida import Propuesta
 from application.services.reglas_porcentajes import (
     AVISO_LINEA_CERO,
@@ -66,7 +75,6 @@ from application.services.texto_linea import anotar_tex, tex_de
 from application.services.reglas_vinculados import (
     AVISO_SIN_PARTIDA_VINCULADO,
     METODO_MANUAL,
-    METODOS_PROPUESTA_PROPIA,
     MOTIVO_PISADO_PENDIENTE,
     MOTIVO_SIGUE_AL_TRABAJADOR,
     MOTIVO_SIN_PARTIDA_VINCULADO,
@@ -82,7 +90,6 @@ from application.services.reglas_vinculados import (
     partida_por_historial,
     por_que_sin_ci,
     synckey_vinculado,
-    va_con_el_titular,
 )
 
 logger = logging.getLogger(__name__)
@@ -162,12 +169,17 @@ class PasoVinculados:
     def proponer(self, *, origen_ide: int, nodos: dict[int, PartidaNodo],
                  nodos_pv: dict[int, PartidaNodo], lineas: list[dict],
                  propuestas: dict[str, Propuesta | None], desde: int,
-                 hasta: int) -> dict[str, dict[str, dict | None]]:
+                 hasta: int, motivos: dict | None = None,
+                 ) -> dict[str, dict[str, dict | None]]:
         """R9: por línea con `vinculados`, la propuesta de cada uno
         (`{paride, cod, res, metodo, origen}`, como la del titular) o None
         (sin partida). Vacío si ninguna línea trae vinculados. F-068 (R15):
-        la misma regla que `_partida`, con el historial en la ventana
-        `desde`-`hasta` y las cuentas, una vez y solo si hacen falta."""
+        la regla de la subfila (`partida_del_vinculado`), con el historial
+        en la ventana `desde`-`hasta` y las cuentas, una vez y solo si hacen
+        falta. F-074 (R8): es el único sitio del transfer donde corre; el
+        preflight usa la definida. F-074 (R9, D6 b): con `motivos`, se le
+        añade `{clave: {recurso: texto}}` de cada subfila sin propuesta (el
+        titular sin partida o el motivo de la regla, en palabras)."""
         con = [l for l in lineas if l.get("vinculados")]
         if not con:
             return {}
@@ -184,10 +196,12 @@ class PasoVinculados:
                 l, nodos_pv if l["es_postventa"] else nodos,
                 propuestas.get(l["clave"]))
             por_recurso: dict[str, dict | None] = {}
+            sin: dict[str, str] = {}
             for v in l["vinculados"]:
                 rid = int(v["recurso_ide"])
                 if titular is None:
                     por_recurso[str(rid)] = None
+                    sin[str(rid)] = MOTIVO_TITULAR_NO_VALIDA
                     continue
 
                 def previa(rid: int = rid):
@@ -205,7 +219,12 @@ class PasoVinculados:
                     asdict(Propuesta(p.paride, p.cod, p.res, p.metodo,
                                      p.origen))
                     if p.paride else None)
+                if not p.paride:
+                    sin[str(rid)] = (por_que_sin_ci(p.motivo) if p.sin_partida
+                                     else MOTIVO_TITULAR_SIN_PARTIDA)
             out[l["clave"]] = por_recurso
+            if sin and motivos is not None:
+                motivos[l["clave"]] = sin
         return out
 
     # ------------------------------------------------------------- #
@@ -213,33 +232,19 @@ class PasoVinculados:
     # ------------------------------------------------------------- #
     def decidir(self, acciones: list[AccionLinea], lineas: list[LineaEntrada],
                 horas: dict[int, list[HoraRecurso]], *, origen_ide: int,
-                validas: dict, nodos_pv: dict[int, PartidaNodo],
-                nodos: Callable[[], dict[int, PartidaNodo]],
-                ventana: Callable[[], tuple[int, int]],
+                validas: dict, obra_pv_ide: int | None,
                 obra: str | None = None,
                 ) -> list[AccionVinculado]:
         """Tras la partida de los titulares (paso 4): la línea de cada
-        vinculado (`decidir_vinculados`, R12, R14, R18) y su partida (R15-R17
-        y F-068 R1) con la elegida (validada en `validas`, la lectura del
-        pipeline, o en el presupuesto de la postventa), la propuesta guardada
-        con un método propio o la regla. El historial de los vinculados en la
-        obra (en `ventana()`, `(desde, hasta)`: la del trabajador) y las
-        cuentas del presupuesto, una vez y solo si alguna subfila llega a su
-        paso; el presupuesto, el del pipeline si ya se leyó. F-069: `obra`,
-        el código de la obra de la petición, para los motivos de la caja."""
+        vinculado (`decidir_vinculados`, R12, R14, R18) y su partida
+        DEFINIDA (F-074 R2, R4, R5: `partida_definida_del_vinculado`), con
+        la elegida y la propuesta guardada validadas en `validas` (la
+        lectura del pipeline) contra su obra: la de origen o, bajo un
+        titular de postventa, `obra_pv_ide`. Sin leer historial, cuentas ni
+        presupuesto (F-074 R6): la regla de la subfila solo corre en
+        `proponer`. F-069: `obra`, el código de la obra de la petición, para
+        los motivos de la caja."""
         por_id = {l.registro_id: l for l in lineas}
-        recursos = sorted({int(v.recurso_ide) for l in lineas
-                           for v in l.vinculados})
-
-        def leer_historial() -> list:
-            desde, hasta = ventana()
-            return self._cli.historial_de_vinculados(
-                recursos, int(origen_ide), int(desde), int(hasta))
-
-        historial = _UnaVez(leer_historial)
-        cuentas = _UnaVez(
-            lambda: self._cli.cuentas_del_presupuesto(int(origen_ide)))
-        presupuesto = _UnaVez(nodos)
         out: list[AccionVinculado] = []
         for a in acciones:
             linea = por_id[a.registro_id]
@@ -248,70 +253,52 @@ class PasoVinculados:
             titular = PartidaTitular(
                 destino=a.destino, paride=int(a.paride or 0),
                 cod=a.partida_cod, res=a.partida_res, metodo=a.partida_metodo)
+            obra_de_validar = (obra_pv_ide if a.destino == "postventa"
+                               else int(origen_ide))
             for v, av in zip(linea.vinculados,
                              decidir_vinculados(a, linea, horas, obra),
                              strict=True):
                 self._entradas[clave_de(av)] = v
                 if av.accion == "escribir":
-                    self._partida(av, v, titular, horas, int(origen_ide),
-                                  validas, nodos_pv, presupuesto, cuentas,
-                                  historial)
+                    self._partida(av, v, titular, obra_de_validar, validas)
                 out.append(av)
         return out
 
     @staticmethod
-    def _valida(paride: int, destino: str, origen_ide: int, validas: dict,
-                nodos_pv: dict[int, PartidaNodo]) -> tuple[bool, str | None]:
-        """¿`paride` es hoja activa del presupuesto de su destino? Con su
-        descripción. La de la obra, por `validar_partidas` (F-055); la de la
-        postventa, en su presupuesto (`#regla-p5`)."""
-        if destino == "postventa":
-            nodo = nodos_pv.get(int(paride))
-            return (bool(nodo and nodo.es_hoja and nodo.activa),
-                    nodo.res if nodo else None)
+    def _valida(paride: int, obra_ide: int | None,
+                validas: dict) -> tuple[bool, str | None]:
+        """¿`paride` es hoja activa del presupuesto de `obra_ide`? Con su
+        descripción. Por `validar_partidas` (F-055), también la de la
+        postventa (F-074 R3: sin leer su presupuesto)."""
         v = validas.get(int(paride))
-        return (v is not None and v.vale_en(origen_ide),
-                v.res if v else None)
+        return (v is not None and obra_ide is not None
+                and v.vale_en(obra_ide), v.res if v else None)
 
     def _partida(self, av: AccionVinculado, v: VinculadoEntrada,
-                 titular: PartidaTitular, horas: dict, origen_ide: int,
-                 validas: dict, nodos_pv: dict, presupuesto: Callable,
-                 cuentas: Callable, historial: Callable) -> None:
-        """R15-R17 sobre `av`: elegida (si no vale, omitida); sin ella, si
-        no va con el titular, la propuesta guardada con un método propio que
-        vale (F-055: se escribe lo que enseña el cuadrante; F-068 R16); si
-        no, la regla: historial en la obra, cuenta y nombre (F-068 R1)."""
+                 titular: PartidaTitular, obra_ide: int | None,
+                 validas: dict) -> None:
+        """F-074 (R2, R4, R5) sobre `av`: la elegida (si no vale, omitida
+        con su código); sin ella, la del titular si va con él (postventa,
+        VAR o partida no `CI*`); si no, la propuesta guardada de método
+        propio (F-068 R16), omitida con su código si no vale; si no, sin
+        partida a confirmar. Nunca propone otra."""
         elegida, valida = None, True
         if v.paride:
-            valida, res = self._valida(int(v.paride), av.destino, origen_ide,
-                                       validas, nodos_pv)
+            valida, res = self._valida(int(v.paride), obra_ide, validas)
             elegida = PartidaElegida(int(v.paride), v.partida_cod, res)
-        elif (v.propuesta_paride
-              and v.propuesta_metodo in METODOS_PROPUESTA_PROPIA
-              and not va_con_el_titular(titular)):
-            vale, res = self._valida(int(v.propuesta_paride), av.destino,
-                                     origen_ide, validas, nodos_pv)
-            if vale:
-                av.paride = int(v.propuesta_paride)
-                av.partida_cod = v.propuesta_cod
-                av.partida_res = v.propuesta_res or res
-                av.partida_metodo = v.propuesta_metodo
-                av.partida_origen = v.propuesta_origen
-                return
-
-        def previa():
-            return partida_por_historial(historial(), int(av.recurso_ide),
-                                         origen_ide, presupuesto())
-
-        def ci():
-            sub = subcuenta_de_linea(horas.get(int(av.recurso_ide), []),
-                                     av.hora_ide)
-            return partida_por_cuenta_o_nombre(presupuesto(), cuentas(), sub,
-                                               v.tipo_res, v.descripcion)
-
-        p = partida_del_vinculado(titular, elegida, valida, ci, previa)
+        guardada, guardada_valida = None, True
+        if v.propuesta_paride:
+            guardada_valida, res = self._valida(int(v.propuesta_paride),
+                                                obra_ide, validas)
+            guardada = Propuesta(int(v.propuesta_paride), v.propuesta_cod,
+                                 v.propuesta_res or res, v.propuesta_metodo,
+                                 v.propuesta_origen)
+        d = partida_definida_del_vinculado(titular, elegida, valida,
+                                           guardada, guardada_valida)
+        p = d.partida
         if p.omitir:
             av.accion, av.motivo = "omitir", p.motivo
+            av.partida_no_valida = d.no_valida
             return
         av.paride, av.partida_cod, av.partida_res = p.paride, p.cod, p.res
         av.partida_metodo, av.partida_origen = p.metodo, p.origen

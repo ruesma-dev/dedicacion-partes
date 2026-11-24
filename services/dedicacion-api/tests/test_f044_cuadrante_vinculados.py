@@ -642,47 +642,20 @@ def test_f044_r8_selector_sin_vinculado_como_hoy():
 
 # ============================ preflight (R9) ============================= #
 def test_f044_r9_el_preflight_guarda_las_propuestas_de_las_subfilas():
+    """F-074 (§6, criterio i; R16): el preflight ya no propone; lo que
+    vuelve de las subfilas (con su método) no se guarda: ninguna sesión."""
     from application.registro_sigrid import RegistroSigrid
 
-    class _S:
-        def __init__(self) -> None:
-            self.ejecutadas: list[Any] = []
-            self.commits = 0
+    def sin_sesion():
+        raise AssertionError("no debe abrir sesión")
 
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *exc):
-            return None
-
-        def execute(self, stmt):
-            self.ejecutadas.append(stmt)
-
-        def commit(self):
-            self.commits += 1
-
-    s = _S()
-    reg = RegistroSigrid(lambda: s, None, 1)  # type: ignore[arg-type]
-    reg._guardar_propuestas([{"ok": True, "acciones": [], "vinculados": [
+    reg = RegistroSigrid(sin_sesion, None, 1)  # type: ignore[arg-type]
+    reg._borrar_no_validas([], [{"ok": True, "acciones": [], "vinculados": [
         {"registro_id": 41, "recurso_ide": 10, "accion": "escribir",
          "paride": 81001, "partida_cod": "CICO13", "partida_res": "TELEFONIA",
          "partida_metodo": "ci_tipo", "partida_origen": None},
-        {"registro_id": 41, "recurso_ide": 11, "paride": 81002,
-         "partida_metodo": "manual"},
-        {"registro_id": 42, "recurso_ide": 10, "paride": 0,
-         "partida_metodo": None},
         {"registro_id": 43, "recurso_ide": 12, "paride": 70001,
          "partida_cod": "0678", "partida_metodo": "titular"}]}])
-    cabecera = ("INSERT INTO asignacion_vinculado (asignacion_id, "
-                "vinculado_ide, propuesta_ide, propuesta_cod, propuesta_res, "
-                "propuesta_metodo, propuesta_origen) VALUES ")
-    assert [_sql(x).split(" ON CONFLICT")[0] for x in s.ejecutadas] == [
-        cabecera + "(41, 10, 81001, 'CICO13', 'TELEFONIA', 'ci_tipo', NULL)",
-        cabecera + "(43, 12, 70001, '0678', NULL, 'titular', NULL)"]
-    assert all(_sql(x).endswith("WHERE asignacion_vinculado.partida_ide IS "
-                                "NULL RETURNING asignacion_vinculado.id")
-               for x in s.ejecutadas)
-    assert s.commits == 1
 
 
 def test_f044_r9_metodos_de_propuesta_de_subfila():
