@@ -125,7 +125,14 @@ eso: (i) esperan que el **preflight** proponga o case (acción con método de
 propuesta o `postventa` sin partida en la entrada); (ii) cuentan lecturas de
 presupuesto, historial o cuentas en el preflight; (iii) esperan
 `partidas_postventa` no vacío del preflight; (iv) pintan o filtran
-«automática»; (v) comparan `ResultadoUniverso`. El implementer anota en
+«automática»; (v) comparan `ResultadoUniverso`; (vi) comparan la respuesta
+exacta de `partidas/propuesta(-lote)` sin `motivos` (R9); (vii) esperan que
+la validación por `ide` excluya las líneas de postventa (R3). **Cómo**: si
+el test prueba otra cosa (cero, capacidad, incidencias, rachas…) y solo
+cae en (i) porque su línea no trae partida, se le da una partida
+**definida** y conserva lo que esperaba; solo los que prueban el casado en
+el preflight cambian de expectativa o se retiran (enmienda del 2026-11-24,
+OK del humano). El implementer anota en
 `progress/impl_F-074.md` cada uno, con su criterio, antes de tocarlo
 (ficheros candidatos: `tasks.md`). Otro test: **PARA** y se pregunta.
 
