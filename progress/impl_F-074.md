@@ -89,6 +89,22 @@ Todos se anotaron aquí antes de tocarlos.
 - `test_f057_buscando_pendientes` r1: «—».
 - `test_f067_ver_vinculados` r3: «automatica» ya no casa con nadie, y su arnés carga `rotuloOrigen`.
 
+## Vuelta de la review, pasada 1 (CHANGES_REQUESTED, `17514ee`)
+
+Corrección en el commit `7b2df8b`; pasada 2 incremental desde `7f6ddc8`.
+- **H1**: las cabeceras de módulo de `registro_pipeline.py` (pasos 1 y 4), `registro_vinculados.py` y `lecturas_lote.py` dicen ahora que el preflight usa la definida, sin leer presupuestos, historial ni cuentas, y que `proponer` solo corre en segundo plano.
+- **H3**: `ARCHITECTURE.md` l. 108, 769 y 1220, «automática» pasa a «sin elegida».
+- **H6**: arriba, las cuatro secciones de `azure-apps` (§2, §4, §5, §7).
+- **H4**: tests renombrados, sin tocar sus aserciones:
+
+| Antes | Ahora | Criterio §6 |
+|---|---|---|
+| `test_f055_pipeline_partidas::test_f055_r6_propuesta_que_no_vale_se_recalcula` | `test_f055_r6_propuesta_que_no_vale_se_omite_nombrandola` | (i) |
+| `test_f068_pipeline::test_f068_r13_si_el_historial_falla_el_preflight_falla` | `test_f068_r13_el_preflight_no_lee_el_historial_aunque_falle` | (ii) |
+| `test_f068_pipeline::test_f068_r16_la_que_no_vale_o_de_titular_se_recalcula` | `test_f068_r16_la_que_no_vale_se_omite_y_la_de_titular_no_cuenta` | (i) |
+
+`bash harness/init.sh` tras la corrección (2026-11-24): `exit 0`, **0 `[KO]`**, «ENTORNO LISTO». Raíz 2319 passed / 47 skipped (782 s); transfer 2009 passed (42,0 s); api y front en verde por caché (sin cambios desde su verde de las 11:22 y 11:24). `PUERTA COBERTURA` 100,0 % (310/310) y `PUERTA TAMAÑO` impl 203/220 · `CARRIL` y `CAPA E2E` N/A.
+
 ## Fase RED (tests nuevos contra el código de `9fb1092`)
 
 Desde la carpeta de cada servicio, con su `.venv`:
@@ -170,7 +186,11 @@ En la api, ruff F señala 9 avisos en ficheros que esta rama no toca (`traer_sig
   1. Desplegar la api; «Sincronizar Sigrid»; desplegar el transfer y después el front. Este orden es obligatorio.
   2. Ctrl+F5. En el mes abierto: ninguna «automática», y las de postventa con su partida.
   3. Si se abre el modal: solo preflight y **Cancelar**.
-- **`azure-apps/dedicacion.md`**: no se ha tocado, lo actualiza el líder. El contrato cambia en tres puntos: `postventa/universo` devuelve `motivos`; `partidas/propuesta(-lote)` devuelve `motivos*`; el preflight devuelve `partida_no_valida` y ya no publica catálogos.
+- **`azure-apps/dedicacion.md`** (design §11): no se ha tocado, lo actualiza el líder en un commit aparte. Cambian cuatro secciones:
+  - §2: las cuatro columnas `postventa_*` de `obra`;
+  - §4: menos lecturas del preflight;
+  - §5: el preflight sin propuesta y con `partida_no_valida`; `partidas/propuesta(-lote)` y `postventa/universo` con motivos; cuadrante, escrituras y `…/propuestas` con las claves y listas nuevas;
+  - §7: la postventa sin sync no se registra; orden de despliegue api → sync → transfer → front.
 
 ## Evidencias
 
