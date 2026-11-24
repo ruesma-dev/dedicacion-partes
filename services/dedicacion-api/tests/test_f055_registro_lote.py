@@ -21,7 +21,6 @@ from types import SimpleNamespace
 
 import pytest
 from application.registro_sigrid import RegistroSigrid, es_metodo_de_propuesta
-from sqlalchemy.dialects import postgresql
 
 from tests.test_f024_registro_empresa import _Sesion, _Transfer
 from tests.test_f039_registro_var import VAR_29
@@ -195,6 +194,8 @@ def _accion(rid, metodo, paride=80002, **kw):
 
 
 def test_f055_r14_guarda_las_propuestas_sin_tocar_nada_mas():
+    """F-074 (§6, criterio i; R16): el preflight ya no propone, así que la
+    api no guarda nada de lo que vuelve (ni con método de propuesta)."""
     acciones = [_accion(1, "parte_anterior", origen="parte P · 05/2026"),
                 _accion(2, "ultimo_parte"), _accion(3, "auto_nombre"),
                 _accion(4, "auto_categoria"), _accion(5, "manual"),
@@ -205,33 +206,13 @@ def test_f055_r14_guarda_las_propuestas_sin_tocar_nada_mas():
     reg, updates = _registro([_fila(1)], t)
     r = reg.preflight(2026, 8)
     assert r["obras"][0]["acciones"] == acciones           # la respuesta, igual
-    guardadas = [u for u in updates if "commit" not in u]
-    assert [u["id_1"] for u in guardadas] == [1, 2, 3, 4]
-    assert guardadas[0] == {
-        "propuesta_ide": 80002, "propuesta_cod": "CI.1.20",
-        "propuesta_res": "JEFE DE OBRA",
-        "propuesta_metodo": "parte_anterior",
-        "propuesta_origen": "parte P · 05/2026", "id_1": 1}
-    assert updates[-1] == {"commit": True}
-    assert not any(k.startswith("sigrid_") for u in updates for k in u)
+    assert updates == []
 
 
-def test_f055_r14_solo_si_sigue_sin_elegida():
-    from application import registro_sigrid as mod
-    sentencias = []
-
-    class _S(_Sesion):
-        def execute(self, sentencia):
-            sentencias.append(sentencia)
-            return super().execute(sentencia)
-
-    t = _TransferLote(por_obra={678: {"ok": True, "acciones": [
-        _accion(1, "auto_nombre")]}})
-    RegistroSigrid(lambda: _S([_fila(1)], []), t, 1).preflight(2026, 8)
-    sql = str(sentencias[-1].compile(dialect=postgresql.dialect()))
-    assert "WHERE asignacion.id = %(id_1)s AND asignacion.partida_ide IS " \
-           "NULL" in sql
-    assert sentencias[-1].is_update and mod.es_metodo_de_propuesta
+# F-074 (§6, criterio i): `test_f055_r14_solo_si_sigue_sin_elegida` se
+# retira: el preflight ya no guarda propuestas. La guarda «solo si sigue sin
+# elegida» se prueba ahora en el borrado de la que no vale
+# (`test_f074_no_valida_api.py::test_f074_r16_solo_si_sigue_sin_elegida`).
 
 
 def test_f055_r14_sin_propuestas_ni_sesion_ni_commit():
@@ -249,7 +230,8 @@ def test_f055_r14_cualquier_accion_con_propuesta_y_sin_partida_no():
     t = _TransferLote(por_obra={678: {"ok": True, "acciones": acciones}})
     reg, updates = _registro([_fila(1)], t)
     reg.preflight(2026, 8)
-    assert [u.get("id_1") for u in updates if "commit" not in u] == [1, 2]
+    # F-074 (§6, criterio i; R16): nada se guarda.
+    assert updates == []
 
 
 def test_f055_r14_metodos_de_propuesta():

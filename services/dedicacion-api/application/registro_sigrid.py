@@ -93,7 +93,6 @@ from application.traza_vinculados import trazar_vinculados
 from infrastructure.db.repositories import (
     importes_del_mes_de,
     subfilas_de,
-    upsert_asignacion_vinculado,
 )
 from infrastructure.transfer.transfer_client import TransferClient
 
@@ -104,6 +103,15 @@ logger = logging.getLogger(__name__)
 #: traza de un registro que en Sigrid YA se hizo.
 _MAX_MOTIVO = 300
 _MAX_USUARIO = 64
+
+
+#: F-074 (R12): el método con el que viaja la partida de postventa de la
+#: obra (la del universo) en una línea de postventa sin elegida.
+METODO_POSTVENTA = "postventa"
+#: F-074 (R16): las columnas de la propuesta guardada que se borran.
+_CAMPOS_PROPUESTA_GUARDADA = ("propuesta_ide", "propuesta_cod",
+                              "propuesta_res", "propuesta_metodo",
+                              "propuesta_origen")
 
 
 def es_metodo_de_propuesta(metodo: str | None) -> bool:
@@ -284,6 +292,17 @@ class RegistroSigrid:
             elif a.partida_ide:
                 linea["paride"] = int(a.partida_ide)
                 linea["partida_cod"] = a.partida_cod
+            elif a.es_postventa:
+                # F-074 (R12, D2): sin elegida, la de postventa lleva la
+                # partida de su obra (la del universo, guardada en el sync)
+                # como propuesta; sin ella (no casa o sin sync), ninguna: el
+                # transfer la omite con su motivo. Nunca una guardada.
+                pv_ide = getattr(o, "postventa_partida_ide", None)
+                if pv_ide:
+                    linea.update(propuesta_paride=int(pv_ide),
+                                 propuesta_cod=o.postventa_partida_cod,
+                                 propuesta_res=o.postventa_partida_res,
+                                 propuesta_metodo=METODO_POSTVENTA)
             elif a.propuesta_ide:
                 # F-055 (R16): la propuesta guardada; el transfer la valida.
                 linea.update(propuesta_paride=int(a.propuesta_ide),
@@ -470,7 +489,7 @@ class RegistroSigrid:
                                                 completo=obra_ide is None)
         resultados = [{"obra": p["obra"], **r}
                       for p, r in zip(payloads, obras)]
-        self._guardar_propuestas(resultados)
+        self._borrar_no_validas(payloads, resultados)
         respuesta = {"ok": all(r.get("ok") for r in resultados) if resultados
                      else True, "obras": resultados, "no_vigentes": no_vigentes}
         if quitadas:
@@ -498,43 +517,47 @@ class RegistroSigrid:
         error = r.get("error") or "el transfer no devolvió todas las obras"
         return [{"ok": False, "error": error} for _ in payloads], []
 
-    def _guardar_propuestas(self, resultados: list[dict]) -> None:
-        """F-055 (R14): la partida de cada acción con método de propuesta,
-        en su asignación, SOLO si sigue sin elegida. Con el ORM, como
-        `_trazar`; sin evento y sin tocar `sigrid_*` ni la respuesta."""
-        propuestas = [a for r in resultados if r.get("ok")
-                      for a in r.get("acciones", [])
-                      if a.get("paride")
-                      and es_metodo_de_propuesta(a.get("partida_metodo"))]
-        # F-044 (R9): igual la de cada subfila (`vinculados` del preflight:
-        # `{registro_id, recurso_ide, paride, partida_*}`), en su fila de
-        # `asignacion_vinculado` y solo si sigue sin elegida.
-        de_subfilas = [v for r in resultados if r.get("ok")
-                       for v in r.get("vinculados") or []
-                       if v.get("paride") and es_metodo_de_propuesta_vinculado(
-                           v.get("partida_metodo"))]
-        if not propuestas and not de_subfilas:
+    def _borrar_no_validas(self, payloads: list[dict],
+                           resultados: list[dict]) -> None:
+        """F-074 (R16, D4): la propuesta GUARDADA que viajó al preflight y
+        que el transfer omite por no válida (`partida_no_valida`) se borra
+        de su asignación (o de su subfila) SOLO si sigue sin elegida, para
+        que la cola la recalcule; la elegida no se toca. Con el ORM, como
+        `_trazar`; sin evento y sin tocar `sigrid_*` ni la respuesta.
+        Sustituye al guardado de F-055 (R14): el preflight ya no propone."""
+        lineas = {int(x["registro_id"]) for p in payloads
+                  for x in p["lineas"]
+                  if x.get("propuesta_paride")
+                  and x.get("propuesta_metodo") != METODO_POSTVENTA}
+        subfilas = {(int(x["registro_id"]), int(v["recurso_ide"]))
+                    for p in payloads for x in p["lineas"]
+                    for v in x.get("vinculados") or []
+                    if v.get("propuesta_paride")}
+        borrar = sorted({int(a["registro_id"]) for r in resultados
+                         if r.get("ok") for a in r.get("acciones", [])
+                         if a.get("partida_no_valida")
+                         and a.get("registro_id") in lineas})
+        borrar_sub = sorted({
+            (int(v["registro_id"]), int(v["recurso_ide"]))
+            for r in resultados if r.get("ok")
+            for v in r.get("vinculados") or []
+            if v.get("partida_no_valida")
+            and (v.get("registro_id"), v.get("recurso_ide")) in subfilas})
+        if not borrar and not borrar_sub:
             return
+        sin_propuesta = dict.fromkeys(_CAMPOS_PROPUESTA_GUARDADA)
         with self._sf() as s:
-            for v in de_subfilas:
-                s.execute(upsert_asignacion_vinculado(
-                    int(v["registro_id"]), int(v["recurso_ide"]),
-                    {"propuesta_ide": v["paride"],
-                     "propuesta_cod": v.get("partida_cod"),
-                     "propuesta_res": v.get("partida_res"),
-                     "propuesta_metodo": v.get("partida_metodo"),
-                     "propuesta_origen": v.get("partida_origen")},
-                    donde=AsignacionVinculadoORM.partida_ide.is_(None)))
-            for a in propuestas:
-                s.execute(
-                    update(AsignacionORM)
-                    .where(AsignacionORM.id == a["registro_id"],
-                           AsignacionORM.partida_ide.is_(None))
-                    .values(propuesta_ide=a["paride"],
-                            propuesta_cod=a.get("partida_cod"),
-                            propuesta_res=a.get("partida_res"),
-                            propuesta_metodo=a.get("partida_metodo"),
-                            propuesta_origen=a.get("partida_origen")))
+            for rid in borrar:
+                s.execute(update(AsignacionORM)
+                          .where(AsignacionORM.id == rid,
+                                 AsignacionORM.partida_ide.is_(None))
+                          .values(**sin_propuesta))
+            for rid, vid in borrar_sub:
+                s.execute(update(AsignacionVinculadoORM)
+                          .where(AsignacionVinculadoORM.asignacion_id == rid,
+                                 AsignacionVinculadoORM.vinculado_ide == vid,
+                                 AsignacionVinculadoORM.partida_ide.is_(None))
+                          .values(**sin_propuesta))
             s.commit()
 
     # ------------------------------------------------------------- #

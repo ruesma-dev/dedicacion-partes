@@ -9,6 +9,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from application.estado_partida import Marcas, estado_de_linea, estado_de_subfila
 from domain.empresas import linea_de_otra_empresa
 from domain.estados import calcular_desviacion, calcular_estado
 from domain.importes import TipoCantidad, importes_del_mes, tipo_de
@@ -144,6 +145,15 @@ class SubfilaOut(_Base):
     propuesta_cod: str | None = None
     propuesta_res: str | None = None
     propuesta_metodo: str | None = None
+    # F-074 (R14): en su cola («buscando partida…») o en su memoria de «sin
+    # propuesta» («no encuentra partida», con el motivo del transfer). Las
+    # claves solo salen con valor (`application/estado_partida.py`).
+    propuesta_pendiente: bool | None = Field(default=None,
+                                             exclude_if=lambda v: v is None)
+    propuesta_no_encontrada: bool | None = Field(
+        default=None, exclude_if=lambda v: v is None)
+    propuesta_motivo: str | None = Field(default=None,
+                                         exclude_if=lambda v: v is None)
     # F-069 (R10): si el vinculado es de cantidad, su reparto y su unidad y,
     # si es por obra, su cantidad aquí, si es copiada y su comentario. Las
     # claves solo salen con valor (sin cantidad, la subfila de siempre).
@@ -195,6 +205,14 @@ class LineaOut(_Base):
     # F-057: la línea está en la cola de las propuestas del mes (en cola o
     # calculándose): el front dice «buscando partida…» solo en estas.
     propuesta_pendiente: bool = False
+    # F-074 (R12, R13): en la memoria de «sin propuesta» (o, en postventa,
+    # su obra no casa): «no encuentra partida», con el motivo del transfer.
+    # Solo con valor. La de postventa publica como propuesta la de su obra
+    # (método `postventa`).
+    propuesta_no_encontrada: bool | None = Field(
+        default=None, exclude_if=lambda v: v is None)
+    propuesta_motivo: str | None = Field(default=None,
+                                         exclude_if=lambda v: v is None)
     # F-044 (R6): las subfilas de los vinculados del trabajador; la clave
     # solo sale si hay alguna (sin vinculados, la línea de siempre).
     vinculados: list[SubfilaOut] = Field(default_factory=list,
@@ -322,15 +340,46 @@ class PropuestaSubfilaOut(_Base):
     propuesta_metodo: str | None
 
 
+class NoEncontradaOut(_Base):
+    """Una línea en la memoria de «sin propuesta», con el motivo del
+    transfer (F-074, R13)."""
+
+    trabajador_ide: int
+    obra_ide: int
+    es_postventa: bool
+    motivo: str | None = None
+
+
+class SubfilaPendienteOut(_Base):
+    """Una subfila en la cola de las propuestas del mes (F-074, R14)."""
+
+    trabajador_ide: int
+    obra_ide: int
+    es_postventa: bool
+    vinculado_ide: int
+
+
+class SubfilaNoEncontradaOut(SubfilaPendienteOut):
+    """Una subfila en su memoria de «sin propuesta» (F-074, R14)."""
+
+    motivo: str | None = None
+
+
 class PropuestasOut(_Base):
     """`GET …/propuestas` (F-055, R35; F-057 `pendientes`; F-044 R9
     `subfilas`). Sin declarar `subfilas`, `extra="forbid"` daba 500 en
-    cuanto una subfila tenía propuesta (hotfix del 2026-11-03)."""
+    cuanto una subfila tenía propuesta (hotfix del 2026-11-03). F-074 (R13,
+    R14): `no_encontradas`, `subfilas_pendientes` y
+    `subfilas_no_encontradas`, solo si hay alguna (la ruta excluye lo no
+    puesto)."""
 
     en_curso: bool
     lineas: list[PropuestaLineaOut]
     pendientes: list[PendienteOut]
     subfilas: list[PropuestaSubfilaOut] = []
+    no_encontradas: list[NoEncontradaOut] = []
+    subfilas_pendientes: list[SubfilaPendienteOut] = []
+    subfilas_no_encontradas: list[SubfilaNoEncontradaOut] = []
 
 
 class EmpresaOut(_Base):
@@ -424,12 +473,19 @@ def a_trabajador_out(
     fila: CuadranteTrabajador, empresa_obras: int,
     pendientes: AbstractSet[tuple[int, int, bool]] = frozenset(),
     tipos: Mapping[str, TipoCantidad] | None = None,
+    *, marcas: Marcas | None = None,
 ) -> TrabajadorOut:
     """`empresa_obras` es la empresa de las obras (`EMPRESA_IMPUTACION`), no
     la elegida: decide `otra_empresa` de cada línea (F-034, R5).
     `pendientes` son las líneas `(trabajador, obra, es_postventa)` en la cola
-    de propuestas (F-057): marcan `propuesta_pendiente` por identidad."""
+    de propuestas (F-057): marcan `propuesta_pendiente` por identidad.
+    F-074 (R12-R14): `marcas`, la foto entera de la cola (si viene, manda
+    sobre `pendientes`); las claves de la propuesta de cada línea y subfila
+    las decide `application/estado_partida.py`."""
     tipos = tipos or {}
+    marcas = marcas if marcas is not None else Marcas(
+        pendientes=frozenset(pendientes))
+    ide = fila.trabajador.ide
     total = fila.total
     estado = calcular_estado(total, len(fila.lineas))
     desviacion = calcular_desviacion(total, len(fila.lineas))
@@ -456,11 +512,7 @@ def a_trabajador_out(
                 partida_cod=ln.partida_cod,
                 partida_res=ln.partida_res,
                 partida_fija=ln.partida_fija,
-                propuesta_cod=ln.propuesta_cod,
-                propuesta_res=ln.propuesta_res,
-                propuesta_metodo=ln.propuesta_metodo,
-                propuesta_pendiente=(fila.trabajador.ide, ln.obra_ide,
-                                     ln.es_postventa) in pendientes,
+                **estado_de_linea(ide, ln, marcas),
                 vinculados=[
                     SubfilaOut(
                         vinculado_ide=v.vinculado_ide, tipo=v.tipo,
@@ -468,9 +520,7 @@ def a_trabajador_out(
                         partida_ide=v.partida_ide, partida_cod=v.partida_cod,
                         partida_res=v.partida_res,
                         partida_fija=ln.partida_fija,
-                        propuesta_cod=v.propuesta_cod,
-                        propuesta_res=v.propuesta_res,
-                        propuesta_metodo=v.propuesta_metodo,
+                        **estado_de_subfila(ide, ln, v, marcas),
                         **_cantidad_out(v, tipo_de(v.tipo, tipos)))
                     for v in ln.vinculados],
                 comentario=ln.comentario,

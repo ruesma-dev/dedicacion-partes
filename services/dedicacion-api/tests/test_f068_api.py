@@ -41,7 +41,6 @@ from tests.test_f044_cuadrante_vinculados import (
     _rv,
     _selector,
     _SesionPorTabla,
-    _sql,
     _Transfer,
     _TransferLote,
     _uow_selector,
@@ -100,6 +99,8 @@ class _S:
 
 
 def test_f068_r17_el_preflight_guarda_las_de_metodo_propio():
+    """F-074 (§6, criterio i; R16): el preflight ya no propone; las de
+    método propio que vuelven no se guardan (la cola y el selector sí)."""
     s = _S()
     reg = RegistroSigrid(lambda: s, None, 1)  # type: ignore[arg-type]
     vinculados = [
@@ -108,20 +109,9 @@ def test_f068_r17_el_preflight_guarda_las_de_metodo_propio():
          "partida_res": "TELEFONIA", "partida_metodo": m,
          "partida_origen": ORIGEN if m == "parte_anterior" else None}
         for i, m in enumerate(PROPIOS)]
-    vinculados.append({"registro_id": 41, "recurso_ide": 30,
-                       "accion": "escribir", "paride": 82001,
-                       "partida_cod": "CI.0.01", "partida_res": None,
-                       "partida_metodo": "manual", "partida_origen": None})
-    reg._guardar_propuestas([{"ok": True, "acciones": [],
-                              "vinculados": vinculados}])
-    cabecera = ("INSERT INTO asignacion_vinculado (asignacion_id, "
-                "vinculado_ide, propuesta_ide, propuesta_cod, propuesta_res, "
-                "propuesta_metodo, propuesta_origen) VALUES ")
-    assert [_sql(x).split(" ON CONFLICT")[0] for x in s.ejecutadas] == [
-        cabecera + f"(41, {20 + i}, 82413, 'CI.4.13', 'TELEFONIA', '{m}', "
-        + (f"'{ORIGEN}')" if m == "parte_anterior" else "NULL)")
-        for i, m in enumerate(PROPIOS)]
-    assert s.commits == 1
+    reg._borrar_no_validas([], [{"ok": True, "acciones": [],
+                                 "vinculados": vinculados}])
+    assert (s.ejecutadas, s.commits) == ([], 0)
 
 
 @pytest.mark.parametrize("metodo", PROPIOS)

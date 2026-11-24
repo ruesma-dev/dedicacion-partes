@@ -146,8 +146,15 @@ class TransferClient:
             causa = r.get("error") or "la respuesta del transfer no trae obras"
             raise UniversoPostventaNoDisponible(
                 f"universo de postventa no disponible: {causa}")
-        return ResultadoUniverso(ides=frozenset(o["ide"] for o in r["obras"]),
-                                 motivo=r.get("motivo"))
+        # F-074 (R11): la partida de cada obra y (R10) el motivo de las que
+        # no casan (claves de texto en el JSON); sin `motivos` (transfer
+        # anterior), ninguno.
+        return ResultadoUniverso(
+            ides=frozenset(o["ide"] for o in r["obras"]),
+            motivo=r.get("motivo"),
+            partidas={int(o["ide"]): o["partida"] for o in r["obras"]
+                      if o.get("partida")},
+            motivos={int(k): v for k, v in (r.get("motivos") or {}).items()})
 
     def universo_var(self, empresa: int) -> ResultadoUniversoVar:
         """Universo VAR de `empresa` (`UniversoVarGateway`, F-039,

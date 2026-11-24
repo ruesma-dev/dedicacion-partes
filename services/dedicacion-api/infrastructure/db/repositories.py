@@ -160,6 +160,11 @@ class PgTrabajadorRepository:
 #: Columnas de la entrada VAR que `sincronizar` copia tal cual de la fila
 #: (F-039, R13, docs/ARCHITECTURE.md#regla-var).
 _REGISTRO_VAR = ("registro_obra_ide", "registro_obra_cod", "registro_paride")
+#: F-074 (R11): la partida de postventa de la obra en el universo (o su
+#: motivo), que `sincronizar` copia tal cual de la fila; `None` si la fila no
+#: la trae (las entradas VAR).
+_POSTVENTA = ("postventa_partida_ide", "postventa_partida_cod",
+              "postventa_partida_res", "postventa_motivo")
 
 
 class PgObraRepository:
@@ -182,8 +187,10 @@ class PgObraRepository:
             activa = fila["activa"]
             admite = fila["admite_postventa"]
             # Obra y partida de registro de una entrada VAR (F-039, R13);
-            # `None` en las obras normales, que no traen las claves.
-            registro = {campo: fila.get(campo) for campo in _REGISTRO_VAR}
+            # `None` en las obras normales, que no traen las claves. F-074
+            # (R11): y la partida de postventa del universo o su motivo.
+            registro = {campo: fila.get(campo)
+                        for campo in (*_REGISTRO_VAR, *_POSTVENTA)}
             existente = actuales.get(ide)
             if existente is None:
                 self._s.add(
@@ -228,6 +235,11 @@ class PgObraRepository:
                 orm.activa = False
                 orm.admite_postventa = False
                 desactivadas += 1
+            if ide not in recibidos:
+                # F-074 (R11): fuera del universo pedido, sin partida de
+                # postventa ni motivo (como una obra aún sin sincronizar).
+                for campo in _POSTVENTA:
+                    setattr(orm, campo, None)
         return ResultadoSyncMaestro(
             recibidos=len(recibidos),
             altas=altas,
@@ -1148,6 +1160,11 @@ def _a_obra(orm: ObraORM) -> Obra:
         activa=orm.activa,
         empresa=orm.empresa,
         admite_postventa=orm.admite_postventa,
+        # F-074 (R11): con `getattr`, como los dobles de fila de antes.
+        postventa_partida_ide=getattr(orm, "postventa_partida_ide", None),
+        postventa_partida_cod=getattr(orm, "postventa_partida_cod", None),
+        postventa_partida_res=getattr(orm, "postventa_partida_res", None),
+        postventa_motivo=getattr(orm, "postventa_motivo", None),
     )
 
 
@@ -1165,6 +1182,12 @@ def _a_linea(a: AsignacionORM, o: ObraORM) -> Linea:
         obra_activa=o.activa,
         obra_empresa=o.empresa,
         obra_admite_postventa=o.admite_postventa,
+        # F-074 (R12): la partida de postventa de su obra o su motivo (con
+        # `getattr`: los dobles de fila anteriores a F-074 no la traen).
+        obra_pv_ide=getattr(o, "postventa_partida_ide", None),
+        obra_pv_cod=getattr(o, "postventa_partida_cod", None),
+        obra_pv_res=getattr(o, "postventa_partida_res", None),
+        obra_pv_motivo=getattr(o, "postventa_motivo", None),
     )
 
 

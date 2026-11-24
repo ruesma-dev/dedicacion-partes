@@ -81,6 +81,14 @@ class ObraORM(Base):
     registro_obra_ide: Mapped[int | None] = mapped_column(BigInteger)
     registro_obra_cod: Mapped[str | None] = mapped_column(Text)
     registro_paride: Mapped[int | None] = mapped_column(BigInteger)
+    # F-074 (R11, D2): la partida de postventa de la obra en el universo del
+    # transfer (la que casa en el sync) o, si no casa, su motivo. Nulables y
+    # sin default: el ADD COLUMN derivado vale sin migración y el siguiente
+    # sync las rellena.
+    postventa_partida_ide: Mapped[int | None] = mapped_column(BigInteger)
+    postventa_partida_cod: Mapped[str | None] = mapped_column(Text)
+    postventa_partida_res: Mapped[str | None] = mapped_column(Text)
+    postventa_motivo: Mapped[str | None] = mapped_column(Text)
     sync_en: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
