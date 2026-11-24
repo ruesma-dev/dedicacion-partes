@@ -111,7 +111,9 @@ def _programa(cuerpo: str, estado: dict, almacen: dict | None = None,
     if node is None:
         pytest.skip("node no está instalado: los tests de lógica de F-067 "
                     "no se ejecutan")
-    funciones = [_funcion(f) for f in (*FUNCIONES, *PREFS)]
+    # F-074 (§6, criterio iv): el texto de la celda Partida de una
+    # propuesta lleva su método (`rotuloOrigen`).
+    funciones = [_funcion(f) for f in (*FUNCIONES, *PREFS, "rotuloOrigen")]
     assert all(funciones), "falta en app.js alguna función de hoy"
     nuevas = [c for c in (_funcion(f) for f in FUNCIONES_F063) if c]
     programa = "\n".join(
@@ -300,7 +302,8 @@ def test_f067_r3_partida_desmarcada_solo_las_lineas():
     assert _visibles({"partida": "ciga14"}, True) == ["Benito", "Carla"]
     assert _visibles({"partida": "ciga14"}, False) == ["Benito"]
     for ver in (True, False):
-        assert _visibles({"partida": "automatica"}, ver) == ["Ana", "Carla"]
+        # F-074 (§6, criterio iv): «automática» ya no se pinta.
+        assert _visibles({"partida": "automatica"}, ver) == []
 
 
 # ====================== R1, R2, R5 · la casilla ========================== #

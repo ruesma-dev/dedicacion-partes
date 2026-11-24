@@ -282,6 +282,9 @@ tr.fila.subfila td { border-top: 1px dashed var(--line); }
 .partida-propuesta { font-style: italic; }
 .partida-propuesta .partida-metodo { color: var(--steel); font-size: 0.9em; }
 .partida-auto.buscando { opacity: 0.8; }
+/* F-074 (R18, D1): «no encuentra partida», un aviso sin cursiva, con el
+   motivo en el título. */
+.partida-sin { font-style: normal; color: var(--warn); }
 .partida-fija { color: var(--ink-soft); }
 /* F-044 (R6, R7): la columna «Tipo recurso» y las subfilas de los
    vinculados: más bajas y en gris, con el % de su línea sin editar. */

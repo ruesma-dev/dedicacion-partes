@@ -198,11 +198,15 @@ function listaSelector(resp, texto, mayor) {
     .map((p) => ({ ...p, propuesta: p === primera }));
 }
 
-// Celda Partida de una línea que no es fija (F-050 R24, F-055 R27): la
-// elegida; sin ella, la propuesta guardada en cursiva con su método; sin
-// ninguna, «buscando partida…» si la API la da por pendiente
-// (`propuesta_pendiente`, F-057) o «automática».
-// Pinta lo que manda la API: no decide nada.
+// Celda Partida de una línea o subfila que no es fija (F-050 R24, F-055
+// R27, F-057; F-074 R17-R19), lo primero que aplique: la elegida; la
+// propuesta (la guardada o, en postventa, la de su obra) en cursiva con su
+// método; «buscando partida…» (en la cola); «no encuentra partida» como
+// aviso, sin cursiva y con el motivo del transfer en el título (D1); «sin
+// calcular» (periodo ABIERTO); «—». Nunca «automática». Pinta lo que manda
+// la API: solo mira `periodoEstado` para separar «sin calcular» de «—».
+// El filtro «Partida» y el buscador libre casan con su texto visible
+// (`textoCeldaPartida` de `trabajadoresVisibles`, en el mismo orden).
 function htmlPartida(l) {
   if (l.partida_ide != null) {
     return `<span class="partida-elegida">${escapeHtml(textoPartida(l))}</span>`;
@@ -214,9 +218,17 @@ function htmlPartida(l) {
       `${escapeHtml(texto)}<span class="partida-metodo"> · ${escapeHtml(metodo)}` +
       "</span></em>";
   }
-  return l.propuesta_pendiente
-    ? '<span class="partida-auto buscando">buscando partida…</span>'
-    : '<span class="partida-auto">automática</span>';
+  if (l.propuesta_pendiente) {
+    return '<span class="partida-auto buscando">buscando partida…</span>';
+  }
+  if (l.propuesta_no_encontrada) {
+    const motivo = l.propuesta_motivo || "La regla no encuentra partida";
+    return `<span class="partida-sin" title="${escapeHtml(motivo)}">` +
+      "no encuentra partida</span>";
+  }
+  return state.periodoEstado === "ABIERTO"
+    ? '<span class="partida-auto">sin calcular</span>'
+    : '<span class="partida-auto">—</span>';
 }
 
 // De dónde sale una partida (`partida_metodo` y `partida_origen` del
@@ -479,6 +491,53 @@ function aplicarPendientes(pendientes) {
   });
 }
 
+// F-074 (R13): copia la lista `no_encontradas` de `GET …/propuestas` (las
+// líneas en la memoria de «sin propuesta» de la API, con su motivo) a
+// `propuesta_no_encontrada` y `propuesta_motivo` de cada línea de obra
+// normal, como `aplicarPendientes`. La de postventa no se toca: su marca
+// viene del cuadrante (su obra no casa).
+function aplicarNoEncontradas(noEncontradas) {
+  state.trabajadores.forEach((t) => {
+    t.lineas.forEach((l) => {
+      if (l.es_postventa) return;
+      const p = noEncontradas.find((x) => x.trabajador_ide === t.ide &&
+        x.obra_ide === l.obra_ide && x.es_postventa === l.es_postventa);
+      if (p) {
+        l.propuesta_no_encontrada = true;
+        l.propuesta_motivo = p.motivo || undefined;
+      } else {
+        delete l.propuesta_no_encontrada;
+        delete l.propuesta_motivo;
+      }
+    });
+  });
+}
+
+// F-074 (R14): lo mismo en las subfilas de vinculado: `subfilas_pendientes`
+// marca «buscando partida…» y `subfilas_no_encontradas`, «no encuentra
+// partida» con su motivo. Lo que no viene deja de estarlo.
+function aplicarMarcasSubfilas(pendientes, noEncontradas) {
+  const de = (lista, t, l, v) => lista.find((x) => x.trabajador_ide === t.ide &&
+    x.obra_ide === l.obra_ide && x.es_postventa === l.es_postventa &&
+    x.vinculado_ide === v.vinculado_ide);
+  state.trabajadores.forEach((t) => {
+    t.lineas.forEach((l) => {
+      (l.vinculados || []).forEach((v) => {
+        if (de(pendientes, t, l, v)) v.propuesta_pendiente = true;
+        else delete v.propuesta_pendiente;
+        const n = de(noEncontradas, t, l, v);
+        if (n) {
+          v.propuesta_no_encontrada = true;
+          v.propuesta_motivo = n.motivo || undefined;
+        } else {
+          delete v.propuesta_no_encontrada;
+          delete v.propuesta_motivo;
+        }
+      });
+    });
+  });
+}
+
 // Marca si hay propuestas en curso (lo dice la API en el cuadrante y en cada
 // escritura) y, si las hay, arranca la consulta (D9: también tras escribir).
 function marcarPropuestas(enCurso) {
@@ -518,6 +577,13 @@ async function consultarPropuestas(generacion, ruta) {
   if (generacion !== propuestas.generacion) return;
   if (datos) aplicarPropuestas(datos.lineas || [], datos.subfilas || []);
   aplicarPendientes((datos && datos.pendientes) || []);
+  // F-074 (R13, R14): las no encontradas y las marcas de las subfilas. Si la
+  // API falla, se quedan como estaban (no se inventa «sin calcular»).
+  if (datos) {
+    aplicarNoEncontradas(datos.no_encontradas || []);
+    aplicarMarcasSubfilas(datos.subfilas_pendientes || [],
+      datos.subfilas_no_encontradas || []);
+  }
   state.propuestasEnCurso = !!(datos && datos.en_curso);
   repintarCeldasPartida();
   if (state.propuestasEnCurso) seguirPropuestas();
@@ -946,6 +1012,29 @@ function trabajadoresVisibles() {
   // F-067: con la casilla desmarcada, «Tipo recurso» y «Partida» no miran
   // los vinculados (no sale un trabajador por algo que no se ve).
   const conVinculados = state.verVinculados !== false;
+  // F-074 (R20): el texto visible de la celda Partida de `x` (una línea o
+  // una subfila de la línea `l`): el de la fija o el de `htmlPartida`, en su
+  // mismo orden. Va en línea, como el de F-050 R28, porque los arneses node
+  // que cargan esta función (F-030, F-041, F-063) no cargan `htmlPartida`;
+  // un test de F-074 compara los dos textos estado a estado.
+  const textoCeldaPartida = (x, l) => {
+    if (l.partida_fija) return l.descripcion || "";
+    if (x.partida_ide != null) {
+      return [x.partida_cod, x.partida_res].filter(Boolean).join(" · ") ||
+        `partida ${x.partida_ide}`;
+    }
+    if (x.propuesta_cod) {
+      const texto = [x.propuesta_cod, x.propuesta_res].filter(Boolean).join(" · ");
+      return `${texto} · ${rotuloOrigen(x.propuesta_metodo)}`;
+    }
+    if (x.propuesta_pendiente) return "buscando partida…";
+    if (x.propuesta_no_encontrada) return "no encuentra partida";
+    return state.periodoEstado === "ABIERTO" ? "sin calcular" : "—";
+  };
+  // El «·» que separa código, descripción y método en la celda no cuenta,
+  // ni en la celda ni en lo tecleado: «ci.1.9 admin» sigue casando con
+  // «CI.1.9 · ADMINISTRATIVO» (F-050, R28).
+  const sinPunto = (s) => normalizar(s).replace(/\s*·\s*/g, " ");
   let filas = state.trabajadores.filter((t) => {
     // Las bajas solo aparecen si tienen carga en el periodo.
     if (!t.activo && !t.lineas.length) return false;
@@ -957,19 +1046,14 @@ function trabajadoresVisibles() {
     for (const clave of state.columnas) {
       const filtro = normalizar(state.filtrosCol[clave] || "");
       if (!filtro) continue;
-      // Partida (F-050, R28): alguna línea cuyo texto de partida case, el
-      // que enseña su celda (en línea: el arnés node de F-041 no lo carga).
+      // Partida (F-050, R28; F-074, R20): alguna línea, o alguna de sus
+      // subfilas (F-044 R6; F-067: si se ven), cuyo texto de celda case.
       if (clave === "partida") {
-        const casaPartida = t.lineas.some((l) => normalizar(
-          l.partida_fija ? l.descripcion
-            : l.partida_ide != null
-              ? `${l.partida_cod || ""} ${l.partida_res || ""}`
-              : "automática").includes(filtro) ||
-          // F-044 (R6): o la elegida de alguna de sus subfilas (F-067: si
-          // se ven).
+        const f = sinPunto(filtro);
+        const casaPartida = t.lineas.some((l) =>
+          sinPunto(textoCeldaPartida(l, l)).includes(f) ||
           (conVinculados && (l.vinculados || []).some((v) =>
-            v.partida_ide != null && normalizar(
-              `${v.partida_cod || ""} ${v.partida_res || ""}`).includes(filtro))));
+            sinPunto(textoCeldaPartida(v, l)).includes(f))));
         if (!casaPartida) return false;
         continue;
       }
@@ -990,13 +1074,16 @@ function trabajadoresVisibles() {
     }
     if (!q) return true;
     // Buscador libre de la fila: todos los campos juntos, y de cada línea su
-    // texto visible, con su `Postv-` (F-041, R9).
+    // texto visible, con su `Postv-` (F-041, R9). F-074 (R20): y el texto de
+    // la celda Partida de cada línea y (si se ven) de cada subfila.
     const pajar = normalizar(
       t.nombre + " " + (t.categoria || "") + " " +
       t.lineas.map((l) => textoObra(l.cod, l.descripcion, l.es_postventa)).join(" ") +
-      " " + t.lineas.map((l) => `${l.partida_cod || ""} ${l.partida_res || ""}`).join(" ")
+      " " + t.lineas.map((l) => [textoCeldaPartida(l, l), ...(conVinculados
+        ? (l.vinculados || []).map((v) => textoCeldaPartida(v, l)) : [])]
+        .map(sinPunto).join(" ")).join(" ")
     );
-    return pajar.includes(q);
+    return pajar.includes(q) || pajar.includes(sinPunto(q));
   });
 
   const { campo, dir } = state.orden;
@@ -1602,7 +1689,8 @@ function construirCelda(t, clave, idx) {
     const l = t.lineas[idx];
     td.textContent = (l && l.comentario) || "";
   } else if (clave === "partida") {
-    // F-050 (R24, R25): la elegida, la fija de una entrada o «automática»;
+    // F-050 (R24, R25): la fija de una entrada o, si no, la celda de F-074
+    // (R17: elegida, propuesta, buscando, no encuentra, sin calcular o «—»);
     // con el periodo abierto, el clic abre el selector (no el editor).
     td.className = "celda-partida";
     const l = t.lineas[idx];
@@ -1614,12 +1702,8 @@ function construirCelda(t, clave, idx) {
       td.innerHTML = `<span class="partida-fija" title="Partida fija de la entrada">${escapeHtml(l.descripcion)}</span>`;
     } else if (l.partida_ide != null) {
       td.innerHTML = `<span class="partida-elegida">${escapeHtml(textoPartida(l))}</span>`;
-    } else if (l.propuesta_cod || l.propuesta_pendiente) {
-      // F-055 (R27) y F-057: la propuesta guardada, o «buscando partida…»
-      // si la API marca la línea como pendiente.
-      td.innerHTML = htmlPartida(l);
     } else {
-      td.innerHTML = '<span class="partida-auto">automática</span>';
+      td.innerHTML = htmlPartida(l);
     }
     if (state.periodoEstado === "ABIERTO" && !l.partida_fija) {
       td.classList.add("editable");
@@ -2769,8 +2853,12 @@ function montarSelectorPartida(ctx) {
         const fila = document.createElement("div");
         fila.className = "opcion" + (i === activa ? " activa" : "") +
           (op.propuesta ? " propuesta" : "") + (op.automatica ? " automatica" : "");
+        // F-074 (R21, D5): la opción sin elegida dice qué queda; sigue
+        // borrando la elegida.
         fila.innerHTML = op.automatica
-          ? '<span class="desc">automática (la propone el registro)</span>'
+          ? `<span class="desc">${resp.propuesta
+            ? "sin elegir · usar la propuesta"
+            : "sin elegir · no encuentra partida"}</span>`
           : `<span class="cod">${escapeHtml(op.cod || "")}</span>` +
             `<span class="desc">${escapeHtml(op.res || "")}</span>` +
             (op.propuesta
@@ -4010,7 +4098,19 @@ function pintarModalPreflight(pf) {
       const aviso = v.aviso ? `<div class="aviso">${escapeHtml(v.aviso)}</div>` : "";
       let sel;
       if (v.accion !== "escribir") {
-        sel = `<span class="motivo">${escapeHtml(v.motivo || "")}</span>` +
+        // F-074 (R22): la omitida porque su partida definida no vale lleva
+        // el selector de su subfila, con la partida que nombra el transfer.
+        if (v.partida_no_valida) {
+          registro.lineas[a.registro_id] = {
+            trabajador: a.recurso_ide, obra_ide: o.obra.ide,
+            es_postventa: a.es_postventa,
+          };
+        }
+        sel = (v.partida_no_valida
+          ? `<button type="button" class="sel-partida" data-reg="${a.registro_id}" ` +
+            `data-vinculado="${v.recurso_ide}">${escapeHtml(v.partida_no_valida)}</button>`
+          : "") +
+          `<span class="motivo">${escapeHtml(v.motivo || "")}</span>` +
           (v.tex_nuevo ? htmlTexNuevo(v) : "");
       } else if (a.partida_metodo === "var") {
         sel = `<span class="partida-fija">${escapeHtml(v.partida_cod || "")}</span>` + aviso;
@@ -4063,9 +4163,12 @@ function pintarModalPreflight(pf) {
         // nombra el motivo del transfer (MOTIVO_PARTIDA_NO_HOJA de
         // propuesta_partida.py). Solo se lee ese texto: el front no decide
         // qué partida vale. Sin motivo, exec(undefined) no casa.
+        // F-074 (R22): y la omitida porque su partida definida (elegida o
+        // propuesta) no vale, por `partida_no_valida`, que la nombra.
         const r20 = /^la partida (.+) elegida no es una partida hoja activa del presupuesto de la obra /
           .exec(a.motivo);
-        sel = (r20 ? botonPartida(r20[1]) : "") +
+        const noValida = a.partida_no_valida || (r20 && r20[1]);
+        sel = (noValida ? botonPartida(noValida) : "") +
           `<span class="motivo">${escapeHtml(a.motivo || "")}</span>` +
           (a.tex_nuevo ? htmlTexNuevo(a) : "");
       }
