@@ -1257,12 +1257,14 @@
       "acceptance": [
         "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "human_review",
+      "status": "done",
       "spec_aprobada": "2026-11-24",
       "sdd": true,
       "rigor": "estandar",
       "priority": 3,
-      "branch": "feature/F-076-excel-sin-resto-de"
+      "branch": "feature/F-076-excel-sin-resto-de",
+      "fecha_cierre": "2026-11-24",
+      "ok_humano": "2026-11-24"
     },
     {
       "id": "F-077",
