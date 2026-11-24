@@ -1257,7 +1257,7 @@
       "acceptance": [
         "Criterios en la spec o acceptance aprobados por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "in_progress",
+      "status": "in_review",
       "spec_aprobada": "2026-11-24",
       "sdd": true,
       "rigor": "estandar",
