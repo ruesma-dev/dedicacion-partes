@@ -159,13 +159,12 @@ La suite de la api salió de caché. Para comprobarlo, se lanzó sin caché desd
 |---|---|
 | Tests ejecutados | raíz `2319 passed, 47 skipped`; api `1695 passed` (de ellos, 15 items de `test_f076`, 18 de `test_f045` y 95 de F-040/F-039/F-024) |
 | Cobertura de las líneas cambiadas | 100,0 % (4/4), según `PUERTA COBERTURA` |
-| Mutantes generados / supervivientes | No lanzada: la campaña va en la pasada tras el APPROVED. En `estandar` es informativa (`harness/rigor.json`) |
+| Mutantes generados / supervivientes | Pasada de campaña tras el APPROVED (sobre `6324db8`): 5 generados, 3 evaluados (uno por línea), **3 muertos, 0 supervivientes**, 0 timeouts, en 82,2 s. `exporter.py` no da mutantes (docstring y borrados; declarado). Detalle en `progress/mutacion_F-076.md`. En `estandar` es informativa |
 | Tiempo de la suite | raíz 602,35 s; api 27,76 s |
 | Capa e2e | N/A (`CAPA E2E: N/A`, ningún servicio declara e2e) |
 
 **Pendiente para cerrar:**
 - la review;
-- la pasada de campaña de mutación (informativa);
 - la MANUAL M1 (T7) del humano.
 
 ## Vuelta de la review, pasada 1 (CHANGES_REQUESTED, punto 2)

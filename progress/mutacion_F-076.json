@@ -1,0 +1,47 @@
+{
+ "version": 1,
+ "criterio": "codigo_1",
+ "fiable": true,
+ "feature": "F-076",
+ "sha": "6324db8e66749df87491fa52247e63e444fd5270",
+ "nivel": "estandar",
+ "regla": {
+  "por_linea": true,
+  "fraccion": null,
+  "suelo": null,
+  "techo": 20,
+  "origen": "nivel"
+ },
+ "semilla": 20260820,
+ "generados": 5,
+ "candidatos": 3,
+ "evaluados": [
+  {
+   "fichero": "services/dedicacion-api/infrastructure/excel/contenido.py",
+   "linea": 81,
+   "col": 63,
+   "operador": "comparacion",
+   "original": "propias = [ln for ln in fila.lineas if ln.es_postventa == postventa]",
+   "mutado": "propias = [ln for ln in fila.lineas if ln.es_postventa != postventa]",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/infrastructure/excel/contenido.py",
+   "linea": 82,
+   "col": 27,
+   "operador": "not",
+   "original": "if fila.lineas and not propias:",
+   "mutado": "if fila.lineas and propias:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/infrastructure/excel/contenido.py",
+   "linea": 87,
+   "col": 59,
+   "operador": "entero",
+   "original": "sum((ln.porcentaje for ln in propias), Decimal(0)),",
+   "mutado": "sum((ln.porcentaje for ln in propias), Decimal(1)),",
+   "veredicto": "muerto"
+  }
+ ]
+}
