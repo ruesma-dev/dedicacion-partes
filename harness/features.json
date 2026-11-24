@@ -1228,7 +1228,7 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "in_review",
+      "status": "in_progress",
       "spec_aprobada": "2026-11-23",
       "sdd": true,
       "rigor": "critico",
