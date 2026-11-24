@@ -3,7 +3,7 @@
  "criterio": "codigo_1",
  "fiable": true,
  "feature": "F-074",
- "sha": "4aa8d7b2d5e107caa19f18e84b33ce504249bb15",
+ "sha": "671ac439c40bc7e2605ab902e33bbcfe326ba4fd",
  "nivel": "critico",
  "regla": {
   "por_linea": true,
@@ -23,7 +23,7 @@
    "operador": "booleano",
    "original": "@dataclass(frozen=True)",
    "mutado": "@dataclass(frozen=False)",
-   "veredicto": "superviviente"
+   "veredicto": "muerto"
   },
   {
    "fichero": "services/dedicacion-api/application/estado_partida.py",
@@ -455,7 +455,7 @@
    "operador": "veracidad",
    "original": "default=None, exclude_if=lambda v: v is None)",
    "mutado": "default=None, exclude_if=lambda v: not v)",
-   "veredicto": "superviviente"
+   "veredicto": "muerto"
   },
   {
    "fichero": "services/dedicacion-api/interface_adapters/api/schemas.py",
@@ -500,7 +500,7 @@
    "operador": "entero",
    "original": "return {\"ide\": 0, \"cod\": None}, None",
    "mutado": "return {\"ide\": 1, \"cod\": None}, None",
-   "veredicto": "superviviente"
+   "veredicto": "muerto"
   },
   {
    "fichero": "services/dedicacion-transfer/application/pipelines/registro_pipeline.py",
@@ -806,7 +806,7 @@
    "operador": "booleano",
    "original": "@dataclass(frozen=True)",
    "mutado": "@dataclass(frozen=False)",
-   "veredicto": "superviviente"
+   "veredicto": "muerto"
   },
   {
    "fichero": "services/dedicacion-transfer/application/services/partida_definida.py",

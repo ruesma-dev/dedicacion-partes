@@ -1,7 +1,7 @@
 <!-- progress/mutacion_F-074.md -->
 # F-074 · Campaña de mutación
 
-Generado por `python -m harness.mutacion --feature F-074 --workers 4` el 2026-11-24 12:16.
+Generado por `python -m harness.mutacion --feature F-074 --workers 4` el 2026-11-24 12:44.
 
 ## Alcance
 
@@ -35,29 +35,30 @@ Origen del diff: **rama** (`c44bf6056e13132b78dd6807d29cfbac12dd2a89` .. `featur
 | Métrica | Valor |
 |---|---|
 | Mutantes generados | 202 |
-| Mutantes evaluados | 100 |
-| Muertos | 84 |
-| Supervivientes | 16 (todos medidos: sin mapa no se poda) |
+| Mutantes evaluados | 25 (+ 75 veredictos reutilizados) |
+| Muertos | 88 |
+| Supervivientes | 12 (todos medidos: sin mapa no se poda) |
 | Timeouts | 0 |
 | Indeterminados | 0 |
 | Timeouts repasados en serie | 0: ningún mutante agotó el reloj |
 | Sin veredicto (base rota) | 0 |
-| Tiempo total | 1321.7 s |
-| SHA de HEAD medido | `4aa8d7b2d5e107caa19f18e84b33ce504249bb15` |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_zj3kgn7w/wk_0/services/dedicacion-api` | 68.2 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_zj3kgn7w/wk_0/services/dedicacion-transfer` | 38.5 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_zj3kgn7w/wk_1/services/dedicacion-api` | 68.5 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_zj3kgn7w/wk_1/services/dedicacion-transfer` | 38.4 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_zj3kgn7w/wk_2/services/dedicacion-api` | 68.5 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_zj3kgn7w/wk_2/services/dedicacion-transfer` | 38.3 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_zj3kgn7w/wk_3/services/dedicacion-api` | 68.9 |
-| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_zj3kgn7w/wk_3/services/dedicacion-transfer` | 38.1 |
-| Media por mutante evaluado (s) | 13.2 |
-| Timeout efectivo por mutante (s) | 138 — derivado de la línea base × 2.0 |
+| Tiempo total | 665.6 s |
+| SHA de HEAD medido | `671ac439c40bc7e2605ab902e33bbcfe326ba4fd` |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_jb4ja_c6/wk_0/services/dedicacion-api` | 65.5 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_jb4ja_c6/wk_0/services/dedicacion-transfer` | 41.8 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_jb4ja_c6/wk_1/services/dedicacion-api` | 65.3 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_jb4ja_c6/wk_1/services/dedicacion-transfer` | 41.9 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_jb4ja_c6/wk_2/services/dedicacion-api` | 65.4 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_jb4ja_c6/wk_2/services/dedicacion-transfer` | 42.2 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_jb4ja_c6/wk_3/services/dedicacion-api` | 65.2 |
+| Línea base (s) — `C:/Users/pgris/AppData/Local/Temp/mutacion_F-074_jb4ja_c6/wk_3/services/dedicacion-transfer` | 42.1 |
+| Media por mutante evaluado (s) | 26.6 |
+| Timeout efectivo por mutante (s) | 131 — derivado de la línea base × 2.0 |
 | Suelo configurado (s) | 120 |
 | Workers | 4 |
 | Un mutante por línea | sí — 202 generados → 133 candidatos, uno por línea |
 | Muestreo | sí — 100 de 133 candidatos, semilla `20261030`, nivel `critico`; tope: 60 % de 133 candidatos, acotado a [100, 300] |
+| Modo | incremental desde `4aa8d7b2d5e107caa19f18e84b33ce504249bb15` — 75 reutilizados, 16 reevaluados, 9 de control |
 | Selección de tests | desactivada (por defecto): todo con la suite entera, como la 1.9.0 |
 | SHA del mapa | n/d |
 | Medición del mapa (s) | n/d |
@@ -67,7 +68,7 @@ Origen del diff: **rama** (`c44bf6056e13132b78dd6807d29cfbac12dd2a89` .. `featur
 | Subconjuntos descartados | n/d |
 | Podados (sin ejecutar) | n/d |
 | Tiempo ahorrado por la poda (s) — derivado: podados × línea base | n/d |
-| Media por mutante juzgado con la suite entera (s) | 43.3 (100 mutantes) |
+| Media por mutante juzgado con la suite entera (s) | 63.2 (25 mutantes) |
 
 ## Cómo se juzgó
 
@@ -78,21 +79,7 @@ Origen del diff: **rama** (`c44bf6056e13132b78dd6807d29cfbac12dd2a89` .. `featur
 
 Cada superviviente es una línea que ningún test comprueba de verdad, o una mutación equivalente. Distinguirlo es trabajo del implementer: ningún análisis puede quedarse sin completar al cerrar la feature.
 
-### 1. `services/dedicacion-api/application/estado_partida.py:33` [booleano]
-
-- Original: `@dataclass(frozen=True)`
-- Mutado:   `@dataclass(frozen=False)`
-- Juicio: MEDIDO
-
-#### Análisis (implementer, 2026-11-24)
-
-> Reproducido EN SERIE el 2026-11-24 (mutante aplicado en el árbol, suite entera del servicio con `pytest -q -x`): código 0, la suite pasa entera.
->
-> Por qué ningún test lo caza: ningún test intentaba modificar una `Marcas`; su inmutabilidad (la foto de la cola que comparten cuadrante y rutas) no se comprobaba.
->
-> Decisión: **test nuevo** `tests/test_f074_mutacion_api.py::test_f074_mut_las_marcas_son_inmutables`. Con el mutante aplicado, el test falla (código 1, comprobado a mano); sin él, pasa.
-
-### 2. `services/dedicacion-api/application/estado_partida.py:75` [veracidad]
+### 1. `services/dedicacion-api/application/estado_partida.py:75` [veracidad]
 
 - Original: `tiene = ln.obra_pv_ide is not None`
 - Mutado:   `tiene = ln.obra_pv_ide`
@@ -106,7 +93,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 3. `services/dedicacion-api/application/use_cases.py:405` [veracidad]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
+
+### 2. `services/dedicacion-api/application/use_cases.py:405` [veracidad]
 
 - Original: `and self._al_borrar_subfilas is not None`
 - Mutado:   `and self._al_borrar_subfilas`
@@ -120,21 +109,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 4. `services/dedicacion-api/interface_adapters/api/schemas.py:154` [veracidad]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
 
-- Original: `default=None, exclude_if=lambda v: v is None)`
-- Mutado:   `default=None, exclude_if=lambda v: not v)`
-- Juicio: MEDIDO
-
-#### Análisis (implementer, 2026-11-24)
-
-> Reproducido EN SERIE el 2026-11-24 (mutante aplicado en el árbol, suite entera del servicio con `pytest -q -x`): código 0, la suite pasa entera.
->
-> Por qué ningún test lo caza: `estado_de_subfila` solo pone `propuesta_no_encontrada` a True, así que ningún test serializaba un False: el contrato del esquema (excluir solo None, como `copiado` de F-069) no estaba fijado.
->
-> Decisión: **test nuevo** `tests/test_f074_mutacion_api.py::test_f074_mut_subfila_solo_excluye_none`. Con el mutante aplicado, el test falla (código 1, comprobado a mano); sin él, pasa.
-
-### 5. `services/dedicacion-api/interface_adapters/api/schemas.py:486` [veracidad]
+### 3. `services/dedicacion-api/interface_adapters/api/schemas.py:486` [veracidad]
 
 - Original: `marcas = marcas if marcas is not None else Marcas(`
 - Mutado:   `marcas = marcas if marcas else Marcas(`
@@ -148,7 +125,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 6. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:217` [veracidad]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
+
+### 4. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:217` [veracidad]
 
 - Original: `if obra_pv is None:`
 - Mutado:   `if not obra_pv:`
@@ -162,21 +141,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 7. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:220` [entero]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
 
-- Original: `return {"ide": 0, "cod": None}, None`
-- Mutado:   `return {"ide": 1, "cod": None}, None`
-- Juicio: MEDIDO
-
-#### Análisis (implementer, 2026-11-24)
-
-> Reproducido EN SERIE el 2026-11-24 (mutante aplicado en el árbol, suite entera del servicio con `pytest -q -x`): código 0, la suite pasa entera.
->
-> Por qué ningún test lo caza: el test de F-039 R6 (postventa con `var_paride`) comprueba la acción y el motivo de la omitida, no su `paride`: el 0 de «sin partida» no se miraba.
->
-> Decisión: **test nuevo** `tests/test_f074_mutacion.py::test_f074_mut_postventa_con_var_se_omite_sin_partida`. Con el mutante aplicado, el test falla (código 1, comprobado a mano); sin él, pasa.
-
-### 8. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:637` [veracidad]
+### 5. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:637` [veracidad]
 
 - Original: `if obra_pv is not None:`
 - Mutado:   `if obra_pv:`
@@ -190,7 +157,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 9. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:686` [entero]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
+
+### 6. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:686` [entero]
 
 - Original: `v = validas.get(int(paride or 0))`
 - Mutado:   `v = validas.get(int(paride or 1))`
@@ -204,7 +173,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 10. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:687` [veracidad]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
+
+### 7. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:687` [veracidad]
 
 - Original: `return v is not None and v.vale_en(obra_pv.ide)`
 - Mutado:   `return v and v.vale_en(obra_pv.ide)`
@@ -218,7 +189,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 11. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:781` [veracidad]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
+
+### 8. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:781` [veracidad]
 
 - Original: `obra_pv_ide=int(obra_pv.ide) if obra_pv is not None else None,`
 - Mutado:   `obra_pv_ide=int(obra_pv.ide) if obra_pv else None,`
@@ -232,7 +205,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 12. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:1137` [veracidad]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
+
+### 9. `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:1137` [veracidad]
 
 - Original: `if p is None:`
 - Mutado:   `if not p:`
@@ -246,7 +221,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 13. `services/dedicacion-transfer/application/pipelines/registro_vinculados.py:289` [booleano]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
+
+### 10. `services/dedicacion-transfer/application/pipelines/registro_vinculados.py:289` [booleano]
 
 - Original: `guardada, guardada_valida = None, True`
 - Mutado:   `guardada, guardada_valida = None, False`
@@ -260,21 +237,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 14. `services/dedicacion-transfer/application/services/partida_definida.py:81` [booleano]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
 
-- Original: `@dataclass(frozen=True)`
-- Mutado:   `@dataclass(frozen=False)`
-- Juicio: MEDIDO
-
-#### Análisis (implementer, 2026-11-24)
-
-> Reproducido EN SERIE el 2026-11-24 (mutante aplicado en el árbol, suite entera del servicio con `pytest -q -x`): código 0, la suite pasa entera.
->
-> Por qué ningún test lo caza: ningún test intentaba retocar una `DefinidaVinculado` ya decidida.
->
-> Decisión: **test nuevo** `tests/test_f074_mutacion.py::test_f074_mut_definida_del_vinculado_es_inmutable`. Con el mutante aplicado, el test falla (código 1, comprobado a mano); sin él, pasa.
-
-### 15. `services/dedicacion-transfer/application/services/partida_definida.py:108` [veracidad]
+### 11. `services/dedicacion-transfer/application/services/partida_definida.py:108` [veracidad]
 
 - Original: `if elegida is not None:`
 - Mutado:   `if elegida:`
@@ -288,7 +253,9 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
-### 16. `services/dedicacion-transfer/application/services/universo_postventa.py:59` [veracidad]
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
+
+### 12. `services/dedicacion-transfer/application/services/universo_postventa.py:59` [veracidad]
 
 - Original: `if obra_pv is None:`
 - Mutado:   `if not obra_pv:`
@@ -302,24 +269,22 @@ Cada superviviente es una línea que ningún test comprueba de verdad, o una mut
 >
 > Decisión: **mutante equivalente**, justificado por escrito. PENDIENTE de la aceptación del humano (nivel `critico`): no se da por aceptado aquí.
 
+> _Análisis traído de la campaña anterior de esta feature: el mutante volvió a sobrevivir con el mismo operador y el mismo texto. Reléelo si el código de alrededor ha cambiado._
+
 ## No muertos: código de salida
 
 | Fichero:línea | Operador | Veredicto | Código |
 |---|---|---|---|
-| `services/dedicacion-api/application/estado_partida.py:33` | booleano | superviviente | 0 |
 | `services/dedicacion-api/application/estado_partida.py:75` | veracidad | superviviente | 0 |
 | `services/dedicacion-api/application/use_cases.py:405` | veracidad | superviviente | 0 |
-| `services/dedicacion-api/interface_adapters/api/schemas.py:154` | veracidad | superviviente | 0 |
 | `services/dedicacion-api/interface_adapters/api/schemas.py:486` | veracidad | superviviente | 0 |
 | `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:217` | veracidad | superviviente | 0 |
-| `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:220` | entero | superviviente | 0 |
 | `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:637` | veracidad | superviviente | 0 |
 | `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:686` | entero | superviviente | 0 |
 | `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:687` | veracidad | superviviente | 0 |
 | `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:781` | veracidad | superviviente | 0 |
 | `services/dedicacion-transfer/application/pipelines/registro_pipeline.py:1137` | veracidad | superviviente | 0 |
 | `services/dedicacion-transfer/application/pipelines/registro_vinculados.py:289` | booleano | superviviente | 0 |
-| `services/dedicacion-transfer/application/services/partida_definida.py:81` | booleano | superviviente | 0 |
 | `services/dedicacion-transfer/application/services/partida_definida.py:108` | veracidad | superviviente | 0 |
 | `services/dedicacion-transfer/application/services/universo_postventa.py:59` | veracidad | superviviente | 0 |
 
@@ -350,3 +315,4 @@ Cada uno tiene líneas en alcance y el generador no ha sacado de ellas ni un mut
 #### Declaración (implementer, 2026-11-24)
 
 > Solo dos campos `partida_no_valida: Optional[str] = None` y comentarios. Los cubre `test_f074_preflight_definida.py` (`test_f074_r4_*`; RED: `AttributeError: 'AccionLinea' object has no attribute 'partida_no_valida'`).
+

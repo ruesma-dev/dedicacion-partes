@@ -198,6 +198,6 @@ En la api, ruff F señala 9 avisos en ficheros que esta rama no toca (`traer_sig
 |---|---|
 | Tests ejecutados (`init.sh`) | raíz 2319 (+47 skipped) · transfer 2009 · api 1690 · front 611, todos en verde; nuevos de F-074: 60 + 51 + 38 = 149 |
 | Cobertura de líneas cambiadas | 100,0 % (310/310 líneas cambiadas; umbral 90 %, nivel critico) |
-| Mutación | no se lanza en esta pasada: el líder la pide en la pasada de campaña, tras el APPROVED (`python -m harness.mutacion --feature F-074`) |
+| Mutación | `critico`, semilla 20261030, uno por línea, 100 de 133 candidatos (202 generados). Campaña 1 sobre `4aa8d7b`: 84 muertos, 16 supervivientes, 0 timeouts, 0 sin veredicto, 1321,7 s. Los 16, reproducidos EN SERIE (todos reales): 4 muertos con tests nuevos (`66d91e3` transfer, `532b994` api: `test_f074_mutacion*.py`, cada uno comprobado contra su mutante) y 12 equivalentes (veracidad sobre dataclasses siempre verdaderas, `ide` 0 imposible, valor inicial nunca leído), justificados uno a uno en `progress/mutacion_F-074.md`, **pendientes de la aceptación del humano**. Repetición `--incremental` sobre el HEAD `671ac43`: 25 reevaluados (16 + 9 de control) y 75 reutilizados, **88 muertos, 12 supervivientes (los 12 equivalentes)**, 0 timeouts, 0 sin veredicto, sin «CAMPAÑA NO VÁLIDA», 665,6 s |
 | Tiempo de las suites (`init.sh`) | raíz 1109 s · transfer 27,6 s · api 99,4 s · front 104,5 s |
 | Capa e2e | N/A (`CAPA E2E: N/A`, ningún servicio declara el bloque e2e) |
