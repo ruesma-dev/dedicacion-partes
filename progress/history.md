@@ -3232,3 +3232,9 @@ OK del humano al cierre el 2026-11-24 («ok» a la PARADA 2, que incluía acepta
 - Al desplegar, orden **obligatorio** api → «Sincronizar Sigrid» → transfer → front (sin sync, postventa no se registra) y `azure-apps/dedicacion.md` §2, §4, §5 y §7 (líder, commit aparte).
 - Aceptado: una línea guardada justo antes de registrar puede salir «buscando…» y no se escribe hasta repetir; una subfila con propuesta «de titular» desfasada va a «sin partida» (H5, seguro).
 - Automejoras del arnés propuestas por los reviewers, pendientes de decisión del humano para `arnes-base`.
+
+## 2026-11-24 · F-074 · Desplegada
+
+- Lanzado por el humano con `infra/d.local.ps1`, en el orden obligatorio api → «Sincronizar Sigrid» → transfer → front: api `r20261124-1616`, transfer `r20261124-1636` y front `r20261124-1637`. Las tres revisiones `Healthy`, `RunningAtMaxScale` y con el 100 % del tráfico (comprobado por el líder, solo lectura). El transfer sigue en modo real.
+- `azure-apps/dedicacion.md` al día (`192b988`: cabecera, §2, §5 y §7; `a1afdda`: tags). `imagenes.json` en `chore/despliegue-20261124`, unido a `dev`.
+- Pendiente del humano: T18 (mirarlo en producción tras Ctrl+F5), MANUAL T15-T17 y los push de `dev` y `azure-apps`.
