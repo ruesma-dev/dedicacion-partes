@@ -10,4 +10,4 @@ Solo `dedicacion-api`. Tests sin red ni BBDD, con el intérprete de `services/de
 - [x] T5: `test_f040_excel.py` según design §6.2 (solo `test_f040_r2_…` y el docstring)  |  Verificación: `pytest tests/test_f040_excel.py tests/test_f039_registro_var.py tests/test_f024_rutas_empresa.py` en verde; F-039 y F-024 sin tocar
 - [x] T6: docs: línea `excel/` de `docs/ARCHITECTURE.md`, fila `export.xlsx` de `services/dedicacion-api/README.md` y nota de sustitución en `specs/F-045-excel-obras-postventa/requirements.md` (R14, design §2)  |  Verificación: `pytest tests/test_f076_excel_sin_resto.py -k r14`
 - [ ] T7: M1, Excel de octubre de 2026 abierto en Excel por el humano (design §7)  |  Verificación: MANUAL (humano): `curl.exe -o "$env:TEMP\f076.xlsx" "http://127.0.0.1:8090/api/v1/periodos/2026/10/export.xlsx?empresa=1"` con la api local y resultado anotado en `progress/`
-- [ ] T8: Ejecutar `bash harness/init.sh` en verde  |  Verificación: `bash harness/init.sh` sin ningún [KO]
+- [x] T8: Ejecutar `bash harness/init.sh` en verde  |  Verificación: `bash harness/init.sh` sin ningún [KO]
