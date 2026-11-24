@@ -67,9 +67,11 @@ class RegistroLote:
             if not r["ok"]:
                 return r
             # F-044 (R29): los vinculados, solo si la petición los trae.
+            # F-074 (R9): los motivos de las que no tienen propuesta, solo
+            # si hay alguno (como en la suelta).
             return {"ok": True, "propuestas": r["propuestas"],
-                    **({"vinculados": r["vinculados"]}
-                       if "vinculados" in r else {})}
+                    **{k: r[k] for k in ("vinculados", "motivos",
+                                         "motivos_vinculados") if k in r}}
         return self._por_obra(memoria, [(lambda p=p: una(p))
                                         for p in peticiones])
 

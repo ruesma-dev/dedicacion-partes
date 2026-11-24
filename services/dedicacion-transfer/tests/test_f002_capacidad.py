@@ -35,9 +35,9 @@ from tests.conftest import (
     OBRA_ORIGEN,
     ClienteFalso,
     SettingsFalso,
-    linea,
     linea_previa,
 )
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
 

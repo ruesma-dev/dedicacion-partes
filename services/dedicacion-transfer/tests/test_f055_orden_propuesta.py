@@ -97,12 +97,19 @@ def test_f055_r38_selector_y_preflight_dan_lo_mismo(
         api, categoria, nombre, esperado):  # noqa: F811
     cuerpo = api(ClienteSoloLectura(HIST_OTRA)).post(RUTA, json=_peticion(
         _l("1", categoria=categoria, nombre=nombre))).json()
+    propuesta = cuerpo["propuestas"]["1"]
+    # F-074 (§6, criterio i): el preflight ya no propone; recibe la del
+    # selector como propuesta guardada y escribe esa misma.
     pf = RegistroPipeline(cliente=ClienteHistorial(HIST_OTRA),
                           settings=SettingsFalso()).preflight(
         obra=ObraEntrada(codigo=OBRA_ORIGEN),
-        lineas=[linea(categoria=categoria, nombre=nombre)])
+        lineas=[linea(categoria=categoria, nombre=nombre,
+                      propuesta_paride=propuesta["paride"],
+                      propuesta_cod=propuesta["cod"],
+                      propuesta_res=propuesta["res"],
+                      propuesta_metodo=propuesta["metodo"],
+                      propuesta_origen=propuesta["origen"])])
     a = pf.acciones[0]
-    propuesta = cuerpo["propuestas"]["1"]
     assert (propuesta["paride"], propuesta["metodo"],
             propuesta["origen"]) == esperado
     assert (a.paride, a.partida_metodo, a.partida_origen) == esperado

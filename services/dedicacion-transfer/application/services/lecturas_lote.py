@@ -10,15 +10,17 @@ métodos de lectura, así que el pipeline de registro no cambia: un
   de lecturas independientes en paralelo (hasta `limite` a la vez):
   A) obras por `ide`, obras por código (origen, pruebas, postventa, VAR),
   horas y lo ya registrado (`synckey` y, F-051, `hmores.ide`); B) partes
-  de los periodos, validación de partidas, historial, presupuestos y
+  de los periodos, validación de partidas, el presupuesto de la obra VAR y
   cuentas de partida; C) líneas de esos partes y (F-062) las líneas de
   incidencia en ventana; D) solo con cierres D14, los partes de M−1.
+  F-074 (R6): ni presupuestos de origen o de postventa ni historial: el
+  preflight usa la partida definida de cada línea y solo la valida.
   F-044 (R27, R29): los recursos vinculados de cada línea van en las
   mismas lecturas que su titular (horas, líneas de los partes, `synckey` y
   `hmores.ide`, partidas); las cuentas del presupuesto, una vez por obra y
   solo si alguna subfila las pide.
-  Validación e historial no dependen de A: van en B para que una obra con
-  elegidas quepa en una tanda de `limite` (4) por ronda (C2).
+  La validación no depende de A: va en B para que una obra con elegidas
+  quepa en una tanda de `limite` (4) por ronda (C2).
 - Una lectura del pipeline se responde de lo precargado SOLO si la consulta
   está entera dentro (los mismos `ide`, un subconjunto de recursos, la
   misma ventana…); si no, va al cliente real y se apunta un fallo de
@@ -152,7 +154,7 @@ class LecturasDelLote:
     # ------------------------------------------------------------ #
     def precargar(self, peticiones: list[tuple], settings, *,
                   mensuales: bool = False) -> None:
-        """Rondas A-C (design §2, con validación e historial en B) para
+        """Rondas A-C (design §2, con la validación en B) para
         las peticiones del lote: `(obra, lineas)` o, con incidencias
         (F-030), `(obra, lineas, incidencias)` y (F-062) su contexto,
         `(obra, lineas, incidencias, contexto)`. Ronda D (F-062 R20): los
@@ -178,7 +180,9 @@ class LecturasDelLote:
 
         # --- Ronda A ---
         tareas: list[Callable] = []
-        compartidas: set[str] = set()       # códigos de postventa y VAR
+        # El código de la obra VAR, cuyo presupuesto se lee (su catálogo).
+        # F-074 (R6): el de postventa ya no: es solo destino.
+        compartidas: set[str] = set()
         ides = _ides(o.ide for o, _ in peticiones)
         if ides:
             tareas.append(lambda: self._cargar_obras(ides))
@@ -192,7 +196,6 @@ class LecturasDelLote:
                     l.es_postventa for i, (_, ls) in enumerate(peticiones)
                     if empresas[i] == emp for l in ls):
                 tareas.append(self._codigo(settings.postventa_obra_cod, emp))
-                compartidas.add(settings.postventa_obra_cod)
             if any(l.var_paride is not None
                    for i, (_, ls) in enumerate(peticiones)
                    if empresas[i] == emp for l in ls):
@@ -248,35 +251,32 @@ class LecturasDelLote:
         periodos = {(int(l.ano), int(l.mes)) for l in [*todas, *todas_inc]}
         if destinos and periodos:
             tareas.append(lambda: self._cargar_partes(destinos, periodos))
+        # F-074 (R6): el único presupuesto, el de la obra VAR (su catálogo);
+        # ni el de origen ni el de postventa, ni historial: el preflight ya
+        # no propone ni casa.
         presupuestos: set[int] = set()
-        for cod in sorted(compartidas):             # postventa y VAR
+        for cod in sorted(compartidas):
             for emp in con_empresa:
                 obra = self._ya(("obra_por_codigo", cod, emp))
                 if obra is not None:
                     presupuestos.add(int(obra.ide))
-        for i, (_, ls) in enumerate(peticiones):
-            if i in origenes and any(
-                    not l.es_postventa and l.var_paride is None
-                    and not l.paride and not l.propuesta_paride for l in ls):
-                presupuestos.add(origenes[i])       # con pendientes
         for obride in sorted(presupuestos):
             tareas.append(self._tolerante(
                 ("capitulos_de_obra", obride),
                 lambda o=obride: self._cli.capitulos_de_obra(o)))
-        normales = [l for l in todas
-                    if not l.es_postventa and l.var_paride is None]
-        parides = _ides(l.paride or l.propuesta_paride for l in normales)
+        # F-074 (R3): la elegida o la propuesta guardada de cada línea que no
+        # es VAR, también la de postventa (un superconjunto de `_validas`).
+        parides = _ides(l.paride or l.propuesta_paride for l in todas
+                        if l.var_paride is None)
         parides |= _ides(x.paride for x in todas_inc)
         # F-044 (R15): la elegida o la propuesta guardada de cada vinculado
-        # de una línea que no va a postventa (como `_validas` del pipeline,
-        # que no excluye las VAR).
-        parides |= _ides(v.paride or v.propuesta_paride for l, v in vins
-                         if not l.es_postventa)
+        # (como `_validas` del pipeline, que no excluye las VAR); bajo una
+        # línea de postventa, solo la elegida (F-074 R3).
+        parides |= _ides(v.paride if l.es_postventa
+                         else v.paride or v.propuesta_paride
+                         for l, v in vins)
         if parides:
             tareas.append(lambda: self._cargar_validas(parides))
-        for (desde, hasta), recursos in self._ventanas(
-                peticiones, settings).items():
-            tareas.append(self._historial_de(desde, hasta, recursos))
         sin_sub = _ides(
             l.paride or l.propuesta_paride or l.var_paride for l in todas
             if self._sin_subcuenta(l.recurso_ide))
@@ -395,22 +395,6 @@ class LecturasDelLote:
         return self._tolerante(
             ("obra_por_codigo", cod, int(empresa)),
             lambda: self._cli.obra_por_codigo(cod, int(empresa)))
-
-    def _ventanas(self, peticiones, settings) -> dict[tuple, set[int]]:
-        """Recursos de las líneas automáticas de cada petición con alguna
-        sin propuesta guardada (pendiente segura), por ventana del
-        historial (la del pipeline: la que acaba en su periodo)."""
-        out: dict[tuple[int, int], set[int]] = {}
-        for _, ls in peticiones:
-            auto = [l for l in ls if not l.es_postventa
-                    and l.var_paride is None and not l.paride]
-            if not any(not l.propuesta_paride for l in auto):
-                continue
-            ano, mes = max((l.ano, l.mes) for l in auto)
-            clave = ventana(ano, mes, settings.propuesta_meses_atras)
-            out.setdefault(clave, set()).update(
-                _ides(l.recurso_ide for l in auto))
-        return {k: v for k, v in out.items() if v}
 
     def _sin_subcuenta(self, recurso) -> bool:
         """¿Alguna hora mensual del recurso se queda sin subcuenta? Solo

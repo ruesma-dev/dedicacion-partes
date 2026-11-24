@@ -226,7 +226,8 @@ from domain.models.registro_models import (
     ObraEntrada,
 )
 
-from tests.conftest import EMPRESA, SettingsFalso, linea
+from tests.conftest import EMPRESA, SettingsFalso
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
 SK_INI, SK_FIN = "porcentajes:inc:7:ini", "porcentajes:inc:7:fin"

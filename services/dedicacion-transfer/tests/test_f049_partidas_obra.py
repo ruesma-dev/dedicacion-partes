@@ -29,6 +29,7 @@ from application.pipelines.registro_pipeline import RegistroPipeline
 from domain.models.registro_models import ObraEntrada
 
 from tests.conftest import (
+    DEFINIDA_POSTVENTA,
     OBRA_ORIGEN,
     ClienteFalso,
     SettingsFalso,
@@ -101,24 +102,26 @@ def test_f049_d_varias_manuales_una_sola_lectura():
 
 
 def test_f049_d_manual_y_automatica_una_sola_lectura_como_hoy():
-    """Control: con una línea sin partida manual el catálogo ya se leía;
-    la ampliación no añade una segunda lectura."""
+    """Control: con una línea sin partida manual el catálogo ya se leía.
+    F-074 (§6, criterios i, ii): ya no; la línea sin partida definida queda
+    sin partida (Regla C) y el preflight no lee el presupuesto."""
     cli, leidas = _cliente()
     pf = _pf(cli, [_manual(registro_id=1, recurso_ide=400),
                    linea(registro_id=2)])
 
     assert [(a.paride, a.partida_metodo) for a in pf.acciones] == [
-        (80002, "manual"), (80001, "auto_nombre")]
-    assert pf.partidas_obra == CATALOGO_ORIGEN
-    assert leidas == [cli.obra_origen.ide]
+        (80002, "manual"), (0, None)]
+    assert pf.partidas_obra == []
+    assert leidas == []
 
 
 def test_f049_d_solo_postventa_no_lee_el_presupuesto_de_origen():
     """Sin líneas de obra normal no hay desplegable de obra que pintar: ni
     lectura de más ni `partidas_obra`."""
     cli, leidas = _cliente()
+    # F-074 (§6, «cómo»): con la partida de su obra, definida.
     pf = _pf(cli, [_manual(es_postventa=True, paride=None,
-                           partida_cod=None)])
+                           partida_cod=None, **DEFINIDA_POSTVENTA)])
 
     assert [a.destino for a in pf.acciones] == ["postventa"]
     assert pf.partidas_obra == []

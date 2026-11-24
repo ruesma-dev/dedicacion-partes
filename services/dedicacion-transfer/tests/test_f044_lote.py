@@ -127,7 +127,8 @@ def test_f044_r27_con_vinculados_el_lote_no_tiene_fallos_de_memoria():
         _suelto(memoria, obra, lineas)
     assert memoria.fallos_de_memoria == {}
     assert cli.horas_leidas == [[10, 11, 12, 200, 201, 202]]
-    assert cli.cuentas_leidas == [555001]       # una vez por obra
+    # F-074 (§6, criterio ii): el preflight ya no lee cuentas del presupuesto.
+    assert cli.cuentas_leidas == []
     assert len(cli.registradas) == 1
 
 

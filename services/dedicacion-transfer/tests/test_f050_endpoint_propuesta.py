@@ -151,12 +151,19 @@ def test_f050_r9_misma_propuesta_que_el_preflight(api):
                           res="JEFE DE OBRA")]
     cuerpo = api(ClienteSoloLectura(historial)).post(RUTA, json=_peticion(
         _l("1"), _l("2", recurso=400, categoria="X", nombre="Y"))).json()
+    # F-074 (§6, criterio i): el preflight ya no propone; recibe la del
+    # selector como propuesta guardada y escribe esa misma.
+    def guardada(k):
+        p = cuerpo["propuestas"][k]
+        return {"propuesta_paride": p["paride"], "propuesta_cod": p["cod"],
+                "propuesta_res": p["res"], "propuesta_metodo": p["metodo"],
+                "propuesta_origen": p["origen"]}
     pf = RegistroPipeline(cliente=ClienteHistorial(historial),
                           settings=SettingsFalso()).preflight(
         obra=ObraEntrada(codigo=OBRA_ORIGEN),
-        lineas=[linea(registro_id=1),
+        lineas=[linea(registro_id=1, **guardada("1")),
                 linea(registro_id=2, recurso_ide=400, categoria="X",
-                      nombre="Y")])
+                      nombre="Y", **guardada("2"))])
     assert [(a.paride, a.partida_metodo, a.partida_origen)
             for a in pf.acciones] == [
         (cuerpo["propuestas"][k]["paride"], cuerpo["propuestas"][k]["metodo"],

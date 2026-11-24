@@ -25,6 +25,7 @@ from domain.models.registro_models import AccionLinea, LineaEntrada
 from fastapi.testclient import TestClient
 
 from tests.conftest import (
+    DEFINIDA_POSTVENTA,
     SettingsFalso,
     linea,
     linea_previa,
@@ -80,8 +81,10 @@ def test_f055_r3_una_sola_validacion_por_peticion():
         linea(registro_id=4, es_postventa=True, paride=70002,
               partida_cod="0713"),
         linea(registro_id=5, recurso_ide=100, paride=80003))   # omitida
-    assert cli.validadas == [[80001, 80002]]
-    assert cli.obra_origen.ide not in cli.presupuestos     # solo la de PV
+    # F-074 (§6, criterios vii y ii; R3): la elegida de postventa entra en
+    # la misma lectura y no se lee ningún presupuesto, tampoco el de PV.
+    assert cli.validadas == [[70002, 80001, 80002]]
+    assert cli.presupuestos == []
     assert cli.lecturas == []
 
 
@@ -116,13 +119,14 @@ def test_f055_r5_elegida_que_no_vale_se_omite(paride):
 @pytest.mark.parametrize("paride", [80004, 80000, 70001, 12345],
                          ids=["baja", "capitulo", "otra_obra", "inexistente"])
 def test_f055_r6_propuesta_que_no_vale_se_recalcula(paride):
+    """F-074 (§6, criterio i; R4, D4): ya no se recalcula; se omite
+    nombrándola y no se lee presupuesto ni historial."""
     cli = Cliente([_h()])
     a = _a(_pf(cli, linea(**dict(GUARDADA, propuesta_paride=paride))))
-    assert (a.accion, a.paride, a.partida_metodo, a.partida_res) == (
-        "escribir", 80003, "parte_anterior", "ADMINISTRATIVO")
-    assert a.partida_origen == "parte PT26/00100 · 07/2026 · obra 0678"
-    assert cli.presupuestos == [cli.obra_origen.ide]
-    assert cli.lecturas == [([200], 202407, 202607)]
+    assert (a.accion, a.paride, a.partida_no_valida) == (
+        "omitir", 0, "CI.1.20")
+    assert cli.presupuestos == []
+    assert cli.lecturas == []
 
 
 def test_f055_r7_pendientes_una_lectura_de_cada_y_solo_sus_recursos():
@@ -131,11 +135,11 @@ def test_f055_r7_pendientes_una_lectura_de_cada_y_solo_sus_recursos():
              linea(registro_id=2, recurso_ide=400, nombre="Otro",
                    categoria="X", **GUARDADA),
              linea(registro_id=3, nombre="Nadie", categoria="Jefe de obra"))
-    assert cli.presupuestos == [cli.obra_origen.ide]
-    assert cli.lecturas == [([200], 202407, 202607)]
+    # F-074 (§6, criterios i, ii): sin definida no se propone ni se lee.
+    assert cli.presupuestos == []
+    assert cli.lecturas == []
     assert [(a.paride, a.partida_metodo) for a in pf.acciones] == [
-        (80001, "auto_nombre"), (80002, "parte_anterior"),
-        (80002, "auto_categoria")]
+        (0, None), (80002, "parte_anterior"), (0, None)]
 
 
 # ================= R8 · la propuesta guardada que vale =================== #
@@ -166,11 +170,14 @@ def test_f055_r9_toda_accion_con_partida_publica_su_descripcion():
     pf = _pf(cli,
              linea(registro_id=1, paride=80003, partida_cod="CI.1.9"),
              linea(registro_id=2, **GUARDADA),
+             # F-074 (§6, «cómo»): la 3 y la 5 con su partida definida.
              linea(registro_id=3, recurso_ide=400, nombre="Otro",
-                   categoria="X"),
+                   categoria="X", propuesta_paride=80001,
+                   propuesta_cod="CI.1.10", propuesta_res="ENCARGADO (ACUNA)",
+                   propuesta_metodo="parte_anterior"),
              linea(registro_id=4, nombre="Nadie Nunca",
                    categoria="Astronauta"),
-             linea(registro_id=5, es_postventa=True),
+             linea(registro_id=5, es_postventa=True, **DEFINIDA_POSTVENTA),
              linea(registro_id=6, es_postventa=True, paride=70002,
                    partida_cod="0713"),
              linea(registro_id=7, recurso_ide=100))
@@ -203,12 +210,13 @@ def test_f055_r10_sin_pendientes_partidas_obra_vacio_y_sin_lectura():
 
 
 def test_f055_r10_con_una_pendiente_el_catalogo_de_hoy():
+    """F-074 (§6, criterios ii, iii; R6): ni con una pendiente se lee el
+    presupuesto ni se publica catálogo."""
     cli = Cliente([])
     pf = _pf(cli, linea(registro_id=1, paride=80002, partida_cod="CI.1.20"),
              linea(registro_id=2, recurso_ide=400))
-    assert [p["cod"] for p in pf.partidas_obra] == [
-        "CI.1.9", "CI.1.10", "CI.1.20"]
-    assert cli.presupuestos == [cli.obra_origen.ide]
+    assert pf.partidas_obra == []
+    assert cli.presupuestos == []
 
 
 # ===================== R12 · conflictos e idempotencia =================== #

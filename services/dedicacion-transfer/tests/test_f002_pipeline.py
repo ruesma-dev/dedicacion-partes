@@ -21,8 +21,9 @@ from infrastructure.sigrid.sigrid_write_client import synckey_de
 
 from tests.conftest import (
     OBRA_ORIGEN, OBRA_POSTVENTA, OBRA_PRUEBAS, ClienteFalso, SettingsFalso,
-    linea, linea_previa,
+    linea_previa,
 )
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
 
@@ -375,8 +376,12 @@ def _pisado_y_sobrecarga_mas_otro_trabajador():
                      horide=7),
     ])
     lineas = [linea(registro_id=1, porcentaje=0.4),
+              # F-074 (§6, «cómo»): con la definida que antes casaba.
               linea(registro_id=9, porcentaje=0.5, recurso_ide=400,
-                    nombre="Jefe de obra", categoria="Jefe de obra")]
+                    nombre="Jefe de obra", categoria="Jefe de obra",
+                    propuesta_paride=80002, propuesta_cod="CI.1.20",
+                    propuesta_res="JEFE DE OBRA",
+                    propuesta_metodo="auto_nombre")]
     return cli, lineas
 
 

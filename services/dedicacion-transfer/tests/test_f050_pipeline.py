@@ -69,21 +69,31 @@ def _accion(pf, registro_id=1):
     return next(a for a in pf.acciones if a.registro_id == registro_id)
 
 
+#: F-074: la propuesta guardada del parte anterior, tal como la manda la api.
+GUARDADA = dict(propuesta_paride=80003, propuesta_cod="CI.1.9",
+                propuesta_res="ADMINISTRATIVO",
+                propuesta_metodo="parte_anterior",
+                propuesta_origen="parte PT26/00100 · 07/2026 · obra 0678")
+
+
 # ======================= R9 · propuesta en el preflight =================== #
-def test_f050_r9_la_automatica_es_la_propuesta_del_parte_anterior():
+# F-074 (§6, criterios i, ii): el preflight ya no propone ni lee el
+# historial; escribe la partida DEFINIDA (la propuesta guardada de la api).
+def test_f050_r9_la_automatica_ya_no_se_propone_en_el_preflight():
     cli = ClienteHistorial([_h()])
     a = _accion(_pl(cli).preflight(obra=OBRA, lineas=[linea()]))
     assert (a.accion, a.paride, a.partida_cod, a.partida_metodo) == (
+        "escribir", 0, None, None)
+    assert cli.lecturas == []
+
+
+def test_f050_r9_la_guardada_del_parte_anterior_se_escribe_tal_cual():
+    cli = ClienteHistorial([])
+    a = _accion(_pl(cli).preflight(obra=OBRA, lineas=[linea(**GUARDADA)]))
+    assert (a.accion, a.paride, a.partida_cod, a.partida_metodo) == (
         "escribir", 80003, "CI.1.9", "parte_anterior")
     assert a.partida_origen == "parte PT26/00100 · 07/2026 · obra 0678"
-    assert a.aviso is None
-
-
-def test_f050_r9_sin_historial_el_casamiento_de_siempre():
-    cli = ClienteHistorial([])
-    a = _accion(_pl(cli).preflight(obra=OBRA, lineas=[linea()]))
-    assert (a.paride, a.partida_metodo, a.partida_origen) == (
-        80001, "auto_nombre", None)
+    assert a.aviso is None and cli.lecturas == []
 
 
 def test_f050_r9_sin_propuesta_sigue_sin_partida():
@@ -93,27 +103,6 @@ def test_f050_r9_sin_propuesta_sigue_sin_partida():
     a = _accion(pf)
     assert (a.paride, a.partida_metodo) == (0, None)
     assert [c.motivo for c in pf.conflictos] == ["sin_partida"]
-
-
-def test_f050_r7_una_sola_lectura_con_los_recursos_automaticos():
-    cli = ClienteHistorial([_h(), _h(recurso=400, paride=80002,
-                                     cod="CI.1.20", res="JEFE DE OBRA")])
-    pf = _pl(cli).preflight(obra=OBRA, lineas=[
-        linea(registro_id=1),
-        linea(registro_id=2, recurso_ide=400, nombre="Otro", categoria="X"),
-        linea(registro_id=3, paride=80001, partida_cod="CI.1.10"),
-        linea(registro_id=4, es_postventa=True)])
-    assert cli.lecturas == [([200, 400], 202407, 202607)]
-    assert [(a.paride, a.partida_metodo) for a in pf.acciones] == [
-        (80003, "parte_anterior"), (80002, "parte_anterior"),
-        (80001, "manual"), (70001, "postventa")]
-
-
-def test_f050_r7_ventana_del_ajuste_y_del_periodo():
-    cli = ClienteHistorial([])
-    _pl(cli, propuesta_meses_atras=3).preflight(
-        obra=OBRA, lineas=[linea(ano=2026, mes=2)])
-    assert cli.lecturas == [([200], 202511, 202602)]
 
 
 @pytest.mark.parametrize("lineas", [
@@ -128,27 +117,27 @@ def test_f050_r7_sin_lineas_automaticas_no_se_lee_el_historial(lineas):
 
 
 def test_f050_r7_si_la_lectura_falla_no_se_propone_ni_se_escribe():
+    """F-074 (§6, criterio ii): el preflight ya no lee el historial, así que
+    su fallo no impide registrar la partida definida."""
     cli = ClienteHistorial(fallo=RuntimeError("sigrid-api devolvio una "
                                               "respuesta truncada"))
-    with pytest.raises(RuntimeError, match="truncada"):
-        _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
-    assert cli.escritos == []
+    _pl(cli).ejecutar(obra=OBRA, lineas=[linea(**GUARDADA)])
+    assert cli.lecturas == []
+    assert [i["paride"] for i in cli.inserts()] == [80003]
 
 
 def test_f050_r9_ejecutar_escribe_la_propuesta():
     cli = ClienteHistorial([_h()])
-    r = _pl(cli).ejecutar(obra=OBRA, lineas=[linea()])
+    r = _pl(cli).ejecutar(obra=OBRA, lineas=[linea(**GUARDADA)])
     assert [i["paride"] for i in cli.inserts()] == [80003]
     assert r.escritas[0]["partida_cod"] == "CI.1.9"
 
 
 def test_f050_modo_pruebas_el_historial_es_el_de_la_obra_de_origen():
-    """En pruebas se escribe en la 0404, pero la propuesta sale de la obra de
-    origen (sus partes y su presupuesto), no de la de pruebas."""
-    cli = ClienteHistorial([_h(obra=cli_pruebas_ide(), paride=80002,
-                               cod="CI.1.20", res="JEFE DE OBRA", mes=7),
-                            _h(mes=6)])
-    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
+    """En pruebas se escribe en la 0404, pero la partida definida se valida
+    contra la obra de origen (su presupuesto), no la de pruebas."""
+    cli = ClienteHistorial([])
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea(**GUARDADA)])
     assert pf.forzada_pruebas and pf.obra_destino.codigo == "0404"
     a = _accion(pf)
     assert (a.paride, a.partida_metodo) == (80003, "parte_anterior")
@@ -204,7 +193,7 @@ def test_f050_r20_ejecutar_no_escribe_la_manual_que_no_vale():
 def test_f050_r21_cada_accion_publica_metodo_y_origen():
     cli = ClienteHistorial([_h()])
     pf = _pl(cli).preflight(obra=OBRA, lineas=[
-        linea(registro_id=1),
+        linea(registro_id=1, **GUARDADA),       # F-074 (§6, «cómo»)
         linea(registro_id=2, recurso_ide=400, paride=80002,
               partida_cod="CI.1.20")])
     publicadas = [asdict(a) for a in pf.acciones]
@@ -214,32 +203,22 @@ def test_f050_r21_cada_accion_publica_metodo_y_origen():
 
 
 # ===================== R10 · catálogo del preflight ======================= #
-def test_f050_r10_partidas_obra_en_orden_natural_sin_mayor():
+@pytest.mark.parametrize("pv", [False, True], ids=["obra", "postventa"])
+def test_f050_r10_el_preflight_ya_no_publica_catalogos(pv):
+    """F-074 (§6, criterio iii; R6): sin lecturas de presupuesto en el
+    preflight no hay `partidas_obra` ni `partidas_postventa`; los ofrece el
+    selector (`/api/partidas/propuesta`)."""
     cli = ClienteHistorial([])
-    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea()])
-    assert pf.partidas_obra == [
-        {"ide": 80003, "cod": "CI.1.9", "res": "ADMINISTRATIVO",
-         "categoria": "CI"},
-        {"ide": 80001, "cod": "CI.1.10", "res": "ENCARGADO (ACUNA)",
-         "categoria": "CI"},
-        {"ide": 80002, "cod": "CI.1.20", "res": "JEFE DE OBRA",
-         "categoria": "CI"}]
-
-
-def test_f050_r10_partidas_postventa_en_orden_natural():
-    """`0656` y `656` empatan en el orden natural: decide el `ide`."""
-    cli = ClienteHistorial([])
-    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea(es_postventa=True)])
-    assert [p["cod"] for p in pf.partidas_postventa] == [
-        "11.01", "0656", "656", "0664", "664", "0678", "0713", "0998",
-        "0999"]
-    assert EMPRESA == 1 and "mayor" not in pf.partidas_postventa[0]
+    pf = _pl(cli).preflight(obra=OBRA, lineas=[linea(es_postventa=pv)])
+    assert (pf.partidas_obra, pf.partidas_postventa) == ([], [])
+    assert EMPRESA == 1
 
 
 # ============ T15 · casos que la campaña de mutación dejó vivos ============ #
 def test_f050_r7_el_historial_solo_lleva_los_recursos_automaticos():
     """Ni el de una línea de postventa, ni el de una manual, ni el de una
-    omitida: solo los que van a llevar propuesta."""
+    omitida: solo los que van a llevar propuesta. F-074 (§6, criterio ii):
+    ni siquiera esos; el preflight no lee el historial."""
     cli = ClienteHistorial([])
     _pl(cli).preflight(obra=OBRA, lineas=[
         linea(registro_id=1),
@@ -247,4 +226,4 @@ def test_f050_r7_el_historial_solo_lleva_los_recursos_automaticos():
         linea(registro_id=3, recurso_ide=400, paride=80001,
               partida_cod="CI.1.10"),
         linea(registro_id=4, recurso_ide=100)])
-    assert cli.lecturas == [([200], 202407, 202607)]
+    assert cli.lecturas == []

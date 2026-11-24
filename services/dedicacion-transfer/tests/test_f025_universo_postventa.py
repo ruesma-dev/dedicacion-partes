@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import pytest
 from application.pipelines.registro_pipeline import RegistroPipeline
+from application.services.partida_definida import MOTIVO_PV_SIN_DEFINIDA
 from application.services.reglas_porcentajes import (
     MOTIVO_PARTIDA_PV_NO_HOJA,
     MOTIVO_POSTVENTA_OFF,
@@ -44,7 +45,9 @@ def test_f025_r8_preflight_sin_postventa_tras_otro_con_postventa():
     pl = _pipeline(ClienteFalso())
     con_pv = pl.preflight(obra=OBRA, lineas=[
         linea(registro_id=3, es_postventa=True)])
-    assert con_pv.partidas_postventa, "control: el primero sí lo publica"
+    # F-074 (§6, criterio iii; R6): el preflight ya no lee el presupuesto
+    # de postventa, así que tampoco el primero publica catálogo.
+    assert con_pv.partidas_postventa == []
 
     sin_pv = pl.preflight(obra=OBRA, lineas=[linea(registro_id=1)])
     assert sin_pv.partidas_postventa == []
@@ -139,12 +142,16 @@ def _cli_cruce() -> ClienteFalso:
     return cli
 
 
-def _preflight_pv(cli, ide, codigo, nombre, **ajustes):
+def _preflight_pv(cli, ide, codigo, nombre, partida=None, **ajustes):
     """Preflight de UNA línea de postventa de la obra dada, como lo manda
-    la api (`RegistroSigrid._payloads`: ide, código y nombre)."""
+    la api (`RegistroSigrid._payloads`: ide, código y nombre). F-074: con
+    la partida de su obra que guardó el sync (`partida`) como definida."""
+    definida = ({} if partida is None else {
+        "propuesta_paride": partida["ide"], "propuesta_cod": partida["cod"],
+        "propuesta_res": partida["res"], "propuesta_metodo": "postventa"})
     return _pipeline(cli, **ajustes).preflight(
         obra=ObraEntrada(ide=ide, codigo=codigo, nombre=nombre),
-        lineas=[linea(registro_id=ide, es_postventa=True)])
+        lineas=[linea(registro_id=ide, es_postventa=True, **definida)])
 
 
 @pytest.mark.parametrize("ide, codigo, nombre", OBRAS_CRUCE,
@@ -152,16 +159,20 @@ def _preflight_pv(cli, ide, codigo, nombre, **ajustes):
 def test_f025_r2_universo_y_preflight_casan_igual(ide, codigo, nombre):
     """R2 · EL test de la feature: una obra está en el universo con la
     partida X si y solo si el preflight de su línea de postventa publica X
-    en `capitulo_postventa`; y fuera si y solo si el preflight la omite."""
+    en `capitulo_postventa`; y fuera si y solo si el preflight la omite.
+    F-074 (§6, criterio i): el preflight ya no casa; escribe la partida del
+    universo que le llega definida (la api la guarda en el sync) y, sin
+    ella, omite la línea con su motivo."""
     universo = {o["ide"]: o["partida"]
                 for o in _universo(_cli_cruce())["obras"]}
-    pf = _preflight_pv(_cli_cruce(), ide, codigo, nombre)
+    pf = _preflight_pv(_cli_cruce(), ide, codigo, nombre,
+                       partida=universo.get(ide))
     publicada = pf.capitulo_postventa
     a = pf.acciones[0]
 
     assert universo.get(ide) == publicada, (codigo, universo.get(ide))
     if publicada is None:
-        assert a.accion == "omitir" and "no casa" in a.motivo, a
+        assert a.accion == "omitir" and a.motivo == MOTIVO_PV_SIN_DEFINIDA, a
     else:
         assert a.accion == "escribir" and a.paride == publicada["ide"], a
 
@@ -302,7 +313,10 @@ def test_f025_r1_ruta_devuelve_el_contrato(ruta):
         "motivo": None, "casadas": 1,
         "obras": [{"ide": 1, "partida": {
             "ide": 71001, "cod": "0656",
-            "res": "33+34 VIVIENDAS TOMARES"}}]}
+            "res": "33+34 VIVIENDAS TOMARES"}}],
+        # F-074 (§6, criterio v; R10): y el motivo de la que no casa.
+        "motivos": {"8": "la obra 9999 no casa con ninguna partida de "
+                         "POSTV2"}}
     assert cli.escritos == []
 
 

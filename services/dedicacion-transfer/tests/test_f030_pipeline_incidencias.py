@@ -32,9 +32,9 @@ from tests.conftest import (
     OBRA_SIN_PARTIDA_PV,
     ClienteFalso,
     SettingsFalso,
-    linea,
     linea_previa,
 )
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 
 # ============================ cliente (T12) ============================== #
 # F-062 (R19, lista cerrada): `incidencias_del_mes` desaparece; su lectura

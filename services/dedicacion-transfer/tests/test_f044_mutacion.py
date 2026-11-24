@@ -48,7 +48,8 @@ from domain.models.registro_models import (
     ResultadoRegistro,
 )
 
-from tests.conftest import linea, linea_previa
+from tests.conftest import linea_previa
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 from tests.test_f044_pipeline_vinculados import (
     ClienteEje,
     ClientePre,
@@ -352,7 +353,9 @@ def test_f044_r15_propuesta_guardada_que_no_es_de_su_ci_no_cuenta():
     [v] = _pf(ClientePre(), linea(vinculados=_v(
         10, propuesta_paride=81002, propuesta_cod="CIGA14",
         propuesta_metodo="titular"))).vinculados
-    assert (v.paride, v.partida_metodo) == (81001, "ci_tipo")
+    # F-074 (§6, criterio i): la de método `titular` no cuenta y el
+    # preflight ya no casa la CI de su tipo: queda sin partida (R2).
+    assert (v.paride, v.partida_metodo) == (0, None)
 
 
 def test_f044_r15_propuesta_guardada_sin_descripcion_toma_la_del_presupuesto():

@@ -24,7 +24,8 @@ from domain.models.registro_models import (
     LineaIncidenciaSigrid,
 )
 
-from tests.conftest import OBRA_ORIGEN, linea
+from tests.conftest import OBRA_ORIGEN
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 from tests.test_f030_pipeline_incidencias import (
     CLAVES_INC,
     ClienteInc,

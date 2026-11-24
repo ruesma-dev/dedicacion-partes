@@ -224,8 +224,10 @@ def ruta_vin(monkeypatch):
     return TestClient(modulo_app.build_app(ajustes)), cli
 
 
+#: F-074 (§6, «cómo»): con su propuesta guardada, la CI de su tipo.
 _TF10 = {"recurso_ide": 10, "tipo": "TF", "tipo_res": "TELEFONO",
-         "cod": "TF-10"}
+         "cod": "TF-10", "propuesta_paride": 81001, "propuesta_cod": "CICO13",
+         "propuesta_res": "TELEFONIA", "propuesta_metodo": "ci_tipo"}
 
 
 def _con_pisado(**extra) -> dict:

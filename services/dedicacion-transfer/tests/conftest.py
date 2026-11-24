@@ -578,3 +578,30 @@ def linea(**kw) -> LineaEntrada:
                  categoria="Encargado", empresa=EMPRESA)
     datos.update(kw)
     return LineaEntrada(**datos)
+
+
+#: F-074 (requirements §6, «cómo»): la partida que el preflight casaba antes
+#: para `linea()` en estos dobles, ahora DEFINIDA en la entrada (la
+#: propuesta guardada que manda la api): la de su obra en postventa (0678 ->
+#: 70001) y, en la obra normal, la del casado por nombre (Acuna -> CI.1.10).
+DEFINIDA_POSTVENTA = dict(propuesta_paride=70001, propuesta_cod="0678",
+                          propuesta_res="15 VIVIENDAS Y HOSTEL",
+                          propuesta_metodo="postventa")
+DEFINIDA_NORMAL = dict(propuesta_paride=80001, propuesta_cod="CI.1.10",
+                       propuesta_res="ENCARGADO (ACUNA)",
+                       propuesta_metodo="auto_nombre")
+
+
+def linea_definida(**kw) -> LineaEntrada:
+    """F-074: `linea()` con su partida DEFINIDA (la que antes casaba el
+    preflight), para los tests que prueban otra cosa (cero, capacidad,
+    incidencias, rachas…) y conservan así lo que esperaban. Si el test ya
+    trae elegida, propuesta o entrada VAR, no se toca; tampoco la línea de
+    obra normal con otra categoría o nombre (la que el test hace «no casar»
+    a propósito: sigue sin partida, como antes)."""
+    otra = not kw.get("es_postventa") and ("categoria" in kw or "nombre" in kw)
+    if not otra and not any(kw.get(k) for k in ("paride", "propuesta_paride",
+                                                "var_paride")):
+        kw = {**(DEFINIDA_POSTVENTA if kw.get("es_postventa")
+                 else DEFINIDA_NORMAL), **kw}
+    return linea(**kw)

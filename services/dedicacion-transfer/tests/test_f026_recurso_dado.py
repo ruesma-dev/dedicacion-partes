@@ -24,7 +24,10 @@ from domain.models.registro_models import (
 )
 from infrastructure.sigrid.sigrid_write_client import SigridWriteClient
 
-from tests.conftest import OBRA_ORIGEN, ClienteFalso, SettingsFalso, linea
+from tests.conftest import (
+    DEFINIDA_POSTVENTA, OBRA_ORIGEN, ClienteFalso, SettingsFalso,
+)
+from tests.conftest import linea_definida as linea  # F-074 (§6, «cómo»): con partida definida
 from tests.test_f022_obra_por_empresa import app_falsa  # noqa: F401 (fixture)
 
 OBRA = ObraEntrada(codigo=OBRA_ORIGEN)
@@ -140,7 +143,11 @@ def test_f026_r20_lineas_de_ejemplo_sin_editar_no_escriben():
     assert len(set(claves)) == len(claves), claves
     assert [d["recurso_ide"] for d in script.LINEAS_PRUEBA] == [0] * len(ids)
 
-    pf = _preflight(ClienteSinElegir(), script._lineas(2026, 7))
+    # F-074 (§6, «cómo»): la de postventa con la partida de su obra, para
+    # que el motivo siga siendo el del recurso que falta.
+    lineas = [dataclasses.replace(l, **DEFINIDA_POSTVENTA) if l.es_postventa
+              else l for l in script._lineas(2026, 7)]
+    pf = _preflight(ClienteSinElegir(), lineas)
     assert [(a.registro_id, a.accion, a.motivo) for a in pf.acciones] == [
         (i, "omitir", reglas.MOTIVO_SIN_RECURSO) for i in ids]
 

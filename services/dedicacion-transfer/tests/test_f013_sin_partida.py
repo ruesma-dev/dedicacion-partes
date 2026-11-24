@@ -30,6 +30,7 @@ from pathlib import Path
 
 import pytest
 from application.pipelines.registro_pipeline import RegistroPipeline
+from application.services.partida_definida import MOTIVO_PV_SIN_DEFINIDA
 from application.services.reglas_porcentajes import (
     AVISO_SIN_PARTIDA,
     MOTIVO_SIN_PARTIDA,
@@ -47,6 +48,7 @@ from tests.conftest import (
     ClienteFalso,
     SettingsFalso,
     linea,
+    linea_definida,
     linea_previa,
 )
 
@@ -104,7 +106,9 @@ def test_f013_premisa_una_linea_que_si_casa_no_molesta():
     Sin este control, un pipeline que avisara de TODAS las líneas pasaría
     los tests de R1 igual de bien."""
     cli = ClienteFalso()
-    pf = _pipeline(cli).preflight(obra=OBRA, lineas=[linea(registro_id=1)])
+    # F-074 (§6, «cómo»): con su partida definida (el registro ya no casa).
+    pf = _pipeline(cli).preflight(obra=OBRA,
+                                  lineas=[linea_definida(registro_id=1)])
 
     assert pf.acciones[0].paride == 80001
     assert pf.conflictos == []
@@ -252,7 +256,7 @@ def test_f013_r2_lo_que_si_casa_se_escribe_igual():
     en la misma ejecución, la línea que sí casa partida se escribe."""
     cli = ClienteFalso()
     lineas = [linea_que_no_casa(registro_id=1),
-              linea(registro_id=2)]
+              linea_definida(registro_id=2)]    # F-074 (§6, «cómo»)
     res = _pipeline(cli).ejecutar(obra=OBRA, lineas=lineas)
 
     assert [e["registro_id"] for e in res.escritas] == [2]
@@ -624,7 +628,9 @@ def test_f013_la_postventa_sin_partida_se_sigue_omitiendo():
 
     a = pf.acciones[0]
     assert a.accion == "omitir", a
-    assert "no casa con ninguna partida" in (a.motivo or "")
+    # F-074 (§6, criterio i): ya no se casa en el preflight; sin la partida
+    # de su obra, el motivo es el de la definida que falta.
+    assert a.motivo == MOTIVO_PV_SIN_DEFINIDA
     assert pf.conflictos == []
 
 
@@ -632,8 +638,9 @@ def test_f013_la_postventa_que_si_casa_se_escribe_sin_preguntar():
     """Control: una postventa con su partida casada no emite ningún aviso de
     F-013 — tiene partida, que es justo lo que aquí se vigila."""
     cli = ClienteFalso()
+    # F-074 (§6, «cómo»): con la partida de su obra, definida.
     pf = _pipeline(cli).preflight(
-        obra=OBRA, lineas=[linea(registro_id=1, es_postventa=True)])
+        obra=OBRA, lineas=[linea_definida(registro_id=1, es_postventa=True)])
 
     a = pf.acciones[0]
     assert a.accion == "escribir" and a.paride == 70001
