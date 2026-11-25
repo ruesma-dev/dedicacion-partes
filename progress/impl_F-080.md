@@ -146,8 +146,10 @@ obra.
 ## Salida de `init.sh`
 
 `bash harness/init.sh` de esta pasada (2026-11-25, tras la campaña), salida
-real: `ENTORNO LISTO`, código 0, sin `[KO]`; raíz `2319 passed, 47 skipped`;
-api `1713 passed`, front `614 passed`, transfer en verde;
+real: `ENTORNO LISTO`, código 0, sin `[KO]`; raíz `2319 passed, 47 skipped
+in 1099.91s`; api, front y transfer en verde servidos de la caché (código sin
+cambios desde la ejecución sobre `0ea4d30`: api `1713 passed`, front `614
+passed`);
 `PUERTA COBERTURA: 100.0% de 13 líneas cambiadas cubiertas (13/13, umbral
 90% (del nivel critico)…)`; `PUERTA TAMAÑO` y `PUERTA CARRIL: N/A (…
 critico …)` en `[OK]`; `CAPA E2E: N/A`; ruff 439 avisos (deuda previa: los 3
@@ -182,5 +184,5 @@ periodo (D3 b). La nota en F-071 («la caja ya no tiene `can` 1») es del líder
 | Cobertura de las líneas cambiadas | 100,0 % (13/13), umbral 90 % del nivel `critico` (`PUERTA COBERTURA`) |
 | Mutantes generados / supervivientes | 9 generados, 3 candidatos (uno por línea, campaña completa: 3 ≤ tope 100), **3 muertos, 0 supervivientes**, 0 timeouts; SHA medido `eaab1f0`. Más 3 a mano (M1-M3, `routes.py` y la guarda de RM6): 3 muertos. Detalle en `progress/mutacion_F-080.md` |
 | Workers de la campaña | 3 (lanzada sin `--workers`: el default de la máquina, que el informe registra como `--workers 3`); tiempo total 200,8 s ⇒ coste por mutante 200,8 × 3 ÷ 3 = 200,8 s; base 72,5 s, timeout 146 s |
-| Tiempo de la suite | api 116 s y front 98 s (con cobertura, en `init.sh`), transfer 27 s, raíz 771 s |
+| Tiempo de la suite | api 116 s y front 98 s (con cobertura, en `init.sh`), transfer 27 s, raíz 771-1100 s según la carga de la máquina |
 | Capa e2e | `CAPA E2E: N/A` (ningún servicio declara el bloque e2e) |
