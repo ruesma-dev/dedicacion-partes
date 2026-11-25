@@ -183,7 +183,7 @@ obra.
 - `CAPA E2E: N/A`.
 - ruff, 442 avisos (439 antes). Los 3 nuevos eran de mis tests y ya están
   corregidos (`4e297a0` y el siguiente). Resultado de la repetición
-  posterior: REPETICION.
+  posterior (sobre `0ea4d30`): `ENTORNO LISTO`, sin `[KO]`, ruff 439, raíz `2319 passed`, api `1713`, front `614` (ejecutada), transfer de caché; cobertura 13/13.
 
 ## Verificaciones MANUAL pendientes (humano)
 
