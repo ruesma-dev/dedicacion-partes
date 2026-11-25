@@ -3,11 +3,13 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **77 features**, 32 abiertas y 45 terminadas. Por columna: 0 en Review, 0 en Blocked, 1 en In progress, 0 en Spec aprobada, 8 en To do, 23 en Backlog y 45 en Done.
+Resumen: **77 features**, 32 abiertas y 45 terminadas. Por columna: 1 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 8 en To do, 23 en Backlog y 45 en Done.
 
 ## Review
 
-_Nada esperando revisión._
+| # | Feature | La tiene | Prioridad | Rigor | Rama |
+|---|---|---|---|---|---|
+| F-080 | Caja de obra: una por trabajador y repartida con su %, como los km | reviewer | 1 | critico | `feature/F-080-caja-por-trabajador` |
 
 ## Blocked
 
@@ -15,9 +17,7 @@ _Ninguna feature bloqueada._
 
 ## In progress
 
-| # | Feature | La tiene | Prioridad | Rigor | Rama |
-|---|---|---|---|---|---|
-| F-080 | Caja de obra: una por trabajador y repartida con su %, como los km | implementer | 1 | critico | `feature/F-080-caja-por-trabajador` |
+_Ninguna feature en implementación._
 
 ## Spec aprobada
 
@@ -118,7 +118,7 @@ _Ninguna feature con la spec lista._
 
 ### F-080 · Caja de obra: una por trabajador y repartida con su %, como los km
 
-estado **en curso** · spec aprobada el 2026-11-25 · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-080-caja-por-trabajador`
+estado **en QA / revisión** · spec aprobada el 2026-11-25 · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-080-caja-por-trabajador`
 
 Petición URGENTE del humano el 2026-11-25: «añade feature urgente para que la caja de obra se comporte como los km, una pro trabjador y se reparte siguiendo los % de reparto». Hoy (F-069 R18, D12) la caja (`CAJA` en `sync.vinculados.importes` de `services/dedicacion-api/config/config.yaml`) va con `reparto: obra`: se teclea un importe por cada obra del trabajador y se escribe entero en esa obra (`can` 1, `pre = tot` = importe). Lo pedido: `reparto: pct`, como `VIAJE` y `VP`: un importe del mes por trabajador que el transfer reparte con el % de cada línea (`can` del titular, `tot = round(can × pre, 2)`). Por decidir en la spec: qué pasa con las cajas ya tecleadas por obra en los periodos ABIERTOS (sumarlas en la del trabajador, descartarlas o pedir revisión) y con las ya registradas en Sigrid; si la postventa entra en el reparto; si basta con cambiar la config (api, transfer y front ya admiten `pct` en `eur`) o hay que tocar motivos y textos («falta la caja del mes … en la obra X»); los céntimos (que la suma de las obras cuadre con lo tecleado); y `azure-apps/dedicacion.md` (qué se escribe). Sustituye F-069 D12 para la caja. Servicios: api (config y datos guardados); transfer y front, a confirmar en la spec.
 
