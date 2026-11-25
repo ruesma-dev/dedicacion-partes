@@ -3279,3 +3279,13 @@ Rama `feature/F-076-excel-sin-resto-de` · `sdd: true` (por petición del humano
 - T16: preflight en lote de 2 obras, de 11 lecturas y 8,2 s a 8 lecturas y 5,3 s (fuera los dos presupuestos y el historial).
 - T17: la guardada que no vale sale omitida nombrándola; al recargar, «buscando partida…» y a los 10 s la nueva. La línea de prueba quedó como estaba.
 - Con esto F-074 no tiene nada pendiente.
+
+## 2026-11-26 · F-080 · Caja de obra: una por trabajador y repartida con su %, como los km
+
+Rama `feature/F-080-caja-por-trabajador` · `sdd: true` · rigor `critico` · OK del humano a la PARADA 2 («ok») el 2026-11-26.
+
+- **Qué cambió.** `CAJA` pasa a `reparto: pct` en `config.yaml`: una casilla de caja por trabajador con el importe del mes, que el transfer reparte entre sus líneas con su % (también postventa y VAR), como km y viajes. Al copiar el mes, las subfilas de un tipo por % llegan sin cantidad, copiado ni comentario (`_sin_propuesta(lineas, tipos)`). `docs/ARCHITECTURE.md` `#regla-vinculado` al día. Transfer y front sin código: solo tests de regresión (18 api, 10 transfer, 3 front).
+- **Decisiones (2026-11-25).** D1, D3-D5 y D7 la (a); D2 sin pasada de restos (no había cajas por obra con importe en producción); D6 retirada. Absorbe el punto (b) de F-077.
+- **Verificado.** `init.sh` sin caché en verde (api 1713, front 614, transfer 2021, raíz 2319 + 47 skipped); cobertura 13/13; mutación 9 generados, 3 evaluados, 3 muertos, 0 supervivientes, más 3 a mano. Review principal APPROVED (`bb5798d`) y de evidencias APPROVED (`38c09d2`).
+- **Ecosistema.** `azure-apps/dedicacion.md` `38e57a3` (pendiente de push del humano). Aviso a `partes`: las `CO` de caja ya no llevan `can` 1.
+- **Pendiente al desplegar.** M1 (líder, solo lectura en producción, justo antes), desplegar solo la api, M3 (local) y M4 (producción).

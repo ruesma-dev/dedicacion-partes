@@ -1312,12 +1312,14 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "human_review",
+      "status": "done",
       "sdd": true,
       "rigor": "critico",
       "priority": 1,
       "branch": "feature/F-080-caja-por-trabajador",
-      "spec_aprobada": "2026-11-25"
+      "spec_aprobada": "2026-11-25",
+      "fecha_cierre": "2026-11-26",
+      "ok_humano": "2026-11-26"
     }
   ]
 }

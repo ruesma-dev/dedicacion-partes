@@ -3,13 +3,11 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **77 features**, 32 abiertas y 45 terminadas. Por columna: 1 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 8 en To do, 23 en Backlog y 45 en Done.
+Resumen: **77 features**, 31 abiertas y 46 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 8 en To do, 23 en Backlog y 46 en Done.
 
 ## Review
 
-| # | Feature | La tiene | Prioridad | Rigor | Rama |
-|---|---|---|---|---|---|
-| F-080 | Caja de obra: una por trabajador y repartida con su %, como los km | humano | 1 | critico | `feature/F-080-caja-por-trabajador` |
+_Nada esperando revisión._
 
 ## Blocked
 
@@ -68,6 +66,7 @@ _Ninguna feature con la spec lista._
 
 | # | Feature | Cierre | OK humano | Prioridad | Rigor |
 |---|---|---|---|---|---|
+| F-080 | Caja de obra: una por trabajador y repartida con su %, como los km | 2026-11-26 | 2026-11-26 | 1 | critico |
 | F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | 2026-11-24 | 2026-11-24 | 1 | critico |
 | F-076 | Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …») | 2026-11-24 | 2026-11-24 | 3 | estandar |
 | F-069 | Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras | 2026-11-20 | 2026-11-20 | 1 | critico |
@@ -115,12 +114,6 @@ _Ninguna feature con la spec lista._
 | F-030 | Incidencias en el cuadrante: texto en lugar del % con desplegable de las de partes (y dedicación por días) | sin fecha | sin anotar | 14 | critico |
 
 ## Detalle
-
-### F-080 · Caja de obra: una por trabajador y repartida con su %, como los km
-
-estado **en revisión humana** · spec aprobada el 2026-11-25 · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-080-caja-por-trabajador`
-
-Petición URGENTE del humano el 2026-11-25: «añade feature urgente para que la caja de obra se comporte como los km, una pro trabjador y se reparte siguiendo los % de reparto». Hoy (F-069 R18, D12) la caja (`CAJA` en `sync.vinculados.importes` de `services/dedicacion-api/config/config.yaml`) va con `reparto: obra`: se teclea un importe por cada obra del trabajador y se escribe entero en esa obra (`can` 1, `pre = tot` = importe). Lo pedido: `reparto: pct`, como `VIAJE` y `VP`: un importe del mes por trabajador que el transfer reparte con el % de cada línea (`can` del titular, `tot = round(can × pre, 2)`). Por decidir en la spec: qué pasa con las cajas ya tecleadas por obra en los periodos ABIERTOS (sumarlas en la del trabajador, descartarlas o pedir revisión) y con las ya registradas en Sigrid; si la postventa entra en el reparto; si basta con cambiar la config (api, transfer y front ya admiten `pct` en `eur`) o hay que tocar motivos y textos («falta la caja del mes … en la obra X»); los céntimos (que la suma de las obras cuadre con lo tecleado); y `azure-apps/dedicacion.md` (qué se escribe). Sustituye F-069 D12 para la caja. Servicios: api (config y datos guardados); transfer y front, a confirmar en la spec.
 
 ### F-071 · Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid
 
@@ -307,6 +300,12 @@ Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T3
 estado **to do (comprometida)** · prioridad 34 · rigor `estandar` · SDD no · rama `feature/F-075-excel-cabecera-logo`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 3): «la cabecera excel con logo». El Excel de exportación (F-040, F-045) lleva una cabecera con el logo de Ruesma. Por decidir: qué logo y de dónde sale (fichero versionado en el repositorio, sin datos sensibles), qué más va en la cabecera (título, mes, empresa, fecha de generación) y en qué pestañas. Solo api (export a Excel). El 2026-11-24 el humano la baja al final del backlog («f75 bájala a la última de todo»).
+
+### F-080 · Caja de obra: una por trabajador y repartida con su %, como los km
+
+estado **terminada** · cerrada el 2026-11-26 · spec aprobada el 2026-11-25 · OK del humano el 2026-11-26 · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-080-caja-por-trabajador`
+
+Petición URGENTE del humano el 2026-11-25: «añade feature urgente para que la caja de obra se comporte como los km, una pro trabjador y se reparte siguiendo los % de reparto». Hoy (F-069 R18, D12) la caja (`CAJA` en `sync.vinculados.importes` de `services/dedicacion-api/config/config.yaml`) va con `reparto: obra`: se teclea un importe por cada obra del trabajador y se escribe entero en esa obra (`can` 1, `pre = tot` = importe). Lo pedido: `reparto: pct`, como `VIAJE` y `VP`: un importe del mes por trabajador que el transfer reparte con el % de cada línea (`can` del titular, `tot = round(can × pre, 2)`). Por decidir en la spec: qué pasa con las cajas ya tecleadas por obra en los periodos ABIERTOS (sumarlas en la del trabajador, descartarlas o pedir revisión) y con las ya registradas en Sigrid; si la postventa entra en el reparto; si basta con cambiar la config (api, transfer y front ya admiten `pct` en `eur`) o hay que tocar motivos y textos («falta la caja del mes … en la obra X»); los céntimos (que la suma de las obras cuadre con lo tecleado); y `azure-apps/dedicacion.md` (qué se escribe). Sustituye F-069 D12 para la caja. Servicios: api (config y datos guardados); transfer y front, a confirmar en la spec.
 
 ### F-074 · La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra
 

@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-080 EN `human_review`** (urgente, prioridad 1; la caja de obra, una por trabajador y repartida por %): spec aprobada por el humano el 2026-11-25 («f80 ok»; D1 a, D2 sin pasada, D3-D5 y D7 a, D6 retirada). Review 1 APPROVED (`bb5798d`), campaña de mutación 3/3 muertos y 0 supervivientes (`progress/mutacion_F-080.md`), pasada de evidencias APPROVED (`38c09d2`), todo en `progress/review_F-080.md`. `azure-apps/dedicacion.md` al día (`38e57a3`, T8, pendiente de push del humano). **Esperando el OK del humano al resumen final (PARADA 2).** Después: merge a `dev`, M1 por el líder justo antes de desplegar, desplegar solo la api (humano), M3 y M4.
+**F-080 CERRADA el 2026-11-26, PENDIENTE DE DESPLEGAR** (OK del humano a la PARADA 2: «ok»; la caja de obra, una por trabajador y repartida por %). Reviews principal y de evidencias APPROVED, mutación 3/3 muertos (`progress/review_F-080.md`). Unida a `dev`; resumen en `progress/history.md`. `azure-apps/dedicacion.md` al día (`38e57a3`, pendiente de push del humano). **Siguiente:** M1 por el líder justo antes de desplegar; luego el humano despliega solo la api; M3 y M4 (en «⚠»).
 
 **F-076 CERRADA el 2026-11-24 y DESPLEGADA el mismo día** (OK del humano a la PARADA 2: «ok»; M1 hecha por el líder, cumple, `progress/manual_F-076.md`). Lanzado por el humano: api `r20261124-1826` (`Healthy`, 100 % del tráfico, comprobado por el líder, solo lectura); transfer y front sin cambios. Excel de octubre mirado en producción por el líder: cumple (`progress/manual_F-076.md`). Push de `dev` y `azure-apps` hecho por el humano el 2026-11-25. Siguiente: **F-080** (urgente, alta del 2026-11-25: la caja de obra, una por trabajador y repartida por %); después, F-071.
 
@@ -482,7 +482,7 @@ desplegada el 2026-10-19. F-057 cerrada el 2026-10-19 y desplegada el
 
 ## ⚠ Lo que espera al humano
 
-- **F-080 (`in_review`): MANUAL y pasos al desplegar** (detalle en `progress/impl_F-080.md`). Nada escribe en Sigrid.
+- **F-080 (cerrada el 2026-11-26, pendiente de desplegar): MANUAL y pasos al desplegar** (detalle en `progress/impl_F-080.md`). Nada escribe en Sigrid.
   - **M1 (T9), el líder a petición del humano, justo antes de desplegar, solo lectura en producción** (comando exacto en `specs/F-080-caja-por-trabajador/tasks.md` T9): (1) cuadrante de cada periodo y empresa (1, 18, 25, 31) desde la sesión del navegador del humano en `https://ca-dedicacion-front.ashypebble-3c89c6d6.spaincentral.azurecontainerapps.io`: subfilas `tipo: "CAJA"` con `reparto: "obra"` y la clave `cantidad`, esperado 0; (2) por `sigrid-api`, líneas `CO` de caja con `synckey` `porcentajes:vin:%` desde el 2026-11-21, esperado 0 o confirmación del humano. Si no, PARA (D2, D3).
   - **M3 (T7), local con `OBRA_PRUEBAS_FORZAR=true`:** teclear 300 en «CAJA …» de un trabajador al 60/40 (o con postventa) y «⇪ Sigrid»: el modal dice «180,00 € de 300,00 €» y «120,00 € de 300,00 €»; **Cancelar** (solo preflight).
   - **M4 (T10), producción:** desplegar **solo la api** (`infra/d.local.ps1 api`), sin «Sincronizar Sigrid»; Ctrl+F5; una casilla de caja por trabajador y ninguna «Caja · obra»; si se abre el modal, solo preflight y **Cancelar**.
