@@ -3271,3 +3271,11 @@ Rama `feature/F-076-excel-sin-resto-de` · `sdd: true` (por petición del humano
 - El «Sincronizar Sigrid» del orden de despliegue de F-074 se había saltado (último en los logs, el 2026-11-10): las 52 líneas de postventa de octubre salían sin partida y no se habrían registrado. Lo pulsó el líder con el OK del humano: «250 empleados (+2/-0), 295 obras (+2/-0)»; después, 52 de 52 con la partida de su obra.
 - T18 de F-074 y el Excel de F-076 en producción, por el líder: cumplen (`progress/manual_F-074.md`, `progress/manual_F-076.md`).
 - Lección: el paso manual del medio («Sincronizar Sigrid») se pierde si el despliegue se lanza servicio a servicio; el resumen de despliegue debe pedir confirmarlo antes de seguir con el transfer.
+
+## 2026-11-25 · F-074 · MANUAL T15-T17 en local
+
+- Hechas por el líder a petición del humano («puedes hacer tu las verificaciones?»), en local con el transfer en modo pruebas; cumplen las tres (`progress/manual_F-074.md`). Nada escribe en Sigrid: solo preflights (4) y 0 `ejecutar`.
+- T15: en octubre, 0 «automática»; 7 «no encuentra partida» con motivo; los modales escriben lo que enseña cada celda y listan las que no tienen partida.
+- T16: preflight en lote de 2 obras, de 11 lecturas y 8,2 s a 8 lecturas y 5,3 s (fuera los dos presupuestos y el historial).
+- T17: la guardada que no vale sale omitida nombrándola; al recargar, «buscando partida…» y a los 10 s la nueva. La línea de prueba quedó como estaba.
+- Con esto F-074 no tiene nada pendiente.
