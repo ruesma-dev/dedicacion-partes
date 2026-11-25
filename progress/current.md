@@ -1,6 +1,8 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
+**F-080 EN SPEC** (`todo`, urgente, prioridad 1; la caja de obra, una por trabajador y repartida por %): spec-author lanzado por el líder el 2026-11-25 a petición del humano («si»), en la rama `feature/F-080-caja-por-trabajador`. Siguiente: resumen de la spec al humano (primera parada).
+
 **F-076 CERRADA el 2026-11-24 y DESPLEGADA el mismo día** (OK del humano a la PARADA 2: «ok»; M1 hecha por el líder, cumple, `progress/manual_F-076.md`). Lanzado por el humano: api `r20261124-1826` (`Healthy`, 100 % del tráfico, comprobado por el líder, solo lectura); transfer y front sin cambios. Excel de octubre mirado en producción por el líder: cumple (`progress/manual_F-076.md`). Push de `dev` y `azure-apps` hecho por el humano el 2026-11-25. Siguiente: **F-080** (urgente, alta del 2026-11-25: la caja de obra, una por trabajador y repartida por %); después, F-071.
 
 **F-074 CERRADA el 2026-11-24 y DESPLEGADA el mismo día** (lanzado por el humano: api `r20261124-1616`, transfer `r20261124-1636` y front `r20261124-1637`, las tres `Healthy` con el 100 % del tráfico, comprobado por el líder, solo lectura; `imagenes.json` en `chore/despliegue-20261124`, unido a `dev`). `azure-apps/dedicacion.md` al día (`192b988` y `a1afdda`, subidos por el humano). **El «Sincronizar Sigrid» se había saltado** (último sync en los logs, el 2026-11-10): la postventa salía sin partida y no se habría registrado. Lo pulsó el líder el 2026-11-24 con el OK del humano; T18 hecha por el líder: cumple (`progress/manual_F-074.md`). MANUAL T15-T17 hechas por el líder el 2026-11-25 a petición del humano: cumplen (`progress/manual_F-074.md`). Nada pendiente de F-074.
