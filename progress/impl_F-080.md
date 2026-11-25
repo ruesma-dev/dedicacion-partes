@@ -8,34 +8,21 @@ nuevos.
 
 ## Hecho
 
-- **La caja se reparte por %, como los km** (R1). `config.yaml` pasa a
-  `CAJA: {unidad: eur, reparto: pct}` y el comentario de `importes` cita
-  F-080. El reparto `obra` sigue siendo válido, aunque ningún tipo lo usa
-  (D1 a).
-- **Con esa config, lo demás ya salía como km** (design §2), y ahora está
-  probado con los tipos de la config real:
-  - el cuadrante da una casilla de caja por trabajador y subfilas
-    `reparto: pct` sin cantidad, aunque la subfila guarde un resto (R2);
-  - `PUT …/importes` la guarda como caja del mes aunque llegue con
-    `obra_ide`, y dos elementos de la misma caja dan 422 «repetido» (R4);
-  - el payload lleva en cada línea la caja con `reparto: pct` y la cantidad
-    del mes, en una sola lectura (R5).
-- **Copiar el mes no propaga los restos por obra** (R11). `_sin_propuesta(lineas,
-  tipos)`: en la subfila de un tipo por %, `cantidad`, `copiado` y
-  `comentario` llegan a `None`. La partida elegida se conserva. Los tipos
-  por obra, los vinculados que no son de cantidad y las llamadas sin
-  `tipos` se comportan como antes. `CopiarPeriodoAnterior` y
-  `CopiarTrabajadorAnterior` reciben `tipos` en `__init__`, y las dos rutas
-  les pasan `_tipos(contenedor)`.
-- **Docs** (R12): en `docs/ARCHITECTURE.md`, `#regla-vinculado`, bloque
-  «Cantidad y comentario»:
-  - la caja aparece como `pct`, con el ejemplo 300 € → 180/120;
-  - se explica que no hay ajuste de céntimos;
-  - el reparto «por obra» queda sin tipo («Hoy ningún tipo lo usa»);
-  - «Se omite» ya no trae el motivo de la caja por obra;
-  - los restos por obra no se copian (R11) ni se pasan al mes (D2);
-  - se cita la decisión del humano del 2026-11-25.
-- **Transfer y front, sin tocar** (R3, R6-R9): tests de regresión.
+- **R1.** `config.yaml`: `CAJA: {unidad: eur, reparto: pct}`; el comentario
+  de `importes` cita F-080. `obra` sigue siendo válido, sin tipo (D1 a).
+- **R2, R4, R5**, probados con los tipos de la config real: una casilla de
+  caja por trabajador y subfilas `pct` sin cantidad; `PUT …/importes` la
+  guarda como caja del mes aunque traiga `obra_ide` (dos de la misma, 422
+  «repetido»); el payload lleva la cantidad del mes en una sola lectura.
+- **R11.** `_sin_propuesta(lineas, tipos)`: la subfila de un tipo por % llega
+  sin `cantidad`, `copiado` ni `comentario`; la partida elegida, por obra, no
+  de cantidad y sin `tipos`, como antes. Las dos copias reciben `tipos` en
+  `__init__` y sus rutas les pasan `_tipos(contenedor)`.
+- **R12.** `docs/ARCHITECTURE.md` `#regla-vinculado`: caja `pct` (300 € →
+  180/120), sin ajuste de céntimos, «por obra» sin tipo, «Se omite» sin el
+  motivo de la caja por obra, restos no copiados (R11) ni pasados (D2), cita
+  del 2026-11-25.
+- **R3, R6-R9.** Transfer y front sin tocar: solo tests de regresión.
 
 ## Tareas y commits
 
@@ -53,31 +40,19 @@ nuevos.
 
 ## Ficheros
 
-- Código (api): `services/dedicacion-api/config/config.yaml`,
-  `application/use_cases.py` y `interface_adapters/api/routes.py`.
-- Tests nuevos:
-  - `services/dedicacion-api/tests/test_f080_caja_api.py` (20 items);
-  - `services/dedicacion-transfer/tests/test_f080_reglas_caja.py` (10);
-  - `services/dedicacion-front/tests/test_f080_caja_front.py` (3).
-- Tests cambiados: los dos de la lista cerrada (abajo).
-- Documentación: `docs/ARCHITECTURE.md`.
-- Rastro: `specs/F-080-caja-por-trabajador/tasks.md` (casillas T1-T6 y T11)
-  y `progress/current.md`.
-- Sin tocar (design §5):
-  - el transfer entero y `static/js/app.js`;
-  - de la api: `main.py`, `domain/importes.py`, `registro_sigrid.py`,
-    `traer_sigrid.py`, `schemas.py`, `orm_models.py` y `esquema.py`;
-  - `docs/INTEGRACION.md` y `azure-apps`.
+- Código (api): `config/config.yaml`, `application/use_cases.py`,
+  `interface_adapters/api/routes.py`. Doc: `docs/ARCHITECTURE.md`.
+- Tests nuevos: api `test_f080_caja_api.py` (18 items, `--collect-only`),
+  transfer `test_f080_reglas_caja.py` (10), front `test_f080_caja_front.py`
+  (3). Cambiados: los dos de la lista cerrada (abajo).
+- Sin tocar (design §5): el transfer, `app.js`, el resto de la api y
+  `azure-apps`.
 
 ## Decisiones de diseño y desviaciones
 
-- **`_subfila_copiada(v, tipos)`** es una función auxiliar privada de
-  `_sin_propuesta`, para que cada rama se lea por separado. El
-  comportamiento es exactamente el de design §6. No es una desviación.
-- **`tipos` vacío (`{}`) equivale a sin tipos** (`if tipos`). Es lo que
-  devuelve `_tipos(contenedor)` cuando el contenedor no trae importes (los
-  dobles de antes), y el test de las rutas lo comprueba.
-- **Sin desviaciones respecto a la spec.**
+- `_subfila_copiada(v, tipos)`: función auxiliar de `_sin_propuesta`, con el
+  comportamiento de design §6. `tipos` vacío (`{}`, lo que da `_tipos` sin
+  importes) equivale a sin tipos. Sin desviaciones respecto a la spec.
 
 ## Tests anteriores que cambian (lista CERRADA, requirements §5): medida
 
@@ -170,20 +145,13 @@ obra.
 
 ## Salida de `init.sh`
 
-`bash harness/init.sh` (2026-11-25, sobre `95227f3`), salida real:
-
-- `ENTORNO LISTO`, código 0, sin `[KO]`.
-- Raíz: `2319 passed, 47 skipped in 855.83s`.
-- Servicios:
-  - api: `1713 passed`;
-  - front y transfer: en verde, servidos de la caché del árbol en HEAD.
-- `PUERTA COBERTURA: 100.0% de 13 líneas cambiadas cubiertas (13/13,
-  umbral 90% (del nivel critico)…)`.
-- `PUERTA TAMAÑO … impl 214/220` y `PUERTA CARRIL: N/A (… critico …)`.
-- `CAPA E2E: N/A`.
-- ruff, 442 avisos (439 antes). Los 3 nuevos eran de mis tests y ya están
-  corregidos (`4e297a0` y el siguiente). Resultado de la repetición
-  posterior (sobre `0ea4d30`): `ENTORNO LISTO`, sin `[KO]`, ruff 439, raíz `2319 passed`, api `1713`, front `614` (ejecutada), transfer de caché; cobertura 13/13.
+`bash harness/init.sh` de esta pasada (2026-11-25, tras la campaña), salida
+real: `ENTORNO LISTO`, código 0, sin `[KO]`; raíz `2319 passed, 47 skipped`;
+api `1713 passed`, front `614 passed`, transfer en verde;
+`PUERTA COBERTURA: 100.0% de 13 líneas cambiadas cubiertas (13/13, umbral
+90% (del nivel critico)…)`; `PUERTA TAMAÑO` y `PUERTA CARRIL: N/A (…
+critico …)` en `[OK]`; `CAPA E2E: N/A`; ruff 439 avisos (deuda previa: los 3
+que añadían mis tests se corrigieron en `0ea4d30`).
 
 ## Verificaciones MANUAL pendientes (humano)
 
@@ -211,7 +179,8 @@ periodo (D3 b). La nota en F-071 («la caja ya no tiene `can` 1») es del líder
 | Evidencia | Valor medido |
 |---|---|
 | Tests ejecutados | api 1713, front 614, transfer 2021, raíz 2319 (+47 skipped): todos en verde. F-080 aporta 18 + 10 + 3 |
-| Cobertura de las líneas cambiadas | 100,0 % (13/13), umbral 90 % (`PUERTA COBERTURA`) |
-| Mutantes generados / supervivientes | sin medir todavía: la campaña (`python -m harness.mutacion --feature F-080`) va en la pasada de campaña, tras el APPROVED (`implementer.md`) |
-| Tiempo de la suite | api 61 s (con cobertura, en `init.sh`), front 67 s, transfer 27 s, raíz 856 s |
+| Cobertura de las líneas cambiadas | 100,0 % (13/13), umbral 90 % del nivel `critico` (`PUERTA COBERTURA`) |
+| Mutantes generados / supervivientes | 9 generados, 3 candidatos (uno por línea, campaña completa: 3 ≤ tope 100), **3 muertos, 0 supervivientes**, 0 timeouts; SHA medido `eaab1f0`. Más 3 a mano (M1-M3, `routes.py` y la guarda de RM6): 3 muertos. Detalle en `progress/mutacion_F-080.md` |
+| Workers de la campaña | 3 (lanzada sin `--workers`: el default de la máquina, que el informe registra como `--workers 3`); tiempo total 200,8 s ⇒ coste por mutante 200,8 × 3 ÷ 3 = 200,8 s; base 72,5 s, timeout 146 s |
+| Tiempo de la suite | api 116 s y front 98 s (con cobertura, en `init.sh`), transfer 27 s, raíz 771 s |
 | Capa e2e | `CAPA E2E: N/A` (ningún servicio declara el bloque e2e) |
