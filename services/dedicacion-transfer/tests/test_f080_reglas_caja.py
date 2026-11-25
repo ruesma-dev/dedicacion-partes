@@ -110,7 +110,7 @@ def test_f080_r8_copiada_sin_revisar_sin_en_la_obra():
 @pytest.mark.parametrize("cantidad", [None, 0.0])
 def test_f080_r8_los_motivos_de_la_caja_por_obra_no_salen(cantidad):
     av = _en(_caja(reparto="pct", cantidad=cantidad))
-    obra = dict(tipo="CAJA", cod="CA0022", obra="0678")
+    obra = {"tipo": "CAJA", "cod": "CA0022", "obra": "0678"}
     assert av.motivo not in (MOTIVO_FALTA_CAJA.format(**obra),
                              MOTIVO_CAJA_CERO.format(**obra))
     assert "en la obra" not in av.motivo

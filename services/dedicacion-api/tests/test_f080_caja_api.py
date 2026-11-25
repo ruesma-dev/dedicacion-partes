@@ -20,26 +20,39 @@ from __future__ import annotations
 
 import dataclasses
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 from application.sync_pipeline import ConfigVinculados
-from application.use_cases import GuardarImportes, ObtenerCuadrante
+from application.use_cases import (
+    CopiarPeriodoAnterior,
+    CopiarTrabajadorAnterior,
+    GuardarImportes,
+    ObtenerCuadrante,
+    _sin_propuesta,
+)
 from config.settings import cargar_config
 from domain.errors import ImporteInvalido
 from domain.importes import TipoCantidad, tipos_de_config
-from domain.models import ImporteMes
+from domain.models import ImporteMes, Linea, SubfilaVinculado
 from interface_adapters.api.schemas import a_trabajador_out
 
-from tests.test_f024_cuadrante_empresa import ANIO, DEF, MES
+from tests.test_f024_cuadrante_empresa import ANIO, DEF, MES, P_ACT, P_ANT, _ln
+from tests.test_f024_rutas_empresa import (
+    BASE,
+    api,  # noqa: F401  (fixture)
+)
 from tests.test_f051_hmores_ide import _fila
 from tests.test_f069_importes_api import (
     CAJA,
     FILTRO,
     TEL,
+    TIPOS,
     VP,
     _LeerImportes,
     _payload,
     _subfila,
+    _uow_copia,
     _uow_imp,
 )
 
@@ -168,17 +181,6 @@ def test_f080_r5_sin_caja_del_mes_va_nula_y_copiada_con_su_marca():
 
 
 # ================================ R11 ==================================== #
-from application.use_cases import (  # noqa: E402
-    CopiarPeriodoAnterior,
-    CopiarTrabajadorAnterior,
-    _sin_propuesta,
-)
-from domain.models import Linea, SubfilaVinculado  # noqa: E402
-
-from tests.test_f024_cuadrante_empresa import P_ACT, _ln  # noqa: E402
-from tests.test_f024_rutas_empresa import BASE, api  # noqa: E402, F401
-from tests.test_f069_importes_api import TIPOS, _uow_copia  # noqa: E402
-
 #: Un resto por obra de la caja (por % tras F-080) con su partida elegida, un
 #: vinculado que no es de cantidad con comentario y el km sin nada.
 RESTO = dataclasses.replace(CAJA, cantidad=Decimal("80.00"), copiado=False,
@@ -199,7 +201,6 @@ def _copiar(uow, copiar: str, tipos):
 def _uow_resto():
     uow = _uow_copia(origen_mes={30: ImporteMes(
         vinculado_ide=30, cantidad=Decimal("300.00"), comentario="caja")})
-    from tests.test_f024_cuadrante_empresa import P_ANT
     uow.lineas[P_ANT][10] = [
         dataclasses.replace(_ln(100, "60"), vinculados=(VP, RESTO, TEL_C)),
         dataclasses.replace(_ln(101, "40"), vinculados=(VP, CAJA, TEL))]
@@ -273,7 +274,7 @@ def _espia(monkeypatch, nombre: str) -> list:
     ("CopiarPeriodoAnterior", "/copiar-anterior"),
     ("CopiarTrabajadorAnterior", "/trabajadores/14/copiar-anterior")])
 def test_f080_r11_las_rutas_pasan_los_tipos_del_contenedor(
-        api, monkeypatch, nombre, ruta):
+        api, monkeypatch, nombre, ruta):  # noqa: F811
     cliente, contenedor = api
     vistos = _espia(monkeypatch, nombre)
     assert cliente.post(f"{BASE}{ruta}").status_code == 200
@@ -283,8 +284,6 @@ def test_f080_r11_las_rutas_pasan_los_tipos_del_contenedor(
 
 
 # ================================ R12 ==================================== #
-from pathlib import Path  # noqa: E402
-
 _RAIZ_REPO = Path(__file__).resolve().parents[3]
 
 
