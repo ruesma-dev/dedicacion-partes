@@ -1116,36 +1116,46 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     en una obra que la plataforma no le da es una sobrante como la de su
     trabajador ([`#regla-obra-cero`](#regla-obra-cero)).
 
-    **Cantidad y comentario (F-069).** Unos tipos de vinculado no toman el
-    precio de su hora sino una **cantidad** que se teclea: los de
+    **Cantidad y comentario (F-069, F-080).** Unos tipos de vinculado no
+    toman el precio de su hora sino una **cantidad** que se teclea: los de
     `sync.vinculados.importes` de `config.yaml`, cada uno con su unidad
-    (`eur` o `km`) y su reparto. Hoy `CAJA` (€, `obra`), `VIAJE` (€, `pct`)
+    (`eur` o `km`) y su reparto. Hoy `CAJA` (€, `pct`), `VIAJE` (€, `pct`)
     y `VP` (km, `pct`), y `precio_km` 0,20 €/km. Mal escrita, la api no
     arranca. Tipo, unidad y reparto los decide **una** función,
     `dedicacion-api/domain/importes.py` (`tipo_de`).
 
-    - **Por %** (km y viajes): una cantidad **del mes** por vinculado
-      (tabla `importe_vinculado`, periodo × vinculado). El transfer la
-      reparte con el % del titular: `can` = el del titular, `pre` = la
-      cantidad (en km, `round(km × precio_km, 2)`) y `tot = round(can ×
-      pre, 2)`. Ejemplo: 100 km × 0,20 al 60 % ⇒ `pre` 20, `tot` 12.
-    - **Por obra** (caja): una cantidad por **cada línea** del titular, en
-      su fila de `asignacion_vinculado` (`cantidad`, `copiado`,
-      `comentario`), entera a esa obra: `can` 1, `pre` = `tot` = la
-      cantidad, sea cual sea el %. Cuenta en la capacidad del parte como
-      cualquier línea: una caja más una a mano en la misma obra es
-      sobrecarga.
+    - **Por %** (caja, km y viajes): una cantidad **del mes** por
+      vinculado (tabla `importe_vinculado`, periodo × vinculado): una
+      casilla por trabajador. El transfer la reparte con el % del titular
+      en **cada** línea suya (obra normal, postventa y VAR): `can` = el del
+      titular, `pre` = la cantidad (en km, `round(km × precio_km, 2)`) y
+      `tot = round(can × pre, 2)`. Ejemplos: 100 km × 0,20 al 60 % ⇒ `pre`
+      20, `tot` 12; 300 € de caja al 60 % y al 40 % ⇒ `tot` 180 y 120. Sin
+      ajuste de céntimos: cada `tot` se redondea por su cuenta (100 € al
+      33,33 % × 3 ⇒ 99,99), y un trabajador por debajo del 100 % reparte
+      menos de lo tecleado.
+    - **Por obra**: una cantidad por **cada línea** del titular, en su fila
+      de `asignacion_vinculado` (`cantidad`, `copiado`, `comentario`),
+      entera a esa obra: `can` 1, `pre` = `tot` = la cantidad, sea cual sea
+      el %, y sus motivos de omisión nombran la obra («falta la caja del
+      mes … en la obra X»). **Hoy ningún tipo lo usa**: era la caja hasta
+      F-080; el mecanismo sigue en el código y en la config (D1 a). Cuenta
+      en la capacidad del parte como cualquier línea.
     - La api guarda lo tecleado tal cual (km o €); **no multiplica**: el
       importe lo calcula el transfer (`precio_del_vinculado`,
       `reglas_vinculados.py`). La hora es la por defecto.
     - **Se omite**, con su motivo: sin hora; copiado del mes anterior y sin
-      revisar; sin cantidad («falta importe», en caja «falta la caja del
-      mes» con la obra); a 0 (nada que escribir); en km sin `precio_km`.
+      revisar; sin cantidad («falta el importe del mes»); a 0 («importe
+      0»); en km sin `precio_km`.
     - **Copiar el mes** copia las cantidades que en el destino falten,
       marcadas `copiado` («copiado del mes anterior, sin revisar»): no se
       registran hasta que alguien las revisa. Nunca pisa lo que ya hay. Un
       comentario sin cantidad se copia sin la marca (no hay nada que
-      revisar).
+      revisar). **Los restos por obra** de un tipo por % (la `cantidad`, el
+      `copiado` o el `comentario` que guarde su subfila, invisibles y sin
+      efecto: manda la del mes) **no se copian** al mes nuevo (F-080 R11,
+      `_sin_propuesta` con los tipos) **ni se pasan** a la cantidad del mes
+      (D2: al pasar la caja a `pct` no había ninguna con importe).
     - **Qué cuenta como revisar (D18).** Teclear **otra** cantidad o pulsar
       «Revisado» (`revisado: true` en el `PUT`) quita la marca; mandar la
       misma cantidad o cambiar **solo el comentario**, no. El front manda en
@@ -1188,6 +1198,15 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     asigna a la obra, cada obra con la suya» (D12), viaje «aunque es
     posible que de momento no se use», y «elijo opcion A en d11. a en las
     demas» (D11, D13-D16) · F-069, `specs/F-069-importe-caja-km/`.*
+
+    *Decidido el 2026-11-25 (Pablo Gris): «la caja de obra se comporte como
+    los km, una por trabajador y se reparte siguiendo los % de reparto»
+    (sustituye D12 de F-069); D1 (solo la config y la guarda de la copia; el
+    reparto `obra` se queda sin tipo), D2 sin pasada de restos («d1 y d2
+    ignoralo, no hay nada que tocar ahi»), D3 (lo registrado no se toca), D4
+    (también a postventa y VAR), D5 (sin ajuste de céntimos), D6 retirada y
+    D7 (F-077 se queda con los km en euros) · F-080,
+    `specs/F-080-caja-por-trabajador/`.*
 
 23. <a id="regla-traer-sigrid"></a>**Al sincronizar, lo que ya hay en los
     partes de Sigrid se compara con el cuadrante y solo entra lo que el

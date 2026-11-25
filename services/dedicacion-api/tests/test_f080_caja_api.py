@@ -280,3 +280,41 @@ def test_f080_r11_las_rutas_pasan_los_tipos_del_contenedor(
     contenedor.importes = TIPOS_CFG
     assert cliente.post(f"{BASE}{ruta}").status_code == 200
     assert vistos == [{}, TIPOS_CFG]
+
+
+# ================================ R12 ==================================== #
+from pathlib import Path  # noqa: E402
+
+_RAIZ_REPO = Path(__file__).resolve().parents[3]
+
+
+def _regla_vinculado() -> str:
+    """El bloque «Cantidad y comentario» de `#regla-vinculado`, en una línea
+    (sin los saltos ni la sangría del Markdown)."""
+    texto = (_RAIZ_REPO / "docs/ARCHITECTURE.md").read_text(encoding="utf-8")
+    inicio = texto.index("**Cantidad y comentario")
+    fin = texto.index('<a id="regla-traer-sigrid">')
+    return " ".join(texto[inicio:fin].split())
+
+
+def test_f080_r12_la_doc_dice_caja_por_pct_y_sin_restos():
+    doc = _regla_vinculado()
+    assert "Hoy `CAJA` (€, `pct`), `VIAJE` (€, `pct`) y `VP` (km, `pct`)" in doc
+    assert "`CAJA` (€, `obra`)" not in doc
+    assert "**Hoy ningún tipo lo usa**" in doc
+    assert "**no se copian** al mes nuevo (F-080 R11" in doc
+    assert "**ni se pasan** a la cantidad del mes (D2" in doc
+    assert "falta la caja del mes» con la obra" not in doc   # «Se omite»
+    assert "*Decidido el 2026-11-25 (Pablo Gris): «la caja de obra se " \
+           "comporte como los km" in doc
+    assert "300 € de caja al 60 % y al 40 % ⇒ `tot` 180 y 120" in doc
+
+
+def test_f080_r12_el_comentario_de_la_config_tambien():
+    texto = (_RAIZ_REPO / "services/dedicacion-api/config/config.yaml"
+             ).read_text(encoding="utf-8")
+    comentario = " ".join(texto[texto.index("# `importes` (F-069"):
+                                texto.index("# `precio_km`")].split())
+    assert "la caja se asigna a la obra" not in comentario
+    assert "Hoy ningún tipo es `obra`: la caja pasó a `pct` con F-080" in \
+        comentario.replace("# ", "")
