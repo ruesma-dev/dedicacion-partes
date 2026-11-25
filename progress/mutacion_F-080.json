@@ -1,0 +1,47 @@
+{
+ "version": 1,
+ "criterio": "codigo_1",
+ "fiable": true,
+ "feature": "F-080",
+ "sha": "eaab1f0c7bc3c3ffbd16b29ca43a345aa9d227bb",
+ "nivel": "critico",
+ "regla": {
+  "por_linea": true,
+  "fraccion": 0.6,
+  "suelo": 100,
+  "techo": 300,
+  "origen": "nivel"
+ },
+ "semilla": 20261030,
+ "generados": 9,
+ "candidatos": 3,
+ "evaluados": [
+  {
+   "fichero": "services/dedicacion-api/application/use_cases.py",
+   "linea": 1220,
+   "col": 37,
+   "operador": "ternario",
+   "original": "tipo = tipo_de(v.tipo, tipos) if tipos else None",
+   "mutado": "tipo = tipo_de(v.tipo, tipos) if not tipos else None",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/use_cases.py",
+   "linea": 1221,
+   "col": 41,
+   "operador": "comparacion",
+   "original": "if tipo is not None and tipo.reparto == REPARTO_PCT:",
+   "mutado": "if tipo is not None and tipo.reparto != REPARTO_PCT:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/use_cases.py",
+   "linea": 1226,
+   "col": 58,
+   "operador": "comparacion",
+   "original": "copiado=None if v.cantidad is None else True)",
+   "mutado": "copiado=None if v.cantidad is not None else True)",
+   "veredicto": "muerto"
+  }
+ ]
+}

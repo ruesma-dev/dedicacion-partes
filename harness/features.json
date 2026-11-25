@@ -1269,7 +1269,7 @@
     {
       "id": "F-077",
       "title": "Km, viajes y gastos de obra en euros: un total por persona que se reparte por el % de cada obra",
-      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas). CONFIRMADO por el humano el 2026-11-22: «sí, cambia lo desplegado» (F-069 D2 queda sustituida).",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas). CONFIRMADO por el humano el 2026-11-22: «sí, cambia lo desplegado» (F-069 D2 queda sustituida). RECORTADA el 2026-11-25 (F-080 D7 a, «f80 ok» del humano): la parte (b), la caja como total del mes por persona repartido por %, la hace F-080; F-077 queda para el km en euros (y lo que dependa de él).",
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
@@ -1312,11 +1312,14 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "todo",
+      "status": "done",
       "sdd": true,
       "rigor": "critico",
       "priority": 1,
-      "branch": "feature/F-080-caja-por-trabajador"
+      "branch": "feature/F-080-caja-por-trabajador",
+      "spec_aprobada": "2026-11-25",
+      "fecha_cierre": "2026-11-26",
+      "ok_humano": "2026-11-26"
     }
   ]
 }

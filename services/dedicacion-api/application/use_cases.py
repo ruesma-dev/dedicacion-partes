@@ -32,6 +32,7 @@ from domain.errors import (
 from domain.estados import calcular_estado, completar_hasta_100, resumir
 from domain.importes import (
     REPARTO_OBRA,
+    REPARTO_PCT,
     TipoCantidad,
     a_copiar,
     tipo_de,
@@ -478,8 +479,13 @@ class CopiarPeriodoAnterior:
     Solo actúa sobre trabajadores activos visibles en la empresa del filtro
     (F-024, R14) y SIN carga en el periodo destino: nunca pisa trabajo ya
     hecho. Las líneas no ofrecibles (`Linea.ofrecible`, F-025 R19) se
-    omiten y se contabilizan.
+    omiten y se contabilizan. F-080 (R11): `tipos`, los de cantidad de la
+    config; con ellos, el resto por obra de un tipo por % no se copia.
     """
+
+    def __init__(self, tipos: Mapping[str, TipoCantidad] | None = None
+                 ) -> None:
+        self._tipos = tipos
 
     def ejecutar(
         self,
@@ -511,7 +517,7 @@ class CopiarPeriodoAnterior:
                 sin_datos += 1
                 continue
             utilizables = _sin_propuesta(
-                [ln for ln in previas if ln.ofrecible])
+                [ln for ln in previas if ln.ofrecible], self._tipos)
             omitidas += len(previas) - len(utilizables)
             if not utilizables:
                 sin_datos += 1
@@ -542,7 +548,12 @@ class CopiarPeriodoAnterior:
 
 
 class CopiarTrabajadorAnterior:
-    """Copia (sustituyendo) las líneas del periodo anterior de UN trabajador."""
+    """Copia (sustituyendo) las líneas del periodo anterior de UN trabajador.
+    F-080 (R11): `tipos`, como en `CopiarPeriodoAnterior`."""
+
+    def __init__(self, tipos: Mapping[str, TipoCantidad] | None = None
+                 ) -> None:
+        self._tipos = tipos
 
     def ejecutar(
         self,
@@ -564,7 +575,8 @@ class CopiarTrabajadorAnterior:
             return fila, resumen, None, 0
         origen_id, periodo_origen = origen
         previas = uow.asignaciones.lineas_de_trabajador(origen_id, trabajador_ide)
-        utilizables = _sin_propuesta([ln for ln in previas if ln.ofrecible])
+        utilizables = _sin_propuesta([ln for ln in previas if ln.ofrecible],
+                                     self._tipos)
         omitidas = len(previas) - len(utilizables)
         antes = uow.asignaciones.lineas_de_trabajador(periodo_id, trabajador_ide)
         if _snapshot(antes) != _snapshot(utilizables):
@@ -1183,19 +1195,35 @@ def _conservar_partidas(lineas: list[Linea], antes: list[Linea],
     ]
 
 
-def _sin_propuesta(lineas: list[Linea]) -> list[Linea]:
+def _sin_propuesta(lineas: list[Linea],
+                   tipos: Mapping[str, TipoCantidad] | None = None
+                   ) -> list[Linea]:
     """Las líneas copiadas de otro periodo, sin su propuesta guardada
     (F-055, R17: copiar el mes y F8 no la copian; la partida elegida sí,
     F-050 R16). F-044 (R8): igual sus subfilas. F-069 (R8, R9): el
     comentario de la línea y la cantidad por obra y el comentario de la
-    subfila sí se copian, la cantidad marcada `copiado` (sin revisar, D11)."""
+    subfila sí se copian, la cantidad marcada `copiado` (sin revisar, D11).
+    F-080 (R11): con `tipos`, la subfila de un tipo por % llega sin
+    cantidad, `copiado` ni comentario (un resto por obra, invisible, no se
+    propaga al mes nuevo; manda la cantidad del mes); sin `tipos`, como
+    hoy."""
     return [dataclasses.replace(
         ln, **dict.fromkeys(_CAMPOS_PROPUESTA), vinculados=tuple(
-            dataclasses.replace(
-                v, **dict.fromkeys(_CAMPOS_PROPUESTA),
-                copiado=None if v.cantidad is None else True)
-            for v in ln.vinculados))
+            _subfila_copiada(v, tipos) for v in ln.vinculados))
         for ln in lineas]
+
+
+def _subfila_copiada(v: SubfilaVinculado,
+                     tipos: Mapping[str, TipoCantidad] | None
+                     ) -> SubfilaVinculado:
+    """F-080 (R11): la subfila de `_sin_propuesta`, sin su propuesta."""
+    tipo = tipo_de(v.tipo, tipos) if tipos else None
+    if tipo is not None and tipo.reparto == REPARTO_PCT:
+        return dataclasses.replace(v, **dict.fromkeys(_CAMPOS_PROPUESTA),
+                                   cantidad=None, copiado=None,
+                                   comentario=None)
+    return dataclasses.replace(v, **dict.fromkeys(_CAMPOS_PROPUESTA),
+                               copiado=None if v.cantidad is None else True)
 
 
 def _copiar_importes(uow: UnitOfWork, origen_id: int, periodo_id: int,

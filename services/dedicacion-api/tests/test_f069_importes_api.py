@@ -909,13 +909,16 @@ def test_f069_r15_el_contenedor_pasa_tipos_y_precio(monkeypatch):
     monkeypatch.delenv("EMPRESA_IMPUTACION", raising=False)
     contenedor = deps.construir_contenedor(Settings(_env_file=None),
                                            lambda: None)
-    assert capturado["importes"] == TIPOS
+    # F-080 (R1): los de la config versionada, con la caja por % (`TIPOS`,
+    # con la caja por obra, es el doble de los tests del mecanismo `obra`).
+    tipos_cfg = {**TIPOS, "CAJA": TipoCantidad("eur", "pct")}
+    assert capturado["importes"] == tipos_cfg
     assert capturado["precio_km"] == Decimal("0.20")
     # Mutación (deps.py:172-173, sin mutantes del generador): los mismos
     # tipos llegan a las rutas (`PUT …/importes`, cuadrante) y a traer de
     # Sigrid (comentario de las cantidades del mes, R32).
-    assert contenedor.importes == TIPOS
-    assert contenedor.traer_sigrid._importes == TIPOS
+    assert contenedor.importes == tipos_cfg
+    assert contenedor.traer_sigrid._importes == tipos_cfg
 
 
 # ======================= R10 · el cuadrante ============================== #

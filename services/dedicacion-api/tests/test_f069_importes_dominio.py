@@ -42,7 +42,9 @@ VP = TipoCantidad(unidad="km", reparto="pct")
 # ================================ R1 ===================================== #
 def test_f069_r1_config_versionada():
     cfg = ConfigVinculados.desde_config(cargar_config()["sync"]["vinculados"])
-    assert cfg.importes == {"CAJA": CAJA, "VIAJE": VIAJE, "VP": VP}
+    # F-080 (R1, D1): la caja pasa a repartirse por % («como los km»).
+    assert cfg.importes == {"CAJA": TipoCantidad("eur", "pct"),
+                            "VIAJE": VIAJE, "VP": VP}
     assert cfg.precio_km == Decimal("0.20")
 
 
