@@ -165,3 +165,118 @@ def test_f080_r5_sin_caja_del_mes_va_nula_y_copiada_con_su_marca():
     [ln], _ = _payload([_fila(1)], {1: (CAJA,)}, tipos=TIPOS_CFG, leer=leer)
     caja = _caja_del_payload(ln)
     assert (caja["cantidad"], caja["copiado"]) == (250.0, True)
+
+
+# ================================ R11 ==================================== #
+from application.use_cases import (  # noqa: E402
+    CopiarPeriodoAnterior,
+    CopiarTrabajadorAnterior,
+    _sin_propuesta,
+)
+from domain.models import Linea, SubfilaVinculado  # noqa: E402
+
+from tests.test_f024_cuadrante_empresa import P_ACT, _ln  # noqa: E402
+from tests.test_f024_rutas_empresa import BASE, api  # noqa: E402, F401
+from tests.test_f069_importes_api import TIPOS, _uow_copia  # noqa: E402
+
+#: Un resto por obra de la caja (por % tras F-080) con su partida elegida, un
+#: vinculado que no es de cantidad con comentario y el km sin nada.
+RESTO = dataclasses.replace(CAJA, cantidad=Decimal("80.00"), copiado=False,
+                            comentario="resto", partida_ide=81001,
+                            partida_cod="CICA10", partida_res="CAJA")
+TEL_C = dataclasses.replace(TEL, comentario="del móvil", partida_ide=81002,
+                            partida_cod="CITF13", partida_res="TELEFONO")
+
+
+def _copiar(uow, copiar: str, tipos):
+    if copiar == "trabajador":
+        return CopiarTrabajadorAnterior(tipos).ejecutar(
+            uow, ANIO, MES, 10, "pgris", filtro=FILTRO)
+    return CopiarPeriodoAnterior(tipos).ejecutar(uow, ANIO, MES, "pgris",
+                                                 filtro=FILTRO)
+
+
+def _uow_resto():
+    uow = _uow_copia(origen_mes={30: ImporteMes(
+        vinculado_ide=30, cantidad=Decimal("300.00"), comentario="caja")})
+    from tests.test_f024_cuadrante_empresa import P_ANT
+    uow.lineas[P_ANT][10] = [
+        dataclasses.replace(_ln(100, "60"), vinculados=(VP, RESTO, TEL_C)),
+        dataclasses.replace(_ln(101, "40"), vinculados=(VP, CAJA, TEL))]
+    return uow
+
+
+@pytest.mark.parametrize("copiar", ["trabajador", "periodo"])
+def test_f080_r11_el_resto_por_obra_de_un_tipo_por_pct_no_se_copia(copiar):
+    uow = _uow_resto()
+    _copiar(uow, copiar, TIPOS_CFG)
+    caja = _subfila(uow, 100)
+    assert (caja.cantidad, caja.copiado, caja.comentario) == (None, None,
+                                                               None)
+    # La partida elegida de la subfila, como hoy (F-050 R16).
+    assert (caja.partida_ide, caja.partida_cod, caja.partida_res) == (
+        81001, "CICA10", "CAJA")
+    # El vinculado que no es de cantidad, como hoy: su comentario se copia.
+    tel = _subfila(uow, 100, vid=10)
+    assert (tel.comentario, tel.partida_ide) == ("del móvil", 81002)
+    # La caja del mes sí se copia, sin revisar (F-069 R8).
+    assert uow.importes.filas[P_ACT] == {30: ImporteMes(
+        vinculado_ide=30, cantidad=Decimal("300.00"), copiado=True,
+        comentario="caja")}
+
+
+@pytest.mark.parametrize("copiar", ["trabajador", "periodo"])
+def test_f080_r11_un_tipo_por_obra_y_sin_tipos_como_hoy(copiar):
+    for tipos in (TIPOS, None):          # `TIPOS`: la caja por obra de F-069
+        uow = _uow_resto()
+        _copiar(uow, copiar, tipos)
+        caja = _subfila(uow, 100)
+        assert (caja.cantidad, caja.copiado, caja.comentario) == (
+            Decimal("80.00"), True, "resto")
+
+
+def test_f080_r11_sin_propuesta_por_tipo():
+    ln = Linea(obra_ide=7, es_postventa=False, porcentaje=Decimal("100"),
+               propuesta_ide=5, propuesta_cod="CI.1", vinculados=(
+                   dataclasses.replace(RESTO, propuesta_ide=9,
+                                       propuesta_cod="CICA"),
+                   dataclasses.replace(VP, cantidad=Decimal("1.00")),
+                   SubfilaVinculado(vinculado_ide=40, tipo=" caja ",
+                                    cantidad=Decimal("2.00"),
+                                    comentario="x")))
+    [out] = _sin_propuesta([ln], TIPOS_CFG)
+    assert (out.propuesta_ide, out.propuesta_cod) == (None, None)
+    for v in out.vinculados:
+        assert (v.cantidad, v.copiado, v.comentario) == (None, None, None)
+        assert (v.propuesta_ide, v.propuesta_cod) == (None, None)
+    [hoy] = _sin_propuesta([ln])
+    assert [(v.cantidad, v.copiado) for v in hoy.vinculados] == [
+        (Decimal("80.00"), True), (Decimal("1.00"), True),
+        (Decimal("2.00"), True)]
+
+
+def _espia(monkeypatch, nombre: str) -> list:
+    from interface_adapters.api import routes
+    real = getattr(routes, nombre)
+    vistos: list = []
+
+    class _Espia(real):
+        def __init__(self, tipos=None):
+            vistos.append(tipos)
+            super().__init__(tipos)
+
+    monkeypatch.setattr(routes, nombre, _Espia)
+    return vistos
+
+
+@pytest.mark.parametrize("nombre, ruta", [
+    ("CopiarPeriodoAnterior", "/copiar-anterior"),
+    ("CopiarTrabajadorAnterior", "/trabajadores/14/copiar-anterior")])
+def test_f080_r11_las_rutas_pasan_los_tipos_del_contenedor(
+        api, monkeypatch, nombre, ruta):
+    cliente, contenedor = api
+    vistos = _espia(monkeypatch, nombre)
+    assert cliente.post(f"{BASE}{ruta}").status_code == 200
+    contenedor.importes = TIPOS_CFG
+    assert cliente.post(f"{BASE}{ruta}").status_code == 200
+    assert vistos == [{}, TIPOS_CFG]

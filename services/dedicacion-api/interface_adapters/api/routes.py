@@ -264,7 +264,7 @@ def copiar_periodo_anterior(
 ) -> CopiaPeriodoOut:
     filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
-        resultado = CopiarPeriodoAnterior().ejecutar(
+        resultado = CopiarPeriodoAnterior(_tipos(contenedor)).ejecutar(
             uow, anio, mes, usuario, filtro=filtro
         )
     return a_copia_periodo_out(resultado).model_copy(
@@ -511,7 +511,8 @@ def copiar_trabajador_anterior(
 ) -> CopiaTrabajadorOut:
     filtro = _filtro(contenedor, empresa)
     with contenedor.uow() as uow:
-        fila, resumen, origen, omitidas = CopiarTrabajadorAnterior().ejecutar(
+        fila, resumen, origen, omitidas = CopiarTrabajadorAnterior(
+            _tipos(contenedor)).ejecutar(
             uow, anio, mes, trabajador_ide, usuario, filtro=filtro
         )
     en_curso, marcas = _encolar(contenedor, anio, mes, [trabajador_ide])
