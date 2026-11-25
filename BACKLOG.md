@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **77 features**, 32 abiertas y 45 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 1 en Spec aprobada, 8 en To do, 23 en Backlog y 45 en Done.
+Resumen: **77 features**, 32 abiertas y 45 terminadas. Por columna: 0 en Review, 0 en Blocked, 1 en In progress, 0 en Spec aprobada, 8 en To do, 23 en Backlog y 45 en Done.
 
 ## Review
 
@@ -15,13 +15,13 @@ _Ninguna feature bloqueada._
 
 ## In progress
 
-_Ninguna feature en implementación._
+| # | Feature | La tiene | Prioridad | Rigor | Rama |
+|---|---|---|---|---|---|
+| F-080 | Caja de obra: una por trabajador y repartida con su %, como los km | implementer | 1 | critico | `feature/F-080-caja-por-trabajador` |
 
 ## Spec aprobada
 
-| # | Feature | Spec aprobada | Prioridad | Rigor | Rama |
-|---|---|---|---|---|---|
-| F-080 | Caja de obra: una por trabajador y repartida con su %, como los km | pendiente de tu aprobación | 1 | critico | `feature/F-080-caja-por-trabajador` |
+_Ninguna feature con la spec lista._
 
 ## To do
 
@@ -118,7 +118,7 @@ _Ninguna feature en implementación._
 
 ### F-080 · Caja de obra: una por trabajador y repartida con su %, como los km
 
-estado **spec lista** · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-080-caja-por-trabajador`
+estado **en curso** · spec aprobada el 2026-11-25 · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-080-caja-por-trabajador`
 
 Petición URGENTE del humano el 2026-11-25: «añade feature urgente para que la caja de obra se comporte como los km, una pro trabjador y se reparte siguiendo los % de reparto». Hoy (F-069 R18, D12) la caja (`CAJA` en `sync.vinculados.importes` de `services/dedicacion-api/config/config.yaml`) va con `reparto: obra`: se teclea un importe por cada obra del trabajador y se escribe entero en esa obra (`can` 1, `pre = tot` = importe). Lo pedido: `reparto: pct`, como `VIAJE` y `VP`: un importe del mes por trabajador que el transfer reparte con el % de cada línea (`can` del titular, `tot = round(can × pre, 2)`). Por decidir en la spec: qué pasa con las cajas ya tecleadas por obra en los periodos ABIERTOS (sumarlas en la del trabajador, descartarlas o pedir revisión) y con las ya registradas en Sigrid; si la postventa entra en el reparto; si basta con cambiar la config (api, transfer y front ya admiten `pct` en `eur`) o hay que tocar motivos y textos («falta la caja del mes … en la obra X»); los céntimos (que la suma de las obras cuadre con lo tecleado); y `azure-apps/dedicacion.md` (qué se escribe). Sustituye F-069 D12 para la caja. Servicios: api (config y datos guardados); transfer y front, a confirmar en la spec.
 
@@ -138,7 +138,7 @@ Pedida por el humano el 2026-10-07: «que cerrar y abrir solo sea posible en cie
 
 estado **to do (comprometida)** · prioridad 6 · rigor `critico` · SDD sí · rama `feature/F-077-importes-en-euros-por-persona`
 
-Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas). CONFIRMADO por el humano el 2026-11-22: «sí, cambia lo desplegado» (F-069 D2 queda sustituida).
+Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas). CONFIRMADO por el humano el 2026-11-22: «sí, cambia lo desplegado» (F-069 D2 queda sustituida). RECORTADA el 2026-11-25 (F-080 D7 a, «f80 ok» del humano): la parte (b), la caja como total del mes por persona repartido por %, la hace F-080; F-077 queda para el km en euros (y lo que dependa de él).
 
 ### F-078 · Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes)
 
