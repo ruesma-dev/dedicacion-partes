@@ -1200,7 +1200,7 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     demas» (D11, D13-D16) · F-069, `specs/F-069-importe-caja-km/`.*
 
     *Decidido el 2026-11-25 (Pablo Gris): «la caja de obra se comporte como
-    los km, una por trabajador y se reparte siguiendo los % de reparto»
+    los km, una pro trabjador [sic] y se reparte siguiendo los % de reparto»
     (sustituye D12 de F-069); D1 (solo la config y la guarda de la copia; el
     reparto `obra` se queda sin tipo), D2 sin pasada de restos («d1 y d2
     ignoralo, no hay nada que tocar ahi»), D3 (lo registrado no se toca), D4

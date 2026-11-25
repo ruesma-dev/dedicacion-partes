@@ -2,8 +2,8 @@
 
 Rigor **`critico`** (cambia el importe que el transfer escribe en Sigrid;
 design, cabecera). Petición del humano del 2026-11-25: «la caja de obra se
-comporte como los km, una por trabajador y se reparte siguiendo los % de
-reparto». **Sustituye F-069 D12** (caja por obra) y, para la caja, F-069 R11
+comporte como los km, una pro trabjador [sic] y se reparte siguiendo los % de
+reparto» (literal). **Sustituye F-069 D12** (caja por obra) y, para la caja, F-069 R11
 (casilla «Caja · obra»), R18 y la parte de caja de R20. Absorbe el punto (b) de
 F-077 (D7). Toca **solo la api**; transfer y front ya admiten `pct` en `eur`
 desde F-069 (design §2). Decisiones **cerradas por el humano el 2026-11-25**
