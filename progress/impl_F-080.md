@@ -35,8 +35,7 @@ nuevos.
   - «Se omite» ya no trae el motivo de la caja por obra;
   - los restos por obra no se copian (R11) ni se pasan al mes (D2);
   - se cita la decisión del humano del 2026-11-25.
-- **Transfer y front, sin tocar** (R3, R6-R9). Los tests de regresión pasan
-  sin código nuevo.
+- **Transfer y front, sin tocar** (R3, R6-R9): tests de regresión.
 
 ## Tareas y commits
 
@@ -171,44 +170,48 @@ obra.
 
 ## Salida de `init.sh`
 
-PENDIENTE_INIT
+`bash harness/init.sh` (2026-11-25, sobre `95227f3`), salida real:
+
+- `ENTORNO LISTO`, código 0, sin `[KO]`.
+- Raíz: `2319 passed, 47 skipped in 855.83s`.
+- Servicios:
+  - api: `1713 passed`;
+  - front y transfer: en verde, servidos de la caché del árbol en HEAD.
+- `PUERTA COBERTURA: 100.0% de 13 líneas cambiadas cubiertas (13/13,
+  umbral 90% (del nivel critico)…)`.
+- `PUERTA TAMAÑO … impl 214/220` y `PUERTA CARRIL: N/A (… critico …)`.
+- `CAPA E2E: N/A`.
+- ruff, 442 avisos (439 antes). Los 3 nuevos eran de mis tests y ya están
+  corregidos (`4e297a0` y el siguiente). Resultado de la repetición
+  posterior: REPETICION.
 
 ## Verificaciones MANUAL pendientes (humano)
 
-- **M1 (T9), justo antes de desplegar, solo lectura en producción.** Repetir
-  la lectura de `progress/manual_F-080.md`:
-  - `GET /api/v1/periodos`;
-  - `GET /api/v1/periodos/{anio}/{mes}/cuadrante?empresa={1,18,25,31}`.
-
-  Esperado: **0** subfilas de caja por obra con `cantidad`. Si aparece
-  alguna, PARA y vuelta al humano (D2, D3).
-- **M3 (T7), en local en modo pruebas** (`OBRA_PRUEBAS_FORZAR=true`).
-  1. Teclear 300 en «CAJA …» de un trabajador repartido 60/40 (o con
-     postventa).
-  2. Pulsar «⇪ Sigrid» de ese trabajador. El modal debe decir «180,00 € de
-     300,00 €» y «120,00 € de 300,00 €».
-  3. **Cancelar** (solo preflight).
-- **M4 (T10), en producción.**
-  1. Desplegar **solo la api**, sin «Sincronizar Sigrid».
-  2. Ctrl+F5.
-  3. En el mes abierto: una casilla de caja por trabajador y ninguna «Caja ·
-     obra».
-  4. Si se abre el modal, solo preflight y **Cancelar**.
-- **T8, del líder.** `azure-apps/dedicacion.md`, en commit aparte en
-  `azure-apps` (design §12):
-  - nota del redespliegue de la api;
-  - en «Desde F-069», que la caja se reparte por % (F-080).
-
-  No lo he tocado. Tampoco el aviso a `partes` (las `CO` de caja ya no
-  llevan `can` 1), que da el humano.
+- **M1 (T9), justo antes de desplegar, solo lectura en producción.** La
+  lectura de `progress/manual_F-080.md` (`GET /api/v1/periodos` y `GET
+  /api/v1/periodos/{anio}/{mes}/cuadrante?empresa={1,18,25,31}`). Esperado:
+  **0** subfilas de caja por obra con `cantidad`; si hay alguna, PARA (D2, D3).
+- **M3 (T7), en local con `OBRA_PRUEBAS_FORZAR=true`.** 300 en «CAJA …» de un
+  trabajador al 60/40 (o con postventa) y «⇪ Sigrid»: el modal dice «180,00 €
+  de 300,00 €» y «120,00 € de 300,00 €». **Cancelar** (solo preflight).
+- **M4 (T10), en producción.** Desplegar **solo la api**, sin «Sincronizar
+  Sigrid»; Ctrl+F5; una casilla de caja por trabajador y ninguna «Caja ·
+  obra». Si se abre el modal, solo preflight y **Cancelar**.
+- **T8, del líder.** `azure-apps/dedicacion.md` en commit aparte (design §12):
+  nota del redespliegue y, en «Desde F-069», la caja por % (F-080). No lo he
+  tocado, ni el aviso a `partes` (las `CO` de caja ya no llevan `can` 1).
 
 ## Fuera de alcance
 
-- Retirar el reparto `obra` (D1 b).
-- La pasada de restos (D2).
-- El corte por periodo (D3 b).
-- F-071: la nota «la caja ya no tiene `can` 1» le toca al líder.
+Retirar el reparto `obra` (D1 b), la pasada de restos (D2) y el corte por
+periodo (D3 b). La nota en F-071 («la caja ya no tiene `can` 1») es del líder.
 
 ## Evidencias
 
-PENDIENTE_EVIDENCIAS
+| Evidencia | Valor medido |
+|---|---|
+| Tests ejecutados | api 1713, front 614, transfer 2021, raíz 2319 (+47 skipped): todos en verde. F-080 aporta 18 + 10 + 3 |
+| Cobertura de las líneas cambiadas | 100,0 % (13/13), umbral 90 % (`PUERTA COBERTURA`) |
+| Mutantes generados / supervivientes | sin medir todavía: la campaña (`python -m harness.mutacion --feature F-080`) va en la pasada de campaña, tras el APPROVED (`implementer.md`) |
+| Tiempo de la suite | api 61 s (con cobertura, en `init.sh`), front 67 s, transfer 27 s, raíz 856 s |
+| Capa e2e | `CAPA E2E: N/A` (ningún servicio declara el bloque e2e) |

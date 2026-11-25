@@ -237,7 +237,7 @@ def test_f080_r11_un_tipo_por_obra_y_sin_tipos_como_hoy(copiar):
 
 
 def test_f080_r11_sin_propuesta_por_tipo():
-    ln = Linea(obra_ide=7, es_postventa=False, porcentaje=Decimal("100"),
+    ln = Linea(obra_ide=7, es_postventa=False, porcentaje=Decimal(100),
                propuesta_ide=5, propuesta_cod="CI.1", vinculados=(
                    dataclasses.replace(RESTO, propuesta_ide=9,
                                        propuesta_cod="CICA"),

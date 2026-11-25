@@ -64,14 +64,15 @@ def test_f080_r3_una_casilla_de_caja_por_trabajador_y_ninguna_por_obra():
 
 
 def test_f080_r3_la_subfila_ensena_la_caja_del_mes_o_falta_importe():
-    r = _node("\n".join([PINTAR, FILA, """
+    r = _node(f"""{PINTAR}
+{FILA}
       const cajas = t.lineas.map((l) => l.vinculados[1]);
-      const sin = { ...t, importes: [t.importes[0]] };
-      process.stdout.write(JSON.stringify({
+      const sin = {{ ...t, importes: [t.importes[0]] }};
+      process.stdout.write(JSON.stringify({{
         con: cajas.map((v) => htmlCantidadVinculado(t, v)),
         sin: cajas.map((v) => htmlCantidadVinculado(sin, v)),
-        comentarios: cajas.map((v) => comentarioVinculado(t, v)) }));
-    """]))
+        comentarios: cajas.map((v) => comentarioVinculado(t, v)) }}));
+    """)
     assert r["con"] == ['<span class="cantidad-vin">300,00 €</span>'] * 2
     assert r["sin"] == ['<span class="cantidad-vin falta">falta importe</span>'] * 2
     assert r["comentarios"] == ["caja", "caja"]
@@ -81,8 +82,8 @@ def test_f080_r3_la_subfila_ensena_la_caja_del_mes_o_falta_importe():
 def test_f080_r9_el_modal_ensena_la_caja_como_los_km():
     texto = "\n".join(_funcion(f) for f in ("fmtCantidad",
                                             "textoImporteVinculado"))
-    caja = dict(recurso_ide=22, tipo="CAJA", tipo_res="CAJA OBRA", cod="CJ",
-                hora_codigo="CO", reparto="pct", pre=300.0)
+    caja = {"recurso_ide": 22, "tipo": "CAJA", "tipo_res": "CAJA OBRA",
+            "cod": "CJ", "hora_codigo": "CO", "reparto": "pct", "pre": 300.0}
     obs = _modal_vin([_obra_reg(
         [_accion_reg(can=0.6),
          _accion_reg(registro_id=3002, can=0.4, destino="postventa",
