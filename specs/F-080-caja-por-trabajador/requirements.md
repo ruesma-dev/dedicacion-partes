@@ -6,15 +6,18 @@ comporte como los km, una por trabajador y se reparte siguiendo los % de
 reparto». **Sustituye F-069 D12** (caja por obra) y, para la caja, F-069 R11
 (casilla «Caja · obra»), R18 y la parte de caja de R20. Absorbe el punto (b) de
 F-077 (D7). Toca **solo la api**; transfer y front ya admiten `pct` en `eur`
-desde F-069 (design §2). Decisiones D1-D7 abiertas (design §13).
+desde F-069 (design §2). Decisiones **cerradas por el humano el 2026-11-25**
+(design §13): D1, D3, D4, D5 y D7 la (a); D2 sin pasada de restos (no hay
+cajas por obra con importe, `progress/manual_F-080.md`); D6 retirada.
 
 ## 0. Glosario
 
 - **Por %** / **por obra**: los dos repartos de F-069 (`reparto: pct | obra`
   en `sync.vinculados.importes`). Tras F-080, ningún tipo es por obra.
 - **Resto por obra**: lo que una subfila (`asignacion_vinculado`) guarda en
-  `cantidad`, `copiado` o `comentario` de un vinculado cuyo tipo es **por %**
-  (hoy, solo las cajas tecleadas por obra antes de F-080).
+  `cantidad`, `copiado` o `comentario` de un vinculado cuyo tipo es **por %**.
+  Medido en producción el 2026-11-25: ninguna caja por obra con importe y un
+  solo comentario suelto; invisible y sin efecto (el transfer usa el del mes).
 - **Caja del mes**: la fila de `importe_vinculado` (periodo × vinculado).
 
 ## 1. Configuración y lo que se ve (api)
@@ -59,55 +62,27 @@ desde F-069 (design §2). Decisiones D1-D7 abiertas (design §13).
   si el comentario del mes difiere y se dan las condiciones de D20. Lo
   prueban los tests de F-069 R26, que no cambian. (capa: unit)
 
-## 3. Lo ya tecleado por obra (api, al arrancar)
+## 3. Copiar el mes (api)
 
-- **R11.** `[D2]` CUANDO arranca la api (tras poner al día el esquema), el
-  sistema debe recorrer los periodos **ABIERTOS** y, por trabajador y
-  vinculado de tipo por % con **restos por obra** en sus subfilas, pasarlos a
-  la caja del mes: cantidad = suma de las no nulas (nula si no hay ninguna),
-  `copiado = true` si hay cantidad (`[D6]`, «sin revisar»: no se registra
-  hasta teclearla o pulsar «Revisado»), comentario = los distintos no vacíos
-  en el orden de las líneas, unidos por « · » y cortados a 200; y dejar los
-  restos vacíos. (capa: unit)
-- **R12.** Cada trabajador cambiado debe dejar **un** evento `IMPORTES` (antes
-  y después, usuario `arranque F-080`), deshacible. (capa: unit)
-- **R13.** SI ese vinculado ya tiene caja del mes (fila en
-  `importe_vinculado`), ENTONCES esa fila no se toca y solo se vacían los
-  restos. (capa: unit)
-- **R14.** `[D3]` SI alguna subfila de ese vinculado en ese periodo está
-  `registrado`, ENTONCES no se cambia nada de ese vinculado en ese periodo y
-  se avisa en el log (periodo, trabajador, vinculado). (capa: unit)
-- **R15.** SI la suma pasa del tope de `eur` (999.999,99, F-069 R5), ENTONCES
-  no se cambia nada de ese vinculado y se avisa en el log. (capa: unit)
-- **R16.** Los periodos **CERRADOS** no se tocan. Una segunda pasada no cambia
-  nada ni deja eventos (idempotente). (capa: unit)
-- **R17.** SI la pasada falla, ENTONCES se deshace entera, se registra en el
-  log como error y la api **arranca igual** (los restos no se registran: el
-  transfer usa la caja del mes). (capa: unit)
-- **R18.** Al terminar, el sistema debe dejar en el log **una** línea `INFO`
-  con el resumen: `F-080: N vinculados pasados al mes en P periodos; S
-  saltados` (aunque N sea 0), para comprobarla en Log Analytics. (capa: unit)
-
-## 4. Copiar el mes (api)
-
-- **R19.** CUANDO se copia el mes anterior (periodo o trabajador), las
+- **R11.** CUANDO se copia el mes anterior (periodo o trabajador), las
   subfilas de un tipo **por %** deben llegar sin `cantidad`, `copiado` ni
-  `comentario` (los restos de un mes cerrado no se propagan); las de un tipo
+  `comentario` (un resto por obra no se propaga al mes nuevo); las de un tipo
   por obra y las de vinculados que no son de cantidad, como hoy. Sin tipos
   configurados, como hoy. (capa: unit)
 
-## 5. Documentación, despliegue y verificación
+## 4. Documentación, despliegue y verificación
 
-- **R20.** `#regla-vinculado` («Cantidad y comentario») debe decir caja `€`,
-  `pct`; el reparto `obra`, sin tipo hoy; la pasada de R11-R18; y la cita de
-  la decisión. El comentario de `config.yaml`, igual. (capa: unit)
-- **R21.** Despliegue: **solo la api**. Sin «Sincronizar Sigrid» (el reparto
-  sale de la config, no del sync). Tras desplegar, la línea de R18 en Log
-  Analytics y recargar la página en el navegador. (MANUAL)
-- **R22.** MANUAL M1-M4 (design §10; tasks). **R23.** `azure-apps/dedicacion.md`
-  al día (design §12).
+- **R12.** `#regla-vinculado` («Cantidad y comentario») debe decir caja `€`,
+  `pct`; el reparto `obra`, sin tipo hoy; que los restos por obra no se pasan
+  al mes (D2) ni se copian (R11); y la cita de la decisión. El comentario de
+  `config.yaml`, igual. (capa: unit)
+- **R13.** Despliegue: **solo la api**. Sin «Sincronizar Sigrid» (el reparto
+  sale de la config, no del sync). Tras desplegar, recargar la página en el
+  navegador. (MANUAL)
+- **R14.** MANUAL M1, M3 y M4 (design §10; tasks). **R15.**
+  `azure-apps/dedicacion.md` al día (design §12).
 
-## 6. Tests anteriores que cambian (lista CERRADA)
+## 5. Tests anteriores que cambian (lista CERRADA)
 
 Solo dos, porque leen la config versionada; los demás de F-069 usan sus
 propios tipos (`CAJA` por obra) y siguen igual:
