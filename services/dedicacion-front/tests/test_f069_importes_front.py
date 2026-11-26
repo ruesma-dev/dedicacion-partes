@@ -77,7 +77,8 @@ def test_f069_r11_cargar_edicion_hace_una_casilla_por_pct_y_por_caja():
 
 
 def test_f069_r11_chip_con_comentario_marca_y_revisado():
-    r = _editor(("chipImporte",), """
+    r = _editor(("chipImporte", "esExpresion", "evaluarExpresion", "redondear2",
+                 "textoNumero", "confirmarExpresion"), """
       var llamadas = [];
       function programarGuardado() { llamadas.push("programar"); }
       const c = { vinculado_ide: 30, obra_ide: 1, etiqueta: "Caja · 0001", unidad: "eur",
@@ -198,7 +199,9 @@ FILA_COPIADA = """
   state.importesEdicion = importesDeFila(t);
   function programarGuardado() { state.guardadoPendiente = true; }
 """
-GUARDAR_CHIP = GUARDAR + ("importesDeFila", "etiquetaObra", "chipImporte")
+GUARDAR_CHIP = GUARDAR + ("importesDeFila", "etiquetaObra", "chipImporte",
+                          "esExpresion", "evaluarExpresion", "redondear2",
+                          "textoNumero", "confirmarExpresion")
 
 
 def test_f069_r12_d18_dos_copiadas_revisado_en_una_solo_manda_esa():
@@ -237,7 +240,9 @@ def test_f069_r12_d18_solo_el_comentario_manda_esa_sin_revisado():
 
 def test_f069_r12_d18_teclear_la_misma_cantidad_no_quita_la_marca():
     r = _editor(("importesDeFila", "etiquetaObra", "cantidadTecleada",
-                 "elementoImporte", "firmaImporte", "chipImporte"), FILA_COPIADA + """
+                 "elementoImporte", "firmaImporte", "chipImporte", "esExpresion",
+                 "evaluarExpresion", "redondear2", "textoNumero",
+                 "confirmarExpresion"), FILA_COPIADA + """
       const km = state.importesEdicion[0];
       const chip = chipImporte(km);
       const cant = chip.children.find((x) => x.className === "importe-cantidad");

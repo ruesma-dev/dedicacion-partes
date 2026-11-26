@@ -471,6 +471,8 @@ tr.fila-editor > td {
 .chip-inc .inc-rotulo { font-size: 0.78rem; color: var(--steel-300); }
 /* F-069 (R11, R14): cantidades y comentarios de los vinculados. */
 .chip-importe .importe-cantidad { width: 5.5rem; text-align: right; }
+/* F-081: una operación a medias, en cursiva: aún no cuenta (se evalúa al salir). */
+.pct-input.expresion, .importe-cantidad.expresion { font-style: italic; }
 .chip-importe .importe-unidad { font-size: 0.78rem; color: var(--steel-300); }
 .chip-importe .importe-comentario, .chip-edit .linea-comentario { width: 10rem; }
 .chip-importe.copiado { border-style: dashed; }

@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **78 features**, 32 abiertas y 46 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 9 en To do, 23 en Backlog y 46 en Done.
+Resumen: **78 features**, 31 abiertas y 47 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 8 en To do, 23 en Backlog y 47 en Done.
 
 ## Review
 
@@ -25,7 +25,6 @@ _Ninguna feature con la spec lista._
 
 | # | Feature | Prioridad | Rigor | Rama |
 |---|---|---|---|---|
-| F-081 | Operaciones matemáticas en las celdas numéricas del cuadrante | 1 | estandar | `feature/F-081-operaciones-en-celdas` |
 | F-071 | Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid | 4 | critico | `feature/F-071-trabajador-mes-parcial` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 5 | estandar | `feature/F-046-permiso-cerrar-periodo` |
 | F-077 | Km, viajes y gastos de obra en euros: un total por persona que se reparte por el % de cada obra | 6 | critico | `feature/F-077-importes-en-euros-por-persona` |
@@ -68,6 +67,7 @@ _Ninguna feature con la spec lista._
 | # | Feature | Cierre | OK humano | Prioridad | Rigor |
 |---|---|---|---|---|---|
 | F-080 | Caja de obra: una por trabajador y repartida con su %, como los km | 2026-11-26 | 2026-11-26 | 1 | critico |
+| F-081 | Operaciones matemáticas en las celdas numéricas del cuadrante | 2026-11-26 | 2026-11-26 | 1 | estandar |
 | F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | 2026-11-24 | 2026-11-24 | 1 | critico |
 | F-076 | Excel de exportación: la pestaña Obras solo con obras y la de Postventa solo con postventa (fuera las líneas «RESTO …») | 2026-11-24 | 2026-11-24 | 3 | estandar |
 | F-069 | Importe mensual de caja de obra y km: casilla para meter la cantidad que luego se reparte por porcentaje entre las obras | 2026-11-20 | 2026-11-20 | 1 | critico |
@@ -115,12 +115,6 @@ _Ninguna feature con la spec lista._
 | F-030 | Incidencias en el cuadrante: texto en lugar del % con desplegable de las de partes (y dedicación por días) | sin fecha | sin anotar | 14 | critico |
 
 ## Detalle
-
-### F-081 · Operaciones matemáticas en las celdas numéricas del cuadrante
-
-estado **to do (comprometida)** · prioridad 1 · rigor `estandar` · SDD sí · rama `feature/F-081-operaciones-en-celdas`
-
-Petición del humano el 2026-11-26, en primer lugar: «añade feature en primer lugar para que las celdas numericas permitan operaciones matematicas». Hoy cada celda numérica del cuadrante solo acepta un número (`parsearPct` y `parsearDia` en `services/dedicacion-front/static/js/app.js`; las casillas de importe de km, viaje y caja). Lo pedido: poder teclear una operación (p. ej. `30+10` o `100/3`) y que la celda se quede con el resultado. Por decidir en la spec: qué celdas (el % de cada línea, los importes y cantidades de los vinculados, los días de incidencia); la sintaxis (con o sin `=` delante; `+ - * /`, paréntesis, coma decimal); cuándo se evalúa (al salir de la celda o con Intro) y qué se ve después (el resultado o la operación; si se guarda la operación); los errores (expresión no válida, división por cero, resultado negativo o fuera de rango) y el redondeo; y que se evalúe sin `eval`. Servicio: front (es interpretar lo tecleado, no decide qué se registra: la api recibe el número de siempre); a confirmar en la spec. Rigor `estandar` propuesto por el líder, a confirmar en la spec.
 
 ### F-071 · Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid
 
@@ -313,6 +307,12 @@ Petición de negocio transmitida por el humano el 2026-11-22 (punto 3): «la cab
 estado **terminada** · cerrada el 2026-11-26 · spec aprobada el 2026-11-25 · OK del humano el 2026-11-26 · prioridad 1 · rigor `critico` · SDD sí · rama `feature/F-080-caja-por-trabajador`
 
 Petición URGENTE del humano el 2026-11-25: «añade feature urgente para que la caja de obra se comporte como los km, una pro trabjador y se reparte siguiendo los % de reparto». Hoy (F-069 R18, D12) la caja (`CAJA` en `sync.vinculados.importes` de `services/dedicacion-api/config/config.yaml`) va con `reparto: obra`: se teclea un importe por cada obra del trabajador y se escribe entero en esa obra (`can` 1, `pre = tot` = importe). Lo pedido: `reparto: pct`, como `VIAJE` y `VP`: un importe del mes por trabajador que el transfer reparte con el % de cada línea (`can` del titular, `tot = round(can × pre, 2)`). Por decidir en la spec: qué pasa con las cajas ya tecleadas por obra en los periodos ABIERTOS (sumarlas en la del trabajador, descartarlas o pedir revisión) y con las ya registradas en Sigrid; si la postventa entra en el reparto; si basta con cambiar la config (api, transfer y front ya admiten `pct` en `eur`) o hay que tocar motivos y textos («falta la caja del mes … en la obra X»); los céntimos (que la suma de las obras cuadre con lo tecleado); y `azure-apps/dedicacion.md` (qué se escribe). Sustituye F-069 D12 para la caja. Servicios: api (config y datos guardados); transfer y front, a confirmar en la spec.
+
+### F-081 · Operaciones matemáticas en las celdas numéricas del cuadrante
+
+estado **terminada** · cerrada el 2026-11-26 · spec aprobada el 2026-11-26 · OK del humano el 2026-11-26 · prioridad 1 · rigor `estandar` · SDD sí · rama `feature/F-081-operaciones-en-celdas`
+
+Petición del humano el 2026-11-26, en primer lugar: «añade feature en primer lugar para que las celdas numericas permitan operaciones matematicas». Hoy cada celda numérica del cuadrante solo acepta un número (`parsearPct` y `parsearDia` en `services/dedicacion-front/static/js/app.js`; las casillas de importe de km, viaje y caja). Lo pedido: poder teclear una operación (p. ej. `30+10` o `100/3`) y que la celda se quede con el resultado. Por decidir en la spec: qué celdas (el % de cada línea, los importes y cantidades de los vinculados, los días de incidencia); la sintaxis (con o sin `=` delante; `+ - * /`, paréntesis, coma decimal); cuándo se evalúa (al salir de la celda o con Intro) y qué se ve después (el resultado o la operación; si se guarda la operación); los errores (expresión no válida, división por cero, resultado negativo o fuera de rango) y el redondeo; y que se evalúe sin `eval`. Servicio: front (es interpretar lo tecleado, no decide qué se registra: la api recibe el número de siempre); a confirmar en la spec. Rigor `estandar` propuesto por el líder, a confirmar en la spec.
 
 ### F-074 · La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra
 

@@ -1921,15 +1921,44 @@ function chipImporte(casilla) {
   cantidad.inputMode = "decimal";
   cantidad.value = casilla.cantidad;
   cantidad.placeholder = casilla.unidad === "km" ? "km" : "€";
+  cantidad.title = "Admite operaciones: 30+10, 100/3, (8+4)*2";   // F-081 (R21)
   // D18: la marca solo se va al teclear OTRA cantidad que la guardada (o con
   // «Revisado»); la misma, o solo el comentario, no la quitan (como la API).
-  cantidad.addEventListener("input", () => {
+  function aplicarCantidad() {
     casilla.cantidad = cantidad.value;
     const guardada = casilla.guardada ? JSON.parse(casilla.guardada).cantidad : null;
     casilla.copiado = !!casilla.copiadoGuardado && !casilla.revisado &&
       cantidadTecleada(cantidad.value) === guardada;
     pintarMarca();
     programarGuardado();
+  }
+  // F-081 (R12): una operación no cuenta hasta confirmarla: ni la cantidad,
+  // ni la marca, ni el guardado; se ve en cursiva.
+  cantidad.addEventListener("input", () => {
+    const operacion = esExpresion(cantidad.value);
+    cantidad.classList.toggle("expresion", operacion);
+    if (!operacion) aplicarCantidad();
+  });
+  // F-081 (R13, R14): salir o Enter (el foco no se mueve) confirman: el
+  // resultado sigue como si se hubiera tecleado (los topes, en la API); si no
+  // es válida, aviso y vuelve lo último válido, sin guardar.
+  const confirmar = () => {
+    cantidad.classList.remove("expresion");
+    if (!esExpresion(cantidad.value)) return;
+    const r = confirmarExpresion(cantidad.value, "cantidad");
+    if (!r.ok) {
+      toast(r.mensaje, true);
+      cantidad.value = casilla.cantidad;
+      return;
+    }
+    cantidad.value = textoNumero(r.valor);
+    aplicarCantidad();
+  };
+  cantidad.addEventListener("blur", confirmar);
+  cantidad.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter") return;
+    ev.preventDefault();
+    confirmar();
   });
   chip.appendChild(cantidad);
   const unidad = document.createElement("span");
@@ -2073,6 +2102,7 @@ function chipEditable(linea, idx, editor) {
   pct.className = "pct-input";
   pct.inputMode = "decimal";
   pct.value = linea.porcentaje ? String(linea.porcentaje).replace(".", ",") : "";
+  pct.title = "Admite operaciones: 30+10, 100/3, (8+4)*2";   // F-081 (R21)
 
   // F-030 (R8-R13): con alguna letra la celda busca una incidencia en vez de
   // un %; sin letras, lo de hoy (R1). `previo` es la celda antes de la
@@ -2146,8 +2176,35 @@ function chipEditable(linea, idx, editor) {
       desplegable.cerrar();
       desplegable = null;
     }
+    // F-081 (R7): una operación no cuenta hasta confirmarla (al salir): ni
+    // el % de la línea, ni el total, ni el guardado; se ve en cursiva.
+    const operacion = esExpresion(pct.value);
+    pct.classList.toggle("expresion", operacion);
+    if (operacion) return;
     previo = pct.value;
     linea.porcentaje = parsearPct(pct.value);
+    refrescarTotalVivo(editor);
+    programarGuardado();
+  });
+  // F-081 (R8-R10): al salir, la operación se evalúa. Con letras no llega
+  // aquí como operación: la rama de F-030 ya repuso la celda. Va ANTES que
+  // la de «en blanco», que ve después un número o un vacío.
+  pct.addEventListener("blur", (ev) => {
+    pct.classList.remove("expresion");
+    if (!esExpresion(pct.value) || /\p{L}/u.test(pct.value)) return;
+    const r = confirmarExpresion(pct.value, "pct");
+    if (!r.ok) {
+      // R9, R10: aviso, la celda vuelve al % de la línea y no se guarda; si
+      // vuelve vacía, tampoco la rellena la escucha de «en blanco».
+      toast(r.mensaje, true);
+      pct.value = linea.porcentaje ? textoNumero(linea.porcentaje) : "";
+      previo = pct.value;
+      if (pct.value === "") ev.stopImmediatePropagation();
+      return;
+    }
+    pct.value = textoNumero(r.valor);
+    previo = pct.value;
+    linea.porcentaje = r.valor;
     refrescarTotalVivo(editor);
     programarGuardado();
   });
@@ -2492,6 +2549,129 @@ function parsearPct(texto) {
   const n = parseFloat(String(texto).replace(",", "."));
   if (!isFinite(n) || n <= 0) return 0;
   return Math.min(Math.round(n * 100) / 100, 100);
+}
+
+// ------------------------------- operaciones en las celdas (F-081)
+// La celda de % y la casilla de cantidad admiten operaciones (`30+10`,
+// `=100/3`): se evalúan al confirmar y a la API solo llega el resultado. El
+// evaluador es propio, sin `eval` ni `Function` (D6): solo lee números,
+// `+ - * /`, paréntesis y signo.
+
+// F-081 (R6, D2): decide el camino de la celda; no valida. Un `-` primero es
+// el signo de un número llano (`-5`), no una operación.
+function esExpresion(texto) {
+  if (texto == null) return false;
+  const limpio = String(texto).replace(/\s+/g, "");
+  return limpio.startsWith("=") || /[+*/()]/.test(limpio) ||
+    limpio.indexOf("-", 1) > 0;
+}
+
+// F-081 (R1-R4): descenso recursivo sobre una lista de fichas (design §5).
+// Nunca lanza: lo mal formado sale como `{ok: false, motivo}`.
+function evaluarExpresion(texto) {
+  const noValida = { ok: false, motivo: "no válida" };
+  const larga = { ok: false, motivo: "demasiado larga" };
+  if (texto == null) return noValida;
+  const crudo = String(texto);
+  if (crudo.length > 100) return larga;          // R4: antes de leerlo
+  let s = crudo.trim();
+  if (s.startsWith("=")) s = s.slice(1);
+  s = s.replace(/\s+/g, "");
+  // Fichas: números (coma o punto, un solo separador), operadores y paréntesis.
+  const fichas = [];
+  let hondo = 0;
+  let i = 0;
+  while (i < s.length) {
+    const c = s[i];
+    if ("+-*/()".includes(c)) {
+      if (c === "(" && ++hondo > 20) return larga;
+      if (c === ")") hondo--;
+      fichas.push({ op: c });
+      i++;
+      continue;
+    }
+    const m = /^(\d+([.,]\d+)?|[.,]\d+)/.exec(s.slice(i));
+    if (!m) return noValida;                     // carácter no admitido
+    i += m[0].length;
+    if (i < s.length && /[\d.,]/.test(s[i])) return noValida;  // `1.234,5`
+    fichas.push({ num: Number(m[0].replace(",", ".")) });
+  }
+  const MAL = {};
+  const DIV0 = {};
+  let pos = 0;
+  const ve = (...ops) => pos < fichas.length && ops.includes(fichas[pos].op);
+  const factor = () => {
+    const f = fichas[pos++];
+    if (!f) throw MAL;
+    if (f.num !== undefined) return f.num;
+    if (f.op === "+") return factor();
+    if (f.op === "-") return -factor();
+    if (f.op === "(") {
+      const v = expr();
+      if (!ve(")")) throw MAL;
+      pos++;
+      return v;
+    }
+    throw MAL;
+  };
+  const term = () => {
+    let v = factor();
+    while (ve("*", "/")) {
+      const op = fichas[pos++].op;
+      const d = factor();
+      if (op === "/" && d === 0) throw DIV0;
+      v = op === "*" ? v * d : v / d;
+    }
+    return v;
+  };
+  const expr = () => {
+    let v = term();
+    while (ve("+", "-")) {
+      const op = fichas[pos++].op;
+      const d = term();
+      v = op === "+" ? v + d : v - d;
+    }
+    return v;
+  };
+  try {
+    const valor = expr();
+    if (pos !== fichas.length || !Number.isFinite(valor)) return noValida;
+    return { ok: true, valor };
+  } catch (e) {
+    return e === DIV0 ? { ok: false, motivo: "división por cero" } : noValida;
+  }
+}
+
+// F-081 (R15, D5): dos decimales, mitad hacia arriba sobre la escritura
+// decimal (desplazando el exponente en la cadena, no `n * 100`, que daría
+// 1,005 ⇒ 1) y el signo aparte.
+function redondear2(n) {
+  if (!Number.isFinite(n) || Math.abs(n) < 1e-6) return 0;
+  if (Math.abs(n) >= 1e15) return n;
+  const r = Number(Math.round(Number(Math.abs(n) + "e2")) + "e-2");
+  return r === 0 ? 0 : (n < 0 ? -r : r);
+}
+
+// F-081: el número con coma decimal, como el resto de la celda.
+function textoNumero(n) {
+  return String(n).replace(".", ",");
+}
+
+// F-081 (R8-R10, R13, R14): evalúa, redondea y, en el % (`rango` "pct"),
+// exige (0, 100] (D4); la cantidad no mira el rango, lo valida la API. Pura:
+// los `chip*` hacen el DOM con lo que devuelve.
+function confirmarExpresion(texto, rango) {
+  const r = evaluarExpresion(texto);
+  if (!r.ok) {
+    return { ok: false,
+             mensaje: `Operación no válida: «${String(texto).trim()}» (${r.motivo})` };
+  }
+  const valor = redondear2(r.valor);
+  if (rango === "pct" && (valor <= 0 || valor > 100)) {
+    return { ok: false, mensaje:
+      `La operación da ${textoNumero(valor)}: el % tiene que estar entre 0 y 100` };
+  }
+  return { ok: true, valor };
 }
 
 function totalEdicion() {

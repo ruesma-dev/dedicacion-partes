@@ -1328,11 +1328,14 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "todo",
+      "status": "done",
       "sdd": true,
       "rigor": "estandar",
       "priority": 1,
-      "branch": "feature/F-081-operaciones-en-celdas"
+      "branch": "feature/F-081-operaciones-en-celdas",
+      "spec_aprobada": "2026-11-26",
+      "fecha_cierre": "2026-11-26",
+      "ok_humano": "2026-11-26"
     }
   ]
 }
