@@ -29,9 +29,9 @@ transfer no cambian, y `azure-apps` tampoco (design §10).
 | T7 `chipImporte`, listas de `test_f069_importes_front` | `6a3235e` |
 | T8 regresión R16, R18, R19 (sin RED: fijan lo de hoy) | `972d16d` |
 | T9 `docs/ARCHITECTURE.md` + test R22 | `d2e240e` |
-| T10 suite del front + este informe | commit de T10 |
+| T10 suite del front + este informe | `186687f` |
 | T11 MANUAL M1 | **sin marcar, del humano** |
-| T12 `bash harness/init.sh` | ver «Salida de `init.sh`» |
+| T12 imports del test + `bash harness/init.sh` en verde | `11a2139` + este commit |
 
 ## Ficheros
 
@@ -137,7 +137,13 @@ con `teclas` real y el editor abierto. R22: `r22_*`.
 
 ## Salida de `init.sh`
 
-PENDIENTE_INIT
+`bash harness/init.sh` (final, tras `11a2139`): **ENTORNO LISTO**, exit 0, sin `[KO]`.
+- raíz: `2319 passed, 47 skipped in 1171.36s`; front: `708 passed in 129.74s` (sin caché);
+  api y transfer en verde (caché: sin cambios).
+- ruff: 439 avisos, igual que antes (ninguno nuevo; `test_f081_operaciones.py`: «All checks passed!»).
+- `[OK] PUERTA COBERTURA: N/A (F-081 no cambia líneas Python de producción frente a dev)`
+- `[OK] PUERTA CARRIL: N/A (F-081 es de nivel estandar: no declara límites)`
+- `[OK] PUERTA TAMAÑO: … impl 161/220` · `[OK] CAPA E2E: N/A (ningún servicio declara el bloque e2e)`
 
 ## MANUAL pendiente (T11, humano)
 
@@ -155,7 +161,7 @@ Resultado en `progress/manual_F-081.md`. Para cerrar faltan además la review y 
 |---|---|
 | Tests de F-081 | 94 passed (`test_f081_operaciones.py`) |
 | Suite del front (`services/dedicacion-front`, su `.venv`) | **708 passed**, 0 failed, en 172,34 s |
-| Suite de la raíz (dentro de `init.sh`) | PENDIENTE_RAIZ |
-| Cobertura de las líneas cambiadas | PENDIENTE_COB |
+| Suite de la raíz (dentro de `init.sh`) | 2319 passed, 47 skipped, en 1171,36 s |
+| Cobertura de las líneas cambiadas | N/A según `init.sh` («no cambia líneas Python de producción»): el cambio es JS y no hay herramienta de cobertura para JS en este arnés. Lo compensa que cada rama nueva (operación válida, fuera de rango, no válida, vacía tras el fallo, con letras, Enter y blur) tiene su test en node sobre el código real. |
 | Mutación | No se lanza aquí: va en la pasada de campaña, tras el APPROVED, y en `estandar` es informativa. Además el código cambiado es JS, y la campaña (`harness.mutacion`) muta Python, así que se espera N/A. |
 | Capa e2e | Ningún requisito lleva `(capa: e2e)`, todos son `unit`. Ver la línea `CAPA E2E` de `init.sh`. |
