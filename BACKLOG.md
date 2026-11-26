@@ -3,11 +3,13 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **78 features**, 32 abiertas y 46 terminadas. Por columna: 0 en Review, 0 en Blocked, 1 en In progress, 0 en Spec aprobada, 8 en To do, 23 en Backlog y 46 en Done.
+Resumen: **78 features**, 32 abiertas y 46 terminadas. Por columna: 1 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 8 en To do, 23 en Backlog y 46 en Done.
 
 ## Review
 
-_Nada esperando revisión._
+| # | Feature | La tiene | Prioridad | Rigor | Rama |
+|---|---|---|---|---|---|
+| F-081 | Operaciones matemáticas en las celdas numéricas del cuadrante | reviewer | 1 | estandar | `feature/F-081-operaciones-en-celdas` |
 
 ## Blocked
 
@@ -15,9 +17,7 @@ _Ninguna feature bloqueada._
 
 ## In progress
 
-| # | Feature | La tiene | Prioridad | Rigor | Rama |
-|---|---|---|---|---|---|
-| F-081 | Operaciones matemáticas en las celdas numéricas del cuadrante | implementer | 1 | estandar | `feature/F-081-operaciones-en-celdas` |
+_Ninguna feature en implementación._
 
 ## Spec aprobada
 
@@ -119,7 +119,7 @@ _Ninguna feature con la spec lista._
 
 ### F-081 · Operaciones matemáticas en las celdas numéricas del cuadrante
 
-estado **en curso** · spec aprobada el 2026-11-26 · prioridad 1 · rigor `estandar` · SDD sí · rama `feature/F-081-operaciones-en-celdas`
+estado **en QA / revisión** · spec aprobada el 2026-11-26 · prioridad 1 · rigor `estandar` · SDD sí · rama `feature/F-081-operaciones-en-celdas`
 
 Petición del humano el 2026-11-26, en primer lugar: «añade feature en primer lugar para que las celdas numericas permitan operaciones matematicas». Hoy cada celda numérica del cuadrante solo acepta un número (`parsearPct` y `parsearDia` en `services/dedicacion-front/static/js/app.js`; las casillas de importe de km, viaje y caja). Lo pedido: poder teclear una operación (p. ej. `30+10` o `100/3`) y que la celda se quede con el resultado. Por decidir en la spec: qué celdas (el % de cada línea, los importes y cantidades de los vinculados, los días de incidencia); la sintaxis (con o sin `=` delante; `+ - * /`, paréntesis, coma decimal); cuándo se evalúa (al salir de la celda o con Intro) y qué se ve después (el resultado o la operación; si se guarda la operación); los errores (expresión no válida, división por cero, resultado negativo o fuera de rango) y el redondeo; y que se evalúe sin `eval`. Servicio: front (es interpretar lo tecleado, no decide qué se registra: la api recibe el número de siempre); a confirmar en la spec. Rigor `estandar` propuesto por el líder, a confirmar en la spec.
 

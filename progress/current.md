@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-081 EN `in_progress`** (prioridad 1; operaciones matemáticas en las celdas numéricas del cuadrante): spec aprobada por el humano el 2026-11-26 («ok»; D1-D9 la (a), rigor `estandar`). Implementer lanzado en la rama `feature/F-081-operaciones-en-celdas`; entrega en `progress/impl_F-081.md`. Siguiente: review contra `CHECKPOINTS.md`. Pendiente al final: M1 en el navegador (T11) y desplegar solo el front.
+**F-081 EN `in_review`** (prioridad 1; operaciones matemáticas en las celdas numéricas del cuadrante): spec aprobada por el humano el 2026-11-26 («ok»; D1-D9 la (a), rigor `estandar`). Implementer entregó `progress/impl_F-081.md` (`4c232c1`, T1-T10 y T12; `init.sh` en verde; dos desviaciones de design §5 a favor de la letra de R4 y R9/R10, para el reviewer). Reviewer principal lanzado; luego pasada de campaña (mutación informativa en `estandar`). Pendiente al final: M1 en el navegador (T11, humano) y desplegar solo el front.
 
 - *Implementer F-081 (2026-11-26):* T1-T10 y T12 hechas, T11 (M1) MANUAL del humano. Dos lecturas de la spec, justificadas en `progress/impl_F-081.md` § «Desviaciones»: (1) el tope de 100 caracteres de R4 se mide sobre el texto tal cual llega (R4 literal y «sin recorrerla»), no tras quitar espacios como sugiere design §5; (2) si una operación del % falla y la línea estaba a 0, la celda vuelve vacía y el «en blanco rellena» de F-030 no actúa (R9/R10 «sin guardado»).
 
