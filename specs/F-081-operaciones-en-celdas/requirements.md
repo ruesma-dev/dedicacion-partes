@@ -5,8 +5,8 @@ Rigor propuesto **`estandar`** (design, cabecera y D8). Petición del humano del
 permitan operaciones matematicas» (literal). Toca **solo el front**
 (`services/dedicacion-front/static/js/app.js`): la api recibe el mismo número
 de siempre (design §1). Los requisitos marcados `[Dn]` siguen la opción
-**recomendada** de la tabla de decisiones (design §12); si el humano elige otra,
-el líder reescribe el requisito antes de aprobar la spec.
+(a) de la tabla de decisiones (design §12), **aprobadas todas por el humano el
+2026-11-26** («ok»).
 
 ## 0. Glosario
 

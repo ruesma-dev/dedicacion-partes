@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-081 EN `spec_ready`** (prioridad 1; operaciones matemáticas en las celdas numéricas del cuadrante): spec del spec-author del 2026-11-26 en `specs/F-081-operaciones-en-celdas/` (`1a72c25`, rama `feature/F-081-operaciones-en-celdas`): solo el front, evaluador propio sin `eval`, el % y las casillas de cantidad (km y €), D1-D9 con (a) recomendada. **Esperando el OK del humano al resumen de la spec (PARADA 1).**
+**F-081 EN `in_progress`** (prioridad 1; operaciones matemáticas en las celdas numéricas del cuadrante): spec aprobada por el humano el 2026-11-26 («ok»; D1-D9 la (a), rigor `estandar`). Implementer lanzado en la rama `feature/F-081-operaciones-en-celdas`; entrega en `progress/impl_F-081.md`. Siguiente: review contra `CHECKPOINTS.md`. Pendiente al final: M1 en el navegador (T11) y desplegar solo el front.
 
 **F-080 CERRADA y DESPLEGADA el 2026-11-26** (la caja de obra, una por trabajador y repartida por %). Solo la api: `r20261126-1234` (`ca-dedicacion-api--r20261126123358`, `Healthy`, 100 % del tráfico, comprobado por el líder). M1 dio 4 cajas por obra con importe de un trabajador (PARADA; el humano desplegó igual); M4 cumple (`progress/manual_F-080.md`). `azure-apps/dedicacion.md` `38e57a3` y `07de20d` (pendiente de push del humano). **Pendiente:** teclear 400 € en la caja de ese trabajador, M3 en local y el aviso a `partes` (en «⚠»). **Siguiente feature: F-081** (prioridad 1).
 
