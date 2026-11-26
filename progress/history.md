@@ -3295,3 +3295,11 @@ Rama `feature/F-080-caja-por-trabajador` · `sdd: true` · rigor `critico` · OK
 - Solo la api, lanzado por el humano: `r20261126-1234` (`ca-dedicacion-api--r20261126123358`), `Healthy` y 100 % del tráfico. Sin «Sincronizar Sigrid».
 - M1 justo antes: 4 cajas por obra con importe en 2026/11, de un trabajador, 400 € ya repartidos por % (PARADA; el humano desplegó). M4 después: 0 cajas por obra, una casilla de caja por trabajador (`progress/manual_F-080.md`).
 - Quedan: 400 € en la caja de ese trabajador, M3 en local y el aviso a `partes`. `azure-apps` `07de20d` con el tag.
+
+## 2026-11-26 · F-081 · Operaciones matemáticas en las celdas numéricas del cuadrante
+
+Rama `feature/F-081-operaciones-en-celdas` · `sdd: true` · rigor `estandar` · spec aprobada y OK del humano el 2026-11-26.
+
+- **Qué cambió.** La celda de % y las casillas de cantidad (km y €) admiten operaciones (`=` opcional, `+ - * /`, paréntesis, coma o punto); se evalúan al confirmar con un evaluador propio de `app.js` (sin `eval`), la celda queda con el resultado a dos decimales y a la api solo llega el número. Errores y % fuera de (0, 100] ⇒ aviso y la celda vuelve a lo último válido. Solo el front; api, transfer y `azure-apps` sin tocar.
+- **Verificado.** 94 tests nuevos; front 708, raíz 2319 + 47 skipped, api 1713, transfer 2021; `init.sh` sin caché en verde. Cobertura y mutación N/A (JS). Review principal APPROVED (`0a73b99`), con fuzz de 3.000 expresiones sin discrepancias. Dos desviaciones de design §5 a favor de la letra de R4 y R9/R10, aceptadas.
+- **Despliegue.** El primero (`r20261126-1744`) salió de `dev` antes del merge y no la lleva (error del líder, que dio el comando antes de unir). Pendiente: redesplegar el front y M1 (T11).

@@ -1,7 +1,7 @@
 <!-- progress/current.md -->
 # Trabajo en curso
 
-**F-081 EN `human_review`** (prioridad 1; operaciones matemáticas en las celdas numéricas del cuadrante): spec aprobada por el humano el 2026-11-26 («ok»; D1-D9 la (a), rigor `estandar`). Review principal APPROVED (`0a73b99`, `progress/review_F-081.md`, O1-O5 informativas); pasada de campaña: mutación N/A (`809a237`, alcance vacío, solo JS). Sin pasada de evidencias (e2e N/A, mutación informativa). **Esperando el OK del humano al resumen final (PARADA 2).** Después: merge a `dev`, desplegar solo el front (humano) y M1 en el navegador (T11).
+**F-081 CERRADA el 2026-11-26, PENDIENTE DE REDESPLEGAR EL FRONT** (OK del humano: desplegó tras la PARADA 2, «desplegado, pruebalo»). Review principal APPROVED; mutación N/A (solo JS). Unida a `dev`; resumen en `progress/history.md`. **Ojo:** el primer despliegue del front (`r20261126-1744`, revisión `ca-dedicacion-front--r20261126174406`) salió de `dev` ANTES del merge y no lleva F-081 (error del líder: dio el comando de despliegue antes de unirla). Siguiente: el humano redespliega el front desde `dev`; luego M1 (T11) en el navegador.
 
 **F-080 CERRADA y DESPLEGADA el 2026-11-26** (la caja de obra, una por trabajador y repartida por %). Solo la api: `r20261126-1234` (`ca-dedicacion-api--r20261126123358`, `Healthy`, 100 % del tráfico, comprobado por el líder). M1 dio 4 cajas por obra con importe de un trabajador (PARADA; el humano desplegó igual); M4 cumple (`progress/manual_F-080.md`). `azure-apps/dedicacion.md` `38e57a3` y `07de20d` (pendiente de push del humano). **Pendiente:** teclear 400 € en la caja de ese trabajador, M3 en local y el aviso a `partes` (en «⚠»). **Siguiente feature: F-081** (prioridad 1).
 
