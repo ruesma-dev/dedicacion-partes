@@ -120,6 +120,17 @@ interacción vive en `static/js/app.js`: lista de trabajadores, editor con
 autocompletado de obra, autoguardado con debounce, atajos de teclado y chips
 de filtro por estado. **No decide nada de negocio.**
 
+**Operaciones en las celdas (F-081).** La celda de % de cada línea y las
+casillas de cantidad de los vinculados (km y €) admiten operaciones
+(`30+10`, `=100/3`, `(8+4)*2`: `+ - * /`, paréntesis, signo y coma o punto
+decimal). Se evalúan al confirmar (salir de la celda, Tab o Enter) con un
+evaluador propio de `app.js` (`evaluarExpresion`, descenso recursivo, sin
+`eval` ni `Function`, tope de 100 caracteres y 20 paréntesis); la celda se
+queda con el resultado redondeado a dos decimales y **a la API solo llega el
+resultado**, el número de siempre: la operación no se guarda. En el % un
+resultado fuera de (0, 100] se avisa y no se aplica; las cantidades las sigue
+validando la API. Los días de las incidencias no admiten operaciones.
+
 ### `dedicacion-transfer` — la única pluma
 
 Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:

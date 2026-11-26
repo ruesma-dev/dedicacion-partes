@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 
 import pytest
 
@@ -705,3 +706,16 @@ def test_f081_r19_pegar_sigue_el_camino_de_teclear():
     assert '"paste"' not in JS and "'paste'" not in JS
     assert 'cantidad.addEventListener("input"' in _funcion("chipImporte")
     assert 'pct.addEventListener("input"' in _funcion("chipEditable")
+
+
+# ================================ R22 ==================================== #
+def test_f081_r22_architecture_lo_explica_en_la_seccion_del_front():
+    doc = (Path(__file__).resolve().parents[3] / "docs" / "ARCHITECTURE.md") \
+        .read_text(encoding="utf-8")
+    seccion = doc.split("### `dedicacion-front` — captura, nada más")[1] \
+        .split("\n### ")[0]
+    plano = " ".join(seccion.split())
+    assert "F-081" in plano
+    assert "celda de % de cada línea" in plano and "km y €" in plano
+    assert "evaluador propio" in plano and "sin `eval` ni `Function`" in plano
+    assert "a la API solo llega el resultado" in plano
