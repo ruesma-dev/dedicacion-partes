@@ -2,7 +2,7 @@
 
 Solo el front cambia (design §1); api y transfer, nada. Tests sin red ni BBDD, con el arnés node de los tests del front (sin `node` se saltan con motivo y el reviewer los exige `passed`). Ningún test existente cambia una aserción: solo se añaden nombres de funciones a sus listas cerradas (design §4); si alguno necesita más ⇒ **PARA** y `blocked`. Fase RED anotada en `progress/impl_F-081.md` para R1-R4, R7-R14 y R15.
 
-- [ ] T1: tests del evaluador puro (R1-R4, R6, R15) en `services/dedicacion-front/tests/test_f081_operaciones.py`, en rojo (RED: las funciones no existen)  |  Verificación: `pytest services/dedicacion-front/tests/test_f081_operaciones.py -k "r1 or r2 or r3 or r4 or r6 or r15"` falla antes de T2
+- [x] T1: tests del evaluador puro (R1-R4, R6, R15) en `services/dedicacion-front/tests/test_f081_operaciones.py`, en rojo (RED: las funciones no existen)  |  Verificación: `pytest services/dedicacion-front/tests/test_f081_operaciones.py -k "r1 or r2 or r3 or r4 or r6 or r15"` falla antes de T2
 - [ ] T2: `esExpresion`, `evaluarExpresion`, `redondear2`, `textoNumero` y `confirmarExpresion` en `app.js`, junto a `parsearPct` (design §5)  |  Verificación: el mismo `pytest` de T1 en verde
 - [ ] T3: test estático de R5 (ni `eval(`, ni `new Function`, ni `Function(`, ni `setTimeout`/`setInterval` con cadena en `app.js`)  |  Verificación: `pytest services/dedicacion-front/tests/test_f081_operaciones.py -k r5`
 - [ ] T4: tests de la celda de % (R7-R11, R17, R20 para `cuerpoLineas`, R21 para su `title`), en rojo  |  Verificación: `pytest services/dedicacion-front/tests/test_f081_operaciones.py -k "r7 or r8 or r9 or r10 or r11 or r17"` falla antes de T5
