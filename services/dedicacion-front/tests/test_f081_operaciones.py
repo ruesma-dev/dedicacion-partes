@@ -476,3 +476,135 @@ def test_f081_r17_con_operadores_y_letras_es_la_busqueda_de_f030():
 def test_f081_r21_la_celda_de_pct_dice_que_admite_operaciones():
     r = _celda(DOS_LINEAS + "resultado = pct.title;")
     assert r == "Admite operaciones: 30+10, 100/3, (8+4)*2"
+
+
+# ===================== la casilla de cantidad (T6) ======================= #
+from tests.test_f030_tabla_incidencias import _editor  # noqa: E402
+from tests.test_f069_importes_front import FILA_COPIADA  # noqa: E402
+
+#: La casilla REAL (`chipImporte` y lo que usa) más el evaluador.
+CASILLA = ("importesDeFila", "etiquetaObra", "cantidadTecleada", "elementoImporte",
+           "firmaImporte", "cuerpoImportes", "chipImporte", *EVALUADOR)
+
+#: El km copiado del mes anterior (cantidad 100) de F-069, con un
+#: `programarGuardado` que cuenta y el `toast` que apunta si es de error.
+KM = FILA_COPIADA + DOM_F081 + """
+  function programarGuardado() { llamadas.push("programarGuardado"); }
+  function guardados() { return llamadas.filter((x) => x === "programarGuardado").length; }
+  const km = state.importesEdicion[0];
+  const chip = chipImporte(km);
+  const cant = chip.children.find((x) => x.classList.contains("importe-cantidad"));
+  const marca = () => chip.children.some((x) => x.className === "marca-copiado");
+  function teclearCant(v) { cant.value = v; return cant.fire("input"); }
+"""
+
+
+# ================================ R12 ==================================== #
+def test_f081_r12_mientras_hay_expresion_no_cambia_cantidad_marca_ni_guarda():
+    r = _editor(CASILLA, KM + """
+      const pasos = [];
+      for (const v of ["1", "12", "120*", "120*2", "=5"]) {
+        teclearCant(v);
+        pasos.push([v, km.cantidad, km.copiado, marca(), cant.classList.contains("expresion")]);
+      }
+      resultado = { pasos, guardados: guardados(), cuerpo: cuerpoImportes(state.importesEdicion) };
+    """)
+    assert r["pasos"] == [["1", "1", False, False, False],
+                          ["12", "12", False, False, False],
+                          ["120*", "12", False, False, True],
+                          ["120*2", "12", False, False, True],
+                          ["=5", "12", False, False, True]]
+    assert r["guardados"] == 2
+    # R20: lo que viajaría es el último número, nunca el texto.
+    assert r["cuerpo"] == [{"vinculado_ide": 20, "cantidad": 12, "comentario": None}]
+
+
+def test_f081_r12_la_marca_de_copiado_no_se_va_con_una_expresion():
+    r = _editor(CASILLA, KM + """
+      teclearCant("50+50");
+      resultado = { cantidad: km.cantidad, copiado: km.copiado, marca: marca(),
+                    guardados: guardados(), cuerpo: cuerpoImportes(state.importesEdicion) };
+    """)
+    assert r == {"cantidad": "100", "copiado": True, "marca": True, "guardados": 0,
+                 "cuerpo": []}
+
+
+# ================================ R13 ==================================== #
+def test_f081_r13_al_salir_pone_el_resultado_y_sigue_como_tecleado():
+    r = _editor(CASILLA, KM + """
+      teclearCant("120*2");
+      cant.blur();
+      resultado = { valor: cant.value, cantidad: km.cantidad, copiado: km.copiado,
+                    marca: marca(), clase: cant.classList.contains("expresion"),
+                    guardados: guardados(), avisos: avisos(),
+                    cuerpo: cuerpoImportes(state.importesEdicion) };
+    """)
+    assert r["valor"] == "240" and r["cantidad"] == "240"
+    assert r["copiado"] is False and r["marca"] is False and r["clase"] is False
+    assert r["guardados"] == 1 and r["avisos"] == []
+    assert r["cuerpo"] == [{"vinculado_ide": 20, "cantidad": 240, "comentario": None}]
+
+
+def test_f081_r13_enter_confirma_sin_mover_el_foco_y_la_misma_cantidad_deja_la_marca():
+    r = _editor(CASILLA, KM + """
+      cant.focus();
+      teclearCant("50+50");
+      const ev = cant.fire("keydown", "Enter");
+      const a = { valor: cant.value, cantidad: km.cantidad, copiado: km.copiado,
+                  marca: marca(), previsto: ev.previsto, foco: foco === cant,
+                  guardados: guardados() };
+      cant.blur();                        // ya es un número: nada más
+      resultado = { a, guardados: guardados(), cuerpo: cuerpoImportes(state.importesEdicion) };
+    """)
+    # D18: la misma cantidad que la guardada no quita la marca.
+    assert r["a"] == {"valor": "100", "cantidad": "100", "copiado": True,
+                      "marca": True, "previsto": True, "foco": True, "guardados": 1}
+    assert r["guardados"] == 1
+    assert r["cuerpo"] == []
+
+
+def test_f081_r13_redondeo_y_negativo_van_como_tecleados():
+    """El front no repite los topes de la API: un negativo va tal cual y la
+    API lo rechaza (422, el aviso de siempre)."""
+    r = _editor(CASILLA, KM + """
+      const casos = [];
+      for (const v of ["100/3", "10-20", "0,1+0,2"]) {
+        teclearCant(v);
+        cant.fire("keydown", "Enter");
+        casos.push([cant.value, km.cantidad, elementoImporte(km).cantidad]);
+      }
+      resultado = { casos, avisos: avisos(), guardados: guardados() };
+    """)
+    assert r["casos"] == [["33,33", "33,33", 33.33], ["-10", "-10", -10],
+                          ["0,3", "0,3", 0.3]]
+    assert r["avisos"] == [] and r["guardados"] == 3
+
+
+# ================================ R14 ==================================== #
+def test_f081_r14_no_valida_avisa_repone_lo_ultimo_valido_y_no_guarda():
+    r = _editor(CASILLA, KM + """
+      teclearCant("150");
+      const casos = [];
+      for (const v of ["150+", "5/0", "(2"]) {
+        teclearCant(v);
+        cant.blur();
+        casos.push([cant.value, km.cantidad, cant.classList.contains("expresion")]);
+      }
+      teclearCant("3*/2");
+      cant.fire("keydown", "Enter");
+      casos.push([cant.value, km.cantidad]);
+      resultado = { casos, avisos: avisos(), guardados: guardados() };
+    """)
+    assert r["casos"] == [["150", "150", False]] * 3 + [["150", "150"]]
+    assert r["avisos"] == [
+        "toast:Operación no válida: «150+» (no válida)|error",
+        "toast:Operación no válida: «5/0» (división por cero)|error",
+        "toast:Operación no válida: «(2» (no válida)|error",
+        "toast:Operación no válida: «3*/2» (no válida)|error"]
+    assert r["guardados"] == 1               # solo el «150» tecleado
+
+
+# ================================ R21 ==================================== #
+def test_f081_r21_la_casilla_de_cantidad_dice_que_admite_operaciones():
+    r = _editor(CASILLA, KM + "resultado = cant.title;")
+    assert r == "Admite operaciones: 30+10, 100/3, (8+4)*2"
