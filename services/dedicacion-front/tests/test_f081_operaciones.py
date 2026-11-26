@@ -608,3 +608,100 @@ def test_f081_r14_no_valida_avisa_repone_lo_ultimo_valido_y_no_guarda():
 def test_f081_r21_la_casilla_de_cantidad_dice_que_admite_operaciones():
     r = _editor(CASILLA, KM + "resultado = cant.title;")
     assert r == "Admite operaciones: 30+10, 100/3, (8+4)*2"
+
+
+# ======================= lo que no cambia (T8) =========================== #
+# Sin fase RED: fijan lo de hoy (se escribieron en verde).
+
+# ================================ R16 ==================================== #
+def test_f081_r16_numero_llano_en_la_celda_de_pct_es_lo_de_hoy():
+    r = _celda(DOS_LINEAS + """
+      const pasos = [];
+      for (const v of ["40", "40,5", "-5", "50%", "40.5 %"]) {
+        teclear(pct, v);
+        const p = l.porcentaje;
+        pct.blur();
+        pasos.push([v, p, pct.value, pct.classList.contains("expresion")]);
+        pct.focus();
+      }
+      resultado = { pasos, avisos: avisos() };
+    """)
+    # «-5» lleva el % a 0 (parsearPct) y al salir en blanco no está: el
+    # valor sigue «-5», como hoy. Ningún aviso.
+    assert r["pasos"] == [["40", 40, "40", False], ["40,5", 40.5, "40,5", False],
+                          ["-5", 0, "-5", False], ["50%", 50, "50%", False],
+                          ["40.5 %", 40.5, "40.5 %", False]]
+    assert r["avisos"] == []
+
+
+def test_f081_r16_numero_llano_en_la_casilla_de_cantidad_es_lo_de_hoy():
+    r = _editor(CASILLA, KM + """
+      const pasos = [];
+      for (const v of ["40", "40,5", "-5", "50%", ""]) {
+        teclearCant(v);
+        cant.blur();
+        pasos.push([v, km.cantidad, elementoImporte(km).cantidad,
+                    cant.classList.contains("expresion")]);
+      }
+      resultado = { pasos, avisos: avisos(), guardados: guardados() };
+    """)
+    # «50%» va tal cual, como hoy: lo rechaza la API (F-069 R12).
+    assert r["pasos"] == [["40", "40", 40, False], ["40,5", "40,5", 40.5, False],
+                          ["-5", "-5", -5, False], ["50%", "50%", "50%", False],
+                          ["", "", None, False]]
+    assert r["avisos"] == [] and r["guardados"] == 5
+
+
+def test_f081_r16_el_camino_del_numero_llano_no_se_toco():
+    """`parsearPct`, `cantidadTecleada`, `cuerpoLineas` y `cuerpoImportes`
+    siguen siendo los de antes de F-081 (literal)."""
+    assert _funcion("parsearPct").startswith(
+        'function parsearPct(texto) {\n'
+        '  const n = parseFloat(String(texto).replace(",", "."));\n'
+        '  if (!isFinite(n) || n <= 0) return 0;\n'
+        '  return Math.min(Math.round(n * 100) / 100, 100);\n}\n')
+    assert ('const n = Number(limpio.replace(",", "."));\n'
+            '  return Number.isFinite(n) ? n : limpio;') in _funcion("cantidadTecleada")
+    assert "expresion" not in _funcion("cuerpoLineas").lower()
+    assert "expresion" not in _funcion("cuerpoImportes").lower()
+
+
+# ================================ R18 ==================================== #
+def test_f081_r18_los_dias_de_incidencia_no_admiten_operaciones():
+    r = _puro("\n".join([_funcion("parsearDia"), """
+      resultado = ["1+2", "=3", "(5)", "12", "3"].map((t) => parsearDia(t));
+    """]))
+    assert r == [None, None, None, 12, 3]
+    chip = _funcion("chipIncidencia")
+    assert "dia.maxLength = 2;" in chip
+    assert "Expresion" not in chip and "Admite operaciones" not in chip
+
+
+# ================================ R19 ==================================== #
+def test_f081_r19_con_el_editor_abierto_los_operadores_no_son_atajos():
+    r = _node("\n".join([_funcion("teclas"), """
+      var llamadas = [];
+      var state = { periodoEstado: "ABIERTO", editandoIde: 14, seleccionIde: 14 };
+      var document = { activeElement: { tagName: "INPUT" } };
+      function $(sel) { return { focus() { llamadas.push("foco:" + sel); } }; }
+      ["copiarDeArriba", "copiarTrabajador", "cerrarEditor", "deshacer",
+       "moverSeleccion", "abrirEditor"].forEach((n) => {
+        globalThis[n] = () => llamadas.push(n);
+      });
+      const previstos = [];
+      for (const key of ["/", "*", "+", "-", "=", "(", ")"]) {
+        const ev = { key, ctrlKey: false, metaKey: false,
+                     preventDefault() { previstos.push(key); } };
+        teclas(ev);
+      }
+      resultado = { previstos, llamadas };
+    """, "process.stdout.write(JSON.stringify(resultado));"]))
+    assert r == {"previstos": [], "llamadas": []}
+
+
+def test_f081_r19_pegar_sigue_el_camino_de_teclear():
+    """No hay escucha de `paste` en ninguna celda: pegar dispara `input`, el
+    mismo camino que teclear (R7, R12)."""
+    assert '"paste"' not in JS and "'paste'" not in JS
+    assert 'cantidad.addEventListener("input"' in _funcion("chipImporte")
+    assert 'pct.addEventListener("input"' in _funcion("chipEditable")
