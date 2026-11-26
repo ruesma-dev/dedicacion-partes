@@ -46,3 +46,20 @@ sesión del navegador del humano en producción: `GET /api/v1/periodos` y `GET
 - Por T9, PARA y decide el humano. Sin la pasada de restos (D2), al desplegar
   esas 4 cantidades dejan de verse y no se mandan: el trabajador saldría «falta
   el importe del mes» hasta teclear 400 € en su casilla de caja.
+
+## Despliegue y M4 (T10), 2026-11-26: cumple
+
+- El humano desplegó **solo la api** tras la PARADA de M1 (sin «Sincronizar
+  Sigrid»): `dedicacion-api:r20261126-1234`, revisión
+  `ca-dedicacion-api--r20261126123358`, `Healthy`, `RunningAtMaxScale` y 100 %
+  del tráfico (`az containerapp revision list`, leído por el líder).
+- M4, hecha por el líder en producción y solo con lecturas (la sesión del
+  navegador del humano, la página recargada desde cero): en los 10 periodos y
+  las 4 empresas, **0** subfilas de caja `reparto: obra`; 639 subfilas de caja
+  `pct`, **ninguna** con `cantidad`; 299 cajas del mes en `importes`, todas sin
+  importe todavía. La página carga noviembre de 2026 sin ninguna «Caja · …» y,
+  para el trabajador de M1 (ide 1372198), las casillas del editor
+  (`importesDeFila`) son una «CAJA CA0078» en € y su «VP VP0049» en km.
+- Pendiente: teclear 400 € (comentario «26-11») en la caja de ese trabajador,
+  como estaban sus 4 cajas por obra (M1). No se abrió ningún modal ni se
+  registró nada.
