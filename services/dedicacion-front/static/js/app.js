@@ -1921,15 +1921,44 @@ function chipImporte(casilla) {
   cantidad.inputMode = "decimal";
   cantidad.value = casilla.cantidad;
   cantidad.placeholder = casilla.unidad === "km" ? "km" : "€";
+  cantidad.title = "Admite operaciones: 30+10, 100/3, (8+4)*2";   // F-081 (R21)
   // D18: la marca solo se va al teclear OTRA cantidad que la guardada (o con
   // «Revisado»); la misma, o solo el comentario, no la quitan (como la API).
-  cantidad.addEventListener("input", () => {
+  function aplicarCantidad() {
     casilla.cantidad = cantidad.value;
     const guardada = casilla.guardada ? JSON.parse(casilla.guardada).cantidad : null;
     casilla.copiado = !!casilla.copiadoGuardado && !casilla.revisado &&
       cantidadTecleada(cantidad.value) === guardada;
     pintarMarca();
     programarGuardado();
+  }
+  // F-081 (R12): una operación no cuenta hasta confirmarla: ni la cantidad,
+  // ni la marca, ni el guardado; se ve en cursiva.
+  cantidad.addEventListener("input", () => {
+    const operacion = esExpresion(cantidad.value);
+    cantidad.classList.toggle("expresion", operacion);
+    if (!operacion) aplicarCantidad();
+  });
+  // F-081 (R13, R14): salir o Enter (el foco no se mueve) confirman: el
+  // resultado sigue como si se hubiera tecleado (los topes, en la API); si no
+  // es válida, aviso y vuelve lo último válido, sin guardar.
+  const confirmar = () => {
+    cantidad.classList.remove("expresion");
+    if (!esExpresion(cantidad.value)) return;
+    const r = confirmarExpresion(cantidad.value, "cantidad");
+    if (!r.ok) {
+      toast(r.mensaje, true);
+      cantidad.value = casilla.cantidad;
+      return;
+    }
+    cantidad.value = textoNumero(r.valor);
+    aplicarCantidad();
+  };
+  cantidad.addEventListener("blur", confirmar);
+  cantidad.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter") return;
+    ev.preventDefault();
+    confirmar();
   });
   chip.appendChild(cantidad);
   const unidad = document.createElement("span");
