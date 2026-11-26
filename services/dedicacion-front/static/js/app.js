@@ -2494,6 +2494,129 @@ function parsearPct(texto) {
   return Math.min(Math.round(n * 100) / 100, 100);
 }
 
+// ------------------------------- operaciones en las celdas (F-081)
+// La celda de % y la casilla de cantidad admiten operaciones (`30+10`,
+// `=100/3`): se evalúan al confirmar y a la API solo llega el resultado. El
+// evaluador es propio, sin `eval` ni `Function` (D6): solo lee números,
+// `+ - * /`, paréntesis y signo.
+
+// F-081 (R6, D2): decide el camino de la celda; no valida. Un `-` primero es
+// el signo de un número llano (`-5`), no una operación.
+function esExpresion(texto) {
+  if (texto == null) return false;
+  const limpio = String(texto).replace(/\s+/g, "");
+  return limpio.startsWith("=") || /[+*/()]/.test(limpio) ||
+    limpio.indexOf("-", 1) > 0;
+}
+
+// F-081 (R1-R4): descenso recursivo sobre una lista de fichas (design §5).
+// Nunca lanza: lo mal formado sale como `{ok: false, motivo}`.
+function evaluarExpresion(texto) {
+  const noValida = { ok: false, motivo: "no válida" };
+  const larga = { ok: false, motivo: "demasiado larga" };
+  if (texto == null) return noValida;
+  const crudo = String(texto);
+  if (crudo.length > 100) return larga;          // R4: antes de leerlo
+  let s = crudo.trim();
+  if (s.startsWith("=")) s = s.slice(1);
+  s = s.replace(/\s+/g, "");
+  // Fichas: números (coma o punto, un solo separador), operadores y paréntesis.
+  const fichas = [];
+  let hondo = 0;
+  let i = 0;
+  while (i < s.length) {
+    const c = s[i];
+    if ("+-*/()".includes(c)) {
+      if (c === "(" && ++hondo > 20) return larga;
+      if (c === ")") hondo--;
+      fichas.push({ op: c });
+      i++;
+      continue;
+    }
+    const m = /^(\d+([.,]\d+)?|[.,]\d+)/.exec(s.slice(i));
+    if (!m) return noValida;                     // carácter no admitido
+    i += m[0].length;
+    if (i < s.length && /[\d.,]/.test(s[i])) return noValida;  // `1.234,5`
+    fichas.push({ num: Number(m[0].replace(",", ".")) });
+  }
+  const MAL = {};
+  const DIV0 = {};
+  let pos = 0;
+  const ve = (...ops) => pos < fichas.length && ops.includes(fichas[pos].op);
+  const factor = () => {
+    const f = fichas[pos++];
+    if (!f) throw MAL;
+    if (f.num !== undefined) return f.num;
+    if (f.op === "+") return factor();
+    if (f.op === "-") return -factor();
+    if (f.op === "(") {
+      const v = expr();
+      if (!ve(")")) throw MAL;
+      pos++;
+      return v;
+    }
+    throw MAL;
+  };
+  const term = () => {
+    let v = factor();
+    while (ve("*", "/")) {
+      const op = fichas[pos++].op;
+      const d = factor();
+      if (op === "/" && d === 0) throw DIV0;
+      v = op === "*" ? v * d : v / d;
+    }
+    return v;
+  };
+  const expr = () => {
+    let v = term();
+    while (ve("+", "-")) {
+      const op = fichas[pos++].op;
+      const d = term();
+      v = op === "+" ? v + d : v - d;
+    }
+    return v;
+  };
+  try {
+    const valor = expr();
+    if (pos !== fichas.length || !Number.isFinite(valor)) return noValida;
+    return { ok: true, valor };
+  } catch (e) {
+    return e === DIV0 ? { ok: false, motivo: "división por cero" } : noValida;
+  }
+}
+
+// F-081 (R15, D5): dos decimales, mitad hacia arriba sobre la escritura
+// decimal (desplazando el exponente en la cadena, no `n * 100`, que daría
+// 1,005 ⇒ 1) y el signo aparte.
+function redondear2(n) {
+  if (!Number.isFinite(n) || Math.abs(n) < 1e-6) return 0;
+  if (Math.abs(n) >= 1e15) return n;
+  const r = Number(Math.round(Number(Math.abs(n) + "e2")) + "e-2");
+  return r === 0 ? 0 : (n < 0 ? -r : r);
+}
+
+// F-081: el número con coma decimal, como el resto de la celda.
+function textoNumero(n) {
+  return String(n).replace(".", ",");
+}
+
+// F-081 (R8-R10, R13, R14): evalúa, redondea y, en el % (`rango` "pct"),
+// exige (0, 100] (D4); la cantidad no mira el rango, lo valida la API. Pura:
+// los `chip*` hacen el DOM con lo que devuelve.
+function confirmarExpresion(texto, rango) {
+  const r = evaluarExpresion(texto);
+  if (!r.ok) {
+    return { ok: false,
+             mensaje: `Operación no válida: «${String(texto).trim()}» (${r.motivo})` };
+  }
+  const valor = redondear2(r.valor);
+  if (rango === "pct" && (valor <= 0 || valor > 100)) {
+    return { ok: false, mensaje:
+      `La operación da ${textoNumero(valor)}: el % tiene que estar entre 0 y 100` };
+  }
+  return { ok: true, valor };
+}
+
 function totalEdicion() {
   const suma = state.edicion.reduce(
     (acc, l) => acc + (l.porcentaje > 0 ? l.porcentaje : 0), 0
