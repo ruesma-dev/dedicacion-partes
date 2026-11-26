@@ -243,3 +243,236 @@ def test_f081_r5_app_js_no_evalua_texto_como_codigo():
     # El evaluador existe y es propio: descenso recursivo sobre fichas.
     cuerpo = _funcion("evaluarExpresion")
     assert "const factor = () =>" in cuerpo and "const expr = () =>" in cuerpo
+
+
+# ========================= la celda de % (T4) ============================ #
+from tests.test_f030_celda_pct import (  # noqa: E402
+    DOM_CELDA,
+    DOM_LETRAS,
+    FUNCIONES_LETRAS,
+)
+from tests.test_f042_sugerencias import DOM_DE_PRUEBA  # noqa: E402
+
+#: `toast` que apunta también si es de error (R9, R10: `toast(…, true)`).
+DOM_F081 = r"""
+function toast(m, error) { llamadas.push("toast:" + m + (error ? "|error" : "")); }
+function avisos() { return llamadas.filter((x) => x.startsWith("toast:")); }
+"""
+
+
+def _celda(cuerpo: str) -> object:
+    """La celda de % REAL (`chipEditable` y lo que llama, con la rama de
+    letras de F-030) más el evaluador."""
+    nombres = list(dict.fromkeys([*FUNCIONES_LETRAS, *EVALUADOR, "cuerpoLineas"]))
+    funciones = [_funcion(f) for f in nombres]
+    variable = "let desmontarSugerencias = null;"
+    if variable not in "".join(funciones):
+        funciones.insert(0, variable)
+    programa = "\n".join([DOM_DE_PRUEBA, DOM_CELDA, DOM_LETRAS, DOM_F081,
+                          *funciones, "var resultado;", cuerpo,
+                          "process.stdout.write(JSON.stringify(resultado));"])
+    return _node(programa)
+
+
+#: Editor con dos líneas: la otra al 30 % y la de la celda al 50 %.
+DOS_LINEAS = """
+  const editor = nuevoEditor();
+  const otra = linea(2, 30), l = linea(1, 50);
+  state.edicion = [otra, l];
+  const pct = montar(l, 1, editor);
+  const badge = editor.querySelector(".total-vivo");
+"""
+
+
+# ================================ R7 ===================================== #
+def test_f081_r7_mientras_hay_expresion_no_cuenta_ni_guarda():
+    r = _celda(DOS_LINEAS + """
+      const pasos = [];
+      for (const v of ["3", "30", "30+", "30+1", "(30+10", "=4"]) {
+        teclear(pct, v);
+        pasos.push([v, l.porcentaje, pct.classList.contains("expresion")]);
+      }
+      resultado = { pasos, guardados: guardados(),
+                    total: editor.querySelector(".total-vivo").innerHTML,
+                    cuerpo: cuerpoLineas(state.edicion) };
+    """)
+    # «3» y «30» son números llanos: cuentan y guardan, como hoy (R16).
+    assert r["pasos"] == [["3", 3, False], ["30", 30, False], ["30+", 30, True],
+                          ["30+1", 30, True], ["(30+10", 30, True], ["=4", 30, True]]
+    assert r["guardados"] == 2
+    assert "60%" in r["total"]
+    # R20: el PUT lleva el último número, nunca el texto.
+    assert r["cuerpo"][1]["porcentaje"] == 30
+
+
+def test_f081_r7_solo_expresion_no_toca_el_total():
+    r = _celda(DOS_LINEAS + """
+      teclear(pct, "30+10");
+      resultado = { mismoBadge: editor.querySelector(".total-vivo") === badge,
+                    pct: l.porcentaje, guardados: guardados() };
+    """)
+    assert r == {"mismoBadge": True, "pct": 50, "guardados": 0}
+
+
+def test_f081_r7_volver_a_un_numero_quita_la_marca_y_cuenta():
+    r = _celda(DOS_LINEAS + """
+      teclear(pct, "30+");
+      const antes = pct.classList.contains("expresion");
+      teclear(pct, "40");
+      resultado = { antes, despues: pct.classList.contains("expresion"),
+                    pct: l.porcentaje, guardados: guardados() };
+    """)
+    assert r == {"antes": True, "despues": False, "pct": 40, "guardados": 1}
+
+
+# ================================ R8 ===================================== #
+def test_f081_r8_al_salir_pone_el_resultado_cuenta_y_guarda_una_vez():
+    r = _celda(DOS_LINEAS + """
+      teclear(pct, "100/3");
+      pct.blur();
+      resultado = { valor: pct.value, pct: l.porcentaje, guardados: guardados(),
+                    marca: pct.classList.contains("expresion"), avisos: avisos(),
+                    total: editor.querySelector(".total-vivo").innerHTML,
+                    cuerpo: cuerpoLineas(state.edicion) };
+    """)
+    assert r["valor"] == "33,33" and r["pct"] == 33.33
+    assert r["guardados"] == 1
+    assert r["marca"] is False and r["avisos"] == []
+    assert "63,33%" in r["total"]
+    assert r["cuerpo"][1] == {"obra_ide": 1, "es_postventa": False,
+                              "porcentaje": 33.33}
+
+
+def test_f081_r8_el_cien_entra_y_un_numero_llano_al_salir_no_se_toca():
+    r = _celda(DOS_LINEAS + """
+      teclear(pct, "=50+50");
+      pct.blur();
+      const a = [pct.value, l.porcentaje, guardados()];
+      teclear(pct, "45");
+      pct.blur();
+      resultado = { a, b: [pct.value, l.porcentaje, guardados()], avisos: avisos() };
+    """)
+    assert r["a"] == ["100", 100, 1]
+    assert r["b"] == ["45", 45, 2]       # el blur no añade guardado (R16)
+    assert r["avisos"] == []
+
+
+# ================================ R9 ===================================== #
+def test_f081_r9_fuera_de_rango_avisa_repone_y_no_guarda():
+    r = _celda(DOS_LINEAS + """
+      const casos = [];
+      for (const v of ["=50+60", "10-10", "5-20"]) {
+        teclear(pct, v);
+        pct.blur();
+        casos.push([pct.value, l.porcentaje, pct.classList.contains("expresion")]);
+      }
+      resultado = { casos, avisos: avisos(), guardados: guardados() };
+    """)
+    assert r["casos"] == [["50", 50, False]] * 3
+    assert r["avisos"] == [
+        "toast:La operación da 110: el % tiene que estar entre 0 y 100|error",
+        "toast:La operación da 0: el % tiene que estar entre 0 y 100|error",
+        "toast:La operación da -15: el % tiene que estar entre 0 y 100|error"]
+    assert r["guardados"] == 0
+
+
+def test_f081_r9_linea_sin_pct_vuelve_vacia_y_no_rellena_ni_guarda():
+    """La línea estaba a 0: la celda vuelve vacía y el «en blanco rellena»
+    de F-030 R1 no actúa tras un aviso (R9, R10: sin guardado)."""
+    r = _celda("""
+      const editor = nuevoEditor();
+      const otra = linea(2, 30), l = linea(1, 0);
+      state.edicion = [otra, l];
+      const pct = montar(l, 1, editor);
+      teclear(pct, "200*2");
+      pct.blur();
+      resultado = { valor: pct.value, pct: l.porcentaje, guardados: guardados(),
+                    avisos: avisos().length };
+    """)
+    assert r == {"valor": "", "pct": 0, "guardados": 0, "avisos": 1}
+
+
+# ================================ R10 ==================================== #
+def test_f081_r10_no_valida_avisa_repone_y_no_guarda():
+    r = _celda(DOS_LINEAS + """
+      const casos = [];
+      for (const v of ["30+", "5/0", "(3", "1.234,5+1"]) {
+        teclear(pct, v);
+        pct.blur();
+        casos.push(pct.value);
+      }
+      resultado = { casos, pct: l.porcentaje, avisos: avisos(), guardados: guardados() };
+    """)
+    assert r["casos"] == ["50"] * 4 and r["pct"] == 50
+    assert r["avisos"] == [
+        "toast:Operación no válida: «30+» (no válida)|error",
+        "toast:Operación no válida: «5/0» (división por cero)|error",
+        "toast:Operación no válida: «(3» (no válida)|error",
+        "toast:Operación no válida: «1.234,5+1» (no válida)|error"]
+    assert r["guardados"] == 0
+
+
+def test_f081_r10_demasiado_larga():
+    r = _celda(DOS_LINEAS + """
+      teclear(pct, "1+".repeat(60) + "1");
+      pct.blur();
+      resultado = { valor: pct.value, aviso: avisos()[0] };
+    """)
+    assert r["valor"] == "50"
+    assert r["aviso"].endswith("(demasiado larga)|error")
+
+
+# ================================ R11 ==================================== #
+def test_f081_r11_enter_confirma_y_va_al_buscador_de_obra():
+    r = _celda(DOS_LINEAS + """
+      teclear(pct, "100/3");
+      const ev = pct.fire("keydown", "Enter");
+      const a = { valor: pct.value, pct: l.porcentaje, foco: foco && foco.className,
+                  previsto: ev.previsto, guardados: guardados() };
+      pct.focus();
+      teclear(pct, "30+");
+      pct.fire("keydown", "Enter");
+      resultado = { a, b: { valor: pct.value, pct: l.porcentaje,
+                            foco: foco && foco.className, avisos: avisos() } };
+    """)
+    assert r["a"] == {"valor": "33,33", "pct": 33.33, "foco": "obra-input",
+                      "previsto": True, "guardados": 1}
+    assert r["b"] == {"valor": "33,33", "pct": 33.33, "foco": "obra-input",
+                      "avisos": ["toast:Operación no válida: «30+» (no válida)|error"]}
+
+
+# ================================ R17 ==================================== #
+def test_f081_r17_con_letras_busca_incidencia_aunque_lleve_operadores():
+    r = _celda(DOS_LINEAS + """
+      teclear(pct, "30+");
+      teclear(pct, "30+v");
+      const abierto = panelInc() !== null;
+      pct.blur();
+      resultado = { abierto, cerrado: panelInc() === null, valor: pct.value,
+                    pct: l.porcentaje, avisos: avisos(), guardados: guardados() };
+    """)
+    assert r["abierto"] is True
+    assert r["cerrado"] is True and r["valor"] == "50" and r["pct"] == 50
+    assert r["avisos"] == [] and r["guardados"] == 0
+
+
+def test_f081_r17_con_operadores_y_letras_es_la_busqueda_de_f030():
+    """Lo de hoy: el panel busca el texto tal cual (`1+vac` no casa con
+    nada), Enter sin coincidencias no hace nada y salir repone la celda; ni
+    se evalúa ni se avisa."""
+    r = _celda(DOS_LINEAS + """
+      teclear(pct, "1+vac");
+      const panel = filas();
+      pct.fire("keydown", "Enter");
+      pct.blur();
+      resultado = { panel, inc: state.incidenciasEdicion.length, valor: pct.value,
+                    pct: l.porcentaje, avisos: avisos(), guardados: guardados() };
+    """)
+    assert r == {"panel": ["sugerencia vacia|Ninguna incidencia con «1+vac»"],
+                 "inc": 0, "valor": "50", "pct": 50, "avisos": [], "guardados": 0}
+
+
+# ================================ R21 ==================================== #
+def test_f081_r21_la_celda_de_pct_dice_que_admite_operaciones():
+    r = _celda(DOS_LINEAS + "resultado = pct.title;")
+    assert r == "Admite operaciones: 30+10, 100/3, (8+4)*2"
