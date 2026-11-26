@@ -3289,3 +3289,9 @@ Rama `feature/F-080-caja-por-trabajador` · `sdd: true` · rigor `critico` · OK
 - **Verificado.** `init.sh` sin caché en verde (api 1713, front 614, transfer 2021, raíz 2319 + 47 skipped); cobertura 13/13; mutación 9 generados, 3 evaluados, 3 muertos, 0 supervivientes, más 3 a mano. Review principal APPROVED (`bb5798d`) y de evidencias APPROVED (`38c09d2`).
 - **Ecosistema.** `azure-apps/dedicacion.md` `38e57a3` (pendiente de push del humano). Aviso a `partes`: las `CO` de caja ya no llevan `can` 1.
 - **Pendiente al desplegar.** M1 (líder, solo lectura en producción, justo antes), desplegar solo la api, M3 (local) y M4 (producción).
+
+## 2026-11-26 · F-080 · Desplegada
+
+- Solo la api, lanzado por el humano: `r20261126-1234` (`ca-dedicacion-api--r20261126123358`), `Healthy` y 100 % del tráfico. Sin «Sincronizar Sigrid».
+- M1 justo antes: 4 cajas por obra con importe en 2026/11, de un trabajador, 400 € ya repartidos por % (PARADA; el humano desplegó). M4 después: 0 cajas por obra, una casilla de caja por trabajador (`progress/manual_F-080.md`).
+- Quedan: 400 € en la caja de ese trabajador, M3 en local y el aviso a `partes`. `azure-apps` `07de20d` con el tag.
