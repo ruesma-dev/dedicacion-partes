@@ -16,10 +16,11 @@ reviewer los exige `passed`. Sin red ni BBDD.
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 
-from tests.test_f042_sugerencias import _funcion, _node
+from tests.test_f042_sugerencias import JS, _funcion, _node
 
 #: Las funciones puras del evaluador (design §5).
 EVALUADOR = ("esExpresion", "evaluarExpresion", "redondear2", "textoNumero",
@@ -229,3 +230,16 @@ def test_f081_r9_el_aviso_de_rango_lleva_coma_decimal():
     r = _puro('resultado = confirmarExpresion("200/3+50", "pct");')
     assert r == {"ok": False, "mensaje":
                  "La operación da 116,67: el % tiene que estar entre 0 y 100"}
+
+
+# ================================ R5 ===================================== #
+def test_f081_r5_app_js_no_evalua_texto_como_codigo():
+    """D6: ni `eval(`, ni `new Function`, ni `Function(`, ni `setTimeout` /
+    `setInterval` con una cadena en todo `app.js`."""
+    prohibidos = [r"\beval\s*\(", r"\bnew\s+Function\b", r"\bFunction\s*\(",
+                  r"\bset(Timeout|Interval)\s*\(\s*[\"'`]"]
+    encontrados = [p for p in prohibidos if re.search(p, JS)]
+    assert encontrados == []
+    # El evaluador existe y es propio: descenso recursivo sobre fichas.
+    cuerpo = _funcion("evaluarExpresion")
+    assert "const factor = () =>" in cuerpo and "const expr = () =>" in cuerpo
