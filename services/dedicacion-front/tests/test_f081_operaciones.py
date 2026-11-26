@@ -21,7 +21,10 @@ from pathlib import Path
 
 import pytest
 
-from tests.test_f042_sugerencias import JS, _funcion, _node
+from tests.test_f030_celda_pct import DOM_CELDA, DOM_LETRAS, FUNCIONES_LETRAS
+from tests.test_f030_tabla_incidencias import _editor
+from tests.test_f042_sugerencias import DOM_DE_PRUEBA, JS, _funcion, _node
+from tests.test_f069_importes_front import FILA_COPIADA
 
 #: Las funciones puras del evaluador (design §5).
 EVALUADOR = ("esExpresion", "evaluarExpresion", "redondear2", "textoNumero",
@@ -247,12 +250,6 @@ def test_f081_r5_app_js_no_evalua_texto_como_codigo():
 
 
 # ========================= la celda de % (T4) ============================ #
-from tests.test_f030_celda_pct import (  # noqa: E402
-    DOM_CELDA,
-    DOM_LETRAS,
-    FUNCIONES_LETRAS,
-)
-from tests.test_f042_sugerencias import DOM_DE_PRUEBA  # noqa: E402
 
 #: `toast` que apunta también si es de error (R9, R10: `toast(…, true)`).
 DOM_F081 = r"""
@@ -480,8 +477,6 @@ def test_f081_r21_la_celda_de_pct_dice_que_admite_operaciones():
 
 
 # ===================== la casilla de cantidad (T6) ======================= #
-from tests.test_f030_tabla_incidencias import _editor  # noqa: E402
-from tests.test_f069_importes_front import FILA_COPIADA  # noqa: E402
 
 #: La casilla REAL (`chipImporte` y lo que usa) más el evaluador.
 CASILLA = ("importesDeFila", "etiquetaObra", "cantidadTecleada", "elementoImporte",
