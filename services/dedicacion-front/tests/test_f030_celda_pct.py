@@ -72,7 +72,8 @@ function totalVivo(editor) { return editor.querySelector(".total-vivo").innerHTM
 #: Funciones REALES de `app.js` que se cargan (la celda y lo que llama).
 FUNCIONES_HOY = ("etiquetaObra", "fmtPct", "badgeTotal", "parsearPct",
                  "totalEdicion", "restanteSin", "refrescarTotalVivo",
-                 "chipEditable")
+                 "chipEditable", "esExpresion", "evaluarExpresion",
+                 "redondear2", "textoNumero", "confirmarExpresion")
 
 
 def _celda_hoy(cuerpo: str) -> object:

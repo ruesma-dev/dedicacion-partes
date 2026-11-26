@@ -2073,6 +2073,7 @@ function chipEditable(linea, idx, editor) {
   pct.className = "pct-input";
   pct.inputMode = "decimal";
   pct.value = linea.porcentaje ? String(linea.porcentaje).replace(".", ",") : "";
+  pct.title = "Admite operaciones: 30+10, 100/3, (8+4)*2";   // F-081 (R21)
 
   // F-030 (R8-R13): con alguna letra la celda busca una incidencia en vez de
   // un %; sin letras, lo de hoy (R1). `previo` es la celda antes de la
@@ -2146,8 +2147,35 @@ function chipEditable(linea, idx, editor) {
       desplegable.cerrar();
       desplegable = null;
     }
+    // F-081 (R7): una operación no cuenta hasta confirmarla (al salir): ni
+    // el % de la línea, ni el total, ni el guardado; se ve en cursiva.
+    const operacion = esExpresion(pct.value);
+    pct.classList.toggle("expresion", operacion);
+    if (operacion) return;
     previo = pct.value;
     linea.porcentaje = parsearPct(pct.value);
+    refrescarTotalVivo(editor);
+    programarGuardado();
+  });
+  // F-081 (R8-R10): al salir, la operación se evalúa. Con letras no llega
+  // aquí como operación: la rama de F-030 ya repuso la celda. Va ANTES que
+  // la de «en blanco», que ve después un número o un vacío.
+  pct.addEventListener("blur", (ev) => {
+    pct.classList.remove("expresion");
+    if (!esExpresion(pct.value) || /\p{L}/u.test(pct.value)) return;
+    const r = confirmarExpresion(pct.value, "pct");
+    if (!r.ok) {
+      // R9, R10: aviso, la celda vuelve al % de la línea y no se guarda; si
+      // vuelve vacía, tampoco la rellena la escucha de «en blanco».
+      toast(r.mensaje, true);
+      pct.value = linea.porcentaje ? textoNumero(linea.porcentaje) : "";
+      previo = pct.value;
+      if (pct.value === "") ev.stopImmediatePropagation();
+      return;
+    }
+    pct.value = textoNumero(r.valor);
+    previo = pct.value;
+    linea.porcentaje = r.valor;
     refrescarTotalVivo(editor);
     programarGuardado();
   });
