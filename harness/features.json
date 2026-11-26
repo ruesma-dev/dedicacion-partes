@@ -1320,6 +1320,19 @@
       "spec_aprobada": "2026-11-25",
       "fecha_cierre": "2026-11-26",
       "ok_humano": "2026-11-26"
+    },
+    {
+      "id": "F-081",
+      "title": "Operaciones matemáticas en las celdas numéricas del cuadrante",
+      "description": "Petición del humano el 2026-11-26, en primer lugar: «añade feature en primer lugar para que las celdas numericas permitan operaciones matematicas». Hoy cada celda numérica del cuadrante solo acepta un número (`parsearPct` y `parsearDia` en `services/dedicacion-front/static/js/app.js`; las casillas de importe de km, viaje y caja). Lo pedido: poder teclear una operación (p. ej. `30+10` o `100/3`) y que la celda se quede con el resultado. Por decidir en la spec: qué celdas (el % de cada línea, los importes y cantidades de los vinculados, los días de incidencia); la sintaxis (con o sin `=` delante; `+ - * /`, paréntesis, coma decimal); cuándo se evalúa (al salir de la celda o con Intro) y qué se ve después (el resultado o la operación; si se guarda la operación); los errores (expresión no válida, división por cero, resultado negativo o fuera de rango) y el redondeo; y que se evalúe sin `eval`. Servicio: front (es interpretar lo tecleado, no decide qué se registra: la api recibe el número de siempre); a confirmar en la spec. Rigor `estandar` propuesto por el líder, a confirmar en la spec.",
+      "acceptance": [
+        "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
+      ],
+      "status": "todo",
+      "sdd": true,
+      "rigor": "estandar",
+      "priority": 1,
+      "branch": "feature/F-081-operaciones-en-celdas"
     }
   ]
 }
