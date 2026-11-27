@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **78 features**, 31 abiertas y 47 terminadas. Por columna: 0 en Review, 0 en Blocked, 0 en In progress, 0 en Spec aprobada, 8 en To do, 23 en Backlog y 47 en Done.
+Resumen: **78 features**, 31 abiertas y 47 terminadas. Por columna: 0 en Review, 1 en Blocked, 0 en In progress, 0 en Spec aprobada, 7 en To do, 23 en Backlog y 47 en Done.
 
 ## Review
 
@@ -11,7 +11,9 @@ _Nada esperando revisión._
 
 ## Blocked
 
-_Ninguna feature bloqueada._
+| # | Feature | Prioridad | Rigor | Rama |
+|---|---|---|---|---|
+| F-071 | Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid | 4 | critico | `feature/F-071-trabajador-mes-parcial` |
 
 ## In progress
 
@@ -25,7 +27,6 @@ _Ninguna feature con la spec lista._
 
 | # | Feature | Prioridad | Rigor | Rama |
 |---|---|---|---|---|
-| F-071 | Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid | 4 | critico | `feature/F-071-trabajador-mes-parcial` |
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 5 | estandar | `feature/F-046-permiso-cerrar-periodo` |
 | F-077 | Km, viajes y gastos de obra en euros: un total por persona que se reparte por el % de cada obra | 6 | critico | `feature/F-077-importes-en-euros-por-persona` |
 | F-078 | Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes) | 7 | critico | `feature/F-078-registrar-por-paquetes` |
@@ -118,7 +119,7 @@ _Ninguna feature con la spec lista._
 
 ### F-071 · Trabajador con alta o baja en el mes: el % a escribir se ajusta a la fracción del mes trabajada, con las fechas de Sesame/Cegid
 
-estado **to do (comprometida)** · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-071-trabajador-mes-parcial`
+estado **bloqueada** · spec aprobada el 2026-11-27 · prioridad 4 · rigor `critico` · SDD sí · rama `feature/F-071-trabajador-mes-parcial`
 
 Petición del humano del 2026-11-05: «añade feature de como tratar a alguien que ha trabajado parcialmente el mes, ya sea por empezar con mes avanzado o causar baja en la empresa». Por decidir en la spec: cómo se detecta (fechas de alta y baja del recurso en Sigrid; hoy F-023 D1 solo usa la fecha de baja para excluirlo como inactivo, así que quien causa baja a mitad de mes puede no salir en el cuadrante del mes); si sigue saliendo en el cuadrante del mes de su alta o baja; si el 100 % se mantiene o se prorratea por días; qué importe mensual (`pre` de la hora M* y de sus vinculados) se registra en Sigrid; y cómo se le avisa al usuario. Probablemente toca api (sync y regla del 100 %), transfer (importe que se escribe) y front (aviso). AMPLIADA el mismo día con la solución que quiere el humano: «que se pueda poner baja del trabajador o alta en una fecha y que se calcule el % a escribir modificado por el % trabajado del mes». O sea, en el cuadrante se puede indicar una fecha de alta o de baja del trabajador en el mes, y lo que se escribe en Sigrid es el % de cada obra multiplicado por la fracción del mes trabajada. Por decidir en la spec: si la fecha se mete a mano, se propone desde Sigrid o ambas; si la fracción va por días naturales o laborables; si se ajusta el % (`can`) o el importe; y cómo cuadra con la regla del 100 % y con los vinculados. REDEFINIDA por el humano el 2026-11-10: «debe buscar el alta y baja del trabajador en sesame/cegid para calcular proporcionalmente cuanto ha estado en el mes si causa alta o baja de la empresa y llevar ese %. no el que se ponga en la app». Las fechas de alta y baja NO se meten a mano en el cuadrante: se leen de Sesame o de Cegid, y el % que se escribe en Sigrid es el del reparto multiplicado por la fracción del mes en alta. Por decidir en la spec: qué sistema manda si Sesame y Cegid no coinciden; cómo se accede (azure-apps/partes.md 5.3 bis para sesame-api; Cegid, por ver si hay acceso); días naturales o laborables; cómo se le enseña al usuario el ajuste antes de registrar; y cómo cuadra con la regla del 100 % y con los vinculados. Cruza la frontera del proyecto: leer `azure-apps/` antes de diseñar. Apunte de F-069 (design §10, 2026-11-21): no debe tocar la caja (`can` 1); en `VP`/`VIAJE` repartiría sobre el `can` ajustado. AMPLIADA el 2026-11-22 (petición de negocio, punto 5): «coger de Sesame la fecha de alta y baja, y llevar el % de contratación × % de la obra». Además de la fracción del mes en alta, entra el **% de contratación** (jornada parcial): lo que se escribe es el % de la obra × el % de contratación (y × la fracción del mes, si hay alta o baja). Por decidir en la spec: de dónde sale el % de contratación (Sesame o Cegid) y si aplica también a los vinculados.
 
