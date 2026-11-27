@@ -62,7 +62,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from decimal import Decimal
 from typing import Any, Optional
 
@@ -218,16 +218,33 @@ class RegistroSigrid:
                              por_defecto=self._por_defecto,
                              empresa_obras=self._por_defecto)
 
+    @staticmethod
+    def _filtro_trabajadores(columna: Any, trabajador_ide: int | None,
+                             trabajador_ides: Sequence[int] | None
+                             ) -> list[Any]:
+        """El filtro por trabajador de las lecturas del registro:
+        `[columna == ide]` (un trabajador, F-056: `is not None`, un 0
+        filtra), `[columna.in_(ides)]` (el paquete, F-078 R1) o `[]` (el
+        mes). Las rutas impiden los dos a la vez; una lista vacía (que la
+        ruta rechaza) daría `IN ()`, que no casa con nadie: nunca el mes."""
+        if trabajador_ides is not None:
+            return [columna.in_(list(trabajador_ides))]
+        if trabajador_ide is not None:
+            return [columna == trabajador_ide]
+        return []
+
     # ------------------------------------------------------------- #
     def _payloads(self, s: Session, anio: int, mes: int,
                   overrides: dict[int, int],
                   trabajador_ide: Optional[int],
                   filtro: FiltroEmpresa,
                   quitadas: list[tuple] | None = None,
+                  trabajador_ides: Sequence[int] | None = None,
                   ) -> tuple[list[dict[str, Any]], list[int]]:
         """Payloads por obra y `registro_id` de los no vigentes en el mes.
         Con `quitadas`, añade ahí las incidencias quitadas visibles y
-        vigentes (R38), que no van en ningún payload."""
+        vigentes (R38), que no van en ningún payload. Con `trabajador_ides`
+        (F-078), solo los de ese paquete, cada uno entero."""
         filas = s.execute(
             select(AsignacionORM, TrabajadorORM, ObraORM)
             .join(PeriodoORM, PeriodoORM.id == AsignacionORM.periodo_id)
@@ -237,8 +254,9 @@ class RegistroSigrid:
             .where(PeriodoORM.anio == anio, PeriodoORM.mes == mes,
                    AsignacionORM.porcentaje > 0,
                    # `is not None` (F-056): un 0 filtra, no coge el mes.
-                   *( [AsignacionORM.trabajador_ide == trabajador_ide]
-                      if trabajador_ide is not None else [] ))
+                   *self._filtro_trabajadores(AsignacionORM.trabajador_ide,
+                                              trabajador_ide,
+                                              trabajador_ides))
             .order_by(ObraORM.cod, TrabajadorORM.nombre)
         ).all()
         # Visibilidad por empresa: la misma regla que el cuadrante (F-034,
@@ -327,7 +345,7 @@ class RegistroSigrid:
         self._sumar_vinculados(s, anio, mes, mandadas)
         del_mes = self._sumar_incidencias(s, anio, mes, trabajador_ide,
                                           filtro, por_obra, partidas,
-                                          quitadas)
+                                          quitadas, trabajador_ides)
         payloads = list(por_obra.values())
         for p in payloads:
             recursos = {x["recurso_ide"] for x in [
@@ -386,6 +404,7 @@ class RegistroSigrid:
                            por_obra: dict[int, dict[str, Any]],
                            partidas: dict[tuple[int, int], int],
                            quitadas: list[tuple] | None = None,
+                           trabajador_ides: Sequence[int] | None = None,
                            ) -> list[dict[str, Any]]:
         """F-030 (R23, R25): las incidencias del periodo, en la petición de
         su obra (nunca VAR ni postventa, R19), con la visibilidad y la
@@ -406,8 +425,9 @@ class RegistroSigrid:
                   TrabajadorORM.ide == IncidenciaORM.trabajador_ide)
             .join(ObraORM, ObraORM.ide == IncidenciaORM.obra_ide)
             .where(PeriodoORM.anio == anio, PeriodoORM.mes == mes,
-                   *( [IncidenciaORM.trabajador_ide == trabajador_ide]
-                      if trabajador_ide is not None else [] ))
+                   *self._filtro_trabajadores(IncidenciaORM.trabajador_ide,
+                                              trabajador_ide,
+                                              trabajador_ides))
             .order_by(ObraORM.cod, TrabajadorORM.nombre,
                       IncidenciaORM.dia_desde, IncidenciaORM.id)
         ).all()
@@ -464,10 +484,14 @@ class RegistroSigrid:
                   overrides: Optional[dict[int, int]] = None,
                   trabajador_ide: Optional[int] = None,
                   empresa: int | None = None,
-                  obra_ide: int | None = None) -> dict:
+                  obra_ide: int | None = None,
+                  trabajador_ides: Sequence[int] | None = None) -> dict:
         """`obra_ide` (F-050, M2 punto 5): solo la petición de esa obra, la
         del grupo (la de registro en las entradas VAR). Es lo que repite el
         modal al cambiar una partida, en vez del mes entero.
+
+        `trabajador_ides` (F-078, R1): solo ese paquete, cada trabajador
+        entero; sin `obra_ide`, completo como el de un trabajador (R7).
 
         Anexo R30 (R38): si hay incidencias quitadas, la respuesta las lista
         en `incidencias_quitadas`; si no, la clave no está."""
@@ -475,7 +499,8 @@ class RegistroSigrid:
         with self._sf() as s:
             payloads, no_vigentes = self._payloads(
                 s, anio, mes, overrides or {}, trabajador_ide,
-                self._filtro(empresa), filas_quitadas)
+                self._filtro(empresa), filas_quitadas,
+                trabajador_ides=trabajador_ides)
             if obra_ide is not None:
                 filas_quitadas = [f for f in filas_quitadas
                                   if f[2].ide == obra_ide]
@@ -483,8 +508,9 @@ class RegistroSigrid:
         if obra_ide is not None:
             payloads = [p for p in payloads if p["obra"]["ide"] == obra_ide]
         self._designar_cierres(payloads)
-        # F-054 (R31): el del periodo o de un trabajador es completo (con
-        # las sobrantes); el de una obra sola, no.
+        # F-054 (R31): el del periodo, de un trabajador o de un paquete
+        # (F-078 R7) es completo (con las sobrantes); el de una obra sola,
+        # no.
         obras, sobrantes = self._preflight_lote(payloads,
                                                 completo=obra_ide is None)
         resultados = [{"obra": p["obra"], **r}
@@ -566,15 +592,17 @@ class RegistroSigrid:
                  usuario: str = "local",
                  trabajador_ide: Optional[int] = None,
                  empresa: int | None = None,
-                 sobrantes_a_cero: list[dict] | None = None) -> dict:
+                 sobrantes_a_cero: list[dict] | None = None,
+                 trabajador_ides: Sequence[int] | None = None) -> dict:
         """F-054 (R35; design §6.4): si trae `sobrantes_a_cero` (las que
         el usuario confirmó del preflight), PRIMERO se ponen a 0 y después
         van las peticiones por obra de siempre, que releen. Si poner a 0
-        falla, no se escribe nada por obra."""
+        falla, no se escribe nada por obra. Con `trabajador_ides` (F-078,
+        R8), lo mismo con las peticiones del paquete."""
         with self._sf() as s:
             payloads, no_vigentes = self._payloads(
                 s, anio, mes, overrides or {}, trabajador_ide,
-                self._filtro(empresa))
+                self._filtro(empresa), trabajador_ides=trabajador_ides)
         self._designar_cierres(payloads)
         a_cero = None
         if sobrantes_a_cero:
