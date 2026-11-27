@@ -1283,11 +1283,11 @@
     {
       "id": "F-078",
       "title": "Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes)",
-      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 8): «poder registrar solo por seleccionados o visibles (por paquetes)». Hoy se registra el mes entero, un trabajador o una obra. Se pide registrar un paquete: los seleccionados (selección múltiple de F-029) o los que quedan visibles con los filtros. Relacionado con el corte del proxy en registros grandes (hotfix del 2026-11-11, F-073): paquetes más pequeños terminan antes. Por decidir en la spec: si el preflight y el ejecutar del paquete se comportan como los del periodo (sobrantes de F-054 incluidas) o como los de un trabajador, cómo se enseña en el modal y cómo cuadra con la regla del 100 % y los avisos por obra.",
+      "description": "Petición de negocio transmitida por el humano el 2026-11-22 (punto 8): «poder registrar solo por seleccionados o visibles (por paquetes)». Hoy se registra el mes entero, un trabajador o una obra. Se pide registrar un paquete: los seleccionados (selección múltiple de F-029) o los que quedan visibles con los filtros. Relacionado con el corte del proxy en registros grandes (hotfix del 2026-11-11, F-073): paquetes más pequeños terminan antes. Por decidir en la spec: si el preflight y el ejecutar del paquete se comportan como los del periodo (sobrantes de F-054 incluidas) o como los de un trabajador, cómo se enseña en el modal y cómo cuadra con la regla del 100 % y los avisos por obra. 2026-11-27: SPEC en specs/F-078-registrar-por-paquetes/ (spec_ready), con D1-D9 ABIERTAS para el humano (design §10; recomendada la (a) en todas): paquete = trabajadores enteros, campo nuevo `trabajador_ides` en preflight y ejecutar de la api (422 si vacío o mal formado, nunca el mes entero), lote completo con sobrantes como el de un trabajador, botón «⇪ Registrar seleccionados (M) / visibles (N)» junto a «Completar al 100 %»; el transfer no cambia. Tests anteriores que cambian: ninguno.",
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md`."
       ],
-      "status": "todo",
+      "status": "spec_ready",
       "sdd": true,
       "rigor": "critico",
       "priority": 7,

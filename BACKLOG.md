@@ -3,7 +3,7 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **78 features**, 31 abiertas y 47 terminadas. Por columna: 0 en Review, 1 en Blocked, 0 en In progress, 0 en Spec aprobada, 7 en To do, 23 en Backlog y 47 en Done.
+Resumen: **78 features**, 31 abiertas y 47 terminadas. Por columna: 0 en Review, 1 en Blocked, 0 en In progress, 1 en Spec aprobada, 6 en To do, 23 en Backlog y 47 en Done.
 
 ## Review
 
@@ -21,7 +21,9 @@ _Ninguna feature en implementación._
 
 ## Spec aprobada
 
-_Ninguna feature con la spec lista._
+| # | Feature | Spec aprobada | Prioridad | Rigor | Rama |
+|---|---|---|---|---|---|
+| F-078 | Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes) | pendiente de tu aprobación | 7 | critico | `feature/F-078-registrar-por-paquetes` |
 
 ## To do
 
@@ -29,7 +31,6 @@ _Ninguna feature con la spec lista._
 |---|---|---|---|---|
 | F-046 | Cerrar y reabrir el periodo solo para ciertos usuarios | 5 | estandar | `feature/F-046-permiso-cerrar-periodo` |
 | F-077 | Km, viajes y gastos de obra en euros: un total por persona que se reparte por el % de cada obra | 6 | critico | `feature/F-077-importes-en-euros-por-persona` |
-| F-078 | Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes) | 7 | critico | `feature/F-078-registrar-por-paquetes` |
 | F-073 | Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube | 8 | critico | `feature/F-073-informe-registro-excel` |
 | F-079 | En Sigrid, las líneas del parte se ven agrupadas por persona y no por concepto | 9 | critico | `feature/F-079-orden-por-persona-en-sigrid` |
 | F-070 | La cabecera del cuadrante se queda fija arriba al hacer scroll | 10 | estandar | `feature/F-070-cabecera-fija` |
@@ -137,9 +138,9 @@ Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «import
 
 ### F-078 · Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes)
 
-estado **to do (comprometida)** · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-078-registrar-por-paquetes`
+estado **spec lista** · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-078-registrar-por-paquetes`
 
-Petición de negocio transmitida por el humano el 2026-11-22 (punto 8): «poder registrar solo por seleccionados o visibles (por paquetes)». Hoy se registra el mes entero, un trabajador o una obra. Se pide registrar un paquete: los seleccionados (selección múltiple de F-029) o los que quedan visibles con los filtros. Relacionado con el corte del proxy en registros grandes (hotfix del 2026-11-11, F-073): paquetes más pequeños terminan antes. Por decidir en la spec: si el preflight y el ejecutar del paquete se comportan como los del periodo (sobrantes de F-054 incluidas) o como los de un trabajador, cómo se enseña en el modal y cómo cuadra con la regla del 100 % y los avisos por obra.
+Petición de negocio transmitida por el humano el 2026-11-22 (punto 8): «poder registrar solo por seleccionados o visibles (por paquetes)». Hoy se registra el mes entero, un trabajador o una obra. Se pide registrar un paquete: los seleccionados (selección múltiple de F-029) o los que quedan visibles con los filtros. Relacionado con el corte del proxy en registros grandes (hotfix del 2026-11-11, F-073): paquetes más pequeños terminan antes. Por decidir en la spec: si el preflight y el ejecutar del paquete se comportan como los del periodo (sobrantes de F-054 incluidas) o como los de un trabajador, cómo se enseña en el modal y cómo cuadra con la regla del 100 % y los avisos por obra. 2026-11-27: SPEC en specs/F-078-registrar-por-paquetes/ (spec_ready), con D1-D9 ABIERTAS para el humano (design §10; recomendada la (a) en todas): paquete = trabajadores enteros, campo nuevo `trabajador_ides` en preflight y ejecutar de la api (422 si vacío o mal formado, nunca el mes entero), lote completo con sobrantes como el de un trabajador, botón «⇪ Registrar seleccionados (M) / visibles (N)» junto a «Completar al 100 %»; el transfer no cambia. Tests anteriores que cambian: ninguno.
 
 ### F-073 · Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube
 
