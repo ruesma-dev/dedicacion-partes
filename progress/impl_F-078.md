@@ -214,7 +214,7 @@ restaurados con `git checkout` (árbol limpio después); muerto con un subconjun
 **RM7**: lo adelantó la review (R8 con A12, R17 con F5); este delta no toca esas líneas.
 **`app.js`** no se muta: lo cubren los 63 tests node y las rupturas F1-F10 de la review.
 
-**O3 · ruff** (`b15042a`): los 4 avisos de los tests nuevos (ISC004 en
-`test_f078_paquete_api.py` l. 158 y `test_f078_paquete_front.py` l. 323 y 423;
-PIE808 en l. 102) corregidos con paréntesis y `range(5)`, sin cambiar lo que
-comprueban. `ruff check .`: 439 avisos, los mismos que `dev` (antes, 443).
+**O3 · ruff** (`b15042a`): ISC004 (api l. 158; front l. 323, 423) y PIE808 (front l. 102), con paréntesis
+y `range(5)`, sin cambiar lo que comprueban: `ruff check .` da 439, como `dev` (antes, 443).
+**`init.sh` de la pasada** (sobre `12a2534`): exit 0, 0 `[KO]`; raíz 2319 passed / 47 skipped (26:28), api 1848,
+front 771, transfer en verde (caché); COBERTURA 100 % (29/29); TAMAÑO OK; ruff 439 (`[AVISO]`, deuda previa).
