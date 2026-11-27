@@ -1130,6 +1130,8 @@ function renderTabla() {
   if (state.seleccionIde === null && visibles.length) {
     state.seleccionIde = visibles[0].ide;
   }
+  // F-078 (R12): el botón general, con el alcance de esta tabla.
+  pintarBotonRegistro(visibles);
   visibles.forEach((t) => {
     cuerpo.appendChild(construirFila(t));
     if (t.ide === state.editandoIde) cuerpo.appendChild(construirFilaEditor());
@@ -3912,7 +3914,10 @@ document.addEventListener("DOMContentLoaded", init);
 // `vistas` (F-064): las claves que `marcadaPorDefecto` señala y ya se han
 // enseñado en este modal; la que no está sale marcada una sola vez.
 // `cero` (F-054): las claves `cero:` marcadas de las sobrantes.
-const registro = { pisar: new Set(), vistas: new Set(), cero: new Set(), trabajadorIde: null, seq: 0, lineas: {}, pf: null, analizando: new Map(), cortado: false };
+// `paquete` (F-078): el alcance del botón general (`origen`, `ides`,
+// `ocultos`, `nombres`) al pedir el preflight, o `null` (un trabajador);
+// `enVuelo`: hay un preflight del botón general en curso.
+const registro = { pisar: new Set(), vistas: new Set(), cero: new Set(), trabajadorIde: null, paquete: null, enVuelo: false, seq: 0, lineas: {}, pf: null, analizando: new Map(), cortado: false };
 
 // Hotfix 2026-11-11: tras un corte del `registro/ejecutar` (502 del proxy a
 // los 200 s, 504 del balanceador a los 230 s o fallo de red) el servidor
@@ -4011,22 +4016,32 @@ function cabeceraPaquete(a, nombres) {
 // El preflight del periodo para el trabajador de la petición (todos o uno).
 // Las partidas son las guardadas en el cuadrante (F-050, R29). Con `obraIde`,
 // solo esa obra (M2, punto 5); sin ella no viaja (JSON omite `undefined`).
+// F-078 (R16, R18, R22): con paquete, su lista congelada (`trabajador_ides`)
+// y sin trabajador; sin él, el cuerpo de siempre (sin la clave).
 function pedirPreflight(obraIde) {
+  const body = registro.paquete
+    ? JSON.stringify({ trabajador_ide: null, obra_ide: obraIde, trabajador_ides: registro.paquete.ides })
+    : JSON.stringify({ trabajador_ide: registro.trabajadorIde, obra_ide: obraIde });
   return api(
     `/periodos/${state.anio}/${state.mes}/registro/preflight`,
-    { method: "POST", body: JSON.stringify({ trabajador_ide: registro.trabajadorIde, obra_ide: obraIde }) });
+    { method: "POST", body });
 }
 
-async function registroPreflight(trabajadorIde = null) {
+// `paquete` (F-078): el alcance del botón general, con sus `nombres`; queda
+// congelado para el repreflight de una obra y `ejecutar` (R18). Sin él (el
+// «⇪ Sigrid» de un trabajador), lo de siempre.
+async function registroPreflight(trabajadorIde = null, paquete = null) {
   if (registro.cortado) {          // hotfix 2026-11-11: no relanzar
     toast("El registro anterior sigue en curso; espera a que se recargue el cuadrante.", true);
     return;
   }
   registro.trabajadorIde = trabajadorIde;
+  registro.paquete = paquete;
   const seq = ++registro.seq;
   registro.analizando.clear();     // lo que se repetía era del modal de antes
   const btn = $("#btn-registro");
   btn.disabled = true; btn.textContent = "Analizando…";
+  registro.enVuelo = true;         // F-078: el repintado no toca el botón
   try {
     const pf = await pedirPreflight();
     if (seq !== registro.seq) return;
@@ -4038,7 +4053,14 @@ async function registroPreflight(trabajadorIde = null) {
     registro.pf = pf;
     pintarModalPreflight(pf);
   } catch (err) { toast(err.message, true); }
-  finally { btn.disabled = false; btn.textContent = "Registrar en Sigrid"; }
+  finally {
+    // F-078 (R19): vuelve al rótulo de su alcance, y `pintarBotonRegistro`
+    // (si está: los arneses de antes no la cargan) lo recalcula.
+    registro.enVuelo = false;
+    btn.disabled = false;
+    btn.textContent = (btn.dataset && btn.dataset.rotulo) || "Registrar en Sigrid";
+    if (typeof pintarBotonRegistro === "function") pintarBotonRegistro();
+  }
 }
 
 // F-050 (M2, punto 5): el preflight de UNA obra sustituye a esa obra, en su
@@ -4322,7 +4344,11 @@ function pintarNoCoincide(pf) {
 
 function pintarModalPreflight(pf) {
   registro.lineas = {};
-  let html = `<h2>Registrar en Sigrid · ${MESES[state.mes - 1]} ${state.anio}</h2>`;
+  // F-078 (R20): el de un paquete dice a quién, en el título y debajo.
+  const paq = registro.paquete
+    ? cabeceraPaquete(registro.paquete, registro.paquete.nombres || []) : null;
+  let html = `<h2>Registrar en Sigrid · ${MESES[state.mes - 1]} ${state.anio}` +
+    `${paq ? paq.titulo : ""}</h2>${paq ? paq.detalle : ""}`;
   (pf.obras || []).forEach((o) => {
     html += `<h3>Obra ${escapeHtml(o.obra.codigo || "")} · ` +
       `${escapeHtml(o.obra.nombre || "")}</h3>`;
@@ -4530,7 +4556,9 @@ async function registroEjecutar() {
       { method: "POST", body: JSON.stringify({
           pisar_claves: pisar, trabajador_ide: registro.trabajadorIde,
           usuario: document.body.dataset.usuario || "local",
-          ...(sobrantes.length ? { sobrantes_a_cero: sobrantes } : {}) }) });
+          ...(sobrantes.length ? { sobrantes_a_cero: sobrantes } : {}),
+          // F-078 (R18, R22): el paquete congelado al pedir el preflight.
+          ...(registro.paquete ? { trabajador_ides: registro.paquete.ides } : {}) }) });
     let esc = 0, omi = 0, pend = 0, vinOmi = 0;
     (r.obras || []).forEach((o) => {
       esc += (o.escritas || []).length;
@@ -4546,7 +4574,10 @@ async function registroEjecutar() {
     cerrarModal();
     // F-054 (R35): una sobrante sin poner a 0 no sale como éxito.
     const ceroOmitidas = r.sobrantes_a_cero ? r.sobrantes_a_cero.omitidas : [];
-    toast(`Sigrid: ${esc} escritas · ${omi} omitidas · ` +
+    // F-078 (R21, D5): el de un paquete dice primero a cuántos.
+    const quienes = registro.paquete
+      ? `${nTrabajadores(registro.paquete.ides.length)} · ` : "";
+    toast(`${quienes}Sigrid: ${esc} escritas · ${omi} omitidas · ` +
       `${pend} pendientes de confirmar${pend ? " (repite y marca pisar)" : ""}` +
       (vinOmi ? ` · ${vinOmi} recursos vinculados omitidos` : "") +
       // F-054 (R35): lo puesto a 0 y lo que no se pudo.
@@ -4586,12 +4617,53 @@ function esperarRegistroCortado(err) {
     await cargarPeriodo(anio, mes);
     aviso.remove();
     registro.cortado = false;
-    lanzar.disabled = false; lanzar.textContent = "Registrar en Sigrid";
+    // F-078 (R19): el rótulo de su alcance (sin él, el de siempre), y
+    // `pintarBotonRegistro` (si está: el arnés del hotfix no la carga) lo
+    // recalcula con la tabla recargada.
+    lanzar.disabled = false;
+    lanzar.textContent = (lanzar.dataset && lanzar.dataset.rotulo) || "Registrar en Sigrid";
+    if (typeof pintarBotonRegistro === "function") pintarBotonRegistro();
     toast("Cuadrante recargado; revisa el resultado del registro.");
   }, ESPERA_RECARGA_TRAS_CORTE);
 }
 
+// F-078 (R12, R14, R15): el botón general dice a quién registra (rótulo y
+// `title`) y se desactiva si el periodo no está abierto, no hay nadie a
+// quien registrar o la selección está oculta. Se llama en cada pintado de la
+// tabla. Tras un corte o con un preflight en vuelo, solo guarda el rótulo
+// (para cuando se restaure): el texto y el bloqueo de ese momento se quedan.
+function pintarBotonRegistro(visibles = trabajadoresVisibles()) {
+  const btn = $("#btn-registro");
+  if (!btn) return;
+  const a = alcanceRegistro(visibles, state.seleccion);
+  const rotulo = rotuloRegistro(a);
+  if (btn.dataset) btn.dataset.rotulo = rotulo;
+  const abierto = state.periodoEstado === "ABIERTO";
+  btn.title = abierto ? tituloRegistro(a)
+    : "No se registra: el periodo no está abierto";
+  if (registro.cortado || registro.enVuelo) return;
+  btn.textContent = rotulo;
+  btn.disabled = !abierto || a.bloqueado || !a.ides.length;
+}
+
+// F-078 (R13, R15-R17): el clic del botón general. Calcula el alcance en ese
+// momento (lo que dice el rótulo); sin nadie a quien registrar, nada. Con el
+// editor abierto, lo guarda antes (D9). La lista va congelada en el paquete.
+async function registrarPaquete() {
+  if (registro.cortado) {          // hotfix 2026-11-11: no relanzar
+    toast("El registro anterior sigue en curso; espera a que se recargue el cuadrante.", true);
+    return;
+  }
+  if (state.periodoEstado !== "ABIERTO") return;
+  const visibles = trabajadoresVisibles();
+  const a = alcanceRegistro(visibles, state.seleccion);
+  if (a.bloqueado || !a.ides.length) return;
+  const nombres = visibles.filter((t) => a.ides.includes(t.ide)).map((t) => t.nombre);
+  if (state.editandoIde !== null) await guardarAhora();
+  await registroPreflight(null, { ...a, nombres });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const b = $("#btn-registro");
-  if (b) b.addEventListener("click", () => registroPreflight(null));
+  if (b) b.addEventListener("click", () => registrarPaquete());
 });
