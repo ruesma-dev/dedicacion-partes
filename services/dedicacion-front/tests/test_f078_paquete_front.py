@@ -99,7 +99,7 @@ def test_f078_r13_nunca_un_oculto():
     `ide` fuera de los visibles, y nunca uno sin seleccionar si van los
     seleccionados."""
     visibles, universo = [5, 2, 7], [5, 2, 7, 90, 91]
-    casos = [list(c) for n in range(0, 5)
+    casos = [list(c) for n in range(5)
              for c in itertools.combinations(universo, n)]
     resultados = _puras(
         f"{json.dumps(casos)}.map((s) => alcanceRegistro("
@@ -320,8 +320,8 @@ def _flujo(escenario: str) -> dict:
         *_paquete_y_arranque(),
         "(async () => { const obs = {};",
         "(escuchas.DOMContentLoaded || []).forEach((f) => f());",
-        "const pulsar = () => botones['#btn-registro']._h.click"
-        " ? botones['#btn-registro']._h.click() : null;",
+        ("const pulsar = () => botones['#btn-registro']._h.click"
+         " ? botones['#btn-registro']._h.click() : null;"),
         escenario,
         "process.stdout.write(JSON.stringify(obs)); })();"])
     return _node(programa)
@@ -420,8 +420,8 @@ def test_f078_r15_al_pulsar_sin_alcance_no_se_pide_nada(preparar):
     """)
     assert obs["log"] == []
     if "cortado" in preparar:
-        assert obs["avisos"] == ["El registro anterior sigue en curso; "
-                                 "espera a que se recargue el cuadrante."]
+        assert obs["avisos"] == [("El registro anterior sigue en curso; "
+                                  "espera a que se recargue el cuadrante.")]
 
 
 # ------------------- R16, R22: el cuerpo de las peticiones ------------ #

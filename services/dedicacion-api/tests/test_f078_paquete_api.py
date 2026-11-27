@@ -155,8 +155,8 @@ def test_f078_r2_r11_sin_tope(api, fase):  # noqa: F811
 # =============== R5: sin la clave o con null, como hoy ================ #
 @pytest.mark.parametrize("cuerpo", [b"{}", b'{"trabajador_ides": null}',
                                     b'{"trabajador_ide": 11}',
-                                    b'{"trabajador_ide": 11, '
-                                    b'"trabajador_ides": null}'])
+                                    (b'{"trabajador_ide": 11, '
+                                     b'"trabajador_ides": null}')])
 @pytest.mark.parametrize("fase", RUTAS)
 def test_f078_r5_sin_paquete_la_llamada_de_hoy(api, fase, cuerpo):  # noqa: F811
     cliente, contenedor = api
