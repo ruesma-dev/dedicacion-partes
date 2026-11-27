@@ -5,15 +5,16 @@
 (`services/dedicacion-api/application/registro_sigrid.py`) manda al transfer
 lo que se escribe en `hmores` de Sigrid (base `ruesma`, la misma que usa
 `partes`) y las sobrantes que se ponen a 0; esta feature cambia **qué
-trabajadores y qué líneas** entran en esa escritura. Decisiones D1-D9
-abiertas (§10).
+trabajadores y qué líneas** entran en esa escritura, y el botón general
+deja de registrar el mes entero. D3 y D4 decididas por el humano el
+2026-11-27; D1, D2 y D5-D11 abiertas (§10).
 
 ## 1. Servicios y límite
 
 | Servicio | Qué cambia | Por qué ahí |
 |---|---|---|
 | api | `trabajador_ides` en las dos rutas del registro y su filtro | dueña del dato: decide qué asignaciones van |
-| front | botón del paquete, cuerpo, modal y aviso final | solo elige a quién (selección y filtros son suyos) |
+| front | `#btn-registro` pasa al paquete: alcance, rótulo, cuerpo, modal y aviso final | solo elige a quién (selección y filtros son suyos) |
 | transfer | **nada** | ya trabaja por recurso (§3) |
 
 Ninguna responsabilidad nueva fuera de su servicio; nada se copia entre
@@ -39,7 +40,7 @@ servicios. El front manda `ide` de trabajadores, como hoy manda uno.
   (`#regla-capacidad`) y rachas. Lo de un recurso que no viene en la
   petición no se lee como suyo ni se toca.
 
-## 3. Por qué el transfer no cambia (D1, R21)
+## 3. Por qué el transfer no cambia (D1, R24)
 
 El modo trabajador ya es «un paquete de uno»: el lote con los recursos de
 ese trabajador, completo, con sus sobrantes. Con N trabajadores el lote
@@ -64,7 +65,7 @@ sobrantes y se ofrecería ponerlas a 0.
 |---|---|
 | `services/dedicacion-api/interface_adapters/api/routes.py` | `_trabajador_ides(valor)` (R2-R4) y pasarlo en `registro_preflight` y `registro_ejecutar` |
 | `services/dedicacion-api/application/registro_sigrid.py` | `trabajador_ides` en `preflight`, `ejecutar`, `_payloads` y `_sumar_incidencias`; `_filtro_trabajadores` |
-| `services/dedicacion-front/templates/index.html` | botón `#btn-registro-paquete` tras `#btn-completar` |
+| `services/dedicacion-front/templates/index.html` | solo la ayuda del pie (el botón es el mismo `#btn-registro`) |
 | `services/dedicacion-front/static/js/app.js` | §6 |
 | `docs/ARCHITECTURE.md` | endpoints (`trabajador_ides`), `#regla-obra-cero` y «Timeouts encadenados» (paquete = menos obras) |
 | `docs/INTEGRACION.md` | párrafo de `trabajador_ides` junto al de F-056 |
@@ -75,7 +76,8 @@ y `services/dedicacion-front/tests/test_f078_paquete_front.py`.
 
 **Ficheros que NO se tocan**: todo `services/dedicacion-transfer/`;
 `infrastructure/transfer/transfer_client.py` (el lote ya admite `completo`);
-`domain/estados.py` (D6); `orm_models.py` y `esquema.py` (sin DDL); el
+`domain/estados.py` (D6); `orm_models.py` y `esquema.py` (sin DDL); la ruta
+del mes sin `trabajador_ides` (se queda, §5); el
 `_trabajador_ide` de F-056 y el filtro `==` del trabajador (R5);
 `seleccionEfectiva`, `marcarSeleccion`, `fijarSeleccion` y
 `trabajadoresVisibles` (se llaman, no se cambian); `pintarSobrantes`,
@@ -115,52 +117,74 @@ def _filtro_trabajadores(columna, trabajador_ide: int | None,
   lo pasan. `completo = obra_ide is None`, como hoy (R7); `ejecutar`, igual
   (R8). Lista vacía no llega (la ruta da 422), pero si llegara por código,
   `in_([])` no casa con nadie: nunca el mes entero.
-- Sin tope (D7): una lista de N `ide` es un `IN` de N parámetros en
-  PostgreSQL; el mes tiene del orden de cientos de trabajadores.
+- Sin tope (D7): sin filtros ni selección el botón manda **todos** los
+  visibles, que es el mes; un tope impediría registrarlo de una vez. Una
+  lista de N `ide` es un `IN` de N parámetros; el mes tiene cientos.
+- **La ruta del mes** (sin `trabajador_ides` ni `trabajador_ide`) **se
+  queda** tal cual: la usan sus tests, el script de pruebas y la «otra
+  forma de registrar» que el humano deja para más adelante; quitarla no
+  aporta seguridad (el front ya no la llama, R12).
 
 Sin SQL nuevo fuera del ORM, sin DDL y sin YAML de Sigrid.
 
 ## 6. front (`app.js`)
 
-Puras (sin DOM, para el arnés node):
+`state.seleccion` puede quedar con 0, 1 o más `ide` (Ctrl+clic quita; Esc la
+vacía); el cursor `state.seleccionIde` siempre cae en una fila visible
+(`renderTabla`). Puras (sin DOM, para el arnés node):
 
-- `paqueteDelCuadrante(visibles, seleccion)` → `{origen: "seleccionados" |
-  "visibles", ides, ocultos}`: con `seleccion.size`, los visibles que están
-  en ella (orden de la tabla) y `ocultos = seleccion.size − ides.length`;
-  sin ella, todos los visibles y `ocultos = 0` (R12-R14, D3).
-- `textoBotonPaquete(p)` → «⇪ Registrar seleccionados (M)» o «⇪ Registrar
-  visibles (N)»; `tituloPaquete(p)` → el `title` (ocultos por el filtro).
-- `cabeceraPaquete(p, nombres)` → HTML del título y la lista plegable
-  (`<details>`) con los nombres escapados y la línea de ocultos (R17).
+- `alcanceRegistro(visibles, seleccion)` → `{origen: "seleccionados" |
+  "visibles", ides, ocultos, bloqueado}` (R13, R14; D3, D4, D11):
+  `vis` = los visibles que están en `seleccion`, en el orden de la tabla.
+  `vis.length ≥ 2` ⇒ seleccionados, `ides = vis`, `ocultos = seleccion.size
+  − vis.length`. `seleccion.size ≥ 2` y `vis.length < 2` ⇒ `bloqueado: true`,
+  `ides = []`. Si no (0 o 1 seleccionados), visibles: `ides` = todos los
+  visibles, `ocultos = 0`. Nunca un `ide` que no esté en `visibles`.
+- `rotuloRegistro(a)` → «Registrar seleccionados (M)» o «Registrar visibles
+  (N)» (D10); `tituloRegistro(a)` → el `title` (alcance; selección oculta).
+- `cabeceraPaquete(a, nombres)` → HTML del título, `<details>` con los
+  nombres escapados y la línea de ocultos (R20).
 
 Con DOM:
 
-- `renderTabla()`: tras el contador, `pintarBotonPaquete()` (rótulo,
-  `title`, `disabled` según periodo, tamaño y `registro.cortado`; R12, R13).
-- `registrarPaquete()`: si `state.editandoIde !== null`, `await
-  guardarAhora()` (R15); recalcula el paquete y, con ides, llama a
-  `registroPreflight(null, paquete)`.
+- `pintarBotonRegistro()`, llamado al final de `renderTabla()`: calcula el
+  alcance, pone `textContent` y `dataset.rotulo` con `rotuloRegistro`,
+  `title` y `disabled` (periodo no ABIERTO, `ides` vacío, `bloqueado` o
+  `registro.cortado`; R12, R14, R15). Si `registro.cortado` o hay un
+  preflight en vuelo, no toca el texto («Analizando…», «Registro en curso…»).
+- `registrarPaquete()` (el clic de `#btn-registro`, que hoy llama a
+  `registroPreflight(null)`): recalcula el alcance; sin `ides`, nada (R15);
+  si `state.editandoIde !== null`, `await guardarAhora()` (R17); después
+  `registroPreflight(null, alcance)`.
 - `registroPreflight(trabajadorIde = null, paquete = null)`: guarda
-  `registro.paquete = paquete` (congelado, R16). `pedirPreflight(obraIde)`
+  `registro.paquete = paquete` (congelado, R18). `pedirPreflight(obraIde)`
   y `registroEjecutar` añaden `trabajador_ides: registro.paquete.ides` solo
-  si hay paquete (la clave no existe en los otros modos, R16, R19). El botón
-  que pone «Analizando…» es el que lanzó el preflight.
-- `pintarModalPreflight(pf)`: si `registro.paquete`, el título lleva
-  `cabeceraPaquete` (R17); el resto no cambia.
-- `registroEjecutar`: con paquete, el aviso empieza por «Paquete de N · »
-  (R18). El bloqueo por corte (`registro.cortado`) ya para
-  `registroPreflight`; `esperarRegistroCortado` además repinta el botón del
-  paquete al desbloquear (R13).
-- En `index.html`, el botón con `class="btn secondary small"`, como
-  «Completar al 100 %», y `#btn-registro-paquete` desactivado si el periodo
-  no está ABIERTO (en el mismo sitio que `#btn-completar`).
+  si hay paquete (R18, R22). Al acabar, el `finally` y
+  `esperarRegistroCortado` restauran el texto con `btn.dataset &&
+  btn.dataset.rotulo || "Registrar en Sigrid"` (R19): los dobles de hoy no
+  tienen `dataset` y siguen viendo «Registrar en Sigrid» (requirements §6);
+  `esperarRegistroCortado` llama además a `pintarBotonRegistro` si existe.
+- `pintarModalPreflight(pf)`: con `registro.paquete`, el título lleva
+  `cabeceraPaquete` (R20). `registroEjecutar`: el aviso empieza por «N
+  trabajadores · » (R21).
+- `index.html`: el mismo `#btn-registro` (sin botón nuevo); el texto
+  inicial «Registrar en Sigrid» se sustituye en el primer pintado. La ayuda
+  del pie gana «Registrar: seleccionados (2+) o visibles».
+- El camino `registroPreflight(null)` sin paquete (el mes) queda en el código
+  sin ningún botón que lo llame; lo usan los tests de hoy y la «otra forma»
+  futura.
 
 ## 7. Riesgos
 
 - **Que un paquete se convierta en el mes entero.** Es la avería de F-056.
   Defensas: 422 ante lista vacía o mal formada (R3), `in_` y no «sin
-  filtro» en el código, y el front sin botón activo con 0 (R13). Tests de
+  filtro» en el código, y el botón desactivado con 0 o con la selección
+  oculta (R14, R15). Tests de
   R3 con cada valor malo y de que el transfer falso no recibe nada.
+- **El botón cambia de significado.** Quien lo pulse por costumbre ya no
+  registra el mes, sino lo que dice el rótulo; sin filtros ni selección es
+  lo mismo (todos los visibles). Un seleccionado suelto (el cursor) no
+  registra solo a ese: para eso está «⇪ Sigrid» de la fila.
 - **Filtro de obra y trabajador entero.** Filtrar por la 0694 y registrar
   los visibles registra **todas** las obras de esos trabajadores (D2). El
   modal enseña cada obra y la lista de nombres; queda dicho en el título.
@@ -198,10 +222,12 @@ de entorno y la base no cambian; las escrituras en Sigrid son las mismas
 |---|---|---|---|
 | D1 Preflight y ejecutar del paquete | (a) como el de un trabajador o el mes: lote completo, con las sobrantes (F-054) de los trabajadores del paquete; (b) como el de una obra: sin sobrantes | (a) | |
 | D2 Qué entra de cada trabajador | (a) el trabajador entero (todas sus obras, `Postv-`, VAR, vinculados e incidencias), aunque el filtro de Obras o Partida case con una sola línea; (b) solo las líneas que casan con el filtro, sin sobrantes | (a) | |
-| D3 Seleccionados ocultos por el filtro | (a) no van (selección ∩ visibles, F-029 D6) y el modal dice cuántos; (b) van todos los seleccionados, se vean o no | (a) | |
-| D4 Cómo se lanza | (a) un botón junto a «Completar al 100 %» con el alcance en el rótulo: «⇪ Registrar seleccionados (M)» con selección, «⇪ Registrar visibles (N)» sin ella; «Registrar en Sigrid», el mes como hoy; (b) dos botones fijos (seleccionados y visibles); (c) «Registrar en Sigrid» abre un menú (mes, visibles, seleccionados) | (a) | |
-| D5 Cómo se enseña en el modal y al terminar | (a) título «· paquete de N trabajadores (seleccionados \| visibles)», lista plegable de nombres, línea de ocultos y aviso final «Paquete de N · …»; el resto, igual; (b) el modal de hoy sin cambios | (a) | |
-| D6 Regla del 100 % | (a) como hoy: no bloquea ni avisa (cada trabajador va entero); (b) aviso informativo en el modal del paquete con los que no están OK; (c) no registrar a los que no están al 100 % | (a) | |
-| D7 Tope de tamaño | (a) sin tope (el mes no lo tiene; el corte lo recoge el hotfix y F-073); (b) tope configurable de trabajadores, 422 por encima; (c) aviso en el modal por número de obras | (a) | |
+| D3 Seleccionados ocultos por el filtro | (a) no van (selección ∩ visibles) y el modal dice cuántos; (b) van todos, se vean o no | (a) | (a), Pablo Gris 2026-11-27: «registra todos los que estan visibles, sin ocultos» |
+| D4 Cómo se lanza | (a) un botón nuevo junto a «Completar al 100 %»; (b) dos botones fijos; (c) un menú en «Registrar en Sigrid»; (d) el botón actual pasa a ser el del paquete y el mes entero sale de la interfaz | (a) | (d), Pablo Gris 2026-11-27: «quiero que el registrar actual sea el boton registrar seleccionados. ya veremos otra forma de registrar. si solo hay 1 seleccionado (…, en ese caso sin seleccion) registra todos los que estan visibles» |
+| D5 Cómo se enseña en el modal y al terminar | (a) título «· N trabajadores (seleccionados \| visibles)», lista plegable de nombres, línea de ocultos y aviso final «N trabajadores · …»; el resto, igual; (b) el modal de hoy sin cambios | (a) | |
+| D6 Regla del 100 % | (a) como hoy: no bloquea ni avisa (cada trabajador va entero); (b) aviso informativo en el modal con los que no están OK; (c) no registrar a los que no están al 100 % | (a) | |
+| D7 Tope de tamaño | (a) sin tope (sin filtros el botón es el mes; el corte lo recoge el hotfix y F-073); (b) tope configurable de trabajadores, 422 por encima; (c) aviso en el modal por número de obras | (a) | |
 | D8 Contrato | (a) campo nuevo `trabajador_ides` (lista), excluyente con `trabajador_ide`, que se queda como está; (b) sustituir `trabajador_ide` por la lista; (c) mandar los filtros y que la api calcule los visibles | (a) | |
 | D9 Editor abierto al pulsar | (a) guardar antes, como el «⇪ Registrar en Sigrid» del editor; (b) pedir que se cierre, como «Completar al 100 %» | (a) | |
+| D10 Rótulo del botón | (a) «Registrar seleccionados (M)» / «Registrar visibles (N)»; (b) «Registrar en Sigrid» fijo y el alcance en un rótulo al lado | (a) | |
+| D11 Varios seleccionados pero menos de 2 visibles | (a) botón desactivado, con el `title` «la selección está oculta por el filtro»; (b) se cuenta lo visible: con 0 o 1 a la vista, todos los visibles | (a) | |
