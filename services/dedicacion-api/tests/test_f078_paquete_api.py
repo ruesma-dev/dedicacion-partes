@@ -576,3 +576,20 @@ def test_f078_r24_obra_compartida_sin_nada_de_los_de_fuera(fase):
         "lineas", "incidencias", "quitadas", "incidencias_mes")
         for x in p.get(clave, [])}
     assert todos == {10, 12}
+
+
+# ------------------------------- R23 ----------------------------------- #
+@pytest.mark.parametrize("fase", RUTAS)
+def test_f078_r23_sin_bloqueo_ni_aviso_por_el_100(fase):
+    """D6: el 10 en FALTA (40 %) y el 11 en EXCESO (70 + 50 %) van como
+    cualquier otro, y la respuesta no trae ninguna clave nueva."""
+    filas = [_asig(1, (10, 1), (678, 1), porcentaje=40),
+             _asig(2, (11, 1), (678, 1), porcentaje=70),
+             _asig(3, (11, 1), (694, 1), porcentaje=50)]
+    reg, transfer, _ = _registro(filas=filas, incs=[])
+    r = _llamar(reg, fase, trabajador_ides=[10, 11])
+    assert set(r) == {"ok", "obras", "no_vigentes"}
+    assert [[(ln["registro_id"], ln["porcentaje"]) for ln in p["lineas"]]
+            for p in transfer.payloads] == [[(1, 0.4), (2, 0.7)], [(3, 0.5)]]
+    assert all(set(o) <= {"obra", "ok"} for o in r["obras"])
+
