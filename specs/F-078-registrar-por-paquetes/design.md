@@ -7,7 +7,7 @@ lo que se escribe en `hmores` de Sigrid (base `ruesma`, la misma que usa
 `partes`) y las sobrantes que se ponen a 0; esta feature cambia **qué
 trabajadores y qué líneas** entran en esa escritura, y el botón general
 deja de registrar el mes entero. D3 y D4 decididas por el humano el
-2026-11-27; D1, D2 y D5-D11 abiertas (§10).
+2026-11-27; D1, D2 y D5-D11 en la (a) por el humano el mismo día, «ok a todo» (§10).
 
 ## 1. Servicios y límite
 
@@ -80,8 +80,10 @@ y `services/dedicacion-front/tests/test_f078_paquete_front.py`.
 del mes sin `trabajador_ides` (se queda, §5); el
 `_trabajador_ide` de F-056 y el filtro `==` del trabajador (R5);
 `seleccionEfectiva`, `marcarSeleccion`, `fijarSeleccion` y
-`trabajadoresVisibles` (se llaman, no se cambian); `pintarSobrantes`,
-`unirPreflight` y `esperarRegistroCortado`.
+`trabajadoresVisibles` (se llaman, no se cambian); `pintarSobrantes` y
+`unirPreflight`. (`esperarRegistroCortado` sí se toca: §6 y R19 le piden
+repintar el botón al desbloquear; corrección del líder del 2026-11-27, la
+lista decía lo contrario.)
 
 ## 5. api
 

@@ -6,8 +6,8 @@ registrar solo por seleccionados o visibles (por paquetes)». Toca **api y
 front**; el transfer, nada (design §1). D3 y D4 **decididas** por el humano el
 2026-11-27 («quiero que el registrar actual sea el boton registrar
 seleccionados… si solo hay 1 seleccionado… registra todos los que estan
-visibles, sin ocultos»); D1, D2 y D5-D11 **abiertas** (design §10): los
-requisitos van con la recomendada y llevan su `[Dn]`.
+visibles, sin ocultos»); D1, D2 y D5-D11 decididas en la (a) por el humano el mismo día, «ok a todo»
+(design §10); los requisitos llevan su `[Dn]`.
 
 ## 0. Glosario
 
