@@ -85,7 +85,10 @@ Endpoints bajo `/api/v1`: `health`, `sync` y `sync/preview`, CRUD de
 atómica de asignaciones por trabajador, `deshacer` (solo lo propio,
 [`#regla-deshacer`](#regla-deshacer)), `completar` (lote «completar al
 100 %» en una obra, [`#regla-completar`](#regla-completar)), `export.xlsx`,
-`registro/preflight` + `registro/ejecutar`, `incidencias` (catálogo del
+`registro/preflight` + `registro/ejecutar` (del mes, de un trabajador con
+`trabajador_ide` o de un paquete con `trabajador_ides`, F-078; el botón
+general del front registra siempre el paquete, nunca el mes entero),
+`incidencias` (catálogo del
 desplegable) y, por trabajador, `trabajadores/{ide}/incidencias` (sustituir
 las suyas, [`#regla-incidencia`](#regla-incidencia), F-030), `empresas` (las del selector,
 con su nombre de Sigrid y si están de baja) y, por línea, `trabajadores/{ide}/
@@ -1315,8 +1318,9 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     `specs/F-054-sync-trae-porcentajes/requirements.md` (R28, R39-R47).*
 
 24. <a id="regla-obra-cero"></a>**Al registrar, una obra en la que la
-    plataforma no tiene nada es un 0 %.** El preflight del periodo o de un
-    trabajador (no el de una obra sola) lee además, en la primera ronda
+    plataforma no tiene nada es un 0 %.** El preflight del periodo, de un
+    trabajador o de un paquete (`trabajador_ides`, F-078; no el de una
+    obra sola) lee además, en la primera ronda
     del lote, las líneas mensuales del periodo de los trabajadores de las
     líneas (`M*`) y, si las traen, de sus vinculados (cualquier hora): una
     lectura más, dos con vinculados.
@@ -1347,6 +1351,14 @@ Réplica del patrón validado en `partes-transfer`. Contrato de dos fases:
     - **Capacidad** ([`#regla-capacidad`](#regla-capacidad)): en el
       preflight una sobrante suma como otra línea del parte; `ejecutar`
       relee tras ponerlas a 0: la puesta a 0 no suma y la omitida sí.
+    - **Paquete** (F-078): el botón general del front ya no pide el mes
+      entero, sino un paquete (`trabajador_ides`: con 2 o más
+      seleccionados a la vista, esos; si no, todos los visibles con los
+      filtros; nunca un oculto). Cada trabajador va **entero** (todas sus
+      obras, `Postv-`, VAR, vinculados e incidencias), así que las
+      sobrantes son solo las de sus recursos y las líneas de los de fuera
+      del paquete, aunque compartan parte, ni se pisan, ni se ponen a 0, ni
+      cuentan como sobrantes. La ruta del mes entero sigue en la api.
 
     *Decidido por Pablo Gris el 2026-10-24 («al registrar, si el
     trabajador no tiene nada en una obra es como un 0%. si en sigrid si
@@ -1476,6 +1488,11 @@ de que sigue en el servidor, bloquea el registro y a los 60 s
 (`ESPERA_RECARGA_TRAS_CORTE` en `app.js`) recarga el cuadrante del mes para
 que se vea qué quedó escrito. Cualquier otro error se enseña como siempre.
 Registrar en segundo plano, con progreso, queda fuera de ese arreglo.
+
+Desde F-078 el botón general registra un **paquete** (los seleccionados
+o los visibles): menos trabajadores, menos obras y menos tiempo que el mes
+entero, aunque uno sin filtros ni selección sigue siendo el mes y puede
+cortarse igual (lo recoge el arreglo de arriba).
 
 Desde F-055 el preflight del periodo es **una** llamada al lote del
 transfer (`TRANSFER_TIMEOUT_S` le cubre entero) y las propuestas del mes se

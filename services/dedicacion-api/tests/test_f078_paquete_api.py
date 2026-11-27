@@ -593,3 +593,30 @@ def test_f078_r23_sin_bloqueo_ni_aviso_por_el_100(fase):
             for p in transfer.payloads] == [[(1, 0.4), (2, 0.7)], [(3, 0.5)]]
     assert all(set(o) <= {"obra", "ok"} for o in r["obras"])
 
+
+# ------------------------------- R25 ----------------------------------- #
+def _doc(nombre: str) -> str:
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parents[3]
+    return " ".join((raiz / "docs" / nombre).read_text(encoding="utf-8")
+                    .split())
+
+
+def test_f078_r25_architecture_describe_el_paquete():
+    doc = _doc("ARCHITECTURE.md")
+    assert "de un paquete con `trabajador_ides`, F-078" in doc
+    assert ("El preflight del periodo, de un trabajador o de un paquete "
+            "(`trabajador_ides`, F-078") in doc
+    assert "el botón general del front registra siempre el paquete" in doc
+    assert "el botón general del front ya no pide el mes entero" in doc
+    assert "Desde F-078 el botón general registra un **paquete**" in doc
+
+
+def test_f078_r25_integracion_describe_la_validacion():
+    doc = _doc("INTEGRACION.md")
+    assert "Desde F-078, las dos rutas admiten además `trabajador_ides`" in doc
+    for trozo in ("lista **no vacía** de enteros", "sin repetidos",
+                  "la lista junto a un `trabajador_ide` no nulo son **422**",
+                  "No tiene tope"):
+        assert trozo in doc, trozo
