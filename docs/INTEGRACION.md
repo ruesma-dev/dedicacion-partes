@@ -347,6 +347,17 @@ Desde F-056, `trabajador_ide` en el cuerpo de `registro/preflight` y
 `null`/ausente (el mes entero); cualquier otro valor (`""`, `false`, texto,
 decimal) es **422** sin analizar ni escribir. Un `0` o un negativo son
 enteros: filtran y no casan con nadie, nunca registran el mes entero.
+Desde F-078, las dos rutas admiten además `trabajador_ides`: el **paquete**
+(los seleccionados o los visibles del front), una lista **no vacía** de
+enteros, cada uno validado como `trabajador_ide` (también `"11"` o `11.0`),
+sin repetidos y en su orden. Analiza o escribe solo a esos trabajadores, cada
+uno entero (todas sus obras, `Postv-`, VAR, vinculados e incidencias), con el
+preflight completo (sus sobrantes) si no trae `obra_ide`. Una lista vacía, un
+elemento que no es entero (`null`, `""`, `true`, texto, decimal, lista,
+objeto), algo que no es una lista o la lista junto a un `trabajador_ide` no
+nulo son **422** sin analizar ni escribir: un paquete mal formado nunca
+registra el mes entero. Sin la clave (o `null`), lo de siempre. No tiene
+tope. El botón general del front ya no pide el mes entero, solo el paquete.
 
 Desde F-055 (registro sin búsquedas de partidas; orden de la propuesta
 parte anterior → casamiento → último parte):
