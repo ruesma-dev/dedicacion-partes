@@ -133,7 +133,7 @@ casan con las firmas reales (`inspect.signature(...).bind`, con `trabajador_ides
 
 ## Para la pasada de evidencias y automejora
 
-- **Alcance:** `registro_sigrid.py` (42 líneas) y `routes.py` (46). **`app.js` no se muta**: lo cubren los 63 tests
+- **Alcance:** `registro_sigrid.py` (42 líneas) y `routes.py` (47; errata corregida por el líder, O-E3 de evidencias). **`app.js` no se muta**: lo cubren los 63 tests
   node y F1-F10. **RM6:** no se mata un mutante quitando `if valor is None`, `if x is None` (l. 177) o el
   `is not None` de `_filtro_trabajadores`: son la defensa de R3 y R10 (A2, A6).
 - **Automejora (propuesta para `CHECKPOINTS.md` C4 bis, no aplicada):** si una feature `critico` cambia código que

@@ -9,7 +9,7 @@ Resumen: **78 features**, 31 abiertas y 47 terminadas. Por columna: 1 en Review,
 
 | # | Feature | La tiene | Prioridad | Rigor | Rama |
 |---|---|---|---|---|---|
-| F-078 | Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes) | reviewer | 7 | critico | `feature/F-078-registrar-por-paquetes` |
+| F-078 | Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes) | humano | 7 | critico | `feature/F-078-registrar-por-paquetes` |
 
 ## Blocked
 
@@ -138,7 +138,7 @@ Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «import
 
 ### F-078 · Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes)
 
-estado **en QA / revisión** · spec aprobada el 2026-11-27 · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-078-registrar-por-paquetes`
+estado **en revisión humana** · spec aprobada el 2026-11-27 · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-078-registrar-por-paquetes`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 8): «poder registrar solo por seleccionados o visibles (por paquetes)». Hoy se registra el mes entero, un trabajador o una obra. Se pide registrar un paquete: los seleccionados (selección múltiple de F-029) o los que quedan visibles con los filtros. Relacionado con el corte del proxy en registros grandes (hotfix del 2026-11-11, F-073): paquetes más pequeños terminan antes. Por decidir en la spec: si el preflight y el ejecutar del paquete se comportan como los del periodo (sobrantes de F-054 incluidas) o como los de un trabajador, cómo se enseña en el modal y cómo cuadra con la regla del 100 % y los avisos por obra. 2026-11-27: SPEC en specs/F-078-registrar-por-paquetes/ (spec_ready), con D1-D9 ABIERTAS para el humano (design §10; recomendada la (a) en todas): paquete = trabajadores enteros, campo nuevo `trabajador_ides` en preflight y ejecutar de la api (422 si vacío o mal formado, nunca el mes entero), lote completo con sobrantes como el de un trabajador, botón «⇪ Registrar seleccionados (M) / visibles (N)» junto a «Completar al 100 %»; el transfer no cambia. Tests anteriores que cambian: ninguno. 2026-11-27, respuesta del humano al resumen: «quiero que el registrar actual sea el boton registrar seleccionados. ya veremos otra forma de registrar. si solo hay 1 seleccionado (no se si puede no seleccionar, en ese caso sin seleccion) registra todos los que estan visibles, sin ocultos». Spec rehecha: D4 = (d) (el botón «Registrar en Sigrid» pasa a ser el del paquete y el mes entero sale de la interfaz; la ruta del mes sigue en la api) y D3 = (a); 2+ seleccionados visibles ⇒ esos, 0 o 1 ⇒ todos los visibles, nunca un oculto; nuevas D10 (rótulo) y D11 (selección oculta ⇒ botón desactivado); D1, D2 y D5-D11 decididas en la (a) por el humano el mismo día («ok a todo»).
 

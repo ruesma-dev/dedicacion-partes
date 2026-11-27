@@ -188,9 +188,9 @@ producción es el mismo que aprobó la review en `8ca80b5`). Alcance: 89 líneas
 (`registro_sigrid.py` 42, `routes.py` 47), 18 mutantes generados → 9 candidatos
 (uno por línea) ≤ 100: **campaña completa**, sin muestreo. **9 muertos, 0
 supervivientes**, 0 timeouts, 0 indeterminados, 0 sin veredicto; sin cabecera
-«⚠ CAMPAÑA NO VÁLIDA». Línea base 123,2-123,5 s por worker; media 70,1 s ×
-4 workers = 280 s por mutante (coherente con la base, RM2); coste por mutante
-630,7 × 4 ÷ 9 = 280 s (> 1 s). Timeout efectivo 248 s. Ningún superviviente:
+«⚠ CAMPAÑA NO VÁLIDA». Línea base 123,2-123,5 s por worker; media por mutante
+juzgado con la suite entera 98,8 s (coherente con la base, RM2; corregido por
+el líder, O-E1 de evidencias); pared 630,7 s. Timeout efectivo 248 s. Ningún superviviente:
 no hubo nada que reproducir, justificar ni matar, y no se tocó producción ni se
 quitó código defensivo (RM6).
 
