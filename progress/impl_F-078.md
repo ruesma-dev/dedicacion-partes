@@ -38,21 +38,14 @@ ruta del mes entero sigue en la api, sin ningún botón que la pida.
 
 ## Ficheros
 
-- `services/dedicacion-api/interface_adapters/api/routes.py`: `_trabajador_ides(valor,
-  trabajador_ide)` y `_paquete(...)`; las dos rutas validan tras `_trabajador_ide` y pasan
-  `trabajador_ides=` al registro **solo si viene** (sin paquete, la llamada de hoy, R5).
-- `services/dedicacion-api/application/registro_sigrid.py`: `_filtro_trabajadores(columna,
-  trabajador_ide, trabajador_ides)` (`IN` / `==` / nada) en `_payloads` y
-  `_sumar_incidencias`; `trabajador_ides` en `preflight` y `ejecutar`.
-- `services/dedicacion-front/static/js/app.js`: puras de T4 + `nTrabajadores`;
-  `pintarBotonRegistro` (llamada en `renderTabla`) y `registrarPaquete` (el clic);
-  `registro.paquete` y `registro.enVuelo`; `pedirPreflight`, `registroPreflight`,
-  `pintarModalPreflight`, `registroEjecutar` y `esperarRegistroCortado`.
-- `services/dedicacion-front/templates/index.html`: la ayuda del pie.
-- `docs/ARCHITECTURE.md`, `docs/INTEGRACION.md`; `azure-apps/dedicacion.md` (commit aparte).
-- Nuevos: `services/dedicacion-api/tests/test_f078_paquete_api.py`,
-  `services/dedicacion-front/tests/test_f078_paquete_front.py`.
-- Sin tocar: todo `services/dedicacion-transfer/`, `transfer_client.py`, ORM, esquema.
+- api: `routes.py` (`_trabajador_ides`, `_paquete`: la clave va al registro solo si viene,
+  R5) y `registro_sigrid.py` (`_filtro_trabajadores`: `IN` / `==` / nada, en `_payloads`,
+  `_sumar_incidencias`, `preflight` y `ejecutar`).
+- front: `app.js` (puras de T4 y `nTrabajadores`; `pintarBotonRegistro`, `registrarPaquete`,
+  `registro.paquete`/`enVuelo`; cambios en `pedirPreflight`, `registroPreflight`,
+  `pintarModalPreflight`, `registroEjecutar`, `esperarRegistroCortado`) e `index.html` (ayuda).
+- docs: `ARCHITECTURE.md`, `INTEGRACION.md`; `azure-apps/dedicacion.md` (commit aparte).
+- Tests nuevos: `test_f078_paquete_api.py` y `test_f078_paquete_front.py`. El transfer, sin tocar.
 
 ## Decisiones y desviaciones (justificadas también en `progress/current.md`)
 
@@ -78,17 +71,8 @@ ruta del mes entero sigue en la api, sin ningún botón que la pida.
 
 ## Tests por requisito
 
-- api (`test_f078_paquete_api.py`): R2 `r2_enteros_sin_repetidos…`; R3 `r3_mal_formado_422…`
-  (20 valores × 2 rutas) y `r3_se_valida_antes…`; R4 `r4_*`; R5 `r5_sin_paquete…`,
-  `r1_r5_un_trabajador_sigue_con_igual`; R1 `r1_*`; R6 `r6_*` (incl. paquete de uno =
-  modo trabajador); R7 `r7_*`; R8 `r8_*` (orden `poner_a_cero` → obras, traza); R9 `r9_*`;
-  R10 `r10_*` (incl. `IN ()` por código); R11 `r2_r11_sin_tope`, `r6_r11_con_todos…`;
-  R23 `r23_*`; R24 `r24_*`; R25 `r25_*`.
-- front (`test_f078_paquete_front.py`): R12-R14 puras y `pintar_el_boton`; R15
-  `r15_*` (desactivado y sin `fetch` en los cuatro casos); R16/R22 `r16_r22_cuerpos…`;
-  R17 `r17_*`; R18 `r18_*`; R19 `r19_*`; R20 `r20_*` (modal real); R21 `r21_*` (aviso y
-  502/504/red); ayuda del pie.
-- R26: MANUAL (T9).
+La tabla requisito → test está en `progress/review_F-078.md` («Trazabilidad»),
+contrastada por el reviewer; R26 es la MANUAL T9.
 
 ## Tests anteriores que cambian
 
@@ -179,7 +163,8 @@ no falló: no hubo que repetir nada.
 | Tests ejecutados | raíz 2319 passed / 47 skipped; api 1848 passed; front 771 passed; transfer en verde (caché) |
 | Casos de test nuevos | api 135 (`test_f078_paquete_api.py`), front 63 (`test_f078_paquete_front.py`) |
 | Cobertura de líneas cambiadas | 100,0 % (29/29, Python; umbral 90 % del nivel `critico`) |
-| Mutantes | **en la pasada de campaña** (tras el APPROVED del reviewer principal), como pide el líder |
+| Mutantes (herramienta) | 18 generados → 9 candidatos (uno por línea), 9 evaluados, **9 muertos, 0 supervivientes**, 0 timeouts, 0 sin veredicto; **4 workers**; 630,7 s |
+| Mutantes (a mano, complementarios) | 8 evaluados, **8 muertos** (tabla de la pasada de campaña) |
 | Tiempo de la suite | raíz 22:52; api 2:51; front 4:01 |
 | Capa e2e | N/A (línea `CAPA E2E` de `init.sh`) |
 
@@ -192,4 +177,44 @@ front, que ejecutan el código real.
 - T9 (MANUAL M1, R26) del humano, en local y en modo pruebas; resultado en
   `progress/manual_F-078.md`.
 - Push del humano: la rama y `azure-apps` (`ce8437c`).
-- La campaña de mutación, en la pasada de campaña (tras el reviewer).
+- El reviewer de evidencias (pasada de campaña hecha, abajo).
+
+## Pasada de campaña (2026-11-27, tras el APPROVED de la review principal)
+
+**Mutación** (`python -m harness.mutacion --feature F-078`, por defecto 4
+workers; informe `progress/mutacion_F-078.md` y estado `.json`). SHA medido
+`b15042ab2943cfa06cba80cd4d6bd5a4f4ce3630` (HEAD tras O3; el código de
+producción es el mismo que aprobó la review en `8ca80b5`). Alcance: 89 líneas
+(`registro_sigrid.py` 42, `routes.py` 47), 18 mutantes generados → 9 candidatos
+(uno por línea) ≤ 100: **campaña completa**, sin muestreo. **9 muertos, 0
+supervivientes**, 0 timeouts, 0 indeterminados, 0 sin veredicto; sin cabecera
+«⚠ CAMPAÑA NO VÁLIDA». Línea base 123,2-123,5 s por worker; media 70,1 s ×
+4 workers = 280 s por mutante (coherente con la base, RM2); coste por mutante
+630,7 × 4 ÷ 9 = 280 s (> 1 s). Timeout efectivo 248 s. Ningún superviviente:
+no hubo nada que reproducir, justificar ni matar, y no se tocó producción ni se
+quitó código defensivo (RM6).
+
+**Mutantes a mano, complementarios.** La herramienta solo genera
+comparaciones, veracidad y lógicos (9 de 89 líneas); se añadieron 8 sobre las
+llamadas y argumentos que sostienen R1-R5, aplicados en el árbol, juzgados con
+`test_f078_paquete_api.py` + `test_f056_trabajador_ide.py` (185 tests) y
+restaurados con `git checkout` (árbol limpio después); muerto con un subconjunto, muerto con la suite.
+
+| # | Fichero | Original → mutado | Resultado |
+|---|---|---|---|
+| M1 | `registro_sigrid.py` | `return [columna.in_(list(trabajador_ides))]` → `return []` | muerto, 48 fallos |
+| M2 | `registro_sigrid.py` | (preflight) `trabajador_ides=trabajador_ides)` → `trabajador_ides=None)` | muerto, 26 |
+| M3 | `registro_sigrid.py` | (ejecutar) `self._filtro(empresa), trabajador_ides=trabajador_ides)` → `…=None)` | muerto, 22 |
+| M4 | `registro_sigrid.py` | `quitadas, trabajador_ides)` → `quitadas, None)` | muerto, 44 |
+| M5 | `routes.py` | `return {"trabajador_ides": trabajador_ides}` → `return {}` | muerto, 14 |
+| M6 | `routes.py` | `if x is None:` → `if x is None and False:` | muerto, 4 |
+| M7 | `routes.py` | `return ides` → `return ides[:1]` | muerto, 8 |
+| M8 | `routes.py` | (preflight) `_trabajador_ides(…, trabajador_ide)` → `_trabajador_ides(…, None)` | muerto, 3 |
+
+**RM7**: lo adelantó la review (R8 con A12, R17 con F5); este delta no toca esas líneas.
+**`app.js`** no se muta: lo cubren los 63 tests node y las rupturas F1-F10 de la review.
+
+**O3 · ruff** (`b15042a`): los 4 avisos de los tests nuevos (ISC004 en
+`test_f078_paquete_api.py` l. 158 y `test_f078_paquete_front.py` l. 323 y 423;
+PIE808 en l. 102) corregidos con paréntesis y `range(5)`, sin cambiar lo que
+comprueban. `ruff check .`: 439 avisos, los mismos que `dev` (antes, 443).

@@ -1,0 +1,101 @@
+{
+ "version": 1,
+ "criterio": "codigo_1",
+ "fiable": true,
+ "feature": "F-078",
+ "sha": "b15042ab2943cfa06cba80cd4d6bd5a4f4ce3630",
+ "nivel": "critico",
+ "regla": {
+  "por_linea": true,
+  "fraccion": 0.6,
+  "suelo": 100,
+  "techo": 300,
+  "origen": "nivel"
+ },
+ "semilla": 20261030,
+ "generados": 18,
+ "candidatos": 9,
+ "evaluados": [
+  {
+   "fichero": "services/dedicacion-api/application/registro_sigrid.py",
+   "linea": 230,
+   "col": 11,
+   "operador": "veracidad",
+   "original": "if trabajador_ides is not None:",
+   "mutado": "if trabajador_ides:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/registro_sigrid.py",
+   "linea": 232,
+   "col": 26,
+   "operador": "comparacion",
+   "original": "if trabajador_ide is not None:",
+   "mutado": "if trabajador_ide is None:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/application/registro_sigrid.py",
+   "linea": 233,
+   "col": 28,
+   "operador": "comparacion",
+   "original": "return [columna == trabajador_ide]",
+   "mutado": "return [columna != trabajador_ide]",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/routes.py",
+   "linea": 166,
+   "col": 7,
+   "operador": "veracidad",
+   "original": "if valor is None:",
+   "mutado": "if not valor:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/routes.py",
+   "linea": 168,
+   "col": 35,
+   "operador": "logico",
+   "original": "if not isinstance(valor, list) or not valor:",
+   "mutado": "if not isinstance(valor, list) and not valor:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/routes.py",
+   "linea": 171,
+   "col": 22,
+   "operador": "comparacion",
+   "original": "if trabajador_ide is not None:",
+   "mutado": "if trabajador_ide is None:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/routes.py",
+   "linea": 177,
+   "col": 11,
+   "operador": "veracidad",
+   "original": "if x is None:",
+   "mutado": "if not x:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/routes.py",
+   "linea": 182,
+   "col": 15,
+   "operador": "comparacion",
+   "original": "if ide not in ides:",
+   "mutado": "if ide in ides:",
+   "veredicto": "muerto"
+  },
+  {
+   "fichero": "services/dedicacion-api/interface_adapters/api/routes.py",
+   "linea": 693,
+   "col": 23,
+   "operador": "comparacion",
+   "original": "if trabajador_ides is None:",
+   "mutado": "if trabajador_ides is not None:",
+   "veredicto": "muerto"
+  }
+ ]
+}
