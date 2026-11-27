@@ -1189,11 +1189,12 @@
       "acceptance": [
         "Spec SDD aprobada por el humano; `bash harness/init.sh` en verde; review APROBADA contra `CHECKPOINTS.md` con rigor crítico."
       ],
-      "status": "todo",
+      "status": "blocked",
       "sdd": true,
       "rigor": "critico",
       "priority": 4,
-      "branch": "feature/F-071-trabajador-mes-parcial"
+      "branch": "feature/F-071-trabajador-mes-parcial",
+      "spec_aprobada": "2026-11-27"
     },
     {
       "id": "F-072",
