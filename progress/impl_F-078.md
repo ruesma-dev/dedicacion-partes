@@ -28,13 +28,13 @@ ruta del mes entero sigue en la api, sin ningún botón que la pida.
 | T2 api, registro: `_filtro_trabajadores` con `IN` (R1, R6, R9-R11), RED | `d075e04` |
 | T3 api, tests R7, R8, R24 (sin RED: el código ya era el de T2) | `bdf7ac9` |
 | T4 front, puras `alcanceRegistro`, `rotuloRegistro`, `tituloRegistro`, `cabeceraPaquete` (R12-R14, R20), RED | `e879249` |
-| T5 front, botón, flujo, modal y aviso (R12, R15-R22), RED | ver `git log` |
-| T6 api, test R23 (sin RED: fija lo de hoy, D6) | ver `git log` |
-| T7 docs `ARCHITECTURE.md` e `INTEGRACION.md` + test R25 | ver `git log` |
+| T5 front, botón, flujo, modal y aviso (R12, R15-R22), RED | `6a12868` |
+| T6 api, test R23 (sin RED: fija lo de hoy, D6) | `1e5fb35` |
+| T7 docs `ARCHITECTURE.md` e `INTEGRACION.md` + test R25 | `6a7d26a` |
 | T8 `azure-apps/dedicacion.md` | `azure-apps` `ce8437c` (sin push) |
 | T9 MANUAL M1 (R26) | **sin marcar, del humano** |
-| T10 este informe | este commit |
-| T11 `bash harness/init.sh` | ver «Salida de `init.sh`» |
+| T10 este informe | `d316311` |
+| T11 `bash harness/init.sh` en verde | este commit |
 
 ## Ficheros
 
@@ -152,11 +152,40 @@ R8, R24; R23, D6), y T7 es documentación.
 
 ## Salida de `init.sh`
 
-PENDIENTE DE COMPLETAR
+`bash harness/init.sh` una sola vez, al final (salida a un fichero del scratchpad,
+sin pipes): **exit 0, ningún `[KO]` ni aviso**. Líneas clave:
+
+```
+2319 passed, 47 skipped in 1372.26s (0:22:52)
+[OK] pytest en verde (con medición de cobertura)
+1848 passed, 1 warning in 171.86s (0:02:51)
+[OK] servicio api (services/dedicacion-api): pytest en verde
+771 passed, 19 warnings in 241.59s (0:04:01)
+[OK] servicio front (services/dedicacion-front): pytest en verde
+[OK] servicio transfer (services/dedicacion-transfer): pytest en verde (caché: … sin cambios …)
+[OK] PUERTA COBERTURA: 100.0% de 29 líneas cambiadas cubiertas (29/29, umbral 90% (del nivel critico), nivel critico; diff desde b383f3c4bf, merge-base con dev)
+[OK] PUERTA TAMAÑO: F-078 dentro de los topes (requirements 150/150, design 233/250, impl 166/220)
+[OK] PUERTA CARRIL: N/A (F-078 es de nivel critico: no declara límites)
+[OK] CAPA E2E: N/A (ningún servicio declara el bloque e2e)
+```
+
+El test intermitente conocido (`test_f059_r9_timeout_mata_el_arbol_y_no_es_rojo`)
+no falló: no hubo que repetir nada.
 
 ## Evidencias
 
-PENDIENTE DE COMPLETAR
+| Evidencia | Valor medido |
+|---|---|
+| Tests ejecutados | raíz 2319 passed / 47 skipped; api 1848 passed; front 771 passed; transfer en verde (caché) |
+| Casos de test nuevos | api 135 (`test_f078_paquete_api.py`), front 63 (`test_f078_paquete_front.py`) |
+| Cobertura de líneas cambiadas | 100,0 % (29/29, Python; umbral 90 % del nivel `critico`) |
+| Mutantes | **en la pasada de campaña** (tras el APPROVED del reviewer principal), como pide el líder |
+| Tiempo de la suite | raíz 22:52; api 2:51; front 4:01 |
+| Capa e2e | N/A (línea `CAPA E2E` de `init.sh`) |
+
+La cobertura de líneas y la mutación solo miden Python: el cambio de `app.js`
+(la mitad de la feature) no lo mide `init.sh`; lo cubren los 63 tests node del
+front, que ejecutan el código real.
 
 ## Pendiente
 
