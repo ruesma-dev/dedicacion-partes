@@ -94,3 +94,7 @@ cierra esos puntos. Nivel `critico` (declarado): mutación exigida, uno por lín
   de O-E1 es la que esa aclaración evita, y vale para cualquier proyecto (portar a `arnes-base`).
 
 ## init.sh sobre este commit
+
+`bash harness/init.sh` sobre `9f1f1d1`: código 0, **0 `[KO]`**, `ENTORNO LISTO`. Raíz `2319 passed, 47 skipped`
+(23:37, ejecutada); api, front y transfer en verde por caché (sin cambios desde su verde de hoy); `COBERTURA [OK]`
+100 % (29/29); `TAMAÑO [OK]` (review 140/140).
