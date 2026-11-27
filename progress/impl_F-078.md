@@ -1,0 +1,166 @@
+# F-078 · Informe del implementer (`critico`)
+
+Rama `feature/F-078-registrar-por-paquetes` (worktree `porcentajes-f078`).
+Spec aprobada por el humano el 2026-11-27 (D3 a, D4 d; D1, D2 y D5-D11 la (a)).
+
+## Hecho
+
+El botón «Registrar en Sigrid» (`#btn-registro`, el mismo, sin botón nuevo)
+registra ahora un **paquete**: con 2 o más seleccionados visibles, esos; con 0
+o 1 (el cursor cuenta como 1), todos los visibles con los filtros; nunca un
+oculto. Su rótulo dice a quién («Registrar seleccionados (M)» / «Registrar
+visibles (N)») y se recalcula en cada pintado de la tabla; se desactiva con el
+periodo no abierto, sin visibles, con la selección oculta por el filtro (con
+`title` que lo dice) o tras un corte. El front solo manda los `ide`
+(`trabajador_ides`); la api decide qué líneas van. En la api, las dos rutas
+del registro validan `trabajador_ides` (lista no vacía de enteros, sin
+repetidos, en su orden; 422 si no, o si viene junto a un `trabajador_ide` no
+nulo) y el registro filtra con `IN` asignaciones e incidencias: cada trabajador
+entero, lote completo con sus sobrantes sin `obra_ide`. El transfer no se toca.
+El «⇪ Sigrid» de fila y editor sigue igual (un trabajador, sin la clave). La
+ruta del mes entero sigue en la api, sin ningún botón que la pida.
+
+## Tareas y commits
+
+| Tarea | Commit |
+|---|---|
+| T1 api, rutas: `_trabajador_ides` (R2-R5), RED | `e4db2d0` |
+| T2 api, registro: `_filtro_trabajadores` con `IN` (R1, R6, R9-R11), RED | `d075e04` |
+| T3 api, tests R7, R8, R24 (sin RED: el código ya era el de T2) | `bdf7ac9` |
+| T4 front, puras `alcanceRegistro`, `rotuloRegistro`, `tituloRegistro`, `cabeceraPaquete` (R12-R14, R20), RED | `e879249` |
+| T5 front, botón, flujo, modal y aviso (R12, R15-R22), RED | ver `git log` |
+| T6 api, test R23 (sin RED: fija lo de hoy, D6) | ver `git log` |
+| T7 docs `ARCHITECTURE.md` e `INTEGRACION.md` + test R25 | ver `git log` |
+| T8 `azure-apps/dedicacion.md` | `azure-apps` `ce8437c` (sin push) |
+| T9 MANUAL M1 (R26) | **sin marcar, del humano** |
+| T10 este informe | este commit |
+| T11 `bash harness/init.sh` | ver «Salida de `init.sh`» |
+
+## Ficheros
+
+- `services/dedicacion-api/interface_adapters/api/routes.py`: `_trabajador_ides(valor,
+  trabajador_ide)` y `_paquete(...)`; las dos rutas validan tras `_trabajador_ide` y pasan
+  `trabajador_ides=` al registro **solo si viene** (sin paquete, la llamada de hoy, R5).
+- `services/dedicacion-api/application/registro_sigrid.py`: `_filtro_trabajadores(columna,
+  trabajador_ide, trabajador_ides)` (`IN` / `==` / nada) en `_payloads` y
+  `_sumar_incidencias`; `trabajador_ides` en `preflight` y `ejecutar`.
+- `services/dedicacion-front/static/js/app.js`: puras de T4 + `nTrabajadores`;
+  `pintarBotonRegistro` (llamada en `renderTabla`) y `registrarPaquete` (el clic);
+  `registro.paquete` y `registro.enVuelo`; `pedirPreflight`, `registroPreflight`,
+  `pintarModalPreflight`, `registroEjecutar` y `esperarRegistroCortado`.
+- `services/dedicacion-front/templates/index.html`: la ayuda del pie.
+- `docs/ARCHITECTURE.md`, `docs/INTEGRACION.md`; `azure-apps/dedicacion.md` (commit aparte).
+- Nuevos: `services/dedicacion-api/tests/test_f078_paquete_api.py`,
+  `services/dedicacion-front/tests/test_f078_paquete_front.py`.
+- Sin tocar: todo `services/dedicacion-transfer/`, `transfer_client.py`, ORM, esquema.
+
+## Decisiones y desviaciones (justificadas también en `progress/current.md`)
+
+1. **`esperarRegistroCortado` sí se toca.** El design §4 la pone en «no se tocan», pero
+   el §6 y R19 piden que al desbloquearse vuelva al rótulo de su alcance. Manda el
+   requisito: solo cambia la restauración (`dataset.rotulo` o «Registrar en Sigrid») y
+   la llamada a `pintarBotonRegistro` si existe; el resto, igual.
+2. **La ruta pasa `trabajador_ides` solo si viene** (`_paquete`): sin paquete, el registro
+   recibe exactamente las claves de hoy (test R5 lo compara).
+3. **`pintarBotonRegistro` va antes del `forEach` de `renderTabla`**, no al final:
+   `test_f050_t15f_total` exige que la función termine en `sincronizarAnchoTabla()`.
+4. **`pedirPreflight` usa dos `JSON.stringify`** (con y sin paquete): `test_f050_modal_registro`
+   exige el literal de hoy; sin paquete, el cuerpo es byte a byte el de siempre.
+5. **`registro.enVuelo`** (nuevo): con un preflight del botón en curso, el repintado de la
+   tabla no pisa «Analizando…» ni lo reactiva (design §6, «hay un preflight en vuelo»).
+6. **Singular**: «1 trabajador» en el título del modal, el aviso final y el `title`.
+7. **Rótulo bloqueado**: «Registrar seleccionados (0)», desactivado y con el `title`.
+8. **Orden de obras del paquete**: el del modo trabajador (una obra donde el paquete solo
+   tiene incidencias va al final, `_grupo`), no el del mes. R6 se comprueba obra a obra y
+   un paquete de uno da las mismas peticiones que `trabajador_ide` (test).
+9. `registrarPaquete` calcula el alcance **antes** de `guardarAhora` (lo que decía el
+   rótulo al pulsar) y, tras un corte, ni guarda ni pide nada.
+
+## Tests por requisito
+
+- api (`test_f078_paquete_api.py`): R2 `r2_enteros_sin_repetidos…`; R3 `r3_mal_formado_422…`
+  (20 valores × 2 rutas) y `r3_se_valida_antes…`; R4 `r4_*`; R5 `r5_sin_paquete…`,
+  `r1_r5_un_trabajador_sigue_con_igual`; R1 `r1_*`; R6 `r6_*` (incl. paquete de uno =
+  modo trabajador); R7 `r7_*`; R8 `r8_*` (orden `poner_a_cero` → obras, traza); R9 `r9_*`;
+  R10 `r10_*` (incl. `IN ()` por código); R11 `r2_r11_sin_tope`, `r6_r11_con_todos…`;
+  R23 `r23_*`; R24 `r24_*`; R25 `r25_*`.
+- front (`test_f078_paquete_front.py`): R12-R14 puras y `pintar_el_boton`; R15
+  `r15_*` (desactivado y sin `fetch` en los cuatro casos); R16/R22 `r16_r22_cuerpos…`;
+  R17 `r17_*`; R18 `r18_*`; R19 `r19_*`; R20 `r20_*` (modal real); R21 `r21_*` (aviso y
+  502/504/red); ayuda del pie.
+- R26: MANUAL (T9).
+
+## Tests anteriores que cambian
+
+**Ninguno** (lista cerrada de requirements §6): `git diff dev --stat` sobre `tests/`
+solo lista los dos ficheros nuevos.
+
+## Fase RED (trazas reales)
+
+Cada test se escribió y ejecutó antes que su código de producción (salida
+recortada de `pytest -q --tb=line`, desde la carpeta del servicio).
+
+**T1** (rutas), `.venv/Scripts/python -m pytest tests/test_f078_paquete_api.py -q --tb=line -p no:cacheprovider -k "r2 or r3 or r4 or r5"`:
+
+```
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF..FFFFFFFFFFFF........ [100%]
+E   AssertionError: {"ok":true,"obras":[]}
+    assert 200 == 422
+E   KeyError: 'trabajador_ides'
+62 failed, 10 passed, 1 warning in 35.02s
+```
+(Los 10 verdes: los 8 de R5, que fijan lo de hoy, y los 2 de
+`r4_trabajador_roto…`, que fijan F-056.) En verde tras `_trabajador_ides`,
+con `test_f056_trabajador_ide.py`, `test_f024_rutas_empresa.py`,
+`test_f054_rutas.py` y `test_f050_preflight_obra.py`: 212 passed.
+
+**T2** (registro), `… -k "r1 or r6 or r9 or r10 or r11"`:
+
+```
+E   TypeError: RegistroSigrid.preflight() got an unexpected keyword argument 'trabajador_ides'
+E   TypeError: RegistroSigrid.ejecutar() got an unexpected keyword argument 'trabajador_ides'
+38 failed, 4 passed, 70 deselected, 1 warning in 15.70s
+```
+(Verdes: `r2_r11_sin_tope`, de rutas, ya en T1, y `r1_r5_un_trabajador…`,
+que fija F-056.) En verde: 120 passed en el fichero.
+
+**T4** (puras), `.venv/Scripts/python -m pytest tests/test_f078_paquete_front.py -q --tb=line -p no:cacheprovider -k "r12 or r13 or r14 or r20"`:
+
+```
+E   AssertionError: no existe la función alcanceRegistro en app.js
+30 failed, 2 deselected in 1.02s
+```
+
+**T5** (botón y flujo), `… tests/test_f078_paquete_front.py -q --tb=line`:
+
+```
+................................FFFFFFFFFFFFFFF.FF.F.FFF...FF.F          [100%]
+E   AssertionError: assert [{'trabajador_ide': None}] == [{'trabajador...': [3, 1, 2]}]
+      At index 0 diff: {'trabajador_ide': None} != {'trabajador_ide': None, 'trabajador_ides': [3, 1, 2]}
+E   assert 'registrarPaquete()' in 'document.addEventListener("DOMContentLoaded", () => {\n  const b = $("#btn-registro");\n  if (b) b.addEventListener("click", () => registroPreflight(null));\n});'
+E   assert 'pintarBotonRegistro(visibles);' in 'function renderTabla() { … sincronizarAnchoTabla();\n}…'
+E   assert '· 3 trabajadores (visibles)</h2>' in '<h2>Registrar en Sigrid · nov 2026</h2>…'
+E   assert 'Registrar: seleccionados (2+) o visibles' in '<!-- templates/index.html -->…'
+24 failed, 39 passed in 34.75s
+```
+(La primera es la avería de la feature: el clic pedía el mes entero. Los 39
+verdes: los 32 de T4 y los que fijan lo de hoy: «⇪ Sigrid» sin la clave, el
+corte del hotfix y el modal sin paquete.) En verde: 63 passed.
+
+T3, T6 y T7 no tienen RED: T3 y T6 fijan lo que ya hace el código de T2 (R7,
+R8, R24; R23, D6), y T7 es documentación.
+
+## Salida de `init.sh`
+
+PENDIENTE DE COMPLETAR
+
+## Evidencias
+
+PENDIENTE DE COMPLETAR
+
+## Pendiente
+
+- T9 (MANUAL M1, R26) del humano, en local y en modo pruebas; resultado en
+  `progress/manual_F-078.md`.
+- Push del humano: la rama y `azure-apps` (`ce8437c`).
+- La campaña de mutación, en la pasada de campaña (tras el reviewer).
