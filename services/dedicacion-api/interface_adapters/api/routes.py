@@ -155,6 +155,35 @@ def _trabajador_ide(valor: Any) -> int | None:
     return _entero_opcional(valor, "trabajador_ide", TrabajadorNoValido)
 
 
+def _trabajador_ides(valor: Any, trabajador_ide: int | None
+                     ) -> list[int] | None:
+    """`trabajador_ides` del cuerpo del registro (F-078, R2-R4): el
+    paquete. `None` si no viene; si no, una lista NO vacía de enteros (cada
+    uno como `trabajador_ide`, sin `null` dentro), sin repetidos y en su
+    orden. Una lista vacía, un elemento que no es entero o la lista junto a
+    un `trabajador_ide` no nulo son 422: un paquete mal formado nunca
+    registra el mes entero."""
+    if valor is None:
+        return None
+    if not isinstance(valor, list) or not valor:
+        raise TrabajadorNoValido(
+            f"trabajador_ides no es una lista no vacía de enteros: {valor!r}")
+    if trabajador_ide is not None:
+        raise TrabajadorNoValido(
+            "trabajador_ides no se admite junto a trabajador_ide")
+    ides: list[int] = []
+    for x in valor:
+        # `None` dentro no es «sin filtro» (`_entero_opcional` lo admite).
+        if x is None:
+            raise TrabajadorNoValido(
+                f"trabajador_ides lleva un elemento nulo: {valor!r}")
+        ide = _entero_opcional(x, "trabajador_ides (elemento)",
+                               TrabajadorNoValido)
+        if ide not in ides:
+            ides.append(ide)
+    return ides
+
+
 # --------------------------- Salud ------------------------------------
 @router.get("/health", tags=["salud"])
 def health(contenedor: Cont) -> dict[str, Any]:
@@ -620,14 +649,17 @@ def registro_preflight(anio: int, mes: int, contenedor: Cont,
     para el registro de una sola línea, `obra_ide` para analizar solo esa
     obra (F-050: el modal tras cambiar una partida) y `overrides` de
     partida. La empresa llega por query, como en el resto de rutas del
-    periodo (F-024). `trabajador_ide` se valida antes de nada (F-056)."""
+    periodo (F-024). `trabajador_ide` se valida antes de nada (F-056), y
+    `trabajador_ides` (el paquete, F-078) justo después."""
     trabajador_ide = _trabajador_ide(payload.get("trabajador_ide"))
+    trabajador_ides = _trabajador_ides(payload.get("trabajador_ides"),
+                                       trabajador_ide)
     filtro = _filtro(contenedor, empresa)
     overrides = {int(k): int(v) for k, v in
                  (payload.get("overrides") or {}).items()}
     return contenedor.registro_sigrid.preflight(
         anio, mes, overrides,
-        trabajador_ide=trabajador_ide,
+        trabajador_ide=trabajador_ide, **_paquete(trabajador_ides),
         empresa=filtro.empresa, obra_ide=_obra_ide(payload.get("obra_ide")))
 
 
@@ -637,19 +669,30 @@ def registro_ejecutar(anio: int, mes: int, contenedor: Cont,
                       empresa: EmpresaQ = None) -> dict[str, Any]:
     """Escribe en Sigrid vía porcentajes-transfer y deja la traza, con la
     empresa elegida (F-024). `trabajador_ide` se valida antes de nada
-    (F-056): un valor que no es entero es 422 y no se escribe."""
+    (F-056): un valor que no es entero es 422 y no se escribe. Lo mismo
+    `trabajador_ides`, el paquete (F-078)."""
     trabajador_ide = _trabajador_ide(payload.get("trabajador_ide"))
+    trabajador_ides = _trabajador_ides(payload.get("trabajador_ides"),
+                                       trabajador_ide)
     filtro = _filtro(contenedor, empresa)
     overrides = {int(k): int(v) for k, v in
                  (payload.get("overrides") or {}).items()}
     return contenedor.registro_sigrid.ejecutar(
         anio, mes, pisar_claves=list(payload.get("pisar_claves") or []),
         overrides=overrides, usuario=str(payload.get("usuario") or "local"),
-        trabajador_ide=trabajador_ide,
+        trabajador_ide=trabajador_ide, **_paquete(trabajador_ides),
         empresa=filtro.empresa,
         # F-054 (R35): las sobrantes confirmadas, tal como las publicó el
         # preflight; sin ellas, como hoy.
         sobrantes_a_cero=_sobrantes_a_cero(payload.get("sobrantes_a_cero")))
+
+
+def _paquete(trabajador_ides: list[int] | None) -> dict[str, Any]:
+    """F-078 (R5): sin paquete, la llamada al registro de hoy (sin la
+    clave); con él, `trabajador_ides`."""
+    if trabajador_ides is None:
+        return {}
+    return {"trabajador_ides": trabajador_ides}
 
 
 def _sobrantes_a_cero(valor: Any) -> list[dict] | None:
