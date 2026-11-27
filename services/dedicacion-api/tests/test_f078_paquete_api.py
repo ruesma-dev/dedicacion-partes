@@ -32,7 +32,7 @@ from sqlalchemy.sql.visitors import iterate
 from tests.test_f024_registro_empresa import _fila
 from tests.test_f024_rutas_empresa import BASE, api  # noqa: F401 (fixture)
 from tests.test_f030_r30_identidad import _inc_traza
-from tests.test_f054_registro_cero import _TransferCero
+from tests.test_f054_registro_cero import SOBRANTE, _TransferCero
 
 RUTAS = ["preflight", "ejecutar"]
 
@@ -467,3 +467,112 @@ def test_f078_r10_lista_vacia_por_codigo_no_es_el_mes(fase):
                                   ("incidencia", "in", [])]
     assert r == {"ok": True, "obras": [], "no_vigentes": []}
     assert transfer.payloads == []
+
+
+# ------------------------------- R7 ------------------------------------ #
+def test_f078_r7_paquete_sin_obra_es_completo_con_sobrantes():
+    t = _TransferCero([SOBRANTE])
+    reg, _, _ = _registro(t)
+    r = reg.preflight(2026, 7, trabajador_ides=[10, 11])
+    assert t.llamadas == [("preflight_lote", True)]
+    assert r["sobrantes"] == [SOBRANTE]
+    assert [o["obra"]["ide"] for o in r["obras"]] == [678, 694, 713, 800]
+
+
+@pytest.mark.parametrize("sobrantes", [None, []])
+def test_f078_r7_sin_sobrantes_la_clave_no_va(sobrantes):
+    t = _TransferCero(sobrantes)
+    reg, _, _ = _registro(t)
+    r = reg.preflight(2026, 7, trabajador_ides=[10, 11])
+    assert t.llamadas == [("preflight_lote", True)]
+    assert "sobrantes" not in r
+
+
+@pytest.mark.parametrize(("obra", "lineas"), [(694, [4]), (678, [1, 2])])
+def test_f078_r7_con_obra_solo_esa_del_paquete_y_sin_sobrantes(obra, lineas):
+    t = _TransferCero([SOBRANTE])
+    reg, _, _ = _registro(t)
+    r = reg.preflight(2026, 7, trabajador_ides=[10, 11], obra_ide=obra)
+    assert t.llamadas == [("preflight_lote", False)]
+    assert "sobrantes" not in r
+    [p] = t.payloads
+    assert p["obra"]["ide"] == obra
+    assert [ln["registro_id"] for ln in p["lineas"]] == lineas
+
+
+def test_f078_r7_con_obra_que_no_es_del_paquete_nada():
+    """La 700 es solo del 12: con el paquete del 10 y el 11, ni se pide."""
+    t = _TransferCero([SOBRANTE])
+    reg, _, _ = _registro(t)
+    r = reg.preflight(2026, 7, trabajador_ides=[10, 11], obra_ide=700)
+    assert t.llamadas == [] and r["obras"] == []
+    assert "incidencias_quitadas" not in r
+
+
+# ------------------------------- R8 ------------------------------------ #
+def test_f078_r8_ejecutar_pone_a_cero_y_luego_las_del_paquete():
+    t = _TransferCero()
+    reg, _, _ = _registro(t)
+    r = reg.ejecutar(2026, 7, pisar_claves=["k"], trabajador_ides=[10, 11],
+                     sobrantes_a_cero=[SOBRANTE])
+    assert t.llamadas == [
+        ("poner_a_cero", 1, 2026, 7, [{
+            "hmores_ide": 7001, "recurso_ide": 201, "hora": "MENC",
+            "vinculado": None, "can": 0.3, "synckey": None}]),
+        ("ejecutar", 678), ("ejecutar", 694), ("ejecutar", 713),
+        ("ejecutar", 800)]
+    assert r["sobrantes_a_cero"] == {"puestas": [{"hmores_ide": 7001}],
+                                     "omitidas": []}
+    assert all(p["pisar_claves"] == ["k"] and p["usuario"] == "local"
+               for p in t.payloads)
+
+
+def test_f078_r8_ejecutar_sin_sobrantes_solo_las_del_paquete():
+    t = _TransferCero()
+    reg, _, _ = _registro(t)
+    r = reg.ejecutar(2026, 7, pisar_claves=[], trabajador_ides=[12])
+    assert t.llamadas == [("ejecutar", 678), ("ejecutar", 700)]
+    assert "sobrantes_a_cero" not in r
+    assert [o["obra"]["ide"] for o in r["obras"]] == [678, 700]
+
+
+def test_f078_r8_ejecutar_traza_lo_que_vuelve():
+    """La traza de hoy (F-054 R35): lo escrito se anota en su asignación."""
+    class _TransferEscribe(_TransferCero):
+        def ejecutar(self, payload):
+            super().ejecutar(payload)
+            return {"ok": True, "escritas": [
+                {"registro_id": ln["registro_id"], "parte_cod": "PT",
+                 "hmores_ide": 5000 + ln["registro_id"]}
+                for ln in payload["lineas"]]}
+
+    t = _TransferEscribe()
+    reg, _, anotado = _registro(t)
+    reg.ejecutar(2026, 7, pisar_claves=[], trabajador_ides=[11])
+    escritas = sorted(u["sigrid_hmores_ide"] for u in anotado["updates"]
+                      if "sigrid_hmores_ide" in u
+                      and u.get("sigrid_estado") == "registrado")
+    assert escritas == [5002, 5007]
+
+
+# ------------------------------- R24 ----------------------------------- #
+@pytest.mark.parametrize("fase", RUTAS)
+def test_f078_r24_obra_compartida_sin_nada_de_los_de_fuera(fase):
+    """La 678 tiene al 10, al 11, al 12 y al 20: con el paquete del 10 y el
+    12, su petición no lleva ni línea, ni incidencia, ni quitada, ni
+    incidencia del mes del 11 ni del 20 (el transfer no los ve: no los pisa,
+    no los pone a 0 ni los cuenta como sobrantes)."""
+    reg, transfer, _ = _registro()
+    _llamar(reg, fase, trabajador_ides=[10, 12])
+    p678 = next(p for p in transfer.payloads if p["obra"]["ide"] == 678)
+    recursos = {x["recurso_ide"] for clave in (
+        "lineas", "incidencias", "quitadas", "incidencias_mes")
+        for x in p678.get(clave, [])}
+    assert recursos == {10, 12}
+    assert [ln["registro_id"] for ln in p678["lineas"]] == [1, 3]
+    assert [i["id"] for i in p678["incidencias"]] == [7, 6]
+    assert p678["cierres_recursos"] == [10, 12]
+    todos = {x["recurso_ide"] for p in transfer.payloads for clave in (
+        "lineas", "incidencias", "quitadas", "incidencias_mes")
+        for x in p.get(clave, [])}
+    assert todos == {10, 12}
