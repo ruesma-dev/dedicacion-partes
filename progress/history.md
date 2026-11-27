@@ -3303,3 +3303,9 @@ Rama `feature/F-081-operaciones-en-celdas` · `sdd: true` · rigor `estandar` ·
 - **Qué cambió.** La celda de % y las casillas de cantidad (km y €) admiten operaciones (`=` opcional, `+ - * /`, paréntesis, coma o punto); se evalúan al confirmar con un evaluador propio de `app.js` (sin `eval`), la celda queda con el resultado a dos decimales y a la api solo llega el número. Errores y % fuera de (0, 100] ⇒ aviso y la celda vuelve a lo último válido. Solo el front; api, transfer y `azure-apps` sin tocar.
 - **Verificado.** 94 tests nuevos; front 708, raíz 2319 + 47 skipped, api 1713, transfer 2021; `init.sh` sin caché en verde. Cobertura y mutación N/A (JS). Review principal APPROVED (`0a73b99`), con fuzz de 3.000 expresiones sin discrepancias. Dos desviaciones de design §5 a favor de la letra de R4 y R9/R10, aceptadas.
 - **Despliegue.** El primero (`r20261126-1744`) salió de `dev` antes del merge y no la lleva (error del líder, que dio el comando antes de unir). Pendiente: redesplegar el front y M1 (T11).
+
+## 2026-11-27 · F-081 · Desplegada
+
+- Solo el front, lanzado por el humano: `r20261127-0913` (`ca-dedicacion-front--r20261127091315`), 100 % del tráfico; el `app.js` servido lleva `evaluarExpresion`.
+- M1 (T11) por el líder en producción, 2026/11 abierto, sin registrar: cumple los cinco pasos de design §8 y el `title` de D7; línea de prueba restaurada (`progress/manual_F-081.md`).
+- Observaciones para el humano: una operación no válida que empieza por un número deja la celda en ese número (el prefijo ya contó en vivo; R10 repone «el % de la línea»); un texto en la casilla de km se perdió una vez, probablemente por el repintado de un guardado pendiente.
