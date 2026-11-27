@@ -3941,6 +3941,73 @@ function textoPartidaAccion(a) {
   return a.partida_cod || `partida ${a.paride}`;
 }
 
+// F-078 (R13, R14; D3, D4, D11): a quién registra el botón general. Solo
+// elige a quién (la api decide qué líneas van). `visibles`: los trabajadores
+// de la tabla con los filtros, en su orden; `seleccion`: la múltiple de
+// F-029 (un `Set` de `ide`). Con 2 o más seleccionados a la vista, esos;
+// con 2 o más seleccionados pero menos de 2 a la vista, bloqueado (la
+// selección está oculta: no pasa a los visibles); con 0 o 1 (el cursor
+// cuenta como 1), todos los visibles. Nunca un `ide` que no se vea.
+function alcanceRegistro(visibles, seleccion) {
+  const vis = visibles.filter((t) => seleccion.has(t.ide)).map((t) => t.ide);
+  const ocultos = seleccion.size - vis.length;
+  if (vis.length >= 2) {
+    return { origen: "seleccionados", ides: vis, ocultos, bloqueado: false };
+  }
+  if (seleccion.size >= 2) {
+    return { origen: "seleccionados", ides: [], ocultos, bloqueado: true };
+  }
+  return { origen: "visibles", ides: visibles.map((t) => t.ide), ocultos: 0,
+    bloqueado: false };
+}
+
+// F-078 (R12, D10): el rótulo del botón con su alcance.
+function rotuloRegistro(a) {
+  return `Registrar ${a.origen} (${a.ides.length})`;
+}
+
+// «1 trabajador» o «N trabajadores» (F-078, R20 y R21).
+function nTrabajadores(n) {
+  return n === 1 ? "1 trabajador" : `${n} trabajadores`;
+}
+
+// F-078 (R12, R14): el `title` del botón: a quién registra, o por qué no.
+function tituloRegistro(a) {
+  if (a.bloqueado) {
+    return "No se registra: la selección está oculta por el filtro " +
+      "(quita el filtro, o Esc para quitar la selección y registrar los visibles)";
+  }
+  if (!a.ides.length) return "No hay trabajadores visibles que registrar";
+  const ocultos = a.ocultos === 1
+    ? " (1 seleccionado oculto por el filtro no se registra)"
+    : a.ocultos > 1
+      ? ` (${a.ocultos} seleccionados ocultos por el filtro no se registran)` : "";
+  const quienes = a.origen === "seleccionados"
+    ? (a.ides.length === 1 ? "seleccionado" : "seleccionados")
+    : (a.ides.length === 1 ? "visible" : "visibles");
+  return `Registra en Sigrid a ${nTrabajadores(a.ides.length)} ${quienes}` +
+    ocultos;
+}
+
+// F-078 (R20, D5): lo que el modal del preflight de un paquete añade: al
+// título, «· N trabajadores (seleccionados | visibles)»; debajo, la lista
+// plegable de sus nombres (escapados) y, si los hay, los seleccionados que
+// el filtro oculta y no se registran.
+function cabeceraPaquete(a, nombres) {
+  const k = a.ocultos || 0;
+  const ocultos = k === 1
+    ? '<div class="aviso">1 seleccionado oculto por el filtro no se registra</div>'
+    : k > 1
+      ? `<div class="aviso">${k} seleccionados ocultos por el filtro no se registran</div>`
+      : "";
+  return {
+    titulo: ` · ${nTrabajadores(a.ides.length)} (${a.origen})`,
+    detalle: `<details class="paquete-registro"><summary>Ver ${nTrabajadores(nombres.length)}</summary>` +
+      `<ul>${nombres.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul></details>` +
+      ocultos,
+  };
+}
+
 // El preflight del periodo para el trabajador de la petición (todos o uno).
 // Las partidas son las guardadas en el cuadrante (F-050, R29). Con `obraIde`,
 // solo esa obra (M2, punto 5); sin ella no viaja (JSON omite `undefined`).
