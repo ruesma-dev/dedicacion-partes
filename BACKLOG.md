@@ -3,13 +3,11 @@
 
 **Fichero generado por `harness/backlog.py` a partir de `harness/features.json`. No lo edites a mano**: edita el JSON y vuelve a generarlo (lo hace solo `bash harness/init.sh`).
 
-Resumen: **78 features**, 31 abiertas y 47 terminadas. Por columna: 1 en Review, 1 en Blocked, 0 en In progress, 0 en Spec aprobada, 6 en To do, 23 en Backlog y 47 en Done.
+Resumen: **78 features**, 30 abiertas y 48 terminadas. Por columna: 0 en Review, 1 en Blocked, 0 en In progress, 0 en Spec aprobada, 6 en To do, 23 en Backlog y 48 en Done.
 
 ## Review
 
-| # | Feature | La tiene | Prioridad | Rigor | Rama |
-|---|---|---|---|---|---|
-| F-078 | Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes) | humano | 7 | critico | `feature/F-078-registrar-por-paquetes` |
+_Nada esperando revisión._
 
 ## Blocked
 
@@ -68,6 +66,7 @@ _Ninguna feature con la spec lista._
 
 | # | Feature | Cierre | OK humano | Prioridad | Rigor |
 |---|---|---|---|---|---|
+| F-078 | Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes) | 2026-11-27 | 2026-11-27 | 7 | critico |
 | F-080 | Caja de obra: una por trabajador y repartida con su %, como los km | 2026-11-26 | 2026-11-26 | 1 | critico |
 | F-081 | Operaciones matemáticas en las celdas numéricas del cuadrante | 2026-11-26 | 2026-11-26 | 1 | estandar |
 | F-074 | La partida no se queda en «automática»: o sale la que va a encontrar el registro, o sale que no la encuentra | 2026-11-24 | 2026-11-24 | 1 | critico |
@@ -135,12 +134,6 @@ Pedida por el humano el 2026-10-07: «que cerrar y abrir solo sea posible en cie
 estado **to do (comprometida)** · prioridad 6 · rigor `critico` · SDD sí · rama `feature/F-077-importes-en-euros-por-persona`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 7): «importe en euros para km, viajes y gastos de obra. Total por persona y se reparte por %». CAMBIA lo que F-069 dejó desplegado el 2026-11-21 (D2 del 2026-11-11: caja en €, km en km y viaje en €): (a) el km se teclea en euros, no en km (fuera el `precio_km` como multiplicador, o se mantiene solo como ayuda: por decidir); (b) la caja de obra (gastos de obra) deja de ser una cantidad por obra (reparto `obra`, `can` 1) y pasa a ser un total del mes por persona que se reparte por el % de cada obra, como viajes. Por decidir en la spec: qué pasa con las cantidades ya tecleadas en km y en caja por obra (migración), con lo ya registrado en Sigrid y con el texto de las casillas; y si F-071 (mes parcial) debe tocar estos importes. Api (config `sync.vinculados.importes`, `importe_vinculado`), transfer (reglas de importe) y front (casillas). CONFIRMADO por el humano el 2026-11-22: «sí, cambia lo desplegado» (F-069 D2 queda sustituida). RECORTADA el 2026-11-25 (F-080 D7 a, «f80 ok» del humano): la parte (b), la caja como total del mes por persona repartido por %, la hace F-080; F-077 queda para el km en euros (y lo que dependa de él).
-
-### F-078 · Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes)
-
-estado **en revisión humana** · spec aprobada el 2026-11-27 · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-078-registrar-por-paquetes`
-
-Petición de negocio transmitida por el humano el 2026-11-22 (punto 8): «poder registrar solo por seleccionados o visibles (por paquetes)». Hoy se registra el mes entero, un trabajador o una obra. Se pide registrar un paquete: los seleccionados (selección múltiple de F-029) o los que quedan visibles con los filtros. Relacionado con el corte del proxy en registros grandes (hotfix del 2026-11-11, F-073): paquetes más pequeños terminan antes. Por decidir en la spec: si el preflight y el ejecutar del paquete se comportan como los del periodo (sobrantes de F-054 incluidas) o como los de un trabajador, cómo se enseña en el modal y cómo cuadra con la regla del 100 % y los avisos por obra. 2026-11-27: SPEC en specs/F-078-registrar-por-paquetes/ (spec_ready), con D1-D9 ABIERTAS para el humano (design §10; recomendada la (a) en todas): paquete = trabajadores enteros, campo nuevo `trabajador_ides` en preflight y ejecutar de la api (422 si vacío o mal formado, nunca el mes entero), lote completo con sobrantes como el de un trabajador, botón «⇪ Registrar seleccionados (M) / visibles (N)» junto a «Completar al 100 %»; el transfer no cambia. Tests anteriores que cambian: ninguno. 2026-11-27, respuesta del humano al resumen: «quiero que el registrar actual sea el boton registrar seleccionados. ya veremos otra forma de registrar. si solo hay 1 seleccionado (no se si puede no seleccionar, en ese caso sin seleccion) registra todos los que estan visibles, sin ocultos». Spec rehecha: D4 = (d) (el botón «Registrar en Sigrid» pasa a ser el del paquete y el mes entero sale de la interfaz; la ruta del mes sigue en la api) y D3 = (a); 2+ seleccionados visibles ⇒ esos, 0 o 1 ⇒ todos los visibles, nunca un oculto; nuevas D10 (rótulo) y D11 (selección oculta ⇒ botón desactivado); D1, D2 y D5-D11 decididas en la (a) por el humano el mismo día («ok a todo»).
 
 ### F-073 · Informe Excel de cada registro en Sigrid: lo escrito, lo omitido y por qué, guardado en Descargas y en la nube
 
@@ -303,6 +296,12 @@ Decision D5 de F-008, que se estaba cayendo por la rendija: viajaba dentro de T3
 estado **to do (comprometida)** · prioridad 34 · rigor `estandar` · SDD no · rama `feature/F-075-excel-cabecera-logo`
 
 Petición de negocio transmitida por el humano el 2026-11-22 (punto 3): «la cabecera excel con logo». El Excel de exportación (F-040, F-045) lleva una cabecera con el logo de Ruesma. Por decidir: qué logo y de dónde sale (fichero versionado en el repositorio, sin datos sensibles), qué más va en la cabecera (título, mes, empresa, fecha de generación) y en qué pestañas. Solo api (export a Excel). El 2026-11-24 el humano la baja al final del backlog («f75 bájala a la última de todo»).
+
+### F-078 · Registrar en Sigrid solo los trabajadores seleccionados o visibles (por paquetes)
+
+estado **terminada** · cerrada el 2026-11-27 · spec aprobada el 2026-11-27 · OK del humano el 2026-11-27 · prioridad 7 · rigor `critico` · SDD sí · rama `feature/F-078-registrar-por-paquetes`
+
+Petición de negocio transmitida por el humano el 2026-11-22 (punto 8): «poder registrar solo por seleccionados o visibles (por paquetes)». Hoy se registra el mes entero, un trabajador o una obra. Se pide registrar un paquete: los seleccionados (selección múltiple de F-029) o los que quedan visibles con los filtros. Relacionado con el corte del proxy en registros grandes (hotfix del 2026-11-11, F-073): paquetes más pequeños terminan antes. Por decidir en la spec: si el preflight y el ejecutar del paquete se comportan como los del periodo (sobrantes de F-054 incluidas) o como los de un trabajador, cómo se enseña en el modal y cómo cuadra con la regla del 100 % y los avisos por obra. 2026-11-27: SPEC en specs/F-078-registrar-por-paquetes/ (spec_ready), con D1-D9 ABIERTAS para el humano (design §10; recomendada la (a) en todas): paquete = trabajadores enteros, campo nuevo `trabajador_ides` en preflight y ejecutar de la api (422 si vacío o mal formado, nunca el mes entero), lote completo con sobrantes como el de un trabajador, botón «⇪ Registrar seleccionados (M) / visibles (N)» junto a «Completar al 100 %»; el transfer no cambia. Tests anteriores que cambian: ninguno. 2026-11-27, respuesta del humano al resumen: «quiero que el registrar actual sea el boton registrar seleccionados. ya veremos otra forma de registrar. si solo hay 1 seleccionado (no se si puede no seleccionar, en ese caso sin seleccion) registra todos los que estan visibles, sin ocultos». Spec rehecha: D4 = (d) (el botón «Registrar en Sigrid» pasa a ser el del paquete y el mes entero sale de la interfaz; la ruta del mes sigue en la api) y D3 = (a); 2+ seleccionados visibles ⇒ esos, 0 o 1 ⇒ todos los visibles, nunca un oculto; nuevas D10 (rótulo) y D11 (selección oculta ⇒ botón desactivado); D1, D2 y D5-D11 decididas en la (a) por el humano el mismo día («ok a todo»).
 
 ### F-080 · Caja de obra: una por trabajador y repartida con su %, como los km
 

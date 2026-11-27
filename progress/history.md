@@ -3309,3 +3309,13 @@ Rama `feature/F-081-operaciones-en-celdas` · `sdd: true` · rigor `estandar` ·
 - Solo el front, lanzado por el humano: `r20261127-0913` (`ca-dedicacion-front--r20261127091315`), 100 % del tráfico; el `app.js` servido lleva `evaluarExpresion`.
 - M1 (T11) por el líder en producción, 2026/11 abierto, sin registrar: cumple los cinco pasos de design §8 y el `title` de D7; línea de prueba restaurada (`progress/manual_F-081.md`).
 - Observaciones para el humano: una operación no válida que empieza por un número deja la celda en ese número (el prefijo ya contó en vivo; R10 repone «el % de la línea»); un texto en la casilla de km se perdió una vez, probablemente por el repintado de un guardado pendiente.
+
+## 2026-11-27 · F-078 · «Registrar en Sigrid» registra un paquete (seleccionados o visibles)
+
+Rama `feature/F-078-registrar-por-paquetes` · `sdd: true` · rigor `critico` · spec aprobada y OK del humano a la PARADA 2 («ok») el 2026-11-27.
+
+- **Qué cambió.** El botón general registra un paquete: 2+ seleccionados visibles («Registrar seleccionados (M)») o, con 0-1 seleccionados, todos los visibles («Registrar visibles (N)»), nunca un oculto; selección oculta por el filtro ⇒ botón desactivado. Cada trabajador va entero y con sus sobrantes (F-054). La api gana `trabajador_ides` (lista no vacía, excluyente con `trabajador_ide`; vacía o mal formada ⇒ 422); la ruta del mes sigue, sin uso desde el front. El transfer, sin tocar.
+- **Decisiones.** D3 (a) y D4 (d) con la frase del humano («quiero que el registrar actual sea el boton registrar seleccionados…»); D1, D2 y D5-D11 en la (a).
+- **Verificado.** `init.sh` en verde (también sin caché en la review); api 1848, front 771, raíz 2319 + 47 skipped; cobertura 29/29. Review principal APPROVED (`8ca80b5`): RED con producción de `dev` 121 fallos (46 del riesgo «paquete = mes»), 22 roturas a mano detectadas salvo una equivalente. Mutación 9/9 y 8 a mano muertos. Review de evidencias APPROVED (`7b741b4`).
+- **Ecosistema.** `azure-apps/dedicacion.md` `ce8437c` (pendiente de push del humano; «sin desplegar» se quita al desplegar).
+- **Pendiente.** MANUAL T9 (humano, modo pruebas) y despliegue de api y front.
